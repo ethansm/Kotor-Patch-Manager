@@ -8,7 +8,13 @@ row ids are assigned by the builder from the live K2 tables).
 [audio] (optional) imports the character's own K1 bark audio: k1_ssf = the K1 SSF resref (e.g. p_carth), k2_ssf =
 the K2 SSF resref the pack serves. Both required. The builder then appends a NEW soundset.2da row for the character
 and the pack serves the SSF plus the K1 voice wavs. `character.soundset` stays required: it is the fallback K2 row
-used when the recipe has no [audio] (and documents the stand-in voice); with [audio] it is ignored for the UTC and pack. The user config (k1_imports.example.toml -> your private copy) names the game dirs,
+used when the recipe has no [audio] (and documents the stand-in voice); with [audio] it is ignored for the UTC and pack.
+
+[dialog] (optional) rips the character's K1 conversation, voice-over and lips (k1_port_dialog.py): k1_dlg = the K1 DLG
+resref (optional; default = the conversation of the K1 creature template, found at build time), k2_dlg = the K2 DLG
+resref the pack serves (required; the UTC conversation and the pack's default_dlg become it, so `character.dlg` must be
+empty or the same), max_voiced = the voice budget in distinct VO lines, 0..80 (default 30; each voiced line is a wav plus
+a lip in the shared asset pool). The user config (k1_imports.example.toml -> your private copy) names the game dirs,
 the output dir and the build order. [build] characters entries are recipe ids (recipes/<id>.toml, which always
 wins) or `utc:<resref>` for any K1 creature template (the importer derives its recipe at build time, see
 k1_port_scan.py); a plain id with no recipe file is tried as a K1 UTC resref of that name.
@@ -39,12 +45,15 @@ CHARACTER_REQUIRED = ("id", "display_name", "utc", "soundset", "template_row", "
 MODELS_KEYS = ("converter", "body_a", "body_b", "head")
 MODEL_ENTRY_KEYS = ("k1", "k2")
 TEXTURE_KEYS = ("k1", "k2", "force_opaque", "txi")
-TOP_KEYS = ("character", "models", "textures", "audio")
+TOP_KEYS = ("character", "models", "textures", "audio", "dialog")
 BUILD_KEYS = ("out", "characters", "recipes_dir", "texture_source", "first_appearance_row", "first_head_row")
 TEXTURE_SOURCES = ("vanilla", "cr")
 
 ROW_HINT = "row ids are assigned by the builder from the live K2 tables"
 AUDIO_KEYS = ("k1_ssf", "k2_ssf")
+DIALOG_KEYS = ("k1_dlg", "k2_dlg", "max_voiced")
+DIALOG_MAX_VOICED = 80
+DIALOG_DEFAULT_VOICED = 30
 
 
 class RecipeError(ValueError):
@@ -72,6 +81,13 @@ class AudioRef:
 
 
 @dataclass(frozen=True)
+class DialogRef:
+    k1_dlg: str  # K1 DLG resref read from the K1 install; "" = the conversation of the K1 creature template
+    k2_dlg: str  # K2 DLG resref the pack serves (also the UTC conversation and the pack's default_dlg)
+    max_voiced: int = DIALOG_DEFAULT_VOICED  # voice budget: distinct VO lines (a wav + a lip each)
+
+
+@dataclass(frozen=True)
 class Recipe:
     id: str
     display_name: str
@@ -89,6 +105,7 @@ class Recipe:
     warnings: tuple[str, ...]
     source: str  # path the recipe was loaded from (diagnostics only)
     audio: AudioRef | None = None
+    dialog: DialogRef | None = None
 
     def k2_names(self) -> tuple[str, ...]:
         """Every k2 resref this recipe introduces (models, textures, utc, ssf), in declaration order."""
@@ -97,6 +114,8 @@ class Recipe:
         names.append(self.utc)
         if self.audio is not None:
             names.append(self.audio.k2_ssf)
+        if self.dialog is not None:
+            names.append(self.dialog.k2_dlg)
         return tuple(names)
 
 
@@ -215,6 +234,15 @@ def parse_recipe(data: dict, path: Path) -> Recipe:
         ctx.require(at, AUDIO_KEYS, "audio")
         audio = AudioRef(k1_ssf=ctx.resref(at["k1_ssf"], "audio.k1_ssf"), k2_ssf=ctx.resref(at["k2_ssf"], "audio.k2_ssf"))
 
+    dialog: DialogRef | None = None
+    if "dialog" in data:
+        dt = ctx.table(data["dialog"], "dialog")
+        ctx.unknown(dt, DIALOG_KEYS, "dialog")
+        ctx.require(dt, ("k2_dlg",), "dialog")
+        dialog = DialogRef(k1_dlg=ctx.resref(dt.get("k1_dlg", ""), "dialog.k1_dlg", allow_empty=True),
+                           k2_dlg=ctx.resref(dt["k2_dlg"], "dialog.k2_dlg"),
+                           max_voiced=ctx.integer(dt.get("max_voiced", DIALOG_DEFAULT_VOICED), "dialog.max_voiced", 0, DIALOG_MAX_VOICED))
+
     if "character" not in data:
         raise ctx.err("character", "missing required table")
     ch = ctx.table(data["character"], "character")
@@ -230,6 +258,11 @@ def parse_recipe(data: dict, path: Path) -> Recipe:
     tag = ctx.printable(ch.get("tag", ""), "character.tag", 0, 31)
     utc = ctx.resref(ch["utc"], "character.utc")
     dlg = ctx.resref(ch.get("dlg", ""), "character.dlg", allow_empty=True)
+    if dialog is not None:
+        if dlg not in ("", dialog.k2_dlg):
+            raise ctx.err("character.dlg", f"{dlg!r} conflicts with [dialog] k2_dlg {dialog.k2_dlg!r}: leave character.dlg empty "
+                          "(the UTC conversation is the [dialog] k2_dlg)")
+        dlg = dialog.k2_dlg
     sound = ch["soundset"]
     if isinstance(sound, str):
         if sound == "auto":
@@ -298,6 +331,8 @@ def parse_recipe(data: dict, path: Path) -> Recipe:
         claim(t.k2, f"textures[{i}].k2")
     if audio is not None:
         claim(audio.k2_ssf, "audio.k2_ssf")
+    if dialog is not None:
+        claim(dialog.k2_dlg, "dialog.k2_dlg")
 
     return Recipe(
         id=rid,
@@ -316,6 +351,7 @@ def parse_recipe(data: dict, path: Path) -> Recipe:
         warnings=tuple(warnings),
         source=str(path),
         audio=audio,
+        dialog=dialog,
     )
 
 
@@ -448,7 +484,9 @@ def main(argv: list[str]) -> int:
         if "character" in data:
             r = parse_recipe(data, p)
             print(f"OK recipe {r.id}: converter={r.converter} textures={len(r.textures)} "
-                  f"audio={r.audio.k1_ssf + '->' + r.audio.k2_ssf if r.audio else 'none'} warnings={list(r.warnings)}")
+                  f"audio={r.audio.k1_ssf + '->' + r.audio.k2_ssf if r.audio else 'none'} "
+                  f"dialog={(r.dialog.k1_dlg or 'utc') + '->' + r.dialog.k2_dlg + ' voiced<=' + str(r.dialog.max_voiced) if r.dialog else 'none'} "
+                  f"warnings={list(r.warnings)}")
         else:
             c = load_config(p)
             files = [i for i in c.characters if (c.recipes_dir / f"{i}.toml").is_file()]

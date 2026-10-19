@@ -32,6 +32,12 @@ build, per character in config order (every step logs to <out>/<id>/logs/):
              converter pykotor -> k1_port_ingest (per model, with its textures); converter mdlops -> k1_port_mdlops
              extract/pass1/rename/pass2, then validate + copy into the stage (the script's own `finish` writes into
              the shared hand-path stage, so the driver does that step itself)
+             (+ dialog, when the recipe has [dialog]: the character's K1 conversation is read from the K1 install and converted
+             by k1_port_dialog.py: every K1 script reference is stripped, only starters/links without a condition survive,
+             the K1 TLK text is embedded literally; the voice-over wavs of the first `max_voiced` lines (breadth-first) are
+             copied from <K1>/streamwaves/ (read only) to <out>/<id>/dialog/streamvoice/ as STREAM assets, their lips from
+             <K1>/lips/*.mod to dialog/lips/ (only lips that pass kvoice_lip.check_lip); the pack serves <k2_dlg>.dlg, and the
+             UTC conversation / default_dlg become it)
   4 textures <k2>.tpc per recipe texture: DXT1 (k1_port_tex_tpc tga-to-tpc for TGA input, --force-opaque, --txi
              with the recipe text; a staged DXT1 TPC is used as is, its TXI trailer replaced by the recipe txi when one is set)
   5 rows     (+ a new soundset.2da row for a recipe with [audio], assigned at the live row count in config order among
@@ -74,6 +80,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))  # python -I drops the script dir from sys.path
 sys.path.insert(0, str(HERE.parent / "kvoice"))
 
+import k1_port_dialog as kdialog  # noqa: E402  stdlib only; pykotor is used in the _dialog helper subprocess
 import k1_port_pack as kpack  # noqa: E402  stdlib only
 import k1_port_recipe as krecipe  # noqa: E402  stdlib only (tomllib at load time)
 import k1_port_resolve as kresolve  # noqa: E402  stdlib only; pykotor is used in the resolve subprocess
@@ -106,6 +113,8 @@ GATE_RE = re.compile(r"gate: scanned (\d+) file\(s\), blocked (\d+), warned (\d+
 PACK_SUFFIX = ".k2pack"
 SSF_SIZE, SSF_MAGIC, SSF_SLOTS, SSF_EMPTY = 172, b"SSF V1.1", 28, 0xFFFFFFFF
 STREAM_DIR = "streamsounds"
+STREAMWAVES_DIR = "streamwaves"  # K1 dialog voice-over, nested <module>/<speaker>/<NAME>.wav
+DIALOG_DIR, STREAMVOICE_DIR, LIPS_DIR = "dialog", "streamvoice", "lips"
 IMPORT_DIR = "k1_imports"
 
 
@@ -866,9 +875,10 @@ TLK_HINT = "this K2 TLK lacks the K1 row; the importer needs the K2 dialog.tlk t
 def find_child_ci(parent: Path, name: str) -> Path | None:
     """Case-insensitive child of parent (any kind), or None."""
     try:
-        for e in os.scandir(parent):
-            if e.name.lower() == name.lower():
-                return Path(e.path)
+        with os.scandir(parent) as it:
+            for e in it:
+                if e.name.lower() == name.lower():
+                    return Path(e.path)
     except OSError:
         return None
     return None
@@ -890,9 +900,10 @@ def tlk_voiceovers(runner: Runner, tlk: Path, strrefs: list, which: str) -> dict
     return {int(k): v for k, v in got.items()}
 
 
-def audio_inspect(runner: Runner, recipe, k1: Path, k2: Path) -> dict:
+def audio_inspect(runner: Runner, recipe, k1: Path, k2: Path, reserved: tuple = (0, 0)) -> dict:
     """Read-only audio resolution: the K1 SSF bytes, its strrefs checked against both dialog.tlk files, and the K1
-    voice wavs in <K1>/streamsounds/. Raises Failure on anything unusable. Writes nothing."""
+    voice wavs in <K1>/streamsounds/. `reserved` = (assets, bytes) the [dialog] part of the same pack needs, kept free of
+    the extra barks. Raises Failure on anything unusable. Writes nothing."""
     a, cid = recipe.audio, recipe.id
     got = audio_call(runner, f"audio ssf {a.k1_ssf}", "ssf", k1, a.k1_ssf)
     try:
@@ -934,21 +945,22 @@ def audio_inspect(runner: Runner, recipe, k1: Path, k2: Path) -> dict:
     if not found:
         raise Failure(f"audio {cid}", f"none of the {len(voiceovers)} K1 voice wavs are in {sdir or k1 / STREAM_DIR}",
                       "check [k1] dir is a full KOTOR 1 install with a streamsounds/ folder")
-    extra, dropped = extra_barks(recipe, index, found, set(voiceovers))
+    extra, dropped = extra_barks(recipe, index, found, set(voiceovers), reserved)
     return {"ssf": data, "strrefs": list(strrefs), "voiceovers": voiceovers, "found": found, "missing": missing,
             "extra": extra, "extra_dropped": dropped}
 
 
-def extra_barks(recipe, index: dict, found: dict, referenced: set) -> tuple[dict, list]:
+def extra_barks(recipe, index: dict, found: dict, referenced: set, reserved: tuple = (0, 0)) -> tuple[dict, list]:
     """The K1 voice wavs named `<k1_ssf>_*.wav` that the SSF does not reference (Carth: p_carth_tia), as {resref: path},
     plus the names dropped to stay under the pack limits (asset count, half the pack byte cap). Sorted by name, so the
-    cut is deterministic. A name that is not a valid resref is dropped too."""
+    cut is deterministic. A name that is not a valid resref is dropped too. `reserved` = (assets, bytes) left free for the
+    recipe's [dialog]."""
     prefix = recipe.audio.k1_ssf.lower() + "_"
     cands = sorted((n[:-4], p) for n, p in index.items() if n.startswith(prefix) and n.endswith(".wav")
                    and n[:-4] not in referenced)
     base = 2 * len(model_refs(recipe)) + len(recipe.textures) + 2  # models mdl+mdx, tpc, the utc and the ssf
-    room = kpack.MAX_ASSETS - base - len(found)
-    budget = kpack.MAX_FILE_BYTES // 2 - sum(p.stat().st_size for p in found.values())
+    room = kpack.MAX_ASSETS - base - len(found) - reserved[0]
+    budget = kpack.MAX_FILE_BYTES // 2 - sum(p.stat().st_size for p in found.values()) - reserved[1]
     extra, dropped = {}, []
     for stem, path in cands:
         size = path.stat().st_size
@@ -1016,6 +1028,171 @@ def prepare_soundset_base(ctx: "Ctx", order: list, idx: int, row: int) -> Path:
     raise Failure(f"{ctx.recipe.id} soundset row", f"no base soundset.2da fits the planned row {row}", "build with --reassign")
 
 
+# ------------------------------------------------------------------------------------------- dialog (K1 conversation, voice, lips)
+
+def dialog_call(runner: Runner, label: str, *args) -> dict:
+    """Run the hidden `_dialog` helper under the k1port venv; parse the JSON object on its last stdout line."""
+    proc = runner.run(label, [str(k1port_py()), "-I", "-B", str(DRIVER), "_dialog", *[str(a) for a in args]],
+                      fix="run the importer's doctor: the k1port venv (pykotor) must work and the K1 install must hold the conversation")
+    lines = [ln for ln in proc.stdout.splitlines() if ln.strip()]
+    try:
+        return json.loads(lines[-1])
+    except (IndexError, json.JSONDecodeError) as e:
+        raise Failure(label, f"helper printed no JSON: {e}", "re-run doctor") from None
+
+
+def resolve_k1_dlg(runner: Runner, loaded: Loaded, recipe, k1: Path) -> str:
+    """[dialog] k1_dlg, else the conversation of the character's K1 creature template (an auto character knows its UTC;
+    a recipe file is tried as p_<id>, then <id>)."""
+    d = recipe.dialog
+    if d.k1_dlg:
+        return d.k1_dlg
+    a = loaded.auto.get(recipe.id)
+    cands = [a.utc] if a is not None else [f"p_{recipe.id}", recipe.id]
+    facts = scan_facts_many(runner, k1, cands)
+    for c in cands:
+        conv = str((facts.get(c) or {}).get("conversation") or "").strip().lower()
+        if conv and krecipe.RESREF_RE.fullmatch(conv):
+            return conv
+    raise Failure(f"dialog {recipe.id}", f"no [dialog] k1_dlg, and the K1 creature template(s) {', '.join(cands)} "
+                  "do not exist or have no conversation", "set k1_dlg in the recipe's [dialog] table")
+
+
+def dialog_inspect(runner: Runner, loaded: Loaded, recipe, k1: Path, *, write_dlg: bool) -> dict:
+    """Read-only dialog conversion: the K1 DLG + TLK text, the streamwaves index and the lips, converted by
+    k1_port_dialog.convert_dialog. write_dlg=False (dry run) skips building the DLG bytes (the asset count is the same).
+    Raises Failure on anything unusable. Writes nothing under the K1/K2 dirs."""
+    d, cid = recipe.dialog, recipe.id
+    k1_dlg = resolve_k1_dlg(runner, loaded, recipe, k1)
+    tlk = find_child_ci(k1, "dialog.tlk")
+    if tlk is None or not tlk.is_file():
+        raise Failure(f"dialog {cid}", f"no dialog.tlk in the K1 dir {k1}", "set [k1] dir to a full KOTOR 1 install")
+    got = dialog_call(runner, f"dialog read {k1_dlg}", "read", k1, tlk, k1_dlg)
+    if not got.get("found"):
+        raise Failure(f"dialog {cid}: K1 {k1_dlg}.dlg", "not found in the K1 install (Override, chitin or modules)",
+                      "check [dialog] k1_dlg names a K1 conversation, and [k1] dir is a full KOTOR 1 install")
+    graph, strings = got["graph"], {int(k): v for k, v in (got.get("strings") or {}).items()}
+    sdir = find_child_ci(k1, STREAMWAVES_DIR)
+    vo_index, vinfo = kdialog.build_vo_index(sdir) if sdir is not None else ({}, {"files": 0, "duplicates": [], "skipped_symlinks": 0})
+    if not vo_index:
+        warn(f"{cid}: no voice wavs found under {sdir or k1 / STREAMWAVES_DIR}; the whole dialog will be silent")
+    lip_src: dict[str, str] = {}
+
+    def lip_lookup(names: list) -> dict:
+        lg = dialog_call(runner, "dialog lips", "lips", k1, *names)
+        out = {}
+        for n, v in (lg.get("lips") or {}).items():
+            if v is None:
+                out[n] = None
+            else:
+                out[n] = base64.b64decode(v["b64"], validate=True)
+                lip_src[n] = v["mod"]
+        return out
+
+    def write(graph_out: dict) -> bytes:
+        with tempfile.TemporaryDirectory(prefix="k1port_dialog_") as td:
+            f = Path(td) / "graph.json"
+            f.write_text(json.dumps(graph_out), encoding="utf-8")
+            wg = dialog_call(runner, "dialog write", "write", f)
+        return base64.b64decode(wg["data_b64"], validate=True)
+
+    try:
+        res = kdialog.convert_dialog(graph, strings.get, vo_index, lip_lookup, max_voiced=d.max_voiced, k2_dlg=d.k2_dlg,
+                                     write_dlg=write if write_dlg else None)
+    except kdialog.DialogError as e:
+        raise Failure(f"dialog {cid}: {e.location}", e.cause, e.fix) from None
+    res.update({"k1_dlg": k1_dlg, "k1_dlg_source": got.get("source"), "k1_dlg_sha256": got.get("sha256"),
+                "lip_sources": lip_src, "vo_index": vo_index, "vo_index_info": vinfo})
+    return res
+
+
+def dialog_reserved(info: dict | None) -> tuple:
+    """(assets, bytes) the dialog needs in the pack, for audio_inspect's extra-bark cap."""
+    if info is None:
+        return (0, 0)
+    return (info["report"]["asset_count"], info["report"]["wav_bytes"])
+
+
+def pack_asset_total(recipe, audio: dict | None, dialog: dict | None) -> int:
+    """Assets the pack will hold: models (mdl+mdx), tpc, utc, + ssf and its wavs, + dlg/wavs/lips."""
+    total = 2 * len(model_refs(recipe)) + len(recipe.textures) + 1
+    if audio is not None:
+        total += 1 + len(audio["found"]) + len(audio.get("extra", {}))
+    if dialog is not None:
+        total += dialog["report"]["asset_count"]
+    return total
+
+
+def check_pack_budget(recipe, audio: dict | None, dialog: dict | None) -> int:
+    total = pack_asset_total(recipe, audio, dialog)
+    if total > kpack.MAX_ASSETS:
+        rep = (dialog or {}).get("report", {})
+        raise Failure(f"dialog {recipe.id}", f"the pack would hold {total} assets, over the {kpack.MAX_ASSETS}-asset pack cap "
+                      f"(dialog adds {rep.get('asset_count', 0)}: 1 dlg + {rep.get('voiced_lines', 0)} wav + {rep.get('lips_ok', 0)} lip)",
+                      "lower [dialog] max_voiced (each voiced line is a wav plus a lip in the pool shared with every mod)")
+    return total
+
+
+def warn_dialog(cid: str, rep: dict) -> None:
+    if rep["lips_missing"]:
+        warn(f"{cid}: {len(rep['lips_missing'])} voiced line(s) have no lip in <K1>/lips/*.mod and ship without one: "
+             + ", ".join(rep["lips_missing"][:8]) + (" ..." if len(rep["lips_missing"]) > 8 else ""))
+    for f in rep["lips_failed"]:
+        warn(f"{cid}: lip {f['name']} fails the LIP structure check ({'; '.join(f['problems'])}); that line ships without a lip")
+    if rep["silent_no_wav"]:
+        warn(f"{cid}: {rep['silent_no_wav']} node(s) name a voice wav that is not in {STREAMWAVES_DIR}/ and stay silent: "
+             + ", ".join(rep["silent_no_wav_names"][:6]) + (" ..." if len(rep["silent_no_wav_names"]) > 6 else ""))
+    if rep["tlk_missing"]:
+        warn(f"{cid}: {len(rep['tlk_missing'])} text strref(s) are not in the K1 dialog.tlk; those lines are empty")
+    if rep["camera_angle_reset"]:
+        warn(f"{cid}: {rep['camera_angle_reset']} node(s) used a static/animated camera angle; reset to the default camera")
+
+
+def say_dialog(cid: str, info: dict, d, total: int) -> None:
+    rep = info["report"]
+    say(f"[{cid}]   dialog: K1 {info['k1_dlg']}.dlg -> {d.k2_dlg}.dlg (UTC conversation + default_dlg), voice budget {d.max_voiced}")
+    for line in kdialog.report_lines(rep):
+        say(f"[{cid}]   dialog: {line}")
+    say(f"[{cid}]   dialog: voice wavs -> {STREAMVOICE_DIR}/ STREAM assets (bytes unchanged), lips + dlg -> RESMAN assets; "
+        f"pack would hold {total}/{kpack.MAX_ASSETS} assets")
+
+
+def stage_dialog(ctx: "Ctx", info: dict) -> dict:
+    """Write the DLG, the voice wavs and the lips into <cdir>/dialog (the K1 dir is only read). Returns the file list and
+    the manifest record."""
+    r, d = ctx.recipe, ctx.recipe.dialog
+    ddir = ctx.cdir / DIALOG_DIR
+    sub = {"dlg": ddir, "wav": ddir / STREAMVOICE_DIR, "lip": ddir / LIPS_DIR}  # a path part named streamvoice marks the wavs STREAM
+    files, dlg_rec, wav_rec, lip_rec = [], None, [], []
+    by_name = {v["name"]: v for v in info["voiced"]}
+    for name, data, kind in info["assets"]:
+        dst = sub[kind] / name
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        dst.write_bytes(data)
+        files.append(dst)
+        stem = name.rsplit(".", 1)[0]
+        base = {"resref": stem, "sha256": sha256_bytes(data), "size": len(data), "origin": VANILLA_ID}
+        if kind == "dlg":
+            dlg_rec = {**base, "k1_dlg": info["k1_dlg"], "k1_sha256": info["k1_dlg_sha256"], "converted": True}
+        elif kind == "wav":
+            src = info["vo_index"].get(by_name[stem]["k1"])
+            try:
+                rel = str(Path(src).relative_to(ctx.k1)) if src is not None else ""
+            except ValueError:
+                rel = str(src)
+            wav_rec.append({**base, "k1_name": by_name[stem]["k1"], "file": rel, "pack_flags": kpack.FLAG_STREAM})
+        else:
+            lip_rec.append({**base, "file": f"{LIPS_DIR}/{info['lip_sources'].get(by_name[stem]['k1'], '?')}", "check": "kvoice_lip.check_lip ok"})
+    if dlg_rec is None:
+        raise Failure(f"dialog {r.id}", "the converter produced no DLG bytes", "report this")
+    rep = info["report"]
+    warn_dialog(r.id, rep)
+    return {"files": files, "manifest": {"k1_dlg": info["k1_dlg"], "k1_dlg_source": info["k1_dlg_source"], "k2_dlg": d.k2_dlg,
+                                         "max_voiced": d.max_voiced, "policy": kdialog.POLICY, "stats": rep, "dlg": dlg_rec,
+                                         "wavs": wav_rec, "lips": lip_rec, "voiced": info["voiced"],
+                                         "vo_index": info["vo_index_info"]}}
+
+
 # ------------------------------------------------------------------------------------------- per-character context
 
 @dataclass
@@ -1027,6 +1204,7 @@ class Ctx:
     runner: Runner
     env: dict
     audio: dict | None = None  # stage_audio() result when the recipe has [audio]
+    dialog: dict | None = None  # stage_dialog() result when the recipe has [dialog]
 
     @property
     def stage(self) -> Path:
@@ -1117,6 +1295,8 @@ def stage_files(ctx: Ctx) -> list:
     files.append(ctx.cdir / "override" / f"{r.utc}.utc")
     if ctx.audio is not None:
         files += [ctx.audio["ssf"], *ctx.audio["wavs"]]
+    if ctx.dialog is not None:
+        files += ctx.dialog["files"]
     missing = [str(f) for f in files if not f.is_file()]
     if missing:
         raise Failure(f"{r.id} pack inputs", "missing: " + ", ".join(missing), f"see {ctx.cdir / 'logs'}")
@@ -1173,9 +1353,11 @@ def print_plan(ctx: Ctx, idx: int, order: list, rows: dict, resolved: dict) -> N
         cmds += mdlops_steps(ctx, r)
         cmds.append(("ingest textures", ingest_argv(ctx, r.body_a.k1, None, list(r.textures), no_model=True, supermodel_map=[])))
     chain = ctx.loaded.out / order[idx - 1] / "override" if idx else None
-    audio = None
+    audio = dialog = None
+    if r.dialog is not None:
+        dialog = dialog_inspect(ctx.runner, ctx.loaded, r, ctx.k1, write_dlg=False)  # read only
     if r.audio is not None:
-        audio = audio_inspect(ctx.runner, r, ctx.k1, ctx.loaded.cfg.k2_dir)  # read only
+        audio = audio_inspect(ctx.runner, r, ctx.k1, ctx.loaded.cfg.k2_dir, dialog_reserved(dialog))  # read only
         base = ctx.loaded.out / order[idx - 1] / "override" / "soundset.2da" if idx else live_tables(ctx.loaded.cfg.k2_dir) / "soundset.2da"
         cmds.append(("soundset row", soundset_row_cmd(ctx, base, rows["soundset"])))
     cmds.append(("char_build", char_build_argv(ctx, rows, chain)))
@@ -1193,6 +1375,9 @@ def print_plan(ctx: Ctx, idx: int, order: list, rows: dict, resolved: dict) -> N
             + (f"; missing (WARN): {', '.join(audio['missing'])}" if audio["missing"] else ""))
         say(f"[{r.id}]   audio: new soundset.2da row {rows['soundset']} (label {label_for(r)}, resref {r.audio.k2_ssf}, gender {r.gender}); "
             f"the UTC uses it instead of recipe soundset {r.soundset}")
+    if dialog:
+        say_dialog(r.id, dialog, r.dialog, check_pack_budget(r, audio, dialog))
+        warn_dialog(r.id, dialog["report"])
     say(f"[{r.id}]   resolved {len(resolved['rows'])} K1 items, {len(resolved['flagged'])} flagged")
     for f in resolved["flagged"]:
         warn(f"{r.id}: flagged source {f['item']} ({f['reason']}); allowed because the out dir is private")
@@ -1218,9 +1403,13 @@ def build_character(loaded: Loaded, recipe, idx: int, order: list, rows: dict, k
     say(f"[{cid}] 1/6 resolve K1 sources")
     resolver = Runner(None)  # logged into the manifest only: the work dir is wiped below
     resolved = resolve_character(resolver, loaded, recipe, k1)
-    audio_info = None
+    audio_info = dialog_info = None
+    if recipe.dialog is not None and not dry_run:  # read only; fails before the work dir is wiped
+        dialog_info = dialog_inspect(resolver, loaded, recipe, k1, write_dlg=True)
     if recipe.audio is not None and not dry_run:  # read only; fails before the work dir is wiped
-        audio_info = audio_inspect(resolver, recipe, k1, loaded.cfg.k2_dir)
+        audio_info = audio_inspect(resolver, recipe, k1, loaded.cfg.k2_dir, dialog_reserved(dialog_info))
+    if not dry_run and dialog_info is not None:
+        check_pack_budget(recipe, audio_info, dialog_info)
     if dry_run:
         print_plan(ctx, idx, order, rows, resolved)
         return {}
@@ -1265,6 +1454,12 @@ def build_character(loaded: Loaded, recipe, idx: int, order: list, rows: dict, k
         audio_man = ctx.audio["manifest"]
         say(f"[{cid}]   {len(ctx.audio['wavs'])} wav(s) staged as STREAM assets ({len(audio_man['extra'])} extra), "
             f"{len(audio_man['missing_optional'])} missing")
+    dialog_man = None
+    if recipe.dialog is not None:
+        say(f"[{cid}] 3/6 dialog: K1 {dialog_info['k1_dlg']}.dlg + voice-over + lips -> {recipe.dialog.k2_dlg}.dlg")
+        ctx.dialog = stage_dialog(ctx, dialog_info)
+        dialog_man = ctx.dialog["manifest"]
+        say_dialog(cid, dialog_info, recipe.dialog, pack_asset_total(recipe, audio_info, dialog_info))
     for data in ingests:
         flagged += ingest_flagged(data)
     seen, uniq = set(), []
@@ -1324,6 +1519,7 @@ def build_character(loaded: Loaded, recipe, idx: int, order: list, rows: dict, k
         "sources": resolved["rows"],
         "missing_optional": resolved["missing"] + (audio_man["missing_optional"] if audio_man else []),
         "audio": audio_man,
+        "dialog": dialog_man,
         "ingest": [summarize_ingest(d) for d in ingests],
         "textures": tex_info,
         "flagged": flagged,
@@ -1384,6 +1580,7 @@ def cmd_build(args) -> int:
             stored = save_assignment(loaded, stored, r.id, rows[r.id])
     if not args.dry_run:
         warn_cell_budget(loaded)
+        warn_asset_budget(loaded)
         say(f"done: {len(chosen)} pack(s) in {loaded.out}. Next: install (close the game first).")
     return EXIT_OK
 
@@ -1403,6 +1600,24 @@ def warn_cell_budget(loaded: Loaded) -> int:
              f"Build fewer characters, or uninstall juhani-char.")
     else:
         say(f"2DA cell budget: {total}/{CELL_POOL} cells (shared with every other asset-vfs client, e.g. juhani-char)")
+    return total
+
+
+ASSET_POOL = 192  # asset-vfs static asset pool: ONE pool for ALL registrants (a pack alone may also hold 192)
+
+
+def warn_asset_budget(loaded: Loaded) -> int:
+    """Sum of assets over every built pack of the config; WARN when it exceeds the shared asset-vfs pool."""
+    total = 0
+    for cid in loaded.cfg.characters:
+        man = read_json(loaded.out / f"{cid}.import_manifest.json", "manifest") or {}
+        total += int(man.get("pack", {}).get("asset_count") or 0)
+    if total > ASSET_POOL:
+        warn(f"asset budget: the built packs need {total} assets, the shared asset-vfs pool holds {ASSET_POOL} for ALL mods "
+             f"(juhani-char alone uses about 51). Assets past the limit are not served. Lower [dialog] max_voiced, drop extra "
+             f"barks, or build fewer characters.")
+    else:
+        say(f"asset budget: {total}/{ASSET_POOL} assets (shared with every other asset-vfs client, e.g. juhani-char)")
     return total
 
 
@@ -1502,6 +1717,10 @@ def cmd_remove(args) -> int:
         warn(f"{expect} was already gone")
     rec.pop(args.id)
     write_json(installed_path(loaded), rec)
+    dman = (read_json(loaded.out / f"{args.id}.import_manifest.json", "manifest") or {}).get("dialog")
+    if dman:
+        say(f"the pack also served dialog {dman.get('k2_dlg')} ({len(dman.get('wavs', []))} voice wav(s), {len(dman.get('lips', []))} lip(s)); "
+            f"it is gone with the pack (nothing else was written to the game dir)")
     stored = read_json(loaded.out / "assignments.json", "assignments") or {}
     if isinstance(stored, dict) and args.id in stored:
         old = stored.pop(args.id)
@@ -1511,6 +1730,14 @@ def cmd_remove(args) -> int:
             f"until a rebuild of {args.id} (rows are positional in config order)")
     say("Close the game before relaunching.")
     return EXIT_OK
+
+
+def _dialog_summary(dialog_man: dict | None) -> dict | None:
+    """The few counts `list` shows from a manifest's dialog record."""
+    if not dialog_man:
+        return None
+    st = dialog_man.get("stats", {})
+    return {k: st.get(k) for k in ("nodes_total", "nodes_kept", "starters_kept", "voiced_lines", "asset_count", "lips_ok")}
 
 
 def cmd_list(args) -> int:
@@ -1531,7 +1758,9 @@ def cmd_list(args) -> int:
                      "auto_utc": loaded.auto[r.id].utc if r.id in loaded.auto else None, "built": built,
                      "pack_sha256": sha, "stale": stale, "installed": installed,
                      "installed_matches_build": bool(installed and sha and sha256_file(dest) == sha),
-                     "assigned": stored.get(r.id), "flagged": len(man.get("flagged", [])) if man else None})
+                     "assigned": stored.get(r.id), "flagged": len(man.get("flagged", [])) if man else None,
+                     "dialog": ({"k2_dlg": r.dialog.k2_dlg, "max_voiced": r.dialog.max_voiced,
+                                 "built": _dialog_summary(man.get("dialog"))} if r.dialog is not None else None)})
     if args.json:
         print(json.dumps({"out": str(loaded.out), "k2_dir": str(loaded.cfg.k2_dir), "characters": rows}, indent=2, sort_keys=True))
         return EXIT_OK
@@ -1542,7 +1771,13 @@ def cmd_list(args) -> int:
         state = ("built" + (" (stale: recipe changed)" if x["stale"] else "")) if x["built"] else "not built"
         inst_txt = ("installed" + ("" if x["installed_matches_build"] else " (differs from build)")) if x["installed"] else "not installed"
         sha = (x["pack_sha256"] or "-")[:16]
-        say(f"{x['id']:<14} {state:<24} {inst_txt:<30} {rowtxt:<18} sha {sha}" + (f"  auto from K1 {x['auto_utc']}" if x["auto"] else ""))
+        dlg = x["dialog"]
+        dtxt = ""
+        if dlg:
+            b = dlg["built"]
+            dtxt = f"  dialog {dlg['k2_dlg']}" + (f" ({b['nodes_kept']}/{b['nodes_total']} nodes, {b['voiced_lines']} voiced, "
+                                                  f"{b['lips_ok']} lips)" if b else " (not built)")
+        say(f"{x['id']:<14} {state:<24} {inst_txt:<30} {rowtxt:<18} sha {sha}" + (f"  auto from K1 {x['auto_utc']}" if x["auto"] else "") + dtxt)
     return EXIT_OK
 
 
@@ -1592,6 +1827,22 @@ def cmd_doctor(args) -> int:
             elif k2_has_game(cfg.k2_dir):
                 bad(f"K2 {fname}", f"{f} not found (k1_port_char_build reads the live table from override/)",
                     f"put the current {fname} into <K2>/override/ (extract it from the K2 BIFs with a tool such as KotOR Tool)")
+        dlg_ids = [r.id for r in loaded.recipes if r.dialog is not None]
+        if dlg_ids:
+            label = f"[dialog] ({', '.join(dlg_ids)})"
+            k1d = cfg.k1_dir.expanduser()
+            tlk = find_child_ci(k1d, "dialog.tlk") if k1d.is_dir() else None
+            if tlk is not None and tlk.is_file():
+                ok(f"K1 dialog.tlk {label}", str(tlk))
+            else:
+                bad(f"K1 dialog.tlk {label}", f"not found in {k1d}", "set [k1] dir to a full KOTOR 1 install (the dialog text is embedded from it)")
+            for what, fix in ((STREAMWAVES_DIR, "the dialog voice-over lives in <K1>/streamwaves/<module>/<speaker>/; without it the dialog is silent"),
+                              (LIPS_DIR, "<K1>/lips/*.mod hold the lip-sync files; without them the dialog has no lips")):
+                sub = find_child_ci(k1d, what) if k1d.is_dir() else None
+                if sub is not None and sub.is_dir() and not sub.is_symlink():
+                    ok(f"K1 {what}/ {label}", str(sub))
+                else:
+                    maybe(f"K1 {what}/ {label}", f"not found in {k1d}", fix)
         reasons = out_safety(loaded.out, [cfg.k1_dir, cfg.k2_dir])
         if reasons:
             bad("out dir", f"{loaded.out}: " + "; ".join(reasons),
@@ -1781,6 +2032,8 @@ def main(argv: list | None = None) -> int:
         return _twoda_main(argv[1:])
     if argv and argv[0] == "_audio":  # hidden helper (SSF / TLK reads), same interpreter
         return _audio_main(argv[1:])
+    if argv and argv[0] == "_dialog":  # hidden helper (K1 DLG / TLK / lip reads, DLG writer), same interpreter
+        return kdialog.helper_main(argv[1:])
     if argv and argv[0] == "_scan":  # hidden helper (K1 UTC / 2DA / MDL reads), same interpreter
         return kscan.helper_main(argv[1:])
     args = build_parser().parse_args(argv)

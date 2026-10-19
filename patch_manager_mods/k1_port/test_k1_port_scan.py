@@ -85,6 +85,9 @@ class FixtureReader:
     def ssf_exists(self, name):
         return self._find(f"{name}.ssf")[0] is not None
 
+    def dlg_exists(self, name):
+        return self._find(f"{name}.dlg.json")[0] is not None
+
 
 class K1Data:
     """Accumulates fake K1 creatures + the 2DA rows they need, then writes the fixture files."""
@@ -183,6 +186,11 @@ class NamingTests(unittest.TestCase):
         self.assertEqual(S.ssf_name("k1p_" + "a" * 12), "k1p_" + "a" * 9 + "ssf")  # the utc part is cut, the suffix stays
         self.assertEqual(len(S.ssf_name("k1p_" + "a" * 12)), 16)
 
+    def test_dlg_name(self):
+        self.assertEqual(S.dlg_name("k1p_carth"), "k1p_carthdlg")
+        self.assertEqual(S.dlg_name("k1p_" + "a" * 12), "k1p_" + "a" * 9 + "dlg")
+        self.assertEqual(len(S.dlg_name("k1p_" + "a" * 12)), 16)
+
     def test_collisions_fail_with_a_hint(self):
         self.assertEqual(S.claim_names([("a", "k1p_a"), ("a", "k1p_a"), ("b", "k1p_b")]), {"k1p_a": "a", "k1p_b": "b"})
         with self.assertRaises(S.ScanError) as cm:
@@ -228,6 +236,65 @@ class DeriveTests(Base):
         self.assertEqual((r.audio.k1_ssf, r.audio.k2_ssf), ("p_aut", "k1p_autssf"))
         self.assertIn("# dialog: k_haut_dialog", text)
         self.assertNotRegex(text, r"(?m)^\[dialog\]")
+
+    def put_dlg(self, name="k_haut_dialog", where="_bif"):
+        self.data.files[(where, f"{name}.dlg.json")] = b"{}"
+
+    def test_conversation_found_as_a_dlg_emits_a_dialog_table(self):
+        self.data.creature("aut")
+        self.put_dlg()
+        d, text = self.derive("p_aut")
+        self.assertEqual(d.dialog, ("k_haut_dialog", "k1p_autdlg"))
+        self.assertRegex(text, r'(?m)^\[dialog\]\nk1_dlg = "k_haut_dialog"\nk2_dlg = "k1p_autdlg"\nmax_voiced = 30')
+        self.assertIn("converted by the [dialog] table below", text)
+        self.assertNotIn("not found as a DLG", text)
+        p = Path(self._td.name) / "aut.toml"
+        p.write_text(text)
+        r = R.load_recipe(p)
+        self.assertEqual(r.dialog, R.DialogRef(k1_dlg="k_haut_dialog", k2_dlg="k1p_autdlg", max_voiced=30))
+        self.assertEqual(r.dlg, "k1p_autdlg")  # the character's conversation becomes the served dlg
+        self.assertEqual(r.k2_names()[-1], "k1p_autdlg")
+
+    def test_dlg_found_in_override_or_modules_counts(self):
+        self.data.creature("aut")
+        self.put_dlg(where="modules")
+        self.assertEqual(self.derive("p_aut")[0].dialog, ("k_haut_dialog", "k1p_autdlg"))
+
+    def test_conversation_without_a_dlg_keeps_the_comment_only(self):
+        self.data.creature("aut")
+        d, text = self.derive("p_aut")
+        self.assertIsNone(d.dialog)
+        self.assertIn("# dialog: k_haut_dialog  (K1 conversation; not found as a DLG in the K1 install, so no [dialog] table)", text)
+        self.assertNotRegex(text, r"(?m)^\[dialog\]")
+
+    def test_no_conversation_at_all(self):
+        self.data.creature("aut", conv="")
+        self.put_dlg("")
+        d, text = self.derive("p_aut")
+        self.assertIsNone(d.dialog)
+        self.assertIn("# dialog: -", text)
+
+    def test_reader_without_dlg_exists_finds_no_dialog(self):
+        self.data.creature("aut")
+        self.put_dlg()
+        reader = self.reader()
+        facts = S.gather_facts(type("Old", (), {n: getattr(reader, n) for n in (
+            "find_utc", "iter_utcs", "twoda_row", "mdl_textures", "texture_exists", "ssf_exists")})(), "p_aut")
+        self.assertFalse(facts["dlg_found"])
+        self.assertIsNone(S.derive(facts).dialog)
+
+    def test_long_ids_cut_the_dlg_name_to_16_and_keep_the_suffix(self):
+        self.data.creature("abcdefgh", conv="k_hlong_dialog")
+        self.put_dlg("k_hlong_dialog")
+        d, text = self.derive("p_abcdefgh", "abcdefghijkl")  # the recipe id is longer than the creature stem
+        self.assertEqual(d.utc, "k1p_abcdefghijkl")
+        self.assertEqual(d.dialog, ("k_hlong_dialog", "k1p_abcdefghidlg"))
+        self.assertEqual(len(d.dialog[1]), 16)
+
+    def test_conversation_that_is_not_a_valid_resref_is_not_converted(self):
+        self.data.creature("aut", conv="K_Bad Name_x_way_too_long")
+        self.put_dlg("K_Bad Name_x_way_too_long")
+        self.assertIsNone(self.derive("p_aut")[0].dialog)
 
     def test_deterministic(self):
         self.data.creature("aut")

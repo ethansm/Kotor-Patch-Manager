@@ -40,3 +40,10 @@ txi = "clamp 1"
 [audio]
 k1_ssf = "p_carth"
 k2_ssf = "k1p_carthssf"
+
+# Carth's K1 party conversation (k_hcar_dialog, the UTC's Conversation), converted for K2 (k1_port_dialog.py): K1 scripts
+# do not exist in K2, so only the nodes reachable without a condition script survive (6 of 978 today); their text is
+# embedded, their K1 voice wavs (streamwaves/<module>/<speaker>/) and lips (lips/*.mod, checked) ride in the pack.
+[dialog]
+k2_dlg = "k1p_carthdlg"
+max_voiced = 30

@@ -29,6 +29,7 @@ sys.path.insert(0, str(HERE.parent / "kvoice"))
 import k1_port_import as imp  # noqa: E402
 import k1_port_pack as kp  # noqa: E402
 import k1_port_scan as kscan  # noqa: E402
+import test_k1_port_dialog as tdlg  # noqa: E402  node/graph builders + the JSON backend of the fake interpreter's _dialog helper
 import test_k1_port_scan as tscan  # noqa: E402  K1Data + FixtureReader (the fake interpreter's _scan helper reads those fixtures)
 
 FAKE_PY = '''#!{python}
@@ -235,6 +236,11 @@ if script == "k1_port_import.py" and args and args[0] == "_scan":
     sys.path.insert(0, "{here}")
     import k1_port_scan, test_k1_port_scan
     sys.exit(k1_port_scan.helper_main(args[1:], reader_factory=test_k1_port_scan.FixtureReader))
+
+if script == "k1_port_import.py" and args and args[0] == "_dialog":
+    sys.path.insert(0, "{here}")
+    import k1_port_dialog, test_k1_port_dialog
+    sys.exit(k1_port_dialog.helper_main(args[1:], backend_factory=test_k1_port_dialog.FakeBackend))
 
 if script == "k1_port_import.py" and args and args[0] == "_audio":
     import base64
@@ -1205,6 +1211,27 @@ class AutoTests(AutoBase):
         self.assertEqual([w["resref"] for w in a["extra"]], ["p_aut_tia"])
         self.assertEqual(self.manifest("aut")["assigned"]["soundset"], LIVE_SND)
 
+    def test_auto_character_with_a_k1_conversation_gets_a_dialog(self):
+        g = tdlg.graph([tdlg.node("Greetings, Commander.", "", [tdlg.link(0)]), tdlg.node("Gone.", "")],
+                       [tdlg.node("Farewell.", "")], [tdlg.link(0, active="k_swg_x"), tdlg.link(0)])
+        self.put_k1("k_haut_dialog.dlg.json", json.dumps(g).encode())
+        self.build_ok()
+        self.assertIn('[dialog]\nk1_dlg = "k_haut_dialog"\nk2_dlg = "k1p_autdlg"', self.auto_file.read_text())
+        info, assets, _ = self.load_pack("aut")
+        self.assertEqual(info.default_dlg, "k1p_autdlg")
+        self.assertEqual([a.resref for a in assets if a.res_type == 2029], ["k1p_autdlg"])
+        d = self.manifest("aut")["dialog"]
+        self.assertEqual((d["k1_dlg"], d["stats"]["nodes_kept"], d["stats"]["voiced_lines"]), ("k_haut_dialog", 2, 0))  # the entry + its reply; "Gone." is unreachable
+        self.assertIsNone(self.manifest("tst")["dialog"])
+        cb = [c for c in self.script_calls("k1_port_char_build.py") if "aut" in c]
+        self.assertEqual(cb[0][cb[0].index("--conversation") + 1], "k1p_autdlg")
+
+    def test_auto_character_without_a_dlg_has_no_dialog(self):
+        self.build_ok()
+        self.assertNotRegex(self.auto_file.read_text(), r"(?m)^\[dialog\]")
+        self.assertIsNone(self.manifest("aut")["dialog"])
+        self.assertEqual(self.load_pack("aut")[0].default_dlg, "")
+
     def test_cell_budget_counts_the_auto_pack(self):
         out, _ = self.build_ok()
         self.assertIn(f"2DA cell budget: {11 + 3 + 11 + 3 + 5}/1024", out)
@@ -1508,6 +1535,302 @@ class NpcsCliTests(AutoBase):
         self.assertEqual(rc, 0, out + err)
         self.assertEqual((snapshot(self.k1), snapshot(self.k2)), before)
         self.assertFalse(self.out.exists())
+
+
+class DialogTests(Base):
+    """Recipes with [dialog]: the K1 DLG (script-stripped, text embedded), streamwaves VO as STREAM assets, lips from lips/*.mod."""
+    chars = ("tst",)
+    max_voiced = 30
+    k1_dlg_line = 'k1_dlg = "k_htst_dialog"\n'
+    VO = ("nm01tst001_", "nm01tst002_", "nm01tst003_")
+
+    def setUp(self):
+        super().setUp()
+        self.write_recipe()
+        self.tlk = {"10": "Hello there.", "11": "Second line.", "12": "Hidden line.", "13": "Go on.", "14": "Bye."}
+        self.put_k1("k_htst_dialog.dlg.json", json.dumps(self.dlg_graph()).encode())
+        (self.k1 / "dialog.tlk").write_text(json.dumps(self.tlk))
+        wdir = self.k1 / "StreamWaves" / "M01" / "TST"  # mixed case + nested on purpose
+        wdir.mkdir(parents=True)
+        for vo in self.VO:
+            (wdir / f"{vo.upper()}.WAV").write_bytes(b"\x00" * 58 + b"\xff\xfbVO:" + vo.encode())
+        (self.k1 / "lips").mkdir()
+        self.lips = {vo: tdlg.GOOD_LIP for vo in self.VO}
+        self.write_lips()
+
+    def write_recipe(self, extra=""):
+        (self.recipes / "tst.toml").write_text(
+            RECIPE.format(id="tst", name="Tst", conv="pykotor") + extra
+            + f'\n[dialog]\n{self.k1_dlg_line}k2_dlg = "k1p_tstdlg"\nmax_voiced = {self.max_voiced}\n')
+
+    def write_lips(self):
+        (self.k1 / "lips" / "a_loc.mod").write_text(json.dumps({k: v.hex() for k, v in self.lips.items()}))
+
+    def dlg_graph(self):
+        n, l = tdlg.node, tdlg.link
+        ents = [n("", "NM01TST001_", [l(0)], strref=10, script="k_swg_do_it", quest="q_tst"),
+                n("", "nm01tst002_", [l(1)], strref=11),
+                n("", "nm01tst003_", [], strref=12),
+                n("Embedded, no strref.", "nm01tst004_", [])]   # no wav in the K1 install
+        reps = [n("", "", [l(1)], strref=13), n("", "", [l(2, active="k_cond_x"), l(3)], strref=14)]
+        return tdlg.graph(ents, reps, [l(0, active="k_swg_start"), l(0)])
+
+    def dlg_out(self, cid="tst"):
+        _, assets, _ = self.load_pack(cid)
+        dlg = next(a for a in assets if a.res_type == 2029)
+        self.assertTrue(dlg.data.startswith(b"FAKEDLG:"))
+        return dlg, json.loads(dlg.data[len(b"FAKEDLG:"):])
+
+    def test_pack_serves_dlg_streamvoice_wavs_lips_and_the_conversation(self):
+        out, err = self.build_ok()
+        info, assets, _ = self.load_pack("tst")
+        self.assertEqual(info.default_dlg, "k1p_tstdlg")
+        dlg = [a for a in assets if a.res_type == 2029]
+        self.assertEqual([(a.resref, a.flags) for a in dlg], [("k1p_tstdlg", kp.FLAG_RESMAN)])
+        wavs = sorted((a.resref, a.flags, a.data) for a in assets if a.res_type == kp.RES_TYPE_WAV)
+        self.assertEqual([w[:2] for w in wavs], [("nm01tst001_", kp.FLAG_STREAM), ("nm01tst002_", kp.FLAG_STREAM)])
+        self.assertEqual([w[2] for w in wavs], [b"\x00" * 58 + b"\xff\xfbVO:" + vo.encode() for vo in self.VO[:2]])  # bytes unchanged
+        lips = sorted((a.resref, a.flags, a.data) for a in assets if a.res_type == 3004)
+        self.assertEqual(lips, [("nm01tst001_", kp.FLAG_RESMAN, tdlg.GOOD_LIP), ("nm01tst002_", kp.FLAG_RESMAN, tdlg.GOOD_LIP)])
+        self.assertEqual(len(assets), 6 + 3 + 1 + 1 + 2 + 2)  # models + tpc + utc + dlg + wavs + lips
+        cb = self.script_calls("k1_port_char_build.py")[0]
+        self.assertEqual(cb[cb.index("--conversation") + 1], "k1p_tstdlg")
+        self.assertTrue((self.out / "tst" / "dialog" / "streamvoice" / "nm01tst001_.wav").is_file())
+        self.assertTrue((self.out / "tst" / "dialog" / "lips" / "nm01tst002_.lip").is_file())
+        self.assertTrue((self.out / "tst" / "dialog" / "k1p_tstdlg.dlg").is_file())
+
+    def test_dlg_has_literal_text_no_scripts_and_only_unconditional_nodes(self):
+        self.build_ok()
+        _, g = self.dlg_out()
+        self.assertEqual([e["text"] for e in g["entries"]], ["Hello there.", "Second line.", "Embedded, no strref."])
+        self.assertEqual([r["text"] for r in g["replies"]], ["Go on.", "Bye."])
+        self.assertEqual([e["vo"] for e in g["entries"]], ["nm01tst001_", "nm01tst002_", ""])  # lowercased; no wav = silent
+        self.assertEqual(g["starters"], [{"index": 0}])
+        self.assertNotIn("k_swg", json.dumps(g))
+        self.assertNotIn("q_tst", json.dumps(g))
+        self.assertNotIn("k_cond_x", json.dumps(g))
+        self.assertEqual([l["index"] for l in g["replies"][1]["links"]], [2])  # the conditional link to "Hidden line." is gone
+
+    def test_manifest_records_the_dialog(self):
+        self.build_ok()
+        d = self.manifest("tst")["dialog"]
+        self.assertEqual((d["k1_dlg"], d["k2_dlg"], d["max_voiced"]), ("k_htst_dialog", "k1p_tstdlg", 30))
+        st = d["stats"]
+        self.assertEqual((st["nodes_total"], st["nodes_kept"], st["nodes_dropped_by_condition"], st["starters_total"],
+                          st["starters_kept"], st["voiced_lines"], st["silent_no_wav"], st["lips_ok"], st["asset_count"]),
+                         (6, 5, 1, 2, 1, 2, 1, 2, 5))
+        self.assertEqual(st["condition_scripts_dropped"], ["k_cond_x", "k_swg_start"])
+        self.assertIn("scripts stripped", d["policy"])
+        self.assertEqual(d["dlg"]["sha256"], imp.sha256_file(self.out / "tst" / "dialog" / "k1p_tstdlg.dlg"))
+        self.assertEqual(d["dlg"]["origin"], "vanilla_k1")
+        self.assertEqual([w["resref"] for w in d["wavs"]], ["nm01tst001_", "nm01tst002_"])
+        for w in d["wavs"]:
+            staged = self.out / "tst" / "dialog" / "streamvoice" / f"{w['resref']}.wav"
+            self.assertEqual((w["sha256"], w["origin"], w["pack_flags"]), (imp.sha256_file(staged), "vanilla_k1", 1))
+            self.assertEqual(w["file"], f"StreamWaves/M01/TST/{w['resref'].upper()}.WAV")
+        self.assertEqual([(l["resref"], l["file"], l["origin"]) for l in d["lips"]],
+                         [("nm01tst001_", "lips/a_loc.mod", "vanilla_k1"), ("nm01tst002_", "lips/a_loc.mod", "vanilla_k1")])
+        self.assertEqual(self.manifest("tst")["pack"]["asset_count"], 6 + 3 + 1 + 1 + 4)
+
+    def test_dry_run_prints_the_stats_and_writes_nothing(self):
+        before = snapshot(self.root)
+        rc, out, err = self.run_cli("build", "--dry-run")
+        self.assertEqual(rc, 0, out + err)
+        self.assertEqual(snapshot(self.root), before)
+        self.assertIn("[tst]   dialog: K1 k_htst_dialog.dlg -> k1p_tstdlg.dlg", out)
+        self.assertIn("dialog: nodes 6 total (4 entries, 2 replies): 5 kept, 1 dropped by condition, 0 shadowed, 0 unreachable", out)
+        self.assertIn("dialog: starters 2 total, 1 without a condition, 1 kept", out)
+        self.assertIn("dialog: voice: 2/30 voiced line(s)", out)
+        self.assertIn("lips 2 ok, 0 missing, 0 failed", out)
+        self.assertIn("pack would hold 15/192 assets", out)  # 6 model files + 3 tpc + utc + dlg + 2 wavs + 2 lips
+        self.assertIn("nm01tst004_", err)  # the node whose wav is missing is a WARN
+        self.assertEqual([c for c in self.calls() if "_dialog" in c and "write" in c], [])  # no DLG is built on a dry run
+
+    def test_budget_voices_the_first_lines_breadth_first_and_keeps_text(self):
+        self.max_voiced = 1
+        self.write_recipe()
+        self.build_ok()
+        _, g = self.dlg_out()
+        self.assertEqual([e["vo"] for e in g["entries"]], ["nm01tst001_", "", ""])
+        self.assertEqual(len(g["entries"]), 3)
+        _, assets, _ = self.load_pack("tst")
+        self.assertEqual([a.resref for a in assets if a.res_type == kp.RES_TYPE_WAV], ["nm01tst001_"])
+        st = self.manifest("tst")["dialog"]["stats"]
+        self.assertEqual((st["voiced_lines"], st["silent_budget"], st["silent_no_wav"]), (1, 1, 1))
+
+    def test_zero_budget_is_text_only(self):
+        self.max_voiced = 0
+        self.write_recipe()
+        out, err = self.build_ok()
+        _, assets, _ = self.load_pack("tst")
+        self.assertEqual(len([a for a in assets if a.res_type in (kp.RES_TYPE_WAV, 3004)]), 0)
+        self.assertEqual([c for c in self.calls() if "_dialog" in c and "lips" in c], [])
+
+    def test_a_lip_that_fails_the_check_ships_without_it(self):
+        self.lips["nm01tst002_"] = tdlg.BAD_LIP
+        self.write_lips()
+        out, err = self.build_ok()
+        _, assets, _ = self.load_pack("tst")
+        self.assertEqual([a.resref for a in assets if a.res_type == 3004], ["nm01tst001_"])
+        self.assertEqual([a.resref for a in assets if a.res_type == kp.RES_TYPE_WAV], ["nm01tst001_", "nm01tst002_"])  # the voice still plays
+        self.assertIn("lip nm01tst002_ fails the LIP structure check", err)
+        st = self.manifest("tst")["dialog"]["stats"]
+        self.assertEqual((st["lips_ok"], [f["name"] for f in st["lips_failed"]]), (1, ["nm01tst002_"]))
+
+    def test_a_missing_lip_warns(self):
+        del self.lips["nm01tst001_"]
+        self.write_lips()
+        out, err = self.build_ok()
+        _, assets, _ = self.load_pack("tst")
+        self.assertEqual([a.resref for a in assets if a.res_type == 3004], ["nm01tst002_"])
+        self.assertIn("have no lip in <K1>/lips/*.mod", err)
+        self.assertEqual(self.manifest("tst")["dialog"]["stats"]["lips_missing"], ["nm01tst001_"])
+
+    def test_no_streamwaves_dir_is_silent_text_with_a_warning(self):
+        import shutil
+        shutil.rmtree(self.k1 / "StreamWaves")
+        out, err = self.build_ok()
+        self.assertIn("no voice wavs found", err)
+        _, g = self.dlg_out()
+        self.assertEqual({e["vo"] for e in g["entries"]}, {""})
+        self.assertEqual(self.manifest("tst")["dialog"]["stats"]["voiced_lines"], 0)
+
+    def test_a_symlinked_wav_is_not_used(self):
+        real = self.root / "elsewhere.wav"
+        real.write_bytes(b"x" * 100)
+        f = self.k1 / "StreamWaves" / "M01" / "TST" / "NM01TST002_.WAV"
+        f.unlink()
+        f.symlink_to(real)
+        self.build_ok()
+        _, assets, _ = self.load_pack("tst")
+        self.assertEqual([a.resref for a in assets if a.res_type == kp.RES_TYPE_WAV], ["nm01tst001_"])
+
+    def test_pack_asset_cap_is_a_failure_before_anything_is_written(self):
+        with mock.patch.object(kp, "MAX_ASSETS", 12):  # 10 base assets + dlg + wavs + lips = 15
+            rc, out, err = self.run_cli("build")
+        self.assertEqual(rc, 1, out + err)
+        self.assertIn("would hold 15 assets, over the 12-asset pack cap", err)
+        self.assertIn("lower [dialog] max_voiced", err)
+        self.assertFalse((self.out / "tst").exists())
+        with mock.patch.object(kp, "MAX_ASSETS", 12):
+            rc, out, err = self.run_cli("build", "--dry-run")
+        self.assertEqual(rc, 1, out + err)
+
+    def test_missing_dlg_and_missing_tlk_fail_clearly(self):
+        (self.k1 / "_bif" / "k_htst_dialog.dlg.json").unlink()
+        rc, out, err = self.run_cli("build")
+        self.assertEqual(rc, 1, out + err)
+        self.assertIn("K1 k_htst_dialog.dlg", err)
+        self.assertIn("not found in the K1 install", err)
+        self.assertFalse((self.out / "tst").exists())
+        self.put_k1("k_htst_dialog.dlg.json", json.dumps(self.dlg_graph()).encode())
+        (self.k1 / "dialog.tlk").unlink()
+        rc, out, err = self.run_cli("build")
+        self.assertEqual(rc, 1, out + err)
+        self.assertIn("no dialog.tlk in the K1 dir", err)
+
+    def test_every_starter_conditional_fails(self):
+        g = self.dlg_graph()
+        g["starters"] = [tdlg.link(0, active="k_a"), tdlg.link(0, active="k_b")]
+        self.put_k1("k_htst_dialog.dlg.json", json.dumps(g).encode())
+        rc, out, err = self.run_cli("build")
+        self.assertEqual(rc, 1, out + err)
+        self.assertIn("none of its 2 starter(s) is free of a condition script", err)
+
+    def test_k1_dlg_defaults_to_the_conversation_of_the_creature_template(self):
+        self.k1_dlg_line = ""
+        self.write_recipe()
+        rc, out, err = self.run_cli("build", "--only", "tst")
+        self.assertEqual(rc, 1, out + err)
+        self.assertIn("no [dialog] k1_dlg", err)
+        self.assertIn("set k1_dlg", err)
+        self.put_k1("p_tst.utc.json", json.dumps({"conversation": "K_HTST_DIALOG"}).encode())  # recipe id tst -> K1 UTC p_tst
+        out, err = self.build_ok("--only", "tst")
+        self.assertEqual(self.manifest("tst")["dialog"]["k1_dlg"], "k_htst_dialog")
+
+    def test_extra_barks_leave_room_for_the_dialog(self):
+        self.write_table("soundset.2da", SND_HEADERS, LIVE_SND)
+        self.write_recipe(AUDIO_RECIPE.format(id="tst"))
+        refs = [1000 + i for i in range(5)] + [0xFFFFFFFF] * 23
+        self.put_k1("p_tst.ssf", b"SSF V1.1" + struct.pack("<I", 12) + struct.pack("<28I", *refs) + struct.pack("<12I", *([0xFFFFFFFF] * 12)))
+        names = ["p_tst_bat1", "p_tst_bat2", "p_tst_hit1", "p_tst_dead", "p_tst_dead"]
+        tlk = dict(self.tlk)
+        (self.k1 / "StreamSounds").mkdir()
+        for i, vo in enumerate(names):
+            tlk[str(1000 + i)] = vo
+        for vo in sorted(set(names)) + ["p_tst_aaa", "p_tst_mmm", "p_tst_zzz"]:
+            (self.k1 / "StreamSounds" / f"{vo.upper()}.wav").write_bytes(b"\xff\xfbK1MP3:" + vo.encode())
+        for d in (self.k1, self.k2):
+            (d / "dialog.tlk").write_text(json.dumps({k: v for k, v in tlk.items()}))
+        # 6 model files + 3 tpc + utc + ssf + 4 SSF wavs = 15; the dialog adds 1 dlg + 2 wavs + 2 lips = 20; a cap of 22 leaves 2 extras
+        with mock.patch.object(kp, "MAX_ASSETS", 22):
+            out, err = self.build_ok()
+        _, assets, _ = self.load_pack("tst")
+        self.assertEqual(len(assets), 22)
+        a = self.manifest("tst")["audio"]
+        self.assertEqual([w["resref"] for w in a["extra"]], ["p_tst_aaa", "p_tst_mmm"])
+        self.assertEqual(a["extra_dropped"], ["p_tst_zzz.wav"])
+        self.assertIn("asset budget: 22/192", out)
+
+    def test_extra_barks_reserved_bytes(self):
+        self.write_recipe(AUDIO_RECIPE.format(id="tst"))
+        recipe = imp.krecipe.load_recipe(self.recipes / "tst.toml")
+        index = {}
+        for n in ("p_tst_a.wav", "p_tst_b.wav"):
+            f = self.root / n
+            f.write_bytes(b"x" * 10)
+            index[n] = f
+        have = self.root / "have.wav"
+        have.write_bytes(b"y" * 10)
+        with mock.patch.object(kp, "MAX_FILE_BYTES", 2 * 30):  # half = 30: 10 used, 5 reserved for the dialog, 15 left
+            extra, dropped = imp.extra_barks(recipe, index, {"p_tst_bat1": have}, {"p_tst_bat1"}, (0, 5))
+        self.assertEqual((sorted(extra), dropped), (["p_tst_a"], ["p_tst_b.wav"]))
+
+    def test_list_doctor_and_remove_show_the_dialog(self):
+        self.build_ok()
+        rc, out, _ = self.run_cli("list")
+        self.assertEqual(rc, 0)
+        self.assertIn("dialog k1p_tstdlg (5/6 nodes, 2 voiced, 2 lips)", out)
+        rc, out, _ = self.run_cli("list", "--json")
+        row = json.loads(out)["characters"][0]
+        self.assertEqual(row["dialog"]["k2_dlg"], "k1p_tstdlg")
+        self.assertEqual(row["dialog"]["built"]["voiced_lines"], 2)
+        rc, out, err = self.run_cli("doctor")
+        self.assertEqual(rc, 0, out + err)
+        self.assertIn("OK   K1 dialog.tlk [dialog] (tst)", out)
+        self.assertIn("OK   K1 streamwaves/ [dialog] (tst)", out)
+        self.assertIn("OK   K1 lips/ [dialog] (tst)", out)
+        self.assertEqual(self.run_cli("install")[0], 0)
+        rc, out, err = self.run_cli("remove", "tst")
+        self.assertEqual(rc, 0, out + err)
+        self.assertIn("the pack also served dialog k1p_tstdlg (2 voice wav(s), 2 lip(s))", out)
+
+    def test_doctor_warns_when_the_voice_dirs_are_missing(self):
+        import shutil
+        shutil.rmtree(self.k1 / "lips")
+        shutil.rmtree(self.k1 / "StreamWaves")
+        rc, out, err = self.run_cli("doctor")
+        self.assertEqual(rc, 0, out + err)
+        self.assertIn("WARN K1 streamwaves/ [dialog] (tst)", out)
+        self.assertIn("WARN K1 lips/ [dialog] (tst)", out)
+
+    def test_build_reads_but_never_writes_the_game_dirs(self):
+        k1_before, k2_before = snapshot(self.k1), snapshot(self.k2)
+        self.build_ok()
+        self.assertEqual((snapshot(self.k1), snapshot(self.k2)), (k1_before, k2_before))
+
+    def test_rebuild_is_deterministic(self):
+        self.build_ok()
+        sha = imp.sha256_file(self.out / "tst.k2pack")
+        self.build_ok()
+        self.assertEqual(imp.sha256_file(self.out / "tst.k2pack"), sha)
+
+    def test_a_recipe_without_dialog_is_unaffected(self):
+        (self.recipes / "tst.toml").write_text(RECIPE.format(id="tst", name="Tst", conv="pykotor"))
+        self.build_ok()
+        self.assertEqual([c for c in self.calls() if "_dialog" in c], [])
+        self.assertIsNone(self.manifest("tst")["dialog"])
+        self.assertEqual(self.load_pack("tst")[0].default_dlg, "")
 
 
 class InstallTests(Base):

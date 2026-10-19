@@ -217,6 +217,46 @@ class RecipeRuleTests(Base):
         self.bad(good() + a.replace("k1p_tstssf", "k1p_tst"), "audio.k2_ssf", "duplicate k2 name")  # clashes with the utc
         self.bad('audio = 3\n' + good(), "audio", "must be a table")
 
+    def test_dialog_table_parsed(self):
+        r = R.load_recipe(self.recipe(good() + '\n[dialog]\nk1_dlg = "k_htst_dialog"\nk2_dlg = "k1p_tstdlg"\nmax_voiced = 12\n'))
+        self.assertEqual(r.dialog, R.DialogRef(k1_dlg="k_htst_dialog", k2_dlg="k1p_tstdlg", max_voiced=12))
+        self.assertEqual(r.dlg, "k1p_tstdlg")  # the UTC conversation / default_dlg is the served dlg
+        self.assertEqual(r.k2_names()[-1], "k1p_tstdlg")
+        self.assertIsNone(R.load_recipe(self.recipe(good())).dialog)
+
+    def test_dialog_defaults(self):
+        r = R.load_recipe(self.recipe(good() + '\n[dialog]\nk2_dlg = "k1p_tstdlg"\n'))
+        self.assertEqual(r.dialog, R.DialogRef(k1_dlg="", k2_dlg="k1p_tstdlg", max_voiced=30))
+        r = R.load_recipe(self.recipe(good().replace('dlg = ""', 'dlg = "k1p_tstdlg"') + '\n[dialog]\nk2_dlg = "k1p_tstdlg"\n'))
+        self.assertEqual(r.dlg, "k1p_tstdlg")  # character.dlg may repeat k2_dlg
+        for n in (0, 80):
+            r = R.load_recipe(self.recipe(good() + f'\n[dialog]\nk2_dlg = "k1p_tstdlg"\nmax_voiced = {n}\n'))
+            self.assertEqual(r.dialog.max_voiced, n)
+
+    def test_dialog_table_rejects(self):
+        d = '\n[dialog]\nk1_dlg = "k_htst_dialog"\nk2_dlg = "k1p_tstdlg"\n'
+        self.bad(good() + '\n[dialog]\nk1_dlg = "k_htst_dialog"\n', "dialog.k2_dlg", "missing required key")
+        self.bad(good() + '\n[dialog]\n', "dialog.k2_dlg", "missing required key")
+        self.bad(good() + d.replace("k_htst_dialog", "K_Htst"), "dialog.k1_dlg", "bad resref")
+        self.bad(good() + d.replace("k1p_tstdlg", "k1p_tst_far_too_long_dlg"), "dialog.k2_dlg", "bad resref")
+        self.bad(good() + d.replace("k1p_tstdlg", "Bad"), "dialog.k2_dlg", "bad resref")
+        self.bad(good() + d + "max_voiced = 81\n", "dialog.max_voiced", "0..80")
+        self.bad(good() + d + "max_voiced = -1\n", "dialog.max_voiced", "0..80")
+        self.bad(good() + d + 'max_voiced = "30"\n', "dialog.max_voiced", "must be an integer")
+        self.bad(good() + d + "max_voiced = true\n", "dialog.max_voiced", "must be an integer")
+        self.bad(good() + d + "voices = 3\n", "dialog.voices", "unknown key")
+        self.bad(good() + d.replace("k1p_tstdlg", "tst_ba"), "dialog.k2_dlg", "duplicate k2 name")
+        self.bad(good() + d.replace("k1p_tstdlg", "k1p_tst"), "dialog.k2_dlg", "duplicate k2 name")  # clashes with the utc
+        self.bad(good().replace('dlg = ""', 'dlg = "other_dlg"') + d, "character.dlg", "conflicts with [dialog] k2_dlg")
+        self.bad("dialog = 3\n" + good(), "dialog", "must be a table")
+
+    def test_dialog_k2_name_collides_across_recipes(self):
+        self.recipe(good("one") + '\n[dialog]\nk2_dlg = "shared_dlg"\n', "one")
+        self.recipe(good("two") + '\n[dialog]\nk2_dlg = "shared_dlg"\n', "two")
+        with self.assertRaises(R.RecipeError) as cm:
+            R.load_recipes(self.dir, ["one", "two"])
+        self.assertIn("shared_dlg", str(cm.exception))
+
     def test_gender_and_ints(self):
         self.bad(good().replace("gender = 0", "gender = 2"), "character.gender")
         self.bad(good().replace("template_row = 17", "template_row = -3"), "character.template_row")

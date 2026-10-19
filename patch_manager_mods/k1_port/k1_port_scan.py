@@ -16,7 +16,7 @@ Where each value comes from (verified against the real K1 data for p_carth and p
                                                  are read from the meshes themselves (every texture a mesh references).
   heads.2da row <normalhead>                     column "head" = the head model
   soundset.2da row <soundset_id>                 column "resref" = the K1 SSF (e.g. p_carth)
-The `reader` is an object with find_utc / iter_utcs / twoda_row / mdl_textures / ssf_exists / texture_exists (see
+The `reader` is an object with find_utc / iter_utcs / twoda_row / mdl_textures / ssf_exists / texture_exists / dlg_exists (see
 PykotorReader, which runs under the k1port venv python via the driver's hidden `_scan` helper; the tests use a fixture
 reader). The pure functions here are stdlib only.
 """
@@ -80,6 +80,11 @@ def ssf_name(utc: str) -> str:
     return utc[:RESREF_MAX - 3] + "ssf"
 
 
+def dlg_name(utc: str) -> str:
+    """K2 DLG resref: `<k2 utc>dlg` within 16 characters (the utc part is cut, never the suffix)."""
+    return utc[:RESREF_MAX - 3] + "dlg"
+
+
 def claim_names(pairs: list[tuple[str, str]]) -> dict[str, str]:
     """pairs = [(k1 label, k2 name)] in order. Returns {k2: k1}. The same k1 label may repeat with the same k2 name;
     two different k1 labels on one k2 name (truncation clash) raise ScanError with a hint."""
@@ -131,6 +136,9 @@ def gather_facts(reader, resref: str) -> dict | None:
     facts["soundset"] = None if ss_id is None or ss_id in NO_SOUNDSET else _row(reader, "soundset", ss_id)
     ssf = _clean((facts["soundset"] or {}).get("resref")).lower()
     facts["ssf_found"] = bool(ssf) and bool(reader.ssf_exists(ssf))
+    conv = _clean(facts.get("conversation")).lower()
+    dlg_exists = getattr(reader, "dlg_exists", None)  # a reader without it (older doubles) finds no DLG
+    facts["dlg_found"] = bool(conv) and krecipe.RESREF_RE.fullmatch(conv) is not None and dlg_exists is not None and bool(dlg_exists(conv))
     models = {}
     names: list[str] = []
     if app is not None and _clean(app.get("modeltype")).upper() == "B":
@@ -174,7 +182,7 @@ class Derived:
     display_name: str
     tag: str
     utc: str
-    dlg: str                          # K1 conversation resref (comment only: phase B converts it)
+    dlg: str                          # K1 conversation resref
     soundset: int
     template_row: int
     gender: int
@@ -183,6 +191,7 @@ class Derived:
     head: tuple[str, str]
     textures: list[tuple[str, str, str]] = field(default_factory=list)  # (k1, k2, txi)
     audio: tuple[str, str] | None = None
+    dialog: tuple[str, str] | None = None  # (k1 dlg, k2 dlg) when the conversation exists as a K1 DLG: the recipe gets [dialog]
     k1_rows: str = ""                 # one comment line: the K1 rows the values came from
     notes: list[str] = field(default_factory=list)
 
@@ -251,6 +260,11 @@ def derive(facts: dict, rid: str | None = None) -> Derived:
                f"K1 {ssf}.ssf is not in the K1 install" if ss is not None and ssf else
                f"soundset_id {facts.get('soundset_id')} is not a K1 soundset.2da row")
         notes.append(f"no [audio]: {why}; the K2 fallback soundset is used")
+    dialog = None
+    conv = _clean(facts.get("conversation")).lower()
+    if facts.get("dlg_found") and krecipe.RESREF_RE.fullmatch(conv):
+        dialog = (conv, dlg_name(d_utc))
+        pairs.append((f"dlg of {rid}", dialog[1]))
     claim_names(pairs)
 
     k2 = {m: k2_stem(m) for m in body_names + [head]}
@@ -265,7 +279,7 @@ def derive(facts: dict, rid: str | None = None) -> Derived:
         body_b=(body_names[1], k2[body_names[1]]) if len(body_names) > 1 else None,
         head=(head, k2[head]),
         textures=[(t, k2_stem(t), HEAD_TXI if t in head_tex else "") for t in tex_order],
-        audio=audio,
+        audio=audio, dialog=dialog,
         k1_rows=(f"appearance.2da row {facts['appearance_id']} ({label}, modeltype B), heads.2da row {facts['head']['row']}, "
                  f"soundset.2da row {facts.get('soundset_id')}, gender_id {facts.get('gender_id')}, conversation "
                  f"{_clean(facts.get('conversation')) or '-'}"),
@@ -282,7 +296,8 @@ def render(d: Derived) -> str:
          "# your K1 install: instructions only, no assets, no 2DA row numbers (the builder assigns them). Edit a copy in",
          "# [build] recipes_dir to override it (a recipe file beats auto-derivation).",
          f"# K1 rows: {d.k1_rows}",
-         f"# dialog: {d.dlg or '-'}  (K1 conversation; the dialog conversion is a later phase, no [dialog] table yet)"]
+         f"# dialog: {d.dlg or '-'}  (K1 conversation; "
+         + ("converted by the [dialog] table below)" if d.dialog else "not found as a DLG in the K1 install, so no [dialog] table)")]
     L += [f"# NOTE: {n}" for n in d.notes]
     L += ["[character]",
           f"id = {_q(d.id)}",
@@ -305,6 +320,9 @@ def render(d: Derived) -> str:
             L.append(f"txi = {_q(txi)}")
     if d.audio is not None:
         L += ["", "[audio]", f"k1_ssf = {_q(d.audio[0])}", f"k2_ssf = {_q(d.audio[1])}"]
+    if d.dialog is not None:
+        L += ["", "[dialog]", f"k1_dlg = {_q(d.dialog[0])}", f"k2_dlg = {_q(d.dialog[1])}",
+              f"max_voiced = {krecipe.DIALOG_DEFAULT_VOICED}   # voice budget: distinct VO lines (a wav + a lip each) in the shared asset pool"]
     return "\n".join(L) + "\n"
 
 
@@ -482,6 +500,9 @@ class PykotorReader:
 
     def ssf_exists(self, name: str) -> bool:
         return self.inst.resource(name, self.rt.SSF, [self.loc.OVERRIDE, self.loc.CHITIN]) is not None
+
+    def dlg_exists(self, name: str) -> bool:
+        return self._res(name, self.rt.DLG) is not None
 
 
 def helper_main(argv: list, reader_factory=None) -> int:
