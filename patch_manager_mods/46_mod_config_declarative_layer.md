@@ -89,3 +89,33 @@ Owner decisions still open: see section 9. Plan rows P0-P7 are in section 8 (reg
 3. 8 visible rows per page and no scrolling: accept, or fund a scroll/two-column phase before the doc 45 mods (max 4 rows each, fits).
 4. Real engine tags for the built-in roster (alias risk) need one live INI/log read; accept tags-as-names fallback for unknown tags.
 5. Native slider (P6) only after play proves the look-alike unsatisfying; confirm it can stay deferred.
+
+---
+
+## 10 Owner decisions (10-18) and plan rows
+
+Decisions: (1) change handler returns the FINAL value (approved). (2) Companion Self-Heal page is a new request; the existing right-click single-character popover stays. (3) Scrolling is IN v1, for BOTH the entry pages and the main list of configurable mods (lifts the 8-row / 8-entry caps); verify once with a built-in dummy-row test entry (gated by a `mod_config.ini` flag, never in the default install). Wave 2 (`mc-ctl/facts/S1-S4`) researches slider RE, native list box + scroll bar, provider layout and wheel input; section 4 and the caps bullet in section 2 are superseded by its result.
+
+## Execution Order & Phase Status
+
+| Id | Batch | Status | Validation | Time Est |
+|---|---|---|---|---|
+| MCF0 | [Mod-config] RE + layout recon: slider/list box/scroll bar K2 map, provider layout, wheel input (wave 2 S1-S4) | PLANNED | `ls .claude/waves/mc-ctl/facts` | 20 min |
+| MCF1 | [Mod-config] Pure logic in MenuUiLogic.h: row kinds (toggle/stepper), ScrollWindow (offset clamp, wheel step, ensure-visible, thumb px), `mui::tickResetDue(gap, flags48, lmbDown)` + tests | PLANNED | `python3 scripts/run_tests.py mod_config` | 45 min |
+| MCF2 | [Mod-config] Provider: AddRow/SetChangeHandler/Get-SetValue slots (final-value handler), scrolling on entry pages AND the mod list, wheel + arrows, dummy-row test entry, contract pins in mod_config + enemy_effects_strip (common_contract_test.cpp:233) + holster_editor (positional K2MenuUiApi initializer; Holster session owns that dir) | PLANNED | `python3 scripts/run_tests.py mod_config` | 90 min |
+| MCF3 | [Mod-config] Declarative layer: `_shared_src/TomlMini.h` + `ModConfigDecl.h` + tests | PLANNED | `python3 scripts/run_tests.py mod_config` | 60 min |
+| MCF4 | [Self-Heal] Options page (roster A, Auto/Heal %/Keep/Follow global/Reset/Apply to everyone) + `shui::erase`/`eraseAll`, popover kept | PLANNED | `python3 scripts/run_tests.py selfheal` | 90 min |
+| MCF5 | [Mod-config] Look-alike slider row (needs Holster-session SliderArt extraction) | PLANNED | `python3 scripts/run_tests.py mod_config` | 45 min |
+| MCF6 | [Mod-config] Native slider embed probe (gated by MCF0) | PLANNED | probe log | 60 min |
+| MCF7 | [Enemy strip] Migrate its page to the declarative layer | PLANNED | `python3 scripts/run_tests.py enemy` | 60 min |
+
+## 11 Holster-session feedback (10-18, folded in)
+Source: `research/mod_config_components/S1_component_map.txt`, `S2_reconcile_doc46.txt` (their commit 8ca6daab). They drop their own row runtime in favour of AddRow + ModConfigDecl.h and will not edit `mod_config_src` or `ModConfigApi.h`.
+1. **Stepper arrows may render blank** (glyph-only captions '<' '>' draw nothing on this GUI). The STEPPER row uses the arrow icon art (`ResetIcon.h` arrowIconImage/arrowIconResref, `ResetIconTex.inc`) or falls back to click-to-cycle. Play row MCR1 is the FIRST live check, before MCF4 builds on it.
+2. **500 ms tick-gap bounce:** `ModConfig.cpp:1263` resets the page to MAIN after a >500 ms gap between Options draws (kTickGapMs); a 1.1 s hitch during a drag discarded unsaved edits. Fix in MCF1/MCF2: pure `mui::tickResetDue(gap, flags48, lmbDown)` (panel shown: reset only if gap > 5000 and LMB up; not shown: gap > 500 as today). Add a play row for one non-Esc close/reopen (HIDDENDRAW log shows gap + flags48).
+3. **Contract pins:** growing K2MenuUiApi from 12 to 19 slots breaks `enemy_effects_strip_src/common_contract_test.cpp:233` (sizeof == 12 pointers) and blinds `holster_editor_src/common_contract_test.cpp` (positional initializer zero-fills silently). Both are in MCF2 scope; the holster one is done by the Holster session on request.
+4. **Scrolling opt-out:** the scroll window applies only to provider-laid rows (AddRow). Pages that place items with SetRect/AddCustom (holster uses 76 of 80 items; enemy-strip preview uses MUI_NOFREE labels) keep today's behaviour. The mod LIST page scrolls too (decision 3).
+5. **INI binder:** `WritePrivateProfileStringA` cannot write the flat-key files (holster.ini, inv3d, equip3d, queue_hud.ini have no [Section]) and adds a kernel32 import (= reinstall for mods that lack it). Holster is lifting a section-aware text rewrite as `_shared_src/IniWrite.h` (atomic, keeps comments/order/unknown lines, no new import). The declarative schema's `ini/section/key` binds to it, `section` optional (empty = flat file). Not needed to start MCF3.
+6. **Shared extraction:** the Holster session moves `HseParty.h`, `SliderArt.h`, `ResetIcon.h` (+tests) into `_shared_src`, behaviour unchanged, keeping EditKit.h repeatTick/sliderToValue/valueToSlider. That unblocks MCF4 (roster names, Reset icon) and MCF5 (slider art).
+7. Their earlier "Steam slider ctor not found" is superseded by FUN_0041ab60 (verified in section 1).
+8. **queue-hud INI reader bug** (their finding, verified by Opus): `QueueHud.cpp` loadIni reads only 4095 bytes; `queue_hud.ini` in the repo is 5011 bytes, `strip_head_pct` sits at byte 4990. Row QL18 in doc 33.
