@@ -22,3 +22,9 @@ REVISED BUILD ORDER (holster side)
 CONFLICT GUARDS
 - mod_config_src/*, _shared_src/ModConfigApi.h: doc 46 session only.
 - holster_editor_src/*, holster_src/*: holster session only. Contract tests that pin sizeof(K2MenuUiApi)==12*sizeof(void*) (enemy_effects_strip_src/common_contract_test.cpp:233, and the holster-editor test against the same header) must be updated in the same change as the header; tell the holster session before MCF2 lands.
+
+STATUS 10-18 (holster session)
+- LANDED 9e329f0e: HseParty.h, SliderArt.h, ResetIcon.h moved to _shared_src (unchanged, namespace hse), tests moved. Peer notified.
+- LANDED 2e2f3b88: IniWrite.h (iniw::setKey/removeKey, optional updateFile) and ProviderClient.h (k2pc::ClientSet, RegisterOnce, registerOnce). Host tests only; no live DLL uses them yet. Peer notified.
+- Doc 46 agreed order: MCF1, MCF2 (no scroll), hot-swap + MCR1, MCF2b parallel with MCF3, MCF4. Peer keeps GuiKit.h untouched until MCF2b and announces first; wheel imports resolved at run time.
+- OURS, NOT STARTED (need owner OK, all change the live holster-editor DLL => one hot-swap batch after a play check of 0.4.8-dev): dead-code prune (keep EditKit repeatTick/sliderToValue/valueToSlider; probes ~500 lines remove/gate/keep is Q4); GuiKit additive ops (setButtonBorderTint, setFont resref guard; grep consumers first); holster adopts ProviderClient.h / GuiKit ops / icon helpers; holster-editor common_contract_test.cpp pin update when MCF2 slot list is final (peer will send).
