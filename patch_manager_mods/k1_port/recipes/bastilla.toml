@@ -1,0 +1,47 @@
+# Bastila Shan (K1 party member, K1 creature template p_bastilla). Instructions only: no assets, no 2DA row numbers (the builder assigns them).
+# Values from k1_port_scan.py facts for p_bastilla (chitin:templates.bif): appearance.2da row 4 (Party_NPC_Bastila, modeltype B),
+# heads.2da row 1, soundset.2da row 75 (p_bastila), conversation k_hbas_dialog, gender_id 1; model facts in
+# .claude/research/pykotor_writer/h8_bastila.md (10-18).
+[character]
+id = "bastilla"
+display_name = "Bastila"
+tag = "k1p_bastilla"       # spawn-probe roster tag
+utc = "k1p_bastilla"
+dlg = ""
+soundset = 57              # FALLBACK only (K2 soundset.2da row 57 = n_commonf); with [audio] below the builder appends a new row and the UTC uses that instead
+template_row = 17          # appearance.2da row copied for the new row
+gender = 1
+
+[models]
+converter = "pykotor"      # supermodel chain renumbering is done by the pykotor path (--supernode chain). NOTE: K1 p_bastilabb has 4 dangly nodes (Object06, Frntflap, RLegFlap01, LLegFlap) and p_bastilah 2 (hairbangs, HAIR): sway of hair, front flap and leg flaps needs `--keep-dangly`; the recipe has no key for it yet, so until then the oracle routes to MDLOps (h8 recon). The body_b -> k1p_bastilabb supermodel rewrite is applied to body_a and the head by the importer (header supermodel of both is P_BastilaBB, which also exists in vanilla K2, so the map keeps them on the K1 copy)
+# K1 Bastila = p_bastilaba + p_bastilabb + head p_bastilah (supermodels: ba and h use P_BastilaBB, bb uses S_Female03)
+body_a = { k1 = "p_bastilaba", k2 = "k1p_bastilaba" }
+body_b = { k1 = "p_bastilabb", k2 = "k1p_bastilabb" }
+head   = { k1 = "p_bastilah",  k2 = "k1p_bastilah" }
+
+# DXT1 TPC output must be opaque (doc 38 s24); the head mesh's texture also gets TXI "clamp 1" (k1_port_scan HEAD_TXI; the body B mesh references p_bastilah04 too).
+[[textures]]
+k1 = "p_bastilaba01"
+k2 = "k1p_bastilaba01"
+force_opaque = true
+
+[[textures]]
+k1 = "p_bastilabb01"
+k2 = "k1p_bastilabb01"
+force_opaque = true
+
+[[textures]]
+k1 = "p_bastilah04"
+k2 = "k1p_bastilah04"
+force_opaque = true
+txi = "clamp 1"
+
+# Bastila's own K1 barks (SSF p_bastila) and party conversation (k_hbas_dialog), same route as recipes/carth.toml and recipes/juhani.toml.
+[audio]
+k1_ssf = "p_bastila"
+k2_ssf = "k1p_bastillassf"
+
+[dialog]
+k1_dlg = "k_hbas_dialog"
+k2_dlg = "k1p_bastilladlg"
+max_voiced = 30
