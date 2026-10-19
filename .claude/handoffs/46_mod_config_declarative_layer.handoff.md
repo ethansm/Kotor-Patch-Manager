@@ -8,15 +8,16 @@ Execute MCF1: [Mod-config] Pure logic in MenuUiLogic.h: row kinds (toggle/steppe
 - **Waves:** .claude/waves/WI-46-a1/
 - **Waves:** .claude/waves/WI-46-a2/
 - **Waves:** .claude/waves/WI-46-a3/
-- **Branch:** `KOTOR-II` (dec25584 doc 46 sec 12: scrolling design (look-alike scroll window, wave 2), row MCF2b)
-- **Generated:** 2026-10-18 22:43:19 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (0ea8a458 PLAY_TEST_QUEUE QH17: queue-hud 0.4.4-dev LIVE (QL18 ini reader, QL19 Cancel colour); doc 33 rows INSTALLED)
+- **Generated:** 2026-10-18 22:58:13 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-dec25584 doc 46 sec 12: scrolling design (look-alike scroll window, wave 2), row MCF2b
- patch_manager_mods/46_mod_config_declarative_layer.md | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
+0ea8a458 PLAY_TEST_QUEUE QH17: queue-hud 0.4.4-dev LIVE (QL18 ini reader, QL19 Cancel colour); doc 33 rows INSTALLED
+ patch_manager_mods/33_ui_queue_hotbar_fixes.md |  4 ++--
+ patch_manager_mods/PLAY_TEST_QUEUE.md          | 28 ++++----------------------
+ 2 files changed, 6 insertions(+), 26 deletions(-)
 ```
-- **Dirty Files (172):**
+- **Dirty Files (176):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
   - ` M .claude/handoffs/DECOMP_PLAN.handoff.md`
@@ -27,7 +28,7 @@ dec25584 doc 46 sec 12: scrolling design (look-alike scroll window, wave 2), row
   - ` M .claude/reviews/gemini_20261014/tools/fix3_items.tsv`
   - ` M .claude/settings.json`
   - ` M CLAUDE.md`
-  - ... +162 more (run `git status --short`)
+  - ... +166 more (run `git status --short`)
 
 ## 2. Immediate Objective (MCF1)
 **[Mod-config] Pure logic in MenuUiLogic.h: row kinds (toggle/stepper), ScrollWindow (offset clamp, wheel step, ensure-visible, thumb px), `mui::tickResetDue(gap, flags48, lmbDown)` + tests**
@@ -36,7 +37,7 @@ Status: PLANNED
 Task: [Mod-config] Pure logic in MenuUiLogic.h: row kinds (toggle/stepper), ScrollWindow (offset clamp, wheel step, ensure-visible, thumb px), `mui::tickResetDue(gap, flags48, lmbDown)` + tests
 
 ## 2b. Upcoming Batches in Pipeline
-- **MCF2** [Meta / Planning Setup] : [Mod-config] Provider: AddRow/SetChangeHandler/Get-SetValue slots (final-value handler), scrolling on entry pages AND the mod list, wheel + arrows, dummy-row test entry, contract pins in mod_config + enemy_effects_strip (common_contract_test.cpp:233) + holster_editor (positional K2MenuUiApi initializer; Holster session owns that dir)
+- **MCF2** [Meta / Planning Setup] : [Mod-config] Provider: AddRow/SetChangeHandler/Get-SetValue slots (final-value handler), `tickResetDue`, stepper arrow art with click-to-cycle fallback, MCR1 logging (arrow path taken, tickResetDue gap/flags48/lmb), contract pins; NO scrolling (MCF2b) in mod_config + enemy_effects_strip (common_contract_test.cpp:233) + holster_editor (positional K2MenuUiApi initializer; Holster session owns that dir)
 - **MCF2b** [Meta / Planning Setup] : [Mod-config] Scrolling: ScrollWindow on AddRow entry pages + the mod LIST page (rebind 8 column buttons, kMaxEntries raised), arrows + WheelHook + thumb drag, `scroll_test` dummy entry, MCR1/MCR2 play rows
 - **MCF3** [Meta / Planning Setup] : [Mod-config] Declarative layer: `_shared_src/TomlMini.h` + `ModConfigDecl.h` + tests
 
