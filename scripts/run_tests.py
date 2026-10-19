@@ -65,6 +65,7 @@ except Exception:  # pragma: no cover - _common is optional
     _GAME_DIR = Path("~/.local/share/Steam/steamapps/common/Knights of the Old Republic II").expanduser()
 
 TMP = Path(os.environ.get("TMPDIR") or f"/tmp/claude-{os.getuid()}") / "kotor-tests"
+TREE_MUTATING_IDS = {"py:scripts/test_compat_check.py"}  # write live repo files temporarily; run after the parallel pool
 os.environ["MASTER_LEDGER_TEST"] = "1"
 KPM_DIR = Path(os.environ.get("KPM_DIR") or "~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager").expanduser()
 VENV_PY = REPO / ".venv" / "bin" / "python"
@@ -961,6 +962,10 @@ def main() -> int:
         if not skip:
             runnable_smokes[s["name"]] = s
     builds = {}
+    # Items that rewrite live tree files (test_compat_check swaps K2Addr.h for a scratch diff) run alone, after the
+    # pool: in parallel they made check-shared-headers / check-raw-addresses / k2addr tests see the edit (10-18 gate FAILs).
+    serial_last = [i for i in items if i.id in TREE_MUTATING_IDS]
+    items = [i for i in items if i.id not in TREE_MUTATING_IDS]
     with cf.ThreadPoolExecutor(max(1, a.jobs)) as ex:
         futs = {ex.submit(execute, i): i for i in items}
         bfuts = {ex.submit(smoke_build, s): n for n, s in runnable_smokes.items()}
@@ -969,6 +974,8 @@ def main() -> int:
                 emit(f.result())
             else:
                 builds[bfuts[f]] = f.result()
+    for i in serial_last:
+        emit(execute(i))
 
     if include_wine:
         if wine_err:
