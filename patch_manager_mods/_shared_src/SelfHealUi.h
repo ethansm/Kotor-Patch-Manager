@@ -286,16 +286,51 @@ inline bool sectionName(const std::string& line, std::string& name) {
 }
 }  // namespace detail
 
+namespace detail {
+// MCF4: INI tags match ASCII case-insensitively (the engine compares tags with stricmp; the utc says "BaoDur", saves say "baodur"). The first
+// spelling written into the table is kept.
+inline bool tagEq(const std::string& a, const std::string& b) {
+    if (a.size() != b.size()) return false;
+    for (size_t i = 0; i < a.size(); ++i) {
+        const char x = a[i] >= 'A' && a[i] <= 'Z' ? (char)(a[i] - 'A' + 'a') : a[i];
+        const char y = b[i] >= 'A' && b[i] <= 'Z' ? (char)(b[i] - 'A' + 'a') : b[i];
+        if (x != y) return false;
+    }
+    return true;
+}
+}  // namespace detail
+
 inline void upsert(CfgTable& t, const std::string& tag, const CompCfg& c) {
     for (auto& r : t.rows)
-        if (r.first == tag) { r.second = c; return; }
+        if (detail::tagEq(r.first, tag)) { r.second = c; return; }
     t.rows.emplace_back(tag, c);
 }
 
 inline const CompCfg& lookup(const CfgTable& t, const std::string& tag) {
     for (const auto& r : t.rows)
-        if (r.first == tag) return r.second;
+        if (detail::tagEq(r.first, tag)) return r.second;
     return t.def;
+}
+
+// MCF4: remove one tag's row so lookup falls back to `def` ("Follow global"). false when the tag has no row.
+inline bool erase(CfgTable& t, const std::string& tag) {
+    for (auto it = t.rows.begin(); it != t.rows.end(); ++it)
+        if (detail::tagEq(it->first, tag)) { t.rows.erase(it); return true; }
+    return false;
+}
+
+// MCF4: remove every per-tag row ("Apply defaults to everyone"); `def` is kept. Returns the number of rows removed.
+inline size_t eraseAll(CfgTable& t) {
+    const size_t n = t.rows.size();
+    t.rows.clear();
+    return n;
+}
+
+// MCF4: true when `tag` has its own [companions] row (false = it follows `def`).
+inline bool hasRow(const CfgTable& t, const std::string& tag) {
+    for (const auto& r : t.rows)
+        if (detail::tagEq(r.first, tag)) return true;
+    return false;
 }
 
 // WI-75 (BG28): the leader (member 0) keys its settings by creature tag, like companions.
@@ -311,7 +346,7 @@ inline bool migrateLeaderRow(CfgTable& t, const std::string& tag) {
     if (tag.empty() || tag == "slot0") return false;
     bool hasTag = false, hasLegacy = false;
     for (const auto& r : t.rows) {
-        if (r.first == tag) hasTag = true;
+        if (detail::tagEq(r.first, tag)) hasTag = true;
         if (r.first == "slot0") hasLegacy = true;
     }
     if (hasTag || !hasLegacy) return false;

@@ -38,6 +38,11 @@
 #include "EmbedTex.h"
 #include "HudKit.h"
 #include "TextFit.h"
+#include "HseParty.h"
+#include "ProviderClient.h"
+#include "ModConfigDecl.h"
+#include "SelfHealRoster.h"
+#include "SelfHealPage.h"
 
 KP_LOG_PATCH("companion-selfheal");
 
@@ -1028,6 +1033,179 @@ void leaderRectLog(const shui::Rect& btn, const shui::Rect& card, const shui::Re
     KP_LOG(chUi, "LEADERBTN rect=[%d,%d,%d,%d] ring=[%d,%d,%d,%d] card=[%d,%d,%d,%d] vit=[%d,%d,%d,%d] disc=%d reserve=%d", btn.x, btn.y, btn.w, btn.h, rg.x, rg.y, rg.w, rg.h, card.x, card.y, card.w, card.h, vit.x, vit.y, vit.w, vit.h, diameter, reserve);
 }
 
+// ---- Mod Configuration options page (doc 46 MCF4): global defaults + per-character values over k2.menuui option rows ----
+// The page edits the same g_cfg rows as the right-click popover (keys = the creature tags keyFor uses), saves through saveIni and the HUD
+// follows at its next refreshCache. Lazy connect (no manifest requires): without mod-config 0.2.0+ nothing is registered. The rows come from a
+// declarative schema (ModConfigDecl.h); all behaviour lives in the pure model (SelfHealPage.h).
+const char* const kPageSchema = R"TOML(
+[page]
+name  = "Companion Self-Heal"
+title = "Companion Self-Heal"
+desc  = "Auto-heal rules for the whole party and for each character. Pick Everyone to set the defaults, or a character to give them their own values."
+
+[[row]]
+id = "who"
+kind = "dynamic"
+label = "Character"
+desc = "Who you are editing. Everyone sets the defaults used by every character that has no values of its own. Characters not in the party can be set up ahead of time."
+max = 1
+
+[[row]]
+id = "auto"
+kind = "toggle"
+label = "Auto-heal"
+desc = "Use a healing item on this character automatically when their health drops below the threshold."
+
+[[row]]
+id = "pct"
+kind = "stepper"
+label = "Heal below"
+desc = "Auto-heal triggers when health falls below this percentage."
+default = 35
+min = 5
+max = 95
+step = 5
+fmt = "Heal below %d%%"
+
+[[row]]
+id = "keep"
+kind = "stepper"
+label = "Keep"
+desc = "Healing items kept in reserve: auto-heal never uses the last N of an item (a manual click ignores this)."
+default = 2
+min = 0
+max = 20
+step = 1
+fmt = "Keep %d"
+
+[[row]]
+id = "follow"
+kind = "toggle"
+label = "Follow global"
+desc = "On: this character uses the defaults and has no values of its own. Off: they get their own copy that starts as the defaults."
+
+[[row]]
+id = "reset"
+kind = "toggle"
+label = "Reset"
+desc = "Character: go back to following the defaults. Everyone: restore the factory defaults (auto off, below 35%, keep 2)."
+
+[[row]]
+id = "apply"
+kind = "toggle"
+label = "Apply defaults to everyone"
+desc = "Remove every character's own values so all follow the defaults. Click twice to confirm."
+)TOML";
+
+constexpr shroster::Known kKnownTags[] = {
+    {"player", "Exile"},         {"atton", "Atton Rand"},   {"kreia", "Kreia"},       {"t3m4", "T3-M4"},   {"baodur", "Bao-Dur"},
+    {"disciple", "Disciple"},    {"handmaiden", "Handmaiden"}, {"mira", "Mira"},      {"visasmarr", "Visas Marr"}, {"hk47", "HK-47"},
+    {"g0t0", "G0-T0"},           {"mand", "Mandalore"},     {"hanharr", "Hanharr"},
+};
+
+k2mc::ConfigClient g_mcCfg;
+k2mc::MenuClient g_mcMenu;
+k2pc::RegisterOnce g_mcReg;
+mcdecl::Page g_page;
+shpage::Model g_model;
+K2ModConfigEntry g_mcEntry;
+bool g_pageLoaded = false;
+int g_pageLogs = 0;
+
+void mcLog(int level, const char* msg) { KP_LOGV(chMain, level, "%s", msg); }
+
+// Roster = the current party (keys as keyFor: leader by leaderKey, followers by tag, slotN when untagged) + INI rows + the known-tag table.
+void rebuildRoster() {
+    party::Vitals v[3];
+    const int cnt = party::members(v, 3);
+    char tagBuf[3][shroster::kTagLen], nameBuf[3][shroster::kNameLen];
+    const char* pt[3] = {};
+    const char* pn[3] = {};
+    int np = 0;
+    for (int i = 0; i < cnt && i < 3; ++i) {
+        if (!v[i].ok) continue;
+        char tag[64] = {};
+        readCreatureTag(v[i].server, tag, sizeof tag);
+        std::string key = i == 0 ? shui::leaderKey(tag) : (tag[0] ? std::string(tag) : "slot" + std::to_string(i));
+        strncpy(tagBuf[np], key.c_str(), sizeof tagBuf[np] - 1);
+        tagBuf[np][sizeof tagBuf[np] - 1] = 0;
+        nameBuf[np][0] = 0;
+        hse::memberName(v[i].client, nameBuf[np], sizeof nameBuf[np]);
+        pt[np] = tagBuf[np];
+        pn[np] = nameBuf[np][0] ? nameBuf[np] : nullptr;
+        ++np;
+    }
+    const char* it[shroster::kMaxRoster];
+    int ni = 0;
+    for (const auto& r : g_cfg.rows)
+        if (ni < shroster::kMaxRoster) it[ni++] = r.first.c_str();
+    shroster::RosterEntry roster[shroster::kMaxRoster];
+    const int n = shroster::buildRoster(pt, pn, np, it, ni, kKnownTags, static_cast<int>(sizeof kKnownTags / sizeof kKnownTags[0]), roster, shroster::kMaxRoster);
+    g_model.t = &g_cfg;
+    g_model.setRoster(roster, n);
+    if (g_pageLogs < 40) { ++g_pageLogs; KP_LOG(chCfg, "PAGE roster party=%d ini=%d entries=%d sel=%d", np, ni, n, g_model.sel); }
+}
+
+// Pushes the model's view into the provider's rows (silent calls: no handler recursion).
+void pushPageView() {
+    if (!g_page.live()) return;
+    shpage::RowView v[shpage::R_COUNT];
+    g_model.view(v, GetTickCount());
+    static const char* const kIds[shpage::R_COUNT] = {"who", "auto", "pct", "keep", "follow", "reset", "apply"};
+    g_page.setRange("who", 0, v[shpage::R_WHO].maxV);
+    for (int i = 0; i < shpage::R_COUNT; ++i) {
+        g_page.setState(kIds[i], v[i].flags);
+        if (i != shpage::R_RESET && i != shpage::R_APPLY) g_page.setValue(kIds[i], v[i].value);
+        g_page.setText(kIds[i], v[i].text);
+    }
+}
+
+int32_t pageOnChange(void*, int row, const char* id, int32_t requested, int /*dir*/) {
+    if (filewatch::changed(g_cfgPoll, IniPath, GetTickCount(), true)) loadCfg();   // pick up a hand edit before overwriting
+    const shpage::Outcome o = g_model.change(row, requested, GetTickCount());
+    if (o.cfgChanged) {
+        const std::string key = g_model.key();
+        const shui::CompCfg c = g_model.current();
+        saveIni(key.empty() ? std::string("default") : key, c);
+    }
+    if (g_pageLogs < 200) { ++g_pageLogs; KP_LOG(chCfg, "PAGE row=%s req=%d final=%d changed=%d sel=%d key=%s", id, (int)requested, (int)o.final, (int)o.cfgChanged, g_model.sel, g_model.key().c_str()); }
+    pushPageView();
+    return o.final;
+}
+
+void pageOnEnter(void*) {
+    if (filewatch::changed(g_cfgPoll, IniPath, GetTickCount(), true)) loadCfg();
+    rebuildRoster();
+    pushPageView();
+}
+
+void pageOnTick(void*) {
+    if (g_model.tick(GetTickCount())) pushPageView();   // the two-click confirm ran out
+}
+
+void pageInit(const KPatchApi* api) {
+    g_mcCfg.init(api);
+    g_mcMenu.init(api);
+    char err[96] = {};
+    g_pageLoaded = g_page.load(kPageSchema, strlen(kPageSchema), err, sizeof err);
+    if (!g_pageLoaded) { KP_LOGV(chMain, KPLOG_WARN, "PAGE schema rejected: %s", err); return; }
+    g_page.menu = &g_mcMenu;
+    g_page.hooks.onChange = pageOnChange;
+    g_page.hooks.onEnter = pageOnEnter;
+    g_page.hooks.onTick = pageOnTick;
+    g_model.t = &g_cfg;
+    g_mcEntry = g_page.entry("companion-selfheal");
+}
+
+// Every frame (cheap): connect lazily, register once, only when the provider has option rows.
+void pagePoll() {
+    if (!g_pageLoaded || g_mcReg.registered) return;
+    g_mcCfg.poll();
+    g_mcMenu.poll();
+    if (!g_mcCfg.ok() || !g_mcMenu.ok() || !g_mcMenu.hasRows()) return;
+    k2pc::registerOnce(g_mcReg, g_mcCfg, g_mcEntry, mcLog);
+}
+
 void uiFrame(const K2PsContext* ctx, DWORD now) {
     // INI hot reload (1 s throttle inside changed())
     if (filewatch::changed(g_cfgPoll, IniPath, now)) loadCfg();
@@ -1281,6 +1459,7 @@ ctrace::Tracker g_ctrace;
 void cstateSink(const char* line) { KP_LOG(chMain, "%s", line); }
 
 void KPATCH_CALL onFrameBegin(const K2PsContext* ctx, void*) {
+    pagePoll();
     if (!g_hud) return;
     saferead::beginScope();
     if (g_logOn) {   // no reads and no cap budget spent while logging is off
@@ -1435,7 +1614,8 @@ void __cdecl KPatchInit(const KPatchApi* api) {
     loadIni();
     loadCfg();
     filewatch::accept(g_cfgPoll, IniPath);
-    KP_LOG(chMain, "0.8.4-dev ui=popsize+togglepill+leaderclick+vanillaarrows+pillnarrow+popocclude: probe call=%d CallKey=0x%02X kick=%d cfg rows=%d", g_probeCall, g_callKey, (int)g_kick, (int)g_cfg.rows.size());
+    KP_LOG(chMain, "0.9.0-dev ui=popsize+togglepill+leaderclick+vanillaarrows+pillnarrow+popocclude+optionspage: probe call=%d CallKey=0x%02X kick=%d cfg rows=%d", g_probeCall, g_callKey, (int)g_kick, (int)g_cfg.rows.size());
+    pageInit(api);
     g_ps.init(api, "companion-selfheal");
     g_ps.onConnect = onConnect;
     g_ps.add(K2PS_FRAME_BEGIN, 300, onFrameBegin);

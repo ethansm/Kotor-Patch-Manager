@@ -449,5 +449,45 @@ int main() {
         KT_CHECK(s == nullptr);
         KT_CHECK(asks == 2);
     }
+    {   // MCF4: erase / eraseAll / hasRow: removal = "Follow global" (lookup falls back to def) and persists through serializeFile.
+        CfgTable t;
+        t.def = CompCfg{true, 50, 3};
+        upsert(t, "atton", CompCfg{false, 20, 1});
+        upsert(t, "kreia", CompCfg{true, 80, 0});
+        upsert(t, "player", CompCfg{true, 10, 9});
+        KT_CHECK(hasRow(t, "atton") && !hasRow(t, "t3m4"));
+        KT_CHECK(erase(t, "kreia"));
+        KT_CHECK(!hasRow(t, "kreia") && t.rows.size() == 2);
+        KT_CHECK(lookup(t, "kreia") == t.def);                           // follows the defaults again
+        KT_CHECK(!erase(t, "kreia"));                                    // already gone: false, no change
+        KT_CHECK(!erase(t, ""));
+        KT_CHECK(t.rows.size() == 2 && t.rows[0].first == "atton" && t.rows[1].first == "player");   // order of the rest is kept
+        const std::string orig = "[defaults]\ndefault=auto:0,hp:35,keep:2\n\n[companions]\natton=auto:0,hp:20,keep:1\nkreia=auto:1,hp:80,keep:0\nplayer=auto:1,hp:10,keep:9\n[other]\nx=1\n";
+        const std::string w = serializeFile(t, orig);
+        KT_CHECK(w.find("kreia") == std::string::npos);                  // the removed row is gone from the file
+        KT_CHECK(w.find("[other]\nx=1\n") != std::string::npos);         // foreign sections untouched
+        KT_CHECK(parseFile(w) == t);                                     // round trip
+        KT_CHECK_EQ((int)eraseAll(t), 2);
+        KT_CHECK(t.rows.empty() && t.def == (CompCfg{true, 50, 3}));     // def kept
+        KT_CHECK_EQ((int)eraseAll(t), 0);
+        const std::string w2 = serializeFile(t, w);
+        KT_CHECK(w2.find("atton") == std::string::npos && w2.find("[companions]") != std::string::npos);
+        KT_CHECK(parseFile(w2) == t);
+        KT_CHECK(lookup(t, "atton") == t.def && lookup(t, "anyone") == t.def);
+    }
+    {   // MCF4: tags match case-insensitively; the first spelling stays.
+        CfgTable t;
+        upsert(t, "BaoDur", CompCfg{true, 40, 1});
+        KT_CHECK(lookup(t, "baodur").hpPct == 40 && hasRow(t, "BAODUR"));
+        upsert(t, "baodur", CompCfg{false, 60, 2});
+        KT_CHECK(t.rows.size() == 1 && t.rows[0].first == "BaoDur" && t.rows[0].second.hpPct == 60);
+        KT_CHECK(erase(t, "BAODUR") && t.rows.empty());
+        t.def = CompCfg{true, 10, 0};
+        KT_CHECK(lookup(t, "baodur") == t.def);
+        CfgTable m;
+        upsert(m, "slot0", CompCfg{true, 70, 4});
+        KT_CHECK(migrateLeaderRow(m, "Player") && hasRow(m, "player") && m.rows.size() == 2);
+        KT_CHECK(!migrateLeaderRow(m, "PLAYER"));
+    }
     return kt::Report("selfheal_ui_test");
 }

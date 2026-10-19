@@ -23,6 +23,10 @@
 #include "ActQueue.h"
 #include "EmbedTex.h"
 #include "HudKit.h"
+#include "ProviderClient.h"
+#include "ModConfigDecl.h"
+#include "SelfHealRoster.h"
+#include "SelfHealPage.h"
 #include "check.h"
 #include <sys/mman.h>
 #include <string.h>
@@ -329,6 +333,54 @@ int main() {
         k2addr::setForTest(nullptr); embtex::clearForTest();
         HCHECK("EmbedTex.h ensure/heal are no-ops (no engine call) off the Steam exe", !embtex::supported() && !embtex::ensure(set, 1) && embtex::slotCount() == 0);
         embtex::heal();
+    }
+    {   // MCF4 options page: k2.menuui option rows (ModConfigApi.h), k2pc::registerOnce (ProviderClient.h), ModConfigDecl.h, SelfHealRoster.h, SelfHealPage.h.
+        { const bool lam_ = [] {
+            k2mc::ConfigClient c; k2pc::RegisterOnce st; K2ModConfigEntry e = {};
+            return !k2pc::registerOnce(st, c, e, nullptr) && !st.registered;
+        }(); HCHECK("K2MenuUiApi grows by appending: SetDescSplit slot 11, AddRow 12 .. SetRowRange 18, 19 pointer slots; rows are gated by hasRows()",
+               offsetof(K2MenuUiApi, SetDescSplit) == 11 * sizeof(void*) && offsetof(K2MenuUiApi, AddRow) == 12 * sizeof(void*) &&
+               offsetof(K2MenuUiApi, SetRowRange) == 18 * sizeof(void*) && sizeof(K2MenuUiApi) == 19 * sizeof(void*));
+        HCHECK("MUI_ROW_TOGGLE 0 / MUI_ROW_STEPPER 1; MUI_RF_WRAP 1 RESTART 2 DISABLED 4 HIDDEN 8 (SelfHealPage views use DISABLED / HIDDEN)",
+               MUI_ROW_TOGGLE == 0 && MUI_ROW_STEPPER == 1 && MUI_RF_WRAP == 1 && MUI_RF_RESTART == 2 && MUI_RF_DISABLED == 4 && MUI_RF_HIDDEN == 8);
+        K2MenuUiApi shortT = {};
+        shortT.struct_size = static_cast<uint32_t>(offsetof(K2MenuUiApi, AddRow));
+        HCHECK("MenuClient::hasRows is false for a table that ends before AddRow (an older mod-config): the page then never registers", !k2mc::MenuClient::hasRows(&shortT));
+        HCHECK("registerOnce does nothing until the config client is ok()", lam_); }
+        { const bool lam_ = [] {
+                   static const shroster::Known kn[] = {{"baodur", "Bao-Dur"}, {"atton", "Atton Rand"}};
+                   const char* party[] = {"player", "Atton"};
+                   const char* ini[] = {"BAO_DUR", "atton"};
+                   shroster::RosterEntry r[shroster::kMaxRoster];
+                   const int n = shroster::buildRoster(party, nullptr, 2, ini, 2, kn, 2, r, shroster::kMaxRoster);
+                   return n == 4 && r[0].tag[0] == 0 && !strcmp(r[1].tag, "player") && !strcmp(r[2].tag, "Atton") && !strcmp(r[3].tag, "BAO_DUR") && !strcmp(r[3].name, "Bao-Dur");
+               }(); HCHECK("shroster::buildRoster: entry 0 is the defaults (tag \"\"), then the party, INI tags, known tags; case/underscore-insensitive dedupe", lam_); }
+        { const bool lam_ = [] {
+                   shui::CfgTable t; shui::upsert(t, "BaoDur", shui::CompCfg{true, 40, 1});
+                   const bool a = shui::lookup(t, "baodur").hpPct == 40 && shui::hasRow(t, "BAODUR");
+                   const bool b = shui::erase(t, "baodur") && shui::lookup(t, "baodur") == t.def;
+                   return a && b;
+               }(); HCHECK("shui tags match case-insensitively (utc says BaoDur, saves say baodur); erase = follow the defaults", lam_); }
+        { const bool lam_ = [] {
+                   shui::CfgTable t; t.def = shui::CompCfg{true, 50, 3};
+                   shpage::Model m; m.t = &t;
+                   shroster::RosterEntry r[2]; memset(r, 0, sizeof r); strcpy(r[0].name, "Everyone (defaults)"); strcpy(r[1].tag, "kreia"); strcpy(r[1].name, "Kreia");
+                   m.setRoster(r, 2); m.sel = 1;
+                   shpage::RowView v[shpage::R_COUNT]; m.view(v, 0);
+                   const bool lock = v[shpage::R_PCT].flags == MUI_RF_DISABLED && v[shpage::R_PCT].value == 50;
+                   m.change(shpage::R_FOLLOW, 0, 0);
+                   const bool own = shui::hasRow(t, "kreia") && shui::lookup(t, "kreia") == t.def;
+                   const shpage::Outcome a1 = m.change(shpage::R_APPLY, 1, 100);
+                   const shpage::Outcome a2 = m.change(shpage::R_APPLY, 1, 200);
+                   return lock && own && !a1.cfgChanged && a2.cfgChanged && t.rows.empty();
+               }(); HCHECK("shpage::Model: a character that follows the defaults has AUTO/PCT/KEEP disabled; FOLLOW off creates a copy of the defaults; APPLY needs two clicks", lam_); }
+        { const bool lam_ = [] {
+                   static mcdecl::PageDecl pd; char err[64];
+                   const char* ok = "[page]\nname=\"P\"\n[[row]]\nid=\"who\"\nkind=\"dynamic\"\nmax=1\n[[row]]\nid=\"a\"\nkind=\"toggle\"\n[[row]]\nid=\"p\"\nkind=\"stepper\"\nmin=5\nmax=95\nstep=5\nfmt=\"Heal below %d%%\"\n";
+                   const bool g = mcdecl::parseSchema(ok, strlen(ok), pd, err, sizeof err) && pd.nRows == 3 && pd.rows[0].wrap && !strcmp(pd.rows[2].fmt, "Heal below %d%%");
+                   const bool b = !mcdecl::parseSchema("[page]\n", 7, pd, err, sizeof err);
+                   return g && b;
+               }(); HCHECK("mcdecl::Page parses the page schema shape (dynamic + toggle + stepper with fmt) and refuses a bad one", lam_); }
     }
     return kt::Report("common_contract_test (companion_selfheal)");
 }
