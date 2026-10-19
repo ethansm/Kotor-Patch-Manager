@@ -155,8 +155,8 @@ Plan changes (Opus accepted):
 ## 16 Evidence for MCR1 (user screenshot 10-18 22:51, enemy-strip page in game)
 The enemy-effects-strip page's `<` and `>` stepper buttons RENDER correctly in game (all 8 rows, glyphs visible, Enabled/Backing toggle rows, hover frame). This answers Holster feedback 1 in part: glyph captions are drawn on these provider buttons, so the arrow-icon art is a fallback, not a requirement. MCR1 still logs which path is taken; keep the icon path ready because holster's own page showed blank glyphs on a different control template.
 
-## 17 Build log MCF1-MCF4 + MCF2b (10-18 night, LIVE 10-18 23:32, batch_swap_20261018_233209)
-Commits: MCF1 a1c80c88 | MCF2 3b4aa96b, Opus review fixes 7d62303d | MCF2b e9a17f47 | MCF3 2a2e53d1 | MCF4 b6e30a50 | play rows 38bb0e08 / cd808b70 / 6467f859 / 86d8a493. Installed: mod-config 0.2.0-dev (407cb333), companion-selfheal 0.9.0-dev (456d37fb); both SWAP (no import change), gate PASS. Nothing is verified in game yet: play rows MCR1, MCR2, SH-PG1 are `pending` in PLAY_TEST_QUEUE.md. Rollback: `python3 scripts/kpm_hotswap.py --rollback batch_swap_20261018_233209`.
+## 17 Build log MCF1-MCF4 + MCF2b (10-18 night, LIVE 10-18 23:32, batch_swap_20261018_234815)
+Commits: MCF1 a1c80c88 | MCF2 3b4aa96b, Opus review fixes 7d62303d | MCF2b e9a17f47 | MCF3 2a2e53d1 | MCF4 b6e30a50 | play rows 38bb0e08 / cd808b70 / 6467f859 / 86d8a493. Installed: mod-config 0.2.0-dev (407cb333), companion-selfheal 0.9.0-dev (456d37fb); both SWAP (no import change), gate PASS. Nothing is verified in game yet: play rows MCR1, MCR2, SH-PG1 are `pending` in PLAY_TEST_QUEUE.md. Rollback: `python3 scripts/kpm_hotswap.py --rollback batch_swap_20261018_234815`.
 
 ### What exists
 - `mod_config_src/MenuUiLogic.h` (namespace mui, pure, host-tested): `RowCfg`, `rowClamp/rowStep/rowApplyHandlerResult/rowFormat`, `rowSlotRect/rowGeom/rowHitZone`, `ScrollWindow` (wheel + = up, `slotOf`, `thumb`, `offsetFromThumbTop`), `tickResetDue(gap, flags48, lmb, dragging)` (shown bit 0x40: reset only after a 5000 ms gap with no button and no drag; hidden: > 500 ms as before). `kMaxEntries` is now 24.
