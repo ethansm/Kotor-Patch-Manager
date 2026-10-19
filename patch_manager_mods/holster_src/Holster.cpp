@@ -513,12 +513,37 @@ static bool tickDue(DWORD& last, DWORD now, int32_t ms) {
 
 static bool tickLogOk() { return g_onToggle && KP_ENABLED(chToggle, KPLOG_INFO) && takeLine(); }
 
-// Same 5 lines as companion_selfheal_src/CompanionSelfHeal.cpp foreground(): the game process owns the foreground window.
+// Foreground test like companion_selfheal_src/CompanionSelfHeal.cpp foreground(): the game process owns the foreground window. The three user32 calls are
+// resolved at run time from the already-loaded user32.dll so the DLL gains no new import (a new import makes kpm_hotswap demand a full reinstall).
+struct User32Fns {
+    HWND(WINAPI* getForeground)();
+    DWORD(WINAPI* getWindowThread)(HWND, LPDWORD);
+    SHORT(WINAPI* getAsyncKey)(int);
+    bool ok;
+};
+static User32Fns& user32Fns() {
+    static User32Fns f = {nullptr, nullptr, nullptr, false};
+    static bool tried = false;
+    if (!tried) {
+        tried = true;
+        const HMODULE m = GetModuleHandleA("user32.dll");
+        if (m) {
+            f.getForeground = reinterpret_cast<HWND(WINAPI*)()>(GetProcAddress(m, "GetForegroundWindow"));
+            f.getWindowThread = reinterpret_cast<DWORD(WINAPI*)(HWND, LPDWORD)>(GetProcAddress(m, "GetWindowThreadProcessId"));
+            f.getAsyncKey = reinterpret_cast<SHORT(WINAPI*)(int)>(GetProcAddress(m, "GetAsyncKeyState"));
+            f.ok = f.getForeground && f.getWindowThread && f.getAsyncKey;
+        }
+        if (!f.ok) KP_LOGV(chMain, KPLOG_WARN, "toggle key: user32 entry points not found, key disabled (logged once)");
+    }
+    return f;
+}
 static bool winForeground() {
-    HWND w = GetForegroundWindow();
+    const User32Fns& u = user32Fns();
+    if (!u.ok) return false;
+    HWND w = u.getForeground();
     DWORD pid = 0;
     if (!w) return false;
-    GetWindowThreadProcessId(w, &pid);
+    u.getWindowThread(w, &pid);
     return pid == GetCurrentProcessId();
 }
 
@@ -676,7 +701,7 @@ static void holsterTick() {
     if (tickDue(s_partyAt, now, 250)) refreshParty();
     if (delayOn && tickDue(s_delayAt, now, 100)) runDelay(now);
     if (keyOn && tickDue(s_keyAt, now, 16)) {
-        const bool down = winForeground() && (GetAsyncKeyState(g_toggleKey) & 0x8000) != 0;
+        const bool down = winForeground() && (user32Fns().getAsyncKey(g_toggleKey) & 0x8000) != 0;
         if (s_edge.update(down)) runToggle(now);
     }
     InterlockedExchange(&s_busy, 0);
