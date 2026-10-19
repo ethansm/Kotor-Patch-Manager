@@ -637,6 +637,12 @@ def model_refs(recipe) -> list:
     return [m for m in (recipe.body_a, recipe.body_b, recipe.head) if m is not None]
 
 
+def ingest_models(recipe) -> list:
+    """Model refs in pykotor conversion order: body B, body A, head. Body A and the head have B as their K2 supermodel,
+    and `--supernode chain` reads the just-written B from <stage>/models, so B must be converted first."""
+    return [m for m in (recipe.body_b, recipe.body_a, recipe.head) if m is not None]
+
+
 def resolve_items(recipe) -> list[str]:
     items = []
     for m in model_refs(recipe):
@@ -726,6 +732,9 @@ def ingest_argv(ctx: "Ctx", resref: str, new: str | None, textures: list, *, no_
              "--prefer-source", CR_ID if ctx.loaded.cfg.texture_source == "cr" else VANILLA_ID]
     if kresolve.kt.overlay_marker(ctx.k1) is not None:
         argv.append(kresolve.kt.OVERLAY_FLAG)
+    if ctx.recipe.converter == "pykotor" and not no_model:
+        # K2 chain supernode numbering; the supermodel (body B) is looked up in the stage first, then the K2 install
+        argv += ["--supernode", "chain", "--supermodel-dir", ctx.stage / "models"]
     if supermodel_map:
         argv += ["--supermodel-map", *supermodel_map]
     if no_model:
@@ -746,7 +755,22 @@ def run_ingest(ctx: "Ctx", label: str, argv: list) -> dict:
                       "fix the cause above (name collision, validation finding, missing source) and rebuild")
     for n in data.get("notes", []):
         say(f"  note: {n}")
+    warn_supernode(label, data)
     return data
+
+
+def supernode_report(data: dict) -> dict | None:
+    """The model converter's "supernode" record from an ingest result (None for legacy output or no model)."""
+    man = (data.get("model") or {}).get("manifest")
+    rep = man.get("supernode") if isinstance(man, dict) else None
+    return rep if isinstance(rep, dict) else None
+
+
+def warn_supernode(label: str, data: dict) -> None:
+    rep = supernode_report(data)
+    if rep and rep.get("origin") == "override":
+        warn(f"{label}: supernode numbering follows supermodel {rep.get('supermodel')!r} from the K2 Override folder "
+             "(a user-modded file, sha256 " + str(rep.get("supermodel_sha256"))[:16] + "), not vanilla K2")
 
 
 def summarize_ingest(data: dict) -> dict:
@@ -755,6 +779,7 @@ def summarize_ingest(data: dict) -> dict:
                           "requires_author_approval": t["chosen"].get("requires_author_approval")}
                          for t in data.get("textures", [])],
             "model_source": (data.get("model") or {}).get("chosen", {}).get("source_id"),
+            **({"supernode": rep} if (rep := supernode_report(data)) else {}),
             "flagged_files": data.get("flagged_files", []),
             "credits_needed": data.get("credits_needed", [])}
 
@@ -1347,7 +1372,7 @@ def print_plan(ctx: Ctx, idx: int, order: list, rows: dict, resolved: dict) -> N
     textures_owned = textures_by_model(r, resolved)
     sm = [f"{r.body_b.k1}={r.body_b.k2}"] if r.body_b else []
     if r.converter == "pykotor":
-        for m in model_refs(r):
+        for m in ingest_models(r):
             own = textures_owned.get(m.k1) or []
             cmds.append((f"ingest {m.k1}", ingest_argv(ctx, m.k1, m.k2, own, no_model=False,
                                                        supermodel_map=[] if m is r.body_b else sm)))
@@ -1437,7 +1462,7 @@ def build_character(loaded: Loaded, recipe, idx: int, order: list, rows: dict, k
     sm = [f"{recipe.body_b.k1}={recipe.body_b.k2}"] if recipe.body_b else []
     say(f"[{cid}] 3/6 models ({recipe.converter})")
     if recipe.converter == "pykotor":
-        for m in model_refs(recipe):
+        for m in ingest_models(recipe):
             own = owned.get(m.k1) or []
             if not own:
                 raise Failure(f"recipe {cid}", f"the K1 mesh {m.k1!r} references none of the recipe's [[textures]]",

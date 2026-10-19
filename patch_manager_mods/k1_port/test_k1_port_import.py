@@ -133,8 +133,13 @@ if script == "k1_port_ingest.py":
     led = stage / "ledger.json"
     if not led.exists():
         led.write_text(json.dumps({"schema": 1, "entries": [], "approvals": {}}))
+    model = None if no_model else {"chosen": {"source_id": "vanilla_k1"}}
+    if model and os.environ.get("FAKE_SUPERNODE"):  # the model converter's per-model manifest, supernode record only
+        model["manifest"] = {"supernode": {"mode": "chain", "supermodel": "k1p_x", "supermodel_sha256": "ab" * 32,
+                                           "origin": os.environ["FAKE_SUPERNODE"], "nodes_changed": 3,
+                                           "anim_nodes_changed": 0, "anim_unmapped": 0, "total_before": 9, "total_after": 12}}
     print(json.dumps({"status": "ok", "resref": resref, "new_resref": new, "textures": texs,
-                      "model": None if no_model else {"chosen": {"source_id": "vanilla_k1"}}, "outputs": outs,
+                      "model": model, "outputs": outs,
                       "flagged_files": [o["path"] for o in outs if o["flagged"]], "credits_needed": [], "notes": [],
                       "errors": []}))
     sys.exit(0)
@@ -356,7 +361,7 @@ class Base(unittest.TestCase):
         self.env.start()
         self.addCleanup(self.env.stop)
         for var in ("FAKE_MISSING", "FAKE_CR", "FAKE_INGEST_FAIL", "FAKE_GATE_BLOCK", "FAKE_TEX_EXT", "FAKE_TEX_BYTES",
-                    "FAKE_VALIDATE_FAIL", "K1PORT_CR_DEST"):
+                    "FAKE_VALIDATE_FAIL", "FAKE_SUPERNODE", "K1PORT_CR_DEST"):
             os.environ.pop(var, None)
 
     # -- fixtures
@@ -2040,6 +2045,105 @@ class MeshTextureTests(Base):
         rc, out, err = self.run_cli("build", "--only", "tst")
         self.assertEqual(rc, 1, out + err)
         self.assertIn("references none of the recipe", err)
+
+
+class SupernodeChainTests(Base):
+    converters = {"tsu": "mdlops"}
+
+    def model_ingests(self):
+        return [c for c in self.script_calls("k1_port_ingest.py") if "--no-model" not in c]
+
+    @staticmethod
+    def resref(call):
+        return call[call.index("--resref") + 1]
+
+    def drop_body_b(self):
+        text = (self.recipes / "tst.toml").read_text()
+        text = "\n".join(l for l in text.splitlines() if not l.startswith("body_b"))
+        text = text.replace('[[textures]]\nk1 = "p_tstbb01"\nk2 = "k1p_tstbb01"\nforce_opaque = true\n\n', "")
+        self.assertNotIn("bb", text)
+        (self.recipes / "tst.toml").write_text(text)
+        self.put_k1("p_tstba.mdl", b"K1:p_tstba.mdl\0P_TSTBA01\0P_TSTH01\0")
+
+    def test_ingest_models_order_is_b_a_head(self):
+        r = imp.krecipe.load_recipe(self.recipes / "tst.toml")
+        self.assertEqual([m.k1 for m in imp.ingest_models(r)], ["p_tstbb", "p_tstba", "p_tsth"])
+        self.assertEqual([m.k1 for m in imp.model_refs(r)], ["p_tstba", "p_tstbb", "p_tsth"])  # unchanged for its other users
+
+    def test_pykotor_ingests_run_b_then_a_then_head(self):
+        self.build_ok("--only", "tst")
+        self.assertEqual([self.resref(c) for c in self.model_ingests()], ["p_tstbb", "p_tstba", "p_tsth"])
+
+    def test_pykotor_gets_chain_flags_and_the_stage_models_dir(self):
+        self.build_ok("--only", "tst")
+        stage_models = str(self.out / "tst" / "stage" / "models")
+        for c in self.model_ingests():
+            self.assertEqual(c[c.index("--supernode") + 1], "chain", c)
+            self.assertEqual(c[c.index("--supermodel-dir") + 1], stage_models, c)
+            self.assertNotIn("--keep-dangly", c)
+        for c in self.script_calls("k1_port_ingest.py"):
+            if "--no-model" in c:  # textures-only ingest converts nothing
+                self.assertNotIn("--supernode", c)
+                self.assertNotIn("--supermodel-dir", c)
+
+    def test_mdlops_gets_no_chain_flags(self):
+        self.build_ok("--only", "tsu")
+        calls = self.script_calls("k1_port_ingest.py")
+        self.assertEqual(len(calls), 1)
+        self.assertNotIn("--supernode", calls[0])
+        self.assertNotIn("--supermodel-dir", calls[0])
+        for c in self.script_calls("k1_port_mdlops.py"):
+            self.assertNotIn("--supernode", c)
+
+    def test_single_model_recipe_converts_body_a_and_head_only(self):
+        self.drop_body_b()
+        self.build_ok("--only", "tst")
+        calls = self.model_ingests()
+        self.assertEqual([self.resref(c) for c in calls], ["p_tstba", "p_tsth"])
+        for c in calls:
+            self.assertNotIn("--supermodel-map", c)
+            self.assertEqual(c[c.index("--supernode") + 1], "chain")
+
+    def test_dry_run_plan_shows_b_before_a(self):
+        rc, out, err = self.run_cli("build", "--dry-run", "--only", "tst")
+        self.assertEqual(rc, 0, out + err)
+        pos = [out.index(f"ingest {r}:") for r in ("p_tstbb", "p_tstba", "p_tsth")]
+        self.assertEqual(pos, sorted(pos), out)
+        self.assertIn("--supernode chain --supermodel-dir " + str(self.out / "tst" / "stage" / "models"), out)
+        rc, out, err = self.run_cli("build", "--dry-run", "--only", "tsu")
+        self.assertEqual(rc, 0, out + err)
+        self.assertNotIn("--supernode", out)
+
+    def test_summarize_ingest_carries_the_supernode_report(self):
+        rep = {"mode": "chain", "supermodel": "k1p_x", "origin": "install", "nodes_changed": 2}
+        data = {"resref": "r", "new_resref": "n", "model": {"chosen": {"source_id": "vanilla_k1"}, "manifest": {"supernode": rep}}}
+        self.assertEqual(imp.summarize_ingest(data)["supernode"], rep)
+
+    def test_summarize_ingest_without_a_report_does_not_fail(self):
+        for model in (None, {"chosen": {"source_id": "v"}}, {"chosen": {"source_id": "v"}, "manifest": {}},
+                      {"chosen": {"source_id": "v"}, "manifest": {"supernode": None}}):
+            got = imp.summarize_ingest({"resref": "r", "new_resref": "n", "model": model})
+            self.assertNotIn("supernode", got)
+            self.assertEqual(got["resref"], "r")
+
+    def test_report_reaches_the_import_manifest(self):
+        os.environ["FAKE_SUPERNODE"] = "install"
+        _, err = self.build_ok("--only", "tst")
+        ing = self.manifest("tst")["ingest"]
+        self.assertEqual([i["supernode"]["origin"] for i in ing if "supernode" in i], ["install"] * 3)
+        self.assertEqual(ing[0]["supernode"]["total_after"], 12)
+        self.assertNotIn("Override", err)
+
+    def test_override_origin_warns(self):
+        os.environ["FAKE_SUPERNODE"] = "override"
+        _, err = self.build_ok("--only", "tst")
+        self.assertIn("WARN: ingest p_tstbb: supernode numbering follows supermodel 'k1p_x' from the K2 Override folder", err)
+        self.assertEqual(err.count("K2 Override folder"), 3)
+
+    def test_legacy_output_without_report_builds_without_warning(self):
+        _, err = self.build_ok("--only", "tst")
+        self.assertNotIn("supernode", err)
+        self.assertTrue(all("supernode" not in i for i in self.manifest("tst")["ingest"]))
 
 
 class CellBudgetTests(Base):
