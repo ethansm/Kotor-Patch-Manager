@@ -1,0 +1,110 @@
+S2 design settle: holster toggle key (A, fallback D1b) + shorter post-combat/flourish delay (B). Static, Steam swkotor2.exe 6a522e71.
+Tags: V = re-read in dump/asm/source this pass. G = guess. Inputs: S1_reconcile.txt, H1..H5, K5, K6, Holster.cpp, HolsterDrawGate.h, CombatHotbar.cpp.
+Dump root: ~/Games/KOTOR2_Mod_Workspace/ghidra_dumps/steam_6a522e71/decomp.
+
+=== 1. PC / party test inside the AIUpdate detour (ECX = server CSWSCreature) ===
+VERDICT: build a small table in a TICK (not in the detour), compare ECX against it in the detour. Zero engine calls in the detour for non-party creatures.
+
+Pointer type settled (H3 right, H4 OPEN 1 closed, V):
+  0x0077D800 (53 B, decomp/77/0077d800.c) = thiscall(ECX = CLIENT creature) -> SERVER CSWSCreature*. Body: CALL 0x007F2540 twice, then vtbl[+0x30] of the result.
+  0x007F2540 (decomp/7f/007f2540.c) = client object -> server object: returns cached [client+0xF8]; on a miss it computes ClientToServerObjectId 0x0051C8B0([client+4]), GetGameObject 0x0051C0A0, and stores the link at +0xF8.
+  Repo agrees: _shared_src/Party.h:89-93 serverCreature(); QueueHud.cpp:272 and :1004 compare party::serverCreature(m) with a server creature `cr`.
+  So the detour's ECX and party::serverCreature(client) are the SAME kind of pointer and can be compared directly.
+
+The engine's own test (V, decomp/56/00569320.c):
+  line 59 / asm 0x5693A0 and line 108 / asm 0x569687: iVar5 = FUN_0051c8f0() (GetPlayerCreatureId, ECX = [[0xA1B4A4]+8], asm 0x569391 loads [ECX+8]); `param_1[1] != iVar5 && param_1[0x46b] != 0` = "party member that is not the controlled leader".
+  0x51C8F0 (decomp/51/0051c8f0.c): reads [ECX+4], calls 0x539d60, which returns the controlled creature's server id (or 0x7F000000). V.
+  Object fields: server +0x04 = id, +0x11AC (param_1[0x46b]) = party flag, +0x10E8 (param_1[0x43a]) = IsPC. +0x10E8 marks the player CHARACTER, not necessarily the leader the player currently controls; do NOT use it to mean "controlled" (H4 cheap filter is only a prefilter).
+
+Recipe:
+  a) Tick (every >=250 ms, runs from HolsterGobUpdate H6 next to maybeReload, Holster.cpp:446-451; plus a fallback refresh from the detour when the table is older than 1000 ms and the creature passes the prefilter):
+       t = party::table(); n = min(party::partyCount(t), 3);
+       for i<n: cli[i] = party::member(t,i); srv[i] = party::serverCreature(cli[i]); id[i] = [srv[i]+4].
+     Slot 0 is the controlled creature (Party.h PartyGetAt comment "0 = controlled"). Do NOT use party::members(): it also calls the HP vtable slots (Party.h:100-141). No existing holster_src code does any of this (S1/H3: Holster.cpp has zero party code), it is the first user.
+  b) Detour (H10 below): `if (!S) return; for i<n: if (S == srv[i] && readAt(S,4)==id[i]) -> slot i`. Cost for a non-party creature = <=3 compares, nothing else. Optional prefilter before the id read: [S+0x11AC] != 0 || [S+0x10E8] == 1.
+  c) Stale-pointer guard: table cleared when party::table()==0 (loading, no game); the id compare rejects a recycled address.
+  d) Whether the controlled one is slot 0 at all times when leaders swap: V by Party.h comment only; G for swaps. Alternative that needs no assumption: ctrlId = thiscall 0x0051C8F0 (ECX = [[0xA1B4A4]+8]), guard [srv+4] != 0 first (H3 A3); done in the tick, compare with id[i].
+
+Client combat flag from the server creature (V design, G for pointer identity):
+  Do not walk server -> client. The tick already holds cli[i] next to srv[i]. Detour reads it with the existing helper: rdU32Ok(kSiteAi, cli[i], k2addr::off(&K2AddrTable::Creature_ClientCombat) /*0x138*/, &v) (Holster.cpp:301-306, :335); off()==0 (GOG) or unreadable -> treat as "unknown" -> do nothing.
+  HolsterPlace derives its owner as [[beh+0x14]+0x1D8] (Holster.cpp:902-904). Whether that equals party::member() is G; verify with the existing DRAWGATE log (creature=%x, Holster.cpp:798) against a new TOGGLE log line that prints cli[0]. If they differ, key the draw hold on `owner` seen by HolsterPlace instead (any party owner).
+  Shortcut without the client read for flourish-only: server +0x11E8 == 2 means no param_3==1 SetCombatState has run since the last state-0 reset (+0x11E8 only takes param_3 "if not already 1", S1; 0x57A659-0x57A66E), and the client flag is only set on the param_3==1 path (K5 final block), so +0x11E8==2 implies client +0x138==0. Use the client read as the primary test and +0x11E8==2 as the second condition.
+
+=== 2. Hostile check and throttle ===
+Call (H3 sec 2, V decomp mods678_research/dump_excerpts/0057c990.c; typedef = companion_ai_src/CompanionAI.cpp:76 and :83):
+  using NearestFn = int(__thiscall*)(uintptr_t self, float range, int exclude, int ref);   // 0x0057C990, RET 0xC
+  nearest = fn(S /*server creature = ECX*/, R = 30.0f, 0x7F000000 /*exclude*/, 0x7F000000 /*ref: always INVALID*/);
+  hostile = (nearest != 0x7F000000 && nearest != 0).   // 0x7F000000 = OBJECT_INVALID = "none" (V); CompanionAI treats 0 as none too.
+  Range is a hull-gap distance (centre distance minus both radii), world units = metres (G). 30.0 = the engine's own "enemy within 30" probe (0x57DC20, AI2.md:137).
+  Candidate must be seen (perception bit), alive, reputation==2 (H3 filters 1-7), so unseen enemies do not count: fail-safe direction is wrong only for unperceived enemies, acceptable.
+  PC as self has vanilla precedent (AI2.md:135). Companions as self: CompanionAI uses it on party attackers (G).
+Guards before the call (a null deref crashes, H3): readAt(S,0x380,&pi) != 0 and readAt(pi,8,&f) ok; only from the game thread inside the detour/tick; wrap with saferead::beginScope().
+
+Throttle and when to call (stateless, bounded):
+  Trigger gate (read-only fields, V decomp lines 144-152): [S+0x520]==1 && [S+0x528]==0 && [S+0x524] > 0 && [S+0x524] <= 8000 - exit_ms.
+    8000 is the literal written at 0x57A64F/0x57A655 on every SetCombatState(state!=0) (V S1; mov [eax+0x524],0x1F40). So `8000 - [S+0x524]` = elapsed ms since the last refresh (G on the unit: +0xD0 is elapsed ms, K5 GUESS; consistent with observed 8.0-8.5 s).
+    While a real fight is on, the PC/AI refresh keeps +0x524 at 8000 each tick (S1: 0x8C9750 refresh), so the gate is false and the hostile call is NEVER made during active combat. It is only evaluated after exit_ms of silence.
+  Per-slot throttle: static DWORD nextCheck[3]; run only when GetTickCount() - nextCheck >= 0.
+    no hostile found -> write [S+0x524] = 0 (probeWrite first), expiry fires at the engine's next AIUpdate pass (0x5698F6 JG fails, 0x569923 CALL 0x57A560(0,[+0x11E8],0)); no further checks needed, +0x520 becomes 0.
+    hostile found   -> nextCheck = now + hostile_backoff_ms (1000), leave the timer alone.
+    gate false      -> no call at all.
+  Worst case cost: <= 3 calls/s per party member (1000 ms back-off); the base period is 250 ms only after "no hostile" is impossible (the write ends it). Cost per call is unmeasured (H3 O2, linear in area objects + LOS rays) -> log the first 20 durations (QueryPerformanceCounter) in the CONFIG/TOGGLE channel.
+  +0x528 guard: S1 says "+0x528 must be 0". Decompile: expiry (`+0x524 < 1`) does not test +0x528, only the decrement does. The guard is conservative (keep it for the automatic shortening, drop it for the explicit toggle press).
+  Flourish-only (S1 (c), K6): [S+0x520]==1 && [S+0x11E8]==2 && client flag==0 && (8000 - [S+0x524]) >= flourish_exit_ms (the flourish body anim 0x27AE is 1500 ms, K6 S6). Same hostile check, then [S+0x524] = 0. No timestamp needed, the elapsed time is encoded in +0x524.
+  Window of the write: the detour runs before the countdown block, so a write lands in the same pass. A tick-side write lands one pass later (ms). Same helper function serves both; the detour is justified mainly by running in the server loop on the server thread; see OPEN 3.
+
+=== 3. "Draw now" with the draw gate ===
+Current state (V): HolsterDrawGate.h:41-44 shouldWriteHip(drawgate, ownerReadable, combatFlag, flourishOpen) -> hip pose only if readable && combatFlag==0 && !flourishOpen. HolsterPlace calls it at Holster.cpp:908 with the global `g_flourishOpen` (Holster.cpp:63), which is initialised false and NEVER assigned (K6 sec 2; the TODO at :61-62 says C2 must make it per creature).
+Cheapest mechanism = a timed per-owner hold, computed at the existing call site; no new hook, no change to shouldWriteHip's signature:
+  State (Holster.cpp, next to :63): static uintptr_t g_holdOwner; static uint32_t g_holdUntil. Write order: g_holdUntil first, then g_holdOwner (non-atomic pair is harmless: a torn read only flips one frame).
+  Pure helper in HolsterDrawGate.h (host-testable, holster_drawgate_test.cpp): holdActive(owner, holdOwner, holdUntil, now) = holdOwner != 0 && owner == holdOwner && static_cast<int32_t>(holdUntil - now) > 0 (wrap-safe like Fsm::tick).
+  Call site (Holster.cpp:908): `hs::shouldWriteHip(true, readable, combat, g_flourishOpen || hs::holdActive(owner, g_holdOwner, g_holdUntil, GetTickCount()))`. gateUpdate (HolsterDrawGate.h:78-84) sees the flip on the next HolsterPlace refresh (per frame, via H7), drops the resolved placement (ent->seq=-1) and logs DRAWGATE; when hip=false HolsterPlace returns at :912 and leaves the hand pose the engine just wrote. Expiry needs no timer: the next refresh after holdUntil flips back to the hip.
+  Set by the toggle: g_holdOwner = cli[0] (or the owner HolsterPlace saw, see sec 1 identity note), g_holdUntil = now + draw_hold_ms. Clear by a second press: g_holdUntil = now (immediately inactive).
+  The stance/anim is NOT changed: no engine call, +0xC5 and +0x520 untouched; the weapon snaps from hip to the engine's native hand node (the visual is "weapon in hand, normal out-of-combat idle", no draw animation). A real draw animation would need the vanilla flourish 0x0079F430 (K6; sets server combat 8000, param_3=2) which then interacts with B; not in v1 (OPEN 5).
+  Interaction with real combat: while client combat flag != 0 the hold is irrelevant (hip=false anyway). When combat ends and the flag returns to 0 the hold keeps the weapon in hand until it expires, so reset g_holdUntil = now on the combat 0->nonzero edge in HolsterCombat (H1, Holster.cpp:330) if a "combat takes over" behaviour is preferred (G, optional).
+  Toggle decision (visual state, V from sec above): drawn = holdActive || client flag != 0. Press when holstered -> start hold (no checks). Press when drawn -> clear hold; if client flag != 0 and a fresh hostile check (no throttle) says none: write [S+0x524]=0 for the controlled server creature (probeWrite; works even with +0x528 != 0); a refused stow (hostile near) is logged and the key does nothing else. A real stow after combat also relies on the client clear that needs [S+0x11E8]==1 (K5); flourish-only combat never set the client flag, so there is nothing to stow.
+
+Key poll (D1b), prior art CombatHotbar.cpp:241-250 pollInvokeKeys: `active = guikit::detail::winForeground() && modifiersMatch(); down = active && (GetAsyncKeyState(key) & 0x8000); if (edge.update(down)) ...` with ch::KeyEdge (CombatLogic.h:35-38, rising edge only).
+  Foreground rule: GuiKit.h:745-751 winForeground() = GetForegroundWindow pid == GetCurrentProcessId() (and the gui_input connection when present). Holster does not include GuiKit; copy the 5 lines (identical to companion_selfheal_src/CompanionSelfHeal.cpp:94-99).
+  GUI-open: CombatHotbar does NOT test it (only foreground + modifiers + ctx->hud != 0 from the HUD host). Nothing equivalent exists in holster; acceptable because the default key (F8) has no vanilla meaning; require party::table() != 0 and a controlled creature, else ignore the press. GetAsyncKeyState does not consume the key.
+  Where to poll: HolsterGobUpdate (H6, render side, runs while paused; the AIUpdate detour does not run while the server tick gate is closed, H4 sec 3) every >=16 ms (GetTickCount delta), gated on g_boneTest && drawgateMode(). Rising edge with a 3-line local KeyEdge struct (put it in a new pure header HolsterToggle.h with the hold/hostile decision functions so a host test covers the toggle rules).
+
+=== 4. ini keys and defaults (holster.ini, read in readConfig Holster.cpp:215-285; all start-only except as noted) ===
+  toggle_key=0x77      VK code, decimal or 0x hex, 1..0xFE; 0 = off. 0x77 = F8. Chosen because the engine keymap has no row on code 46/F8 (H1 sec 3-4: free) and CombatHotbar uses F9-F11 (CombatHotbar.cpp:99), Steam screenshot is F12. A letter would double-fire the vanilla action (poll does not consume keys).
+  draw_hold_ms=8000    1000..60000; 0 = hold until the next press.
+  combat_exit_ms=1500  200..7800; 0 = off (vanilla 8000). Automatic shorten target (sec 2).
+  flourish_exit_ms=1500  200..7800; 0 = off.
+  hostile_range=30.0   float 5..60, hull-gap metres.
+  hostile_backoff_ms=1000  250..5000.
+  delay_party=1        1 = apply B to every party member, 0 = controlled creature only.
+  All B/A behaviour inert unless probe=1? No: gate on bone_test=1 AND place_mode=drawgate (the only mode where "drawn" means anything); key logging via a new channel ch_toggle (probe=1 AND ch_toggle=1) like ch_place.
+
+Raw-address bookkeeping (tests/static/raw_addresses.toml; scripts/check_raw_addresses.py regex \b0x00[4-9A-B]xxxxx\b, comments count). Holster.cpp currently has NO allowlist section: its 6 literals are all in GameAddr.h (INFO line from the checker). Preferred route = add GameAddr.h constants, then no rows are needed:
+  GameAddr.h new: CreatureAIUpdate = 0x00569320 (hook site, comment only), NearestVisibleEnemy = 0x0057C990 (+ K2AddrTable field so it goes inert off Steam, K2Addr.h:47-49 pattern, K2Addr.h:237-239 fill; pin in holster_src/common_contract_test.cpp like the Creature_ClientCombat lines :38,:62).
+  companion_ai_src/CompanionAI.cpp already has raw rows for 0x0057C990, 0x0051C0A0, 0x0051C8D0, 0x0051C8F0 (raw_addresses.toml:53-54): once GameAddr has 0x0057C990 that row becomes a stale WARN (not FAIL).
+  If instead the literals stay raw in holster_src, the rows to ADD (do not edit now) are: [files."patch_manager_mods/holster_src/Holster.cpp"] addresses = ["0x00569320", "0x0057C990"] plus every other image address typed in a comment (0x00569923, 0x0057A560, 0x0057A64F, 0x0051C8F0, 0x0051C0A0 if mentioned) and the same for any new holster_src header (HolsterToggle.h).
+  Not raw-address items but required beside them: kotor2-steam-aspyr.hooks.toml new entry H10 { address=0x00569320, type="detour", function="HolsterAiUpdate", original_bytes=[0x55,0x8B,0xEC,0x81,0xEC,0x9C,0x01,0x00,0x00], skip_original_bytes=false, exclude_from_restore=[], params: source="ecx" type="pointer" } (H4 sec 1, bytes V from 16-byte dump 0x569320..0x56932F; window ends on the boundary 0x569329; no relative branch inside); exports.def += HolsterAiUpdate (H4 sec 5); scripts/check_hook_bytes.py / check_hook_sources.py / check_hook_spans.py must pass; KPM rule: a different patch may not detour the same address, companion-ai E2 is at 0x569A08 (mid-body, no overlap, H4 sec 4).
+
+=== 5. Contradictions / corrections found ===
+  C1. H3 (Party.h Route B: 0x77D800 -> server creature) vs H4 OPEN 1 (client vs server): H3 is right (V, 0x7F2540 body). Closed, no live probe needed for the pointer kind. CompanionAI.cpp:75 comment ("controlled creature") is only a name.
+  C2. S1 recommendation (b)/(c) says "write S+0x524=0 ... +0x528 must be 0, else do nothing". Decompile (00569320.c lines 148-152; K5) shows expiry runs on `+0x524 < 1` regardless of +0x528; +0x528 only blocks the decrement. Guard kept for the auto-shorten, not needed for the explicit toggle.
+  C3. S1 says the PC test needs the server player pointer from 0x51C8F0/0x51C0A0 or party code; H4 proposed IsPC +0x10E8. +0x10E8 is not "controlled leader" (H4 OPEN 3 itself doubts +0x11AC for the PC). The engine's own test in AIUpdate (asm 0x5693A0, 0x569687) is `[S+4] != GetPlayerCreatureId() && [S+0x11AC] != 0`; use ids/pointers from the party table instead of +0x10E8.
+  C4. H4 verdict says "S1 plan (b) tick-side write needs no detour". True: the same write helper works from the H6 tick with the cached server pointers; the detour adds PUSHAD+PUSHFD+FXSAVE (H4 sec 5 wrapper) on EVERY AIUpdate of EVERY creature, unmeasured. Not a contradiction with the user decision, but the cost argument favours implementing the write as a shared function and hooking it from the detour only if the tick path proves insufficient.
+  C5. S1 GOAL A step 1-2 (Override/keymap.2da + poll 0x72F9D0 with action id 266) vs H5 (KPM has no way to ship Override files; hotswap copies DLLs only; kpm_status ignores override/) and H2 (custom label needs a dialog.tlk edit): resolved by decision D1b (own VK poll); S1's polling recipe (0x72F9D0, type-0 entry via EventType=1) becomes unused. S1's own statement "K4 must also edit override GUI is unproven" stays unproven and moot.
+  C6. S1 sec (1) "no other action already bound in that context" vs H1 sec 2 (conflict scope = same context AND same device, earlier registrants, key2 only if vfunc1 != 0): H1 corrects S1. Moot for D1b except that H1's "free" engine codes (N=64, F7..F10=45..48) are engine key codes, NOT Windows VK codes; the VK default is chosen separately (0x77 = F8, matches engine code 46 only by H1's G deduction F1..F6=39..44).
+  C7. K6 sec 2 / sec 5 says flourish-only combat leaves the weapon on the hip (drawgate keys only on client +0x138) while the engine keeps the weapon in hand (S3); S1 states the same mismatch. Consequence for B: for flourish-only combat the user-visible problem is the engine stance (ready stance up to 8 s, +0xC5 unchanged), not the hip pose; shortening +0x524 fixes the duration only if the stance really follows +0x520 (G, K6 says 0x863650 keys on +0xC5; S1 sec "Cause" G). Needs one in-game check (PLAY_TEST_QUEUE row).
+
+=== OPEN ===
+  1. Is client creature from party::member() == [[beh+0x14]+0x1D8] used by HolsterPlace (G, one DRAWGATE/TOGGLE log pair).
+  2. +0xD0 unit (ms) and that the PC/party refresh really keeps +0x524 at 8000 during fights (log elapsed = 8000-[+0x524] at the first gate-true tick, G).
+  3. Thread/cadence: HolsterGobUpdate vs AIUpdate on one thread? (H4 OPEN 2). Add a TID line for the new hook like "TID gobupdate" (Holster.cpp:447-450); writes are aligned dword stores and all reads go through saferead, so a race is benign.
+  4. 0x57C990 cost and whether companions' perception (4 s refresh, H3 sec 3) delays "hostile" detection; the 1500 ms elapsed gate plus 1000 ms back-off bounds the damage, first 20 call durations to be logged.
+  5. Optional real draw animation (vanilla flourish 0x79F430) not in v1.
+  6. Install state of companion-ai E2 hook (0x569A08) unchecked (H4 OPEN 6); no address overlap.
+  7. Play checks (queue, never block): TOG1 press draws/holsters with F8; DLY1 post-combat holster in ~1.5 s with no enemies and unchanged when an enemy stands within 30 m; DLY2 flourish-only ends in ~1.5 s.
+
+OUTPUT: research/holstered_weapons/keybind/S2_design.txt
+EVIDENCE: decomp/77/0077d800.c, decomp/7f/007f2540.c, decomp/51/0051c8f0.c, decomp/56/00569320.c:59,108,148-152, asm 0x5693A0/0x569687; Holster.cpp:63,301,330,446,902-908; HolsterDrawGate.h:41,78; CombatHotbar.cpp:241-250; GuiKit.h:745; Party.h:89,125; raw_addresses.toml:53; check_raw_addresses.py run (PASS, holster via GameAddr)
+FINDING: Poll F8 from H6; compare ECX with cached party server pointers; shorten +0x524 only after elapsed>=1500 ms and no hostile within 30 m; draw via per-owner timed hold.
+OPEN: client-pointer identity with HolsterPlace owner, +0xD0 unit, AIUpdate versus render thread, hostile-call cost, stance following +0x520 vs +0xC5.
+VERDICT: 1 PASS (table+ECX compare) 2 PASS (elapsed gate, 1000 ms backoff) 3 PASS (holdActive at Holster.cpp:908) 4 PASS (add GameAddr constants, no raw rows) 5 seven corrections C1-C7.

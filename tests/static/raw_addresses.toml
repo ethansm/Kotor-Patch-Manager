@@ -68,6 +68,10 @@ addresses = ["0x00462320", "0x0073F530", "0x007645F0", "0x0076D200", "0x0077EC20
 [files."patch_manager_mods/holster_editor_src/HolsterEditor.cpp"]
 addresses = ["0x00A309C0", "0x00A309C8", "0x00A309CE", "0x00A32A30", "0x00A32A54"]
 
+# 0x0057C990 = CSWSCreature::GetNearestEnemy (query_ghidra.py address; Steam verified batch B12a), holster toggle-key hostile check
+[files."patch_manager_mods/holster_src/Holster.cpp"]
+addresses = ["0x0057C990"]
+
 [files."patch_manager_mods/hud_host_src/HhDispatch.h"]
 addresses = ["0x00743847", "0x00743850"]
 

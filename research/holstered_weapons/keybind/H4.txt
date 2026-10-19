@@ -1,0 +1,107 @@
+H4 recon: viability of a prologue detour on CSWSCreature::AIUpdate 0x00569320 (Steam swkotor2.exe, sha256 6a522e71...)
+Static only. Read-only. Sources: ghidra_dumps/steam_6a522e71/decomp/56/00569320.{asm,c}, raw bytes of swkotor2_vanilla_6a522e71.exe (PE .text raw 0x400 maps VA 0x569320 -> file 0x168720), repo rg.
+Ghidra name: CSWSCreature::AIUpdate (steam_db B12a, high). GOG twin 0x00681F50 (no hook there).
+
+=== (1) Prologue bytes and instruction boundaries ===
+Raw 0x569320..0x56932F (16 bytes):
+  55 8b ec 81 ec 9c 01 00 00 89 8d 6c fe ff ff
+Next bytes: d9 e8 (0x56932F) d9 5d f8 (0x569331) 83 3d 98 e0 a7 00 00 00 (0x569334) 74 32 (0x56933C)
+Whole-instruction boundaries (VA: insn, length):
+  0x569320  PUSH EBP                 1
+  0x569321  MOV EBP,ESP              2
+  0x569323  SUB ESP,0x19c            6   (81 ec imm32)
+  0x569329  MOV [EBP-0x194],ECX      6   (89 8d imm32; stores this)
+  0x56932F  FLD1                     2
+  0x569331  FSTP float [EBP-8]       3
+  0x569334  CMP [0xA7E098],0         8
+Recommended window: 0x569320..0x569328, 9 bytes, ends on boundary 0x569329.
+  original_bytes = [0x55, 0x8B, 0xEC, 0x81, 0xEC, 0x9C, 0x01, 0x00, 0x00]
+  No relative call/jmp/jcc in the window (passes check_hook_bytes.py relative-branch rule with skip_original_bytes=false).
+  Alt window 0x569320..0x56932E, 15 bytes, ends on boundary 0x56932F; also clean.
+  No jump or call in the dumps targets 0x569321..0x569328 (rg: 0 hits). Byte 0x56931F is CC padding (entry is 16-aligned).
+  No other patch or hook in the repo covers 0x569320..0x56932F (rg of *.hooks.toml, code_patches.toml, raw_addresses.toml, *.kpatch: none).
+  Image-wide search for LE dword 0x00569320: one hit only, file 0x593BCC = VA 0x00994FCC (.rdata). That is vtable slot +0x70 (28*4). No immediate or direct pointer to 0x569320 exists anywhere else.
+
+=== (2) Calling convention ===
+  Ghidra: void __fastcall FUN_00569320(int *param_1). Only argument is ECX, stored at 0x569329.
+  asm has no positive [EBP+n] reads, so no stack args.
+  Epilogue 0x56A22B is plain RET (C3), so callee pops 0. Ghidra header ret=0.
+  => ECX = CSWSCreature* (this), no stack args, callee pops nothing (thiscall with zero stack args).
+  Scheduler dispatch, CServerAIMaster::UpdateState 0x51D790, asm 0x51DC70..0x51DC7B:
+    MOV ECX,[EBP-0x28]; MOV EDX,[ECX]; MOV ECX,[EBP-0x28]; MOV EAX,[EDX+0x70]; CALL EAX
+  Hook declaration: source="ecx" type="pointer", handler extern "C" void __cdecl H(void* creature), same shape as H1 HolsterCombat.
+
+=== (3) Callers and frequency ===
+  Direct callers: none (dump header callers= empty; no CALL/JMP 0x569320 in decomp/). Only the vtable slot.
+  Sole caller of the scheduler: CServerExoApp 0x533830, CALL 0x51D790 at 0x53396E (decomp/53/00533830.c:84-85).
+    Gate: **(app+0x14)==0 && *(short*)(this+0x10008)==2.
+  Scheduler (AI4 doc): 10 ms budget (0x51D79F MOV [EBP-0x18],0x2710), levels 4..0, each object at most once per pass, a single AIUpdate never preempted.
+  Level 0 (idle, no player in area) is also in the lists, so the detour fires for every creature in every list, not only party or PC.
+  Cadence per render frame vs fixed tick: not measured (OPEN).
+
+=== (4) Existing hooks on 0x569320 ===
+  No entry-point hook exists in the repo.
+  Only hit: patch_manager_mods/companion_ai_src/kotor2-steam-aspyr.hooks.toml:83-88, entry "E2", detour at 0x00569A08 (mid-body, not the prologue).
+    original_bytes = [0x8B,0x8D,0x6C,0xFE,0xFF,0xFF] (MOV ECX,[EBP-0x194], 6 bytes), function AiTraceFallbackFires, log-only.
+    Window 0x569A08..0x569A0D does not overlap 0x569320..0x569328.
+    companion_ai_src is version 0.2.1-probe. Whether E2 is installed was not checked.
+  Comment-only mentions: companion_ai_src/CompanionAI.cpp:16 and :919; patch_manager_mods/29_paused_command_evidence/PQ1.md:28; engine_ai_atlas/AI4_scheduler.md:26,120.
+  KPM rule: two patches may not detour one address (_shared_src NpcWorld.h:4). No conflict at 0x569320.
+
+=== (5) Declaration format and Holster hooks ===
+  Format, holster_src/kotor2-steam-aspyr.hooks.toml lines 1-25 (H1 0x007682B0):
+    line 2   [metadata] target_versions = ["6A522E71631D...FEF"]   (full sha256 of the Steam exe)
+    line 11  [[hooks]]
+    line 12  address = 0x007682B0
+    line 13  type = "detour"
+    line 14  function = "HolsterCombat"
+    line 15  original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x20]
+    line 16  skip_original_bytes = false
+    line 17  exclude_from_restore = []
+    line 19  [[hooks.parameters]] source = "ecx" type = "pointer"
+    line 23  [[hooks.parameters]] source = "[esp+4]" type = "int"
+  Semantics (file header line 4): handler runs first, then the stolen bytes, then resume after the window. The detour cannot skip the body.
+  Wrapper (patch_manager_mods/10_engine_optimization_research.md:145, KotorPatcher wrapper_x86.cpp, outside this repo): PUSHAD + PUSHFD + FXSAVE, __cdecl handler, cannot change control flow. POPAD restores every register not in exclude_from_restore, so ECX survives. H3 (line 49) already relies on this.
+  Exports: holster_src/exports.def (KPatchInit, HolsterCombat, HolsterAttach, HolsterSwap, HolsterAnimResolve, HolsterPlace, HolsterGobUpdate, OnHandAttachR, OnHandAttachL).
+  Holster hooks now (8 entries; H5 removed, line 7 comment):
+    H1  0x007682B0  HolsterCombat         address line 12   (Holster.cpp:330)
+    H2  0x007637E0  HolsterAttach         line 29
+    H3  0x005DF926  HolsterSwap           line 51, mid-prologue (Holster.cpp:372)
+    H4  0x00863650  HolsterAnimResolve    line 64           (Holster.cpp:389)
+    H6  0x005047B0  HolsterGobUpdate      line 81
+    H7  0x00504EF5  HolsterPlace          line 98, mid-function
+    H8  0x00763B49  OnHandAttachR         line 117, mid-function
+    H9  0x00763E7B  OnHandAttachL         line 137, mid-function
+  None of H1..H9 touches 0x569320..0x569328.
+
+=== (6) Cheap filter inside the detour and PC or party resolution ===
+  Inside the detour, ECX = the server CSWSCreature*. No lookup needed. Server creature offsets:
+    +0x004  int  object id (ObId; CompanionAI.cpp:85)
+    +0x078  int  AI level (AI4; 4 = party/PC, forced at 0x5694D6; AIUpdate decomp line 78 reads param_1[0x1e])
+    +0x10E8 int  IsPC, ==1 for the PC (AIUpdate decomp line 244 reads param_1[0x43a]; repo: CompanionAI.cpp:90 CrIsPC, RangedAI.cpp:47, LevelUpOverride.cpp:2097 Sv_IsPC)
+    +0x11AC int  party flag, nonzero for party (CompanionAI.cpp:90 CrParty; decomp line 54/175/182 param_1[0x46b]; sole runtime writer 0x58A35E per AI4 #7)
+    +0x520  int  combat state (CrCombat, CompanionAI.cpp:90; decomp line 144 param_1[0x148])
+    +0x524  int  combat countdown (CrCombatExit, CompanionAI.cpp:459; decomp lines 148-152 param_1[0x149])
+    +0x528  int  hold guard (decomp line 151 param_1[0x14a]; countdown only decrements while ==0)
+    +0x11E8 char combat param_3 (decomp lines 145-149 (char)param_1[0x47a]; 0x563DA0(1,0,0) when ==1; 0x57A560(0,(char)+0x11E8,0) when countdown <1)
+    +0x0D0  dt, decomp param_1[0x34]
+  Confirmed in this pass (decomp lines 144-152): +0x520==1 gate, countdown -= dt only when +0x524>=1 and +0x528==0, else SetCombatState(0,+0x11E8,0). This matches S1.
+  Note: +0x11E8 and +0x528 have no named constant in the repo yet. +0x524 is named CrCombatExit (CompanionAI.cpp:459).
+  Cheap filter (2 loads): if (this[0x10E8]==1 || this[0x11AC]!=0) and this[0x04]==cachedPcServerId.
+  Caching the PC server id in the holster tick (outside the detour):
+    (a) Client path: G_App=[0xA1B4A4]; clientApp=[G_App+4]; list=FnClientList 0x0073FB90(clientApp); p=FnClientAt 0x007E5DA0(list,0); S=FnControlled 0x0077D800(p). See OPEN.
+    (b) Server path: objTable=[[0xA1B4A4]+8]; serverId=ClientToServerObjectId 0x0051C8B0(objTable, clientId) (thiscall RET 4; GameAddr.h:65); ServerIdMask 0x0099449C (server id = client id & ~mask); obj=FnGetGameObject 0x0051C0A0(objTable, serverId) (CompanionAI.cpp:72; DiversityAnimEngine.h:19).
+
+=== Verdict for the detour ===
+  Mechanically viable. 9-byte prologue window, boundary-aligned, no relative branches, no jumps into it, no other patch on it.
+  The handler can read or write memory before the body, so a write to +0x524 or +0x528 would take effect in the same AIUpdate pass (before the countdown at decomp lines 148-152).
+  Cost: fires for every creature in every level list each pass, so filter first.
+  S1 plan (b) (tick-side write of +0x524 with the PC server pointer) needs no detour. Use the detour only if the same-pass write is needed.
+
+=== OPEN (unresolved) ===
+  1. FnControlled 0x0077D800: GameAddr.h:36 says client party member -> SERVER CSWSCreature. CompanionAI.cpp:75 says "controlled creature". CompanionAI.cpp:350-355 and :984-985 compare its +0x04 directly with server ids (no mask), which fits the server reading. Needs one live probe. (Primary OPEN.)
+  2. Server loop cadence: is 0x533830 called per render frame or per fixed tick, and is there any pause gate beyond *(app+0x14)==0 and state==2?
+  3. Does the PC's own +0x11AC hold a nonzero party value? Unverified. Use +0x10E8 for PC identity.
+  4. Ghidra size 3850 (0x569320..0x57A22A) vs contiguous asm ending 0x56A22B. The body is non-contiguous. The prologue is unaffected.
+  5. ECX restore by the KPM wrapper is taken from repo precedent (H3, H4), not re-read in wrapper_x86.cpp (outside repo).
+  6. Install state of companion-ai E2 hook at 0x569A08 not checked.

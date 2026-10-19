@@ -1,4 +1,4 @@
-// Holster.cpp -- holster 0.1.5-dev (Steam build): P0 probe for the holstered-weapons mod (patch_manager_mods/42_holstered_weapons.md).
+// Holster.cpp -- holster 0.3.0-dev (Steam build): P0 probe for the holstered-weapons mod (patch_manager_mods/42_holstered_weapons.md).
 // Plan: .claude/plans/holstered_weapons.md. Handlers are plain extern "C" void __cdecl functions; the detour wrappers in
 // kotor2-steam-aspyr.hooks.toml call them at function entry with the game arguments BEFORE the stolen bytes run.
 // Hard rules for P0 (exceptions, both default off: the bone_test code patch, and HolsterPlace's 28-byte pose write with probe=1 bone_test=1 place=1): no other writes to game memory or registers, no engine calls, reads only through saferead, and every handler returns at
@@ -27,6 +27,9 @@
 #include "HolsterTune.h"
 #include "HolsterLogRate.h"
 #include "HolsterDrawGate.h"
+#include "HolsterToggle.h"
+#include "HolsterDelay.h"
+#include "Party.h"
 #include "HolsterPreview.h"
 #include "HolsterApi.h"
 #include "FileWatch.h"
@@ -42,6 +45,7 @@ KP_CHANNEL(chSwap, "swap");
 KP_CHANNEL(chAnim, "anim");
 KP_CHANNEL(chGob, "gob");
 KP_CHANNEL(chPlace, "place");
+KP_CHANNEL(chToggle, "toggle");   // 0.3.0-dev: TOGGLE / DELAY / HOSTILE lines (toggle key + shorter combat exit), probe=1 AND ch_toggle=1
 KP_CHANNEL(chEdit, "edit");   // k2.holster editor API (holster-editor patch): own line cap kEditLines, not max_lines
 
 // Fallback sink for an old core or a failed KpLog_Init. Stores the path and level only.
@@ -61,11 +65,23 @@ static inline bool drawgateMode() { return g_placeMode == hs::PlaceDrawgate; }
 // TODO(C2, Opus review C1 #8): this is ONE global bool, so one creature's flourish would draw every creature's weapons. C2 must make the window
 // per creature (keyed by the owner, like gate.owner) before any detour sets it.
 static bool g_flourishOpen = false;
+// Toggle-key draw hold (0.3.0-dev, HolsterDrawGate.h holdActive): the owner (client creature) whose weapons stay in the hand until g_holdUntil (GetTickCount ms,
+// wrap-safe). Written by the tick (g_holdUntil first, then g_holdOwner), read by HolsterPlace. 0 owner = no hold.
+static volatile uintptr_t g_holdOwner = 0;
+static volatile uint32_t g_holdUntil = 0;
+// Toggle key + shorter combat exit config (0.3.0-dev). Written once in readConfig; inert unless bone_test=1 AND place_mode=drawgate.
+static bool g_onToggle = false;                 // probe=1 AND ch_toggle=1: TOGGLE / DELAY / HOSTILE log lines
+static int g_toggleKey = 0x77;                  // toggle_key VK code (0x77 = F8); 0 = off
+static uint32_t g_drawHoldMs = 8000;            // draw_hold_ms; 0 = hold until the next press
+static hs::DelayCfg g_delayCfg;                 // combat_exit_ms / flourish_exit_ms (0 = off)
+static float g_hostileRange = 30.0f;            // hostile_range (hull-gap metres)
+static uint32_t g_hostileBackoffMs = 1000;      // hostile_backoff_ms
+static bool g_delayParty = true;                // delay_party: 1 = every party member, 0 = controlled creature only
 // Config warnings found before KpLog_Init (readConfig runs first): flushed once by KPatchInit.
-static char g_cfgWarn[4][120];
+static char g_cfgWarn[8][120];
 static int g_cfgWarnN = 0;
 static void cfgWarn(const char* key, const char* val, const char* why) {
-    if (g_cfgWarnN < 4) snprintf(g_cfgWarn[g_cfgWarnN++], sizeof g_cfgWarn[0], "ini %.40s=%.40s ignored: %s", key, val, why);
+    if (g_cfgWarnN < 8) snprintf(g_cfgWarn[g_cfgWarnN++], sizeof g_cfgWarn[0], "ini %.40s=%.40s ignored: %s", key, val, why);
 }
 static bool g_editor = true;            // editor=0: RegisterPreview refuses and the preview fast path never runs (no probe needed)
 static char g_boneName[32] = "pelvis_g";              // attach node name; its ADDRESS becomes the push immediate, so it must stay static
@@ -82,7 +98,7 @@ static volatile LONG g_placeCalls = 0;   // PLACE lines: first 24 placements, th
 static volatile LONG g_animPerId[0x100] = {};   // ANIMRES lines per id 0x27xx: ids resolve every frame (run 2: 0x2711 x3976, 0x2718 x1900), cap each at 20
 
 // saferead site tags (failure ring only).
-static const unsigned kSiteComb = 0xE70010u, kSiteAttach = 0xE70020u, kSiteSwap = 0xE70030u, kSiteAnim = 0xE70040u, kSiteGob = 0xE70050u, kSitePlace = 0xE70060u;
+static const unsigned kSiteComb = 0xE70010u, kSiteAttach = 0xE70020u, kSiteSwap = 0xE70030u, kSiteAnim = 0xE70040u, kSiteGob = 0xE70050u, kSitePlace = 0xE70060u, kSiteTick = 0xE70070u;
 
 static inline unsigned U(const void* p) { return static_cast<unsigned>(reinterpret_cast<uintptr_t>(p)); }
 
@@ -214,7 +230,7 @@ static bool readFileText(const char* path, std::string& out) {
 
 static void readConfig() {
     hs::TuneCfg tune;
-    bool probe = false, boneTest = false, boneLeft = true, comb = false, attach = false, swap = false, anim = false, gob = false, place = false;
+    bool probe = false, boneTest = false, boneLeft = true, comb = false, attach = false, swap = false, anim = false, gob = false, place = false, toggle = false;
     FILE* f = fopen("holster.ini", "r");
     if (f) {
         char line[256];
@@ -251,6 +267,42 @@ static void readConfig() {
             else if (!_stricmp(key, "ch_anim")) anim = flagValue(val);
             else if (!_stricmp(key, "ch_gob")) gob = flagValue(val);
             else if (!_stricmp(key, "ch_place")) place = flagValue(val);
+            else if (!_stricmp(key, "ch_toggle")) toggle = flagValue(val);
+            else if (!_stricmp(key, "toggle_key")) {
+                int k = 0;
+                if (hs::parseKey(val, &k)) g_toggleKey = k;
+                else cfgWarn(key, val, "not a key code 0..0xFE (decimal or 0x hex), keeping the default 0x77");
+            }
+            else if (!_stricmp(key, "draw_hold_ms")) {
+                char* end = nullptr;
+                const long v = strtol(val, &end, 10);
+                if (end != val && *end == 0) g_drawHoldMs = hs::clampDrawHold(v);
+                else cfgWarn(key, val, "not a number, keeping the default 8000");
+            }
+            else if (!_stricmp(key, "combat_exit_ms") || !_stricmp(key, "flourish_exit_ms")) {
+                char* end = nullptr;
+                const long v = strtol(val, &end, 10);
+                if (end == val || *end != 0) { cfgWarn(key, val, "not a number, keeping the default 1500"); continue; }
+                if (!_stricmp(key, "combat_exit_ms")) g_delayCfg.combatExitMs = hs::clampExitMs(v);
+                else g_delayCfg.flourishExitMs = hs::clampExitMs(v);
+            }
+            else if (!_stricmp(key, "hostile_range")) {
+                char* end = nullptr;
+                const float v = strtof(val, &end);
+                if (end != val && *end == 0 && v == v) g_hostileRange = v < 5.0f ? 5.0f : (v > 60.0f ? 60.0f : v);
+                else cfgWarn(key, val, "not a number, keeping the default 30.0");
+            }
+            else if (!_stricmp(key, "hostile_backoff_ms")) {
+                char* end = nullptr;
+                const long v = strtol(val, &end, 10);
+                if (end != val && *end == 0) g_hostileBackoffMs = static_cast<uint32_t>(v < 250 ? 250 : (v > 5000 ? 5000 : v));
+                else cfgWarn(key, val, "not a number, keeping the default 1000");
+            }
+            else if (!_stricmp(key, "delay_party")) {
+                bool b = true;
+                if (hs::tuneParseBool(val, b)) g_delayParty = b;
+                else cfgWarn(key, val, "not a boolean word, keeping the default 1");
+            }
             else if (!_stricmp(key, "editor")) g_editor = flagValue(val);
             else if (!_stricmp(key, "log_verbose")) g_logVerbose = flagValue(val);
             else if (!_stricmp(key, "place_gobvt")) {
@@ -281,6 +333,7 @@ static void readConfig() {
     g_onAnim = probe && anim;
     g_onGob = probe && gob;
     g_onPlace = probe && place;
+    g_onToggle = probe && toggle;
     tune.bootBoneIdx = hs::boneIndexOf(g_boneName);   // 0 = custom bone_name (not one of the five editor bones)
     publishTune(tune);
 }
@@ -439,6 +492,196 @@ static void maybeReload() {
     InterlockedExchange(&g_reloadBusy, 0);
 }
 
+// ---- 0.3.0-dev: toggle key (draw / stow) + shorter post-combat exit (doc 42; research/holstered_weapons/keybind/S2_design.txt). ----
+// Tick-side only (called from HolsterGobUpdate, no AIUpdate detour). Inert unless bone_test=1 AND place_mode=drawgate. Every read goes through saferead;
+// the only writes are the draw-hold statics and server +0x524 (aligned dword, probeWrite first). Unreadable / unknown state never cuts and never writes.
+struct PartyCache {
+    uintptr_t cli[3];   // client creatures, party::member(table, i); slot 0 = controlled
+    uintptr_t srv[3];   // server creatures, party::serverCreature(cli); 0 = unusable slot
+    uint32_t id[3];     // server +0x04 object id (rejects a recycled address)
+    int n;
+};
+static PartyCache g_party = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, 0};
+static hs::Throttle g_delayThrottle[3];
+static hs::KeyCounts<8> g_tickKeys;
+
+static bool tickDue(DWORD& last, DWORD now, int32_t ms) {
+    if (static_cast<int32_t>(now - last) < ms) return false;
+    last = now;
+    return true;
+}
+
+static bool tickLogOk() { return g_onToggle && KP_ENABLED(chToggle, KPLOG_INFO) && takeLine(); }
+
+// Same 5 lines as companion_selfheal_src/CompanionSelfHeal.cpp foreground(): the game process owns the foreground window.
+static bool winForeground() {
+    HWND w = GetForegroundWindow();
+    DWORD pid = 0;
+    if (!w) return false;
+    GetWindowThreadProcessId(w, &pid);
+    return pid == GetCurrentProcessId();
+}
+
+// Aligned dword write into the game's memory, only when VirtualQuery says the page is committed and writable.
+static bool writeU32Safe(unsigned site, uintptr_t base, int off, uint32_t v) {
+    void* const p = reinterpret_cast<void*>(base + static_cast<uintptr_t>(off));
+    if (base == 0 || !saferead::probeWrite(site, p, sizeof(uint32_t))) return false;
+    *reinterpret_cast<volatile uint32_t*>(p) = v;
+    return true;
+}
+
+static void refreshParty() {
+    saferead::beginScope();
+    PartyCache p = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, 0};
+    const uintptr_t t = party::table();
+    if (t) {
+        int n = party::partyCount(t);
+        if (n > 3) n = 3;
+        for (int i = 0; i < n; ++i) {
+            const uintptr_t cli = party::member(t, i);
+            if (!cli) break;
+            p.cli[i] = cli;
+            p.n = i + 1;
+            const uintptr_t srv = party::serverCreature(cli);
+            uint32_t id = 0;
+            if (srv && rdU32Ok(kSiteTick, srv, 0x04, &id)) { p.srv[i] = srv; p.id[i] = id; }
+        }
+    }
+    g_party = p;
+}
+
+// Engine nearest-enemy scan: CSWSCreature::GetNearestEnemy 0x0057C990 (Ghidra name), thiscall(self = server creature; float range, int exclude, int ref) RET 0xC.
+// Guards from S2 sec 2 (a null deref inside crashes): [S+0x380] != 0 and [[S+0x380]+8] readable. Returns false when the scan could not run (guards,
+// GOG table, null creature); then *hostile is untouched and the caller fails closed. The first 20 call durations are logged (QueryPerformanceCounter).
+static bool hostileScan(uintptr_t S, bool* hostile) {
+    using NearestFn = int(__thiscall*)(uintptr_t self, float range, int exclude, int ref);
+    if (!S || k2addr::off(&K2AddrTable::Creature_ClientCombat) == 0) return false;   // Steam table only (GOG offset is 0)
+    uint32_t pi = 0, f = 0;
+    if (!rdU32Ok(kSiteTick, S, 0x380, &pi) || pi == 0 || !rdU32Ok(kSiteTick, pi, 8, &f)) return false;
+    static volatile LONG s_calls = 0;
+    const bool timed = g_onToggle && s_calls < 20;
+    LARGE_INTEGER t0 = {}, t1 = {}, fq = {};
+    if (timed) { QueryPerformanceCounter(&t0); QueryPerformanceFrequency(&fq); }
+    const int r = reinterpret_cast<NearestFn>(static_cast<uintptr_t>(0x0057C990))(S, g_hostileRange, 0x7F000000, 0x7F000000);
+    *hostile = r != 0x7F000000 && r != 0;
+    if (timed) {
+        QueryPerformanceCounter(&t1);
+        const LONG c = InterlockedIncrement(&s_calls);
+        if (c <= 20 && fq.QuadPart > 0 && tickLogOk())
+            KP_LOG(chToggle, "HOSTILE call=%ld srv=%x range=%.1f result=%x dur_us=%lld", static_cast<long>(c), U(reinterpret_cast<void*>(S)), static_cast<double>(g_hostileRange),
+                   static_cast<unsigned>(r), static_cast<long long>((t1.QuadPart - t0.QuadPart) * 1000000LL / fq.QuadPart));
+    }
+    saferead::beginScope();   // engine code ran: cached region answers may be stale
+    return true;
+}
+
+// Feature B: per cached party slot, cut the post-combat countdown (server +0x524 = 0) once the gate says enough time has elapsed and no hostile is near.
+static void runDelay(DWORD now) {
+    const int combatOff = k2addr::off(&K2AddrTable::Creature_ClientCombat);
+    if (combatOff == 0) return;
+    saferead::beginScope();
+    static bool s_warned = false;
+    const int slots = g_delayParty ? g_party.n : (g_party.n > 0 ? 1 : 0);
+    for (int i = 0; i < slots; ++i) {
+        const uintptr_t S = g_party.srv[i], C = g_party.cli[i];
+        if (!S || !C) continue;
+        uint32_t id = 0, p520 = 0, p524 = 0, p528 = 0, p11E8 = 0, combat = 0;
+        const bool srvOk = rdU32Ok(kSiteTick, S, 0x04, &id) && id == g_party.id[i] && rdU32Ok(kSiteTick, S, 0x520, &p520) && rdU32Ok(kSiteTick, S, 0x524, &p524) &&
+                           rdU32Ok(kSiteTick, S, 0x528, &p528) && rdU32Ok(kSiteTick, S, 0x11E8, &p11E8);
+        const bool cliOk = rdU32Ok(kSiteTick, C, combatOff, &combat);
+        if (!srvOk || !cliOk) {
+            if (!s_warned) {
+                s_warned = true;
+                KP_LOGV(chMain, KPLOG_WARN, "DELAY slot=%d fields unreadable (srv=%d cli=%d): no cut (this WARN is logged once)", i, srvOk ? 1 : 0, cliOk ? 1 : 0);
+            }
+            continue;
+        }
+        hs::DelayIn in;
+        in.plus520 = p520;
+        in.plus524 = static_cast<int32_t>(p524);
+        in.plus528 = p528;
+        in.plus11E8 = p11E8;
+        in.clientCombat = combat;
+        in.clientKnown = true;
+        in.serverReadable = true;
+        const hs::DelayAct a = hs::delayGate(in, g_delayCfg);
+        if (a != hs::DelayNeedHostileCheck || !g_delayThrottle[i].due(now)) continue;
+        bool hostile = false;
+        if (!hostileScan(S, &hostile)) {   // scan could not run: fail closed, retry after the back-off
+            g_delayThrottle[i].backoff(now, g_hostileBackoffMs);
+            continue;
+        }
+        if (!hs::shouldCut(a, hostile)) { g_delayThrottle[i].backoff(now, g_hostileBackoffMs); continue; }
+        const int32_t before = in.plus524;
+        const int elapsed = hs::elapsedMs(before);
+        const bool wrote = writeU32Safe(kSiteTick, S, 0x524, 0u);
+        if (!wrote) g_delayThrottle[i].backoff(now, g_hostileBackoffMs);
+        if (hs::keyedWant(hs::keyBump(g_tickKeys, S), 20, 10) && tickLogOk())
+            KP_LOG(chToggle, "DELAY slot=%d cut before=%d elapsed=%d kind=%s wrote=%d", i, before, elapsed, combat != 0 ? "combat" : "flourish", wrote ? 1 : 0);
+    }
+}
+
+// Feature A: a rising edge of the toggle key. Draw = timed per-owner hold (g_holdOwner/g_holdUntil, read by HolsterPlace); Stow = clear the hold and, in
+// combat, end the countdown. The explicit press ignores +0x528 (S2 sec 2, C2).
+static void runToggle(DWORD now) {
+    refreshParty();
+    const bool ready = g_party.n > 0 && g_party.cli[0] != 0;
+    const uintptr_t cli0 = ready ? g_party.cli[0] : 0, srv0 = ready ? g_party.srv[0] : 0;
+    const int combatOff = k2addr::off(&K2AddrTable::Creature_ClientCombat);
+    saferead::beginScope();
+    uint32_t combat = 0;
+    const bool known = ready && combatOff != 0 && rdU32Ok(kSiteTick, cli0, combatOff, &combat);
+    const bool holdOn = ready && hs::holdActive(cli0, g_holdOwner, g_holdUntil, now);
+    bool hostile = false;
+    if (ready && known && (holdOn || combat != 0)) {
+        bool h = false;
+        hostile = hostileScan(srv0, &h) ? h : true;   // scan could not run: treat as hostile, the stow is refused
+    }
+    hs::ToggleIn in;
+    in.ready = ready;
+    in.holdOn = holdOn;
+    in.clientCombat = combat;
+    in.combatKnown = known;
+    in.hostileNear = hostile;
+    const hs::ToggleAct act = hs::toggleDecide(in);
+    const bool log = hs::keyedWant(hs::keyBump(g_tickKeys, 1), 200, 10);
+    if (log && tickLogOk())
+        KP_LOG(chToggle, "TOGGLE edge act=%d key=0x%x holdOn=%d combat=%u hostile=%d cli0=%x srv0=%x ready=%d known=%d", static_cast<int>(act), static_cast<unsigned>(g_toggleKey),
+               holdOn ? 1 : 0, static_cast<unsigned>(combat), hostile ? 1 : 0, U(reinterpret_cast<void*>(cli0)), U(reinterpret_cast<void*>(srv0)), ready ? 1 : 0, known ? 1 : 0);
+    if (act == hs::ToggleDraw) {
+        g_holdUntil = now + (g_drawHoldMs ? g_drawHoldMs : 0x7FFFFFFFu);   // deadline first, then the owner
+        g_holdOwner = cli0;
+        if (log && tickLogOk()) KP_LOG(chToggle, "TOGGLE draw owner=%x hold_ms=%u", U(reinterpret_cast<void*>(cli0)), static_cast<unsigned>(g_drawHoldMs));
+    } else if (act == hs::ToggleStow) {
+        g_holdUntil = now;
+        bool wrote = false;
+        uint32_t before = 0;
+        if (combat != 0 && srv0 && rdU32Ok(kSiteTick, srv0, 0x524, &before)) wrote = writeU32Safe(kSiteTick, srv0, 0x524, 0u);
+        if (log && tickLogOk()) KP_LOG(chToggle, "TOGGLE stow owner=%x combat=%u cut=%d before=%d", U(reinterpret_cast<void*>(cli0)), static_cast<unsigned>(combat), wrote ? 1 : 0, static_cast<int>(before));
+    } else if (log && tickLogOk()) {
+        KP_LOG(chToggle, "TOGGLE %s", act == hs::ToggleRefused ? "refused" : "none");
+    }
+}
+
+static void holsterTick() {
+    if (!g_boneTest || !drawgateMode()) return;
+    const bool keyOn = g_toggleKey != 0;
+    const bool delayOn = g_delayCfg.combatExitMs > 0 || g_delayCfg.flourishExitMs > 0;
+    if (!keyOn && !delayOn) return;
+    static volatile LONG s_busy = 0;
+    if (InterlockedCompareExchange(&s_busy, 1, 0) != 0) return;   // never re-enter (e.g. from inside an engine call)
+    static DWORD s_partyAt = 0, s_delayAt = 0, s_keyAt = 0;
+    static hs::KeyEdge s_edge;
+    const DWORD now = GetTickCount();
+    if (tickDue(s_partyAt, now, 250)) refreshParty();
+    if (delayOn && tickDue(s_delayAt, now, 100)) runDelay(now);
+    if (keyOn && tickDue(s_keyAt, now, 16)) {
+        const bool down = winForeground() && (GetAsyncKeyState(g_toggleKey) & 0x8000) != 0;
+        if (s_edge.update(down)) runToggle(now);
+    }
+    InterlockedExchange(&s_busy, 0);
+}
+
 // 0x005047B0 behavior update handler (UpdateDependentPosition). C1 recon (.claude/research/holster_c1_postcopy.md): ECX is the CAurBehaviorAttach
 // object, NOT the Gob. Child Gob = [this+0x10], attach node N = [this+0x18], name-lookup parent = [this+0x14]. The handler calls
 // N->vtbl[+0xC](gob+0xA4, gob+0xB0), which re-copies the node transform into the child. Runs per delivered event: count every call, log the
@@ -448,6 +691,7 @@ extern "C" void __cdecl HolsterGobUpdate(void* beh) {
         static volatile LONG s_tid = 0;
         if (InterlockedCompareExchange(&s_tid, 1, 0) == 0) KP_LOG(chMain, "TID gobupdate=%lu", static_cast<unsigned long>(GetCurrentThreadId()));
         maybeReload();
+        holsterTick();   // 0.3.0-dev: toggle key + shorter combat exit (inert unless bone_test=1 and place_mode=drawgate)
     }
     if (!g_onGob) return;
     const LONG n = InterlockedIncrement(&g_gobCalls);
@@ -808,6 +1052,7 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
     handMapLog(reinterpret_cast<uintptr_t>(gob));
     if (previewPlace(reinterpret_cast<uintptr_t>(gob), reinterpret_cast<uintptr_t>(beh))) return;
     if (!g_probe) return;
+    holsterTick();   // per frame per weapon Gob (H7); HolsterGobUpdate (H6) only fires on attach events, so the key poll and delay tick must also run here (s_busy + tickDue throttle it)
     static volatile LONG s_tid = 0;
     if (InterlockedCompareExchange(&s_tid, 1, 0) == 0) KP_LOG(chMain, "TID place=%lu", static_cast<unsigned long>(GetCurrentThreadId()));
     previewProbe(reinterpret_cast<uintptr_t>(gob), reinterpret_cast<uintptr_t>(beh));
@@ -905,7 +1150,7 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
         const int combatOff = k2addr::off(&K2AddrTable::Creature_ClientCombat);
         uint32_t combat = 0;
         const bool readable = owner != 0 && combatOff != 0 && rdU32Ok(kSitePlace, owner, combatOff, &combat);
-        const bool hip = hs::shouldWriteHip(true, readable, combat, g_flourishOpen);
+        const bool hip = hs::shouldWriteHip(true, readable, combat, g_flourishOpen || hs::holdActive(owner, g_holdOwner, g_holdUntil, GetTickCount()));
         if (hs::gateUpdate(ent->gate, owner, hip)) {
             ent->seq = -1;   // state flip or new owner: the resolved placement is redone
             gateLog(g, owner, readable, combat, hip, ent->left);
@@ -1304,12 +1549,16 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     addName(names, sizeof(names), g_onAnim, "anim");
     addName(names, sizeof(names), g_onGob, "gob");
     addName(names, sizeof(names), g_onPlace, "place");
-    KP_LOG(chMain, "holster 0.2.0-dev loaded (P0 probe, log-only): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_probe ? 1 : 0,
+    addName(names, sizeof(names), g_onToggle, "toggle");
+    KP_LOG(chMain, "holster 0.3.0-dev loaded (P0 probe, log-only): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_probe ? 1 : 0,
            names[0] ? names : "none", static_cast<long>(g_maxLines), g_gobEvery, k2addr::get() ? "ok" : "none");
     {
         hs::TuneCfg t;
         LONG seq = 0;
         (void)loadTuneIfChanged(t, seq);
+        KP_LOG(chMain, "CONFIG toggle_key=0x%x draw_hold_ms=%u combat_exit_ms=%d flourish_exit_ms=%d hostile_range=%.1f hostile_backoff_ms=%u delay_party=%d (active=%d: needs probe=1, bone_test=1 and place_mode=drawgate)",
+               static_cast<unsigned>(g_toggleKey), static_cast<unsigned>(g_drawHoldMs), g_delayCfg.combatExitMs, g_delayCfg.flourishExitMs, static_cast<double>(g_hostileRange),
+               static_cast<unsigned>(g_hostileBackoffMs), g_delayParty ? 1 : 0, (g_boneTest && drawgateMode()) ? 1 : 0);
         KP_LOG(chMain, "PLACEMODE %s (active=%d: needs probe=1 and bone_test=1)", hs::placeModeName(g_placeMode), g_boneTest ? 1 : 0);
         KP_LOG(chMain, "CONFIG left_extra_rot=%.1f bone_test_left=%d (ini=%d, active=%d: needs probe=1 and bone_test=1) log_verbose=%d", static_cast<double>(t.leftExtra),
                g_boneLeftCfg ? 1 : 0, g_boneLeftCfg ? 1 : 0, g_boneLeft ? 1 : 0, g_logVerbose ? 1 : 0);

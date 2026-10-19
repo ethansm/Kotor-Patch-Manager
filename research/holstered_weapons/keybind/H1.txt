@@ -1,0 +1,59 @@
+H1 - ICPC key-conflict rule and free default keys (static, Steam swkotor2.exe 6a522e71)
+Scope: read-only. Dumps: ~/Games/KOTOR2_Mod_Workspace/ghidra_dumps/steam_6a522e71/decomp/{72,78,45}/ (.asm and .c). Table: K4_keymap_2da.txt.
+Tags: V = verified this pass in asm or exe bytes. G = inferred, not proven.
+
+=== 1. Context index and string (V) ===
+- 0x0099F568 = bytes "ICPC\0" (read from swkotor2_vanilla_6a522e71.exe, file offset 0x59E168). strings.tsv does not list this address, so this is a raw read.
+- Loader 0x785DF0 pass 3a (ids 200..269, ascending) maps ctx 0..5 to the 2DA columns ICPC, ICMiniGame, ICPCGUI, ICDialog, ICFreeLook, ICMovie. Each ctx is bound via 0x72F8F0(id, ctx) only when the cell is nonzero, Disabled != 1, and table[id] exists (0x72FD10).
+- Pass 3b (ids 0x118..0x11E = 280..286) repeats the same ctx loop.
+
+=== 2. The rule (V, asm) ===
+0x72B830 bind(mgr, id, ctx): returns 0 (refused, nothing changes) when:
+  a. ctx >= 6, or table[id] == NULL.
+  b. bit id already set in the ctx bitmask (0x72B3E0 != 0).
+  c. key1 = entry+0x1C != 0x86 AND 0x72B300(mgr, key1, device=entry+0x18, ctx) != 0.
+  d. vfunc1(entry) != 0 AND key2 = entry+0x30 != 0x86 AND 0x72B300(mgr, key2, device, ctx) != 0.
+  On success: entry+8 += 1, entry is added to the registry list for (ctx, device) at mgr+ctx*0x40+0x14+device*4 (device -1 uses entry+0x10 instead), and the ctx bit is set.
+
+0x72B300 conflict scan (V): returns 0 at once if key >= 0x86, device not in 0..9, or ctx not in 0..5.
+  Otherwise it walks the registry list for (ctx, device) and returns the first registered entry S where S.key1 == key, or (vfunc1(S) != 0 AND S.key2 == key).
+  Decompile note: the .c shows FUN_0072b300(piVar2[7], piVar2[6], param_3). The asm shows ECX=mgr and 3 pushes (key, device, ctx), so the .c first argument is not the this pointer.
+
+Consequences for ICPC (ctx 0):
+  - Key K is refused for row R iff K < 0x86, R's device is 0, and an already-registered ICPC row on device 0 has key1 == K. Only one entry per key can sit in the list, so the first registrant wins. List order does not change this.
+  - Registration order: (1) literal id 80 (0x50) registers ctx 0 with key 38 (DAT_0099C934 = 38) in the literal block around 0x785DF0 L176-181, before any 2DA row; (2) ids 200..269 ascending; (3) ids 280..286.
+  - Every 2DA row (200..269, 280..286) is built on device DAT_0099C884 = 0 (V). So all K4 rows share the same ICPC list.
+  - Types 0/1 (all 200..269 rows) use the base vtable 0x99C7EC. Its vfunc1 = 0x4558A0 = "return 0" (V). So the key2 branch never fires for them. Key2 only matters for type 3/4 objects (280..286 A/B pairs, 0x785DF0 L567-569); their vtable was not checked.
+  - Loader pass 2 has a "claimed key" array local_430[256] (0x785DF0 L140, L267, L372/414/567). It is memset to 0 and never written (V), so the load-time key check is a no-op. The only key-conflict check is inside 0x72B830 at ICPC bind time.
+  - A refused row keeps its table entry, its ini value, and its other ctx bindings. It is only missing the ctx-0 bit, so it is not polled in ICPC (G: no code path removes the entry).
+  - Correction to S1 "G: no other action already bound in that context": the scope is same ctx AND same device, earlier registrants only, and key2 only when vfunc1 != 0.
+
+=== 3. Code census from K4 (V by script over 81 rows) ===
+- ICPC-enabled codes (icpc=1, Disabled!=1; 43 rows): 24,25,28,29,30,31,42,43,51-63,65-83,87,89,90.
+- Taken but NOT in K4: 38 (literal id 80, ICPC). Do not use 38.
+- Only in disabled ICPC rows (not registered, but vanilla hard-wired defaults, G): 12,14,16,18 (keypad 2/4/6/8, ActionMenu*), 21 (Del), 23 (+), 39,40,41,44 (F1,F2,F3,F6 hotbar page keys), 88 (Enter).
+- Enabled but non-ICPC rows (registered on device 0 in other ctx): 7,8,9,10 (arrows, MG ctx1, action285a/b, 286a/b), 84,85 (digits 8/9, Dialog8/9, ctx3).
+- In no K4 row: 11,13,15,17,19,20,22,26,27,32-37,45-50,64,86, and 91+.
+- Letter check (V): A..Z = 51..76 contiguous except N. So N = 64 (G, deduced).
+- Function keys (V): F1..F6 = 39..44, so F7..F12 = 45..50 (G, deduced).
+- Digits (V): '1'..'9' = 77..85, so '0' = 86 (G, deduced; number row, excluded).
+
+=== 4. Five picks (free in ICPC, not WASD/QE/number row) ===
+  1. 64 = N. No row cites it. Only free letter. Acceptance: UNPROVEN (G).
+  2. 45 = F7. No row cites it. Acceptance: UNPROVEN (G).
+  3. 46 = F8. No row cites it. Acceptance: UNPROVEN (G).
+  4. 47 = F9. No row cites it. Acceptance: UNPROVEN (G).
+  5. 48 = F10. No row cites it. Acceptance: UNPROVEN (G).
+  Rejected: 50 (F12, Steam screenshot default, G); 38 (taken); disabled-row keys (vanilla hard-wired, G); 84/85 (number row); 7-10 (arrows = vanilla MoveForward/Back/Strafe keys, G clash risk).
+  Only codes with definite engine acceptance (cited enabled rows) are 7-10, 84, 85, which are the rejected ones. The 5 picks are "free", not "proven accepted".
+
+=== 5. Holster row placement note (V registration order) ===
+  - A new 2DA row at id 266, 267, or 269 registers in pass 3a after 200..265 and before 268. Its key only needs to avoid the ICPC codes above.
+  - Rows 280..286 register in pass 3b, later. They are already in the ICPC code set, so the picks above do not collide with them.
+
+=== 6. Open (not resolved here) ===
+  - Device 0 = keyboard is inferred from the key codes, not from the input manager.
+  - No key-name table was found in strings.tsv, so the names of codes 11..37 are unknown.
+  - Whether the input path accepts a code with no row (N, F7-F10) is not proven. In-game check needed.
+  - Whether vanilla reads F7-F10 or N directly, outside the keymap, is unknown.
+  - vfunc1 of the type-4 vtable was not checked (affects 280..286 key2 only).

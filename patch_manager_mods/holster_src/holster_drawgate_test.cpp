@@ -162,6 +162,29 @@ static void testHandFromNode() {
     KT_CHECK(!handFromNode(false, "pelvis_g", HandNone, false));
 }
 
+static void testHoldActive() {
+    const uintptr_t o = 0xB924540;
+    KT_CHECK(holdActive(o, o, 5000, 4000));          // active
+    KT_CHECK(holdActive(o, o, 5000, 4999));          // last ms
+    KT_CHECK(!holdActive(o, o, 5000, 5000));         // expired exactly at the deadline
+    KT_CHECK(!holdActive(o, o, 5000, 9000));         // expired
+    KT_CHECK(!holdActive(0xAD5F938, o, 5000, 4000)); // other owner
+    KT_CHECK(!holdActive(0, o, 5000, 4000));         // owner unreadable
+    KT_CHECK(!holdActive(o, 0, 5000, 4000));         // no hold set
+    KT_CHECK(!holdActive(0, 0, 5000, 4000));         // both zero never matches
+    // Wrap-around: the deadline lands just after the 32-bit tick rollover.
+    const uint32_t until = 0xFFFFFFF0u + 100u;       // == 0x54
+    KT_CHECK(until == 0x54u);
+    KT_CHECK(holdActive(o, o, until, 0xFFFFFFF0u));  // before the rollover
+    KT_CHECK(holdActive(o, o, until, 0xFFFFFFFFu));
+    KT_CHECK(holdActive(o, o, until, 0u));           // after the rollover, still ahead
+    KT_CHECK(holdActive(o, o, until, 0x53u));
+    KT_CHECK(!holdActive(o, o, until, 0x54u));       // expired
+    KT_CHECK(!holdActive(o, o, until, 0x1000u));
+    // Deadline just before the rollover, now already past it: expired.
+    KT_CHECK(!holdActive(o, o, 0xFFFFFFF0u, 0x10u));
+}
+
 int main() {
     testTruthTable();
     testPlaceMode();
@@ -171,5 +194,6 @@ int main() {
     testPoseBaseEqual();
     testIsWeaponModel();
     testHandFromNode();
+    testHoldActive();
     return kt::Report("holster_drawgate");
 }

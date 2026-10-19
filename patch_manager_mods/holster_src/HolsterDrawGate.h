@@ -6,6 +6,7 @@
 //   GateState        per placement-cache entry: owner + hip/drawn state; gateUpdate reports a change so the entry's resolved placement is dropped
 //   isWeaponModel    drawgate target filter: the Gob's model name starts with "w_" (weapon models); anything else on a hand node is left alone
 //   handFromNode     which hand a placement entry is: drawgate = the attach node name (lhand => left); repoint = the old sticky ring resolve
+//   holdActive       toggle-key draw hold: owner matches the hold owner and holdUntil (ms tick, wrap-safe) is still in the future
 //   poseBaseEqual    tolerance compare of two world poses (mountPose(pelvis_g) base vs the old pelvis attach-node base)
 // Failure mode rule: anything unreadable (owner null, combat flag unreadable) is treated as DRAWN, so the weapon is never stuck on the hip.
 #pragma once
@@ -41,6 +42,12 @@ inline const char* placeModeName(PlaceMode m) { return m == PlaceDrawgate ? "dra
 inline bool shouldWriteHip(bool drawgate, bool ownerReadable, uint32_t combatFlag, bool flourishOpen) {
     if (!drawgate) return true;
     return ownerReadable && combatFlag == 0 && !flourishOpen;
+}
+
+// Toggle-key draw hold (holster toggle key). True while `owner` is the creature the hold was set for and the hold deadline is still ahead of `now`.
+// All tick math is wrap-safe (signed 32-bit difference). holdOwner 0 = no hold. Does not affect shouldWriteHip; the caller ORs it in as "drawn".
+inline bool holdActive(uintptr_t owner, uintptr_t holdOwner, uint32_t holdUntil, uint32_t now) {
+    return holdOwner != 0 && owner == holdOwner && static_cast<int32_t>(holdUntil - now) > 0;
 }
 
 // Attach-node name HolsterPlace accepts. Repoint: the configured bone_name (the engine attached the weapon there). Drawgate: the native hand nodes,

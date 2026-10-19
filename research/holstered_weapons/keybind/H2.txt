@@ -1,0 +1,129 @@
+H2 - Key Mapping row label: how keymap.2da ActionStrRef becomes visible text
+Static only (Steam swkotor2.exe 6a522e71, dumps in ~/Games/KOTOR2_Mod_Workspace/ghidra_dumps/steam_6a522e71/). Read-only.
+Tags: V = read in asm/decomp this pass. G = guess. OPEN = not resolved.
+Anchors: "asm 0xADDR" = decomp/<2-hex-after-00>/<addr>.asm in the dump dir.
+
+=== 0. SHORT ANSWER ===
+- Label text path: 2DA ActionStrRef -> TLK fetch 0x71D970 -> stored in row+0x178 by setter 0x416E30.
+- (a) Fetch = 0x71DEE0 -> 0x71DF90 -> 0x71D970 (global TLK object at [0x00A1B4B0]).
+      strref >= table count -> "" (empty, no crash). strref 0 -> TLK entry 0 text "Bad StrRef".
+      strref -1 -> "". In-range entry whose text runs past EOF -> the decimal strref digits.
+- (b) 0x83EA60 append is UNBOUNDED (doubling realloc, no cap). The real row cap is the id loops in 0x900D40: 84 candidates.
+- (c) No literal-string column. 0x901D70 reads no label column besides ActionStrRef/DescStrRef. Key names come from key code, not the 2DA.
+- (d) Repo: no mod manifest or source writes dialog.tlk. A script does: scripts/append_ranged_kite_tlk.py (appends 2 TLK entries, applied).
+      Only one TLK file exists on disk (dialogf.tlk absent). High custom strrefs = append to root dialog.tlk.
+
+=== 1. CALL CHAIN, ActionStrRef -> visible text (V) ===
+1) Row builder 0x900940 -> 0x901D70 (2215 B, thiscall, RET 4). Row object = CSWGuiKeyMapButton (K1 section 2).
+2) ActionStrRef read: CALL 0x71BAD0(2DA, "ActionStrRef", &int) at asm 0x901DEE. Out is an int strref.
+3) Fetch of the label (asm 0x9023EB..0x9023FB):
+     ECX = [0x00A1B4B0]            global TLK object
+     push strref; push &tmp        (tmp = CExoString)
+     CALL 0x71DEE0                 thiscall, RET 8, returns tmp ptr in EAX
+4) 0x71DEE0 (161 B): CALL 0x71DF90(TLK, &tmp, strref, gender=0), then copies tmp out via 0x7335F0.
+5) 0x71DF90 (124 B, RET 0xC): stores gender at TLK+0x3C (clamped to 0/1), CALL 0x71D970(strref, out).
+6) 0x71D970 (1387 B) = the TLK fetch. Semantics in section 2.
+7) Store (asm 0x902407): ECX = row+0x178; push tmp; CALL 0x416E30.
+     0x416E30 (103 B, RET 4): copies the CExoString via 0x7337C0, sets [obj+8] = -1 (strref cleared, literal text), then
+     calls obj+0x50 vfunc refresh if present. So row+0x178 = plain text of the ActionStrRef entry.
+8) Key-button text, separate object (asm 0x90241E..0x9025F2):
+     - unbound path: tmp = TLK 48724 "None Set" (fetch at asm 0x90241E, copied into the same tmp at 0x902443).
+     - bound path: 0x72F9B0(row+0x3A8 action id, -1) -> binding entry; key code = entry+0x1C -> 0x741300 -> key-name text -> tmp.
+     - final (asm 0x9025E2..0x9025F2): ECX = row+0x34C; push tmp; CALL 0x416E30.
+     => action label text lives at row+0x178. Key-cap text lives at row+0x34C (V: store addresses).
+9) DescStrRef: fetched as an INT into row+0x1D0 (asm via 0x71BAD0 call with param_1+0x1D0), copied to +0x28 and +0x1FC.
+     The text fetch for the description is not in 0x901D70 (G: done by the tooltip/description code, not traced).
+10) OPEN: which widget draws row+0x178. No reader of +0x178 in decomp/90 (only the row ctor 0x9017B0 and 0x41xxxx base code).
+
+=== 2. TLK FETCH 0x71D970 (V, decomp lines 30-200) ===
+- Message "Invalid STRREF %d passed to Fetch" (exe 0x99C4C0) is formatted into a local tmp (0x734270). The only path
+  that touches it stores nothing to the output. No log/print call seen on any path. Treat as dead (G: debug-only).
+- Early out: strref == 0xFFFFFFFF OR gender byte > 1 -> out = "" (constant 0x986925; PE bytes start with NUL = empty string).
+- Else loop i = 0..6 over TLK slots: table = [TLK + 4 + 8*i + 4*gender].
+    skip slot if table == 0;
+    strref masked & 0xFFFFFF; skip if strref >= table count ([table+0x10]);
+    skip if entry header (0x14 + strref*entsize) is beyond file size (FUN_00739970/0x739B20 bounds);
+    entsize = 0x28 if [table+8] == global version value, else 0x24 (G: 40 B = TLK v3.0 entry);
+    flags bit 0 = has text. If text range end > file size -> out = decimal strref via 0x733700 (sprintf "%i"). EARLY RETURN.
+    flags bit 1 = text present (else ""), bit 2 (0x4) read sound/extra field, bit 15 (0x8000) = skip entry (V).
+- If no slot matched: if gender == 1 -> retry with gender 0 (0x71D970 recursion, TLK+0x3C := 0). Else out = "".
+- No exception, no abort, no assert path in 0x71D970. Crash risk = none found.
+
+=== 3. CELL -> STRREF CONVERSION (V, 0x71BAD0 534 B) ===
+- Keymap is binary V2.b (K4). Binary branch (TLK-field offset +0x3C != 0): out = 0; sscanf("%i") on the cell text; return cell[0] != 0.
+  => empty cell and "*****" both give strref 0 -> TLK entry 0 text ("Bad StrRef"). "-1" gives strref -1 -> "".
+  Text branch (not used for keymap): atol, or hex if "0x...".
+- Consequence: a row with ActionStrRef = "*****" or empty, AND visible (ReMappable or ForceDisplay = 1, Disabled != 1), would show "Bad StrRef".
+  Shipped *****-rows (254-262, 285a-286b) have ReMappable=0 and ForceDisplay=0, so they are hidden and never show it (K4 table, V).
+
+=== 4. LIVE dialog.tlk (read-only parse, V) ===
+Path: ~/.local/share/Steam/steamapps/common/Knights of the Old Republic II/dialog.tlk (10,196,627 bytes, Sep 30 23:57).
+Header: 'TLK ' V3.0, language 0, entry count 136540 (at +0x0C), string-data offset at +0x10.
+Samples (strref -> text):
+   0       "Bad StrRef"
+   1       "ERROR: UNEXPECTED CHARACTER"
+   48724   "None Set"              (0xBE54, used as unbound key text)
+   48751   "Key already used"
+   48891   "Select Previous (Left)" (shipped label for action204)
+   123712  "Switch Weapons"        (shipped SwitchWeaps label, action265)
+   126015  "Run / Walk"            (shipped WALKMODIFY, action268)
+   136538  "Ranged (Kiting)"       (repo append, see section 6)
+   136539  "Ranged (Kiting) Behavior\nKeeps its distance,\nfinds a clear shot.\nMelee ..."
+   136540  OUT OF RANGE -> label would be ""
+Next free strref = 136540 today. Any custom strref must be read from the live header at apply time.
+
+=== 5. LIST APPEND 0x83EA60 (V) ===
+- 0x83EA60 (102 B): if size == capacity: newcap = 16 if cap==0 else 2*cap; CALL 0x84A680(newcap) (alloc + copy size items + free old).
+  Then store item, size++. NO cap check -> unbounded (memory only).
+- Real row cap: 0x900D40 candidate loops only.
+    ids 200..269 bare (mode 0): 70 candidates.
+    ids 280..286 with A and B (mode 2 and 1): 14 candidates.
+  => max 84 rows created from the 2DA. 0x900E30 then filters by Page (row+0x3C4 = "Page" column, 0x9AA004 V) and sorts by SortPos.
+- A possible slot cap would be in the GUI template (optkeymapping_p.gui / override GUI), not in code here. OPEN.
+
+=== 6. REPO STATE (rg, V) ===
+- patch_manager_mods/*/manifest.toml (41 files): zero hits for "tlk".
+- patch_manager_mods (any file) with "dialog.tlk" or write_tlk: zero hits. Readers only: action_hotbar_src/Tlk.h
+  (+ twoda_test.cpp, synthetic TLK fixture; testdata/make_tlk_fixture.py).
+- scripts/append_ranged_kite_tlk.py: appends 2 entries to the end of the live dialog.tlk; dry run by default; --apply user-gated;
+  copies the TLK to a backup (md5-verified) first; atomic os.replace; "close the game first (it reads dialog.tlk at start-up)".
+  Applied: entries 136538/136539 are the kite strings (verified above). Header count 136540 = 136538 + 2.
+- scripts/build_ranged_kite_2da.py: writes an Override 2DA that carries those appended strrefs (precedent for
+  Override 2DA + appended TLK strref).
+- scripts/install_echoes_compatch.py (phase 2, scripts/test_02_merge_2da_and_tlk.py): external Echoes pipeline, merges 2DA and TLK
+  (appends). Not in patch_manager_mods.
+- scripts/_common.py: GAME_DIR default is the Steam dir above. KOTOR2_ROOT overrides.
+
+=== 7. SECOND TLK / CUSTOM HIGH STRREFS (V) ===
+- Only dialog.tlk is on disk in the game dir (no dialogf.tlk; dialogue_letterbox_fix.ini is unrelated).
+- exe contains no "dialogf.tlk" string (only dialogfont*). The gender-1 slots only fall back to gender 0.
+  => no second TLK is loaded in a vanilla install. A female TLK is not a route.
+- The only bound on strref is the table count (header) and the 24-bit mask. Entries past the count are skipped, not an error.
+  => appending to dialog.tlk IS the way to get a high custom strref.
+- The TLK is opened from "HD0:dialog" (exe 0x53691F -> 0x71E010 with "HD0:dialog"). HD0 = game root.
+  Override/dialog.tlk is NOT checked by any code seen here. Treat as unsupported until tested (OPEN).
+- "tlk" also appears as a resource-extension name in the exe type table at 0x59B9B4 (V). Not used to find the file here.
+
+=== 8. LITERAL-STRING ALTERNATIVES (c) ===
+- 0x901D70 column reads (V): ActionStrRef, DescStrRef, Page (0x9AA004), ICPC (0x99F568, bit 1), ICMiniGame (bit 2),
+  ICPCGUI (bit 4), ICDialog (bit 8), ICFreeLook (bit 0x10), ICMovie (bit 0x20). No label/literal column.
+- Key names come from the key code via 0x741300 (-> 0x7A1380), not from the 2DA "character" column (K4 col 4). Not read here.
+- Code-only route (not data-only): after row build, call 0x416E30 on row+0x178 with a literal CExoString.
+  That is a detour on 0x901D70 or on the row ctor, plus refresh. Costs more than the TLK append. Not recommended.
+- GuiTip.h precedent (ctl+0x28 strref = 0 + inline CExoString at ctl+0x2C) is for generic controls, not this row struct.
+
+=== 9. CHEAPEST CUSTOM LABEL (plan, not executed) ===
+1. Close the game. Run the append script in dry-run to read the live count N (= 136540 today).
+2. With user GO: append ONE entry "Toggle Holster" (and optionally a desc entry) with the append_ranged_kite_tlk.py pattern
+   (backup, md5, atomic). Do NOT reuse 123712/123713 (would read "Switch Weapons"). Do NOT leave DescStrRef = 0 or ***** (shows "Bad StrRef").
+3. Keymap row (ids 266/267/269 are free, S1): ActionStrRef = N, DescStrRef = N+1 (or N), ReMappable = 1, ForceDisplay = 0,
+   Disabled = 0, Page = 0 or 1, language0 = a free ICPC key code, EventType = 1 (S1 b). Ship as binary Override/keymap.2da (K4).
+4. Launch game: label text should show via the same 0x71D970 path. Verify on the Key Mapping panel (live test, not done here).
+
+=== 10. OPEN ===
+1. Widget that draws row+0x178 (action label) and row+0x34C (key cap) not traced. Affects where a literal label could be drawn.
+2. Override/dialog.tlk: honoured or not. Not tested. Assume root-only.
+3. Fixed GUI row slots in optkeymapping_p.gui / override GUI: not parsed. Could cap visible rows below 84.
+4. Which TLK slots (i = 0..6, gender 0/1) get filled at load: only dialog.tlk on disk, so presumably slot 0 gender 0 only. Not traced.
+5. DescStrRef text path (tooltip/description) not traced; assumed the same 0x71D970 fetch.
+6. Entry size 0x24 vs 0x28 selection (version compare) not confirmed.

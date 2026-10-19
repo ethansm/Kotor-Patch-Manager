@@ -1,0 +1,113 @@
+H3 recon: SERVER creature recipe for PC/party + FnNearestEnemy 0x0057C990 (Steam swkotor2.exe 6a522e71)
+Tags: V = read in decompile/asm/source this pass; G = inferred or label guess; O = open (not resolved)
+Repo: /home/ethansm/orca/workspaces/local-setup/KOTOR-II (read-only; this file is the only output)
+
+=====================================================================
+1. GLOBALS AND CHAIN (V unless noted)
+=====================================================================
+- G_App = 0x00A1B4A4 = CAppManager*. app+4 = CLIENT app, app+8 = SERVER app = "objTable".
+  (companion_ai_src/CompanionAI.cpp:70; action_hotbar_src/ActionHotbar.cpp:65 App_ObjTable = 8)
+- ServerIdMask = 0x0099449C (DWORD). Server id = client id & ~mask; 0x7F000000 passes through unchanged.
+  (_shared_src/GameAddr.h:88; 27_companion_selfheal_evidence/R1_actor_route/dump/00539d30.c V)
+  The literal mask value is not in the repo. 0x00798160 builds client keys as oid|0x80000000 (ghidra_knowledge/rea_findings/20261016_nb2-recon.tsv), so the mask is probably 0x80000000 (G). Read it at runtime, never hardcode.
+
+Route A: SERVER side from the app (no client pointer needed). Preferred for FnNearestEnemy.
+  A1. app = *(u32*)0x00A1B4A4. 0 = fail.
+  A2. srv = *(u32*)(app+8). 0 = fail.
+  A3. Require *(u32*)(srv+4) != 0 BEFORE calling 0x51C8D0 / 0x51C8F0. The engine getters dereference [srv+4] (CompanionAI.cpp partyEmit, comment "review N5").
+  A4. pcId = thiscall 0x0051C8F0 (ECX = srv; no stack args; RET 0) = CServerExoApp::GetPlayerCreatureId. Returns the controlled leader's server id, or 0x7F000000 if none. (CompanionAI.cpp:458; name per steam_db_pr3/work/digests/B_CGuiInGame.md:871)
+  A5. pc = thiscall 0x0051C0A0 (ECX = srv; push pcId; RET 4) = CServerExoApp::GetGameObject. 0 = none. (CompanionAI.cpp:72 FnGetGameObject; digests E_CSWCObject.md:630)
+  A6. Require *(u8*)(pc+0x08) == 5 (ObType 5 = creature). (CompanionAI.cpp:86-87)
+  Party list, server side: tbl = thiscall 0x0051C8D0 (ECX = srv; RET 0) (CompanionAI.cpp:457, "+0x1F0B4 table").
+    count = [tbl+0]. For i < count (CompanionAI caps i < 12): idx = [tbl+8+4*i] (guard 0 <= idx < 64); sid = [tbl+0x1C+4*idx]; member = GetGameObject(srv, sid); check type 5 as in A6.
+
+Route B: CLIENT object pointer given. Use the shared helper.
+  B1. party::table() = app -> +4 -> +4 -> +0x270 (_shared_src/Party.h:33-42).
+  B2. party::controlledCreature(&why,&n) = thiscall 0x007E5D80(table) -> client PC (Party.h:51-62; GameAddr.h:34).
+  B3. party::member(table,i) = thiscall 0x007E5DA0(table, i) RET 4 -> client member i, 0 = none (Party.h:80-84; GameAddr.h:35). party::partyCount(table) = [table+0].
+  B4. party::serverCreature(clientObj) = thiscall 0x0077D800 (ECX = client obj; RET 0, NO stack args) -> server CSWSCreature*, 0 if none (Party.h:89-93; GameAddr.h:36). Decompile dump_excerpts/0077d800.c: returns 0 when its getter returns 0, else vtbl+0x30 of the linked object. Same function as CompanionAI FnControlled (CompanionAI.cpp:75).
+  B5. Client OBJECT ID given (not pointer): serverId = thiscall 0x0051C8B0 (ECX = objTable = srv; push clientId; RET 4) = ClientToServerObjectId. Body (dump 00539d30.c): if id == 0x7F000000 return it, else id & ~[0x99449C]. The body never reads ECX, so ECX is harmless either way (ActionHotbar.cpp:573 passes objTable). Then GetGameObject(srv, serverId) as A5/A6.
+
+Party-id helper that exists in the repo:
+  _shared_src/Party.h party::members(Vitals* out, int cap) (Party.h:125-141). Fills .client and .server (plus vitals) for each party position; an unreadable member keeps ok=false. Holster.cpp has NO party or server-pointer code today (grep: 0 hits). Holster would be the first holster_src user. Existing users: companion_selfheal_src/CompanionSelfHeal.cpp:219,371,389,438,453,768,822 (party::members(v,3)); level_up_override_src/LevelUpOverride.cpp:2051-2053; holster_editor_src/HseParty.h:12-28; portrait_slots_src/PortraitSlotsProvider.cpp:104.
+  Party IDs: Party.h returns POINTERS. Server ids come from party::serverCreature(member) then the object's id (+4), or from Route A's server table.
+
+=====================================================================
+2. FnNearestEnemy = CSWSCreature GetNearestVisibleEnemyInRange (Steam 0x0057C990), RET 0xC
+=====================================================================
+Typedef (CompanionAI.cpp:76 and :83):
+  using NearestFn = int(__thiscall*)(int self, float range, int exclude, int ref);
+  ECX = self; stack [esp+4] float range, [esp+8] exclude id, [esp+0xC] ref id. Callee pops 12. Result = object id in EAX.
+  Decompile signature (mods678_research/dump_excerpts/0057c990.c:1-14): FUN_0057c990(int param_1 /*self*/, float param_2 /*range*/, int param_3 /*exclude*/, int param_4 /*ref*/).
+
+Argument meaning (V from decompile):
+  self (ECX): the origin creature. It must be a live CSWSCreature. Unguarded reads:
+    - self+0x380 (pathinfo ptr), then [pathinfo+8] (radius float). NO null check. A null pathinfo crashes the game.
+    - self+4 (id), self+0x94 (position).
+    - area = GetArea 0x005453C0(self). area 0 -> returns INVALID.
+    - self must be in area's object list (area+0x194 array, count area+0x198). Not found -> returns INVALID.
+  range (float): initial "best". A candidate is accepted only if (3D centre distance - self.radius - cand.radius) < best. So range is a HULL-GAP distance, not a centre distance. Units: world units, which are metres (G). The same space as +0x94. Engine values in that space: melee reach = 1.6 + HITRADIUS terms, ranged 20.0 / 30.0 (AI2 rows 6b, 9). Engine's own "enemy within 30" probe is 0x57C990(30.0, INVALID, INVALID) (0x57DC20; engine_ai_atlas/findings/AI2.md:137). Sane R for holster: 30.0.
+  exclude (int): candidate id to skip (cand id == exclude -> skipped). Sane value: 0x7F000000 (no object has that id). Vanilla: current target (A1 0x6D7D24, PC path), self (CreateNewAttackActions 0x6DA4F0).
+  ref (int): 0x7F000000 = origin is self's own position, and the hostility test is on the candidate. ref != INVALID = origin is the position of object ref (lookup 0x0051C100), and the hostility test goes through ref (FUN_005e1680(ref)==2 in the decompile). The exact meaning of this branch is NOT pinned (O). Always pass 0x7F000000 from a mod.
+
+Candidate filters, in code order (V; 0057c990.c lines ~80-279):
+  1. cand id != self id, cand id != exclude.
+  2. Reputation: GetAIStateReputation 0x005E1680(cand) == 2 (2 = enemy; AI6 note).
+  3. Alive: cand vtbl+0x94() == 0.
+  4. If cand CrParty (+0x11AC) != 0: cand current HP (vtbl+0x9C(0)) >= 1.
+  5. Perception: 0x005D1750(cand id) on self returns an entry, and (entry+4) & 1 == 1 ("seen" bit).
+  6. Radius-adjusted distance < best (3D length 0x5142F0 of diff, minus self radius, minus cand radius).
+  7. LOS: 0x0052BB60(self eye, cand eye, self id, cand id, 1, 0) != 0. Eye = pos + _DAT_00989F10 (atlas says +1.5) on both ends.
+  The scan walks the area list OUTWARD from self's own index, with a raw-X-gap prune (0057c990.c loop, T1 in AI2).
+
+Return sentinel (V): 0x7F000000 (OBJECT_INVALID) for "no enemy". The decompile initialises local_1c = 0x7f000000, returns it when no candidate passes, when area == 0, and when self is not in the area list (0057c990.c final "return local_1c"). Also 0057c9b3 MOV EAX,0x7f000000 (steam_db_batches/B12a/opus/overrides_r.md:66-67). Callers test "!= INVALID" (0x57DC20; AI2 Q2 item 4). The result is never 0 in the decompile. Treat 0 as "none" too, as CompanionAI does (CompanionAiLogic.h:504 a1NewTarget). To get the pointer: GetGameObject(srv, id) (Route A5).
+
+Vanilla precedent for self = PC (V): AIActionPhysicalAttacks calls it with self = the controlled creature (IsPC +0x10E8 != 0) in the LOS-blocked retarget (engine_ai_atlas/findings/AI2.md:135). So a PC as self is a normal engine input.
+
+Recipe for "any hostile within R of PC" (sane first pass):
+  nearest = thiscall 0x0057C990(ECX = pcSrv; push 0x7F000000 as ref; push 0x7F000000 as exclude; push R as float) ; hostileNear = (nearest != 0x7F000000 && nearest != 0)
+  Pass the float as a 4-byte stack value (RET 0xC). Use a typedef, NOT a naked call, to match CompanionAI.cpp:997.
+
+=====================================================================
+3. SAFE TO CALL EVERY FRAME? (answer: no; throttle)
+=====================================================================
+- Cost (O, not measured; no timing in repo): linear in the number of objects in self's area, with the X-gap prune. Each candidate that passes the cheap tests and is closer than best costs one LOS ray. Repo guidance: "at most once per action end, not per frame" (mods678_research/ai_review_2026-10-01/designs/design_ai_engine_fixes.md:203). CompanionAI calls it only on A1 spin events (CompanionAI.cpp:997).
+- Side effects (V for the 0x57C990 body): none to game state. The body writes only stack locals. Callees: GetArea, GetGameObject, 0x5E1680, 0x5D1750, 0x4452B0, 0x5142F0 read-only (by the decompile). 0x0052BB60 (LOS, 767 B, __thiscall RET 0x20) calls 0x0083EA60 (CExoArrayList::Add) and 0x0084A640. These were NOT traced (O).
+- Perception lag (V from design doc:204, O for the PC): the "seen" test uses self's perception list. Companions refresh perception only about every 4 s (P2). A newly engaged enemy may be missed for seconds. A just-dead enemy is excluded at once (filter 3).
+- Recommendation (G): call at most every 250-500 ms from the holster tick, and only while the holster state needs a stow decision. The holster delay is 1.5 s, so this granularity is enough.
+
+=====================================================================
+4. FAILED OR ZERO POINTER: HOW EXISTING MODS HANDLE IT (V)
+=====================================================================
+- companion_ai_src/CompanionAI.cpp gameObject(id) (~line 291-297): returns 0 if the app or server is missing, or id is 0/INVALID. Callers test for 0 and fall back to vanilla (CompanionAI.cpp ~983-989: "if (!attacker || !readAt...) { ++g_st.a1Unread; return 0; }", 0 = vanilla runs).
+- controlledId() false (CompanionAI.cpp ~339-352) -> vanilla ("unknown: vanilla", ~line 980).
+- partyEmit (~610-614): returns before 0x51C8D0/0x51C8F0 when srv == 0 or [srv+4] == 0.
+- action_hotbar_src/ActionHotbar.cpp:568-583 serverItemFor(): any zero link -> WARN log + dumpRing + return 0 -> "using it normally" (vanilla path).
+- _shared_src/Party.h: member == 0 -> serverCreature returns 0 WITHOUT calling the engine (Party.h:89-93). members(): unreadable member keeps ok=false (Party.h:125-141). vitals() probes vtable slots before any call (Party.h:108-123).
+- companion_selfheal_src/CompanionSelfHeal.cpp:130-136 serverIdOf(): mask unreadable -> returns 0.
+- queue_hud_src/QueueHudLogic.h:1277-1291: 0 and 0x7F000000 both mean "none" (kNoTargetId).
+=> Convention: 0 or 0x7F000000 = none; fail-open to vanilla; never call an engine function with a null object.
+
+=====================================================================
+5. OPEN ITEMS (O)
+=====================================================================
+  O1. ref != INVALID branch semantics (candidate hostility via ref id) not pinned. Mods must pass INVALID.
+  O2. Per-call cost of 0x57C990 not measured. Needs a live timing probe before per-frame use.
+  O3. Side effects of 0x0052BB60 (LOS) not traced (list add 0x83EA60, 0x84A640). Treated as a query.
+  O4. ServerIdMask value: literal not seen; 0x80000000 inferred (G). Read at runtime.
+  O5. Dumps for 0x0051C0A0 (GetGameObject), 0x0051C8D0 (party table getter) and 0x0051C8F0 (GetPlayerCreatureId) are not in the repo. Their use and names come from CompanionAI and the steam_db_pr3 digests. Verify before first live use.
+  O6. Steam addresses are hardcoded inline in companion_ai_src (CompanionAI.cpp:65-79, 457-458). _shared_src/K2Addr.h has NO fields for 0x57C990, 0x51C0A0, 0x51C8D0, 0x51C8F0 (grep: none). On the non-Steam table, ClientToServerObjectId = 0 (K2Addr.h:564; inert). New calls should go through K2Addr fields so they go inert on other builds (recommendation G).
+  O7. PC perception refresh cadence (the seen bit) not measured for the controlled creature.
+  O8. "metres" label for range: G (consistent with 1.6 m melee base and 20/30 ranged values).
+
+=====================================================================
+6. ANSWERS TO THE BRIEF (short)
+=====================================================================
+  Q: typedef/calling convention -> section 2 (__thiscall, ECX = self, 3 stack args, RET 0xC).
+  Q: args (exclude / ref meaning, sane values) -> exclude = skip this id, use 0x7F000000; ref = alternate origin, use 0x7F000000 (O1).
+  Q: no-enemy sentinel -> 0x7F000000 (V), never 0 in practice.
+  Q: range unit -> float, hull-gap, world units / metres (G). Use 30.0 (engine's own probe value).
+  Q: safe every frame? -> no. Throttle to 250-500 ms (section 3); cost unmeasured (O2).
+  Q: failed/zero pointer in existing mods -> fail-open to vanilla, never call with null (section 4).
+  Q: party client ids -> _shared_src/Party.h party::table / party::member / party::members (section 1). Holster.cpp has none.
+  Q: server PC pointer -> Route A (0x51C8F0 then 0x51C0A0, type 5) or Route B (party::controlledCreature then party::serverCreature = 0x77D800).
