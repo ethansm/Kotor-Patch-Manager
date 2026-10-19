@@ -154,3 +154,35 @@ Plan changes (Opus accepted):
 
 ## 16 Evidence for MCR1 (user screenshot 10-18 22:51, enemy-strip page in game)
 The enemy-effects-strip page's `<` and `>` stepper buttons RENDER correctly in game (all 8 rows, glyphs visible, Enabled/Backing toggle rows, hover frame). This answers Holster feedback 1 in part: glyph captions are drawn on these provider buttons, so the arrow-icon art is a fallback, not a requirement. MCR1 still logs which path is taken; keep the icon path ready because holster's own page showed blank glyphs on a different control template.
+
+## 17 Build log MCF1-MCF4 + MCF2b (10-18 night, LIVE 10-18 23:32, batch_swap_20261018_233209)
+Commits: MCF1 a1c80c88 | MCF2 3b4aa96b, Opus review fixes 7d62303d | MCF2b e9a17f47 | MCF3 2a2e53d1 | MCF4 b6e30a50 | play rows 38bb0e08 / cd808b70 / 6467f859 / 86d8a493. Installed: mod-config 0.2.0-dev (407cb333), companion-selfheal 0.9.0-dev (456d37fb); both SWAP (no import change), gate PASS. Nothing is verified in game yet: play rows MCR1, MCR2, SH-PG1 are `pending` in PLAY_TEST_QUEUE.md. Rollback: `python3 scripts/kpm_hotswap.py --rollback batch_swap_20261018_233209`.
+
+### What exists
+- `mod_config_src/MenuUiLogic.h` (namespace mui, pure, host-tested): `RowCfg`, `rowClamp/rowStep/rowApplyHandlerResult/rowFormat`, `rowSlotRect/rowGeom/rowHitZone`, `ScrollWindow` (wheel + = up, `slotOf`, `thumb`, `offsetFromThumbTop`), `tickResetDue(gap, flags48, lmb, dragging)` (shown bit 0x40: reset only after a 5000 ms gap with no button and no drag; hidden: > 500 ms as before). `kMaxEntries` is now 24.
+- `_shared_src/ModConfigApi.h`: K2MenuUiApi 19 slots (12 AddRow, 13 SetChangeHandler, 14 GetValue, 15 SetValue, 16 SetRowText, 17 SetRowState, 18 SetRowRange); `K2MuiRowSpec`; `MenuClient::hasRows()`; `usable()` unchanged (11-slot floor).
+- `mod_config_src/ModConfig.cpp`: rows (toggle = 1 button; stepper = caption label + `<` `>` button clones, `RowX`/`RowPage` per entry, `itemRow/itemPart` maps), layout in the COLUMN pane, `rowChange` (handler returns the FINAL value), `rowArrowInput` (arrows step on PRESS + `editkit::repeatTick`; toggle on RELEASE; row parts never latch `Clicked`), scroll bars (`makeBar`: up/down/thumb BTN_GAMEPLAY clones, `barWidth` = 7 % of column height, min 12 px; no track control), `scrollTick` (wheel notch = 120, bar buttons with hold-repeat, thumb drag, track click = page jump), LIST scroll over a bind-time token snapshot (`entTok`, `rebindList`), selftest entry (`mod_config.ini selftest=1` = 6 rows; `=2` = 24 rows + 6 filler entries "Dummy 1..6"), `TICKGAP`/`ROW`/`SCROLL`/`ARROWPATH`/`WHEEL` log lines (caps 32/200/100).
+- `_shared_src/TomlMini.h` (+ `tomlmini_test.cpp`) and `ModConfigDecl.h` (+ `moddecl_test.cpp`): `mcdecl::parseSchema`, `Page` (build/entry/change/setValue/setText/setRange/setState), `iniGet` (pure ini read side, used instead of waiting for an `iniw::getKey`), `IniIo` injection, `fileIo()` only under `MCDECL_FILE_API`, `formatScaled`. The golden 8-row enemy-strip schema in `moddecl_test.cpp` is the MCF7 acceptance fixture.
+- Self-Heal: `_shared_src/SelfHealRoster.h` (order: Everyone, party, INI tags, built-in table; dedupe ignores case and `_ - space`; first spelling wins), `SelfHealPage.h` (`shpage::Model`: `view()`, `change()`, two-click APPLY with a 3 s window, uint32-wrap safe), `SelfHealUi.h` (`erase`, `eraseAll`, `hasRow`; tag compare is now ASCII case-insensitive for `lookup/upsert/erase/hasRow/migrateLeaderRow`), glue block in `CompanionSelfHeal.cpp` (schema raw string, `rebuildRoster`, `pushPageView`, `pageOnChange/Enter/Tick`, `pagePoll` registers only when `hasRows()`). Built-in tag table (utc spellings, from `.claude/waves/mc-ctl/facts/H-tags.md`): player, atton, kreia, t3m4, baodur, disciple, handmaiden, mira, visasmarr, hk47, g0t0, mand, hanharr; `remote` is unconfirmed and NOT shipped.
+
+### Deviations from the plan (all deliberate)
+1. Arrows step on press with hold-repeat (the plan's "first click on release" would double count with `repeatTick`, which steps on press).
+2. `arrow_icons` is read but icons are NOT built (text glyphs only; ARROWPATH log says so). Add the icon path only if glyphs ever draw blank.
+3. Reset and "Apply defaults to everyone" are toggle rows whose handler returns the old value (button idiom); no button row kind.
+4. Wheel: mod-config calls `guikit::initGuiInput` and subscribes `guikit::detail::guikitWheelCb` through the gui-input provider itself, never `wheelInstall`/`WheelWin` (that would add SetWindowLongPtr imports and flip SWAP to REINSTALL). No manifest `requires` on gui-input: without it only the wheel is off.
+5. ItemX/RowPage arrays stay inline (McState about 1.1 MB, zeroed per Options open) instead of lazy per-entry allocation.
+6. Scroll test entry is `selftest=2`, not a separate `scroll_test` flag. Disabled stepper = arrows hidden; disabled toggle caption gets " (locked)".
+7. `SetChangeHandler` is wiped every McBind: a consumer must set it in `build()` (ModConfigDecl does).
+
+### Opus review 1 (MCF1/MCF2, 7d62303d, PASS) fixed
+rowStep 64-bit distance (no overflow on wide ranges); `SetRowRange` on a choice stepper stays inside [0, nChoices-1]; static_asserts tying MUI_ROW_*/MUI_RF_* to mui:: enums and the 32-bit `K2MuiRowSpec` layout (52 bytes); `K2MuiRowSpec` struct_size compared to a v1 floor (not sizeof, so the struct may grow); honest ARROWPATH text; extra edge-case tests. Noted, not fixed (low): a close/reopen 0.5-5 s apart that misses the Esc edge now keeps the old page (spec'd; MCR1 step 6 checks it); a disabled stepper has no caption cue.
+### Opus review 2 (MCF2b/MCF3/MCF4)
+Launched 10-18 night against e9a17f47, 2a2e53d1, b6e30a50; it had NOT reported when this section was written. If commits with subject `mod-config/selfheal review fixes (MCF2b-MCF4):` appear in `git log`, re-run `bash scripts/pre_install_gate.sh --skip-default --mod mod_config_src --mod companion_selfheal_src`, `kpm_hotswap.py --mod mod-config --mod companion-selfheal --prepare` (must say SWAP) and hot-swap again (user GO, game closed), then update this section.
+
+### Coordination state
+Holster session ("holster-toggle-key-delay") updated `holster_editor_src/common_contract_test.cpp` for the 19-slot table (6dcbee15). `iniw` has no read side (mcdecl::iniGet covers it). GuiKit.h was NOT edited.
+
+### Still open
+- MCF5 look-alike slider, MCF6 native slider probe, MCF7 enemy-strip migration (use the golden schema fixture; strip needs a stepper `scale`/`zero_text` mapping already supported).
+- Play rows MCR1 (rows, arrows, hold-repeat, tick gap, non-Esc close), MCR2 (scrolling; `selftest=2`; list keeps its offset on return, entry pages open at the top), SH-PG1 (Self-Heal page, persistence after restart). Set `selftest=0` after.
+- Unverified in game: scroll bar look (thumb as an empty button clone, `^`/`v` glyphs), wheel delivery inside Options, hold-repeat feel, ` (locked)` caption, the 5000 ms tick-gap rule.
