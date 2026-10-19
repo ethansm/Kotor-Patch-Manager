@@ -1037,65 +1037,7 @@ void leaderRectLog(const shui::Rect& btn, const shui::Rect& card, const shui::Re
 // The page edits the same g_cfg rows as the right-click popover (keys = the creature tags keyFor uses), saves through saveIni and the HUD
 // follows at its next refreshCache. Lazy connect (no manifest requires): without mod-config 0.2.0+ nothing is registered. The rows come from a
 // declarative schema (ModConfigDecl.h); all behaviour lives in the pure model (SelfHealPage.h).
-const char* const kPageSchema = R"TOML(
-[page]
-name  = "Companion Self-Heal"
-title = "Companion Self-Heal"
-desc  = "Auto-heal rules for the whole party and for each character. Pick Everyone to set the defaults, or a character to give them their own values."
-
-[[row]]
-id = "who"
-kind = "dynamic"
-label = "Character"
-desc = "Who you are editing. Everyone sets the defaults used by every character that has no values of its own. Characters not in the party can be set up ahead of time."
-max = 1
-
-[[row]]
-id = "auto"
-kind = "toggle"
-label = "Auto-heal"
-desc = "Use a healing item on this character automatically when their health drops below the threshold."
-
-[[row]]
-id = "pct"
-kind = "stepper"
-label = "Heal below"
-desc = "Auto-heal triggers when health falls below this percentage."
-default = 35
-min = 5
-max = 95
-step = 5
-fmt = "Heal below %d%%"
-
-[[row]]
-id = "keep"
-kind = "stepper"
-label = "Keep"
-desc = "Healing items kept in reserve: auto-heal never uses the last N of an item (a manual click ignores this)."
-default = 2
-min = 0
-max = 20
-step = 1
-fmt = "Keep %d"
-
-[[row]]
-id = "follow"
-kind = "toggle"
-label = "Follow global"
-desc = "On: this character uses the defaults and has no values of its own. Off: they get their own copy that starts as the defaults."
-
-[[row]]
-id = "reset"
-kind = "toggle"
-label = "Reset"
-desc = "Character: go back to following the defaults. Everyone: restore the factory defaults (auto off, below 35%, keep 2)."
-
-[[row]]
-id = "apply"
-kind = "toggle"
-label = "Apply defaults to everyone"
-desc = "Remove every character's own values so all follow the defaults. Click twice to confirm."
-)TOML";
+// declarative schema: shpage::kPageSchema (SelfHealPage.h)
 
 constexpr shroster::Known kKnownTags[] = {
     {"player", "Exile"},         {"atton", "Atton Rand"},   {"kreia", "Kreia"},       {"t3m4", "T3-M4"},   {"baodur", "Bao-Dur"},
@@ -1187,7 +1129,7 @@ void pageInit(const KPatchApi* api) {
     g_mcCfg.init(api);
     g_mcMenu.init(api);
     char err[96] = {};
-    g_pageLoaded = g_page.load(kPageSchema, strlen(kPageSchema), err, sizeof err);
+    g_pageLoaded = g_page.load(shpage::kPageSchema, strlen(shpage::kPageSchema), err, sizeof err);
     if (!g_pageLoaded) { KP_LOGV(chMain, KPLOG_WARN, "PAGE schema rejected: %s", err); return; }
     g_page.menu = &g_mcMenu;
     g_page.hooks.onChange = pageOnChange;
@@ -1614,7 +1556,7 @@ void __cdecl KPatchInit(const KPatchApi* api) {
     loadIni();
     loadCfg();
     filewatch::accept(g_cfgPoll, IniPath);
-    KP_LOG(chMain, "0.9.1-dev ui=popsize+togglepill+leaderclick+vanillaarrows+pillnarrow+popocclude+optionspage: probe call=%d CallKey=0x%02X kick=%d cfg rows=%d", g_probeCall, g_callKey, (int)g_kick, (int)g_cfg.rows.size());
+    KP_LOG(chMain, "0.9.2-dev ui=popsize+togglepill+leaderclick+vanillaarrows+pillnarrow+popocclude+optionspage: probe call=%d CallKey=0x%02X kick=%d cfg rows=%d", g_probeCall, g_callKey, (int)g_kick, (int)g_cfg.rows.size());
     pageInit(api);
     g_ps.init(api, "companion-selfheal");
     g_ps.onConnect = onConnect;

@@ -1,5 +1,6 @@
 // Host test of SelfHealPage.h: selection, row values per selection, every click path, the two-click apply, persistence through serializeFile.
 #include "SelfHealPage.h"
+#include "ModConfigDecl.h"
 #include "check.h"
 
 using namespace shpage;
@@ -197,7 +198,20 @@ static void test_persistence_round_trip() {
     KT_CHECK(file.find("kreia") == std::string::npos);
 }
 
+static void test_shipped_schema() {   // the 10-18 first install: a 140-char desc made TomlMini reject the whole page
+    static mcdecl::PageDecl pd;
+    char err[96];
+    const bool ok = mcdecl::parseSchema(kPageSchema, strlen(kPageSchema), pd, err, sizeof err);
+    if (!ok) printf("schema error: %s\n", err);
+    KT_CHECK(ok);
+    KT_CHECK_EQ(pd.nRows, (int)R_COUNT);
+    const char* ids[R_COUNT] = {"who", "auto", "pct", "keep", "follow", "reset", "apply"};
+    for (int i = 0; i < (int)R_COUNT && i < pd.nRows; ++i) KT_CHECK(strcmp(pd.rows[i].id, ids[i]) == 0);
+    KT_CHECK(strcmp(pd.name, "Companion Self-Heal") == 0);
+}
+
 int main() {
+    test_shipped_schema();
     test_view_defaults_and_character();
     test_character_switch();
     test_edit_defaults_and_character();

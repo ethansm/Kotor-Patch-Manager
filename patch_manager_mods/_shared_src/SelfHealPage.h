@@ -21,6 +21,68 @@
 
 namespace shpage {
 
+// Page schema (ModConfigDecl.h / TomlMini.h subset: every string at most 95 bytes, enforced by selfheal_page_test).
+constexpr const char* kPageSchema = R"TOML(
+[page]
+name  = "Companion Self-Heal"
+title = "Companion Self-Heal"
+desc  = "Auto-heal rules. Pick Everyone for the defaults, or a character for their own values."
+
+[[row]]
+id = "who"
+kind = "dynamic"
+label = "Character"
+desc = "Who you are editing. Everyone sets the defaults. Absent characters can be set up ahead."
+max = 1
+
+[[row]]
+id = "auto"
+kind = "toggle"
+label = "Auto-heal"
+desc = "Use a healing item on this character automatically when their health drops below the threshold."
+
+[[row]]
+id = "pct"
+kind = "stepper"
+label = "Heal below"
+desc = "Auto-heal triggers when health falls below this percentage."
+default = 35
+min = 5
+max = 95
+step = 5
+fmt = "Heal below %d%%"
+
+[[row]]
+id = "keep"
+kind = "stepper"
+label = "Keep"
+desc = "Items kept in reserve: auto-heal never uses the last N of an item. A manual click ignores this."
+default = 2
+min = 0
+max = 20
+step = 1
+fmt = "Keep %d"
+
+[[row]]
+id = "follow"
+kind = "toggle"
+label = "Follow global"
+desc = "On: uses the defaults. Off: gets their own copy that starts as the defaults."
+
+[[row]]
+id = "reset"
+kind = "toggle"
+label = "Reset"
+desc = "Character: follow the defaults again. Everyone: factory defaults (off, 35%, keep 2)."
+
+[[row]]
+id = "apply"
+kind = "toggle"
+label = "Apply defaults to everyone"
+desc = "Remove every character's own values so all follow the defaults. Click twice to confirm."
+)TOML";
+
+
 enum Row { R_WHO = 0, R_AUTO, R_PCT, R_KEEP, R_FOLLOW, R_RESET, R_APPLY, R_COUNT };
 constexpr uint32_t kConfirmMs = 3000;
 
