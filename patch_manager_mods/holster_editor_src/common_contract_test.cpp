@@ -84,7 +84,8 @@ int32_t KPATCH_CALL stubMuiSetDescSplit(uint32_t, int32_t) { return 1; }
 const K2ModConfigApi kCfgTable = { sizeof(K2ModConfigApi), stubCfgRegister, stubCfgUnregister };
 const K2MenuUiApi kMuiTable = { sizeof(K2MenuUiApi), stubMuiNewPage, stubMuiAddButton, stubMuiAddLabel, stubMuiAddCustom,
                                 stubMuiClicked, stubMuiSetText, stubMuiSetRect, stubMuiSetDesc, stubMuiPaneRect, stubMuiControl,
-                                nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };   // SetDescSplit + the 7 row slots (12..18) are unused here
+                                nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
+                                nullptr, nullptr, nullptr, nullptr };   // SetDescSplit + the 7 row slots (11..18) + SetItemShown/NewModal/SetModalOpen/AddGear (19..22) are unused here
 
 // ---- Preview3dApi stubs ----
 uint32_t KPATCH_CALL stubP3CreateView(void*, const char*) { return 1; }
