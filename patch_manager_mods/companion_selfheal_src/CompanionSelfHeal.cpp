@@ -1614,7 +1614,7 @@ void __cdecl KPatchInit(const KPatchApi* api) {
     loadIni();
     loadCfg();
     filewatch::accept(g_cfgPoll, IniPath);
-    KP_LOG(chMain, "0.9.0-dev ui=popsize+togglepill+leaderclick+vanillaarrows+pillnarrow+popocclude+optionspage: probe call=%d CallKey=0x%02X kick=%d cfg rows=%d", g_probeCall, g_callKey, (int)g_kick, (int)g_cfg.rows.size());
+    KP_LOG(chMain, "0.9.1-dev ui=popsize+togglepill+leaderclick+vanillaarrows+pillnarrow+popocclude+optionspage: probe call=%d CallKey=0x%02X kick=%d cfg rows=%d", g_probeCall, g_callKey, (int)g_kick, (int)g_cfg.rows.size());
     pageInit(api);
     g_ps.init(api, "companion-selfheal");
     g_ps.onConnect = onConnect;
