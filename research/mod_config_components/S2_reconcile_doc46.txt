@@ -1,0 +1,24 @@
+S2 reconcile: holster session component map (S1) vs doc 46 (mod-config declarative layer, session combat-state-logging-queue-hud)
+Date 10-18. Doc 46 wins where the owner already decided (section 10: final-value handler, Self-Heal page, scrolling in v1).
+
+CHANGES TO OUR PLAN (S1)
+1. DROP CMP5 ModRowPage.h. Superseded by doc 46 provider AddRow/SetChangeHandler (MCF2) + _shared_src/ModConfigDecl.h (MCF3). Do not build a second row runtime.
+2. S1 "no new K2MenuUiApi slots" is superseded. Doc 46 appends 7 slots (12 -> 19). Owner approved scrolling, which S1 had deferred (Q5).
+3. R4 said Steam CSWGuiSlider ctor not found. Doc 46 found it: FUN_0041ab60 (164 b), SetMax 0x41b190 (+0x74), SetCur 0x41b1d0 (+0x78). R4 was wrong; object size 0x1C4 still unconfirmed.
+4. Q2 (where does the TOML runtime live) is answered by doc 46 section 3: consumer-side headers, schema as a raw-string literal in the DLL. No .toml file shipping needed.
+5. CMP1 (tick-gate fix) and CMP6 (caption fix) are provider-side edits to mod_config_src. Doc 46 MCF1/MCF2 own that file. We do NOT edit mod_config_src. Hand them over as spec (see message) and let MCF1/MCF2 absorb them.
+6. Dead-code prune (S1 phase 1b) must EXCLUDE _shared_src/EditKit.h repeatTick, sliderToValue, valueToSlider: doc 46 uses them (stepper hold-repeat, MCF5 slider).
+7. Keep CMP2 IniWrite.h (section-aware text rewrite). Offer it as the optional INI binder behind ModConfigDecl; doc 46 plans WritePrivateProfileStringA, which cannot write the flat-key files (holster, inv3d, equip3d, queue-hud) and adds a kernel32 import for mods that lack it.
+8. WE take the extraction doc 46 section 7 asks of the holster session: move HseParty.h, SliderArt.h, ResetIcon.h from holster_editor_src to _shared_src (with their tests), unblocking MCF4 (roster names, Reset icon) and MCF5 (slider art). Hot-swap, no behaviour change.
+9. Holster Config stays a custom page. It does not use AddRow. It adopts only shared headers (CMP3 client, CMP4 GuiKit ops, CMP7 icon/radio, CMP8 slider) and later the provider caption fix.
+
+REVISED BUILD ORDER (holster side)
+ A. Extract HseParty.h, SliderArt.h, ResetIcon.h -> _shared_src (check_shared_headers --sync), host tests green. Hot-swap holster-editor.
+ B. Prune dead helpers (minus the EditKit items in 6). Hot-swap holster-editor.
+ C. IniWrite.h lifted + section-aware, host tests only.
+ D. After doc 46 MCF2 lands: holster adopts the shared client template, GuiKit ops, icon/radio helpers; caption fix handshake.
+ E. Slider extraction (CMP8) after MCF5 decides the slider shape, so there is one slider implementation.
+
+CONFLICT GUARDS
+- mod_config_src/*, _shared_src/ModConfigApi.h: doc 46 session only.
+- holster_editor_src/*, holster_src/*: holster session only. Contract tests that pin sizeof(K2MenuUiApi)==12*sizeof(void*) (enemy_effects_strip_src/common_contract_test.cpp:233, and the holster-editor test against the same header) must be updated in the same change as the header; tell the holster session before MCF2 lands.
