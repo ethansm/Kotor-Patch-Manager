@@ -55,3 +55,6 @@ Full build log, deviations, review findings and open items: `patch_manager_mods/
 
 ## Update 10-18 23:48
 Review 2 landed (2026b001) + selfheal 0.9.1-dev bump (2a35790f). Re-swapped LIVE: mod-config 0.2.0-dev (0e3c78c3), companion-selfheal 0.9.1-dev (655fc04a). Rollback: `python3 scripts/kpm_hotswap.py --rollback batch_swap_20261018_234815`. Pending: user plays MCR1/MCR2/SH-PG1. Review-2 unfixed minors: untagged-follower slotN fallback, stale hover text after scroll, TomlMini BOM/bracket spaces, kpm_hotswap misses shared-header changes (bump version to force).
+
+## Update 10-18 23:58 (first play: Self-Heal page missing)
+Cause: `PAGE schema rejected: line 5: string too long (max 95)` - 5 schema descs exceeded TomlMini's 95-char limit, so the page never registered. Fix 96e23ede (companion-selfheal 0.9.2-dev): schema moved to `shpage::kPageSchema` in SelfHealPage.h, descs shortened, `test_shipped_schema` parses it. Gate PASS, prepare = SWAP, NOT YET INSTALLED (needs user GO, game closed). Live is still 0.9.1-dev. Rollback for the live batch: batch_swap_20261018_234815. After install: play SH-PG1; check `selfheal_log_check.py` for no `PAGE schema rejected` and a `REGISTER companion-selfheal` line in the mod-config log (via kplog_parse). Lesson: any shipped TOML schema needs a host test that parses it (combat_hotbar already has one).
