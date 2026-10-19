@@ -1,0 +1,43 @@
+K5 combat exit timer (recon, static, read-only). Steam swkotor2.exe 6a522e71.
+Dumps: ~/Games/KOTOR2_Mod_Workspace/ghidra_dumps/steam_6a522e71/decomp/<bb>/<addr>.{c,asm}
+Tags: VERIFIED (anchor) / GUESS.
+
+ANSWER
+- The client flag [creature+0x138] is not timed on the client. It is cleared by the SERVER countdown below, which calls the client setter 0x7682B0(0) at expiry.
+- Countdown field: SERVER CSWSCreature +0x524 (per-creature). Set to literal 8000 on every SetCombatState(state != 0). VERIFIED 57/0057a560.c else-branch (`*(param_1+0x524)=8000`), asm 0x57A64F (per G2 note).
+- Not a global: 8000 is an immediate in SetCombatState. Only the countdown state is per-creature.
+- Decrement: AIUpdate 0x569320, decompile 56/00569320.c:
+    if (+0x520 == 1) {                       // combat state
+      if (+0x11E8 == 1) FUN_00563DA0(1,0,0);
+      if (+0x524 < 1) SetCombatState(0, +0x11E8, 0);   // expiry
+      else if (+0x528 == 0) +0x524 -= +0xD0; // +0xD0 = per-tick delta
+    }
+  Expiry call site: asm 0x569923 CALL 0x57A560 (VERIFIED, G2 + cg.py callers).
+- Per-tick delta +0xD0: asm 0x56955E CALL 0x51AF60, then 0x56956C `MOV [ECX+0xD0],EDX` (VERIFIED). Chain: 0x51A920 returns 64-bit clock at obj+0x0C; 0x51AD20 divides it by 1000 and splits on obj+0x3C; 0x51AF60 takes the borrow-aware low-part difference vs the stored value at +0xAC/+0xB0 (VERIFIED code path).
+- Unit of +0xD0: GUESS elapsed ms. A us clock with modulus 1000 would fit the observed 8.0-8.5 s exit pairs (holster_log COMB, per G2). Low part only: whole seconds are dropped, so a gap over 1 s would under-count (GUESS).
+
+CLIENT CLEAR GATE (SetCombatState, 0x57A560)
+- Final block (VERIFIED, decompile): `if (FUN_0058AE90() != 0 && param_3 == 1) { FUN_0058AE90(param_2); FUN_007682B0(param_2); }`. Asm 0x57A93D CALL 0x7682B0.
+- Expiry passes param_3 = +0x11E8. That field is set to the entry's param_3 only if it is not already 1 (VERIFIED). So the client clear fires on timeout only when combat was entered with param_3 == 1.
+- Flourish (0x79F430 -> SetCombatState(1,2,0)) and FUN_008C9750 refresh (SetCombatState(1,2,0)) use param_3 = 2, so they never touch the client flag (VERIFIED; matches E3 and G2).
+
+CALLERS OF 0x7682B0 THAT PASS 0
+1. 0x57A93D in SetCombatState: passes its state arg. Gated on param_3 == 1 (above). Delayed path = AIUpdate timeout (0x569923).
+2. 0x807962 in FUN_00807730 (caller 0x813120; strings Body_Bag/Corpse in decompile): literal PUSH 0, unconditional. Immediate, no timer. VERIFIED.
+3. 0x809E33 in FUN_008079B0 (caller 0x8162C0): arg = byte from a network message (FUN_005E36A0 reads buffer +0x28 at cursor +0x30). Server-driven sync, immediate on receipt. VERIFIED.
+
+PER-FRAME AND ENEMY CHECK
+- The countdown is delta-based (elapsed clock), so it is frame-rate independent. It runs once per AIUpdate pass. AIUpdate has no direct callers (vtable), so "every frame" is GUESS.
+- No enemy, perception or attacker-list check in the countdown block. VERIFIED (decompile lines above contain only FUN_00563DA0 and SetCombatState).
+- Nearby candidate: FUN_005BD6A0 (target validity; called by PC-side FUN_008C9750). It is not in the countdown path. Range semantics GUESS. FUN_008C9750 refreshes the timer (SetCombatState(1,2,0)) before calling it, so the refresh is not gated on it.
+- Countdown freeze: +0x528 != 0 stops the decrement (VERIFIED). FUN_0057A560 sets +0x528 = param_4 on every call.
+
+HOOK NOTES (for the holster DLL)
+- Shorten: write server +0x524 to 0 (or a small value) once the mod judges no hostile is near. The next AIUpdate pass then runs the expiry. Client clear still requires +0x11E8 == 1.
+- Do NOT call 0x7682B0(client, 0) directly. Server +0x520 stays 1, and the 0x8079B0 message path can re-set the flag.
+- Need the server object for the creature. How the DLL reaches it is OPEN (GetGameObject 0x73F4D0 is the client-side lookup; server lookup not traced).
+
+OPEN
+- Exact unit of +0xD0 (ms vs us) and the modulus value at obj+0x3C: read the clock object's init.
+- Whether 0x8079B0's server update message re-sends +0x520 each update.
+- Server object lookup path from the DLL.

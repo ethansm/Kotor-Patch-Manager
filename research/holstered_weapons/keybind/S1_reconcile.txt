@@ -1,0 +1,66 @@
+S1 reconcile of K1..K6 (static, Steam swkotor2.exe 6a522e71). Tags: V = I re-read it in decomp/asm this pass, G = guess.
+
+=== GOAL A: native "Toggle holster" row in Options > Key Mapping ===
+
+(1) K1 vs K2 contradiction: both are half right.
+- UI row set. 0x00900D40 (V): loops id 0x118+i, i<7, modes 2 and 1 (A/B) and id 200+i, i<0x46 (200..269), mode 0. For each, 0x00900940 (V) builds the key "Action<N>[A|B]" (0x901C30), reads 2DA cells ReMappable, ForceDisplay, Disabled, SortPos via 0x71BAD0. If (ReMappable==0 && ForceDisplay==0) || Disabled==1 the row object is freed and 0 is returned, so 0x900D40 skips it (V). A 2DA row that does not exist leaves all locals 0, so it is skipped the same way (V by reading, not run).
+  => visible rows = hard-coded id RANGE intersect keymap.2da rows with ReMappable/ForceDisplay set and Disabled!=1. No fixed GUI slot count is visible in the code: rows are appended one by one via 0x83EA60 (G: dynamic list box append; K4 open item 1, GUI template not parsed).
+- Shipped 2DA (K4 table, re-counted): rows 200..265, 268, and 280a..286b = 66+1+14 = 81. Ids 266, 267, 269 are ABSENT, i.e. free inside the 200..269 range. Nothing to patch in 0x900D40 for those ids.
+- Engine-side binding + default key. 0x00785DF0 (V) is NOT 2DA-free (K2 section G is wrong for 200..269). Part 1: ~27 literal 0x72F8C0(id,type,device,key,0x86) defaults for non-2DA ids (3,4,7,8,0xC,0xD,0x17-0x1A,0x33.., 0x41-0x46, 0x50, 0xB5-0xBB). Part 2 (decomp lines 331-572, V): for id 0xC8..0x10D, with guard [[0xA1B4D0]+0x130]+0x6C != 0 (the "keymap" 2DA object that 0x6EA570 stores at +0x6C): read 2DA cell Disabled (skip if ==1); read ini [Keymapping] "Action<N>" from .\swkotor2.ini; if ini present use it, else take the 2DA cell (column name var local_450, not resolved in this pass; K4 shows it equals the "language0" column) and, if >=0, bind it and WRITE it back to the ini (lines 484-497); EventType cell (default 0): EventType==1 -> 0x72F8C0(id, type 0, ...) else type 1 (lines 500-512, 563-571 V).
+  Part 3 (lines 574-760, V): for id 200..269, if Disabled!=1 and 0x72FD10(id) (table[id] != 0, V) then per-context registration 0x72F8F0(id, ctx) for ctx 0..5 from 2DA columns [0x99F568 (G: ICPC, K1 unnamed col), ICMiniGame, ICPCGUI, ICDialog, ICFreeLook, ICMovie], then Repeatable/RepeatWait/RepeatRate/Scale*.
+- Persistence. Accept (0x901310 -> 0x902800, V per K1/K2 + decomp) writes ini [Keymapping] Action<N> for the row's id. No hard-coded id list on the write path. So a new 2DA row at 266/267/269 would show, bind, save and reload with NO code patch, provided Override/keymap.2da is honoured (G; unproven) and the label strref exists.
+- Rows whose id has no handler: harmless in the dump. Nothing in 0x900D40/0x900940/0x785DF0 asks for a handler; behaviour is polled at call sites (K3 confirmed: no central switch on action id).
+- Other new-row requirements (G): Page column -> filter tab (row+0x3C4 vs panel filter), SortPos, ActionStrRef must be a real TLK strref (shipped invisible rows use *****). Reusing 123712/123713 (SwitchWeaps text) would show the wrong label.
+
+(2) Polling an arbitrary action id (V, asm 0x7AE862-0x7AE871):
+  push slot ; push id ; mov ecx,[0x00A1B48C] ; call 0x0072F9D0 ; fstp float
+  - 0x72F9D0 = thiscall(ECX=W, id, slot) RET 8, W=[0xA1B48C] (written at startup in 0x409750). It forwards ECX=[W+4] (the input manager) to 0x72C320(id, slot) and returns a float in ST0 (V, asm 0x72F9D0-0x72F9ED).
+  - 0x72C320 (V): requires 0<=slot<6; requires 0x72B3E0(id,slot) != 0 (bit id in bitmask [mgr+0x3C+slot*0x40]); entry = table[id] ([mgr+0x188+id*4], count [mgr+0x18C]); switch(entry+0x14): types 0,2,5 -> held value from 0x72C010; type 1 -> returns 0 ALWAYS; type 3/4 -> axis.
+  - Works for an id that no engine switch knows, with three conditions (all V from code):
+    a) table[id] exists: created by 0x72B4D0 in the loader (part 2) for ids 200..269 whose 2DA row is not Disabled and which have a key (ini or 2DA). The array grows on demand (0x840EF0), no cap issue.
+    b) entry type must be 0, i.e. the 2DA row needs EventType=1 (as shipped action268 WALKMODIFY). EventType 0 (default) -> type 1 -> poll returns 0. Event-style rows are delivered by the event queue path (0x72C7E0), not by this poll.
+    c) the context bit must be set: 0x72B830(id, ctx) sets it only if the key is 0x86 (unbound) or 0x72B300(key,device,ctx)==0 (G: no other action already bound to that key in that context) and not already set. So the row needs the ICPC-type flag (ctx 0, G) AND a default key not used by another ICPC row. Poll slot = ctx = 0 (K3: engine reader uses slots 0 and 4).
+  - The value is the held state (1.0 while held, 0.0 otherwise); a toggle needs a rising-edge detect in the holster tick.
+  - Calling convention for a mod: __thiscall with 2 stack args, callee pops 8, float result in ST0 (declare as __fastcall-with-dummy-edx or use inline asm/naked thunk; MSVC thiscall typedef + float return works because ST0 is the standard x87 float return).
+
+(3) Feasibility: native row = FEASIBLE with NO engine code patch (data-only override), pending 3 in-game unknowns. Minimal design:
+  1. Ship Override/keymap.2da = full 81-row copy + one row action266 (or 267/269): Disabled=0, ReMappable=1, ForceDisplay=0, ActionStrRef/DescStrRef = a TLK strref carrying the "Toggle holster" text, language0 = a key code free in ICPC context, Page 1 (or 0), SortPos ~235, Name ToggleHolster, icpc=1, EventType=1, repeatable=0. Binary V2.b like the shipped file (K4 section 1).
+  2. Holster DLL tick: v = poll(0x10A /*266*/, 0) via 0x72F9D0; rising edge (v>0.5 after <=0.5) toggles holster; ignore while GUI/dialog open (ctx 0 only registered for ICPC).
+  3. Persist/rebind/default all come from the vanilla screen (ini [Keymapping] Action266).
+  Single biggest in-game unknown: does the engine's "keymap" load (0x6EA570 -> FUN_00710840("keymap") -> C2DA 0x71AD40) honour Override/keymap.2da, AND does the Key Mapping list show the new row (dynamic list vs fixed GUI slots; ultrawide override optkeymapping_p.gui exists). Close second: custom label text (needs a strref; dialog.tlk is not extended by KPM today).
+  Fallback if Override is ignored: INI-driven own key (holster.ini) via existing input tick, no vanilla row.
+
+Biggest corrections to the notes:
+  - K2 "defaults are hardcoded, no 2DA" is wrong for ids 200..269 (2DA is read in 0x785DF0 part 2/3).
+  - K1 "needs an id inside loop range or patched count" is right; ids 266/267/269 are unused so no patch.
+  - K3 "array allocation not found" resolved: 0x72B4D0 allocates on first bind per id (grows array); open "CExoInput singleton" resolved: global 0x00A1B48C holds W, manager = [W+4].
+  - K4 "must also edit override GUI" is unproven; rows are created in code (0x900940, template class CSWGuiKeyMapButton 0x3D0 B) and appended to a list.
+
+=== GOAL B: holster delay after combat / flourish ===
+
+Verified this pass (asm):
+  - 0x57A64F  C7 80 24 05 00 00 | 40 1F 00 00  = mov [eax+0x524], 0x1F40 (8000). 4-byte immediate at 0x57A655. Reached only for state!=0 (cmp [ebp+8],0 / jz 0x57A679 at 0x57A646-0x57A64A). Then 0x57A659-0x57A66E: [+0x11E8] = param_3 only if it is not already 1. +0x520 = state and +0x528 = param_4 are stored just before (0x57A634/0x57A640).
+  - State-0 branch 0x57A679: +0x524=0, +0x11E8=0, +0x528=0, +0x51C=1, +0x584=-1.
+  - Countdown in AIUpdate 0x569320 (V): 0x5698B4 cmp [+0x520],1; 0x5698C7 if [+0x11E8]==1 call 0x563DA0(1,0,0); 0x5698F6 cmp [+0x524],0 / JG (signed) -> else at 0x569923 CALL 0x57A560 with (0, byte[+0x11E8], 0) = SetCombatState(0,+0x11E8,0); decrement 0x569945-0x569957 [+0x524] -= [+0xD0] only if [+0x528]==0. No enemy/perception test in this block. K5 fully confirmed; this also settles K6 S8: expiry DOES call SetCombatState(0,...) (G2 right, E3 wrong).
+  - Client clear 0x7682B0 inside 0x57A560 is gated on param_3==1 (K5, asm 0x57A926 via K6); flourish passes 2, so expiry of flourish-only combat never touches client +0x138.
+
+Cause of "carrying the weapon in combat stance after a flourish" (K6 + above): flourish (0x79F430) equips/powers the weapon into the hand (PowerItem 0x7FE6C0), sets SERVER combat +0x520=1/+0x524=8000 with param_3=2, never sets CLIENT +0x138. Holster FSM only moves on +0x138 edges, so no stow ever starts; the engine keeps the ready stance/in-hand weapon until the vanilla server timer expires (about 8-8.5 s, no enemy check), and nothing rewrites the wield byte +0xC5 on entry or exit. (Whether stance anim is chosen from +0x520 or +0xC5 is G; K6 says 0x863650 keys on +0xC5.)
+
+Choice of method:
+  (a) patch/detour the literal 8000 at 0x57A64F/0x57A655: GLOBAL (every creature, including enemy AI cycle and the PC's per-tick refresh via 0x8C9750 which also uses param_3=2) and cannot see "no enemies" unless it becomes a detour. Not recommended.
+  (b) tick write of +0x524: per-creature, reversible, uses the engine's own expiry (0x569923) so state-0 cleanup and client clear run normally. Needs the SERVER player creature pointer.
+  (c) holster-only handling of flourish: free to detect without any enemy data: flourish-only combat == server +0x520==1 && client +0x138==0 && server +0x11E8==2.
+  RECOMMENDED = (b)+(c): in the holster tick, with server creature S of the controlled player:
+     - flourish-only (S+0x520==1 && client +0x138==0 && S+0x11E8==2): after the ~1500 ms flourish anim, write S+0x524 = 0 (expires on next AIUpdate pass, +0x528 must be 0, else do nothing). Optionally treat it as a holster stow edge directly.
+     - real combat (client +0x138==1): if no hostile within range, write S+0x524 = min(current, short) (e.g. 1500); the normal expiry then fires H1 (0x7682B0) and the existing 1500 ms stow delay runs.
+     Guard: only when S+0x520==1, +0x524>target, +0x528==0; never touch while an enemy is found.
+  Data for "no enemies near" (reuse, no new RE):
+     - companion_ai_src/CompanionAI.cpp:76 FnNearestEnemy = 0x0057C990 thiscall(server creature; float range, int exclude, int ref) RET 0xC -> object id (invalid sentinel to confirm; queue-hud uses 0 and 0x7F000000 as "none", QueueHudLogic.h:1277).
+     - queue_hud_src/QueueHudLogic.h:1279-1291 softCandidate(): a party member's target fields t550/t564/t568 (client/creature offsets) classify hostile vs party vs none.
+     - Server pointer path: _shared_src/GameAddr.h:65 ClientToServerObjectId 0x0051C8B0 (thiscall(objTable, clientId) RET 4), with the objTable access pattern in action_hotbar_src/ActionHotbar.cpp:568; companion_selfheal_src uses ServerIdMask. companion-ai already has `attacker` server creature pointers.
+  Not yet shown: that FnNearestEnemy accepts the PC / that range units are metres.
+
+=== NEXT 3 HAIKU QUESTIONS (ranked, one deliverable each) ===
+1. [A, gates the in-game test] Read 0x72B300 and 0x72B830 plus the ICPC cell values in the K4 table: state in 5 lines what makes 0x72B300 nonzero (key/device/context conflict), confirm that the string at 0x0099F568 is "ICPC", and list 5 key codes (language0 values) NOT used by any row with icpc=1 (for the new row's default).
+2. [A] Read 0x901D70 lines 100+ and 0x83EA60: deliverable = how ActionStrRef becomes text (which TLK function/address, what happens for a strref beyond the TLK size) and whether 0x83EA60 is an unbounded list append; verdict "custom label possible: yes/no + shim address".
+3. [B] Server-object recipe: from GameAddr.h, CompanionAI.cpp (attacker/FnNearestEnemy call at ~line 997) and ActionHotbar.cpp:568, write a 8-line recipe (addresses, offsets, calling conventions) to get the controlled player's server CSWSCreature* from the client creature, and what 0x57C990 returns when no enemy exists (sentinel, range unit).

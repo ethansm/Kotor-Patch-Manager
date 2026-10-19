@@ -1,0 +1,55 @@
+K6 flourish state (recon, static, $0). No live REA, no game run.
+Sources: repo notes research/holstered_weapons/ux_v3/E1, E2, E3, C_a, G2, OPUS_review; .claude/research/holster_c6_unarmed_anim.md, holster_c7/c_readers_combat.md, holster_c7/d_resolver_caller.md; patch_manager_mods/holster_src/.
+Tags: VERIFIED = read in dump/asm per the notes. GUESS = inferred. Dump root (outside repo): ghidra_dumps/steam_6a522e71/decomp.
+Correction: 0x79F621 and 0x66BAC2 are CALL sites. Return addresses are 0x79F626 and 0x66BAC7 (C_a lines 4-9). E1, E3, G2 quote call sites as "return".
+
+1. WHAT "FLOURISH" MEANS HERE (three things)
+A. Vanilla weapon flourish, the one in the user report. Engine body 0x0079F430 CClientExoAppInternal::PlayerFlourishWeapons.
+   Player path: input handler 0x007B12C0 -> 0x008993F0 (44 bytes, caller not found) -> wrapper 0x007408A0 -> 0x0079F430.
+   NPC/script path: VM 847 Global::ExecuteCommandCreatureFlourishWeapon 0x0066B8A0, dispatched via slot [ECX+0xD3C] (set at 0x00667F4F).
+B. Holster flourish window (C2). Holster.cpp:63 static bool g_flourishOpen. Read by HolsterDrawGate.h:41-43 (shouldWriteHip) and Holster.cpp:799, 908.
+C. Unrelated "flourish": Equip3D preview (equipment_3d_character_src/EquipCharPreview.cpp, flourish_* keys in Equip3dLogic.h) and NB2 ambient NPC flourish (npc_diversity_src/DiversityAnim.h). Neither touches +0x520, +0x524, +0x138 or the holster.
+
+2. IMPLEMENTED OR DESIGNED?
+- Vanilla flourish: engine code, runs unmodded. kotor2-steam-aspyr.hooks.toml has no hook on 0x007408A0, 0x0066B8A0, 0x0079F430, 0x008993F0, 0x007B12C0 or 0x0057A560 (zero matches).
+- Holster C2 flourish window: DESIGN ONLY. g_flourishOpen is initialised false and never assigned true (rg over holster_src: declaration plus two reads). Design in E1 options A/B and E3 option 2.
+- Holster hooks that exist: H1 0x007682B0 (HolsterCombat, COMB log only), H4 0x00863650 (anim-id resolver), H7 0x00504EF5 (HolsterPlace, hip pose write).
+
+3. EXACT SEQUENCE (vanilla, static)
+S1. Input or VM calls 0x008993F0 or 0x0066B8A0, which reach 0x007408A0 (ECX = [EAX+4]) and then 0x0079F430.
+S2. Gates in 0x0079F430 (E1 sec 1-2, E2 Q3, c_readers_combat.md:20):
+    - player +0x464 > 0 -> return (cooldown; set to 1000 at end; unit GUESS)
+    - creature vtbl+0x94() != 0, or (+0x11AC != 0 and vtbl+0x9c(0) < 1) -> return
+    - wield byte +0xC5 == 1 or 8 -> return silently (no anim, no cooldown)
+    - +0x2E4 early-out (meaning unknown)
+S3. Weapon block: items in slots 0x10 and 0x20 (GetEquippedItemID 0x0076E610), item vtbl+0x34(1,0,1,0), then PowerItem 0x007FE6C0. This is the visible "weapon into hand" step. VERIFIED in dump; visual meaning GUESS.
+S4. CALL 0x0079F621 (push 0, push 2, push 1) -> CSWSCreature::SetCombatState 0x0057A560 with state=1, param3=2, p4=0. VERIFIED.
+    Server writes inside 0x0057A560: +0x520 = 1; +0x528 = 0; +0x524 = 8000; +0x11E8 = 2 if not already 1.
+S5. 0x0057A560 calls client 0x007682B0 only when param3 == 1 (asm 0x57A926 CMP/JNZ). Flourish passes 2, so the call is skipped. Client +0x138 stays 0. VERIFIED.
+S6. Body anim: fire-and-forget 0x27AE (10158), 1500 ms, speed 1.0, via 0x007EFC40. Movement-input branch uses 0x27AD (10157) through vtbl+0xE0 -> resolver 0x00863650. Args VERIFIED; anim names GUESS.
+S7. Nothing in 0x0079F430 clears +0x520, +0x524, +0x138 or the wield byte. VERIFIED (E3 Q1).
+S8. Conflict: G2:24 says "expiry of a flourish calls SetCombatState(0,2,0)" with no trace. E3:9 found no clear in 0x0079F430. Unresolved; see OPEN.
+
+4. WHERE THE CHARACTER IS STUCK AFTER A FLOURISH
+- Server combat flag +0x520 = 1. Written by S4. No clear in the flourish path. Clear path: GUESS.
+- Server combat timer +0x524 = 8000 (units presumably ms, GUESS). Expected clearer: vanilla server combat timeout (GUESS). Conflict: E1:23 says the timer "does not auto-clear"; E3:9 says it counts down. Both GUESS. holster.ini:28 says "~8 s after combat ends", which fits 8000 but is a note, not a trace.
+- Client combat flag +0x138 = 0. Flourish never sets it, so H1 never sees an edge and the holster FSM never draws. VERIFIED.
+- Stance idle: 0x2711 (alias 0x27A4) is the ready/holding idle, resolved by 0x00863650 using wield byte +0xC5. Wield 1->0x5C, 2->0x85, 3->0xAE, 4->0xD7, 5->0xDF, 6->0xED, 7->0xF5, 8->0xF9 (0x217 if +0xD4 != 0), 9->0xF5. VERIFIED from c6_unarmed_anim.md:6-7 and d_resolver_caller.md:30,34. "0x2711 is the holding idle" is GUESS (c6:15).
+- Combat entry does not rewrite +0xC5 (c_readers_combat.md ordering hint). The stance therefore persists until the wield byte changes.
+- Who clears: no mod code. Only H1 reads 0x007682B0. The GameAddr.h:75 entry is a constant. Nothing in patch_manager_mods writes +0x520, +0x524, +0x138 or the stance. The vanilla server countdown is expected to clear it (GUESS, not traced).
+
+5. IMPLICATIONS FOR THE HOLSTER GOAL
+- The FSM (HolsterLogic.h:193-199) runs only on +0x138 edges. A flourish gives no edge, so the FSM never draws or stows for it.
+- Stow after real combat: 1500 ms (kStowDelayMs, HolsterLogic.h:172) after the client flag returns to 0. The 8 s figure is the server timer, not the mod's.
+- Under the live config (probe=1, bone_test=1, place=1, per E2:9), drawgate writes the hip pose whenever +0x138 == 0. So a flourish-only event leaves the weapon on the hip from the mod side, while S3 shows it in the hand from the engine side. Does not match the user report exactly. In-game check needed.
+
+6. OPEN
+- G2:24 vs E3:9 on whether expiry clears +0x520 (SetCombatState(0,...) call not located).
+- +0x524 countdown: writer, units and decrement not traced.
+- Caller of 0x008993F0 (key table or indirect) not found (E1:8).
+- Idle 0x2711 as the ready stance: GUESS.
+- Not reproduced in game.
+
+7. DOC CONFLICTS NOTED, NOT RESOLVED
+- E2:40 says the flourish passes 0 to 0x7680A0; the dump line it cites calls FUN_007680A0(0,1). Arg meaning not rechecked.
+- E2 gate "+0xC5 == 1 or 8" and c_readers "styles 1 and 8" are the same byte assumed.

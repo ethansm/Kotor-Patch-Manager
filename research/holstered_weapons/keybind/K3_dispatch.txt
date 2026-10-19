@@ -1,0 +1,51 @@
+K3 DISPATCH: KOTOR II (Steam swkotor2.exe, base 0x00400000) keyboard key -> action id -> behaviour
+Source: static dumps ghidra_dumps/steam_6a522e71 (decomp, asm, callgraph, globals). No live REA. Anchors are Steam addresses; decomp line numbers refer to decomp/<bb>/<addr>.c.
+
+## 1. Key Mapping screen (UI side, already known)
+- ctor FUN_008fff20 (size 1664), caller FUN_008e0fc0 (options parent). Panel string "OPTKeyMapping_p" @0x009a9e8c.
+- Row builder FUN_00900d40 (size 234):
+  - ids 0x118+i, i=0..6, each added twice (slot 2 and slot 1) via FUN_00900940.
+  - ids 200+i, i=0..69 (0x46), slot 0, via FUN_00900940.
+  - Row ids are hard-coded loop bounds here. No table is read from file for the row set.
+- FUN_00900940 (size 1021): factory. Allocates 0x3d0 bytes (ctor FUN_009017b0). Stores action id at row+0x3a8 and slot at row+0x3ac. Argument-to-register mapping: GUESS.
+- Row list: owner+0x68 (array), count owner+0x6c. FUN_00900e30 filters rows by row+0x3c4 and sorts by row+0x3cc.
+
+## 2. Where a binding is written (the table the screen edits)
+- FUN_00902800 (size 392), called from FUN_00901310 (Accept/apply path):
+  - ev = FUN_0072f9b0(row+0x3a8, -1) -> FUN_0072b280(id, -1), which returns the engine event object at array[id] (array at CExoInput+0x188, count +0x18c; decomp of 0072b280, lines 1-20).
+  - slot > 1: ev+0x30 = row+0x3b4 (new key). Otherwise ev+0x1c = row+0x3b4 (new key).
+  - Persists to ".\swkotor2.ini", section "Keymapping", key from FUN_00901c30(id, slot), via FUN_00736350 (strings 0x0099f574 "Keymapping").
+- FUN_00902620 (size 480): reads the ini value back, sets dirty flag row+0x3b0, default vs alt labels from DAT_00a7fde8/DAT_00a7fe48 (GUESS on label meaning).
+- Loader "keymap": FUN_006ea570 (size 176, string 0x0099ae40) loads resource "keymap" into an object (+0x6c). Caller FUN_006e7610 (size 1617) is an engine init chain. GUESS: input init.
+
+## 3. Read path (the dispatch)
+- Thin wrapper FUN_0072f9d0 (size 32, ret=8): calls FUN_0072c320(id, slot). Args on stack; ECX (CExoInput this) passes through.
+- FUN_0072c320 (size 449): requires -1 < slot < 6, validates via FUN_0072b3e0, fetches event via FUN_0072b280, then switch(event+0x14) (decomp line 'switch(puVar2[5])'). Returns float10.
+- Model: POLL, not push. Callers ask for the value of a fixed id each frame and decide behaviour themselves.
+- No central switch on action id. The switch is on event type. Behaviour lives at each call site.
+
+## 4. Readers (who consumes the table)
+- FUN_007ac470 (__thiscall, size 15798, caller FUN_00781be0): at least 26 call sites of 0x72f9d0. Literal ids seen: 0x7, 0x8, 0xc, 0xd, 0x118, 0x119 (slots 0 and 4).
+- FUN_0078c350 (size 2883, caller FUN_00781be0): 4 call sites of 0x72f9d0.
+- Not used as readers: FUN_00785df0 (options GUI builder, string "Keymapping"), FUN_007e5df0 (not a key path).
+
+## 5. Worked example: ids 0x118 (280) and 0x119 (281)
+- Rows: built in FUN_00900d40 (slot 1/2 for 0x118+i).
+- Write: FUN_00902800 sets ev+0x1c or ev+0x30 for the id.
+- Read: FUN_007ac470 decomp lines 972-980 (ids 0x7, 0x8, 0x119, 0x118; slot 0). Lines 1010-1013 (slot 4). Lines 1031-1066 (0x119, 0x118 compared with thresholds DAT_00986d98 and DAT_00987474, and DAT_00986b50).
+- Name of 280/281 is NOT resolved from the dumps. GUESS: an analog axis pair.
+
+## 6. Can a mod DLL add a new action id?
+- Partly. Two gaps block a clean row:
+  a. Row creation is hard-coded in FUN_00900d40. A new row needs an extra FUN_00900940 call there, or a detour of FUN_00900d40 (size 234).
+  b. The engine event array at CExoInput+0x188 must have an entry for the new id (count +0x18c). The allocation site was NOT found. OPEN.
+- Behaviour hook: FUN_0072f9d0 is a 32-byte wrapper with stack args and ECX passing through. A 5-byte JMP detour fits. It can return 1.0 for a new id when its key is held. That covers the consumer side only if the event slot exists (gap b).
+- Feasible detour sites: 0x0072f9d0 (poll), 0x00900d40 (row builder), 0x00902800 (persist).
+
+## 7. Caveats and OPEN
+- OPEN: CExoInput singleton address (ECX at call sites). Not resolved.
+- OPEN: meaning of slots 0..5, event types 0..5, and the 0072c320 switch cases. Not decoded.
+- OPEN: array allocation/size for CExoInput+0x188.
+- OPEN: keyboard key codes at ev+0x1c vs device state. Not traced.
+- R9_map_aur.tsv lists 0x0072f9d0 as both CExoInput::GetEvent and PollInput. The decomp shows a thin wrapper, so the R9 names look unreliable here. Trust the decomp.
+- Verify with a live probe before shipping any hook.

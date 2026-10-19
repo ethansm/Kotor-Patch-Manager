@@ -1,0 +1,82 @@
+K1_panel_rows: Options > Key Mapping (OPTKeyMapping_p) row source
+Binary: Steam swkotor2.exe (base 0x00400000). Static dumps only: ~/Games/KOTOR2_Mod_Workspace/ghidra_dumps/steam_6a522e71/ (no live REA).
+Anchors: "asm A-B" = decomp/<bb>/<addr>.asm lines; "dec" = decomp/<bb>/<addr>.c.
+
+=== VERDICT ===
+Row metadata comes from the keymap 2DA (C2DA object). The action ids are hard-coded loop bounds in 00900D40. Not a hardcoded label table. Not read from the in-memory table for row creation.
+Default key code per row = 2DA column "Language0". Saved key = swkotor2.ini [Keymapping] Action<N>[A|B] (written by 00902800).
+Runtime binding table = global 0x00A1B48C -> manager -> pointer array indexed by action id.
+
+=== 1. CALL CHAIN ===
+1) 0x008FFF20 ctor (1664 B): FUN_00710840("OPTKeyMapping_p") (dec); 00900E30(this+0x1364) filter; 00900D40() populate; event 0x27 handlers 009012B0, 00901310, 009013F0, 00901430, 00901470 (FUN_00418AF0 calls, dec).
+2) 0x008E0FC0 opener (178 B): allocs 0x1370 then calls 008FFF20. Not a row source. String BTN_KEYMAP (0x009A8E38) is referenced by 008DF930.
+3) 0x00900D40 populate (234 B), dec + asm 0x00900D6B-0x00900D8D:
+   - loop i=0..6: 00900940(id=280+i, table, mode=2) and mode=1 (A and B slots).
+   - loop i=0..69: 00900940(id=200+i, table, mode=0) (bare rows).
+   - table = [this+0xF78] (dec line 11; asm pushes 2, [ebp-8], id).
+   - non-null row appended with 0083EA60 (dec).
+4) 0x00900940 row builder (1021 B). Asm 0x00900A7A-0x00900A89 shows id=[EBP+8], table=[EBP+0xC], mode=[EBP+0x10]. The dec parameter names are shifted; trust the asm.
+   - allocs 0x3D0 bytes (0x00919723), ctor 0x009017B0 (vtable CSWGuiKeyMapButton).
+   - 2DA cells: "ReMappable", "ForceDisplay" (skip row unless one is nonzero), "Disabled" (skip if ==1), "SortPos" -> row+0x3CC (default -1). Strings 0099F580, 009A9F14, 009A9F1C, 009A9F2C.
+   - row key from 00901C30(id, mode): mode0 "Action<id>", mode1 "Action<id>B", mode2 "Action<id>A" (format strings "%s%dB", "%s%dA" in dec).
+5) 0x00901D70 (2215 B): 2DA "ActionStrRef" (label strref, dec line ~44), "DescStrRef" -> row+0x1D0 (string 009AA00C), "ICPCGUI"/"ICMiniGame" and one unnamed column at 0x0099F568 -> row+0x3C0 bits. Column name for row+0x3C4 is an unresolved local.
+6) 0x00900E30 filter/sort (422 B): keeps rows where row+0x3C4 == panel+0x1364, orders by row+0x3CC (insert via 00414280).
+7) 0x00901310 Accept (215 B): rows with row+0x3BC==0 and row+0x3B0!=0 -> 00902800. Then resets panel+0x1368 and flags at +0x48.
+8) 0x009012B0 Refresh (95 B): rows with row+0x3BC==0 -> 00902620.
+9) 0x00902620 (480 B): 2DA cell "Language0" for key (id,mode) -> row+0x3B4. row+0x3B0 = (row+0x3B8 != default). Colors DAT_00A7FDE8.. vs DAT_00A7FE48.. set at +0x98/+0x26C.
+10) 0x00902800 (392 B) writer:
+   - entry = 0x0072F9B0(id, -1) via "MOV ECX,[0x00A1B48C]" (asm 0x00902834, 0x0090283A).
+   - if mode==A and entry vcall[+4] nonzero: entry+0x30 = row+0x3B4; else entry+0x1C = row+0x3B4.
+   - ini write: section "Keymapping" (string 0099F574), file ".\\swkotor2.ini", key = 00901C30(id,mode), value = row+0x3B4.
+11) 0x0072F9B0 (32 B) thiscall(this, id, slot), asm 0x0072F9B4-0x0072F9C5: ECX = [this+4], calls 0x0072B280.
+12) 0x0072B280 (127 B): slot -1 path returns [mgr+0x188 + id*4] if id < [mgr+0x18C], else 0.
+13) 0x006EA570 (176 B): FUN_00710840("keymap") then 0x0071AD40 (C2DA ctor). Caller 006E7610 (startup). Result stored to [obj+0x6C]; obj not resolved.
+14) 0x0071BAD0 (534 B): C2DA cell read (ECX = 2DA, row label, column, &out). Uses 0x0071C320 (column index) and 0x0071AEF0 (row index).
+
+=== 2. ROW OBJECT (CSWGuiKeyMapButton, 0x3D0 bytes) ===
++0x1D0  DescStrRef (2DA), also copied to +0x28 and +0x1FC
++0x3A8  action id (asm 0x00900A31 uses [EBP+8]); table index for in-memory lookup
++0x3AC  mode: 0 = bare "Action<id>", 1 = B slot, 2 = A slot
++0x3B0  changed flag (set in 00902620)
++0x3B4  current / default code (2DA "Language0" at load; written to ini by 00902800)
++0x3B8  compare value (no writer found in 8F/8E/90 dumps)
++0x3BC  binding-row flag (0 = binding row)
++0x3C0  bitmask: 1 = unnamed column 0x0099F568, 2 = ICMiniGame, 4 = ICPCGUI (bit 4 partly GUESS)
++0x3C4  category (matched against panel+0x1364)
++0x3CC  SortPos (default -1)
+Label text: ActionStrRef is read into a local in 00901D70; its storage offset and TLK lookup not resolved (dec beyond line 100 not read).
+
+=== 3. PANEL FIELDS (this = CSWGuiInGameOptKeyMappings) ===
++0xF78  C2DA table pointer used by 00900D40 (writer not found in 8F/8E/90 dumps)
++0x68   row pointer array; +0x6C count (dec, 00900E30 / 009012B0)
++0x1364 current filter (BTN_Filter_Move / BTN_Filter_Game / BTN_Filter_Mini)
++0x1368 selected row index (GUESS)
+
+=== 4. IN-MEMORY BINDING TABLE ===
+Global    : 0x00A1B48C -> wrapper W (read by 0x00902834 and by 0x00901D70 call site at 0x0090246C)
+Manager   : mgr = *(W + 0x04)
+Array     : mgr+0x188 = pointer array, stride 4, index = action id
+Count     : mgr+0x18C (lookup fails if id >= count)
+Entry     : no id or strref field. Code fields: +0x1C (B slot, GUESS), +0x30 (A slot, GUESS). Entry vfunc [+4] gates the A write.
+Label strref: not stored in the table; comes from the 2DA ActionStrRef column.
+
+=== 5. ROW SOURCE DECISION ===
+- Which actions appear: hard-coded id ranges in 00900D40 (200..269 bare; 280..286 with A and B). Anything outside these never becomes a row, whatever the 2DA holds.
+- Row metadata (label strref, sort, filter, visibility): keymap 2DA via C2DA.
+- Default key: 2DA column "Language0".
+- Saved key: swkotor2.ini [Keymapping] Action<N>[A|B].
+- No hardcoded label table found. Label text is a TLK string referenced from the 2DA.
+
+=== 6. IMPLICATIONS FOR A HOLSTER ROW ===
+- Needs an id inside the loop ranges, or a patched count in 00900D40 (loop bounds 0x46 and 7).
+- Needs a 2DA row "Action<N>" or "Action<N>A/B" with ReMappable=1 or ForceDisplay=1, Disabled!=1, Language0, ActionStrRef, SortPos, and a category matching the active filter.
+- Runtime binding needs entry at mgr+0x188[N] non-null and N < mgr+0x18C (0x0072B280 returns 0 otherwise).
+- keymap.2da contents are not in the dumps, so which ids are free is unknown.
+
+=== 7. OPEN ===
+- Writer of panel+0xF78 and the owner of the 006EA570 result.
+- Source of +0x3B8.
+- Category column name (local at 00901D70 +0x3C4 read) and the 0x0099F568 column name.
+- Label strref storage and TLK call in 00901D70 beyond line 100.
+- Meaning of entry +0x1C and +0x30 (no reader traced).
+- Whether 00785DF0 (refs "Keymapping", 0x0099F574, callers 007819E0 and 0073FB00) fills the in-memory table at startup. Not verified.

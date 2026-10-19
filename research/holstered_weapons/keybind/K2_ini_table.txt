@@ -1,0 +1,76 @@
+K2 [Keymapping] ini table recon - swkotor2.exe Steam (base 0x00400000)
+Source: ghidra_dumps/steam_6a522e71 (static dumps). No live REA.
+Confidence tags: CONFIRMED = read in decomp/asm; GUESS = inferred, unverified.
+
+== A. Strings ==
+- 0099f574 "Keymapping" (7 refs: FUN_00902800, FUN_00785df0, others)
+- 00986b98 ".\\swkotor2.ini" (175 refs)
+- 0099f58c "Action" (refs: FUN_00901c30, FUN_00785df0)
+- 009a9ff4 "%s%dA" and 009a9ffc "%s%dB" (ref: FUN_00901c30 only)
+- 00986b94 "%d" (raw PE bytes, not in strings.tsv): the value format
+- Win32 INI API: none in imports.tsv (no GetPrivateProfile*/WritePrivateProfile*). The engine uses its own ini layer.
+- Key name = "Action" + decimal id + "A" or "B". Value = decimal key code. CONFIRMED.
+
+== B. Key-name builder ==
+- FUN_00901c30 @00901c30 (308 B). Selector arg3: 2 -> "%s%dA", 1 -> "%s%dB", 0 -> "Action"+id (CSWString path). CONFIRMED.
+
+== C. Loader ==
+- FUN_00785df0 @00785df0 (12175 B). CONFIRMED.
+- Callers: FUN_0073fb00 @0073fb00 (called from FUN_00409750 @00409cdc, startup). Also FUN_007819e0 (call at 0073f980).
+- Order inside the loader:
+  1. Hardcoded defaults: 27 literal FUN_0072f8c0(id, slot, device, value, 0x86) calls, first at 00785e52.
+     Pattern: 00785e3e loads device from [0x0099c884]; 00785e4c loads the controller root from [0x00a1b48c].
+  2. Ini overrides: loop ids 200..269 (0xc8..0x10d, 70 ids). Reads with FUN_0071bad0 (get-int, bool return) and FUN_00736320 -> FUN_0073ba80 (ini get). Section "Keymapping", file ".\\swkotor2.ini" (decomp lines 359-361, 394-396, 477-479, 533-535, 546-548).
+  3. Override bind: FUN_0072f8c0(id, slot, 0x0099c884, value, 0x86). Slot = 0 when EventType==1, else 1 (decomp 386-389, 428-431). CONFIRMED for call sites; EventType meaning GUESS.
+  4. A second loop over ids 200..269 reads "Action<N>" + "Disabled" (decomp ~285-300). That section is not resolved (OPEN).
+  5. "Language" is read in the same function (decomp ~270-280). Section not resolved (OPEN).
+
+== D. Saver ==
+- FUN_00902800 @00902800 (392 B). CONFIRMED.
+- Caller: FUN_00901310 @00901374. It loops rows at this+0x68 / count this+0x6c and skips a row when +0x3bc != 0 or +0x3b0 == 0.
+- Flow per (action, selector), CONFIRMED from decomp:
+  a. FUN_0072f9b0(this+0x3a8, -1) returns the in-memory entry.
+  b. The new code (this+0x3b4) is stored to entry+0x1c, or to entry+0x30 when selector==2.
+  c. FUN_00734270 formats "%d" -> value string.
+  d. FUN_00733570("Keymapping"), FUN_00733570(".\\swkotor2.ini").
+  e. FUN_00901c30(key, id=this+0x3a8, sel=this+0x3ac) -> "Action<id>A" or "Action<id>B".
+  f. FUN_00736350 -> FUN_0073c0e0 (write, GUESS: value string is arg1, key is last arg).
+
+== E. INI primitives ==
+- FUN_0073ba80 @0073ba80 (1616 B): ini get. Wrapper FUN_00736320 @00736320.
+- FUN_0073c0e0 @0073c0e0 (3953 B): ini get/put. Wrapper FUN_00736350 @00736350. Read vs write NOT verified (OPEN).
+- FUN_0071bad0 @0071bad0 (534 B): (ini obj, CSWString key, int* out) -> bool. Returns 0 when the key is missing.
+
+== F. In-memory binding table ==
+- Root global: DAT_00a1b48c (0x00a1b48c). Written in FUN_00409750 @00409c7e (MOV [0xa1b48c],EDX), i.e. startup allocation. CONFIRMED.
+- Wrapper FUN_0072f8c0 @0072f8c0 (44 B): ECX = [root], then callee this = [root+4] (asm @0072f8db-0072f8de). CONFIRMED.
+- Controller object (this):
+  - +0x188: action table pointer. Stride 4 B. Index = action id. CONFIRMED (FUN_0072b4d0 @0072b508-0072b53e).
+  - +0x18c: table count. Grown via FUN_00840ef0(id*2+1). CONFIRMED.
+  - +0x40 + type*0x40: per-type lists (FUN_0072b3e0 @0072b3e0). GUESS for list semantics.
+- Entry: heap object, pointer stored at table[id]. Allocated only if table[id] is null. CONFIRMED.
+  - +0x00: vftable (CExoInputEventDesc; CExoInputEventDescDetailed for type 3).
+  - +0x10: action id (uint). CONFIRMED.
+  - +0x14: type/slot 0-5 (switch selector). CONFIRMED.
+  - +0x18: device index. Callee rejects device >= 10. CONFIRMED.
+  - +0x1c: key code (int). CONFIRMED.
+  - +0x30: param6 = 0x86, type 4 only (object size 0x38, FUN_0072b790). CONFIRMED. Saver also writes +0x30 for selector 2 (A). GUESS for A/B mapping.
+  - Type 0,1,2,5 = 0x20 B. Type 3 = 0x30 B (floats 1.0 at +0x28/+0x2c). CONFIRMED.
+- keyA / keyB: NOT separate fields. A and B are separate ini keys. Field mapping above is GUESS.
+
+== G. Defaults ==
+- Hardcoded in FUN_00785df0. No 2DA string in the loader. CONFIRMED.
+- Default data = .data dwords read from exe file: device DAT_0099c884=0, DAT_0099c888=1, DAT_0099c88c=2. Values e.g. DAT_0099c8b4=6, DAT_0099c8c0=9, DAT_0099c934=38, DAT_0099c9fc=88, DAT_0099ca58=111, DAT_0099ca70=117.
+- Are these key codes or table indexes? GUESS (unverified). globals.tsv has 0 rows for 0x0099c8xx-0x0099ca7x, so no writer check was possible. Dump is incomplete here.
+- Default bind ids (27 literal binds):
+  - hex: 0x50, 0xb5-0xb9, 0xbb, 0x0c, 0x0d, 0x17-0x1a, 0x33, 0x34, 0x37, 0x38, 0x41-0x46
+  - dec: 3, 4, 7, 8
+- Iteration count: ini override loop = 70 ids (200..269). Defaults = 27 binds over about 24 distinct ids.
+- Free-id note: ids 200..269 are the ini override range. Ids 0x51-0xb4 and 0xbc+ are not used by the loader defaults. GUESS for free-id safety.
+
+== H. OPEN ==
+1. FUN_0073c0e0 read vs write. Needs one trace of its branch on a flag.
+2. Slot 0/1/2/3 meaning and EventType mapping.
+3. Meaning of the 0x86 sentinel (also compared at FUN_0072b830 @0072b830 as key == 0x86).
+4. Section for "Action<N>Disabled" and "Language" reads.
+5. Whether .data defaults are VK-style key codes or indexes.

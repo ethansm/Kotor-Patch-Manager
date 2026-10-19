@@ -1,0 +1,126 @@
+K4 - keymap.2da: what the real table contains, and whether an Override copy can add a row
+Source: read-only extraction from the Steam install (game dir not modified). Question owner: K4 (holster keybind).
+
+## 1. Where keymap.2da lives
+- Not a loose file. In chitin.key (KEY V1, 18439 keys) it is resref 'keymap', restype 2017 (2DA), in data/2DA.bif (the game dir also has Data -> data symlink), resource index 155 inside 2DA.bif, size 6892 bytes.
+- Format: binary '2DA V2.b', 23 columns, 81 rows. Layout: NUL-terminated TAB column names; u32 row count; TAB-terminated row labels; u16 cell offsets (row-major); u16 data size; string pool. Decoder check: all 1863 offsets land on string starts (score 1.0).
+- Engine strings present in swkotor2.exe: 'keymap', 'KEYMAP', 'KeyMappings', 'KeyMapping_p', 'KeyMapButton', 'Keymapping'.
+- GUI: optkeymapping_p and optkeyentry_p are in data/Gui.bif (restype 2047). The game dir ALSO has override/optkeymapping_p.gui (ultrawide GUI copy), so any new row must also be reflected in that override GUI, not only in the 2DA.
+- Live bindings: swkotor2.ini [Keymapping], keys Action<row-label without 'action', uppercased>. Suffix A/B = two bindings for rows 280-286 (e.g. Action280A=ActionUp W, Action280B=ActionDown S).
+
+## 2. Columns (header names as written in the file)
+0 disabled (1 = row not bindable; all 17 disabled rows have no ini key)
+1 actionstrref  2 descstrref  (strref; ***** = none)
+3 language0 = DEFAULT KEY CODE (misnamed header). Every ini ActionNNN value equals this column.
+4 character = key label text shown (e.g. 30=Tab, 67=Q, 51=A, 73=W, 9=UP, 31=Escape)
+5 page (0/1/2; MG* rows and PauseMinigame are page 2)
+6 sortpos  7 name (internal action name, e.g. SelectPrev, ActionUp)
+8 remappable  9 forcedisplay  10 icpc  11 icminigame  12 icpcgui  13 icdialog  14 icfreelook  15 icmovie  16 repeatable  17 repeatwait  18 repeatrate  19 scale  20 scalemag  21 scaleexp  22 eventtype
+Key codes are the engine's own table, NOT DirectInput: 67 is Q, 30 is Tab (DIK would be 16 and 15).
+
+## 3. Full dump (TSV: label, then the 23 columns above)
+label	disabled	actionstrref	descstrref	language0	character	page	sortpos	name	remappable	forcedisplay	icpc	icminigame	icpcgui	icdialog	icfreelook	icmovie	repeatable	repeatwait	repeatrate	scale	scalemag	scaleexp	eventtype
+action200	1			9	Up	0		MoveForward	0	0	0	0	1	0	0	0	1	500	60	0			0
+action201	1			10	Down	0		MoveBack	0	0	0	0	1	0	0	0	1	500	60	0			0
+action202	1			7	Left	0		StrafeLeft	0	0	0	0	1	0	0	0	1	500	60	0			0
+action203	1			8	Right	0		StrafeRight	0	0	0	0	1	0	0	0	1	500	60	0			0
+action204	0	48891	48892	67	Q	0	100	SelectPrev	1	0	1	0	0	0	1	0	1	500	60	0			0
+action205	0	48893	48894	55	E	0	110	SelectNext	1	0	1	0	0	0	1	0	1	500	60	0			0
+action206	0	48895	48896	30	Tab	1	200	ChangeChar	1	0	1	0	1	0	1	0	0			0			0
+action207	0	48799	48897	72	V	1	210	PartyActive	1	0	1	0	0	0	1	0	0			0			0
+action208	0	48898	48899	89	CAPTLOCK	0	70	Freelook	1	0	1	0	0	0	1	0	0			0			0
+action209	0	48900	48901	71	U	1	180	Equip	1	0	1	0	1	0	1	0	0			0			0
+action210	0	48902	48903	59	I	1	170	Inventory	1	0	1	0	1	0	1	0	0			0			0
+action211	0	48904	48905	66	P	1	160	Character	1	0	1	0	1	0	1	0	0			0			0
+action212	0	48906	48907	61	K	1	140	SkillsAndFeats	1	0	1	0	1	0	1	0	0			0			0
+action213	0	48908	48909	62	L	1	110	Messages	1	0	1	0	1	0	1	0	0			0			0
+action214	0	48910	48911	60	J	1	130	Quests	1	0	1	0	1	0	1	0	0			0			0
+action215	0	48912	48913	63	M	1	120	Map	1	0	1	0	1	0	1	0	0			0			0
+action216	0	48914	48915	65	O	1	150	Options	1	0	1	0	1	0	1	0	0			0			0
+action217	0	48916	48917	87	Space	2	50	MGshoot	1	0	0	1	0	0	0	0	0			0			0
+action218	0	48752	48919	42	F4	1	250	Quicksave	1	0	1	0	0	0	1	0	0			0			0
+action219	0	48920	48921	28	LeftCTRL	0	80	LeftLookabout	1	0	1	0	1	1	1	0	0			0			0
+action220	0	48920	48921	29	RightCTRL	0		RightLookabout	0	0	1	0	1	1	1	0	0			0			0
+action221	0	48922	48923	24	LeftShift	0		AlternateActions	0	0	1	0	1	0	1	0	0			0			0
+action222	0	48922	48923	25	RightShift	0		AlternateActions2	0	0	1	0	1	0	1	0	0			0			0
+action223	0	48924	48925	31	Escape	0	90	GUI	0	1	1	0	1	0	1	0	0			0			0
+action224	0	48798	48926	90	PauseKey	1	10	Pause	0	1	1	1	0	0	1	0	0			0			0
+action225	0	48927	48928	70	T	1	240	ToolTips	1	0	1	1	1	0	1	0	0			0			0
+action226	0	48792	48929	77	1	1	40	TargetLeftAct	1	0	1	0	0	0	1	0	0			0			0
+action227	1	48930	48931	39	F1	1		DEFAULTChg	1	0	1	0	0	0	1	0	0			0			0
+action228	0	48932	48933	78	2	1	50	TargetMiddleAct	1	0	1	0	0	0	1	0	0			0			0
+action229	1	48787	48934	40	F2	1		FEATSSKILLChg	1	0	1	0	0	0	1	0	0			0			0
+action230	0	48935	48936	79	3	1	60	TargetRightAct	1	0	1	0	0	0	1	0	0			0			0
+action231	1	48789	48937	41	F3	1		HOSTILEPOWERChg	1	0	1	0	0	0	1	0	0			0			0
+action232	0	48938	48939	80	4	1	70	PersonalPowerAct	1	0	1	0	0	0	1	0	0			0			0
+action233	1	48791	48940	42	F4	1		HOSTILEITEMChg	1	0	1	0	0	0	1	0	0			0			0
+action234	0	48941	48942	81	5	1	80	PersonalMedicalAct	1	0	1	0	0	0	1	0	0			0			0
+action235	1	48943	48944	43	F5	1		FRIENDLYPOWERChg	1	0	1	0	0	0	1	0	0			0			0
+action236	0	48788	48945	83	7	1	100	PersonalMinesAct	1	0	1	0	0	0	1	0	0			0			0
+action237	1	48795	48946	44	F6	1		minesMenuChg	1	0	1	0	0	0	1	0	0			0			0
+action238	0	48947	48948	82	6	1	90	PersonalOtherAct	1	0	1	0	0	0	1	0	0			0			0
+action239	0	48949	48950	68	R	1	30	DefaultAction	1	0	1	0	0	0	1	0	0			0			0
+action240	0	48951	48952	56	F	1	190	CancleCombat	1	0	1	1	0	0	1	0	0			0			0
+action241	0	48798	48953	87	Space	1	20	Pause	1	0	1	0	0	0	0	0	0			0			0
+action242	0	48954	48955	74	X	1	230	Flourish	1	0	1	0	0	0	0	0	0			0			0
+action243	0	48956	48957	67	Q	1	270	PrevMenu	1	0	0	0	1	0	0	0	0			0			0
+action244	0	48958	48959	55	E	1	280	NextMenu	1	0	0	0	1	0	0	0	0			0			0
+action245	0	48800	48960	75	Y	1	290	ClearOneAction	1	0	1	0	0	0	0	0	0			0			0
+action246	1	48961	48962	14	4	1		ActionMenuLeft	1	0	1	0	0	0	1	0	0			0			0
+action247	1	48963	48964	16	6	1		ActionMenuRight	1	0	1	0	0	0	1	0	0			0			0
+action248	1	48784	48965	18	8	1		ActionMenuUp	1	0	1	0	0	0	1	0	0			0			0
+action249	1	48802	48966	12	2	1		ActionMenuDown	1	0	1	0	0	0	1	0	0			0			0
+action250	1	48967	48968	88	Enter	1		ActionMenuQueue	1	0	1	0	0	0	1	0	0			0			0
+action251	1	48969	48970	21	Del	1		ActionMenuRemoveQ	1	0	1	0	0	0	1	0	0			0			0
+action252	1	48971	48972	23	+	1		ActionMenuShowMenu	1	0	1	0	0	0	1	0	0			0			0
+action253	0	48973	48974	31	Escape	2	60	PauseMinigame	1	0	0	1	0	0	0	0	0			0			0
+action254	0	*****	*****	77	1	0		Dialog1	0	0	0	0	0	1	0	0	0			0			0
+action255	0	*****	*****	78	2	0		Dialog2	0	0	0	0	0	1	0	0	0			0			0
+action256	0	*****	*****	79	3	0		Dialog3	0	0	0	0	0	1	0	0	0			0			0
+action257	0	*****	*****	80	4	0		Dialog4	0	0	0	0	0	1	0	0	0			0			0
+action258	0	*****	*****	81	5	0		Dialog5	0	0	0	0	0	1	0	0	0			0			0
+action259	0	*****	*****	82	6	0		Dialog6	0	0	0	0	0	1	0	0	0			0			0
+action260	0	*****	*****	83	7	0		Dialog7	0	0	0	0	0	1	0	0	0			0			0
+action261	0	*****	*****	84	8	0		Dialog8	0	0	0	0	0	1	0	0	0			0			0
+action262	0	*****	*****	85	9	0		Dialog9	0	0	0	0	0	1	0	0	0			0			0
+action263	0	48975	48976	43	F5	1	260	QUICKLOAD	1	0	1	0	0	0	0	0	0			0			0
+action264	0	48977	48978	57	G	1	220	STEALTH	1	0	1	0	0	0	0	0	0			0			0
+action265	0	123712	123713	58	H	1	231	SwitchWeaps	1	0	1	0	0	0	0	0	0			0			0
+action268	0	126015	126016	52	B	0	232	WALKMODIFY	1	0	1	0	0	0	0	0	0			0			1
+action280a	0	48979	48980	73	W	0	10	ActionUp	1	0	1	0	0	0	1	0	1			1	1	1	
+action280b	0	48981	48982	69	S	0	20	ActionDown	1	0	1	0	0	0	1	0	1						
+action281a	0	48983	48984	76	Z	0	30	ActionLeft	1	0	1	0	0	0	1	0	1			1	1	1	
+action281b	0	48985	48986	53	C	0	40	ActionRight	1	0	1	0	0	0	1	0	1						
+action282a	0	48979	48980	73	W	2	10	MGActionUp	1	0	0	1	0	0	0	0	1			1	1	1	
+action282b	0	48981	48982	69	S	2	20	MGActionDown	1	0	0	1	0	0	0	0	1						
+action283a	0	48983	48984	51	A	2	30	MGActionLeft	1	0	0	1	0	0	0	0	1			1	1	1	
+action283b	0	48985	48986	54	D	2	40	MGActionRight	1	0	0	1	0	0	0	0	1						
+action284a	0	48987	48988	51	A	0	50	CameraRotateLeft	1	0	1	0	0	0	1	0	1			1	1	1	
+action284b	0	48989	48990	54	D	0	60	CameraRotateRight	1	0	1	0	0	0	1	0	1						
+action285a	0	*****	*****	9	UP	2		ArrowUp	0	0	0	1	0	0	0	0	1			1	1	1	
+action285b	0	*****	*****	10	Down	2		ArrowDown	0	0	0	1	0	0	0	0	1						
+action286a	0	*****	*****	7	Left	2		ArrowLeft	0	0	0	1	0	0	0	0	1			1	1	1	
+action286b	0	*****	*****	8	Right	2		ArrowRight	0	0	0	1	0	0	0	0	1						
+
+## 4. Compare with swkotor2.ini [Keymapping]
+- ini keys: 64. Enabled rows (disabled=0): 64. Disabled rows: 17.
+- ini value != keymap language0 default: none (ini == shipped defaults for all keys)
+- ini key with no row: none
+- enabled row with no ini key: none
+- ini key on a disabled row: none
+- Disabled rows (not in ini): action200 action201 action202 action203 action227 action229 action231 action233 action235 action237 action246 action247 action248 action249 action250 action251 action252
+
+## 5. Would an Override/keymap.2da be honoured?
+- Likely for the file lookup: keymap is a normal chitin 2DA, so the standard Override-first lookup applies. Repo prior art for Override-first 2DA: action_hotbar_src/README.md lines 27 and 178-183 (override/spells.2da read before chitin.key -> data/2da.bif); build_ranged_kite_2da.py writes Override/aiscripts.2da as binary V2.b; K1_ENGINE_BUGS_IN_K2.md line 36 says normal override tables are binary.
+- Caveat: the spells.2da evidence is the mod's own reader, not the engine's keymap screen. Not tested in game.
+- Row count is NOT proven: optkeymapping_p / optkeyentry_p (Gui.bif) were not parsed, so a fixed list of GUI entries may cap how many rows show.
+- New binding needs its own ini key (Action<label>) or a default from the 2DA column; not verified.
+
+## 6. Open items
+1. Parse Gui.bif optkeymapping_p + optkeyentry_p: count row templates, check how rows are generated from keymap.2da.
+2. Confirm the engine keymap loader reads Override before chitin (in-game test: Override/keymap.2da with one extra row, check the screen and log).
+3. Check how an unknown Action key in ini is handled (default vs. blank).
+4. Keep override/optkeymapping_p.gui in sync with any new row.
+
+## 7. Verdict
+PARTIAL: keymap.2da is a standard 2DA, so Override likely works for the table, but row display and binding persistence are unproven.
