@@ -718,7 +718,8 @@ def check_supernode_args(args: argparse.Namespace) -> tuple[str, list[Path]]:
     if dirs and mode != "chain":
         raise Rejected("--supermodel-dir only applies with --supernode chain")
     for d in dirs:
-        if not d.is_dir():
+        # a dir that does not exist yet is fine: the importer passes <stage>/models before body B is written there
+        if d.exists() and not d.is_dir():
             raise Rejected(f"--supermodel-dir is not a directory: {d}")
     return mode, dirs
 

@@ -1083,7 +1083,9 @@ def test_supernode_arg_rules():
         a = lambda **kw: _ns(**kw)  # noqa: E731
         assert pk.check_supernode_args(a()) == ("legacy", [])
         assert pk.check_supernode_args(a(supernode="chain", supermodel_dir=[str(root)])) == ("chain", [root])
-        for bad in (a(supernode="chain", supermodel_dir=[str(root / "nope")]),
+        (root / "afile").write_text("x")
+        assert pk.check_supernode_args(a(supernode="chain", supermodel_dir=[str(root / "nope")]))[0] == "chain"  # not yet created: ok
+        for bad in (a(supernode="chain", supermodel_dir=[str(root / "afile")]),
                     a(supernode="legacy", supermodel_dir=[str(root)]),
                     a(supernode="bogus")):
             try:
@@ -1305,9 +1307,13 @@ def test_supernode_chain_missing_supermodel_exits_1_and_writes_nothing():
 
 def test_supernode_chain_bad_arguments_refused_before_writing():
     with workdir() as root:
-        r = _convert(root, "out", extra=["--supernode", "chain", "--supermodel-dir", str(root / "nope")])
+        (root / "afile").write_text("x")
+        r = _convert(root, "out", extra=["--supernode", "chain", "--supermodel-dir", str(root / "afile")])
         assert r.returncode == 2 and "not a directory" in r.stderr, (r.returncode, r.stderr[-300:])
         assert not (root / "out").exists()
+        # a not-yet-existing dir (the importer's stage/models) is accepted: it fails later as a missing supermodel (1), not 2
+        r = _convert(root, "out", extra=["--supernode", "chain", "--supermodel-dir", str(root / "nope")], supermodel="s_nowhere")
+        assert r.returncode == 1, (r.returncode, r.stderr[-300:])
         r = _convert(root, "out", extra=["--supermodel-dir", str(root)])
         assert r.returncode == 2 and "--supernode chain" in r.stderr, (r.returncode, r.stderr[-300:])
 
