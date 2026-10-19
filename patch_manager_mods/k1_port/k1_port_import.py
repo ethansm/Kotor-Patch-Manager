@@ -735,6 +735,8 @@ def ingest_argv(ctx: "Ctx", resref: str, new: str | None, textures: list, *, no_
     if ctx.recipe.converter == "pykotor" and not no_model:
         # K2 chain supernode numbering; the supermodel (body B) is looked up in the stage first, then the K2 install
         argv += ["--supernode", "chain", "--supermodel-dir", ctx.stage / "models"]
+        if ctx.recipe.keep_dangly:
+            argv.append("--keep-dangly")  # keep danglymesh nodes (needs the pykotor_k2_dangly venv patch: setup_venv.sh)
     if supermodel_map:
         argv += ["--supermodel-map", *supermodel_map]
     if no_model:
@@ -1393,7 +1395,7 @@ def print_plan(ctx: Ctx, idx: int, order: list, rows: dict, resolved: dict) -> N
     for t in r.textures:
         cmds.append((f"tex {t.k2}", tpc_argv(ctx, t, ctx.stage / "override" / f"{t.k2.lower()}.<tga>", ctx.cdir / "tpc" / f"{t.k2.lower()}.tpc")))
     say(f"[{r.id}] dry run: appearance row {rows['appearance']}, heads row {rows['head']}"
-        + (f", soundset row {rows['soundset']}" if audio else "") + f", converter {r.converter}, "
+        + (f", soundset row {rows['soundset']}" if audio else "") + f", converter {r.converter}" + (" (keep_dangly)" if r.keep_dangly else "") + ", "
         f"texture_source {ctx.loaded.cfg.texture_source}")
     if audio:
         refs = [x for x in audio["strrefs"] if x != SSF_EMPTY]
@@ -1542,6 +1544,7 @@ def build_character(loaded: Loaded, recipe, idx: int, order: list, rows: dict, k
     manifest = {
         "schema": 1, "id": cid, "built_at": now_iso(),
         "recipe": {"path": recipe.source, "sha256": recipe_file_sha(recipe), "converter": recipe.converter,
+                   "keep_dangly": recipe.keep_dangly,
                    "auto": ({"k1_utc": loaded.auto[cid].utc, "sha256": sha256_bytes(loaded.auto[cid].text.encode("utf-8"))}
                             if cid in loaded.auto else None)},
         "k1_dir": str(k1), "k2_dir": str(loaded.cfg.k2_dir), "texture_source": loaded.cfg.texture_source,

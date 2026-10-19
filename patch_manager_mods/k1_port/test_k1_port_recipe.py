@@ -129,6 +129,29 @@ class RecipeRuleTests(Base):
         r = R.load_recipe(self.recipe(good().replace("force_opaque = true\n\n[[", "\n\n[[", 1)))
         self.assertFalse(r.textures[0].force_opaque)
 
+    def test_keep_dangly_default_true_false(self):
+        r = R.load_recipe(self.recipe(good()))
+        self.assertIs(r.keep_dangly, False)
+        self.assertEqual(r.warnings, ())
+        r = R.load_recipe(self.recipe(good().replace('converter = "pykotor"', 'converter = "pykotor"\nkeep_dangly = true')))
+        self.assertIs(r.keep_dangly, True)
+        self.assertEqual(r.warnings, ())
+        r = R.load_recipe(self.recipe(good().replace('converter = "pykotor"', 'converter = "pykotor"\nkeep_dangly = false')))
+        self.assertIs(r.keep_dangly, False)
+
+    def test_keep_dangly_non_bool_rejected(self):
+        for v in ('"yes"', "1", "0", "[true]"):
+            self.bad(good().replace('converter = "pykotor"', f'converter = "pykotor"\nkeep_dangly = {v}'),
+                     "models.keep_dangly", "true or false")
+
+    def test_keep_dangly_with_mdlops_warns_and_is_ignored(self):
+        r = R.load_recipe(self.recipe(good().replace('converter = "pykotor"', 'converter = "mdlops"\nkeep_dangly = true')))
+        self.assertIs(r.keep_dangly, False)
+        self.assertEqual(len(r.warnings), 1)
+        self.assertIn("keep_dangly", r.warnings[0])
+        r = R.load_recipe(self.recipe(good().replace('converter = "pykotor"', 'converter = "mdlops"\nkeep_dangly = false')))
+        self.assertEqual(r.warnings, ())
+
     def test_unknown_key_top_level(self):
         self.bad(good() + '\n[extras]\nx = 1\n', "extras", "unknown key")
 

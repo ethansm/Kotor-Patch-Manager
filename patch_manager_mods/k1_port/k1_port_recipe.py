@@ -42,7 +42,7 @@ TXI_MAX = 1024
 
 CHARACTER_KEYS = ("id", "display_name", "tag", "utc", "dlg", "soundset", "template_row", "gender")
 CHARACTER_REQUIRED = ("id", "display_name", "utc", "soundset", "template_row", "gender")
-MODELS_KEYS = ("converter", "body_a", "body_b", "head")
+MODELS_KEYS = ("converter", "body_a", "body_b", "head", "keep_dangly")
 MODEL_ENTRY_KEYS = ("k1", "k2")
 TEXTURE_KEYS = ("k1", "k2", "force_opaque", "txi")
 TOP_KEYS = ("character", "models", "textures", "audio", "dialog")
@@ -106,6 +106,7 @@ class Recipe:
     source: str  # path the recipe was loaded from (diagnostics only)
     audio: AudioRef | None = None
     dialog: DialogRef | None = None
+    keep_dangly: bool = False  # [models] keep_dangly: pykotor keeps danglymesh nodes (hair/flap sway) instead of demoting them
 
     def k2_names(self) -> tuple[str, ...]:
         """Every k2 resref this recipe introduces (models, textures, utc, ssf), in declaration order."""
@@ -284,6 +285,12 @@ def parse_recipe(data: dict, path: Path) -> Recipe:
     body_a = _model(ctx, md["body_a"], "models.body_a")
     body_b = _model(ctx, md["body_b"], "models.body_b") if "body_b" in md else None
     head = _model(ctx, md["head"], "models.head") if "head" in md else None
+    keep_dangly = md.get("keep_dangly", False)
+    if not isinstance(keep_dangly, bool):
+        raise ctx.err("models.keep_dangly", f"must be true or false, got {keep_dangly!r}")
+    if keep_dangly and converter != "pykotor":
+        warnings.append(f"{rid}: models.keep_dangly only applies to converter \"pykotor\"; ignored for converter {converter!r}")
+        keep_dangly = False
 
     textures: list[TextureRef] = []
     raw_tex = data.get("textures", [])
@@ -353,6 +360,7 @@ def parse_recipe(data: dict, path: Path) -> Recipe:
         source=str(path),
         audio=audio,
         dialog=dialog,
+        keep_dangly=keep_dangly,
     )
 
 
@@ -487,7 +495,7 @@ def main(argv: list[str]) -> int:
         data = _read_toml(p)
         if "character" in data:
             r = parse_recipe(data, p)
-            print(f"OK recipe {r.id}: converter={r.converter} textures={len(r.textures)} "
+            print(f"OK recipe {r.id}: converter={r.converter} keep_dangly={r.keep_dangly} textures={len(r.textures)} "
                   f"audio={r.audio.k1_ssf + '->' + r.audio.k2_ssf if r.audio else 'none'} "
                   f"dialog={(r.dialog.k1_dlg or 'utc') + '->' + r.dialog.k2_dlg + ' voiced<=' + str(r.dialog.max_voiced) if r.dialog else 'none'} "
                   f"warnings={list(r.warnings)}")

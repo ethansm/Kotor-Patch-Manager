@@ -2114,6 +2114,51 @@ class SupernodeChainTests(Base):
         self.assertEqual(rc, 0, out + err)
         self.assertNotIn("--supernode", out)
 
+    def set_keep_dangly(self, cid, value="true"):
+        p = self.recipes / f"{cid}.toml"
+        text = p.read_text()
+        conv = next(l for l in text.splitlines() if l.startswith("converter = "))
+        p.write_text(text.replace(conv, f"{conv}\nkeep_dangly = {value}", 1))
+
+    def test_keep_dangly_defaults_off_and_is_recorded_false(self):
+        self.build_ok("--only", "tst")
+        for c in self.script_calls("k1_port_ingest.py"):
+            self.assertNotIn("--keep-dangly", c)
+        self.assertIs(self.manifest("tst")["recipe"]["keep_dangly"], False)
+
+    def test_keep_dangly_true_adds_flag_to_model_ingests_only(self):
+        self.set_keep_dangly("tst")
+        self.build_ok("--only", "tst")
+        calls = self.script_calls("k1_port_ingest.py")
+        models = self.model_ingests()
+        self.assertEqual(len(models), 3)
+        for c in calls:
+            if "--no-model" in c:
+                self.assertNotIn("--keep-dangly", c)
+            else:
+                self.assertEqual(c.count("--keep-dangly"), 1, c)
+        self.assertIs(self.manifest("tst")["recipe"]["keep_dangly"], True)
+
+    def test_keep_dangly_false_explicit_adds_no_flag(self):
+        self.set_keep_dangly("tst", "false")
+        self.build_ok("--only", "tst")
+        for c in self.script_calls("k1_port_ingest.py"):
+            self.assertNotIn("--keep-dangly", c)
+
+    def test_keep_dangly_with_mdlops_is_ignored(self):
+        self.set_keep_dangly("tsu")
+        self.build_ok("--only", "tsu")
+        for c in self.script_calls("k1_port_ingest.py") + self.script_calls("k1_port_mdlops.py"):
+            self.assertNotIn("--keep-dangly", c)
+        self.assertIs(self.manifest("tsu")["recipe"]["keep_dangly"], False)
+
+    def test_dry_run_plan_shows_keep_dangly(self):
+        self.set_keep_dangly("tst")
+        rc, out, err = self.run_cli("build", "--dry-run", "--only", "tst")
+        self.assertEqual(rc, 0, out + err)
+        self.assertIn("(keep_dangly)", out)
+        self.assertEqual(out.count("--keep-dangly"), 3, out)
+
     def test_summarize_ingest_carries_the_supernode_report(self):
         rep = {"mode": "chain", "supermodel": "k1p_x", "origin": "install", "nodes_changed": 2}
         data = {"resref": "r", "new_resref": "n", "model": {"chosen": {"source_id": "vanilla_k1"}, "manifest": {"supernode": rep}}}
