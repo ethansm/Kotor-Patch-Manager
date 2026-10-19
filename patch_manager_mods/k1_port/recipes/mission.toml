@@ -8,7 +8,7 @@ tag = "k1p_mission"        # spawn-probe roster tag
 utc = "k1p_mission"
 dlg = ""
 soundset = 57              # FALLBACK only (K2 soundset.2da row 57 = n_commonf); with [audio] below the builder appends a new row and the UTC uses that instead
-template_row = 17          # appearance.2da row copied for the new row
+template_row = 10          # vanilla K2 party row: Mission (female small PFB*S armour bodies)
 gender = 1
 
 [models]

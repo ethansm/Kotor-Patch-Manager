@@ -58,10 +58,23 @@ def make_game(root: Path, *, app_rows=APP_ROWS, head_rows=HEAD_ROWS) -> Path:
     game = root / "game"
     (game / "override").mkdir(parents=True)
     (game / "modules").mkdir()
-    headers = ["label", "race", "modeltype", "normalhead", "backuphead", "modela", "texa", "texaevil", "modelb",
-               "texb", "texbevil", "modelc", "texc"]
-    (game / "override" / "appearance.2da").write_bytes(table(
-        headers, app_rows, lambda i, h: f"ROW_{i}" if h == "label" else {"modeltype": "B", "texaevil": "ev"}.get(h, f"{h}{i}")))
+    letters = "abcdefghijklmn"
+    headers = ["label", "race", "modeltype", "normalhead", "backuphead", "height", "headtrack", "texaevil", "texbevil",
+               "texievil", "texlevil", "texnevil"] + [f"{k}{L}" for L in letters for k in ("model", "tex")]
+    blank_17 = {"modelj", "texj", "modell", "texl"}  # row 17 (commoner) has no Revan-armour / slave-outfit body
+    f_row = {"modela": "P_Single", "texa": "P_Single", "race": "P_Single", "modeltype": "F"}
+
+    def cell(i, h):
+        if h == "label":
+            return f"ROW_{i}"
+        if i == 17 and h in blank_17:
+            return ""
+        if i == 18:  # single-model (Zaalbar-like) row: only race/modela/texa, no body letters, no head
+            return f_row.get(h, "")
+        if h in ("texievil", "texlevil", "texnevil", "texbevil"):  # Mira-like evil textures on row 16
+            return f"{h}{i}" if i == 16 else ""
+        return {"modeltype": "B", "texaevil": "ev" if i != 5 else "", "height": "1.6" if i == 5 else "1"}.get(h, f"{h}{i}")
+    (game / "override" / "appearance.2da").write_bytes(table(headers, app_rows, cell))
     (game / "override" / "heads.2da").write_bytes(table(
         ["head", "alttexture", "headtexve"], head_rows, lambda i, h: f"{h}{i}"))
     (game / "override" / "soundset.2da").write_bytes(table(["label"], SOUND_ROWS, lambda i, h: f"S{i}"))
@@ -102,7 +115,7 @@ def appends_rows_and_builds_utc(root):
     check({c: h.get_cell(HEAD_ROWS, c) for c in h.get_headers()} == {"head": "k1p_juhanih", "alttexture": "",
                                                                       "headtexve": ""}, "head row")
     for i in range(APP_ROWS):  # existing rows untouched
-        check(a.get_cell(i, "modela") == f"modela{i}", f"row {i} changed")
+        check(a.get_cell(i, "modela") == ("P_Single" if i == 18 else f"modela{i}"), f"row {i} changed")
     u = read_utc((root / "out" / "k1p_juhani.utc").read_bytes())
     check((u.tag, u.resref, u.appearance_id, u.soundset_id, u.gender_id, u.texture_variation) ==
           ("k1p_juhani", "k1p_juhani", APP_ROWS, 5, 1, 1), vars(u))
@@ -215,6 +228,164 @@ def cli_runs_and_reports_json(root):
     bad = subprocess.run([*cmd[:-3], "--new-row", "3", "--out", str(root / "o2")], capture_output=True, text=True,
                          timeout=120)
     check(bad.returncode == 1 and "error:" in bad.stderr and not (root / "o2").exists(), bad.stderr[-200:])
+
+
+def built_row(root, name="out", **over):
+    """Build with KW + over against a fresh make_game; returns (info, appearance row dict of the new row, out dir)."""
+    from pykotor.resource.formats.twoda import read_2da
+    game = make_game(root)
+    info = cb.build(game, root / name, **{**KW, **over})
+    a = read_2da((root / name / "appearance.2da").read_bytes())
+    return info, {c: a.get_cell(APP_ROWS, c) for c in a.get_headers()}, root / name
+
+
+LETTERS = "abcdefghijklmn"
+
+
+def all_letters_set(row):
+    return all(row[f"{k}{L}"].strip() for L in LETTERS for k in ("model", "tex"))
+
+
+@test
+def fill_blank_letters_pure_female_male_and_noop(root):
+    row = {f"{k}{L}": f"{k}{L}_x" for L in LETTERS for k in ("model", "tex")}
+    check(cb.fill_blank_letters(row, body_b="k1p_xbb", female=True) == {}, "a full row needs no fill")
+    row.update(modelj="", texj="", modell="", texl="")
+    fem = cb.fill_blank_letters(row, body_b="k1p_xbb", female=True)
+    check(fem == {"modelj": "k1p_xbb", "texj": "k1p_xbb", "modell": "PFBL", "texl": "PFBLA"}, fem)
+    male = cb.fill_blank_letters(row, body_b="k1p_xbb", female=False)
+    check(male == {"modelj": "k1p_xbb", "texj": "k1p_xbb", "modell": "k1p_xbb", "texl": "k1p_xbb"}, male)
+    row.update(modelg=" ", texg="")  # whitespace is blank, any letter is aliased (not only j / l)
+    check(cb.fill_blank_letters(row, body_b="k1p_xbb", female=False)["modelg"] == "k1p_xbb", "blank g")
+    row.update(modelk="PMBKM", texk="")  # model set, texture blank: not filled (the guard reports it)
+    check("modelk" not in cb.fill_blank_letters(row, body_b="b", female=True) and
+          "texk" not in cb.fill_blank_letters(row, body_b="b", female=True), "a set model is left alone")
+
+
+@test
+def guard_lists_blank_cells(root):
+    row = {f"{k}{L}": "v" for L in LETTERS for k in ("model", "tex")}
+    cb.check_no_blank_letters(row)  # full row passes
+    row["texk"] = ""
+    del row["modeln"]
+    try:
+        cb.check_no_blank_letters(row)
+    except cb.BuildError as exc:
+        check("texk" in str(exc) and "modeln" in str(exc), str(exc))
+        return
+    raise AssertionError("blank/missing cells must raise BuildError")
+
+
+@test
+def female_row_gets_pfbl_and_aliased_j(root):
+    info, row, _ = built_row(root)  # template 17: modelj/texj/modell/texl blank, KW gender 1
+    check((row["modell"], row["texl"]) == ("PFBL", "PFBLA"), row)
+    check((row["modelj"], row["texj"]) == ("k1p_juhanibb",) * 2, row)
+    check(all_letters_set(row), "no blank letter")
+    check(info["filled_cells"] == {"modelj": "k1p_juhanibb", "texj": "k1p_juhanibb", "modell": "PFBL", "texl": "PFBLA"}, info)
+    check(row["modelc"] == "modelc17" and row["modeln"] == "modeln17", "filled cells are untouched")
+
+
+@test
+def male_row_aliases_slave_letter_to_clothes_body(root):
+    info, row, _ = built_row(root, tag="carth", label="K1P_Carth", body_a="k1p_carthba", body_b="k1p_carthbb",
+                             head="k1p_carthh", gender=0)
+    check((row["modell"], row["texl"], row["modelj"], row["texj"]) == ("k1p_carthbb",) * 4, row)
+    check(all_letters_set(row), "no blank letter")
+
+
+@test
+def full_party_row_template_is_a_noop_fill_and_keeps_physics(root):
+    info, row, _ = built_row(root, template_row=5)  # row 5: every letter set, height 1.6, texaevil empty
+    check(info["filled_cells"] == {}, info["filled_cells"])
+    check(row["modelj"] == "modelj5" and row["texl"] == "texl5" and row["modell"] == "modell5", row)
+    check(row["height"] == "1.6" and row["headtrack"] == "headtrack5", row)
+    check(row["race"] == "k1p_juhanibb" and row["label"] == "K1P_Juhani" and row["modela"] == "k1p_juhaniba", row)
+
+
+@test
+def every_evil_texture_column_is_cleared(root):
+    _info, row, _ = built_row(root, template_row=16)  # Mira-like: all evil textures set
+    for col in cb.CLEARED:
+        check(row[col] == "", f"{col} leaked: {row[col]!r}")
+    check({"texaevil", "texbevil", "texievil", "texlevil", "texnevil", "backuphead"} == set(cb.CLEARED), cb.CLEARED)
+
+
+@test
+def blank_cell_after_fill_is_refused_and_writes_nothing(root):
+    game = make_game(root)
+    from pykotor.resource.formats.twoda import read_2da, bytes_2da
+    t = read_2da((game / "override" / "appearance.2da").read_bytes())
+    t.set_cell(5, "modelk", "PMBKM")
+    t.set_cell(5, "texk", "")  # model set, texture blank: fill_blank_letters leaves it, the guard must refuse
+    (game / "override" / "appearance.2da").write_bytes(bytes_2da(t))
+    try:
+        cb.build(game, root / "out", **{**KW, "template_row": 5})
+    except cb.BuildError as exc:
+        check("blank body cells texk" in str(exc), str(exc))
+        check(not (root / "out").exists(), "a refused build must write nothing")
+        return
+    raise AssertionError("a leftover blank cell must be refused")
+
+
+@test
+def single_model_f_template_sets_race_only(root):
+    from pykotor.resource.formats.twoda import read_2da
+    kw = dict(tag="zaalbar", label="K1P_Zaalbar", body_a="k1p_zaalbar", body_b=None, head=None, new_head_row=None,
+              gender=0, template_row=18, utc="k1p_zaalbaru")
+    game = make_game(root)
+    info = cb.build(game, root / "out", **{**KW, **kw})
+    a = read_2da((root / "out" / "appearance.2da").read_bytes())
+    row = {c: a.get_cell(APP_ROWS, c) for c in a.get_headers()}
+    check((row["race"], row["modela"], row["texa"], row["modeltype"]) == ("k1p_zaalbar",) * 3 + ("F",), row)
+    check(row["label"] == "K1P_Zaalbar" and row["normalhead"] == "" and row["modelb"] == "" and row["modelc"] == "", row)
+    check("P_Single" not in row.values(), f"stale vanilla model left in the row: {row}")
+    check(info["filled_cells"] == {} and info["heads_row"] is None and info["modeltype"] == "F", info)
+    check(sorted(p.name for p in (root / "out").iterdir()) == ["appearance.2da", "char_build.json", "k1p_zaalbaru.utc"],
+          "no heads.2da for a headless row")
+    check(set(info["sha256"]) == {"appearance.2da", "k1p_zaalbaru.utc"} and "heads.2da" not in info["base_sha256"], info)
+
+
+@test
+def single_model_importer_shape_body_b_equals_body_a_with_head(root):
+    """What k1_port_import.char_build_argv passes today for a one-model recipe: --body-b == --body-a, plus a head."""
+    info, row, out = built_row(root, body_a="k1p_zaalbar", body_b="k1p_zaalbar", head="k1p_zaalbarh", template_row=18,
+                               gender=0, tag="zaalbar", label="K1P_Zaalbar")
+    check((row["race"], row["modela"], row["modeltype"], row["modelb"]) == ("k1p_zaalbar", "k1p_zaalbar", "F", ""), row)
+    check(row["normalhead"] == str(HEAD_ROWS) and (out / "heads.2da").is_file() and info["heads_row"] == HEAD_ROWS, info)
+
+
+@test
+def single_model_with_different_body_b_refused(root):
+    refused(root, "differs from body_a", template_row=18, body_b="k1p_other")
+
+
+@test
+def body_template_without_body_b_or_head_refused(root):
+    refused(root, "body_b and head are required", body_b=None)
+    refused(Path(tempfile.mkdtemp(dir=root)), "body_b and head are required", head=None, new_head_row=None)
+
+
+@test
+def headless_chain_needs_only_appearance(root):
+    game = make_game(root)
+    kw = dict(KW, template_row=18, body_b=None, head=None, new_head_row=None, tag="zaalbar", label="K1P_Zaalbar",
+              body_a="k1p_zaalbar")
+    cb.build(game, root / "one", **{**kw, "tag": "z1", "label": "K1P_Z1"})
+    (root / "one" / "heads.2da").unlink(missing_ok=True)
+    info = cb.build(game, root / "two", chain_from=root / "one", **{**kw, "new_row": APP_ROWS + 1})
+    check(info["chained_from"] == str((root / "one").resolve()) and info["heads_row"] is None, info)
+
+
+@test
+def cli_single_model_without_head_args(root):
+    game = make_game(root)
+    cmd = [str(VENV_PY), "-I", str(CLI), "--game-dir", str(game), "--tag", "zaalbar", "--label", "K1P_Zaalbar",
+           "--new-row", str(APP_ROWS), "--body-a", "k1p_zaalbar", "--soundset", "3", "--gender", "0", "--name", "Zaalbar",
+           "--template-row", "18", "--utc", "k1p_zaalbaru", "--out", str(root / "o"), "--json"]
+    r = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+    check(r.returncode == 0, r.stderr[-300:])
+    check(json.loads(r.stdout)["heads_row"] is None and not (root / "o" / "heads.2da").exists(), r.stdout[:200])
 
 
 def main() -> int:

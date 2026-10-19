@@ -214,10 +214,19 @@ Recipe keys:
 
 | Table | Keys | Rules |
 |---|---|---|
-| `[character]` | `id`, `display_name`, `utc`, `soundset`, `template_row`, `gender` (required); `tag`, `dlg` (optional) | `display_name` is 1 to 63 printable ASCII characters. `utc` and `dlg` are resrefs `[a-z0-9_]{1,16}`. `soundset` and `template_row` are integers (`soundset` cannot be `"auto"`). `gender` is 0 or 1. |
+| `[character]` | `id`, `display_name`, `utc`, `soundset`, `template_row`, `gender` (required); `tag`, `dlg` (optional) | `display_name` is 1 to 63 printable ASCII characters. `utc` and `dlg` are resrefs `[a-z0-9_]{1,16}`. `soundset` and `template_row` are integers (`soundset` cannot be `"auto"`). `template_row` should be the character's vanilla K2 party row in `appearance.2da`: 4 Bastila, 6 Carth, 8 Juhani, 9 Zaalbar, 10 Mission (see "What the builder fills" below). `gender` is 0 or 1. |
 | `[models]` | `converter` (`pykotor` or `mdlops`), `body_a` (required), `body_b`, `head`, `keep_dangly` | Each model is `{ k1 = "...", k2 = "..." }`. The builder needs `head`. `keep_dangly` (true or false, default false) makes the pykotor converter keep danglymesh nodes (hair and flap sway) instead of demoting them; it needs the `pykotor_k2_dangly` venv patch (run `setup_venv.sh`), and the sway needs a play check. With `converter = "mdlops"` it is ignored with a recipe warning. The build manifest records it next to the converter. |
 | `[[textures]]` | `k1`, `k2`, `force_opaque`, `txi` | `force_opaque` is true or false. `txi` is text, up to 1024 characters. List every texture the K1 meshes use: each model is ingested with the recipe textures its mesh references (`k1_port_resolve.py --scan`), and a mesh texture missing from the recipe fails validation. |
 | `[audio]` | `k1_ssf`, `k2_ssf` (both required if the table exists) | Imports the character's own K1 barks. `k1_ssf` is the K1 soundset file (for example `p_carth`); `k2_ssf` is the SSF name the pack serves. The builder checks that the K1 SSF's strrefs carry the same voice names in the K2 `dialog.tlk`, copies the K1 voice wavs from `<K1>/streamsounds/` (read only) into the pack as streamed assets, and adds a new `soundset.2da` row that the UTC uses. `character.soundset` stays required as the fallback voice. Dialog voice-over, lips and DLG are not imported. |
+
+#### What the builder fills in the new `appearance.2da` row
+
+`k1_port_char_build.py` copies the `template_row` and overwrites the cells that name the character. Pick the vanilla K2 party row of the character you port (4 Bastila, 6 Carth, 8 Juhani, 9 Zaalbar, 10 Mission). The default male commoner row 17 gives female characters male armour bodies (classes C to N) and blank Revan-armour and slave-outfit letters.
+
+- Copied from the party row: body and physics columns (`height`, `headtrack`, `prefatckdist`, `body_bag`, `creperspace`, `walkdist`), and the shared armour bodies `model<C..N>` / `tex<C..N>` (female `PFB*`, Mission's small `PFB*S`, male `PMB*`).
+- Overwritten: `label`, `race`, `modela`/`texa`, `modelb`/`texb`, `normalhead`. Emptied: `texaevil`, `texbevil`, `texievil`, `texlevil`, `texnevil`, `backuphead`.
+- Blank letters: for a body-type `B` row every `model<L>` / `tex<L>` pair for L = a..n ends non-empty. A blank pair becomes the character's clothes body (`k1p_<id>bb`, the vanilla Kreia pattern). For a female character (recipe `gender = 1`) the slave-outfit letter L becomes the vanilla `PFBL` / `PFBLA` instead; vanilla K2 has no male slave body, so Carth's L aliases to his clothes body. The build refuses a row that still has a blank cell.
+- Single-model characters (Zaalbar, row 9, `modeltype = F`): the engine reads only the `race` cell. The builder sets `race`, `modela` and `texa` to the new model and keeps the rest of the row (no body letters, no head).
 
 ## Caveat
 

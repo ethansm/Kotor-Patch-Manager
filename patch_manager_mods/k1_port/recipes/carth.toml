@@ -7,7 +7,7 @@ tag = "k1p_carth"          # spawn-probe roster tag (k1_client_core_test.cpp)
 utc = "k1p_carth"
 dlg = ""
 soundset = 14              # FALLBACK only: K2 soundset.2da row 14 = n_repoff (Republic_Officer); row 11 n_commm sounded like an Ithorian (play 10-18). With [audio] below the builder appends a new row and the UTC uses that instead
-template_row = 17          # appearance.2da row copied for the new row
+template_row = 6          # vanilla K2 party row: Carth (male, medium PMB* armour bodies, own physics)
 gender = 0
 
 [models]

@@ -9,7 +9,7 @@ tag = "k1p_zaalbar"        # spawn-probe roster tag
 utc = "k1p_zaalbaru"       # not k1p_zaalbar: that is the model name (a k2 name may be claimed once)
 dlg = ""
 soundset = 11              # FALLBACK only (K2 soundset.2da row 11 = n_commm); with [audio] below the builder appends a new row and the UTC uses that instead
-template_row = 17          # appearance.2da row copied for the new row
+template_row = 9          # vanilla K2 party row: Zaalbar (modeltype F: single model, race cell only)
 gender = 0
 
 [models]

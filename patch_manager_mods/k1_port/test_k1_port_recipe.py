@@ -83,7 +83,7 @@ class ShippedTests(unittest.TestCase):
         self.assertEqual(juhani.audio, R.AudioRef(k1_ssf="p_juhani", k2_ssf="k1p_juhanissf"))
         self.assertEqual((juhani.dialog.k1_dlg, juhani.dialog.k2_dlg), ("k_hjuh_dialog", "k1p_juhanidlg"))
         for r in rs:
-            self.assertEqual(r.template_row, 17)
+            self.assertEqual(r.template_row, {"carth": 6, "juhani": 8}[r.id])  # vanilla K2 party rows
             self.assertEqual(len(r.textures), 3)
             self.assertTrue(all(t.force_opaque for t in r.textures))
             heads = [t for t in r.textures if t.k2.endswith("h01")]

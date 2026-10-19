@@ -7,7 +7,7 @@ tag = "k1p_juhani"         # spawn-probe roster tag (k1_client_core_test.cpp)
 utc = "k1p_juhani"
 dlg = ""                   # hand path: kvjdlg01 / Conversation edit stays outside this recipe (audio pass)
 soundset = 57              # K2 soundset.2da row 57 = n_commonf (generic female); hand path uses custom row 70 (audio pass)
-template_row = 17          # appearance.2da row copied for the new row
+template_row = 8          # vanilla K2 party row: Juhani (female PFB*M armour bodies)
 gender = 1
 
 [models]
