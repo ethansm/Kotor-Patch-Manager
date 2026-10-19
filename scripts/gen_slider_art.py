@@ -2,9 +2,11 @@
 """Generate the holster-editor slider art textures (hse_sld_frame, hse_sld_wedge, hse_sld_mark) and embed them in the DLL source (stdlib only, deterministic).
 
 Writes patch_manager_mods/_shared_src/SliderArtTex.inc (uncompressed 32-bit TGAs, same layout/format as ResetIconTex.inc / GearIconTex.inc):
-  kSliderFrameTex  128x16 rounded-rectangle outline, teal, transparent inside
-  kSliderWedgeTex  128x16 tapered wedge (thin at the left, tall at the right, like the vanilla Sound Options slider fill), teal, transparent elsewhere
-  kSliderMarkTex   8x32 thin white double-arrow marker (vertical bar, small arrowheads up and down); 32 rather than 24 keeps power-of-two dimensions
+  kSliderFrameTex  512x64 rounded-rectangle outline, teal, transparent inside
+  kSliderWedgeTex  512x64 tapered wedge (thin at the left, tall exactly at the right edge so the wedge end sits on the thumb, like the vanilla Sound Options slider fill), teal, transparent elsewhere
+  kSliderMarkTex   32x128 thin white double-arrow marker (vertical bar, small arrowheads up and down); power-of-two dimensions
+  kSliderBoxTex    256x128 description box: rounded rectangle, vanilla Options description colours (fill 0,17,11, 3 texel outline 0,105,81 -- sampled from the
+                   game's LB_DESC in a screenshot), opaque inside
   kSliderTex[] / kSliderTexCount   embtex::Tex table in that order
 
 Art: coverage of an analytic shape, 4x4 supersampled for the alpha edge; teal is the gen_reset_icon.py PAL_NORMAL family (top -> bot vertical
@@ -24,17 +26,18 @@ from gen_reset_icon import PAL_NORMAL, _mix   # same teal palette as the reset a
 REPO = Path(__file__).resolve().parent.parent
 INC = REPO / "patch_manager_mods/_shared_src/SliderArtTex.inc"
 SS = 4                       # supersample per axis
-WIDE_W, WIDE_H = 128, 16     # frame and wedge
-MARK_W, MARK_H = 8, 32       # marker
+K = 4                        # resolution factor: the first art was 128x16 / 8x32 and stretched ~4x on a 3840 screen (visibly pixelated)
+WIDE_W, WIDE_H = 128 * K, 16 * K        # frame and wedge: 512x64
+MARK_W, MARK_H = 8 * K, 32 * K         # marker
 WHITE = (255, 255, 255)
 
 # Frame: rounded rectangle outline (px). STROKE is the line width, RADIUS the corner radius (outer edge).
-STROKE, RADIUS = 2.0, 6.0
+STROKE, RADIUS = 2.0 * K, 6.0 * K
 # Wedge: left end x0 / right end x1, vertical half height at each end (centred on the row midline), inside the frame's inner edge (STROKE).
-WEDGE_X0, WEDGE_X1 = 5.0, WIDE_W - 5.0
-WEDGE_H0, WEDGE_H1 = 1.0, 5.0
+WEDGE_X0, WEDGE_X1 = 3.0 * K, float(WIDE_W)   # the tall end is the right edge of the texture: the wedge rect is cut at the thumb centre
+WEDGE_H0, WEDGE_H1 = 1.0 * K, 5.0 * K
 # Marker: bar of BAR_W px centred on the texture, arrowheads HEAD_H tall spanning the full width at both ends.
-BAR_W, HEAD_H = 2.0, 6.0
+BAR_W, HEAD_H = 2.0 * K, 6.0 * K
 
 
 def _in_frame(x, y):
@@ -55,13 +58,45 @@ def _in_wedge(x, y):
 
 def _in_mark(x, y):
     cx = MARK_W / 2.0
-    if abs(x - cx) <= BAR_W / 2.0 and HEAD_H - 1.0 <= y <= MARK_H - HEAD_H + 1.0:
+    if abs(x - cx) <= BAR_W / 2.0 and HEAD_H - K <= y <= MARK_H - HEAD_H + K:
         return True
     if y <= HEAD_H:                                   # up arrowhead: apex at the top centre, widening to the full width at y = HEAD_H
-        return abs(x - cx) <= (cx - 0.5) * y / HEAD_H
+        return abs(x - cx) <= (cx - 0.5 * K) * y / HEAD_H
     if y >= MARK_H - HEAD_H:                          # down arrowhead, mirrored
-        return abs(x - cx) <= (cx - 0.5) * (MARK_H - y) / HEAD_H
+        return abs(x - cx) <= (cx - 0.5 * K) * (MARK_H - y) / HEAD_H
     return False
+
+
+BOX_W, BOX_H, BOX_STROKE, BOX_RADIUS = 256, 128, 3.0, 10.0
+BOX_FILL, BOX_EDGE = (0, 17, 11), (0, 105, 81)
+
+
+def _rr(px, py, x0, y0, x1, y1, r):
+    cx = min(max(px, x0 + r), x1 - r)
+    cy = min(max(py, y0 + r), y1 - r)
+    return (px - cx) ** 2 + (py - cy) ** 2 <= r * r and x0 <= px <= x1 and y0 <= py <= y1
+
+
+def render_box(w, h):
+    """pixel(x, y) for the description box: alpha = covered fraction of the outer rounded rectangle, colour = edge/fill mix of the covered samples."""
+    px = {}
+    for y in range(h):
+        for x in range(w):
+            hit = ring = 0
+            for sy in range(SS):
+                for sx in range(SS):
+                    fx, fy = x + (sx + 0.5) / SS, y + (sy + 0.5) / SS
+                    if _rr(fx, fy, 0, 0, w, h, BOX_RADIUS):
+                        hit += 1
+                        if not _rr(fx, fy, BOX_STROKE, BOX_STROKE, w - BOX_STROKE, h - BOX_STROKE, BOX_RADIUS - BOX_STROKE):
+                            ring += 1
+            if hit == 0:
+                px[(x, y)] = BOX_FILL + (0,)
+                continue
+            t = ring / hit
+            col = tuple(int(round(BOX_FILL[i] + (BOX_EDGE[i] - BOX_FILL[i]) * t)) for i in range(3))
+            px[(x, y)] = col + (int(round(255.0 * hit / (SS * SS))),)
+    return lambda x, y: px[(x, y)]
 
 
 def _teal(h):
@@ -85,8 +120,10 @@ def render(w, h, inside, colour):
 
 
 def build():
-    """(resref, identifier, bytes) for the three slider textures, in table order."""
-    return [(name, ident, tga32(w, h, render(w, h, inside, colour))) for name, ident, w, h, inside, colour in SHAPES]
+    """(resref, identifier, bytes) for the four slider textures, in table order."""
+    out = [(name, ident, tga32(w, h, render(w, h, inside, colour))) for name, ident, w, h, inside, colour in SHAPES]
+    out.append(("hse_desc_box", "kSliderBoxTex", tga32(BOX_W, BOX_H, render_box(BOX_W, BOX_H))))
+    return out
 
 
 def render_inc(blobs) -> str:

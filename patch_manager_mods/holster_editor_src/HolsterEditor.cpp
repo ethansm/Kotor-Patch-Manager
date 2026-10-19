@@ -1,4 +1,4 @@
-// HolsterEditor.cpp -- holster-editor 0.4.6-dev (Steam build): a HOOKLESS consumer of the mod-config provider (k2.modconfig@1, k2.menuui@1).
+// HolsterEditor.cpp -- holster-editor 0.4.7-dev (Steam build): a HOOKLESS consumer of the mod-config provider (k2.modconfig@1, k2.menuui@1).
 // (doc 42 HW-EDIT, plan .claude/plans/holster_editor_options.md; page rebuild: .claude/plans/holster_editor_layout_v3.md, holster_hw_ux3_build.md Wave B.)
 //
 // mod-config owns everything about the Options screen: the hooks, the root "Mod Configuration" button, the list page, control cloning,
@@ -206,7 +206,8 @@ struct Editor {
     DWORD inspWinStart = 0;            // INSP refresh log window (log_verbose only)
     int inspWinSets = 0, inspWinTicks = 0;
     int scrubLogs = 0, inspLogs = 0;
-    int hintRow = -2;                  // the row whose hint is on hint line 2 (-1 none, -2 not set yet)
+    int hintRow = -2;                  // the slider row whose help is in the right description pane (-1 none, -2 not written yet)
+    int leftTip = -2;                  // the left-column item whose help is in the left description box (-1 none, -2 not written yet)
 
     // Style caches (item index -> what was last applied): text colour state (-1 unknown, 0 default, 1 lit/amber), the control's own default colour, selector caption
     int8_t colState[hse::kPageItemsV3];
@@ -434,7 +435,14 @@ bool itemIsResetIcon(int i) {
 
 // The party member prev / next buttons: arrow art on the button (the "<" ">" captions render as nothing).
 bool itemIsMemberArrow(int i) { return i == hse::PI_MEMBER_PREV || i == hse::PI_MEMBER_NEXT; }
-bool itemIsHintBox(int i) { return i >= hse::PI_HINT && i < hse::PI_HINT + hse::kV3Hints; }
+bool itemIsHintBox(int i) { return i == hse::PI_HINT; }       // the left description box (fill art)
+bool itemIsHintText(int i) { return i == hse::PI_HINT + 1; }   // its text label
+// Buttons whose hover help goes to the LEFT description box (the editor writes it) instead of mod-config's right pane (which then keeps the slider help).
+bool itemIsLeftTip(int i) {
+    using namespace hse;
+    if (i == PI_MEMBER_PREV || i == PI_MEMBER_NEXT || i == PI_SAVE || i == PI_REVERT || i == PI_RESET_SCOPE) return true;
+    return (i >= PI_WEAPON && i < PI_WEAPON + kV3Weapons) || (i >= PI_BONE && i < PI_BONE + kV3Bones) || (i >= PI_SCOPE && i < PI_SCOPE + kV3Scopes);
+}
 
 // First text of item i (buf is the scratch for composed ones).
 const char* itemInitText(int i, char* buf, int cap) {
@@ -604,7 +612,7 @@ void KPATCH_CALL cbBuild(void* panel, void*) {
         }
         char buf[64];
         const char* text = itemInitText(i, buf, sizeof buf);
-        g_ed.item[i] = itemIsButton(i) ? ui->AddButton(g_ed.page, text, itemTip(i)) : ui->AddLabel(g_ed.page, text);
+        g_ed.item[i] = itemIsButton(i) ? ui->AddButton(g_ed.page, text, itemIsLeftTip(i) ? "" : itemTip(i)) : ui->AddLabel(g_ed.page, text);
         if (g_ed.item[i] < 0) failedAt = i;
     }
     int built = 0;
@@ -1409,11 +1417,6 @@ float selPx(const Editor& e, const editkit::Box& b, bool lit) {
 }
 // Text room of a LABEL (status, note, hints, legend, inspector values): the box width less 4 px per side (0 = not laid out yet).
 float labelPx(const Editor& e, const editkit::Box& b) { return e.layOk ? static_cast<float>(hse::labelTextPx(b.w)) : 0.0f; }
-// The hint lines sit inside a frame (the slider frame art): 8 more px of room per side than a plain label.
-float hintPx(const Editor& e, const editkit::Box& b) {
-    const float px = labelPx(e, b);
-    return px > 0.0f ? (px > 17.0f ? px - 16.0f : 1.0f) : 0.0f;
-}
 
 // Weapon button caption: the item display name (cached at build), else the model resref. "Right: Vibrosword" when that fits the button, else
 // "R: Vibrosword", cut with "..." when even that is too wide.
@@ -1550,10 +1553,15 @@ void applyLayout(Editor& e) {
     e.layOk = true;
     editkit::Box all[hse::kPageItemsV3];
     hse::pageBoxesV3(L, all);
-    for (int i = 0; i < hse::kPageItemsV3; ++i) placeBox(e.item[i], all[i]);
-    for (int r = 0; r < hse::kV3Rows; ++r) {   // the wedge is the track cut to the thumb fraction (nothing at 0: parked off screen like the hidden items)
-        const editkit::Box t = L.rows[r].track;
-        const int w = static_cast<int>(hse::sliderWedgeWidth(static_cast<float>(t.w), e.rowFrac[r]) + 0.5f);
+    for (int i = 0; i < hse::kPageItemsV3; ++i) {
+        const bool emptyHint = (itemIsHintBox(i) || itemIsHintText(i)) && (all[i].w <= 0 || all[i].h <= 0);   // no room for the left description box
+        placeBox(e.item[i], emptyHint ? editkit::Box{-9999, -9999, 0, 0} : all[i]);
+    }
+    for (int r = 0; r < hse::kV3Rows; ++r) {   // the wedge is the track cut at the thumb centre (nothing at 0: parked off screen like the hidden items)
+        const editkit::Box t = L.rows[r].track, th = L.rows[r].thumb;
+        // The wedge's tall end is the right edge of its texture: cut the rect at the centre of the thumb box (the layout clamps the thumb inside the track),
+        // so the wedge always ends exactly where the marker sits.
+        const int w = th.w > 0 ? th.x + th.w / 2 - t.x : 0;
         placeBox(e.wedge[r], w > 0 && t.h > 0 ? editkit::Box{t.x, t.y, w, t.h} : editkit::Box{-9999, -9999, 0, 0});
     }
     applyCaptions(e);   // after every button rect is set: the engine's SetExtent just re-insetted each caption text rect
@@ -1793,14 +1801,29 @@ int hoverRowAt(const Editor& e, int x, int y) {
     return -1;
 }
 
-// Hint line 2 shows the short hint of the hovered slider row (empty otherwise); line 1 is fixed at enter.
+constexpr const char* kSliderHelp = "Drag or click a slider. Shift fine, Ctrl snap.";
+constexpr const char* kLeftHelp = "Pick the weapon, the bone and where Save applies, then adjust the sliders. Hover a button for help.";
+
+// Right description pane (mod-config's green box, written through SetDesc): the help of the hovered slider row plus the drag keys, else the drag keys.
+// Written when the hovered row changes only, so mod-config's own hover text for the view buttons is not overwritten every tick.
+// Left description box (hint items): the help of the hovered left-column button, else a short default. Without the box (small panes) it goes to the right pane.
 void refreshHints(Editor& e, int x, int y) {
+    if (!g_menu.ok() || !e.page) return;
     const int row = hoverRowAt(e, x, y);
-    if (row == e.hintRow) return;
-    e.hintRow = row;
-    char fit[64];
-    fitButton(hintPx(e, e.lay.hint[1]), row >= 0 ? hse::inspHint(row) : "", fit, sizeof fit);
-    setItemText(e, hse::PI_HINT + 1, fit);
+    if (row != e.hintRow) {
+        e.hintRow = row;
+        char buf[200];
+        if (row >= 0) snprintf(buf, sizeof buf, "%s %s", hse::inspHint(row), kSliderHelp); else snprintf(buf, sizeof buf, "%s", kSliderHelp);
+        g_menu.p->SetDesc(e.page, buf);
+    }
+    int tip = -1;
+    for (int i = 0; i < hse::kPageItemsV3 && tip < 0; ++i)
+        if (itemIsLeftTip(i) && overItem(e, e.item[i], x, y)) tip = i;
+    if (tip == e.leftTip) return;
+    e.leftTip = tip;
+    const char* text = tip >= 0 ? itemTip(tip) : kLeftHelp;
+    if (e.lay.hint[0].w > 0) setItemText(e, hse::PI_HINT + 1, text);
+    else if (tip >= 0) g_menu.p->SetDesc(e.page, text);
 }
 
 // Ends the running scrub (release) or drops it (cancelled: foreground loss, leave, scope change, edit closing, ...). Applied values stay as they are.
@@ -2049,8 +2072,7 @@ void KPATCH_CALL cbEnter(uint32_t page, void*) {
     guikit::g_wheel.touch(GetTickCount());
     setItemText(g_ed, hse::PI_STATUS, statusText());
     char fit[64];
-    fitButton(hintPx(g_ed, g_ed.lay.hint[0]), "Drag or click a slider. Shift fine, Ctrl snap.", fit, sizeof fit);
-    setItemText(g_ed, hse::PI_HINT, fit);
+    g_ed.leftTip = -2;
     {   // the legend line under the view: cut to the view width
         char leg[64];
         fitButton(labelPx(g_ed, g_ed.lay.legend), hse::helpLine(), leg, sizeof leg);
@@ -2304,14 +2326,14 @@ void applyArt(Editor& e) {
         if (!ctlOf(e, e.item[b + 1]) || !ctlOf(e, e.wedge[r]) || !ctlOf(e, e.item[b + 2])) haveSlider = false;
     }
     for (int i = 0; i < hse::kPageItemsV3 && haveSlider; ++i)
-        if (itemIsHintBox(i) && !ctlOf(e, e.item[i])) haveSlider = false;
+        if ((itemIsHintBox(i) || itemIsHintText(i)) && !ctlOf(e, e.item[i])) haveSlider = false;
     for (int i = 0; i < hse::kPageItemsV3 && haveIcon; ++i)
         if ((itemIsResetIcon(i) || itemIsMemberArrow(i) || i == hse::PI_VIEW_FLIP) && !ctlOf(e, e.item[i])) haveIcon = false;
     if (!timedOut && (!haveIcon || !haveSlider)) return;
     if (timedOut)
         KP_LOGV(chView, KPLOG_WARN, "ART WARN not ready after %d ticks (slider=%d reset_icon=%d): the missing part keeps its plain controls", kArtMaxTicks,
                 haveSlider ? 1 : 0, haveIcon ? 1 : 0);
-    int frame = 0, wedge = 0, mark = 0, icon = 0, icons = 0, arrow = 0, arrows = 0, flip = 0, hintBox = 0;
+    int frame = 0, wedge = 0, mark = 0, icon = 0, icons = 0, arrow = 0, arrows = 0, flip = 0, hintBox = 0, descStyle = 0;
     for (int r = 0; r < hse::kV3Rows && haveSlider; ++r) {
         const int b = hse::PI_ROW + r * hse::kRowStride;
         const uintptr_t tc = ctlOf(e, e.item[b + 1]), wc = ctlOf(e, e.wedge[r]), mc = ctlOf(e, e.item[b + 2]);
@@ -2319,10 +2341,17 @@ void applyArt(Editor& e) {
         if (hse::sliderArtFill(wc, hse::SA_Wedge)) { ++wedge; (void)guikit::setFillStyle(wc, 2); }
         if (hse::sliderArtFill(mc, hse::SA_Mark)) { ++mark; (void)guikit::setFillStyle(mc, 2); }
     }
-    for (int i = 0; i < hse::kPageItemsV3 && haveSlider; ++i) {   // the two hint lines get the slider frame as a description box
-        if (!itemIsHintBox(i)) continue;
-        const uintptr_t hc = ctlOf(e, e.item[i]);
-        if (hse::sliderArtFill(hc, hse::SA_Frame)) { ++hintBox; (void)guikit::setFillStyle(hc, 2); }
+    for (int i = 0; i < hse::kPageItemsV3 && haveSlider; ++i) {   // the left description box: the vanilla description colours as a stretched fill, its text in the description font
+        if (itemIsHintBox(i)) {
+            const uintptr_t hc = ctlOf(e, e.item[i]);
+            if (hse::sliderArtFill(hc, hse::SA_Box)) { ++hintBox; (void)guikit::setFillStyle(hc, 2); }
+        } else if (itemIsHintText(i)) {
+            const uintptr_t tc = ctlOf(e, e.item[i]);
+            if (tc) {   // fnt_d16x16b + the description teal (37,200,164) + top-left, as the Options description list draws
+                descStyle = (guikit::setFont(tc, "fnt_d16x16b") ? 1 : 0) | (guikit::setTextColor(tc, 37.0f / 255.0f, 200.0f / 255.0f, 164.0f / 255.0f) ? 2 : 0) |
+                            (guikit::setAlign(tc, 9) ? 4 : 0);
+            }
+        }
     }
     for (int i = 0; i < hse::kPageItemsV3 && haveIcon; ++i) {
         if (!itemIsResetIcon(i)) continue;
@@ -2354,8 +2383,8 @@ void applyArt(Editor& e) {
         }
     }
     e.artDone = true;
-    KP_LOG(chView, "ART applied frame=%d/%d wedge=%d/%d mark=%d/%d reset_icon=%d/%d member_arrow=%d/%d flip=%d/1 hint_box=%d/%d after %d ticks", frame, hse::kV3Rows, wedge, hse::kV3Rows, mark,
-           hse::kV3Rows, icon, icons, arrow, arrows, flip, hintBox, hse::kV3Hints, e.artTicks);
+    KP_LOG(chView, "ART applied frame=%d/%d wedge=%d/%d mark=%d/%d reset_icon=%d/%d member_arrow=%d/%d flip=%d/1 hint_box=%d/1 desc_style=%d/7 after %d ticks", frame, hse::kV3Rows, wedge, hse::kV3Rows, mark,
+           hse::kV3Rows, icon, icons, arrow, arrows, flip, hintBox, descStyle, e.artTicks);
 }
 
 // Mounting bone `want` (0..4): HolsterApi has no absolute bone setter, so this cycles CycleBone until GetEdit reports the bone, at most
@@ -2713,7 +2742,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     g_menu.init(api);
     embedgui::g_log = embedLog;
     embtex::g_log = embedLog;
-    KP_LOG(chMain, "holster-editor 0.4.6-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
+    KP_LOG(chMain, "holster-editor 0.4.7-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
            static_cast<unsigned>(sizeof kHseViewGui));
     const bool cfgOk = g_cfgClient.connect(), menuOk = g_menu.connect();
     if (!cfgOk || !menuOk) {

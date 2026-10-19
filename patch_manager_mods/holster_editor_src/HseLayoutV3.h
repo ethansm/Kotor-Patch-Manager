@@ -14,9 +14,9 @@
 //             ordered column < view < preview (left to right).
 //   preview = MUI_PANE_PREVIEW (the area above the shrunken description). The inspector is at most kInspWantW wide,
 //             left aligned at preview.x + 4.
-//   hint    = optional description rect (w <= 0 or h <= 0 means none): the two hint lines (kV3HintMax = 40 px high where space allows) go inside it. Without it they
-//             are stacked under the mirrored note inside `preview`. The holster editor passes NO hint rect: the shrunken description pane
-//             under the split belongs to mod-config (its hover text), so a label over it would cover that text.
+//   hint    = unused (kept for the signature). hint[0] is the LEFT description box: the free part of the left column under the status line
+//             (kV3DescMinH..kV3DescMaxH high, empty Box when less is left); hint[1] is the text area inset by kV3DescPad inside it (empty with it). The slider hints go to mod-config's own
+//             description pane (SetDesc), which the editor keeps on the right under the split.
 // Documented minimum panes (everything has positive size and nothing overlaps): column 140 x 180, view 160 x 150,
 // preview 170 x 200 (with or without the hint rect). Below the minimum the layout degrades
 // by shrinking row heights to their floors, then by clipping each box to its own pane: widths and heights never go
@@ -44,7 +44,8 @@ constexpr int kV3LeftRowMax = 52, kV3InspRowMax = 60, kV3RowMin = 14;   // left 
 constexpr int kV3RoomyRowMin = 30;  // the roomy left column (2 bone columns, one scope per row) is used while its rows stay at least this high; below, the compact one
 constexpr int kV3BarMax = 44, kV3BarMin = 12;   // mode bar / stance row heights
 constexpr int kV3MinViewW = 8;    // the view area is at least this wide when the preview pane leaves any room
-constexpr int kV3HintMax = 40;    // hint line height (dialogfont16x16 lines need about 18 px); shrinks only when the rect is small
+constexpr int kV3DescPad = 12;   // text inset inside the left description box
+constexpr int kV3DescMinH = 90, kV3DescMaxH = 260, kV3DescWantH = 130;   // left description box (hint[0], under the status line): shown from this height, at most this high
 constexpr int kV3MinViewH = 60;   // the bars shrink before the view gets lower than this
 constexpr int kV3NameW = 170, kV3ValueW = 200;    // inspector name and value label widths (shrink together when narrow)
 constexpr int kV3TrackWant = 150;  // a narrow inspector keeps the track this wide before the labels take their full width
@@ -151,12 +152,19 @@ inline int buildLeft(editkit::Box Z, int r, bool roomy, PageLayoutV3& L) {
     y += r + kGap;
     L.status = mk(x0, y, W, r);
     y += r;
+    // The left description box (hint[0]) takes what is left of the column below the status line (none when less than kV3DescMinH remains).
+    // Placed from the final call only (the fit loops re-run buildLeft at smaller rows, which rewrites it).
+    const int dTop = y + kGap, dH = Z.y + Z.h - kPad - dTop;
+    L.hint[0] = dH >= kV3DescMinH ? mk(x0, dTop, W, imin(dH, kV3DescMaxH)) : Box{0, 0, 0, 0};
+    // hint[1] is the text area inside the box (a label has no inner padding, so the text is its own item, drawn over the box).
+    L.hint[1] = L.hint[0].w > 0 ? mk(L.hint[0].x + kV3DescPad, L.hint[0].y + kV3DescPad, imax(0, L.hint[0].w - 2 * kV3DescPad), imax(0, L.hint[0].h - 2 * kV3DescPad))
+                                : Box{0, 0, 0, 0};
     return y + kPad;
 }
 
 // Inspector in zone Z (the preview pane) at row height rr, left aligned at Z.x + pad, width inspW.
-// hintZone: the optional description rect (w/h > 0) holding the hint lines; otherwise they are stacked in Z.
-inline int buildInspector(editkit::Box Z, editkit::Box hintZone, int rr, const float* thumbFrac, PageLayoutV3& L) {
+// hintZone: unused (the hint lines left the inspector; see buildLeft).
+inline int buildInspector(editkit::Box Z, editkit::Box /*hintZone: unused, the hints left the inspector*/, int rr, const float* thumbFrac, PageLayoutV3& L) {
     using editkit::Box;
     const int cap = rr * 2 / 3;
     const int sq = imin(kV3ResetMax, rr);
@@ -202,13 +210,6 @@ inline int buildInspector(editkit::Box Z, editkit::Box hintZone, int rr, const f
     L.note = mk(X, y, W, cap);
     y += cap + kGap;
 
-    if (hintZone.w > 0 && hintZone.h > 0) {
-        int lh = iclamp((hintZone.h - 2 * kPad - kGap) / 2, 0, kV3HintMax);
-        for (int i = 0; i < kV3Hints; ++i)
-            L.hint[i] = clipTo(Box{hintZone.x + kPad, hintZone.y + kPad + i * (lh + kGap), hintZone.w - 2 * kPad, lh}, hintZone);
-    } else {
-        for (int i = 0; i < kV3Hints; ++i) { L.hint[i] = mk(X, y, W, cap); y += cap + kGap; }
-    }
     return y - kGap + kPad;
 }
 
@@ -225,14 +226,19 @@ inline PageLayoutV3 pageLayoutV3(editkit::Box column, editkit::Box view, editkit
     int colW = v3::iclamp(v3::imin(column.w, kV3ColWantW), 0, v3::imax(0, view.x - 4 - column.x));
     Box colZ{column.x, column.y, colW, column.h};
     {
+        // Rows first leave kV3DescWantH + kGap under the status line for the left description box; a column too short for that keeps the old fit
+        // (the box then gets what is left, or is absent below kV3DescMinH).
         bool fitted = false;
-        for (int r = kV3LeftRowMax; r >= kV3RoomyRowMin && !fitted; --r) {
-            L.leftRowH = r;
-            fitted = v3::buildLeft(colZ, r, true, L) <= colZ.y + v3::imax(0, colZ.h);
-        }
-        for (int r = kV3RoomyRowMin - 1; r >= kV3RowMin && !fitted; --r) {
-            L.leftRowH = r;
-            fitted = v3::buildLeft(colZ, r, false, L) <= colZ.y + v3::imax(0, colZ.h);
+        for (int pass = 0; pass < 2 && !fitted; ++pass) {
+            const int bottom = colZ.y + v3::imax(0, colZ.h) - (pass == 0 ? kV3DescWantH + v3::kGap : 0);
+            for (int r = kV3LeftRowMax; r >= kV3RoomyRowMin && !fitted; --r) {
+                L.leftRowH = r;
+                fitted = v3::buildLeft(colZ, r, true, L) <= bottom;
+            }
+            for (int r = kV3RoomyRowMin - 1; r >= kV3RowMin && !fitted; --r) {
+                L.leftRowH = r;
+                fitted = v3::buildLeft(colZ, r, false, L) <= bottom;
+            }
         }
         if (!fitted) { L.leftRowH = kV3RowMin; v3::buildLeft(colZ, kV3RowMin, false, L); }
     }
