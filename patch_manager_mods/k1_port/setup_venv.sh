@@ -6,11 +6,18 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PATCH_FILE="${SCRIPT_DIR}/pykotor_k2_mdl.patch"
+# Second patch, applied on top of the first: danglymesh (0x121) reader/writer fix (vanilla layout, positions block).
+DANGLY_PATCH_FILE="${SCRIPT_DIR}/pykotor_k2_dangly.patch"
 VENV="${K1PORT_VENV:-$HOME/Games/KOTOR2_Mod_Workspace/venvs/k1port}"
 PYKOTOR_VERSION="2.3.12"
 
 if [[ ! -f "$PATCH_FILE" ]]; then
     echo "ERROR: patch file missing: $PATCH_FILE" >&2
+    exit 1
+fi
+
+if [[ ! -f "$DANGLY_PATCH_FILE" ]]; then
+    echo "ERROR: patch file missing: $DANGLY_PATCH_FILE" >&2
     exit 1
 fi
 
@@ -30,6 +37,18 @@ if patch -p1 --dry-run -R -d "$SITE" -i "$PATCH_FILE" >/dev/null 2>&1; then
 else
     patch -p1 --no-backup-if-mismatch -d "$SITE" -i "$PATCH_FILE"
     echo "Patch applied under $SITE: pykotor/resource/formats/mdl/io_mdl.py, mdl_data.py"
+fi
+
+# Patch 2 (danglymesh) goes on top of patch 1. Re-running this script on an existing venv upgrades it:
+# patch 1 is detected and skipped, patch 2 is applied.
+if patch -p1 --dry-run -R -d "$SITE" -i "$DANGLY_PATCH_FILE" >/dev/null 2>&1; then
+    echo "Dangly patch already applied, skipping: $SITE"
+elif patch -p1 --dry-run -d "$SITE" -i "$DANGLY_PATCH_FILE" >/dev/null 2>&1; then
+    patch -p1 --no-backup-if-mismatch -d "$SITE" -i "$DANGLY_PATCH_FILE"
+    echo "Dangly patch applied under $SITE: pykotor/resource/formats/mdl/io_mdl.py"
+else
+    echo "ERROR: $DANGLY_PATCH_FILE does not apply under $SITE (patch 1 is applied); the venv's pykotor differs from ${PYKOTOR_VERSION}+patch 1" >&2
+    exit 1
 fi
 
 echo "VENV_PYTHON=$VENV/bin/python"

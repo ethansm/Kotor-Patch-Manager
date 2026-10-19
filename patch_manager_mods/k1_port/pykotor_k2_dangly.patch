@@ -1,0 +1,164 @@
+--- a/pykotor/resource/formats/mdl/io_mdl.py
++++ b/pykotor/resource/formats/mdl/io_mdl.py
+@@ -442,6 +442,7 @@
+     SIZE: ClassVar[int] = 80
+ 
+     _dangly_constraints: list[MDLConstraint] | None = None
++    _dangly_positions: list[Vector3] | None = None  # k1port-dangly-v1: rest positions, one per constraint
+     _aabb_nodes: list[MDLAABBNode] | None = None
+     _aabb_tree_size: int | None = None
+ 
+@@ -577,6 +578,9 @@
+         # Danglymesh sub-sub-header follows trimesh header
+         if self.dangly is not None:
+             self.dangly.write(writer)
++            # k1port-dangly-v1: vanilla order = dangly header, constraints (N floats), positions (3N floats),
++            # then faces. 716/716 vanilla K2 dangly nodes follow this layout.
++            self._write_dangly_extra(writer)
+ 
+         # AABB nodes have an extra 4-byte field (aabbloc) after the trimesh header
+         # This extends the header from 332/340 bytes to 336/344 bytes
+@@ -596,8 +600,6 @@
+ 
+         if self.trimesh is not None:
+             self._write_trimesh_data(writer)
+-        if self.dangly is not None:
+-            self._write_dangly_extra(writer)
+         if self.skin is not None:
+             self._write_skin_extra(writer)
+         for child_offset in self.children_offsets:
+@@ -697,12 +699,12 @@
+             writer.write_int16(face.vertex3)
+ 
+     def dangly_extra_size(self) -> int:
+-        """Size of dangly constraints array (1 float per constraint = 4 bytes each)."""
++        """Size of the dangly block that follows the dangly header: constraints (4 B each) + positions (12 B each)."""
+         if not self.dangly:
+             return 0
+         if self._dangly_constraints is None:
+             return 0
+-        return len(self._dangly_constraints) * 4
++        return len(self._dangly_constraints) * 16
+ 
+     def _write_aabb_extra(
+         self,
+@@ -782,7 +784,7 @@
+         self,
+         writer: BinaryWriter,
+     ) -> None:
+-        """Write danglymesh constraints array after vertices."""
++        """Write the danglymesh constraints (N floats) then rest positions (N Vector3) right after the dangly header."""
+         assert self.dangly is not None
+         # Constraints are written as floats (4 bytes each, one float per vertex)
+         # MDLOps writes constraints after the dangly sub-sub-header
+@@ -795,6 +797,18 @@
+             else:
+                 constraint_value = 0.0
+             writer.write_single(constraint_value)
++        # k1port-dangly-v1: positions block (vanilla: cptr + 4N). Missing entries fall back to the mesh vertex
++        # position, then to the null vector, so the block always has exactly N entries.
++        positions = self._dangly_positions or []
++        mesh_vertices = self.trimesh.vertices if self.trimesh is not None else []
++        for idx in range(len(constraints)):
++            if idx < len(positions):
++                pos = positions[idx]
++            elif idx < len(mesh_vertices):
++                pos = mesh_vertices[idx]
++            else:
++                pos = Vector3.from_null()
++            writer.write_vector3(pos)
+ 
+     def _write_skin_extra(
+         self,
+@@ -853,6 +867,8 @@
+     ) -> int:
+         # MDLOps layout: faces come immediately after headers (and AABB if present)
+         offset = self.all_headers_size(game)
++        # k1port-dangly-v1: dangly constraints + positions sit between the dangly header and the faces
++        offset += self.dangly_extra_size()
+         # AABB tree (if present) comes after aabbloc field but before faces
+         if self.header and self.header.type_id & MDLNodeFlags.AABB and self.trimesh:
+             offset += 4  # aabbloc field
+@@ -923,8 +939,6 @@
+         offset = self.vertex_indices_offset(game)
+         if self.trimesh:
+             offset += self.trimesh.vertex_indices_size()
+-        if self.dangly:
+-            offset += self.dangly_extra_size()
+         if self.skin:
+             offset += self.skin_extra_size()
+         return offset
+@@ -2980,8 +2994,9 @@
+                 ):
+                     saved_pos = self._reader.position()
+                     try:
+-                        # MDLOps line 2176: offset + 12 (offset-12 semantics)
+-                        constraint_loc: int = bin_node.dangly.offset_to_contraints + 12
++                        # k1port-dangly-v1: the stored pointer is already in reader space (same as the flare
++                        # read, which seeks the raw pointer after set_offset(+12)). The old "+ 12" read 12 B late.
++                        constraint_loc: int = bin_node.dangly.offset_to_contraints
+                         self._reader.seek(constraint_loc)
+                         # MDLOps line 2401: constraints are floats, one per vertex
+                         # MDLOps line 7264: pack("f", $_) for each constraint
+@@ -2999,6 +3014,17 @@
+                                     else 0
+                                 )  # type: ignore[assignment]
+                                 node.dangly.constraints.append(constraint)
++                        # k1port-dangly-v1: rest positions (N Vector3) at the dangly header's positions pointer
++                        posptr: int = bin_node.dangly.danglyverts_offset
++                        if posptr not in (0, 0xFFFFFFFF):
++                            self._reader.seek(posptr)
++                            positions: list[Vector3] = []
++                            for _ in range(bin_node.dangly.constraints_count):
++                                if self._reader.position() + 12 > self._reader.size():
++                                    break
++                                positions.append(self._reader.read_vector3())
++                            node.dangly.verts_original = positions
++                            node.dangly.verts = list(positions)
+                     finally:
+                         self._reader.seek(saved_pos)
+ 
+@@ -3382,6 +3408,11 @@
+                 bin_node.dangly.constraints_count2 = len(mdl_node.dangly.constraints)
+                 # Store constraints for writing later (store on bin_node for access during write)
+                 bin_node._dangly_constraints = list(mdl_node.dangly.constraints)
++                # k1port-dangly-v1: rest positions; verts_original is the bind pose, verts the fallback
++                if mdl_node.dangly.verts_original:
++                    bin_node._dangly_positions = list(mdl_node.dangly.verts_original)
++                else:
++                    bin_node._dangly_positions = list(mdl_node.dangly.verts)
+ 
+             # Store AABB tree for writing later if this is an AABB node
+             # Always initialize _aabb_nodes when aabb exists, even if empty, to match AABB flag behavior
+@@ -4177,15 +4208,16 @@
+         bin_node: _Node,
+     ) -> None:
+         assert bin_node.dangly is not None, "Dangly node is required"
+-        # Constraints follow vertices
+-        after_vertices: int = node_offset + bin_node.vertices_offset(self.game)
+-        if bin_node.trimesh is not None:
+-            after_vertices += bin_node.trimesh.vertices_size()
++        # k1port-dangly-v1: vanilla layout. Constraints start right after the last node header, positions follow
++        # the N constraint floats (cptr + 4N), faces follow the positions (cptr + 16N). Pointers are in the same
++        # space as every other writer pointer (no -12).
+         if bin_node.dangly.constraints_count > 0:
+-            # MDLOps uses offset-12 semantics for constraint pointer
+-            bin_node.dangly.offset_to_contraints = after_vertices - 12
++            cptr: int = node_offset + bin_node.all_headers_size(self.game)
++            bin_node.dangly.offset_to_contraints = cptr
++            bin_node.dangly.danglyverts_offset = cptr + 4 * bin_node.dangly.constraints_count
+         else:
+             bin_node.dangly.offset_to_contraints = 0
++            bin_node.dangly.danglyverts_offset = 0
+ 
+     def _calc_aabb_offsets(
+         self,
+@@ -4212,7 +4244,7 @@
+         #
+         # The layout is: headers -> aabbloc field (4 bytes) -> AABB tree -> faces
+         # So the AABB tree position is: node_offset + all_headers_size + 4 (for aabbloc field)
+-        aabb_tree_offset: int = node_offset + bin_node.all_headers_size(self.game) + 4
++        aabb_tree_offset: int = node_offset + bin_node.all_headers_size(self.game) + bin_node.dangly_extra_size() + 4
+ 
+         # AABB tree size: 40 bytes per node
+         aabb_tree_size: int = len(aabb_nodes) * 40
