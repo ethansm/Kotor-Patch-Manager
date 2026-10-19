@@ -1,4 +1,4 @@
-// HolsterEditor.cpp -- holster-editor 0.4.7-dev (Steam build): a HOOKLESS consumer of the mod-config provider (k2.modconfig@1, k2.menuui@1).
+// HolsterEditor.cpp -- holster-editor 0.4.8-dev (Steam build): a HOOKLESS consumer of the mod-config provider (k2.modconfig@1, k2.menuui@1).
 // (doc 42 HW-EDIT, plan .claude/plans/holster_editor_options.md; page rebuild: .claude/plans/holster_editor_layout_v3.md, holster_hw_ux3_build.md Wave B.)
 //
 // mod-config owns everything about the Options screen: the hooks, the root "Mod Configuration" button, the list page, control cloning,
@@ -2347,8 +2347,9 @@ void applyArt(Editor& e) {
             if (hse::sliderArtFill(hc, hse::SA_Box)) { ++hintBox; (void)guikit::setFillStyle(hc, 2); }
         } else if (itemIsHintText(i)) {
             const uintptr_t tc = ctlOf(e, e.item[i]);
-            if (tc) {   // fnt_d16x16b + the description teal (37,200,164) + top-left, as the Options description list draws
-                descStyle = (guikit::setFont(tc, "fnt_d16x16b") ? 1 : 0) | (guikit::setTextColor(tc, 37.0f / 255.0f, 200.0f / 255.0f, 164.0f / 255.0f) ? 2 : 0) |
+            if (tc) {   // the description teal (37,200,164) + top-left, as the Options description list draws. No SetFont: SetFont(fnt_d16x16b) on this label
+                        // crashed live (10-18 21:51, 0x47AFA8 null font data in the wrap pass, backtrace SetFont 0x416DE0 <- holster-editor) so the label keeps its font
+                descStyle = (guikit::setTextColor(tc, 37.0f / 255.0f, 200.0f / 255.0f, 164.0f / 255.0f) ? 2 : 0) |
                             (guikit::setAlign(tc, 9) ? 4 : 0);
             }
         }
@@ -2383,7 +2384,7 @@ void applyArt(Editor& e) {
         }
     }
     e.artDone = true;
-    KP_LOG(chView, "ART applied frame=%d/%d wedge=%d/%d mark=%d/%d reset_icon=%d/%d member_arrow=%d/%d flip=%d/1 hint_box=%d/1 desc_style=%d/7 after %d ticks", frame, hse::kV3Rows, wedge, hse::kV3Rows, mark,
+    KP_LOG(chView, "ART applied frame=%d/%d wedge=%d/%d mark=%d/%d reset_icon=%d/%d member_arrow=%d/%d flip=%d/1 hint_box=%d/1 desc_style=%d/6 after %d ticks", frame, hse::kV3Rows, wedge, hse::kV3Rows, mark,
            hse::kV3Rows, icon, icons, arrow, arrows, flip, hintBox, descStyle, e.artTicks);
 }
 
@@ -2742,7 +2743,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     g_menu.init(api);
     embedgui::g_log = embedLog;
     embtex::g_log = embedLog;
-    KP_LOG(chMain, "holster-editor 0.4.7-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
+    KP_LOG(chMain, "holster-editor 0.4.8-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
            static_cast<unsigned>(sizeof kHseViewGui));
     const bool cfgOk = g_cfgClient.connect(), menuOk = g_menu.connect();
     if (!cfgOk || !menuOk) {
