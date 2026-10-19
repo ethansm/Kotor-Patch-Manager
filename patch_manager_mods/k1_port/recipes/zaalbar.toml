@@ -1,0 +1,34 @@
+# Zaalbar (K1 party member, K1 creature template p_zaalbar). Instructions only: no assets, no 2DA row numbers (the builder assigns them).
+# Values from k1_port_scan.py facts for p_zaalbar (chitin:templates.bif): appearance.2da row 9 (modeltype F: one full-body model, no
+# head, no body B), soundset.2da row 87 (p_zaalbar), conversation k_hzaa_dialog, gender_id 0; supermodel N_WookieM exists in vanilla K2
+# (.claude/research/pykotor_writer/h7_mission_zaalbar.md, 10-18). k1_port_scan.py cannot derive this one (it needs a head).
+[character]
+id = "zaalbar"
+display_name = "Zaalbar"
+tag = "k1p_zaalbar"        # spawn-probe roster tag
+utc = "k1p_zaalbaru"       # not k1p_zaalbar: that is the model name (a k2 name may be claimed once)
+dlg = ""
+soundset = 11              # FALLBACK only (K2 soundset.2da row 11 = n_commm); with [audio] below the builder appends a new row and the UTC uses that instead
+template_row = 17          # appearance.2da row copied for the new row
+gender = 0
+
+[models]
+converter = "pykotor"      # no dangly nodes in K1 p_zaalbar (h7 recon); supermodel N_WookieM resolves by name to vanilla K2 n_wookiem, no map needed
+# K1 Zaalbar = the single full-body model p_zaalbar (no body B, no head)
+body_a = { k1 = "p_zaalbar", k2 = "k1p_zaalbar" }
+
+# DXT1 TPC output must be opaque (doc 38 s24). The only texture the p_zaalbar mesh references that exists in K1 is p_zaalbar02.
+[[textures]]
+k1 = "p_zaalbar02"
+k2 = "k1p_zaalbar02"
+force_opaque = true
+
+# Zaalbar's own K1 barks (SSF p_zaalbar) and party conversation (k_hzaa_dialog), same route as recipes/carth.toml and recipes/juhani.toml.
+[audio]
+k1_ssf = "p_zaalbar"
+k2_ssf = "k1p_zaalbarssf"
+
+[dialog]
+k1_dlg = "k_hzaa_dialog"
+k2_dlg = "k1p_zaalbardlg"
+max_voiced = 30
