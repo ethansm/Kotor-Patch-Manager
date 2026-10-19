@@ -921,6 +921,21 @@ class AudioTests(Base):
         self.assertEqual(rows[LIVE_SND], [""] * 5)  # the gap row the first character would own
         self.assertEqual(self.load_pack("tsu")[0].soundset_id, LIVE_SND + 1)
 
+    def test_first_soundset_row_pads_above_the_live_table(self):
+        self.write_config(build_extra=f"first_soundset_row = {LIVE_SND + 3}")
+        self.build_ok()
+        assign = json.loads((self.out / "assignments.json").read_text())
+        self.assertEqual(assign["tst"]["soundset"], LIVE_SND + 3)
+        self.assertEqual(assign["tsu"]["soundset"], LIVE_SND + 4)
+        self.assertEqual(self.load_pack("tst")[0].soundset_id, LIVE_SND + 3)
+
+    def test_first_soundset_row_below_live_count_is_refused(self):
+        self.write_config(build_extra=f"first_soundset_row = {LIVE_SND - 1}")
+        rc, _, err = self.run_cli("build")
+        self.assertEqual(rc, 1)
+        self.assertIn(f"first_soundset_row = {LIVE_SND - 1}", err)
+        self.assertIn("overwrite", err)
+
     def test_live_soundset_count_change_is_refused_then_reassigned(self):
         self.build_ok()
         pack_before = imp.sha256_file(self.out / "tst.k2pack")

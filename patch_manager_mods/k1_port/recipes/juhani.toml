@@ -33,3 +33,14 @@ k1 = "p_juhanih01"
 k2 = "k1p_juhanih01"
 force_opaque = true
 txi = "clamp 1"
+
+# Juhani's own K1 barks (SSF p_juhani) and party conversation (k_hjuh_dialog), same route as recipes/carth.toml.
+# Hand path (juhani-char) keeps its custom soundset row 70 and 3-line test dialog; this pack route replaces them.
+[audio]
+k1_ssf = "p_juhani"
+k2_ssf = "k1p_juhanissf"
+
+[dialog]
+k1_dlg = "k_hjuh_dialog"
+k2_dlg = "k1p_juhanidlg"
+max_voiced = 30

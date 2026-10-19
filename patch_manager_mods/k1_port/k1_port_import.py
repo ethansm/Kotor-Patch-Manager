@@ -594,8 +594,12 @@ def plan_assignments(loaded: Loaded, runner: Runner, reassign: bool) -> tuple[di
     audio_ids = [r.id for cid in cfg.characters for r in loaded.recipes if r.id == cid and r.audio is not None]
     if audio_ids:
         live["soundset"] = twoda_height(runner, live_dir / "soundset.2da")
+        start_s = live["soundset"] if cfg.first_soundset_row is None else cfg.first_soundset_row
+        if start_s < live["soundset"]:
+            raise Failure(f"[build] first_soundset_row = {start_s}", f"below the live soundset.2da row count ({live['soundset']}); it would overwrite rows",
+                          f"use {live['soundset']} or higher, or remove the key")
         for i, cid in enumerate(audio_ids):
-            planned[cid]["soundset"] = live["soundset"] + i
+            planned[cid]["soundset"] = start_s + i
     stored = read_json(loaded.out / "assignments.json", "assignments") or {}
     if not isinstance(stored, dict):
         raise Failure(str(loaded.out / "assignments.json"), "not a JSON object", "delete it (rows are reassigned on the next build)")

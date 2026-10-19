@@ -46,7 +46,7 @@ MODELS_KEYS = ("converter", "body_a", "body_b", "head")
 MODEL_ENTRY_KEYS = ("k1", "k2")
 TEXTURE_KEYS = ("k1", "k2", "force_opaque", "txi")
 TOP_KEYS = ("character", "models", "textures", "audio", "dialog")
-BUILD_KEYS = ("out", "characters", "recipes_dir", "texture_source", "first_appearance_row", "first_head_row")
+BUILD_KEYS = ("out", "characters", "recipes_dir", "texture_source", "first_appearance_row", "first_head_row", "first_soundset_row")
 TEXTURE_SOURCES = ("vanilla", "cr")
 
 ROW_HINT = "row ids are assigned by the builder from the live K2 tables"
@@ -131,6 +131,7 @@ class Config:
     texture_source: str = "vanilla"          # [build] texture_source: "vanilla" (K1 install) or "cr" (Characters Revisited)
     first_appearance_row: int | None = None  # [build] first_appearance_row: start of the assigned appearance.2da rows
     first_head_row: int | None = None        # [build] first_head_row: start of the assigned heads.2da rows
+    first_soundset_row: int | None = None    # [build] first_soundset_row: start of the assigned soundset.2da rows ([audio] recipes)
 
 
 def _toml_module():
@@ -460,6 +461,8 @@ def load_config(path) -> Config:
         if "first_appearance_row" in build else None
     first_head = ctx.integer(build["first_head_row"], "build.first_head_row", 0) \
         if "first_head_row" in build else None
+    first_sound = ctx.integer(build["first_soundset_row"], "build.first_soundset_row", 0) \
+        if "first_soundset_row" in build else None
     return Config(
         k1_dir=k1_dir,
         k2_dir=k2_dir,
@@ -471,6 +474,7 @@ def load_config(path) -> Config:
         texture_source=texture_source,
         first_appearance_row=first_app,
         first_head_row=first_head,
+        first_soundset_row=first_sound,
     )
 
 

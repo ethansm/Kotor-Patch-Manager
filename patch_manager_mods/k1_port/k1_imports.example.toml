@@ -33,3 +33,4 @@ recipes_dir = ""
 # juhani-char DLL owns appearance 818-820 and heads 249-251: use 821 and 252 while it is installed).
 # first_appearance_row = 821
 # first_head_row = 252
+# first_soundset_row = 71   # [audio] recipes: soundset.2da rows start here (juhani-char owns row 70)

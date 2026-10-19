@@ -79,7 +79,9 @@ class ShippedTests(unittest.TestCase):
         carth, juhani = rs
         self.assertEqual((carth.converter, carth.soundset, carth.gender), ("mdlops", 14, 0))
         self.assertEqual(carth.audio, R.AudioRef(k1_ssf="p_carth", k2_ssf="k1p_carthssf"))
-        self.assertEqual((juhani.converter, juhani.dlg, juhani.gender), ("mdlops", "", 1))
+        self.assertEqual((juhani.converter, juhani.dlg, juhani.gender), ("mdlops", "k1p_juhanidlg", 1))
+        self.assertEqual(juhani.audio, R.AudioRef(k1_ssf="p_juhani", k2_ssf="k1p_juhanissf"))
+        self.assertEqual((juhani.dialog.k1_dlg, juhani.dialog.k2_dlg), ("k_hjuh_dialog", "k1p_juhanidlg"))
         for r in rs:
             self.assertEqual(r.template_row, 17)
             self.assertEqual(len(r.textures), 3)
@@ -348,6 +350,8 @@ characters = ["carth", "juhani"]
         self.assertEqual((c.texture_source, c.first_appearance_row, c.first_head_row), ("vanilla", None, None))
         c = R.load_config(self.cfg(self.CFG + 'texture_source = "cr"\nfirst_appearance_row = 821\nfirst_head_row = 252\n'))
         self.assertEqual((c.texture_source, c.first_appearance_row, c.first_head_row), ("cr", 821, 252))
+        c = R.load_config(self.cfg(self.CFG + 'first_soundset_row = 71\n'))
+        self.assertEqual((c.first_soundset_row, R.load_config(self.cfg(self.CFG)).first_soundset_row), (71, None))
         self.bad_cfg(self.CFG + 'texture_source = "hd"\n', "build.texture_source", "one of")
         self.bad_cfg(self.CFG + "texture_source = 1\n", "build.texture_source", "string")
         self.bad_cfg(self.CFG + "first_appearance_row = -1\n", "build.first_appearance_row")
