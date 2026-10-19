@@ -51,3 +51,9 @@ cxxflags = ["-m32", "-D_GLIBCXX_DEBUG", "-DKT_MSVC_CRT_SHIM", "-include", "TestH
 # -Wno-format-truncation: wrapAppend's 255-byte candidate buffer truncates by design (same flag as chareff_decode_test).
 [textfit_test]
 cxxflags = ["-Werror", "-Wno-format-truncation"]
+
+[reset_icon_test]
+cxxflags = ["-I../../research/companion_levelup/tools/parity/stub", "-DGUIKIT_HOST", "-DEMBTEX_HOST", "-Werror"]
+
+[slider_art_test]
+cxxflags = ["-I../../research/companion_levelup/tools/parity/stub", "-DGUIKIT_HOST", "-DEMBTEX_HOST", "-Werror"]
