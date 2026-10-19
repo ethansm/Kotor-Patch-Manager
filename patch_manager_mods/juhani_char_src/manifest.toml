@@ -1,7 +1,7 @@
 [patch]
 id = "juhani-char"
 name = "Juhani + Carth + Juhani DLL twin (K1 port) VFS bundles"
-version = "0.3.1-dev"
+version = "0.3.2-dev"
 author = "local"
 description = "DLL-only client of asset-vfs (doc 44 VFS-B1/B2): at KPatchInit registers the Juhani bundle (models, DXT1 TPC textures, UTC, DLG, lips, SSF, VO and bark streams, appearance/heads/soundset rows 818/249/70) and the Carth bundle (models, DXT1 TPC textures, UTC, appearance/heads rows 819/250, vanilla soundset 11) and the Juhani twin 'Juhani DLL' (renamed k1p_juhanv* models/TPCs/UTC, appearance/heads rows 820/251, shares soundset 70; for a side-by-side with the Override rig's k1p_juhani) with k2.assetvfs@1 and the characters with k2.characterlib@1. No hooks, no game-dir files. The bundles are private (CR textures + K1 audio) and are linked from ~/Games/KOTOR2_Mod_Workspace/k1_port_stage/vfs_bundle/ when present; without a header the DLL logs 'no bundle' for it and registers nothing. The k1-spawn-probe roster does the spawn."
 
