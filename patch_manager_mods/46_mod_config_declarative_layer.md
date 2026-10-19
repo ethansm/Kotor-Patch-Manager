@@ -1,0 +1,91 @@
+# 46 — Mod-config declarative layer, new control kinds, Companion Self-Heal page
+
+Status: RESEARCH DONE 10-18 (no code). Wave `.claude/waves/mc-ctl/` (10 Haiku recon units R1-R10, one Sonnet synthesis; facts files are gitignored). Opus checks: `K2ModConfigEntry` size lock-out confirmed (`ModConfig.cpp:979` refuses `struct_size < sizeof`); Steam `FUN_0041ab60` is the `CSWGuiSlider` constructor (vftable store, max at `+0x74`, cur at `+0x78`, `SetCur` 0x41b1d0 clamps 0..max); object size 0x1C4 still unconfirmed.
+Goal: (1) grow the mod-config provider with row kinds (toggle, stepper, optional slider) and a declarative TOML layer, (2) build a Companion Self-Heal options page on it, (3) migrate enemy-effects-strip. Related: doc 45 (onboarding audit; graded selfheal NONE, this doc is the scope change), doc 42 (holster editor, source of the shared pieces).
+Owner decisions still open: see section 9. Plan rows P0-P7 are in section 8 (register them in a plan doc once the decisions are made).
+
+---
+
+
+## 1 Verified facts and Haiku corrections
+| claim | verdict | evidence |
+|---|---|---|
+| R4: no value-change channel; Clicked = one-shot latch readable only in tick() | CONFIRMED. Latch is set right before entry tick() and cleared at the start of the next McTick; clicks fire on RELEASE only (no press/hold/drag events) | MC:1101-1106, 1246-1247, 1293-1322; LOGIC:255 |
+| R4: Register copies sizeof; rule unwritten | NEW: Register REFUSES struct_size < sizeof(K2ModConfigEntry), so growing the Entry struct would lock out every old consumer. Do not grow Entry | MC:979, ABI:66-83 |
+| R9: hot-swap suffices; selfheal needs no requires entry | CONFIRMED, conditions: REINSTALL only if hooks differ or DLL exports/imports differ (so no new hook, no exports.def line, no new import in mod-config or selfheal). Lazy connect = enemy-strip precedent; listing k2.modconfig@1 in requires_interfaces WITHOUT "mod-config" in requires FAILS the checker. selfheal today: requires portrait-slots, hud-host | scripts/kpm_status.py:189-195; check_provider_manifests.py:341-355; enemy_effects_strip_src/manifest.toml:8-9; companion_selfheal_src/manifest.toml:7 |
+| R10: no C++ TOML parser exists | PARTLY WRONG. None in patch_manager_mods (0 hits), but Lane's tree ships toml++ (489 KB, Patches/Common/External/toml.hpp, used by ModOptionsConfig.h:17) and mod_config test.toml already adds that Common dir to -I. Still recommend a small own subset parser (section 3) | KPM Patches/ModOptions/ModOptionsConfig.h:17; mod_config_src/test.toml:5 |
+| R10: doc 45 has 19 rows, zero need a slider | CONFIRMED (3+4+3+3+3+3 = 19: 14 KEEP + 5 WEAK; header "~17" is stale). Drag speed / gesture rate are WEAK steppers. Doc 45 grades companion_selfheal NONE (popover covers it): the new page is a scope change the owner must accept | 45_mod_config_onboarding_audit.md:3,14,26-34 |
+| R10: SelfHealUi has no erase | CONFIRMED (upsert + lookup only; lookup falls back to def, so deleting a row = Follow global). serializeFile regenerates the [companions] body from rows, so a removal persists | _shared_src/SelfHealUi.h:289-300, 344-366 |
+| R10: live apply assumed | CONFIRMED: refreshCache re-looks-up g_cfg every cycle; saveIni accepts its own write into the file watcher | companion_selfheal_src/CompanionSelfHeal.cpp:898,924,484-486 |
+| R2: all four native controls created at runtime by `new` | PARTLY WRONG. Slider, list-select, edit box = `new` + layout.Load of an OPT_* template tag; the list box is a by-value member + InitControl on the .gui tag. All need a template layout and vtable overrides (Load/Draw/SetExtent) and K1 addresses | Lane OptionsMenu.h:42,360-361,526,556,581; OptionsSlider.h:33-35 |
+| R8: slider drag exists only in holster_editor_src | CONFIRMED (rg slider/scrub: only holster_editor_src; EditKit.h:16,25 maths has no live caller). The provider already polls the LMB, so it can host drag | MC:707,1282; HolsterEditor.cpp:1909 |
+| R6/R7: Steam slider ctor / size unknown | DB is right, dump answers: ctor FUN_0041ab60 (164 b, = GOG 164 b), dtor 0041ac10, Load 0041b030, SetMax 0041b190 (+0x74), SetCur 0041b1d0 (+0x78, clamp 0..max, vslot1 redraw); operator new size 0x1C4 at 00420180 (site may be a list-box scroll bar sharing the vftable label: UNCONFIRMED) | ghidra_dumps/steam_6a522e71/decomp/41/0041ab60.c,0041b190.c,0041b1d0.c; decomp/42/00420180.c:98-104 |
+| R5: enemy-strip stepper/toggle page is a proven pattern | OVERSTATED: the page is code-only (doc 45: "unplayed"); the live-proven look-alikes are holster-editor's | 45:36; EnemyStrip.cpp:1169-1194 |
+
+## 2 Provider growth (mod-config, hot-swap only)
+- New logical row kinds (one composite item in the page, 1-3 provider-owned clones each, no engine RE): TOGGLE (1 button, text On/Off), STEPPER (label + `<` + `>`; numeric min/max/step, optional wrap, optional choice texts, optional zero text like "Auto"; covers list-select and the character selector), SLIDER (label + track + thumb clones; optional, phase P5). Existing BUTTON stays the action kind. LOGIC ItemKind gets ROW; pure row maths (clamp, step, wrap, hit zone split, slider px<->value via editkit) go in MenuUiLogic.h.
+- Appended K2MenuUiApi slots after SetDescSplit (table 12 -> 19 pointers): AddRow(page, spec*) (one generic call; spec has its own struct_size, kind, label, desc, min, max, step, value, flags, fmt, choices, zeroText); SetChangeHandler(page, fn, user); GetValue(page,row); SetValue(page,row,v) (silent, clamps); SetRowText(page,row,text) (override of the shown value text); SetRowState(page,row,flags: disabled/hidden); SetRowRange(page,row,min,max); LayoutRows(page) (provider stacks rows in the COLUMN pane: pitch h*36/284, slot h*32/284, arrow buttons 20%, gap 6 = enemy-strip's cbEnter, so consumers drop their layout code).
+- Delivery decision: RECOMMEND provider-held int32 value + ONE synchronous callback fn(page,row,requested,dir,user) -> final value, called from McTick just before entry tick(); no get/set vtable. Reasons: (1) Clicked cannot carry a value and loses clicks when tick is 0; (2) returning the final value lets a consumer snap to a ladder (enemy-strip IconSize 0 -> 16 -> +2, alpha in hundredths) or reject at a limit (return old value); (3) a dynamic roster changes values on selection: the consumer pushes with silent SetValue/SetRowText in one loop, no re-entrancy; (4) in-process fn pointers need no exports.def (Lane's GetProcAddress-by-name handler would add an export = REINSTALL, kpm_status.py:193); (5) change-only SetText caching moves into the provider (removes per-mod TextCache).
+- Handler lives in SetChangeHandler, NOT a new K2ModConfigEntry field (MC:979 lock-out above). Handler runs on the main thread inside the Options draw.
+- INI persistence: consumer-owned by default (selfheal CfgTable, holster DLL store, enemy-strip sanitize-before-write all differ). Provider stays storage-free (keeps hot-swap simple). The declarative header offers an OPTIONAL flat binding (ini/section/key via GetPrivateProfileIntA/WritePrivateProfileStringA, enemy-strip precedent EnemyStrip.cpp:1152) = doc 45 decision A for the 5 mods without a writer; caveat: queue-hud.ini has commented defaults, verify the writer keeps comments on Wine.
+- Live-apply: handler updates the mod's in-memory config first, then persists; flag MUI_ROW_RESTART appends " (restart)" to the shown text.
+- ABI rules: struct only grows; gate with MenuClient::hasRows() (struct_size >= offsetof(last new slot)+sizeof); usable() unchanged (11-slot floor) so old providers/consumers interoperate; add offset asserts and extend common_contract_test.cpp pins (61-70, 114-133, 137-190); same-release slots share one gate, later growth gets its own. K2ModConfigApi untouched.
+- Caps: kMaxItems 80 counts controls (toggle 1, stepper 3, slider 3-4) and stays; the real limit is VISIBLE rows: no scrolling, the COLUMN pane fits 8 rows (enemy-strip uses exactly 8) so AddRow refuses a 9th (-1, logged) and the declarative loader reports it; entry cap 8 unchanged (holster-editor, enemy-strip, +selfheal = 3).
+
+## 3 Declarative layer
+- Lives CONSUMER-side: _shared_src/TomlMini.h (parser, ~150 lines, host-tested) + _shared_src/ModConfigDecl.h (schema model, page builder over MenuClient, change dispatch, optional INI bind). Not in the provider: provider hot-swaps stay independent, callbacks and stores are consumer code, only users pay for the parser, no toml++ (489 KB header). Schema ships as a raw-string literal in the DLL (mods install as a DLL only; no drop-in file dir like Lane's); an optional override file is a debug aid only.
+- Schema subset (TOML tables + key = int/bool/string/string-array; comments; no inline tables):
+  [page] name, title, desc
+  [[row]] (file order = page order, max 8)
+    id (unique, passed to the handler), kind = toggle|stepper|list|slider|button|label|dynamic, label, desc
+    default (int, bool or choice text), min, max, step (stepper/slider), wrap (bool)
+    choices = ["Off","Slow",...] (list; stored value = index), fmt = "Heal below %d%%", zero_text = "Auto"
+    style = "slider" (hint; falls back to stepper when the provider lacks the slider)
+    scale = 100 (shows value/scale with 2 decimals; alpha settings as hundredths)
+    ini, section, key (optional flat binding; absent = the handler persists)
+    apply = "live"|"restart"
+- Stays custom: the dynamic roster. kind = "dynamic" creates a wrap stepper; the consumer supplies DeclHooks {onChange(id,value,dir) -> final value; onEnter() which pushes SetRowRange/SetRowText/SetValue/SetRowState}. Follow-global/Reset/Apply stay declared (toggle/buttons); only their meaning is code.
+
+## 4 Native controls
+- Ranking: (1) look-alike from provider clones (proven pieces: enemy_strip stepper, holster buttons/labels, editkit maths) = v1, zero RE; (2) engine slider built by us: new(0x1C4) + ctor 0x41AB60 + InitControl against an in-memory .gui (EmbedGui; engine loader does Load/Draw/drag; read +0x78 by polling, so no vtable override and no event thunk); only a type-4 control is proven in EmbedGui; (3) Lane-style subclass with vtable overrides + thunk registry + OPT_* templates: K1-specific, last. Edit box: not feasible v1 (provider reads only the Esc edge, MC:1258-1270; K2 edit-box key handler unknown) -> presets/steppers.
+- K2 RE missing for (2): confirm 0x41AB60 is CSWGuiSlider and its object size (0x1C4 vs scroll bar) via ctor call sites 007dc410/007d4620; CSWGuiSlider::vftable address and slots (Load 0x41B030, Draw, HandleInputEvent, HitCheck); that InitControl 0x40F620 accepts an object we allocated and checks CONTROLTYPE; the CONTROLTYPE 8 dispatch (V2.md:27 unlocated); border/hilight/thumb texture resrefs for the template; whether CURVALUE feeds byte +0x58 for mouse sensitivity (R7 open); whether a panel-list control receives engine mouse events when mod-config hides vanilla controls.
+- Phasing: native slider is a LATER PROBE (P6), not v1. No audited row needs one; stepper with hold-repeat (editkit::repeatTick, host-tested, no live user yet) covers heal 5..95 (19 steps).
+
+## 5 Self-heal page spec (new entry in companion_selfheal_src, lazy connect like enemy-strip, retry from the frame callback)
+| # | row | kind | value / behaviour |
+|---|---|---|---|
+| 1 | Character | dynamic stepper (wrap) | roster index; shown text = display name; entry 0 = "Everyone (defaults)" edits [defaults] |
+| 2 | Auto-heal | toggle | selected cfg.autoOn |
+| 3 | Heal below N% | stepper 5..95 step 5, fmt "Heal below %d%%" | hpPct (shui::stepHpPct) |
+| 4 | Keep N | stepper 0..20 step 1 | keep (shui::stepKeep) |
+| 5 | Follow global | toggle (hidden for entry 0) | On = no [companions] row for the tag; rows 2-4 disabled and show the defaults; Off = upsert(copy of def) |
+| 6 | Reset | button | character: back to Follow global (erase); entry 0: factory CompCfg{false,35,2} |
+| 7 | Apply defaults to everyone | button, two-click arm (HolsterEditor.cpp:2127 pattern) | erase every row (= all follow defaults) |
+- Roster (option A, pure fn buildRoster(partyTags, iniTags, builtinTable) deduped case-insensitively, order: party, INI tags, built-in): party slots via readCreatureTag (tag key; empty tag -> "player", untagged leader "slot0" via leaderKey) with first name from HseParty.h memberName; built-in table tag -> display name (seed DiversityExclusion.h:50-52). Alias risk: bao_dur/baodur, t3m4/t3_m4, hk47/hk_47, g0t0 variants; engine tags must be confirmed from a live INI/log before the table ships.
+- Persistence = existing INI via SelfHealUi.h; new pure helpers shui::erase(t,tag) and shui::eraseAll(t) tested in _shared_src/selfheal_ui_test.cpp. Handler: loadCfg() if filewatch changed (as the popover does, CompanionSelfHeal.cpp:1193), mutate g_cfg, saveIni, done; the HUD sees it next refreshCache. Page hover text per row via desc.
+
+## 6 Enemy-strip migration (P7)
+- 8 rows map 1:1 (2 toggles; MaxIcons/IconSize/Gap/Spacing ints; BackingAlpha/DrainAlpha as scale=100). IconSize Auto ladder and at-limit rejection use the callback's final-value return; formatRowText -> fmt/zero_text; MaxIcons = apply "restart". Keep its own INI writer and "live value only" warning inside the handler (declarative bind would lose that), still remove cbEnter layout, cbTick Clicked loop and refreshRow caches (about 100 of the ~180 non-preview lines). Preview (AddCustom MUI_NOFREE + SetDescSplit 750, about 140 lines) stays custom. Do after P2/P3 are played; page is unplayed today.
+
+## 7 Shared code
+- Needed from the Holster session: HseParty.h (memberName/memberCount/memberAt -> _shared_src), TextCache (HseView.h:923, only if the provider cache is not enough), ResetIcon.h (Reset button icon; ResetIconTex.inc already shared), SliderArt.h (P5 only; SliderArtTex.inc already shared). If not extracted in time: roster shows tags (no names), Reset is text; nothing blocks P0-P4.
+- New by us: TomlMini.h, ModConfigDecl.h, row logic in MenuUiLogic.h, provider row code in ModConfig.cpp, shui::erase/eraseAll, SelfHealRoster.h (pure roster + built-in table), companion_selfheal page glue. No edits inside holster_editor_src.
+
+## 8 Work breakdown
+| P | scope (write) | pure tests | live check (PLAY_TEST_QUEUE) | size / tier | install |
+|---|---|---|---|---|---|
+| P0 | probe: poll slider RE items in section 4 (read-only REA/dump), list in doc | none | none | S / Haiku recon (rea-recon) | none |
+| P1 | mod_config_src/MenuUiLogic.h + menu_ui_logic_test.cpp (row maths, hit zones, value/clamp, handler dispatch order) | new tests in menu_ui_logic_test | none | M / Sonnet | none |
+| P2 | ModConfigApi.h (slots, asserts, hasRows), ModConfig.cpp (AddRow toggle+stepper, handler, LayoutRows), common_contract_test pins | contract test (null/short/old table) | MCR1: a stub entry page: toggle + stepper click, hold-repeat, text refresh, Back/Esc, no crash on page re-entry | L / Sonnet write, Opus review of ABI | hot-swap mod-config |
+| P3 | TomlMini.h, ModConfigDecl.h + tomlmini_test.cpp, moddecl_test.cpp (fake MenuUiApi) | parser edge cases, 9th row refusal, scale/zero_text | none | M / Sonnet | none |
+| P4 | companion_selfheal_src page + SelfHealUi.h erase + SelfHealRoster.h | selfheal_ui_test erase, roster dedupe/order/alias | SH-PG1: open page in party of 3, change char/auto/%/keep, confirm HUD ring + threshold follow at once; Follow global, Reset, Apply-everyone (two-click), restart game and check INI | L / Sonnet, Opus gate | hot-swap mod-config + companion-selfheal (one batch, one GO) |
+| P5 | optional look-alike slider row (needs Holster extraction SliderArt) | slider px<->value, drag clamp | SLD1 drag/click-jump/release outside | M / Sonnet | hot-swap mod-config |
+| P6 | native-slider embed probe (own throwaway mod, gated by P0 results) | none | NSL1 | M / Opus | probe install |
+| P7 | enemy_effects_strip_src migration | existing esl tests + decl parse of its schema | ES-UX rows re-run | M / Sonnet | hot-swap enemy-effects-strip |
+
+## 9 Risks and owner decisions
+1. Scope change: doc 45 graded selfheal NONE (popover covers it). Confirm the page is wanted (owner already asked) and that the popover stays.
+2. Callback semantics: approve "final value returned by the handler" (enables ladders/reject) over plain notify.
+3. 8 visible rows per page and no scrolling: accept, or fund a scroll/two-column phase before the doc 45 mods (max 4 rows each, fits).
+4. Real engine tags for the built-in roster (alias risk) need one live INI/log read; accept tags-as-names fallback for unknown tags.
+5. Native slider (P6) only after play proves the look-alike unsatisfying; confirm it can stay deferred.
