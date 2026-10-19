@@ -1,11 +1,11 @@
-// HolsterEditor.cpp -- holster-editor 0.4.11-dev (Steam build): a HOOKLESS consumer of the mod-config provider (k2.modconfig@1, k2.menuui@1).
+// HolsterEditor.cpp -- holster-editor 0.5.0-dev (Steam build): a HOOKLESS consumer of the mod-config provider (k2.modconfig@1, k2.menuui@1).
 // (doc 42 HW-EDIT, plan .claude/plans/holster_editor_options.md; page rebuild: .claude/plans/holster_editor_layout_v3.md, holster_hw_ux3_build.md Wave B.)
 //
 // mod-config owns everything about the Options screen: the hooks, the root "Mod Configuration" button, the list page, control cloning,
 // hover text, page navigation and freeing its controls. This patch registers ONE entry ("Holstered Weapons") and keeps only what is
 // holster-specific:
 //   build    (Options ctor window, vanilla layout open) opens the embedded HSE_VIEW layout, lets preview-3d bind the 3D view to it, restores
-//            the panel's layout slot FIRST, then makes the page: the 70 widgets of hse::pageLayoutV3 (HseLayoutV3.h, created in its pageBoxesV3 order
+//            the panel's layout slot FIRST, then makes the page: the 73 widgets of hse::pageLayoutV3 (HseLayoutV3.h, created in its pageBoxesV3 order
 //            into Editor::item[]) plus one wedge label per slider row, and asks for the description split (SetDescSplit 850). A provider without
 //            SetDescSplit (mod-config older than 0.1.3, which also caps a page at 40 items) or a refused AddX gives a page that only says
 //            "needs a newer mod-config": a log line and a message, never a crash.
@@ -146,11 +146,6 @@ static_assert(kModeCount == hse::kV3Modes, "one mode button per weapon mode");
 constexpr const char* kNeedsModConfig = "Needs a newer mod-config (0.1.3 or later)";   // the refusal message (old provider: no SetDescSplit, 40-item cap)
 constexpr float kColLit[3] = {1.0f, 0.86f, 0.35f};     // lit selector button text
 constexpr float kColAmber[3] = {1.0f, 0.70f, 0.15f};   // value text that differs from the value when the edit opened
-constexpr float kColDim[3] = {0.42f, 0.42f, 0.42f};    // text of a locked control (rotation rows / Tilt and Roll-Turn modes in the body scope)
-constexpr float kDimTintK = 0.40f;                     // a locked BUTTON's frame tint (normal and hover) is its own normal tint times this
-constexpr float kDimAlpha = 0.35f;                     // a locked LABEL's border alpha is its own alpha times this (slider track / thumb / name / value)
-constexpr DWORD kNoteMs = 5000;                        // how long a click-notice stays in the left description box
-constexpr const char* kModeLockedNote = "Tilt and Roll/Turn are not saved for 'This body'. Pick 'This weapon' or a weapon class to rotate.";
 constexpr int kCrRightItemOff = 0x238, kCrLeftItemOff = 0x23C;   // client creature: equipped item ids (preview-3d CrRightItemOff/CrLeftItemOff)
 constexpr uint32_t kNoItemId = 0x7F000000u;
 constexpr int kItemModelResOff = 0x128;      // client item: model ResRef char[16]
@@ -200,6 +195,7 @@ struct Editor {
     hse::HseRect paneDesc = {0, 0, 0, 0};   // MUI_PANE_DESC: mod-config's shrunk LB_DESC (clipped under the preview pane); all zero = unavailable
     int hintRState = -1;                    // the right description box: -1 not decided, 0 absent (no pane / too small), 1 placed (logged on change)
     bool hintLHave = false, hintRHave = false;   // the left / right description box had room at the last hint refresh (a change rewrites the texts)
+    char hintRBuf[256] = {0};               // the text the right pane (SetDesc) last got
     char longTxt[2][256] = {{0}, {0}};      // the full text of the left (0) / right (1) description label (SetText is cut to 95 characters by mod-config)
     bool panesOk = false;
     hse::PageLayoutV3 lay = {};
@@ -221,17 +217,15 @@ struct Editor {
     int inspWinSets = 0, inspWinTicks = 0;
     int scrubLogs = 0, inspLogs = 0;
     int hintRow = -2;                  // the slider row whose help is in the right description pane (-1 none, -2 not written yet)
-    int leftTip = -2;                  // the left-column item whose help is in the left description box (-1 none, -2 not written yet)
+    // Remove menu (the "..." toggle opens it; PI_REMOVE is shown only while it is open): closed again when the scope, hand or member it was opened for changes
+    hse::RemoveMenu removeMenu;
+    int removeScope = -1, removeHand = -1, removeMember = -1;   // the edit the menu was opened for
+    // SCOPE log state: the last (scope, body, type) logged for the open edit (scope == -1: nothing logged for this edit yet)
+    int scopeLogScope = -1;
+    char scopeLogBody[20] = {0}, scopeLogType[16] = {0};
 
     // Style caches (item index -> what was last applied): text colour state (-1 unknown, 0 default, 1 lit/amber), the control's own default colour, selector caption
     int8_t colState[hse::kPageItemsV3];
-    bool dimState[hse::kPageItemsV3] = {};   // the item is drawn locked (dimmed): see setItemDim
-    float dimAlpha[hse::kPageItemsV3] = {};  // a dimmed label's own border alpha (read on the first dim)
-    bool dimAlphaOk[hse::kPageItemsV3] = {};
-    bool dimBad = false;                     // a dim write was refused (logged once)
-    bool rotLocked = false;                  // the edit scope is BODY: rotation controls are disabled (syncRotationLock)
-    const char* leftNote = nullptr;          // click notice shown in the left description box until leftNoteAt + kNoteMs
-    DWORD leftNoteAt = 0;
     bool defColOk[hse::kPageItemsV3];
     float defCol[hse::kPageItemsV3][3];
     float brdNormal[hse::kPageItemsV3][3], brdHover[hse::kPageItemsV3][3];   // a selector button's own normal / hover frame tint (read once)
@@ -432,7 +426,7 @@ void KPATCH_CALL cbBeforeFree(uint32_t token, void* user) {
 // Buttons of the page; every other item is a label (PI_VIEW is the 3D view control).
 bool itemIsButton(int i) {
     using namespace hse;
-    if (i == PI_MEMBER_PREV || i == PI_MEMBER_NEXT || i == PI_SAVE || i == PI_REVERT || i == PI_RESET_SCOPE || i == PI_VIEW_RESET || i == PI_VIEW_FLIP) return true;
+    if (i == PI_MEMBER_PREV || i == PI_MEMBER_NEXT || i == PI_SAVE || i == PI_REVERT || i == PI_RESET_SCOPE || i == PI_REMOVE || i == PI_VIEW_RESET || i == PI_VIEW_FLIP) return true;
     if (i >= PI_WEAPON && i < PI_WEAPON + kV3Weapons) return true;
     if (i >= PI_BONE && i < PI_BONE + kV3Bones) return true;
     if (i >= PI_SCOPE && i < PI_SCOPE + kV3Scopes) return true;
@@ -463,7 +457,7 @@ bool itemIsHintText(int i) { return i == hse::PI_HINT + 1 || i == hse::PI_HINTR 
 // Buttons whose hover help goes to the LEFT description box (the editor writes it) instead of mod-config's right pane (which then keeps the slider help).
 bool itemIsLeftTip(int i) {
     using namespace hse;
-    if (i == PI_MEMBER_PREV || i == PI_MEMBER_NEXT || i == PI_SAVE || i == PI_REVERT || i == PI_RESET_SCOPE) return true;
+    if (i == PI_MEMBER_PREV || i == PI_MEMBER_NEXT || i == PI_SAVE || i == PI_REVERT || i == PI_RESET_SCOPE || i == PI_REMOVE) return true;
     return (i >= PI_WEAPON && i < PI_WEAPON + kV3Weapons) || (i >= PI_BONE && i < PI_BONE + kV3Bones) || (i >= PI_SCOPE && i < PI_SCOPE + kV3Scopes);
 }
 
@@ -483,7 +477,8 @@ const char* itemInitText(int i, char* buf, int cap) {
     if (i >= PI_SCOPE && i < PI_SCOPE + kV3Scopes) { scopeSegText(buf, cap, i - PI_SCOPE, ""); return buf; }
     if (i == PI_SAVE) return "Save";
     if (i == PI_REVERT) return "Revert";
-    if (i == PI_RESET_SCOPE) return "Reset";
+    if (i == PI_RESET_SCOPE) return removeToggleLabel();
+    if (i == PI_REMOVE) return removeLabel();
     if (i >= PI_MODE && i < PI_MODE + kV3Modes) return weaponModeName(i - PI_MODE);
     if (i == PI_VIEW_RESET) return "R";
     if (i == PI_VIEW_FLIP) return "<>";
@@ -516,10 +511,11 @@ const char* itemTip(int i) {
     if (i == PI_WEAPON) return "Edit the holster placement of the right-hand weapon.";
     if (i == PI_WEAPON + 1) return "Edit the holster placement of the left-hand weapon.";
     if (i >= PI_BONE && i < PI_BONE + kV3Bones) return "Mount the weapon on this bone while holstered.";
-    if (i >= PI_SCOPE && i < PI_SCOPE + kV3Scopes) return scopeTip();
+    if (i >= PI_SCOPE && i < PI_SCOPE + kV3Scopes) return scopeTip();   // the editor writes the per-button sentence into the left box (leftTipText)
     if (i == PI_SAVE) return "Save placement to holster.ini under [editor].";
-    if (i == PI_REVERT) return "Revert unsaved edits back to saved values.";
-    if (i == PI_RESET_SCOPE) return "Delete this scope's saved overrides (click twice).";
+    if (i == PI_REVERT) return revertTip();
+    if (i == PI_RESET_SCOPE) return removeToggleTip();
+    if (i == PI_REMOVE) return removeLabel();   // leftTipText writes removeSentence
     if (i >= PI_MODE && i < PI_MODE + kV3Modes) return kModeDesc[i - PI_MODE];
     if (i == PI_VIEW_RESET) return "Reset view: back to the fit framing.";
     if (i == PI_VIEW_FLIP) return "Flip view: turn the character around.";
@@ -1419,49 +1415,6 @@ void setItemColor(Editor& e, int idx, bool on, const float* litCol) {
     }
 }
 
-// Locked (dimmed) look of item idx, written only when the state changes. A BUTTON gets its frame tint (normal and hover) set to its own normal tint times
-// kDimTintK (so it neither lights up nor highlights on hover); unlocked puts back the normal tint (the hover tint when the button is a lit selector) and the
-// hover tint. A LABEL gets a dim text colour (setItemColor) and its border alpha times kDimAlpha (slider track / thumb art). A refused write is logged once and
-// the item stays clickable-but-ignored (the real lock is in the handlers, this is only the look).
-void setItemDim(Editor& e, int idx, bool dim) {
-    if (idx < 0 || idx >= hse::kPageItemsV3 || e.item[idx] < 0 || e.dimState[idx] == dim) return;
-    const uintptr_t c = ctlOf(e, e.item[idx]);
-    if (!c) return;
-    bool ok = false;
-    if (itemIsButton(idx)) {
-        const int oTint = guikit::detail::off(&K2AddrTable::Border_Tint);
-        const uintptr_t n = oTint ? guikit::detail::buttonBorder(c, false) : 0, h = oTint ? guikit::detail::buttonBorder(c, true) : 0;
-        if (n && h && readBrd(e, idx, n, h)) {
-            float tn[3], th[3];
-            for (int k = 0; k < 3; ++k) {
-                tn[k] = dim ? e.brdNormal[idx][k] * kDimTintK : (e.colState[idx] == 1 ? e.brdHover[idx][k] : e.brdNormal[idx][k]);
-                th[k] = dim ? e.brdNormal[idx][k] * kDimTintK : e.brdHover[idx][k];
-            }
-            ok = true;
-            for (int k = 0; k < 3 && ok; ++k)
-                ok = guikit::detail::wr<float>(n, oTint + 4 * k, tn[k]) && guikit::detail::wr<float>(h, oTint + 4 * k, th[k]);
-        }
-    }
-    if (!ok) {   // labels, and a reset-icon button that is a label clone
-        const int k = idx >= hse::PI_ROW && idx < hse::PI_NOTE ? (idx - hse::PI_ROW) % hse::kRowStride : -1;
-        const bool hasText = !itemIsButton(idx) && k != 1 && k != 2;   // the track and the thumb are art only (no text object to recolour)
-        bool textOk = false;
-        if (hasText) {
-            setItemColor(e, idx, false, kColDim);   // drop an amber state first, then (un)dim the text
-            setItemColor(e, idx, dim, kColDim);
-            textOk = e.defColOk[idx];
-        }
-        if (!e.dimAlphaOk[idx]) e.dimAlphaOk[idx] = guikit::getAlpha(c, &e.dimAlpha[idx]);
-        const bool alphaOk = e.dimAlphaOk[idx] && guikit::setAlpha(c, dim ? e.dimAlpha[idx] * kDimAlpha : e.dimAlpha[idx]);
-        ok = textOk || alphaOk;
-    }
-    e.dimState[idx] = dim;   // set even when refused: no retry every tick
-    if (!ok && !e.dimBad) {
-        e.dimBad = true;
-        KP_LOGV(chView, KPLOG_WARN, "STYLE WARN dim refused on item %d (button=%d): locked controls keep their normal look (they are still ignored)", idx, itemIsButton(idx) ? 1 : 0);
-    }
-}
-
 // Selector button: lit when `on` (text colour, or >raw< when the colour call is refused), caption raw.
 void setSel(Editor& e, int idx, bool on, const char* raw) {
     if (idx < 0 || idx >= hse::kPageItemsV3 || e.item[idx] < 0 || !g_menu.ok() || !raw) return;
@@ -1555,32 +1508,6 @@ void setWeaponMode(Editor& e, int mode, const char* why) {
     refreshSelectors(e, true);
 }
 
-// Body scope (K2HOLSTER_SCOPE_BODY) saves the offset only (HolsterApi.h), so Tilt, Roll/Turn and the three rotation rows are locked while it is selected
-// (hse::rotationAllowed / modeEnabled / effectiveMode, host tested). Runs every tick: it logs once per scope change, moves a selected Tilt / Roll-Turn mode to
-// Move, and dims / undims the two mode buttons and the rotation rows (name, track, thumb, value, reset) and the Rotation group reset. The handlers ignore the
-// locked controls on their own (modeEnabled in the click loop, effectiveMode in the gesture, inspRowEnabled in the scrub / reset), this is the visible half.
-void syncRotationLock(Editor& e) {
-    if (!g_menu.ok() || !e.page || e.refused) return;
-    const bool locked = !hse::rotationAllowed(e.editScope);
-    if (locked != e.rotLocked) {
-        e.rotLocked = locked;
-        e.hintRow = -2;   // the right description text of the rotation rows differs
-        if (locked) {
-            if (e.scrub.active && hse::inspIsRot(e.scrub.row)) scrubCancel(e, "body_scope");
-        } else {
-            e.leftNote = nullptr;
-        }
-        KP_LOG(chView, "BODY scope: rotation controls %s", locked ? "disabled" : "enabled");
-    }
-    if (!hse::modeEnabled(e.weaponMode, e.editScope)) setWeaponMode(e, hse::effectiveMode(e.weaponMode, e.editScope), "body_scope");
-    for (int i = 0; i < kModeCount; ++i) setItemDim(e, hse::PI_MODE + i, !hse::modeEnabled(i, e.editScope));
-    for (int r = 0; r < hse::kV3Rows; ++r) {
-        if (!hse::inspIsRot(r)) continue;
-        for (int k = 0; k < hse::kRowStride; ++k) setItemDim(e, hse::PI_ROW + r * hse::kRowStride + k, locked);
-    }
-    setItemDim(e, hse::PI_GROUP + 1 * 2 + 1, locked);
-}
-
 // Stance back to Idle (a member rebuild starts from the idle pose).
 void resetStanceUi(Editor& e) {
     e.stanceIdx = 0;
@@ -1591,7 +1518,7 @@ void updateStatusText(Editor& e) {
     if (!g_menu.ok() || !e.page || e.statusItem < 0) return;
     char raw[100] = {0}, buf[100] = {0};
     if (e.mode == MODE_WEAPON && e.discardArmed && e.discardAction == ACT_RESET_SCOPE && hse::guardArmLive(true, e.discardArmedAt, GetTickCount(), kDiscardWindowMs)) {
-        snprintf(raw, sizeof raw, "Reset? Click again");
+        snprintf(raw, sizeof raw, "Remove? Click again");
     } else if (e.mode == MODE_WEAPON && e.discardArmed && hse::guardArmLive(true, e.discardArmedAt, GetTickCount(), kDiscardWindowMs)) {
         snprintf(raw, sizeof raw, "Unsaved: click again to discard");
     } else if (e.mode == MODE_WEAPON) {
@@ -1695,15 +1622,15 @@ void applyLayout(Editor& e) {
     hse::pageBoxesV3(L, all);
     for (int i = 0; i < hse::kPageItemsV3; ++i) {
         const bool emptyHint = (itemIsHintBox(i) || itemIsHintText(i)) && (all[i].w <= 0 || all[i].h <= 0);   // no room for the left / right description box
-        placeBox(e.item[i], emptyHint ? editkit::Box{-9999, -9999, 0, 0} : all[i]);
+        const bool hiddenRemove = i == hse::PI_REMOVE && !(e.removeMenu.open && e.mode == MODE_WEAPON);   // the Remove button exists only while the "..." menu is open
+        placeBox(e.item[i], (emptyHint || hiddenRemove) ? editkit::Box{-9999, -9999, 0, 0} : all[i]);
     }
     for (int r = 0; r < hse::kV3Rows; ++r) {   // the wedge is the track cut at the thumb centre (nothing at 0: parked off screen like the hidden items)
         const editkit::Box t = L.rows[r].track, th = L.rows[r].thumb;
         // The wedge's tall end is the right edge of its texture: cut the rect at the centre of the thumb box (the layout clamps the thumb inside the track),
         // so the wedge always ends exactly where the marker sits.
         const int w = th.w > 0 ? th.x + th.w / 2 - t.x : 0;
-        const bool lockedRow = e.rotLocked && hse::inspIsRot(r);   // body scope: no teal fill on a locked rotation row
-        placeBox(e.wedge[r], w > 0 && t.h > 0 && !lockedRow ? editkit::Box{t.x, t.y, w, t.h} : editkit::Box{-9999, -9999, 0, 0});
+        placeBox(e.wedge[r], w > 0 && t.h > 0 ? editkit::Box{t.x, t.y, w, t.h} : editkit::Box{-9999, -9999, 0, 0});
     }
     applyCaptions(e);   // after every button rect is set: the engine's SetExtent just re-insetted each caption text rect
     const hse::HseRect vr = hse::rectOf<hse::HseRect>(L.view);
@@ -1871,19 +1798,18 @@ void refreshInspector(Editor& e, bool force) {
     e.inspForce = false;
     ++e.inspWinTicks;
     for (int r = 0; r < hse::IR_COUNT; ++r) {
-        const bool enabled = hse::inspRowEnabled(r, e.editInfo.scope);
         const float v = hse::inspGet(r, e.editInfo.rot, e.editInfo.off);
         const float open = hse::inspGet(r, e.openRot, e.openOff);
-        e.rowFrac[r] = enabled ? hse::inspThumbFrac(r, v) : 0.5f;
+        e.rowFrac[r] = hse::inspThumbFrac(r, v);
         char raw[32], fit[32];
-        hse::inspValueText(raw, sizeof raw, r, v, enabled);
+        hse::inspValueText(raw, sizeof raw, r, v, true);
         fitButton(labelPx(e, e.lay.rows[r].value), raw, fit, sizeof fit);   // an over-wide value would word-wrap and lose the number
         const int idx = hse::PI_ROW + r * hse::kRowStride + 3;
         if (e.inspText.update(r, fit) && e.item[idx] >= 0) {
             setItemText(e, idx, fit);
             ++e.inspWinSets;
         }
-        if (enabled) setItemColor(e, idx, e.openValid && hse::inspDiffers(r, v, open), kColAmber);   // a locked row keeps its dim colour (setItemDim)
+        setItemColor(e, idx, e.openValid && hse::inspDiffers(r, v, open), kColAmber);
     }
 }
 
@@ -1893,7 +1819,7 @@ void showNoEdit(Editor& e) {
         e.rowFrac[r] = 0.5f;
         const int idx = hse::PI_ROW + r * hse::kRowStride + 3;
         setItemText(e, idx, "-");
-        if (!e.dimState[idx]) setItemColor(e, idx, false, kColAmber);
+        setItemColor(e, idx, false, kColAmber);
     }
     e.inspText.clear();
     e.inspForce = true;
@@ -1956,14 +1882,128 @@ void setHintText(Editor& e, int idx, const char* text) {
     if (const uintptr_t c = ctlOf(e, e.item[idx])) (void)guikit::setText(c, cache);
 }
 
+// ---- Remove menu, SCOPE sentences ----
+
+// The Remove two-click confirm is armed and still live (the left box then shows the "Click again to remove." sentence).
+bool removeArmed(const Editor& e) {
+    return e.discardArmed && e.discardAction == ACT_RESET_SCOPE && hse::guardArmLive(true, e.discardArmedAt, GetTickCount(), kDiscardWindowMs);
+}
+
+// Closes the "..." menu (no-op when closed) and drops a Remove arm that belonged to it. why: scope / hand / member / edit_end / leave / done / toggle.
+void closeRemoveMenu(Editor& e, const char* why) {
+    if (!e.removeMenu.open) return;
+    e.removeMenu.close();
+    if (e.discardArmed && e.discardAction == ACT_RESET_SCOPE) e.discardArmed = false;
+    KP_LOG(chView, "REMOVE menu close why=%s", why);
+}
+
+// Opens or closes the menu from the "..." button; remembers which edit it belongs to.
+void toggleRemoveMenu(Editor& e) {
+    if (e.removeMenu.open) {
+        closeRemoveMenu(e, "toggle");
+        return;
+    }
+    e.removeMenu.toggle();
+    e.removeScope = e.editScope;
+    e.removeHand = e.editHand;
+    e.removeMember = e.member;
+    KP_LOG(chView, "REMOVE menu open scope=%d", e.editScope);
+}
+
+// Every tick: the menu belongs to one edit (scope, hand, member); any change of those, or the edit ending, closes it.
+void syncRemoveMenu(Editor& e) {
+    if (!e.removeMenu.open) return;
+    if (e.mode != MODE_WEAPON) closeRemoveMenu(e, "edit_end");
+    else if (e.editScope != e.removeScope) closeRemoveMenu(e, "scope");
+    else if (e.editHand != e.removeHand || e.member != e.removeMember) closeRemoveMenu(e, "weapon");
+}
+
+// Logs the SCOPE line once per change of (scope, body, type) of the open edit, and again when an edit opens.
+void logScopeIfChanged(Editor& e) {
+    if (e.mode != MODE_WEAPON) {
+        e.scopeLogScope = -1;
+        return;
+    }
+    if (e.scopeLogScope == e.editScope && !strncmp(e.scopeLogBody, e.editInfo.body, 16) && !strncmp(e.scopeLogType, e.editInfo.type, 11)) return;
+    e.scopeLogScope = e.editScope;
+    snprintf(e.scopeLogBody, sizeof e.scopeLogBody, "%.16s", e.editInfo.body);
+    snprintf(e.scopeLogType, sizeof e.scopeLogType, "%.11s", e.editInfo.type);
+    char seg[48];
+    hse::scopeSegText(seg, sizeof seg, e.editScope, e.scopeLogType);
+    KP_LOG(chView, "SCOPE label=\"%s\" body=%s armor=\"%s\"", seg, e.scopeLogBody, hse::armorClassLabel(e.scopeLogBody));
+}
+
+// The Remove button while the menu is open: the selected (hover) frame tint marks it as the dangerous one (setItemColor, the same path the selectors use); the
+// caption asks for the second click while the confirm is armed.
+void refreshRemoveButton(Editor& e) {
+    if (!e.removeMenu.open) return;
+    setItemColor(e, hse::PI_REMOVE, true, kColAmber);
+    char fit[64];
+    fitButton(buttonPx(e, e.lay.remove), removeArmed(e) ? "Click again to remove" : hse::removeLabel(), fit, sizeof fit);
+    setItemText(e, hse::PI_REMOVE, fit);
+}
+
+// Left description text of a hovered left-column button: the scope buttons and the Remove button answer with their sentence, the rest with itemTip.
+void leftTipText(const Editor& e, int tip, char* buf, int cap) {
+    const bool editing = e.mode == MODE_WEAPON;
+    const char* model = editing ? e.editInfo.model : "";
+    const char* type = editing ? e.editInfo.type : "";
+    const char* body = editing ? e.editInfo.body : "";
+    if (tip >= hse::PI_SCOPE && tip < hse::PI_SCOPE + hse::kV3Scopes) hse::scopeSentence(buf, cap, tip - hse::PI_SCOPE, model, type, body);
+    else if (tip == hse::PI_REMOVE) hse::removeSentence(buf, cap, e.editScope, model, type, body, removeArmed(e));
+    else snprintf(buf, cap, "%s", itemTip(tip));
+}
+
+// Estimated line count of `t` word-wrapped to maxPx (greedy on spaces, the fit measure of textCtx; at least 1).
+int wrapLinesEst(const char* t, float maxPx) {
+    const textfit::TextCtx tc = textCtx();
+    const float sp = textfit::textPx(tc, " ", 1);
+    int lines = 1;
+    float cur = 0.0f;
+    const char* p = t;
+    while (*p) {
+        while (*p == ' ') ++p;
+        const char* w = p;
+        while (*p && *p != ' ') ++p;
+        if (p == w) break;
+        const float ww = textfit::textPx(tc, w, static_cast<int>(p - w));
+        if (cur > 0.0f && cur + sp + ww > maxPx) { ++lines; cur = ww; }
+        else cur = cur > 0.0f ? cur + sp + ww : ww;
+    }
+    return lines;
+}
+
+// The left description box with nothing hovered: the armed / open Remove sentence, else "Save changes go to ..." for the current scope followed by the short help
+// when the pair still fits the text area (estimated lines of kLeftLinePx each; the box is small at low resolutions and the text would run out of it); without an
+// open edit the short help alone.
+constexpr int kLeftLinePx = 32;
+void leftDefaultText(const Editor& e, char* buf, int cap) {
+    if (e.mode != MODE_WEAPON) {
+        snprintf(buf, cap, "%s", kLeftHelp);
+        return;
+    }
+    if (e.removeMenu.open) {
+        hse::removeSentence(buf, cap, e.editScope, e.editInfo.model, e.editInfo.type, e.editInfo.body, removeArmed(e));
+        return;
+    }
+    hse::scopeSentence(buf, cap, e.editScope, e.editInfo.model, e.editInfo.type, e.editInfo.body);
+    const size_t n = strlen(buf), h = strlen(kLeftHelp);
+    if (n + 1 + h >= static_cast<size_t>(cap) || e.lay.hint[1].w <= 0 || e.lay.hint[1].h <= 0) return;
+    char both[256];
+    snprintf(both, sizeof both, "%s %s", buf, kLeftHelp);
+    if (wrapLinesEst(both, static_cast<float>(e.lay.hint[1].w)) * kLeftLinePx <= e.lay.hint[1].h) snprintf(buf, cap, "%s", both);
+}
+
 // Right description pane (mod-config's green LB_DESC, written through SetDesc, and our framed label drawn over it): the help of the hovered slider row plus the
-// drag keys, else the help of the hovered RIGHT-side button (mode, view, stance, reset icons), else the drag keys. Written when the shown thing changes only.
-// Left description box (hint items): the help of the hovered left-column button, else a short default. Without the left box (small panes) it goes to the right pane.
+// drag keys, else the help of the hovered RIGHT-side button (mode, view, stance, reset icons), else the drag keys. Written when the shown text changes only.
+// Left description box (hint items): the help of the hovered left-column button, else the live "Save changes ..." sentence of the current scope. The text is
+// rebuilt every tick and compared with what the box last got (setHintText), so a change of scope, model, type, body or the Remove menu state refreshes it.
+// Without the left box (small panes) the left help goes to the right pane.
 void refreshHints(Editor& e, int x, int y) {
     if (!g_menu.ok() || !e.page) return;
     const bool haveL = e.lay.hint[0].w > 0, haveR = e.lay.hintR[0].w > 0;
     if (haveR != e.hintRHave) { e.hintRHave = haveR; e.hintRow = -2; }   // the box appeared / went: write its text again
-    if (haveL != e.hintLHave) { e.hintLHave = haveL; e.leftTip = -2; }
+    if (haveL != e.hintLHave) { e.hintLHave = haveL; }
     int tip = -1;
     for (int i = 0; i < hse::kPageItemsV3 && tip < 0; ++i)
         if (itemIsLeftTip(i) && overItem(e, e.item[i], x, y)) tip = i;
@@ -1971,31 +2011,24 @@ void refreshHints(Editor& e, int x, int y) {
     int rtip = -1;   // a RIGHT-side button with help (the mode bar, the view icons, the stances, the group resets)
     for (int i = 0; row < 0 && i < hse::kPageItemsV3 && rtip < 0; ++i)
         if (itemIsButton(i) && !itemIsLeftTip(i) && itemTip(i)[0] && overItem(e, e.item[i], x, y)) rtip = i;
-    // Body scope: the rotation rows and the Tilt / Roll-Turn mode buttons answer with the lock text. A click notice (kModeLockedNote) shows in the left box for kNoteMs.
-    const bool rowLocked = row >= 0 && !hse::inspRowEnabled(row, e.editScope);
-    const bool modeLocked = rtip >= hse::PI_MODE && rtip < hse::PI_MODE + kModeCount && !hse::modeEnabled(rtip - hse::PI_MODE, e.editScope);
-    const bool noteLive = e.leftNote && GetTickCount() - e.leftNoteAt < kNoteMs;
-    // key of what the right pane shows: a slider row (+ 64 when locked), 100 + a right button (1000 + when locked), 200 + a left button (no left box), 300 a notice (no left box), -1 the default
-    const int key = row >= 0 ? row + (rowLocked ? 64 : 0)
-                             : (rtip >= 0 ? (modeLocked ? 1000 : 100) + rtip : ((!haveL && tip >= 0) ? 200 + tip : ((!haveL && noteLive) ? 300 : -1)));
-    if (key != e.hintRow) {
+    // key of what the right pane shows: a slider row, 100 + a right button, 200 + a left button (no left box), -1 the default
+    const int key = row >= 0 ? row : (rtip >= 0 ? 100 + rtip : ((!haveL && tip >= 0) ? 200 + tip : -1));
+    char buf[256];
+    if (row >= 0) snprintf(buf, sizeof buf, "%s %s", hse::inspHint(row), kSliderHelp);
+    else if (rtip >= 0) snprintf(buf, sizeof buf, "%s", itemTip(rtip));
+    else if (key >= 200) leftTipText(e, tip, buf, sizeof buf);
+    else snprintf(buf, sizeof buf, "%s", kSliderHelp);
+    if (key != e.hintRow || strcmp(buf, e.hintRBuf)) {
         e.hintRow = key;
-        char buf[240];
-        if (rowLocked) snprintf(buf, sizeof buf, "%s", hse::rotationLockedHint());
-        else if (row >= 0) snprintf(buf, sizeof buf, "%s %s", hse::inspHint(row), kSliderHelp);
-        else if (modeLocked) snprintf(buf, sizeof buf, "%s", hse::rotationLockedHint());
-        else if (rtip >= 0) snprintf(buf, sizeof buf, "%s", itemTip(rtip));
-        else if (key == 300) snprintf(buf, sizeof buf, "%s", e.leftNote);
-        else if (key >= 200) snprintf(buf, sizeof buf, "%s", itemTip(tip));
-        else snprintf(buf, sizeof buf, "%s", kSliderHelp);
+        snprintf(e.hintRBuf, sizeof e.hintRBuf, "%s", buf);
         g_menu.p->SetDesc(e.page, buf);
         if (haveR) setHintText(e, hse::PI_HINTR + 1, buf);
     }
-    const int ltip = tip >= 0 ? tip : (noteLive ? 500 : -1);
-    if (ltip == e.leftTip) return;
-    e.leftTip = ltip;
-    const char* text = tip >= 0 ? itemTip(tip) : (noteLive ? e.leftNote : kLeftHelp);
-    if (haveL) setHintText(e, hse::PI_HINT + 1, text);
+    if (!haveL) return;
+    char lbuf[256];
+    if (tip >= 0) leftTipText(e, tip, lbuf, sizeof lbuf);
+    else leftDefaultText(e, lbuf, sizeof lbuf);
+    setHintText(e, hse::PI_HINT + 1, lbuf);   // compares with the text the box last got: a no-op while nothing changed
 }
 
 // Ends the running scrub (release) or drops it (cancelled: foreground loss, leave, scope change, edit closing, ...). Applied values stay as they are.
@@ -2013,7 +2046,6 @@ void scrubCancel(Editor& e, const char* why) { scrubFinish(e, why, true); }
 // SetValues with ABSOLUTE values: the fresh edit values with ONE row set to `value`. SetValues returns void, so a failure shows as a missing provider, an edit that
 // is no longer open, or a read-back that is not the value sent; each is a WARN (capped per kind). False when the value did not take.
 bool applyRowValue(Editor& e, int row, float value, WarnKind kind, const char* what) {
-    if (hse::inspIsRot(row) && !hse::rotationAllowed(e.editScope)) return false;   // body scope: the provider is never asked to rotate
     if (!g_hol.ok()) {
         if (warnOk(e, kind)) KP_LOGV(chView, KPLOG_WARN, "%s WARN %s row=%s: holster provider missing, SetValues dropped", kind == W_SCRUB ? "SCRUB" : "INSP", what, hse::inspRowName(row));
         return false;
@@ -2036,8 +2068,8 @@ bool applyRowValue(Editor& e, int row, float value, WarnKind kind, const char* w
     const float got = hse::inspGet(row, e.editInfo.rot, e.editInfo.off);
     if (!hse::inspMatches(row, got, value)) {
         if (warnOk(e, kind))
-            KP_LOGV(chView, KPLOG_WARN, "%s WARN %s row=%s: SetValues did not take, sent %.5f read back %.5f (scope=%d%s)", kind == W_SCRUB ? "SCRUB" : "INSP", what,
-                    hse::inspRowName(row), value, got, e.editInfo.scope, e.editInfo.scope == K2HOLSTER_SCOPE_BODY && hse::inspIsRot(row) ? " body: rotation is ignored" : "");
+            KP_LOGV(chView, KPLOG_WARN, "%s WARN %s row=%s: SetValues did not take, sent %.5f read back %.5f (scope=%d)", kind == W_SCRUB ? "SCRUB" : "INSP", what,
+                    hse::inspRowName(row), value, got, e.editInfo.scope);
         return false;
     }
     return true;
@@ -2047,11 +2079,6 @@ bool applyRowValue(Editor& e, int row, float value, WarnKind kind, const char* w
 void scrubBegin(Editor& e, int row, int x, int y, bool shift, bool ctrl) {
     if (!refreshEdit(e)) {
         if (warnOk(e, W_SCRUB)) KP_LOGV(chView, KPLOG_WARN, "SCRUB WARN begin row=%s: the edit is not open", hse::inspRowName(row));
-        return;
-    }
-    if (!hse::inspRowEnabled(row, e.editInfo.scope)) {
-        if (logRoom(e.scrubLogs, kMaxScrubLogs, "SCRUB"))
-            KP_LOG(chView, "SCRUB ignore row=%s: no rotation in the body scope at=(%d,%d)", hse::inspRowName(row), x, y);
         return;
     }
     const float v = hse::inspGet(row, e.editInfo.rot, e.editInfo.off);
@@ -2096,11 +2123,7 @@ void scrubTick(Editor& e, const hse::ChordOut& co, bool lEdge, int x, int y, boo
     bool onThumb = false;
     const int row = sliderRowAt(e, x, y, &onThumb);
     if (row < 0) return;
-    if (!hse::inspRowEnabled(row, e.editScope)) {   // a locked rotation row: no jump, no scrub (the row's right description text says why)
-        if (logRoom(e.scrubLogs, kMaxScrubLogs, "SCRUB")) KP_LOG(chView, "SCRUB ignore row=%s: no rotation in the body scope at=(%d,%d)", hse::inspRowName(row), x, y);
-        return;
-    }
-    if (!onThumb && refreshEdit(e) && hse::inspRowEnabled(row, e.editInfo.scope)) {
+    if (!onThumb && refreshEdit(e)) {
         const editkit::Box t = e.lay.rows[row].track;
         const float to = hse::inspTrackValue(row, x, t.x, t.w);
         if (hse::finiteF(to)) {
@@ -2124,10 +2147,6 @@ void inspReset(Editor& e, int row) {
     if (!refreshEdit(e)) {
         if (warnOk(e, W_INSP)) KP_LOGV(chView, KPLOG_WARN, "INSP WARN RESET row=%s: the edit is not open", hse::inspRowName(row));
         exitEdit(e);
-        return;
-    }
-    if (!hse::inspRowEnabled(row, e.editInfo.scope)) {
-        if (logRoom(e.inspLogs, kMaxInspLogs, "INSP")) KP_LOG(chView, "INSP RESET row=%s ignored: no rotation in the body scope", hse::inspRowName(row));
         return;
     }
     float rot[3], off[3];
@@ -2158,7 +2177,6 @@ void inspResetGroup(Editor& e, int group) {
     memcpy(off, e.editInfo.off, sizeof off);
     int moved = 0;
     for (int r = group * 3; r < group * 3 + 3; ++r) {
-        if (!hse::inspRowEnabled(r, e.editInfo.scope)) continue;
         const float to = hse::inspGet(r, e.openRot, e.openOff);
         if (hse::inspGet(r, rot, off) != to) ++moved;
         hse::inspSet(r, rot, off, to);
@@ -2176,6 +2194,7 @@ void inspResetGroup(Editor& e, int group) {
 
 void enterEdit(Editor& e, int hand) {
     if (hand < 0 || hand > 1 || !e.regGob[hand] || !g_hol.ok()) return;
+    closeRemoveMenu(e, "weapon");
     if (e.mode == MODE_WEAPON) g_hol.h->EndEdit();
     if (!g_hol.h->BeginEdit(e.regGob[hand], e.editScope)) {
         KP_LOG(chView, "EDIT refused hand=%d gob=%p scope=%d", hand, e.regGob[hand], e.editScope);
@@ -2207,6 +2226,7 @@ void enterEdit(Editor& e, int hand) {
 
 void exitEdit(Editor& e) {
     if (e.mode != MODE_WEAPON) return;
+    closeRemoveMenu(e, "edit_end");
     if (g_hol.ok()) g_hol.h->EndEdit();
     e.mode = MODE_NAV;
     e.editHand = -1;
@@ -2249,7 +2269,6 @@ void KPATCH_CALL cbEnter(uint32_t page, void*) {
     guikit::g_wheel.touch(GetTickCount());
     setItemText(g_ed, hse::PI_STATUS, statusText());
     char fit[64];
-    g_ed.leftTip = -2;
     g_ed.longTxt[0][0] = g_ed.longTxt[1][0] = '\x01';   // rewrite both description texts on this visit
     g_ed.hintRState = -1;
     {   // the legend line under the view: cut to the view width
@@ -2267,6 +2286,7 @@ void KPATCH_CALL cbLeave(uint32_t, void*) {
     guikit::g_wheel.clearRect(0);   // stop the wheel hook counting this page's area
     g_ed.wheelRect = {0, 0, 0, 0};
     g_ed.discardArmed = false;
+    closeRemoveMenu(g_ed, "leave");
     if (g_ed.mode == MODE_WEAPON) {
         if (editDirty()) KP_LOG(chView, "DISCARD why=leave");
         exitEdit(g_ed);
@@ -2340,8 +2360,8 @@ bool applyCalls(Editor& e, const hse::WeaponCall* calls, int n, const char* what
     }
     if (!memcmp(rot, e.editInfo.rot, sizeof rot) && !memcmp(off, e.editInfo.off, sizeof off) && warnOk(e, W_NUDGE)) {
         const hse::WeaponCall& c = calls[0];
-        KP_LOGV(chView, KPLOG_WARN, "NUDGE WARN %s: no change (call0 kind=%d axis=%d deg=%.4f m=%.4f dp=(%.4f,%.4f,%.4f) scope=%d%s)", what, c.kind, c.axis, c.deg, c.metres,
-                c.dp[0], c.dp[1], c.dp[2], e.editScope, e.editScope == K2HOLSTER_SCOPE_BODY ? " body: rotation is ignored" : "");
+        KP_LOGV(chView, KPLOG_WARN, "NUDGE WARN %s: no change (call0 kind=%d axis=%d deg=%.4f m=%.4f dp=(%.4f,%.4f,%.4f) scope=%d)", what, c.kind, c.axis, c.deg, c.metres,
+                c.dp[0], c.dp[1], c.dp[2], e.editScope);
     }
     return true;
 }
@@ -2421,7 +2441,7 @@ hse::ChordOut weaponMouse(Editor& e, int curX, int curY, bool insideView, bool f
     } else if (o.began == hse::CA_WEAPON) {
         refreshEdit(e);
         e.gActive = true;
-        e.gMode = hse::effectiveMode(e.weaponMode, e.editScope);   // the mode bar can change meanwhile; this gesture keeps the mode it began with (Tilt / Roll-Turn in the body scope run as Move)
+        e.gMode = e.weaponMode;   // the mode bar can change meanwhile; this gesture keeps the mode it began with
         e.gHand = e.editHand == 1 ? 1 : 0;
         e.gFrames = 0;
         e.gDx = e.gDy = 0;
@@ -2429,8 +2449,7 @@ hse::ChordOut weaponMouse(Editor& e, int curX, int curY, bool insideView, bool f
         resetSnap(e, "gesture_begin");
         if (e.gestureLogs < kMaxGestureLogs) {
             ++e.gestureLogs;
-            KP_LOG(chView, "GESTURE begin mode=%s%s hand=%s scope=%d zoom=%.2f shift=%d ctrl=%d how=%s", hse::weaponModeName(e.gMode),
-                   e.gMode != e.weaponMode ? " (body scope: rotation mode runs as Move)" : "", handName(e.gHand), e.editScope,
+            KP_LOG(chView, "GESTURE begin mode=%s hand=%s scope=%d zoom=%.2f shift=%d ctrl=%d how=%s", hse::weaponModeName(e.gMode), handName(e.gHand), e.editScope,
                    e.view.zoom, shift ? 1 : 0, ctrl ? 1 : 0, hse::chordWhyName(o.why));
         }
         updateStatusText(e);
@@ -2448,7 +2467,6 @@ hse::ChordOut weaponMouse(Editor& e, int curX, int curY, bool insideView, bool f
     } else if (o.act == hse::CA_SPIN && (o.dx != 0)) {
         e.view.yaw = hse::spin(e.view.yaw, static_cast<float>(o.dx));   // dx > 0 turns the yaw up, same sign as NAV and the equip screen
     } else if (o.act == hse::CA_WEAPON && e.gActive && (o.dx != 0 || o.dy != 0)) {
-        e.gMode = hse::effectiveMode(e.gMode, e.editScope);   // never a rotation call in the body scope, even if the scope changed mid-gesture
         const hse::WeaponStep st = hse::weaponGesture(e.gMode, o.dx, o.dy, e.view.zoom, o.fine, o.snap, e.snap);
         ++e.gFrames;
         e.gDx += o.dx;
@@ -2656,6 +2674,7 @@ void tickBody(Editor& e) {
                 for (int i = 0; i < hse::kV3Scopes && e.mode == MODE_WEAPON; ++i) {
                     if (!clk[hse::PI_SCOPE + i] || i == e.editScope) continue;
                     if (!guardTransition(e, ACT_SCOPE0 + i, "scope")) continue;
+                    closeRemoveMenu(e, "scope");
                     e.editScope = i;
                     const int sc = g_hol.h->SetScope(e.editScope, e.editHand == 1 ? 1 : 0);
                     if (!sc || !refreshEdit(e)) {
@@ -2687,13 +2706,21 @@ void tickBody(Editor& e) {
                     refreshSelectors(e, true);
                     updateStatusText(e);
                 } else if (clk[hse::PI_RESET_SCOPE]) {
-                    if (guardConfirm(e, ACT_RESET_SCOPE, "reset_scope")) {
+                    toggleRemoveMenu(e);   // the "..." button only opens / closes the menu; nothing is deleted here
+                } else if (clk[hse::PI_REMOVE] && e.removeMenu.open) {
+                    const int scope = e.editScope;
+                    const bool wasArmed = removeArmed(e);
+                    if (guardConfirm(e, ACT_RESET_SCOPE, "remove_scope")) {
                         g_hol.h->ResetScope();   // deletes this scope's saved keys and saves; the open edit stays open
+                        KP_LOG(chView, "REMOVE done scope=%d", scope);
                         KP_LOG(chView, "BTN ResetScope");
-                        captureOpen(e, "reset_scope");
+                        captureOpen(e, "remove_scope");
                         refreshEdit(e);
                         refreshSelectors(e, true);
                         updateStatusText(e);
+                        closeRemoveMenu(e, "done");
+                    } else if (!wasArmed) {
+                        KP_LOG(chView, "REMOVE armed scope=%d", scope);
                     }
                 }
                 bool didReset = false;
@@ -2704,15 +2731,8 @@ void tickBody(Editor& e) {
             }
             for (int i = 0; i < kModeCount; ++i) {   // the mode bar picks what RMB + LMB does; it works with or without an open edit
                 if (!clk[hse::PI_MODE + i]) continue;
-                if (!hse::modeEnabled(i, e.editScope)) {   // Tilt / Roll-Turn in the body scope: nothing changes, the left description box says why
-                    e.leftNote = kModeLockedNote;
-                    e.leftNoteAt = GetTickCount();
-                    KP_LOG(chView, "MODE click %s ignored: rotation is not saved for the body scope", hse::weaponModeName(i));
-                    continue;
-                }
                 setWeaponMode(e, i, "click");
             }
-            syncRotationLock(e);
         }
     }
 
@@ -2742,6 +2762,9 @@ void tickBody(Editor& e) {
         const hse::ChordOut co = weaponMouse(e, curX, curY, insideView, fg, shift, ctrl, lmb, rmb, mmb, w);
         if (e.mode == MODE_WEAPON) scrubTick(e, co, lEdge, curX, curY, fg, lmb, rmb, mmb, shift, ctrl);
         if (e.mode == MODE_WEAPON) refreshInspector(e, false);
+        syncRemoveMenu(e);
+        logScopeIfChanged(e);
+        refreshRemoveButton(e);
         refreshSelectors(e, false);
         refreshHints(e, curX, curY);
     }
@@ -2931,7 +2954,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     g_clients.init(api);
     embedgui::g_log = embedLog;
     embtex::g_log = embedLog;
-    KP_LOG(chMain, "holster-editor 0.4.11-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
+    KP_LOG(chMain, "holster-editor 0.5.0-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
            static_cast<unsigned>(sizeof kHseViewGui));
     g_clients.poll();   // the first poll() of every client tries to connect
     // This DLL is hookless: there is no frame hook to retry mod-config / menuui from later, so a missing provider now means no page this run.

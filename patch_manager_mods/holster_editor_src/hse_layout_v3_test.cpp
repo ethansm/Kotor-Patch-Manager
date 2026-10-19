@@ -50,10 +50,11 @@ static int collect(const PageLayoutV3& L, Item* o) {
     Box raw[kPageItemsV3];
     int n = pageBoxesV3(L, raw);
     for (int i = 0; i < n; ++i) o[i] = Item{raw[i], 0, 0, -1};
-    // order: left 19 (0..18), view area 13 (19..31), inspector 37 (32..68), then the Reset button (69, left column), then the right description box (70, 71)
+    // order: left 19 (0..18), view area 13 (19..31), inspector 37 (32..68), then the "..." toggle (69, left column), the right description box (70, 71), Remove (72, inspector)
     for (int i = 19; i < 32; ++i) o[i].zone = 1;
     for (int i = 32; i < PI_RESET_SCOPE; ++i) o[i].zone = 2;
     o[PI_RESET_SCOPE].zone = 0;
+    o[PI_REMOVE].zone = 2;                            // the Remove button sits in the inspector zone, under the note
     // inspector: groupLabel0, groupReset0, groupLabel1, groupReset1 (32..35), then rows 5 boxes each (36..65), note 66
     for (int r = 0; r < kV3Rows; ++r) {
         o[36 + r * 5 + 1].kind = 2; o[36 + r * 5 + 1].row = r;
@@ -69,8 +70,8 @@ static int collect(const PageLayoutV3& L, Item* o) {
 static bool isZeroBox(Box b) { return b.x == 0 && b.y == 0 && b.w == 0 && b.h == 0; }
 
 // Independent model of the inspector height (from the header constants, not from buildInspector): 2 groups of (label + 3 rows) at rr + kGap each,
-// kSpacer between the groups, the note (rr * 2 / 3 high), kPad above and below.
-static int inspNeed(int rr) { return 2 * v3::kPad + 8 * (rr + v3::kGap) + v3::kSpacer + rr * 2 / 3; }
+// kSpacer between the groups, the note (rr * 2 / 3 high) + kGap, the Remove row (rr high) + kGap, kPad above and below, minus the last kGap.
+static int inspNeed(int rr) { return 2 * v3::kPad + 8 * (rr + v3::kGap) + v3::kSpacer + rr * 2 / 3 + (rr + v3::kGap); }
 
 // Violations: negative sizes (and empty when requirePositive), box outside its zone, overlap of different widgets, and the left description box contract
 // (an all-zero hint box means "absent" and is exempt from the size and zone checks).
@@ -174,7 +175,7 @@ static void testGeometries() {
             KT_CHECK_EQ(v3::buildLeft(colZ, L.leftRowH, L.leftRowH >= kV3RoomyRowMin, T), colZ.y + leftNeed(L.leftRowH, L.leftRowH >= kV3RoomyRowMin));
             if (L.leftRowH < kV3LeftRowMax)
                 KT_CHECK(v3::buildLeft(colZ, L.leftRowH + 1, L.leftRowH + 1 >= kV3RoomyRowMin, T) > bound);
-            // the inspector ends after the note (no hint space): the largest row height whose total (inspNeed, from the header constants) fits the pane
+            // the inspector ends after the Remove row (no hint space): the largest row height whose total (inspNeed, from the header constants) fits the pane
             KT_CHECK(inspNeed(L.inspRowH) <= g.preview.h);
             if (L.inspRowH < kV3InspRowMax) KT_CHECK(inspNeed(L.inspRowH + 1) > g.preview.h);
             // and the model agrees with the implementation
@@ -205,9 +206,9 @@ static void testGeometries() {
         // item budget
         Box all[kPageItemsV3 + 8];
         KT_CHECK_EQ(pageBoxesV3(L, all), kPageItemsV3);
-        KT_CHECK_EQ(kPageItemsV3, 72);
+        KT_CHECK_EQ(kPageItemsV3, 73);
         KT_CHECK(kPageItemsV3 + kV3Rows <= 80);
-        KT_CHECK(kPageItemsV3 == 19 + 13 + 37 + 1 + 2);
+        KT_CHECK(kPageItemsV3 == 19 + 13 + 37 + 1 + 2 + 1);
     }
 }
 
@@ -232,7 +233,7 @@ static void testSaveRow() {
         // label misses the 30 px text budget by 3 px but still fits the raw box
         if (sizes[s][0] > 1280) KT_CHECK(px("Save") <= static_cast<float>(L.save.w - 8));
         else KT_CHECK(px("Save") <= static_cast<float>(L.save.w));
-        KT_CHECK(px("Reset") <= static_cast<float>(L.reset.w - 8));
+        KT_CHECK(px("...") <= static_cast<float>(L.reset.w - 8));   // the "..." toggle (removeToggleLabel)
         if (sizes[s][0] > 1280) KT_CHECK(px("Revert") <= static_cast<float>(L.revert.w - 8));
     }
     // a tiny column still gives non-negative widths in order
@@ -295,7 +296,7 @@ static void testThumbs() {
     int tw = R[0].track.w;
     KT_CHECK(tw > 40);
     KT_CHECK(R[0].thumb.x == R[0].track.x);                                   // 0 -> flush left
-    KT_CHECK(R[1].thumb.x == R[1].track.x + (int)(0.5f * (float)tw + 0.5f) - 5);   // centred, same maths as modalLayout
+    KT_CHECK(R[1].thumb.x == R[1].track.x + (int)(0.5f * (float)tw + 0.5f) - 5);   // centred, the thumb centre is the rounded fraction of the track width
     KT_CHECK(R[2].thumb.x == R[2].track.x + tw - 10);                          // 1 -> flush right
     KT_CHECK(R[3].thumb.x == R[3].track.x + (int)(0.25f * (float)tw + 0.5f) - 5);
     KT_CHECK(R[4].thumb.x == R[4].track.x);                                    // -3 clamps to 0
@@ -392,8 +393,9 @@ static void testViewVsPreview() {
     KT_CHECK(O.view.w > 0);
     Box all[kPageItemsV3 + 8]; pageBoxesV3(O, all);
     for (int i = 19; i < 32; ++i) KT_CHECK(all[i].x + all[i].w <= po.x - v3::kPad);   // view area items (see collect())
-    for (int i = 32; i < PI_RESET_SCOPE; ++i) KT_CHECK(!overlaps(all[i], O.view));   // the Reset button sits in the left column
+    for (int i = 32; i < PI_RESET_SCOPE; ++i) KT_CHECK(!overlaps(all[i], O.view));   // the "..." toggle sits in the left column
     KT_CHECK(!overlaps(all[PI_RESET_SCOPE], O.view));
+    KT_CHECK(!overlaps(all[PI_REMOVE], O.view));
     KT_CHECK(!overlaps(O.viewFlip, O.rows[0].name) && !overlaps(O.legend, O.groupLabel[0]));
     // a preview left of the column content leaves no room: the width stays non-negative and inside [vl, preview.x]
     Box pn = g.preview; pn.x = g.column.x + 100;
@@ -742,8 +744,8 @@ static void testReal3840x1600() {
     // the view stays left of the preview pane, never overlapping the inspector
     KT_CHECK(L.view.x + L.view.w < g.preview.x);
     KT_CHECK(L.view.x > L.status.x + L.status.w);
-    // item budget: 72 boxes + 6 wedges
-    KT_CHECK_EQ(kPageItemsV3Total, 78);
+    // item budget: 73 boxes + 6 wedges
+    KT_CHECK_EQ(kPageItemsV3Total, 79);
     KT_CHECK(kPageItemsV3Total <= 80);
     Box all[kPageItemsV3];
     KT_CHECK_EQ(pageBoxesV3(L, all), kPageItemsV3);
@@ -760,7 +762,8 @@ static void testReal3840x1600() {
         PageLayoutV3 P = pageLayoutV3(q.column, q.view, q.preview, q.hint, nullptr);
         KT_CHECK(px("Save") <= static_cast<float>(buttonTextPx(P.save.w)));
         if (s == 0) KT_CHECK(px("Revert") <= static_cast<float>(buttonTextPx(P.revert.w)));   // the synthetic 3440 column is 400 wide: its 129 px Revert gets cut
-        KT_CHECK(px("Reset") <= static_cast<float>(buttonTextPx(P.reset.w)));
+        KT_CHECK(px(removeToggleLabel()) <= static_cast<float>(buttonTextPx(P.reset.w)));
+        KT_CHECK(px(removeLabel()) <= static_cast<float>(buttonTextPx(P.remove.w)));   // "Remove saved placement" fits its button
         KT_CHECK(px("Move") <= static_cast<float>(buttonTextPx(P.modeBtn[0].w)));
         for (int i = 0; i < kV3Stances; ++i)
             KT_CHECK(px(kStances[i]) <= static_cast<float>(buttonTextPx(P.stance[i].w)));
@@ -829,8 +832,42 @@ static void testRoomyButtons3840() {
     for (int i = 0; i < kV3Bones; ++i) KT_CHECK(fits(kBones[i], L.bone[i]));
     for (int i = 0; i < kV3Stances; ++i) KT_CHECK(fits(kStances[i], L.stance[i]));
     for (int i = 0; i < kV3Modes; ++i) KT_CHECK(fits(kModes[i], L.modeBtn[i]));
-    KT_CHECK(fits("This weapon", L.scope[0]) && fits("All vibroswords", L.scope[1]) && fits("This body", L.scope[2]));
+    {   // the scope captions (scopeSegText) fit at 3840x1600 with the worst producible plural ("All vibroswords" is never produced: vibroswords are melee)
+        char t[48];
+        scopeSegText(t, sizeof t, 0, "heavy"); KT_CHECK(!strcmp(t, "This weapon model")); KT_CHECK(fits(t, L.scope[0]));
+        scopeSegText(t, sizeof t, 1, "heavy"); KT_CHECK(!strcmp(t, "All heavy weapons")); KT_CHECK(fits(t, L.scope[1]));
+        scopeSegText(t, sizeof t, 2, "heavy"); KT_CHECK(!strcmp(t, "This body + armor")); KT_CHECK(fits(t, L.scope[2]));
+        KT_CHECK(fits("This weapon model", L.scope[0]) && fits("All heavy weapons", L.scope[1]) && fits("This body + armor", L.scope[2]));
+    }
     KT_CHECK(L.view.h >= 600);
+}
+
+// The Remove button (PI_REMOVE): in the inspector zone, left aligned under the note, row high, at most kV3RemoveMaxW wide, overlapping nothing (not the view,
+// the right description box, the left column or any other box) at the two gated resolutions and at the smaller sizes.
+static void testRemoveBox() {
+    struct Case { const char* what; Geom g; };
+    const Case cases[] = {{"3840x1600 real", realGeom()}, {"3440x1440", geomFor(3440, 1440)}, {"1920x1080", geomFor(1920, 1080)}, {"1280x720", geomFor(1280, 720)}};
+    for (const Case& c : cases) {
+        const Geom& g = c.g;
+        PageLayoutV3 L = pageLayoutV3(g.column, g.view, g.preview, g.hint, nullptr);
+        KT_CHECK_EQ(violations(g, L, true, true), 0);   // covers pairwise overlap of every box incl. PI_REMOVE, and its inspector zone
+        const Box R = L.remove;
+        KT_CHECK(R.w > 0 && R.h > 0);
+        KT_CHECK(inside(R, g.preview));
+        KT_CHECK(R.y >= L.note.y + L.note.h + v3::kGap);          // below the note
+        KT_CHECK(R.x == L.note.x && R.h == L.inspRowH);            // left aligned under it, a slider row high
+        KT_CHECK(R.w <= kV3RemoveMaxW && R.w <= L.note.w);
+        KT_CHECK(!overlaps(R, L.view) && !overlaps(R, L.hintR[0]) && !overlaps(R, L.hintR[1]) && !overlaps(R, L.hint[0]) && !overlaps(R, L.reset));
+        for (int r = 0; r < kV3Rows; ++r) {
+            const InspRowV3& W = L.rows[r];
+            KT_CHECK(!overlaps(R, W.name) && !overlaps(R, W.track) && !overlaps(R, W.thumb) && !overlaps(R, W.value) && !overlaps(R, W.reset));
+        }
+        Box all[kPageItemsV3];
+        pageBoxesV3(L, all);
+        for (int i = 0; i < kPageItemsV3 - 1; ++i) KT_CHECK(!overlaps(all[i], R));
+        // the wedges sit in the track rects: nothing of them reaches the Remove box either
+        for (int r = 0; r < kV3Rows; ++r) KT_CHECK(!overlaps(R, L.rows[r].track));
+    }
 }
 
 static void testHelpers() {
@@ -889,10 +926,12 @@ static void testAdaptersAndIndex() {
     KT_CHECK(same(all[PI_RESET_SCOPE], L.reset));
     KT_CHECK(PI_RESET_SCOPE == 69 && PI_HINT + kV3Hints == PI_RESET_SCOPE);
     for (int i = 0; i < kV3Hints; ++i) KT_CHECK(same(all[PI_HINTR + i], L.hintR[i]));
-    KT_CHECK(PI_HINTR == 70 && PI_HINTR + kV3Hints == kPageItemsV3);
+    KT_CHECK(PI_HINTR == 70 && PI_HINTR + kV3Hints == PI_REMOVE);
+    KT_CHECK(same(all[PI_REMOVE], L.remove));
+    KT_CHECK(PI_REMOVE == 72 && PI_REMOVE + 1 == kPageItemsV3 && kPageItemCap == 80);
 
-    // the page holds the 72 boxes plus one wedge per slider row, inside the consumer cap
-    KT_CHECK_EQ(kPageItemsV3Total, 78);
+    // the page holds the 73 boxes plus one wedge per slider row, inside the consumer cap
+    KT_CHECK_EQ(kPageItemsV3Total, 79);
     KT_CHECK(kPageItemsV3Total <= kPageItemCap);
 }
 
@@ -902,6 +941,7 @@ int main() {
     testGeometries();
     testSaveRow();
     testReal3840x1600();
+    testRemoveBox();
     testFill3840x1600();
     testRoomyButtons3840();
     testPinned3440();

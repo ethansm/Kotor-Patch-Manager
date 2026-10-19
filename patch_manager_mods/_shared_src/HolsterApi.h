@@ -20,7 +20,7 @@
 #define K2HOLSTER_IFACE   "k2.holster"
 #define K2HOLSTER_VERSION 1
 
-/* Edit scopes (BeginEdit / SetScope). Body scope edits the offset only (an additive per-body delta). */
+/* Edit scopes (BeginEdit / SetScope). Body scope edits an additive per-body delta: offset and, since holster 0.4.0-dev, rotation (place_rot_body_<name>). */
 #define K2HOLSTER_SCOPE_WEAPON 0
 #define K2HOLSTER_SCOPE_TYPE   1
 #define K2HOLSTER_SCOPE_BODY   2
@@ -29,7 +29,8 @@
 #define K2HOLSTER_SRC_GLOBAL 0
 #define K2HOLSTER_SRC_TYPE   1
 #define K2HOLSTER_SRC_WEAPON 2
-#define K2HOLSTER_SRC_BODY   4   /* bit: a per-body delta is added (offset only) */
+#define K2HOLSTER_SRC_BODY   4   /* bit in src[1]: a per-body offset delta is added */
+#define K2HOLSTER_SRC_BODYROT 16 /* bit in src[0] (holster 0.4.0-dev): a non-zero per-body rotation delta is composed into rot; older editors ignore it */
 
 #ifdef __cplusplus
 extern "C" {
@@ -51,9 +52,9 @@ typedef struct K2HolsterApi {
     int32_t (KPATCH_CALL *RegisterPreview)(void* gob, void* beh_or_0, int32_t left);   /* 1 ok, 0 registry full / invalid */
     void    (KPATCH_CALL *UnregisterPreview)(void* gob);                               /* gob 0 = clear all; ends an edit on that gob */
     int32_t (KPATCH_CALL *BeginEdit)(void* gob, int32_t scope);                        /* 1 ok; gob must be registered */
-    void    (KPATCH_CALL *NudgeWorld)(const float dq[4], const float dp[3]);           /* world-space delta, dq w-first (rotation ignored in body scope) */
+    void    (KPATCH_CALL *NudgeWorld)(const float dq[4], const float dp[3]);           /* world-space delta, dq w-first (body scope: the rotation turns the per-body delta) */
     void    (KPATCH_CALL *NudgeLocal)(int32_t axis, float deg, float metres);          /* bone axis 0 x right, 1 y forward, 2 z up */
-    void    (KPATCH_CALL *SetValues)(const float rot[3], const float off[3]);          /* absolute values (body scope: absolute offset) */
+    void    (KPATCH_CALL *SetValues)(const float rot[3], const float off[3]);          /* absolute values (body scope: the shown rot and off; the delta to the base is the body delta) */
     int32_t (KPATCH_CALL *CycleBone)(int32_t dir);                                     /* returns the new bone index (1-based) */
     int32_t (KPATCH_CALL *GetEdit)(K2HolsterEditInfo* out);                            /* 1 while an edit is open */
     int32_t (KPATCH_CALL *GetMountWorld)(float pos[3], float q[4]);                    /* world pose of the edited Gob's mount bone */

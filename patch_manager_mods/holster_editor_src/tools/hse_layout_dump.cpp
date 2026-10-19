@@ -13,7 +13,7 @@ static const char* itemKind(int i) {
     if (i == PI_VIEW) return "view";
     if (i == PI_HINT || i == PI_HINTR) return "frame";                   // the green description boxes (drawn as a frame, no caption)
     if (i == PI_HINT + 1 || i == PI_HINTR + 1) return "desctext";        // their text areas (top-left aligned, word wrapped)
-    if (i == PI_MEMBER_PREV || i == PI_MEMBER_NEXT || i == PI_SAVE || i == PI_REVERT || i == PI_RESET_SCOPE || i == PI_VIEW_RESET || i == PI_VIEW_FLIP) return "button";
+    if (i == PI_MEMBER_PREV || i == PI_MEMBER_NEXT || i == PI_SAVE || i == PI_REVERT || i == PI_RESET_SCOPE || i == PI_REMOVE || i == PI_VIEW_RESET || i == PI_VIEW_FLIP) return "button";
     if (i >= PI_WEAPON && i < PI_WEAPON + kV3Weapons) return "button";
     if (i >= PI_BONE && i < PI_BONE + kV3Bones) return "button";
     if (i >= PI_SCOPE && i < PI_SCOPE + kV3Scopes) return "button";

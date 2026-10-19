@@ -1,4 +1,4 @@
-// Holster.cpp -- holster 0.3.0-dev (Steam build): P0 probe for the holstered-weapons mod (patch_manager_mods/42_holstered_weapons.md).
+// Holster.cpp -- holster 0.4.0-dev (Steam build): P0 probe for the holstered-weapons mod (patch_manager_mods/42_holstered_weapons.md).
 // Plan: .claude/plans/holstered_weapons.md. Handlers are plain extern "C" void __cdecl functions; the detour wrappers in
 // kotor2-steam-aspyr.hooks.toml call them at function entry with the game arguments BEFORE the stolen bytes run.
 // Hard rules for P0 (exceptions, both default off: the bone_test code patch, and HolsterPlace's 28-byte pose write with probe=1 bone_test=1 place=1): no other writes to game memory or registers, no engine calls, reads only through saferead, and every handler returns at
@@ -1465,9 +1465,13 @@ static bool edWrite(bool reset) {
             break;
         case hs::ScopeBody:
             if (reset) {
+                // Reset deletes both body keys (offset and rotation delta).
                 const int n = snprintf(buf, sizeof buf, "place_off_body_%s", body);
-                ok = body[0] && n > 0 && static_cast<size_t>(n) < sizeof buf;
-                if (ok) { unset[0] = buf; so.nUnset = 1; so.nSet = 0; }
+                bool fit = body[0] && n > 0 && static_cast<size_t>(n) < sizeof buf;
+                const int m = fit ? snprintf(buf + n + 1, sizeof buf - static_cast<size_t>(n) - 1, "place_rot_body_%s", body) : -1;
+                fit = fit && m > 0 && static_cast<size_t>(n) + 1 + static_cast<size_t>(m) < sizeof buf;
+                ok = fit;
+                if (ok) { unset[0] = buf; unset[1] = buf + n + 1; so.nUnset = 2; so.nSet = 0; }
             } else if (hs::overlayWrite(g_edit, c)) {
                 const hs::BodyTune* b = hs::findBody(c, body);
                 ok = b && hs::scopeKeys(*b, so);
@@ -1575,7 +1579,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     addName(names, sizeof(names), g_onGob, "gob");
     addName(names, sizeof(names), g_onPlace, "place");
     addName(names, sizeof(names), g_onToggle, "toggle");
-    KP_LOG(chMain, "holster 0.3.0-dev loaded (P0 probe, log-only): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_probe ? 1 : 0,
+    KP_LOG(chMain, "holster 0.4.0-dev loaded (P0 probe, log-only): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_probe ? 1 : 0,
            names[0] ? names : "none", static_cast<long>(g_maxLines), g_gobEvery, k2addr::get() ? "ok" : "none");
     {
         hs::TuneCfg t;

@@ -43,14 +43,6 @@ inline float clampZoom(float z) {
     return z;
 }
 
-inline float zoomIn(float z) {
-    return clampZoom(z * kZoomStep);
-}
-
-inline float zoomOut(float z) {
-    return clampZoom(z / kZoomStep);
-}
-
 // wrapYaw, clampZoom, panZ clamped to [-1, 1] (NaN -> 0.0f; +-inf clamp to +-1).
 inline View makeView(float yaw, float zoom, float panZ) {
     float p = panZ;
@@ -94,13 +86,6 @@ struct HseRect {
     int h;
 };
 
-// {col.x, col.y, max(0, view.x - gap - col.x), col.h}
-inline HseRect leftStrip(const HseRect& col, const HseRect& view, int gap) {
-    int w = view.x - gap - col.x;
-    if (w < 0) w = 0;
-    return HseRect{col.x, col.y, w, col.h};
-}
-
 // Button caption rect (pure). CSWGuiButton::SetExtent insets the caption text object's rect by the border dimension on every side, which collapses at
 // 34 px rows (F3_R1_inset.txt): the centred 32 px line is dropped or drawn on the box seam. Keep the engine's x/w, take the button's own y/h.
 // An engine rect with no width, or whose x is outside [btn.x, btn.x + btn.w), is not trusted: use a 4 px side margin instead. w is never negative.
@@ -126,21 +111,6 @@ inline int buttonTextPx(int boxW) { int w = boxW - 2 * (kButtonTextInset + kText
 // Width a LABEL (status, note, hints, legend, inspector names / values) may take: box.w - 8 (0 when too small).
 inline int labelTextPx(int boxW) { int w = boxW - 2 * kLabelPad; return w > 0 ? w : 0; }
 
-// vanilla ratio: slotH = strip.h * 32 / 284, pitch = strip.h * 36 / 284, y = strip.y + row * pitch, x/w = strip's
-inline HseRect stripSlot(const HseRect& strip, int row) {
-    int slotH = strip.h * 32 / 284;
-    int pitch = strip.h * 36 / 284;
-    return HseRect{strip.x, strip.y + row * pitch, strip.w, slotH};
-}
-
-// which 0 = left, 1 = right; w = (s.w - gap) / 2; right.x = s.x + w + gap
-inline HseRect half(const HseRect& s, int which, int gap) {
-    int w = (s.w - gap) / 2;
-    if (w < 0) w = 0;
-    int x = (which == 0) ? s.x : (s.x + w + gap);
-    return HseRect{x, s.y, w, s.h};
-}
-
 // name when non-empty, else "Member <idx0+1>"; always NUL terminated; cap <= 0 is a no-op
 inline void memberLabel(char* out, int cap, int idx0, const char* name) {
     if (cap <= 0 || !out) return;
@@ -152,13 +122,13 @@ inline void memberLabel(char* out, int cap, int idx0, const char* name) {
     out[cap - 1] = '\0';
 }
 
-// Scope label: 0=Weapon, 1=Category, 2=Body
+// Short scope name for the log: 0 weapon model, 1 weapon class, 2 body+armor (any other scope reads as 0).
 inline const char* scopeLabel(int scope) {
     switch (scope) {
-        case 0: return "Scope: Weapon";
-        case 1: return "Scope: Category";
-        case 2: return "Scope: Body";
-        default: return "Scope: Weapon";
+        case 0: return "weapon model";
+        case 1: return "weapon class";
+        case 2: return "body+armor";
+        default: return "weapon model";
     }
 }
 
@@ -761,14 +731,6 @@ inline WeaponCall wheelDepth(int wheel, bool fine, bool snap, SnapAcc& acc) {
 
 // ---- U2 labels (pure text; the editor fits them with textfit::fitText) ----
 
-// ">Move<" for the active mode, "Move" otherwise; always NUL terminated.
-inline void modeLabel(char* out, int cap, int mode, bool active) {
-    if (!out || cap <= 0) return;
-    if (active) snprintf(out, cap, ">%s<", weaponModeName(mode));
-    else snprintf(out, cap, "%s", weaponModeName(mode));
-    out[cap - 1] = '\0';
-}
-
 // Plural of the GetEdit type for the scope button; an unknown or empty type has no category word.
 inline const char* categoryPlural(const char* type) {
     if (!type || !type[0]) return "of this type";
@@ -781,18 +743,9 @@ inline const char* categoryPlural(const char* type) {
     return "of this type";
 }
 
-// Scope button text: 0 "For: this weapon", 1 "For: all <type plural>", 2 "For: this body"; any other scope reads as 0.
-inline void scopeButtonText(char* out, int cap, int scope, const char* type) {
-    if (!out || cap <= 0) return;
-    if (scope == 1) snprintf(out, cap, "For: all %s", categoryPlural(type));
-    else if (scope == 2) snprintf(out, cap, "For: this body");
-    else snprintf(out, cap, "For: this weapon");
-    out[cap - 1] = '\0';
-}
-
-// Hover text of the scope button (the mod-config description pane). ASCII, under 190 characters.
+// Generic hover text of the scope row (kept for callers that have no per-button sentence; scopeSentence is the real text). ASCII, under 190 characters.
 inline const char* scopeTip() {
-    return "Where Save applies. This weapon: only this item model. All <type>: every weapon of this type. This body: every weapon on this character body.";
+    return "Where Save applies. This weapon model: only this item model. All <type>: every weapon of this type. This body + armor: every weapon on this character body.";
 }
 
 inline const char* helpLine() { return "LMB turn . RMB+LMB move weapon . RMB+wheel depth . Shift fine . Ctrl snap"; }
@@ -821,7 +774,7 @@ constexpr int kPageItemCap = 80;             // mod-config mui::kMaxItems (0.1.3
 static_assert(kPageItemsBase + kInspItems <= kPageItemCap, "the editor page (base items + 12 inspector items) must fit mod-config's per-page item cap");
 constexpr int kStripRowsBase = 9;            // weapon mode strip rows without the inspector: name, hands, bone, scope, save/revert, reset scope/done, view, 2 mode rows
 constexpr int kStripRowsInsp = kStripRowsBase + IR_COUNT;
-constexpr int kScopeBodyId = 2;              // edit scope BODY (K2HOLSTER_SCOPE_BODY): the offset only, rotation is ignored
+constexpr int kScopeBodyId = 2;              // edit scope BODY (K2HOLSTER_SCOPE_BODY): offset and rotation, added on top of the weapon placement
 
 constexpr float kScrubOffPerPx = 0.001f;     // 1 px = 1 mm
 constexpr float kScrubRotPerPx = 0.5f;       // 1 px = 0.5 deg
@@ -833,7 +786,7 @@ constexpr float kScrubLimitOff = 3.0f;       // holster.ini parser limits (Holst
 constexpr float kScrubLimitRot = 720.0f;
 constexpr float kInspDiffOff = 0.0005f;      // a row differs from its open value from half a display step on (0.05 cm / 0.05 deg)
 constexpr float kInspDiffRot = 0.05f;
-constexpr uint8_t kSrcMirrorBit = 8;         // K2HolsterEditInfo.src[0] / src[1] bit: the shown left value is the right one mirrored (reserved; holster has not set it yet)
+constexpr uint8_t kSrcMirrorBit = 8;         // K2HolsterEditInfo.src[0] / src[1] bit: the shown left value is the right one mirrored (holster GetEdit sets it from leftMirror)
 
 inline const char* inspRowName(int r) {
     static const char* const kNames[IR_COUNT] = {"Slide", "Depth", "Height", "Tilt", "Roll", "Turn"};
@@ -843,31 +796,8 @@ inline bool inspIsRot(int r) { return r >= IR_TILT; }
 inline int inspAxis(int r) { return r % 3; }
 inline const char* inspUnit(int r) { return inspIsRot(r) ? "deg" : "cm"; }
 
-// Hover text of the scrub button (ASCII, under 190 characters).
-inline const char* inspTip(int r) {
-    static const char* const kTips[IR_COUNT] = {
-        "Slide: the weapon's side-to-side offset on the bone. Hold the left button and drag sideways: 1 px = 1 mm. Shift is fine, Ctrl snaps to 1 cm.",
-        "Depth: the weapon's forward (+) and back (-) offset on the bone. Hold the left button and drag sideways: 1 px = 1 mm. Shift is fine, Ctrl snaps to 1 cm.",
-        "Height: the weapon's up (+) and down (-) offset on the bone. Hold the left button and drag sideways: 1 px = 1 mm. Shift is fine, Ctrl snaps to 1 cm.",
-        "Tilt: rotation about the bone's side axis. Hold the left button and drag sideways: 1 px = 0.5 degrees. Shift is fine, Ctrl snaps to 5 degrees.",
-        "Roll: rotation about the bone's forward axis. Hold the left button and drag sideways: 1 px = 0.5 degrees. Shift is fine, Ctrl snaps to 5 degrees.",
-        "Turn: rotation about the bone's up axis. Hold the left button and drag sideways: 1 px = 0.5 degrees. Shift is fine, Ctrl snaps to 5 degrees.",
-    };
-    return (r >= 0 && r < IR_COUNT) ? kTips[r] : "";
-}
-inline const char* inspResetTip() { return "Put this value back to what it was when the edit opened (or after the last Save)."; }
-
-// Body scope edits the offset only: its rotation rows have nothing to scrub.
-inline bool inspRowEnabled(int row, int scope) { return !(scope == kScopeBodyId && inspIsRot(row)); }
-
-// Body scope saves the offset only (HolsterApi.h: the provider ignores rotation there), so every rotation control is locked in it:
-// rotationAllowed(scope) is the one rule; effectiveMode maps a rotation weapon mode (Tilt, Roll/Turn) to Move while it is locked, anything else is unchanged;
-// modeEnabled is false for the two rotation mode buttons while locked. Unknown modes / scopes: allowed (only kScopeBodyId locks).
-inline bool rotationAllowed(int scope) { return scope != kScopeBodyId; }
-inline bool modeIsRotation(int mode) { return mode == WPM_TILT || mode == WPM_ROLLTURN; }
-inline bool modeEnabled(int mode, int scope) { return rotationAllowed(scope) || !modeIsRotation(mode); }
-inline int effectiveMode(int mode, int scope) { return modeEnabled(mode, scope) ? mode : static_cast<int>(WPM_MOVE); }
-inline const char* rotationLockedHint() { return "Rotation is not saved for 'This body'. Pick 'This weapon' or a weapon class to rotate."; }
+inline const char* inspResetTip() { return "Undo this value (back to when the edit opened or the last Save)."; }
+inline const char* revertTip() { return "Undo unsaved changes."; }
 
 // The value of a row in provider units (metres or degrees); NaN for a bad row.
 inline float inspGet(int row, const float rot[3], const float off[3]) {
@@ -894,24 +824,6 @@ inline bool inspMatches(int row, float got, float want) {
     if (d > 180.0f) d -= 360.0f;
     if (d < -180.0f) d += 360.0f;
     return fabsf(d) < 0.05f;
-}
-
-// "Depth  -11.0 cm" / "Tilt  30.5 deg"; a leading "* " marks a row that differs from its open value. A disabled row reads "Tilt  (body: n/a)".
-// Never "-0.0". Always NUL terminated; null/cap<=0 is a no-op.
-inline void inspRowText(char* out, int cap, int row, float value, bool changed, bool enabled) {
-    if (!out || cap <= 0) return;
-    const char* name = inspRowName(row);
-    if (!enabled) {
-        snprintf(out, cap, "%s  (body: n/a)", name);
-    } else if (!finiteF(value)) {
-        snprintf(out, cap, "%s  n/a", name);
-    } else {
-        float shown = inspIsRot(row) ? value : value * 100.0f;
-        shown = roundf(shown * 10.0f) / 10.0f;
-        if (shown == 0.0f) shown = 0.0f;   // folds -0.0 into +0.0
-        snprintf(out, cap, "%s%s  %.1f %s", changed ? "* " : "", name, static_cast<double>(shown), inspUnit(row));
-    }
-    out[cap - 1] = '\0';
 }
 
 // Copies cur to out, then puts ONE row back to its open value (the other five stay as they are). True when that row actually changes.
@@ -1058,41 +970,9 @@ struct Scrub {
     void cancel() { *this = Scrub(); }
 };
 
-// Strip row `row` of `rows` equal rows that all fit in availH px below strip.y. The vanilla pitch (strip.h * 36 / 284) is kept while the rows fit,
-// otherwise the pitch shrinks to availH / rows (slot height scales with it). With rows <= availH / pitch this is exactly stripSlot().
-inline HseRect compactSlot(const HseRect& strip, int availH, int row, int rows) {
-    const int basePitch = strip.h * 36 / 284;
-    const int baseH = strip.h * 32 / 284;
-    int pitch = basePitch;
-    if (rows > 0 && availH > 0 && availH / rows < pitch) pitch = availH / rows;
-    int h = basePitch > 0 ? baseH * pitch / basePitch : baseH;
-    if (h < 1) h = 1;
-    if (h > pitch && pitch > 0) h = pitch;
-    return HseRect{strip.x, strip.y + row * pitch, strip.w, h};
-}
-
-// Splits an inspector slot into the scrub button (left, wide) and the reset button (right, at least 18 px or the slot height, never over a third of it).
-inline void inspRects(const HseRect& slot, HseRect* scrub, HseRect* reset) {
-    if (!scrub || !reset) return;
-    int rw = slot.h < 18 ? 18 : slot.h;
-    if (rw > slot.w / 3) rw = slot.w / 3;
-    const int gap = 2;
-    int sw = slot.w - rw - gap;
-    if (sw < 0) sw = 0;
-    *scrub = HseRect{slot.x, slot.y, sw, slot.h};
-    *reset = HseRect{slot.x + slot.w - rw, slot.y, rw, slot.h};
-}
-
 // The left hand's shown values come from the right hand's mirror (K2HolsterEditInfo.src bit kSrcMirrorBit on rot or off).
 inline bool leftMirrored(bool left, const uint8_t src[3]) {
     return left && src && ((src[0] | src[1]) & kSrcMirrorBit) != 0;
-}
-
-// Weapon mode status line at rest: an optional "* " (unsaved), the mirrored-left note, then the help line.
-inline void idleStatusText(char* out, int cap, bool dirty, bool mirroredLeft) {
-    if (!out || cap <= 0) return;
-    snprintf(out, cap, "%s%s%s", dirty ? "* " : "", mirroredLeft ? "Left: mirrored from right . " : "", helpLine());
-    out[cap - 1] = '\0';
 }
 
 // ---- HW-UX3 page helpers (direct selector buttons, slider rows with a thumb and a value outside) ----
@@ -1119,7 +999,7 @@ inline int boneIndexOf(const char* name) {
     return -1;
 }
 
-// Scope button text: 0 "This weapon", 1 "All <type plural>" (or "All of type" when the type is unknown), 2 "This body"; any other scope reads as 0.
+// Scope button text: 0 "This weapon model", 1 "All <type plural>" (or "All of type" when the type is unknown), 2 "This body + armor"; any other scope reads as 0.
 inline void scopeSegText(char* out, int cap, int scope, const char* type) {
     if (!out || cap <= 0) return;
     if (scope == 1) {
@@ -1127,12 +1007,104 @@ inline void scopeSegText(char* out, int cap, int scope, const char* type) {
         if (!strcmp(p, "of this type")) snprintf(out, cap, "All of type");
         else snprintf(out, cap, "All %s", p);
     } else if (scope == 2) {
-        snprintf(out, cap, "This body");
+        snprintf(out, cap, "This body + armor");
     } else {
-        snprintf(out, cap, "This weapon");
+        snprintf(out, cap, "This weapon model");
     }
     out[cap - 1] = '\0';
 }
+
+// Armor class from the body resref letter: P[FM]B<letter>... (case-insensitive, vanilla baseitems.2da). "" for anything else (companion bodies, empty, null).
+inline const char* armorClassLabel(const char* body) {
+    if (!body || strlen(body) < 4) return "";
+    if (toupper(static_cast<unsigned char>(body[0])) != 'P' || toupper(static_cast<unsigned char>(body[2])) != 'B') return "";
+    const int f = toupper(static_cast<unsigned char>(body[1]));
+    if (f != 'F' && f != 'M') return "";
+    switch (toupper(static_cast<unsigned char>(body[3]))) {
+        case 'A': return "Underwear";
+        case 'B': return "Clothing";
+        case 'C': return "Armor Class 4 / Miner";
+        case 'D': return "Armor Class 5";
+        case 'E': return "Armor Class 6";
+        case 'F': return "Armor Class 7";
+        case 'G': return "Armor Class 8";
+        case 'H': return "Armor Class 9";
+        case 'I': return "Jedi Robe";
+        case 'J': return "Revan Armor";
+        case 'K': return "Armored Flight Suit";
+        case 'L': return "Slave Outfit";
+        case 'M': return "Zeison Sha Armor";
+        case 'N': return "Jedi Knight/Master Robe";
+        default: return "";
+    }
+}
+
+// "all rifles" / "all weapons of this type" for the sentences below.
+inline void scopeAllText_(char* out, int cap, const char* type) {
+    const char* p = categoryPlural(type);
+    if (!strcmp(p, "of this type")) snprintf(out, cap, "all weapons of this type");
+    else snprintf(out, cap, "all %s", p);
+}
+
+// The live "Save changes: ..." sentence for one scope (also the tooltip of that scope's button). ASCII, < 190 characters for a 16-char model / body.
+inline void scopeSentence(char* out, int cap, int scope, const char* model, const char* type, const char* body) {
+    if (!out || cap <= 0) return;
+    char all[48];
+    scopeAllText_(all, sizeof all, type);
+    const bool hasModel = model && model[0];
+    const bool hasBody = body && body[0];
+    if (scope == 1) {
+        snprintf(out, cap, "Save changes go to %s, on every character.", all);
+    } else if (scope == 2) {
+        if (!hasBody) {
+            snprintf(out, cap, "This character's body is not known yet: body saves are off.");
+        } else {
+            const char* a = armorClassLabel(body);
+            if (a[0]) snprintf(out, cap, "Save changes go to every weapon on %s bodies (%s), added on top of the weapon placement.", body, a);
+            else snprintf(out, cap, "Save changes go to every weapon on %s bodies, added on top of the weapon placement.", body);
+        }
+    } else if (hasModel) {
+        snprintf(out, cap, "Save changes go to this weapon model only (%s), on every character.", model);
+    } else {
+        snprintf(out, cap, "Save changes go to this weapon model only, on every character.");
+    }
+    out[cap - 1] = '\0';
+}
+
+// ---- remove saved placement (behind the small "..." button) ----
+inline const char* removeToggleLabel() { return "..."; }
+inline const char* removeToggleTip() { return "More: remove the saved placement for this scope."; }
+inline const char* removeLabel() { return "Remove saved placement"; }
+
+// What Remove does for a scope; armed appends the second-click prompt. ASCII, < 190 characters for a 16-char model / body.
+inline void removeSentence(char* out, int cap, int scope, const char* model, const char* type, const char* body, bool armed) {
+    if (!out || cap <= 0) return;
+    const char* p = categoryPlural(type);
+    const bool known = strcmp(p, "of this type") != 0;
+    const bool hasModel = model && model[0];
+    char t[200];
+    if (scope == 1) {
+        if (known) snprintf(t, sizeof t, "Removes the saved %s placement. Those weapons fall back to the global default (weapon-model saves stay).", p);
+        else snprintf(t, sizeof t, "Removes the saved placement for this weapon type. Those weapons fall back to the global default (weapon-model saves stay).");
+    } else if (scope == 2) {
+        if (body && body[0]) snprintf(t, sizeof t, "Removes the saved nudge for %s bodies (offset and rotation). Weapons there show without a body nudge.", body);
+        else snprintf(t, sizeof t, "Removes the saved body nudge (offset and rotation). Weapons show without a body nudge.");
+    } else {
+        char who[40];
+        if (hasModel) snprintf(who, sizeof who, "of %s", model); else snprintf(who, sizeof who, "of this weapon model");
+        if (known) snprintf(t, sizeof t, "Removes the saved placement %s. It falls back to the %s default.", who, p);
+        else snprintf(t, sizeof t, "Removes the saved placement %s. It falls back to the type default.", who);
+    }
+    snprintf(out, cap, "%s%s", t, armed ? " Click again to remove." : "");
+    out[cap - 1] = '\0';
+}
+
+// Open / closed state of the "..." remove menu. Closed by: scope change, member / weapon change, edit end, page leave, after a finished remove.
+struct RemoveMenu {
+    bool open = false;
+    void toggle() { open = !open; }
+    void close() { open = false; }
+};
 
 // The slider window of a row: +-30 cm for the offsets, +-180 deg for the rotations (the same window a scrub allows around the open value).
 inline float inspWindow(int row) { return inspIsRot(row) ? kScrubWindowRot : kScrubWindowOff; }

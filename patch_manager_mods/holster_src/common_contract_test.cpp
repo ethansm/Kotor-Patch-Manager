@@ -14,6 +14,8 @@
 #include "KpLog.h"
 #include "K2Addr.h"
 #include "HolsterBonePatch.h"
+#include "HolsterApi.h"
+#include "HolsterTune.h"
 #include "check.h"
 #include "FakeKPatchApi.h"
 
@@ -100,6 +102,19 @@ int main() {
         memcpy(site, hs::kLhandOrig, 5);
         HEQ("a lhand site is not accepted with the rhand expectation", hs::patchNodeLiteral(reinterpret_cast<uintptr_t>(site), hs::kRhandOrig, 0x1u, seen), -1);
         HEQ("lhand expectation patches the lhand literal", hs::patchNodeLiteral(reinterpret_cast<uintptr_t>(site), hs::kLhandOrig, 0xAABBCCDDu, seen), 1);
+    }
+
+    // 3c. editor API src[] bits (HolsterApi.h): the provider's resolveFull sets bit 4 in src[1] (body offset) and bit 16 in src[0] (body rotation).
+    // Pinned as literals: the editor and an old DLL read these bits, and a new bit must not collide with the mirror bit 8 added in GetEdit.
+    {
+        HEQ("K2HOLSTER_SRC_BODY is 4 (src[1])", K2HOLSTER_SRC_BODY, 4);
+        HEQ("K2HOLSTER_SRC_BODYROT is 16 (src[0])", K2HOLSTER_SRC_BODYROT, 16);
+        HEQ("K2HOLSTER_VERSION stays 1 (no new slot for body rotation)", K2HOLSTER_VERSION, 1);
+        hs::TuneCfg c;
+        HCHECK("place_rot_body_<name> is a tune key", hs::applyTuneKey(c, "place_rot_body_PFBCM", "0,0,10"));
+        hs::Resolved r;
+        hs::resolveFull(c, "", hs::CatUnknown, "PFBCM", false, false, r);
+        HCHECK("a body rotation delta sets src[0] bit 16 and no other bit", r.src[0] == K2HOLSTER_SRC_BODYROT);
     }
 
     // 4. KpLog: init with no API is fail-soft (the probe must keep running if the log core is old)

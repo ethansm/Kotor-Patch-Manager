@@ -6,7 +6,10 @@
 //           parent or node changed, or whose gob is gone.
 // Overlay   overlayBegin seeds from resolveFull (body delta included). Nudges and overlaySetValues edit the shown values only.
 //           overlayWrite stores them into a TuneCfg for the current scope. Angles are degrees. Off is metres.
-//           Body scope edits only the body delta (rot and bone are read-only there). Other scopes edit the level value.
+//           Body scope edits only the body delta (offset and rotation; the bone is read-only there). Other scopes edit the level value.
+//           The body rotation delta is kept apart from the level rotation exactly as the body offset is kept apart from baseOff:
+//           baseQ is the placement without the body delta, bodyQ the hand-frame body delta, and
+//           placeQ = E * bodyQ * conj(E) * baseQ, with E the left_extra_rot tilt (identity unless the seed carried one).
 //           Stored components are capped: rot |v| <= 720, off |v| <= 3 m. The shown absolute off is the stored level plus
 //           the body part, so it can differ from typed input when a cap applies.
 #pragma once
@@ -112,7 +115,36 @@ struct EditOverlay {
     float baseOff[3] = {0.f, 0.f, 0.f};  // off without the body delta (the level value)
     Resolved seed;                       // BeginEdit values, restored by overlayRevert
     float seedBaseOff[3] = {0.f, 0.f, 0.f};
+    Q baseQ{1, 0, 0, 0};                 // placement without the body rotation delta (shown frame, left_extra included)
+    Q bodyQ{1, 0, 0, 0};                 // body rotation delta in the hand's own frame (identity = none)
+    float baseRot[3] = {0.f, 0.f, 0.f};  // euler of baseQ (continuity reference)
+    Q seedBodyQ{1, 0, 0, 0};
+    float seedBaseRot[3] = {0.f, 0.f, 0.f};
 };
+
+// The left_extra_rot tilt of the open edit as a quaternion (identity when the seed carried none).
+inline Q overlayExtraQ(const EditOverlay& o) {
+    const float xAxis[3] = {1.f, 0.f, 0.f};
+    return o.seed.extraDeg != 0.f ? qaxis(xAxis, o.seed.extraDeg) : Q{1.f, 0.f, 0.f, 0.f};
+}
+
+inline bool overlayBodyRotSet(const EditOverlay& o) {
+    return std::fabs(o.bodyQ.x) > 1e-6f || std::fabs(o.bodyQ.y) > 1e-6f || std::fabs(o.bodyQ.z) > 1e-6f;
+}
+
+// Call after placeQ changed by an edit. Body scope: the change belongs to the body delta (baseQ stays). Other scopes: the change
+// belongs to the level (bodyQ stays) and baseQ follows, so the body part is never baked into a weapon or type level.
+inline void overlayRotChanged(EditOverlay& o) {
+    const Q e = overlayExtraQ(o), ec = qconj(e);
+    if (o.scope == ScopeBody) {
+        o.bodyQ = qnormalize(qmul(qmul(qmul(ec, o.placeQ), qconj(o.baseQ)), e));
+    } else {
+        o.baseQ = qnormalize(qmul(qmul(qmul(e, qconj(o.bodyQ)), ec), o.placeQ));
+        float r[3];
+        eulerNear(o.baseQ, o.baseRot, r);
+        for (int i = 0; i < 3; ++i) o.baseRot[i] = r[i];
+    }
+}
 
 // Re-derives the shown euler from placeQ. The last shown euler is the continuity reference for eulerNear.
 inline void overlaySync(EditOverlay& o) {
@@ -155,6 +187,18 @@ inline void overlayBegin(EditOverlay& o, const TuneCfg& c, const char* model, Ca
         o.seedBaseOff[i] = base.off[i];
     }
     o.placeQ = qbase(full.rot[0], full.rot[1], full.rot[2]);
+    o.baseQ = qbase(base.rot[0], base.rot[1], base.rot[2]);
+    for (int i = 0; i < 3; ++i) {
+        o.baseRot[i] = base.rot[i];
+        o.seedBaseRot[i] = base.rot[i];
+    }
+    const BodyTune* bt = findBody(c, body);
+    if (bt && bt->hasRot) {
+        float d[3] = {bt->rot[0], bt->rot[1], bt->rot[2]};
+        if (left) mirrorRot(d);
+        o.bodyQ = qbase(d[0], d[1], d[2]);
+    }
+    o.seedBodyQ = o.bodyQ;
 }
 
 // Switches the write target. Does not change any value or the dirty flag. False for an invalid scope or an inactive overlay.
@@ -164,11 +208,12 @@ inline bool overlaySetScope(EditOverlay& o, int scope) {
     return true;
 }
 
-// Rotates the placement by a world-space drag dqWorld about the bone's world orientation boneQ. Rotation is not body-scoped.
+// Rotates the placement by a world-space drag dqWorld about the bone's world orientation boneQ. Under body scope the body delta turns.
 inline bool overlayNudgeWorldRot(EditOverlay& o, const Q& boneQ, const Q& dqWorld) {
-    if (!o.active || o.scope == ScopeBody) return false;
+    if (!o.active) return false;
     o.placeQ = worldDeltaToLocal(boneQ, o.placeQ, dqWorld);
     overlaySync(o);
+    overlayRotChanged(o);
     o.dirty = true;
     return true;
 }
@@ -183,23 +228,23 @@ inline bool overlayNudgeWorldMove(EditOverlay& o, const Q& boneQ, const float dp
     return true;
 }
 
-// Rotates the placement about one local axis (0 x, 1 y, 2 z) by deg. Rotation is not body-scoped.
+// Rotates the placement about one local axis (0 x, 1 y, 2 z) by deg. Under body scope the body delta turns.
 inline bool overlayNudgeLocal(EditOverlay& o, int axis, float deg) {
-    if (!o.active || o.scope == ScopeBody || axis < 0 || axis > 2) return false;
+    if (!o.active || axis < 0 || axis > 2) return false;
     o.placeQ = localAxisNudge(o.placeQ, axis, deg);
     overlaySync(o);
+    overlayRotChanged(o);
     o.dirty = true;
     return true;
 }
 
-// Writes the value pane. Under body scope rot is ignored, because a body delta carries only off. Otherwise rot is capped at
-// 720 deg per component and placeQ is rebuilt from it.
+// Writes the value pane: the shown absolute rot (capped at 720 deg per component; placeQ is rebuilt from it) and the shown absolute
+// off. Under body scope the difference to the base becomes the body delta, otherwise the level changes.
 inline bool overlaySetValues(EditOverlay& o, const float rot[3], const float off[3]) {
     if (!o.active) return false;
-    if (o.scope != ScopeBody) {
-        for (int i = 0; i < 3; ++i) o.cur.rot[i] = previewCap(rot[i], kPreviewRotCap);
-        o.placeQ = qbase(o.cur.rot[0], o.cur.rot[1], o.cur.rot[2]);
-    }
+    for (int i = 0; i < 3; ++i) o.cur.rot[i] = previewCap(rot[i], kPreviewRotCap);
+    o.placeQ = qbase(o.cur.rot[0], o.cur.rot[1], o.cur.rot[2]);
+    overlayRotChanged(o);
     overlaySetAbsOff(o, off);
     o.dirty = true;
     return true;
@@ -225,6 +270,9 @@ inline void overlayRevert(EditOverlay& o) {
     o.cur = o.seed;
     for (int i = 0; i < 3; ++i) o.baseOff[i] = o.seedBaseOff[i];
     o.placeQ = qbase(o.seed.rot[0], o.seed.rot[1], o.seed.rot[2]);
+    o.bodyQ = o.seedBodyQ;
+    o.baseQ = qbase(o.seedBaseRot[0], o.seedBaseRot[1], o.seedBaseRot[2]);
+    for (int i = 0; i < 3; ++i) o.baseRot[i] = o.seedBaseRot[i];
     o.dirty = false;
 }
 
@@ -260,7 +308,12 @@ inline void overlayStoreLevel(CatTune& t, const EditOverlay& o) {
     const bool keepInherited = o.left && o.seed.extraDeg != 0.f && overlayRotUnchanged(o);
     if (!keepInherited) {
         t.hasRot = true;
-        for (int i = 0; i < 3; ++i) t.rot[i] = o.cur.rot[i];
+        float r[3] = {o.cur.rot[0], o.cur.rot[1], o.cur.rot[2]};
+        if (overlayBodyRotSet(o)) {   // the level is the shown placement without the body rotation delta (never baked into the level)
+            const Q lq = qnormalize(qmul(qconj(o.bodyQ), o.placeQ));
+            eulerNear(lq, o.cur.rot, r);
+        }
+        for (int i = 0; i < 3; ++i) t.rot[i] = r[i];
     }
     for (int i = 0; i < 3; ++i) t.off[i] = o.baseOff[i];
     t.boneIdx = o.cur.boneIdx;
@@ -270,7 +323,9 @@ inline void overlayStoreLevel(CatTune& t, const EditOverlay& o) {
 // category for type scope, an inactive overlay, or a full table.
 //   Weapon  per-model entry for this hand (left entries are stored in the left frame).
 //   Type    cat[] for the right hand, catL[] for the left.
-//   Body    body delta = absolute off - baseOff. resolveFull negates x on the left, so the stored x is negated there too.
+//   Body    body delta = absolute off - baseOff, and rot D = eulerNear(bodyQ, 0) (bodyQ = conj(E) * placeQ * conj(baseQ) * E). resolveFull
+//           negates x (off) and mirrors y, z (rot) on the left, so the stored values are mirrored back there too. A D within the
+//           printed precision of zero is stored as no rot (hasRot false), so the key is removed.
 inline bool overlayWrite(const EditOverlay& o, TuneCfg& c) {
     if (!o.active) return false;
     switch (o.scope) {
@@ -294,6 +349,13 @@ inline bool overlayWrite(const EditOverlay& o, TuneCfg& c) {
         for (int i = 0; i < 3; ++i) d[i] = o.cur.off[i] - o.baseOff[i];
         if (o.left) mirrorOff(d);
         for (int i = 0; i < 3; ++i) b->off[i] = d[i];
+        const float zero[3] = {0.f, 0.f, 0.f};
+        float dr[3];
+        eulerNear(o.bodyQ, zero, dr);
+        if (o.left) mirrorRot(dr);
+        const bool any = std::fabs(dr[0]) >= 0.05f || std::fabs(dr[1]) >= 0.05f || std::fabs(dr[2]) >= 0.05f;
+        b->hasRot = any;
+        for (int i = 0; i < 3; ++i) b->rot[i] = any ? dr[i] : 0.f;
         return true;
     }
     }

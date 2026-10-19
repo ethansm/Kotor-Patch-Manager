@@ -4,7 +4,7 @@
 // scope per row) and a compact one below kV3RoomyRowMin rows) and the inspector in the right pane (two groups, six slider
 // rows with thumbs, value labels outside the track, reset squares, note, hint lines).
 // Integer math only (float rounding differed between x87 and SSE builds, F18); the only floats are the thumb fractions,
-// clamped before they touch a pixel (NaN -> 0), exactly like HseLayout.h modalLayout. 4 px pad, 2 px gaps.
+// clamped before they touch a pixel (NaN -> 0), the same clamping the old modal layout used. 4 px pad, 2 px gaps.
 //
 // Geometry contract (measured UI px):
 //   column  = MUI_PANE_COLUMN (left). The content uses at most kColWantW of its width; the rest is handed to the view.
@@ -61,9 +61,10 @@ constexpr int kV3ResetMax = 60;   // reset icon squares are up to 60 x 60 (small
 // Page items that become mod-config items: left 19 (member 3, captions 3, weapons 2, bones 5, scopes 3, save/revert 2,
 // status 1) + view area 13 (mode 4, view reset + flip 2, view 1, stances 5, legend 1) + inspector 37 (group labels 2,
 // group resets 2, rows 6 x 5, note 1, hints 2) + the Reset Scope button 1 (left column, appended after the hints so no index shifts)
-// + the right description box and its text 2 (appended last, drawn over mod-config's LB_DESC).
+// + the right description box and its text 2 (drawn over mod-config's LB_DESC) + the Remove button 1 (inspector zone, under the note; appended last).
 // kPageItemsV3 + kV3Rows (wedges) must stay <= 80 (kMaxItems).
-constexpr int kPageItemsV3 = 72;
+constexpr int kPageItemsV3 = 73;
+constexpr int kV3RemoveMaxW = 480;   // the Remove saved placement button is at most this wide (left aligned under the note)
 
 struct InspRowV3 { editkit::Box name, track, thumb, value, reset; };
 
@@ -75,7 +76,7 @@ struct PageLayoutV3 {
     editkit::Box bone[kV3Bones];
     editkit::Box scope[kV3Scopes];
     editkit::Box save, revert, status;
-    editkit::Box reset;                                   // third Save-row button ("Reset": deletes this scope's saved overrides); appended last in pageBoxesV3
+    editkit::Box reset;                                   // third Save-row button (the small "..." toggle that opens the remove menu); appended after the hints in pageBoxesV3
     // view area
     editkit::Box modeBtn[kV3Modes];
     editkit::Box viewReset, viewFlip;                     // small icon squares at the right end of the mode strip
@@ -88,6 +89,7 @@ struct PageLayoutV3 {
     editkit::Box note;                                    // "Left: mirrored from right ..."
     editkit::Box hint[kV3Hints];                          // LEFT description box + its text area
     editkit::Box hintR[kV3Hints];                         // RIGHT description box (over LB_DESC) + its text area
+    editkit::Box remove;                                  // "Remove saved placement" (shown only while the "..." menu is open): inspector zone, under the note
     // chosen sizes (for the caller's fonts and tests)
     int leftRowH, barH, inspRowH;
 };
@@ -217,6 +219,9 @@ inline int buildInspector(editkit::Box Z, editkit::Box /*hintZone: unused, the h
     }
     L.note = mk(X, y, W, cap);
     y += cap + kGap;
+    // The Remove button: a row-high button under the note (the inspector fit reserves it, so it exists at every size), left aligned, at most kV3RemoveMaxW wide.
+    L.remove = mk(X, y, imin(W, kV3RemoveMaxW), rr);
+    y += rr + kGap;
 
     return y - kGap + kPad;
 }
@@ -390,6 +395,7 @@ inline int pageBoxesV3(const PageLayoutV3& L, editkit::Box* out) {
     for (int i = 0; i < kV3Hints; ++i) out[n++] = L.hint[i];
     out[n++] = L.reset;
     for (int i = 0; i < kV3Hints; ++i) out[n++] = L.hintR[i];
+    out[n++] = L.remove;
     return n;
 }
 
@@ -415,14 +421,15 @@ enum PageIdxV3 {
     PI_ROW = 36,          // + row * 5 = name, +1 track, +2 thumb, +3 value, +4 reset
     PI_NOTE = 66,
     PI_HINT = 67,         // + hint (2)
-    PI_RESET_SCOPE = 69,  // the Reset button next to Save / Revert (appended after the hints)
-    PI_HINTR = 70         // + hint (2): the RIGHT description box (over mod-config's LB_DESC) and its text label (appended last)
+    PI_RESET_SCOPE = 69,  // the small "..." toggle next to Save / Revert (appended after the hints); opens the remove menu
+    PI_HINTR = 70,        // + hint (2): the RIGHT description box (over mod-config's LB_DESC) and its text label
+    PI_REMOVE = 72        // the "Remove saved placement" button (inspector zone, under the note); shown only while the menu is open (appended last)
 };
 constexpr int kRowStride = 5;   // boxes per inspector row (name, track, thumb, value, reset)
-static_assert(PI_HINT + kV3Hints == PI_RESET_SCOPE && PI_RESET_SCOPE + 1 == PI_HINTR && PI_HINTR + kV3Hints == kPageItemsV3, "the PageIdxV3 table must cover exactly kPageItemsV3 boxes");
+static_assert(PI_HINT + kV3Hints == PI_RESET_SCOPE && PI_RESET_SCOPE + 1 == PI_HINTR && PI_HINTR + kV3Hints == PI_REMOVE && PI_REMOVE + 1 == kPageItemsV3, "the PageIdxV3 table must cover exactly kPageItemsV3 boxes");
 static_assert(PI_ROW + kV3Rows * kRowStride == PI_NOTE, "inspector rows end at the note");
 
-// The slider wedge (the teal fill behind each track) is a sixth item per row beside the 72 boxes: its rect is the track rect cut to the thumb fraction
+// The slider wedge (the teal fill behind each track) is a sixth item per row beside the 73 boxes: its rect is the track rect cut to the thumb fraction
 // (SliderArt.h sliderWedgeWidth). The page therefore holds kPageItemsV3 + kV3Rows items; the consumer cap (HseView.h kPageItemCap) must hold them.
 constexpr int kPageItemsV3Total = kPageItemsV3 + kV3Rows;
 

@@ -78,9 +78,6 @@ static void testZoomAndView() {
     KT_CHECK(closeF(hse::clampZoom(0.5f), 0.5f));
     KT_CHECK(closeF(hse::clampZoom(0.3f), 0.4f));
     KT_CHECK(closeF(hse::clampZoom(9.0f), 4.0f));
-    KT_CHECK(closeF(hse::zoomIn(3.5f), 4.0f));
-    KT_CHECK(closeF(hse::zoomOut(0.45f), 0.4f));
-    KT_CHECK(closeF(hse::zoomOut(0.9f), 0.9f / hse::kZoomStep));
     KT_CHECK(closeF(hse::clampZoom(std::nanf("")), hse::kZoomFit));
     KT_CHECK(closeF(hse::clampZoom(INFINITY), 4.0f));
     KT_CHECK(closeF(hse::clampZoom(-INFINITY), 0.4f));
@@ -101,25 +98,6 @@ static void testIndex() {
     KT_CHECK_EQ(hse::wrapIndex(0, -1, 3), 2);
     KT_CHECK_EQ(hse::wrapIndex(2, 1, 3), 0);
     KT_CHECK_EQ(hse::wrapIndex(1, 1, 0), 0);
-}
-
-static void testRectHelpers() {
-    hse::HseRect col{161, 134, 236, 284};
-    hse::HseRect view{330, 134, 160, 284};
-    KT_CHECK(sameRect(hse::leftStrip(col, view, 6), hse::HseRect{161, 134, 163, 284}));
-
-    hse::HseRect viewBeforeCol{100, 134, 160, 284};
-    KT_CHECK_EQ(hse::leftStrip(col, viewBeforeCol, 6).w, 0);
-
-    hse::HseRect strip{161, 134, 163, 284};
-    KT_CHECK(sameRect(hse::stripSlot(strip, 0), hse::HseRect{161, 134, 163, 32}));
-    KT_CHECK_EQ(hse::stripSlot(strip, 1).y, 170);
-    KT_CHECK_EQ(hse::stripSlot(strip, 4).y, 278);
-    KT_CHECK_EQ(hse::stripSlot(strip, 7).y, 386);
-
-    hse::HseRect slot0 = hse::stripSlot(strip, 0);
-    KT_CHECK(sameRect(hse::half(slot0, 0, 6), hse::HseRect{161, 134, 78, 32}));
-    KT_CHECK_EQ(hse::half(slot0, 1, 6).x, 245);
 }
 
 static void testMemberLabel() {
@@ -144,10 +122,11 @@ static void testMemberLabel() {
 }
 
 static void testScopeLabel() {
-    KT_CHECK_EQ(hse::scopeLabel(0), "Scope: Weapon");
-    KT_CHECK_EQ(hse::scopeLabel(1), "Scope: Category");
-    KT_CHECK_EQ(hse::scopeLabel(2), "Scope: Body");
-    KT_CHECK_EQ(hse::scopeLabel(99), "Scope: Weapon");
+    KT_CHECK_EQ(hse::scopeLabel(0), "weapon model");
+    KT_CHECK_EQ(hse::scopeLabel(1), "weapon class");
+    KT_CHECK_EQ(hse::scopeLabel(2), "body+armor");
+    KT_CHECK_EQ(hse::scopeLabel(99), "weapon model");
+    KT_CHECK_EQ(hse::scopeLabel(-1), "weapon model");
 }
 
 static void testSnapAccum() {
@@ -854,20 +833,6 @@ static void testWheelDepth() {
 }
 
 static void testModeAndScopeLabels() {
-    char b[64];
-    hse::modeLabel(b, sizeof b, hse::WPM_MOVE, true);
-    KT_CHECK_EQ(b, ">Move<");
-    hse::modeLabel(b, sizeof b, hse::WPM_DEPTH, false);
-    KT_CHECK_EQ(b, "Depth");
-    hse::modeLabel(b, sizeof b, hse::WPM_ROLLTURN, true);
-    KT_CHECK_EQ(b, ">Roll/Turn<");
-    hse::modeLabel(b, sizeof b, 9, false);
-    KT_CHECK_EQ(b, "?");
-    char tiny[4];
-    hse::modeLabel(tiny, sizeof tiny, hse::WPM_ROLLTURN, true);
-    KT_CHECK(strlen(tiny) == 3 && tiny[3] == '\0');
-    hse::modeLabel(nullptr, 8, 0, true);
-    hse::modeLabel(b, 0, 0, true);
     KT_CHECK_EQ(hse::weaponModeName(hse::WPM_TILT), "Tilt");
 
     KT_CHECK_EQ(hse::categoryPlural("rifle"), "rifles");
@@ -881,25 +846,6 @@ static void testModeAndScopeLabels() {
     KT_CHECK_EQ(hse::categoryPlural(nullptr), "of this type");
     KT_CHECK_EQ(hse::categoryPlural("flamethrower"), "of this type");
 
-    hse::scopeButtonText(b, sizeof b, 0, "rifle");
-    KT_CHECK_EQ(b, "For: this weapon");
-    hse::scopeButtonText(b, sizeof b, 1, "rifle");
-    KT_CHECK_EQ(b, "For: all rifles");
-    hse::scopeButtonText(b, sizeof b, 1, "heavy");
-    KT_CHECK_EQ(b, "For: all heavy weapons");
-    hse::scopeButtonText(b, sizeof b, 1, "unknown");
-    KT_CHECK_EQ(b, "For: all of this type");
-    hse::scopeButtonText(b, sizeof b, 1, nullptr);
-    KT_CHECK_EQ(b, "For: all of this type");
-    hse::scopeButtonText(b, sizeof b, 2, "rifle");
-    KT_CHECK_EQ(b, "For: this body");
-    hse::scopeButtonText(b, sizeof b, 2, "unknown");
-    KT_CHECK_EQ(b, "For: this body");
-    hse::scopeButtonText(b, sizeof b, 7, "rifle");
-    KT_CHECK_EQ(b, "For: this weapon");
-    hse::scopeButtonText(tiny, sizeof tiny, 1, "rifle");
-    KT_CHECK(strlen(tiny) == 3);
-    hse::scopeButtonText(nullptr, 5, 0, "x");
     // the scope tip fits the mod-config description buffer (192) and is plain ASCII; so is the help line
     const char* tip = hse::scopeTip();
     KT_CHECK(strlen(tip) < 190);
@@ -936,9 +882,9 @@ static void testHandButtonText() {
 }
 
 static void testLabelsFit() {
-    // Vanilla 800x600: the strip is ~163 px, a half button 78 px (leftStrip/half above). Fitting never exceeds the width and falls back to "...".
+    // Vanilla 800x600: the strip is ~163 px, a half button 78 px. Fitting never exceeds the width and falls back to "...".
     const textfit::TextCtx tc = {1.0f, 1.0f, 1.0f};
-    const float half = 78.0f, full = 163.0f;
+    const float half = 78.0f;
     char fit[64];
     const char* names[] = {"Vibrosword", "Mandalorian Heavy Repeating Blaster Rifle Mark Two Extended", "Lightsaber", "x"};
     for (const char* n : names) {
@@ -955,20 +901,6 @@ static void testLabelsFit() {
     hse::handButtonText(raw, sizeof raw, 0, true, "Pistol", "", true);
     KT_CHECK(!textfit::fitText(tc, raw, half, fit, sizeof fit));     // short names are untouched
     KT_CHECK_EQ(fit, "R: Pistol");
-    // the scope text and the mode bar in their slots
-    const char* types[] = {"lightsaber", "melee", "qstaff", "pistol", "rifle", "heavy", "unknown"};
-    for (const char* t : types) {
-        char sc[64];
-        hse::scopeButtonText(sc, sizeof sc, 1, t);
-        textfit::fitText(tc, sc, full, fit, sizeof fit);
-        KT_CHECK(textfit::textPx(tc, fit, static_cast<int>(strlen(fit))) <= full + 0.001f);
-    }
-    for (int m = 0; m < hse::WPM_COUNT; ++m) {
-        char ml[32];
-        hse::modeLabel(ml, sizeof ml, m, true);
-        textfit::fitText(tc, ml, half, fit, sizeof fit);
-        KT_CHECK(textfit::textPx(tc, fit, static_cast<int>(strlen(fit))) <= half + 0.001f);
-    }
 }
 
 // ---- U3 inspector rows ----
@@ -1002,44 +934,8 @@ static void testInspRowBasics() {
     hse::inspSet(-1, rr, oo, 99.0f);
     hse::inspSet(6, rr, oo, 99.0f);
     KT_CHECK(rr[0] == 1 && rr[1] == 2 && rr[2] == 3 && oo[0] == 4 && oo[1] == 5 && oo[2] == 6);
-    // body scope has no rotation
-    for (int r = 0; r < hse::IR_COUNT; ++r) {
-        KT_CHECK(hse::inspRowEnabled(r, 0) && hse::inspRowEnabled(r, 1));
-        KT_CHECK_EQ(hse::inspRowEnabled(r, 2) ? 1 : 0, hse::inspIsRot(r) ? 0 : 1);
-    }
-    // the body scope rule: rotationAllowed / modeEnabled / effectiveMode
-    KT_CHECK(hse::rotationAllowed(0) && hse::rotationAllowed(1) && !hse::rotationAllowed(2));
-    KT_CHECK(hse::rotationAllowed(-1) && hse::rotationAllowed(3));   // only the body scope id locks
-    for (int sc = 0; sc <= 2; ++sc)
-        for (int m = 0; m < hse::WPM_COUNT; ++m) {
-            const bool rot = m == hse::WPM_TILT || m == hse::WPM_ROLLTURN;
-            KT_CHECK_EQ(hse::modeIsRotation(m) ? 1 : 0, rot ? 1 : 0);
-            KT_CHECK_EQ(hse::modeEnabled(m, sc) ? 1 : 0, (sc == 2 && rot) ? 0 : 1);
-            KT_CHECK_EQ(hse::effectiveMode(m, sc), (sc == 2 && rot) ? static_cast<int>(hse::WPM_MOVE) : m);   // leaving BODY restores the mode itself
-            // the rule matches the inspector rows: a rotation row and a rotation mode lock together
-            KT_CHECK_EQ(hse::rotationAllowed(sc) ? 1 : 0, hse::inspRowEnabled(hse::IR_TILT, sc) ? 1 : 0);
-        }
-    KT_CHECK_EQ(hse::effectiveMode(hse::WPM_MOVE, 2), static_cast<int>(hse::WPM_MOVE));
-    KT_CHECK_EQ(hse::effectiveMode(hse::WPM_DEPTH, 2), static_cast<int>(hse::WPM_DEPTH));
-    KT_CHECK_EQ(hse::effectiveMode(hse::WPM_TILT, 2), static_cast<int>(hse::WPM_MOVE));
-    KT_CHECK_EQ(hse::effectiveMode(hse::WPM_ROLLTURN, 2), static_cast<int>(hse::WPM_MOVE));
-    KT_CHECK_EQ(hse::effectiveMode(hse::WPM_TILT, 0), static_cast<int>(hse::WPM_TILT));
-    KT_CHECK_EQ(hse::effectiveMode(hse::WPM_ROLLTURN, 1), static_cast<int>(hse::WPM_ROLLTURN));
-    KT_CHECK_EQ(hse::effectiveMode(99, 2), 99);   // an unknown mode is passed through (weaponGesture ignores it)
-    {   // a body-scope Tilt / Roll-Turn gesture is a Move: the same step as Move, never a local rotation call
-        hse::SnapAcc a1, a2;
-        const hse::WeaponStep mv = hse::weaponGesture(hse::WPM_MOVE, 10, 6, 1.0f, false, false, a1);
-        for (int m = hse::WPM_TILT; m <= hse::WPM_ROLLTURN; ++m) {
-            const hse::WeaponStep st = hse::weaponGesture(hse::effectiveMode(m, 2), 10, 6, 1.0f, false, false, a2);
-            KT_CHECK_EQ(st.n, mv.n);
-            for (int k = 0; k < st.n; ++k) KT_CHECK_EQ(st.c[k].kind, static_cast<int>(hse::WK_WORLD));
-        }
-    }
-    KT_CHECK(strstr(hse::rotationLockedHint(), "Rotation is not saved for 'This body'") && strstr(hse::rotationLockedHint(), "Pick 'This weapon'"));
-    for (int r = 0; r < hse::IR_COUNT; ++r) {
-        KT_CHECK(strlen(hse::inspTip(r)) > 20 && strlen(hse::inspTip(r)) < 190);
-        for (const char* c = hse::inspTip(r); *c; ++c) KT_CHECK(static_cast<unsigned char>(*c) >= 0x20 && static_cast<unsigned char>(*c) < 0x7F);
-    }
+    KT_CHECK_EQ(hse::inspResetTip(), "Undo this value (back to when the edit opened or the last Save).");
+    KT_CHECK_EQ(hse::revertTip(), "Undo unsaved changes.");
     KT_CHECK(strlen(hse::inspResetTip()) < 190);
 }
 
@@ -1048,49 +944,8 @@ static void testInspItemBudget() {
     KT_CHECK_EQ(hse::kInspItems, 12);
     KT_CHECK_EQ(hse::kPageItemsBase + hse::kInspItems, 38);
     KT_CHECK(hse::kPageItemsBase + hse::kInspItems <= hse::kPageItemCap);
-    KT_CHECK_EQ(hse::kPageItemCap, 80);   // mod-config kMaxItems 0.1.3+ (the v3 page needs 78: HseLayoutV3.h kPageItemsV3Total)
+    KT_CHECK_EQ(hse::kPageItemCap, 80);   // mod-config kMaxItems 0.1.3+ (the v3 page needs 79: HseLayoutV3.h kPageItemsV3Total)
     KT_CHECK_EQ(hse::kStripRowsInsp, 15);
-}
-
-static void testInspRowText() {
-    char t[64];
-    hse::inspRowText(t, sizeof t, hse::IR_DEPTH, -0.11f, false, true);
-    KT_CHECK(!strcmp(t, "Depth  -11.0 cm"));
-    hse::inspRowText(t, sizeof t, hse::IR_TILT, 30.5f, false, true);
-    KT_CHECK(!strcmp(t, "Tilt  30.5 deg"));
-    hse::inspRowText(t, sizeof t, hse::IR_HEIGHT, 0.25f, true, true);
-    KT_CHECK(!strcmp(t, "* Height  25.0 cm"));
-    hse::inspRowText(t, sizeof t, hse::IR_SLIDE, 0.0f, false, true);
-    KT_CHECK(!strcmp(t, "Slide  0.0 cm"));
-    hse::inspRowText(t, sizeof t, hse::IR_SLIDE, -0.00001f, false, true);   // rounds to zero: never "-0.0"
-    KT_CHECK(!strcmp(t, "Slide  0.0 cm"));
-    hse::inspRowText(t, sizeof t, hse::IR_ROLL, -0.01f, false, true);
-    KT_CHECK(!strcmp(t, "Roll  0.0 deg"));
-    hse::inspRowText(t, sizeof t, hse::IR_TURN, -90.0f, false, true);
-    KT_CHECK(!strcmp(t, "Turn  -90.0 deg"));
-    hse::inspRowText(t, sizeof t, hse::IR_TURN, 720.0f, true, true);
-    KT_CHECK(!strcmp(t, "* Turn  720.0 deg"));
-    hse::inspRowText(t, sizeof t, hse::IR_DEPTH, 3.0f, false, true);
-    KT_CHECK(!strcmp(t, "Depth  300.0 cm"));
-    hse::inspRowText(t, sizeof t, hse::IR_TILT, std::nanf(""), false, true);
-    KT_CHECK(!strcmp(t, "Tilt  n/a"));
-    hse::inspRowText(t, sizeof t, hse::IR_TILT, INFINITY, true, true);
-    KT_CHECK(!strcmp(t, "Tilt  n/a"));
-    hse::inspRowText(t, sizeof t, hse::IR_TILT, 12.0f, true, false);   // disabled (body scope) beats the value and the marker
-    KT_CHECK(!strcmp(t, "Tilt  (body: n/a)"));
-    char small[8];
-    hse::inspRowText(small, sizeof small, hse::IR_HEIGHT, 0.25f, true, true);
-    KT_CHECK(small[7] == '\0' && strlen(small) == 7);
-    hse::inspRowText(nullptr, 8, 0, 0.0f, false, true);   // no-ops
-    hse::inspRowText(t, 0, 0, 0.0f, false, true);
-    // every row text of a realistic value fits the scrub button (the 139 px of the 163 px strip minus the reset button) after fitText
-    const textfit::TextCtx tc = {1.0f, 1.0f, 1.0f};
-    char fit[64];
-    for (int r = 0; r < hse::IR_COUNT; ++r) {
-        hse::inspRowText(t, sizeof t, r, hse::inspIsRot(r) ? -150.0f : -0.11f, true, true);
-        textfit::fitText(tc, t, 139.0f, fit, sizeof fit);
-        KT_CHECK(textfit::textPx(tc, fit, static_cast<int>(strlen(fit))) <= 139.0f + 0.001f);
-    }
 }
 
 static void testInspDiffersAndMatches() {
@@ -1439,82 +1294,6 @@ static void testScrubGuards() {
     KT_CHECK(s.begin(hse::IR_SLIDE, 7, 0.0f) && s.frames == 0 && s.acc == 0.0f && !s.clampWarned);
 }
 
-static void testCompactSlot() {
-    hse::HseRect strip{161, 134, 163, 284};
-    const int availH = 336;                          // the view pane height
-    // without the inspector the compact slot IS the vanilla stripSlot
-    for (int row = 0; row < hse::kStripRowsBase; ++row) KT_CHECK(sameRect(hse::compactSlot(strip, availH, row, hse::kStripRowsBase), hse::stripSlot(strip, row)));
-    // a scaled UI (ultrawide / larger window): same rule
-    hse::HseRect big{200, 268, 326, 568};
-    for (int row = 0; row < hse::kStripRowsBase; ++row) KT_CHECK(sameRect(hse::compactSlot(big, 672, row, hse::kStripRowsBase), hse::stripSlot(big, row)));
-    // with the inspector: 15 rows, ordered, no overlap, all inside the strip's vertical room
-    for (int pass = 0; pass < 2; ++pass) {
-        const hse::HseRect& st = pass ? big : strip;
-        const int room = pass ? 672 : availH;
-        int prevBottom = st.y;
-        for (int row = 0; row < hse::kStripRowsInsp; ++row) {
-            const hse::HseRect r = hse::compactSlot(st, room, row, hse::kStripRowsInsp);
-            KT_CHECK(r.h >= 16);                     // tall enough for one line of the 16 px font
-            KT_CHECK(r.y >= prevBottom);
-            KT_CHECK(r.y + r.h <= st.y + room);
-            KT_CHECK(r.x == st.x && r.w == st.w);
-            prevBottom = r.y + r.h;
-        }
-    }
-    KT_CHECK_EQ(hse::compactSlot(strip, availH, 0, 15).y, 134);
-    KT_CHECK_EQ(hse::compactSlot(strip, availH, 14, 15).y + hse::compactSlot(strip, availH, 14, 15).h, 134 + 14 * 22 + 19);
-    // degenerate input never produces a negative or oversized slot
-    const hse::HseRect z = hse::compactSlot(hse::HseRect{0, 0, 0, 0}, 0, 3, 15);
-    KT_CHECK(z.h >= 1 && z.w == 0);
-    const hse::HseRect d = hse::compactSlot(strip, 0, 2, 15);   // availH unknown: the vanilla pitch
-    KT_CHECK(sameRect(d, hse::stripSlot(strip, 2)));
-}
-
-static void testInspRects() {
-    hse::HseRect strip{161, 134, 163, 284};
-    for (int i = 0; i < hse::IR_COUNT; ++i) {
-        const hse::HseRect slot = hse::compactSlot(strip, 336, hse::kStripRowsBase + i, hse::kStripRowsInsp);
-        hse::HseRect sc, rs;
-        hse::inspRects(slot, &sc, &rs);
-        KT_CHECK(sc.x == slot.x && sc.y == slot.y && sc.h == slot.h && rs.y == slot.y && rs.h == slot.h);
-        KT_CHECK(sc.w > 100);                        // room for "* Height  -11.0 cm"
-        KT_CHECK(rs.w >= 18 && rs.w <= slot.w / 3);
-        KT_CHECK(sc.x + sc.w < rs.x);                // a gap between the two buttons
-        KT_CHECK(rs.x + rs.w == slot.x + slot.w);    // the reset button ends at the strip's right edge
-    }
-    // no two of the 15 weapon-mode rows (12 inspector buttons + 9 one/two button rows) overlap
-    hse::HseRect all[40];
-    int n = 0;
-    for (int row = 0; row < hse::kStripRowsBase; ++row) {
-        const hse::HseRect slot = hse::compactSlot(strip, 336, row, hse::kStripRowsInsp);
-        if (row == 0 || row == 2 || row == 3) all[n++] = slot;
-        else {
-            all[n++] = hse::half(slot, 0, 6);
-            all[n++] = hse::half(slot, 1, 6);
-        }
-    }
-    for (int i = 0; i < hse::IR_COUNT; ++i) {
-        hse::HseRect sc, rs;
-        hse::inspRects(hse::compactSlot(strip, 336, hse::kStripRowsBase + i, hse::kStripRowsInsp), &sc, &rs);
-        all[n++] = sc;
-        all[n++] = rs;
-    }
-    for (int i = 0; i < n; ++i) {
-        for (int j = i + 1; j < n; ++j) {
-            const bool overlap = all[i].x < all[j].x + all[j].w && all[j].x < all[i].x + all[i].w && all[i].y < all[j].y + all[j].h && all[j].y < all[i].y + all[i].h;
-            KT_CHECK(!overlap);
-        }
-    }
-    // a narrow strip still splits without negative widths
-    hse::HseRect sc, rs;
-    hse::inspRects(hse::HseRect{0, 0, 30, 20}, &sc, &rs);
-    KT_CHECK(sc.w >= 0 && rs.w >= 0 && rs.w <= 10);
-    hse::inspRects(hse::HseRect{0, 0, 0, 0}, &sc, &rs);
-    KT_CHECK(sc.w == 0 && rs.w == 0);
-    hse::inspRects(hse::HseRect{0, 0, 100, 20}, nullptr, &rs);   // null guards
-}
-
-// CAMENG probe maths (eyeOf / rawPredict / rawToNorm / rawFrac): the engine's MapToScreen reproduced from pose + fovy + viewport.
 static void testCamEngMath() {
     const float pos0[3] = {0.0f, 0.0f, 0.0f};
     const float qI[4] = {1.0f, 0.0f, 0.0f, 0.0f};
@@ -1638,20 +1417,6 @@ static void testLeftMirroredStatus() {
     KT_CHECK(!hse::leftMirrored(false, rotBit));     // the right hand is never "mirrored"
     KT_CHECK(!hse::leftMirrored(true, nullptr));
     KT_CHECK(hse::kSrcMirrorBit != 4 && hse::kSrcMirrorBit != 3);   // no clash with the body bit (4) or the level numbers (0..2)
-    char t[160];
-    hse::idleStatusText(t, sizeof t, false, false);
-    KT_CHECK(!strcmp(t, hse::helpLine()));
-    hse::idleStatusText(t, sizeof t, true, false);
-    KT_CHECK(!strncmp(t, "* ", 2) && !strcmp(t + 2, hse::helpLine()));
-    hse::idleStatusText(t, sizeof t, false, true);
-    KT_CHECK(!strncmp(t, "Left: mirrored from right", 25));
-    KT_CHECK(strstr(t, hse::helpLine()) != nullptr);
-    hse::idleStatusText(t, sizeof t, true, true);
-    KT_CHECK(!strncmp(t, "* Left: mirrored from right", 27));
-    char small[10];
-    hse::idleStatusText(small, sizeof small, true, true);
-    KT_CHECK(strlen(small) == 9);
-    hse::idleStatusText(nullptr, 10, true, true);
 }
 
 // ---- HW-UX3 page helpers ----
@@ -1677,16 +1442,121 @@ static void testUx3Bones() {
 
 static void testUx3ScopeSeg() {
     char t[48];
-    hse::scopeSegText(t, sizeof t, 0, "rifle"); KT_CHECK(!strcmp(t, "This weapon"));
+    hse::scopeSegText(t, sizeof t, 0, "rifle"); KT_CHECK(!strcmp(t, "This weapon model"));
     hse::scopeSegText(t, sizeof t, 1, "rifle"); KT_CHECK(!strcmp(t, "All rifles"));
     hse::scopeSegText(t, sizeof t, 1, "lightsaber"); KT_CHECK(!strcmp(t, "All lightsabers"));
     hse::scopeSegText(t, sizeof t, 1, ""); KT_CHECK(!strcmp(t, "All of type"));
     hse::scopeSegText(t, sizeof t, 1, "mystery"); KT_CHECK(!strcmp(t, "All of type"));
-    hse::scopeSegText(t, sizeof t, 2, "rifle"); KT_CHECK(!strcmp(t, "This body"));
-    hse::scopeSegText(t, sizeof t, 7, "rifle"); KT_CHECK(!strcmp(t, "This weapon"));
+    hse::scopeSegText(t, sizeof t, 2, "rifle"); KT_CHECK(!strcmp(t, "This body + armor"));
+    hse::scopeSegText(t, sizeof t, 7, "rifle"); KT_CHECK(!strcmp(t, "This weapon model"));
     char tiny[6];
     hse::scopeSegText(tiny, sizeof tiny, 0, "rifle"); KT_CHECK(strlen(tiny) == 5 && tiny[5] == '\0');
     hse::scopeSegText(nullptr, 4, 0, "x"); hse::scopeSegText(t, 0, 0, "x");   // no-ops
+}
+
+static bool asciiOk(const char* p) {
+    if (!*p) return false;
+    for (; *p; ++p) if (static_cast<unsigned char>(*p) < 0x20 || static_cast<unsigned char>(*p) >= 0x7F) return false;
+    return true;
+}
+
+static void testScopeSentences() {
+    char t[256];
+    const char* model = "W_VBLADE_01";
+    hse::scopeSentence(t, sizeof t, 0, model, "melee", "PFBCM");
+    KT_CHECK(!strcmp(t, "Save changes go to this weapon model only (W_VBLADE_01), on every character."));
+    hse::scopeSentence(t, sizeof t, 1, model, "heavy", "PFBCM");
+    KT_CHECK(!strcmp(t, "Save changes go to all heavy weapons, on every character."));
+    hse::scopeSentence(t, sizeof t, 1, model, "rifle", "PFBCM");
+    KT_CHECK(!strcmp(t, "Save changes go to all rifles, on every character."));
+    hse::scopeSentence(t, sizeof t, 1, model, "mystery", "PFBCM");
+    KT_CHECK(!strcmp(t, "Save changes go to all weapons of this type, on every character."));
+    hse::scopeSentence(t, sizeof t, 2, model, "rifle", "PFBCM");
+    KT_CHECK(!strcmp(t, "Save changes go to every weapon on PFBCM bodies (Armor Class 4 / Miner), added on top of the weapon placement."));
+    hse::scopeSentence(t, sizeof t, 2, model, "rifle", "N_KREIA");   // non-P*B* body: no armor parenthesis
+    KT_CHECK(!strcmp(t, "Save changes go to every weapon on N_KREIA bodies, added on top of the weapon placement."));
+    hse::scopeSentence(t, sizeof t, 2, model, "rifle", "");
+    KT_CHECK(!strcmp(t, "This character's body is not known yet: body saves are off."));
+    hse::scopeSentence(t, sizeof t, 2, model, "rifle", nullptr);
+    KT_CHECK(!strcmp(t, "This character's body is not known yet: body saves are off."));
+    hse::scopeSentence(t, sizeof t, 0, "", "rifle", "PFBCM");
+    KT_CHECK(!strcmp(t, "Save changes go to this weapon model only, on every character."));
+    hse::scopeSentence(t, sizeof t, 0, nullptr, nullptr, nullptr);
+    KT_CHECK(!strcmp(t, "Save changes go to this weapon model only, on every character."));
+    hse::scopeSentence(t, sizeof t, 9, model, "rifle", "PFBCM");   // unknown scope reads as weapon
+    KT_CHECK(!strncmp(t, "Save changes go to this weapon model only", 40));
+    char tiny[12];
+    hse::scopeSentence(tiny, sizeof tiny, 0, model, "rifle", "PFBCM");
+    KT_CHECK(strlen(tiny) == 11);
+    hse::scopeSentence(nullptr, 8, 0, model, "rifle", "x"); hse::scopeSentence(t, 0, 0, model, "rifle", "x");   // no-ops
+
+    // longest inputs: model 16, body 16, the longest armor label and plural; < 190 chars, ASCII, every scope and type
+    const char* types[] = {"lightsaber", "melee", "qstaff", "pistol", "rifle", "heavy", "", "mystery", nullptr};
+    const char* m16 = "ABCDEFGHIJKLMNOP";
+    const char* b16 = "PMBNABCDEFGHIJKL";
+    for (const char* ty : types)
+        for (int sc = 0; sc <= 2; ++sc) {
+            hse::scopeSentence(t, sizeof t, sc, m16, ty, b16);
+            KT_CHECK(strlen(t) < 190 && asciiOk(t));
+            hse::removeSentence(t, sizeof t, sc, m16, ty, b16, false);
+            KT_CHECK(strlen(t) < 190 && asciiOk(t));
+            hse::removeSentence(t, sizeof t, sc, m16, ty, b16, true);
+            KT_CHECK(strlen(t) < 190 && asciiOk(t));
+        }
+}
+
+static void testArmorClassLabel() {
+    const char* want[14] = {"Underwear", "Clothing", "Armor Class 4 / Miner", "Armor Class 5", "Armor Class 6", "Armor Class 7", "Armor Class 8",
+                            "Armor Class 9", "Jedi Robe", "Revan Armor", "Armored Flight Suit", "Slave Outfit", "Zeison Sha Armor", "Jedi Knight/Master Robe"};
+    for (int i = 0; i < 14; ++i) {
+        char up[8] = {'P', 'F', 'B', static_cast<char>('A' + i), 'M', 0}, lo[8] = {'p', 'm', 'b', static_cast<char>('a' + i), 'x', 0};
+        KT_CHECK_EQ(hse::armorClassLabel(up), want[i]);
+        KT_CHECK_EQ(hse::armorClassLabel(lo), want[i]);
+        up[4] = 0;   // exactly four characters
+        KT_CHECK_EQ(hse::armorClassLabel(up), want[i]);
+    }
+    KT_CHECK_EQ(hse::armorClassLabel("PFBOM"), "");     // letter past N
+    KT_CHECK_EQ(hse::armorClassLabel("PFB"), "");       // too short
+    KT_CHECK_EQ(hse::armorClassLabel(""), "");
+    KT_CHECK_EQ(hse::armorClassLabel(nullptr), "");
+    KT_CHECK_EQ(hse::armorClassLabel("N_KREIA"), "");   // companion body
+    KT_CHECK_EQ(hse::armorClassLabel("PZBCM"), "");     // not F / M
+    KT_CHECK_EQ(hse::armorClassLabel("PFXCM"), "");     // not B
+    KT_CHECK_EQ(hse::armorClassLabel("XFBCM"), "");     // not P
+}
+
+static void testRemoveMenu() {
+    char t[256];
+    KT_CHECK_EQ(hse::removeLabel(), "Remove saved placement");
+    KT_CHECK_EQ(hse::removeToggleLabel(), "...");
+    KT_CHECK_EQ(hse::removeToggleTip(), "More: remove the saved placement for this scope.");
+    hse::removeSentence(t, sizeof t, 0, "W_VBLADE_01", "melee", "PFBCM", false);
+    KT_CHECK(!strcmp(t, "Removes the saved placement of W_VBLADE_01. It falls back to the melee weapons default."));
+    hse::removeSentence(t, sizeof t, 0, "W_VBLADE_01", "melee", "PFBCM", true);
+    KT_CHECK(!strcmp(t, "Removes the saved placement of W_VBLADE_01. It falls back to the melee weapons default. Click again to remove."));
+    hse::removeSentence(t, sizeof t, 0, "", "", "PFBCM", false);
+    KT_CHECK(!strcmp(t, "Removes the saved placement of this weapon model. It falls back to the type default."));
+    hse::removeSentence(t, sizeof t, 1, "W_VBLADE_01", "rifle", "PFBCM", false);
+    KT_CHECK(!strcmp(t, "Removes the saved rifles placement. Those weapons fall back to the global default (weapon-model saves stay)."));
+    hse::removeSentence(t, sizeof t, 1, "W_VBLADE_01", "mystery", "PFBCM", true);
+    KT_CHECK(strstr(t, "this weapon type") && strstr(t, "Click again to remove."));
+    hse::removeSentence(t, sizeof t, 2, "W_VBLADE_01", "rifle", "PFBCM", false);
+    KT_CHECK(!strcmp(t, "Removes the saved nudge for PFBCM bodies (offset and rotation). Weapons there show without a body nudge."));
+    hse::removeSentence(t, sizeof t, 2, "W_VBLADE_01", "rifle", "", false);
+    KT_CHECK(strstr(t, "saved body nudge") && !strstr(t, "for  bodies"));
+    hse::removeSentence(t, sizeof t, 2, nullptr, nullptr, nullptr, true);
+    KT_CHECK(strstr(t, "Click again to remove."));
+    char tiny[10];
+    hse::removeSentence(tiny, sizeof tiny, 0, "m", "rifle", "b", true);
+    KT_CHECK(strlen(tiny) == 9);
+    hse::removeSentence(nullptr, 8, 0, "m", "rifle", "b", false); hse::removeSentence(t, 0, 0, "m", "rifle", "b", false);   // no-ops
+
+    hse::RemoveMenu m;
+    KT_CHECK(!m.open);
+    m.toggle(); KT_CHECK(m.open);
+    m.toggle(); KT_CHECK(!m.open);
+    m.toggle(); m.close(); KT_CHECK(!m.open);
+    m.close(); KT_CHECK(!m.open);   // closing a closed menu is a no-op
 }
 
 static void testUx3ValueText() {
@@ -1755,7 +1625,6 @@ int main() {
     testYawAndSpin();
     testZoomAndView();
     testIndex();
-    testRectHelpers();
     testMemberLabel();
     testScopeLabel();
     testSnapAccum();
@@ -1787,7 +1656,6 @@ int main() {
     testLabelsFit();
     testInspRowBasics();
     testInspItemBudget();
-    testInspRowText();
     testInspDiffersAndMatches();
     testInspRevert();
     testTextCache();
@@ -1797,12 +1665,13 @@ int main() {
     testScrubWindowAndLimits();
     testScrubGuards();
     testScrubTrackMode();
-    testCompactSlot();
-    testInspRects();
     testLeftMirroredStatus();
     testCamEngMath();
     testUx3Bones();
     testUx3ScopeSeg();
+    testScopeSentences();
+    testArmorClassLabel();
+    testRemoveMenu();
     testUx3ValueText();
     testUx3ThumbFrac();
     testUx3TrackValue();

@@ -263,6 +263,9 @@ static void testKeyShapes() {
         {"place_off_l_pistol", "0.1,0,0"},
         {"place_bone_l_rifle", "rthigh_g"},
         {"place_off_body_Juhani", "0.1,0,0"},
+        {"place_rot_body_Juhani", "0,0,10"},
+        {"place_rot_body_0123456789abcdef", "-720,720,0"},   // 16 chars, caps inclusive
+        {"Place_Rot_Body_JUHANI", "1,2,3"},
         {"place_off_body_a_1", "0,0,0"},
         {"place_off_body_0123456789abcdef", "0,0,0"},      // 16 chars
         {"place_rot_w_Blaster", "1,2,3"},
@@ -281,7 +284,8 @@ static void testKeyShapes() {
         KT_CHECK(applyTuneKey(c, k.key, k.val));
     }
     const char* bad[] = {
-        "place_rot_body_x", "place_bone_body_x", "place_off_body_", "place_off_body_0123456789abcdefg", "place_off_body_a-b",
+        "place_bone_body_x", "place_rot_body_", "place_rot_body_0123456789abcdefg", "place_rot_body_a-b", "place_rot_l_body_x",
+        "place_bone_body_", "place_off_body_", "place_off_body_0123456789abcdefg", "place_off_body_a-b",
         "place_off_body_a.b", "place_off_l_body_x", "place_rot_l_", "place_rot_l_l_pistol", "place_rot_w_a-b",
         "place_rot_w_0123456789abcdef", "place_rot_x_w_a", "place_rot_w", "place_rot_l", "place_rot_body", "place_off_body",
         "place_bone_l_w_x-y", "place_gobvt", "place_rot_", "placerot_w_x",
@@ -324,6 +328,10 @@ static void testBodyTableFull() {
     KT_CHECK(isTuneKey("place_off_body_b24"));
     KT_CHECK(applyTuneKey(c, "place_off_body_B03", "0,0.5,0"));              // existing name updates in place
     KT_CHECK(c.nBody == 24 && closeF(c.body[3].off[1], 0.5f));
+    KT_CHECK(!applyTuneKey(c, "place_rot_body_b24", "0,0,10"));              // a rot key needs a slot too
+    KT_CHECK(isTuneKey("place_rot_body_b24") && c.nBody == 24);
+    KT_CHECK(applyTuneKey(c, "place_rot_body_B03", "1,2,3"));                // existing name takes the rot in place
+    KT_CHECK(c.nBody == 24 && c.body[3].hasRot && closeV3(c.body[3].rot, 1, 2, 3) && closeF(c.body[3].off[1], 0.5f));
 }
 
 static void testRejectedValueClaimsNoSlot() {
@@ -334,6 +342,12 @@ static void testRejectedValueClaimsNoSlot() {
     KT_CHECK(c.nMdl == 0);
     KT_CHECK(!applyTuneKey(c, "place_off_body_NewBody", "4,0,0"));
     KT_CHECK(c.nBody == 0);
+    KT_CHECK(!applyTuneKey(c, "place_rot_body_NewBody", "721,0,0"));
+    KT_CHECK(!applyTuneKey(c, "place_rot_body_NewBody", "1,2"));
+    KT_CHECK(c.nBody == 0);
+    KT_CHECK(applyTuneKey(c, "place_rot_body_NewBody", "0,0,720"));
+    KT_CHECK(c.nBody == 1 && c.body[0].hasRot && !c.body[0].off[0] && !c.body[0].off[1] && !c.body[0].off[2]);   // rot only: off stays 0
+    KT_CHECK(!applyTuneKey(c, "place_rot_body_NewBody", "0,0,720.5") && closeF(c.body[0].rot[2], 720.f));   // a rejected value changes nothing
 }
 
 static void testResolveRightMatrix() {
@@ -645,6 +659,125 @@ static void testLeftExtraBodyDeltaUnaffected() {
     KT_CHECK(closeV3(rb.off, ra.off[0], ra.off[1], ra.off[2]) && closeV3(ra.off, -0.17f, -0.05f, 0.27f));
 }
 
+// ---- body rotation delta (place_rot_body_<name>, holster 0.4.0-dev) ----
+
+// True when the euler triple e and the quaternion q are the same orientation (either quaternion sign), within float noise.
+static bool orient(const float* e, const Q& q) {
+    const Q a = qbase(e[0], e[1], e[2]);
+    const float d = std::fabs(a.w * q.w + a.x * q.x + a.y * q.y + a.z * q.z);   // |<a, q>| = 1 when equal up to sign
+    return d > 1.f - 1e-6f;
+}
+static Q reflQ(const Q& q) { return Q{q.w, q.x, -q.y, -q.z}; }
+
+static TuneCfg bodyRotCfg(float extra) {
+    TuneCfg c;
+    c.leftExtra = extra;
+    KT_CHECK(applyTuneKey(c, "place_rot", "10,20,30"));
+    KT_CHECK(applyTuneKey(c, "place_off", "0.1,0.2,0.3"));
+    KT_CHECK(applyTuneKey(c, "place_rot_body_Juhani", "5,-15,40"));
+    return c;
+}
+
+static void testBodyRotRight() {
+    TuneCfg c = bodyRotCfg(0.f);
+    Resolved r, nb;
+    resolveFull(c, nullptr, CatRifle, "Juhani", false, false, r);
+    KT_CHECK(orient(r.rot, qmul(qbase(5, -15, 40), qbase(10, 20, 30))));          // q = qbase(D) * qbase(R)
+    KT_CHECK(r.src[0] == 16 && r.src[1] == 4);                                    // global rot + the new bit; rot-only body: off unchanged
+    KT_CHECK(closeV3(r.off, 0.1f, 0.2f, 0.3f));
+    resolveFull(c, nullptr, CatRifle, "Juhani", false, true, nb);                // excludeBody: plain global
+    KT_CHECK(closeV3(nb.rot, 10, 20, 30) && nb.src[0] == 0 && nb.src[1] == 0);
+    resolveFull(c, nullptr, CatRifle, "Nobody", false, false, nb);
+    KT_CHECK(closeV3(nb.rot, 10, 20, 30) && nb.src[0] == 0);
+    // pre-multiplication = the editor's bone-axis nudge (HolsterEdit.h localAxisNudge)
+    TuneCfg n;
+    KT_CHECK(applyTuneKey(n, "place_rot", "10,20,30"));
+    KT_CHECK(applyTuneKey(n, "place_rot_body_B", "0,0,40"));
+    resolveFull(n, nullptr, CatRifle, "B", false, false, r);
+    KT_CHECK(orient(r.rot, localAxisNudge(qbase(10, 20, 30), 2, 40.f)));
+    // a model / type rot is the base R too
+    KT_CHECK(applyTuneKey(c, "place_rot_pistol", "1,2,3"));
+    resolveFull(c, nullptr, CatPistol, "Juhani", false, false, r);
+    KT_CHECK(orient(r.rot, qmul(qbase(5, -15, 40), qbase(1, 2, 3))) && r.src[0] == (1 | 16));
+}
+
+static void testBodyRotBitIdenticalWithoutRot() {
+    // offset-only body, rot 0,0,0 body and an absent body must leave rot bit-identical to excludeBody, with no src bit 16
+    for (int variant = 0; variant < 3; ++variant) {
+        TuneCfg c;
+        KT_CHECK(applyTuneKey(c, "place_rot", "10,20,30"));
+        KT_CHECK(applyTuneKey(c, "place_rot_l_rifle", "11,12,13"));
+        if (variant == 0) KT_CHECK(applyTuneKey(c, "place_off_body_X", "0.1,0.2,0.3"));
+        if (variant == 1) KT_CHECK(applyTuneKey(c, "place_rot_body_X", "0,0,0"));
+        for (int left = 0; left < 2; ++left)
+            for (int ex = 0; ex < 2; ++ex) {
+                c.leftExtra = ex ? -8.f : 0.f;
+                Resolved with, without;
+                resolveFull(c, nullptr, CatRifle, "X", left != 0, false, with);
+                resolveFull(c, nullptr, CatRifle, "X", left != 0, true, without);
+                KT_CHECK(memcmp(with.rot, without.rot, sizeof with.rot) == 0);
+                KT_CHECK((with.src[0] & 16) == 0);
+                KT_CHECK(with.extraDeg == without.extraDeg);
+            }
+    }
+}
+
+static void testBodyRotLeft() {
+    // Inherited left rot: left == S(right)S, i.e. the reflection (w, x, -y, -z) of the right-hand quaternion, for a spread of D and R.
+    const float rs[4][3] = {{10, 20, 30}, {-90, 0, 0}, {33, -45, 120}, {170, -65, 5}};
+    const float ds[4][3] = {{5, -15, 40}, {0, 0, 90}, {-20, 30, 0}, {1, 2, 3}};
+    for (int i = 0; i < 4; ++i)
+        for (int k = 0; k < 4; ++k) {
+            TuneCfg c;
+            c.leftExtra = 0.f;
+            char v[48];
+            snprintf(v, sizeof v, "%g,%g,%g", rs[i][0], rs[i][1], rs[i][2]);
+            KT_CHECK(applyTuneKey(c, "place_rot", v));
+            snprintf(v, sizeof v, "%g,%g,%g", ds[k][0], ds[k][1], ds[k][2]);
+            KT_CHECK(applyTuneKey(c, "place_rot_body_Juhani", v));
+            Resolved r, l;
+            resolveFull(c, nullptr, CatRifle, "Juhani", false, false, r);
+            resolveFull(c, nullptr, CatRifle, "Juhani", true, false, l);
+            KT_CHECK(orient(l.rot, reflQ(qbase(r.rot[0], r.rot[1], r.rot[2]))));
+            KT_CHECK((l.src[0] & 16) != 0 && (r.src[0] & 16) != 0);
+            // and it is D_L (mirrorRot, NOT mirrorOff) * mirrored R
+            float dl[3] = {ds[k][0], ds[k][1], ds[k][2]}, rm[3] = {rs[i][0], rs[i][1], rs[i][2]};
+            mirrorRot(dl);
+            mirrorRot(rm);
+            KT_CHECK(orient(l.rot, qmul(qbase(dl[0], dl[1], dl[2]), qbase(rm[0], rm[1], rm[2]))));
+        }
+    // Explicit left rot also gets the body delta (as the offset delta does).
+    TuneCfg c = bodyRotCfg(0.f);
+    KT_CHECK(applyTuneKey(c, "place_rot_l_rifle", "11,12,13"));
+    Resolved l;
+    resolveFull(c, nullptr, CatRifle, "Juhani", true, false, l);
+    float dl[3] = {5, -15, 40};
+    mirrorRot(dl);
+    KT_CHECK(orient(l.rot, qmul(qbase(dl[0], dl[1], dl[2]), qbase(11, 12, 13))));
+    KT_CHECK(l.src[0] == (1 | 16) && l.extraDeg == 0.f && std::string(leftSrcName(l, true)) != "mirror");
+}
+
+static void testBodyRotWithLeftExtra() {
+    // left_extra_rot stays outermost: q = qaxis(X, extra) * qbase(D_L) * qbase(mirrored R).
+    TuneCfg c = bodyRotCfg(-8.f);
+    Resolved l, nb;
+    resolveFull(c, nullptr, CatRifle, "Juhani", true, false, l);
+    float dl[3] = {5, -15, 40}, rm[3] = {10, 20, 30};
+    mirrorRot(dl);
+    mirrorRot(rm);
+    const float xAxis[3] = {1.f, 0.f, 0.f};
+    const Q want = qmul(qaxis(xAxis, -8.f), qmul(qbase(dl[0], dl[1], dl[2]), qbase(rm[0], rm[1], rm[2])));
+    KT_CHECK(orient(l.rot, want));
+    KT_CHECK(l.extraDeg == -8.f && (l.src[0] & 16) != 0 && std::string(leftSrcName(l, true)) == "mirror");
+    // the extra alone (no body) is unchanged by the body feature
+    resolveFull(c, nullptr, CatRifle, "Juhani", true, true, nb);
+    KT_CHECK(orient(nb.rot, qmul(qaxis(xAxis, -8.f), qbase(rm[0], rm[1], rm[2]))) && nb.extraDeg == -8.f && (nb.src[0] & 16) == 0);
+    // the right hand takes no extra
+    Resolved r;
+    resolveFull(c, nullptr, CatRifle, "Juhani", false, false, r);
+    KT_CHECK(orient(r.rot, qmul(qbase(5, -15, 40), qbase(10, 20, 30))) && r.extraDeg == 0.f);
+}
+
 static void testSizeBudget() {
     static_assert(sizeof(TuneCfg) <= 4096, "TuneCfg budget");
     KT_CHECK(sizeof(TuneCfg) <= 4096);
@@ -791,12 +924,33 @@ static void testScopeBodyKeysAndRoundTrip() {
     if (!juhani) return;
     ScopeArrays a;
     KT_CHECK(scopeKeys(*juhani, a.o));
-    KT_CHECK(a.o.nSet == 1 && a.o.nUnset == 0);
+    KT_CHECK(a.o.nSet == 1 && a.o.nUnset == 1);   // no rot delta: place_rot_body_Juhani is unset so a stale key goes away
     KT_CHECK(strcmp(setVal(a.o, "place_off_body_Juhani"), "0.050,0.060,0.070") == 0);
+    KT_CHECK(isUnset(a.o, "place_rot_body_Juhani"));
     TuneCfg fresh;
     KT_CHECK(applySet(fresh, a.o));
     const BodyTune* back = findBody(fresh, "Juhani");
-    KT_CHECK(back && closeV3(back->off, 0.05f, 0.06f, 0.07f));
+    KT_CHECK(back && closeV3(back->off, 0.05f, 0.06f, 0.07f) && !back->hasRot);
+
+    // With a rot delta: both keys are set, nothing is unset, and the keys round-trip.
+    BodyTune r = *juhani;
+    r.hasRot = true;
+    r.rot[0] = 1.5f; r.rot[1] = -20.f; r.rot[2] = 90.f;
+    ScopeArrays b;
+    KT_CHECK(scopeKeys(r, b.o));
+    KT_CHECK(b.o.nSet == 2 && b.o.nUnset == 0);
+    KT_CHECK(strcmp(setVal(b.o, "place_rot_body_Juhani"), "1.5,-20.0,90.0") == 0);
+    TuneCfg fresh2;
+    KT_CHECK(applySet(fresh2, b.o));
+    const BodyTune* back2 = findBody(fresh2, "Juhani");
+    KT_CHECK(back2 && back2->hasRot && closeV3(back2->rot, 1.5f, -20.f, 90.f) && closeV3(back2->off, 0.05f, 0.06f, 0.07f));
+
+    // A rot that rounds to zero still prints as 0 (the editor decides about hasRot), never -0.
+    BodyTune z = r;
+    z.rot[0] = -0.01f; z.rot[1] = 0.f; z.rot[2] = 0.04f;
+    ScopeArrays zz;
+    KT_CHECK(scopeKeys(z, zz.o));
+    KT_CHECK(strcmp(setVal(zz.o, "place_rot_body_Juhani"), "0.0,0.0,0.0") == 0);
 }
 
 static void testScopeValueFormat() {
@@ -842,6 +996,13 @@ static void testScopeRangeBoundary() {
     b.off[0] = std::nanf("");
     KT_CHECK(!scopeKeys(b, a.o));
     KT_CHECK(a.o.nSet == 0);
+    b.off[0] = 0.f;
+    b.hasRot = true;
+    b.rot[0] = 720.f; b.rot[1] = -720.f;
+    KT_CHECK(scopeKeys(b, a.o) && strcmp(setVal(a.o, "place_rot_body_Edge"), "720.0,-720.0,0.0") == 0);   // inclusive
+    b.rot[2] = 720.5f;
+    KT_CHECK(!scopeKeys(b, a.o));
+    KT_CHECK(a.o.nSet == 0 && a.o.nUnset == 0);
 }
 
 static void testScopeNameBoundary() {
@@ -911,6 +1072,16 @@ static void testScopeCountAndBufferCaps() {
     z.o.set = nullptr;
     z.o.setCap = 1;
     KT_CHECK(!scopeKeys(b, z.o));
+    ScopeArrays y;   // no rot delta: the rot key needs one unset slot
+    y.o.unsetCap = 0;
+    KT_CHECK(!scopeKeys(b, y.o) && y.o.nSet == 0 && y.o.nUnset == 0);
+    b.hasRot = true;
+    ScopeArrays x;   // a rot delta needs a second set slot
+    x.o.setCap = 1;
+    KT_CHECK(!scopeKeys(b, x.o) && x.o.nSet == 0);
+    x.o.setCap = 3;
+    KT_CHECK(scopeKeys(b, x.o) && x.o.nSet == 2 && x.o.nUnset == 0);
+    b.hasRot = false;
 
     // Buffer: the worst case (16-char left weapon, every field at its cap) fits kScopeTextMax; a smaller buffer fails cleanly
     // and bytes past bufCap are never written.
@@ -969,6 +1140,10 @@ int main() {
     testLeftExtraHeavyMeleeAndCategory();
     testLeftExtraNeverOnExplicit();
     testLeftExtraBodyDeltaUnaffected();
+    testBodyRotRight();
+    testBodyRotBitIdenticalWithoutRot();
+    testBodyRotLeft();
+    testBodyRotWithLeftExtra();
     testSizeBudget();
     testBoneNameForwards();
     testScopeModelKeysAndRoundTrip();

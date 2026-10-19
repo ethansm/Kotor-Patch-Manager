@@ -40,8 +40,8 @@ def cpp_button_indices():
     src = (M.SRC_DIR / "HolsterEditor.cpp").read_text()
     body = src[src.index("bool itemIsButton"):src.index("bool itemIsResetIcon")]
     out = set()
-    for i in range(72):
-        ok = any(f"i == {n}" in body and i == pi[n] for n in ("PI_MEMBER_PREV", "PI_MEMBER_NEXT", "PI_SAVE", "PI_REVERT", "PI_RESET_SCOPE", "PI_VIEW_RESET", "PI_VIEW_FLIP"))
+    for i in range(73):
+        ok = any(f"i == {n}" in body and i == pi[n] for n in ("PI_MEMBER_PREV", "PI_MEMBER_NEXT", "PI_SAVE", "PI_REVERT", "PI_RESET_SCOPE", "PI_REMOVE", "PI_VIEW_RESET", "PI_VIEW_FLIP"))
         for name, base, cnt in (("PI_WEAPON", "PI_WEAPON", "kV3Weapons"), ("PI_BONE", "PI_BONE", "kV3Bones"), ("PI_SCOPE", "PI_SCOPE", "kV3Scopes"),
                                 ("PI_MODE", "PI_MODE", "kV3Modes"), ("PI_STANCE", "PI_STANCE", "kV3Stances")):
             assert f"i >= {name}" in body, name
@@ -58,8 +58,8 @@ def cpp_button_indices():
 class DumpTests(unittest.TestCase):
     def test_json_and_counts(self):
         d = dump()
-        self.assertEqual(len(d["items"]), 72)
-        self.assertEqual([it["i"] for it in d["items"]], list(range(72)))
+        self.assertEqual(len(d["items"]), 73)
+        self.assertEqual([it["i"] for it in d["items"]], list(range(73)))
         for key in ("column", "view", "preview"):
             self.assertEqual(len(d["panes"][key]), 4)
         self.assertEqual(d["panes"]["desc"], list(M.default_desc(M.DEFAULT_PANES_3840x1600[2])))
@@ -70,8 +70,47 @@ class DumpTests(unittest.TestCase):
         d = dump()
         buttons = {it["i"] for it in d["items"] if it["kind"] == "button"}
         self.assertEqual(buttons, cpp_button_indices())
-        self.assertEqual(buttons, {0, 2, *range(6, 18), *range(19, 25), *range(26, 31), 33, 35, 40, 45, 50, 55, 60, 65, 69})
+        self.assertEqual(buttons, {0, 2, *range(6, 18), *range(19, 25), *range(26, 31), 33, 35, 40, 45, 50, 55, 60, 65, 69, 72})
         self.assertEqual([it["i"] for it in d["items"] if it["kind"] == "view"], [25])
+
+
+class RemoveMenuTests(unittest.TestCase):
+    def _side(self, extra=()):
+        with tempfile.TemporaryDirectory() as td:
+            out = Path(td) / "p.png"
+            M.main(["--panes", "3840x1600", "--mode", "engine-model", "--caption-fix", "1", "--crop", "--build-dir", _BUILD, "--out", str(out), *extra])
+            return json.loads(out.with_suffix(".json").read_text())
+
+    def test_labels_and_toggle(self):
+        by = {it["i"]: it for it in self._side()["items"]}
+        self.assertEqual([by[i]["text"] for i in (13, 14, 15)], ["This weapon model", "All melee weapons", "This body + armor"])
+        self.assertEqual(by[69]["text"], "...")   # the "Reset" button became the small "..." toggle
+        self.assertEqual(by[69]["kind"], "button")
+        for i in (13, 14, 15, 69):   # every new caption is drawn whole, not cut with "..."
+            self.assertEqual(by[i]["shown"], by[i]["text"], i)
+            self.assertFalse(by[i]["wraps"], i)
+        self.assertTrue(by[68]["text"].startswith("Save changes go to "))   # the live default sentence of the current scope
+
+    def test_remove_closed_is_hidden(self):
+        side = self._side()
+        r = {it["i"]: it for it in side["items"]}[72]
+        self.assertTrue(r.get("hidden"))
+        self.assertFalse(r["drawn"])
+        self.assertFalse(side["remove_open"])
+
+    def test_remove_open_is_drawn_and_in_the_inspector(self):
+        side = self._side(["--remove-open"])
+        by = {it["i"]: it for it in side["items"]}
+        r = by[72]
+        self.assertEqual((r["kind"], r["text"], r["shown"]), ("button", "Remove saved placement", "Remove saved placement"))
+        self.assertTrue(r["drawn"] and not r.get("wraps"))
+        self.assertTrue(side["remove_open"])
+        pv = side["panes"]["preview"]
+        b = r["box"]
+        self.assertTrue(pv[0] <= b[0] and b[0] + b[2] <= pv[0] + pv[2] and pv[1] <= b[1] and b[1] + b[3] <= pv[1] + pv[3])   # inside the preview (inspector) pane
+        self.assertGreaterEqual(b[1], by[66]["box"][1] + by[66]["box"][3])   # under the note
+        self.assertTrue(by[68]["text"].startswith("Removes the saved placement of "))   # the left box describes what Remove does
+        self.assertFalse(by[68]["overflow"])
 
 
 class DescBoxTests(unittest.TestCase):
@@ -234,10 +273,10 @@ class SmokeTests(unittest.TestCase):
             self.assertEqual(M.main(["--panes", "3840x1600", "--mode", "engine-model", "--caption-fix", "1", "--crop", "--build-dir", _BUILD, "--out", str(out)]), 0)
             self.assertTrue(out.stat().st_size > 1000)
             side = json.loads(out.with_suffix(".json").read_text())
-            self.assertEqual(len(side["items"]), 72)
+            self.assertEqual(len(side["items"]), 73)
             self.assertIn("crop", side)
             btn = [it for it in side["items"] if it["kind"] == "button" and it["box"][3] >= 34]
-            self.assertTrue(btn and all(it["drawn"] for it in btn if it["text"]))
+            self.assertTrue(btn and all(it["drawn"] for it in btn if it["text"] and not it.get("hidden")))
 
 
 if __name__ == "__main__":

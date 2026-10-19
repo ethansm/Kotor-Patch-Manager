@@ -204,16 +204,20 @@ static void testSetScopeAndBodyLocks() {
     KT_CHECK(o.scope == ScopeBody);
     const Q id = {1.f, 0.f, 0.f, 0.f};
     const float zAxis[3] = {0.f, 0.f, 1.f};
-    KT_CHECK(!overlayNudgeLocal(o, 0, 10.f));
-    KT_CHECK(!overlayNudgeWorldRot(o, id, qaxis(zAxis, 10.f)));
-    KT_CHECK(!overlayCycleBone(o, 1));
+    KT_CHECK(!overlayCycleBone(o, 1));                            // the bone is still not body-scoped
+    KT_CHECK(overlayNudgeLocal(o, 0, 10.f));                      // rotation is body-scoped since 0.4.0-dev
+    KT_CHECK(o.dirty);
+    KT_CHECK(overlayNudgeWorldRot(o, id, qaxis(zAxis, 10.f)));
+    overlayRevert(o);
     const float dp[3] = {0.1f, 0.f, 0.f};
-    KT_CHECK(overlayNudgeWorldMove(o, id, dp));                   // off-only edits are allowed
+    KT_CHECK(overlayNudgeWorldMove(o, id, dp));                   // off edits are allowed
     KT_CHECK(closeTo(o.cur.off[0] - o.baseOff[0], 0.15f));        // body part 0.05 + 0.1
-    const float rot[3] = {90.f, 90.f, 90.f};
+    const float rot[3] = {40.f, 50.f, 60.f};
     const float off[3] = {o.cur.off[0], o.cur.off[1], o.cur.off[2]};
     KT_CHECK(overlaySetValues(o, rot, off));
-    KT_CHECK(closeV3(o.cur.rot, 10, 20, 30));                     // rot ignored under body scope
+    EditView v;
+    overlayGetEdit(o, v);
+    KT_CHECK(closeV3(v.r.rot, 40, 50, 60));                       // rot is no longer ignored under body scope
 }
 
 static void testBodyScopeWriteRoundTrip() {
@@ -221,12 +225,13 @@ static void testBodyScopeWriteRoundTrip() {
     EditOverlay o;
     overlayBegin(o, c, kModel, CatPistol, kBody, false);
     KT_CHECK(overlaySetScope(o, ScopeBody));
-    const float rot[3] = {0.f, 0.f, 0.f};
+    const float rot[3] = {o.cur.rot[0], o.cur.rot[1], o.cur.rot[2]};   // the editor repeats the shown rot with one row changed
     const float off[3] = {o.cur.off[0] + 0.2f, o.cur.off[1], o.cur.off[2]};
     KT_CHECK(overlaySetValues(o, rot, off));
     TuneCfg w = c;
     KT_CHECK(overlayWrite(o, w));
     KT_CHECK_EQ(w.nBody, 1);
+    KT_CHECK(!w.body[0].hasRot);                                  // an unchanged rot stores no rotation delta
     KT_CHECK(closeV3(w.body[0].off, 0.25f, 0.1f, -0.02f));        // absolute 0.35 - base 0.1
     KT_CHECK(findModel(w, kModel, false) == nullptr);             // body scope writes no model entry
     Resolved r;
@@ -240,11 +245,12 @@ static void testLeftBodyMirrorRoundTrip() {
     EditOverlay o;
     overlayBegin(o, c, kModel, CatPistol, kBody, true);
     KT_CHECK(overlaySetScope(o, ScopeBody));
-    const float rot[3] = {0.f, 0.f, 0.f};
+    const float rot[3] = {o.cur.rot[0], o.cur.rot[1], o.cur.rot[2]};
     const float off[3] = {o.cur.off[0] + 0.2f, o.cur.off[1], o.cur.off[2]};   // shown x: -0.15 -> 0.05
     KT_CHECK(overlaySetValues(o, rot, off));
     TuneCfg w = c;
     KT_CHECK(overlayWrite(o, w));
+    KT_CHECK(!w.body[0].hasRot);
     // Stored body x is negated on the left: shown body part 0.15 is stored as -0.15.
     KT_CHECK(closeTo(w.body[0].off[0], -0.15f));
     KT_CHECK(closeTo(w.body[0].off[1], 0.1f));
@@ -489,6 +495,196 @@ static void testExtraRightHandAndBodyScopeUnchanged() {
     KT_CHECK(m0 && m0->t.hasRot && closeV3(m0->t.rot, -60, -4, -93));
 }
 
+// ---- body rotation (holster 0.4.0-dev): body scope turns the delta, weapon/type saves never bake it ----
+
+static bool sameOrient(const float* e, const float* f) {
+    return absDot(qbase(e[0], e[1], e[2]), qbase(f[0], f[1], f[2])) > 1.f - 1e-6f;
+}
+static bool sameOrientQ(const float* e, const Q& q) { return absDot(qbase(e[0], e[1], e[2]), q) > 1.f - 1e-6f; }
+static bool closeV3L(const float* v, float a, float b, float c) {   // looser: an euler round trip through a quaternion
+    return closeTo(v[0], a, 2e-3f) && closeTo(v[1], b, 2e-3f) && closeTo(v[2], c, 2e-3f);
+}
+
+static TuneCfg bodyRotCfg() {
+    TuneCfg c = baseCfg();
+    KT_CHECK(applyTuneKey(c, "place_rot_body_BodyA", "5,-15,40"));
+    return c;
+}
+
+static void testBodyScopeRotRoundTrip() {
+    for (int left = 0; left < 2; ++left) {
+        const TuneCfg c = baseCfg();   // no body rot yet
+        EditOverlay o;
+        overlayBegin(o, c, kModel, CatPistol, kBody, left != 0);
+        KT_CHECK(overlaySetScope(o, ScopeBody));
+        const float rot[3] = {20.f, 30.f, 40.f};
+        const float off[3] = {o.cur.off[0], o.cur.off[1], o.cur.off[2]};
+        KT_CHECK(overlaySetValues(o, rot, off));
+        TuneCfg w = c;
+        KT_CHECK(overlayWrite(o, w));
+        KT_CHECK(w.body[0].hasRot);
+        // D = shown * conj(base) in the hand's frame (base = global 10,20,30, mirrored on the left), stored in the right-hand frame
+        float baseRot[3] = {10.f, 20.f, 30.f};
+        if (left) mirrorRot(baseRot);
+        const Q dq = qmul(qbase(20, 30, 40), qconj(qbase(baseRot[0], baseRot[1], baseRot[2])));
+        float d[3];
+        const float zero[3] = {0.f, 0.f, 0.f};
+        eulerNear(dq, zero, d);
+        if (left) mirrorRot(d);
+        KT_CHECK(closeV3L(w.body[0].rot, d[0], d[1], d[2]));
+        KT_CHECK(closeV3(w.body[0].off, 0.05f, 0.1f, -0.02f));        // the offset delta is untouched
+        // the saved cfg renders what was shown, on this hand
+        Resolved r;
+        resolveFull(w, kModel, CatPistol, kBody, left != 0, false, r);
+        KT_CHECK(sameOrient(r.rot, rot));
+        KT_CHECK((r.src[0] & 16) != 0);
+        // the other hand sees the mirror of the same stored delta, i.e. the reflection of the quaternion
+        Resolved other;
+        resolveFull(w, kModel, CatPistol, kBody, left == 0, false, other);
+        const Q rq = qbase(r.rot[0], r.rot[1], r.rot[2]);
+        KT_CHECK(sameOrientQ(other.rot, Q{rq.w, rq.x, -rq.y, -rq.z}));
+    }
+}
+
+static void testBodyScopeNudgeAndZeroRemoves() {
+    const TuneCfg c = baseCfg();
+    EditOverlay o;
+    overlayBegin(o, c, kModel, CatPistol, kBody, false);
+    KT_CHECK(overlaySetScope(o, ScopeBody));
+    KT_CHECK(overlayNudgeLocal(o, 2, 15.f));                      // pre-multiplied: the bone's own z axis
+    TuneCfg w = c;
+    KT_CHECK(overlayWrite(o, w));
+    KT_CHECK(w.body[0].hasRot && closeV3L(w.body[0].rot, 0, 0, 15));
+    Resolved r;
+    resolveFull(w, kModel, CatPistol, kBody, false, false, r);
+    KT_CHECK(sameOrientQ(r.rot, localAxisNudge(qbase(10, 20, 30), 2, 15.f)));
+    // nudging back to zero removes the delta (hasRot false), so the key is unset on save
+    KT_CHECK(overlayNudgeLocal(o, 2, -15.f));
+    TuneCfg w2 = bodyRotCfg();
+    KT_CHECK(overlayWrite(o, w2));
+    KT_CHECK(!w2.body[0].hasRot && w2.body[0].rot[0] == 0.f && w2.body[0].rot[2] == 0.f);
+    KV set[3];
+    const char* unset[3];
+    char buf[kScopeTextMax];
+    ScopeOut so{set, 3, 0, unset, 3, 0, buf, sizeof buf, 0};
+    KT_CHECK(scopeKeys(w2.body[0], so) && so.nSet == 1 && so.nUnset == 1 && strcmp(unset[0], "place_rot_body_BodyA") == 0);
+    // a world drag in body scope turns the delta too (identity bone: left multiplication)
+    EditOverlay g;
+    overlayBegin(g, c, kModel, CatPistol, kBody, false);
+    KT_CHECK(overlaySetScope(g, ScopeBody));
+    const float zAxis[3] = {0.f, 0.f, 1.f};
+    KT_CHECK(overlayNudgeWorldRot(g, Q{1.f, 0.f, 0.f, 0.f}, qaxis(zAxis, 15.f)));
+    TuneCfg wg = c;
+    KT_CHECK(overlayWrite(g, wg));
+    KT_CHECK(wg.body[0].hasRot && closeV3L(wg.body[0].rot, 0, 0, 15));
+}
+
+static void testWeaponSaveDoesNotBakeBodyRot() {
+    for (int left = 0; left < 2; ++left) {
+        const TuneCfg c = bodyRotCfg();
+        EditOverlay o;
+        overlayBegin(o, c, kModel, CatPistol, kBody, left != 0);
+        KT_CHECK(overlayNudgeLocal(o, 0, 5.f));                   // weapon scope: tilt 5 deg about the bone x axis
+        const float shown[3] = {o.cur.rot[0], o.cur.rot[1], o.cur.rot[2]};
+        TuneCfg w = c;
+        KT_CHECK(overlayWrite(o, w));
+        const ModelTune* m = findModel(w, kModel, left != 0);
+        KT_CHECK(m && m->t.hasRot);
+        if (!m) continue;
+        // the body entry is untouched
+        KT_CHECK(w.nBody == 1 && w.body[0].hasRot && closeV3(w.body[0].rot, 5, -15, 40) && closeV3(w.body[0].off, 0.05f, 0.1f, -0.02f));
+        // WYSIWYG: with the body delta composed back in, the saved cfg renders what was shown
+        Resolved r, lvl;
+        resolveFull(w, kModel, CatPistol, kBody, left != 0, false, r);
+        KT_CHECK(sameOrient(r.rot, shown));
+        // the stored level excludes the body rot: it is the no-body resolve, not the shown rot
+        resolveFull(w, kModel, CatPistol, kBody, left != 0, true, lvl);
+        KT_CHECK(sameOrient(m->t.rot, lvl.rot));
+        KT_CHECK(!sameOrient(m->t.rot, shown));
+        // and it is conj(D) * (the shown nudge of D * R) with R the global rot (mirrored on the left) and D the body delta of this hand:
+        // the nudge turns the shown placement about the bone's own x axis, and only the part that is not the body delta is stored
+        float g[3] = {10.f, 20.f, 30.f}, dd[3] = {5.f, -15.f, 40.f};
+        if (left) { mirrorRot(g); mirrorRot(dd); }
+        const Q dQ = qbase(dd[0], dd[1], dd[2]);
+        KT_CHECK(sameOrientQ(m->t.rot, qmul(qconj(dQ), localAxisNudge(qmul(dQ, qbase(g[0], g[1], g[2])), 0, 5.f))));
+    }
+    // type scope: same rule
+    const TuneCfg c = bodyRotCfg();
+    EditOverlay t;
+    overlayBegin(t, c, kModel, CatPistol, kBody, false);
+    KT_CHECK(overlaySetScope(t, ScopeType));
+    KT_CHECK(overlayNudgeLocal(t, 1, 7.f));
+    TuneCfg wt = c;
+    KT_CHECK(overlayWrite(t, wt));
+    const Q dT = qbase(5, -15, 40);
+    KT_CHECK(wt.cat[CatPistol].hasRot &&
+             sameOrientQ(wt.cat[CatPistol].rot, qmul(qconj(dT), localAxisNudge(qmul(dT, qbase(10, 20, 30)), 1, 7.f))));
+    KT_CHECK(closeV3(wt.body[0].rot, 5, -15, 40));
+}
+
+static void testBodyRotRevert() {
+    const TuneCfg c = bodyRotCfg();
+    EditOverlay o;
+    overlayBegin(o, c, kModel, CatPistol, kBody, false);
+    const float global[3] = {10.f, 20.f, 30.f};
+    KT_CHECK(sameOrient(o.baseRot, global) && sameOrient(o.seedBaseRot, global));
+    // body scope: turn the delta, then Revert
+    KT_CHECK(overlaySetScope(o, ScopeBody));
+    KT_CHECK(overlayNudgeLocal(o, 2, 25.f));
+    TuneCfg moved = c;
+    KT_CHECK(overlayWrite(o, moved));
+    KT_CHECK(!closeV3L(moved.body[0].rot, 5, -15, 40));
+    overlayRevert(o);
+    KT_CHECK(!o.dirty);
+    KT_CHECK(sameOrient(o.baseRot, global));
+    TuneCfg back = c;
+    KT_CHECK(overlayWrite(o, back));
+    KT_CHECK(back.body[0].hasRot && closeV3L(back.body[0].rot, 5, -15, 40));
+    // weapon scope: move the level, then Revert restores the base rot seed as well
+    KT_CHECK(overlaySetScope(o, ScopeWeapon));
+    KT_CHECK(overlayNudgeLocal(o, 0, 30.f));
+    KT_CHECK(!sameOrient(o.baseRot, global));                     // the level moved, the body part did not
+    overlayRevert(o);
+    KT_CHECK(sameOrient(o.baseRot, global));
+    KT_CHECK(overlaySetScope(o, ScopeBody));
+    TuneCfg again = c;
+    KT_CHECK(overlayWrite(o, again));
+    KT_CHECK(again.body[0].hasRot && closeV3L(again.body[0].rot, 5, -15, 40));   // the body delta survived the weapon edit + revert
+}
+
+static void testBodyRotWithLeftExtra() {
+    TuneCfg c = extraCfg();
+    KT_CHECK(applyTuneKey(c, "place_rot_body_BodyA", "5,-15,40"));
+    // body scope, unedited: the stored delta is unchanged although the shown rot carries the left tilt
+    EditOverlay o;
+    overlayBegin(o, c, kModel, CatRifle, kBody, true);
+    KT_CHECK(o.seed.extraDeg == -8.f);
+    const float seedShown[3] = {o.cur.rot[0], o.cur.rot[1], o.cur.rot[2]};
+    KT_CHECK(overlaySetScope(o, ScopeBody));
+    TuneCfg same = c;
+    KT_CHECK(overlayWrite(o, same));
+    KT_CHECK(same.body[0].hasRot && closeV3L(same.body[0].rot, 5, -15, 40));
+    // a turn about the bone z axis in body scope: the saved cfg renders exactly the turned shown rot
+    KT_CHECK(overlayNudgeLocal(o, 2, 10.f));
+    TuneCfg w = c;
+    KT_CHECK(overlayWrite(o, w));
+    Resolved r;
+    resolveFull(w, kModel, CatRifle, kBody, true, false, r);
+    KT_CHECK(sameOrientQ(r.rot, localAxisNudge(qbase(seedShown[0], seedShown[1], seedShown[2]), 2, 10.f)));
+    KT_CHECK(r.extraDeg == -8.f);                                 // the tilt still applies on top
+    // weapon scope: tilt 5 deg; the explicit left rot written renders the shown rot (no extra on an explicit level), body kept
+    EditOverlay q;
+    overlayBegin(q, c, kModel, CatRifle, kBody, true);
+    KT_CHECK(overlayNudgeLocal(q, 0, 5.f));
+    const float shown[3] = {q.cur.rot[0], q.cur.rot[1], q.cur.rot[2]};
+    TuneCfg ww = c;
+    KT_CHECK(overlayWrite(q, ww));
+    Resolved rw;
+    resolveFull(ww, kModel, CatRifle, kBody, true, false, rw);
+    KT_CHECK(rw.extraDeg == 0.f && sameOrient(rw.rot, shown));
+    KT_CHECK(closeV3(ww.body[0].rot, 5, -15, 40));
+}
+
 int main() {
     testRegistryRegisterUnregister();
     testRegistrySweep();
@@ -511,5 +707,10 @@ int main() {
     testExtraUneditedRotNotWritten();
     testExtraEditedRotWrittenAsShown();
     testExtraRightHandAndBodyScopeUnchanged();
+    testBodyScopeRotRoundTrip();
+    testBodyScopeNudgeAndZeroRemoves();
+    testWeaponSaveDoesNotBakeBodyRot();
+    testBodyRotRevert();
+    testBodyRotWithLeftExtra();
     return kt::Report("holster_preview");
 }

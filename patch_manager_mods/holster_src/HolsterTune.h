@@ -10,6 +10,7 @@
 //                   place_bone_<cat>  mount bone for that category: one of kBones (case-insensitive: torsoUpr_g, torso_g,
 //                              pelvis_g, rthigh_g, lthigh_g). Any other value is rejected. The attach node itself is used when no bone is set.
 //                   place_off_body_<name>  body delta added to the offset of every weapon on that body (name = 1..16 chars [A-Za-z0-9_])
+//                   place_rot_body_<name>  body rotation delta in degrees (|v| <= 720), pre-multiplied onto the resolved rot (0.4.0-dev)
 //                   place_{rot,off,bone}_w_<x>  per-weapon-model override; the model name is "w_<x>" (resref, 2..16 chars [A-Za-z0-9_])
 //                   place_{rot,off,bone}_l_<cat|w_x>  the same keys for the left hand. A left value that is not set mirrors the right one.
 //                 left_extra_rot / left_extra_rot_<cat>  one float, degrees about the bone X axis (|v| <= 720 or the key is rejected;
@@ -17,7 +18,7 @@
 //                              hand's rot is inherited from the right (mirrored) as a whole triple, after the mirror, as a quaternion
 //                              (qaxis(X, ex) * qbase(mirrored rot)); never to an explicit place_rot_l_* / place_rot_l_w_* level. The
 //                              per-category key (cat = categoryName) wins over the global one. 0 = plain mirror.
-//                 Key shape after place_<kind>_: [body_<name>] [l_] [w_<x> | <cat>]. body_ is only valid for place_off.
+//                 Key shape after place_<kind>_: [body_<name>] [l_] [w_<x> | <cat>]. body_ is valid for place_off and place_rot (not place_bone).
 //                 Any parse failure, wrong count, range violation, unknown key or full table returns false and leaves the cfg
 //                 unchanged. A rejected vector is never half-applied. Tables: 48 model entries (left and right together), 24 bodies.
 //                 isTuneKey is syntactic: it stays true for a well-formed key even when its table is full.
@@ -82,10 +83,13 @@ struct ModelTune {
     CatTune t;
 };
 
-// Per-body offset delta, right-hand frame (the left hand negates x).
+// Per-body delta, right-hand frame: off (the left hand negates x) and an optional rot (place_rot_body_<name>, degrees; the left
+// hand mirrors it with mirrorRot). hasRot false = no rotation delta (rot stays 0).
 struct BodyTune {
     char body[17] = {0};
     float off[3] = {0.f, 0.f, 0.f};
+    bool hasRot = false;
+    float rot[3] = {0.f, 0.f, 0.f};
 };
 
 // left_extra_rot: default tilt (degrees about bone X) added after the mirror, and the clamp applied when it is used.
@@ -165,6 +169,7 @@ struct TuneKeyRef {
 };
 
 // Parses the key shape [body_<name>] [l_] [w_<x> | <cat>] after place_rot_ / place_off_ / place_bone_. False for anything else.
+// body_<name> is accepted after place_rot_ and place_off_ only (place_bone_body_<name> is not a key).
 inline bool tuneParseKey(const char* key, TuneKeyRef& r) {
     if (!key) return false;
     const char* p = nullptr;
@@ -172,7 +177,7 @@ inline bool tuneParseKey(const char* key, TuneKeyRef& r) {
     else if (tunePrefixCi(key, "place_off_", p)) r.kind = TkOff;
     else if (tunePrefixCi(key, "place_bone_", p)) r.kind = TkBone;
     else return false;
-    if (r.kind == TkOff && tunePrefixCi(p, "body_", p)) {
+    if ((r.kind == TkOff || r.kind == TkRot) && tunePrefixCi(p, "body_", p)) {
         if (tuneNameLen(p, 16) == 0) return false;
         r.body = true;
         tuneCopyName(r.name, p);
@@ -299,7 +304,8 @@ inline float leftExtraFor(const TuneCfg& c, Category cat) {
 inline bool leftExtraClamped(float raw) { return std::isnan(raw) || std::fabs(raw) > kLeftExtraMax; }
 
 // Resolved placement for one weapon on one hand. src[0] is the rot source, src[1] the off source, src[2] the bone source:
-// 0 global, 1 category (type), 2 weapon model. src[1] has |4 when a body delta was added.
+// 0 global, 1 category (type), 2 weapon model. src[1] has |4 when a body delta was added, src[0] has |16 when a non-zero body rotation
+// delta was composed into rot.
 // extraDeg is the left_extra_rot tilt that is folded into rot (0 = none: right hand, explicit left rot, or extra 0). leftMirror
 // (left hand only) has bit 0 set when rot came from the mirror and bit 1 when off did: the editor save path uses extraDeg to keep
 // the extra out of explicit l_ keys, and the logs print leftSrcName.
@@ -330,7 +336,10 @@ inline void tunePushLevel(TuneLevel* lv, int& n, const CatTune* t, bool mirror, 
 }
 
 // Right hand: model > type > global. Left hand: left-model > model (mirrored) > left-type > type (mirrored) > global (mirrored).
-// Each of rot, off and bone takes the first level that has it. A body delta (x negated on the left) is added to off unless excludeBody.
+// Each of rot, off and bone takes the first level that has it. A body delta is added unless excludeBody: its off (x negated on the left)
+// is added to off, and its rot D (mirrorRot on the left) is pre-multiplied onto the resolved rot, q = qbase(D) * qbase(R), so D turns
+// about the bone's own axes like the editor's nudges (HolsterEdit.h localAxisNudge). The left_extra_rot tilt stays outermost. With no
+// body rot (or D = 0) the result is bit-identical to the offset-only path.
 // model, body may be null or "". cat may be CatUnknown (global only).
 inline void resolveFull(const TuneCfg& c, const char* model, Category cat, const char* body, bool left, bool excludeBody, Resolved& out) {
     CatTune global;   // the global level: rot and off always present, no bone
@@ -370,19 +379,34 @@ inline void resolveFull(const TuneCfg& c, const char* model, Category cat, const
     if (rotL->mirror) mirrorRot(out.rot);
     if (offL->mirror) mirrorOff(out.off);
     if (left) out.leftMirror = static_cast<uint8_t>((rotL->mirror ? 1 : 0) | (offL->mirror ? 2 : 0));
+    // Body rotation delta (also on an explicit left rot, as the offset delta is): q = qbase(D) * qbase(R).
+    const BodyTune* b = excludeBody ? nullptr : findBody(c, body);
+    bool recompose = false;
+    Q q = Q{1.f, 0.f, 0.f, 0.f};
+    if (b && b->hasRot && (b->rot[0] != 0.f || b->rot[1] != 0.f || b->rot[2] != 0.f)) {
+        float d[3] = {b->rot[0], b->rot[1], b->rot[2]};
+        if (left) mirrorRot(d);
+        q = qmul(qbase(d[0], d[1], d[2]), qbase(out.rot[0], out.rot[1], out.rot[2]));
+        recompose = true;
+    }
     // left_extra_rot: only on a whole inherited rot triple, composed as a quaternion about the bone X axis (never added to rx).
     if (left && rotL->mirror) {
         const float ex = leftExtraFor(c, cat);
         if (ex != 0.f) {
             const float xAxis[3] = {1.f, 0.f, 0.f};
-            const Q q = qmul(qaxis(xAxis, ex), qbase(out.rot[0], out.rot[1], out.rot[2]));
-            float e[3];
-            eulerNear(q, out.rot, e);
-            for (int i = 0; i < 3; ++i) out.rot[i] = e[i];
+            q = qmul(qaxis(xAxis, ex), recompose ? q : qbase(out.rot[0], out.rot[1], out.rot[2]));
+            recompose = true;
             out.extraDeg = ex;
         }
     }
+    if (recompose) {
+        float e[3];
+        eulerNear(q, out.rot, e);
+        for (int i = 0; i < 3; ++i) out.rot[i] = e[i];
+    }
     out.src[0] = rotL->src;
+    if (b && b->hasRot && (b->rot[0] != 0.f || b->rot[1] != 0.f || b->rot[2] != 0.f))
+        out.src[0] = static_cast<uint8_t>(out.src[0] | 16);
     out.src[1] = offL->src;
     out.boneIdx = 0;
     out.src[2] = 0;
@@ -391,7 +415,6 @@ inline void resolveFull(const TuneCfg& c, const char* model, Category cat, const
         if (boneL->mirror) mirrorBone(out.boneIdx);
         out.src[2] = boneL->src;
     }
-    const BodyTune* b = excludeBody ? nullptr : findBody(c, body);
     if (b) {
         float d[3] = {b->off[0], b->off[1], b->off[2]};
         if (left) mirrorOff(d);
@@ -413,7 +436,12 @@ inline bool tuneApplyParsed(TuneCfg& c, const TuneKeyRef& r, const char* val) {
     if (r.body) {
         BodyTune* b = findOrAddBody(c, r.name);
         if (!b) return false;
-        for (int i = 0; i < 3; ++i) b->off[i] = v[i];
+        if (r.kind == TkRot) {
+            for (int i = 0; i < 3; ++i) b->rot[i] = v[i];
+            b->hasRot = true;
+        } else {
+            for (int i = 0; i < 3; ++i) b->off[i] = v[i];
+        }
         return true;
     }
     CatTune* t = nullptr;
@@ -585,7 +613,8 @@ inline bool scopeKeys(Category cat, bool left, const CatTune& t, ScopeOut& o) {
     return true;
 }
 
-// Body delta (BodyTune): always one set entry place_off_body_<name> (a body entry always has an off, so nothing is unset).
+// Body delta (BodyTune): always one set entry place_off_body_<name> (a body entry always has an off), plus place_rot_body_<name>:
+// set when hasRot, else unset (so a body without a rotation delta removes a stale key).
 inline bool scopeKeys(const BodyTune& b, ScopeOut& o) {
     o.nSet = 0;
     o.nUnset = 0;
@@ -599,6 +628,15 @@ inline bool scopeKeys(const BodyTune& b, ScopeOut& o) {
     if (!key) return scopeFail(o);
     const char* val = scopeVec(o, b.off, false);
     if (!val || !scopeSet(o, key, val)) return scopeFail(o);
+    if (!scopeParses("rot", tail, r) || !r.body) return scopeFail(o);
+    key = scopeKey(o, "rot", tail);
+    if (!key) return scopeFail(o);
+    if (b.hasRot) {
+        val = scopeVec(o, b.rot, true);
+        if (!val || !scopeSet(o, key, val)) return scopeFail(o);
+    } else if (!scopeUnset(o, key)) {
+        return scopeFail(o);
+    }
     return true;
 }
 

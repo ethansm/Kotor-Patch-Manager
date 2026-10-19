@@ -7,6 +7,7 @@ and its JSON read back. Fonts, border textures and the glyph atlas are imported 
 
   .venv/bin/python scripts/holster_editor_mockup.py --panes 3840x1600 --mode engine-model --caption-fix 0 --out /tmp/p.png
   .venv/bin/python scripts/holster_editor_mockup.py --panes 1920x1080 --mode ideal --out /tmp/p.png --crop
+  .venv/bin/python scripts/holster_editor_mockup.py --panes 3840x1600 --remove-open --crop --out /tmp/p_remove.png   (the "..." menu open: Remove saved placement shown)
 
 Modes:
   engine-model  buttons get the engine's inner rect (research/holstered_weapons/ux_v3/F3_R1_inset.txt section 1(c)); a line taller than
@@ -77,6 +78,9 @@ def run_dump(col, view, preview, desc=None, build_dir=None, cover=None):
         args.append(str(cover))
     r = subprocess.run([str(exe)] + args, capture_output=True, text=True, check=True)
     return json.loads(r.stdout)
+
+
+PI_REMOVE = 72   # HseLayoutV3.h PI_REMOVE: the Remove saved placement button (a button; shown only while the "..." menu is open)
 
 
 # ---- pane sets -------------------------------------------------------------------------------------------------------
@@ -198,20 +202,27 @@ ROW_VALUES = ["0.0 cm", "-11.0 cm", "2.5 cm", "30.5 deg", "0.0 deg", "-5.0 deg"]
 HELP_LINE = "LMB turn . RMB+LMB move weapon . RMB+wheel depth . Shift fine . Ctrl snap"
 
 
-LEFT_DESC_TEXT = "Pick the weapon, the bone and where Save applies, then adjust the sliders. Hover a button for help."
+# Left box text with nothing hovered (HolsterEditor.cpp leftDefaultText): the "Save changes go to ..." sentence of the current scope (hse::scopeSentence, scope 0
+# with a sample model). The editor appends the short help only when the pair still fits the text area by its line estimate; at 3840x1600 (7 lines of 32 px)
+# the sentence alone is 4 lines and the pair 8, so the help is not appended. With the "..." menu open the box shows the Remove sentence (hse::removeSentence).
+LEFT_HELP = "Pick the weapon, the bone and where Save applies, then adjust the sliders. Hover a button for help."
+LEFT_SENTENCE = "Save changes go to this weapon model only (w_vbrsw_01), on every character."
+LEFT_DESC_TEXT = LEFT_SENTENCE
+REMOVE_DESC_TEXT = "Removes the saved placement of w_vbrsw_01. It falls back to the melee weapons default."
 RIGHT_DESC_TEXT = "Drag or click a slider. Shift fine, Ctrl snap."
 DESC_EDGE = (0 / 255, 105 / 255, 81 / 255)   # description box frame colour 0,105,81
 DESC_FILL = (0, 17, 11, 255)                 # description box fill
 DESC_TEXT = (37 / 255, 200 / 255, 164 / 255)  # description text 37,200,164
 
 
-def caption_for(i):
+def caption_for(i, remove_open=False):
     """Plausible caption of page item i (strings from HolsterEditor.cpp itemInitText / HseView.h; sample values for composed ones)."""
     fixed = {0: "<", 1: "Meetra Surik", 2: ">", 3: "WEAPON", 4: "BONE", 5: "APPLIES TO", 6: "Right: Vibrosword", 7: "Left: Vibrosword",
-             13: "This weapon", 14: "All vibroswords", 15: "This body", 16: "Save", 17: "Revert",
+             13: "This weapon model", 14: "All melee weapons", 15: "This body + armor", 16: "Save", 17: "Revert",
              18: "Member 1/9 | Weapons: Right+Left", 19: ">Move<", 20: "Depth", 21: "Tilt", 22: "Roll/Turn", 23: "R", 24: "<>", 25: "",
              31: HELP_LINE, 32: "POSITION", 33: "R", 34: "ROTATION", 35: "R", 66: "Left: mirrored from right",
-             67: "", 68: LEFT_DESC_TEXT, 69: "Reset", 70: "", 71: RIGHT_DESC_TEXT}
+             67: "", 68: REMOVE_DESC_TEXT if remove_open else LEFT_DESC_TEXT, 69: "...", 70: "", 71: RIGHT_DESC_TEXT,
+             PI_REMOVE: "Remove saved placement"}
     if i in fixed:
         return fixed[i]
     if 8 <= i <= 12:
@@ -353,8 +364,9 @@ def line_rects(lines, rect, y0, line_h, scale, left):
 
 
 def render(W, H, panes, dump, mode="engine-model", fix=0, g=16, m=9, line_h=None, no_drop=False, crop=False,
-           button_fit_pad=DEFAULT_BUTTON_FIT_PAD, label_fit_pad=DEFAULT_LABEL_FIT_PAD, text_k=DEFAULT_TEXT_K):
-    """-> (RGBA image, sidecar dict)."""
+           button_fit_pad=DEFAULT_BUTTON_FIT_PAD, label_fit_pad=DEFAULT_LABEL_FIT_PAD, text_k=DEFAULT_TEXT_K, remove_open=False):
+    """-> (RGBA image, sidecar dict). remove_open: the "..." menu is open (the Remove button is drawn and the left box shows the Remove sentence); closed, the
+    editor parks the button off screen, so it is listed (hidden) but not drawn."""
     from PIL import Image, ImageDraw
     install_font_fix()
     scale = engine_scale(W)
@@ -370,8 +382,12 @@ def render(W, H, panes, dump, mode="engine-model", fix=0, g=16, m=9, line_h=None
     for it in dump["items"]:
         i, kind, box = it["i"], it["kind"], tuple(it["box"])
         X, Y, bw, bh = box
-        text = caption_for(i)
+        text = caption_for(i, remove_open)
         rec = {"i": i, "kind": kind, "text": text, "box": list(box)}
+        if i == PI_REMOVE and not remove_open:   # parked off screen by applyLayout while the menu is closed
+            rec.update(caption_rect=list(box), drawn=False, text_y0=None, shown="", lines=0, wraps=False, text_rect=None, hidden=True)
+            items.append(rec)
+            continue
         if bw <= 0 or bh <= 0:   # absent item (e.g. no description pane / too small): nothing to draw
             rec.update(caption_rect=list(box), drawn=False, text_y0=None, shown="", lines=0, wraps=False, text_rect=None)
             items.append(rec)
@@ -415,7 +431,7 @@ def render(W, H, panes, dump, mode="engine-model", fix=0, g=16, m=9, line_h=None
         items.append(rec)
     side = {"width": W, "height": H, "mode": mode, "caption_fix": fix, "dim": g, "margin": m, "line_h": line_h, "text_scale": text_scale(W), "engine_px_per_texel": scale,
             "button_fit_pad": button_fit_pad, "label_fit_pad": label_fit_pad, "text_k": text_k, "fit_px_per_texel": fscale,
-            "panes": {"column": list(panes[0]), "view": list(panes[1]), "preview": list(panes[2]), "desc": list(desc) if desc else None}, "rows": dump["rows"], "items": items}
+            "panes": {"column": list(panes[0]), "view": list(panes[1]), "preview": list(panes[2]), "desc": list(desc) if desc else None}, "rows": dump["rows"], "remove_open": remove_open, "items": items}
     if crop:
         x0 = max(0, min(p[0] for p in panes) - 40)
         y0 = max(0, min(p[1] for p in panes) - 40)
@@ -452,6 +468,7 @@ def main(argv=None):
     ap.add_argument("--label-fit-pad", type=int, default=None, help=f"label fit width = w - pad (default {DEFAULT_LABEL_FIT_PAD})")
     ap.add_argument("--text-k", type=float, default=None, help=f"ini text_k: fit px per texel = text_k * 0.75 (default {DEFAULT_TEXT_K})")
     ap.add_argument("--legacy-fit", action="store_true", help=f"the 0.4.3 build: pad {LEGACY_BUTTON_FIT_PAD} for all, text_k {LEGACY_TEXT_K}")
+    ap.add_argument("--remove-open", action="store_true", help="draw the page with the \"...\" menu open: the Remove saved placement button shown (item 72) and the Remove sentence in the left box")
     ap.add_argument("--crop", action="store_true", help="output the pane bounding box + 40 px margin")
     ap.add_argument("--dump-json", help="use this layout dump JSON instead of compiling/running the C++ tool")
     ap.add_argument("--build-dir", help="where the dump tool is compiled (default: system temp)")
@@ -470,13 +487,13 @@ def main(argv=None):
     else:
         defaults = (DEFAULT_BUTTON_FIT_PAD, DEFAULT_LABEL_FIT_PAD, DEFAULT_TEXT_K)
     bpad, lpad, tk = (d if v is None else v for v, d in zip((a.button_fit_pad, a.label_fit_pad, a.text_k), defaults))
-    img, side = render(W, H, panes, dump, a.mode, a.caption_fix, a.dim, a.margin, a.line_h, a.no_drop, a.crop, bpad, lpad, tk)
+    img, side = render(W, H, panes, dump, a.mode, a.caption_fix, a.dim, a.margin, a.line_h, a.no_drop, a.crop, bpad, lpad, tk, a.remove_open)
     out = Path(a.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     img.convert("RGB").save(out)
     out.with_suffix(".json").write_text(json.dumps(side, indent=1))
     n = sum(1 for it in side["items"] if it["kind"] == "button")
-    dropped = sum(1 for it in side["items"] if it["kind"] == "button" and it["text"] and not it["drawn"])
+    dropped = sum(1 for it in side["items"] if it["kind"] == "button" and it["text"] and not it["drawn"] and not it.get("hidden"))
     wrapped = [it["i"] for it in side["items"] if it.get("wraps")]
     wb = sum(1 for it in side["items"] if it.get("wraps") and it["kind"] == "button")
     print(f"{out} ({img.width}x{img.height}) buttons={n} dropped={dropped} wrapped={len(wrapped)} (buttons {wb}) items={wrapped}")
