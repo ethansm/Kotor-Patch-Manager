@@ -102,6 +102,8 @@ class Grammar(unittest.TestCase):
         self.assertTrue(E.RE_AW.match("leader skills base=00f0e1d2 raw=[1,2,3,14,5,6,7,8] awareness(idx3)=14 (UNPROVEN index)"))
         self.assertTrue(E.RE_AW_UNK.match("leader skills: awareness=? (srvLeader=00d4e5f6 stats=00000000 base=00000000)"))
         self.assertTrue(E.RE_BUILD.match("BUILD: slots=8/8 pill=1"))
+        self.assertTrue(E.RE_BUILD.match("BUILD: slots=8/8 pill=1 (MaxIcons=5 Enabled=1)"))   # 0.4.4 line
+        self.assertIsNone(E.RE_BUILD.match("BUILD: slots=8/8 pill=1 (junk)"))
         self.assertTrue(E.RE_CHANGED.match("effects CHANGED sig=1a2b3c4d count=4"))
 
     def test_empty_resref_list_gives_no_resrefs(self):

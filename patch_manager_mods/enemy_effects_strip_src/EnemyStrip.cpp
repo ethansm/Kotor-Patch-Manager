@@ -976,7 +976,7 @@ struct SettingsPage {
     void* panel = nullptr;
     uint32_t page = 0;
     int32_t text[esl::S_Count];         // toggle: the button; number / slider: the label
-    int32_t prev[esl::S_Count];         // number: '<'; slider: the track button
+    int32_t prev[esl::S_Count];         // number: '<'; slider: the groove (a provider-owned label, the framed track)
     int32_t next[esl::S_Count];         // number: '>'
     int32_t fill[esl::S_Count];         // slider: the filled part of the track (a provider-owned label)
     int32_t thumb[esl::S_Count];        // slider: the marker at the value (a provider-owned label)
@@ -1120,9 +1120,9 @@ void destroyPreview() {
 }
 
 const char* const kPageDescPreview =
-    "Example of the icon row above a target's name, drawn with your edits. Nothing changes in the game until you press Save. Reset undoes unsaved edits; Defaults loads the default values (then press Save).";
+    "Example of the icon row above a target's name, drawn with your edits. Drag or click the opacity bars. Nothing changes in the game until you press Save. Reset undoes unsaved edits; Defaults loads the default values (then press Save).";
 const char* const kPageDescPlain =
-    "Icon row above the target name. Nothing changes in the game until you press Save. Reset undoes unsaved edits; Defaults loads the default values.";
+    "Icon row above the target name. Drag or click the opacity bars. Nothing changes in the game until you press Save. Reset undoes unsaved edits; Defaults loads the default values.";
 
 const char* const kRowDesc[esl::S_Count] = {
     "Show or hide the icon row.",
@@ -1131,7 +1131,7 @@ const char* const kRowDesc[esl::S_Count] = {
     "Pixels between the icon row and the name label.",
     "Pixels between neighbouring icons.",
     "Draw a pill behind the icon row.",
-    "Opacity of the pill behind the icon row. Drag the bar or click on it.",
+    "Opacity of the pill behind the icon row. Drag the bar or click on it.",   // (a label row has no hover text; the page description covers it)
     "Opacity of the dark remaining-time drain shading on the icons. 0 = off (default). Drag the bar or click on it.",
 };
 const char* const kSaveDesc = "Write the edits to enemy_strip.ini and apply them to the game now.";
@@ -1152,28 +1152,36 @@ void refreshRow(int s) {
     g_mcMenu.p->SetText(g_pg.page, g_pg.text[s], b);
 }
 
-// ---- slider rows (alpha): a track button (native bevel, hover and click sound) with a fill bar and a marker label on top. The labels are
-// provider-owned (AddLabel); their engine pointers come from Control() and are re-read on every page enter. Dragging is polled here: a press
-// edge over the track starts it, the cursor x then sets the value on the 0.05 grid until the button is released.
-Wid g_slFill[esl::S_Count], g_slThumb[esl::S_Count];
+// ---- slider rows (alpha): three labels in draw order: the groove (the framed pill art, so it looks like the page's buttons), the fill bar and the
+// marker. mod-config hands out pre-cloned controls (all buttons before all labels), so anything drawn ON TOP of a button must be a label, which
+// is why the track is not a button. The labels are provider-owned (AddLabel); their engine pointers come from Control() and are re-read on every
+// page enter. Dragging is polled here: a press edge inside the track rect starts it, the cursor x then sets the value on the 0.05 grid until the
+// button is released. No hover sound or highlight: the fill turns brighter while dragging.
+Wid g_slGroove[esl::S_Count], g_slFill[esl::S_Count], g_slThumb[esl::S_Count];
 const float TintSlider[3] = { 0.10f, 0.75f, 0.65f };
-void clearSliderWids() { for (int s = 0; s < esl::S_Count; ++s) { g_slFill[s] = Wid(); g_slThumb[s] = Wid(); } }   // the labels belong to the provider and die with the panel
+const float TintSliderHot[3] = { 0.30f, 0.95f, 0.85f };
+void clearSliderWids() { for (int s = 0; s < esl::S_Count; ++s) { g_slGroove[s] = Wid(); g_slFill[s] = Wid(); g_slThumb[s] = Wid(); } }   // the labels belong to the provider and die with the panel
+bool inTrack(const esl::RowRect& r, int x, int y) { return r.w > 0 && r.h > 0 && x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h; }
 
 void refreshSlider(int s) {
     if (!g_mcMenu.ok() || !g_pg.page || g_pg.fill[s] < 0) return;
     const esl::RowRect& tr = g_pg.track[s];
     void* overImg = imageCached(TexOverlay);
+    Wid& gr = g_slGroove[s];
     Wid& f = g_slFill[s];
     Wid& th = g_slThumb[s];
-    if (tr.w <= 0 || !f.c || !th.c) return;
+    if (tr.w <= 0 || !gr.c || !f.c || !th.c) return;
     const int ih = tr.h * 24 / 100 < 4 ? 4 : tr.h * 24 / 100;
     const esl::RowRect inner = { tr.x + 6, tr.y + (tr.h - ih) / 2, tr.w - 12 > 0 ? tr.w - 12 : 1, ih };
     const int fillPx = esl::sliderFillPx(esl::settingFloat(g_edit, s), inner.w);
-    guikit::setClickable(f.c, false);    // both labels sit on the track button: they must stay click-through
+    guikit::setClickable(gr.c, false);   // the labels must never swallow a click meant for the rows around them
+    guikit::setClickable(f.c, false);
     guikit::setClickable(th.c, false);
+    void* pillImg = imageCached(TexPill);
+    if (pillImg) { widFill(gr, pillImg); widTint(gr, TintTeal); widAlpha(gr, 1.0f); widRect(gr, tr); }
     if (!overImg) return;
     if (fillPx > 0) {
-        widFill(f, overImg); widTint(f, TintSlider); widAlpha(f, 1.0f); widRect(f, { inner.x, inner.y, fillPx, inner.h });
+        widFill(f, overImg); widTint(f, g_pg.drag == s ? TintSliderHot : TintSlider); widAlpha(f, 1.0f); widRect(f, { inner.x, inner.y, fillPx, inner.h });
     } else {
         widRect(f, { inner.x, inner.y, 1, 1 });   // an empty bar: a 1 px dot rather than a zero-size label
     }
@@ -1267,7 +1275,7 @@ void KPATCH_CALL cbBuild(void* panel, void*) {
             g_pg.text[s] = ui->AddButton(page, b, kRowDesc[s]);
         } else if (esl::settingIsSlider(s)) {
             g_pg.text[s] = ui->AddLabel(page, b);
-            g_pg.prev[s] = ui->AddButton(page, "", kRowDesc[s]);   // the track (click and drag target)
+            g_pg.prev[s] = ui->AddLabel(page, "");   // the groove (draw order: groove, fill, marker)
             g_pg.fill[s] = ui->AddLabel(page, "");
             g_pg.thumb[s] = ui->AddLabel(page, "");
             if (g_pg.prev[s] < 0 || g_pg.fill[s] < 0 || g_pg.thumb[s] < 0) ok = false;
@@ -1317,10 +1325,14 @@ void KPATCH_CALL cbEnter(uint32_t page, void*) {
                 ui->SetRect(g_pg.page, g_pg.text[s], &rl);
                 ui->SetRect(g_pg.page, g_pg.prev[s], &rt);
                 g_pg.track[s] = { rt.x, rt.y, rt.w, rt.h };
-                g_slFill[s] = Wid(); g_slThumb[s] = Wid();   // fresh caches: the controls may be new objects
+                g_slGroove[s] = Wid(); g_slFill[s] = Wid(); g_slThumb[s] = Wid();   // fresh caches: the controls may be new objects
+                g_slGroove[s].c = reinterpret_cast<uintptr_t>(ui->Control(g_pg.page, g_pg.prev[s]));
                 g_slFill[s].c = reinterpret_cast<uintptr_t>(ui->Control(g_pg.page, g_pg.fill[s]));
                 g_slThumb[s].c = reinterpret_cast<uintptr_t>(ui->Control(g_pg.page, g_pg.thumb[s]));
-                if (g_slFill[s].c) guikit::setFillStyle(g_slFill[s].c, 2);    // fill mode 2: the label draws its fill image, as for the example labels
+                KP_LOGV(chCfg, KPLOG_INFO, "slider %s: groove=%08x fill=%08x thumb=%08x track=%d,%d,%d,%d", esl::settingKey(s), static_cast<unsigned>(g_slGroove[s].c),
+                        static_cast<unsigned>(g_slFill[s].c), static_cast<unsigned>(g_slThumb[s].c), rt.x, rt.y, rt.w, rt.h);
+                if (g_slGroove[s].c) guikit::setFillStyle(g_slGroove[s].c, 2);   // fill mode 2: the label draws its fill image, as for the example labels
+                if (g_slFill[s].c) guikit::setFillStyle(g_slFill[s].c, 2);
                 if (g_slThumb[s].c) guikit::setFillStyle(g_slThumb[s].c, 2);
             } else {
                 const K2MuiRect rl = { col.x, y, lw, slotH };
@@ -1359,7 +1371,7 @@ void KPATCH_CALL cbTick(uint32_t page, void*) {
     saferead::beginScope();
     const K2MenuUiApi* ui = g_mcMenu.p;
     for (int s = 0; s < esl::S_Count; ++s) {
-        if (esl::settingIsSlider(s)) { ui->Clicked(g_pg.page, g_pg.prev[s]); continue; }   // the track is driven by the polled press / drag below
+        if (esl::settingIsSlider(s)) continue;   // the track is driven by the polled press / drag below
         int dir = 0;
         if (esl::settingIsToggle(s)) {
             if (ui->Clicked(g_pg.page, g_pg.text[s])) dir = 1;
@@ -1379,9 +1391,7 @@ void KPATCH_CALL cbTick(uint32_t page, void*) {
     } else if (!g_pg.lprev && haveCur) {
         g_pg.drag = -1;
         for (int s = 0; s < esl::S_Count; ++s) {
-            if (!esl::settingIsSlider(s) || g_pg.track[s].w <= 0) continue;
-            const void* ctl = ui->Control(g_pg.page, g_pg.prev[s]);
-            if (ctl && guikit::hit(reinterpret_cast<uintptr_t>(ctl), cx, cy)) { g_pg.drag = s; break; }
+            if (esl::settingIsSlider(s) && inTrack(g_pg.track[s], cx, cy)) { g_pg.drag = s; break; }
         }
     }
     if (g_pg.drag >= 0 && down && haveCur) {
@@ -1455,7 +1465,7 @@ __declspec(dllexport) void __cdecl KPatchInit(const KPatchApi* api) {
     g_pg.reset();
     g_mcCfg.init(api);
     g_mcMenu.init(api);
-    KP_LOGV(chMain, KPLOG_INFO, "enemy-effects-strip 0.4.4-dev loaded (Enabled=%d Verbose=%d MaxIcons=%d)", g_cfg.enabled ? 1 : 0, g_cfg.verbose ? 1 : 0, g_cfg.maxIcons);
+    KP_LOGV(chMain, KPLOG_INFO, "enemy-effects-strip 0.4.5-dev loaded (Enabled=%d Verbose=%d MaxIcons=%d)", g_cfg.enabled ? 1 : 0, g_cfg.verbose ? 1 : 0, g_cfg.maxIcons);
     g_hud.add(K2HUD_BUILD, 300, onHudBuild);
     g_hud.add(K2HUD_TARGET_MENU_POST, 100, onTargetMenuPost);
     g_hud.connect();

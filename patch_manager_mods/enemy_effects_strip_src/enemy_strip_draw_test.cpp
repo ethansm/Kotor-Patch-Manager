@@ -1385,10 +1385,13 @@ static void scenario14_staged_edits_and_sliders() {
     const uintptr_t track = mkItemCtl(g_pg.prev[dr], 170, 326, 110, 33);
     const uintptr_t fillC = mkItemCtl(g_pg.fill[dr], 0, 0, 1, 1);
     const uintptr_t thumbC = mkItemCtl(g_pg.thumb[dr], 0, 0, 1, 1);
-    (void)track;
     cbEnter(2, nullptr);
     KT_CHECK(g_pg.track[dr].x == 170 && g_pg.track[dr].y == 326 && g_pg.track[dr].w == 110 && g_pg.track[dr].h == 33);
     KT_CHECK(g_edit.drainAlpha == 0.65f);
+    // The groove is a label (a button would draw OVER the fill: mod-config pre-clones all buttons before all labels): framed pill art, teal, the whole track.
+    KT_CHECK(rectEq(lastOn(trec::O_Rect, track), { 170, 326, 110, 33 }));
+    KT_CHECK(lastOn(trec::O_Fill, track) && lastOn(trec::O_Fill, track)->img == tImgPtr("lbl_miscroll_f") && clickThrough(track));
+    KT_CHECK_EQ(tm.addButton, 2 + 4 * 2 + 3);   // 2 toggles, 4 number rows x ('<', '>'), Save / Reset / Defaults: no slider button any more
     // 0.65 of the inner 98 px = 64 px of fill (int(0.65*98+0.5) = 64); marker 6 px wide centred on its end: x 176+64-3 = 237, 18 px tall at y 333.
     KT_CHECK(rectEq(lastOn(trec::O_Rect, fillC), { 176, 339, 64, 7 }));
     KT_CHECK(rectEq(lastOn(trec::O_Rect, thumbC), { 237, 333, 6, 18 }));

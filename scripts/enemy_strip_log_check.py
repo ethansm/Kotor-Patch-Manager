@@ -9,7 +9,7 @@ Usage: enemy_strip_log_check.py [LOG | --log LOG] [--new [--no-advance] [--state
   Exit 0 = analyzed, 2 = log missing.
 
 Grammar: the KP_LOGV strings of patch_manager_mods/enemy_effects_strip_src/EnemyStrip.cpp (other lines are not summarised):
-  BUILD: slots=N/M pill=P                          INFO when built; any other BUILD: line is a failure
+  BUILD: slots=N/M pill=P [(MaxIcons=n Enabled=e)]  INFO when built (0.4.4: the pool is always 8/8); any other BUILD: line is a failure
   strip: target=HEX tier=T slots=N [resref,...]    one line per strip change (the strip cap line is not counted)
   effects CHANGED sig=HEX count=N
   eff[i] type=T sub=S spell=SP dur=D/F creator=HEX creatorIsLeader=B ratio=R buff=I debuff=I state=ST
@@ -49,7 +49,7 @@ FEAR_TYPE = 8             # EffType_SetState (EnemyStrip.cpp)
 FEAR_STATE = 8            # Horrified = ip_fear icon (EnemyStripLogic.h)
 
 RE_LOADED = re.compile(r"^enemy-effects-strip (\S+) loaded")
-RE_BUILD = re.compile(r"^BUILD: slots=(\d+)/(\d+) pill=([01])$")
+RE_BUILD = re.compile(r"^BUILD: slots=(\d+)/(\d+) pill=([01])(?: \(MaxIcons=\d+ Enabled=[01]\))?$")   # 0.4.4 appends the settings
 RE_STRIP = re.compile(r"^strip: target=([0-9a-fA-F]+) tier=(-?\d+) slots=(-?\d+) \[(.*)\]$")
 RE_STRIP_CAP = re.compile(r"^strip: log cap reached")
 RE_CHANGED = re.compile(r"^effects CHANGED sig=([0-9a-fA-F]+) count=(-?\d+)$")
