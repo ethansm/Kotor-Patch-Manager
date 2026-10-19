@@ -8,15 +8,15 @@ Execute MCF1: [Mod-config] Pure logic in MenuUiLogic.h: row kinds (toggle/steppe
 - **Waves:** .claude/waves/WI-46-a1/
 - **Waves:** .claude/waves/WI-46-a2/
 - **Waves:** .claude/waves/WI-46-a3/
-- **Branch:** `KOTOR-II` (6467f859 PLAY_TEST_QUEUE: MCR2 mod-config scrolling)
-- **Generated:** 2026-10-18 23:31:05 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (86d8a493 PLAY_TEST_QUEUE: MCR1/MCR2/SH-PG1 mod-config + selfheal LIVE 10-18 23:32)
+- **Generated:** 2026-10-18 23:32:21 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-6467f859 PLAY_TEST_QUEUE: MCR2 mod-config scrolling
- patch_manager_mods/PLAY_TEST_QUEUE.md | 1 +
- 1 file changed, 1 insertion(+)
+86d8a493 PLAY_TEST_QUEUE: MCR1/MCR2/SH-PG1 mod-config + selfheal LIVE 10-18 23:32
+ patch_manager_mods/PLAY_TEST_QUEUE.md | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 ```
-- **Dirty Files (174):**
+- **Dirty Files (178):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
   - ` M .claude/handoffs/46_mod_config_declarative_layer.handoff.md`
@@ -27,7 +27,7 @@ Execute MCF1: [Mod-config] Pure logic in MenuUiLogic.h: row kinds (toggle/steppe
   - ` M .claude/plans/swarm_library_architecture.md`
   - ` M .claude/reviews/gemini_20261014/tools/fix3_items.tsv`
   - ` M .claude/settings.json`
-  - ... +164 more (run `git status --short`)
+  - ... +168 more (run `git status --short`)
 
 ## 2. Immediate Objective (MCF1)
 **[Mod-config] Pure logic in MenuUiLogic.h: row kinds (toggle/stepper), ScrollWindow (offset clamp, wheel step, ensure-visible, thumb px), `mui::tickResetDue(gap, flags48, lmbDown)` + tests**
@@ -36,9 +36,9 @@ Status: BUILT
 Task: [Mod-config] Pure logic in MenuUiLogic.h: row kinds (toggle/stepper), ScrollWindow (offset clamp, wheel step, ensure-visible, thumb px), `mui::tickResetDue(gap, flags48, lmbDown)` + tests
 
 ## 2b. Upcoming Batches in Pipeline
-- **MCF2** [Meta / Planning Setup] : [Mod-config] Provider: AddRow/SetChangeHandler/Get-SetValue slots (final-value handler), `tickResetDue`, stepper arrow art with click-to-cycle fallback, MCR1 logging (arrow path taken, tickResetDue gap/flags48/lmb), contract pins; NO scrolling (MCF2b) in mod_config + enemy_effects_strip (common_contract_test.cpp:233) + holster_editor (positional K2MenuUiApi initializer; Holster session owns that dir)
-- **MCF2b** [Meta / Planning Setup] : [Mod-config] Scrolling: ScrollWindow on AddRow entry pages + the mod LIST page (rebind 8 column buttons, kMaxEntries raised), arrows + WheelHook + thumb drag, `scroll_test` dummy entry, MCR1/MCR2 play rows
-- **MCF3** [Meta / Planning Setup] : [Mod-config] Declarative layer: `_shared_src/TomlMini.h` + `ModConfigDecl.h` + tests
+- **MCF5** [Meta / Planning Setup] : [Mod-config] Look-alike slider row (needs Holster-session SliderArt extraction)
+- **MCF6** [Meta / Planning Setup] : [Mod-config] Native slider embed probe (gated by MCF0)
+- **MCF7** [Meta / Planning Setup] : [Enemy strip] Migrate its page to the declarative layer
 
 ## 3. Strict Context Budget & Read Policy
 - **Fresh Session Bootstrap**: Run `python3 scripts/plan_manager.py resume patch_manager_mods/46_mod_config_declarative_layer.md`.
