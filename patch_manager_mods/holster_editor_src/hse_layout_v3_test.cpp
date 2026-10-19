@@ -44,13 +44,13 @@ static int expectedLeftRowH(int colH, bool* pass1 = nullptr) {
 }
 
 // zone of each item index in pageBoxesV3 order: 0 left column (incl. the left description box hint[0] and its text area hint[1]), 1 view area, 2 inspector (preview).
-// kind: 0 plain, 1 thumb, 2 track (pair id = slider row), 3 left description box, 4 its text area.
+// kind: 0 plain, 1 thumb, 2 track (pair id = slider row), 3 left description box, 4 its text area, 5 right description box (over LB_DESC), 6 its text area.
 struct Item { Box b; int zone; int kind; int row; };
 static int collect(const PageLayoutV3& L, Item* o) {
     Box raw[kPageItemsV3];
     int n = pageBoxesV3(L, raw);
     for (int i = 0; i < n; ++i) o[i] = Item{raw[i], 0, 0, -1};
-    // order: left 19 (0..18), view area 13 (19..31), inspector 37 (32..68), then the Reset button (69, left column)
+    // order: left 19 (0..18), view area 13 (19..31), inspector 37 (32..68), then the Reset button (69, left column), then the right description box (70, 71)
     for (int i = 19; i < 32; ++i) o[i].zone = 1;
     for (int i = 32; i < PI_RESET_SCOPE; ++i) o[i].zone = 2;
     o[PI_RESET_SCOPE].zone = 0;
@@ -62,6 +62,8 @@ static int collect(const PageLayoutV3& L, Item* o) {
     // the two hint boxes (67, 68) belong to the LEFT column now, not the inspector
     o[PI_HINT].zone = 0; o[PI_HINT].kind = 3;
     o[PI_HINT + 1].zone = 0; o[PI_HINT + 1].kind = 4;
+    o[PI_HINTR].zone = 0; o[PI_HINTR].kind = 5;       // zone not checked (kinds 5 / 6 are exempt: the pane is not one of the three zones)
+    o[PI_HINTR + 1].zone = 0; o[PI_HINTR + 1].kind = 6;
     return n;
 }
 static bool isZeroBox(Box b) { return b.x == 0 && b.y == 0 && b.w == 0 && b.h == 0; }
@@ -81,12 +83,13 @@ static int violations(const Geom& g, const PageLayoutV3& L, bool requirePositive
     zone[2] = g.preview;
     int bad = 0;
     for (int i = 0; i < n; ++i) {
-        const bool absent = (it[i].kind == 3 || it[i].kind == 4) && isZeroBox(it[i].b);
+        const bool absent = (it[i].kind >= 3) && isZeroBox(it[i].b);
         if (it[i].b.w < 0 || it[i].b.h < 0) ++bad;
         if (!absent && requirePositive && (it[i].b.w <= 0 || it[i].b.h <= 0)) ++bad;
-        if (!absent && checkZones && !inside(it[i].b, zone[it[i].zone])) ++bad;
+        if (!absent && checkZones && it[i].kind < 5 && !inside(it[i].b, zone[it[i].zone])) ++bad;
         for (int j = i + 1; j < n; ++j) {
             if ((it[i].kind == 3 && it[j].kind == 4) || (it[i].kind == 4 && it[j].kind == 3)) continue;   // the text area sits inside its box
+            if ((it[i].kind == 5 && it[j].kind == 6) || (it[i].kind == 6 && it[j].kind == 5)) continue;
             bool thumbTrack = it[i].row >= 0 && it[i].row == it[j].row &&
                               ((it[i].kind == 1 && it[j].kind == 2) || (it[i].kind == 2 && it[j].kind == 1));
             if (thumbTrack) {
@@ -202,9 +205,9 @@ static void testGeometries() {
         // item budget
         Box all[kPageItemsV3 + 8];
         KT_CHECK_EQ(pageBoxesV3(L, all), kPageItemsV3);
-        KT_CHECK(kPageItemsV3 <= 70);   // at the ideal bound
-        KT_CHECK(kPageItemsV3 <= 80);
-        KT_CHECK(kPageItemsV3 == 19 + 13 + 37 + 1);
+        KT_CHECK_EQ(kPageItemsV3, 72);
+        KT_CHECK(kPageItemsV3 + kV3Rows <= 80);
+        KT_CHECK(kPageItemsV3 == 19 + 13 + 37 + 1 + 2);
     }
 }
 
@@ -520,6 +523,111 @@ static void testDescBox3840() {
     KT_CHECK(L.hint[0].x + L.hint[0].w <= L.view.x);
 }
 
+// The shrunk description pane as mod-config makes it (mui::splitDesc at 850 permille): the bottom 15 % of the original rect (same x / width as the preview
+// pane, the original rect has the view's y and height), at least ~a gap under the preview.
+static Box descFor(const Geom& g) {
+    const int bottom = g.view.y + g.view.h, h = (150 * g.view.h + 500) / 1000;
+    return Box{g.preview.x, bottom - h, g.preview.w, h};
+}
+
+// Description boxes with a valid desc pane: both boxes end on the pane bottom, the right box is the pane, the left box is tall enough for text and clear of the rows.
+static void checkDescPane(const Geom& g, const char* what) {
+    (void)what;
+    const Box d = descFor(g);
+    PageLayoutV3 L = pageLayoutV3(g.column, g.view, g.preview, g.hint, nullptr, d);
+    PageLayoutV3 N = pageLayoutV3(g.column, g.view, g.preview, g.hint, nullptr);
+    KT_CHECK(!isZeroBox(L.hint[0]));
+    KT_CHECK_EQ(L.hint[0].y + L.hint[0].h, d.y + d.h);                       // bottoms equal
+    KT_CHECK_EQ(L.hintR[0].y + L.hintR[0].h, d.y + d.h);
+    KT_CHECK(L.hint[0].y + L.hint[0].h == L.hintR[0].y + L.hintR[0].h);
+    KT_CHECK(same(L.hintR[0], d));                                           // right box == pane
+    KT_CHECK(same(L.hintR[1], Box{d.x + kV3DescPad, d.y + kV3DescPad, d.w - 2 * kV3DescPad, d.h - 2 * kV3DescPad}));
+    KT_CHECK(L.hint[0].h >= kV3DescMinH && L.hint[0].h <= kV3DescMaxH);
+    KT_CHECK(L.hint[0].h >= 3 * 36 + 2 * kV3DescPad);                        // ~3 lines of description text
+    KT_CHECK(L.hint[0].y >= L.status.y + L.status.h + v3::kGap);             // below the status line
+    KT_CHECK(L.hint[0].x == L.status.x && L.hint[0].w == L.status.w);
+    KT_CHECK(same(L.hint[1], Box{L.hint[0].x + kV3DescPad, L.hint[0].y + kV3DescPad, L.hint[0].w - 2 * kV3DescPad, L.hint[0].h - 2 * kV3DescPad}));
+    KT_CHECK(L.hint[0].x + L.hint[0].w <= L.view.x);                         // left of the view area
+    KT_CHECK(!overlaps(L.hint[0], L.hintR[0]));
+    Box all[kPageItemsV3]; pageBoxesV3(L, all);
+    for (int i = 0; i < PI_HINT; ++i) KT_CHECK(!overlaps(all[i], L.hint[0]) && !overlaps(all[i], L.hint[1]));   // no row, status or view item under the left box
+    KT_CHECK(!overlaps(L.reset, L.hint[0]));
+    for (int i = 0; i < kPageItemsV3; ++i) {
+        if (i == PI_HINTR || i == PI_HINTR + 1) continue;
+        KT_CHECK(!overlaps(all[i], L.hintR[0]));                             // the right box covers nothing of ours
+    }
+    // the rows are the same as without a desc pane (only the description boxes change)
+    KT_CHECK_EQ(L.leftRowH, N.leftRowH);
+    KT_CHECK(same(L.status, N.status) && same(L.view, N.view) && same(L.rows[0].track, N.rows[0].track));
+    KT_CHECK(isZeroBox(N.hintR[0]) && isZeroBox(N.hintR[1]));
+}
+
+static void testDescPane() {
+    checkDescPane(realGeom(), "3840x1600 real");
+    checkDescPane(geomFor(1920, 1080), "1920x1080");
+    checkDescPane(geomFor(1440, 1080), "4:3");
+    // 3840x1600 real: the left box is much taller than the old rule's (which ended at the column bottom, 139 px above the pane bottom)
+    {
+        const Geom g = realGeom();
+        const Box d = descFor(g);
+        PageLayoutV3 O = pageLayoutV3(g.column, g.view, g.preview, g.hint, nullptr);
+        PageLayoutV3 L = pageLayoutV3(g.column, g.view, g.preview, g.hint, nullptr, d);
+        KT_CHECK(O.hint[0].y + O.hint[0].h < d.y + d.h);
+        KT_CHECK(L.hint[0].h > O.hint[0].h);
+    }
+    // a very tall pane: the left box is kV3DescMaxH high, starting at bottom - kV3DescMaxH
+    {
+        Geom g = realGeom();
+        g.column.h = 1400; g.view.h = 1400;
+        const Box d = Box{g.preview.x, 357 + 1400 - 210, g.preview.w, 210};
+        PageLayoutV3 L = pageLayoutV3(g.column, g.view, g.preview, g.hint, nullptr, d);
+        KT_CHECK_EQ(L.hint[0].h, kV3DescMaxH);
+        KT_CHECK_EQ(L.hint[0].y, d.y + d.h - kV3DescMaxH);
+    }
+    // an invalid pane (zero Box, no width, no height) falls back to the old rule and parks the right box
+    {
+        const Geom g = realGeom();
+        PageLayoutV3 O = pageLayoutV3(g.column, g.view, g.preview, g.hint, nullptr);
+        const Box bad[3] = {Box{0, 0, 0, 0}, Box{1953, 1119, 0, 134}, Box{1953, 1119, 1113, 0}};
+        for (int i = 0; i < 3; ++i) {
+            PageLayoutV3 L = pageLayoutV3(g.column, g.view, g.preview, g.hint, nullptr, bad[i]);
+            KT_CHECK(same(L.hint[0], O.hint[0]) && same(L.hint[1], O.hint[1]));
+            KT_CHECK(isZeroBox(L.hintR[0]) && isZeroBox(L.hintR[1]));
+        }
+        KT_CHECK_EQ(violations(g, O, true, true), 0);
+    }
+    // a pane too small for the padded text area: the right box is parked (zero), the left box still follows the pane bottom
+    {
+        const Geom g = realGeom();
+        const Box tiny{1953, 1119, 1113, 2 * kV3DescPad};
+        PageLayoutV3 L = pageLayoutV3(g.column, g.view, g.preview, g.hint, nullptr, tiny);
+        KT_CHECK(isZeroBox(L.hintR[0]) && isZeroBox(L.hintR[1]));
+        KT_CHECK_EQ(L.hint[0].y + L.hint[0].h, tiny.y + tiny.h);
+    }
+    // a pane so high up that less than kV3DescMinH is left under the status line: no left box (never overlaps the rows), the right box stays
+    {
+        const Geom g = realGeom();
+        PageLayoutV3 N = pageLayoutV3(g.column, g.view, g.preview, g.hint, nullptr);
+        const Box high{1953, N.status.y, 1113, 120};
+        PageLayoutV3 L = pageLayoutV3(g.column, g.view, g.preview, g.hint, nullptr, high);
+        KT_CHECK(isZeroBox(L.hint[0]) && isZeroBox(L.hint[1]));
+        KT_CHECK(same(L.hintR[0], high));
+    }
+    // the whole-screen sweep: with the pane the layout never violates (the left/right boxes are exempt from the zone test)
+    for (int W = 800; W <= 3840; W += 320)
+        for (int H = 600; H <= 1600; H += 200) {
+            Geom g = geomFor(W, H);
+            const Box d = descFor(g);
+            PageLayoutV3 L = pageLayoutV3(g.column, g.view, g.preview, g.hint, nullptr, d);
+            KT_CHECK_EQ(violations(g, L, false, true), 0);
+            if (!isZeroBox(L.hint[0])) {
+                KT_CHECK_EQ(L.hint[0].y + L.hint[0].h, d.y + d.h);
+                KT_CHECK(L.hint[0].y >= L.status.y + L.status.h + v3::kGap);
+                KT_CHECK(L.hint[0].h >= kV3DescMinH && L.hint[0].h <= kV3DescMaxH);
+            }
+        }
+}
+
 // The REAL pane rects of the 3840x1600 log (UI units): the layout must use the space and every label must fit its box.
 static Geom realGeom() {
     Geom r;
@@ -544,8 +652,8 @@ static void testReal3840x1600() {
     // the view stays left of the preview pane, never overlapping the inspector
     KT_CHECK(L.view.x + L.view.w < g.preview.x);
     KT_CHECK(L.view.x > L.status.x + L.status.w);
-    // item budget: 70 boxes + 6 wedges
-    KT_CHECK_EQ(kPageItemsV3Total, 76);
+    // item budget: 72 boxes + 6 wedges
+    KT_CHECK_EQ(kPageItemsV3Total, 78);
     KT_CHECK(kPageItemsV3Total <= 80);
     Box all[kPageItemsV3];
     KT_CHECK_EQ(pageBoxesV3(L, all), kPageItemsV3);
@@ -690,9 +798,11 @@ static void testAdaptersAndIndex() {
 
     KT_CHECK(same(all[PI_RESET_SCOPE], L.reset));
     KT_CHECK(PI_RESET_SCOPE == 69 && PI_HINT + kV3Hints == PI_RESET_SCOPE);
+    for (int i = 0; i < kV3Hints; ++i) KT_CHECK(same(all[PI_HINTR + i], L.hintR[i]));
+    KT_CHECK(PI_HINTR == 70 && PI_HINTR + kV3Hints == kPageItemsV3);
 
-    // the page holds the 70 boxes plus one wedge per slider row, inside the consumer cap
-    KT_CHECK_EQ(kPageItemsV3Total, 76);
+    // the page holds the 72 boxes plus one wedge per slider row, inside the consumer cap
+    KT_CHECK_EQ(kPageItemsV3Total, 78);
     KT_CHECK(kPageItemsV3Total <= kPageItemCap);
 }
 
@@ -708,6 +818,7 @@ int main() {
     testViewVsPreview();
     testDescBox();
     testDescBox3840();
+    testDescPane();
     testThumbs();
     testDegradation();
     return kt::Report("hse_layout_v3");

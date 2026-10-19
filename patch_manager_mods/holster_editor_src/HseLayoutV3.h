@@ -14,9 +14,14 @@
 //             ordered column < view < preview (left to right).
 //   preview = MUI_PANE_PREVIEW (the area above the shrunken description). The inspector is at most kInspWantW wide,
 //             left aligned at preview.x + 4.
-//   hint    = unused (kept for the signature). hint[0] is the LEFT description box: the free part of the left column under the status line
-//             (kV3DescMinH..kV3DescMaxH high, empty Box when less is left); hint[1] is the text area inset by kV3DescPad inside it (empty with it). The slider hints go to mod-config's own
-//             description pane (SetDesc), which the editor keeps on the right under the split.
+//   hint    = unused (kept for the signature).
+//   desc    = MUI_PANE_DESC (the SHRUNK description rect of mod-config under the split; optional, a zero Box = absent).
+//             hint[0] is the LEFT description box. With a valid desc pane its BOTTOM is the pane bottom (so both boxes end on the same y) and its top is
+//             max(status bottom + gap, bottom - kV3DescMaxH); it is shown from kV3DescMinH high (the box may reach below the column pane, never beyond the
+//             column's x range). Without a desc pane: the free part of the left column under the status line (kV3DescMinH..kV3DescMaxH high).
+//             hint[1] is the text area inset by kV3DescPad inside it (empty with it).
+//   hintR   = the RIGHT description box: hintR[0] = the desc pane rect itself (drawn over mod-config's LB_DESC list box so its scrollbar is covered),
+//             hintR[1] = its text area inset by kV3DescPad. Both empty when desc is absent or too small (the editor then writes only SetDesc).
 // Documented minimum panes (everything has positive size and nothing overlaps): column 140 x 180, view 160 x 150,
 // preview 170 x 200 (with or without the hint rect). Below the minimum the layout degrades
 // by shrinking row heights to their floors, then by clipping each box to its own pane: widths and heights never go
@@ -45,7 +50,7 @@ constexpr int kV3RoomyRowMin = 30;  // the roomy left column (2 bone columns, on
 constexpr int kV3BarMax = 44, kV3BarMin = 12;   // mode bar / stance row heights
 constexpr int kV3MinViewW = 8;    // the view area is at least this wide when the preview pane leaves any room
 constexpr int kV3DescPad = 12;   // text inset inside the left description box
-constexpr int kV3DescMinH = 90, kV3DescMaxH = 260, kV3DescWantH = 130;   // left description box (hint[0], under the status line): shown from this height, at most this high
+constexpr int kV3DescMinH = 90, kV3DescMaxH = 360, kV3DescWantH = 130;   // left description box (hint[0], under the status line): shown from this height, at most this high
 constexpr int kV3MinViewH = 60;   // the bars shrink before the view gets lower than this
 constexpr int kV3NameW = 170, kV3ValueW = 200;    // inspector name and value label widths (shrink together when narrow)
 constexpr int kV3TrackWant = 150;  // a narrow inspector keeps the track this wide before the labels take their full width
@@ -54,9 +59,10 @@ constexpr int kV3ResetMax = 60;   // reset icon squares are up to 60 x 60 (small
 
 // Page items that become mod-config items: left 19 (member 3, captions 3, weapons 2, bones 5, scopes 3, save/revert 2,
 // status 1) + view area 13 (mode 4, view reset + flip 2, view 1, stances 5, legend 1) + inspector 37 (group labels 2,
-// group resets 2, rows 6 x 5, note 1, hints 2) + the Reset Scope button 1 (left column, appended last so no index shifts).
-// Must stay <= 80 (kMaxItems), ideally <= 70.
-constexpr int kPageItemsV3 = 70;
+// group resets 2, rows 6 x 5, note 1, hints 2) + the Reset Scope button 1 (left column, appended after the hints so no index shifts)
+// + the right description box and its text 2 (appended last, drawn over mod-config's LB_DESC).
+// kPageItemsV3 + kV3Rows (wedges) must stay <= 80 (kMaxItems).
+constexpr int kPageItemsV3 = 72;
 
 struct InspRowV3 { editkit::Box name, track, thumb, value, reset; };
 
@@ -79,7 +85,8 @@ struct PageLayoutV3 {
     editkit::Box groupLabel[kV3Groups], groupReset[kV3Groups];
     InspRowV3 rows[kV3Rows];
     editkit::Box note;                                    // "Left: mirrored from right ..."
-    editkit::Box hint[kV3Hints];
+    editkit::Box hint[kV3Hints];                          // LEFT description box + its text area
+    editkit::Box hintR[kV3Hints];                         // RIGHT description box (over LB_DESC) + its text area
     // chosen sizes (for the caller's fonts and tests)
     int leftRowH, barH, inspRowH;
 };
@@ -218,7 +225,7 @@ inline int buildInspector(editkit::Box Z, editkit::Box /*hintZone: unused, the h
 // pageLayoutV3: see the geometry contract at the top. thumbFrac: six fractions in [0,1] (clamped; NaN -> 0), null = 0.5.
 // hint: pass a zero Box {0,0,0,0} for none.
 inline PageLayoutV3 pageLayoutV3(editkit::Box column, editkit::Box view, editkit::Box preview, editkit::Box hint,
-                                 const float* thumbFrac) {
+                                 const float* thumbFrac, editkit::Box desc = editkit::Box{0, 0, 0, 0}) {
     using editkit::Box;
     PageLayoutV3 L = PageLayoutV3();
 
@@ -241,6 +248,23 @@ inline PageLayoutV3 pageLayoutV3(editkit::Box column, editkit::Box view, editkit
             }
         }
         if (!fitted) { L.leftRowH = kV3RowMin; v3::buildLeft(colZ, kV3RowMin, false, L); }
+    }
+
+    // ---- description boxes: bottom aligned on the desc pane (mod-config's shrunk LB_DESC)
+    if (desc.w > 0 && desc.h > 0) {
+        const int bottom = desc.y + desc.h;
+        const int top = v3::imax(L.status.y + L.status.h + v3::kGap, bottom - kV3DescMaxH);
+        if (L.status.w > 0 && bottom - top >= kV3DescMinH) {
+            L.hint[0] = Box{L.status.x, top, L.status.w, bottom - top};
+            L.hint[1] = Box{L.hint[0].x + kV3DescPad, top + kV3DescPad, v3::imax(0, L.hint[0].w - 2 * kV3DescPad), v3::imax(0, L.hint[0].h - 2 * kV3DescPad)};
+        } else {
+            L.hint[0] = Box{0, 0, 0, 0};
+            L.hint[1] = Box{0, 0, 0, 0};
+        }
+        if (desc.w > 2 * kV3DescPad && desc.h > 2 * kV3DescPad) {
+            L.hintR[0] = desc;
+            L.hintR[1] = Box{desc.x + kV3DescPad, desc.y + kV3DescPad, desc.w - 2 * kV3DescPad, desc.h - 2 * kV3DescPad};
+        }
     }
 
     // ---- view area: from 4 px right of the used column to the preview pane (or the old right edge)
@@ -330,6 +354,7 @@ inline int pageBoxesV3(const PageLayoutV3& L, editkit::Box* out) {
     out[n++] = L.note;
     for (int i = 0; i < kV3Hints; ++i) out[n++] = L.hint[i];
     out[n++] = L.reset;
+    for (int i = 0; i < kV3Hints; ++i) out[n++] = L.hintR[i];
     return n;
 }
 
@@ -355,13 +380,14 @@ enum PageIdxV3 {
     PI_ROW = 36,          // + row * 5 = name, +1 track, +2 thumb, +3 value, +4 reset
     PI_NOTE = 66,
     PI_HINT = 67,         // + hint (2)
-    PI_RESET_SCOPE = 69   // the Reset button next to Save / Revert (appended last)
+    PI_RESET_SCOPE = 69,  // the Reset button next to Save / Revert (appended after the hints)
+    PI_HINTR = 70         // + hint (2): the RIGHT description box (over mod-config's LB_DESC) and its text label (appended last)
 };
 constexpr int kRowStride = 5;   // boxes per inspector row (name, track, thumb, value, reset)
-static_assert(PI_HINT + kV3Hints == PI_RESET_SCOPE && PI_RESET_SCOPE + 1 == kPageItemsV3, "the PageIdxV3 table must cover exactly kPageItemsV3 boxes");
+static_assert(PI_HINT + kV3Hints == PI_RESET_SCOPE && PI_RESET_SCOPE + 1 == PI_HINTR && PI_HINTR + kV3Hints == kPageItemsV3, "the PageIdxV3 table must cover exactly kPageItemsV3 boxes");
 static_assert(PI_ROW + kV3Rows * kRowStride == PI_NOTE, "inspector rows end at the note");
 
-// The slider wedge (the teal fill behind each track) is a sixth item per row beside the 70 boxes: its rect is the track rect cut to the thumb fraction
+// The slider wedge (the teal fill behind each track) is a sixth item per row beside the 72 boxes: its rect is the track rect cut to the thumb fraction
 // (SliderArt.h sliderWedgeWidth). The page therefore holds kPageItemsV3 + kV3Rows items; the consumer cap (HseView.h kPageItemCap) must hold them.
 constexpr int kPageItemsV3Total = kPageItemsV3 + kV3Rows;
 

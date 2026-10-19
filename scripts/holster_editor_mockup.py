@@ -19,7 +19,13 @@ glyph advance, 1.98 px per texel at 3840 (ENGINE_PX_PER_TEXEL_3840).
 Fit (mirrors the DLL textfit::fitText): the caption is cut with "..." to (box w - pad) at texels * text_k * 0.75 px (TextFit.h TextK;
 HolsterEditor.cpp textCtx sy = ini text_k, no resolution scaling). --button-fit-pad 20, --label-fit-pad 8, --text-k 2.65 are the new DLL
 defaults; --legacy-fit = pad 8 for all + text_k 2.5 (the 0.4.3 build).
-Writes <out>.json beside the PNG: per item {i, kind, text, box, caption_rect, drawn, text_y0, lines, wraps}.
+Description boxes: the page has a LEFT green box (PI_HINT, text PI_HINT+1) bottom-aligned on the description pane and a RIGHT one (PI_HINTR, text
+PI_HINTR+1) that is the description pane itself (mod-config's shrunk LB_DESC). --desc X,Y,W,H sets that pane (engine px). Default derivation (default_desc):
+mod-config splits the original description pane (kDescSplitPermille 850) into the preview (top 85%, the rect the mockup already has) and LB_DESC (bottom
+15%); so original height = preview.h / 0.85, LB_DESC = (preview.x, preview.y + preview.h, preview.w, preview.h * 150 / 850) = 132 px tall at the measured
+3840 set (about the ~100 px the real screenshot shows at its 2000 px wide crop: 132 * 2000 / 2374). Frames use edge 0,105,81 / fill 0,17,11, texts 37,200,164
+top-left aligned and word wrapped in the inset text area (no "..." cut).
+Writes <out>.json beside the PNG: per item {i, kind, text, box, caption_rect, drawn, text_y0, lines, wraps, text_rect}.
 Use the repo venv (PIL + pykotor); the game install is needed for fonts and border textures.
 """
 import argparse
@@ -63,9 +69,9 @@ def build_dump(build_dir=None):
     return exe
 
 
-def run_dump(col, view, preview, build_dir=None):
+def run_dump(col, view, preview, desc=None, build_dir=None):
     exe = build_dump(build_dir)
-    args = [str(v) for v in (*col, *view, *preview)]
+    args = [str(v) for v in (*col, *view, *preview, *(desc or ()))]
     r = subprocess.run([str(exe)] + args, capture_output=True, text=True, check=True)
     return json.loads(r.stdout)
 
@@ -89,6 +95,15 @@ def panes_for(W, H):
     if (W, H) == (3840, 1600):
         return DEFAULT_PANES_3840x1600
     return geom_for(W, H)
+
+
+DESC_SPLIT_PERMILLE = 850   # HseLayoutV3.h kDescSplitPermille: the preview (inspector) is the top 85% of the description pane
+
+
+def default_desc(preview):
+    """Shrunk LB_DESC from the preview pane: the bottom (1000 - 850) / 850 of the preview's height, directly under it, same x and width."""
+    x, y, w, h = preview
+    return (x, y + h, w, h * (1000 - DESC_SPLIT_PERMILLE) // DESC_SPLIT_PERMILLE)
 
 
 def text_scale(W):
@@ -180,13 +195,20 @@ ROW_VALUES = ["0.0 cm", "-11.0 cm", "2.5 cm", "30.5 deg", "0.0 deg", "-5.0 deg"]
 HELP_LINE = "LMB turn . RMB+LMB move weapon . RMB+wheel depth . Shift fine . Ctrl snap"
 
 
+LEFT_DESC_TEXT = "Pick the weapon, the bone and where Save applies, then adjust the sliders. Hover a button for help."
+RIGHT_DESC_TEXT = "Drag or click a slider. Shift fine, Ctrl snap."
+DESC_EDGE = (0 / 255, 105 / 255, 81 / 255)   # description box frame colour 0,105,81
+DESC_FILL = (0, 17, 11, 255)                 # description box fill
+DESC_TEXT = (37 / 255, 200 / 255, 164 / 255)  # description text 37,200,164
+
+
 def caption_for(i):
     """Plausible caption of page item i (strings from HolsterEditor.cpp itemInitText / HseView.h; sample values for composed ones)."""
     fixed = {0: "<", 1: "Meetra Surik", 2: ">", 3: "WEAPON", 4: "BONE", 5: "APPLIES TO", 6: "Right: Vibrosword", 7: "Left: Vibrosword",
              13: "This weapon", 14: "All vibroswords", 15: "This body", 16: "Save", 17: "Revert",
              18: "Member 1/9 | Weapons: Right+Left", 19: ">Move<", 20: "Depth", 21: "Tilt", 22: "Roll/Turn", 23: "R", 24: "<>", 25: "",
              31: HELP_LINE, 32: "POSITION", 33: "R", 34: "ROTATION", 35: "R", 66: "Left: mirrored from right",
-             67: "Drag or click a slider. Shift fine, Ctrl snap.", 68: "Slide: side offset. Drag the marker (Shift fine, Ctrl snap).", 69: "Reset"}
+             67: "", 68: LEFT_DESC_TEXT, 69: "Reset", 70: "", 71: RIGHT_DESC_TEXT}
     if i in fixed:
         return fixed[i]
     if 8 <= i <= 12:
@@ -263,14 +285,14 @@ def wrap_width(kind, box, rect, mode):
     return rect[2]
 
 
-def draw_line(canvas, s, rect, y0, scale, col):
-    """Glyphs of s centred horizontally in rect, glyph cell top at y0 (cell height = 16 texels * scale)."""
+def draw_line(canvas, s, rect, y0, scale, col, left=False):
+    """Glyphs of s centred horizontally in rect (left=True: starting at rect x), glyph cell top at y0 (cell height = 16 texels * scale)."""
     import character_page_mockup as cpm
     from PIL import Image
     tex, boxes = cpm.font(FONT)
     tinted = cpm.tint(tex, col)
     adv = texel_widths()[FONT]
-    x = rect[0] + (rect[2] - text_px(s, scale)) / 2.0
+    x = rect[0] if left else rect[0] + (rect[2] - text_px(s, scale)) / 2.0
     for c in s:
         idx = ord(c) if ord(c) < 256 else 63
         if c != " ":
@@ -311,6 +333,22 @@ def draw_border_px(canvas, box, g=16, b=BTN_BORDER):
         ps(canvas, c.transpose(Image.ROTATE_180), (x1 - dx, y1 - dy, x1, y1))
 
 
+def line_rects(lines, rect, y0, line_h, scale, left):
+    """Union box [x, y, w, h] of the drawn lines (what the glyphs really cover), None when there is no text."""
+    xs = []
+    for k, ln in enumerate(lines):
+        if not ln:
+            continue
+        w = text_px(ln, scale)
+        x = rect[0] if left else rect[0] + (rect[2] - w) / 2.0
+        xs.append((x, x + w, y0 + k * line_h))
+    if not xs:
+        return None
+    x0, x1 = min(a for a, _, _ in xs), max(b for _, b, _ in xs)
+    ys = [y for _, _, y in xs]
+    return [int(x0), min(ys), int(x1 - int(x0) + 0.999), max(ys) + line_h - min(ys)]
+
+
 def render(W, H, panes, dump, mode="engine-model", fix=0, g=16, m=9, line_h=None, no_drop=False, crop=False,
            button_fit_pad=DEFAULT_BUTTON_FIT_PAD, label_fit_pad=DEFAULT_LABEL_FIT_PAD, text_k=DEFAULT_TEXT_K):
     """-> (RGBA image, sidecar dict)."""
@@ -322,7 +360,8 @@ def render(W, H, panes, dump, mode="engine-model", fix=0, g=16, m=9, line_h=None
         line_h = round(32 * text_scale(W) / 2)
     canvas = Image.new("RGBA", (W, H), (10, 20, 22, 255))
     d = ImageDraw.Draw(canvas)
-    for p in panes:
+    desc = dump["panes"].get("desc")
+    for p in list(panes) + ([desc] if desc and desc[2] > 0 and desc[3] > 0 else []):
         d.rectangle((p[0], p[1], p[0] + p[2] - 1, p[1] + p[3] - 1), outline=(40, 70, 70, 255))
     items = []
     for it in dump["items"]:
@@ -330,9 +369,28 @@ def render(W, H, panes, dump, mode="engine-model", fix=0, g=16, m=9, line_h=None
         X, Y, bw, bh = box
         text = caption_for(i)
         rec = {"i": i, "kind": kind, "text": text, "box": list(box)}
+        if bw <= 0 or bh <= 0:   # absent item (e.g. no description pane / too small): nothing to draw
+            rec.update(caption_rect=list(box), drawn=False, text_y0=None, shown="", lines=0, wraps=False, text_rect=None)
+            items.append(rec)
+            continue
+        if kind == "frame":
+            d.rectangle((X, Y, X + bw - 1, Y + bh - 1), fill=DESC_FILL)
+            draw_border_px(canvas, box, g, {**BTN_BORDER, "COLOR": DESC_EDGE})
+            rec.update(caption_rect=list(box), drawn=False, text_y0=None, shown="", lines=0, wraps=False, text_rect=None)
+            items.append(rec)
+            continue
+        if kind == "desctext":
+            lines = wrap_text(text, bw, scale) if text else []
+            overflow = len(lines) * line_h > bh
+            rec.update(caption_rect=list(box), drawn=bool(lines), text_y0=Y, shown=text, lines=len(lines), wraps=len(lines) > 1, overflow=overflow,
+                       text_rect=line_rects(lines, box, Y, line_h, scale, True))
+            for k, ln in enumerate(lines):
+                draw_line(canvas, ln, box, Y + k * line_h, scale, DESC_TEXT, left=True)
+            items.append(rec)
+            continue
         if kind == "view":
             d.rectangle((X, Y, X + bw - 1, Y + bh - 1), fill=(6, 10, 12, 255), outline=(60, 100, 100, 255))
-            rec.update(caption_rect=list(box), drawn=False, text_y0=None)
+            rec.update(caption_rect=list(box), drawn=False, text_y0=None, text_rect=None)
             items.append(rec)
             continue
         if kind == "button":
@@ -346,14 +404,15 @@ def render(W, H, panes, dump, mode="engine-model", fix=0, g=16, m=9, line_h=None
         lines = wrap_text(shown, wrap_width(kind, box, rect0, mode), scale) if shown else []
         n = max(1, len(lines))
         rect, drawn, y0 = place_caption(kind, box, mode, fix, g, m, line_h, no_drop, lines=n)
-        rec.update(caption_rect=list(rect), drawn=bool(drawn and shown), text_y0=y0, shown=shown, lines=len(lines), wraps=len(lines) > 1)
+        rec.update(caption_rect=list(rect), drawn=bool(drawn and shown), text_y0=y0, shown=shown, lines=len(lines), wraps=len(lines) > 1,
+                   text_rect=line_rects(lines, rect, y0, line_h, scale, False) if (drawn and shown) else None)
         if rec["drawn"]:
             for k, ln in enumerate(lines):
                 draw_line(canvas, ln, rect, y0 + k * line_h, scale, TEAL_TEXT if kind == "button" else CREAM)
         items.append(rec)
     side = {"width": W, "height": H, "mode": mode, "caption_fix": fix, "dim": g, "margin": m, "line_h": line_h, "text_scale": text_scale(W), "engine_px_per_texel": scale,
             "button_fit_pad": button_fit_pad, "label_fit_pad": label_fit_pad, "text_k": text_k, "fit_px_per_texel": fscale,
-            "panes": {"column": list(panes[0]), "view": list(panes[1]), "preview": list(panes[2])}, "rows": dump["rows"], "items": items}
+            "panes": {"column": list(panes[0]), "view": list(panes[1]), "preview": list(panes[2]), "desc": list(desc) if desc else None}, "rows": dump["rows"], "items": items}
     if crop:
         x0 = max(0, min(p[0] for p in panes) - 40)
         y0 = max(0, min(p[1] for p in panes) - 40)
@@ -377,6 +436,8 @@ def main(argv=None):
     ap.add_argument("--col", type=parse_rect)
     ap.add_argument("--view", type=parse_rect)
     ap.add_argument("--preview", type=parse_rect)
+    ap.add_argument("--desc", type=parse_rect, help="shrunk description pane (mod-config LB_DESC) X,Y,W,H in engine px (default: bottom 15%% of the original pane under the preview, see default_desc)")
+    ap.add_argument("--no-desc", action="store_true", help="old layout without description boxes")
     ap.add_argument("--mode", choices=("engine-model", "ideal"), default="engine-model")
     ap.add_argument("--caption-fix", type=int, choices=(0, 1), default=0)
     ap.add_argument("--dim", type=int, default=16, help="border DIMENSION G (px)")
@@ -398,7 +459,8 @@ def main(argv=None):
     if a.dump_json:
         dump = json.loads(Path(a.dump_json).read_text())
     else:
-        dump = run_dump(*panes, build_dir=a.build_dir)
+        desc = None if a.no_desc else (a.desc or default_desc(panes[2]))
+        dump = run_dump(*panes, desc=desc, build_dir=a.build_dir)
     if a.legacy_fit:
         defaults = (LEGACY_BUTTON_FIT_PAD, LEGACY_LABEL_FIT_PAD, LEGACY_TEXT_K)
     else:

@@ -27,7 +27,7 @@ _DUMP = None
 def dump():
     global _DUMP
     if _DUMP is None:
-        _DUMP = M.run_dump(*M.DEFAULT_PANES_3840x1600, build_dir=_BUILD)
+        _DUMP = M.run_dump(*M.DEFAULT_PANES_3840x1600, desc=M.default_desc(M.DEFAULT_PANES_3840x1600[2]), build_dir=_BUILD)
     return _DUMP
 
 
@@ -40,7 +40,7 @@ def cpp_button_indices():
     src = (M.SRC_DIR / "HolsterEditor.cpp").read_text()
     body = src[src.index("bool itemIsButton"):src.index("bool itemIsResetIcon")]
     out = set()
-    for i in range(70):
+    for i in range(72):
         ok = any(f"i == {n}" in body and i == pi[n] for n in ("PI_MEMBER_PREV", "PI_MEMBER_NEXT", "PI_SAVE", "PI_REVERT", "PI_RESET_SCOPE", "PI_VIEW_RESET", "PI_VIEW_FLIP"))
         for name, base, cnt in (("PI_WEAPON", "PI_WEAPON", "kV3Weapons"), ("PI_BONE", "PI_BONE", "kV3Bones"), ("PI_SCOPE", "PI_SCOPE", "kV3Scopes"),
                                 ("PI_MODE", "PI_MODE", "kV3Modes"), ("PI_STANCE", "PI_STANCE", "kV3Stances")):
@@ -58,10 +58,11 @@ def cpp_button_indices():
 class DumpTests(unittest.TestCase):
     def test_json_and_counts(self):
         d = dump()
-        self.assertEqual(len(d["items"]), 70)
-        self.assertEqual([it["i"] for it in d["items"]], list(range(70)))
+        self.assertEqual(len(d["items"]), 72)
+        self.assertEqual([it["i"] for it in d["items"]], list(range(72)))
         for key in ("column", "view", "preview"):
             self.assertEqual(len(d["panes"][key]), 4)
+        self.assertEqual(d["panes"]["desc"], list(M.default_desc(M.DEFAULT_PANES_3840x1600[2])))
         self.assertEqual(set(d["rows"]), {"leftRowH", "inspRowH", "barH"})
         self.assertGreaterEqual(d["rows"]["leftRowH"], 34)   # grows with the layout constants (34 in 0.4.3, 52 now)
 
@@ -71,6 +72,46 @@ class DumpTests(unittest.TestCase):
         self.assertEqual(buttons, cpp_button_indices())
         self.assertEqual(buttons, {0, 2, *range(6, 18), *range(19, 25), *range(26, 31), 33, 35, 40, 45, 50, 55, 60, 65, 69})
         self.assertEqual([it["i"] for it in d["items"] if it["kind"] == "view"], [25])
+
+
+class DescBoxTests(unittest.TestCase):
+    def _side(self, extra=()):
+        with tempfile.TemporaryDirectory() as td:
+            out = Path(td) / "p.png"
+            M.main(["--panes", "3840x1600", "--mode", "engine-model", "--caption-fix", "1", "--crop", "--build-dir", _BUILD, "--out", str(out), *extra])
+            return json.loads(out.with_suffix(".json").read_text())
+
+    def test_default_desc_derivation(self):
+        # bottom 15% of the original pane (preview = top 85%): 746 * 150 // 850 = 131 px, right under the preview, same x / width
+        self.assertEqual(M.default_desc((1953, 357, 1113, 746)), (1953, 1103, 1113, 131))
+
+    def test_both_boxes_same_bottom_and_no_text_overlap(self):
+        side = self._side()
+        by = {it["i"]: it for it in side["items"]}
+        left, right = by[67]["box"], by[70]["box"]
+        self.assertTrue(left[2] > 0 and left[3] > 0 and right[2] > 0 and right[3] > 0)
+        self.assertEqual(left[1] + left[3], right[1] + right[3])
+        self.assertEqual(right, side["panes"]["desc"])
+        self.assertEqual(by[68]["text"], M.LEFT_DESC_TEXT)
+        self.assertEqual(by[71]["text"], M.RIGHT_DESC_TEXT)
+        self.assertEqual((by[67]["text"], by[70]["text"]), ("", ""))   # the frames carry no caption (the old table put hint text on them -> two labels at one spot)
+        for i in (68, 71):   # text stays inside its box
+            self.assertFalse(by[i]["overflow"], i)
+            tr, bx = by[i]["text_rect"], by[i]["box"]
+            self.assertTrue(bx[0] <= tr[0] and tr[0] + tr[2] <= bx[0] + bx[2] and bx[1] <= tr[1] and tr[1] + tr[3] <= bx[1] + bx[3], (i, tr, bx))
+        rects = [(it["i"], it["text_rect"]) for it in side["items"] if it.get("text_rect")]
+        self.assertTrue(len(rects) > 40)
+        bad = [(a, b) for k, (a, ra) in enumerate(rects) for b, rb in rects[k + 1:]
+               if min(ra[0] + ra[2], rb[0] + rb[2]) > max(ra[0], rb[0]) and min(ra[1] + ra[3], rb[1] + rb[3]) > max(ra[1], rb[1])]
+        self.assertEqual(bad, [])
+
+    def test_desc_option_and_absent(self):
+        side = self._side(["--desc", "1953,1103,1113,160"])
+        by = {it["i"]: it for it in side["items"]}
+        self.assertEqual(by[70]["box"], [1953, 1103, 1113, 160])
+        self.assertEqual(by[67]["box"][1] + by[67]["box"][3], 1263)
+        side = self._side(["--no-desc"])
+        self.assertEqual(side["panes"]["desc"], [0, 0, 0, 0])
 
 
 class PlacementTests(unittest.TestCase):
@@ -188,7 +229,7 @@ class SmokeTests(unittest.TestCase):
             self.assertEqual(M.main(["--panes", "3840x1600", "--mode", "engine-model", "--caption-fix", "1", "--crop", "--build-dir", _BUILD, "--out", str(out)]), 0)
             self.assertTrue(out.stat().st_size > 1000)
             side = json.loads(out.with_suffix(".json").read_text())
-            self.assertEqual(len(side["items"]), 70)
+            self.assertEqual(len(side["items"]), 72)
             self.assertIn("crop", side)
             btn = [it for it in side["items"] if it["kind"] == "button" and it["box"][3] >= 34]
             self.assertTrue(btn and all(it["drawn"] for it in btn if it["text"]))

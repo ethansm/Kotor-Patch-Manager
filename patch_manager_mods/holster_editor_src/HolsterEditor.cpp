@@ -1,4 +1,4 @@
-// HolsterEditor.cpp -- holster-editor 0.4.8-dev (Steam build): a HOOKLESS consumer of the mod-config provider (k2.modconfig@1, k2.menuui@1).
+// HolsterEditor.cpp -- holster-editor 0.4.9-dev (Steam build): a HOOKLESS consumer of the mod-config provider (k2.modconfig@1, k2.menuui@1).
 // (doc 42 HW-EDIT, plan .claude/plans/holster_editor_options.md; page rebuild: .claude/plans/holster_editor_layout_v3.md, holster_hw_ux3_build.md Wave B.)
 //
 // mod-config owns everything about the Options screen: the hooks, the root "Mod Configuration" button, the list page, control cloning,
@@ -187,6 +187,10 @@ struct Editor {
 
     // Panes (UI units, re-read every tick) and the layout built from them (hse::pageLayoutV3; the enlarged view is lay.view = viewRect)
     hse::HseRect paneCol = {0, 0, 0, 0}, paneView = {0, 0, 0, 0}, panePreview = {0, 0, 0, 0};
+    hse::HseRect paneDesc = {0, 0, 0, 0};   // MUI_PANE_DESC: mod-config's shrunk LB_DESC (clipped under the preview pane); all zero = unavailable
+    int hintRState = -1;                    // the right description box: -1 not decided, 0 absent (no pane / too small), 1 placed (logged on change)
+    bool hintLHave = false, hintRHave = false;   // the left / right description box had room at the last hint refresh (a change rewrites the texts)
+    char longTxt[2][256] = {{0}, {0}};      // the full text of the left (0) / right (1) description label (SetText is cut to 95 characters by mod-config)
     bool panesOk = false;
     hse::PageLayoutV3 lay = {};
     bool layOk = false;
@@ -435,8 +439,8 @@ bool itemIsResetIcon(int i) {
 
 // The party member prev / next buttons: arrow art on the button (the "<" ">" captions render as nothing).
 bool itemIsMemberArrow(int i) { return i == hse::PI_MEMBER_PREV || i == hse::PI_MEMBER_NEXT; }
-bool itemIsHintBox(int i) { return i == hse::PI_HINT; }       // the left description box (fill art)
-bool itemIsHintText(int i) { return i == hse::PI_HINT + 1; }   // its text label
+bool itemIsHintBox(int i) { return i == hse::PI_HINT || i == hse::PI_HINTR; }             // the left / right description box (fill art)
+bool itemIsHintText(int i) { return i == hse::PI_HINT + 1 || i == hse::PI_HINTR + 1; }   // its text label
 // Buttons whose hover help goes to the LEFT description box (the editor writes it) instead of mod-config's right pane (which then keeps the slider help).
 bool itemIsLeftTip(int i) {
     using namespace hse;
@@ -1527,12 +1531,26 @@ bool refreshPanes(Editor& e) {
         return e.panesOk;
     }
     const hse::HseRect nc = {c.x, c.y, c.w, c.h}, nv = {v.x, v.y, v.w, v.h}, np = {p.x, p.y, p.w, p.h};
-    if (!e.panesOk || memcmp(&nc, &e.paneCol, sizeof nc) != 0 || memcmp(&nv, &e.paneView, sizeof nv) != 0 || memcmp(&np, &e.panePreview, sizeof np) != 0) {
+    // MUI_PANE_DESC answers the LIVE LB_DESC rect: the shrunk one while the split is applied (ModConfig.cpp paneRect), the full original rect for the first ticks
+    // before syncDescSplit ran. Both end on the same bottom, so the top is clipped under the preview pane (the preview bottom is where the shrunk rect starts, less
+    // mod-config's small gap). All zero = unavailable: the right box stays absent.
+    K2MuiRect d = {0, 0, 0, 0};
+    hse::HseRect nd = {0, 0, 0, 0};
+    if (g_menu.p->PaneRect(e.panel, MUI_PANE_DESC, &d) && d.w > 0 && d.h > 0) {
+        const int pb = np.y + np.h;
+        nd = hse::HseRect{d.x, d.y, d.w, d.h};
+        if (nd.y < pb) { nd.h -= pb - nd.y; nd.y = pb; }
+        if (nd.h <= 0 || nd.w <= 0) nd = hse::HseRect{0, 0, 0, 0};
+    }
+    if (!e.panesOk || memcmp(&nc, &e.paneCol, sizeof nc) != 0 || memcmp(&nv, &e.paneView, sizeof nv) != 0 || memcmp(&np, &e.panePreview, sizeof np) != 0 ||
+        memcmp(&nd, &e.paneDesc, sizeof nd) != 0) {
         e.paneCol = nc;
         e.paneView = nv;
         e.panePreview = np;
+        e.paneDesc = nd;
         e.panesOk = true;
-        KP_LOG(chView, "LAYOUT panes column=(%d,%d,%d,%d) view=(%d,%d,%d,%d) preview=(%d,%d,%d,%d)", nc.x, nc.y, nc.w, nc.h, nv.x, nv.y, nv.w, nv.h, np.x, np.y, np.w, np.h);
+        KP_LOG(chView, "LAYOUT panes column=(%d,%d,%d,%d) view=(%d,%d,%d,%d) preview=(%d,%d,%d,%d) desc=(%d,%d,%d,%d) raw=(%d,%d,%d,%d)", nc.x, nc.y, nc.w, nc.h, nv.x, nv.y, nv.w, nv.h,
+               np.x, np.y, np.w, np.h, nd.x, nd.y, nd.w, nd.h, d.x, d.y, d.w, d.h);
     }
     return true;
 }
@@ -1547,14 +1565,24 @@ void applyLayout(Editor& e) {
     editkit::Box col = hse::boxOf(e.paneCol), prev = hse::boxOf(e.panePreview);
     col.x -= g_marginPx; col.w += g_marginPx;   // into the empty screen margins (ini margin_px 0 = stay inside the panes)
     prev.w += g_marginPx;
-    const hse::PageLayoutV3 L = hse::pageLayoutV3(col, hse::boxOf(e.paneView), prev, none, e.rowFrac);
+    const hse::PageLayoutV3 L = hse::pageLayoutV3(col, hse::boxOf(e.paneView), prev, none, e.rowFrac, hse::boxOf(e.paneDesc));
     const bool first = !e.layOk;
+    const int rState = L.hintR[0].w > 0 ? 1 : 0;
+    if (rState != e.hintRState) {   // the right description box (a framed label over mod-config's LB_DESC, hides its scrollbar) was created / lost
+        e.hintRState = rState;
+        if (rState)
+            KP_LOG(chView, "HINTR box created over LB_DESC rect=(%d,%d,%d,%d) text=(%d,%d,%d,%d) left=(%d,%d,%d,%d)", L.hintR[0].x, L.hintR[0].y, L.hintR[0].w, L.hintR[0].h,
+                   L.hintR[1].x, L.hintR[1].y, L.hintR[1].w, L.hintR[1].h, L.hint[0].x, L.hint[0].y, L.hint[0].w, L.hint[0].h);
+        else
+            KP_LOG(chView, "HINTR box absent (desc pane=(%d,%d,%d,%d) unavailable or too small): the right help goes through SetDesc only", e.paneDesc.x, e.paneDesc.y, e.paneDesc.w,
+                   e.paneDesc.h);
+    }
     e.lay = L;
     e.layOk = true;
     editkit::Box all[hse::kPageItemsV3];
     hse::pageBoxesV3(L, all);
     for (int i = 0; i < hse::kPageItemsV3; ++i) {
-        const bool emptyHint = (itemIsHintBox(i) || itemIsHintText(i)) && (all[i].w <= 0 || all[i].h <= 0);   // no room for the left description box
+        const bool emptyHint = (itemIsHintBox(i) || itemIsHintText(i)) && (all[i].w <= 0 || all[i].h <= 0);   // no room for the left / right description box
         placeBox(e.item[i], emptyHint ? editkit::Box{-9999, -9999, 0, 0} : all[i]);
     }
     for (int r = 0; r < hse::kV3Rows; ++r) {   // the wedge is the track cut at the thumb centre (nothing at 0: parked off screen like the hidden items)
@@ -1804,26 +1832,48 @@ int hoverRowAt(const Editor& e, int x, int y) {
 constexpr const char* kSliderHelp = "Drag or click a slider. Shift fine, Ctrl snap.";
 constexpr const char* kLeftHelp = "Pick the weapon, the bone and where Save applies, then adjust the sliders. Hover a button for help.";
 
-// Right description pane (mod-config's green box, written through SetDesc): the help of the hovered slider row plus the drag keys, else the drag keys.
-// Written when the hovered row changes only, so mod-config's own hover text for the view buttons is not overwritten every tick.
-// Left description box (hint items): the help of the hovered left-column button, else a short default. Without the box (small panes) it goes to the right pane.
+// Sets the text of a description label (PI_HINT + 1 = left, PI_HINTR + 1 = right). mod-config keeps item text in 96 bytes, so the provider is told the cut text
+// (keeps its state sane) and the label gets the FULL text straight through guikit. Written only when it changed.
+void setHintText(Editor& e, int idx, const char* text) {
+    if (idx < 0 || idx >= hse::kPageItemsV3 || e.item[idx] < 0 || !g_menu.ok() || !e.page || !text) return;
+    char (&cache)[256] = e.longTxt[idx == hse::PI_HINTR + 1 ? 1 : 0];
+    if (!strcmp(cache, text)) return;
+    snprintf(cache, sizeof cache, "%s", text);
+    g_menu.p->SetText(e.page, e.item[idx], cache);
+    if (const uintptr_t c = ctlOf(e, e.item[idx])) (void)guikit::setText(c, cache);
+}
+
+// Right description pane (mod-config's green LB_DESC, written through SetDesc, and our framed label drawn over it): the help of the hovered slider row plus the
+// drag keys, else the help of the hovered RIGHT-side button (mode, view, stance, reset icons), else the drag keys. Written when the shown thing changes only.
+// Left description box (hint items): the help of the hovered left-column button, else a short default. Without the left box (small panes) it goes to the right pane.
 void refreshHints(Editor& e, int x, int y) {
     if (!g_menu.ok() || !e.page) return;
-    const int row = hoverRowAt(e, x, y);
-    if (row != e.hintRow) {
-        e.hintRow = row;
-        char buf[200];
-        if (row >= 0) snprintf(buf, sizeof buf, "%s %s", hse::inspHint(row), kSliderHelp); else snprintf(buf, sizeof buf, "%s", kSliderHelp);
-        g_menu.p->SetDesc(e.page, buf);
-    }
+    const bool haveL = e.lay.hint[0].w > 0, haveR = e.lay.hintR[0].w > 0;
+    if (haveR != e.hintRHave) { e.hintRHave = haveR; e.hintRow = -2; }   // the box appeared / went: write its text again
+    if (haveL != e.hintLHave) { e.hintLHave = haveL; e.leftTip = -2; }
     int tip = -1;
     for (int i = 0; i < hse::kPageItemsV3 && tip < 0; ++i)
         if (itemIsLeftTip(i) && overItem(e, e.item[i], x, y)) tip = i;
+    const int row = hoverRowAt(e, x, y);
+    int rtip = -1;   // a RIGHT-side button with help (the mode bar, the view icons, the stances, the group resets)
+    for (int i = 0; row < 0 && i < hse::kPageItemsV3 && rtip < 0; ++i)
+        if (itemIsButton(i) && !itemIsLeftTip(i) && itemTip(i)[0] && overItem(e, e.item[i], x, y)) rtip = i;
+    // key of what the right pane shows: a slider row, 100 + a right button, 200 + a left button (no left box), -1 the default
+    const int key = row >= 0 ? row : (rtip >= 0 ? 100 + rtip : ((!haveL && tip >= 0) ? 200 + tip : -1));
+    if (key != e.hintRow) {
+        e.hintRow = key;
+        char buf[240];
+        if (row >= 0) snprintf(buf, sizeof buf, "%s %s", hse::inspHint(row), kSliderHelp);
+        else if (rtip >= 0) snprintf(buf, sizeof buf, "%s", itemTip(rtip));
+        else if (key >= 200) snprintf(buf, sizeof buf, "%s", itemTip(tip));
+        else snprintf(buf, sizeof buf, "%s", kSliderHelp);
+        g_menu.p->SetDesc(e.page, buf);
+        if (haveR) setHintText(e, hse::PI_HINTR + 1, buf);
+    }
     if (tip == e.leftTip) return;
     e.leftTip = tip;
     const char* text = tip >= 0 ? itemTip(tip) : kLeftHelp;
-    if (e.lay.hint[0].w > 0) setItemText(e, hse::PI_HINT + 1, text);
-    else if (tip >= 0) g_menu.p->SetDesc(e.page, text);
+    if (haveL) setHintText(e, hse::PI_HINT + 1, text);
 }
 
 // Ends the running scrub (release) or drops it (cancelled: foreground loss, leave, scope change, edit closing, ...). Applied values stay as they are.
@@ -2073,6 +2123,8 @@ void KPATCH_CALL cbEnter(uint32_t page, void*) {
     setItemText(g_ed, hse::PI_STATUS, statusText());
     char fit[64];
     g_ed.leftTip = -2;
+    g_ed.longTxt[0][0] = g_ed.longTxt[1][0] = '\x01';   // rewrite both description texts on this visit
+    g_ed.hintRState = -1;
     {   // the legend line under the view: cut to the view width
         char leg[64];
         fitButton(labelPx(g_ed, g_ed.lay.legend), hse::helpLine(), leg, sizeof leg);
@@ -2349,8 +2401,8 @@ void applyArt(Editor& e) {
             const uintptr_t tc = ctlOf(e, e.item[i]);
             if (tc) {   // the description teal (37,200,164) + top-left, as the Options description list draws. No SetFont: SetFont(fnt_d16x16b) on this label
                         // crashed live (10-18 21:51, 0x47AFA8 null font data in the wrap pass, backtrace SetFont 0x416DE0 <- holster-editor) so the label keeps its font
-                descStyle = (guikit::setTextColor(tc, 37.0f / 255.0f, 200.0f / 255.0f, 164.0f / 255.0f) ? 2 : 0) |
-                            (guikit::setAlign(tc, 9) ? 4 : 0);
+                descStyle |= (guikit::setTextColor(tc, 37.0f / 255.0f, 200.0f / 255.0f, 164.0f / 255.0f) ? 2 : 0) |
+                             (guikit::setAlign(tc, 9) ? 4 : 0);
             }
         }
     }
@@ -2384,7 +2436,7 @@ void applyArt(Editor& e) {
         }
     }
     e.artDone = true;
-    KP_LOG(chView, "ART applied frame=%d/%d wedge=%d/%d mark=%d/%d reset_icon=%d/%d member_arrow=%d/%d flip=%d/1 hint_box=%d/1 desc_style=%d/6 after %d ticks", frame, hse::kV3Rows, wedge, hse::kV3Rows, mark,
+    KP_LOG(chView, "ART applied frame=%d/%d wedge=%d/%d mark=%d/%d reset_icon=%d/%d member_arrow=%d/%d flip=%d/1 hint_box=%d/2 desc_style=%d/6 after %d ticks", frame, hse::kV3Rows, wedge, hse::kV3Rows, mark,
            hse::kV3Rows, icon, icons, arrow, arrows, flip, hintBox, descStyle, e.artTicks);
 }
 
@@ -2743,7 +2795,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     g_menu.init(api);
     embedgui::g_log = embedLog;
     embtex::g_log = embedLog;
-    KP_LOG(chMain, "holster-editor 0.4.8-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
+    KP_LOG(chMain, "holster-editor 0.4.9-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
            static_cast<unsigned>(sizeof kHseViewGui));
     const bool cfgOk = g_cfgClient.connect(), menuOk = g_menu.connect();
     if (!cfgOk || !menuOk) {

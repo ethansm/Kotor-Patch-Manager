@@ -1,6 +1,7 @@
 // Host dump of the holster editor page layout (HseLayoutV3.h) as JSON, for scripts/holster_editor_mockup.py (offline caption/box renderer).
 // Build (from patch_manager_mods/holster_editor_src): g++ -std=c++17 -Wall -Wextra -I../_shared_src -Werror tools/hse_layout_dump.cpp -o <exe>
-// Usage: hse_layout_dump <col x y w h> <view x y w h> <preview x y w h>   (12 ints; hint = none, rowFrac = the editor default 0.5)
+// Usage: hse_layout_dump <col x y w h> <view x y w h> <preview x y w h> [<desc x y w h>]   (12 or 16 ints; hint = none, rowFrac = the editor default 0.5;
+// desc = the SHRUNK description pane (mod-config LB_DESC) -> left + right description boxes, omitted = the old layout without them)
 #include "../HseLayoutV3.h"
 #include <cstdio>
 #include <cstdlib>
@@ -9,6 +10,8 @@
 static const char* itemKind(int i) {
     using namespace hse;
     if (i == PI_VIEW) return "view";
+    if (i == PI_HINT || i == PI_HINTR) return "frame";                   // the green description boxes (drawn as a frame, no caption)
+    if (i == PI_HINT + 1 || i == PI_HINTR + 1) return "desctext";        // their text areas (top-left aligned, word wrapped)
     if (i == PI_MEMBER_PREV || i == PI_MEMBER_NEXT || i == PI_SAVE || i == PI_REVERT || i == PI_RESET_SCOPE || i == PI_VIEW_RESET || i == PI_VIEW_FLIP) return "button";
     if (i >= PI_WEAPON && i < PI_WEAPON + kV3Weapons) return "button";
     if (i >= PI_BONE && i < PI_BONE + kV3Bones) return "button";
@@ -27,22 +30,23 @@ static void pane(const char* name, const editkit::Box& b, bool last) {
 }
 
 int main(int argc, char** argv) {
-    if (argc != 13) {
-        std::fprintf(stderr, "usage: %s <col x y w h> <view x y w h> <preview x y w h>\n", argv[0]);
+    if (argc != 13 && argc != 17) {
+        std::fprintf(stderr, "usage: %s <col x y w h> <view x y w h> <preview x y w h> [<desc x y w h>]\n", argv[0]);
         return 2;
     }
-    int v[12];
-    for (int i = 0; i < 12; ++i) v[i] = std::atoi(argv[i + 1]);
-    const editkit::Box col{v[0], v[1], v[2], v[3]}, view{v[4], v[5], v[6], v[7]}, prev{v[8], v[9], v[10], v[11]};
+    int v[16] = {0};
+    for (int i = 0; i < argc - 1; ++i) v[i] = std::atoi(argv[i + 1]);
+    const editkit::Box col{v[0], v[1], v[2], v[3]}, view{v[4], v[5], v[6], v[7]}, prev{v[8], v[9], v[10], v[11]}, desc{v[12], v[13], v[14], v[15]};
     const editkit::Box none{0, 0, 0, 0};
     const float rowFrac[hse::kV3Rows] = {0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f};   // HolsterEditor.cpp Editor::rowFrac default
-    const hse::PageLayoutV3 L = hse::pageLayoutV3(col, view, prev, none, rowFrac);
+    const hse::PageLayoutV3 L = hse::pageLayoutV3(col, view, prev, none, rowFrac, desc);
     editkit::Box all[hse::kPageItemsV3];
     const int n = hse::pageBoxesV3(L, all);
     std::printf("{\"panes\":{");
     pane("column", col, false);
     pane("view", view, false);
-    pane("preview", prev, true);
+    pane("preview", prev, false);
+    pane("desc", desc, true);
     std::printf("},\"rows\":{\"leftRowH\":%d,\"inspRowH\":%d,\"barH\":%d},\"items\":[", L.leftRowH, L.inspRowH, L.barH);
     for (int i = 0; i < n; ++i)
         std::printf("%s{\"i\":%d,\"kind\":\"%s\",\"box\":[%d,%d,%d,%d]}", i ? "," : "", i, itemKind(i), all[i].x, all[i].y, all[i].w, all[i].h);
