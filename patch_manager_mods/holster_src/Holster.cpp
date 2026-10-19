@@ -120,10 +120,8 @@ static bool takeEditLine() {
     return false;
 }
 
-static char* trimIni(char* s) {
-    while (*s == ' ' || *s == '\t' || *s == '\r' || *s == '\n') ++s;
-    size_t n = strlen(s);
-    while (n && (s[n - 1] == ' ' || s[n - 1] == '\t' || s[n - 1] == '\r' || s[n - 1] == '\n')) s[--n] = 0;
+static char* trimIni(char* s) {   // inikit::trim works in place (it also strips \v and \f), so the pointer stays valid
+    inikit::trim(s);
     return s;
 }
 

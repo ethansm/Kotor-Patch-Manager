@@ -2459,7 +2459,7 @@ hse::ChordOut weaponMouse(Editor& e, int curX, int curY, bool insideView, bool f
 
     // The running gesture
     if (o.act == hse::CA_ORBIT && o.began != hse::CA_ORBIT && e.drag.active) {
-        p3d::ViewState vs = {e.view.yaw, e.view.zoom, e.view.panZ};
+        p3d::ViewState vs = e.view;   // hse::View is p3d::ViewState
         if (p3d::dragMove(&e.drag, static_cast<float>(curX), static_cast<float>(curY), e.dragCfg, &vs)) {
             e.view.yaw = hse::wrapYaw(vs.yaw);
             e.view.panZ = hse::panStep(vs.panZ, 0);   // clamp to [-1, 1]

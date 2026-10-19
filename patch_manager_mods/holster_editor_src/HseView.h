@@ -6,14 +6,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include "EditKit.h"    // editkit::sliderToValue
+#include "ViewDrag.h"   // p3d::ViewState
 
 namespace hse {
 
-struct View {
-    float yaw;
-    float zoom;
-    float panZ;
-};
+using View = p3d::ViewState;   // {yaw, zoom, panZ}: the same three floats the shared drag maths edits
 
 constexpr float kZoomMin = 0.4f;   // HW-UX3: low enough to show the whole body (0.8 before)
 constexpr float kZoomMax = 4.0f;
@@ -1139,10 +1137,7 @@ inline float inspThumbFrac(int row, float value) {
 inline float inspTrackValue(int row, int px, int trackX, int trackW) {
     if (row < 0 || row >= IR_COUNT || trackW <= 0) return NAN;
     const float W = inspWindow(row);
-    const int d = px - trackX;
-    if (d <= 0) return -W;
-    if (d >= trackW) return W;
-    return -W + (static_cast<float>(d) / static_cast<float>(trackW)) * (2.0f * W);
+    return editkit::sliderToValue(px, editkit::Box{trackX, 0, trackW, 0}, -W, W);   // clamped to the track: the ends return -W / +W exactly
 }
 
 // One short hint line (ASCII, under 64 characters) for the hovered slider row.
