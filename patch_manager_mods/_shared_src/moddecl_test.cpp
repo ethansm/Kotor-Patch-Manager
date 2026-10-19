@@ -21,6 +21,7 @@ static K2MuiChangeFn g_fn;
 static void* g_fnUser;
 static uint32_t g_page = 7;
 static int g_newPageCalls, g_failAddAt, g_addCalls;
+static bool g_rejectSlider;   // a provider that predates kind 2 (MUI_ROW_SLIDER): AddRow answers < 0
 static char g_title[64];
 
 static void fakeReset() {
@@ -31,6 +32,7 @@ static void fakeReset() {
     g_newPageCalls = 0;
     g_failAddAt = -1;
     g_addCalls = 0;
+    g_rejectSlider = false;
     g_title[0] = 0;
 }
 static int32_t clampTo(const FakeRow& r, int32_t v) {
@@ -44,6 +46,7 @@ static uint32_t KPATCH_CALL fNewPage(void*, const char* title) {
 }
 static int32_t KPATCH_CALL fAddRow(uint32_t, const K2MuiRowSpec* sp) {
     if (g_addCalls++ == g_failAddAt || g_nRows >= 40) return -1;
+    if (g_rejectSlider && sp->kind == MUI_ROW_SLIDER) return -1;
     FakeRow& r = g_rows[g_nRows];
     r.spec = *sp;
     r.value = sp->value;
@@ -684,6 +687,101 @@ static void test_review_fixes() {
     KT_CHECK(strcmp(b, "Opacity: Off (restart)") == 0);
 }
 
+static const char* kSliderSchema = R"TOML(
+[page]
+name = "Sliders"
+[[row]]
+id = "vol"
+kind = "stepper"
+style = "slider"
+label = "Volume"
+min = 0
+max = 100
+step = 5
+default = 50
+fmt = "Volume %d%%"
+[[row]]
+id = "plain"
+kind = "stepper"
+min = 1
+max = 4
+[[row]]
+id = "explicit"
+kind = "stepper"
+style = "stepper"
+min = 1
+max = 4
+[[row]]
+id = "on"
+kind = "toggle"
+)TOML";
+
+static void test_slider_style() {
+    static PageDecl pd;
+    char err[96];
+    KT_CHECK(parseStr(kSliderSchema, pd, err, sizeof err));
+    KT_CHECK(pd.rows[0].slider && !pd.rows[1].slider && !pd.rows[2].slider && !pd.rows[3].slider);
+    const char* pg = "[page]\nname = \"P\"\n";
+    char b[400];
+    snprintf(b, sizeof b, "%s[[row]]\nid = \"a\"\nkind = \"stepper\"\nstyle = \"knob\"\n", pg);
+    expectBad(b, "style must be stepper or slider");
+    snprintf(b, sizeof b, "%s[[row]]\nid = \"a\"\nkind = \"stepper\"\nstyle = 3\n", pg);
+    expectBad(b, "expected a string");
+    snprintf(b, sizeof b, "%s[[row]]\nid = \"a\"\nkind = \"toggle\"\nstyle = \"slider\"\n", pg);
+    expectBad(b, "stepper rows only");
+    snprintf(b, sizeof b, "%s[[row]]\nid = \"a\"\nkind = \"list\"\nchoices = [\"x\",\"y\"]\nstyle = \"slider\"\n", pg);
+    expectBad(b, "stepper rows only");
+    snprintf(b, sizeof b, "%s[[row]]\nid = \"a\"\nkind = \"dynamic\"\nstyle = \"slider\"\n", pg);
+    expectBad(b, "stepper rows only");
+
+    // a provider that knows kind 2: the slider row is added once as a slider, the others unchanged
+    setupPage(kSliderSchema);
+    g_pg.build(reinterpret_cast<void*>(0x1234));
+    KT_CHECK(g_pg.built);
+    KT_CHECK_EQ(g_nRows, 4);
+    KT_CHECK_EQ(g_addCalls, 4);
+    KT_CHECK_EQ(g_rows[0].spec.kind, MUI_ROW_SLIDER);
+    KT_CHECK_EQ(g_rows[1].spec.kind, MUI_ROW_STEPPER);
+    KT_CHECK_EQ(g_rows[2].spec.kind, MUI_ROW_STEPPER);
+    KT_CHECK_EQ(g_rows[3].spec.kind, MUI_ROW_TOGGLE);
+    KT_CHECK_EQ(g_pg.rowKind[0], MUI_ROW_SLIDER);
+    KT_CHECK_EQ(g_pg.rowKind[1], MUI_ROW_STEPPER);
+    KT_CHECK_EQ(g_pg.rowKind[3], MUI_ROW_TOGGLE);
+    KT_CHECK(g_rows[0].spec.min == 0 && g_rows[0].spec.max == 100 && g_rows[0].spec.step == 5 && g_rows[0].value == 50);
+    KT_CHECK(g_rows[0].spec.fmt && strcmp(g_rows[0].spec.fmt, "Volume %d%%") == 0);
+
+    // a provider that refuses kind 2: the same row is asked again as a stepper (one extra AddRow call), nothing else changes
+    setupPage(kSliderSchema);
+    g_rejectSlider = true;
+    g_pg.build(reinterpret_cast<void*>(0x1234));
+    KT_CHECK(g_pg.built);
+    KT_CHECK_EQ(g_nRows, 4);
+    KT_CHECK_EQ(g_addCalls, 5);
+    KT_CHECK_EQ(g_rows[0].spec.kind, MUI_ROW_STEPPER);
+    KT_CHECK(g_rows[0].spec.min == 0 && g_rows[0].spec.max == 100 && g_rows[0].spec.step == 5 && g_rows[0].value == 50);
+    KT_CHECK(g_rows[0].spec.fmt && strcmp(g_rows[0].spec.fmt, "Volume %d%%") == 0);
+    KT_CHECK_EQ(g_pg.rowKind[0], MUI_ROW_STEPPER);
+    KT_CHECK_EQ(g_pg.rowId[0], 0);
+    KT_CHECK_EQ(g_pg.rowId[3], 3);
+    // the change path is the stepper one: the hook's final value is stored, row ids still map
+    g_hookSet = true; g_hookRet = 55;
+    KT_CHECK_EQ(g_fn(g_page, g_pg.rowId[0], 60, 1, g_fnUser), 55);
+
+    // the first call fails for another reason: the stepper retry still succeeds; when the retry fails too the row is skipped (one retry only)
+    setupPage(kSliderSchema);
+    g_failAddAt = 0;
+    g_pg.build(reinterpret_cast<void*>(0x1234));
+    KT_CHECK_EQ(g_addCalls, 5);          // slider refused (call 0), stepper retry (call 1) accepted
+    KT_CHECK_EQ(g_pg.rowKind[0], MUI_ROW_STEPPER);
+    setupPage(kSliderSchema);
+    g_rejectSlider = true;
+    g_failAddAt = 1;                      // the stepper retry itself fails
+    g_pg.build(reinterpret_cast<void*>(0x1234));
+    KT_CHECK_EQ(g_pg.rowId[0], -1);
+    KT_CHECK_EQ(g_pg.rowKind[0], -1);
+    KT_CHECK_EQ(g_pg.rowId[1], 0);        // provider ids stay dense: the next row is the provider's first
+}
+
 static void test_footprint() {
     KT_CHECK(sizeof(Page) < 64 * 1024);
     KT_CHECK(sizeof(PageDecl) < 48 * 1024);
@@ -749,6 +847,7 @@ int main() {
     test_no_ini_and_dynamic();
     test_provider_variants();
     test_review_fixes();
+    test_slider_style();
     test_footprint();
     return kt::Report("moddecl_test");
 }

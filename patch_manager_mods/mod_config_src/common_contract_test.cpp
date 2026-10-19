@@ -91,6 +91,13 @@ int main() {
     MEQ("K2MenuUiApi.SetModalOpen at slot 21", offsetof(K2MenuUiApi, SetModalOpen), 21 * sizeof(void*));
     MEQ("K2MenuUiApi.AddGear at slot 22 (the last field)", offsetof(K2MenuUiApi, AddGear), 22 * sizeof(void*));
     MEQ("MUI_ROW_TOGGLE == 0 / MUI_ROW_STEPPER == 1", MUI_ROW_TOGGLE * 10 + MUI_ROW_STEPPER, 1);
+    // MCF5: kind 2 is the slider; it is NOT a new API slot (the table above stays 23 slots, K2MuiRowSpec keeps its layout), so a consumer detects
+    // it by calling AddRow with kind 2 and falling back to MUI_ROW_STEPPER when the provider answers < 0.
+    MEQ("MUI_ROW_SLIDER == 2", MUI_ROW_SLIDER, 2);
+    MCHECK("MUI_ROW_TOGGLE / STEPPER / SLIDER are 0 / 1 / 2 (distinct)", MUI_ROW_TOGGLE == 0 && MUI_ROW_STEPPER == 1 && MUI_ROW_SLIDER == 2);
+    MEQ("K2MuiRowSpec is 13 4-byte fields on 32-bit (52 bytes), unchanged by the slider kind", sizeof(void*) == 4 ? sizeof(K2MuiRowSpec) : static_cast<size_t>(52), 52);
+    MEQ("K2MuiRowSpec.zeroText is the last field", offsetof(K2MuiRowSpec, zeroText) + sizeof(const char*), sizeof(K2MuiRowSpec));
+    MEQ("K2MenuUiApi still ends at AddGear (no slider slot)", offsetof(K2MenuUiApi, AddGear) + sizeof(void*), sizeof(K2MenuUiApi));
     MEQ("MUI_RF_WRAP/RESTART/DISABLED/HIDDEN == 1/2/4/8", MUI_RF_WRAP | MUI_RF_RESTART | MUI_RF_DISABLED | MUI_RF_HIDDEN, 15);
     MEQ("MUI_RF_WRAP == 1", MUI_RF_WRAP, 1);
     MEQ("MUI_RF_RESTART == 2", MUI_RF_RESTART, 2);

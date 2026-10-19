@@ -15,6 +15,7 @@
 //   default = 0                        # initial value (clamped into the range)
 //   min = 5  max = 95  step = 5        # stepper / dynamic (list: 0 .. n-1 from choices)
 //   wrap = false                       # values wrap at the ends (dynamic: default true)
+//   style = "stepper|slider"           # stepper rows only (default stepper): "slider" asks for MUI_ROW_SLIDER; a provider without it gets a stepper (rowKind[])
 //   fmt = "Heal below %d%%"            # %d / %% only; a fmt caption stands alone, otherwise "Label: value"
 //   zero_text = "Auto"                 # shown instead of 0
 //   choices = ["Off","Slow","Fast"]    # list: stored value = index (<= 12 choices, <= 31 chars each)
@@ -51,6 +52,7 @@ struct RowDecl {
     char desc[192];
     int32_t def, minV, maxV, step;
     bool wrap, restart;
+    bool slider;                        // style = "slider" (stepper rows only): shown as MUI_ROW_SLIDER when the provider has it, else a stepper
     char fmt[48];
     char zero[24];
     char choices[kMaxChoices][kChoiceLen];
@@ -171,6 +173,13 @@ inline const char* onKv(void* u, const char* key, const tomlmini::Value& v) {
     if (strcmp(key, "max") == 0) return setInt(&r.maxV, v);
     if (strcmp(key, "step") == 0) return setInt(&r.step, v);
     if (strcmp(key, "wrap") == 0) return setBool(&r.wrap, v);
+    if (strcmp(key, "style") == 0) {
+        if (v.type != tomlmini::V_STR) return "expected a string";
+        if (strcmp(v.s, "slider") == 0) r.slider = true;
+        else if (strcmp(v.s, "stepper") == 0) r.slider = false;
+        else return "style must be stepper or slider";
+        return nullptr;
+    }
     if (strcmp(key, "fmt") == 0) return setStr(r.fmt, sizeof r.fmt, v);
     if (strcmp(key, "zero_text") == 0) return setStr(r.zero, sizeof r.zero, v);
     if (strcmp(key, "scale") == 0) return setInt(&r.scale, v);
@@ -293,6 +302,7 @@ inline bool parseSchema(const char* text, size_t n, PageDecl& pd, char* err, int
                 r.def = detail::clampI(r.def, r.minV, r.maxV);
                 break;
         }
+        if (r.slider && r.kind != K_STEPPER) return fail(i, r.id, "style = \"slider\" applies to stepper rows only");
         if (r.kind != K_LIST && r.nChoices > 0) return fail(i, r.id, "choices apply to list rows only");
     }
     return true;
@@ -406,6 +416,7 @@ struct Page {
     const char* choicePtr[kMaxRows][kMaxChoices] = {};
     int32_t values[kMaxRows] = {};      // mirror of the provider's stored values (decl index)
     int rowId[kMaxRows];                // provider row id per decl row, -1 = AddRow failed
+    int32_t rowKind[kMaxRows];          // MUI_ROW_* the provider accepted per decl row (a style = "slider" row on an older provider reads MUI_ROW_STEPPER)
     int32_t lo[kMaxRows] = {}, hi[kMaxRows] = {};   // the provider's current range per row (decl range at build, then setRange)
     k2mc::MenuClient* menu = nullptr;
     DeclHooks hooks;
@@ -470,7 +481,7 @@ struct Page {
         const RowDecl& r = decl.rows[i];
         memset(sp, 0, sizeof *sp);
         sp->struct_size = sizeof *sp;
-        sp->kind = r.kind == K_TOGGLE ? MUI_ROW_TOGGLE : MUI_ROW_STEPPER;
+        sp->kind = r.kind == K_TOGGLE ? MUI_ROW_TOGGLE : (r.kind == K_STEPPER && r.slider ? MUI_ROW_SLIDER : MUI_ROW_STEPPER);
         sp->label = r.label;
         sp->desc = r.desc;
         sp->min = r.minV;
@@ -518,7 +529,7 @@ struct Page {
     // The Options ctor window: NewPage + one AddRow per decl row + the change handler. A provider without rows leaves the page unbuilt.
     void build(void* panel) {
         built = false;
-        for (int i = 0; i < kMaxRows; ++i) rowId[i] = -1;
+        for (int i = 0; i < kMaxRows; ++i) { rowId[i] = -1; rowKind[i] = -1; }
         if (!loaded || !menu || !menu->ok() || !menu->hasRows() || !panel) return;
         const K2MenuUiApi* ui = menu->p;
         page = ui->NewPage(panel, decl.title);
@@ -531,7 +542,11 @@ struct Page {
             hi[i] = decl.rows[i].maxV;
             fillSpec(i, values[i], &sp);
             rowId[i] = ui->AddRow(page, &sp);
-            if (rowId[i] >= 0) any = true;
+            if (rowId[i] < 0 && sp.kind == MUI_ROW_SLIDER) {   // no new API slot: a provider that does not know kind 2 refuses it, so ask once more for a stepper
+                sp.kind = MUI_ROW_STEPPER;
+                rowId[i] = ui->AddRow(page, &sp);
+            }
+            if (rowId[i] >= 0) { any = true; rowKind[i] = sp.kind; }
         }
         if (!any) return;
         ui->SetChangeHandler(page, &Page::cbChange, this);

@@ -96,17 +96,19 @@ typedef struct K2MuiRect { int32_t x, y, w, h; } K2MuiRect;
 /* Option rows (doc 46). */
 #define MUI_ROW_TOGGLE 0
 #define MUI_ROW_STEPPER 1
-#define MUI_RF_WRAP 1      /* stepper values wrap at the ends */
+#define MUI_ROW_SLIDER 2   /* look-alike slider (MCF5): a stepper's range / step / value / fmt / choices / zeroText, shown as "Label: value" + a draggable track.
+                              Not a new API slot: a provider without sliders answers AddRow(kind 2) with < 0, and the caller falls back to MUI_ROW_STEPPER. */
+#define MUI_RF_WRAP 1      /* stepper values wrap at the ends (ignored by a slider) */
 #define MUI_RF_RESTART 2   /* shown text gets " (restart)" */
 #define MUI_RF_DISABLED 4  /* greyed out: clicks are ignored */
 #define MUI_RF_HIDDEN 8    /* not shown, takes no slot */
 
 typedef struct K2MuiRowSpec {
     uint32_t struct_size;      /* sizeof(K2MuiRowSpec) */
-    int32_t  kind;             /* MUI_ROW_* */
+    int32_t  kind;             /* MUI_ROW_*; 2 = slider: caption "Label: <formatted value>" left of the track, press / drag on the track sets the value */
     const char* label;         /* caption prefix ("Label: value") */
     const char* desc;          /* shown in the description pane while the row is hovered */
-    int32_t  min, max, step;   /* stepper range and step (toggle: ignored) */
+    int32_t  min, max, step;   /* stepper / slider range and step (toggle: ignored); a slider snaps the dragged value to min + n * step */
     int32_t  value;            /* initial value */
     int32_t  flags;            /* MUI_RF_* */
     const char* fmt;           /* "%d" / "%%" template, null = "label: value"; a fmt caption stands alone ("Heal below %d%%") */
@@ -115,7 +117,7 @@ typedef struct K2MuiRowSpec {
     const char* zeroText;      /* shown instead of the number at value 0, e.g. "Auto" */
 } K2MuiRowSpec;
 
-/* Returns the FINAL value to store. dir = -1 / +1 for the arrows, 0 for a toggle flip. Return `requested` to accept, the old value to
+/* Returns the FINAL value to store. dir = -1 / +1 for the arrows, 0 for a toggle flip; a slider passes dir = sign of (requested - old value). Return `requested` to accept, the old value to
    reject, anything else to snap. */
 typedef int32_t (KPATCH_CALL *K2MuiChangeFn)(uint32_t page, int32_t row, int32_t requested, int32_t dir, void* user);
 
@@ -167,7 +169,7 @@ typedef struct K2MenuUiApi {
     void     (KPATCH_CALL *SetRowText)(uint32_t page, int32_t row, const char* text);
     /* Replaces the row's flags (MUI_RF_*; only DISABLED and HIDDEN change at run time, WRAP and RESTART are kept from the spec). */
     void     (KPATCH_CALL *SetRowState)(uint32_t page, int32_t row, int32_t flags);
-    /* Changes a stepper's range; the stored value is re-clamped (no handler call). */
+    /* Changes a stepper's or slider's range; the stored value is re-clamped (no handler call). */
     void     (KPATCH_CALL *SetRowRange)(uint32_t page, int32_t row, int32_t minV, int32_t maxV);
 
     /* ---- Modal pages, item visibility and the shared gear (slots 19..22; check MenuClient::hasModal). A modal is a second set of

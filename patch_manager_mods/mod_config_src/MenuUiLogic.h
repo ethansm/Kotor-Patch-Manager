@@ -451,12 +451,29 @@ inline bool canTruncate(const uintptr_t* listed, int count, int vanilla, bool (*
 //              dir == 0 returns the clamped value. A value off the step grid (e.g. 37 at step 5) moves from where it is: the handler snaps.
 //   rowApplyHandlerResult: the handler returns the FINAL value to store. The result is clamped to the row's range; with no handler the request
 //              is stored (clamped). A disabled row never changes (returns c.value). "Reject" = the handler returns the old value.
+//   Slider rows (kind 2, SliderRowLogic.h) use the stepper range / step / value / rowFormat captions; rowStep is not used by them.
 //   rowFormat: caption text. value text = choices[v] if choices, else zeroText at 0 (steppers), else On/Off (toggle), else fmt applied to v.
 //              Only "%d" and "%%" are expanded in fmt (every other '%' stays literal: no printf on consumer strings). A caption built from fmt
 //              stands alone ("Heal below 35%"); every other value text is "Label: value". RF_RESTART appends " (restart)".
 //              Returns false when out is null/cap < 1 or the text was cut; out is always NUL-terminated when cap > 0.
-enum RowKind { RK_TOGGLE = 0, RK_STEPPER = 1 };         // SLIDER = 2 reserved
+enum RowKind { RK_TOGGLE = 0, RK_STEPPER = 1 };         // RK_SLIDER = 2 lives in SliderRowLogic.h (MCF5)
 enum RowFlag { RF_WRAP = 1, RF_RESTART = 2, RF_DISABLED = 4, RF_HIDDEN = 8 };
+
+// Parts (controls) of a row, as kept in itemPart[][]: toggle = 1 control (RP_CAPTION, the whole slot); stepper = caption + "<" + ">" = 3;
+// slider = caption + frame + wedge + mark = 4 (SliderRowLogic.h geometry). An unknown kind has 0 parts (AddRow refuses it).
+enum RowPart { RP_CAPTION = 0, RP_LEFT = 1, RP_RIGHT = 2, RP_FRAME = 3, RP_WEDGE = 4, RP_MARK = 5 };
+inline int rowPartCount(int kind) { return kind == 0 ? 1 : (kind == 1 ? 3 : (kind == 2 ? 4 : 0)); }
+inline bool rowKindValid(int kind) { return kind >= 0 && kind <= 2; }
+inline bool rowPartIsArrow(int part) { return part == RP_LEFT || part == RP_RIGHT; }
+// The wedge and the mark sit on top of the frame and are never hit-tested: the frame (the whole track) is the one hit area of a slider.
+inline bool rowPartHittable(int part) { return part != RP_WEDGE && part != RP_MARK; }
+// A press on the slider track grabs it only on a live slider row (kind 2 = RK_SLIDER): a disabled or hidden one takes no grab.
+inline bool sliderGrabbable(int kind, int flags) { return kind == 2 && (flags & (RF_DISABLED | RF_HIDDEN)) == 0; }
+// dir the change handler gets for a slider move: the sign of (requested - old); 0 when unchanged.
+inline int sliderChangeDir(int oldV, int reqV) { return reqV > oldV ? 1 : (reqV < oldV ? -1 : 0); }
+// During a held drag the handler is called only when the pointer value differs from what is stored AND from the last value already asked for
+// (a rejected value under a still pointer is asked once, not every tick).
+inline bool sliderAskHandler(bool moved, int v, int lastAsked) { return moved && v != lastAsked; }
 
 struct RowCfg {
     int kind;

@@ -962,6 +962,50 @@ static void test_gear_rect() {
     KT_CHECK_EQ(g.w, 0);
 }
 
+// MCF5 part 2: the pure bits behind the slider row wiring (part counts, hit rules, grab rule, handler gating, caption text).
+static void test_row_slider_wiring() {
+    KT_CHECK_EQ(rowPartCount(0), 1); KT_CHECK_EQ(rowPartCount(1), 3); KT_CHECK_EQ(rowPartCount(2), 4);
+    KT_CHECK_EQ(rowPartCount(-1), 0); KT_CHECK_EQ(rowPartCount(3), 0); KT_CHECK_EQ(rowPartCount(99), 0);
+    KT_CHECK(rowKindValid(0) && rowKindValid(1) && rowKindValid(2));
+    KT_CHECK(!rowKindValid(-1) && !rowKindValid(3));
+    // item parts: 3 frame, 4 wedge, 5 mark; only the arrows repeat, only the frame and the caption are hit-tested
+    KT_CHECK_EQ(RP_FRAME, 3); KT_CHECK_EQ(RP_WEDGE, 4); KT_CHECK_EQ(RP_MARK, 5);
+    for (int p = 0; p <= 5; ++p) KT_CHECK_EQ(rowPartIsArrow(p), p == 1 || p == 2);
+    for (int p = 0; p <= 5; ++p) KT_CHECK_EQ(rowPartHittable(p), p != 4 && p != 5);
+    // grab rule: slider kind only, never disabled / hidden; the restart and wrap flags do not matter
+    KT_CHECK(sliderGrabbable(2, 0));
+    KT_CHECK(sliderGrabbable(2, RF_RESTART | RF_WRAP));
+    KT_CHECK(!sliderGrabbable(2, RF_DISABLED));
+    KT_CHECK(!sliderGrabbable(2, RF_HIDDEN));
+    KT_CHECK(!sliderGrabbable(2, RF_DISABLED | RF_HIDDEN | RF_RESTART));
+    KT_CHECK(!sliderGrabbable(1, 0));
+    KT_CHECK(!sliderGrabbable(0, 0));
+    // handler dir = sign of the move
+    KT_CHECK_EQ(sliderChangeDir(10, 20), 1); KT_CHECK_EQ(sliderChangeDir(20, 10), -1); KT_CHECK_EQ(sliderChangeDir(7, 7), 0);
+    KT_CHECK_EQ(sliderChangeDir(INT_MIN, INT_MAX), 1); KT_CHECK_EQ(sliderChangeDir(INT_MAX, INT_MIN), -1);
+    // handler gating while held: only a moved value that was not already asked for
+    KT_CHECK(sliderAskHandler(true, 60, 55));
+    KT_CHECK(!sliderAskHandler(true, 60, 60));    // a rejected value under a still pointer is not asked again every tick
+    KT_CHECK(!sliderAskHandler(false, 60, 55));   // not moved
+    KT_CHECK(sliderAskHandler(true, 55, 60));     // back to the earlier value: asked again
+    // a slider row's caption is the stepper text: "Label: value", fmt stands alone, choices and zero text apply, restart suffix
+    const RowCfg sl = RowCfg{2, 0, 100, 5, 35, 0};
+    char b[96];
+    KT_CHECK(rowFormat(b, sizeof b, "Volume", sl, nullptr, nullptr, 0, nullptr)); KT_CHECK(strcmp(b, "Volume: 35") == 0);
+    KT_CHECK(rowFormat(b, sizeof b, "Volume", sl, "Volume %d%%", nullptr, 0, nullptr)); KT_CHECK(strcmp(b, "Volume 35%") == 0);
+    RowCfg z = sl; z.value = 0;
+    KT_CHECK(rowFormat(b, sizeof b, "Volume", z, "Volume %d%%", nullptr, 0, "Muted")); KT_CHECK(strcmp(b, "Volume: Muted") == 0);
+    static const char* const ch[] = {"Low", "Mid", "High"};
+    const RowCfg cs = RowCfg{2, 0, 2, 1, 1, RF_RESTART};
+    KT_CHECK(rowFormat(b, sizeof b, "Quality", cs, nullptr, ch, 3, nullptr)); KT_CHECK(strcmp(b, "Quality: Mid (restart)") == 0);
+    // rowClamp / rowApplyHandlerResult treat kind 2 as a range (not 0/1); a disabled slider keeps its value
+    KT_CHECK_EQ(rowClamp(sl, 150), 100); KT_CHECK_EQ(rowClamp(sl, -3), 0); KT_CHECK_EQ(rowClamp(sl, 42), 42);
+    KT_CHECK_EQ(rowApplyHandlerResult(sl, 60, 55, true), 55);
+    KT_CHECK_EQ(rowApplyHandlerResult(sl, 60, 0, false), 60);
+    RowCfg dis = sl; dis.flags = RF_DISABLED;
+    KT_CHECK_EQ(rowApplyHandlerResult(dis, 60, 60, true), 35);
+}
+
 int main() {
     test_registry_basic();
     test_registry_null_and_empty_ids();
@@ -1004,5 +1048,6 @@ int main() {
     test_tickreset();
     test_modal_table();
     test_gear_rect();
+    test_row_slider_wiring();
     return kt::Report("menu_ui_logic_test");
 }

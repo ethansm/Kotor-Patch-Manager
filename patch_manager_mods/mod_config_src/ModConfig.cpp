@@ -1,4 +1,4 @@
-// ModConfig.cpp -- mod-config 0.3.0-dev (Steam build): the "Mod Configuration" provider on the in-game Options screen (doc 42,
+// ModConfig.cpp -- mod-config 0.3.1-dev (Steam build): the "Mod Configuration" provider on the in-game Options screen (doc 42,
 // plan .claude/plans/holster_editor_options.md, card c18). Provides two interfaces declared in ModConfigApi.h:
 //   k2.modconfig@1  K2ModConfigApi  Register / Unregister: a mod adds one entry (name, description, build/enter/leave/tick/destroy).
 //   k2.menuui@1     K2MenuUiApi     NewPage / AddButton / AddLabel / AddCustom / Clicked / SetText / SetRect / SetDesc / PaneRect / Control /
@@ -19,11 +19,14 @@
 //              destroy() callbacks, free our controls (never a MUI_NOFREE one).
 // Esc is never intercepted (it closes the whole in-game GUI); its key edge resets a non-MAIN page to MAIN. Reopening the Options screen starts at MAIN.
 //
+// Option rows (AddRow): toggle, stepper and slider (kind 2, MCF5: caption + wedge + frame + mark in one row slot, press / drag on the track sets the
+// value through the page's change handler; a kind this build does not know makes AddRow return < 0 so the caller can fall back to a stepper).
+//
 // Failure values (documented here because the header leaves them open): NewPage returns 0 (page 0 is MAIN, never an entry page);
 // AddButton / AddLabel / AddCustom return -1. One entry owns one page: a second NewPage in the same build() returns the same page id
 // (the title is updated). Items can only be added to the page of the entry whose build() is running.
 // Probe lines (log only): CONFIG, CTOR, BTNCLONE, LABEL, APPEND, TEMPLATE, REFLOW, RELAYOUT, HOVER, DESC, INPUTCLASS, PAGE, BUILD,
-// REGISTER, MUI, FREE, DTOR, HIDDENDRAW, PROVIDE, DESCSPLIT.
+// REGISTER, MUI, FREE, DTOR, HIDDENDRAW, PROVIDE, DESCSPLIT, ROW, SLIDER, GEAR, MODAL, EMBED.
 #include <windows.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -42,6 +45,8 @@
 #include "MenuLayout.h"
 #include "ModConfigApi.h"
 #include "MenuUiLogic.h"
+#include "SliderRowLogic.h"   // MCF5: the look-alike slider row maths (kind 2)
+#include "SliderArt.h"        // MCF5: frame / wedge / mark art (EmbedTex textures)
 #include "EditKit.h"
 #include "GearButton.h"   // the shared gear: art names + EmbedTex registration (AddGear)
 
@@ -115,13 +120,16 @@ struct Target {
 };
 
 // ---------------------------------------------------------------------------------------------------- option rows (doc 46)
-// A row is one toggle button, or a stepper = caption label + "<" + ">" buttons. Rows are added by AddRow; the provider lays them out in the
+// A row is one toggle button, a stepper = caption label + "<" + ">" buttons, or a slider = caption label + frame + wedge + mark labels (MCF5). Rows are added by AddRow; the provider lays them out in the
 // COLUMN pane (mui::rowSlotRect), draws the caption (mui::rowFormat), steps the value on a click / arrow press and calls the page's change handler.
 constexpr int kMaxRows = 32;
 struct RowX {
     bool used = false;
     mui::RowCfg cfg = {0, 0, 1, 1, 0, 0};
-    int item[3] = {-1, -1, -1};   // item ids on the page: toggle = [0]; stepper = caption label [0], "<" [1], ">" [2]
+    int item[4] = {-1, -1, -1, -1};   // item ids on the page: toggle = [0]; stepper = caption label [0], "<" [1], ">" [2]; slider = caption [0], frame [1], wedge [2], mark [3]
+    mui::Rect track = {0, 0, 0, 0};   // slider: the frame rect as laid out (the hit area and the value <-> pixel maths); only meaningful while slot >= 0
+    bool artDone = false;             // slider: the art fill was applied (or given up); artTries counts the fill attempts while the textures were not resolvable yet
+    int artTries = 0;
     int slot = -1;                // visible slot (0..kRowsVisible-1), -1 = not shown
     bool hasFmt = false, hasZero = false;
     char label[64] = {}, desc[192] = {}, fmt[48] = {}, zero[24] = {}, cap[96] = {};
@@ -196,7 +204,7 @@ struct McState {
     int descReasserts = 0;              // times a describe or tick had to write the shrunk rect again (log cap)
     RowPage rp[mui::kMaxSlots];
     unsigned char itemRow[mui::kMaxSlots][mui::kMaxItems] = {};    // row index + 1 of an item that belongs to a row, 0 = none
-    unsigned char itemPart[mui::kMaxSlots][mui::kMaxItems] = {};   // 0 toggle / caption, 1 "<", 2 ">"
+    unsigned char itemPart[mui::kMaxSlots][mui::kMaxItems] = {};   // mui::RowPart: 0 toggle / caption, 1 "<", 2 ">", 3 slider frame, 4 wedge, 5 mark
     editkit::Repeat rep = {0, 0, 0};   // hold-repeat of the arrow under the press
     int repItem = -1;                  // item id (on the shown entry page) the press went down on, -1 = none
     // ---- scrolling (MCF2b): one window per option-row entry page (sw[k]) and one for the LIST page (lsw)
@@ -212,7 +220,12 @@ struct McState {
     int dragGrab = 0;                        // cursor y minus thumb top at the press
     int wheelRem = 0;                        // wheel units not yet a whole notch
     int scrollLogs = 0;                      // SCROLL lines logged (cap 100)
-    int rowLogs = 0;                   // ROW lines logged (cap 200)
+    int rowLogs = 0;                   // ROW + SLIDER lines logged (shared cap 200)
+    mui::SliderDrag sd;                // the slider being held (one at a time); active only while the LMB is down on a shown entry / modal page
+    int sdSlot = -1;                   // page slot of the dragged row
+    int sdAsked = 0;                   // last value the handler was asked for in this drag (mui::sliderAskHandler)
+    bool sliderMade = false;           // some page has a slider row: embtex::heal() runs every tick
+    int sliderArt = 0;                 // 0 not tried, 1 textures ensured (fills pending / done), 2 art unavailable (fallback look for every slider)
     int gapLogs = 0;                   // TICKGAP lines logged (cap 32)
 };
 McState g_mc;
@@ -791,7 +804,10 @@ RowX* rowAt(uint32_t page, int32_t row) {
 // Slot k (an entry page, or a modal page) has its controls on screen now: with a modal open that is the modal's slot, not its parent's.
 bool entryShown(int k) { return g_mc.appended && k >= 0 && shownSlot() == k; }
 
+void sliderPlaceParts(int k, RowX& r);   // slider rows (below): wedge + mark rects for the current value
+
 // Rewrites the caption control of a row (override text, else mui::rowFormat). A disabled toggle gets " (locked)" (it has no arrows to hide).
+// A slider row also moves its wedge and mark to the new value (every value path ends here: SetValue, a handler result, SetRowRange, a drag).
 void rowCaption(int k, RowX& r) {
     if (r.item[0] < 0) return;
     char buf[sizeof(ItemX::text)];
@@ -805,6 +821,7 @@ void rowCaption(int k, RowX& r) {
     copyStr(it.text, sizeof it.text, buf);
     it.hasText = true;
     if (g_mc.appended) applyItemText(it);
+    if (r.cfg.kind == mui::RK_SLIDER) sliderPlaceParts(k, r);
 }
 
 // Puts a control we own on a rect (resets its drift counters).
@@ -820,6 +837,91 @@ void placeItem(ItemX& it, const mui::Rect& r) {
 void setPartRect(int k, int itemId, const mui::Rect& r) {
     if (itemId < 0) return;
     placeItem(g_mc.items[k][itemId], r);
+}
+
+// ---- slider rows (MCF5)
+// A slider row = caption label + wedge + frame + mark labels in ONE row slot (mui::sliderGeom). Item ids are added in draw order (later items draw over
+// earlier ones): caption, wedge, frame (the outline and the hit area), mark. RowX.item[] indexes: [0] caption, [1] frame, [2] wedge, [3] mark.
+constexpr int kSliderArtMaxTries = 600;   // art fill attempts (one engine image lookup per image per try) before the plain look stays for good
+static_assert(static_cast<int>(hse::sliderart_detail::kSliderTexCount) + static_cast<int>(gearbtn::detail::kEditTexCount) <= embtex::MaxTex,
+              "mod-config's embedded textures (slider art + gear art) must fit embtex::MaxTex");
+
+void embedLog(const char* fmt, ...) {   // embtex::g_log sink
+    char buf[512];
+    va_list ap;
+    va_start(ap, fmt);
+    vsnprintf(buf, sizeof buf, fmt, ap);
+    va_end(ap);
+    KP_LOG(chMain, "EMBED %s", buf);
+}
+
+int sliderWedgeW(const RowX& r) { return mui::sliderPosOf(r.cfg, r.track.w, r.cfg.value); }
+
+// Puts the wedge and the mark of a laid-out slider row (slot >= 0, track set) on their rects for the current value. The wedge is 0 px wide at the
+// minimum: it is parked 1 px wide and hidden there (a label cannot be 0 wide).
+void sliderPlaceParts(int k, RowX& r) {
+    if (r.cfg.kind != mui::RK_SLIDER || r.slot < 0 || r.item[2] < 0 || r.item[3] < 0) return;
+    mui::Rect w = mui::sliderWedgeRect(r.cfg, r.track, r.cfg.value);
+    const bool wedgeOn = w.w > 0;
+    if (w.w < 1) w.w = 1;
+    setPartRect(k, r.item[2], w);
+    setPartRect(k, r.item[3], mui::sliderThumbRect(r.cfg, r.track, r.cfg.value));
+    if (entryShown(k)) setShown(g_mc.items[k][r.item[2]], wedgeOn);
+}
+
+void sliderFallbackLog(const char* why, int k, int row) {
+    static volatile LONG s_fb = 0;
+    if (InterlockedIncrement(&s_fb) <= 1) KP_LOG(chMain, "SLIDER art fallback (%s) page=%d row=%d: caption + plain track, drag still works", why, 2 + k, row);
+}
+
+// The first slider row of a panel registers the art textures (EmbedTex, idempotent, Steam only). A failure leaves every slider on the plain look.
+void sliderArtInit() {
+    McState& e = g_mc;
+    e.sliderMade = true;
+    if (e.sliderArt) return;
+    const bool ok = hse::sliderArtEnsure();
+    e.sliderArt = ok ? 1 : 2;
+    KP_LOG(chMain, "SLIDER art ensure=%d textures=%d gear=%d max=%d", ok ? 1 : 0, hse::sliderArtTextureCount(), gearbtn::textureCount(), embtex::MaxTex);
+    if (!ok) sliderFallbackLog("ensure failed", -1, -1);
+}
+
+// Plain look: the mark label shows a "|" so the position is still visible; the wedge and the frame stay empty.
+void sliderGiveUp(int k, int row, RowX& r, const char* why) {
+    r.artDone = true;
+    sliderFallbackLog(why, k, row);
+    if (r.item[3] < 0) return;
+    ItemX& mk = g_mc.items[k][r.item[3]];
+    copyStr(mk.text, sizeof mk.text, "|");
+    mk.hasText = true;
+    applyItemText(mk);
+}
+
+// Called every tick for the shown page: fills the art of each slider row once the textures resolve (they appear a few ticks after ensure).
+void sliderArtTick(int k) {
+    McState& e = g_mc;
+    if (!e.sliderMade || k < 0 || k >= mui::kMaxSlots) return;
+    RowPage& rp = e.rp[k];
+    for (int i = 0; i < rp.n; ++i) {
+        RowX& r = rp.rows[i];
+        if (r.cfg.kind != mui::RK_SLIDER || r.artDone) continue;
+        ItemX& fr = e.items[k][r.item[1]];
+        ItemX& wd = e.items[k][r.item[2]];
+        ItemX& mk = e.items[k][r.item[3]];
+        if (e.sliderArt != 1) { sliderGiveUp(k, i, r, "art unavailable"); continue; }
+        if (!fr.ctl || !wd.ctl || !mk.ctl || fr.unlinked || wd.unlinked || mk.unlinked) { sliderGiveUp(k, i, r, "control missing"); continue; }
+        if (++r.artTries > kSliderArtMaxTries) { sliderGiveUp(k, i, r, "textures never resolved"); continue; }
+        if (!hse::sliderArtImage(hse::SA_Frame) || !hse::sliderArtImage(hse::SA_Wedge) || !hse::sliderArtImage(hse::SA_Mark)) continue;   // retry next tick
+        r.artDone = true;
+        int n = 0;
+        if (hse::sliderArtFill(fr.ctl, hse::SA_Frame)) { ++n; (void)guikit::setFillStyle(fr.ctl, 2); }
+        if (hse::sliderArtFill(wd.ctl, hse::SA_Wedge)) { ++n; (void)guikit::setFillStyle(wd.ctl, 2); }
+        const bool markOk = hse::sliderArtFill(mk.ctl, hse::SA_Mark);
+        if (markOk) { ++n; (void)guikit::setFillStyle(mk.ctl, 2); }
+        static volatile LONG s_ok = 0;
+        if (InterlockedIncrement(&s_ok) <= 4) KP_LOG(chMain, "SLIDER art applied page=%d row=%d parts=%d/3 after %d tries", 2 + k, i, n, r.artTries);
+        if (!markOk) sliderGiveUp(k, i, r, "mark fill refused");
+        else if (n < 3) sliderFallbackLog("fill refused", k, i);
+    }
 }
 
 void releaseRowCtl(ItemX& it) {
@@ -921,7 +1023,16 @@ void layoutRows(int k) {
         if (r.cfg.flags & mui::RF_HIDDEN) { r.slot = -1; continue; }
         r.slot = sw.slotOf(vi++);
         if (r.slot < 0) continue;
-        const mui::RowGeom g = mui::rowGeom(mui::rowSlotRect(c, r.slot), r.cfg.kind);
+        const mui::Rect slotR = mui::rowSlotRect(c, r.slot);
+        if (r.cfg.kind == mui::RK_SLIDER) {
+            const mui::SliderGeom sg = mui::sliderGeom(slotR);
+            r.track = sg.track;
+            setPartRect(k, r.item[0], sg.caption);
+            setPartRect(k, r.item[1], sg.track);
+            sliderPlaceParts(k, r);   // wedge + mark for the current value
+            continue;
+        }
+        const mui::RowGeom g = mui::rowGeom(slotR, r.cfg.kind);
         if (r.cfg.kind == mui::RK_TOGGLE) {
             setPartRect(k, r.item[0], g.whole);
         } else {
@@ -933,17 +1044,21 @@ void layoutRows(int k) {
     if (e.sbMade[k]) layoutBar(e.sb[k], sw, col);
 }
 
-// Shows / hides the controls of page k's rows: hidden or unslotted rows are hidden, a disabled stepper keeps its caption but loses its arrows.
+// Shows / hides the controls of page k's rows: hidden or unslotted rows are hidden, a disabled stepper keeps its caption but loses its arrows
+// (a disabled slider keeps all four parts; it just takes no grab).
 void showRows(int k) {
     McState& e = g_mc;
     RowPage& rp = e.rp[k];
     for (int i = 0; i < rp.n; ++i) {
         RowX& r = rp.rows[i];
         const bool vis = r.slot >= 0;
-        for (int p = 0; p < 3; ++p) {
+        const bool slider = r.cfg.kind == mui::RK_SLIDER;
+        for (int p = 0; p < 4; ++p) {
             if (r.item[p] < 0) continue;
-            const bool arrow = p > 0;
-            setShown(e.items[k][r.item[p]], vis && !(arrow && (r.cfg.flags & mui::RF_DISABLED)));
+            const bool arrow = !slider && p > 0;
+            bool on = vis && !(arrow && (r.cfg.flags & mui::RF_DISABLED));
+            if (slider && p == 2) on = on && sliderWedgeW(r) > 0;   // the wedge is hidden at the minimum
+            setShown(e.items[k][r.item[p]], on);
         }
     }
 }
@@ -956,6 +1071,25 @@ void rowsRelayout(int k) {
     }
 }
 
+// Asks the page's change handler about `req` (old = the stored value), stores its FINAL value (clamped; no handler = req), redraws the caption and
+// logs through the shared capped ROW / SLIDER log. Returns the stored value.
+int rowCommit(int k, int row, int old, int req, int dir) {
+    McState& e = g_mc;
+    RowPage& rp = e.rp[k];
+    const K2MuiChangeFn fn = rp.fn;
+    int32_t fin = 0;
+    if (fn) fin = fn(static_cast<uint32_t>(2 + k), row, req, dir, rp.user);
+    RowX& r2 = rp.rows[row];   // the handler may have changed this row (SetValue / SetRowState): decide on its current state
+    const int nv = mui::rowApplyHandlerResult(r2.cfg, req, fin, fn != nullptr);
+    r2.cfg.value = nv;
+    rowCaption(k, r2);
+    if (++e.rowLogs <= 200) {
+        if (r2.cfg.kind == mui::RK_SLIDER) KP_LOG(chMain, "SLIDER page=%d row=%d req=%d final=%d", 2 + k, row, req, nv);
+        else KP_LOG(chMain, "ROW page=%d row=%d old=%d req=%d final=%d handler=%d", 2 + k, row, old, req, nv, fn ? 1 : 0);
+    }
+    return nv;
+}
+
 // One accepted click / arrow step on a row: stepper moves by dir, a toggle flips (dir 0). The handler's return is the FINAL value.
 void rowChange(int k, int row, int dir) {
     McState& e = g_mc;
@@ -963,17 +1097,11 @@ void rowChange(int k, int row, int dir) {
     if (row < 0 || row >= rp.n) return;
     RowX& r = rp.rows[row];
     if (r.cfg.flags & (mui::RF_DISABLED | mui::RF_HIDDEN)) return;
+    if (r.cfg.kind == mui::RK_SLIDER) return;   // sliders change through sliderCommit (a drag), never by an arrow or a click
     const int old = r.cfg.value;
     const int req = mui::rowStep(r.cfg, old, r.cfg.kind == mui::RK_TOGGLE ? 0 : dir);
     if (req == old && r.cfg.kind == mui::RK_STEPPER) return;   // already at an end: nothing to ask the handler
-    const K2MuiChangeFn fn = rp.fn;
-    int32_t fin = 0;
-    if (fn) fin = fn(static_cast<uint32_t>(2 + k), row, req, r.cfg.kind == mui::RK_TOGGLE ? 0 : dir, rp.user);
-    RowX& r2 = rp.rows[row];   // the handler may have changed this row (SetValue / SetRowState): decide on its current state
-    const int nv = mui::rowApplyHandlerResult(r2.cfg, req, fin, fn != nullptr);
-    r2.cfg.value = nv;
-    rowCaption(k, r2);
-    if (++e.rowLogs <= 200) KP_LOG(chMain, "ROW page=%d row=%d old=%d req=%d final=%d handler=%d", 2 + k, row, old, req, nv, fn ? 1 : 0);
+    (void)rowCommit(k, row, old, req, r.cfg.kind == mui::RK_TOGGLE ? 0 : dir);
 }
 
 // Arrow press with hold-repeat (first step on the press, repeats after editkit::kRepeatDelayMs while the cursor stays on that arrow).
@@ -985,13 +1113,73 @@ void rowArrowInput(int k, bool down, int hit, DWORD now) {
         row = e.itemRow[k][hit] - 1;
         part = e.itemPart[k][hit];
     }
-    if (press) e.repItem = (row >= 0 && part >= 1) ? hit : -1;
+    if (press) e.repItem = (row >= 0 && mui::rowPartIsArrow(part)) ? hit : -1;
     if (!down || (e.repItem >= 0 && hit != e.repItem)) e.repItem = -1;   // released, or the cursor left the arrow: stop for this press
     const bool held = e.repItem >= 0;
     int n = editkit::repeatTick(e.rep, held, now);
     if (!held) return;
     const int rr = e.itemRow[k][e.repItem] - 1, pp = e.itemPart[k][e.repItem];
     for (; n > 0; --n) rowChange(k, rr, pp == 1 ? -1 : 1);
+}
+
+// ---- slider input (MCF5)
+void sliderEndDrag(const char* why) {
+    McState& e = g_mc;
+    if (!e.sd.active) return;
+    (void)why;
+    mui::sliderEnd(e.sd);
+    e.sdSlot = -1;
+    e.dragging = false;   // the thumb drag cannot be active at the same time (both begin on a press edge)
+}
+
+// One slider value change (a grab or a drag move): the handler decides, the final value is stored. Equal to the stored value: nothing to ask.
+void sliderCommit(int k, int row, int req) {
+    McState& e = g_mc;
+    if (k < 0 || k >= mui::kMaxSlots || row < 0 || row >= e.rp[k].n) return;
+    RowX& r = e.rp[k].rows[row];
+    if (!mui::sliderGrabbable(r.cfg.kind, r.cfg.flags)) return;
+    const int old = r.cfg.value;
+    req = mui::rowClamp(r.cfg, req);
+    if (req == old) return;
+    (void)rowCommit(k, row, old, req, mui::sliderChangeDir(old, req));
+}
+
+// Per tick, after the scroll bar. A press EDGE on a live slider's track grabs it (returns true: the press is consumed and never becomes a click);
+// while the LMB stays down the value follows the pointer (the handler is asked only when the snapped value changes); the LMB going up, the page
+// or panel hiding, the row going away or being disabled ends the drag. McState::dragging is true while a drag is active.
+bool sliderTick(bool down, bool haveCur, int x, int y) {
+    McState& e = g_mc;
+    const int k = (e.appended && e.ps.state == mui::ENTRY) ? shownSlot() : -1;
+    if (e.sd.active) {
+        RowX* r = (k >= 0 && k == e.sdSlot && e.sd.row >= 0 && e.sd.row < e.rp[k].n) ? &e.rp[k].rows[e.sd.row] : nullptr;
+        if (!down || !r || r->slot < 0 || !mui::sliderGrabbable(r->cfg.kind, r->cfg.flags)) { sliderEndDrag(down ? "row gone" : "release"); return false; }
+        if (haveCur) {
+            bool moved = false;
+            const int row = e.sd.row;
+            const int v = mui::sliderMove(e.sd, r->cfg, r->track, x, &moved);
+            if (mui::sliderAskHandler(moved, v, e.sdAsked)) {
+                e.sdAsked = v;
+                sliderCommit(k, row, v);
+            }
+            if (e.sd.active && e.sdSlot == k) mui::sliderSetStored(e.sd, e.rp[k].rows[row].cfg.value);   // a snapped or rejected value is what later moves compare with
+        }
+        if (e.sd.active) e.dragging = true;
+        return false;
+    }
+    if (!down || e.prevDown || !haveCur || k < 0) return false;
+    RowPage& rp = e.rp[k];
+    for (int i = 0; i < rp.n; ++i) {
+        RowX& r = rp.rows[i];
+        if (r.slot < 0 || !mui::sliderGrabbable(r.cfg.kind, r.cfg.flags) || !mui::rectHas(r.track, x, y)) continue;
+        const int v = mui::sliderBegin(e.sd, i, r.cfg, r.track, x);
+        e.sdSlot = k;
+        e.sdAsked = v;
+        e.dragging = true;
+        sliderCommit(k, i, v);
+        if (e.sd.active) mui::sliderSetStored(e.sd, rp.rows[i].cfg.value);
+        return true;
+    }
+    return false;
 }
 
 // LIST page: the 8 vanilla column buttons show entries [lsw.offset, lsw.offset + 8) of the bind-time snapshot.
@@ -1056,13 +1244,15 @@ bool scrollTick(bool down, bool haveCur, int x, int y, DWORD now) {
     guikit::g_wheel.touch(now);
     guikit::g_wheel.setRect(0, col.x, col.y, col.w, col.h);
     e.wheelRem += guikit::g_wheel.take();
-    const int notches = e.wheelRem / kWheelNotch;
+    const bool slideLock = e.sd.active;   // a held slider owns the pointer: no wheel scroll, no bar press, no thumb drag until it is let go
+    const int notches = slideLock ? 0 : e.wheelRem / kWheelNotch;
+    if (slideLock) e.wheelRem = 0;
     e.wheelRem -= notches * kWheelNotch;
     bool changed = false;
     const char* src = "";
     if (notches != 0 && sw->wheel(notches)) { changed = true; src = "wheel"; }
     const BarGeom g = barGeom(col);
-    const bool press = down && !e.prevDown && haveCur;
+    const bool press = down && !e.prevDown && haveCur && !slideLock;
     if (press) {
         const mui::Rect th = sw->thumb(g.track);
         if (overCtl(bar[kBarUp], x, y)) e.barHeld = kBarUp;
@@ -1077,13 +1267,14 @@ bool scrollTick(bool down, bool haveCur, int x, int y, DWORD now) {
         e.barHeld = -1;   // the cursor left the button: stop for this press
     }
     int n = editkit::repeatTick(e.barRep, e.barHeld >= 0, now);
-    if (e.barHeld >= 0)
+    if (e.barHeld >= 0 && !slideLock)
         for (; n > 0; --n)
             if (sw->wheel(e.barHeld == kBarUp ? 1 : -1)) { changed = true; src = "button"; }
-    if (e.dragging && haveCur && sw->setOffset(sw->offsetFromThumbTop(y, e.dragGrab, g.track))) { changed = true; src = "drag"; }
+    if (!slideLock && e.dragging && haveCur && sw->setOffset(sw->offsetFromThumbTop(y, e.dragGrab, g.track))) { changed = true; src = "drag"; }
     for (int i = 0; i < kBarCtl; ++i)
         if (bar[i].ctl && bar[i].hasRect && !bar[i].unlinked) applyOne(e, bar[i].tg, false);
     if (changed) {
+        sliderEndDrag("scroll");   // a scroll that moves the page ends a slider drag
         if (k >= 0) rowsRelayout(k);
         else { rebindList(); layoutBar(e.lsb, e.lsw, col); }
         e.hov = mui::HoverTracker();   // the hover description follows what is under the cursor now
@@ -1195,6 +1386,7 @@ void hideSlot(int k) {
 
 void resetPageInput() {
     McState& e = g_mc;
+    sliderEndDrag("page input reset");
     e.repItem = -1;
     e.hov = mui::HoverTracker();
     e.clk = mui::ClickTracker();
@@ -1294,6 +1486,7 @@ void applyEvent(const mui::PageEvent& ev, const char* why) {
 
 void pageChange(int from, const mui::PageEvents& ev, const char* why) {
     McState& e = g_mc;
+    sliderEndDrag("page change");
     for (int i = 0; i < ev.n; ++i) applyEvent(ev.ev[i], why);
     e.leaveAt = 0;
     e.repItem = -1;
@@ -1323,7 +1516,7 @@ int hitItem(int x, int y) {
     if (k < 0) return -1;
     for (int i = 0; i < e.pt.itemCount(2 + k); ++i) {
         const ItemX& it = e.items[k][i];
-        if (e.pt.pages[2 + k].items[i].kind == mui::LABEL || it.userHidden) continue;
+        if (e.pt.pages[2 + k].items[i].kind == mui::LABEL || it.userHidden || !mui::rowPartHittable(e.itemPart[k][i])) continue;   // the wedge and mark sit on the frame: the frame is the hit
         if (overCtl(it, x, y)) return i;
     }
     return -1;
@@ -1668,7 +1861,7 @@ bool rowPageGate(uint32_t page, const char* what) {
 }
 
 // The ABI values are copied straight into mui::RowCfg (kind, flags): pin the two enum sets to each other.
-static_assert(MUI_ROW_TOGGLE == mui::RK_TOGGLE && MUI_ROW_STEPPER == mui::RK_STEPPER, "MUI_ROW_* == mui::RK_*");
+static_assert(MUI_ROW_TOGGLE == mui::RK_TOGGLE && MUI_ROW_STEPPER == mui::RK_STEPPER && MUI_ROW_SLIDER == mui::RK_SLIDER, "MUI_ROW_* == mui::RK_*");
 static_assert(MUI_RF_WRAP == mui::RF_WRAP && MUI_RF_RESTART == mui::RF_RESTART && MUI_RF_DISABLED == mui::RF_DISABLED && MUI_RF_HIDDEN == mui::RF_HIDDEN,
               "MUI_RF_* == mui::RF_*");
 // The v1 spec ends at zeroText. A later, longer spec must keep accepting v1 callers: compare struct_size with this floor (not with a
@@ -1679,13 +1872,14 @@ static_assert(sizeof(void*) != 4 || (sizeof(K2MuiRowSpec) == 52 && offsetof(K2Mu
               "K2MuiRowSpec 32-bit layout (13 x 4 bytes, no padding under pack(8))");
 
 int32_t KPATCH_CALL muiAddRow(uint32_t page, const K2MuiRowSpec* sp) {
-    if (!sp || sp->struct_size < kRowSpecV1 ||(sp->kind != MUI_ROW_TOGGLE && sp->kind != MUI_ROW_STEPPER)) return -1;
+    if (!sp || sp->struct_size < kRowSpecV1 || !mui::rowKindValid(sp->kind)) return -1;   // an unknown kind (3+) is refused: callers fall back to a stepper
     if (!rowPageGate(page, "AddRow")) return -1;
     McState& e = g_mc;
     const int k = static_cast<int>(page) - 2;
     RowPage& rp = e.rp[k];
     const bool toggle = sp->kind == MUI_ROW_TOGGLE;
-    const int parts = toggle ? 1 : 3;
+    const bool slider = sp->kind == MUI_ROW_SLIDER;
+    const int parts = mui::rowPartCount(sp->kind);
     if (rp.n >= kMaxRows || e.pt.itemCount(static_cast<int>(page)) + parts > mui::kMaxItems) {
         KP_LOG(chMain, "MUI refused: AddRow page %u is full (rows=%d items=%d)", static_cast<unsigned>(page), rp.n, e.pt.itemCount(static_cast<int>(page)));
         return -1;
@@ -1695,11 +1889,12 @@ int32_t KPATCH_CALL muiAddRow(uint32_t page, const K2MuiRowSpec* sp) {
     const bool needsBar = rp.n >= mui::kRowsVisible;
     RowX r;
     r.used = true;
-    r.cfg.kind = toggle ? mui::RK_TOGGLE : mui::RK_STEPPER;
+    r.cfg.kind = sp->kind;
     r.cfg.minV = toggle ? 0 : sp->min;
     r.cfg.maxV = toggle ? 1 : sp->max;
     r.cfg.step = sp->step < 1 ? 1 : sp->step;
     r.cfg.flags = sp->flags & (MUI_RF_WRAP | MUI_RF_RESTART | MUI_RF_DISABLED | MUI_RF_HIDDEN);
+    if (slider) r.cfg.flags &= ~MUI_RF_WRAP;   // a slider has no ends to wrap
     r.choices = sp->choices;
     r.nChoices = sp->choices && sp->nChoices > 0 ? sp->nChoices : 0;
     if (!toggle && r.nChoices > 0) { r.cfg.minV = 0; r.cfg.maxV = r.nChoices - 1; }
@@ -1709,11 +1904,16 @@ int32_t KPATCH_CALL muiAddRow(uint32_t page, const K2MuiRowSpec* sp) {
     if (sp->fmt && sp->fmt[0]) { copyStr(r.fmt, sizeof r.fmt, sp->fmt); r.hasFmt = true; }
     if (sp->zeroText && sp->zeroText[0]) { copyStr(r.zero, sizeof r.zero, sp->zeroText); r.hasZero = true; }
     // Create every control first so a failed clone leaves no half row on the page.
-    ItemX ctl[3];
+    // Slider controls are all label clones, created in draw order (later items draw over earlier ones): caption, wedge, frame, mark.
+    static const unsigned char kSlItem[4] = {0, 2, 1, 3};   // creation order -> RowX.item[] index (item[1] frame, item[2] wedge)
+    static const unsigned char kSlPart[4] = {mui::RP_CAPTION, mui::RP_WEDGE, mui::RP_FRAME, mui::RP_MARK};
+    static const mui::ItemKind kSlKind[4] = {mui::BUTTON, mui::LABEL, mui::BUTTON, mui::LABEL};   // only the caption and the frame are hit-testable
+    if (slider) sliderArtInit();
+    ItemX ctl[4];
     char what[40];
     for (int p = 0; p < parts; ++p) {
         snprintf(what, sizeof what, "row_%u_%d_%d", static_cast<unsigned>(page), rp.n, p);
-        if (!toggle && p == 0) { ctl[p].ctl = cloneLabel(e.panel, what); ctl[p].isButton = false; }
+        if (slider || (!toggle && p == 0)) { ctl[p].ctl = cloneLabel(e.panel, what); ctl[p].isButton = false; }
         else ctl[p].ctl = cloneEntry(e.panel, "BTN_GAMEPLAY", what, &ctl[p].isButton);
         if (!ctl[p].ctl) {
             for (int q = 0; q < p; ++q) releaseRowCtl(ctl[q]);
@@ -1734,16 +1934,16 @@ int32_t KPATCH_CALL muiAddRow(uint32_t page, const K2MuiRowSpec* sp) {
         e.sbMade[k] = true;
     }
     copyStr(ctl[0].text, sizeof ctl[0].text, "");
-    if (!toggle) { copyStr(ctl[1].text, sizeof ctl[1].text, "<"); copyStr(ctl[2].text, sizeof ctl[2].text, ">"); }
+    if (!toggle && !slider) { copyStr(ctl[1].text, sizeof ctl[1].text, "<"); copyStr(ctl[2].text, sizeof ctl[2].text, ">"); }
     for (int p = 0; p < parts; ++p) {
-        const int id = addItemCommon(page, mui::BUTTON, ctl[p], 0);   // the caption label is hit-testable too (hover shows the row description)
+        const int id = addItemCommon(page, slider ? kSlKind[p] : mui::BUTTON, ctl[p], 0);   // the caption label is hit-testable too (hover shows the row description)
         if (id < 0) {   // cannot happen after the capacity check; keep the page consistent anyway
             for (int q = p; q < parts; ++q) releaseRowCtl(ctl[q]);
             return -1;
         }
-        r.item[p] = id;
+        r.item[slider ? kSlItem[p] : p] = id;
         e.itemRow[k][id] = static_cast<unsigned char>(rp.n + 1);
-        e.itemPart[k][id] = static_cast<unsigned char>(p);
+        e.itemPart[k][id] = static_cast<unsigned char>(slider ? kSlPart[p] : p);
     }
     // Only the "<" ">" text path exists in 0.2.0-dev: arrow_icons is read and logged but not built yet (MCR1 decides whether it is needed).
     if (rp.n == 0) KP_LOG(chMain, "ARROWPATH text page=%u arrow_icons=%d (icons not built: text path used)", static_cast<unsigned>(page), g_cfg.arrowIcons ? 1 : 0);
@@ -1794,7 +1994,7 @@ void KPATCH_CALL muiSetRowState(uint32_t page, int32_t row, int32_t flags) {
 
 void KPATCH_CALL muiSetRowRange(uint32_t page, int32_t row, int32_t minV, int32_t maxV) {
     RowX* r = rowAt(page, row);
-    if (!r || r->cfg.kind != mui::RK_STEPPER) return;
+    if (!r || r->cfg.kind == mui::RK_TOGGLE) return;   // steppers and sliders
     saferead::beginScope();
     if (r->nChoices > 0) {   // a choice stepper stores an index: keep the range inside [0, nChoices - 1] (a subset is fine)
         const int top = r->nChoices - 1;
@@ -1887,7 +2087,7 @@ int32_t KPATCH_CALL muiAddGear(uint32_t page, const char* desc) {
 
 
 // ---------------------------------------------------------------------------------------------------- built-in self test (mod_config.ini selftest=1)
-// Six rows that cover every row feature plus a change handler that snaps and rejects; the MCR1 vehicle.
+// Eight rows that cover every row feature (toggle, steppers, two sliders) plus a change handler that snaps and rejects; the MCR1 vehicle.
 const char* const kStChoices[] = {"Off", "Slow", "Fast"};
 
 int32_t KPATCH_CALL stChange(uint32_t page, int32_t row, int32_t requested, int32_t dir, void*) {
@@ -1895,6 +2095,9 @@ int32_t KPATCH_CALL stChange(uint32_t page, int32_t row, int32_t requested, int3
     if (row == 2) {   // 5..95 step 5: snap to the nearest multiple of 5, and reject 60 (stay where it was)
         fin = ((requested + 2) / 5) * 5;
         if (fin == 60) fin = requested - 5 * dir;
+    } else if (row == 7) {   // the 5..95 step 5 slider: the same snap, and 60 is rejected (the slider keeps its stored value; dir is the sign of the move)
+        fin = ((requested + 2) / 5) * 5;
+        if (fin == 60) fin = muiGetValue(page, row);
     }
     KP_LOG(chMain, "SELFTEST change page=%u row=%d requested=%d dir=%d final=%d", static_cast<unsigned>(page), row, requested, dir, fin);
     return fin;
@@ -1925,14 +2128,23 @@ void KPATCH_CALL stBuild(void* panel, void*) {
     sp = K2MuiRowSpec(); sp.struct_size = sizeof sp;
     sp.kind = MUI_ROW_TOGGLE; sp.label = "Needs restart"; sp.desc = "The caption gets (restart)."; sp.value = 0; sp.flags = MUI_RF_RESTART;
     muiAddRow(pg, &sp);
-    if (g_cfg.selftest >= 2) {   // 24 rows in all (alternating steppers and toggles), so the page scrolls
+    sp = K2MuiRowSpec(); sp.struct_size = sizeof sp;
+    sp.kind = MUI_ROW_SLIDER; sp.label = "Volume"; sp.desc = "A slider, 0 to 100 in steps of 1. Press the track to jump, drag to follow."; sp.min = 0; sp.max = 100; sp.step = 1; sp.value = 40;
+    sp.fmt = "Volume %d%%";
+    muiAddRow(pg, &sp);
+    sp = K2MuiRowSpec(); sp.struct_size = sizeof sp;
+    sp.kind = MUI_ROW_SLIDER; sp.label = "Snap"; sp.desc = "A slider, 5 to 95 in steps of 5. The handler snaps to a multiple of 5 and rejects 60 (the thumb stays put)."; sp.min = 5; sp.max = 95; sp.step = 5; sp.value = 35;
+    sp.fmt = "Snap %d";
+    muiAddRow(pg, &sp);
+    if (g_cfg.selftest >= 2) {   // 26 rows in all (the 8 above plus 18 filler rows alternating steppers and toggles, one slider among them), so the page scrolls
         static const char* const kNames[18] = {"Row 07", "Row 08", "Row 09", "Row 10", "Row 11", "Row 12", "Row 13", "Row 14", "Row 15",
                                                "Row 16", "Row 17", "Row 18", "Row 19", "Row 20", "Row 21", "Row 22", "Row 23", "Row 24"};
         for (int i = 0; i < 18; ++i) {
             sp = K2MuiRowSpec(); sp.struct_size = sizeof sp;
             sp.label = kNames[i];
             sp.desc = "A scroll-test row. Its description should change when the page scrolls under the cursor.";
-            if (i % 2 == 0) { sp.kind = MUI_ROW_TOGGLE; sp.value = 0; }
+            if (i == 5) { sp.kind = MUI_ROW_SLIDER; sp.min = 0; sp.max = 100; sp.step = 5; sp.value = 50; }
+            else if (i % 2 == 0) { sp.kind = MUI_ROW_TOGGLE; sp.value = 0; }
             else { sp.kind = MUI_ROW_STEPPER; sp.min = 0; sp.max = 9; sp.step = 1; sp.value = i / 2; }
             muiAddRow(pg, &sp);
         }
@@ -1966,7 +2178,7 @@ extern "C" void __cdecl McBind(int panelArg) {
                g_debug ? 1 : 0, g_cfg.buttonClone ? 1 : 0, g_cfg.reflow ? 1 : 0, g_cfg.desc ? 1 : 0, g_cfg.freeLabels ? 1 : 0, g_cfg.arrowIcons ? 1 : 0,
                g_cfg.selftest, k2addr::get() ? "ok" : "none");
         if (g_enabled && g_cfg.selftest > 0) {   // the built-in test entry (rows of every kind); registered like any other mod's entry
-            static const K2ModConfigEntry st = {sizeof(K2ModConfigEntry), "mc-selftest", "Mod-config self test", "Option-row self test: toggle, steppers, snap / reject, disabled, restart. For play checks only.",
+            static const K2ModConfigEntry st = {sizeof(K2ModConfigEntry), "mc-selftest", "Mod-config self test", "Option-row self test: toggle, steppers, sliders, snap / reject, disabled, restart. For play checks only.",
                                                 nullptr, &stBuild, nullptr, nullptr, nullptr, nullptr};
             mcRegister(&st);
             if (g_cfg.selftest >= 2) {   // six filler entries so the list page has more than 8 buttons
@@ -2095,9 +2307,10 @@ extern "C" void __cdecl McTick(int panelArg) {
     if (!e.appended) firstTick();
     applyTargets(e, false);
     syncDescSplit("tick");   // no-op unless a split page is shown (or was just left)
-    if (e.gearMade) embtex::heal();   // refill the gear textures after a GL reset (idempotent, cheap)
+    if (e.gearMade || e.sliderMade) embtex::heal();   // refill the gear textures after a GL reset (idempotent, cheap)
     if (e.ps.state == mui::ENTRY && e.ps.entry >= 0 && e.ps.entry < mui::kMaxEntries) {
         const int sh = shownSlot();   // the open modal's slot while one is open; its parent's controls (a preview) keep their rects too
+        if (sh >= 0) sliderArtTick(sh);   // slider art fills once the embedded textures resolve
         for (int pass = 0; pass < 2; ++pass) {
             const int k = pass == 0 ? sh : e.ps.entry;
             if (k < 0 || (pass == 1 && k == sh)) continue;
@@ -2118,13 +2331,14 @@ extern "C" void __cdecl McTick(int panelArg) {
     hoverStep(overBack ? -1 : hit);
     if (shownSlot() >= 0 && e.rp[shownSlot()].n > 0) rowArrowInput(shownSlot(), down, overBack ? -1 : hit, now);
     (void)scrollTick(down, cur, x, y, now);
+    const bool sliderGrab = sliderTick(down, cur, x, y);   // a press edge on a slider track: consumed here, never a click on whatever is under it
     if (down && !e.prevDown) {
         static volatile LONG s_in = 0;
         if (InterlockedIncrement(&s_in) <= 40)
             KP_LOG(chInput, "INPUTCLASS press cur=%d x=%d y=%d page=%d item=%d overBack=%d", cur ? 1 : 0, x, y, curPageId(), hit, overBack ? 1 : 0);
     }
     e.prevDown = down;
-    const int clicked = e.clk.tick(down, overBack ? -1 : hit);
+    const int clicked = e.clk.tick(down, (overBack || sliderGrab) ? -1 : hit);
     const int backClicked = e.clkBack.tick(down, overBack ? 0 : -1);
     if (clicked >= 0 || backClicked >= 0) {
         static volatile LONG s_up = 0;
@@ -2204,8 +2418,9 @@ extern "C" void __cdecl McDestroy(int panelArg) {
 // the config is read at the first McBind.
 extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
+    embtex::g_log = embedLog;   // gear + slider art textures (EmbedTex) log through the main channel
     guikit::initGuiInput(api, "mod-config");   // optional: the wheel provider (k2.guiinput); a missing provider only means no wheel
-    KP_LOG(chMain, "mod-config 0.3.0-dev loaded (Mod Configuration button under Gameplay; k2.modconfig@1 + k2.menuui@1; config mod_config.ini is read at the first Options panel: enabled debug button_clone reflow desc free_labels)");
+    KP_LOG(chMain, "mod-config 0.3.1-dev loaded (Mod Configuration button under Gameplay; k2.modconfig@1 + k2.menuui@1; config mod_config.ini is read at the first Options panel: enabled debug button_clone reflow desc free_labels)");
     int rcC = -1, rcM = -1;
     if (api && api->struct_size >= offsetof(KPatchApi, require) + sizeof(api->require) && api->provide) {
         rcC = api->provide(K2MODCONFIG_IFACE, K2MODCONFIG_VERSION, &g_mcApi);
