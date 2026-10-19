@@ -1128,6 +1128,8 @@ void pageOnTick(void*) {
 void pageInit(const KPatchApi* api) {
     g_mcCfg.init(api);
     g_mcMenu.init(api);
+    g_mcCfg.onConnect = [](bool ok, const char* why) { KP_LOGV(chMain, ok ? KPLOG_INFO : KPLOG_WARN, "PAGE k2.modconfig %s: %s", ok ? "ok" : "unavailable", why); };
+    g_mcMenu.onConnect = [](bool ok, const char* why) { KP_LOGV(chMain, ok ? KPLOG_INFO : KPLOG_WARN, "PAGE k2.menuui %s: %s", ok ? "ok" : "unavailable", why); };
     char err[96] = {};
     g_pageLoaded = g_page.load(shpage::kPageSchema, strlen(shpage::kPageSchema), err, sizeof err);
     if (!g_pageLoaded) { KP_LOGV(chMain, KPLOG_WARN, "PAGE schema rejected: %s", err); return; }
@@ -1144,6 +1146,9 @@ void pagePoll() {
     if (!g_pageLoaded || g_mcReg.registered) return;
     g_mcCfg.poll();
     g_mcMenu.poll();
+    static unsigned s_polls = 0;
+    if (++s_polls == 600 && !(g_mcCfg.ok() && g_mcMenu.ok() && g_mcMenu.hasRows()))   // once, ~10 s of frames in
+        KP_LOGV(chMain, KPLOG_WARN, "PAGE not registered after %u polls: modconfig=%d menuui=%d hasRows=%d", s_polls, (int)g_mcCfg.ok(), (int)g_mcMenu.ok(), (int)g_mcMenu.hasRows());
     if (!g_mcCfg.ok() || !g_mcMenu.ok() || !g_mcMenu.hasRows()) return;
     k2pc::registerOnce(g_mcReg, g_mcCfg, g_mcEntry, mcLog);
 }
@@ -1556,7 +1561,7 @@ void __cdecl KPatchInit(const KPatchApi* api) {
     loadIni();
     loadCfg();
     filewatch::accept(g_cfgPoll, IniPath);
-    KP_LOG(chMain, "0.9.2-dev ui=popsize+togglepill+leaderclick+vanillaarrows+pillnarrow+popocclude+optionspage: probe call=%d CallKey=0x%02X kick=%d cfg rows=%d", g_probeCall, g_callKey, (int)g_kick, (int)g_cfg.rows.size());
+    KP_LOG(chMain, "0.9.3-dev ui=popsize+togglepill+leaderclick+vanillaarrows+pillnarrow+popocclude+optionspage: probe call=%d CallKey=0x%02X kick=%d cfg rows=%d", g_probeCall, g_callKey, (int)g_kick, (int)g_cfg.rows.size());
     pageInit(api);
     g_ps.init(api, "companion-selfheal");
     g_ps.onConnect = onConnect;
