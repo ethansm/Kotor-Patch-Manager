@@ -26,7 +26,8 @@
 // [Buttons] HideEmpty=0 restores the CH4d three-equal-pill layout (ch::layoutBannerGroups).
 // 0.8.0-dev: CH5 [Profile] Pin0..2/Hide0..2 (comma lists; a token matches an entry's name exactly, or as a " "-suffix when no entry has that exact name, or a 0x engine key)
 // and Sort0..2=count|engine (default count for grenades g2, by stack size +0x34); tiers are native (doc 31 sec 2H). combat_hotbar.ini hot-reloads within 1 s (FileWatch); [General] Verbose=1 (default 0) enables the per-frame/probe log lines
-// except Buttons Enabled/Cols/MaxRows, which take effect after a game reload. The reflow guard also compares an order signature.
+// 0.10.0-dev: every [Buttons] key now applies live (no reload): BUILD always creates all MaxBtn slots, Cols/MaxRows only change the per-group stride (g_per),
+// and Enabled=0 just hides everything. The reflow guard also compares an order signature.
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <stdio.h>
@@ -45,6 +46,11 @@
 #include "GuiTip.h"
 #include "CombatLogic.h"
 #include "FileWatch.h"
+#define INIW_FILE_API 1   // ModConfigDecl.h ini-bound rows write through IniWrite.h's file API (doc 46)
+#define MCDECL_FILE_API 1
+#include "ProviderClient.h"
+#include "ModConfigDecl.h"
+#include "CombatPage.h"
 
 KP_LOG_PATCH("combat-hotbar");
 
@@ -390,11 +396,10 @@ void KPATCH_CALL onHudBuild(const K2HudContext* ctx, void*) {
     memset(g_lastCont, 0, sizeof(g_lastCont));
     memset(g_lastSig, 0, sizeof(g_lastSig));
     g_nBtn = 0; g_per = 0; g_click = guikit::ClickEdge(); g_haveLast = false; g_pillMask = -1; g_freeze = { false, 0, 0 }; g_frozenLog = false; g_hover = -1; g_logObj = 0; g_logType = -2;
-    if (!g_cfg.btnEnabled) { KP_LOGV(chMain, KPLOG_INFO, "BUILD: buttons disabled ([Buttons] Enabled=0)"); return; }
     if (!ctx || ctx->struct_size < offsetof(K2HudContext, panel) + sizeof(ctx->panel) || !ctx->panel) { KP_LOGV(chMain, KPLOG_WARN, "BUILD: no panel in the context"); return; }
     saferead::beginScope();
     const uintptr_t panel = static_cast<uintptr_t>(static_cast<uint32_t>(ctx->panel));
-    const int per = g_cfg.cols * g_cfg.maxRows, total = 3 * per;
+    const int per = g_cfg.cols * g_cfg.maxRows, total = MaxBtn;   // all slots always: Cols/MaxRows/Enabled change live, only the stride g_per follows them
     ProjGuard pg;
     int n = 0, failAlloc = 0, failVt = 0, failTpl = 0, failOther = 0, failAppend = 0, failAppendCont = 0;
     uint32_t badVt = 0;
@@ -430,7 +435,7 @@ void KPATCH_CALL onHudBuild(const K2HudContext* ctx, void*) {
         g_btn[i].icon.c = cs[1]; g_btn[i].icon.vis = 0;
         ++n;
     }
-    g_nBtn = total < MaxBtn ? total : MaxBtn; g_per = per;
+    g_nBtn = total; g_per = per;
     if (n == total) KP_LOGV(chMain, KPLOG_INFO, "BUILD buttons created=%d/%d slots x2 labels (panel=%08x cols=%d rows=%d)", n, total, (unsigned)panel, g_cfg.cols, g_cfg.maxRows);
     else KP_LOGV(chMain, KPLOG_WARN, "BUILD buttons created=%d/%d alloc=%d vtable=%d(%08x) template=%d append=%d other=%d", n, total, failAlloc, failVt, (unsigned)badVt, failTpl, failAppend, failOther);
     if (visBudget(2)) KP_LOGV(chMain, KPLOG_INFO, "VIS build controls=%d failAppend=%d", nCont + 2 * n, failAppend + failAppendCont);
@@ -487,6 +492,9 @@ void updateButtons(const K2HudContext* ctx) {
     const bool replace = g_cfg.btnEnabled && g_cfg.replace;
     if (!replace && g_replaced) restoreVanilla(menu);
     if (!g_cfg.btnEnabled || g_nBtn == 0 || g_per == 0) {
+        // Enabled turned off live: the controls exist (BUILD always creates them), so hide whatever is still shown, once.
+        if (g_nBtn > 0 && (anyButtonVisible() || g_cont[0].vis == 1 || g_cont[1].vis == 1 || g_cont[2].vis == 1)) hideAllButtons("disabled");
+        if (g_nBtn > 0) (void)guikit::clickEdge(g_click);   // keep sampling: a press held while disabled must not fire on re-enable
         visLog(g_visButtons, "buttons", 0, !g_cfg.btnEnabled ? "disabled" : "not-built", ch::Rect{ 0, 0, 0, 0 });
         return;
     }
@@ -765,12 +773,15 @@ void KPATCH_CALL onTargetMenuPost(const K2HudContext* ctx, void*) {
         if (st != g_arrowState) { g_arrowState = st; KP_LOGV(chMain, ok ? KPLOG_INFO : KPLOG_WARN, "arrows: hide %s (menu=%08x)", ok ? "applied" : "FAILED (not writable)", (unsigned)menu); }
     }
     if (filewatch::changed(g_iniPoll, IniPath, GetTickCount())) {
-        const bool oe = g_cfg.btnEnabled; const int oc = g_cfg.cols, om = g_cfg.maxRows;
+        const int oc = g_cfg.cols, om = g_cfg.maxRows;
         loadIni(); loadProfile();
-        const bool differs = oe != g_cfg.btnEnabled || oc != g_cfg.cols || om != g_cfg.maxRows;
-        g_cfg.btnEnabled = oe; g_cfg.cols = oc; g_cfg.maxRows = om;
         KP_LOGV(chMain, KPLOG_INFO, "config: reloaded");
-        if (differs) KP_LOGV(chMain, KPLOG_INFO, "config: cols/maxRows/enabled change takes effect after reload");
+        if (g_nBtn > 0 && (oc != g_cfg.cols || om != g_cfg.maxRows)) {
+            // The slot stride changed: slot s = g*per+k now means a different button, so hide every control once and let this frame redraw.
+            g_per = g_cfg.cols * g_cfg.maxRows;
+            hideAllButtons("cols-changed");
+            KP_LOGV(chMain, KPLOG_INFO, "config: cols=%d maxRows=%d applied live (per=%d)", g_cfg.cols, g_cfg.maxRows, g_per);
+        }
         g_pillMask = -1;
         for (int g = 0; g < 3; ++g) g_nameValid[g] = false;
     }
@@ -881,6 +892,39 @@ void KPATCH_CALL onTargetMenu(const K2HudContext* ctx, void*) {
     }
 }
 
+// ---- Mod Configuration page (doc 46): four layout rows bound to combat_hotbar.ini [Buttons]; see CombatPage.h.
+// The provider is optional: nothing here runs unless mod-config + menuui are loaded. Registration is polled from K2HUD_FRAME (every
+// PopulateMenus call), so the entry appears once the HUD has run (i.e. after the first game load), not on the main menu.
+k2mc::ConfigClient g_mcCfg;
+k2mc::MenuClient g_mcMenu;
+k2pc::RegisterOnce g_mcReg;
+mcdecl::Page g_page;
+K2ModConfigEntry g_mcEntry;
+bool g_pageLoaded = false;
+
+void mcLog(int level, const char* msg) { KP_LOGV(chMain, level, "%s", msg); }
+
+void pageInit(const KPatchApi* api) {
+    g_mcCfg.init(api);
+    g_mcMenu.init(api);
+    char err[96] = {};
+    g_pageLoaded = g_page.load(chpage::kPageSchema, strlen(chpage::kPageSchema), err, sizeof err);
+    if (!g_pageLoaded) { KP_LOGV(chMain, KPLOG_WARN, "PAGE schema rejected: %s", err); return; }
+    g_page.menu = &g_mcMenu;
+    g_page.io = mcdecl::fileIo();
+    g_mcEntry = g_page.entry(chpage::kEntryId);
+}
+
+void pagePoll() {
+    if (!g_pageLoaded || g_mcReg.registered) return;
+    g_mcCfg.poll();
+    g_mcMenu.poll();
+    if (!g_mcCfg.ok() || !g_mcMenu.ok() || !g_mcMenu.hasRows()) return;
+    k2pc::registerOnce(g_mcReg, g_mcCfg, g_mcEntry, mcLog);
+}
+
+void KPATCH_CALL onHudFrame(const K2HudContext*, void*) { pagePoll(); }
+
 } // namespace
 
 extern "C" {
@@ -892,6 +936,8 @@ __declspec(dllexport) void __cdecl KPatchInit(const KPatchApi* api) {
     loadIni();
     loadProfile();
     filewatch::accept(g_iniPoll, IniPath);
+    pageInit(api);
+    g_hud.add(K2HUD_FRAME, 100, onHudFrame);
     g_hud.add(K2HUD_TARGET_MENU_PRE, 100, onTargetMenu);
     g_hud.add(K2HUD_TARGET_MENU_POST, 100, onTargetMenuPost);
     g_hud.add(K2HUD_BUILD, 300, onHudBuild);
