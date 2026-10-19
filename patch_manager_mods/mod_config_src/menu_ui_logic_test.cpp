@@ -5,10 +5,22 @@
 #include "MenuUiLogic.h"
 #include <limits.h>
 #include "check.h"
+#include <stdio.h>
 
 using namespace mui;
 
-static const char* kIds[9] = {"m0", "m1", "m2", "m3", "m4", "m5", "m6", "m7", "m8"};
+// One more id than the registry holds ("m0" .. "m<kMaxEntries>"), so the "full" tests have a rejected id to try.
+static const char* kIdsInit(int i) {
+    static char buf[kMaxEntries + 1][16];
+    snprintf(buf[i], sizeof buf[i], "m%d", i);
+    return buf[i];
+}
+struct IdTable {
+    const char* v[kMaxEntries + 1];
+    IdTable() { for (int i = 0; i <= kMaxEntries; ++i) v[i] = kIdsInit(i); }
+    const char* operator[](int i) const { return v[i]; }
+};
+static const IdTable kIds;
 
 // True when event i of r has this kind, state and entry.
 static bool evIs(const PageEvents& r, int i, EventKind k, State s, int entry) {
@@ -49,7 +61,7 @@ static void test_registry_full() {
     Registry reg;
     for (int i = 0; i < kMaxEntries; ++i) KT_CHECK_EQ(reg.registerEntry(kIds[i]), i + 1);
     KT_CHECK_EQ(reg.count(), kMaxEntries);
-    KT_CHECK_EQ(reg.registerEntry(kIds[8]), 0);      // ninth distinct id: rejected
+    KT_CHECK_EQ(reg.registerEntry(kIds[kMaxEntries]), 0);      // one more distinct id than slots: rejected
     KT_CHECK_EQ(reg.count(), kMaxEntries);
     KT_CHECK_EQ(reg.at(kMaxEntries - 1), kMaxEntries);
     KT_CHECK_EQ(reg.at(kMaxEntries), 0);
@@ -332,9 +344,8 @@ static void test_click_press_outside_drag_in() {
 static void test_page_table_full() {
     PageTable pt;
     for (int i = 0; i < kMaxPages; ++i) KT_CHECK_EQ(pt.addPage(), i);
-    KT_CHECK_EQ(pt.addPage(), -1);                       // eleventh page
+    KT_CHECK_EQ(pt.addPage(), -1);                       // one page past the table
     KT_CHECK_EQ(pt.pageCount(), kMaxPages);
-    KT_CHECK_EQ(kMaxPages, 10);
     KT_CHECK_EQ(kMaxPages, 2 + kMaxEntries);             // MAIN, LIST, one ENTRY page per registry slot
 }
 
@@ -818,6 +829,45 @@ static void test_scroll_thumb() {
     KT_CHECK_EQ(last, cramped.maxOffset());
 }
 
+static void test_scroll_list_rebind_maths() {
+    // LIST page: 8 buttons over N entries; button i shows entry offset + i (the snapshot index), blank past the end.
+    for (int n = 9; n <= kMaxEntries; ++n) {
+        ScrollWindow s;
+        s.total = n;
+        for (int off = 0; off <= s.maxOffset(); ++off) {
+            s.offset = off;
+            for (int i = 0; i < s.visible; ++i) {
+                const int idx = s.offset + i;
+                KT_CHECK(idx < n);                                   // a clamped window never shows a slot past the last entry
+                KT_CHECK_EQ(s.slotOf(idx), i);                       // and slotOf is the inverse of the rebind
+            }
+            KT_CHECK_EQ(s.slotOf(off - 1), -1);
+            KT_CHECK_EQ(s.slotOf(off + s.visible), -1);
+        }
+        KT_CHECK_EQ(s.maxOffset(), n - 8);
+    }
+    // Option rows hidden at run time: the window shrinks with the visible count and the offset follows.
+    ScrollWindow r;
+    r.total = 24;
+    r.offset = 16;
+    r.total = 20;                                                    // 4 rows hidden under a scrolled page
+    r.clamp();
+    KT_CHECK_EQ(r.offset, 12);
+    KT_CHECK(r.ensureVisible(19) == false && r.offset == 12);        // last row is on screen
+    r.total = 8;
+    r.clamp();
+    KT_CHECK(r.offset == 0 && !r.needBar());                         // everything fits again: no bar
+    // Scroll bar inside the column keeps the thumb on the track for every offset.
+    const Rect track = {0, 30, 12, 200};
+    ScrollWindow t;
+    t.total = 24;
+    for (int off = 0; off <= t.maxOffset(); ++off) {
+        t.offset = off;
+        const Rect th = t.thumb(track);
+        KT_CHECK(th.y >= track.y && th.y + th.h <= track.y + track.h && th.h >= kThumbMin);
+    }
+}
+
 // ---------------------------------------------------------------- tick-gap reset
 static void test_tickreset() {
     const unsigned gaps[] = {0, 400, 500, 501, 600, 5000, 5001, 60000};
@@ -881,6 +931,7 @@ int main() {
     test_scroll_clamp_wheel();
     test_scroll_ensure_visible();
     test_scroll_thumb();
+    test_scroll_list_rebind_maths();
     test_tickreset();
     return kt::Report("menu_ui_logic_test");
 }

@@ -6,7 +6,7 @@
 // shows its description) -> ENTRY(k) (mod k's own page). Entry index k = registry token - 1 (= registry slot).
 //
 //   mui::Registry reg;
-//   int tok = reg.registerEntry("npc-diversity");        // token 1..8, 0 = rejected
+//   int tok = reg.registerEntry("npc-diversity");        // token 1..24, 0 = rejected
 //   mui::PageStack ps;
 //   mui::PageEvents pe = ps.push(mui::LIST, -1);         // pe.n == 2: LEAVE(MAIN), ENTER(LIST)
 //   mui::PageTable pt;                                   // page ids: 0 = MAIN, 1 = LIST, 2 + k = ENTRY(k)
@@ -34,7 +34,7 @@
 
 namespace mui {
 
-enum { kMaxEntries = 8, kMaxItems = 80, kMaxPages = 2 + kMaxEntries, kMaxEvents = 4 };
+enum { kMaxEntries = 24, kMaxItems = 80, kMaxPages = 2 + kMaxEntries, kMaxEvents = 4 };
 
 // ---------------------------------------------------------------------------------------------------- registry
 // A slot is live while registered. seq is the registration order of the id's first registration: removing an entry

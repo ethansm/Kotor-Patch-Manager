@@ -36,6 +36,7 @@
 #include "KpLog.h"
 #include "K2Addr.h"
 #include "GameAddr.h"
+#include "GuiInput.h"   // before GuiKit.h: the mouse wheel comes from the gui-input provider (no window subclass of our own)
 #include "GuiKit.h"
 #include "GuiButton.h"
 #include "MenuLayout.h"
@@ -73,7 +74,13 @@ constexpr const char* kLabelTemplate = "LBL_TITLE";
 constexpr const char* kRootText = "Mod Configuration";
 constexpr const char* kRootDesc = "Settings for installed mods. Each mod that offers options is listed here.";
 constexpr const char* kListBlurb = "Choose a mod to change its settings.";
-constexpr int kMaxOwn = 1 + mui::kMaxEntries + 2 + mui::kMaxEntries * mui::kMaxItems;   // root + list + back + title + entry items
+constexpr int kListMax = mui::kRowsVisible;   // list-page buttons (the 8 vanilla column slots); more entries scroll through them
+constexpr int kBarCtl = 3;                    // scroll bar controls per scrolling page: up, down, thumb
+constexpr int kBarUp = 0, kBarDown = 1, kBarThumb = 2;
+constexpr int kBarPctOfCol = 7;               // bar width = this % of the column height (min kBarMinPx)
+constexpr int kBarMinPx = 12;
+constexpr int kWheelNotch = 120;
+constexpr int kMaxOwn = 1 + kListMax + 2 + mui::kMaxEntries * mui::kMaxItems + (mui::kMaxEntries + 1) * kBarCtl;   // root + list + back + title + entry items + scroll bars
 // Options panel offsets (static dump reads, doc r4/r7/r9): layout slot, manager, focus, description string object, text holder pointer, label.
 constexpr int kPanelLayoutSlot = 0x30, kPanelMgr = 0x1C, kPanelFocus = 0x20, kDescStr = 0x1120, kDescHolderPtr = 0x1170, kDescLabel = 0x1030;
 constexpr int kMgrHover = 0x08, kMgrCaptureFlag = 0x0C, kMgrCapture = 0x10, kMgrLastHit = 0x14;
@@ -146,9 +153,11 @@ struct McState {
     uintptr_t panel = 0;
     int vanillaCount = 0;
     ItemX root, back, title;
-    ItemX list[mui::kMaxEntries];
-    int listTok[mui::kMaxEntries] = {};
-    int nList = 0;
+    ItemX list[kListMax];
+    int listTok[kListMax] = {};       // registry token shown by each list button (rebound when the list scrolls)
+    int nList = 0;                    // list buttons made (min(entries, kListMax))
+    int nEntries = 0;                 // registered entries at bind time (> kListMax = the list scrolls)
+    int entTok[mui::kMaxEntries] = {};   // registry tokens at bind time, in list order (the list scrolls over this snapshot)
     bool built[mui::kMaxEntries] = {};
     bool pageMade[mui::kMaxEntries] = {};
     char pageTitle[mui::kMaxEntries][64] = {};
@@ -182,6 +191,19 @@ struct McState {
     unsigned char itemPart[mui::kMaxEntries][mui::kMaxItems] = {};   // 0 toggle / caption, 1 "<", 2 ">"
     editkit::Repeat rep = {0, 0, 0};   // hold-repeat of the arrow under the press
     int repItem = -1;                  // item id (on the shown entry page) the press went down on, -1 = none
+    // ---- scrolling (MCF2b): one window per option-row entry page (sw[k]) and one for the LIST page (lsw)
+    mui::ScrollWindow sw[mui::kMaxEntries];
+    mui::ScrollWindow lsw;
+    ItemX sb[mui::kMaxEntries][kBarCtl];     // entry-page scroll bar (made at build when a page has more rows than fit)
+    bool sbMade[mui::kMaxEntries] = {};
+    ItemX lsb[kBarCtl];                      // LIST-page scroll bar
+    bool lsbMade = false;
+    editkit::Repeat barRep = {0, 0, 0};      // hold-repeat of the bar's up / down buttons
+    int barHeld = -1;                        // kBarUp / kBarDown while that button is pressed, -1 = none
+    bool dragging = false;                   // the thumb is being dragged (tickResetDue + wheel guard)
+    int dragGrab = 0;                        // cursor y minus thumb top at the press
+    int wheelRem = 0;                        // wheel units not yet a whole notch
+    int scrollLogs = 0;                      // SCROLL lines logged (cap 100)
     int rowLogs = 0;                   // ROW lines logged (cap 200)
     int gapLogs = 0;                   // TICKGAP lines logged (cap 32)
 };
@@ -570,6 +592,12 @@ bool paneRect(uintptr_t P, int which, Rect* out) {
     }
 }
 
+// Scroll bar width for a column pane (see "scroll bars" below).
+int barWidth(const Rect& col) {
+    const int w = col.h * kBarPctOfCol / 100;
+    return w < kBarMinPx ? kBarMinPx : w;
+}
+
 // ---------------------------------------------------------------------------------------------------- item helpers
 template <typename F>
 void eachOwn(F f) {
@@ -580,6 +608,11 @@ void eachOwn(F f) {
     f(e.title);
     for (int k = 0; k < mui::kMaxEntries; ++k)
         for (int i = 0; i < e.pt.itemCount(2 + k); ++i) f(e.items[k][i]);
+    if (e.lsbMade)
+        for (int i = 0; i < kBarCtl; ++i) f(e.lsb[i]);
+    for (int k = 0; k < mui::kMaxEntries; ++k)
+        if (e.sbMade[k])
+            for (int i = 0; i < kBarCtl; ++i) f(e.sb[k][i]);
 }
 
 // The item the API names, or null (page not an entry page, item out of range, or no panel bound).
@@ -642,6 +675,11 @@ void firstTick() {
     appendItem(e.title, "title");
     for (int k = 0; k < mui::kMaxEntries; ++k)
         for (int i = 0; i < e.pt.itemCount(2 + k); ++i) appendItem(e.items[k][i], "item");
+    if (e.lsbMade)
+        for (int i = 0; i < kBarCtl; ++i) appendItem(e.lsb[i], "listbar");
+    for (int k = 0; k < mui::kMaxEntries; ++k)
+        if (e.sbMade[k])
+            for (int i = 0; i < kBarCtl; ++i) appendItem(e.sb[k][i], "bar");
 
     // Button column, top -> bottom (measured before any row moves).
     Rect col[kColumnN];
@@ -684,8 +722,15 @@ void firstTick() {
         }
     }
     // List page: one button per entry on the column rects from the top slot down; Back on the BTN_EXIT rect; the title on LBL_TITLE.
-    if (colOk)
-        for (int i = 0; i < e.nList; ++i) addTarget(e, e.list[i].ctl, col[i]);
+    if (colOk) {
+        Rect pane = {0, 0, 0, 0};
+        const int bw = (e.lsbMade && e.nEntries > kListMax && paneRect(P, MUI_PANE_COLUMN, &pane)) ? barWidth(pane) : 0;
+        for (int i = 0; i < e.nList; ++i) {
+            Rect lr = col[i];
+            if (bw > 0) lr.w -= bw + mui::kRowGap;   // room for the scroll bar on the right
+            addTarget(e, e.list[i].ctl, lr);
+        }
+    }
     if (xOk) addTarget(e, e.back.ctl, exitR);
     if (tOk) addTarget(e, e.title.ctl, titleR);
     applyTargets(e, true);
@@ -707,6 +752,11 @@ void firstTick() {
     for (int k = 0; k < mui::kMaxEntries; ++k)
         for (int i = 0; i < e.pt.itemCount(2 + k); ++i) applyItemText(e.items[k][i]);
 
+    if (e.lsbMade)
+        for (int i = 0; i < kBarCtl; ++i) { applyItemText(e.lsb[i]); setShown(e.lsb[i], false); }
+    for (int k = 0; k < mui::kMaxEntries; ++k)
+        if (e.sbMade[k])
+            for (int i = 0; i < kBarCtl; ++i) { applyItemText(e.sb[k][i]); setShown(e.sb[k][i], false); }
     // Clones start hidden + click-through. MAIN shows only the root.
     setShown(e.root, true);
     for (int i = 0; i < e.nList; ++i) setShown(e.list[i], false);
@@ -745,10 +795,9 @@ void rowCaption(int k, RowX& r) {
     if (g_mc.appended) applyItemText(it);
 }
 
-void setPartRect(int k, int itemId, const mui::Rect& r) {
-    if (itemId < 0) return;
+// Puts a control we own on a rect (resets its drift counters).
+void placeItem(ItemX& it, const mui::Rect& r) {
     McState& e = g_mc;
-    ItemX& it = e.items[k][itemId];
     it.tg = Target();
     it.tg.ctl = it.ctl;
     it.tg.r = Rect{r.x, r.y, r.w, r.h};
@@ -756,7 +805,76 @@ void setPartRect(int k, int itemId, const mui::Rect& r) {
     if (e.appended && it.ctl && !it.unlinked) applyOne(e, it.tg, true);
 }
 
-// Puts every visible row of page k on its slot of the COLUMN pane (hidden rows take no slot; rows past kRowsVisible are not shown).
+void setPartRect(int k, int itemId, const mui::Rect& r) {
+    if (itemId < 0) return;
+    placeItem(g_mc.items[k][itemId], r);
+}
+
+void releaseRowCtl(ItemX& it) {
+    if (!it.ctl) return;
+    if (it.isButton) guibutton::releaseUnlinkedButton(it.ctl);
+    else guikit::releaseUnlinkedLabel(it.ctl, kLabelVtable);
+    it.ctl = 0;
+}
+
+// ---------------------------------------------------------------------------------------------------- scroll bars (MCF2b)
+// A scrolling page (option rows past the 8 that fit, or more mod entries than list buttons) gets a bar on the right edge of the COLUMN pane:
+// an up button on top, a down button at the bottom, and a thumb button (no text) riding between them. The rows / list buttons shrink by the
+// bar width + one gap. Input: the two buttons (press + hold-repeat), the thumb (drag), a click on the empty track (page jump), the mouse wheel.
+struct BarGeom {
+    mui::Rect up, down, track;
+};
+
+BarGeom barGeom(const Rect& col) {
+    const int bw = barWidth(col);
+    const int bx = col.x + col.w - bw;
+    const int g = mui::kRowGap / 3;
+    BarGeom b;
+    b.up = mui::Rect{bx, col.y, bw, bw};
+    b.down = mui::Rect{bx, col.y + col.h - bw, bw, bw};
+    b.track = mui::Rect{bx, col.y + bw + g, bw, col.h - 2 * bw - 2 * g};
+    return b;
+}
+
+bool makeBar(ItemX* bar, const char* tag) {
+    static const char* const kTxt[kBarCtl] = {"^", "v", ""};
+    static const char* const kName[kBarCtl] = {"up", "down", "thumb"};
+    for (int i = 0; i < kBarCtl; ++i) {
+        char what[40];
+        snprintf(what, sizeof what, "bar_%s_%s", tag, kName[i]);
+        bar[i] = ItemX();
+        bar[i].ctl = cloneEntry(g_mc.panel, "BTN_GAMEPLAY", what, &bar[i].isButton);
+        if (!bar[i].ctl) {
+            for (int q = 0; q < i; ++q) releaseRowCtl(bar[q]);
+            return false;
+        }
+        copyStr(bar[i].text, sizeof bar[i].text, kTxt[i]);
+        bar[i].hasText = true;
+    }
+    return true;
+}
+
+// Moves the bar's three controls: arrows at the ends, the thumb where sw says. Does not change visibility.
+void layoutBar(ItemX* bar, const mui::ScrollWindow& sw, const Rect& col) {
+    const BarGeom g = barGeom(col);
+    placeItem(bar[kBarUp], g.up);
+    placeItem(bar[kBarDown], g.down);
+    placeItem(bar[kBarThumb], sw.thumb(g.track));
+}
+
+void showBar(ItemX* bar, bool on) {
+    for (int i = 0; i < kBarCtl; ++i) setShown(bar[i], on);
+}
+
+// Rows area of page k's column: the pane minus the bar when the page scrolls.
+Rect rowsArea(int k, const Rect& col) {
+    Rect r = col;
+    if (g_mc.sbMade[k] && g_mc.sw[k].needBar()) r.w -= barWidth(col) + mui::kRowGap;
+    return r;
+}
+
+// Puts every visible row of page k on its slot of the COLUMN pane (hidden rows take no slot). Rows past the scroll window take no slot either:
+// slot = visible index - offset, so showRows hides them (hidden, never only moved: hit testing needs the visibility bit).
 void layoutRows(int k) {
     McState& e = g_mc;
     RowPage& rp = e.rp[k];
@@ -767,13 +885,20 @@ void layoutRows(int k) {
         if (InterlockedIncrement(&s_nc) <= 4) KP_LOG(chMain, "ROWS layout: column pane unavailable (page %d)", 2 + k);
         return;
     }
-    const mui::Rect c = toMui(col);
+    mui::ScrollWindow& sw = e.sw[k];
+    int total = 0;
+    for (int i = 0; i < rp.n; ++i)
+        if (!(rp.rows[i].cfg.flags & mui::RF_HIDDEN)) ++total;
+    sw.total = total;
+    sw.visible = mui::kRowsVisible;
+    sw.clamp();
+    const mui::Rect c = toMui(rowsArea(k, col));
     int vi = 0;
     for (int i = 0; i < rp.n; ++i) {
         RowX& r = rp.rows[i];
-        const bool vis = !(r.cfg.flags & mui::RF_HIDDEN) && vi < mui::kRowsVisible;
-        r.slot = vis ? vi++ : -1;
-        if (!vis) continue;
+        if (r.cfg.flags & mui::RF_HIDDEN) { r.slot = -1; continue; }
+        r.slot = sw.slotOf(vi++);
+        if (r.slot < 0) continue;
         const mui::RowGeom g = mui::rowGeom(mui::rowSlotRect(c, r.slot), r.cfg.kind);
         if (r.cfg.kind == mui::RK_TOGGLE) {
             setPartRect(k, r.item[0], g.whole);
@@ -783,6 +908,7 @@ void layoutRows(int k) {
             setPartRect(k, r.item[2], g.right);
         }
     }
+    if (e.sbMade[k]) layoutBar(e.sb[k], sw, col);
 }
 
 // Shows / hides the controls of page k's rows: hidden or unslotted rows are hidden, a disabled stepper keeps its caption but loses its arrows.
@@ -802,7 +928,10 @@ void showRows(int k) {
 
 void rowsRelayout(int k) {
     layoutRows(k);
-    if (entryShown(k)) showRows(k);
+    if (entryShown(k)) {
+        showRows(k);
+        if (g_mc.sbMade[k]) showBar(g_mc.sb[k], g_mc.sw[k].needBar());
+    }
 }
 
 // One accepted click / arrow step on a row: stepper moves by dir, a toggle flips (dir 0). The handler's return is the FINAL value.
@@ -841,6 +970,103 @@ void rowArrowInput(int k, bool down, int hit, DWORD now) {
     if (!held) return;
     const int rr = e.itemRow[k][e.repItem] - 1, pp = e.itemPart[k][e.repItem];
     for (; n > 0; --n) rowChange(k, rr, pp == 1 ? -1 : 1);
+}
+
+// LIST page: the 8 vanilla column buttons show entries [lsw.offset, lsw.offset + 8) of the bind-time snapshot.
+void rebindList() {
+    McState& e = g_mc;
+    for (int i = 0; i < e.nList; ++i) {
+        const int idx = e.lsw.offset + i;
+        const int tok = idx < e.nEntries ? e.entTok[idx] : 0;
+        e.listTok[i] = tok;
+        copyStr(e.list[i].text, sizeof e.list[i].text, entLive(tok - 1) ? g_ent[tok - 1].name : "");
+        e.list[i].hasText = true;
+        applyItemText(e.list[i]);
+    }
+}
+
+void listBarSync() {
+    McState& e = g_mc;
+    e.lsw.total = e.nEntries;
+    e.lsw.visible = kListMax;
+    e.lsw.clamp();
+    Rect col = {0, 0, 0, 0};
+    if (e.lsbMade && paneRect(e.panel, MUI_PANE_COLUMN, &col)) layoutBar(e.lsb, e.lsw, col);
+}
+
+// The mouse wheel arrives from the gui-input provider (optional; without it the bar buttons and the thumb still work).
+void wheelSubscribeOnce() {
+    static bool ok = false;
+    if (ok) return;
+    guikit::g_gkInput.poll();
+    if (guikit::g_gkInput.connected && guikit::g_gkInput.wheel_subscribe(guikit::detail::guikitWheelCb, nullptr) > 0) {
+        ok = true;
+        KP_LOG(chMain, "WHEEL subscribed through gui-input");
+    }
+}
+
+bool wheelDragGuard() { return g_mc.dragging; }
+
+// One tick of scroll input for the shown page (list or option rows). Returns true when the position changed (and re-lays the page out).
+bool scrollTick(bool down, bool haveCur, int x, int y, DWORD now) {
+    McState& e = g_mc;
+    mui::ScrollWindow* sw = nullptr;
+    ItemX* bar = nullptr;
+    int k = -1;
+    if (e.ps.state == mui::LIST && e.lsbMade && e.lsw.needBar()) { sw = &e.lsw; bar = e.lsb; }
+    else if (e.ps.state == mui::ENTRY && e.ps.entry >= 0 && e.ps.entry < mui::kMaxEntries && e.sbMade[e.ps.entry] && e.sw[e.ps.entry].needBar()) {
+        k = e.ps.entry;
+        sw = &e.sw[k];
+        bar = e.sb[k];
+    }
+    Rect col = {0, 0, 0, 0};
+    if (!sw || !paneRect(e.panel, MUI_PANE_COLUMN, &col)) {
+        guikit::g_wheel.clearRect(0);   // nothing scrolls here: the wheel goes to the game
+        e.barHeld = -1;
+        e.dragging = false;
+        (void)editkit::repeatTick(e.barRep, false, now);
+        return false;
+    }
+    wheelSubscribeOnce();
+    guikit::g_wheel.scoped = true;
+    guikit::g_wheel.dragGuard = wheelDragGuard;
+    guikit::g_wheel.touch(now);
+    guikit::g_wheel.setRect(0, col.x, col.y, col.w, col.h);
+    e.wheelRem += guikit::g_wheel.take();
+    const int notches = e.wheelRem / kWheelNotch;
+    e.wheelRem -= notches * kWheelNotch;
+    bool changed = false;
+    const char* src = "";
+    if (notches != 0 && sw->wheel(notches)) { changed = true; src = "wheel"; }
+    const BarGeom g = barGeom(col);
+    const bool press = down && !e.prevDown && haveCur;
+    if (press) {
+        const mui::Rect th = sw->thumb(g.track);
+        if (overCtl(bar[kBarUp], x, y)) e.barHeld = kBarUp;
+        else if (overCtl(bar[kBarDown], x, y)) e.barHeld = kBarDown;
+        else if (overCtl(bar[kBarThumb], x, y)) { e.dragging = true; e.dragGrab = y - th.y; }
+        else if (mui::rectHas(g.track, x, y) && sw->setOffset(sw->offset + (y < th.y ? -sw->visible : sw->visible))) { changed = true; src = "track"; }
+    }
+    if (!down) {
+        e.barHeld = -1;
+        e.dragging = false;
+    } else if (e.barHeld >= 0 && !(haveCur && overCtl(bar[e.barHeld], x, y))) {
+        e.barHeld = -1;   // the cursor left the button: stop for this press
+    }
+    int n = editkit::repeatTick(e.barRep, e.barHeld >= 0, now);
+    if (e.barHeld >= 0)
+        for (; n > 0; --n)
+            if (sw->wheel(e.barHeld == kBarUp ? 1 : -1)) { changed = true; src = "button"; }
+    if (e.dragging && haveCur && sw->setOffset(sw->offsetFromThumbTop(y, e.dragGrab, g.track))) { changed = true; src = "drag"; }
+    for (int i = 0; i < kBarCtl; ++i)
+        if (bar[i].ctl && bar[i].hasRect && !bar[i].unlinked) applyOne(e, bar[i].tg, false);
+    if (changed) {
+        if (k >= 0) rowsRelayout(k);
+        else { rebindList(); layoutBar(e.lsb, e.lsw, col); }
+        e.hov = mui::HoverTracker();   // the hover description follows what is under the cursor now
+        if (++e.scrollLogs <= 100) KP_LOG(chMain, "SCROLL page=%d off=%d total=%d src=%s", curPageId(), sw->offset, sw->total, src);
+    }
+    return changed;
 }
 
 // ---------------------------------------------------------------------------------------------------- page changes
@@ -908,12 +1134,16 @@ void applyEvent(const mui::PageEvent& ev, const char* why) {
         case mui::LIST:
             if (!enter) {
                 for (int i = 0; i < e.nList; ++i) setShown(e.list[i], false);
+                if (e.lsbMade) showBar(e.lsb, false);
                 setShown(e.back, false);
                 setShown(e.title, false);
             } else {
                 const bool cleared = clearFocus(e.panel);
                 if (e.title.ctl) guikit::setText(e.title.ctl, kRootText);
+                listBarSync();
+                rebindList();
                 for (int i = 0; i < e.nList; ++i) setShown(e.list[i], true);
+                if (e.lsbMade) showBar(e.lsb, e.lsw.needBar());
                 setShown(e.back, true);
                 setShown(e.title, true);
                 KP_LOG(chMain, "LIST enter entries=%d focusCleared=%d", e.nList, cleared ? 1 : 0);
@@ -927,11 +1157,13 @@ void applyEvent(const mui::PageEvent& ev, const char* why) {
                 callEntryLeave(k);
                 syncDescSplit("leave");   // ps already moved off the entry page: the original LB_DESC rect goes back
                 for (int i = 0; i < e.pt.itemCount(2 + k); ++i) setShown(e.items[k][i], false);
+                if (e.sbMade[k]) showBar(e.sb[k], false);
                 setShown(e.back, false);
                 setShown(e.title, false);
             } else {
                 const bool cleared = clearFocus(e.panel);
                 if (e.title.ctl) guikit::setText(e.title.ctl, e.pageTitle[k]);
+                e.sw[k].offset = 0;   // a page always opens at its top
                 layoutRows(k);   // option rows take their column slots (the party / values may have changed since the last visit)
                 for (int i = 0; i < e.pt.itemCount(2 + k); ++i) {
                     ItemX& it = e.items[k][i];
@@ -944,6 +1176,7 @@ void applyEvent(const mui::PageEvent& ev, const char* why) {
                     setShown(it, true);
                 }
                 showRows(k);   // after the show-all loop: hidden / unslotted rows and the arrows of disabled rows go back to hidden
+                if (e.sbMade[k]) showBar(e.sb[k], e.sw[k].needBar());
                 setShown(e.back, true);
                 setShown(e.title, true);
                 KP_LOG(chMain, "ENTRY enter id=%s page=%d items=%d focusCleared=%d", entLive(k) ? g_ent[k].id : "?", 2 + k, e.pt.itemCount(2 + k), cleared ? 1 : 0);
@@ -1327,13 +1560,6 @@ bool rowPageGate(uint32_t page, const char* what) {
     return true;
 }
 
-void releaseRowCtl(ItemX& it) {
-    if (!it.ctl) return;
-    if (it.isButton) guibutton::releaseUnlinkedButton(it.ctl);
-    else guikit::releaseUnlinkedLabel(it.ctl, kLabelVtable);
-    it.ctl = 0;
-}
-
 // The ABI values are copied straight into mui::RowCfg (kind, flags): pin the two enum sets to each other.
 static_assert(MUI_ROW_TOGGLE == mui::RK_TOGGLE && MUI_ROW_STEPPER == mui::RK_STEPPER, "MUI_ROW_* == mui::RK_*");
 static_assert(MUI_RF_WRAP == mui::RF_WRAP && MUI_RF_RESTART == mui::RF_RESTART && MUI_RF_DISABLED == mui::RF_DISABLED && MUI_RF_HIDDEN == mui::RF_HIDDEN,
@@ -1360,10 +1586,7 @@ int32_t KPATCH_CALL muiAddRow(uint32_t page, const K2MuiRowSpec* sp) {
     int visible = 0;
     for (int i = 0; i < rp.n; ++i)
         if (!(rp.rows[i].cfg.flags & mui::RF_HIDDEN)) ++visible;
-    if (!(sp->flags & MUI_RF_HIDDEN) && visible >= mui::kRowsVisible) {   // scrolling lands in MCF2b
-        KP_LOG(chMain, "MUI refused: AddRow page %u already has %d visible rows", static_cast<unsigned>(page), visible);
-        return -1;
-    }
+    const bool needsBar = !(sp->flags & MUI_RF_HIDDEN) && visible >= mui::kRowsVisible;   // this row is the 9th visible one: the page scrolls
     RowX r;
     r.used = true;
     r.cfg.kind = toggle ? mui::RK_TOGGLE : mui::RK_STEPPER;
@@ -1393,6 +1616,16 @@ int32_t KPATCH_CALL muiAddRow(uint32_t page, const K2MuiRowSpec* sp) {
         }
         ctl[p].hasText = true;
         copyStr(ctl[p].desc, sizeof ctl[p].desc, sp->desc);
+    }
+    if (needsBar && !e.sbMade[k]) {
+        char tag[16];
+        snprintf(tag, sizeof tag, "p%u", static_cast<unsigned>(page));
+        if (!makeBar(e.sb[k], tag)) {
+            for (int q = 0; q < parts; ++q) releaseRowCtl(ctl[q]);
+            KP_LOG(chMain, "MUI refused: AddRow page %u needs a scroll bar and its controls could not be cloned", static_cast<unsigned>(page));
+            return -1;
+        }
+        e.sbMade[k] = true;
     }
     copyStr(ctl[0].text, sizeof ctl[0].text, "");
     if (!toggle) { copyStr(ctl[1].text, sizeof ctl[1].text, "<"); copyStr(ctl[2].text, sizeof ctl[2].text, ">"); }
@@ -1508,7 +1741,28 @@ void KPATCH_CALL stBuild(void* panel, void*) {
     sp = K2MuiRowSpec(); sp.struct_size = sizeof sp;
     sp.kind = MUI_ROW_TOGGLE; sp.label = "Needs restart"; sp.desc = "The caption gets (restart)."; sp.value = 0; sp.flags = MUI_RF_RESTART;
     muiAddRow(pg, &sp);
+    if (g_cfg.selftest >= 2) {   // 24 rows in all (alternating steppers and toggles), so the page scrolls
+        static const char* const kNames[18] = {"Row 07", "Row 08", "Row 09", "Row 10", "Row 11", "Row 12", "Row 13", "Row 14", "Row 15",
+                                               "Row 16", "Row 17", "Row 18", "Row 19", "Row 20", "Row 21", "Row 22", "Row 23", "Row 24"};
+        for (int i = 0; i < 18; ++i) {
+            sp = K2MuiRowSpec(); sp.struct_size = sizeof sp;
+            sp.label = kNames[i];
+            sp.desc = "A scroll-test row. Its description should change when the page scrolls under the cursor.";
+            if (i % 2 == 0) { sp.kind = MUI_ROW_TOGGLE; sp.value = 0; }
+            else { sp.kind = MUI_ROW_STEPPER; sp.min = 0; sp.max = 9; sp.step = 1; sp.value = i / 2; }
+            muiAddRow(pg, &sp);
+        }
+    }
     muiSetChangeHandler(pg, &stChange, nullptr);
+}
+
+void KPATCH_CALL stDummyBuild(void* panel, void*) {
+    const uint32_t pg = muiNewPage(panel, "Dummy entry");
+    if (!pg) return;
+    K2MuiRowSpec sp = {};
+    sp.struct_size = sizeof sp;
+    sp.kind = MUI_ROW_TOGGLE; sp.label = "Dummy toggle"; sp.desc = "A filler entry that makes the mod list longer than 8."; sp.value = 1;
+    muiAddRow(pg, &sp);
 }
 
 const K2MenuUiApi g_muiApi = {sizeof(K2MenuUiApi), &muiNewPage, &muiAddButton, &muiAddLabel, &muiAddCustom, &muiClicked,
@@ -1530,6 +1784,20 @@ extern "C" void __cdecl McBind(int panelArg) {
             static const K2ModConfigEntry st = {sizeof(K2ModConfigEntry), "mc-selftest", "Mod-config self test", "Option-row self test: toggle, steppers, snap / reject, disabled, restart. For play checks only.",
                                                 nullptr, &stBuild, nullptr, nullptr, nullptr, nullptr};
             mcRegister(&st);
+            if (g_cfg.selftest >= 2) {   // six filler entries so the list page has more than 8 buttons
+                static const char* const kDId[6] = {"mc-dummy1", "mc-dummy2", "mc-dummy3", "mc-dummy4", "mc-dummy5", "mc-dummy6"};
+                static const char* const kDName[6] = {"Dummy 1", "Dummy 2", "Dummy 3", "Dummy 4", "Dummy 5", "Dummy 6"};
+                static K2ModConfigEntry de[6];
+                for (int i = 0; i < 6; ++i) {
+                    de[i] = K2ModConfigEntry();
+                    de[i].struct_size = sizeof(K2ModConfigEntry);
+                    de[i].id = kDId[i];
+                    de[i].name = kDName[i];
+                    de[i].desc = "Self-test filler entry (selftest=2).";
+                    de[i].build = &stDummyBuild;
+                    mcRegister(&de[i]);
+                }
+            }
         }
     }
     if (!g_enabled || !panelArg) return;
@@ -1557,9 +1825,13 @@ extern "C" void __cdecl McBind(int panelArg) {
     // Buttons and labels from the vanilla layout (open until StopLoadFromLayout right after this hook), in this order:
     // root button, list buttons, Back, title.
     e.root.ctl = cloneEntry(P, "BTN_GAMEPLAY", "root", &e.root.isButton);
-    e.nList = g_reg.count() < mui::kMaxEntries ? g_reg.count() : mui::kMaxEntries;
+    e.nEntries = g_reg.count() < mui::kMaxEntries ? g_reg.count() : mui::kMaxEntries;
+    for (int i = 0; i < e.nEntries; ++i) e.entTok[i] = g_reg.at(i);
+    e.nList = e.nEntries < kListMax ? e.nEntries : kListMax;
+    e.lsw.total = e.nEntries;
+    e.lsw.visible = kListMax;
     for (int i = 0; i < e.nList; ++i) {
-        const int tok = g_reg.at(i);
+        const int tok = e.entTok[i];
         const int s = tok - 1;
         e.listTok[i] = tok;
         char what[32];
@@ -1568,14 +1840,18 @@ extern "C" void __cdecl McBind(int panelArg) {
         copyStr(e.list[i].text, sizeof e.list[i].text, entLive(s) ? g_ent[s].name : "");
         e.list[i].hasText = true;
     }
+    if (e.nEntries > kListMax) {
+        e.lsbMade = makeBar(e.lsb, "list");
+        if (!e.lsbMade) KP_LOG(chMain, "CTOR list scroll bar clone failed: entries past %d are unreachable", kListMax);
+    }
     e.back.ctl = cloneEntry(P, "BTN_EXIT", "back", &e.back.isButton);
     e.title.ctl = cloneLabel(P, "title");
     if (!e.root.ctl) {
         KP_LOG(chMain, "CTOR root button clone failed: entries are not built for this panel");
         return;
     }
-    for (int i = 0; i < e.nList; ++i) {
-        const int s = e.listTok[i] - 1;
+    for (int i = 0; i < e.nEntries; ++i) {   // every registered entry builds its page, scrolled-out list entries included
+        const int s = e.entTok[i] - 1;
         if (!entLive(s) || !g_ent[s].build) continue;
         g_inBuild = true;
         g_buildSlot = s;
@@ -1620,7 +1896,7 @@ extern "C" void __cdecl McTick(int panelArg) {
     e.prevEsc = escDown;
     {   // A long gap used to always mean "the panel was closed". While the panel is still marked shown (flags48 bit 0x40) a game hitch under a held
         // button looks the same, so only a very long gap with no button held counts then (mui::tickResetDue). Every decision past 500 ms is logged.
-        const bool due = mui::tickResetDue(static_cast<unsigned>(gap), flags48, down, false);
+        const bool due = mui::tickResetDue(static_cast<unsigned>(gap), flags48, down, e.dragging);
         if (gap > kTickGapMs && ++e.gapLogs <= 32)
             KP_LOG(chMain, "TICKGAP gap=%lu flags48=%x lmb=%d reset=%d", static_cast<unsigned long>(gap), static_cast<unsigned>(flags48), down ? 1 : 0, due ? 1 : 0);
         if (due) resetPages("tick gap");
@@ -1648,6 +1924,7 @@ extern "C" void __cdecl McTick(int panelArg) {
     const bool overBack = cur && e.ps.state != mui::MAIN && overCtl(e.back, x, y);
     hoverStep(overBack ? -1 : hit);
     if (e.ps.state == mui::ENTRY && e.ps.entry >= 0 && e.ps.entry < mui::kMaxEntries && e.rp[e.ps.entry].n > 0) rowArrowInput(e.ps.entry, down, overBack ? -1 : hit, now);
+    (void)scrollTick(down, cur, x, y, now);
     if (down && !e.prevDown) {
         static volatile LONG s_in = 0;
         if (InterlockedIncrement(&s_in) <= 40)
@@ -1701,6 +1978,7 @@ extern "C" void __cdecl McDestroy(int panelArg) {
     if (P != g_mc.panel) return;
     saferead::beginScope();
     McState& e = g_mc;
+    guikit::g_wheel.clearRect(0);   // the wheel goes back to the game
     KP_LOG(chMain, "DTOR panel=%x page=%d appended=%d free_labels=%d", static_cast<unsigned>(P), curPageId(), e.appended ? 1 : 0, g_cfg.freeLabels ? 1 : 0);
     // (1) leave the shown page: only the entry's leave callback (the panel is going away, nothing to show or hide).
     if (e.ps.state == mui::ENTRY && e.ps.entry >= 0) callEntryLeave(e.ps.entry);
@@ -1730,6 +2008,7 @@ extern "C" void __cdecl McDestroy(int panelArg) {
 // the config is read at the first McBind.
 extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
+    guikit::initGuiInput(api, "mod-config");   // optional: the wheel provider (k2.guiinput); a missing provider only means no wheel
     KP_LOG(chMain, "mod-config 0.2.0-dev loaded (Mod Configuration button under Gameplay; k2.modconfig@1 + k2.menuui@1; config mod_config.ini is read at the first Options panel: enabled debug button_clone reflow desc free_labels)");
     int rcC = -1, rcM = -1;
     if (api && api->struct_size >= offsetof(KPatchApi, require) + sizeof(api->require) && api->provide) {

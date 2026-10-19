@@ -84,7 +84,7 @@ typedef struct K2ModConfigEntry {
 
 typedef struct K2ModConfigApi {
     uint32_t struct_size;
-    /* Adds an entry (copies *e; its strings must be static). > 0 token. 0 = refused (e is null, or all 8 slots are used). */
+    /* Adds an entry (copies *e; its strings must be static). > 0 token. 0 = refused (e is null, or all 24 slots are used). */
     int32_t  (KPATCH_CALL *Register)(const K2ModConfigEntry* e);
     /* Removes the entry with this token. An unknown token is a no-op. */
     void     (KPATCH_CALL *Unregister)(int32_t token);
@@ -147,13 +147,16 @@ typedef struct K2MenuUiApi {
 
     /* ---- Option rows (slots 12..18; check MenuClient::hasRows). The provider lays rows out itself in the column pane and draws
        the value caption, the "<" ">" arrows (or the toggle button) and the description on hover, so consumers write no geometry.
-       Entry pages only; a page may mix AddRow with AddButton/AddLabel/AddCustom, but its rows then share the column pane. */
+       Entry pages only; a page may mix AddRow with AddButton/AddLabel/AddCustom, but its rows then share the column pane.
+       A page with more than 8 visible rows scrolls: the provider adds an up / down / thumb bar on the right of the column and the mouse
+       wheel (through gui-input, when installed) moves 1 row per notch. Pages that lay items out with SetRect / AddCustom do not scroll. */
 
     /* Adds a row. build() only. Row id >= 0 (0, 1, 2 ... in call order, separate from item ids); < 0 = fail (no panel, too many rows
        or controls, bad spec). The spec and its strings are copied except `choices` (the array and its strings must stay valid). */
     int32_t  (KPATCH_CALL *AddRow)(uint32_t page, const K2MuiRowSpec* spec);
     /* Registers the page's change handler (one per page; null clears). It runs on the main thread inside the provider's tick, never
-       from Clicked, once per accepted arrow press / toggle flip. */
+       from Clicked, once per accepted arrow press / toggle flip. The handler is dropped with the Options panel: set it again in every
+       build() (the declarative layer does). */
     void     (KPATCH_CALL *SetChangeHandler)(uint32_t page, K2MuiChangeFn fn, void* user);
     /* The row's stored value (toggle 0/1, stepper value or choice index); 0 for an unknown row. */
     int32_t  (KPATCH_CALL *GetValue)(uint32_t page, int32_t row);
