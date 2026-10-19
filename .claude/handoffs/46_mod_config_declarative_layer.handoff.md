@@ -1,22 +1,24 @@
 # Session Handoff & Plan State: patch_manager_mods/46_mod_config_declarative_layer.md
 
 ## 0. Next-Phase Direction
-Combat HUD preview mockup with gear button + test-state modal, and move those components into the mod-config provider
+Execute MCF1: [Mod-config] Pure logic in MenuUiLogic.h: row kinds (toggle/stepper), ScrollWindow (offset clamp, wheel step, ensure-visible, thumb px), `mui::tickResetDue(gap, flags48, lmbDown)` + tests
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/46_mod_config_declarative_layer.md`
 - **Waves:** .claude/waves/WI-46-a1/
 - **Waves:** .claude/waves/WI-46-a2/
 - **Waves:** .claude/waves/WI-46-a3/
-- **Branch:** `KOTOR-II` (f32ccef7 PLAY_TEST_QUEUE: CH-PG1 combat-hotbar 0.10.0-dev LIVE 10-19 00:45)
-- **Generated:** 2026-10-19 00:47:41 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Waves:** .claude/waves/w1-46-prev/
+- **Branch:** `KOTOR-II` (2a4d126c doc 46 + PLAY_TEST_QUEUE: mod-config 0.3.0-dev + combat-hotbar 0.11.0-dev INSTALLED 10-19 01:28 (rollback batch_swap_20261019_012850))
+- **Generated:** 2026-10-19 01:41:58 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-f32ccef7 PLAY_TEST_QUEUE: CH-PG1 combat-hotbar 0.10.0-dev LIVE 10-19 00:45
- patch_manager_mods/PLAY_TEST_QUEUE.md | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+2a4d126c doc 46 + PLAY_TEST_QUEUE: mod-config 0.3.0-dev + combat-hotbar 0.11.0-dev INSTALLED 10-19 01:28 (rollback batch_swap_20261019_012850)
+ patch_manager_mods/46_mod_config_declarative_layer.md | 4 ++--
+ patch_manager_mods/PLAY_TEST_QUEUE.md                 | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 ```
-- **Dirty Files (179):**
+- **Dirty Files (180):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
   - ` M .claude/handoffs/DECOMP_PLAN.handoff.md`
@@ -27,7 +29,7 @@ f32ccef7 PLAY_TEST_QUEUE: CH-PG1 combat-hotbar 0.10.0-dev LIVE 10-19 00:45
   - ` M .claude/reviews/gemini_20261014/tools/fix3_items.tsv`
   - ` M .claude/settings.json`
   - ` M CLAUDE.md`
-  - ... +169 more (run `git status --short`)
+  - ... +170 more (run `git status --short`)
 
 ## 2. Immediate Objective (MCF1)
 **[Mod-config] Pure logic in MenuUiLogic.h: row kinds (toggle/stepper), ScrollWindow (offset clamp, wheel step, ensure-visible, thumb px), `mui::tickResetDue(gap, flags48, lmbDown)` + tests**
@@ -36,7 +38,7 @@ Status: BUILT
 Task: [Mod-config] Pure logic in MenuUiLogic.h: row kinds (toggle/stepper), ScrollWindow (offset clamp, wheel step, ensure-visible, thumb px), `mui::tickResetDue(gap, flags48, lmbDown)` + tests
 
 ## 2b. Upcoming Batches in Pipeline
-- **MCF5** [Meta / Planning Setup] : [Mod-config] Look-alike slider row (needs Holster-session SliderArt extraction)
+- **MCF5** [Meta / Planning Setup] : [Mod-config] Look-alike slider row (SliderArt extracted; part 1 pure maths 09fbf5d7, part 2 provider wiring)
 - **MCF6** [Meta / Planning Setup] : [Mod-config] Native slider embed probe (gated by MCF0)
 - **MCF7** [Meta / Planning Setup] : [Enemy strip] Migrate its page to the declarative layer
 
