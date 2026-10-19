@@ -1,5 +1,12 @@
 # Handoff: holster config shared components, UX fixes, body-rotation plan (session holster-toggle-key-delay, 10-18 night)
 
+## State at 10-19 00:30 (body rotation plan DONE)
+LIVE: holster 0.4.0-dev + holster-editor 0.5.0-dev (one batch; rollback `kpm_hotswap.py --rollback batch_swap_20261019_002931`). Repo 7e17b5ec, play rows 59f4ad2d (BR1-BR3, SC1, RS1; DB2 part b is superseded: no rotation lock any more). KPM 6ac94b1, 667806a.
+- Provider: place_rot_body_<name> (q = qbase(D) * qbase(R), left mirrorRot, left_extra outermost, src[0] bit 16 = K2HOLSTER_SRC_BODYROT); weapon/type saves never bake the body rot (overlayStoreLevel stores conj(bodyQ) * placeQ); ResetScope body unsets both keys. sizeof(TuneCfg) 3924 < 4096.
+- Editor: labels "This weapon model" | "All <plural>" | "This body + armor"; live "Save changes go to ..." sentence; armorClassLabel from the body resref 4th char (vanilla baseitems verified, A = appearance default only); "..." toggle (item 69) + PI_REMOVE item 72 (page 79/80, ONE spare); HseLayout.h + 12 HseView helpers pruned, probes kept.
+- Gate waiver (10-19): default tier failed on k1_port (another session's uncommitted k1_port_recipe.py body_b/head rule) and test_subagent_tools; both PASS on a clean HEAD copy with this patch applied; GATE PASS with --skip-default (mod steps + builds); holster/hse/view_drag/mockup/providerclient/iniwrite suites pass.
+- Left open: KPM Patches/Common + Patches/_shared HolsterApi.h are stale (comment + unused #define only; next check_shared_headers --sync outside an install); KPM still holds the deleted Patches/HolsterEditor/HseLayout.h (unused); dead accessors in shared EditKit.h (dragMode/midClick/fmtValue), SliderArt.h (7), ResetIcon.h (6) need the doc 46 session's OK before pruning; 1920x1080 / 1280x720 scope labels overflow (did before too; needs a layout change, not text).
+
 ## State at 10-18 23:40
 LIVE: holster 0.3.0-dev (F8 toggle key + shorter combat/flourish exit; rollback holster_swap_20261018_221317), holster-editor 0.4.11-dev (rollback holster-editor_swap_20261018_233719).
 Game closed at install time. Nothing of the new work is play-tested; play rows pending in patch_manager_mods/PLAY_TEST_QUEUE.md: HK1, HD1-HD3 (holster 0.3.0), DB1, DB2 (editor boxes + body-scope lock).
