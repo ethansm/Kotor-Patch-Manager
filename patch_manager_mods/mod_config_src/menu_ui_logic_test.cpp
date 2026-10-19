@@ -502,6 +502,325 @@ static void test_split_odd_heights() {
     }
 }
 
+// ---------------------------------------------------------------- option rows
+static RowCfg stepper(int lo, int hi, int st, int v, int flags = 0) { return RowCfg{RK_STEPPER, lo, hi, st, v, flags}; }
+static RowCfg toggle(int v, int flags = 0) { return RowCfg{RK_TOGGLE, 0, 1, 1, v, flags}; }
+
+static void test_row_clamp_step() {
+    const RowCfg hp = stepper(5, 95, 5, 35);                      // Heal below N%
+    KT_CHECK_EQ(rowClamp(hp, 0), 5);
+    KT_CHECK_EQ(rowClamp(hp, 100), 95);
+    KT_CHECK_EQ(rowClamp(hp, 40), 40);
+    KT_CHECK_EQ(rowStep(hp, 35, 1), 40);
+    KT_CHECK_EQ(rowStep(hp, 35, -1), 30);
+    KT_CHECK_EQ(rowStep(hp, 95, 1), 95);                          // clamp at the top
+    KT_CHECK_EQ(rowStep(hp, 5, -1), 5);                           // clamp at the bottom
+    KT_CHECK_EQ(rowStep(hp, 90, 1), 95);
+    KT_CHECK_EQ(rowStep(hp, 10, -1), 5);
+    KT_CHECK_EQ(rowStep(hp, 37, 1), 42);                          // off-grid value moves from where it is (the handler snaps)
+    KT_CHECK_EQ(rowStep(hp, 37, 0), 37);                          // dir 0 = clamped value only
+    KT_CHECK_EQ(rowStep(hp, 200, 0), 95);
+    const RowCfg keep = stepper(0, 20, 1, 2);                     // Keep N
+    KT_CHECK_EQ(rowStep(keep, 20, 1), 20);
+    KT_CHECK_EQ(rowStep(keep, 0, -1), 0);
+    KT_CHECK_EQ(rowStep(keep, 0, 1), 1);
+    const RowCfg w = stepper(0, 20, 1, 20, RF_WRAP);
+    KT_CHECK_EQ(rowStep(w, 20, 1), 0);                            // wrap both ways
+    KT_CHECK_EQ(rowStep(w, 0, -1), 20);
+    KT_CHECK_EQ(rowStep(w, 10, 1), 11);
+    const RowCfg odd = stepper(0, 20, 3, 18, RF_WRAP);            // step does not divide the range
+    KT_CHECK_EQ(rowStep(odd, 18, 1), 0);
+    KT_CHECK_EQ(rowStep(odd, 0, -1), 20);
+    KT_CHECK_EQ(rowStep(stepper(0, 20, 3, 18), 18, 1), 20);       // clamp variant lands on max
+    KT_CHECK_EQ(rowStep(stepper(0, 5, 0, 2), 2, 1), 3);           // step < 1 reads as 1
+    KT_CHECK_EQ(rowStep(stepper(9, 3, 1, 5), 5, 1), 6);           // swapped range reads as min..max
+    KT_CHECK_EQ(rowClamp(stepper(9, 3, 1, 5), 100), 9);
+    KT_CHECK_EQ(rowStep(stepper(4, 4, 1, 4, RF_WRAP), 4, 1), 4);  // one-value range
+}
+
+static void test_row_toggle() {
+    const RowCfg t = toggle(0);
+    KT_CHECK_EQ(rowStep(t, 0, 0), 1);                             // a toggle flips whatever dir says
+    KT_CHECK_EQ(rowStep(t, 1, 0), 0);
+    KT_CHECK_EQ(rowStep(t, 0, 1), 1);
+    KT_CHECK_EQ(rowStep(t, 1, -1), 0);
+    KT_CHECK_EQ(rowStep(t, 7, 1), 0);                             // non-zero counts as on
+    KT_CHECK_EQ(rowClamp(t, 5), 1);
+    KT_CHECK_EQ(rowClamp(t, -3), 1);
+    KT_CHECK_EQ(rowClamp(t, 0), 0);
+}
+
+static void test_row_handler_result() {
+    const RowCfg hp = stepper(5, 95, 5, 35);
+    KT_CHECK_EQ(rowApplyHandlerResult(hp, 40, 40, true), 40);     // accepted
+    KT_CHECK_EQ(rowApplyHandlerResult(hp, 42, 40, true), 40);     // snapped: the handler's FINAL value wins
+    KT_CHECK_EQ(rowApplyHandlerResult(hp, 40, 35, true), 35);     // rejected: handler returns the old value
+    KT_CHECK_EQ(rowApplyHandlerResult(hp, 40, 500, true), 95);    // out of range is clamped
+    KT_CHECK_EQ(rowApplyHandlerResult(hp, 40, -4, true), 5);
+    KT_CHECK_EQ(rowApplyHandlerResult(hp, 40, 99, false), 40);    // no handler: the request is stored
+    KT_CHECK_EQ(rowApplyHandlerResult(hp, 400, 99, false), 95);
+    KT_CHECK_EQ(rowApplyHandlerResult(toggle(0), 1, 1, true), 1);
+    KT_CHECK_EQ(rowApplyHandlerResult(toggle(0), 1, 3, true), 1);
+    KT_CHECK_EQ(rowApplyHandlerResult(stepper(5, 95, 5, 35, RF_DISABLED), 40, 40, true), 35);   // disabled never changes
+    KT_CHECK_EQ(rowApplyHandlerResult(stepper(5, 95, 5, 35, RF_DISABLED), 40, 40, false), 35);
+}
+
+static void test_row_format() {
+    char b[64];
+    RowCfg hp = stepper(5, 95, 5, 35);
+    KT_CHECK(rowFormat(b, sizeof b, "Heal", hp, "Heal below %d%%", nullptr, 0, nullptr));
+    KT_CHECK(strcmp(b, "Heal below 35%") == 0);
+    RowCfg keep = stepper(0, 20, 1, 0);
+    KT_CHECK(rowFormat(b, sizeof b, "Keep", keep, nullptr, nullptr, 0, "Auto"));
+    KT_CHECK(strcmp(b, "Keep: Auto") == 0);                       // zero text
+    keep.value = 4;
+    KT_CHECK(rowFormat(b, sizeof b, "Keep", keep, nullptr, nullptr, 0, "Auto"));
+    KT_CHECK(strcmp(b, "Keep: 4") == 0);                          // default %d
+    keep.flags = RF_RESTART;
+    KT_CHECK(rowFormat(b, sizeof b, "Keep", keep, nullptr, nullptr, 0, nullptr));
+    KT_CHECK(strcmp(b, "Keep: 4 (restart)") == 0);
+    const char* ch[] = {"Off", "Slow", "Fast"};
+    RowCfg lst = stepper(0, 2, 1, 1);
+    KT_CHECK(rowFormat(b, sizeof b, "Speed", lst, nullptr, ch, 3, nullptr));
+    KT_CHECK(strcmp(b, "Speed: Slow") == 0);
+    lst.value = 2;
+    KT_CHECK(rowFormat(b, sizeof b, "Speed", lst, "ignored %d", ch, 3, nullptr));
+    KT_CHECK(strcmp(b, "Speed: Fast") == 0);                      // choices beat fmt
+    RowCfg tg = toggle(1);
+    KT_CHECK(rowFormat(b, sizeof b, "Auto-heal", tg, nullptr, nullptr, 0, nullptr));
+    KT_CHECK(strcmp(b, "Auto-heal: On") == 0);
+    tg.value = 0;
+    tg.flags = RF_RESTART;
+    KT_CHECK(rowFormat(b, sizeof b, "Auto-heal", tg, nullptr, nullptr, 0, nullptr));
+    KT_CHECK(strcmp(b, "Auto-heal: Off (restart)") == 0);
+    RowCfg neg = stepper(-50, 50, 5, -15);
+    KT_CHECK(rowFormat(b, sizeof b, "Bias", neg, nullptr, nullptr, 0, nullptr));
+    KT_CHECK(strcmp(b, "Bias: -15") == 0);
+    KT_CHECK(rowFormat(b, sizeof b, "", keep, nullptr, nullptr, 0, nullptr) && strcmp(b, "4 (restart)") == 0);   // no label
+    KT_CHECK(rowFormat(b, sizeof b, "X", hp, "100%% of %d %s", nullptr, 0, nullptr));
+    KT_CHECK(strcmp(b, "100% of 35 %s") == 0);                    // only %d and %% expand
+    hp.value = 500;                                               // the shown value is clamped
+    KT_CHECK(rowFormat(b, sizeof b, "X", hp, "%d", nullptr, 0, nullptr) && strcmp(b, "95") == 0);
+    hp.value = 35;
+    KT_CHECK(!rowFormat(b, 8, "Heal", hp, "Heal below %d%%", nullptr, 0, nullptr));   // cut text: false, still terminated
+    KT_CHECK(strcmp(b, "Heal be") == 0);
+    KT_CHECK(!rowFormat(b, 1, "Heal", hp, nullptr, nullptr, 0, nullptr) && b[0] == 0);
+    KT_CHECK(!rowFormat(nullptr, 10, "x", hp, nullptr, nullptr, 0, nullptr));
+    KT_CHECK(!rowFormat(b, 0, "x", hp, nullptr, nullptr, 0, nullptr));
+}
+
+static void test_row_geometry() {
+    const Rect col = {100, 50, 240, 284};
+    for (int k = 0; k < kRowsVisible; ++k) {
+        const Rect s = rowSlotRect(col, k);
+        KT_CHECK(rectIs(s, 100, 50 + 36 * k, 240, 32));
+    }
+    KT_CHECK_EQ(rowSlotRect(col, 7).y + rowSlotRect(col, 7).h, col.y + col.h);   // 8 slots fit exactly
+    for (int h = 100; h <= 700; h += 13) {                        // 8 slots always fit, never overlap
+        const Rect c = {0, 10, 200, h};
+        for (int k = 0; k < kRowsVisible; ++k) {
+            const Rect s = rowSlotRect(c, k);
+            KT_CHECK(s.y >= c.y && s.y + s.h <= c.y + c.h);
+            if (k > 0) KT_CHECK(s.y >= rowSlotRect(c, k - 1).y + rowSlotRect(c, k - 1).h);
+        }
+    }
+    const Rect slot = rowSlotRect(col, 2);
+    const RowGeom g = rowGeom(slot, RK_STEPPER);
+    KT_CHECK_EQ(g.label.x, slot.x);
+    KT_CHECK_EQ(g.left.w, 48);                                    // 20 % of 240
+    KT_CHECK_EQ(g.right.w, 48);
+    KT_CHECK_EQ(g.label.w, 240 - 96 - 12);
+    KT_CHECK_EQ(g.left.x, g.label.x + g.label.w + kRowGap);
+    KT_CHECK_EQ(g.right.x, g.left.x + g.left.w + kRowGap);
+    KT_CHECK_EQ(g.right.x + g.right.w, slot.x + slot.w);          // parts + gaps sum to the slot width
+    KT_CHECK(g.label.y == slot.y && g.left.y == slot.y && g.right.y == slot.y && g.label.h == slot.h && g.left.h == slot.h && g.right.h == slot.h);
+    const RowGeom t = rowGeom(slot, RK_TOGGLE);
+    KT_CHECK(rectIs(t.whole, slot.x, slot.y, slot.w, slot.h) && rectIs(t.label, slot.x, slot.y, slot.w, slot.h));
+    KT_CHECK(t.left.w == 0 && t.right.w == 0);
+    for (int w = 0; w <= 400; w += 7) {                           // never negative, still sums when the slot is wide enough
+        const RowGeom q = rowGeom(Rect{5, 6, w, 30}, RK_STEPPER);
+        KT_CHECK(q.label.w >= 0 && q.left.w >= 0 && q.right.w >= 0);
+        if (w >= 60) KT_CHECK_EQ(q.right.x + q.right.w, 5 + w);
+    }
+}
+
+static void test_row_hit_zones() {
+    const Rect slot = {100, 80, 240, 32};
+    const RowGeom g = rowGeom(slot, RK_STEPPER);
+    KT_CHECK_EQ(rowHitZone(g, slot.x, slot.y), Z_LABEL);          // top-left corner
+    KT_CHECK_EQ(rowHitZone(g, g.label.x + g.label.w - 1, slot.y + 31), Z_LABEL);
+    KT_CHECK_EQ(rowHitZone(g, g.label.x + g.label.w, slot.y + 5), Z_NONE);      // the gap
+    KT_CHECK_EQ(rowHitZone(g, g.left.x - 1, slot.y + 5), Z_NONE);
+    KT_CHECK_EQ(rowHitZone(g, g.left.x, slot.y), Z_LEFT);
+    KT_CHECK_EQ(rowHitZone(g, g.left.x + g.left.w - 1, slot.y + 31), Z_LEFT);
+    KT_CHECK_EQ(rowHitZone(g, g.left.x + g.left.w, slot.y + 5), Z_NONE);        // gap between the arrows
+    KT_CHECK_EQ(rowHitZone(g, g.right.x, slot.y + 5), Z_RIGHT);
+    KT_CHECK_EQ(rowHitZone(g, g.right.x + g.right.w - 1, slot.y + 31), Z_RIGHT);
+    KT_CHECK_EQ(rowHitZone(g, g.right.x + g.right.w, slot.y + 5), Z_NONE);      // right edge is exclusive
+    KT_CHECK_EQ(rowHitZone(g, slot.x + 10, slot.y - 1), Z_NONE);                // above / below
+    KT_CHECK_EQ(rowHitZone(g, slot.x + 10, slot.y + 32), Z_NONE);
+    KT_CHECK_EQ(rowHitZone(g, slot.x - 1, slot.y + 5), Z_NONE);
+    const RowGeom t = rowGeom(slot, RK_TOGGLE);
+    KT_CHECK_EQ(rowHitZone(t, slot.x, slot.y), Z_WHOLE);
+    KT_CHECK_EQ(rowHitZone(t, slot.x + 239, slot.y + 31), Z_WHOLE);
+    KT_CHECK_EQ(rowHitZone(t, slot.x + 240, slot.y + 5), Z_NONE);
+    // Zones never overlap: every pixel of the slot reports at most one zone and the three stepper rects are disjoint.
+    int nLabel = 0, nL = 0, nR = 0, nNone = 0;
+    for (int x = slot.x; x < slot.x + slot.w; ++x) {
+        const int z = rowHitZone(g, x, slot.y + 10);
+        if (z == Z_LABEL) ++nLabel; else if (z == Z_LEFT) ++nL; else if (z == Z_RIGHT) ++nR; else ++nNone;
+    }
+    KT_CHECK_EQ(nLabel, g.label.w);
+    KT_CHECK_EQ(nL, g.left.w);
+    KT_CHECK_EQ(nR, g.right.w);
+    KT_CHECK_EQ(nNone, 2 * kRowGap);
+}
+
+// ---------------------------------------------------------------- scroll window
+static void test_scroll_clamp_wheel() {
+    ScrollWindow s;
+    s.total = 24;
+    KT_CHECK_EQ(s.visible, 8);
+    KT_CHECK_EQ(s.maxOffset(), 16);
+    KT_CHECK(!s.wheel(1));                                        // already at the top: + is up
+    KT_CHECK_EQ(s.offset, 0);
+    KT_CHECK(s.wheel(-1));                                        // down one row
+    KT_CHECK_EQ(s.offset, 1);
+    KT_CHECK(s.wheel(-3));
+    KT_CHECK_EQ(s.offset, 4);
+    KT_CHECK(s.wheel(2));                                         // up two
+    KT_CHECK_EQ(s.offset, 2);
+    KT_CHECK(s.wheel(-100));
+    KT_CHECK_EQ(s.offset, 16);                                    // clamps at maxOffset
+    KT_CHECK(!s.wheel(-1));
+    KT_CHECK(s.wheel(100));
+    KT_CHECK_EQ(s.offset, 0);
+    KT_CHECK(s.setOffset(5) && s.offset == 5);
+    KT_CHECK(!s.setOffset(5));
+    KT_CHECK(s.setOffset(-9) && s.offset == 0);
+    KT_CHECK(s.setOffset(99) && s.offset == 16);
+    s.total = 20;                                                 // rows shrink under a large offset
+    s.clamp();
+    KT_CHECK_EQ(s.offset, 12);
+    s.total = 5;                                                  // fewer rows than the window: no scrolling
+    s.clamp();
+    KT_CHECK(s.offset == 0 && s.maxOffset() == 0 && !s.needBar());
+    KT_CHECK(!s.wheel(-1) && !s.setOffset(3));
+    s.total = 0;
+    KT_CHECK(s.maxOffset() == 0 && !s.needBar());
+    ScrollWindow e;                                               // exactly 8 rows and 9 rows
+    e.total = 8;
+    KT_CHECK(!e.needBar() && e.maxOffset() == 0);
+    e.total = 9;
+    KT_CHECK(e.needBar() && e.maxOffset() == 1);
+}
+
+static void test_scroll_ensure_visible() {
+    ScrollWindow s;
+    s.total = 24;
+    KT_CHECK(!s.ensureVisible(0) && s.offset == 0);               // inside: unchanged
+    KT_CHECK(!s.ensureVisible(7) && s.offset == 0);
+    KT_CHECK(s.ensureVisible(8) && s.offset == 1);                // one below: scroll just enough
+    KT_CHECK(s.ensureVisible(23) && s.offset == 16);
+    KT_CHECK(!s.ensureVisible(23));
+    KT_CHECK(s.ensureVisible(3) && s.offset == 3);                // above: row 3 becomes the top
+    KT_CHECK(!s.ensureVisible(10) && s.offset == 3);
+    KT_CHECK(!s.ensureVisible(-1) && !s.ensureVisible(24) && s.offset == 3);   // out of range is ignored
+    // After SetRowState hides the selected row the window can end up past the end: clamp then ensure.
+    s.total = 10;
+    s.clamp();
+    KT_CHECK_EQ(s.offset, 2);
+    KT_CHECK(s.ensureVisible(9) == false && s.offset == 2);
+    KT_CHECK_EQ(s.slotOf(2), 0);                                  // slotOf: displayed slot or -1
+    KT_CHECK_EQ(s.slotOf(9), 7);
+    KT_CHECK_EQ(s.slotOf(1), -1);
+    KT_CHECK_EQ(s.slotOf(10), -1);
+    KT_CHECK_EQ(s.slotOf(-1), -1);
+}
+
+static void test_scroll_thumb() {
+    const Rect track = {400, 100, 14, 250};
+    ScrollWindow s;
+    s.total = 8;                                                  // no bar needed: thumb is the whole track
+    KT_CHECK(rectIs(s.thumb(track), 400, 100, 14, 250));
+    s.total = 9;                                                  // 8/9 of 250 = 222
+    KT_CHECK_EQ(s.thumb(track).h, 222);
+    KT_CHECK_EQ(s.thumb(track).y, 100);
+    s.offset = 1;
+    KT_CHECK_EQ(s.thumb(track).y + s.thumb(track).h, track.y + track.h);   // bottom at maxOffset
+    s.total = 24;                                                 // 8/24 of 250 = 83
+    s.offset = 0;
+    KT_CHECK_EQ(s.thumb(track).h, 83);
+    s.offset = 16;
+    KT_CHECK_EQ(s.thumb(track).y + s.thumb(track).h, track.y + track.h);
+    s.total = 400;                                                // tiny share -> min 12 px
+    s.offset = 0;
+    KT_CHECK_EQ(s.thumb(track).h, kThumbMin);
+    ScrollWindow sh;                                              // short track shorter than the minimum
+    sh.total = 400;
+    KT_CHECK_EQ(sh.thumb(Rect{0, 0, 14, 8}).h, 8);
+    KT_CHECK_EQ(sh.thumb(Rect{0, 0, 14, 0}).h, 0);
+    // px <-> offset round trip: the thumb top for offset o maps back to o whenever the travel has a pixel per row.
+    const int totals[] = {9, 24, 40};
+    for (int ti = 0; ti < 3; ++ti) {
+        ScrollWindow w;
+        w.total = totals[ti];
+        for (int o = 0; o <= w.maxOffset(); ++o) {
+            w.offset = o;
+            const Rect th = w.thumb(track);
+            KT_CHECK(th.y >= track.y && th.y + th.h <= track.y + track.h);
+            KT_CHECK_EQ(w.offsetFromThumbTop(th.y, 0, track), o);
+            KT_CHECK_EQ(w.offsetFromThumbTop(th.y + 5, 5, track), o);          // a grab offset cancels out
+            if (o > 0) {
+                w.offset = o - 1;
+                KT_CHECK(w.thumb(track).y <= th.y);                            // monotonic
+                w.offset = o;
+            }
+        }
+        w.offset = 3;
+        KT_CHECK_EQ(w.offsetFromThumbTop(-500, 0, track), 0);                  // dragged past either end clamps
+        KT_CHECK_EQ(w.offsetFromThumbTop(5000, 0, track), w.maxOffset());
+    }
+    ScrollWindow no;                                              // nothing to scroll
+    no.total = 4;
+    KT_CHECK_EQ(no.offsetFromThumbTop(200, 0, track), 0);
+    ScrollWindow cramped;                                         // travel smaller than the row count: still in range, monotonic
+    cramped.total = 40;
+    const Rect small = {0, 0, 14, 40};
+    int last = 0;
+    for (int py = 0; py <= 40; ++py) {
+        const int o = cramped.offsetFromThumbTop(py, 0, small);
+        KT_CHECK(o >= last && o <= cramped.maxOffset());
+        last = o;
+    }
+    KT_CHECK_EQ(last, cramped.maxOffset());
+}
+
+// ---------------------------------------------------------------- tick-gap reset
+static void test_tickreset() {
+    const unsigned gaps[] = {0, 400, 500, 501, 600, 5000, 5001, 60000};
+    for (int gi = 0; gi < 8; ++gi) {
+        const unsigned g = gaps[gi];
+        for (int lmb = 0; lmb < 2; ++lmb) {
+            for (int drag = 0; drag < 2; ++drag) {
+                // Panel hidden: today's behaviour, > 500 ms resets, buttons and drag are irrelevant.
+                KT_CHECK_EQ(tickResetDue(g, 0, lmb != 0, drag != 0), g > 500);
+                KT_CHECK_EQ(tickResetDue(g, 0x01, lmb != 0, drag != 0), g > 500);       // other flag bits do not count as shown
+                // Panel shown: only a long gap with no button and no drag.
+                KT_CHECK_EQ(tickResetDue(g, 0x40, lmb != 0, drag != 0), g > 5000 && !lmb && !drag);
+                KT_CHECK_EQ(tickResetDue(g, 0xFF, lmb != 0, drag != 0), g > 5000 && !lmb && !drag);
+            }
+        }
+    }
+    KT_CHECK(!tickResetDue(600, 0x40, false, false));             // shown + 600 ms hitch: no reset
+    KT_CHECK(tickResetDue(600, 0x00, false, false));              // hidden + 600 ms: reset
+    KT_CHECK(tickResetDue(5001, 0x40, false, false));             // shown but gone for 5 s with the mouse up: reset
+    KT_CHECK(!tickResetDue(5001, 0x40, true, false));             // ... unless the button is held
+    KT_CHECK(tickResetDue(300, 0, false, false, 200, 1000));      // custom thresholds
+    KT_CHECK(!tickResetDue(900, 0x40, false, false, 200, 1000));
+    KT_CHECK(tickResetDue(1001, 0x40, false, false, 200, 1000));
+}
+
 int main() {
     test_registry_basic();
     test_registry_null_and_empty_ids();
@@ -531,5 +850,15 @@ int main() {
     test_split_out_of_range_clamps();
     test_split_zero_area();
     test_split_odd_heights();
+    test_row_clamp_step();
+    test_row_toggle();
+    test_row_handler_result();
+    test_row_format();
+    test_row_geometry();
+    test_row_hit_zones();
+    test_scroll_clamp_wheel();
+    test_scroll_ensure_visible();
+    test_scroll_thumb();
+    test_tickreset();
     return kt::Report("menu_ui_logic_test");
 }

@@ -389,4 +389,221 @@ inline bool canTruncate(const uintptr_t* listed, int count, int vanilla, bool (*
     return true;
 }
 
+// ---------------------------------------------------------------------------------------------------- option rows (toggle / stepper)
+// Pure model behind K2MenuUiApi.AddRow (doc 46). A row is one button (toggle) or a label + "<" + ">" trio (stepper); button rows stay AddButton.
+//   rowClamp:  toggle -> 0/1 (any non-zero is 1); stepper -> [minV, maxV] (a swapped range is read as min..max).
+//   rowStep:   toggle flips; stepper moves by dir * step (step < 1 reads as 1) from the clamped value. Past an end it wraps (RF_WRAP) or clamps.
+//              dir == 0 returns the clamped value. A value off the step grid (e.g. 37 at step 5) moves from where it is: the handler snaps.
+//   rowApplyHandlerResult: the handler returns the FINAL value to store. The result is clamped to the row's range; with no handler the request
+//              is stored (clamped). A disabled row never changes (returns c.value). "Reject" = the handler returns the old value.
+//   rowFormat: caption text. value text = choices[v] if choices, else zeroText at 0 (steppers), else On/Off (toggle), else fmt applied to v.
+//              Only "%d" and "%%" are expanded in fmt (every other '%' stays literal: no printf on consumer strings). A caption built from fmt
+//              stands alone ("Heal below 35%"); every other value text is "Label: value". RF_RESTART appends " (restart)".
+//              Returns false when out is null/cap < 1 or the text was cut; out is always NUL-terminated when cap > 0.
+enum RowKind { RK_TOGGLE = 0, RK_STEPPER = 1 };         // SLIDER = 2 reserved
+enum RowFlag { RF_WRAP = 1, RF_RESTART = 2, RF_DISABLED = 4, RF_HIDDEN = 8 };
+
+struct RowCfg {
+    int kind;
+    int minV, maxV, step, value, flags;
+};
+
+inline int rowClamp(const RowCfg& c, int v) {
+    if (c.kind == RK_TOGGLE) return v != 0 ? 1 : 0;
+    int lo = c.minV, hi = c.maxV;
+    if (hi < lo) { const int t = lo; lo = hi; hi = t; }
+    return v < lo ? lo : (v > hi ? hi : v);
+}
+
+inline int rowStep(const RowCfg& c, int v, int dir) {
+    if (c.kind == RK_TOGGLE) return v != 0 ? 0 : 1;
+    const int cur = rowClamp(c, v);
+    if (dir == 0) return cur;
+    int lo = c.minV, hi = c.maxV;
+    if (hi < lo) { const int t = lo; lo = hi; hi = t; }
+    const int st = c.step < 1 ? 1 : c.step;
+    const bool wrap = (c.flags & RF_WRAP) != 0;
+    if (dir > 0) {
+        if (cur >= hi) return wrap ? lo : hi;
+        return (hi - cur < st) ? (wrap ? lo : hi) : cur + st;
+    }
+    if (cur <= lo) return wrap ? hi : lo;
+    return (cur - lo < st) ? (wrap ? hi : lo) : cur - st;
+}
+
+inline int rowApplyHandlerResult(const RowCfg& c, int requested, int handlerFinal, bool haveHandler) {
+    if (c.flags & RF_DISABLED) return rowClamp(c, c.value);
+    return rowClamp(c, haveHandler ? handlerFinal : requested);
+}
+
+struct FmtBuf {
+    char* p;
+    int cap;
+    int n;
+    bool ok;
+    void put(char ch) {
+        if (n + 1 < cap) { p[n++] = ch; p[n] = 0; } else ok = false;
+    }
+    void str(const char* s) {
+        if (!s) return;
+        while (*s) put(*s++);
+    }
+    void num(int v) {
+        char t[12];
+        int k = 0;
+        unsigned u = v < 0 ? 0u - (unsigned)v : (unsigned)v;
+        do { t[k++] = (char)('0' + (u % 10)); u /= 10; } while (u);
+        if (v < 0) put('-');
+        while (k) put(t[--k]);
+    }
+};
+
+// Expands "%d" (the value) and "%%" in fmt; null/empty fmt = "%d".
+inline void fmtExpand(FmtBuf& b, const char* fmt, int v) {
+    if (!fmt || !fmt[0]) { b.num(v); return; }
+    for (const char* s = fmt; *s; ++s) {
+        if (s[0] == '%' && s[1] == 'd') { b.num(v); ++s; }
+        else if (s[0] == '%' && s[1] == '%') { b.put('%'); ++s; }
+        else b.put(*s);
+    }
+}
+
+inline bool rowFormat(char* out, int cap, const char* label, const RowCfg& c, const char* fmt, const char* const* choices, int nChoices, const char* zeroText) {
+    if (!out || cap < 1) return false;
+    out[0] = 0;
+    FmtBuf b = {out, cap, 0, true};
+    const int v = rowClamp(c, c.value);
+    const bool hasLabel = label && label[0];
+    const char* text = nullptr;
+    bool stand = false;                                  // the caption is fmt's output alone
+    if (choices && nChoices > 0) {
+        const int i = v < 0 ? 0 : (v >= nChoices ? nChoices - 1 : v);
+        text = choices[i] ? choices[i] : "";
+    } else if (c.kind == RK_TOGGLE) {
+        text = v ? "On" : "Off";
+    } else if (v == 0 && zeroText && zeroText[0]) {
+        text = zeroText;
+    } else if (fmt && fmt[0]) {
+        stand = true;
+    }
+    if (stand) {
+        fmtExpand(b, fmt, v);
+    } else {
+        if (hasLabel) { b.str(label); b.str(": "); }
+        if (text) b.str(text); else b.num(v);
+    }
+    if (c.flags & RF_RESTART) b.str(" (restart)");
+    return b.ok;
+}
+
+// ---------------------------------------------------------------------------------------------------- row geometry
+// Rows sit in the COLUMN pane (the vanilla button column, 284 px tall at the reference size): slot k at y + k * pitch, pitch = h*36/284,
+// slot height = h*32/284, so 8 slots fit exactly (7*36 + 32 = 284). A stepper slot is [label][gap][<][gap][>]: arrows 20 % of the width each,
+// gap 6, the label takes the rest; widths sum to the slot width. A toggle slot is the whole slot (label/left/right are empty).
+enum { kRowsVisible = 8, kRowRefH = 284, kRowPitchRef = 36, kRowSlotRef = 32, kRowGap = 6, kRowArrowPct = 20 };
+
+inline Rect rowSlotRect(const Rect& col, int visibleIndex) {
+    Rect r = col;
+    r.y = col.y + visibleIndex * ((col.h * kRowPitchRef) / kRowRefH);
+    r.h = (col.h * kRowSlotRef) / kRowRefH;
+    return r;
+}
+
+struct RowGeom {
+    int kind;
+    Rect whole, label, left, right;
+};
+
+inline RowGeom rowGeom(const Rect& slot, int kind) {
+    RowGeom g;
+    g.kind = kind;
+    g.whole = slot;
+    const Rect none = {slot.x, slot.y, 0, 0};
+    g.label = g.left = g.right = none;
+    if (kind == RK_TOGGLE) { g.label = slot; return g; }
+    const int aw = (slot.w * kRowArrowPct) / 100;
+    int lw = slot.w - 2 * aw - 2 * kRowGap;
+    if (lw < 0) lw = 0;
+    g.label = Rect{slot.x, slot.y, lw, slot.h};
+    g.left = Rect{slot.x + lw + kRowGap, slot.y, aw, slot.h};
+    g.right = Rect{slot.x + lw + kRowGap + aw + kRowGap, slot.y, aw, slot.h};
+    return g;
+}
+
+enum Zone { Z_NONE = 0, Z_LABEL = 1, Z_LEFT = 2, Z_RIGHT = 3, Z_WHOLE = 4 };
+
+inline bool rectHas(const Rect& r, int px, int py) {
+    return px >= r.x && px < r.x + r.w && py >= r.y && py < r.y + r.h;
+}
+
+// Toggle: Z_WHOLE inside the slot. Stepper: Z_LEFT / Z_RIGHT / Z_LABEL; the 6 px gaps and anything outside are Z_NONE.
+inline int rowHitZone(const RowGeom& g, int px, int py) {
+    if (g.kind == RK_TOGGLE) return rectHas(g.whole, px, py) ? Z_WHOLE : Z_NONE;
+    if (rectHas(g.left, px, py)) return Z_LEFT;
+    if (rectHas(g.right, px, py)) return Z_RIGHT;
+    if (rectHas(g.label, px, py)) return Z_LABEL;
+    return Z_NONE;
+}
+
+// ---------------------------------------------------------------------------------------------------- scroll window
+// Rows [offset, offset + visible) of `total` are shown. Wheel: + = up (offset shrinks), 1 row per notch. The bar thumb is
+// visible/total of the track (min kThumbMin px, or the whole track when it is shorter), its top maps linearly to the offset.
+enum { kThumbMin = 12 };
+
+struct ScrollWindow {
+    int total = 0, visible = kRowsVisible, offset = 0;
+
+    int maxOffset() const { return total > visible ? total - visible : 0; }
+    void clamp() { offset = offset < 0 ? 0 : (offset > maxOffset() ? maxOffset() : offset); }
+    bool setOffset(int v) {
+        const int old = offset;
+        offset = v;
+        clamp();
+        return offset != old;
+    }
+    bool wheel(int notches) { return setOffset(offset - notches); }
+    bool ensureVisible(int idx) {                       // idx outside [0, total) is ignored
+        if (idx < 0 || idx >= total) return false;
+        if (idx < offset) return setOffset(idx);
+        if (idx >= offset + visible) return setOffset(idx - visible + 1);
+        return false;
+    }
+    bool needBar() const { return total > visible; }
+    int slotOf(int idx) const {                         // displayed slot of row idx, -1 when outside the window
+        const int s = idx - offset;
+        return (idx >= 0 && idx < total && s >= 0 && s < visible) ? s : -1;
+    }
+    int thumbHeight(const Rect& track) const {
+        if (!needBar() || track.h <= 0) return track.h > 0 ? track.h : 0;
+        int h = (track.h * visible) / total;
+        if (h < kThumbMin) h = kThumbMin;
+        return h > track.h ? track.h : h;
+    }
+    Rect thumb(const Rect& track) const {
+        Rect t = track;
+        t.h = thumbHeight(track);
+        const int travel = track.h - t.h, mo = maxOffset();
+        if (travel > 0 && mo > 0) t.y = track.y + (travel * offset + mo / 2) / mo;
+        return t;
+    }
+    // Offset for a thumb dragged so the cursor (py) holds the thumb `grab` px below its top.
+    int offsetFromThumbTop(int py, int grab, const Rect& track) const {
+        const int travel = track.h - thumbHeight(track), mo = maxOffset();
+        if (travel <= 0 || mo <= 0) return 0;
+        int rel = py - grab - track.y;
+        rel = rel < 0 ? 0 : (rel > travel ? travel : rel);
+        return (rel * mo + travel / 2) / travel;
+    }
+};
+
+// ---------------------------------------------------------------------------------------------------- tick-gap reset
+// McTick runs every frame the Options panel draws. A long gap used to mean "the panel closed" (reset the page stack at > 500 ms), but
+// a game hitch with the panel still open and the mouse held also gives a long gap. flags48 bit 0x40 is the Options panel's shown bit
+// (live logs 10-17): while it is set only a LONG gap with no button held and no thumb drag counts as a close.
+inline bool tickResetDue(unsigned gapMs, int flags48, bool lmbDown, bool dragging, unsigned shortGap = 500, unsigned longGap = 5000) {
+    const bool shown = (flags48 & 0x40) != 0;
+    if (!shown) return gapMs > shortGap;
+    return gapMs > longGap && !lmbDown && !dragging;
+}
+
 }  // namespace mui
