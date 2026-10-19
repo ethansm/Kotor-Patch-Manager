@@ -689,7 +689,55 @@ static void test_footprint() {
     KT_CHECK(sizeof(PageDecl) < 48 * 1024);
 }
 
+// MCF10: DeclHooks::onBuilt runs once at the end of build(), after the rows and the change handler, with the provider page id and the panel.
+static int g_builtCalls = 0, g_builtRowsAtCall = -1; static uint32_t g_builtPage = 0; static void* g_builtPanel = nullptr; static void* g_builtUser = nullptr;
+static bool g_builtHadHandler = false;
+static void hookBuilt(void* user, uint32_t page, void* panel) {
+    ++g_builtCalls; g_builtUser = user; g_builtPage = page; g_builtPanel = panel; g_builtRowsAtCall = g_nRows; g_builtHadHandler = g_fn != nullptr;
+}
+static void test_on_built() {
+    setupPage(kStripSchema);
+    g_builtCalls = 0; g_builtUser = nullptr;
+    int tag = 7;
+    g_pg.hooks.user = &tag;
+    g_pg.hooks.onBuilt = hookBuilt;
+    K2ModConfigEntry e = g_pg.entry("enemy-effects-strip");
+    e.build(reinterpret_cast<void*>(0x1234), e.user);
+    KT_CHECK(g_pg.built);
+    KT_CHECK_EQ(g_builtCalls, 1);
+    KT_CHECK(g_builtPanel == reinterpret_cast<void*>(0x1234));
+    KT_CHECK_EQ(g_builtPage, g_pg.page);
+    KT_CHECK(g_builtPage != 0);
+    KT_CHECK(g_builtUser == &tag);                       // hooks.user, not the page
+    KT_CHECK_EQ(g_builtRowsAtCall, 8);                   // all rows were added before the hook
+    KT_CHECK(g_builtHadHandler);                         // and the change handler is set
+    // not called when the page did not build: null panel, unloaded schema, NewPage refused
+    g_builtCalls = 0;
+    setupPage(kHealSchema);
+    g_pg.hooks.onBuilt = hookBuilt;
+    e = g_pg.entry("x");
+    e.build(nullptr, e.user);
+    KT_CHECK(!g_pg.built && g_builtCalls == 0);
+    // every row refused: not built, so no hook
+    setupPage(kHealSchema);
+    g_pg.hooks.onBuilt = hookBuilt;
+    g_failAddAt = 0;
+    K2MenuUiApi noRows = g_table;
+    noRows.AddRow = [](uint32_t, const K2MuiRowSpec*) -> int32_t { return -1; };
+    connectFake(&noRows);
+    e = g_pg.entry("x");
+    e.build(reinterpret_cast<void*>(1), e.user);
+    g_failAddAt = -1;
+    KT_CHECK(!g_pg.built && g_builtCalls == 0);
+    // a null hook is fine
+    setupPage(kStripSchema);
+    e = g_pg.entry("enemy-effects-strip");
+    e.build(reinterpret_cast<void*>(1), e.user);
+    KT_CHECK(g_pg.built);
+}
+
 int main() {
+    test_on_built();
     test_parse_strip_golden();
     test_parse_errors();
     test_row_cap();

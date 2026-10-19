@@ -396,6 +396,9 @@ struct DeclHooks {
     void (*onEnter)(void* user) = nullptr;
     void (*onLeave)(void* user) = nullptr;
     void (*onTick)(void* user) = nullptr;
+    // End of build(): the rows exist and the change handler is set; `page` is the provider page id, `panel` the Options panel. Add custom items here
+    // (a preview via AddCustom, the shared gear via AddGear, a NewModal) so they come after the rows. Called only when the page was built.
+    void (*onBuilt)(void* user, uint32_t page, void* panel) = nullptr;
 };
 
 struct Page {
@@ -534,6 +537,7 @@ struct Page {
         ui->SetChangeHandler(page, &Page::cbChange, this);
         built = true;
         for (int i = 0; i < decl.nRows; ++i) refreshCaption(i);
+        if (hooks.onBuilt) hooks.onBuilt(hooks.user, page, panel);
     }
 
     // The provider's change handler: the hook decides, an ini-bound row writes the accepted value, a scaled row refreshes its caption.
