@@ -175,6 +175,10 @@ inline CancelStyle cancelStyle(bool leader) {
     return CancelStyle{ { kTealBorder[0], kTealBorder[1], kTealBorder[2] }, { 0.15f, 0.75f, 0.80f }, 1.0f };
 }
 
+// QL19: the leader Cancel Queue BUTTON (BTN_CLEARALL clone). Its border art takes the tint nearly as is; the 0.4.3 build used the cyan companion teal
+// (0.10,0.58,0.62) and rendered (33,171,179), while the queue tray border (lbl_miqueue_teal) renders (18,150,122). Tint chosen so the border lands on the tray's green-teal.
+inline CancelStyle cancelButtonStyle() { return CancelStyle{ { 0.055f, 0.51f, 0.42f }, { 0.09f, 0.66f, 0.54f }, 1.0f }; }
+
 struct Config {
     bool enabled = true;
     float bg[3] = { kTealBg[0], kTealBg[1], kTealBg[2] };

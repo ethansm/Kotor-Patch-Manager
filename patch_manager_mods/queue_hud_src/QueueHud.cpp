@@ -19,6 +19,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
 #include <stdarg.h>
@@ -119,11 +120,18 @@ void onConnect(bool ok, const char* why) { QLOGV(chMain, ok ? KPLOG_INFO : KPLOG
 void loadIni() {
     FILE* f = fopen(".\\queue_hud.ini", "rb");
     if (!f) return;
-    char buf[4096];
-    size_t n = fread(buf, 1, sizeof buf - 1, f);
+    // QL18: the whole file (the 4095-byte buffer cut keys past byte 4095, e.g. strip_head_pct in the shipped ini); capped at 64 KB.
+    fseek(f, 0, SEEK_END);
+    long sz = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    if (sz <= 0 || sz > 65536) { fclose(f); return; }
+    char* buf = static_cast<char*>(malloc(static_cast<size_t>(sz) + 1));
+    if (!buf) { fclose(f); return; }
+    size_t n = fread(buf, 1, static_cast<size_t>(sz), f);
     fclose(f);
     buf[n] = 0;
     qh::parseIni(g_cfg, buf);
+    free(buf);
 }
 
 // ---- once-only log keys (a blank icon must not log every frame) ----
@@ -422,7 +430,7 @@ void cwLookLeader(CW& w) {
         if (w.fill != want) {
             guibutton::setButtonText(w.c, "CANCEL QUEUE");
             void* f = guikit::imageFor("uibit_fill_2bt");
-            const qh::CancelStyle bs = qh::cancelStyle(false);
+            const qh::CancelStyle bs = qh::cancelButtonStyle();
             guikit::setButtonFill(w.c, f, f, w.hover ? bs.hoverTint : bs.tint);
             guikit::setButtonFillStyle(w.c, 2);
             w.fill = want;
@@ -2113,7 +2121,7 @@ void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
     loadIni();
     g_logOn = g_cfg.log;
-    KP_LOG(chMain, "0.4.3-dev: kit=%d frame_alpha=%.2f cancel=%d enabled=%d waiting_dim=%d border_px=%d log=%d companions=%d strip_icon_px=%d strip_side=%s strip_max=%d waiting_icon_dim=%d strip_head_pct=%d", g_cfg.kit ? 1 : 0, g_cfg.frameAlpha, g_cfg.cancel ? 1 : 0, g_cfg.enabled ? 1 : 0, g_cfg.waitingDim ? 1 : 0, g_cfg.borderPx, g_cfg.log ? 1 : 0, g_cfg.companions ? 1 : 0, g_cfg.stripIconPx, g_cfg.stripSide == qh::kSideBelow ? "below" : g_cfg.stripSide == qh::kSideAbove ? "above" : "left", g_cfg.stripMax, g_cfg.waitingIconDim ? 1 : 0, g_cfg.stripHeadPct);
+    KP_LOG(chMain, "0.4.4-dev: kit=%d frame_alpha=%.2f cancel=%d enabled=%d waiting_dim=%d border_px=%d log=%d companions=%d strip_icon_px=%d strip_side=%s strip_max=%d waiting_icon_dim=%d strip_head_pct=%d", g_cfg.kit ? 1 : 0, g_cfg.frameAlpha, g_cfg.cancel ? 1 : 0, g_cfg.enabled ? 1 : 0, g_cfg.waitingDim ? 1 : 0, g_cfg.borderPx, g_cfg.log ? 1 : 0, g_cfg.companions ? 1 : 0, g_cfg.stripIconPx, g_cfg.stripSide == qh::kSideBelow ? "below" : g_cfg.stripSide == qh::kSideAbove ? "above" : "left", g_cfg.stripMax, g_cfg.waitingIconDim ? 1 : 0, g_cfg.stripHeadPct);
     QLOG(chMain, "pause_eaten_wait=%d dispatch_wait_flags=%d spell_replay_pos=%d", g_cfg.pauseEatenWait ? 1 : 0, g_cfg.dispatchWaitFlags ? 1 : 0, g_cfg.spellReplayPos ? 1 : 0);
     QLOG(chMain, "pause_reinject=%d handoff_on_combat=%d handoff_clear_first=%d handoff_keep_new=%d handoff_resend_held=%d show_in_combat=%d handoff_keep_unpaused=%d trace_mode=%d mode_cap=%d",
          g_cfg.pauseReinject ? 1 : 0, g_cfg.handoffOnCombat ? 1 : 0, g_cfg.handoffClearFirst ? 1 : 0, g_cfg.handoffKeepNew ? 1 : 0, g_cfg.handoffResendHeld ? 1 : 0, g_cfg.showInCombat ? 1 : 0, g_cfg.handoffKeepUnpaused ? 1 : 0, g_cfg.traceMode ? 1 : 0, g_cfg.modeCap);

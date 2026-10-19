@@ -2570,6 +2570,11 @@ void testCancelStyle() {
     const CancelStyle C = cancelStyle(false);
     for (int k = 0; k < 3; ++k) { KT_CHECK(C.tint[k] == kTealBorder[k]); KT_CHECK(C.hoverTint[k] > C.tint[k]); }
     KT_CHECK(C.alpha == 1.0f);
+    // QL19: the leader BUTTON border is the tray's green-teal (G > B > R), not the cyan companion teal, and hover is brighter.
+    const CancelStyle B = cancelButtonStyle();
+    KT_CHECK(B.tint[1] > B.tint[2] && B.tint[2] > B.tint[0]);
+    KT_CHECK(B.tint[2] < kTealBorder[2]);   // less blue than the 0.4.3 cyan
+    for (int k = 0; k < 3; ++k) KT_CHECK(B.hoverTint[k] > B.tint[k]);
 }
 
 }  // namespace
