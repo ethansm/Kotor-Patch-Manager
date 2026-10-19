@@ -238,6 +238,39 @@ class RecipeRuleTests(Base):
         self.bad("[character\nid=", "invalid TOML")
 
 
+class CollisionTests(Base):
+    def test_check_collisions_across_recipes(self):
+        a = R.load_recipe(self.write("a.toml", good("a")))
+        b = R.load_recipe(self.write("b.toml", good("b")))
+        R.check_collisions([a, b])
+        c = R.load_recipe(self.write("c.toml", good("c").replace('"c_ba"', '"a_ba"')))
+        with self.assertRaises(R.RecipeError) as cm:
+            R.check_collisions([a, b, c])
+        self.assertIn("c.toml", str(cm.exception))
+        self.assertIn("'a_ba'", str(cm.exception))
+        self.assertIn("recipe 'a'", str(cm.exception))
+        R.check_collisions([a, a])  # the same recipe twice is not a collision with another recipe
+
+    def test_load_recipes_still_rejects_collisions(self):
+        self.write("a.toml", good("a"))
+        self.write("c.toml", good("c").replace('"c_ba"', '"a_ba"'))
+        with self.assertRaises(R.RecipeError) as cm:
+            R.load_recipes(self.dir, ["a", "c"])
+        self.assertIn("collides with recipe 'a'", str(cm.exception))
+
+    def test_main_validates_a_config_with_auto_entries(self):
+        import contextlib
+        import io
+        self.write("a.toml", good("a"))
+        cfg = self.write("cfg.toml", '[k1]\ndir = "/k1"\n[k2]\ndir = "/k2"\n[build]\nout = "/o"\n'
+                         f'characters = ["a", "utc:p_bastila"]\nrecipes_dir = "{self.dir}"\n')
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            rc = R.main(["k1_port_recipe.py", str(cfg)])
+        self.assertEqual(rc, 0)
+        self.assertIn("auto-derived (K1 UTC, checked at build)=['bastila']", out.getvalue())
+
+
 class ConfigTests(Base):
     CFG = """\
 [k1]
@@ -291,6 +324,32 @@ characters = ["carth", "juhani"]
         self.bad_cfg(self.CFG.replace('["carth", "juhani"]', '["carth", "carth"]'), "unique")
         self.bad_cfg(self.CFG.replace('["carth", "juhani"]', '["Carth"]'), "build.characters[0]")
         self.bad_cfg(self.CFG.replace('["carth", "juhani"]', "[1]"), "build.characters[0]")
+
+    def test_utc_entries(self):
+        c = R.load_config(self.cfg(self.CFG.replace('["carth", "juhani"]', '["carth", "utc:p_bastila", "utc:dan13_juhani", "p_hk47"]')))
+        self.assertEqual(c.characters, ("carth", "bastila", "dan13_juhani", "p_hk47"))  # ids; a plain id stays as written
+        self.assertEqual(c.utc_entries, {"bastila": "p_bastila", "dan13_juhani": "dan13_juhani"})  # only the utc: entries
+        self.assertEqual(R.load_config(self.cfg(self.CFG)).utc_entries, {})
+
+    def test_bad_utc_entries(self):
+        for bad in ('"utc:"', '"utc:P_Bastila"', '"utc:' + "a" * 17 + '"', '"utc:p bastila"', '"utc:p-bastila"'):
+            self.bad_cfg(self.CFG.replace('["carth", "juhani"]', f"[{bad}]"), "build.characters[0]", "creature template")
+        self.bad_cfg(self.CFG.replace('["carth", "juhani"]', '["carth", "utc:p_carth"]'), "unique", "carth")  # both derive id carth
+        self.bad_cfg(self.CFG.replace('["carth", "juhani"]', '["utc:p_a", "utc:p_a"]'), "unique")
+
+    def test_utc_entry_id_rules_apply_to_the_derived_id(self):
+        self.assertEqual(R.utc_entry_id("p_carth"), "carth")
+        self.assertEqual(R.utc_entry_id("p_"), "p_")
+        self.assertEqual(R.utc_entry_id("n_comm_a"), "n_comm_a")
+        self.assertTrue(R.ID_RE.fullmatch(R.utc_entry_id("p_" + "a" * 14)))
+
+    def test_example_config_loads(self):
+        c = R.load_config(HERE / "k1_imports.example.toml")
+        self.assertEqual(c.characters, ("carth", "juhani"))
+        text = (HERE / "k1_imports.example.toml").read_text()
+        self.assertIn("utc:p_bastila", text)  # the pick-an-NPC form is documented
+        c2 = R.load_config(self.cfg(text.replace('characters = ["carth", "juhani"]\n#', 'characters = ["carth", "utc:p_bastila"]\n#', 1)))
+        self.assertEqual(c2.utc_entries, {"bastila": "p_bastila"})
 
     def test_missing_keys(self):
         self.bad_cfg(self.CFG.replace('dir = "~/k1"', ""), "k1.dir", "missing")

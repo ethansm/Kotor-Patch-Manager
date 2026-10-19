@@ -12,8 +12,16 @@ dir = "~/.local/share/Steam/steamapps/common/Knights of the Old Republic II"
 [build]
 # Private output dir: keep it OUTSIDE any git work tree (the importer refuses a repo-local out dir).
 out = "~/.cache/k1_port/packs"
-# Recipe ids (recipes/<id>.toml). Order = build order = appearance/heads row order. Ids must be unique.
+# Characters to build. Order = build order = appearance/heads row order. Ids must be unique. Each entry is one of:
+#   "carth"          a committed recipe (recipes/<id>.toml). A recipe file always wins: it is an override.
+#   "utc:p_bastila"  ANY K1 creature template (UTC resref). The recipe is derived from your K1 install at build time
+#                    (models, textures, gender, K1 barks), written to <out>/recipes_auto/<id>.toml and recorded in the
+#                    manifest. The id is the resref without a leading "p_" (here "bastila"); a recipes/bastila.toml
+#                    would override it. `k1_port_import.py npcs --grep NAME` lists the templates, `scan p_bastila`
+#                    prints the derived recipe first.
+#   "bastila"        a plain id with no recipe file is tried as a K1 UTC resref of that name (same as "utc:bastila").
 characters = ["carth", "juhani"]
+# characters = ["carth", "utc:p_bastila"]
 # Optional. Empty = the recipes/ dir next to k1_port_recipe.py.
 recipes_dir = ""
 # Optional. Texture source: "vanilla" (default, your K1 install) or "cr" (Characters Revisited, from env K1PORT_CR_DEST

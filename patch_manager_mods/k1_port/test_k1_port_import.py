@@ -28,6 +28,8 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent / "kvoice"))
 import k1_port_import as imp  # noqa: E402
 import k1_port_pack as kp  # noqa: E402
+import k1_port_scan as kscan  # noqa: E402
+import test_k1_port_scan as tscan  # noqa: E402  K1Data + FixtureReader (the fake interpreter's _scan helper reads those fixtures)
 
 FAKE_PY = '''#!{python}
 import hashlib, json, os, pathlib, sys
@@ -229,6 +231,11 @@ if script == "k1_port_import.py" and args and args[0] == "_twoda":
         print(json.dumps({"height": len(t["rows"])}))
     sys.exit(0)
 
+if script == "k1_port_import.py" and args and args[0] == "_scan":
+    sys.path.insert(0, "{here}")
+    import k1_port_scan, test_k1_port_scan
+    sys.exit(k1_port_scan.helper_main(args[1:], reader_factory=test_k1_port_scan.FixtureReader))
+
 if script == "k1_port_import.py" and args and args[0] == "_audio":
     import base64
     if args[1] == "ssf":
@@ -316,7 +323,7 @@ class Base(unittest.TestCase):
         self.recipes = self.root / "recipes"
         self.log = self.root / "fake.log"
         self.fakepy = self.root / "fakepy"
-        self.fakepy.write_text(FAKE_PY.replace("{python}", sys.executable))
+        self.fakepy.write_text(FAKE_PY.replace("{python}", sys.executable).replace("{here}", str(HERE)))
         self.fakepy.chmod(0o755)
         self.recipes.mkdir()
         for cid in self.chars:
@@ -1060,12 +1067,447 @@ class AudioTests(Base):
         self.assertEqual(rc, 1)
         self.assertIn("FAIL K2 soundset.2da", out)
 
+    # -- extra barks: every <k1_ssf>_*.wav the SSF does not reference
+    def put_wav(self, name, data=None):
+        (self.k1 / "StreamSounds" / name).write_bytes(data if data is not None else b"\xff\xfbK1MP3:" + name.lower().encode())
+
+    def test_extra_barks_are_served_and_recorded_separately(self):
+        self.put_wav("P_TST_TIA.WAV")
+        self.put_wav("P_TSTX_FOO.WAV")           # another prefix: not this character's
+        self.put_wav("P_TST_WAYTOOLONGNAME.WAV")  # not a valid 16-char resref
+        self.put_wav("P_TST_NOTES.TXT")           # not a wav
+        out, err = self.build_ok("--only", "tst")
+        _, assets, _ = self.load_pack("tst")
+        wavs = sorted(a.resref for a in assets if a.res_type == kp.RES_TYPE_WAV)
+        self.assertEqual(wavs, sorted(self.vos("tst") + ["p_tst_tia"]))
+        self.assertTrue(all(a.flags == kp.FLAG_STREAM for a in assets if a.res_type == kp.RES_TYPE_WAV))
+        a = self.manifest("tst")["audio"]
+        self.assertEqual([w["resref"] for w in a["wavs"]], self.vos("tst"))  # the SSF-referenced ones, unchanged
+        self.assertEqual([w["resref"] for w in a["extra"]], ["p_tst_tia"])
+        w = a["extra"][0]
+        staged = self.out / "tst" / "audio" / "streamsounds" / "p_tst_tia.wav"
+        self.assertEqual((w["sha256"], w["origin"], w["pack_flags"], w["file"]),
+                         (imp.sha256_file(staged), "vanilla_k1", 1, "streamsounds/P_TST_TIA.WAV"))
+        self.assertEqual(a["extra_dropped"], ["p_tst_waytoolongname.wav"])
+        self.assertIn("1 extra K1 bark wav(s) left out", err)
+        self.assertEqual(a["missing_optional"], [])
+        self.assertIn("(1 extra)", out)
+
+    def test_no_extra_barks_records_an_empty_list(self):
+        self.build_ok("--only", "tst")
+        a = self.manifest("tst")["audio"]
+        self.assertEqual((a["extra"], a["extra_dropped"]), ([], []))
+
+    def test_extra_barks_are_capped_by_the_pack_asset_limit(self):
+        for n in ("P_TST_AAA.WAV", "P_TST_MMM.WAV", "P_TST_ZZZ.WAV"):
+            self.put_wav(n)
+        # 6 model files + 3 tpc + utc + ssf + 4 SSF wavs = 15 assets; a limit of 16 leaves room for one extra
+        with mock.patch.object(kp, "MAX_ASSETS", 16):
+            out, err = self.build_ok("--only", "tst")
+        _, assets, _ = self.load_pack("tst")
+        self.assertEqual(len(assets), 16)
+        a = self.manifest("tst")["audio"]
+        self.assertEqual([w["resref"] for w in a["extra"]], ["p_tst_aaa"])  # sorted: the cut is deterministic
+        self.assertEqual(a["extra_dropped"], ["p_tst_mmm.wav", "p_tst_zzz.wav"])
+        self.assertIn("2 extra K1 bark wav(s) left out to stay under the pack limits", err)
+
+    def test_extra_barks_are_capped_by_bytes(self):
+        recipe = imp.krecipe.load_recipe(self.recipes / "tst.toml")
+        index = {}
+        for n, size in (("p_tst_a.wav", 10), ("p_tst_b.wav", 10), ("p_tst_c.wav", 2)):
+            f = self.root / n
+            f.write_bytes(b"x" * size)
+            index[n] = f
+        have = self.root / "have.wav"
+        have.write_bytes(b"y" * 10)
+        with mock.patch.object(kp, "MAX_FILE_BYTES", 2 * (10 + 12)):  # half = 22 bytes: 10 used by the SSF wavs, 12 left
+            extra, dropped = imp.extra_barks(recipe, index, {"p_tst_bat1": have}, {"p_tst_bat1"})
+        self.assertEqual(sorted(extra), ["p_tst_a", "p_tst_c"])  # b does not fit, the smaller c after it still does
+        self.assertEqual(dropped, ["p_tst_b.wav"])
+
+    def test_dry_run_mentions_the_extra_barks(self):
+        self.put_wav("P_TST_TIA.WAV")
+        rc, out, err = self.run_cli("build", "--dry-run", "--only", "tst")
+        self.assertEqual(rc, 0, out + err)
+        self.assertIn("(+1 extra p_tst_*.wav)", out)
+
     def test_audio_recipe_without_it_in_a_plain_config_is_unaffected(self):
         for cid in self.chars:
             (self.recipes / f"{cid}.toml").write_text(RECIPE.format(id=cid, name=cid.capitalize(), conv="pykotor"))
         self.build_ok()
         self.assertEqual([c for c in self.calls() if "_audio" in c], [])
         self.assertIsNone(self.manifest("tst")["audio"])
+
+
+class AutoBase(Base):
+    """A config with one committed recipe (tst) and K1 creature template p_aut with NO recipe file (auto-derived)."""
+    chars = ("tst",)
+    entries = ["tst", "utc:p_aut"]
+
+    def setUp(self):
+        super().setUp()
+        self.write_table("soundset.2da", SND_HEADERS, LIVE_SND)
+        self.data = tscan.K1Data()
+        self.data.creature("aut", first="Autman")
+        self.data.write(self.k1)
+        refs = [2000, 2001, 2002] + [0xFFFFFFFF] * 25
+        self.put_k1("p_aut.ssf", b"SSF V1.1" + struct.pack("<I", 12) + struct.pack("<28I", *refs) + struct.pack("<12I", *([0xFFFFFFFF] * 12)))
+        (self.k1 / "StreamSounds").mkdir()
+        tlk = {"2000": "p_aut_bat1", "2001": "p_aut_bat2", "2002": "p_aut_dead"}
+        for vo in tlk.values():
+            (self.k1 / "StreamSounds" / f"{vo.upper()}.wav").write_bytes(b"\xff\xfbK1MP3:" + vo.encode())
+        (self.k1 / "StreamSounds" / "P_AUT_TIA.wav").write_bytes(b"\xff\xfbK1MP3:p_aut_tia")  # not in the SSF
+        for d in (self.k1, self.k2):
+            (d / "dialog.tlk").write_text(json.dumps(tlk))
+        self.write_config(chars=self.entries)
+        self.auto_file = self.out / "recipes_auto" / "aut.toml"
+
+    def derived_text(self, rid="aut"):
+        return kscan.derive_text(kscan.gather_facts(tscan.FixtureReader(self.k1), "p_aut"), rid)[1]
+
+    def scan_calls(self):
+        return [c for c in self.calls() if "_scan" in c]
+
+
+class AutoTests(AutoBase):
+    def test_build_derives_writes_and_records_the_recipe(self):
+        out, err = self.build_ok()
+        self.assertTrue(self.auto_file.is_file())
+        self.assertEqual(self.auto_file.read_text(), self.derived_text())
+        man = self.manifest("aut")
+        self.assertEqual(man["recipe"]["path"], str(self.auto_file))
+        self.assertEqual(man["recipe"]["sha256"], imp.sha256_file(self.auto_file))
+        self.assertEqual(man["recipe"]["auto"], {"k1_utc": "p_aut", "sha256": imp.sha256_file(self.auto_file)})
+        self.assertEqual(man["recipe"]["converter"], "mdlops")
+        self.assertIsNone(self.manifest("tst")["recipe"]["auto"])
+        self.assertEqual(self.manifest("tst")["recipe"]["path"], str(self.recipes / "tst.toml"))
+        self.assertIn("[aut] auto recipe: derived from K1 creature template p_aut", out)
+        self.assertEqual(len(self.scan_calls()), 1)  # one pykotor start for every auto character
+
+    def test_auto_character_gets_rows_pack_audio_and_mdlops(self):
+        self.build_ok()
+        assign = json.loads((self.out / "assignments.json").read_text())
+        self.assertEqual(assign["tst"], {"appearance": LIVE_APP, "head": LIVE_HEAD})
+        self.assertEqual(assign["aut"], {"appearance": LIVE_APP + 1, "head": LIVE_HEAD + 1, "soundset": LIVE_SND})
+        info, assets, cells = self.load_pack("aut")
+        self.assertEqual((info.character_id, info.display_name, info.default_utc, info.default_tag), ("aut", "Autman", "k1p_aut", "k1p_aut"))
+        self.assertEqual((info.appearance_id, info.head_id, info.soundset_id), (LIVE_APP + 1, LIVE_HEAD + 1, LIVE_SND))
+        wavs = sorted(a.resref for a in assets if a.res_type == kp.RES_TYPE_WAV)
+        self.assertEqual(wavs, ["p_aut_bat1", "p_aut_bat2", "p_aut_dead", "p_aut_tia"])  # 3 SSF-referenced + 1 extra
+        self.assertEqual([a.resref for a in assets if a.res_type == 2060], ["k1p_autssf"])
+        self.assertEqual(len(assets), 6 + 3 + 1 + 1 + 4)
+        self.assertEqual(len(cells), 11 + 3 + 5)  # appearance + heads + soundset cells: the cell budget sees the auto pack
+        utc = next(a for a in assets if a.res_type == 2027)
+        self.assertTrue(utc.data.endswith(f":Autman:ss={LIVE_SND}".encode()), utc.data)
+        subs = [c[next(i for i, x in enumerate(c) if x.endswith("k1_port_mdlops.py")) + 1] for c in self.script_calls("k1_port_mdlops.py")]
+        self.assertEqual(subs, ["extract", "pass1", "rename", "pass2"])
+        a = self.manifest("aut")["audio"]
+        self.assertEqual([w["resref"] for w in a["extra"]], ["p_aut_tia"])
+        self.assertEqual(self.manifest("aut")["assigned"]["soundset"], LIVE_SND)
+
+    def test_cell_budget_counts_the_auto_pack(self):
+        out, _ = self.build_ok()
+        self.assertIn(f"2DA cell budget: {11 + 3 + 11 + 3 + 5}/1024", out)
+
+    def test_rebuild_is_stable(self):
+        self.build_ok()
+        before = (self.auto_file.read_bytes(), imp.sha256_file(self.out / "aut.k2pack"), self.auto_file.stat().st_mtime_ns)
+        self.build_ok()
+        self.assertEqual((self.auto_file.read_bytes(), imp.sha256_file(self.out / "aut.k2pack"), self.auto_file.stat().st_mtime_ns), before)
+
+    def test_dry_run_writes_nothing(self):
+        before = snapshot(self.root)
+        rc, out, err = self.run_cli("build", "--dry-run")
+        self.assertEqual(rc, 0, out + err)
+        self.assertEqual(snapshot(self.root), before)
+        self.assertFalse((self.out / "recipes_auto").exists())
+        self.assertIn("[aut] auto recipe: derived from K1 creature template p_aut (would write", out)
+        self.assertIn("[aut]   audio: K1 p_aut.ssf", out)
+        self.assertIn("(+1 extra p_aut_*.wav)", out)
+        self.assertIn("mdlops", out)
+
+    def test_committed_recipe_wins(self):
+        (self.recipes / "aut.toml").write_text(RECIPE.format(id="aut", name="Hand", conv="pykotor"))
+        self.build_ok()
+        self.assertEqual(self.scan_calls(), [])  # nothing derived
+        self.assertFalse((self.out / "recipes_auto").exists())
+        man = self.manifest("aut")
+        self.assertEqual((man["recipe"]["path"], man["recipe"]["auto"], man["recipe"]["converter"]),
+                         (str(self.recipes / "aut.toml"), None, "pykotor"))
+        self.assertEqual(self.load_pack("aut")[0].display_name, "Hand")
+
+    def test_plain_id_without_a_recipe_file_is_tried_as_a_utc(self):
+        self.write_config(chars=["tst", "p_aut"])
+        self.build_ok()
+        self.assertTrue((self.out / "recipes_auto" / "p_aut.toml").is_file())
+        info = self.load_pack("p_aut")[0]
+        self.assertEqual((info.character_id, info.default_utc), ("p_aut", "k1p_p_aut"))
+        rc, out, _ = self.run_cli("list", "--json")
+        self.assertEqual({c["id"]: c["auto"] for c in json.loads(out)["characters"]}, {"tst": False, "p_aut": True})
+
+    def test_unknown_utc_fails_with_a_hint_and_writes_nothing(self):
+        self.write_config(chars=["tst", "utc:p_nope"])
+        rc, out, err = self.run_cli("build")
+        self.assertEqual(rc, 1, out + err)
+        self.assertIn("p_nope", err)
+        self.assertIn("not found in the K1 install", err)
+        self.assertIn("npcs --grep", err)
+        self.assertFalse(self.out.exists())
+
+    def test_plain_id_with_no_recipe_and_no_utc_names_both(self):
+        self.write_config(chars=["tst", "nope"])
+        rc, out, err = self.run_cli("build")
+        self.assertEqual(rc, 1, out + err)
+        self.assertIn("no recipe file", err)
+        self.assertIn("nope.toml", err)
+        self.assertFalse(self.out.exists())
+
+    def test_non_humanoid_utc_fails_the_build(self):
+        self.data.creature("drd", modeltype="S")
+        self.data.write(self.k1)
+        self.write_config(chars=["tst", "utc:p_drd"])
+        rc, out, err = self.run_cli("build")
+        self.assertEqual(rc, 1, out + err)
+        self.assertIn("model type 'S'", err)
+        self.assertFalse(self.out.exists())
+
+    def test_k2_names_may_not_collide_with_another_character(self):
+        self.data.files[("_bif", "p_aut2.utc.json")] = self.data.files[("_bif", "p_aut.utc.json")]  # same models as p_aut
+        self.data.write(self.k1)
+        self.write_config(chars=["utc:p_aut", "utc:p_aut2"])
+        rc, out, err = self.run_cli("build")
+        self.assertEqual(rc, 1, out + err)
+        self.assertIn("collides with recipe 'aut'", err)
+        self.assertFalse(self.out.exists())
+
+    def test_auto_recipes_dir_symlink_is_refused(self):
+        (self.root / "elsewhere").mkdir()
+        self.out.mkdir()
+        (self.out / "recipes_auto").symlink_to(self.root / "elsewhere")
+        rc, out, err = self.run_cli("build")
+        self.assertEqual(rc, 2, out + err)
+        self.assertIn("symlink", err)
+        self.assertEqual(list((self.root / "elsewhere").iterdir()), [])
+
+    def test_build_leaves_k1_and_k2_untouched(self):
+        before = (snapshot(self.k1), snapshot(self.k2))
+        self.build_ok()
+        self.assertEqual((snapshot(self.k1), snapshot(self.k2)), before)
+
+    def test_only_selects_an_auto_character(self):
+        self.build_ok("--only", "aut")
+        self.assertTrue((self.out / "aut.k2pack").is_file())
+        self.assertFalse((self.out / "tst.k2pack").exists())
+        self.assertEqual(json.loads((self.out / "assignments.json").read_text())["aut"]["appearance"], LIVE_APP + 1)
+
+    def test_list_install_remove_work_from_the_written_recipe(self):
+        self.build_ok()
+        n = len(self.scan_calls())
+        rc, out, _ = self.run_cli("list")
+        self.assertEqual(rc, 0)
+        self.assertIn("auto from K1 p_aut", out)
+        rc, out, _ = self.run_cli("list", "--json")
+        listed = {c["id"]: c for c in json.loads(out)["characters"]}
+        self.assertEqual((listed["aut"]["auto"], listed["aut"]["auto_utc"], listed["aut"]["built"], listed["aut"]["stale"]),
+                         (True, "p_aut", True, False))
+        self.assertEqual((listed["tst"]["auto"], listed["tst"]["auto_utc"]), (False, None))
+        self.assertEqual(self.run_cli("install")[0], 0)
+        rc, out, err = self.run_cli("remove", "aut")
+        self.assertEqual(rc, 0, out + err)
+        self.assertNotIn("aut", json.loads((self.out / "assignments.json").read_text()))
+        self.assertEqual(len(self.scan_calls()), n)  # list / install / remove never re-read the K1 install
+        self.assertFalse((self.k2 / "k1_imports" / "aut.k2pack").exists())
+        self.assertTrue((self.k2 / "k1_imports" / "tst.k2pack").is_file())
+
+    def test_list_before_a_build_derives_in_memory(self):
+        rc, out, err = self.run_cli("list", "--json")
+        self.assertEqual(rc, 0, out + err)
+        listed = {c["id"]: c for c in json.loads(out)["characters"]}
+        self.assertEqual((listed["aut"]["auto"], listed["aut"]["built"]), (True, False))
+        self.assertFalse(self.out.exists())
+
+    def test_stale_when_the_auto_recipe_changes(self):
+        self.build_ok()
+        self.auto_file.write_text(self.auto_file.read_text() + "# edited\n")
+        rows = {r["id"]: r for r in json.loads(self.run_cli("list", "--json")[1])["characters"]}
+        self.assertTrue(rows["aut"]["stale"])
+
+    def test_doctor_lists_auto_recipes_and_checks_mdlops(self):
+        import k1_port_mdlops as km
+        with mock.patch.object(km, "PROTON", self.root), mock.patch.object(km, "TOOL_SRC", self.root), \
+                mock.patch.object(km, "PREFIX", self.root):
+            rc, out, err = self.run_cli("doctor")
+            self.assertEqual(rc, 0, out + err)
+            self.assertIn("OK   auto recipes: aut <- K1 p_aut", out)
+            self.assertIn("converter mdlops: aut", out)
+            self.assertIn("OK   K2 soundset.2da", out)  # the auto recipe has [audio]
+        with mock.patch.object(km, "PROTON", self.root / "no_proton"):
+            rc, out, _ = self.run_cli("doctor")
+        self.assertEqual(rc, 1)
+        self.assertIn("FAIL Proton (converter mdlops: aut)", out)
+
+    def test_doctor_reports_an_unknown_utc_as_a_config_failure(self):
+        self.write_config(chars=["tst", "utc:p_nope"])
+        rc, out, _ = self.run_cli("doctor")
+        self.assertEqual(rc, 1)
+        self.assertIn("FAIL config", out)
+        self.assertIn("p_nope", out)
+
+    def test_install_dry_run_needs_a_built_auto_pack(self):
+        rc, out, err = self.run_cli("install", "--dry-run")
+        self.assertEqual(rc, 1, out + err)
+        self.assertIn("pack not built", err)
+
+
+class ScanCliTests(AutoBase):
+    def scan(self, *argv, config=True):
+        return self.run_cli("scan", *argv, config=config)
+
+    def test_prints_the_derived_recipe(self):
+        rc, out, err = self.scan("p_aut")
+        self.assertEqual(rc, 0, out + err)
+        self.assertEqual(out, self.derived_text())
+        self.assertNotIn("WARN", err)
+        self.assertFalse(self.out.exists())  # read only
+
+    def test_id_option(self):
+        rc, out, _ = self.scan("p_aut", "--id", "mine")
+        self.assertEqual(rc, 0)
+        self.assertIn('id = "mine"', out)
+        self.assertIn('utc = "k1p_mine"', out)
+        self.assertEqual(self.scan("p_aut", "--id", "Bad Id")[0], 1)
+
+    def test_write_default_dir_is_out_recipes_auto(self):
+        rc, out, err = self.scan("p_aut", "--write")
+        self.assertEqual(rc, 0, out + err)
+        self.assertEqual(self.auto_file.read_text(), out)
+        self.assertIn(f"wrote {self.auto_file}", err)
+        self.assertEqual(self.scan("p_aut", "--write")[0], 0)  # the default dir is regenerated freely
+
+    def test_write_to_a_dir_refuses_to_overwrite_a_different_file(self):
+        d = self.root / "mine"
+        rc, out, err = self.scan("p_aut", "--write", str(d))
+        self.assertEqual(rc, 0, out + err)
+        self.assertEqual((d / "aut.toml").read_text(), out)
+        self.assertEqual(self.scan("p_aut", "--write", str(d))[0], 0)  # identical: fine
+        (d / "aut.toml").write_text("# hand edit\n")
+        rc, out, err = self.scan("p_aut", "--write", str(d))
+        self.assertEqual(rc, 1)
+        self.assertIn("exists and differs", err)
+        self.assertIn("--force", err)
+        self.assertEqual((d / "aut.toml").read_text(), "# hand edit\n")
+        self.assertEqual(self.scan("p_aut", "--write", str(d), "--force")[0], 0)
+        self.assertEqual((d / "aut.toml").read_text(), self.derived_text())
+
+    def test_write_into_a_game_dir_is_refused(self):
+        for d in (self.k2 / "override", self.k1 / "Override"):
+            rc, out, err = self.scan("p_aut", "--write", str(d))
+            self.assertEqual(rc, 2, out + err)
+            self.assertIn("game dir", err)
+            self.assertFalse((d / "aut.toml").exists())
+
+    def test_written_recipe_is_a_valid_recipes_dir_override(self):
+        d = self.root / "mine"
+        self.scan("p_aut", "--write", str(d))
+        (d / "tst.toml").write_text((self.recipes / "tst.toml").read_text())
+        self.recipes = d
+        self.write_config(chars=["tst", "aut"])
+        n = len(self.scan_calls())
+        self.build_ok()
+        self.assertEqual(len(self.scan_calls()), n)  # the written file is a plain committed-style recipe now
+        self.assertEqual(self.manifest("aut")["recipe"]["path"], str(d / "aut.toml"))
+
+    def test_without_a_config_the_k1_dir_is_an_option(self):
+        with mock.patch.object(imp, "DEFAULT_CONFIG", str(self.root / "no_such_config.toml")):
+            rc, out, err = self.scan("p_aut", "--k1-dir", str(self.k1), config=False)
+            self.assertEqual(rc, 0, out + err)
+            self.assertEqual(out, self.derived_text())
+            rc, out, err = self.scan("p_aut", "--k1-dir", str(self.k1), "--write", config=False)
+            self.assertEqual(rc, 1)
+            self.assertIn("no DIR given and no config", err)
+            rc, out, err = self.scan("p_aut", "--k1-dir", str(self.root / "nowhere"), config=False)
+            self.assertEqual(rc, 1)
+            self.assertIn("no chitin.key", err)
+
+    def test_unknown_and_bad_resrefs(self):
+        rc, out, err = self.scan("p_nope")
+        self.assertEqual(rc, 1)
+        self.assertIn("not found in the K1 install", err)
+        self.assertIn("npcs --grep", err)
+        rc, out, err = self.scan("P Bad")
+        self.assertEqual(rc, 1)
+        self.assertIn("bad K1 creature template", err)
+
+    def test_upper_case_resref_is_accepted(self):
+        self.assertEqual(self.scan("P_AUT")[0], 0)
+
+    def test_non_humanoid_is_refused_with_a_fix(self):
+        self.data.creature("drd", modeltype="S")
+        self.data.write(self.k1)
+        rc, out, err = self.scan("p_drd")
+        self.assertEqual(rc, 1)
+        self.assertIn("model type 'S'", err)
+        self.assertIn("Fix:", err)
+        self.assertEqual(out, "")
+
+    def test_notes_are_warnings_on_stderr(self):
+        self.data.creature("mut", soundset=False)
+        self.data.write(self.k1)
+        rc, out, err = self.scan("p_mut")
+        self.assertEqual(rc, 0, out + err)
+        self.assertIn("WARN: mut: no [audio]", err)
+
+    def test_scan_leaves_k1_and_k2_untouched(self):
+        before = (snapshot(self.k1), snapshot(self.k2))
+        self.scan("p_aut")
+        self.assertEqual((snapshot(self.k1), snapshot(self.k2)), before)
+
+
+class NpcsCliTests(AutoBase):
+    def setUp(self):
+        super().setUp()
+        self.data.creature("bastila", first="Bastila", tag="Bastila", gender=1)
+        self.data.creature("carth", first="Carth", tag="Carth")
+        self.data.write(self.k1)
+
+    def test_lists_all_templates_with_columns(self):
+        rc, out, err = self.run_cli("npcs")
+        self.assertEqual(rc, 0, out + err)
+        lines = out.splitlines()
+        self.assertTrue(lines[0].startswith("utc"))
+        for col in ("tag", "name", "app", "models", "soundset", "conversation"):
+            self.assertIn(col, lines[0])
+        row = next(x for x in lines if x.startswith("p_carth "))
+        self.assertIn("p_carthba+p_carthbb/p_carthh", row)
+        self.assertIn("k_hcarth_dialog", row)
+        self.assertIn("3 of 3 K1 creature template(s)", out)
+
+    def test_grep_and_limit(self):
+        rc, out, _ = self.run_cli("npcs", "--grep", "BASTI")
+        self.assertEqual(rc, 0)
+        self.assertIn("p_bastila", out)
+        self.assertNotIn("p_carth", out)
+        self.assertIn("1 of 1 K1 creature template(s) matching 'BASTI'", out)
+        rc, out, _ = self.run_cli("npcs", "--limit", "1")
+        self.assertIn("1 of 3 K1 creature template(s)", out)
+        self.assertEqual(len([x for x in out.splitlines() if x.startswith("p_")]), 1)
+
+    def test_json_and_no_match(self):
+        rc, out, _ = self.run_cli("npcs", "--json", "--grep", "autman")  # first name
+        got = json.loads(out)
+        self.assertEqual([r["utc"] for r in got["rows"]], ["p_aut"])
+        self.assertEqual(got["total"], 1)
+        rc, out, _ = self.run_cli("npcs", "--grep", "zzzz")
+        self.assertEqual(rc, 0)
+        self.assertIn("0 of 0", out)
+
+    def test_read_only_and_no_config_needed(self):
+        before = (snapshot(self.k1), snapshot(self.k2))
+        with mock.patch.object(imp, "DEFAULT_CONFIG", str(self.root / "no_such_config.toml")):
+            rc, out, err = self.run_cli("npcs", "--k1-dir", str(self.k1), config=False)
+        self.assertEqual(rc, 0, out + err)
+        self.assertEqual((snapshot(self.k1), snapshot(self.k2)), before)
+        self.assertFalse(self.out.exists())
 
 
 class InstallTests(Base):

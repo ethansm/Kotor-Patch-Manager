@@ -6,10 +6,15 @@
   python3 k1_port_import.py install [--config C] [--only ID] [--dry-run]
   python3 k1_port_import.py remove  ID [--config C]
   python3 k1_port_import.py list    [--config C] [--json]
+  python3 k1_port_import.py npcs    [--config C] [--grep PATTERN] [--limit N] [--json]   list K1 creature templates
+  python3 k1_port_import.py scan    UTC_RESREF [--id ID] [--write [DIR]] [--config C]     derive a recipe from a K1 UTC
 
 The config (see k1_imports.example.toml; copy it to a PRIVATE place) names the K1 dir, the K2 dir, the output dir
-and the characters to build. Each character is a committed recipe (recipes/<id>.toml). The driver is stdlib only; it
-chains the existing step scripts as subprocesses, each in the interpreter it needs:
+and the characters to build. A character is a committed recipe (recipes/<id>.toml, always wins) or ANY K1 creature
+template: `utc:<resref>` (or a plain id with no recipe file that is a K1 UTC resref). The recipe of such an auto
+character is derived from your K1 install at build time (k1_port_scan.py), written to <out>/recipes_auto/<id>.toml
+and recorded in the manifest. npcs lists the K1 creature templates; scan prints (or writes) the derived recipe.
+The driver is stdlib only; it chains the existing step scripts as subprocesses, each in the interpreter it needs:
   k1port venv python (env K1PORT_PY)   k1_port_resolve, k1_port_ingest, k1_port_char_build, k1_port_mdlops extract/pass2
   repo .venv python  (env REPO_VENV_PY) k1_port_tex_tpc (numpy)
   this python (env K1PORT_SYS_PY)      k1_port_prune gate/adopt, k1_port_validate, k1_port_mdlops rename/pass1
@@ -22,7 +27,8 @@ build, per character in config order (every step logs to <out>/<id>/logs/):
              WARN + recorded in the manifest. k1_port_prune gate runs (non-strict) on the staged files.
   3 models   (+ audio, when the recipe has [audio]: the K1 SSF is read from the K1 install and checked against both
              dialog.tlk files (every strref must carry the same voiceover in K2), the K1 voice wavs are copied from
-             <K1>/streamsounds/ (read only) to <out>/<id>/audio/streamsounds/, a missing wav is a WARN, none = failure)
+             <K1>/streamsounds/ (read only) to <out>/<id>/audio/streamsounds/, a missing wav is a WARN, none = failure;
+             every other <K1>/streamsounds/<k1_ssf>_*.wav is served too, recorded as `extra`, capped by the pack limits)
              converter pykotor -> k1_port_ingest (per model, with its textures); converter mdlops -> k1_port_mdlops
              extract/pass1/rename/pass2, then validate + copy into the stage (the script's own `finish` writes into
              the shared hand-path stage, so the driver does that step itself)
@@ -60,7 +66,7 @@ import struct
 import subprocess
 import sys
 import tempfile
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 sys.dont_write_bytecode = True
@@ -71,6 +77,7 @@ sys.path.insert(0, str(HERE.parent / "kvoice"))
 import k1_port_pack as kpack  # noqa: E402  stdlib only
 import k1_port_recipe as krecipe  # noqa: E402  stdlib only (tomllib at load time)
 import k1_port_resolve as kresolve  # noqa: E402  stdlib only; pykotor is used in the resolve subprocess
+import k1_port_scan as kscan  # noqa: E402  stdlib only; pykotor is used in the _scan helper subprocess
 import k1_port_sources as ksources  # noqa: E402  stdlib only
 
 DRIVER = Path(__file__).resolve()
@@ -311,17 +318,34 @@ def juhani_rows_clash(assigned: dict | None) -> bool:
 # ------------------------------------------------------------------------------------------- config
 
 @dataclass
+class AutoRecipe:
+    """A recipe derived from a K1 creature template at load time (never committed). `path` is where build writes `text`."""
+    id: str
+    utc: str
+    text: str
+    path: Path
+
+
+@dataclass
 class Loaded:
     cfg: krecipe.Config
     recipes: list
     out: Path
+    auto: dict = field(default_factory=dict)  # {id: AutoRecipe} for the characters without a committed recipe file
 
     @property
     def k2_imports(self) -> Path:
         return self.cfg.k2_dir / IMPORT_DIR
 
+    @property
+    def auto_dir(self) -> Path:
+        return self.out / kscan.AUTO_DIR
 
-def load_all(config_arg: str | None) -> Loaded:
+
+def load_all(config_arg: str | None, *, cached: bool = False) -> Loaded:
+    """Config + recipes in config order. A character is its committed recipes/<id>.toml, else (auto) a recipe derived
+    from the K1 creature template `utc:<resref>` / of the same name as the id. cached=True (list, install, remove)
+    reuses an already written <out>/recipes_auto/<id>.toml instead of reading the K1 install again."""
     path = Path(config_arg or DEFAULT_CONFIG).expanduser()
     if not path.is_file():
         raise Failure(str(path), "config file not found",
@@ -329,10 +353,46 @@ def load_all(config_arg: str | None) -> Loaded:
                       "and pass --config")
     try:
         cfg = krecipe.load_config(path)
-        recipes = krecipe.load_recipes(cfg.recipes_dir, cfg.characters)
+        out = Path(os.path.abspath(cfg.out))
+        recipes, auto = [], {}
+        plan = []  # (id, committed recipe file | cached auto file | None, resref, apath)
+        for cid in cfg.characters:
+            f = cfg.recipes_dir / f"{cid}.toml"
+            apath = out / kscan.AUTO_DIR / f"{cid}.toml"
+            if f.is_file():  # a committed recipe is an override: it always wins over auto-derivation
+                plan.append((cid, f, None, apath))
+            elif cached and apath.is_file():
+                plan.append((cid, apath, cfg.utc_entries.get(cid, cid), apath))
+            else:
+                plan.append((cid, None, cfg.utc_entries.get(cid, cid), apath))
+        todo = [p[2] for p in plan if p[1] is None]
+        facts = {}
+        if todo:
+            try:
+                k1 = kresolve.find_k1_dir(str(cfg.k1_dir), None, env={})
+            except kresolve.ResolveError as e:
+                raise Failure("[k1] dir", str(e), "set [k1] dir to the folder that holds chitin.key") from None
+            facts = scan_facts_many(Runner(None), k1, todo)
+        for cid, src, resref, apath in plan:
+            if src is not None and resref is None:
+                recipes.append(krecipe.load_recipe(src))
+            elif src is not None:  # cached auto recipe
+                recipes.append(krecipe.load_recipe(src))
+                auto[cid] = AutoRecipe(cid, resref, src.read_text(encoding="utf-8"), apath)
+            else:
+                text = derive_auto_text(facts.get(resref), resref, cid, hint_file=cfg.recipes_dir / f"{cid}.toml")
+                recipes.append(krecipe.parse_recipe(_toml_loads(text), apath))
+                auto[cid] = AutoRecipe(cid, resref, text, apath)
+        krecipe.check_collisions(recipes)
     except krecipe.RecipeError as e:
         raise Failure(str(path), str(e), "fix the config or recipe named in the message") from None
-    return Loaded(cfg=cfg, recipes=recipes, out=Path(os.path.abspath(cfg.out)))
+    except kscan.ScanError as e:
+        raise Failure(f"{path}: {e.location}", e.cause, e.fix) from None
+    return Loaded(cfg=cfg, recipes=recipes, out=Path(os.path.abspath(cfg.out)), auto=auto)
+
+
+def _toml_loads(text: str) -> dict:
+    return krecipe._toml_module().loads(text)
 
 
 def select(loaded: Loaded, only: str | None) -> list:
@@ -343,6 +403,68 @@ def select(loaded: Loaded, only: str | None) -> list:
         raise Failure("--only", f"{only!r} is not in [build] characters {list(loaded.cfg.characters)}",
                       "use one of the configured ids")
     return chosen
+
+
+# ------------------------------------------------------------------------------------------- K1 creature templates (hidden _scan)
+
+def scan_call(runner: Runner, label: str, *args) -> dict:
+    """Run the hidden `_scan` helper under the k1port venv; parse the JSON object on its last stdout line."""
+    proc = runner.run(label, [str(k1port_py()), "-I", "-B", str(DRIVER), "_scan", *[str(a) for a in args]],
+                      fix="run the importer's doctor: the k1port venv (pykotor) must work and [k1] dir must be a full K1 install")
+    lines = [ln for ln in proc.stdout.splitlines() if ln.strip()]
+    try:
+        return json.loads(lines[-1])
+    except (IndexError, json.JSONDecodeError) as e:
+        raise Failure(label, f"helper printed no JSON: {e}", "re-run doctor") from None
+
+
+def scan_facts_many(runner: Runner, k1: Path, resrefs: list) -> dict:
+    """{resref: facts or None} from ONE pykotor start (it costs seconds)."""
+    got = scan_call(runner, "scan " + " ".join(resrefs), "derive", k1, *resrefs)
+    return got["facts"]
+
+
+def scan_facts(runner: Runner, k1: Path, resref: str) -> dict | None:
+    return scan_facts_many(runner, k1, [resref])[resref]
+
+
+def derive_auto_text(facts: dict | None, resref: str, rid: str | None, hint_file: Path | None = None) -> str:
+    """The derived recipe TOML for K1 creature template `resref` from its facts. ScanError when it cannot be built; a
+    template that does not exist names both ways a recipe could have been provided."""
+    if facts is None:
+        raise kscan.ScanError(f"K1 creature template {resref!r}",
+                              "not found in the K1 install (templates.bif, Override or the module archives)"
+                              + (f", and there is no recipe file {hint_file}" if hint_file else ""),
+                              "use a recipe id from recipes/ or a K1 UTC resref: npcs --grep NAME lists them")
+    return kscan.derive_text(facts, rid)[1]
+
+
+def write_auto(loaded: Loaded) -> list[Path]:
+    """Write each derived recipe to <out>/recipes_auto/<id>.toml (only when the bytes changed). Call after the out dir
+    was checked private. Returns the files written."""
+    written = []
+    if not loaded.auto:
+        return written
+    d = loaded.auto_dir
+    if d.is_symlink() or (d.exists() and not d.is_dir()):
+        raise Refusal(str(d), "is a symlink or not a directory", "remove it and let build create a real dir")
+    d.mkdir(parents=True, exist_ok=True)
+    for a in loaded.auto.values():
+        if a.path.parent != d:
+            raise Refusal(str(a.path), "auto recipe path is outside <out>/recipes_auto", "report this")
+        if a.path.is_symlink():
+            raise Refusal(str(a.path), "is a symlink", "remove it by hand")
+        old = a.path.read_text(encoding="utf-8") if a.path.is_file() else None
+        if old != a.text:
+            tmp = a.path.with_name(f".{a.path.name}.tmp{os.getpid()}")
+            try:
+                tmp.write_text(a.text, encoding="utf-8")
+                os.replace(tmp, a.path)
+            finally:
+                with _suppress(OSError):
+                    tmp.unlink()
+            written.append(a.path)
+    return written
 
 
 # ------------------------------------------------------------------------------------------- 2DA helpers (hidden _twoda)
@@ -812,7 +934,30 @@ def audio_inspect(runner: Runner, recipe, k1: Path, k2: Path) -> dict:
     if not found:
         raise Failure(f"audio {cid}", f"none of the {len(voiceovers)} K1 voice wavs are in {sdir or k1 / STREAM_DIR}",
                       "check [k1] dir is a full KOTOR 1 install with a streamsounds/ folder")
-    return {"ssf": data, "strrefs": list(strrefs), "voiceovers": voiceovers, "found": found, "missing": missing}
+    extra, dropped = extra_barks(recipe, index, found, set(voiceovers))
+    return {"ssf": data, "strrefs": list(strrefs), "voiceovers": voiceovers, "found": found, "missing": missing,
+            "extra": extra, "extra_dropped": dropped}
+
+
+def extra_barks(recipe, index: dict, found: dict, referenced: set) -> tuple[dict, list]:
+    """The K1 voice wavs named `<k1_ssf>_*.wav` that the SSF does not reference (Carth: p_carth_tia), as {resref: path},
+    plus the names dropped to stay under the pack limits (asset count, half the pack byte cap). Sorted by name, so the
+    cut is deterministic. A name that is not a valid resref is dropped too."""
+    prefix = recipe.audio.k1_ssf.lower() + "_"
+    cands = sorted((n[:-4], p) for n, p in index.items() if n.startswith(prefix) and n.endswith(".wav")
+                   and n[:-4] not in referenced)
+    base = 2 * len(model_refs(recipe)) + len(recipe.textures) + 2  # models mdl+mdx, tpc, the utc and the ssf
+    room = kpack.MAX_ASSETS - base - len(found)
+    budget = kpack.MAX_FILE_BYTES // 2 - sum(p.stat().st_size for p in found.values())
+    extra, dropped = {}, []
+    for stem, path in cands:
+        size = path.stat().st_size
+        if not krecipe.RESREF_RE.fullmatch(stem) or len(extra) >= room or size > budget:
+            dropped.append(f"{stem}.wav")
+            continue
+        extra[stem] = path
+        budget -= size
+    return extra, dropped
 
 
 def stage_audio(ctx: "Ctx", info: dict) -> dict:
@@ -830,11 +975,22 @@ def stage_audio(ctx: "Ctx", info: dict) -> dict:
         wavs.append(dst)
         rec.append({"resref": vo, "file": f"{STREAM_DIR}/{src.name}", "sha256": sha256_file(dst), "size": dst.stat().st_size,
                     "origin": VANILLA_ID, "pack_flags": kpack.FLAG_STREAM})
+    extra_rec = []
+    for vo, src in sorted(info.get("extra", {}).items()):  # K1 barks the SSF does not reference (e.g. p_carth_tia)
+        dst = sdir / f"{vo}.wav"
+        shutil.copyfile(src, dst)
+        wavs.append(dst)
+        extra_rec.append({"resref": vo, "file": f"{STREAM_DIR}/{src.name}", "sha256": sha256_file(dst), "size": dst.stat().st_size,
+                          "origin": VANILLA_ID, "pack_flags": kpack.FLAG_STREAM})
     for w in info["missing"]:
         warn(f"{ctx.recipe.id}: K1 voice wav {w} is not in {STREAM_DIR}/; that bark stays silent (recorded in the manifest)")
+    if info.get("extra_dropped"):
+        warn(f"{ctx.recipe.id}: {len(info['extra_dropped'])} extra K1 bark wav(s) left out to stay under the pack limits: "
+             + ", ".join(info["extra_dropped"][:8]) + (" ..." if len(info["extra_dropped"]) > 8 else ""))
     return {"ssf": ssf, "wavs": wavs,
             "manifest": {"k1_ssf": a.k1_ssf, "k2_ssf": a.k2_ssf, "ssf_sha256": sha256_bytes(info["ssf"]), "ssf_size": len(info["ssf"]),
-                         "strrefs": info["strrefs"], "origin": VANILLA_ID, "wavs": rec, "missing_optional": list(info["missing"])}}
+                         "strrefs": info["strrefs"], "origin": VANILLA_ID, "wavs": rec, "extra": extra_rec,
+                         "extra_dropped": list(info.get("extra_dropped", [])), "missing_optional": list(info["missing"])}}
 
 
 def soundset_row_cmd(ctx: "Ctx", base: Path, row: int) -> list:
@@ -1032,6 +1188,8 @@ def print_plan(ctx: Ctx, idx: int, order: list, rows: dict, resolved: dict) -> N
         refs = [x for x in audio["strrefs"] if x != SSF_EMPTY]
         say(f"[{r.id}]   audio: K1 {r.audio.k1_ssf}.ssf (172 bytes, {len(refs)} strrefs {min(refs)}..{max(refs)}, same voiceovers in the K2 dialog.tlk) "
             f"-> {r.audio.k2_ssf}.ssf; {len(audio['found'])}/{len(audio['voiceovers'])} K1 voice wavs from {STREAM_DIR}/ -> STREAM assets"
+            + (f" (+{len(audio['extra'])} extra {r.audio.k1_ssf}_*.wav" + (f", {len(audio['extra_dropped'])} left out by the pack limits"
+                                                                          if audio["extra_dropped"] else "") + ")" if audio["extra"] or audio["extra_dropped"] else "")
             + (f"; missing (WARN): {', '.join(audio['missing'])}" if audio["missing"] else ""))
         say(f"[{r.id}]   audio: new soundset.2da row {rows['soundset']} (label {label_for(r)}, resref {r.audio.k2_ssf}, gender {r.gender}); "
             f"the UTC uses it instead of recipe soundset {r.soundset}")
@@ -1105,7 +1263,8 @@ def build_character(loaded: Loaded, recipe, idx: int, order: list, rows: dict, k
         say(f"[{cid}] 3/6 audio: K1 {recipe.audio.k1_ssf}.ssf + K1 voice wavs -> {recipe.audio.k2_ssf}.ssf, soundset row {rows['soundset']}")
         ctx.audio = stage_audio(ctx, audio_info)
         audio_man = ctx.audio["manifest"]
-        say(f"[{cid}]   {len(ctx.audio['wavs'])} wav(s) staged as STREAM assets, {len(audio_man['missing_optional'])} missing")
+        say(f"[{cid}]   {len(ctx.audio['wavs'])} wav(s) staged as STREAM assets ({len(audio_man['extra'])} extra), "
+            f"{len(audio_man['missing_optional'])} missing")
     for data in ingests:
         flagged += ingest_flagged(data)
     seen, uniq = set(), []
@@ -1158,7 +1317,9 @@ def build_character(loaded: Loaded, recipe, idx: int, order: list, rows: dict, k
 
     manifest = {
         "schema": 1, "id": cid, "built_at": now_iso(),
-        "recipe": {"path": recipe.source, "sha256": recipe_file_sha(recipe), "converter": recipe.converter},
+        "recipe": {"path": recipe.source, "sha256": recipe_file_sha(recipe), "converter": recipe.converter,
+                   "auto": ({"k1_utc": loaded.auto[cid].utc, "sha256": sha256_bytes(loaded.auto[cid].text.encode("utf-8"))}
+                            if cid in loaded.auto else None)},
         "k1_dir": str(k1), "k2_dir": str(loaded.cfg.k2_dir), "texture_source": loaded.cfg.texture_source,
         "sources": resolved["rows"],
         "missing_optional": resolved["missing"] + (audio_man["missing_optional"] if audio_man else []),
@@ -1196,6 +1357,12 @@ def cmd_build(args) -> int:
     for r in chosen:
         for w in r.warnings:
             warn(w)
+    for r in chosen:
+        a = loaded.auto.get(r.id)
+        if a is not None:
+            say(f"[{r.id}] auto recipe: derived from K1 creature template {a.utc} ({'would write' if args.dry_run else 'writing'} {a.path})")
+    if not args.dry_run:
+        write_auto(loaded)
     plan_runner = Runner(None)
     rows, live, stored = plan_assignments(loaded, plan_runner, args.reassign)
     ids = installed_juhani_char(loaded.cfg.k2_dir)
@@ -1260,7 +1427,7 @@ def verify_pack_bytes(data: bytes, label: str):
 
 
 def cmd_install(args) -> int:
-    loaded = load_all(args.config)
+    loaded = load_all(args.config, cached=True)
     chosen = select(loaded, args.only)
     require_private_out(loaded.out, [loaded.cfg.k1_dir, loaded.cfg.k2_dir])
     require_k2(loaded.cfg.k2_dir)
@@ -1313,7 +1480,7 @@ def cmd_install(args) -> int:
 def cmd_remove(args) -> int:
     if not ID_RE.fullmatch(args.id or ""):
         raise Failure("remove", f"bad id {args.id!r}", "ids match [a-z0-9_]{1,31}")
-    loaded = load_all(args.config)
+    loaded = load_all(args.config, cached=True)
     require_private_out(loaded.out, [loaded.cfg.k1_dir, loaded.cfg.k2_dir])
     rec = read_installed(loaded)
     entry = rec.get(args.id)
@@ -1347,7 +1514,7 @@ def cmd_remove(args) -> int:
 
 
 def cmd_list(args) -> int:
-    loaded = load_all(args.config)
+    loaded = load_all(args.config, cached=True)
     stored = read_json(loaded.out / "assignments.json", "assignments") or {}
     inst = read_json(installed_path(loaded), "installed.json") or {}
     rows = []
@@ -1360,7 +1527,8 @@ def cmd_list(args) -> int:
         i = inst.get(r.id)
         dest = loaded.k2_imports / f"{r.id}{PACK_SUFFIX}"
         installed = bool(i and dest.is_file())
-        rows.append({"id": r.id, "display_name": r.display_name, "converter": r.converter, "built": built,
+        rows.append({"id": r.id, "display_name": r.display_name, "converter": r.converter, "auto": r.id in loaded.auto,
+                     "auto_utc": loaded.auto[r.id].utc if r.id in loaded.auto else None, "built": built,
                      "pack_sha256": sha, "stale": stale, "installed": installed,
                      "installed_matches_build": bool(installed and sha and sha256_file(dest) == sha),
                      "assigned": stored.get(r.id), "flagged": len(man.get("flagged", [])) if man else None})
@@ -1374,7 +1542,7 @@ def cmd_list(args) -> int:
         state = ("built" + (" (stale: recipe changed)" if x["stale"] else "")) if x["built"] else "not built"
         inst_txt = ("installed" + ("" if x["installed_matches_build"] else " (differs from build)")) if x["installed"] else "not installed"
         sha = (x["pack_sha256"] or "-")[:16]
-        say(f"{x['id']:<14} {state:<24} {inst_txt:<30} {rowtxt:<18} sha {sha}")
+        say(f"{x['id']:<14} {state:<24} {inst_txt:<30} {rowtxt:<18} sha {sha}" + (f"  auto from K1 {x['auto_utc']}" if x["auto"] else ""))
     return EXIT_OK
 
 
@@ -1401,6 +1569,9 @@ def cmd_doctor(args) -> int:
     try:
         loaded = load_all(args.config)
         ok("config", f"{path}: characters {list(loaded.cfg.characters)}, texture_source {loaded.cfg.texture_source}")
+        if loaded.auto:
+            ok("auto recipes", ", ".join(f"{a.id} <- K1 {a.utc}" for a in loaded.auto.values())
+               + " (derived from your K1 install; a recipes/<id>.toml would override)")
     except Failure as e:
         bad("config", f"{e.location}: {e.cause}", e.fix)
     if loaded is not None:
@@ -1478,10 +1649,94 @@ def cmd_doctor(args) -> int:
     return EXIT_FAIL if failed else EXIT_OK
 
 
+# ------------------------------------------------------------------------------------------- scan / npcs
+
+def scan_context(args) -> tuple[Path, "krecipe.Config | None"]:
+    """(K1 dir, config or None) for scan/npcs. The config is optional: without one the K1 dir is --k1-dir, env
+    KOTOR1_ROOT or the Steam default. With one, --k1-dir then the config's [k1] dir win."""
+    cfg = None
+    path = Path(args.config or DEFAULT_CONFIG).expanduser()
+    if path.is_file():
+        try:
+            cfg = krecipe.load_config(path)
+        except krecipe.RecipeError as e:
+            if args.config:
+                raise Failure(str(path), str(e), "fix the config named in the message") from None
+    elif args.config:
+        raise Failure(str(path), "config file not found", "pass an existing --config or drop the option")
+    try:
+        if cfg is not None:
+            return kresolve.find_k1_dir(args.k1_dir or str(cfg.k1_dir), None, env={}), cfg
+        return kresolve.find_k1_dir(args.k1_dir, None, env=os.environ), None
+    except kresolve.ResolveError as e:
+        raise Failure("[k1] dir", str(e), "pass --k1-dir, set [k1] dir in the config, or set KOTOR1_ROOT") from None
+
+
+def cmd_scan(args) -> int:
+    resref = (args.utc or "").lower()
+    if not krecipe.RESREF_RE.fullmatch(resref):
+        raise Failure("scan", f"bad K1 creature template {args.utc!r}: must match [a-z0-9_]{{1,16}}", "npcs --grep NAME lists them")
+    k1, cfg = scan_context(args)
+    runner = Runner(None)
+    facts = scan_facts(runner, k1, resref)
+    if facts is None:
+        raise Failure(f"K1 creature template {resref!r}", f"not found in the K1 install {k1} (templates.bif, Override or modules)",
+                      "npcs --grep NAME lists the K1 creature templates")
+    try:
+        derived, text = kscan.derive_text(facts, args.id)
+    except kscan.ScanError as e:
+        raise Failure(e.location, e.cause, e.fix) from None
+    for n in derived.notes:
+        warn(f"{derived.id}: {n}")
+    print(text, end="", flush=True)
+    if args.write is None:
+        return EXIT_OK
+    if args.write == "":
+        if cfg is None:
+            raise Failure("--write", "no DIR given and no config to name the out dir", "pass --write DIR or --config C")
+        dest_dir = Path(os.path.abspath(cfg.out)) / kscan.AUTO_DIR
+    else:
+        dest_dir = Path(os.path.abspath(Path(args.write).expanduser()))
+    protected = [k1] + ([cfg.k1_dir, cfg.k2_dir] if cfg else [])
+    real = dest_dir.resolve()
+    for prot in protected:
+        pr = Path(prot).expanduser().resolve()
+        if real == pr or pr in real.parents:
+            raise Refusal(str(dest_dir), f"inside the game dir {pr}", "write the recipe to a private dir outside the game installs")
+    dest = dest_dir / f"{derived.id}.toml"
+    if dest.is_symlink():
+        raise Refusal(str(dest), "is a symlink", "remove it by hand")
+    if args.write != "" and dest.is_file() and dest.read_text(encoding="utf-8") != text and not args.force:
+        raise Failure(str(dest), "exists and differs from the derived recipe", "pass --force to overwrite it, or pick another DIR")
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    dest.write_text(text, encoding="utf-8")
+    print(f"wrote {dest}", file=sys.stderr, flush=True)
+    return EXIT_OK
+
+
+def cmd_npcs(args) -> int:
+    k1, _cfg = scan_context(args)
+    got = scan_call(Runner(None), "npcs", "npcs", k1)
+    rows = got.get("rows", [])
+    if args.grep:
+        rows = [r for r in rows if kscan.match_npc(r, args.grep)]
+    total = len(rows)
+    if args.limit and args.limit > 0:
+        rows = rows[:args.limit]
+    if args.json:
+        print(json.dumps({"k1_dir": str(k1), "total": total, "rows": rows}, indent=2, sort_keys=True))
+        return EXIT_OK
+    for line in kscan.format_npcs(rows):
+        say(line)
+    say(f"{len(rows)} of {total} K1 creature template(s)" + (f" matching {args.grep!r}" if args.grep else "")
+        + ("; --limit N / --grep PATTERN narrow it" if len(rows) < total or not args.grep else ""))
+    return EXIT_OK
+
+
 # ------------------------------------------------------------------------------------------- CLI
 
 def build_parser() -> argparse.ArgumentParser:
-    ap = argparse.ArgumentParser(description="K1 -> K2 character importer (doc 38 s26): doctor | build | install | remove | list",
+    ap = argparse.ArgumentParser(description="K1 -> K2 character importer (doc 38 s26): doctor | build | install | remove | list | npcs | scan",
                                  epilog="Exit: 0 ok, 1 failure, 2 safety refusal.")
     sub = ap.add_subparsers(dest="cmd", required=True)
     common = argparse.ArgumentParser(add_help=False)
@@ -1503,6 +1758,20 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("list", parents=[common], help="characters, build status, installed state, rows")
     p.add_argument("--json", action="store_true")
     p.set_defaults(fn=cmd_list)
+    k1opt = argparse.ArgumentParser(add_help=False)
+    k1opt.add_argument("--k1-dir", default=None, metavar="DIR", help="K1 install (else the config's [k1] dir, env KOTOR1_ROOT, the Steam default)")
+    p = sub.add_parser("npcs", parents=[common, k1opt], help="list the K1 creature templates (read only)")
+    p.add_argument("--grep", default=None, metavar="PATTERN", help="case-insensitive; matches the UTC resref, tag or first name")
+    p.add_argument("--limit", type=int, default=60, metavar="N", help="rows to print (default 60; 0 = all)")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(fn=cmd_npcs)
+    p = sub.add_parser("scan", parents=[common, k1opt], help="derive a recipe from a K1 creature template (read only)")
+    p.add_argument("utc", metavar="UTC_RESREF", help="a K1 creature template resref, e.g. p_carth (npcs lists them)")
+    p.add_argument("--id", default=None, metavar="ID", help="recipe id (default: the resref without a leading p_)")
+    p.add_argument("--write", nargs="?", const="", default=None, metavar="DIR",
+                   help="also save <id>.toml (default DIR: <out>/recipes_auto from the config); give DIR after the options")
+    p.add_argument("--force", action="store_true", help="with --write DIR: overwrite a different existing file")
+    p.set_defaults(fn=cmd_scan)
     return ap
 
 
@@ -1512,6 +1781,8 @@ def main(argv: list | None = None) -> int:
         return _twoda_main(argv[1:])
     if argv and argv[0] == "_audio":  # hidden helper (SSF / TLK reads), same interpreter
         return _audio_main(argv[1:])
+    if argv and argv[0] == "_scan":  # hidden helper (K1 UTC / 2DA / MDL reads), same interpreter
+        return kscan.helper_main(argv[1:])
     args = build_parser().parse_args(argv)
     try:
         return args.fn(args)
@@ -1519,6 +1790,9 @@ def main(argv: list | None = None) -> int:
         print(f"error: {e}", file=sys.stderr)
         return e.code
     except (krecipe.RecipeError, kresolve.ResolveError) as e:
+        print(f"error: {e}", file=sys.stderr)
+        return EXIT_FAIL
+    except kscan.ScanError as e:
         print(f"error: {e}", file=sys.stderr)
         return EXIT_FAIL
 

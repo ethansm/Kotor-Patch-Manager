@@ -186,6 +186,17 @@ The asset-vfs 2DA pool holds 1024 cells since asset-vfs 0.1.3-dev (256 before), 
 - **Spawning.** A pack holds models, textures, a UTC, a DLG, 2DA cells and the character definition. Nothing spawns it. A patch spawns the character through `k2.characterlib@1` (`Spawn`). No spawn is set from the config yet.
 - **Audio.** The recipe `[audio]` table is reserved and not read. The pack format can hold WAV, LIP and SSF files. The importer does not write them yet.
 
+### Pick any K1 NPC (no recipe needed)
+
+The importer is NPC-agnostic. Search the K1 creature templates, preview what it would rip, then add the NPC to your config:
+
+```bash
+python3 patch_manager_mods/k1_port/k1_port_import.py npcs --grep bastila     # K1 UTC resref, tag, name, models, soundset, conversation
+python3 patch_manager_mods/k1_port/k1_port_import.py scan p_bastilla          # prints the derived recipe (models, textures, bark audio)
+```
+
+In your private config, write `characters = ["carth", "utc:p_bastilla"]`. An entry with a committed `recipes/<id>.toml` uses that file (an override); a `utc:<resref>` entry is derived from the K1 UTC, `appearance.2da`, `heads.2da`, `soundset.2da` and the meshes at build time, and the derived recipe is saved to `<out>/recipes_auto/<id>.toml`. Defaults: MDLOps converter, `k1p_` names, the K1 SSF barks (plus every `<ssf>_*` wav in `streamsounds/`), fallback soundset 11 or 57 by gender. The conversation resref is only reported; dialog, voice-over and lip import are a later phase.
+
 ### Add a recipe
 
 1. Copy `patch_manager_mods/k1_port/recipes/carth.toml` (mdlops, with `[audio]`) or `recipes/juhani.toml` (mdlops) to `recipes/<id>.toml`. `<id>` matches `[a-z0-9_]{1,31}`.

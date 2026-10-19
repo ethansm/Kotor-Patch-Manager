@@ -9,17 +9,19 @@ row ids are assigned by the builder from the live K2 tables).
 the K2 SSF resref the pack serves. Both required. The builder then appends a NEW soundset.2da row for the character
 and the pack serves the SSF plus the K1 voice wavs. `character.soundset` stays required: it is the fallback K2 row
 used when the recipe has no [audio] (and documents the stand-in voice); with [audio] it is ignored for the UTC and pack. The user config (k1_imports.example.toml -> your private copy) names the game dirs,
-the output dir and the build order.
+the output dir and the build order. [build] characters entries are recipe ids (recipes/<id>.toml, which always
+wins) or `utc:<resref>` for any K1 creature template (the importer derives its recipe at build time, see
+k1_port_scan.py); a plain id with no recipe file is tried as a K1 UTC resref of that name.
 
-API: load_recipe(path) -> Recipe, load_recipes(dir, ids) -> list[Recipe], load_config(path) -> Config,
-RecipeError. Needs Python >= 3.11 (tomllib); use the repo .venv Python otherwise.
+API: load_recipe(path) -> Recipe, load_recipes(dir, ids) -> list[Recipe], check_collisions(recipes), load_config(path)
+-> Config, utc_entry_id(resref), RecipeError. Needs Python >= 3.11 (tomllib); use the repo .venv Python otherwise.
 Run: python3 k1_port_recipe.py <recipe.toml|config.toml>   (validates and prints a one-line summary)
 """
 from __future__ import annotations
 
 import re
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -28,6 +30,7 @@ DEFAULT_RECIPES_DIR = HERE / "recipes"
 
 RESREF_RE = re.compile(r"[a-z0-9_]{1,16}")
 ID_RE = re.compile(r"[a-z0-9_]{1,31}")
+UTC_PREFIX = "utc:"
 CONVERTERS = ("pykotor", "mdlops")
 TXI_MAX = 1024
 
@@ -105,6 +108,7 @@ class Config:
     characters: tuple[str, ...]
     recipes_dir: Path
     source: str
+    utc_entries: dict = field(default_factory=dict)  # {recipe id: K1 UTC resref} for the `utc:<resref>` characters entries
     texture_source: str = "vanilla"          # [build] texture_source: "vanilla" (K1 install) or "cr" (Characters Revisited)
     first_appearance_row: int | None = None  # [build] first_appearance_row: start of the assigned appearance.2da rows
     first_head_row: int | None = None        # [build] first_head_row: start of the assigned heads.2da rows
@@ -330,20 +334,26 @@ def load_recipes(directory, ids) -> list[Recipe]:
         dup = sorted({i for i in ids if ids.count(i) > 1})
         raise RecipeError(f"{directory}: duplicate recipe ids {dup}")
     recipes: list[Recipe] = []
-    owner: dict[str, str] = {}
     for rid in ids:
         if not isinstance(rid, str) or not ID_RE.fullmatch(rid):
             raise RecipeError(f"{directory}: bad recipe id {rid!r}: must match [a-z0-9_]{{1,31}}")
         path = directory / f"{rid}.toml"
         if not path.is_file():
             raise RecipeError(f"{path}: recipe not found")
-        r = load_recipe(path)
+        recipes.append(load_recipe(path))
+    check_collisions(recipes)
+    return recipes
+
+
+def check_collisions(recipes) -> None:
+    """Reject a k2 resref (model, texture, utc, ssf) introduced by two different recipes. Works on any mix of
+    committed and auto-derived recipes (the message names the later recipe's source file)."""
+    owner: dict[str, str] = {}
+    for r in recipes:
         for name in r.k2_names():
             if name in owner and owner[name] != r.id:
-                raise RecipeError(f"{path}: k2 name {name!r} collides with recipe {owner[name]!r}")
+                raise RecipeError(f"{r.source}: k2 name {name!r} collides with recipe {owner[name]!r}")
             owner[name] = r.id
-        recipes.append(r)
-    return recipes
 
 
 def _dir_value(ctx: _Ctx, table: dict, key: str, where: str, required: bool = True) -> Path | None:
@@ -358,6 +368,12 @@ def _dir_value(ctx: _Ctx, table: dict, key: str, where: str, required: bool = Tr
             raise ctx.err(full, "must not be empty")
         return None
     return Path(s).expanduser()
+
+
+def utc_entry_id(resref: str) -> str:
+    """Recipe id of a `utc:<resref>` entry: the resref without a leading `p_` (p_carth -> carth). Same as k1_port_scan.auto_id."""
+    r = resref
+    return r[2:] if r.startswith("p_") and len(r) > 2 else r
 
 
 def load_config(path) -> Config:
@@ -381,10 +397,22 @@ def load_config(path) -> Config:
         raise ctx.err("build.characters", "missing required key")
     chars = build["characters"]
     if not isinstance(chars, list) or not chars:
-        raise ctx.err("build.characters", "must be a non-empty list of recipe ids")
+        raise ctx.err("build.characters", "must be a non-empty list of recipe ids or utc:<resref> entries")
+    utc_entries: dict[str, str] = {}
+    ids: list[str] = []
     for i, c in enumerate(chars):
+        key = f"build.characters[{i}]"
+        if isinstance(c, str) and c.startswith(UTC_PREFIX):
+            resref = c[len(UTC_PREFIX):]
+            if not RESREF_RE.fullmatch(resref):
+                raise ctx.err(key, f"bad K1 creature template in {c!r}: {resref!r} must match [a-z0-9_]{{1,16}} (lowercase), "
+                              "for example \"utc:p_bastila\" (npcs --grep NAME lists them)")
+            c = utc_entry_id(resref)
+            utc_entries[c] = resref
         if not isinstance(c, str) or not ID_RE.fullmatch(c):
-            raise ctx.err(f"build.characters[{i}]", f"bad recipe id {c!r}: must match [a-z0-9_]{{1,31}}")
+            raise ctx.err(key, f"bad recipe id {c!r}: must match [a-z0-9_]{{1,31}}")
+        ids.append(c)
+    chars = ids
     if len(set(chars)) != len(chars):
         dup = sorted({c for c in chars if chars.count(c) > 1})
         raise ctx.err("build.characters", f"ids must be unique, duplicated: {dup}")
@@ -403,6 +431,7 @@ def load_config(path) -> Config:
         characters=tuple(chars),
         recipes_dir=recipes_dir,
         source=str(path),
+        utc_entries=utc_entries,
         texture_source=texture_source,
         first_appearance_row=first_app,
         first_head_row=first_head,
@@ -422,8 +451,12 @@ def main(argv: list[str]) -> int:
                   f"audio={r.audio.k1_ssf + '->' + r.audio.k2_ssf if r.audio else 'none'} warnings={list(r.warnings)}")
         else:
             c = load_config(p)
-            load_recipes(c.recipes_dir, c.characters)
-            print(f"OK config: characters={list(c.characters)} recipes_dir={c.recipes_dir}")
+            files = [i for i in c.characters if (c.recipes_dir / f"{i}.toml").is_file()]
+            if files:
+                load_recipes(c.recipes_dir, files)
+            auto = [i for i in c.characters if i not in files]
+            print(f"OK config: characters={list(c.characters)} recipes_dir={c.recipes_dir} "
+                  f"auto-derived (K1 UTC, checked at build)={auto}")
     except RecipeError as e:
         print(f"ERROR {e}", file=sys.stderr)
         return 1
