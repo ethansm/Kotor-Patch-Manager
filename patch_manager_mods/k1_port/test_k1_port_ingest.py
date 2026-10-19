@@ -398,12 +398,15 @@ def _not_tpc(raw: bytes):
 
 
 calls_map: list = []  # supermodel_map argument of each fake run_model call
+calls_sn: list = []  # (supernode, supermodel_dirs, keep_dangly) of each fake run_model call
 
 
 def fake_run_model(calls: list):
     """Stands in for k1_port_model.py: writes a synthetic MDL/MDX pair and registers it as the converter does."""
-    def run(stage, ledger, install, cand, resref, new, pairs, allow_overlay=False, supermodel_map=None):
+    def run(stage, ledger, install, cand, resref, new, pairs, allow_overlay=False, supermodel_map=None,
+            supernode="legacy", supermodel_dirs=None, keep_dangly=False):
         calls_map.append(supermodel_map)
+        calls_sn.append((supernode, supermodel_dirs, keep_dangly))
         out_dir = stage / ing.MODEL_DIR
         out_dir.mkdir(parents=True, exist_ok=True)
         (out_dir / f"{new}.mdl").write_bytes(MDL_BYTES)
@@ -548,6 +551,68 @@ def supermodel_map_reaches_the_model_tool(root):
     check(calls_map == [["P_OldBB=k1p_newbb"]], f"run_model supermodel_map: {calls_map}")
     s = subprocess.run([sys.executable, "-I", "-B", str(DRIVER), "--help"], capture_output=True, text=True, timeout=60)
     check("--supermodel-map" in s.stdout, "help lacks --supermodel-map")
+
+
+@test
+def supernode_flags_reach_the_model_tool_and_defaults_are_legacy(root):
+    model_world(root)
+    calls_sn.clear()
+    with stubbed(root), patched(kv, "validate", lambda mdl, mdx=None, **kw: []):
+        r = ingest_main(root, "--json")
+    expect_rc(r, 0, "default ingest")
+    check(calls_sn == [("legacy", [], False)], f"defaults reaching run_model: {calls_sn}")
+    shutil.rmtree(root / "stage", ignore_errors=True)
+    (root / "ledger.json").unlink(missing_ok=True)
+    calls_sn.clear()
+    with stubbed(root), patched(kv, "validate", lambda mdl, mdx=None, **kw: []):
+        r = ingest_main(root, "--json", "--supernode", "chain", "--supermodel-dir", "/a/one",
+                        "--supermodel-dir", "/b/two", "--keep-dangly")
+    expect_rc(r, 0, "ingest with the supernode flags")
+    check(calls_sn == [("chain", ["/a/one", "/b/two"], True)], f"flags reaching run_model: {calls_sn}")
+    s = subprocess.run([sys.executable, "-I", "-B", str(DRIVER), "--help"], capture_output=True, text=True, timeout=60)
+    for flag in ("--supernode", "--supermodel-dir", "--keep-dangly"):
+        check(flag in s.stdout, f"help lacks {flag}")
+
+
+@test
+def run_model_argv_carries_the_flags_in_order_and_defaults_add_none(root):
+    captured: list = []
+
+    def fake_tool(cmd, what):
+        captured.append(list(cmd))
+        return {}
+
+    cand = {"source_id": ing.VANILLA}
+    base = (root / "stage", root / "ledger.json", root / "k1", cand, "n_test", "k1p_n_test", [("A", "b")])
+    with patched(ing, "run_tool", fake_tool):
+        ing.run_model(*base)
+        ing.run_model(*base, supermodel_map=["P_X=k1p_x"], supernode="chain",
+                      supermodel_dirs=[root / "d1", "d2"], keep_dangly=True)
+    plain, full = captured
+    for flag in ("--supernode", "--supermodel-dir", "--keep-dangly"):
+        check(flag not in plain, f"default argv must not carry {flag}: {plain}")
+    check(full.count("--supermodel-dir") == 2, f"--supermodel-dir not repeated: {full}")
+    i = full.index("--supernode")
+    check(full[i + 1] == "chain", f"--supernode value: {full}")
+    check(full[full.index("--supermodel-map") + 1] == "P_X=k1p_x" and full.index("--supermodel-map") < i,
+          f"supermodel-map must precede the supernode flags: {full}")
+    dirs = [full[k + 1] for k, v in enumerate(full) if v == "--supermodel-dir"]
+    check(dirs == [str(root / "d1"), "d2"], f"dirs in order: {dirs}")
+    check("--keep-dangly" in full, f"--keep-dangly missing: {full}")
+    # no flag may swallow a following option: the nargs='+' lists must end at the next flag
+    check(full.index("--keep-dangly") > i, f"unexpected order: {full}")
+
+
+@test
+def supermodel_dir_without_chain_is_refused(root):
+    model_world(root)
+    with stubbed(root):
+        try:
+            ingest_main(root, "--supermodel-dir", "/a/one")
+        except SystemExit as e:
+            check(e.code == 2, f"exit code {e.code}")
+            return
+    raise AssertionError("--supermodel-dir without --supernode chain was accepted")
 
 
 @test

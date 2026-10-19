@@ -292,12 +292,19 @@ def stage_texture(stage: Path, ledger: Path, install: Path, cand: dict, old: str
 
 
 def run_model(stage: Path, ledger: Path, install: Path, cand: dict, resref: str, new: str, pairs: list,
-              allow_overlay: bool = False, supermodel_map: list | None = None) -> dict:
+              allow_overlay: bool = False, supermodel_map: list | None = None, supernode: str = "legacy",
+              supermodel_dirs: list | None = None, keep_dangly: bool = False) -> dict:
     cmd = [sys.executable, "-I", "-B", "-u", str(MODEL_TOOL), "--resref", resref, "--new-resref", new,
            "--tex-map", *[f"{o}={n}" for o, n in pairs], "--out-dir", str(stage / MODEL_DIR),
            "--ledger", str(ledger)]
     if supermodel_map:
         cmd += ["--supermodel-map", *supermodel_map]
+    if supernode != "legacy":
+        cmd += ["--supernode", supernode]
+    for d in supermodel_dirs or []:
+        cmd += ["--supermodel-dir", str(d)]
+    if keep_dangly:
+        cmd.append("--keep-dangly")
     if cand["source_id"] == VANILLA:
         cmd += ["--install-k1", str(install), "--source-id", VANILLA]
         if allow_overlay:
@@ -435,7 +442,8 @@ def ingest(args, mapping: dict, new_resref: str, out: dict) -> None:
             if model and model["status"] == "planned":
                 model["manifest"] = run_model(stage, ledger_path, install, model["chosen"], args.resref,
                                               new_resref, pairs, args.allow_overlay_install,
-                                              args.supermodel_map)
+                                              args.supermodel_map, args.supernode, args.supermodel_dir,
+                                              args.keep_dangly)
                 model["status"] = "staged"
     if model and model["status"] == "staged":
         gate_model(args, ledger_path, model, new_resref, notes)
@@ -524,6 +532,15 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--supermodel-map", nargs="+", metavar="OLD=NEW", default=None,
                     help="model header supermodel rewrite, passed to k1_port_model.py (OLD = K1-only name, NEW = "
                          "staged K2 resref)")
+    ap.add_argument("--supernode", choices=("legacy", "chain"), default="legacy",
+                    help="passed to k1_port_model.py: legacy (default) keeps pykotor's supernode numbering; chain "
+                         "rewrites it with K2 supermodel-chain numbering (a missing supermodel fails the model)")
+    ap.add_argument("--supermodel-dir", action="append", default=[], metavar="DIR",
+                    help="with --supernode chain, repeatable: directory holding the supermodel .mdl, searched before "
+                         "the K2 install (passed to k1_port_model.py)")
+    ap.add_argument("--keep-dangly", action="store_true",
+                    help="passed to k1_port_model.py: keep danglymesh nodes instead of demoting them; REQUIRES the "
+                         "pykotor_k2_dangly patch in the venv")
     ap.add_argument("--no-model", action="store_true", help="textures only: skip the model conversion")
     ap.add_argument("--allow-variant-folders", action="store_true",
                     help="let Optional*/ and Upscale* folders of a source compete on equal terms "
@@ -599,6 +616,8 @@ def main(argv=None) -> int:
     if not NEW_RESREF_RE.fullmatch(new_resref):
         parser.error(f"--new-resref {new_resref!r} must be 1-16 chars of [a-z0-9_]")
     mapping = parse_textures(parser, args.texture)
+    if args.supermodel_dir and args.supernode != "chain":
+        parser.error("--supermodel-dir only applies with --supernode chain")
 
     out: dict = {"status": "failed", "dry_run": bool(args.dry_run), "resref": args.resref,
                  "new_resref": new_resref, "install_k1": str(args.install_k1.expanduser()),

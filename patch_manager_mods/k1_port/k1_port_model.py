@@ -26,6 +26,16 @@ written without the flag and the block (patched pykotor; no K1/K2 vanilla preced
 counts those meshes as matches (manifest tangent_zero_cleared, plus an informational warning). --keep-zero-tangents
 keeps the flag and block and applies the strict compare.
 
+Supernode numbering: pykotor writes supernode = own index and geometry total = own node count. --supernode chain
+(default legacy = unchanged bytes) rewrites those with K2 supermodel-chain numbering, as MDLOps does
+(k1_port_mdl_supernode.py, rules R0-R5): the supermodel is looked up in each --supermodel-dir (repeatable, first
+hit wins), then the K2 install's Override, then the K2 chitin/modules. A supermodel that cannot be found is an
+error (exit 1, nothing written), never a silent fallback. The pass runs right after the writer and before the
+ledger/compare read the bytes; the MDX is untouched. A supermodel taken from Override is a user-modded file and
+changes the numbers: it warns on stderr and in the manifest. Manifest key "supernode" records mode, supermodel,
+sha256, origin and the counts. --keep-dangly keeps danglymesh nodes instead of demoting them to plain trimesh; it
+requires the pykotor_k2_dangly patch in the venv (a stock writer emits garbage dangly data).
+
 Provenance: --source-id ID must be registered in sources.json. Required with --pack-dir; with the K1 install it
 defaults to vanilla_k1. Both written files are registered in the removal ledger (kind "model"): --ledger PATH,
 else env K1PORT_LEDGER, else the library default. The ledger path obeys the texture tool's stage guard.
@@ -49,6 +59,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # python -I drops the script dir from sys.path
+import k1_port_mdl_supernode as ksn  # noqa: E402  stdlib only
 from k1_port_sources import Ledger, SourceError, get_source  # noqa: E402  stdlib only
 from k1_port_textures import OVERLAY_FLAG, overlay_refusal, repo_roots, stage_refusal  # noqa: E402  stdlib only; one stage/ledger guard
 
@@ -151,9 +162,10 @@ def find_ci(directory: Path, filename: str) -> Path | None:
     return matches[0] if matches else None
 
 
-def k2_lookup(pk: SimpleNamespace, k2_path: Path, name: str) -> tuple[bool, list[str]]:
+def k2_lookup(pk: SimpleNamespace, k2_path: Path, name: str, keep: dict | None = None) -> tuple[bool, list[str]]:
     """(checked, hits): hits are the paths of K2 MDL/MDX resources named name (override, chitin, modules).
-    Read only. A missing install dir gives (False, []). A dir that is not a K2 install is refused."""
+    Read only. A missing install dir gives (False, []). A dir that is not a K2 install is refused.
+    keep: optional dict that receives the loaded Installation as keep["inst"] (so the caller need not load it again)."""
     if not k2_path.is_dir():
         return False, []
     try:
@@ -163,6 +175,8 @@ def k2_lookup(pk: SimpleNamespace, k2_path: Path, name: str) -> tuple[bool, list
         raise Rejected(f"cannot read the K2 install {k2_path}: {type(exc).__name__}: {exc}") from exc
     if game != pk.Game.K2:
         raise Rejected(f"--k2-install {k2_path} is not a K2 install (game={game})")
+    if keep is not None:
+        keep["inst"] = inst
     order = [pk.SearchLocation.OVERRIDE, pk.SearchLocation.CHITIN, pk.SearchLocation.MODULES]
     hits = []
     for rtype in (pk.ResourceType.MDL, pk.ResourceType.MDX):
@@ -308,6 +322,16 @@ def demote_dangly(mdl) -> int:
             node.dangly = None
             demoted += 1
     return demoted
+
+
+def count_dangly(mdl) -> int:
+    """Number of nodes that carry danglymesh data."""
+    return sum(1 for node in walk_nodes(mdl.root) if getattr(node, "dangly", None) is not None)
+
+
+def demote_unless_kept(mdl, keep_dangly: bool) -> int:
+    """demote_dangly(mdl), or nothing (returns 0) when --keep-dangly is set."""
+    return 0 if keep_dangly else demote_dangly(mdl)
 
 
 def _bounds(points, axes=("x", "y", "z")):
@@ -625,6 +649,80 @@ def load_supermodel(lib: Library, pk: SimpleNamespace, name: str, warnings: list
     return "read", origin
 
 
+# ---------------------------------------------------------------- supernode numbering
+
+SUPERNODE_MODES = ("legacy", "chain")
+
+
+class ChainResolver:
+    """Supermodel MDL bytes for ksn.apply: --supermodel-dir dirs (first hit), then the K2 install's Override, then
+    its chitin/modules, through the Installation convert already loaded. `.origins[name]` = 'dir:<path>' |
+    'override' | 'install' (the same labels as ksn.chain_resolver). Raises FileNotFoundError when nothing has it."""
+
+    def __init__(self, pk: SimpleNamespace, dirs: list[Path], inst):
+        self.pk, self.inst = pk, inst
+        self._dirs = ksn.dir_resolver(dirs)
+        self.origins: dict[str, str] = {}
+
+    def __call__(self, name: str) -> bytes:
+        name = name.lower()
+        try:
+            data = self._dirs(name)
+        except FileNotFoundError:
+            pass
+        else:
+            self.origins[name] = self._dirs.origins[name]
+            return data
+        if self.inst is not None:
+            for label, where in (("override", [self.pk.SearchLocation.OVERRIDE]),
+                                 ("install", [self.pk.SearchLocation.CHITIN, self.pk.SearchLocation.MODULES])):
+                found = self.inst.resource(name, self.pk.ResourceType.MDL, where)
+                if found is not None:
+                    self.origins[name] = label
+                    return bytes(found.data)
+        raise FileNotFoundError(f"{name}.mdl not found in the --supermodel-dir dirs or the K2 install")
+
+
+def supernode_pass(out_mdl: Path, mode: str, resolve=None) -> dict:
+    """Rewrites out_mdl in place with K2 chain supernode numbering (mode 'chain'); mode 'legacy' touches nothing.
+    resolve(name_lower) -> supermodel MDL bytes, with an `.origins` dict (see ChainResolver). Returns the manifest
+    "supernode" record. A supermodel that cannot be resolved raises ksn.SupernodeError; the file is then unchanged."""
+    info = {"mode": mode, "supermodel": None, "supermodel_sha256": None, "origin": None, "nodes_changed": None,
+            "anim_nodes_changed": None, "anim_unmapped": None, "total_before": None, "total_after": None}
+    if mode == "legacy":
+        return info
+    if mode != "chain":
+        raise Rejected(f"--supernode {mode!r} must be one of {', '.join(SUPERNODE_MODES)}")
+    if resolve is None:
+        raise ValueError("supernode_pass: chain mode needs a resolver")
+    try:
+        new, rep = ksn.apply(out_mdl.read_bytes(), resolve)
+    except ksn.SupernodeError as exc:
+        raise ksn.SupernodeError(f"--supernode chain: {exc} (pass --supermodel-dir DIR holding the supermodel, "
+                                 "or a valid --k2-install)") from exc
+    out_mdl.write_bytes(new)
+    for key in ("supermodel", "supermodel_sha256", "nodes_changed", "anim_nodes_changed", "anim_unmapped",
+                "total_before", "total_after"):
+        info[key] = rep[key]
+    if rep["supermodel"]:
+        info["origin"] = getattr(resolve, "origins", {}).get(rep["supermodel"].lower())
+    return info
+
+
+def check_supernode_args(args: argparse.Namespace) -> tuple[str, list[Path]]:
+    """(mode, supermodel dirs), refusing a --supermodel-dir that is not a directory or has no --supernode chain."""
+    mode = getattr(args, "supernode", "legacy") or "legacy"
+    if mode not in SUPERNODE_MODES:
+        raise Rejected(f"--supernode {mode!r} must be one of {', '.join(SUPERNODE_MODES)}")
+    dirs = [Path(d).expanduser() for d in (getattr(args, "supermodel_dir", None) or [])]
+    if dirs and mode != "chain":
+        raise Rejected("--supermodel-dir only applies with --supernode chain")
+    for d in dirs:
+        if not d.is_dir():
+            raise Rejected(f"--supermodel-dir is not a directory: {d}")
+    return mode, dirs
+
+
 # ---------------------------------------------------------------- conversion
 
 def _is_within(path: Path, parent: Path) -> bool:
@@ -681,6 +779,8 @@ def convert(args: argparse.Namespace) -> dict:
     check_new_resref(new_resref)
     tex_map = parse_tex_map(args.tex_map)
     sm_map = parse_supermodel_map(getattr(args, "supermodel_map", None))
+    sn_mode, sn_dirs = check_supernode_args(args)
+    keep_dangly = bool(getattr(args, "keep_dangly", False))
 
     install = Path(args.install_k1).expanduser()
     if args.pack_dir is None:  # the install is only read without --pack-dir
@@ -729,7 +829,8 @@ def convert(args: argparse.Namespace) -> dict:
     sm_status, sm_origin = load_supermodel(lib, pk, mdl.supermodel or "", warnings)
 
     # Collision guard, before anything is written: a K2 resource with the output name would be replaced in Override.
-    k2_checked, k2_hits = k2_lookup(pk, k2_install, new_resref)
+    k2_held: dict = {}
+    k2_checked, k2_hits = k2_lookup(pk, k2_install, new_resref, k2_held)
     if not k2_checked:
         warnings.append(f"K2 install not found at {k2_install}: {new_resref!r} NOT checked against K2 resources")
     k2_collision = bool(k2_hits)
@@ -749,7 +850,11 @@ def convert(args: argparse.Namespace) -> dict:
         mdl.supermodel = sm_mapped_to
     padded_slots = pad_skin_bones(mdl)
     planes_fixed = fix_face_planes(mdl)
-    dangly_demoted = demote_dangly(mdl)
+    dangly_kept = count_dangly(mdl) if keep_dangly else 0
+    dangly_demoted = demote_unless_kept(mdl, keep_dangly)
+    if dangly_kept:
+        warnings.append(f"{dangly_kept} danglymesh node(s) kept by --keep-dangly: needs the pykotor_k2_dangly patch in "
+                        "the venv, else the writer emits garbage dangly data")
     if dangly_demoted:
         warnings.append(f"{dangly_demoted} danglymesh node(s) written as plain trimesh (pykotor cannot write dangly data); "
                         "cloth/hair will not sway")
@@ -764,6 +869,10 @@ def convert(args: argparse.Namespace) -> dict:
         writer.synth_zero_uv = synth
         writer.keep_zero_tangents = bool(args.keep_zero_tangents)
         writer.write()
+        # Chain supernode numbering rewrites the MDL in place; everything below (compare, ledger sha, manifest sizes)
+        # then sees the final bytes. A SupernodeError lands in the cleanup below: outputs and ledger rows removed.
+        sn_info = supernode_pass(out_mdl, sn_mode, ChainResolver(pk, sn_dirs, k2_held.get("inst"))
+                                 if sn_mode == "chain" else None)
         k2_mdl_bytes, k2_mdx_bytes = out_mdl.read_bytes(), out_mdx.read_bytes()
         back = pk.read_mdl(k2_mdl_bytes, source_ext=k2_mdx_bytes, size_ext=len(k2_mdx_bytes))
         out = summarize(back, binary_mdx_strides(pk, k2_mdl_bytes, k2_mdx_bytes))
@@ -785,6 +894,11 @@ def convert(args: argparse.Namespace) -> dict:
                 out_dir.rmdir()
         raise
 
+    if sn_info["origin"] == "override":
+        msg = (f"supermodel {sn_info['supermodel']!r} was read from the K2 Override folder (a user-modded file): "
+               "the supernode numbers follow that file, not vanilla K2")
+        print(f"WARNING: {msg}", file=sys.stderr, flush=True)
+        warnings.append(msg)
     results, detail = compare(src, out, tex_map, model_name=new_resref, root_renamed=root_renamed,
                               allow_zero_tangent_drop=not args.keep_zero_tangents)
     zero_cleared = 0 if args.keep_zero_tangents else sum(zero_tangent_cleared(src["meshes"], out["meshes"]))
@@ -808,6 +922,8 @@ def convert(args: argparse.Namespace) -> dict:
         "bones16_slots_zeroed": padded_slots,
         "face_planes_recomputed": planes_fixed,
         "dangly_demoted": dangly_demoted,
+        "keep_dangly": keep_dangly,
+        "supernode": sn_info,
         "k2_collision_checked": k2_checked,
         "k2_collision": k2_collision,
         "synth_zero_uv": synth,
@@ -873,6 +989,16 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--keep-zero-tangents", action="store_true",
                    help="keep a flagged all-zero tangent block (flag and rows written as-is) and apply the strict "
                         "tangent compare; default drops such blocks and counts them in tangent_zero_cleared")
+    p.add_argument("--supernode", choices=SUPERNODE_MODES, default="legacy",
+                   help="legacy (default): pykotor numbering, bytes unchanged. chain: rewrite the node supernode "
+                        "u16s and the geometry total with K2 supermodel-chain numbering (MDLOps rules); a missing "
+                        "supermodel is an error")
+    p.add_argument("--supermodel-dir", action="append", default=[], metavar="DIR",
+                   help="with --supernode chain, repeatable: directory holding <supermodel>.mdl (case-insensitive), "
+                        "searched in order before the K2 install's Override and chitin/modules")
+    p.add_argument("--keep-dangly", action="store_true",
+                   help="keep danglymesh nodes instead of demoting them to plain trimesh; REQUIRES the "
+                        "pykotor_k2_dangly patch in the venv (stock pykotor writes garbage dangly data). Default off")
     return p
 
 

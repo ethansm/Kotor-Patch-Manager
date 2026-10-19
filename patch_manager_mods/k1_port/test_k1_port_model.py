@@ -912,6 +912,206 @@ def test_demote_dangly_clears_only_dangly_nodes():
     assert pk.demote_dangly(mdl) == 0, "second run must be a no-op"
 
 
+# ---------------------------------------------------------------- supernode pass (chain numbering)
+
+def _syn_mdl(tree, super_name="NULL", total=None):
+    """Minimal binary MDL for k1_port_mdl_supernode: header 208 bytes, name table, 80-byte node headers.
+    tree = (name, stored_supernode, [children]); node index = pre-order position. Stored pointers are abs - 12."""
+    buf = bytearray(208)
+
+    def alloc(n):
+        while len(buf) % 4:
+            buf.append(0)
+        off = len(buf)
+        buf.extend(bytes(n))
+        return off
+
+    flat = []
+
+    def collect(t):
+        flat.append(t)
+        for c in t[2]:
+            collect(c)
+
+    collect(tree)
+    offs = []
+    for t in flat:
+        o = alloc(len(t[0]) + 1)
+        buf[o:o + len(t[0])] = t[0].encode("latin1")
+        offs.append(o)
+    arr = alloc(4 * len(flat))
+    for i, o in enumerate(offs):
+        struct.pack_into("<I", buf, arr + 4 * i, o - 12)
+    struct.pack_into("<I", buf, 196, arr - 12)
+    struct.pack_into("<II", buf, 200, len(flat), len(flat))
+    counter = [0]
+
+    def emit(t):
+        idx = counter[0]
+        counter[0] += 1
+        off = alloc(80)
+        struct.pack_into("<HHH", buf, off, 1, t[1], idx)
+        kids = [emit(c) for c in t[2]]
+        if kids:
+            ca = alloc(4 * len(kids))
+            for i, k in enumerate(kids):
+                struct.pack_into("<I", buf, ca + 4 * i, k - 12)
+            struct.pack_into("<I", buf, off + 44, ca - 12)
+            struct.pack_into("<II", buf, off + 48, len(kids), len(kids))
+        return off
+
+    struct.pack_into("<I", buf, 52, emit(tree) - 12)
+    struct.pack_into("<i", buf, 56, len(flat) if total is None else total)
+    buf[148:180] = super_name.encode("latin1").ljust(32, b"\0")
+    struct.pack_into("<I", buf, 4, len(buf) - 12)
+    return bytes(buf)
+
+
+# supermodel: root(0) -> a(5) -> a1(7), b(9); stored total 40
+SYN_SUPER = _syn_mdl(("Root", 0, [("A", 5, [("A1", 7, [])]), ("B", 9, [])]), total=40)
+# child as pykotor writes it: supernode = own index, total = own node count
+SYN_CHILD = _syn_mdl(("root2", 0, [("a", 1, [("a1", 2, [])]), ("zed", 3, [("zkid", 4, [])])]), super_name="S_Syn")
+
+
+def _fake_pk():
+    return _ns(SearchLocation=_ns(OVERRIDE="OV", CHITIN="CH", MODULES="MO"), ResourceType=_ns(MDL="MDL"))
+
+
+class _FakeInst:
+    """Stands in for a pykotor Installation: resource(name, type, locations) -> object with .data, or None."""
+
+    def __init__(self, table):
+        self.table, self.calls = table, []
+
+    def resource(self, name, rtype, where):
+        self.calls.append((name, tuple(where)))
+        for w in where:
+            if (name, w) in self.table:
+                return _ns(data=self.table[(name, w)])
+        return None
+
+
+def _numbering(mdl):
+    import k1_port_mdl_supernode as ksn
+    return [n.sn for n in ksn.parse_tree(mdl).nodes]
+
+
+def test_supernode_legacy_is_a_byte_no_op():
+    pk = _import_model()
+    with workdir() as root:
+        f = root / "m.mdl"
+        f.write_bytes(SYN_CHILD)
+        calls = []
+        rec = pk.supernode_pass(f, "legacy", lambda name: calls.append(name))
+        assert f.read_bytes() == SYN_CHILD and calls == [], "legacy must not touch the file or call the resolver"
+        assert rec["mode"] == "legacy" and rec["origin"] is None and rec["total_after"] is None, rec
+
+
+def test_supernode_chain_renumbers_with_a_supermodel_dir():
+    pk = _import_model()
+    with workdir() as root:
+        sup = root / "sup"
+        sup.mkdir()
+        (sup / "S_SYN.MDL").write_bytes(SYN_SUPER)  # case-insensitive file name
+        f = root / "m.mdl"
+        f.write_bytes(SYN_CHILD)
+        res = pk.ChainResolver(_fake_pk(), [sup], None)
+        rec = pk.supernode_pass(f, "chain", res)
+        out = f.read_bytes()
+        # root->0, a->5, a1->7 (matched), zed unmatched -> max(9)+1 = 10, zkid below it -> idx 4 + 40 + 1 = 45
+        assert _numbering(out) == [0, 5, 7, 10, 45], _numbering(out)
+        assert rec["mode"] == "chain" and rec["supermodel"] == "S_Syn", rec
+        assert rec["origin"] == f"dir:{sup / 'S_SYN.MDL'}", rec
+        assert rec["supermodel_sha256"] == hashlib.sha256(SYN_SUPER).hexdigest(), rec
+        assert rec["nodes_changed"] == 4 and rec["total_before"] == 5 and rec["total_after"] == 5 + 41, rec
+        assert len(out) == len(SYN_CHILD)
+        diff = {i for i, (a, b) in enumerate(zip(SYN_CHILD, out)) if a != b}
+        import k1_port_mdl_supernode as ksn
+        allowed = {n.off + k for n in ksn.parse_tree(SYN_CHILD).nodes for k in (2, 3)} | {56, 57}
+        assert diff and diff <= allowed, sorted(diff - allowed)
+        assert not ksn.mismatches(out, res)["mismatches"]
+
+
+def test_supernode_dir_beats_override_beats_install():
+    pk = _import_model()
+    other = _syn_mdl(("Root", 0, [("A", 1, [])]), total=2)  # a different supermodel, so a wrong pick shows in the numbers
+    with workdir() as root:
+        sup = root / "sup"
+        sup.mkdir()
+        (sup / "s_syn.mdl").write_bytes(SYN_SUPER)
+        inst = _FakeInst({("s_syn", "OV"): other, ("s_syn", "CH"): other})
+        res = pk.ChainResolver(_fake_pk(), [sup], inst)
+        assert res("S_Syn") == SYN_SUPER and res.origins["s_syn"].startswith("dir:") and inst.calls == []
+        res2 = pk.ChainResolver(_fake_pk(), [], inst)
+        assert res2("s_syn") == other and res2.origins["s_syn"] == "override"
+        assert inst.calls == [("s_syn", ("OV",))], "the install must not be searched past a hit"
+        inst3 = _FakeInst({("s_syn", "MO"): other})
+        res3 = pk.ChainResolver(_fake_pk(), [], inst3)
+        assert res3("s_syn") == other and res3.origins["s_syn"] == "install"
+        assert [c[1] for c in inst3.calls] == [("OV",), ("CH", "MO")], inst3.calls
+
+
+def test_supernode_missing_supermodel_raises_and_leaves_file_alone():
+    pk = _import_model()
+    import k1_port_mdl_supernode as ksn
+    with workdir() as root:
+        f = root / "m.mdl"
+        f.write_bytes(SYN_CHILD)
+        for res in (pk.ChainResolver(_fake_pk(), [root], None), pk.ChainResolver(_fake_pk(), [], _FakeInst({}))):
+            try:
+                pk.supernode_pass(f, "chain", res)
+            except ksn.SupernodeError as exc:
+                assert "s_syn" in str(exc).lower() and "--supermodel-dir" in str(exc), exc
+            else:
+                raise AssertionError("missing supermodel must raise SupernodeError")
+            assert f.read_bytes() == SYN_CHILD
+
+
+def test_supernode_chain_without_a_supermodel_is_the_identity():
+    pk = _import_model()
+    plain = _syn_mdl(("root", 0, [("a", 1, [])]), super_name="NULL")
+    with workdir() as root:
+        f = root / "m.mdl"
+        f.write_bytes(plain)
+        rec = pk.supernode_pass(f, "chain", pk.ChainResolver(_fake_pk(), [], None))
+        assert f.read_bytes() == plain and rec["supermodel"] is None and rec["origin"] is None, rec
+
+
+def test_supernode_arg_rules():
+    pk = _import_model()
+    with workdir() as root:
+        a = lambda **kw: _ns(**kw)  # noqa: E731
+        assert pk.check_supernode_args(a()) == ("legacy", [])
+        assert pk.check_supernode_args(a(supernode="chain", supermodel_dir=[str(root)])) == ("chain", [root])
+        for bad in (a(supernode="chain", supermodel_dir=[str(root / "nope")]),
+                    a(supernode="legacy", supermodel_dir=[str(root)]),
+                    a(supernode="bogus")):
+            try:
+                pk.check_supernode_args(bad)
+            except pk.Rejected:
+                continue
+            raise AssertionError(f"expected Rejected for {bad}")
+
+
+def test_keep_dangly_skips_the_demotion():
+    pk = _import_model()
+    cloth = _ns(children=[], skin=None, mesh=None, dangly=_ns(constraints=[1]))
+    mdl = _tree(cloth)
+    assert pk.count_dangly(mdl) == 1
+    assert pk.demote_unless_kept(mdl, True) == 0 and cloth.dangly is not None, "--keep-dangly must not demote"
+    assert pk.demote_unless_kept(mdl, False) == 1 and cloth.dangly is None
+
+
+def test_supernode_and_keep_dangly_flags_are_parsed_with_legacy_defaults():
+    pk = _import_model()
+    p = pk.build_parser()
+    base = ["--resref", "x", "--tex-map", "a=b", "--out-dir", "o"]
+    d = p.parse_args(base)
+    assert d.supernode == "legacy" and d.supermodel_dir == [] and d.keep_dangly is False
+    c = p.parse_args(base + ["--supernode", "chain", "--supermodel-dir", "d1", "--supermodel-dir", "d2", "--keep-dangly"])
+    assert c.supernode == "chain" and c.supermodel_dir == ["d1", "d2"] and c.keep_dangly is True
+
+
 def _import_model():
     spec = importlib.util.spec_from_file_location("k1_port_model_mod", CLI)
     mod = importlib.util.module_from_spec(spec)
@@ -1009,6 +1209,188 @@ def test_supermodel_map_unmatched_warns_and_bad_entries_refused():
             assert_refused(r, root)
 
 
+# ---------------------------------------------------------------- supernode chain through the CLI
+
+def _load_validate():
+    spec = importlib.util.spec_from_file_location("kv_model_test", HERE / "k1_port_validate.py")
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules["kv_model_test"] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _put_supermodel(root, name="s_syn", data=None, sub="sup"):
+    d = root / sub
+    d.mkdir(exist_ok=True)
+    (d / f"{name}.mdl").write_bytes(data if data is not None else SYN_SUPER_PK)
+    return d
+
+
+# supermodel for the pykotor-written pack model (root k1p_root -> k1p_body, k1p_head): body matches, head does not
+SYN_SUPER_PK = _syn_mdl(("anyroot", 0, [("k1p_body", 3, []), ("other", 5, [])]), total=9)
+
+
+def _convert(root, out_name, extra=(), supermodel="S_Syn", k2=None, meshes=TWO_MESH):
+    pack, _ = make_pack(root, meshes, supermodel=supermodel)
+    return run_cli(root, pack, "k1p_test", ["n_testtex=k1p_new"], out_dir=root / out_name, extra=list(extra), k2=k2)
+
+
+def _diff_offsets(a, b):
+    return {i for i, (x, y) in enumerate(zip(a, b)) if x != y}
+
+
+def test_supernode_default_is_legacy_and_bytes_match_an_explicit_legacy_run():
+    import k1_port_mdl_supernode as ksn
+    with workdir() as root:
+        m1 = manifest_of(_convert(root, "o1"))
+        assert m1["supernode"]["mode"] == "legacy" and m1["supernode"]["origin"] is None, m1["supernode"]
+        assert m1["keep_dangly"] is False
+        (root / "ledger.json").unlink()
+        pack = root / "pack"
+        m2 = manifest_of(run_cli(root, pack, "k1p_test", ["n_testtex=k1p_new"], out_dir=root / "o2",
+                                 extra=["--supernode", "legacy"]))
+        assert (root / "o1" / "k1p_test.mdl").read_bytes() == (root / "o2" / "k1p_test.mdl").read_bytes()
+        # pykotor numbering: supernode == own index, total == own node count
+        tree = ksn.parse_tree((root / "o1" / "k1p_test.mdl").read_bytes())
+        assert [n.sn for n in tree.nodes] == [n.idx for n in tree.nodes] and tree.total == len(tree.nodes)
+        assert m2["supernode"]["mode"] == "legacy"
+
+
+def test_supernode_chain_differs_only_at_supernode_fields_and_total():
+    import k1_port_mdl_supernode as ksn
+    with workdir() as root:
+        sup = _put_supermodel(root)
+        legacy = manifest_of(_convert(root, "leg"))
+        (root / "ledger.json").unlink()
+        pack = root / "pack"
+        chain = manifest_of(run_cli(root, pack, "k1p_test", ["n_testtex=k1p_new"], out_dir=root / "chn",
+                                    extra=["--supernode", "chain", "--supermodel-dir", str(sup)]))
+        a = (root / "leg" / "k1p_test.mdl").read_bytes()
+        b = (root / "chn" / "k1p_test.mdl").read_bytes()
+        assert len(a) == len(b) and a != b
+        allowed = {n.off + k for n in ksn.parse_tree(a).nodes for k in (2, 3)} | {56, 57, 58, 59}
+        diff = _diff_offsets(a, b)
+        assert diff <= allowed, f"bytes changed outside node+2 / total: {sorted(diff - allowed)[:10]}"
+        assert (root / "leg" / "k1p_test.mdx").read_bytes() == (root / "chn" / "k1p_test.mdx").read_bytes(), "MDX changed"
+        tree = ksn.parse_tree(b)
+        # root->supermodel root (0), body matches (3), head is unmatched -> max(5)+1 = 6; total 3 + (9 + 1)
+        assert [n.sn for n in tree.nodes] == [0, 3, 6], [n.sn for n in tree.nodes]
+        assert tree.total == 13, tree.total
+        rec = chain["supernode"]
+        assert rec["mode"] == "chain" and rec["supermodel"].lower() == "s_syn", rec
+        assert rec["origin"] == f"dir:{sup / 's_syn.mdl'}", rec
+        assert rec["supermodel_sha256"] == hashlib.sha256(SYN_SUPER_PK).hexdigest(), rec
+        assert rec["total_before"] == 3 and rec["total_after"] == 13 and rec["nodes_changed"] == 2, rec
+        assert legacy["k2_mdl_bytes"] == chain["k2_mdl_bytes"]
+        assert chain["match"] is True, chain.get("mismatch_detail")
+        # the ledger and the manifest see the FINAL bytes
+        row = next(e for e in ledger_entries(root) if e["file"].endswith("chn/k1p_test.mdl"))
+        assert row["sha256"] == hashlib.sha256(b).hexdigest(), "ledger sha is not the chain-numbered file"
+        kv = _load_validate()
+        found = kv.validate(b, (root / "chn" / "k1p_test.mdx").read_bytes(), game="K2", require_lower_k1p=True)
+        base = kv.validate(a, (root / "leg" / "k1p_test.mdx").read_bytes(), game="K2", require_lower_k1p=True)
+        assert [f.code for f in found] == [f.code for f in base], (found, base)
+
+
+def test_supernode_chain_missing_supermodel_exits_1_and_writes_nothing():
+    with workdir() as root:
+        k2 = make_fake_k2(root)
+        r = _convert(root, "out", extra=["--supernode", "chain"], supermodel="s_nowhere", k2=k2)
+        assert r.returncode == 1, f"rc={r.returncode} stderr={r.stderr[-400:]}"
+        assert "s_nowhere" in r.stderr and "SupernodeError" in r.stderr, r.stderr[-400:]
+        out = root / "out"
+        assert not out.exists() or not any(out.iterdir()), "failed run left output files"
+        assert not any(e["file"].startswith(str(out)) for e in ledger_entries(root)) if (root / "ledger.json").exists() else True
+
+
+def test_supernode_chain_bad_arguments_refused_before_writing():
+    with workdir() as root:
+        r = _convert(root, "out", extra=["--supernode", "chain", "--supermodel-dir", str(root / "nope")])
+        assert r.returncode == 2 and "not a directory" in r.stderr, (r.returncode, r.stderr[-300:])
+        assert not (root / "out").exists()
+        r = _convert(root, "out", extra=["--supermodel-dir", str(root)])
+        assert r.returncode == 2 and "--supernode chain" in r.stderr, (r.returncode, r.stderr[-300:])
+
+
+def test_supernode_chain_override_supermodel_warns_and_dir_wins():
+    with workdir() as root:
+        k2 = make_fake_k2(root)
+        (k2 / "Override" / "s_syn.mdl").write_bytes(SYN_SUPER_PK)
+        m = manifest_of(_convert(root, "ov", extra=["--supernode", "chain"], k2=k2))
+        rec = m["supernode"]
+        assert rec["origin"] == "override", rec
+        r = _convert(root, "ov2", extra=["--supernode", "chain"], k2=k2)  # only to read stderr of a fresh run
+        assert "WARNING" in r.stderr and "Override" in r.stderr, r.stderr[-400:]
+        assert any("Override" in w for w in m["warnings"]), m["warnings"]
+        assert rec["supermodel_sha256"] == hashlib.sha256(SYN_SUPER_PK).hexdigest()
+        # a --supermodel-dir copy wins over Override, and then no override warning is printed
+        other = _syn_mdl(("anyroot", 0, [("k1p_body", 1, [])]), total=4)
+        sup = _put_supermodel(root, data=other, sub="sup2")
+        (root / "ledger.json").unlink()
+        shutil.rmtree(root / "ov"), shutil.rmtree(root / "ov2")
+        r = _convert(root, "ov3", extra=["--supernode", "chain", "--supermodel-dir", str(sup)], k2=k2)
+        m3 = manifest_of(r)
+        assert m3["supernode"]["origin"].startswith("dir:") and "WARNING" not in r.stderr, (m3["supernode"], r.stderr[-300:])
+        assert m3["supernode"]["supermodel_sha256"] == hashlib.sha256(other).hexdigest()
+
+
+def test_keep_dangly_flag_is_recorded_and_default_demotes():
+    with workdir() as root:
+        m = manifest_of(_convert(root, "kd", extra=["--keep-dangly"], supermodel=""))
+        assert m["keep_dangly"] is True and m["dangly_demoted"] == 0, m
+
+
+def test_golden_n_commm_chain_supernode_matches_s_female02():
+    """Real K1 n_commm converted twice (legacy, chain) against the real K2 install: the chain output carries
+    the K2 supermodel-chain numbering of vanilla s_female02 (k1_port_mdl_supernode.mismatches is empty), differs
+    from legacy only at node+2 / total, and the MDX is byte-identical."""
+    import k1_port_mdl_supernode as ksn
+    k1 = Path(os.path.expanduser(os.environ.get("K1_INSTALL", "~/.local/share/Steam/steamapps/common/swkotor")))
+    if not (k1 / "chitin.key").is_file() or not (REAL_K2 / "chitin.key").is_file():
+        raise Skip("K1 or K2 install not found")
+    vspec = importlib.util.spec_from_file_location("tv_golden_sn", HERE / "test_k1_port_validate.py")
+    tv = importlib.util.module_from_spec(vspec)
+    sys.modules["tv_golden_sn"] = tv
+    vspec.loader.exec_module(tv)
+    sup_bytes = next((m for n, m, x in tv._vanilla_k2_pairs() if n == "s_female02"), None)
+    assert sup_bytes is not None, "s_female02 missing from K2 chitin"
+
+    def conv(root, out):
+        r = subprocess.run([K1PORT_PY, str(CLI), "--install-k1", str(k1), "--resref", "n_commm", "--out-dir",
+                            str(root / out), "--k2-install", str(REAL_K2), "--new-resref", "k1p_commm",
+                            "--source-id", "vanilla_k1", *CONV_EXTRA, "--tex-map", "N_CommM04=k1p_commm04"],
+                           capture_output=True, text=True, timeout=600, env=test_env(root / "ledger.json"), cwd=root)
+        return manifest_of(r)
+
+    with workdir() as root:
+        CONV_EXTRA.clear()
+        legacy = conv(root, "leg")
+        (root / "ledger.json").unlink()
+        CONV_EXTRA[:] = ["--supernode", "chain"]
+        try:
+            chain = conv(root, "chn")
+        finally:
+            CONV_EXTRA.clear()
+        a, b = (root / "leg" / "k1p_commm.mdl").read_bytes(), (root / "chn" / "k1p_commm.mdl").read_bytes()
+        rec = chain["supernode"]
+        assert rec["supermodel"].lower() == "s_female02" and rec["origin"] in ("install", "override"), rec
+        if rec["origin"] == "override":  # the player's Override holds its own s_female02 (the converter warned): use it
+            ov = next(f for f in (REAL_K2 / "override").iterdir() if f.name.lower() == "s_female02.mdl")
+            sup_bytes = ov.read_bytes()
+            assert any("Override" in w for w in chain["warnings"]), chain["warnings"]
+        assert rec["supermodel_sha256"] == hashlib.sha256(sup_bytes).hexdigest(), rec
+        res = ksn.mismatches(b, lambda name: sup_bytes)
+        assert not res["mismatches"] and res["total_ok"], res["mismatches"][:5]
+        allowed = {n.off + k for n in ksn.parse_tree(a).nodes for k in (2, 3)} | {56, 57, 58, 59}
+        assert _diff_offsets(a, b) <= allowed
+        assert ksn.mismatches(a, lambda name: sup_bytes)["mismatches"], "legacy output unexpectedly already has chain numbering"
+        assert (root / "leg" / "k1p_commm.mdx").read_bytes() == (root / "chn" / "k1p_commm.mdx").read_bytes()
+        assert legacy["supernode"]["mode"] == "legacy" and chain["match"] is True
+
+
+CONV_EXTRA: list = []
+
+
 PURE_TESTS = [
     ("identical_skin_and_tangent_summaries_all_true", test_identical_skin_and_tangent_summaries_all_true),
     ("differing_bonemap_flags_skin_bone_poses", test_differing_bonemap_flags_skin_bone_poses),
@@ -1028,6 +1410,17 @@ PURE_TESTS = [
     ("pad_skin_bones_zeroes_only_unused_slots", test_pad_skin_bones_zeroes_only_unused_slots),
     ("pad_skin_bones_leaves_full_and_empty_skins_alone", test_pad_skin_bones_leaves_full_and_empty_skins_alone),
     ("fix_face_planes_recomputes_float_distance", test_fix_face_planes_recomputes_float_distance),
+    ("demote_dangly_clears_only_dangly_nodes", test_demote_dangly_clears_only_dangly_nodes),
+    ("supernode_legacy_is_a_byte_no_op", test_supernode_legacy_is_a_byte_no_op),
+    ("supernode_chain_renumbers_with_a_supermodel_dir", test_supernode_chain_renumbers_with_a_supermodel_dir),
+    ("supernode_dir_beats_override_beats_install", test_supernode_dir_beats_override_beats_install),
+    ("supernode_missing_supermodel_raises_and_leaves_file_alone",
+     test_supernode_missing_supermodel_raises_and_leaves_file_alone),
+    ("supernode_chain_without_a_supermodel_is_the_identity", test_supernode_chain_without_a_supermodel_is_the_identity),
+    ("supernode_arg_rules", test_supernode_arg_rules),
+    ("keep_dangly_skips_the_demotion", test_keep_dangly_skips_the_demotion),
+    ("supernode_and_keep_dangly_flags_are_parsed_with_legacy_defaults",
+     test_supernode_and_keep_dangly_flags_are_parsed_with_legacy_defaults),
 ]
 
 
@@ -1067,6 +1460,16 @@ TESTS = [
     ("supermodel_map_unmatched_warns_and_bad_entries_refused", test_supermodel_map_unmatched_warns_and_bad_entries_refused),
     ("golden_n_commm_matches_k2_vanilla_skin_and_planes", test_golden_n_commm_matches_k2_vanilla_skin_and_planes),
     ("skin_round_trip_keeps_bones16_bonemap_and_weights", test_skin_round_trip_keeps_bones16_bonemap_and_weights),
+    ("supernode_default_is_legacy_and_bytes_match_an_explicit_legacy_run",
+     test_supernode_default_is_legacy_and_bytes_match_an_explicit_legacy_run),
+    ("supernode_chain_differs_only_at_supernode_fields_and_total",
+     test_supernode_chain_differs_only_at_supernode_fields_and_total),
+    ("supernode_chain_missing_supermodel_exits_1_and_writes_nothing",
+     test_supernode_chain_missing_supermodel_exits_1_and_writes_nothing),
+    ("supernode_chain_bad_arguments_refused_before_writing", test_supernode_chain_bad_arguments_refused_before_writing),
+    ("supernode_chain_override_supermodel_warns_and_dir_wins", test_supernode_chain_override_supermodel_warns_and_dir_wins),
+    ("keep_dangly_flag_is_recorded_and_default_demotes", test_keep_dangly_flag_is_recorded_and_default_demotes),
+    ("golden_n_commm_chain_supernode_matches_s_female02", test_golden_n_commm_chain_supernode_matches_s_female02),
 ]
 
 
