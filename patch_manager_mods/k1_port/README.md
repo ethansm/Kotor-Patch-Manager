@@ -188,7 +188,7 @@ The asset-vfs 2DA pool holds 1024 cells since asset-vfs 0.1.3-dev (256 before), 
 
 ### Add a recipe
 
-1. Copy `patch_manager_mods/k1_port/recipes/carth.toml` (pykotor) or `recipes/juhani.toml` (mdlops) to `recipes/<id>.toml`. `<id>` matches `[a-z0-9_]{1,31}`.
+1. Copy `patch_manager_mods/k1_port/recipes/carth.toml` (mdlops, with `[audio]`) or `recipes/juhani.toml` (mdlops) to `recipes/<id>.toml`. `<id>` matches `[a-z0-9_]{1,31}`.
 2. Set the K1 model and texture names, and the K2 names the importer writes.
 3. Leave out row numbers. The builder assigns them.
 4. Append `<id>` to `characters` in your private config.
@@ -206,7 +206,7 @@ Recipe keys:
 | `[character]` | `id`, `display_name`, `utc`, `soundset`, `template_row`, `gender` (required); `tag`, `dlg` (optional) | `display_name` is 1 to 63 printable ASCII characters. `utc` and `dlg` are resrefs `[a-z0-9_]{1,16}`. `soundset` and `template_row` are integers (`soundset` cannot be `"auto"`). `gender` is 0 or 1. |
 | `[models]` | `converter` (`pykotor` or `mdlops`), `body_a` (required), `body_b`, `head` | Each model is `{ k1 = "...", k2 = "..." }`. The builder needs `head`. |
 | `[[textures]]` | `k1`, `k2`, `force_opaque`, `txi` | `force_opaque` is true or false. `txi` is text, up to 1024 characters. List every texture the K1 meshes use: each model is ingested with the recipe textures its mesh references (`k1_port_resolve.py --scan`), and a mesh texture missing from the recipe fails validation. |
-| `[audio]` | reserved | Not read. |
+| `[audio]` | `k1_ssf`, `k2_ssf` (both required if the table exists) | Imports the character's own K1 barks. `k1_ssf` is the K1 soundset file (for example `p_carth`); `k2_ssf` is the SSF name the pack serves. The builder checks that the K1 SSF's strrefs carry the same voice names in the K2 `dialog.tlk`, copies the K1 voice wavs from `<K1>/streamsounds/` (read only) into the pack as streamed assets, and adds a new `soundset.2da` row that the UTC uses. `character.soundset` stays required as the fallback voice. Dialog voice-over, lips and DLG are not imported. |
 
 ## Caveat
 
