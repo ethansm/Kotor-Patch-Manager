@@ -401,6 +401,56 @@ inline CfgRaw stepSetting(CfgRaw c, int s, int dir) {
     return sanitize(c);
 }
 
+// ---- staged edits (0.4.3): the page edits a pending CfgRaw; Save writes the changed keys and applies them, Reset / Defaults only move the pending copy.
+// Alpha rows are sliders: a cursor x over the track [trackX, trackX + trackW] maps to whole hundredths on the 0.05 grid, clamped 0..100.
+inline bool settingIsSlider(int s) { return settingIsFloat(s); }
+inline int sliderHundredths(int x, int trackX, int trackW) {
+    if (trackW <= 0 || x <= trackX) return 0;
+    if (x >= trackX + trackW) return 100;
+    const long raw = (static_cast<long>(x - trackX) * 100 + trackW / 2) / trackW;
+    return clampInt(static_cast<int>((raw + kAlphaStepHundredths / 2) / kAlphaStepHundredths) * kAlphaStepHundredths, 0, 100);
+}
+// Filled part of a slider track in px for value v (0..1, NaN -> 0).
+inline int sliderFillPx(float v, int trackW) {
+    if (trackW <= 0) return 0;
+    v = clampFloat(v, 0.0f, 1.0f, 0.0f);
+    return clampInt(static_cast<int>(v * static_cast<float>(trackW) + 0.5f), 0, trackW);
+}
+// c with an alpha setting moved to `hundredths` (0..100), sanitized. Other settings: unchanged.
+inline CfgRaw setSliderValue(CfgRaw c, int s, int hundredths) {
+    const float v = static_cast<float>(clampInt(hundredths, 0, 100)) / 100.0f;
+    if (s == S_BackingAlpha) c.backingAlpha = v;
+    else if (s == S_DrainAlpha) c.drainAlpha = v;
+    return sanitize(c);
+}
+// dst with page setting s taken from src.
+inline CfgRaw copySetting(CfgRaw dst, const CfgRaw& src, int s) {
+    switch (s) {
+        case S_Enabled:      dst.enabled = src.enabled; break;
+        case S_MaxIcons:     dst.maxIcons = src.maxIcons; break;
+        case S_IconSize:     dst.iconSize = src.iconSize; break;
+        case S_Gap:          dst.gap = src.gap; break;
+        case S_Spacing:      dst.spacing = src.spacing; break;
+        case S_Backing:      dst.backing = src.backing; break;
+        case S_BackingAlpha: dst.backingAlpha = src.backingAlpha; break;
+        case S_DrainAlpha:   dst.drainAlpha = src.drainAlpha; break;
+        default: break;
+    }
+    return dst;
+}
+// True when any page setting differs (Verbose, tiers, BackingPad and ForceTier are INI-only and never count).
+inline bool pageDiffers(const CfgRaw& a, const CfgRaw& b) {
+    for (int s = 0; s < S_Count; ++s) if (!sameSetting(a, b, s)) return true;
+    return false;
+}
+// `keep` with every page setting at its default (INI-only fields stay as they are).
+inline CfgRaw pageDefaults(const CfgRaw& keep) {
+    const CfgRaw d;
+    CfgRaw r = keep;
+    for (int s = 0; s < S_Count; ++s) r = copySetting(r, d, s);
+    return r;
+}
+
 // The text written to the INI for setting s: integers "%d", alphas "%.2f". cap < 1 or a null out is a no-op; an unknown s writes "".
 inline void formatIniValue(int s, const CfgRaw& c, char* out, int cap) {
     if (!out || cap < 1) return;

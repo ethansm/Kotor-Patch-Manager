@@ -292,9 +292,16 @@ static void postT(const TxCre* target, DWORD dtMs = 1) { post(postCtx(tPanel, ta
 
 static Config tBaseCfg;
 // A clean HUD: baseline config, empty log, a new panel, one BUILD. Controls are read back from the Create records.
+// The pre-0.4.3 "one click applies" behaviour: one pending step followed by Save. The staged edit / Reset / Defaults paths have their own scenario.
+static int logCount(const char* needle);
+// After a test pokes g_cfg directly: make the page's saved / pending copies follow it.
+static void syncEdit() { g_saved = currentRaw(g_cfg.maxIcons); g_edit = g_saved; }
+static void applySetting(int s, int dir) { editSetting(s, dir); saveEdits(); }
+
 static void fresh(bool expectBuilt = true) {
     g_cfg = tBaseCfg;
-    g_pendMax = g_cfg.maxIcons;
+    g_saved = currentRaw(g_cfg.maxIcons);
+    g_edit = g_saved;
     g_nWarned = 0;
     g_stubIniWriteFails = false;
     stubIni().clear();
@@ -305,7 +312,7 @@ static void fresh(bool expectBuilt = true) {
     doBuild(tPanel);
     tCtl.clear();
     for (const Rec& r : L()) if (r.op == trec::O_Create && r.c) tCtl.push_back(r.c);
-    if (expectBuilt) KT_CHECK_EQ(tCtl.size(), static_cast<size_t>(1 + 3 * g_cfg.maxIcons));
+    if (expectBuilt) KT_CHECK_EQ(tCtl.size(), static_cast<size_t>(1 + 3 * PoolSlots));   // the pool is always built at full size (0.4.4)
     L().clear();
 }
 
@@ -318,10 +325,10 @@ static void scenario1_build() {
     const std::vector<Rec> l = L();
     std::vector<uintptr_t> ctl;
     for (const Rec& r : l) if (r.op == trec::O_Create) ctl.push_back(r.c);
-    // 1 pill + 3 slots x (disc, icon, overlay) = 10 labels, each exactly Create -> Vis(false) -> Click(false) -> Append, in that order.
-    KT_CHECK_EQ(l.size(), static_cast<size_t>(40));
-    bool seq = l.size() == 40;
-    for (size_t i = 0; seq && i < 10; ++i) {
+    // 1 pill + PoolSlots (8) slots x (disc, icon, overlay) = 25 labels (the pool is always full size, 0.4.4), each exactly Create -> Vis(false) -> Click(false) -> Append, in that order.
+    KT_CHECK_EQ(l.size(), static_cast<size_t>(100));
+    bool seq = l.size() == 100;
+    for (size_t i = 0; seq && i < 25; ++i) {
         const Rec& cr = l[4 * i]; const Rec& v = l[4 * i + 1]; const Rec& k = l[4 * i + 2]; const Rec& ap = l[4 * i + 3];
         seq = cr.op == trec::O_Create && cr.c && cr.panel == panel && !strcmp(cr.tag, "LBL_QUEUE1") &&
               v.op == trec::O_Vis && v.c == cr.c && !v.flag &&
@@ -330,7 +337,7 @@ static void scenario1_build() {
     }
     KT_CHECK(seq);
     KT_CHECK(allOk());
-    KT_CHECK_EQ(ctl.size(), static_cast<size_t>(10));
+    KT_CHECK_EQ(ctl.size(), static_cast<size_t>(25));
     // Nothing is positioned, filled or shown during BUILD.
     KT_CHECK_EQ(cnt(trec::O_Rect), 0);
     KT_CHECK_EQ(cnt(trec::O_Fill), 0);
@@ -340,13 +347,13 @@ static void scenario1_build() {
     bool hidden = true;
     for (uintptr_t c : ctl) hidden = hidden && !real_gk::isVisible(c) && (tAt<int>(c, real_gk::Ctl_Flags) & real_gk::FlagClickThrough);
     KT_CHECK(hidden);
-    KT_CHECK_EQ(tAt<int>(panel, real_gk::Panel_CtlCount), 10);
+    KT_CHECK_EQ(tAt<int>(panel, real_gk::Panel_CtlCount), 25);
     const uint32_t arr = tAt<uint32_t>(panel, real_gk::Panel_CtlArray);
     bool order = arr != 0;
     for (size_t i = 0; order && i < ctl.size(); ++i) order = tAt<uint32_t>(arr, static_cast<int>(i) * 4) == static_cast<uint32_t>(ctl[i]);
     KT_CHECK(order);
-    KT_CHECK(g_built && g_nSw == 3 && g_panel == static_cast<int32_t>(panel));
-    KT_CHECK(g_pill.c == ctl[0] && g_sw[0].disc.c == ctl[1] && g_sw[0].icon.c == ctl[2] && g_sw[0].over.c == ctl[3] && g_sw[2].over.c == ctl[9]);
+    KT_CHECK(g_built && g_nSw == PoolSlots && g_panel == static_cast<int32_t>(panel));
+    KT_CHECK(g_pill.c == ctl[0] && g_sw[0].disc.c == ctl[1] && g_sw[0].icon.c == ctl[2] && g_sw[0].over.c == ctl[3] && g_sw[2].over.c == ctl[9] && g_sw[7].over.c == ctl[24]);
     // Registered through the fake hud-host with the documented priorities.
     KT_CHECK_EQ(tRegCalls, 2);
     KT_CHECK(tCbBuild == &onHudBuild && tCbPost == &onTargetMenuPost);
@@ -626,7 +633,7 @@ static void scenario7_build_resets() {
     doBuild(panel2);
     std::vector<uintptr_t> newCtl;
     for (const Rec& r : L()) if (r.op == trec::O_Create) newCtl.push_back(r.c);
-    KT_CHECK_EQ(newCtl.size(), static_cast<size_t>(10));
+    KT_CHECK_EQ(newCtl.size(), static_cast<size_t>(25));
     bool touchedOld = false;
     for (const Rec& r : L()) for (uintptr_t o : oldCtl) if (r.c == o) touchedOld = true;
     KT_CHECK(!touchedOld);   // BUILD never writes to the previous pool's labels
@@ -649,13 +656,14 @@ static void scenario7_build_resets() {
     KT_CHECK(allOk());
     // The old pool still shows what it showed (the mod does not touch it any more).
     KT_CHECK(real_gk::isVisible(oldCtl[2]));
-    // Disabled at BUILD: no labels are created at all, and enabling later is "restart needed": a frame stays silent.
+    // Disabled at BUILD (0.4.4): the full pool is still created (hidden), so enabling later works live; a frame draws nothing.
     fresh(false);
     g_cfg.enabled = false;
+    syncEdit();
     L().clear();
     doBuild(tAlloc(0x100));
-    KT_CHECK_EQ(cnt(trec::O_Create), 0);
-    KT_CHECK(!g_built && g_skippedDisabled);
+    KT_CHECK_EQ(cnt(trec::O_Create), 1 + 3 * PoolSlots);
+    KT_CHECK(g_built);
 }
 
 static void scenario8_missing_image() {
@@ -843,46 +851,48 @@ static void scenario11_enabled_and_live_setter() {
     KT_CHECK_EQ(cntOn(trec::O_Rect, iconC(0)), 0);   // the rect cache already holds the 16 px rect
     KT_CHECK_EQ(cntOn(trec::O_Fill, iconC(0)), 0);
 
-    // --- MaxIcons is write-only live: the built pool keeps its size, the INI and the pending value change, the frame is silent.
+    // --- MaxIcons is live too (0.4.4): the pool is always full size, so a Save caps the shown icons at once, with no restart.
     fresh();
     postT(&t);
     L().clear();
     applySetting(esl::S_MaxIcons, +1);
-    KT_CHECK_EQ(g_cfg.maxIcons, 3);
-    KT_CHECK_EQ(g_pendMax, 4);
+    KT_CHECK_EQ(g_cfg.maxIcons, 4);
+    KT_CHECK_EQ(g_saved.maxIcons, 4);
     KT_CHECK_EQ(static_cast<int>(GetPrivateProfileIntA("Strip", "MaxIcons", -1, "")), 4);
-    postT(&t, 1);
-    KT_CHECK_EQ(L().size(), static_cast<size_t>(0));
     char rowTxt[64];
     rowText(esl::S_MaxIcons, rowTxt, static_cast<int>(sizeof rowTxt));
-    KT_CHECK(strstr(rowTxt, "(restart)") != nullptr);
+    KT_CHECK(strstr(rowTxt, "(restart)") == nullptr);
 
-    // --- INI write failure: the live value still applies (Gap), MaxIcons is left unchanged.
+    // --- INI write failure (0.4.3): nothing is applied and the edit stays pending ("Save *"); a later Save with a working INI applies it.
     fresh();
     postT(&t);
     g_stubIniWriteFails = true;
     applySetting(esl::S_Gap, +1);
-    KT_CHECK_EQ(g_cfg.gap, 5);
+    KT_CHECK_EQ(g_cfg.gap, 4);
+    KT_CHECK_EQ(g_saved.gap, 4);
+    KT_CHECK_EQ(g_edit.gap, 5);
+    KT_CHECK(esl::pageDiffers(g_saved, g_edit));
     KT_CHECK_EQ(static_cast<int>(GetPrivateProfileIntA("Strip", "Gap", -1, "")), -1);
-    applySetting(esl::S_MaxIcons, +1);
-    KT_CHECK_EQ(g_pendMax, 3);
+    KT_CHECK_EQ(logCount("INI write FAILED for Gap=5"), 1);
     g_stubIniWriteFails = false;
+    saveEdits();
+    KT_CHECK_EQ(g_cfg.gap, 5);
+    KT_CHECK(!esl::pageDiffers(g_saved, g_edit));
+    KT_CHECK_EQ(static_cast<int>(GetPrivateProfileIntA("Strip", "Gap", -1, "")), 5);
 
-    // --- built-while-disabled: turning Enabled on later needs a restart; the frame stays silent and the row says so.
-    fresh(false);
+    // --- built while disabled (0.4.4): enabling on the page works live; nothing was visible before, the row is shown after, no "(restart)".
+    fresh();
     g_cfg.enabled = false;
-    L().clear();
-    tPanel = tAlloc(0x100);
-    doBuild(tPanel);
-    KT_CHECK(!g_built && g_skippedDisabled);
+    syncEdit();
+    postT(&t);
+    KT_CHECK(!real_gk::isVisible(iconC(0)));
     applySetting(esl::S_Enabled, +1);
     KT_CHECK(g_cfg.enabled);
     rowText(esl::S_Enabled, rowTxt, static_cast<int>(sizeof rowTxt));
-    KT_CHECK(strstr(rowTxt, "(restart)") != nullptr);
+    KT_CHECK(strstr(rowTxt, "(restart)") == nullptr);
     L().clear();
     postT(&t, 1);
-    postT(&t, 300);
-    KT_CHECK_EQ(L().size(), static_cast<size_t>(0));
+    KT_CHECK(real_gk::isVisible(iconC(0)));
 }
 
 // ---------------------------------------------------------------- settings-page preview (0.4.1): fake k2.modconfig@1 / k2.menuui@1
@@ -899,6 +909,7 @@ struct FakeMui {
     bool unlinked = true;                  // Control() answers nullptr for listed custom items (mod-config unlinked them)
     std::string desc;
     std::vector<int> clicks;               // item ids Clicked() answers 1 for, once each
+    std::vector<std::pair<int, void*>> itemCtl;   // engine controls Control() answers for NON-custom items (the slider track / fill / marker)
     void reset() { *this = FakeMui(); }
 } tm;
 static K2ModConfigEntry tRegEntry;
@@ -927,6 +938,7 @@ static int32_t KPATCH_CALL mPaneRect(void*, int32_t which, K2MuiRect* out) {
     return 0;
 }
 static void* KPATCH_CALL mControl(uint32_t, int32_t item) {
+    for (const auto& pr : tm.itemCtl) if (pr.first == item) return pr.second;
     for (size_t i = 0; i < tm.customItem.size(); ++i) if (tm.customItem[i] == item) return tm.unlinked ? nullptr : tm.customCtl[i];
     return nullptr;
 }
@@ -972,15 +984,15 @@ static void scenario12_page_preview() {
     KT_CHECK_EQ(tRegCount, 1);
     KT_CHECK(tRegEntry.build == cbBuild && tRegEntry.enter == cbEnter && tRegEntry.tick == cbTick && tRegEntry.destroy == cbDestroy && tRegEntry.leave == nullptr);
 
-    // --- BUILD: rows first (20 items), then 12 preview labels from LBL_TITLE, listed MUI_NOFREE and NOT appended by the mod; then the split.
+    // --- BUILD: rows first (25 items: 2 toggles, 4 number rows of 3, 2 slider rows of 4, Save/Reset/Defaults), then 12 preview labels from LBL_TITLE, listed MUI_NOFREE and NOT appended by the mod; then the split.
     const uintptr_t panel = pageBuild();
     KT_CHECK(g_pg.panel == reinterpret_cast<void*>(panel) && g_pg.page == 2);
-    KT_CHECK_EQ(tm.addButton + tm.addLabel, 20);
+    KT_CHECK_EQ(tm.addButton + tm.addLabel, 25);
     KT_CHECK_EQ(createsOf("LBL_TITLE"), 12);
     KT_CHECK_EQ(cnt(trec::O_Append), 0);
     KT_CHECK_EQ(tAt<int>(panel, real_gk::Panel_CtlCount), 0);
     KT_CHECK_EQ(tm.addCustom, 12);
-    KT_CHECK_EQ(tm.items, 32);   // 20 rows + 12 preview <= the 40-item page cap
+    KT_CHECK_EQ(tm.items, 37);   // 25 rows + 12 preview <= the 40-item page cap
     bool flagsOk = tm.customFlags.size() == 12;
     for (int f : tm.customFlags) flagsOk = flagsOk && f == MUI_NOFREE;
     KT_CHECK(flagsOk);
@@ -999,6 +1011,10 @@ static void scenario12_page_preview() {
     }
     KT_CHECK(made && hid && style && listedSame);
     KT_CHECK(lastOn(trec::O_Text, pv(0)) && !strcmp(lastOn(trec::O_Text, pv(0))->text, "Sith Assassin"));
+    // The other 11 labels are clones of the Options title: their inherited text ("OPTIONS") must be blanked, or it draws over the icons.
+    bool blank = true;
+    for (int i = 1; i < 12; ++i) blank = blank && lastOn(trec::O_Text, pv(i)) && !strcmp(lastOn(trec::O_Text, pv(i))->text, "");
+    KT_CHECK(blank);
 
     // --- ENTER: mod-config shows every item; the preview then draws the layout previewLayout gives (literals: pane 500,100,300,220, 3 icons).
     modconfigShowAll();
@@ -1035,52 +1051,55 @@ static void scenario12_page_preview() {
     KT_CHECK(onlyClick);
     KT_CHECK(tm.previewPaneCalls >= 2);
 
-    // --- live setter through the page: Gap 4 -> 5 (click on its '>'): the same tick redraws; bh 53 -> block y 183.
+    // --- staged edit through the page: Gap 4 -> 5 (click on its '>'): the same tick redraws the example; the game's g_cfg is untouched until Save; bh 53 -> block y 183.
     tm.clicks.push_back(g_pg.next[esl::S_Gap]);
     L().clear();
     cbTick(2, nullptr);
-    KT_CHECK_EQ(g_cfg.gap, 5);
+    KT_CHECK_EQ(g_edit.gap, 5);
+    KT_CHECK_EQ(g_cfg.gap, 4);
+    KT_CHECK_EQ(g_pg.dirtyShown, 1);
     KT_CHECK_EQ(cntOn(trec::O_Rect, pv(0)), 0);   // the name bar does not move (still y 212): cached
     KT_CHECK(rectEq(lastOn(trec::O_Rect, pv(2)), { 610, 183, 24, 24 }) && rectEq(lastOn(trec::O_Rect, pv(6)), { 666, 183, 24, 24 }));
     KT_CHECK(rectEq(lastOn(trec::O_Rect, pv(3)), { 610, 183, 24, 18 }));
-    // DrainAlpha 0.65 -> 0.70: the overlays take the new alpha.
-    tm.clicks.push_back(g_pg.next[esl::S_DrainAlpha]);
+    // DrainAlpha 0.65 -> 0.70 (a slider value): the overlays take the new alpha.
+    g_edit = esl::setSliderValue(g_edit, esl::S_DrainAlpha, 70);
     L().clear();
     cbTick(2, nullptr);
-    KT_CHECK(g_cfg.drainAlpha == 0.70f);
+    KT_CHECK(g_edit.drainAlpha == 0.70f && g_cfg.drainAlpha == 0.65f);
     KT_CHECK(lastOn(trec::O_Alpha, pv(3)) && lastOn(trec::O_Alpha, pv(3))->f == esl::overlayAlpha(0.70f));
     KT_CHECK(lastOn(trec::O_Alpha, pv(7)) && lastOn(trec::O_Alpha, pv(7))->f == esl::overlayAlpha(0.70f));
     // Backing on: pill (lbl_miscroll_f, grey, BackingAlpha) behind the row; pad 4 -> bh 57, block y 181, name y 214, row y 185, pill {606,181,88,32}.
     tm.clicks.push_back(g_pg.text[esl::S_Backing]);
     L().clear();
     cbTick(2, nullptr);
-    KT_CHECK(g_cfg.backing);
+    KT_CHECK(g_edit.backing && !g_cfg.backing);
     KT_CHECK(vis(pv(1)) && rectEq(lastOn(trec::O_Rect, pv(1)), { 606, 181, 88, 32 }));
     KT_CHECK(lastOn(trec::O_Fill, pv(1)) && lastOn(trec::O_Fill, pv(1))->img == tImgPtr("lbl_miscroll_f"));
     KT_CHECK(sameRgb(lastOn(trec::O_Tint, pv(1)), kRgbGrey));
-    KT_CHECK(lastOn(trec::O_Alpha, pv(1)) && lastOn(trec::O_Alpha, pv(1))->f == g_cfg.backingAlpha);
+    KT_CHECK(lastOn(trec::O_Alpha, pv(1)) && lastOn(trec::O_Alpha, pv(1))->f == g_edit.backingAlpha);
     KT_CHECK(rectEq(lastOn(trec::O_Rect, pv(0)), { 550, 214, 200, 24 }) && rectEq(lastOn(trec::O_Rect, pv(2)), { 610, 185, 24, 24 }));
     // Enabled off: row, pill and overlays hide; the name bar stays, re-centred (by = 100 + (220-24)/2 = 198). On again: they come back.
     tm.clicks.push_back(g_pg.text[esl::S_Enabled]);
     L().clear();
     cbTick(2, nullptr);
-    KT_CHECK(!g_cfg.enabled);
+    KT_CHECK(!g_edit.enabled && g_cfg.enabled);
     bool rowHidden = true;
     for (int i = 1; i < 12; ++i) rowHidden = rowHidden && !vis(pv(i));
     KT_CHECK(rowHidden);
     KT_CHECK(vis(pv(0)) && rectEq(lastOn(trec::O_Rect, pv(0)), { 550, 198, 200, 24 }));
     tm.clicks.push_back(g_pg.text[esl::S_Enabled]);
     cbTick(2, nullptr);
-    KT_CHECK(g_cfg.enabled && vis(pv(2)) && vis(pv(3)) && vis(pv(1)) && vis(pv(6)));
-    // MaxIcons is restart-only: stepping it leaves the preview (it shows the built pool size) unchanged.
+    KT_CHECK(g_edit.enabled && vis(pv(2)) && vis(pv(3)) && vis(pv(1)) && vis(pv(6)));
+    // MaxIcons is restart-only for the GAME (g_cfg keeps the built pool size) but the example follows the pending value: 4 icons.
     tm.clicks.push_back(g_pg.next[esl::S_MaxIcons]);
     L().clear();
     cbTick(2, nullptr);
-    KT_CHECK(g_pendMax == 4 && g_cfg.maxIcons == 3 && !vis(pv(8)));
+    KT_CHECK(g_edit.maxIcons == 4 && g_saved.maxIcons == 3 && g_cfg.maxIcons == 3 && vis(pv(8)) && !vis(pv(10)));
 
     // --- mod-config re-showing hidden preview items (page re-entry, or a late show): the next refresh hides them again, all click-through.
     modconfigShowAll();
-    cbEnter(2, nullptr);
+    cbEnter(2, nullptr);   // also drops every unsaved edit (back to the saved values: Gap 4, no backing, MaxIcons 3)
+    KT_CHECK(g_edit.gap == 4 && g_edit.maxIcons == 3 && !esl::pageDiffers(g_saved, g_edit));
     KT_CHECK(!vis(pv(8)) && !vis(pv(11)) && vis(pv(6)));
     ct = true;
     for (int i = 0; i < 12; ++i) ct = ct && clickThrough(pv(i));
@@ -1092,7 +1111,7 @@ static void scenario12_page_preview() {
     // --- the pane moves (resolution change): the next tick re-lays out; a failing PaneRect hides the preview with ONE warning, then it recovers.
     tm.preview = { 0, 0, 100, 200 };   // 100 wide: 3 icons of 24 + 2*4 = 80 fit; name bar narrows to 100
     cbTick(2, nullptr);
-    KT_CHECK(rectEq(lastOn(trec::O_Rect, pv(0)), { 0, 104, 100, 24 }));   // bh = 24+5+24+4 = 57 (backing on), by = 71, name y = 71+57-24
+    KT_CHECK(rectEq(lastOn(trec::O_Rect, pv(0)), { 0, 102, 100, 24 }));   // saved values: bh = 24+4+24 = 52 (no backing), by = 74, name y = 74+52-24
     tm.previewOk = false;
     cbTick(2, nullptr);
     cbTick(2, nullptr);
@@ -1138,14 +1157,20 @@ static void scenario12b_older_provider() {
     KT_CHECK_EQ(tm.splitCalls, 0);
     KT_CHECK_EQ(g_pv.n, 0);
     KT_CHECK_EQ(logCount("preview skipped: provider has no SetDescSplit"), 1);
-    KT_CHECK_EQ(tm.addButton + tm.addLabel, 20);
+    KT_CHECK_EQ(tm.addButton + tm.addLabel, 25);
     L().clear();
     cbEnter(2, nullptr);
     KT_CHECK(tm.desc.find("Example") == std::string::npos && !tm.desc.empty());
     KT_CHECK_EQ(tm.previewPaneCalls, 0);
     tm.clicks.push_back(g_pg.next[esl::S_Gap]);
     cbTick(2, nullptr);
+    KT_CHECK_EQ(g_edit.gap, 5);
+    KT_CHECK_EQ(g_cfg.gap, 4);
+    tm.clicks.push_back(g_pg.save);
+    L().clear();
+    cbTick(2, nullptr);
     KT_CHECK_EQ(g_cfg.gap, 5);
+    KT_CHECK_EQ(static_cast<int>(GetPrivateProfileIntA("Strip", "Gap", -1, "")), 5);
     KT_CHECK_EQ(L().size(), static_cast<size_t>(0));
     cbDestroy(reinterpret_cast<void*>(panel), nullptr);
     KT_CHECK(tDtors.empty() && g_pg.panel == nullptr);
@@ -1204,7 +1229,7 @@ static void scenario12c_split_refused_and_failures() {
     KT_CHECK(g_pv.n == 0 && tm.addCustom == 0 && tm.splitCalls == 0);
     KT_CHECK_EQ(tDtors.size(), static_cast<size_t>(6));
     KT_CHECK_EQ(warnCount("preview: "), 1);
-    KT_CHECK_EQ(tm.addButton + tm.addLabel, 20);
+    KT_CHECK_EQ(tm.addButton + tm.addLabel, 25);
     KT_CHECK(g_pg.panel == reinterpret_cast<void*>(panel3));
     L().clear();
     cbEnter(2, nullptr);
@@ -1244,6 +1269,7 @@ static void scenario13_drain_off_default() {
     postT(&t, 1);
     KT_CHECK_EQ(L().size(), static_cast<size_t>(0));
     // Through the live setter: 0 -> 0.05 shows the overlay with alpha 0.05/0.78; stepping back down to 0 hides it.
+    syncEdit();
     applySetting(esl::S_DrainAlpha, +1);
     KT_CHECK(g_cfg.drainAlpha == 0.05f);
     postT(&t, 1);
@@ -1259,6 +1285,7 @@ static void scenario13b_preview_drain_off() {
     // Settings-page preview with DrainAlpha 0: icons show, no overlay control is shown or written; the row's '>' brings the shading back.
     pageBuild();
     g_cfg.drainAlpha = 0.0f;
+    syncEdit();
     modconfigShowAll();
     L().clear();
     cbEnter(2, nullptr);
@@ -1271,15 +1298,136 @@ static void scenario13b_preview_drain_off() {
     KT_CHECK(overOff);
     KT_CHECK(overQuiet);   // hidden overlays only get the hide/click-through calls, never a rect, fill, tint or alpha
     for (int k = 0; k < 5; ++k) KT_CHECK(!lastOn(trec::O_Alpha, pv(3 + 2 * k)) && !lastOn(trec::O_Rect, pv(3 + 2 * k)));
-    tm.clicks.push_back(g_pg.next[esl::S_DrainAlpha]);
+    g_edit = esl::setSliderValue(g_edit, esl::S_DrainAlpha, 5);   // the slider's value
     cbTick(2, nullptr);
-    KT_CHECK(g_cfg.drainAlpha == 0.05f);
+    KT_CHECK(g_edit.drainAlpha == 0.05f && g_cfg.drainAlpha == 0.0f);
     KT_CHECK(vis(pv(3)) && vis(pv(5)) && vis(pv(7)));
     KT_CHECK(lastOn(trec::O_Alpha, pv(3)) && lastOn(trec::O_Alpha, pv(3))->f == esl::overlayAlpha(0.05f));
-    tm.clicks.push_back(g_pg.prev[esl::S_DrainAlpha]);
+    g_edit = esl::setSliderValue(g_edit, esl::S_DrainAlpha, 0);
     cbTick(2, nullptr);
-    KT_CHECK(g_cfg.drainAlpha == 0.0f && !vis(pv(3)) && !vis(pv(5)) && !vis(pv(7)));
+    KT_CHECK(g_edit.drainAlpha == 0.0f && !vis(pv(3)) && !vis(pv(5)) && !vis(pv(7)));
     cbDestroy(reinterpret_cast<void*>(g_pg.panel), nullptr);
+}
+
+// ---------------------------------------------------------------- staged edits, Reset / Defaults / Save, alpha sliders (0.4.3), live MaxIcons (0.4.4)
+static int tCurX = 0, tCurY = 0;
+static bool tMouseDown = false;
+static bool tCursorClient(int* cx, int* cy, int* cw, int* ch) { *cx = tCurX; *cy = tCurY; *cw = 3840; *ch = 1600; return true; }
+static bool tForeground() { return true; }
+static bool tLeftDown() { return tMouseDown; }
+
+static uintptr_t mkItemCtl(int item, int x, int y, int w, int h) {
+    int why = 0; uint32_t bv = 0;
+    const uintptr_t c = guikit::createLabelFromTemplate(tPanel, "LBL_TITLE", &why, &bv);
+    real_gk::setRect(c, x, y, w, h);
+    real_gk::setVisible(c, true);
+    // The host engine fake does not store the extent the way the real SetRect does: write the four fields hit() reads.
+    tAt<int>(c, k2addr::off(&K2AddrTable::Ctl_X)) = x; tAt<int>(c, k2addr::off(&K2AddrTable::Ctl_Y)) = y;
+    tAt<int>(c, k2addr::off(&K2AddrTable::Ctl_W)) = w; tAt<int>(c, k2addr::off(&K2AddrTable::Ctl_H)) = h;
+    tm.itemCtl.push_back({ item, reinterpret_cast<void*>(c) });
+    return c;
+}
+
+static void scenario14_staged_edits_and_sliders() {
+    // --- Reset / Defaults / Save: edits are pending until Save; Save writes only the changed keys and applies them (MaxIcons included).
+    pageBuild();
+    cbEnter(2, nullptr);
+    KT_CHECK(g_cfg.maxIcons == 3 && g_cfg.drainAlpha == 0.65f && g_cfg.gap == 4 && !esl::pageDiffers(g_saved, g_edit));
+    tm.clicks.push_back(g_pg.next[esl::S_Gap]);
+    cbTick(2, nullptr);
+    KT_CHECK(g_edit.gap == 5 && g_cfg.gap == 4 && g_pg.dirtyShown == 1);
+    KT_CHECK_EQ(static_cast<int>(GetPrivateProfileIntA("Strip", "Gap", -1, "")), -1);   // nothing written yet
+    tm.clicks.push_back(g_pg.rst);
+    cbTick(2, nullptr);
+    KT_CHECK(g_edit.gap == 4 && g_pg.dirtyShown == 0 && !esl::pageDiffers(g_saved, g_edit));
+    tm.clicks.push_back(g_pg.next[esl::S_Gap]);
+    cbTick(2, nullptr);
+    tm.clicks.push_back(g_pg.defs);
+    cbTick(2, nullptr);   // Defaults: every page setting at its default (gap 4 is the default, so the earlier step is gone too)
+    KT_CHECK(g_edit.gap == 4 && g_edit.maxIcons == 5 && g_edit.drainAlpha == 0.0f);
+    KT_CHECK(g_cfg.maxIcons == 3 && g_cfg.drainAlpha == 0.65f && g_pg.dirtyShown == 1);   // still only pending
+    tm.clicks.push_back(g_pg.save);
+    cbTick(2, nullptr);
+    KT_CHECK(g_cfg.maxIcons == 5 && g_cfg.drainAlpha == 0.0f && g_pg.dirtyShown == 0);   // applied live, MaxIcons too
+    KT_CHECK_EQ(static_cast<int>(GetPrivateProfileIntA("Strip", "MaxIcons", -1, "")), 5);
+    KT_CHECK_EQ(static_cast<int>(GetPrivateProfileIntA("Strip", "Gap", -1, "")), -1);   // unchanged keys are not written
+    KT_CHECK_EQ(logCount("cfg: SAVE wrote="), 1);
+    tm.clicks.push_back(g_pg.save);
+    cbTick(2, nullptr);   // nothing pending: Save writes nothing
+    KT_CHECK_EQ(logCount("cfg: SAVE wrote=0 failed=0"), 1);
+    // Leaving and re-entering the page drops unsaved edits.
+    tm.clicks.push_back(g_pg.next[esl::S_Spacing]);
+    cbTick(2, nullptr);
+    KT_CHECK(g_edit.spacing == 5 && g_pg.dirtyShown == 1);
+    cbEnter(2, nullptr);
+    KT_CHECK(g_edit.spacing == 4 && g_pg.dirtyShown == 0);
+
+    // --- MaxIcons applies live to the HUD row: 4 obvious effects, cap 3 -> 3 slots; Save with MaxIcons 4 -> 4 slots on the next refresh, no new labels.
+    fresh();
+    tNowDay = 0; tNowMs = 1000;
+    const TxCre t = makeCre();
+    setEffects(t, { { 0x08, 0, -1, 4, 0.f, 0 }, { 0x08, 0, -1, 5, 0.f, 0 }, { 0x08, 0, -1, 6, 0.f, 0 }, { 0x08, 0, 16, 8, 0.f, 0 } });
+    postT(&t);
+    KT_CHECK_EQ(g_nSlots, 3);
+    applySetting(esl::S_MaxIcons, +1);
+    L().clear();
+    postT(&t, 1);
+    KT_CHECK_EQ(g_nSlots, 4);
+    KT_CHECK_EQ(cnt(trec::O_Create), 0);
+
+    // --- alpha sliders: a press edge over the track starts a drag, the cursor x sets the value on the 0.05 grid, release ends it.
+    pageBuild();
+    guikit::g_gk.cursorClient = tCursorClient; guikit::g_gk.gameForeground = tForeground; guikit::g_gk.lbuttonDown = tLeftDown;
+    const uintptr_t savedSw = guikit::g_gk.screenWAddr, savedSh = guikit::g_gk.screenHAddr;
+    guikit::g_gk.screenWAddr = 0; guikit::g_gk.screenHAddr = 0;   // unknown screen size: cursorEngine falls back to client px (1:1)
+    const int dr = esl::S_DrainAlpha;
+    // Layout of cbEnter on the fake column {20,60,260,300}: slot h 33, pitch 38, bw 52, lw 144, gap 6 -> row 7 track {170, 326, 110, 33}, inner {176, 339, 98, 7}.
+    const uintptr_t track = mkItemCtl(g_pg.prev[dr], 170, 326, 110, 33);
+    const uintptr_t fillC = mkItemCtl(g_pg.fill[dr], 0, 0, 1, 1);
+    const uintptr_t thumbC = mkItemCtl(g_pg.thumb[dr], 0, 0, 1, 1);
+    (void)track;
+    cbEnter(2, nullptr);
+    KT_CHECK(g_pg.track[dr].x == 170 && g_pg.track[dr].y == 326 && g_pg.track[dr].w == 110 && g_pg.track[dr].h == 33);
+    KT_CHECK(g_edit.drainAlpha == 0.65f);
+    // 0.65 of the inner 98 px = 64 px of fill (int(0.65*98+0.5) = 64); marker 6 px wide centred on its end: x 176+64-3 = 237, 18 px tall at y 333.
+    KT_CHECK(rectEq(lastOn(trec::O_Rect, fillC), { 176, 339, 64, 7 }));
+    KT_CHECK(rectEq(lastOn(trec::O_Rect, thumbC), { 237, 333, 6, 18 }));
+    KT_CHECK(clickThrough(fillC) && clickThrough(thumbC));
+    // Not pressed: moving the cursor over the track does nothing.
+    tCurX = 225; tCurY = 340; tMouseDown = false;
+    cbTick(2, nullptr);
+    KT_CHECK(g_edit.drainAlpha == 0.65f && g_pg.drag == -1);
+    // Press on the track at x 225 (49 px into the 98 px inner span = 0.50), still unsaved.
+    tMouseDown = true;
+    cbTick(2, nullptr);
+    KT_CHECK(g_pg.drag == dr && g_edit.drainAlpha == 0.50f && g_cfg.drainAlpha == 0.65f);
+    KT_CHECK(rectEq(lastOn(trec::O_Rect, fillC), { 176, 339, 49, 7 }));
+    // Drag past both ends: clamped 1.00 / 0.00; 0.05 grid in between (x 190 = 14 px = 14.3 % -> 0.15).
+    tCurX = 400; cbTick(2, nullptr);
+    KT_CHECK(g_edit.drainAlpha == 1.0f);
+    tCurX = 190; cbTick(2, nullptr);
+    KT_CHECK(g_edit.drainAlpha == 0.15f);
+    tCurX = 100; cbTick(2, nullptr);
+    KT_CHECK(g_edit.drainAlpha == 0.0f);
+    // Release ends the drag; moving afterwards does nothing.
+    tMouseDown = false; cbTick(2, nullptr);
+    KT_CHECK(g_pg.drag == -1);
+    tCurX = 250; cbTick(2, nullptr);
+    KT_CHECK(g_edit.drainAlpha == 0.0f);
+    // A press OUTSIDE every track (the Gap row) starts nothing, and dragging into a track from outside does nothing.
+    tCurX = 250; tCurY = 100; tMouseDown = true;
+    cbTick(2, nullptr);
+    tCurY = 340; cbTick(2, nullptr);
+    KT_CHECK(g_pg.drag == -1 && g_edit.drainAlpha == 0.0f);
+    tMouseDown = false; cbTick(2, nullptr);
+    // The drag is still only pending: Save applies it.
+    g_edit = esl::setSliderValue(g_edit, dr, 35);
+    tm.clicks.push_back(g_pg.save);
+    cbTick(2, nullptr);
+    KT_CHECK(g_cfg.drainAlpha == 0.35f);
+    cbDestroy(reinterpret_cast<void*>(g_pg.panel), nullptr);
+    guikit::g_gk.cursorClient = nullptr; guikit::g_gk.gameForeground = nullptr; guikit::g_gk.lbuttonDown = nullptr;
+    guikit::g_gk.screenWAddr = savedSw; guikit::g_gk.screenHAddr = savedSh;
 }
 
 int main() {
@@ -1350,5 +1498,6 @@ int main() {
     scenario12c_split_refused_and_failures();
     scenario13_drain_off_default();
     scenario13b_preview_drain_off();
+    scenario14_staged_edits_and_sliders();
     return kt::Report("enemy_strip_draw_test");
 }

@@ -7,13 +7,15 @@
 // [Strip] Verbose (enemy_strip.ini, default 0): 1 additionally runs the 0.2.0 probe: on a target change one block with the target menu fields,
 // the server effect list (spells.2da icon matches, remaining-duration ratio, SetState id), the icon cache and the leader's skill ranks;
 // 'effects CHANGED' headers + dumps while a target is set. Log: enemystrip_log.txt (fallback) and the game's mod log.
-// Optional settings page (0.4.0, doc 39 item 4): when mod-config (k2.modconfig@1 + k2.menuui@1) is present the mod registers one entry under
-// Options -> Mod Configuration. mod-config is NOT in `requires`: the connect is lazy (KPatchInit, then retried from the HUD frame until it works)
-// and a missing provider is silent after one log line. The page edits enemy_strip.ini [Strip] one key at a time (this mod writes the INI itself,
-// mod-config never does): Enabled, IconSize, Gap, Spacing, Backing, BackingAlpha, DrainAlpha apply at once through esl::sanitize; MaxIcons is
-// written only (the label pool is built per HUD, so it needs a restart). ForceTier, Verbose and the Tier* thresholds are INI-only.
-// 0.4.1: with a provider that has SetDescSplit the page also shows a live example of the strip (mock name bar, pill, five sample icons with drain
-// overlays; esl::previewLayout) in the top 75 % of the right half, redrawn from the current settings every tick; the description keeps the rest. 0.4.2: the example is drawn zoomed (esl::previewZoomPct, 1x to 6x) so it is readable on large displays.
+// Optional settings page (0.4.0, doc 39 item 4; staged edits and sliders 0.4.3): when mod-config (k2.modconfig@1 + k2.menuui@1) is present the mod
+// registers one entry under Options -> Mod Configuration. mod-config is NOT in `requires`: the connect is lazy (KPatchInit, then retried from the
+// HUD frame until it works) and a missing provider is silent after one log line. The page edits a PENDING copy of the settings (toggles, number
+// steppers, alpha sliders); Save writes the changed keys to enemy_strip.ini one at a time (this mod writes the INI itself, mod-config never
+// does) and applies them at once, Reset goes back to the saved values and Defaults loads the defaults (then Save). 0.4.4: every setting applies live,
+// because the label pool is always built at full size. ForceTier, Verbose and the Tier* thresholds are INI-only (read once at DLL load).
+// With a provider that has SetDescSplit the page also shows a live example of the strip (mock name bar, pill, five sample icons with drain
+// overlays; esl::previewLayoutZoomed, drawn zoomed so it is readable) in the top 75 % of the right half, redrawn from the pending edits every tick;
+// the description keeps the rest.
 #include <windows.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -613,7 +615,6 @@ Wid g_pill;
 SlotW g_sw[PoolSlots];
 int g_nSw = 0;              // complete slots built in the last BUILD
 bool g_built = false;       // pool complete for g_panel
-bool g_skippedDisabled = false;      // the last HUD BUILD was skipped because Enabled=0 (turning it on again needs a restart)
 int32_t g_panel = 0;        // HUD panel the pool belongs to (identity guard against a stale HUD)
 bool g_buildFailLogged = false;
 
@@ -929,9 +930,10 @@ bool makeWid(uintptr_t panel, Wid& w, const char* what, int k, const char* tmpl 
     return true;
 }
 
-// K2HUD_BUILD (prio 300): the HUD layout is open, so labels can be created from the LBL_QUEUE1 template. A new HUD = a new pool.
+// K2HUD_BUILD (prio 300): the HUD layout is open, so labels can be created from the LBL_QUEUE1 template. A new HUD = a new pool. The pool is ALWAYS
+// built at full size (PoolSlots, hidden) whatever Enabled / MaxIcons say, so the settings page can change both live: MaxIcons only caps how many
+// of the pool are used, Enabled only decides whether anything is shown.
 void KPATCH_CALL onHudBuild(const K2HudContext* ctx, void*) {
-    g_skippedDisabled = !g_cfg.enabled;
     g_built = false; g_panel = 0; g_nSw = 0; g_buildFailLogged = false;
     g_pill = Wid();
     for (SlotW& s : g_sw) s = SlotW();
@@ -939,21 +941,20 @@ void KPATCH_CALL onHudBuild(const K2HudContext* ctx, void*) {
     g_awSrv = 0; g_awAt = 0; g_awVal = 0; g_awValid = false;
     g_sigSet = false; g_sigTarget = 0; g_sigTier = -1; g_sigList[0] = 0;
     memset(g_imgs, 0, sizeof(g_imgs)); g_nImgs = 0; g_imgNext = 0;
-    if (!g_cfg.enabled) { KP_LOGV(chMain, KPLOG_INFO, "BUILD: disabled ([Strip] Enabled=0)"); return; }
     if (!ctx || ctx->struct_size < offsetof(K2HudContext, panel) + sizeof(ctx->panel) || !ctx->panel) { KP_LOGV(chMain, KPLOG_WARN, "BUILD: no panel in the context"); return; }
     saferead::beginScope();
     const uintptr_t panel = static_cast<uintptr_t>(static_cast<uint32_t>(ctx->panel));
     const bool pillOk = makeWid(panel, g_pill, "pill", 0);   // first: behind everything else
     int n = 0;
-    for (int k = 0; pillOk && k < g_cfg.maxIcons && k < PoolSlots; ++k) {
+    for (int k = 0; pillOk && k < PoolSlots; ++k) {
         SlotW& s = g_sw[k];
         if (!makeWid(panel, s.disc, "disc", k) || !makeWid(panel, s.icon, "icon", k) || !makeWid(panel, s.over, "overlay", k)) break;
         ++n;
     }
     g_nSw = n;
-    g_built = pillOk && n == g_cfg.maxIcons;
+    g_built = pillOk && n > 0;   // a partial pool is usable: draw / hideAll / the refresh clamp are all bound by g_nSw
     if (g_built) g_panel = static_cast<int32_t>(ctx->panel);
-    KP_LOGV(chMain, g_built ? KPLOG_INFO : KPLOG_WARN, "BUILD: slots=%d/%d pill=%d", n, g_cfg.maxIcons, pillOk ? 1 : 0);
+    KP_LOGV(chMain, g_built ? KPLOG_INFO : KPLOG_WARN, "BUILD: slots=%d/%d pill=%d (MaxIcons=%d Enabled=%d)", n, PoolSlots, pillOk ? 1 : 0, g_cfg.maxIcons, g_cfg.enabled ? 1 : 0);
 }
 
 // ---------------------------------------------------------------- mod-config settings page (0.4.0, doc 39 item 4)
@@ -967,22 +968,31 @@ k2mc::ConfigClient g_mcCfg;
 k2mc::MenuClient g_mcMenu;
 bool g_mcRegistered = false;         // Register has been answered (accepted or refused): stop polling
 int32_t g_mcToken = 0;
-int g_pendMax = 5;                   // MaxIcons as stored in the INI; the built pool keeps g_cfg.maxIcons until the next game start
+esl::CfgRaw g_saved;                 // the settings as stored in the INI (and applied to g_cfg)
+esl::CfgRaw g_edit;                  // the page's pending copy: rows, sliders and the example work on it; Save writes it, Reset / Defaults only move it
 bool g_layoutWarned = false;
 
 struct SettingsPage {
     void* panel = nullptr;
     uint32_t page = 0;
-    int32_t text[esl::S_Count];      // toggle: the button; number: the label
-    int32_t prev[esl::S_Count];
-    int32_t next[esl::S_Count];
+    int32_t text[esl::S_Count];         // toggle: the button; number / slider: the label
+    int32_t prev[esl::S_Count];         // number: '<'; slider: the track button
+    int32_t next[esl::S_Count];         // number: '>'
+    int32_t fill[esl::S_Count];         // slider: the filled part of the track (a provider-owned label)
+    int32_t thumb[esl::S_Count];        // slider: the marker at the value (a provider-owned label)
+    esl::RowRect track[esl::S_Count];   // slider track rect in engine px, set in cbEnter (w == 0: not placed)
+    int32_t save = -1, rst = -1, defs = -1;   // the button row: Save, Reset, Defaults
+    int dirtyShown = -1;                // Save button text on screen: -1 unknown, 0 "Save", 1 "Save *"
+    int drag = -1;                      // slider row being dragged, -1 none
+    bool lprev = false;                 // left button state last tick (press edge)
     void reset() {
         panel = nullptr; page = 0;
-        for (int i = 0; i < esl::S_Count; ++i) text[i] = prev[i] = next[i] = -1;
+        for (int i = 0; i < esl::S_Count; ++i) { text[i] = prev[i] = next[i] = fill[i] = thumb[i] = -1; track[i] = { 0, 0, 0, 0 }; }
+        save = rst = defs = -1; dirtyShown = -1; drag = -1; lprev = false;
     }
 } g_pg;
 
-// ---- preview (0.4.1): an example of the strip in the PREVIEW pane, drawn from the CURRENT g_cfg every tick (change-only setters) ----
+// ---- preview (0.4.1): an example of the strip in the PREVIEW pane, drawn from the page's PENDING edits (g_edit, 0.4.3) every tick (change-only setters) ----
 // 12 labels cloned from LBL_TITLE, listed on the page with AddCustom(MUI_NOFREE), so this mod OWNS them and frees them in cbDestroy once
 // mod-config reports them unlinked (Control() == nullptr). Creation order = draw order: bar, pill, then icon k / drain overlay k.
 constexpr int PvN = esl::kPreviewControls;
@@ -1025,8 +1035,8 @@ void refreshPreview() {
         pvHideAll();
     } else {
         const esl::RowRect pane = { r.x, r.y, r.w, r.h };
-        const esl::PreviewLayout pl = esl::previewLayoutZoomed(pane, g_cfg.enabled ? 1 : 0, g_cfg.maxIcons, g_cfg.iconSize, g_cfg.gap, g_cfg.spacing,
-                                                          g_cfg.backingPad, g_cfg.backing);
+        const esl::PreviewLayout pl = esl::previewLayoutZoomed(pane, g_edit.enabled ? 1 : 0, g_edit.maxIcons, g_edit.iconSize, g_edit.gap, g_edit.spacing,
+                                                          g_edit.backingPad, g_edit.backing != 0);
         if (!pl.ok) {
             pvHideAll();
         } else {
@@ -1035,9 +1045,9 @@ void refreshPreview() {
             widFill(bar, overImg); widTint(bar, TintBlack); widAlpha(bar, 1.0f); widRect(bar, pl.name); widShow(bar);
             void* pillImg = pl.pill ? imageCached(TexPill) : nullptr;
             Wid& pill = g_pv.w[PvPill];
-            if (pillImg) { widFill(pill, pillImg); widTint(pill, TintGrey); widAlpha(pill, g_cfg.backingAlpha); widRect(pill, pl.row.pill); widShow(pill); }
+            if (pillImg) { widFill(pill, pillImg); widTint(pill, TintGrey); widAlpha(pill, g_edit.backingAlpha); widRect(pill, pl.row.pill); widShow(pill); }
             else widHide(pill);
-            const float overA = esl::overlayAlpha(g_cfg.drainAlpha);
+            const float overA = esl::overlayAlpha(g_edit.drainAlpha);
             for (int k = 0; k < esl::kPreviewMaxIcons; ++k) {
                 Wid& ic = g_pv.w[pvIcon(k)];
                 Wid& ov = g_pv.w[pvOver(k)];
@@ -1046,7 +1056,7 @@ void refreshPreview() {
                 if (!img) { widHide(ic); widHide(ov); continue; }   // beyond the shown count, or this icon is missing
                 const esl::RowRect& rc = pl.row.icon[k];
                 widFill(ic, img); widTint(ic, TintWhite); widAlpha(ic, 1.0f); widRect(ic, rc); widShow(ic);
-                const int oh = esl::overlayVisible(g_cfg.drainAlpha) ? esl::overlayH(rc.h, sm.ratio) : 0;
+                const int oh = esl::overlayVisible(g_edit.drainAlpha) ? esl::overlayH(rc.h, sm.ratio) : 0;
                 if (oh > 0 && overImg) {
                     const esl::RowRect orc = { rc.x, rc.y, rc.w, oh };
                     widFill(ov, overImg); widTint(ov, TintBlack); widAlpha(ov, overA); widRect(ov, orc); widShow(ov);
@@ -1071,6 +1081,7 @@ void buildPreview(void* panel, uint32_t page) {
     for (; made < PvN; ++made) {
         const char* what = made == PvBar ? "bar" : (made == PvPill ? "pill" : ((made - 2) % 2 == 0 ? "icon" : "overlay"));
         if (!makeWid(pn, tmp[made], what, made, "LBL_TITLE", false)) break;
+        if (made != PvBar) guikit::setText(tmp[made].c, "");   // the clone carries the Options title text ("OPTIONS"): blank it so it never shows over an icon
     }
     int listed = 0;
     if (made == PvN) {
@@ -1109,28 +1120,29 @@ void destroyPreview() {
 }
 
 const char* const kPageDescPreview =
-    "Example of the icon row above an enemy's name, drawn with your current settings. Every row applies at once except MaxIcons (restart). Hover a row for details.";
+    "Example of the icon row above a target's name, drawn with your edits. Nothing changes in the game until you press Save. Reset undoes unsaved edits; Defaults loads the default values (then press Save).";
 const char* const kPageDescPlain =
-    "Icon row above the target name. Every row applies at once except MaxIcons (restart). Hover a row for details.";
+    "Icon row above the target name. Nothing changes in the game until you press Save. Reset undoes unsaved edits; Defaults loads the default values.";
 
 const char* const kRowDesc[esl::S_Count] = {
-    "Show or hide the icon row at once. Turning it back on after the HUD was built disabled needs a game restart.",
-    "Most icons shown at once (1-8). Saved to enemy_strip.ini; takes effect at the next game start.",
+    "Show or hide the icon row.",
+    "Most icons shown at once (1-8). The example above shows at most 5.",
     "Icon edge in pixels. Auto uses the height of the target name label.",
     "Pixels between the icon row and the name label.",
     "Pixels between neighbouring icons.",
     "Draw a pill behind the icon row.",
-    "Opacity of the pill behind the icon row.",
-    "Opacity of the dark remaining-time drain shading on the icons. 0 = off (default).",
+    "Opacity of the pill behind the icon row. Drag the bar or click on it.",
+    "Opacity of the dark remaining-time drain shading on the icons. 0 = off (default). Drag the bar or click on it.",
 };
+const char* const kSaveDesc = "Write the edits to enemy_strip.ini and apply them to the game now.";
+const char* const kResetDesc = "Throw away unsaved edits: go back to the saved values.";
+const char* const kDefaultsDesc = "Load the default value of every row. They apply when you press Save.";
 
-bool rowNeedsRestart(int s, const esl::CfgRaw& c) {
-    return s == esl::S_MaxIcons || (s == esl::S_Enabled && c.enabled && g_skippedDisabled);
-}
+// Every setting applies live since 0.4.4 (the label pool is always built at full size): no row needs a restart.
+bool rowNeedsRestart(int, const esl::CfgRaw&) { return false; }
 
 void rowText(int s, char* out, int cap) {
-    const esl::CfgRaw c = currentRaw(g_pendMax);
-    esl::formatRowText(s, c, rowNeedsRestart(s, c), out, cap);
+    esl::formatRowText(s, g_edit, rowNeedsRestart(s, g_edit), out, cap);
 }
 
 void refreshRow(int s) {
@@ -1140,44 +1152,125 @@ void refreshRow(int s) {
     g_mcMenu.p->SetText(g_pg.page, g_pg.text[s], b);
 }
 
-// One step on setting s. The INI key is written first; the live values follow through esl::sanitize (inside stepSetting). Change-only caches
-// (Wid rect/alpha/vis) re-send whatever differs next frame; g_lastRefresh = 0 also re-runs the effect read at once. MaxIcons only updates
-// the pending value (and the INI): the label pool is built per HUD from g_cfg.maxIcons.
-void applySetting(int s, int dir) {
-    const esl::CfgRaw cur = currentRaw(g_pendMax);
-    const esl::CfgRaw nxt = esl::stepSetting(cur, s, dir);
-    if (esl::sameSetting(cur, nxt, s)) return;   // at a limit
-    char val[32];
-    esl::formatIniValue(s, nxt, val, static_cast<int>(sizeof val));
-    const BOOL wrote = WritePrivateProfileStringA("Strip", esl::settingKey(s), val, IniPath);
-    if (s == esl::S_MaxIcons) {
-        if (wrote) g_pendMax = nxt.maxIcons;
+// ---- slider rows (alpha): a track button (native bevel, hover and click sound) with a fill bar and a marker label on top. The labels are
+// provider-owned (AddLabel); their engine pointers come from Control() and are re-read on every page enter. Dragging is polled here: a press
+// edge over the track starts it, the cursor x then sets the value on the 0.05 grid until the button is released.
+Wid g_slFill[esl::S_Count], g_slThumb[esl::S_Count];
+const float TintSlider[3] = { 0.10f, 0.75f, 0.65f };
+void clearSliderWids() { for (int s = 0; s < esl::S_Count; ++s) { g_slFill[s] = Wid(); g_slThumb[s] = Wid(); } }   // the labels belong to the provider and die with the panel
+
+void refreshSlider(int s) {
+    if (!g_mcMenu.ok() || !g_pg.page || g_pg.fill[s] < 0) return;
+    const esl::RowRect& tr = g_pg.track[s];
+    void* overImg = imageCached(TexOverlay);
+    Wid& f = g_slFill[s];
+    Wid& th = g_slThumb[s];
+    if (tr.w <= 0 || !f.c || !th.c) return;
+    const int ih = tr.h * 24 / 100 < 4 ? 4 : tr.h * 24 / 100;
+    const esl::RowRect inner = { tr.x + 6, tr.y + (tr.h - ih) / 2, tr.w - 12 > 0 ? tr.w - 12 : 1, ih };
+    const int fillPx = esl::sliderFillPx(esl::settingFloat(g_edit, s), inner.w);
+    guikit::setClickable(f.c, false);    // both labels sit on the track button: they must stay click-through
+    guikit::setClickable(th.c, false);
+    if (!overImg) return;
+    if (fillPx > 0) {
+        widFill(f, overImg); widTint(f, TintSlider); widAlpha(f, 1.0f); widRect(f, { inner.x, inner.y, fillPx, inner.h });
     } else {
-        const int builtMax = g_cfg.maxIcons;
-        storeCfg(nxt);
-        g_cfg.maxIcons = builtMax;
+        widRect(f, { inner.x, inner.y, 1, 1 });   // an empty bar: a 1 px dot rather than a zero-size label
+    }
+    int tx = inner.x + fillPx - 3;
+    if (tx < inner.x) tx = inner.x;
+    if (tx + 6 > inner.x + inner.w) tx = inner.x + inner.w - 6;
+    const int thh = tr.h * 56 / 100 < 6 ? 6 : tr.h * 56 / 100;
+    widFill(th, overImg); widTint(th, TintWhite); widAlpha(th, 1.0f); widRect(th, { tx, tr.y + (tr.h - thh) / 2, 6, thh });
+}
+
+void refreshSaveButton() {
+    if (!g_mcMenu.ok() || !g_pg.page || g_pg.save < 0) return;
+    const int dirty = esl::pageDiffers(g_saved, g_edit) ? 1 : 0;
+    if (dirty == g_pg.dirtyShown) return;
+    g_mcMenu.p->SetText(g_pg.page, g_pg.save, dirty ? "Save *" : "Save");
+    g_pg.dirtyShown = dirty;
+}
+
+void refreshAll() {
+    for (int s = 0; s < esl::S_Count; ++s) {
+        refreshRow(s);
+        if (esl::settingIsSlider(s)) refreshSlider(s);
+    }
+    refreshSaveButton();
+    refreshPreview();   // the example redraws from the pending edits at once (and again every tick)
+}
+
+// One step on setting s of the PENDING edits only (nothing is written or applied until Save).
+void editSetting(int s, int dir) {
+    const esl::CfgRaw nxt = esl::stepSetting(g_edit, s, dir);
+    if (esl::sameSetting(g_edit, nxt, s)) return;   // at a limit
+    g_edit = nxt;
+    char val[32];
+    esl::formatIniValue(s, g_edit, val, static_cast<int>(sizeof val));
+    KP_LOGV(chCfg, KPLOG_INFO, "edit: %s=%s (unsaved)", esl::settingKey(s), val);
+}
+
+// Save: write every changed key (one key at a time) and apply what was written. A key whose INI write fails stays unsaved (the page keeps showing
+// "Save *"). The live values follow through g_saved (already sanitized by stepSetting / setSliderValue); the label pool is always built at full
+// size, so every setting including MaxIcons and Enabled applies at once. g_lastRefresh = 0 re-runs the effect read and the change-only caches
+// re-send what differs.
+void saveEdits() {
+    int wrote = 0, failed = 0;
+    for (int s = 0; s < esl::S_Count; ++s) {
+        if (esl::sameSetting(g_saved, g_edit, s)) continue;
+        char val[32];
+        esl::formatIniValue(s, g_edit, val, static_cast<int>(sizeof val));
+        if (WritePrivateProfileStringA("Strip", esl::settingKey(s), val, IniPath)) {
+            g_saved = esl::copySetting(g_saved, g_edit, s);
+            ++wrote;
+            KP_LOGV(chCfg, KPLOG_INFO, "cfg: saved %s=%s", esl::settingKey(s), val);
+        } else {
+            ++failed;
+            KP_LOGV(chCfg, KPLOG_WARN, "cfg: INI write FAILED for %s=%s (left unsaved)", esl::settingKey(s), val);
+        }
+    }
+    if (wrote) {
+        storeCfg(g_saved);
         g_lastRefresh = 0;
     }
-    const bool isMax = s == esl::S_MaxIcons;
-    KP_LOGV(chCfg, wrote ? KPLOG_INFO : KPLOG_WARN, "cfg: %s=%s%s%s", esl::settingKey(s), val, isMax ? " (restart)" : "",
-            wrote ? "" : (isMax ? " (INI write FAILED: not changed)" : " (INI write FAILED: live value only)"));
-    refreshRow(s);
-    refreshPreview();   // the example redraws from the new g_cfg at once (and again every tick)
+    KP_LOGV(chCfg, KPLOG_INFO, "cfg: SAVE wrote=%d failed=%d", wrote, failed);
+    refreshAll();
+}
+
+void resetEdits() {
+    g_edit = g_saved;
+    KP_LOGV(chCfg, KPLOG_INFO, "edit: RESET to saved values");
+    refreshAll();
+}
+
+void defaultEdits() {
+    g_edit = esl::pageDefaults(g_saved);
+    KP_LOGV(chCfg, KPLOG_INFO, "edit: DEFAULTS loaded (unsaved)");
+    refreshAll();
 }
 
 // Options ctor window: creates the page items (valid only here).
 void KPATCH_CALL cbBuild(void* panel, void*) {
     g_pg.reset();
+    clearSliderWids();
     if (!panel || !g_mcMenu.ok()) { KP_LOGV(chCfg, KPLOG_WARN, "page BUILD skipped panel=%p menuui=%d", panel, g_mcMenu.ok() ? 1 : 0); return; }
     const K2MenuUiApi* ui = g_mcMenu.p;
     const uint32_t page = ui->NewPage(panel, "Enemy Effects Strip");
     if (!page) { KP_LOGV(chCfg, KPLOG_WARN, "page BUILD: NewPage failed"); return; }
+    g_edit = g_saved;   // the page always starts from the saved values
     bool ok = true;
     for (int s = 0; s < esl::S_Count; ++s) {
         char b[64];
         rowText(s, b, static_cast<int>(sizeof b));
         if (esl::settingIsToggle(s)) {
             g_pg.text[s] = ui->AddButton(page, b, kRowDesc[s]);
+        } else if (esl::settingIsSlider(s)) {
+            g_pg.text[s] = ui->AddLabel(page, b);
+            g_pg.prev[s] = ui->AddButton(page, "", kRowDesc[s]);   // the track (click and drag target)
+            g_pg.fill[s] = ui->AddLabel(page, "");
+            g_pg.thumb[s] = ui->AddLabel(page, "");
+            if (g_pg.prev[s] < 0 || g_pg.fill[s] < 0 || g_pg.thumb[s] < 0) ok = false;
         } else {
             g_pg.text[s] = ui->AddLabel(page, b);
             g_pg.prev[s] = ui->AddButton(page, "<", kRowDesc[s]);
@@ -1186,9 +1279,14 @@ void KPATCH_CALL cbBuild(void* panel, void*) {
         }
         if (g_pg.text[s] < 0) ok = false;
     }
+    g_pg.save = ui->AddButton(page, "Save", kSaveDesc);
+    g_pg.rst = ui->AddButton(page, "Reset", kResetDesc);
+    g_pg.defs = ui->AddButton(page, "Defaults", kDefaultsDesc);
+    if (g_pg.save < 0 || g_pg.rst < 0 || g_pg.defs < 0) ok = false;
     if (!ok) { KP_LOGV(chCfg, KPLOG_WARN, "page BUILD: an item failed (page %u left inert)", page); g_pg.reset(); return; }
     g_pg.panel = panel;
     g_pg.page = page;
+    g_pg.dirtyShown = 0;
     KP_LOGV(chCfg, KPLOG_INFO, "page BUILD ok page=%u rows=%d", page, static_cast<int>(esl::S_Count));
     buildPreview(panel, page);
 }
@@ -1197,6 +1295,10 @@ void KPATCH_CALL cbEnter(uint32_t page, void*) {
     if (!g_pg.panel || page != g_pg.page || !g_mcMenu.ok()) return;
     saferead::beginScope();
     const K2MenuUiApi* ui = g_mcMenu.p;
+    g_edit = g_saved;   // unsaved edits are dropped when the page is left
+    g_pg.drag = -1;
+    g_pg.lprev = false;
+    g_pg.dirtyShown = -1;
     K2MuiRect col = { 0, 0, 0, 0 };
     if (ui->PaneRect(g_pg.panel, MUI_PANE_COLUMN, &col) && col.w > 0 && col.h > 0) {
         const int slotH = col.h * 32 / 284, pitch = col.h * 36 / 284;
@@ -1209,6 +1311,17 @@ void KPATCH_CALL cbEnter(uint32_t page, void*) {
             if (esl::settingIsToggle(s)) {
                 const K2MuiRect r = { col.x, y, col.w, slotH };
                 ui->SetRect(g_pg.page, g_pg.text[s], &r);
+            } else if (esl::settingIsSlider(s)) {
+                const K2MuiRect rl = { col.x, y, lw, slotH };
+                const K2MuiRect rt = { col.x + lw + gap, y, 2 * bw + gap, slotH };
+                ui->SetRect(g_pg.page, g_pg.text[s], &rl);
+                ui->SetRect(g_pg.page, g_pg.prev[s], &rt);
+                g_pg.track[s] = { rt.x, rt.y, rt.w, rt.h };
+                g_slFill[s] = Wid(); g_slThumb[s] = Wid();   // fresh caches: the controls may be new objects
+                g_slFill[s].c = reinterpret_cast<uintptr_t>(ui->Control(g_pg.page, g_pg.fill[s]));
+                g_slThumb[s].c = reinterpret_cast<uintptr_t>(ui->Control(g_pg.page, g_pg.thumb[s]));
+                if (g_slFill[s].c) guikit::setFillStyle(g_slFill[s].c, 2);    // fill mode 2: the label draws its fill image, as for the example labels
+                if (g_slThumb[s].c) guikit::setFillStyle(g_slThumb[s].c, 2);
             } else {
                 const K2MuiRect rl = { col.x, y, lw, slotH };
                 const K2MuiRect rp = { col.x + lw + gap, y, bw, slotH };
@@ -1218,13 +1331,26 @@ void KPATCH_CALL cbEnter(uint32_t page, void*) {
                 ui->SetRect(g_pg.page, g_pg.next[s], &rn);
             }
         }
+        // The button row under the rows: Save | Reset | Defaults, a quarter pitch below the last row.
+        const int by = col.y + esl::S_Count * pitch + pitch / 4;
+        int w3 = (col.w - 2 * gap) / 3;
+        if (w3 < 0) w3 = 0;
+        const K2MuiRect rs = { col.x, by, w3, slotH };
+        const K2MuiRect rr = { col.x + w3 + gap, by, w3, slotH };
+        const K2MuiRect rd = { col.x + 2 * (w3 + gap), by, w3, slotH };
+        ui->SetRect(g_pg.page, g_pg.save, &rs);
+        ui->SetRect(g_pg.page, g_pg.rst, &rr);
+        ui->SetRect(g_pg.page, g_pg.defs, &rd);
     } else if (!g_layoutWarned) {
         g_layoutWarned = true;
         KP_LOGV(chCfg, KPLOG_WARN, "page ENTER: no COLUMN pane rect (%d,%d,%d,%d): items stay unplaced", col.x, col.y, col.w, col.h);
     }
-    for (int s = 0; s < esl::S_Count; ++s) refreshRow(s);
     ui->SetDesc(g_pg.page, g_pv.on ? kPageDescPreview : kPageDescPlain);
-    refreshPreview();   // mod-config just showed every page item: hide what must stay hidden, keep the rest click-through
+    refreshAll();   // mod-config just showed every page item: hide what must stay hidden, keep the rest click-through
+}
+
+bool leftDown() {
+    return guikit::g_gk.gameForeground && guikit::g_gk.lbuttonDown && guikit::g_gk.gameForeground() && guikit::g_gk.lbuttonDown();
 }
 
 // Every Options draw while the page is shown: Clicked() is 1 once per click, so each item is asked every tick.
@@ -1233,6 +1359,7 @@ void KPATCH_CALL cbTick(uint32_t page, void*) {
     saferead::beginScope();
     const K2MenuUiApi* ui = g_mcMenu.p;
     for (int s = 0; s < esl::S_Count; ++s) {
+        if (esl::settingIsSlider(s)) { ui->Clicked(g_pg.page, g_pg.prev[s]); continue; }   // the track is driven by the polled press / drag below
         int dir = 0;
         if (esl::settingIsToggle(s)) {
             if (ui->Clicked(g_pg.page, g_pg.text[s])) dir = 1;
@@ -1241,13 +1368,41 @@ void KPATCH_CALL cbTick(uint32_t page, void*) {
             const bool up = ui->Clicked(g_pg.page, g_pg.next[s]) != 0;
             dir = up ? 1 : (dn ? -1 : 0);
         }
-        if (dir) applySetting(s, dir);
+        if (dir) editSetting(s, dir);
     }
-    refreshPreview();   // also follows a pane rect change (resolution, split asserted after enter)
+    // Sliders: press edge over a track starts a drag; while held the cursor x sets the value (nothing is saved until Save).
+    const bool down = leftDown();
+    int cx = 0, cy = 0;
+    const bool haveCur = guikit::cursorEngine(&cx, &cy);
+    if (!down) {
+        g_pg.drag = -1;
+    } else if (!g_pg.lprev && haveCur) {
+        g_pg.drag = -1;
+        for (int s = 0; s < esl::S_Count; ++s) {
+            if (!esl::settingIsSlider(s) || g_pg.track[s].w <= 0) continue;
+            const void* ctl = ui->Control(g_pg.page, g_pg.prev[s]);
+            if (ctl && guikit::hit(reinterpret_cast<uintptr_t>(ctl), cx, cy)) { g_pg.drag = s; break; }
+        }
+    }
+    if (g_pg.drag >= 0 && down && haveCur) {
+        const esl::RowRect& tr = g_pg.track[g_pg.drag];
+        const int inX = tr.x + 6, inW = tr.w - 12;   // the same inner span the fill bar uses
+        const esl::CfgRaw nxt = esl::setSliderValue(g_edit, g_pg.drag, esl::sliderHundredths(cx, inX, inW));
+        if (!esl::sameSetting(g_edit, nxt, g_pg.drag)) {
+            g_edit = nxt;
+            KP_LOGV(chCfg, KPLOG_INFO, "edit: %s=%.2f (unsaved, drag)", esl::settingKey(g_pg.drag), static_cast<double>(esl::settingFloat(g_edit, g_pg.drag)));
+        }
+    }
+    g_pg.lprev = down;
+    if (ui->Clicked(g_pg.page, g_pg.save)) saveEdits();
+    if (ui->Clicked(g_pg.page, g_pg.rst)) resetEdits();
+    if (ui->Clicked(g_pg.page, g_pg.defs)) defaultEdits();
+    refreshAll();   // the example follows a pane rect change (resolution, split asserted after enter); rows and sliders are placed once per enter
 }
 
 void KPATCH_CALL cbDestroy(void* panel, void*) {
     if (!panel || panel != g_pg.panel) return;
+    clearSliderWids();   // the slider labels are provider-owned: never touch them after the panel is gone
     destroyPreview();   // mod-config frees its own controls; this mod owns the MUI_NOFREE preview labels (mod-config unlinked them already)
     g_pg.reset();
 }
@@ -1265,7 +1420,7 @@ bool tryRegisterPage() {
     g_mcEntry.struct_size = sizeof(K2ModConfigEntry);
     g_mcEntry.id = "enemy-effects-strip";
     g_mcEntry.name = "Enemy Effects Strip";
-    g_mcEntry.desc = "Icon row above the target name: size, spacing, backing and drain overlay. Changes are saved to enemy_strip.ini and apply at once, except rows marked (restart).";
+    g_mcEntry.desc = "Icon row above the target name: size, spacing, backing and drain overlay. Edit, then press Save to write enemy_strip.ini and apply at once.";
     g_mcEntry.user = nullptr;
     g_mcEntry.build = cbBuild;
     g_mcEntry.enter = cbEnter;
@@ -1295,11 +1450,12 @@ __declspec(dllexport) void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
     g_hud.init(api, "enemy-effects-strip");
     loadIni();
-    g_pendMax = g_cfg.maxIcons;
+    g_saved = currentRaw(g_cfg.maxIcons);
+    g_edit = g_saved;
     g_pg.reset();
     g_mcCfg.init(api);
     g_mcMenu.init(api);
-    KP_LOGV(chMain, KPLOG_INFO, "enemy-effects-strip 0.4.1-dev loaded (Enabled=%d Verbose=%d MaxIcons=%d)", g_cfg.enabled ? 1 : 0, g_cfg.verbose ? 1 : 0, g_cfg.maxIcons);
+    KP_LOGV(chMain, KPLOG_INFO, "enemy-effects-strip 0.4.4-dev loaded (Enabled=%d Verbose=%d MaxIcons=%d)", g_cfg.enabled ? 1 : 0, g_cfg.verbose ? 1 : 0, g_cfg.maxIcons);
     g_hud.add(K2HUD_BUILD, 300, onHudBuild);
     g_hud.add(K2HUD_TARGET_MENU_POST, 100, onTargetMenuPost);
     g_hud.connect();

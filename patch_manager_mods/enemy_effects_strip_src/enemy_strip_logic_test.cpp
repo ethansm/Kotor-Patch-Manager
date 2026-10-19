@@ -574,6 +574,63 @@ static void testPreviewZoom() {
     }
 }
 
+// Staged edits (0.4.3): slider mapping, setSliderValue, copySetting, pageDiffers, pageDefaults.
+static void testStagedEdits() {
+    // sliderHundredths: track x 100..300 (w 200): 0 at/below the left edge, 100 at/beyond the right, 0.05 grid in between.
+    KT_CHECK_EQ(sliderHundredths(50, 100, 200), 0);
+    KT_CHECK_EQ(sliderHundredths(100, 100, 200), 0);
+    KT_CHECK_EQ(sliderHundredths(300, 100, 200), 100);
+    KT_CHECK_EQ(sliderHundredths(999, 100, 200), 100);
+    KT_CHECK_EQ(sliderHundredths(200, 100, 200), 50);    // half way
+    KT_CHECK_EQ(sliderHundredths(130, 100, 200), 15);    // 15 %
+    KT_CHECK_EQ(sliderHundredths(131, 100, 200), 15);    // 15.5 -> raw 16 -> nearest 0.05 = 15
+    KT_CHECK_EQ(sliderHundredths(133, 100, 200), 15);    // 16.5 -> raw 17 -> 15
+    KT_CHECK_EQ(sliderHundredths(134, 100, 200), 15);    // raw 17 -> still 15 (17/5 rounds down)
+    KT_CHECK_EQ(sliderHundredths(135, 100, 200), 20);    // raw 18 -> 20
+    KT_CHECK_EQ(sliderHundredths(150, 0, 0), 0);          // empty track
+    KT_CHECK_EQ(sliderHundredths(150, 0, -5), 0);
+    // sliderFillPx: rounds, clamps, NaN -> 0.
+    KT_CHECK_EQ(sliderFillPx(0.0f, 98), 0);
+    KT_CHECK_EQ(sliderFillPx(1.0f, 98), 98);
+    KT_CHECK_EQ(sliderFillPx(0.65f, 98), 64);
+    KT_CHECK_EQ(sliderFillPx(2.0f, 98), 98);
+    KT_CHECK_EQ(sliderFillPx(-1.0f, 98), 0);
+    KT_CHECK_EQ(sliderFillPx(0.5f, 0), 0);
+    { const float nan = 0.0f / 0.0f; KT_CHECK_EQ(sliderFillPx(nan, 98), 0); }
+    // setSliderValue touches only its own alpha and clamps 0..100.
+    { CfgRaw c; CfgRaw a = setSliderValue(c, S_DrainAlpha, 70);
+      KT_CHECK(a.drainAlpha == 0.70f && a.backingAlpha == c.backingAlpha);
+      CfgRaw b = setSliderValue(c, S_BackingAlpha, 130);
+      KT_CHECK(b.backingAlpha == 1.0f && b.drainAlpha == c.drainAlpha);
+      CfgRaw d = setSliderValue(c, S_DrainAlpha, -5);
+      KT_CHECK(d.drainAlpha == 0.0f);
+      CfgRaw e = setSliderValue(c, S_Gap, 50);   // not a slider: unchanged
+      KT_CHECK(!pageDiffers(c, e)); }
+    KT_CHECK(settingIsSlider(S_BackingAlpha) && settingIsSlider(S_DrainAlpha) && !settingIsSlider(S_Gap) && !settingIsSlider(S_Backing));
+    // copySetting + pageDiffers: every page setting individually; INI-only fields never count.
+    { CfgRaw a, b;
+      b.enabled = 0; b.maxIcons = 8; b.iconSize = 20; b.gap = 9; b.spacing = 7; b.backing = 1; b.backingAlpha = 0.9f; b.drainAlpha = 0.4f;
+      b.verbose = 1; b.tierObvious = 9; b.forceTier = 2; b.backingPad = 11;
+      for (int s = 0; s < S_Count; ++s) {
+          CfgRaw c = copySetting(a, b, s);
+          KT_CHECK(pageDiffers(a, c));
+          KT_CHECK(!sameSetting(a, c, s) && sameSetting(c, b, s));
+          int others = 0;
+          for (int k = 0; k < S_Count; ++k) if (k != s && !sameSetting(a, c, k)) ++others;
+          KT_CHECK_EQ(others, 0);
+      }
+      CfgRaw iniOnly = a; iniOnly.verbose = 1; iniOnly.tierObvious = 9; iniOnly.forceTier = 2; iniOnly.backingPad = 11;
+      KT_CHECK(!pageDiffers(a, iniOnly));
+      KT_CHECK(!pageDiffers(b, copySetting(copySetting(copySetting(copySetting(copySetting(copySetting(copySetting(copySetting(a, b, 0), b, 1), b, 2), b, 3), b, 4), b, 5), b, 6), b, 7)));
+      KT_CHECK(copySetting(a, b, 99).gap == a.gap); }
+    // pageDefaults: page settings at the defaults, INI-only fields kept.
+    { CfgRaw k; k.enabled = 0; k.maxIcons = 8; k.gap = 9; k.drainAlpha = 0.9f; k.verbose = 1; k.forceTier = 3; k.tierFull = 33; k.backingPad = 6;
+      CfgRaw d = pageDefaults(k);
+      const CfgRaw def;
+      KT_CHECK(!pageDiffers(d, def));
+      KT_CHECK(d.verbose == 1 && d.forceTier == 3 && d.tierFull == 33 && d.backingPad == 6); }
+}
+
 int main() {
     testConfig();
     testParseFloat();
@@ -586,5 +643,6 @@ int main() {
     testSettings();
     testPreview();
     testPreviewZoom();
+    testStagedEdits();
     return kt::Report("enemy_strip_logic");
 }
