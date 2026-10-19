@@ -5,6 +5,11 @@ A recipe (recipes/<id>.toml) is committed per-NPC instructions: resrefs, texture
 soundset, and optionally an [audio] table. It carries NO assets and NO 2DA row numbers (appearance/heads/soundset
 row ids are assigned by the builder from the live K2 tables).
 
+[models] body_b and head go together: a body-type B template (Bastila, Carth, Juhani, Mission) needs both, a
+single-model template (modeltype F/L/S, Zaalbar row 9) takes neither, so a recipe with only body_a is a head-less
+single-model character (no heads.2da row is assigned or built). Only one of the two is a recipe error. The recipe cannot
+see the template's modeltype at parse time; k1_port_char_build.py refuses a B template without body_b/head at build time.
+
 [audio] (optional) imports the character's own K1 bark audio: k1_ssf = the K1 SSF resref (e.g. p_carth), k2_ssf =
 the K2 SSF resref the pack serves. Both required. The builder then appends a NEW soundset.2da row for the character
 and the pack serves the SSF plus the K1 voice wavs. `character.soundset` stays required: it is the fallback K2 row
@@ -285,6 +290,10 @@ def parse_recipe(data: dict, path: Path) -> Recipe:
     body_a = _model(ctx, md["body_a"], "models.body_a")
     body_b = _model(ctx, md["body_b"], "models.body_b") if "body_b" in md else None
     head = _model(ctx, md["head"], "models.head") if "head" in md else None
+    if (body_b is None) != (head is None):  # a B-type character has both, a single-model (F/L/S) one neither
+        have, miss = ("body_b", "head") if head is None else ("head", "body_b")
+        raise ctx.err(f"models.{miss}", f"missing: models.{have} is set, but body_b and head go together (both for a body-type B template, "
+                      f"neither for a single-model F/L/S template such as Zaalbar row 9)")
     keep_dangly = md.get("keep_dangly", False)
     if not isinstance(keep_dangly, bool):
         raise ctx.err("models.keep_dangly", f"must be true or false, got {keep_dangly!r}")

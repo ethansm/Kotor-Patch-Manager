@@ -45,7 +45,8 @@ build, per character in config order (every step logs to <out>/<id>/logs/):
              RESMAN asset and the wavs as STREAM assets (flags 1, res_type 4), plus the row's 2DA cells)
              appearance/heads row ids come from the live K2 tables (<K2>/override/appearance.2da, heads.2da) in
              config order, chained with --chain-from (a pad step covers [build] first_appearance_row/first_head_row
-             above the live count); ids are persisted in <out>/assignments.json and reused. If the live counts moved
+             above the live count; a head-less single-model recipe, i.e. body_a only, gets no heads row and no heads cells);
+             ids are persisted in <out>/assignments.json and reused. If the live counts moved
              the build refuses unless --reassign (then every configured character is rebuilt).
   6 pack     <out>/<id>.k2pack (re-read with read_pack) and <out>/<id>.import_manifest.json
 Whole-character rebuilds start from a clean <out>/<id>/ work dir. --dry-run resolves, gates and prints the planned
@@ -321,7 +322,7 @@ def juhani_rows_clash(assigned: dict | None) -> bool:
     """True when any assigned row falls on juhani-char's virtual rows (or nothing is assigned yet: warn to be safe)."""
     if not assigned:
         return True
-    return any(int(r.get(k, -1)) in JUHANI_ROWS[k] for r in assigned.values() for k in JUHANI_ROWS)
+    return any(r.get(k) is not None and int(r.get(k, -1)) in JUHANI_ROWS[k] for r in assigned.values() for k in JUHANI_ROWS)
 
 
 # ------------------------------------------------------------------------------------------- config
@@ -577,8 +578,9 @@ def live_tables(k2: Path) -> Path:
 
 def plan_assignments(loaded: Loaded, runner: Runner, reassign: bool) -> tuple[dict, dict, dict]:
     """(planned {id: {appearance, head[, soundset]}}, live {appearance, head[, soundset]}, stored). Refuses when stored
-    ids no longer fit. A soundset row is planned only for recipes with [audio] (live soundset.2da height, then +1 per
-    audio recipe in config order)."""
+    ids no longer fit. A head-less (single-model) recipe gets head = None and does not advance the heads counter, so the
+    heads rows of the other characters are the same as if it were not in the list. A soundset row is planned only for
+    recipes with [audio] (live soundset.2da height, then +1 per audio recipe in config order)."""
     cfg = loaded.cfg
     live_dir = live_tables(cfg.k2_dir)
     live = {"appearance": twoda_height(runner, live_dir / "appearance.2da"),
@@ -590,7 +592,11 @@ def plan_assignments(loaded: Loaded, runner: Runner, reassign: bool) -> tuple[di
         if start < height:
             raise Failure(f"[build] {key} = {start}", f"below the live {what}.2da row count ({height}); it would overwrite rows",
                           f"use {height} or higher, or remove the key")
-    planned = {cid: {"appearance": start_a + i, "head": start_h + i} for i, cid in enumerate(cfg.characters)}
+    headless = {r.id for r in loaded.recipes if r.head is None}
+    planned, next_h = {}, start_h
+    for i, cid in enumerate(cfg.characters):
+        planned[cid] = {"appearance": start_a + i, "head": None if cid in headless else next_h}
+        next_h += cid not in headless
     audio_ids = [r.id for cid in cfg.characters for r in loaded.recipes if r.id == cid and r.audio is not None]
     if audio_ids:
         live["soundset"] = twoda_height(runner, live_dir / "soundset.2da")
@@ -607,8 +613,8 @@ def plan_assignments(loaded: Loaded, runner: Runner, reassign: bool) -> tuple[di
     for cid in cfg.characters:
         old = stored.get(cid)
         if old is not None and rows_differ(old, planned[cid]):
-            clash.append(f"{cid}: stored appearance {old.get('appearance')}/head {old.get('head')}/soundset {old.get('soundset')}, "
-                         f"plan now {planned[cid]['appearance']}/{planned[cid]['head']}/{planned[cid].get('soundset')}")
+            clash.append(f"{cid}: stored appearance {old.get('appearance')}/head {head_txt(old.get('head'))}/soundset {old.get('soundset')}, "
+                         f"plan now {planned[cid]['appearance']}/{head_txt(planned[cid]['head'])}/{planned[cid].get('soundset')}")
     if clash and not reassign:
         warn("assigned rows no longer fit the live K2 tables or the config order: " + "; ".join(clash))
         raise Failure(str(loaded.out / "assignments.json"),
@@ -616,6 +622,11 @@ def plan_assignments(loaded: Loaded, runner: Runner, reassign: bool) -> tuple[di
                       + (f", soundset.2da {live['soundset']}" if "soundset" in live else "") + ")",
                       "remove the installed packs and rebuild everything with --reassign, or restore the tables/config order")
     return planned, live, stored
+
+
+def head_txt(head) -> str:
+    """A heads row id for messages; a head-less (single-model) character has none."""
+    return "none" if head is None else str(head)
 
 
 def rows_differ(old: dict, new: dict) -> bool:
@@ -1253,12 +1264,12 @@ def label_for(recipe) -> str:
 
 def char_build_argv(ctx: Ctx, rows: dict, chain_from: Path | None) -> list:
     r = ctx.recipe
-    body_b = r.body_b or r.body_a
     soundset = rows["soundset"] if r.audio is not None else r.soundset  # [audio]: the new row; else the recipe fallback
     argv = py_cmd(k1port_py(), CHAR_BUILD_TOOL, "--game-dir", ctx.loaded.cfg.k2_dir, "--tag", r.id,
-                  "--label", label_for(r), "--new-row", rows["appearance"], "--new-head-row", rows["head"],
-                  "--body-a", r.body_a.k2, "--body-b", body_b.k2, "--head", r.head.k2, "--soundset", soundset,
+                  "--label", label_for(r), "--new-row", rows["appearance"], "--body-a", r.body_a.k2, "--soundset", soundset,
                   "--gender", r.gender, "--name", r.display_name, "--utc", r.utc, "--template-row", r.template_row)
+    if r.head is not None:  # B-type character: body B (body A when the recipe has none) + a heads.2da row
+        argv += ["--new-head-row", rows["head"], "--body-b", (r.body_b or r.body_a).k2, "--head", r.head.k2]
     if r.dlg:
         argv += ["--conversation", r.dlg]
     if chain_from is not None:
@@ -1270,29 +1281,35 @@ def char_build_argv(ctx: Ctx, rows: dict, chain_from: Path | None) -> list:
 
 def prepare_base(ctx: Ctx, order: list, idx: int, rows: dict) -> Path | None:
     """The --chain-from dir for char_build: the previous character's tables, else the live tables padded to the
-    planned row (a pad copy in <cdir>/base). None = no chain (the live tables already have exactly the planned count)."""
+    planned row (a pad copy in <cdir>/base). None = no chain (the live tables already have exactly the planned count).
+    The heads table is only needed (and only chained) for a character with a heads row: a head-less recipe writes no
+    heads.2da, so the heads source is the nearest earlier character dir that has one, else the live table."""
     live = live_tables(ctx.loaded.cfg.k2_dir)
-    cands: list[Path | None] = []
-    if idx > 0:
-        pdir = ctx.loaded.out / order[idx - 1] / "override"
-        if (pdir / "appearance.2da").is_file() and (pdir / "heads.2da").is_file():
-            cands.append(pdir)
-    cands.append(None)
-    pick = None
-    for cand in cands:
-        d = cand or live
-        ha, hh = (twoda_height(ctx.runner, d / "appearance.2da"), twoda_height(ctx.runner, d / "heads.2da"))
-        if ha <= rows["appearance"] and hh <= rows["head"]:
-            pick = (cand, d, ha, hh)
-            break
-    if pick is None:
+    want_h = rows["head"]
+    prev = [ctx.loaded.out / cid / "override" for cid in reversed(order[:idx])]
+
+    def pick(name: str, target: int, dirs: list):
+        for cand in [*dirs, None]:
+            d = cand or live
+            if cand is not None and not (d / name).is_file():
+                continue
+            h = twoda_height(ctx.runner, d / name)
+            if h <= target:
+                return cand, d, h
+        return None
+
+    # appearance.2da always chains from the previous character; heads.2da from the nearest one that wrote it
+    app = pick("appearance.2da", rows["appearance"], prev[:1])
+    heads = pick("heads.2da", want_h, prev) if want_h is not None else None
+    if app is None or (want_h is not None and heads is None):
         raise Failure(f"{ctx.recipe.id} rows", "no base table fits the planned rows", "build with --reassign")
-    cand, d, ha, hh = pick
-    if ha == rows["appearance"] and hh == rows["head"]:
-        return cand
+    exact = app[2] == rows["appearance"] and (want_h is None or heads[2] == want_h)
+    if exact and (want_h is None or app[0] == heads[0]):
+        return app[0]
     base = ctx.cdir / "base"
     base.mkdir(parents=True, exist_ok=True)
-    for name, target, height in (("appearance.2da", rows["appearance"], ha), ("heads.2da", rows["head"], hh)):
+    sources = [("appearance.2da", rows["appearance"], app)] + ([("heads.2da", want_h, heads)] if want_h is not None else [])
+    for name, target, (_cand, d, height) in sources:
         if height == target:
             shutil.copyfile(d / name, base / name)
         else:
@@ -1304,7 +1321,9 @@ def cells_for(ctx: Ctx, rows: dict) -> list:
     r = ctx.recipe
     from k1_port_vfs_pack import TwoDaCell
     tds = []
-    specs = [("appearance", "appearance.2da", rows["appearance"], r.template_row), ("heads", "heads.2da", rows["head"], -1)]
+    specs = [("appearance", "appearance.2da", rows["appearance"], r.template_row)]
+    if rows["head"] is not None:  # a head-less (single-model) character ships no heads.2da cells
+        specs.append(("heads", "heads.2da", rows["head"], -1))
     if r.audio is not None:  # the new soundset row: no template, every other column stays empty
         specs.append(("soundset", "soundset.2da", rows["soundset"], -1))
     for table, fname, row, template in specs:
@@ -1394,7 +1413,7 @@ def print_plan(ctx: Ctx, idx: int, order: list, rows: dict, resolved: dict) -> N
     cmds.append(("char_build", char_build_argv(ctx, rows, chain)))
     for t in r.textures:
         cmds.append((f"tex {t.k2}", tpc_argv(ctx, t, ctx.stage / "override" / f"{t.k2.lower()}.<tga>", ctx.cdir / "tpc" / f"{t.k2.lower()}.tpc")))
-    say(f"[{r.id}] dry run: appearance row {rows['appearance']}, heads row {rows['head']}"
+    say(f"[{r.id}] dry run: appearance row {rows['appearance']}, heads row {head_txt(rows['head'])}"
         + (f", soundset row {rows['soundset']}" if audio else "") + f", converter {r.converter}" + (" (keep_dangly)" if r.keep_dangly else "") + ", "
         f"texture_source {ctx.loaded.cfg.texture_source}")
     if audio:
@@ -1428,9 +1447,6 @@ def build_character(loaded: Loaded, recipe, idx: int, order: list, rows: dict, k
     if loaded.cfg.texture_source == "cr" and not dry_run and not cr_dir().is_dir():
         raise Failure("[build] texture_source = cr", f"Characters Revisited dir not found: {cr_dir()}",
                       "extract CR (k1_port_cr_extract.py) or set K1PORT_CR_DEST; or use texture_source = \"vanilla\"")
-    if recipe.head is None:
-        raise Failure(f"recipe {cid}", "no [models] head: the importer builds appearance + heads rows and needs a head model",
-                      "add models.head to the recipe")
     say(f"[{cid}] 1/6 resolve K1 sources")
     resolver = Runner(None)  # logged into the manifest only: the work dir is wiped below
     resolved = resolve_character(resolver, loaded, recipe, k1)
@@ -1507,7 +1523,7 @@ def build_character(loaded: Loaded, recipe, idx: int, order: list, rows: dict, k
     say(f"[{cid}] 4/6 textures -> DXT1 TPC")
     tex_info = [make_tpc(ctx, t) for t in recipe.textures]
 
-    say(f"[{cid}] 5/6 rows {rows['appearance']}/{rows['head']}" + (f" + soundset {rows['soundset']}" if recipe.audio else "") + " + UTC")
+    say(f"[{cid}] 5/6 rows {rows['appearance']}/{head_txt(rows['head'])}" + (f" + soundset {rows['soundset']}" if recipe.audio else "") + " + UTC")
     chain = prepare_base(ctx, order, idx, rows)
     if recipe.audio is not None:
         (cdir / "override").mkdir(parents=True, exist_ok=True)
@@ -1527,7 +1543,7 @@ def build_character(loaded: Loaded, recipe, idx: int, order: list, rows: dict, k
         assets = kpack.assets_from_stage(files)
         info = kpack.CharacterInfo(character_id=recipe.id, display_name=recipe.display_name, default_tag=recipe.tag,
                                    default_utc=recipe.utc, default_dlg=recipe.dlg, appearance_id=rows["appearance"],
-                                   head_id=rows["head"],
+                                   head_id=rows["head"] if rows["head"] is not None else 0,  # pack field is a u32: unused without a heads row
                                    soundset_id=rows["soundset"] if recipe.audio is not None else recipe.soundset)
         pack_path = loaded.out / f"{recipe.id}{PACK_SUFFIX}"
         summary = kpack.write_pack(pack_path, info, assets, cells)
@@ -1566,7 +1582,7 @@ def build_character(loaded: Loaded, recipe, idx: int, order: list, rows: dict, k
     }
     write_json(loaded.out / f"{recipe.id}.import_manifest.json", manifest)
     say(f"[{cid}] built {pack_path} ({summary['size']} bytes, {summary['asset_count']} assets, {summary['cell_count']} cells, "
-        f"rows {rows['appearance']}/{rows['head']}" + (f"/{rows['soundset']}" if recipe.audio else "") + f"), sha256 {summary['sha256'][:16]}")
+        f"rows {rows['appearance']}/{head_txt(rows['head'])}" + (f"/{rows['soundset']}" if recipe.audio else "") + f"), sha256 {summary['sha256'][:16]}")
     return manifest
 
 
@@ -1757,7 +1773,7 @@ def cmd_remove(args) -> int:
     if isinstance(stored, dict) and args.id in stored:
         old = stored.pop(args.id)
         write_json(loaded.out / "assignments.json", stored)
-        say(f"dropped the assignment (appearance {old.get('appearance')}, heads {old.get('head')}"
+        say(f"dropped the assignment (appearance {old.get('appearance')}, heads {head_txt(old.get('head'))}"
             + (f", soundset {old['soundset']}" if "soundset" in old else "") + "); those row ids stay unused "
             f"until a rebuild of {args.id} (rows are positional in config order)")
     say("Close the game before relaunching.")
@@ -1799,7 +1815,7 @@ def cmd_list(args) -> int:
     say(f"out: {loaded.out}")
     for x in rows:
         a = x["assigned"]
-        rowtxt = (f"rows {a['appearance']}/{a['head']}" + (f"/{a['soundset']}" if "soundset" in a else "")) if a else "rows unassigned"
+        rowtxt = (f"rows {a['appearance']}/{head_txt(a['head'])}" + (f"/{a['soundset']}" if "soundset" in a else "")) if a else "rows unassigned"
         state = ("built" + (" (stale: recipe changed)" if x["stale"] else "")) if x["built"] else "not built"
         inst_txt = ("installed" + ("" if x["installed_matches_build"] else " (differs from build)")) if x["installed"] else "not installed"
         sha = (x["pack_sha256"] or "-")[:16]

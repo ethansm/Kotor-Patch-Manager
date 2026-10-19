@@ -1,7 +1,9 @@
 # Zaalbar (K1 party member, K1 creature template p_zaalbar). Instructions only: no assets, no 2DA row numbers (the builder assigns them).
 # Values from k1_port_scan.py facts for p_zaalbar (chitin:templates.bif): appearance.2da row 9 (modeltype F: one full-body model, no
 # head, no body B), soundset.2da row 87 (p_zaalbar), conversation k_hzaa_dialog, gender_id 0; supermodel N_WookieM exists in vanilla K2
-# (.claude/research/pykotor_writer/h7_mission_zaalbar.md, 10-18). k1_port_scan.py cannot derive this one (it needs a head).
+# (.claude/research/pykotor_writer/h7_mission_zaalbar.md, 10-18). k1_port_scan.py cannot derive this one (it needs a head), so this committed recipe is the way to import him.
+# Buildable now: a head-less recipe (body_a only, no body_b, no head) is a single-model character; the importer assigns no heads.2da row
+# and passes no --head/--body-b/--new-head-row to k1_port_char_build.py (README: recipe keys).
 [character]
 id = "zaalbar"
 display_name = "Zaalbar"

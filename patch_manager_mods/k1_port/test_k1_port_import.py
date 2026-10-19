@@ -148,12 +148,18 @@ if script == "k1_port_char_build.py":
     game = pathlib.Path(opt("--game-dir"))
     chain = opt("--chain-from")
     base = pathlib.Path(chain) if chain else game / "override"
-    app, heads = read2da(base / "appearance.2da"), read2da(base / "heads.2da")
-    nr, nh = int(opt("--new-row")), int(opt("--new-head-row"))
+    single = "--head" not in args  # head-less single-model row: heads.2da is neither read nor written
+    if single and ("--new-head-row" in args or "--body-b" in args):
+        print("error: --body-b/--new-head-row without --head", file=sys.stderr)
+        sys.exit(1)
+    app = read2da(base / "appearance.2da")
+    heads = None if single else read2da(base / "heads.2da")
+    nr = int(opt("--new-row"))
+    nh = None if single else int(opt("--new-head-row"))
     if len(app["rows"]) != nr:
         print("error: live appearance.2da has %d rows but --new-row is %d" % (len(app["rows"]), nr), file=sys.stderr)
         sys.exit(1)
-    if len(heads["rows"]) != nh:
+    if heads is not None and len(heads["rows"]) != nh:
         print("error: live heads.2da has %d rows but --new-head-row is %d" % (len(heads["rows"]), nh), file=sys.stderr)
         sys.exit(1)
     sst = opt("--soundset-table")
@@ -161,13 +167,17 @@ if script == "k1_port_char_build.py":
     if snd_path.is_file() and int(opt("--soundset")) >= len(read2da(snd_path)["rows"]):
         print("error: soundset %s is outside soundset.2da 0..%d" % (opt("--soundset"), len(read2da(snd_path)["rows"]) - 1), file=sys.stderr)
         sys.exit(1)
-    app["rows"].append([opt("--label"), opt("--body-b"), opt("--body-a"), opt("--body-a"), opt("--body-b"),
-                        opt("--body-b"), str(nh), "", "", "", "B"])
-    heads["rows"].append([opt("--head"), "", ""])
+    if single:
+        app["rows"].append([opt("--label"), opt("--body-a"), opt("--body-a"), opt("--body-a"), "", "", "", "", "", "", "F"])
+    else:
+        app["rows"].append([opt("--label"), opt("--body-b"), opt("--body-a"), opt("--body-a"), opt("--body-b"),
+                            opt("--body-b"), str(nh), "", "", "", "B"])
+        heads["rows"].append([opt("--head"), "", ""])
     out = pathlib.Path(opt("--out"))
     out.mkdir(parents=True, exist_ok=True)
     write2da(out / "appearance.2da", app)
-    write2da(out / "heads.2da", heads)
+    if heads is not None:
+        write2da(out / "heads.2da", heads)
     (out / (opt("--utc") + ".utc")).write_bytes(("UTC:" + opt("--utc") + ":" + opt("--name") + ":ss=" + opt("--soundset")).encode())
     (out / "char_build.json").write_text("{}")
     print(json.dumps({"appearance_row": nr, "heads_row": nh, "chained_from": chain, "sha256": {"appearance.2da": "x"}}))
@@ -307,6 +317,28 @@ txi = "clamp 1"
 """
 
 
+RECIPE_SINGLE = """\
+[character]
+id = "{id}"
+display_name = "{name}"
+tag = "k1p_{id}"
+utc = "k1p_{id}"
+dlg = ""
+soundset = 11
+template_row = 9
+gender = 0
+
+[models]
+converter = "{conv}"
+body_a = {{ k1 = "p_{id}ba", k2 = "k1p_{id}ba" }}
+
+[[textures]]
+k1 = "p_{id}ba01"
+k2 = "k1p_{id}ba01"
+force_opaque = true
+"""
+
+
 def snapshot(root: Path, skip=("fake.log",)) -> dict:
     snap = {}
     for dirpath, dirs, files in os.walk(root):
@@ -324,6 +356,7 @@ class Base(unittest.TestCase):
     converters = {}
     extra_build = ""
     override_items: tuple = ()
+    single: tuple = ()  # ids whose recipe is a head-less single-model one (RECIPE_SINGLE)
 
     def setUp(self):
         self._td = tempfile.TemporaryDirectory(prefix="k1port_import_test_")
@@ -339,7 +372,8 @@ class Base(unittest.TestCase):
         self.recipes.mkdir()
         for cid in self.chars:
             (self.recipes / f"{cid}.toml").write_text(
-                RECIPE.format(id=cid, name=cid.capitalize(), conv=self.converters.get(cid, "pykotor")))
+                (RECIPE_SINGLE if cid in self.single else RECIPE).format(
+                    id=cid, name=cid.capitalize(), conv=self.converters.get(cid, "pykotor")))
         (self.k1 / "_bif").mkdir(parents=True)
         (self.k1 / "Override").mkdir()
         (self.k1 / "chitin.key").write_bytes(b"KEY")
@@ -739,12 +773,146 @@ class BuildTests(Base):
         self.assertEqual(rc, 1)
         self.assertIn("nobody", err)
 
-    def test_head_is_required(self):
+    def test_head_is_required_with_body_b(self):
         text = (self.recipes / "tst.toml").read_text().replace('head   = { k1 = "p_tsth",  k2 = "k1p_tsth" }\n', "")
         (self.recipes / "tst.toml").write_text(text)
         rc, _, err = self.run_cli("build", "--only", "tst")
         self.assertEqual(rc, 1)
-        self.assertIn("needs a head model", err)
+        self.assertIn("models.head", err)
+        self.assertIn("go together", err)
+        self.assertFalse(self.out.exists())
+
+    def test_body_b_is_required_with_head(self):
+        text = (self.recipes / "tst.toml").read_text().replace('body_b = { k1 = "p_tstbb", k2 = "k1p_tstbb" }\n', "")
+        (self.recipes / "tst.toml").write_text(text)
+        rc, _, err = self.run_cli("build", "--dry-run", "--only", "tst")
+        self.assertEqual(rc, 1)
+        self.assertIn("models.body_b", err)
+
+
+class HeadlessTests(Base):
+    """A single-model (modeltype F) recipe such as Zaalbar: body_a only, no body_b, no head, no heads.2da row."""
+    chars = ("tst", "zaa", "tsu")
+    single = ("zaa",)
+
+    def argv_of(self, script, tag):
+        for c in self.script_calls(script):
+            if "--tag" in c and c[c.index("--tag") + 1] == tag:
+                return c
+        self.fail(f"no {script} call for {tag}")
+
+    def test_no_heads_row_is_assigned_and_the_others_do_not_shift(self):
+        self.build_ok()
+        stored = json.loads((self.out / "assignments.json").read_text())
+        self.assertEqual(stored["tst"], {"appearance": LIVE_APP, "head": LIVE_HEAD})
+        self.assertEqual(stored["zaa"], {"appearance": LIVE_APP + 1, "head": None})
+        self.assertEqual(stored["tsu"], {"appearance": LIVE_APP + 2, "head": LIVE_HEAD + 1})  # same as with no zaa in the list
+        self.assertEqual(self.manifest("zaa")["assigned"]["head"], None)
+
+    def test_char_build_argv_has_no_head_flags(self):
+        self.build_ok()
+        zaa = self.argv_of("k1_port_char_build.py", "zaa")
+        for flag in ("--head", "--new-head-row", "--body-b"):
+            self.assertNotIn(flag, zaa)
+        self.assertEqual(zaa[zaa.index("--body-a") + 1], "k1p_zaaba")
+        self.assertEqual(zaa[zaa.index("--template-row") + 1], "9")
+        self.assertEqual(zaa[zaa.index("--new-row") + 1], str(LIVE_APP + 1))
+        tst = self.argv_of("k1_port_char_build.py", "tst")
+        self.assertEqual(tst[tst.index("--head") + 1], "k1p_tsth")
+        self.assertEqual(tst[tst.index("--new-head-row") + 1], str(LIVE_HEAD))
+        self.assertEqual(tst[tst.index("--body-b") + 1], "k1p_tstbb")
+
+    def test_one_model_ingest_and_no_supermodel_map(self):
+        self.build_ok()
+        models = [c for c in self.script_calls("k1_port_ingest.py") if "--resref" in c and "--no-model" not in c
+                  and c[c.index("--resref") + 1].startswith("p_zaa")]
+        self.assertEqual([c[c.index("--resref") + 1] for c in models], ["p_zaaba"])
+        self.assertNotIn("--supermodel-map", models[0])
+        self.assertTrue((self.out / "zaa" / "stage" / "models" / "k1p_zaaba.mdl").is_file())
+        self.assertEqual(sorted(p.name for p in (self.out / "zaa" / "stage" / "models").glob("*.mdl")), ["k1p_zaaba.mdl"])
+
+    def test_pack_ships_appearance_cells_only(self):
+        self.build_ok()
+        info, assets, cells = self.load_pack("zaa")
+        self.assertEqual(info.appearance_id, LIVE_APP + 1)
+        self.assertEqual(info.head_id, 0)
+        self.assertEqual({c.table for c in cells}, {"appearance"})
+        self.assertEqual({c.row for c in cells}, {LIVE_APP + 1})
+        self.assertEqual({c.template_row for c in cells}, {9})
+        self.assertFalse((self.out / "zaa" / "override" / "heads.2da").exists())
+        _, _, tsu_cells = self.load_pack("tsu")
+        self.assertEqual({c.table for c in tsu_cells}, {"appearance", "heads"})
+        self.assertEqual({c.row for c in tsu_cells if c.table == "heads"}, {LIVE_HEAD + 1})
+
+    def test_chain_skips_the_head_less_character_for_heads(self):
+        self.build_ok()
+        tsu = self.argv_of("k1_port_char_build.py", "tsu")
+        base = Path(tsu[tsu.index("--chain-from") + 1])
+        self.assertEqual(base, self.out / "tsu" / "base")  # appearance from zaa, heads from tst: assembled
+        app = json.loads((base / "appearance.2da").read_text())
+        heads = json.loads((base / "heads.2da").read_text())
+        self.assertEqual((len(app["rows"]), len(heads["rows"])), (LIVE_APP + 2, LIVE_HEAD + 1))
+        final = json.loads((self.out / "tsu" / "override" / "heads.2da").read_text())
+        self.assertEqual(len(final["rows"]), LIVE_HEAD + 2)
+
+    def test_head_less_first_then_a_b_character(self):
+        self.write_config(chars=["zaa", "tst"])
+        self.build_ok()
+        stored = json.loads((self.out / "assignments.json").read_text())
+        self.assertEqual(stored["zaa"], {"appearance": LIVE_APP, "head": None})
+        self.assertEqual(stored["tst"], {"appearance": LIVE_APP + 1, "head": LIVE_HEAD})
+        zaa = self.argv_of("k1_port_char_build.py", "zaa")
+        self.assertNotIn("--chain-from", zaa)  # the live tables have exactly the planned appearance count
+        tst = self.argv_of("k1_port_char_build.py", "tst")
+        base = Path(tst[tst.index("--chain-from") + 1])
+        self.assertEqual(len(json.loads((base / "heads.2da").read_text())["rows"]), LIVE_HEAD)
+
+    def test_head_less_alone_chains_nothing_and_writes_no_heads(self):
+        self.write_config(chars=["zaa"])
+        self.build_ok()
+        zaa = self.argv_of("k1_port_char_build.py", "zaa")
+        self.assertNotIn("--chain-from", zaa)
+        self.assertEqual(sorted(p.name for p in (self.out / "zaa" / "override").glob("*.2da")), ["appearance.2da"])
+
+    def test_first_head_row_pads_only_for_the_b_characters(self):
+        self.write_config(build_extra=f"first_head_row = {LIVE_HEAD + 3}")
+        self.build_ok()
+        stored = json.loads((self.out / "assignments.json").read_text())
+        self.assertEqual([stored[c]["head"] for c in self.chars], [LIVE_HEAD + 3, None, LIVE_HEAD + 4])
+
+    def test_rebuild_is_stable_and_list_shows_no_heads_row(self):
+        self.build_ok()
+        first = (self.out / "assignments.json").read_text()
+        sha = imp.sha256_file(self.out / "zaa.k2pack")
+        self.build_ok()
+        self.assertEqual((self.out / "assignments.json").read_text(), first)
+        self.assertEqual(imp.sha256_file(self.out / "zaa.k2pack"), sha)
+        rc, out, err = self.run_cli("list")
+        self.assertEqual(rc, 0, out + err)
+        self.assertIn(f"rows {LIVE_APP + 1}/none", out)
+        self.assertIn(f"rows {LIVE_APP + 2}/{LIVE_HEAD + 1}", out)
+
+    def test_recipe_gaining_a_head_is_a_row_clash_not_a_crash(self):
+        self.build_ok()
+        (self.recipes / "zaa.toml").write_text(RECIPE.format(id="zaa", name="Zaa", conv="pykotor"))
+        rc, out, err = self.run_cli("build")
+        self.assertEqual(rc, 1)
+        self.assertIn("head none", err)
+        self.assertIn("--reassign", err)
+
+    def test_dry_run_prints_the_plan_without_a_heads_row(self):
+        before = snapshot(self.root)
+        rc, out, err = self.run_cli("build", "--dry-run", "--only", "zaa")
+        self.assertEqual(rc, 0, out + err)
+        self.assertIn("heads row none", out)
+        self.assertEqual(len([ln for ln in out.splitlines() if "ingest p_zaa" in ln and "no-model" not in ln]), 1)
+        line = next(ln for ln in out.splitlines() if "char_build:" in ln)
+        for flag in ("--head ", "--new-head-row", "--body-b"):
+            self.assertNotIn(flag, line)
+        self.assertEqual(snapshot(self.root), before)
+        rc, out, err = self.run_cli("build", "--dry-run")  # the full dry run still plans the B characters
+        self.assertEqual(rc, 0, out + err)
+        self.assertIn(f"heads row {LIVE_HEAD + 1}", out)
 
 
 class AssignmentTests(Base):
@@ -2095,14 +2263,24 @@ class SupernodeChainTests(Base):
         for c in self.script_calls("k1_port_mdlops.py"):
             self.assertNotIn("--supernode", c)
 
-    def test_single_model_recipe_converts_body_a_and_head_only(self):
+    def test_head_without_body_b_is_a_recipe_error(self):
         self.drop_body_b()
+        rc, out, err = self.run_cli("build", "--only", "tst")
+        self.assertEqual(rc, 1)
+        self.assertIn("models.body_b", err)
+        self.assertIn("go together", err)
+
+    def test_single_model_recipe_converts_body_a_only(self):
+        self.drop_body_b()
+        text = "\n".join(l for l in (self.recipes / "tst.toml").read_text().splitlines() if not l.startswith("head"))
+        text = text.replace('[[textures]]\nk1 = "p_tsth01"\nk2 = "k1p_tsth01"\nforce_opaque = true\ntxi = "clamp 1"\n', "")
+        (self.recipes / "tst.toml").write_text(text)
+        self.put_k1("p_tstba.mdl", b"K1:p_tstba.mdl\0P_TSTBA01\0")
         self.build_ok("--only", "tst")
         calls = self.model_ingests()
-        self.assertEqual([self.resref(c) for c in calls], ["p_tstba", "p_tsth"])
-        for c in calls:
-            self.assertNotIn("--supermodel-map", c)
-            self.assertEqual(c[c.index("--supernode") + 1], "chain")
+        self.assertEqual([self.resref(c) for c in calls], ["p_tstba"])
+        self.assertNotIn("--supermodel-map", calls[0])
+        self.assertEqual(calls[0][calls[0].index("--supernode") + 1], "chain")
 
     def test_dry_run_plan_shows_b_before_a(self):
         rc, out, err = self.run_cli("build", "--dry-run", "--only", "tst")

@@ -125,6 +125,26 @@ class RecipeRuleTests(Base):
         self.assertIsNone(r.body_b)
         self.assertIsNone(r.head)
 
+    def test_head_and_body_b_go_together(self):
+        no_b = good().replace('body_b = { k1 = "p_tstbb", k2 = "tst_bb" }\n', "")
+        no_head = good().replace('head   = { k1 = "p_tsth",  k2 = "tst_h" }\n', "")
+        msg = self.bad(no_b, "models.body_b", "go together")
+        self.assertIn("models.head is set", msg)
+        msg = self.bad(no_head, "models.head", "go together")
+        self.assertIn("models.body_b is set", msg)
+
+    def test_head_less_single_model_recipe(self):
+        text = good().replace('body_b = { k1 = "p_tstbb", k2 = "tst_bb" }\n', "").replace(
+            'head   = { k1 = "p_tsth",  k2 = "tst_h" }\n', "").replace("template_row = 17", "template_row = 9")
+        r = R.load_recipe(self.recipe(text))
+        self.assertEqual((r.template_row, r.body_b, r.head), (9, None, None))
+        self.assertEqual(r.k2_names()[0], "tst_ba")
+        self.assertNotIn("tst_h", r.k2_names())
+
+    def test_shipped_zaalbar_is_head_less(self):
+        z = R.load_recipe(HERE / "recipes" / "zaalbar.toml")
+        self.assertEqual((z.template_row, z.body_b, z.head), (9, None, None))
+
     def test_force_opaque_default_false(self):
         r = R.load_recipe(self.recipe(good().replace("force_opaque = true\n\n[[", "\n\n[[", 1)))
         self.assertFalse(r.textures[0].force_opaque)
