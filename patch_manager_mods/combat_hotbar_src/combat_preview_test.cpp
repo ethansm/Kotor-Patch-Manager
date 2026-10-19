@@ -103,6 +103,35 @@ int main() {
     // out-of-range demo inputs are clamped, never crash
     { Demo d; d.count[0] = -5; d.count[1] = 99; d.count[2] = 3; d.screen = 9; Settings s; s.cols = 0; s.maxRows = 99; Model m = build(d, s);
       KT_CHECK_EQ(m.sw, 3440); KT_CHECK_EQ(m.per, 1 * 8); KT_CHECK_EQ(m.outN[0], 0); KT_CHECK_EQ(m.outN[1], 8); }
+    // ---- draw list ----
+    { Demo d; d.count[0] = 3; d.count[1] = 0; d.count[2] = 16; d.unusable = UNUSABLE_SOME; d.screen = 1; Settings s; s.cols = 4; s.maxRows = 4;
+      Model m = build(d, s); Prim pr[kMaxPrims]; const int n = buildPrims(m, pr, kMaxPrims);
+      bool seen[kPoolSize] = {}; int nBtn = 0, nPill = 0, nScreen = 0, nName = 0, nHealth = 0;
+      for (int i = 0; i < n; ++i) {
+        KT_CHECK(pr[i].label >= 0 && pr[i].label < kPoolSize); KT_CHECK(!seen[pr[i].label]); seen[pr[i].label] = true;   // unique, in range
+        KT_CHECK(pr[i].r.w > 0 && pr[i].r.h > 0);
+        KT_CHECK(within(pr[i].r, m.sw, m.sh));
+        if (pr[i].kind == PK_BUTTON) { ++nBtn; KT_CHECK_EQ(pr[i].label, kLblBtn + pr[i].group * kDrawPerGroup + pr[i].slot); KT_CHECK(pr[i].alpha == 1.f || pr[i].alpha == kUnusableAlpha); }
+        if (pr[i].kind == PK_PILL) { ++nPill; KT_CHECK_EQ(pr[i].label, kLblPill + pr[i].group); }
+        if (pr[i].kind == PK_SCREEN) { ++nScreen; KT_CHECK(pr[i].r.x == 0 && pr[i].r.w == m.sw && pr[i].r.h == m.sh); }
+        if (pr[i].kind == PK_NAME) ++nName;
+        if (pr[i].kind == PK_HEALTH) ++nHealth;
+      }
+      KT_CHECK_EQ(nBtn, 3 + 16); KT_CHECK_EQ(nPill, 2); KT_CHECK_EQ(nScreen, 1); KT_CHECK_EQ(nName, 1); KT_CHECK_EQ(nHealth, 1);   // group 1 is empty: no pill (HideEmpty=1)
+      KT_CHECK(!seen[kLblPill + 1]);
+      // name + health bars tile the banner exactly: 60 % of 20 px = 12, health 8
+      for (int i = 0; i < n; ++i) { if (pr[i].kind == PK_NAME) { KT_CHECK_EQ(pr[i].r.h, 12); KT_CHECK_EQ(pr[i].r.y, 40); } if (pr[i].kind == PK_HEALTH) { KT_CHECK_EQ(pr[i].r.h, 8); KT_CHECK_EQ(pr[i].r.y, 52); } }
+      // unusable SOME: odd entries dim, the same count as the model says
+      int dim = 0; for (int i = 0; i < n; ++i) if (pr[i].kind == PK_BUTTON && pr[i].alpha < 1.f) ++dim;
+      KT_CHECK_EQ(dim, 1 + 8);   // group 0 (3 entries): entry 1; group 2 (16 entries): 8 odd ones
+      // cap: a too-small output array never overruns
+      Prim small[4]; KT_CHECK_EQ(buildPrims(m, small, 4), 4);
+      // HideEmpty=0: all three containers
+      s.hideEmpty = 0; m = build(d, s); const int n2 = buildPrims(m, pr, kMaxPrims); int pills = 0; for (int i = 0; i < n2; ++i) if (pr[i].kind == PK_PILL) ++pills; KT_CHECK_EQ(pills, 3);
+      // all empty: only the backdrop and the banner
+      Demo e; e.count[0] = e.count[1] = e.count[2] = 0; m = build(e, Settings()); KT_CHECK_EQ(buildPrims(m, pr, kMaxPrims), 3); }
+    // the pool plus the page's rows and gear fit mod-config's 80 items per page (4 steppers x 3 items + 1 gear)
+    KT_CHECK(kPoolSize + 4 * 3 + 1 <= 80);
     KT_CHECK(g_cases > 1000);
     return kt::Report("combat_preview_test");
 }

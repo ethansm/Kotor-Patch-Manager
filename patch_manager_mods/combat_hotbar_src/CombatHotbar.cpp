@@ -50,6 +50,7 @@
 #define MCDECL_FILE_API 1
 #include "ProviderClient.h"
 #include "ModConfigDecl.h"
+#include "PreviewCanvas.h"
 #include "CombatPage.h"
 
 KP_LOG_PATCH("combat-hotbar");
@@ -904,6 +905,146 @@ bool g_pageLoaded = false;
 
 void mcLog(int level, const char* msg) { KP_LOGV(chMain, level, "%s", msg); }
 
+// ---- options-page preview + test-state modal (doc 46 MCF9/MCF10, CH7). A mock of the target menu in the page's PREVIEW pane, laid out by the SAME
+// ch:: functions as the live HUD (CombatPreview.h) from the page's rows and a memory-only DEMO target the gear's modal edits. It never touches the ini,
+// the live HUD or any engine invoke path. Without hasModal() / hasDescSplit() (older mod-config) the page keeps its four rows only.
+pvc::Canvas g_cv;                 // 54 labels, listed on the page with AddCustom(MUI_NOFREE); freed in pageDestroy once mod-config unlinked them
+chprev::Demo g_demo;
+uint32_t g_modalPage = 0;
+int32_t g_gearItem = -1;
+void* g_pagePanel = nullptr;
+bool g_pvOn = false;              // canvas built, description split asked: the preview draws
+unsigned g_pvFrame = 0;
+bool g_pvLogged = false;
+
+constexpr const char* kPvFill = "uibit_fill_2bt";      // solid black, baked alpha 0.78 (same fill as the enemy strip preview)
+constexpr const char* kPvPill = "lbl_miscroll_f";      // the live pills' art
+constexpr const char* kPvIcons[3][4] = {               // placeholder entry icons per group (force power icons exist in the stock icon set); a miss falls back to a tinted fill
+    {"ip_flurry", "ip_speedburst", "ip_knightspeed", "ip_cure"},
+    {"ip_mind", "ip_shield", "ip_cure", "ip_speedburst"},
+    {"ip_armor", "ip_shield", "ip_mind", "ip_cure"},
+};
+constexpr float kPvGroupTint[3][3] = {{0.80f, 0.30f, 0.25f}, {0.25f, 0.50f, 0.85f}, {0.30f, 0.70f, 0.35f}};   // fallback fills: attacks red, powers blue, items green
+constexpr float kPvScreenTint[3] = {0.10f, 0.12f, 0.16f}, kPvBlack[3] = {0.f, 0.f, 0.f}, kPvHealth[3] = {0.75f, 0.12f, 0.12f}, kPvPillTint[3] = {0.035f, 0.415f, 0.34f};
+
+// resref -> image, pooled by imageForRetry once non-null; a miss is retried every 30th frame, at most 20 times, then given up.
+struct PvImg { const char* name; void* img; int tries; };
+PvImg g_pvImgs[24];
+int g_nPvImgs = 0;
+void* pvImage(const char* name) {
+    for (int i = 0; i < g_nPvImgs; ++i)
+        if (g_pvImgs[i].name == name || !strcmp(g_pvImgs[i].name, name)) {
+            PvImg& e = g_pvImgs[i];
+            if (!e.img && e.tries < 20 && (g_pvFrame % 30) == 0) { ++e.tries; e.img = guikit::imageForRetry(name); }
+            return e.img;
+        }
+    if (g_nPvImgs >= static_cast<int>(sizeof g_pvImgs / sizeof g_pvImgs[0])) return nullptr;
+    PvImg& e = g_pvImgs[g_nPvImgs++];
+    e.name = name; e.tries = 1; e.img = guikit::imageForRetry(name);
+    return e.img;
+}
+
+void pvRefresh() {
+    if (!g_mcMenu.ok() || !g_pagePanel) return;
+    if (!g_pvOn) { g_cv.resync(); g_cv.hideAll(); return; }   // listed labels must stay hidden (mod-config shows every page item on entry)
+    ++g_pvFrame;
+    chprev::Settings s;
+    s.cols = g_cfg.cols; s.maxRows = g_cfg.maxRows; s.capPad = g_cfg.capPad; s.sidePad = g_cfg.sidePad; s.hideEmpty = g_cfg.hideEmpty;
+    s.btnPx = g_page.get(chpage::kRowSize); s.colsTotal = g_page.get(chpage::kRowCols); s.pad = g_page.get(chpage::kRowPad); s.groupGap = g_page.get(chpage::kRowGap);
+    const chprev::Model m = chprev::build(g_demo, s);
+    if (!g_cv.begin(g_mcMenu.p, g_pagePanel, m.sw, m.sh)) { g_cv.hideAll(); return; }
+    chprev::Prim pr[chprev::kMaxPrims];
+    const int n = chprev::buildPrims(m, pr, chprev::kMaxPrims);
+    int missing = 0;
+    for (int i = 0; i < n; ++i) {
+        const chprev::Prim& p = pr[i];
+        const pvc::Rect r = {p.r.x, p.r.y, p.r.w, p.r.h};
+        switch (p.kind) {
+            case chprev::PK_SCREEN: g_cv.put(p.label, r, pvImage(kPvFill), kPvScreenTint, 1.f); break;
+            case chprev::PK_NAME: g_cv.put(p.label, r, pvImage(kPvFill), kPvBlack, 0.9f); break;
+            case chprev::PK_HEALTH: g_cv.put(p.label, r, pvImage(kPvFill), kPvHealth, 0.95f); break;
+            case chprev::PK_PILL: g_cv.put(p.label, r, pvImage(kPvPill), kPvPillTint, p.alpha); break;
+            default: {
+                void* img = pvImage(kPvIcons[p.group][p.slot & 3]);
+                if (img) g_cv.put(p.label, r, img, nullptr, p.alpha);
+                else { ++missing; g_cv.put(p.label, r, pvImage(kPvFill), kPvGroupTint[p.group], p.alpha); }
+                break;
+            }
+        }
+    }
+    g_cv.end();
+    if (!g_pvLogged && g_pvFrame > 60) {   // once, after the lookups had time to settle: which placeholder icons resolved
+        g_pvLogged = true;
+        KP_LOGV(chMain, KPLOG_INFO, "PREVIEW frame=%u prims=%d iconFallbacks=%d screen=%dx%d counts=[%d,%d,%d]", g_pvFrame, n, missing, m.sw, m.sh, m.outN[0], m.outN[1], m.outN[2]);
+    }
+}
+
+// The modal's change handler: a row edits the demo; "Reset demo" restores the starting target and pushes the values back into the rows.
+int32_t KPATCH_CALL pvModalChange(uint32_t page, int32_t row, int32_t requested, int32_t, void*) {
+    if (row == chpage::MR_RESET) {
+        g_demo = chprev::Demo();
+        if (g_mcMenu.ok() && g_mcMenu.hasRows())
+            for (int r = 0; r < chpage::MR_RESET; ++r) g_mcMenu.p->SetValue(page, r, chpage::demoValue(g_demo, r));
+        return 0;   // the toggle snaps back to Off
+    }
+    chpage::demoApply(g_demo, row, requested);
+    return requested;
+}
+
+void pvBuildModal(const K2MenuUiApi* ui, uint32_t page) {
+    g_modalPage = ui->NewModal(page, nullptr, chpage::kModalTitle);
+    if (!g_modalPage) { KP_LOGV(chMain, KPLOG_WARN, "PREVIEW: NewModal refused: no gear"); return; }
+    bool all = true;
+    for (int r = 0; r < chpage::MR_COUNT; ++r) {
+        const chpage::ModalRowDef& d = chpage::kModalRows[r];
+        K2MuiRowSpec sp = {};
+        sp.struct_size = sizeof sp;
+        sp.kind = d.kind == 0 ? MUI_ROW_TOGGLE : MUI_ROW_STEPPER;
+        sp.label = d.label; sp.desc = d.desc;
+        sp.min = d.minV; sp.max = d.maxV; sp.step = d.step;
+        sp.value = r == chpage::MR_RESET ? 0 : chpage::demoValue(g_demo, r);
+        sp.flags = d.wrap ? MUI_RF_WRAP : 0;
+        sp.choices = d.choices; sp.nChoices = d.nChoices;
+        if (ui->AddRow(g_modalPage, &sp) != r) all = false;
+    }
+    ui->SetChangeHandler(g_modalPage, &pvModalChange, nullptr);
+    if (g_modalPage && all) ui->SetRowText(g_modalPage, chpage::MR_RESET, "Reset demo");   // a click, not an On / Off switch
+    g_gearItem = all ? ui->AddGear(page, chpage::kGearDesc) : -1;
+    KP_LOGV(chMain, KPLOG_INFO, "PREVIEW modal page=%u rows=%d gear item=%d", g_modalPage, all ? chpage::MR_COUNT : -1, g_gearItem);
+}
+
+// DeclHooks::onBuilt (the Options ctor window, after the rows): the preview labels, then the description split, then the modal and the gear.
+void pvOnBuilt(void*, uint32_t page, void* panel) {
+    g_pvOn = false; g_modalPage = 0; g_gearItem = -1; g_pagePanel = panel; g_pvFrame = 0; g_pvLogged = false;
+    if (!g_mcMenu.hasModal() || !g_mcMenu.hasDescSplit()) { KP_LOGV(chMain, KPLOG_INFO, "PREVIEW skipped: provider has no modal / gear / description split (older mod-config); the four rows work as before"); return; }
+    const K2MenuUiApi* ui = g_mcMenu.p;
+    if (!g_cv.build(ui, panel, page, chprev::kPoolSize)) { KP_LOGV(chMain, KPLOG_WARN, "PREVIEW skipped: label pool not complete (%d of %d listed)", g_cv.n, chprev::kPoolSize); return; }
+    guikit::setAlign(g_cv.w[chprev::kLblName].c, 18);
+    pvc::ops().setText(g_cv.w[chprev::kLblName].c, "Sith Assassin");
+    if (!ui->SetDescSplit(page, chpage::kPreviewPermille)) { KP_LOGV(chMain, KPLOG_WARN, "PREVIEW skipped: SetDescSplit(%u, %d) refused (listed labels stay hidden)", page, chpage::kPreviewPermille); return; }
+    pvBuildModal(ui, page);
+    g_pvOn = true;
+    KP_LOGV(chMain, KPLOG_INFO, "PREVIEW BUILD ok: %d labels, split %d permille", chprev::kPoolSize, chpage::kPreviewPermille);
+}
+
+// Every Options draw while the page is shown: the gear opens the modal, then the preview redraws from the page's current rows and the demo.
+void pvOnTick(void*) {
+    if (g_pvOn && g_gearItem >= 0 && g_modalPage && g_mcMenu.ok() && g_mcMenu.p->Clicked(g_page.page, g_gearItem)) g_mcMenu.p->SetModalOpen(g_modalPage, 1);
+    pvRefresh();
+}
+
+// Options dtor entry (mod-config has unlinked its controls by now): free the preview labels it listed MUI_NOFREE, then the declarative page's own teardown.
+void KPATCH_CALL pvDestroy(void* panel, void* user) {
+    if (g_mcMenu.ok()) {
+        const int freed = g_cv.destroy(g_mcMenu.p, g_page.page);
+        if (freed) KP_LOGV(chMain, KPLOG_INFO, "PREVIEW DESTROY freed=%d", freed);
+    } else {
+        g_cv.reset();
+    }
+    g_pvOn = false; g_modalPage = 0; g_gearItem = -1; g_pagePanel = nullptr;
+    mcdecl::Page::cbDestroy(panel, user);
+}
+
 void pageInit(const KPatchApi* api) {
     g_mcCfg.init(api);
     g_mcMenu.init(api);
@@ -912,7 +1053,10 @@ void pageInit(const KPatchApi* api) {
     if (!g_pageLoaded) { KP_LOGV(chMain, KPLOG_WARN, "PAGE schema rejected: %s", err); return; }
     g_page.menu = &g_mcMenu;
     g_page.io = mcdecl::fileIo();
+    g_page.hooks.onBuilt = pvOnBuilt;
+    g_page.hooks.onTick = pvOnTick;
     g_mcEntry = g_page.entry(chpage::kEntryId);
+    g_mcEntry.destroy = pvDestroy;   // frees the preview labels before the declarative layer's own teardown
 }
 
 void pagePoll() {

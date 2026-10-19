@@ -100,4 +100,33 @@ inline Model build(const Demo& demo, const Settings& s) {
     return m;
 }
 
+// ---- draw list (what the options-page preview puts on its label pool) ---------------------------------------------------------------------
+// Each Prim is one label of the preview canvas (PreviewCanvas.h) in virtual-screen units. The label index is fixed per thing (so the z-order is stable):
+// screen backdrop 0, name bar 1, health bar 2, pill of group g at 3+g, button k of group g at 6 + g*16 + k. One label per button (the entry icon; the
+// live HUD adds a frame label under it, which the page's 80-item cap cannot afford). Entries are capped at 16 per group by the live ordering anyway.
+enum PrimKind { PK_SCREEN = 0, PK_NAME, PK_HEALTH, PK_PILL, PK_BUTTON };
+constexpr int kLblScreen = 0, kLblName = 1, kLblHealth = 2, kLblPill = 3, kLblBtn = 6, kDrawPerGroup = 16;
+constexpr int kPoolSize = kLblBtn + 3 * kDrawPerGroup;   // 54 labels
+constexpr int kMaxPrims = kPoolSize;
+struct Prim { int label; int kind; ch::Rect r; int group; int slot; float alpha; };
+
+// Fills out[] (cap kMaxPrims) and returns the count. The name bar is the top 60 % of the banner and the health bar the rest (the banner is the union
+// of LBL_NAME and PB_HEALTH). Pills are the model's containers (hidden groups have none); buttons are the model's rects, first 16 per group.
+inline int buildPrims(const Model& m, Prim* out, int cap) {
+    int n = 0;
+    auto add = [&](int label, int kind, ch::Rect r, int g, int slot, float a) { if (n < cap && r.w > 0 && r.h > 0) out[n++] = Prim{label, kind, r, g, slot, a}; };
+    add(kLblScreen, PK_SCREEN, ch::Rect{0, 0, m.sw, m.sh}, -1, -1, 1.f);
+    const int nameH = (m.banner.h * 60 + 50) / 100;
+    add(kLblName, PK_NAME, ch::Rect{m.banner.x, m.banner.y, m.banner.w, nameH}, -1, -1, 1.f);
+    add(kLblHealth, PK_HEALTH, ch::Rect{m.banner.x, m.banner.y + nameH, m.banner.w, m.banner.h - nameH}, -1, -1, 1.f);
+    for (int g = 0; g < 3; ++g) {
+        if (m.cont[g].w > 0 && m.cont[g].h > 0) add(kLblPill + g, PK_PILL, m.cont[g], g, -1, 0.95f);
+        for (int k = 0; k < m.outN[g] && k < kDrawPerGroup && g * m.per + k < kMaxBtn; ++k) {
+            const int idx = g * m.per + k;
+            add(kLblBtn + g * kDrawPerGroup + k, PK_BUTTON, m.rects[idx], g, k, m.alpha[idx]);
+        }
+    }
+    return n;
+}
+
 }  // namespace chprev
