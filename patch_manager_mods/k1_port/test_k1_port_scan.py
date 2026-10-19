@@ -371,10 +371,9 @@ class DeriveTests(Base):
 
     def test_single_body_model(self):
         self.data.creature("one", bodies=("ba",))
-        d, text = self.derive("p_one")
-        self.assertIsNone(d.body_b)
-        self.assertNotIn("body_b", text)
-        self.assertEqual([t[0] for t in d.textures], ["p_oneba01", "p_oneh01"])
+        with self.assertRaises(S.ScanError) as cm:
+            self.derive("p_one")
+        self.assertIn("one body model", str(cm.exception))
 
     def test_textures_missing_from_k1_are_skipped_and_noted(self):
         self.data.creature("aut", textures={"ba": ["p_autba01", "p_auth01", "ghosttex"]}, no_tex_files=("ghosttex",))

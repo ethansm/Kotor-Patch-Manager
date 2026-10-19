@@ -243,6 +243,10 @@ def derive(facts: dict, rid: str | None = None) -> Derived:
         raise ScanError(where, "its meshes reference no texture that exists in the K1 install", "check [k1] dir is a full KOTOR 1 install")
     skipped = sorted({t for m in body_names + [head] for t in models[m].get("missing_textures", [])})
 
+    if len(body_names) < 2:
+        # recipe rule (709ff749): body_b and head go together; the builder has no row for one body model plus a head
+        raise ScanError(where, f"{label} has one body model ({body_names[0]}) and a head; the importer needs body A, "
+                        "body B and a head", "single-body creatures with a head are not supported yet: pick another template")
     # k2 names + collision check
     d_utc = utc_name(rid)
     pairs = [(f"model {m}", k2_stem(m)) for m in body_names + [head]] + [(f"texture {t}", k2_stem(t)) for t in tex_order]
