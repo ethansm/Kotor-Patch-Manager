@@ -8,18 +8,18 @@ Execute MCF1: [Mod-config] Pure logic in MenuUiLogic.h: row kinds (toggle/steppe
 - **Waves:** .claude/waves/WI-46-a1/
 - **Waves:** .claude/waves/WI-46-a2/
 - **Waves:** .claude/waves/WI-46-a3/
-- **Branch:** `KOTOR-II` (a1c80c88 mod-config MCF1: pure row model (toggle/stepper), row geometry + hit zones, ScrollWindow, tickResetDue + host tests)
-- **Generated:** 2026-10-18 23:04:18 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (6467f859 PLAY_TEST_QUEUE: MCR2 mod-config scrolling)
+- **Generated:** 2026-10-18 23:31:05 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-a1c80c88 mod-config MCF1: pure row model (toggle/stepper), row geometry + hit zones, ScrollWindow, tickResetDue + host tests
- patch_manager_mods/mod_config_src/MenuUiLogic.h    | 217 ++++++++++++++
- .../mod_config_src/menu_ui_logic_test.cpp          | 329 +++++++++++++++++++++
- 2 files changed, 546 insertions(+)
+6467f859 PLAY_TEST_QUEUE: MCR2 mod-config scrolling
+ patch_manager_mods/PLAY_TEST_QUEUE.md | 1 +
+ 1 file changed, 1 insertion(+)
 ```
-- **Dirty Files (173):**
+- **Dirty Files (174):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
+  - ` M .claude/handoffs/46_mod_config_declarative_layer.handoff.md`
   - ` M .claude/handoffs/DECOMP_PLAN.handoff.md`
   - ` M .claude/handoffs/PHASE7_COMMON_MASTER.handoff.md`
   - ` M .claude/handoffs/deep_haiku_review_skill.handoff.md`
@@ -27,8 +27,7 @@ a1c80c88 mod-config MCF1: pure row model (toggle/stepper), row geometry + hit zo
   - ` M .claude/plans/swarm_library_architecture.md`
   - ` M .claude/reviews/gemini_20261014/tools/fix3_items.tsv`
   - ` M .claude/settings.json`
-  - ` M CLAUDE.md`
-  - ... +163 more (run `git status --short`)
+  - ... +164 more (run `git status --short`)
 
 ## 2. Immediate Objective (MCF1)
 **[Mod-config] Pure logic in MenuUiLogic.h: row kinds (toggle/stepper), ScrollWindow (offset clamp, wheel step, ensure-visible, thumb px), `mui::tickResetDue(gap, flags48, lmbDown)` + tests**
