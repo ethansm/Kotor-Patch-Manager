@@ -27,6 +27,8 @@
 #include "GameAddr.h"
 #include "HseView.h"
 #include "HseLayoutV3.h"
+#include "ProviderClient.h"
+#include <type_traits>
 
 #include <sys/mman.h>
 #include <unistd.h>
@@ -36,6 +38,13 @@
 
 #define HCHECK(why, expr) ::kt::Check("holster-editor relies on: " why " (line " KT_STR(__LINE__) ")", static_cast<bool>(expr))
 #define HEQ(why, a, b) ::kt::CheckEq("holster-editor relies on: " why " (line " KT_STR(__LINE__) ")", (a), (b))
+
+// ProviderClient.h (k2pc): the ClientSet / RegisterOnce shapes HolsterEditor.cpp uses (full behaviour is pinned by providerclient_test).
+#define SIG(fn, ...) static_assert(std::is_same<decltype(&fn), __VA_ARGS__>::value, #fn " signature changed")
+using HseClientSet = k2pc::ClientSet<k2p3::Client, k2holster::Client, k2mc::ConfigClient, k2mc::MenuClient>;
+SIG(HseClientSet::init, void (HseClientSet::*)(const KPatchApi*));
+SIG(HseClientSet::poll, void (HseClientSet::*)());
+SIG(k2pc::registerOnce<k2mc::ConfigClient>, bool (*)(k2pc::RegisterOnce&, k2mc::ConfigClient&, const K2ModConfigEntry&, void (*)(int, const char*)));
 
 namespace {
 

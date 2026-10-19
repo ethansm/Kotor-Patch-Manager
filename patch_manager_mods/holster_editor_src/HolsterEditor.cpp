@@ -1,4 +1,4 @@
-// HolsterEditor.cpp -- holster-editor 0.4.9-dev (Steam build): a HOOKLESS consumer of the mod-config provider (k2.modconfig@1, k2.menuui@1).
+// HolsterEditor.cpp -- holster-editor 0.4.10-dev (Steam build): a HOOKLESS consumer of the mod-config provider (k2.modconfig@1, k2.menuui@1).
 // (doc 42 HW-EDIT, plan .claude/plans/holster_editor_options.md; page rebuild: .claude/plans/holster_editor_layout_v3.md, holster_hw_ux3_build.md Wave B.)
 //
 // mod-config owns everything about the Options screen: the hooks, the root "Mod Configuration" button, the list page, control cloning,
@@ -57,6 +57,7 @@
 #include "HolsterApi.h"
 #include "Preview3dApi.h"
 #include "ModConfigApi.h"
+#include "ProviderClient.h"   // k2pc::ClientSet / RegisterOnce: the lazy-connect plumbing for the four clients below
 #include "ViewDrag.h"
 #include "HseView.h"
 #include "TextFit.h"
@@ -116,6 +117,8 @@ k2p3::Client g_p3;
 k2holster::Client g_hol;
 k2mc::ConfigClient g_cfgClient;
 k2mc::MenuClient g_menu;
+k2pc::ClientSet<k2p3::Client, k2holster::Client, k2mc::ConfigClient, k2mc::MenuClient> g_clients(g_p3, g_hol, g_cfgClient, g_menu);   // pointers: the clients above outlive it
+k2pc::RegisterOnce g_reg;
 
 enum State { IDLE, NEEDBUILD, LIVE, FAILED };
 // MODE_WEAPON = a weapon edit is open (the normal state of the page); MODE_NAV = none is (the member has no weapon, or the edit was refused or lost).
@@ -2724,8 +2727,7 @@ void tickBody(Editor& e) {
 }
 
 void KPATCH_CALL cbTick(uint32_t, void*) {
-    g_p3.poll();
-    g_hol.poll();
+    g_clients.poll();   // p3 + holster retry here (every 256th call until connected); config / menu are already connected, so theirs are no-ops
     if (!g_ed.panel || !g_menu.ok() || !g_ed.page || g_ed.refused) return;
     saferead::beginScope();
     embtex::heal();   // the slider / reset art textures survive a GL reset
@@ -2784,22 +2786,22 @@ void KPATCH_CALL cbDestroy(void* panel, void*) {
 
 K2ModConfigEntry g_entry;   // Register copies it; the strings are static
 
+void regLog(int level, const char* msg) { KP_LOGV(chMain, level, "%s", msg); }
+
 }  // namespace
 
 // Written out literally (create-patch's export scan reads the source text) and listed in exports.def. No file I/O here.
 extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
-    g_p3.init(api);
-    g_hol.init(api);
-    g_cfgClient.init(api);
-    g_menu.init(api);
+    g_clients.init(api);
     embedgui::g_log = embedLog;
     embtex::g_log = embedLog;
-    KP_LOG(chMain, "holster-editor 0.4.9-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
+    KP_LOG(chMain, "holster-editor 0.4.10-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
            static_cast<unsigned>(sizeof kHseViewGui));
-    const bool cfgOk = g_cfgClient.connect(), menuOk = g_menu.connect();
-    if (!cfgOk || !menuOk) {
-        KP_LOG(chMain, "REGISTER fail why=noapi modconfig=%d menuui=%d", cfgOk ? 1 : 0, menuOk ? 1 : 0);
+    g_clients.poll();   // the first poll() of every client tries to connect
+    // This DLL is hookless: there is no frame hook to retry mod-config / menuui from later, so a missing provider now means no page this run.
+    if (!g_cfgClient.ok() || !g_menu.ok()) {
+        KP_LOG(chMain, "REGISTER fail why=noapi modconfig=%d menuui=%d", g_cfgClient.ok() ? 1 : 0, g_menu.ok() ? 1 : 0);
         return;
     }
     g_entry = K2ModConfigEntry();
@@ -2813,9 +2815,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     g_entry.leave = cbLeave;
     g_entry.tick = cbTick;
     g_entry.destroy = cbDestroy;
-    const int32_t token = g_cfgClient.p->Register(&g_entry);
-    if (token > 0) KP_LOG(chMain, "REGISTER ok token=%d", static_cast<int>(token));
-    else KP_LOG(chMain, "REGISTER fail why=refused");
+    k2pc::registerOnce(g_reg, g_cfgClient, g_entry, regLog);   // logs "page REGISTER ok token=N" or "page REGISTER refused ..."
 }
 
 // No I/O here (loader lock). The config is read in build().
