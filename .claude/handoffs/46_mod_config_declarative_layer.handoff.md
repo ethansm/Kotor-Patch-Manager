@@ -75,3 +75,6 @@ Same class: combat-hotbar registers from its HUD frame callback (token 3 at 21 s
 
 ## Update 10-19 01:25
 combat-hotbar 0.10.1-dev (d9e96ba7): same early-register fix (`pagePoll()` in KPatchInit; it loads at 173 ms, mod-config at 71 ms). Gate PASS (both), prepare SWAP for combat-hotbar + companion-selfheal 0.9.3-dev, NOT installed. Install both with one GO: `python3 scripts/kpm_hotswap.py --mod combat-hotbar companion-selfheal --apply`.
+
+## Update 10-19 01:13
+INSTALLED combat-hotbar 0.10.1-dev (8e05cb4e) + companion-selfheal 0.9.3-dev (0435be5f), both register in KPatchInit. Rollback: `python3 scripts/kpm_hotswap.py --rollback batch_swap_20261019_011326`. Play check: Options -> Mod Configuration must list Companion Self-Heal and Combat Hotbar; logs: `page REGISTER ok` early in both mods' logs (kplog_parse). MCF5 part 2 (slider wiring) is being built by a Sonnet worker in worktree .claude/worktrees/mcf5 (branch mcf5-slider-part2, on e05391f1); rebase onto 0369b41a, review, then merge. Build in worktrees needs a scratch KPM dir (SP/kpm copy of Patches/Common + lib; refresh Common from _shared_src) because the real mirror lacks new headers.
