@@ -1563,6 +1563,7 @@ void __cdecl KPatchInit(const KPatchApi* api) {
     filewatch::accept(g_cfgPoll, IniPath);
     KP_LOG(chMain, "0.9.3-dev ui=popsize+togglepill+leaderclick+vanillaarrows+pillnarrow+popocclude+optionspage: probe call=%d CallKey=0x%02X kick=%d cfg rows=%d", g_probeCall, g_callKey, (int)g_kick, (int)g_cfg.rows.size());
     pageInit(api);
+    pagePoll();   // register now: mod-config binds its entry list once, when the Options panel is first built, and a frame callback can run only after that
     g_ps.init(api, "companion-selfheal");
     g_ps.onConnect = onConnect;
     g_ps.add(K2PS_FRAME_BEGIN, 300, onFrameBegin);
