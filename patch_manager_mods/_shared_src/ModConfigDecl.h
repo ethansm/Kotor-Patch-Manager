@@ -369,7 +369,11 @@ inline void formatScaled(char* out, int cap, const RowDecl& r, int32_t v) {
     auto put = [&](const char* s) { while (*s && o + 1 < (size_t)cap) out[o++] = *s++; out[o] = 0; };
     put(r.label);
     put(": ");
-    if (v == 0 && r.zero[0]) { put(r.zero); return; }
+    if (v == 0 && r.zero[0]) {
+        put(r.zero);
+        if (r.restart) put(" (restart)");   // same rule as the provider's rowFormat: RF_RESTART always appends
+        return;
+    }
     const bool neg = v < 0;
     unsigned long long a = neg ? (unsigned long long)(-(long long)v) : (unsigned long long)v;
     const unsigned long long sc = r.scale > 0 ? (unsigned long long)r.scale : 1ull;
@@ -399,6 +403,7 @@ struct Page {
     const char* choicePtr[kMaxRows][kMaxChoices] = {};
     int32_t values[kMaxRows] = {};      // mirror of the provider's stored values (decl index)
     int rowId[kMaxRows];                // provider row id per decl row, -1 = AddRow failed
+    int32_t lo[kMaxRows] = {}, hi[kMaxRows] = {};   // the provider's current range per row (decl range at build, then setRange)
     k2mc::MenuClient* menu = nullptr;
     DeclHooks hooks;
     IniIo io;
@@ -438,10 +443,17 @@ struct Page {
         const int i = index(id);
         if (i >= 0 && live() && rowId[i] >= 0) menu->p->SetRowText(page, rowId[i], text);
     }
-    void setRange(const char* id, int32_t lo, int32_t hi) {
+    void setRange(const char* id, int32_t lo_, int32_t hi_) {
         const int i = index(id);
         if (i < 0 || !live() || rowId[i] < 0) return;
-        menu->p->SetRowRange(page, rowId[i], lo, hi);
+        menu->p->SetRowRange(page, rowId[i], lo_, hi_);
+        const RowDecl& r = decl.rows[i];
+        if (r.kind == K_LIST) {   // the provider keeps a choice row inside [0, nChoices - 1]
+            lo_ = detail::clampI(lo_, 0, r.maxV);
+            hi_ = detail::clampI(hi_, 0, r.maxV);
+        }
+        lo[i] = lo_;
+        hi[i] = hi_;
         values[i] = menu->p->GetValue(page, rowId[i]);
         refreshCaption(i);
     }
@@ -512,6 +524,8 @@ struct Page {
         for (int i = 0; i < decl.nRows; ++i) {
             K2MuiRowSpec sp;
             values[i] = startValue(i);
+            lo[i] = decl.rows[i].minV;
+            hi[i] = decl.rows[i].maxV;
             fillSpec(i, values[i], &sp);
             rowId[i] = ui->AddRow(page, &sp);
             if (rowId[i] >= 0) any = true;
@@ -529,10 +543,13 @@ struct Page {
             if (rowId[k] == providerRow) { i = k; break; }
         if (i < 0) return requested;
         const RowDecl& r = decl.rows[i];
+        const int32_t old = values[i];   // before the hook: a hook that re-pushes its rows (setValue) must not hide the change from the ini write
         int32_t fin = requested;
         if (hooks.onChange) fin = hooks.onChange(hooks.user, i, r.id, requested, dir);
-        if (r.kind != K_DYNAMIC) fin = detail::clampI(fin, r.minV, r.maxV);
-        if (r.ini[0] && fin != values[i] && io.write) {
+        // Same clamp as the provider stores (mui::rowClamp): toggles 0/1, else the row's CURRENT range (a dynamic row's setRange included).
+        if (r.kind == K_TOGGLE) fin = fin != 0 ? 1 : 0;
+        else fin = lo[i] <= hi[i] ? detail::clampI(fin, lo[i], hi[i]) : detail::clampI(fin, hi[i], lo[i]);
+        if (r.ini[0] && fin != old && io.write) {
             char b[16];
             detail::itoa10(b, fin);
             io.write(r.ini, r.section[0] ? r.section : nullptr, r.key, b);

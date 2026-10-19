@@ -1024,6 +1024,7 @@ bool scrollTick(bool down, bool haveCur, int x, int y, DWORD now) {
         guikit::g_wheel.clearRect(0);   // nothing scrolls here: the wheel goes to the game
         e.barHeld = -1;
         e.dragging = false;
+        e.wheelRem = 0;                 // a part notch left over from another page does not carry into the next one
         (void)editkit::repeatTick(e.barRep, false, now);
         return false;
     }
@@ -1064,6 +1065,7 @@ bool scrollTick(bool down, bool haveCur, int x, int y, DWORD now) {
         if (k >= 0) rowsRelayout(k);
         else { rebindList(); layoutBar(e.lsb, e.lsw, col); }
         e.hov = mui::HoverTracker();   // the hover description follows what is under the cursor now
+        e.clk.pressItem = -1;          // (down is kept, so the release clicks nothing) a press that began before the scroll (wheel under a held LMB) must not click whatever slid under it
         if (++e.scrollLogs <= 100) KP_LOG(chMain, "SCROLL page=%d off=%d total=%d src=%s", curPageId(), sw->offset, sw->total, src);
     }
     return changed;
@@ -1583,10 +1585,9 @@ int32_t KPATCH_CALL muiAddRow(uint32_t page, const K2MuiRowSpec* sp) {
         KP_LOG(chMain, "MUI refused: AddRow page %u is full (rows=%d items=%d)", static_cast<unsigned>(page), rp.n, e.pt.itemCount(static_cast<int>(page)));
         return -1;
     }
-    int visible = 0;
-    for (int i = 0; i < rp.n; ++i)
-        if (!(rp.rows[i].cfg.flags & mui::RF_HIDDEN)) ++visible;
-    const bool needsBar = !(sp->flags & MUI_RF_HIDDEN) && visible >= mui::kRowsVisible;   // this row is the 9th visible one: the page scrolls
+    // The 9th row of any visibility gets the page its scroll bar: a row added hidden can be shown later (SetRowState), and a page whose
+    // 9th visible row only appears then would have no bar to reach it. The bar stays hidden while <= 8 rows are visible (needBar).
+    const bool needsBar = rp.n >= mui::kRowsVisible;
     RowX r;
     r.used = true;
     r.cfg.kind = toggle ? mui::RK_TOGGLE : mui::RK_STEPPER;

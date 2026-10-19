@@ -620,6 +620,69 @@ static void test_provider_variants() {
     KT_CHECK(!g_pg.built);
 }
 
+// ---------------------------------------------------------------- review MCF3 fixes
+// A hook that re-pushes its own rows (setValue on the clicked row, as CompanionSelfHeal's pushPageView does) must not hide the change from
+// the ini write-through: the write compares against the value BEFORE the hook.
+static Page* g_repush;
+static int32_t hookRepush(void*, int, const char* id, int32_t requested, int) {
+    g_repush->setValue(id, requested);
+    return requested;
+}
+static int32_t g_dynRet;
+static int32_t hookDyn(void*, int, const char*, int32_t, int) { return g_dynRet; }
+
+static void test_review_fixes() {
+    // (1) ini write survives a hook that setValue()s the same row
+    snprintf(g_iniText, sizeof g_iniText, "[Strip]\nMaxIcons=4\n");
+    setupPage(kStripSchema);
+    g_repush = &g_pg;
+    g_pg.hooks.onChange = hookRepush;
+    K2ModConfigEntry e = g_pg.entry("x");
+    e.build(reinterpret_cast<void*>(1), e.user);
+    KT_CHECK_EQ(g_fn(g_page, 1, 5, 1, g_fnUser), 5);
+    KT_CHECK_EQ(g_nWr, 1);
+    KT_CHECK(g_nWr >= 1 && strcmp(g_wr[0].key, "MaxIcons") == 0 && strcmp(g_wr[0].val, "5") == 0);
+    // (2) a toggle hook returning -1 stores 1 (the provider's rowClamp: any non-zero is on), not 0
+    g_hookSet = true; g_hookRet = -1;
+    g_pg.hooks.onChange = hookChange;
+    KT_CHECK_EQ(g_fn(g_page, 0, 1, 0, g_fnUser), 1);
+    KT_CHECK_EQ(g_pg.get("enabled"), 1);
+    // (3) a dynamic row's final value is clamped to the range the consumer pushed (the provider clamps the same way)
+    setupPage(kHealSchema);
+    g_pg.hooks.onChange = hookDyn;
+    e = g_pg.entry("y");
+    e.build(reinterpret_cast<void*>(1), e.user);
+    g_pg.setRange("who", 0, 4);
+    g_dynRet = 9;
+    KT_CHECK_EQ(g_fn(g_page, 0, 1, 1, g_fnUser), 4);
+    KT_CHECK_EQ(g_pg.get("who"), 4);
+    g_dynRet = -3;
+    KT_CHECK_EQ(g_fn(g_page, 0, 1, 1, g_fnUser), 0);
+    // (4) a list row narrowed by setRange clamps the hook's final value into the subset
+    g_pg.setRange("speed", 1, 2);
+    g_dynRet = 0;
+    KT_CHECK_EQ(g_fn(g_page, 3, 0, -1, g_fnUser), 1);
+    g_pg.setRange("speed", -5, 40);                                      // the provider keeps a choice row in [0, n-1]
+    g_dynRet = 7;
+    KT_CHECK_EQ(g_fn(g_page, 3, 2, 1, g_fnUser), 2);
+    // (5) a rebuild (next Options panel) resets the tracked range to the schema's
+    fakeReset();
+    connectFake(&g_table);
+    e.build(reinterpret_cast<void*>(1), e.user);
+    g_dynRet = 9;
+    KT_CHECK_EQ(g_fn(g_page, 0, 1, 1, g_fnUser), 2);                     // schema who: 0..2
+    // (6) scaled zero_text keeps " (restart)" like every other caption
+    RowDecl r;
+    r.reset();
+    strcpy(r.label, "Opacity");
+    strcpy(r.zero, "Off");
+    r.scale = 100;
+    r.restart = true;
+    char b[64];
+    formatScaled(b, sizeof b, r, 0);
+    KT_CHECK(strcmp(b, "Opacity: Off (restart)") == 0);
+}
+
 static void test_footprint() {
     KT_CHECK(sizeof(Page) < 64 * 1024);
     KT_CHECK(sizeof(PageDecl) < 48 * 1024);
@@ -636,6 +699,7 @@ int main() {
     test_change_path();
     test_no_ini_and_dynamic();
     test_provider_variants();
+    test_review_fixes();
     test_footprint();
     return kt::Report("moddecl_test");
 }

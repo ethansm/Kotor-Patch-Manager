@@ -84,6 +84,28 @@ static void test_basic() {
     KT_CHECK(run("a=+7\nb=2147483647\nc=-2147483648\nd = []\n", r, err, sizeof err));
     KT_CHECK(strcmp(r.log, "a=i7;b=i2147483647;c=i-2147483648;d=a0;") == 0);
     KT_CHECK(run("[ok]  # c\n", r, err, sizeof err));
+    // review MCF3: edge cases the cases above do not pin
+    KT_CHECK(run("a = \"x # y\" # real\n", r, err, sizeof err) && strcmp(r.log, "a=s'x # y';") == 0);   // '#' inside a string is text
+    KT_CHECK(run("a = 1\r", r, err, sizeof err) && strcmp(r.log, "a=i1;") == 0);                       // CR before EOF, no LF
+    KT_CHECK(run("\ta\t=\t\"t\"\t\n", r, err, sizeof err) && strcmp(r.log, "a=s't';") == 0);           // tabs are blanks
+    KT_CHECK(run("a = [\"x\",]\n", r, err, sizeof err) && strcmp(r.log, "a=a1:x;") == 0);              // trailing comma (TOML allows it)
+    KT_CHECK(run("a = [\"x\"]#c\nb = true#c\n", r, err, sizeof err) && strcmp(r.log, "a=a1:x;b=b1;") == 0);   // glued comments
+    KT_CHECK(run("a = [\"[\", \"]\", \",\"]\n", r, err, sizeof err) && strcmp(r.log, "a=a3:[:]:,;") == 0);   // brackets/commas in strings
+    KT_CHECK(run("a = \"\"\n", r, err, sizeof err) && strcmp(r.log, "a=s'';") == 0);                  // empty string
+}
+
+// review MCF3: line numbers count LF lines (CRLF files too) and errors deep in a file name the right line
+static void test_line_numbers() {
+    Rec r;
+    char err[96];
+    KT_CHECK(!run("a=1\r\n\r\n# c\r\nb=\r\n", r, err, sizeof err) && strcmp(err, "line 4: missing value") == 0);
+    KT_CHECK(!run("a = 2147483648\n", r, err, sizeof err) && strcmp(err, "line 1: integer out of range") == 0);
+    KT_CHECK(!run("a = 1\r\r\n", r, err, sizeof err) && strcmp(err, "line 1: text after value") == 0);   // only one trailing CR is stripped
+    char big[2400];
+    big[0] = 0;
+    for (int i = 0; i < 120; ++i) strcat(big, "k = 1\n");
+    strcat(big, "k = ?\n");
+    KT_CHECK(!run(big, r, err, sizeof err) && strcmp(err, "line 121: unsupported value") == 0 && r.kvs == 120);
 }
 
 static void expectFail(const char* text, const char* wantPrefix) {
@@ -172,7 +194,9 @@ static void test_callback_abort_and_err_buffer() {
     KT_CHECK(strcmp(err, "line 2: stop here") == 0);
     KT_CHECK_EQ(r.kvs, 1);                                       // parsing stopped at the failing callback
     char tiny[8];
-    KT_CHECK(!parse(t, strlen(t), Callbacks{&r, onTable, nullptr}, tiny, 0) || true);   // cap 0: no write, no crash
+    memcpy(tiny, "UNTOUCH", 8);
+    KT_CHECK(!parse("bad line\n", 9, Callbacks{&r, onTable, nullptr}, tiny, 0));   // cap 0: fails, writes nothing, no crash
+    KT_CHECK(memcmp(tiny, "UNTOUCH", 8) == 0);
     r = Rec();
     r.abortAt = 0;
     KT_CHECK(!parse(t, strlen(t), cb, tiny, sizeof tiny));
@@ -186,6 +210,7 @@ static void test_callback_abort_and_err_buffer() {
 int main() {
     test_basic();
     test_rejects();
+    test_line_numbers();
     test_limits();
     test_callback_abort_and_err_buffer();
     return kt::Report("tomlmini_test");
