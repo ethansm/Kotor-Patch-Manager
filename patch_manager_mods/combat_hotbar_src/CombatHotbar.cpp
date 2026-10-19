@@ -937,6 +937,7 @@ __declspec(dllexport) void __cdecl KPatchInit(const KPatchApi* api) {
     loadProfile();
     filewatch::accept(g_iniPoll, IniPath);
     pageInit(api);
+    pagePoll();   // register now: mod-config binds its entry list once, when the Options panel is first built (a HUD frame can come later; live 10-19)
     g_hud.add(K2HUD_FRAME, 100, onHudFrame);
     g_hud.add(K2HUD_TARGET_MENU_PRE, 100, onTargetMenu);
     g_hud.add(K2HUD_TARGET_MENU_POST, 100, onTargetMenuPost);
