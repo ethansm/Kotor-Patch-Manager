@@ -100,9 +100,9 @@ static int g_dtorCalls = 0; static uint32_t g_dtorFn = 0; static uintptr_t g_dto
 static void fakeLabelDtor(uint32_t fn, uintptr_t ctl, unsigned flags) { ++g_dtorCalls; g_dtorFn = fn; g_dtorCtl = ctl; g_dtorFlags = flags; }
 static const K2ModConfigApi kCfgTable = { sizeof(K2ModConfigApi), stubRegister, stubUnregister };
 static const K2MenuUiApi kMuiTable = { sizeof(K2MenuUiApi), stubNewPage, stubAddButton, stubAddLabel, stubAddCustom, stubClicked,
-                                       stubSetText, stubSetRect, stubSetDesc, stubPaneRect, stubControl, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };   // an 11-slot-era provider: SetDescSplit null
+                                       stubSetText, stubSetRect, stubSetDesc, stubPaneRect, stubControl, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };   // an 11-slot-era provider: SetDescSplit null
 static const K2MenuUiApi kMuiTableSplit = { sizeof(K2MenuUiApi), stubNewPage, stubAddButton, stubAddLabel, stubAddCustom, stubClicked,
-                                            stubSetText, stubSetRect, stubSetDesc, stubPaneRect, stubControl, stubSetDescSplit, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
+                                            stubSetText, stubSetRect, stubSetDesc, stubPaneRect, stubControl, stubSetDescSplit, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
 
 int main() {
     int flags = MAP_PRIVATE | MAP_ANONYMOUS;

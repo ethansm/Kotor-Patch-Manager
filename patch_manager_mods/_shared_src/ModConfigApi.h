@@ -18,7 +18,8 @@
  * entry's own preview widgets. 0 turns the split off. The split is per entry page and only active while that page is shown; the provider
  * re-asserts it after every description write and on every tick, and puts the original rect back when the page is left, so no other
  * page (the list, other entries) sees it. Without a split MUI_PANE_PREVIEW is the whole original description rect.
- * Compatibility: SetDescSplit is the LAST field of K2MenuUiApi (struct_size growth). A consumer built with this header against an older
+ * Compatibility: the table only grows (SetDescSplit was the first growth; rows are slots 12..18, modal / gear slots 19..22: check
+ * MenuClient::hasRows() / hasModal()). A consumer built with this header against an older
  * provider must check MenuClient::hasDescSplit(), i.e. struct_size >= offsetof(K2MenuUiApi, SetDescSplit) + sizeof(void*) and a non-null
  * pointer, before calling it. MenuClient::usable() requires only the v1 members that existed before, so older consumers and older
  * providers keep working in both directions. MUI_PANE_PREVIEW on an older provider answers 0 (fail).
@@ -168,6 +169,27 @@ typedef struct K2MenuUiApi {
     void     (KPATCH_CALL *SetRowState)(uint32_t page, int32_t row, int32_t flags);
     /* Changes a stepper's range; the stored value is re-clamped (no handler call). */
     void     (KPATCH_CALL *SetRowRange)(uint32_t page, int32_t row, int32_t minV, int32_t maxV);
+
+    /* ---- Modal pages, item visibility and the shared gear (slots 19..22; check MenuClient::hasModal). A modal is a second set of
+       controls on top of an entry page: while it is open the entry page's own AddButton / AddLabel / AddRow controls are hidden and the
+       modal's are shown in their place, in the same column pane (or the `box` NewModal was given). AddCustom controls of the parent
+       (a preview, say) stay on screen (the parent's gear hides), so the modal can change what the preview shows. The entry's enter / tick /
+       leave callbacks are not interrupted. A modal page id works with every call that takes a page id (AddButton, AddLabel, AddRow,
+       AddCustom, Clicked, SetText, SetRect, SetChangeHandler, GetValue, SetValue, SetRowText, SetRowState, SetRowRange, Control). */
+
+    /* Shows or hides one item. build() or any later call. Rows' own controls are managed by SetRowState (refused here); an unknown
+       item is a no-op. Hidden items take no clicks and no hover. */
+    void     (KPATCH_CALL *SetItemShown)(uint32_t page, int32_t item, int32_t shown);
+    /* Creates a modal page owned by `page` (the entry page NewPage returned). build() only. `box` (may be null) is the rect the modal's rows
+       lay out in; null = the column pane. `title` replaces the Options title while the modal is open (null / empty = keep the page title).
+       Returns the modal page id (> 0), 0 = refused (not in build, not the entry's own page, all 8 modals used). */
+    uint32_t (KPATCH_CALL *NewModal)(uint32_t page, const K2MuiRect* box, const char* title);
+    /* Opens or closes a modal. Opening works only while the modal's entry page is shown (from enter / tick / a change handler / Clicked
+       handling); it closes any other open modal. Back closes the open modal first; Escape, a tick gap and leaving the entry clear it. */
+    void     (KPATCH_CALL *SetModalOpen)(uint32_t modalPage, int32_t open);
+    /* Adds the shared settings gear to an entry page: a provider-drawn square button in the top-right corner of the preview pane (the
+       description pane without a split), same look on every page. build() only. Item id >= 0 (read clicks with Clicked); < 0 = fail. */
+    int32_t  (KPATCH_CALL *AddGear)(uint32_t page, const char* desc);
 } K2MenuUiApi;
 
 #pragma pack(pop)
@@ -225,7 +247,11 @@ K2MC_STATIC_ASSERT(offsetof(K2MenuUiApi, SetValue) == 15 * sizeof(void*), "K2Men
 K2MC_STATIC_ASSERT(offsetof(K2MenuUiApi, SetRowText) == 16 * sizeof(void*), "K2MenuUiApi.SetRowText offset");
 K2MC_STATIC_ASSERT(offsetof(K2MenuUiApi, SetRowState) == 17 * sizeof(void*), "K2MenuUiApi.SetRowState offset");
 K2MC_STATIC_ASSERT(offsetof(K2MenuUiApi, SetRowRange) == 18 * sizeof(void*), "K2MenuUiApi.SetRowRange offset");
-K2MC_STATIC_ASSERT(sizeof(K2MenuUiApi) == 19 * sizeof(void*), "K2MenuUiApi size");
+K2MC_STATIC_ASSERT(offsetof(K2MenuUiApi, SetItemShown) == 19 * sizeof(void*), "K2MenuUiApi.SetItemShown offset");
+K2MC_STATIC_ASSERT(offsetof(K2MenuUiApi, NewModal) == 20 * sizeof(void*), "K2MenuUiApi.NewModal offset");
+K2MC_STATIC_ASSERT(offsetof(K2MenuUiApi, SetModalOpen) == 21 * sizeof(void*), "K2MenuUiApi.SetModalOpen offset");
+K2MC_STATIC_ASSERT(offsetof(K2MenuUiApi, AddGear) == 22 * sizeof(void*), "K2MenuUiApi.AddGear offset");
+K2MC_STATIC_ASSERT(sizeof(K2MenuUiApi) == 23 * sizeof(void*), "K2MenuUiApi size");
 K2MC_STATIC_ASSERT(offsetof(K2MuiRowSpec, struct_size) == 0, "K2MuiRowSpec.struct_size offset");
 K2MC_STATIC_ASSERT(offsetof(K2MuiRowSpec, kind) == 4, "K2MuiRowSpec.kind offset");
 #undef K2MC_STATIC_ASSERT
@@ -318,6 +344,12 @@ struct MenuClient {
                t->SetValue && t->SetRowText && t->SetRowState && t->SetRowRange;
     }
     bool hasRows() const { return connected && p && hasRows(p); }
+
+    // The table holds the four modal / gear slots (19..22) and all of them are non-null (an older provider answers false).
+    static bool hasModal(const K2MenuUiApi* t) {
+        return t && t->struct_size >= offsetof(K2MenuUiApi, AddGear) + sizeof(t->AddGear) && t->SetItemShown && t->NewModal && t->SetModalOpen && t->AddGear;
+    }
+    bool hasModal() const { return connected && p && hasModal(p); }
 
     bool connect() {
         if (connected && p) return true;

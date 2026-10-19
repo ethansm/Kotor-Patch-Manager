@@ -34,7 +34,7 @@ void KPATCH_CALL mSetDesc(uint32_t, const char*) {}
 int32_t KPATCH_CALL mPaneRect(void*, int32_t, K2MuiRect*) { return 0; }
 void* KPATCH_CALL mControl(uint32_t, int32_t) { return nullptr; }
 const K2MenuUiApi kMenu = { offsetof(K2MenuUiApi, SetDescSplit), mNewPage, mAddButton, mAddLabel, mAddCustom, mClicked, mSetText, mSetRect,
-                            mSetDesc, mPaneRect, mControl, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
+                            mSetDesc, mPaneRect, mControl, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };   // slots 11..22 unused (SetDescSplit, rows, modal / gear)
 
 // ---- p3 / holster tables: every pointer slot after struct_size is a dummy function ----
 void KPATCH_CALL dummyFn() {}

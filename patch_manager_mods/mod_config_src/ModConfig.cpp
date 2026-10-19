@@ -1,4 +1,4 @@
-// ModConfig.cpp -- mod-config 0.2.0-dev (Steam build): the "Mod Configuration" provider on the in-game Options screen (doc 42,
+// ModConfig.cpp -- mod-config 0.3.0-dev (Steam build): the "Mod Configuration" provider on the in-game Options screen (doc 42,
 // plan .claude/plans/holster_editor_options.md, card c18). Provides two interfaces declared in ModConfigApi.h:
 //   k2.modconfig@1  K2ModConfigApi  Register / Unregister: a mod adds one entry (name, description, build/enter/leave/tick/destroy).
 //   k2.menuui@1     K2MenuUiApi     NewPage / AddButton / AddLabel / AddCustom / Clicked / SetText / SetRect / SetDesc / PaneRect / Control /
@@ -43,6 +43,7 @@
 #include "ModConfigApi.h"
 #include "MenuUiLogic.h"
 #include "EditKit.h"
+#include "GearButton.h"   // the shared gear: art names + EmbedTex registration (AddGear)
 
 KP_LOG_PATCH("mod-config");
 
@@ -80,7 +81,7 @@ constexpr int kBarUp = 0, kBarDown = 1, kBarThumb = 2;
 constexpr int kBarPctOfCol = 7;               // bar width = this % of the column height (min kBarMinPx)
 constexpr int kBarMinPx = 12;
 constexpr int kWheelNotch = 120;
-constexpr int kMaxOwn = 1 + kListMax + 2 + mui::kMaxEntries * mui::kMaxItems + (mui::kMaxEntries + 1) * kBarCtl;   // root + list + back + title + entry items + scroll bars
+constexpr int kMaxOwn = 1 + kListMax + 2 + mui::kMaxSlots * mui::kMaxItems + (mui::kMaxSlots + 1) * kBarCtl;   // root + list + back + title + entry and modal items + scroll bars
 // Options panel offsets (static dump reads, doc r4/r7/r9): layout slot, manager, focus, description string object, text holder pointer, label.
 constexpr int kPanelLayoutSlot = 0x30, kPanelMgr = 0x1C, kPanelFocus = 0x20, kDescStr = 0x1120, kDescHolderPtr = 0x1170, kDescLabel = 0x1030;
 constexpr int kMgrHover = 0x08, kMgrCaptureFlag = 0x0C, kMgrCapture = 0x10, kMgrLastHit = 0x14;
@@ -144,6 +145,10 @@ struct ItemX {
     bool latched = false;      // a release-edge click not yet read through Clicked()
     bool hasRect = false;
     bool hasText = false;
+    bool gear = false;         // AddGear: provider-drawn gear button (placed in the preview pane's top-right corner, art filled once the textures exist)
+    bool gearFilled = false;   // both gear images were set on the button (or the attempt was given up)
+    int gearTries = 0;         // fill attempts while the textures were not resolvable yet
+    bool userHidden = false;   // SetItemShown(false): stays hidden, takes no hit
     Target tg;
     char text[96] = {};
     char desc[192] = {};
@@ -159,10 +164,13 @@ struct McState {
     int nEntries = 0;                 // registered entries at bind time (> kListMax = the list scrolls)
     int entTok[mui::kMaxEntries] = {};   // registry tokens at bind time, in list order (the list scrolls over this snapshot)
     bool built[mui::kMaxEntries] = {};
-    bool pageMade[mui::kMaxEntries] = {};
-    char pageTitle[mui::kMaxEntries][64] = {};
+    bool pageMade[mui::kMaxSlots] = {};          // entry slots, then modal slots (mui::ModalTable)
+    char pageTitle[mui::kMaxSlots][64] = {};
     mui::PageTable pt;
-    ItemX items[mui::kMaxEntries][mui::kMaxItems];
+    ItemX items[mui::kMaxSlots][mui::kMaxItems];
+    bool gearMade = false;                       // some page has an AddGear button: embtex::heal() runs every tick
+    mui::ModalTable md;                          // modal pages (NewModal): owner entry per modal, the open one
+    Rect modalBox[mui::kMaxModals] = {};         // NewModal box (w > 0: the modal's rows lay out in it instead of the column pane)
     mui::PageStack ps;
     mui::HoverTracker hov;
     mui::ClickTracker clk, clkBack;
@@ -186,16 +194,16 @@ struct McState {
     bool descSplitOn = false;           // the shrunk rect is currently asserted on LB_DESC (so the original must be put back)
     int descSplitPage = -1;
     int descReasserts = 0;              // times a describe or tick had to write the shrunk rect again (log cap)
-    RowPage rp[mui::kMaxEntries];
-    unsigned char itemRow[mui::kMaxEntries][mui::kMaxItems] = {};    // row index + 1 of an item that belongs to a row, 0 = none
-    unsigned char itemPart[mui::kMaxEntries][mui::kMaxItems] = {};   // 0 toggle / caption, 1 "<", 2 ">"
+    RowPage rp[mui::kMaxSlots];
+    unsigned char itemRow[mui::kMaxSlots][mui::kMaxItems] = {};    // row index + 1 of an item that belongs to a row, 0 = none
+    unsigned char itemPart[mui::kMaxSlots][mui::kMaxItems] = {};   // 0 toggle / caption, 1 "<", 2 ">"
     editkit::Repeat rep = {0, 0, 0};   // hold-repeat of the arrow under the press
     int repItem = -1;                  // item id (on the shown entry page) the press went down on, -1 = none
     // ---- scrolling (MCF2b): one window per option-row entry page (sw[k]) and one for the LIST page (lsw)
-    mui::ScrollWindow sw[mui::kMaxEntries];
+    mui::ScrollWindow sw[mui::kMaxSlots];
     mui::ScrollWindow lsw;
-    ItemX sb[mui::kMaxEntries][kBarCtl];     // entry-page scroll bar (made at build when a page has more rows than fit)
-    bool sbMade[mui::kMaxEntries] = {};
+    ItemX sb[mui::kMaxSlots][kBarCtl];       // entry / modal page scroll bar (made at build when a page has more rows than fit)
+    bool sbMade[mui::kMaxSlots] = {};
     ItemX lsb[kBarCtl];                      // LIST-page scroll bar
     bool lsbMade = false;
     editkit::Repeat barRep = {0, 0, 0};      // hold-repeat of the bar's up / down buttons
@@ -606,18 +614,18 @@ void eachOwn(F f) {
     for (int i = 0; i < e.nList; ++i) f(e.list[i]);
     f(e.back);
     f(e.title);
-    for (int k = 0; k < mui::kMaxEntries; ++k)
+    for (int k = 0; k < mui::kMaxSlots; ++k)
         for (int i = 0; i < e.pt.itemCount(2 + k); ++i) f(e.items[k][i]);
     if (e.lsbMade)
         for (int i = 0; i < kBarCtl; ++i) f(e.lsb[i]);
-    for (int k = 0; k < mui::kMaxEntries; ++k)
+    for (int k = 0; k < mui::kMaxSlots; ++k)
         if (e.sbMade[k])
             for (int i = 0; i < kBarCtl; ++i) f(e.sb[k][i]);
 }
 
-// The item the API names, or null (page not an entry page, item out of range, or no panel bound).
+// The item the API names, or null (page not an entry or modal page, item out of range, or no panel bound).
 ItemX* itemAt(uint32_t page, int32_t item) {
-    if (page < 2 || page >= 2 + static_cast<uint32_t>(mui::kMaxEntries) || item < 0) return nullptr;
+    if (page < 2 || page >= 2 + static_cast<uint32_t>(mui::kMaxSlots) || item < 0) return nullptr;
     McState& e = g_mc;
     if (item >= e.pt.itemCount(static_cast<int>(page))) return nullptr;
     return &e.items[page - 2][item];
@@ -643,8 +651,11 @@ void copyStr(char* dst, size_t cap, const char* src) {
 int curPageId() {
     if (g_mc.ps.state == mui::MAIN) return 0;
     if (g_mc.ps.state == mui::LIST) return 1;
-    return 2 + g_mc.ps.entry;
+    return 2 + g_mc.md.shownSlot(g_mc.ps);   // the open modal's page while one is open
 }
+
+// The slot (entry slot, or modal slot while a modal is open) whose controls are on screen and take input; -1 outside an entry page.
+int shownSlot() { return g_mc.md.shownSlot(g_mc.ps); }
 
 // ---------------------------------------------------------------------------------------------------- first draw
 void appendItem(ItemX& it, const char* what) {
@@ -673,11 +684,11 @@ void firstTick() {
     for (int i = 0; i < e.nList; ++i) appendItem(e.list[i], "list");
     appendItem(e.back, "back");
     appendItem(e.title, "title");
-    for (int k = 0; k < mui::kMaxEntries; ++k)
+    for (int k = 0; k < mui::kMaxSlots; ++k)
         for (int i = 0; i < e.pt.itemCount(2 + k); ++i) appendItem(e.items[k][i], "item");
     if (e.lsbMade)
         for (int i = 0; i < kBarCtl; ++i) appendItem(e.lsb[i], "listbar");
-    for (int k = 0; k < mui::kMaxEntries; ++k)
+    for (int k = 0; k < mui::kMaxSlots; ++k)
         if (e.sbMade[k])
             for (int i = 0; i < kBarCtl; ++i) appendItem(e.sb[k][i], "bar");
 
@@ -736,7 +747,7 @@ void firstTick() {
     applyTargets(e, true);
 
     // Entry page items: the rects the entries set during build().
-    for (int k = 0; k < mui::kMaxEntries; ++k)
+    for (int k = 0; k < mui::kMaxSlots; ++k)
         for (int i = 0; i < e.pt.itemCount(2 + k); ++i) {
             ItemX& it = e.items[k][i];
             if (it.ctl && it.hasRect && !it.unlinked) {
@@ -749,12 +760,12 @@ void firstTick() {
     for (int i = 0; i < e.nList; ++i) applyItemText(e.list[i]);
     setCtlText(e.back.ctl, e.back.isButton, "Back");
     if (e.title.ctl) guikit::setText(e.title.ctl, kRootText);
-    for (int k = 0; k < mui::kMaxEntries; ++k)
+    for (int k = 0; k < mui::kMaxSlots; ++k)
         for (int i = 0; i < e.pt.itemCount(2 + k); ++i) applyItemText(e.items[k][i]);
 
     if (e.lsbMade)
         for (int i = 0; i < kBarCtl; ++i) { applyItemText(e.lsb[i]); setShown(e.lsb[i], false); }
-    for (int k = 0; k < mui::kMaxEntries; ++k)
+    for (int k = 0; k < mui::kMaxSlots; ++k)
         if (e.sbMade[k])
             for (int i = 0; i < kBarCtl; ++i) { applyItemText(e.sb[k][i]); setShown(e.sb[k][i], false); }
     // Clones start hidden + click-through. MAIN shows only the root.
@@ -762,7 +773,7 @@ void firstTick() {
     for (int i = 0; i < e.nList; ++i) setShown(e.list[i], false);
     setShown(e.back, false);
     setShown(e.title, false);
-    for (int k = 0; k < mui::kMaxEntries; ++k)
+    for (int k = 0; k < mui::kMaxSlots; ++k)
         for (int i = 0; i < e.pt.itemCount(2 + k); ++i) setShown(e.items[k][i], false);
     logRect("root", e.root.ctl);
     logRect("back", e.back.ctl);
@@ -772,12 +783,13 @@ void firstTick() {
 
 // ---------------------------------------------------------------------------------------------------- option rows
 RowX* rowAt(uint32_t page, int32_t row) {
-    if (page < 2 || page >= 2 + static_cast<uint32_t>(mui::kMaxEntries) || row < 0) return nullptr;
+    if (page < 2 || page >= 2 + static_cast<uint32_t>(mui::kMaxSlots) || row < 0) return nullptr;
     RowPage& rp = g_mc.rp[page - 2];
     return row < rp.n ? &rp.rows[row] : nullptr;
 }
 
-bool entryShown(int k) { return g_mc.appended && g_mc.ps.state == mui::ENTRY && g_mc.ps.entry == k; }
+// Slot k (an entry page, or a modal page) has its controls on screen now: with a modal open that is the modal's slot, not its parent's.
+bool entryShown(int k) { return g_mc.appended && k >= 0 && shownSlot() == k; }
 
 // Rewrites the caption control of a row (override text, else mui::rowFormat). A disabled toggle gets " (locked)" (it has no arrows to hide).
 void rowCaption(int k, RowX& r) {
@@ -873,6 +885,16 @@ Rect rowsArea(int k, const Rect& col) {
     return r;
 }
 
+// The pane page k's rows (and scroll bar) lay out in: the COLUMN pane, or a modal's own NewModal box.
+bool slotPane(int k, Rect* col) {
+    McState& e = g_mc;
+    if (mui::ModalTable::isModalSlot(k) && e.md.valid(mui::ModalTable::indexOf(k))) {
+        const Rect& b = e.modalBox[mui::ModalTable::indexOf(k)];
+        if (b.w > 0 && b.h > 0) { *col = b; return true; }
+    }
+    return paneRect(e.panel, MUI_PANE_COLUMN, col);
+}
+
 // Puts every visible row of page k on its slot of the COLUMN pane (hidden rows take no slot). Rows past the scroll window take no slot either:
 // slot = visible index - offset, so showRows hides them (hidden, never only moved: hit testing needs the visibility bit).
 void layoutRows(int k) {
@@ -880,7 +902,7 @@ void layoutRows(int k) {
     RowPage& rp = e.rp[k];
     if (rp.n == 0 || !e.panel) return;
     Rect col = {0, 0, 0, 0};
-    if (!paneRect(e.panel, MUI_PANE_COLUMN, &col)) {
+    if (!slotPane(k, &col)) {
         static volatile LONG s_nc = 0;
         if (InterlockedIncrement(&s_nc) <= 4) KP_LOG(chMain, "ROWS layout: column pane unavailable (page %d)", 2 + k);
         return;
@@ -1014,13 +1036,13 @@ bool scrollTick(bool down, bool haveCur, int x, int y, DWORD now) {
     ItemX* bar = nullptr;
     int k = -1;
     if (e.ps.state == mui::LIST && e.lsbMade && e.lsw.needBar()) { sw = &e.lsw; bar = e.lsb; }
-    else if (e.ps.state == mui::ENTRY && e.ps.entry >= 0 && e.ps.entry < mui::kMaxEntries && e.sbMade[e.ps.entry] && e.sw[e.ps.entry].needBar()) {
-        k = e.ps.entry;
+    else if (e.ps.state == mui::ENTRY && shownSlot() >= 0 && e.sbMade[shownSlot()] && e.sw[shownSlot()].needBar()) {
+        k = shownSlot();
         sw = &e.sw[k];
         bar = e.sb[k];
     }
     Rect col = {0, 0, 0, 0};
-    if (!sw || !paneRect(e.panel, MUI_PANE_COLUMN, &col)) {
+    if (!sw || !(k >= 0 ? slotPane(k, &col) : paneRect(e.panel, MUI_PANE_COLUMN, &col))) {
         guikit::g_wheel.clearRect(0);   // nothing scrolls here: the wheel goes to the game
         e.barHeld = -1;
         e.dragging = false;
@@ -1110,6 +1132,94 @@ void restoreVanilla(const char* why) {
     e.haveSaved = false;
 }
 
+// ---- shared gear (AddGear) and modal pages (NewModal)
+constexpr int kGearMaxTries = 600;   // fill attempts (one engine image lookup per image per try) before the text fallback stays for good
+
+// Top-right corner of the preview pane (the description pane without a split), sized from the row slot height.
+void placeGear(ItemX& it) {
+    McState& e = g_mc;
+    Rect pane = {0, 0, 0, 0}, col = {0, 0, 0, 0};
+    if (!e.panel || (!paneRect(e.panel, MUI_PANE_PREVIEW, &pane) && !paneRect(e.panel, MUI_PANE_DESC, &pane)) || !paneRect(e.panel, MUI_PANE_COLUMN, &col)) return;
+    const int slotH = (col.h * mui::kRowSlotRef) / mui::kRowRefH;
+    const mui::Rect g = mui::gearButtonRect(toMui(pane), slotH);
+    if (g.w > 0) placeItem(it, g);
+}
+
+// Gives the gear button its two images once the embedded textures resolve; until then (or on a label clone) the "*" text stays.
+void gearFill(ItemX& it) {
+    if (!it.gear || it.gearFilled || !it.ctl || it.unlinked) return;
+    if (!it.isButton || ++it.gearTries > kGearMaxTries) {
+        it.gearFilled = true;
+        if (!it.isButton || it.gearTries > kGearMaxTries) KP_LOG(chMain, "GEAR art not applied (button=%d tries=%d): the text fallback stays", it.isButton ? 1 : 0, it.gearTries);
+        return;
+    }
+    void* normal = guikit::imageForRetry(gearbtn::artName(false));
+    void* hover = guikit::imageForRetry(gearbtn::artName(true));
+    if (!normal || !hover) return;
+    it.gearFilled = true;
+    if (!guikit::setButtonFill(it.ctl, normal, hover)) { KP_LOG(chMain, "GEAR setButtonFill refused: the text fallback stays"); return; }
+    (void)guikit::setButtonFillStyle(it.ctl, 2);   // stretch the 64x64 glyph over the square
+    it.text[0] = 0;
+    it.hasText = true;
+    applyItemText(it);
+    KP_LOG(chMain, "GEAR art applied after %d tries", it.gearTries);
+}
+
+// Shows slot k's controls the way ENTER(ENTRY) does: rows on their column slots, rects re-applied, everything shown, then unslotted rows hidden again.
+// underModal: k is the parent of an open modal: only its AddCustom controls stay (a preview must keep drawing); rows, buttons, labels and the gear hide.
+void showSlot(int k, bool underModal) {
+    McState& e = g_mc;
+    layoutRows(k);
+    for (int i = 0; i < e.pt.itemCount(2 + k); ++i) {
+        ItemX& it = e.items[k][i];
+        if (it.gear) {
+            placeGear(it);
+        } else if (it.ctl && it.hasRect && !it.unlinked) {
+            it.tg.ctl = it.ctl;
+            it.tg.applied = 0;
+            it.tg.gaveUp = false;
+            applyOne(e, it.tg, true);
+        }
+        const bool keep = !underModal || e.pt.pages[2 + k].items[i].kind == mui::CUSTOM;
+        setShown(it, keep && !it.userHidden);
+    }
+    if (!underModal) showRows(k);   // after the show-all loop: hidden / unslotted rows and the arrows of disabled rows go back to hidden
+    if (e.sbMade[k]) showBar(e.sb[k], !underModal && e.sw[k].needBar());
+}
+
+void hideSlot(int k) {
+    McState& e = g_mc;
+    for (int i = 0; i < e.pt.itemCount(2 + k); ++i) setShown(e.items[k][i], false);
+    if (e.sbMade[k]) showBar(e.sb[k], false);
+}
+
+void resetPageInput() {
+    McState& e = g_mc;
+    e.repItem = -1;
+    e.hov = mui::HoverTracker();
+    e.clk = mui::ClickTracker();
+    e.clkBack = mui::ClickTracker();
+}
+
+// The on-screen half of opening / closing modal m (md.open is already updated): swap the parent's controls for the modal's and the title text.
+void modalApply(int m, bool open) {
+    McState& e = g_mc;
+    const int s = mui::ModalTable::slotOf(m), k = e.md.parent[m];
+    if (!e.appended || k < 0) return;
+    if (open) {
+        showSlot(k, true);
+        e.sw[s].offset = 0;
+        showSlot(s, false);
+        if (e.title.ctl) guikit::setText(e.title.ctl, e.pageTitle[s][0] ? e.pageTitle[s] : e.pageTitle[k]);
+    } else {
+        hideSlot(s);
+        showSlot(k, false);
+        if (e.title.ctl) guikit::setText(e.title.ctl, e.pageTitle[k]);
+    }
+    resetPageInput();
+    KP_LOG(chMain, "MODAL %s page=%d parent=%d rows=%d items=%d", open ? "open" : "close", 2 + s, 2 + k, e.rp[s].n, e.pt.itemCount(2 + s));
+}
+
 void callEntryLeave(int k) {
     if (!entLive(k) || !g_ent[k].leave) return;
     g_ent[k].leave(static_cast<uint32_t>(2 + k), g_ent[k].user);
@@ -1158,27 +1268,19 @@ void applyEvent(const mui::PageEvent& ev, const char* why) {
             if (!enter) {
                 callEntryLeave(k);
                 syncDescSplit("leave");   // ps already moved off the entry page: the original LB_DESC rect goes back
-                for (int i = 0; i < e.pt.itemCount(2 + k); ++i) setShown(e.items[k][i], false);
-                if (e.sbMade[k]) showBar(e.sb[k], false);
+                if (e.md.open >= 0 && e.md.parent[e.md.open] == k) {   // leaving with a modal open (Esc, tick gap, panel hidden): it closes with the page
+                    hideSlot(mui::ModalTable::slotOf(e.md.open));
+                    e.md.clear();
+                }
+                hideSlot(k);
                 setShown(e.back, false);
                 setShown(e.title, false);
             } else {
                 const bool cleared = clearFocus(e.panel);
                 if (e.title.ctl) guikit::setText(e.title.ctl, e.pageTitle[k]);
+                e.md.clear();         // a page always opens without its modal
                 e.sw[k].offset = 0;   // a page always opens at its top
-                layoutRows(k);   // option rows take their column slots (the party / values may have changed since the last visit)
-                for (int i = 0; i < e.pt.itemCount(2 + k); ++i) {
-                    ItemX& it = e.items[k][i];
-                    if (it.ctl && it.hasRect && !it.unlinked) {
-                        it.tg.ctl = it.ctl;
-                        it.tg.applied = 0;
-                        it.tg.gaveUp = false;
-                        applyOne(e, it.tg, true);
-                    }
-                    setShown(it, true);
-                }
-                showRows(k);   // after the show-all loop: hidden / unslotted rows and the arrows of disabled rows go back to hidden
-                if (e.sbMade[k]) showBar(e.sb[k], e.sw[k].needBar());
+                showSlot(k, false);   // option rows take their column slots (the party / values may have changed since the last visit)
                 setShown(e.back, true);
                 setShown(e.title, true);
                 KP_LOG(chMain, "ENTRY enter id=%s page=%d items=%d focusCleared=%d", entLive(k) ? g_ent[k].id : "?", 2 + k, e.pt.itemCount(2 + k), cleared ? 1 : 0);
@@ -1217,11 +1319,11 @@ int hitItem(int x, int y) {
             if (overCtl(e.list[i], x, y)) return i;
         return -1;
     }
-    const int k = e.ps.entry;
-    if (k < 0 || k >= mui::kMaxEntries) return -1;
+    const int k = shownSlot();
+    if (k < 0) return -1;
     for (int i = 0; i < e.pt.itemCount(2 + k); ++i) {
         const ItemX& it = e.items[k][i];
-        if (e.pt.pages[2 + k].items[i].kind == mui::LABEL) continue;
+        if (e.pt.pages[2 + k].items[i].kind == mui::LABEL || it.userHidden) continue;
         if (overCtl(it, x, y)) return i;
     }
     return -1;
@@ -1232,8 +1334,8 @@ ItemX* shownItem(int item) {
     if (item < 0) return nullptr;
     if (e.ps.state == mui::MAIN) return item == 0 ? &e.root : nullptr;
     if (e.ps.state == mui::LIST) return item < e.nList ? &e.list[item] : nullptr;
-    const int k = e.ps.entry;
-    if (k < 0 || k >= mui::kMaxEntries || item >= e.pt.itemCount(2 + k)) return nullptr;
+    const int k = shownSlot();
+    if (k < 0 || item >= e.pt.itemCount(2 + k)) return nullptr;
     return &e.items[k][item];
 }
 
@@ -1401,7 +1503,10 @@ bool buildGate(uint32_t page, const char* what) {
         if (InterlockedIncrement(&s_ref) <= 8) KP_LOG(chMain, "MUI refused (not in build): %s", what);
         return false;
     }
-    if (page != static_cast<uint32_t>(2 + g_buildSlot)) {
+    const bool own = page == static_cast<uint32_t>(2 + g_buildSlot);
+    const bool ownModal = page >= 2 + static_cast<uint32_t>(mui::kMaxEntries) && page < 2 + static_cast<uint32_t>(mui::kMaxSlots) &&
+                          g_mc.md.parentOfSlot(static_cast<int>(page) - 2) == g_buildSlot;   // a modal NewModal made for the entry being built
+    if (!own && !ownModal) {
         KP_LOG(chMain, "MUI refused: %s page %u is not the page of the entry being built (%d)", what, static_cast<unsigned>(page), 2 + g_buildSlot);
         return false;
     }
@@ -1649,7 +1754,7 @@ int32_t KPATCH_CALL muiAddRow(uint32_t page, const K2MuiRowSpec* sp) {
 }
 
 void KPATCH_CALL muiSetChangeHandler(uint32_t page, K2MuiChangeFn fn, void* user) {
-    if (page < 2 || page >= 2 + static_cast<uint32_t>(mui::kMaxEntries)) return;
+    if (page < 2 || page >= 2 + static_cast<uint32_t>(mui::kMaxSlots)) return;
     RowPage& rp = g_mc.rp[page - 2];
     rp.fn = fn;
     rp.user = user;
@@ -1700,6 +1805,84 @@ void KPATCH_CALL muiSetRowRange(uint32_t page, int32_t row, int32_t minV, int32_
     r->cfg.maxV = maxV;
     r->cfg.value = mui::rowClamp(r->cfg, r->cfg.value);
     rowCaption(static_cast<int>(page) - 2, *r);
+}
+
+// ---- item visibility, modal pages and the shared gear (K2MenuUiApi slots 19..22)
+void KPATCH_CALL muiSetItemShown(uint32_t page, int32_t item, int32_t shown) {
+    McState& e = g_mc;
+    ItemX* it = itemAt(page, item);
+    if (!it) return;
+    const int k = static_cast<int>(page) - 2;
+    if (e.itemRow[k][item]) return;   // a row's controls follow the row (SetRowState)
+    saferead::beginScope();
+    it->userHidden = shown == 0;
+    (void)e.pt.setVisible(static_cast<int>(page), item, shown != 0);
+    if (!e.appended || !it->ctl || it->unlinked) return;
+    const int sh = shownSlot();
+    const bool underModal = e.md.open >= 0 && sh == mui::ModalTable::slotOf(e.md.open) && e.md.parent[e.md.open] == k && e.pt.pages[page].items[item].kind == mui::CUSTOM;
+    if (sh == k || underModal) setShown(*it, shown != 0);
+}
+
+uint32_t KPATCH_CALL muiNewModal(uint32_t page, const K2MuiRect* box, const char* title) {
+    if (!buildGate(page, "NewModal")) return 0;
+    McState& e = g_mc;
+    const int k = static_cast<int>(page) - 2;
+    if (k != g_buildSlot) { KP_LOG(chMain, "MUI refused: NewModal needs the entry's own page, not page %u", static_cast<unsigned>(page)); return 0; }
+    if (!e.pageMade[k]) { KP_LOG(chMain, "MUI refused: NewModal before NewPage"); return 0; }
+    const int m = e.md.add(k);
+    if (m < 0) { KP_LOG(chMain, "MUI refused: NewModal (all %d modals used)", mui::kMaxModals); return 0; }
+    const int s = mui::ModalTable::slotOf(m);
+    e.pageMade[s] = true;
+    copyStr(e.pageTitle[s], sizeof e.pageTitle[s], title);
+    e.modalBox[m] = (box && box->w > 0 && box->h > 0) ? Rect{box->x, box->y, box->w, box->h} : Rect{0, 0, 0, 0};
+    KP_LOG(chMain, "MODAL made page=%d parent=%u box=%d", 2 + s, static_cast<unsigned>(page), e.modalBox[m].w > 0 ? 1 : 0);
+    return static_cast<uint32_t>(2 + s);
+}
+
+void KPATCH_CALL muiSetModalOpen(uint32_t modalPage, int32_t open) {
+    McState& e = g_mc;
+    if (modalPage < 2 + static_cast<uint32_t>(mui::kMaxEntries) || modalPage >= 2 + static_cast<uint32_t>(mui::kMaxSlots)) return;
+    const int m = mui::ModalTable::indexOf(static_cast<int>(modalPage) - 2);
+    if (!e.md.valid(m)) return;
+    saferead::beginScope();
+    if (open != 0) {
+        if (e.md.open >= 0 && e.md.open != m) {   // one modal at a time: the other one closes first
+            const int prev = e.md.open;
+            if (e.md.setOpen(prev, false, e.ps)) modalApply(prev, false);
+        }
+        if (e.md.setOpen(m, true, e.ps)) modalApply(m, true);
+    } else if (e.md.setOpen(m, false, e.ps)) {
+        modalApply(m, false);
+    }
+}
+
+int32_t KPATCH_CALL muiAddGear(uint32_t page, const char* desc) {
+    if (!buildGate(page, "AddGear")) return -1;
+    McState& e = g_mc;
+    const int k = static_cast<int>(page) - 2;
+    if (k != g_buildSlot) { KP_LOG(chMain, "MUI refused: AddGear needs the entry's own page, not page %u", static_cast<unsigned>(page)); return -1; }
+    if (!e.pageMade[k]) { KP_LOG(chMain, "MUI refused: AddGear before NewPage"); return -1; }
+    if (e.pt.itemCount(static_cast<int>(page)) >= mui::kMaxItems) { KP_LOG(chMain, "MUI refused: page %u is full", static_cast<unsigned>(page)); return -1; }
+    for (int i = 0; i < e.pt.itemCount(static_cast<int>(page)); ++i)
+        if (e.items[k][i].gear) { KP_LOG(chMain, "MUI refused: page %u already has a gear", static_cast<unsigned>(page)); return -1; }
+    (void)gearbtn::registerArt();   // idempotent, Steam only; the textures resolve a few ticks later (gearFill retries)
+    char what[40];
+    snprintf(what, sizeof what, "gear_%u", static_cast<unsigned>(page));
+    ItemX it;
+    it.ctl = cloneEntry(e.panel, "BTN_GAMEPLAY", what, &it.isButton);
+    if (!it.ctl) return -1;
+    copyStr(it.text, sizeof it.text, "*");   // shown until the gear art is applied (and for good on a label clone)
+    it.hasText = true;
+    copyStr(it.desc, sizeof it.desc, desc);
+    it.gear = true;
+    const int id = addItemCommon(page, mui::BUTTON, it, 0);
+    if (id < 0) {
+        if (it.isButton) guibutton::releaseUnlinkedButton(it.ctl);
+        else guikit::releaseUnlinkedLabel(it.ctl, kLabelVtable);
+        return -1;
+    }
+    e.gearMade = true;
+    return id;
 }
 
 
@@ -1768,7 +1951,8 @@ void KPATCH_CALL stDummyBuild(void* panel, void*) {
 
 const K2MenuUiApi g_muiApi = {sizeof(K2MenuUiApi), &muiNewPage, &muiAddButton, &muiAddLabel, &muiAddCustom, &muiClicked,
                               &muiSetText,         &muiSetRect, &muiSetDesc,   &muiPaneRect,  &muiControl, &muiSetDescSplit,
-                              &muiAddRow,          &muiSetChangeHandler, &muiGetValue, &muiSetValue, &muiSetRowText, &muiSetRowState, &muiSetRowRange};
+                              &muiAddRow,          &muiSetChangeHandler, &muiGetValue, &muiSetValue, &muiSetRowText, &muiSetRowState, &muiSetRowRange,
+                              &muiSetItemShown,    &muiNewModal,         &muiSetModalOpen,  &muiAddGear};
 
 }  // namespace
 
@@ -1877,7 +2061,7 @@ extern "C" void __cdecl McTick(int panelArg) {
         return;
     }
     // A click latched last tick and never read is dropped now (Clicked answers 1 once, for one tick).
-    for (int k = 0; k < mui::kMaxEntries; ++k)
+    for (int k = 0; k < mui::kMaxSlots; ++k)
         for (int i = 0; i < e.pt.itemCount(2 + k); ++i) e.items[k][i].latched = false;
     const DWORD now = GetTickCount();
     const DWORD gap = e.lastTick ? now - e.lastTick : 0;
@@ -1911,10 +2095,18 @@ extern "C" void __cdecl McTick(int panelArg) {
     if (!e.appended) firstTick();
     applyTargets(e, false);
     syncDescSplit("tick");   // no-op unless a split page is shown (or was just left)
+    if (e.gearMade) embtex::heal();   // refill the gear textures after a GL reset (idempotent, cheap)
     if (e.ps.state == mui::ENTRY && e.ps.entry >= 0 && e.ps.entry < mui::kMaxEntries) {
-        const int k = e.ps.entry;
-        for (int i = 0; i < e.pt.itemCount(2 + k); ++i)
-            if (e.items[k][i].ctl && e.items[k][i].hasRect && !e.items[k][i].unlinked) applyOne(e, e.items[k][i].tg, false);
+        const int sh = shownSlot();   // the open modal's slot while one is open; its parent's controls (a preview) keep their rects too
+        for (int pass = 0; pass < 2; ++pass) {
+            const int k = pass == 0 ? sh : e.ps.entry;
+            if (k < 0 || (pass == 1 && k == sh)) continue;
+            for (int i = 0; i < e.pt.itemCount(2 + k); ++i) {
+                ItemX& it = e.items[k][i];
+                if (pass == 0) gearFill(it);
+                if (it.ctl && it.hasRect && !it.unlinked) applyOne(e, it.tg, false);
+            }
+        }
     }
 
     int x = 0, y = 0;
@@ -1924,7 +2116,7 @@ extern "C" void __cdecl McTick(int panelArg) {
     const int hit = cur ? hitItem(x, y) : -1;
     const bool overBack = cur && e.ps.state != mui::MAIN && overCtl(e.back, x, y);
     hoverStep(overBack ? -1 : hit);
-    if (e.ps.state == mui::ENTRY && e.ps.entry >= 0 && e.ps.entry < mui::kMaxEntries && e.rp[e.ps.entry].n > 0) rowArrowInput(e.ps.entry, down, overBack ? -1 : hit, now);
+    if (shownSlot() >= 0 && e.rp[shownSlot()].n > 0) rowArrowInput(shownSlot(), down, overBack ? -1 : hit, now);
     (void)scrollTick(down, cur, x, y, now);
     if (down && !e.prevDown) {
         static volatile LONG s_in = 0;
@@ -1946,8 +2138,8 @@ extern "C" void __cdecl McTick(int panelArg) {
         } else if (e.ps.state == mui::LIST) {
             entryClicked(clicked);
         } else {
-            const int k = e.ps.entry;
-            if (k >= 0 && k < mui::kMaxEntries && clicked < mui::kMaxItems && e.itemRow[k][clicked]) {
+            const int k = shownSlot();
+            if (k >= 0 && clicked < mui::kMaxItems && e.itemRow[k][clicked]) {
                 // A row part: a toggle flips on its release; the arrows already stepped on their press (rowArrowInput); neither latches Clicked.
                 const int row = e.itemRow[k][clicked] - 1;
                 if (e.itemPart[k][clicked] == 0 && e.rp[k].rows[row].cfg.kind == mui::RK_TOGGLE) rowChange(k, row, 0);
@@ -1958,8 +2150,11 @@ extern "C" void __cdecl McTick(int panelArg) {
         }
     } else if (backClicked >= 0) {
         const int from = curPageId();
-        if (e.ps.state == mui::ENTRY) pageChange(from, e.ps.back(), "back");
-        else if (e.ps.state == mui::LIST && e.leaveAt == 0) e.leaveAt = now + kLeaveDelayMs;
+        if (e.ps.state == mui::ENTRY) {
+            const int om = e.md.open;
+            if (e.md.closeFirst()) modalApply(om, false);   // Back closes an open modal first, the page stays
+            else pageChange(from, e.ps.back(), "back");
+        } else if (e.ps.state == mui::LIST && e.leaveAt == 0) e.leaveAt = now + kLeaveDelayMs;
     }
     // Back on LIST: restore the vanilla controls only once the LMB is up and the delay has passed (the release must not land on BTN_EXIT).
     if (e.ps.state == mui::LIST && e.leaveAt && !down && static_cast<LONG>(now - e.leaveAt) >= 0) {
@@ -2010,7 +2205,7 @@ extern "C" void __cdecl McDestroy(int panelArg) {
 extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
     guikit::initGuiInput(api, "mod-config");   // optional: the wheel provider (k2.guiinput); a missing provider only means no wheel
-    KP_LOG(chMain, "mod-config 0.2.0-dev loaded (Mod Configuration button under Gameplay; k2.modconfig@1 + k2.menuui@1; config mod_config.ini is read at the first Options panel: enabled debug button_clone reflow desc free_labels)");
+    KP_LOG(chMain, "mod-config 0.3.0-dev loaded (Mod Configuration button under Gameplay; k2.modconfig@1 + k2.menuui@1; config mod_config.ini is read at the first Options panel: enabled debug button_clone reflow desc free_labels)");
     int rcC = -1, rcM = -1;
     if (api && api->struct_size >= offsetof(KPatchApi, require) + sizeof(api->require) && api->provide) {
         rcC = api->provide(K2MODCONFIG_IFACE, K2MODCONFIG_VERSION, &g_mcApi);

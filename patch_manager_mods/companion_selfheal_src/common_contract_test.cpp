@@ -338,9 +338,9 @@ int main() {
         { const bool lam_ = [] {
             k2mc::ConfigClient c; k2pc::RegisterOnce st; K2ModConfigEntry e = {};
             return !k2pc::registerOnce(st, c, e, nullptr) && !st.registered;
-        }(); HCHECK("K2MenuUiApi grows by appending: SetDescSplit slot 11, AddRow 12 .. SetRowRange 18, 19 pointer slots; rows are gated by hasRows()",
+        }(); HCHECK("K2MenuUiApi grows by appending: SetDescSplit slot 11, AddRow 12 .. SetRowRange 18, modal / gear 19..22, 23 pointer slots; rows are gated by hasRows()",
                offsetof(K2MenuUiApi, SetDescSplit) == 11 * sizeof(void*) && offsetof(K2MenuUiApi, AddRow) == 12 * sizeof(void*) &&
-               offsetof(K2MenuUiApi, SetRowRange) == 18 * sizeof(void*) && sizeof(K2MenuUiApi) == 19 * sizeof(void*));
+               offsetof(K2MenuUiApi, SetRowRange) == 18 * sizeof(void*) && offsetof(K2MenuUiApi, AddGear) == 22 * sizeof(void*) && sizeof(K2MenuUiApi) == 23 * sizeof(void*));
         HCHECK("MUI_ROW_TOGGLE 0 / MUI_ROW_STEPPER 1; MUI_RF_WRAP 1 RESTART 2 DISABLED 4 HIDDEN 8 (SelfHealPage views use DISABLED / HIDDEN)",
                MUI_ROW_TOGGLE == 0 && MUI_ROW_STEPPER == 1 && MUI_RF_WRAP == 1 && MUI_RF_RESTART == 2 && MUI_RF_DISABLED == 4 && MUI_RF_HIDDEN == 8);
         K2MenuUiApi shortT = {};

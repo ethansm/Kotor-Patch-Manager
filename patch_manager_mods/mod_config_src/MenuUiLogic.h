@@ -34,7 +34,8 @@
 
 namespace mui {
 
-enum { kMaxEntries = 24, kMaxItems = 80, kMaxPages = 2 + kMaxEntries, kMaxEvents = 4 };
+// Page ids: 0 MAIN, 1 LIST, 2 + slot. Slots 0..kMaxEntries-1 are the entry pages (slot = token - 1); slots kMaxEntries.. are modal pages (ModalTable).
+enum { kMaxEntries = 24, kMaxItems = 80, kMaxModals = 8, kMaxSlots = kMaxEntries + kMaxModals, kMaxPages = 2 + kMaxSlots, kMaxEvents = 4 };
 
 // ---------------------------------------------------------------------------------------------------- registry
 // A slot is live while registered. seq is the registration order of the id's first registration: removing an entry
@@ -202,6 +203,60 @@ inline PageEvents PageStack::reset() {
     entry = -1;
     return r;
 }
+
+// ---------------------------------------------------------------------------------------------------- modal pages (K2MenuUiApi.NewModal)
+// A modal is an extra page slot (kMaxEntries + m) that belongs to one entry page (its parent). It is not a PageStack state: the entry
+// page stays ENTRY(k), its enter / tick / leave callbacks keep running, and only the controls on screen change while the modal is open
+// (the parent's provider-drawn controls hide, the modal's show). At most one modal is open; it can only be opened while its parent is the
+// shown entry page. Back closes the modal first (closeFirst), and every page change (Esc, tick gap, panel hidden, leaving the entry) clears it.
+//   shownSlot(ps): the slot whose controls take input: the open modal's slot while its parent is shown, else ps.entry, -1 outside an entry page.
+struct ModalTable {
+    int parent[kMaxModals];   // owning entry slot, -1 = unused
+    int n = 0;
+    int open = -1;            // open modal index, -1 = none
+    ModalTable() { for (int i = 0; i < kMaxModals; ++i) parent[i] = -1; }
+
+    static bool isModalSlot(int slot) { return slot >= kMaxEntries && slot < kMaxSlots; }
+    static int slotOf(int m) { return kMaxEntries + m; }
+    static int indexOf(int slot) { return slot - kMaxEntries; }
+    // New modal for entry slot `parentEntry` (0 <= parentEntry < kMaxEntries). Returns the modal index, or -1 when the table is full or the parent is invalid.
+    int add(int parentEntry) {
+        if (parentEntry < 0 || parentEntry >= kMaxEntries || n >= kMaxModals) return -1;
+        parent[n] = parentEntry;
+        return n++;
+    }
+    bool valid(int m) const { return m >= 0 && m < n; }
+    // Parent entry slot of a slot: the entry itself for an entry slot, the owner for a modal slot, -1 when unknown.
+    int parentOfSlot(int slot) const {
+        if (slot >= 0 && slot < kMaxEntries) return slot;
+        return isModalSlot(slot) && valid(indexOf(slot)) ? parent[indexOf(slot)] : -1;
+    }
+    // Opens (open = true) or closes modal m. Opening needs ps to show m's parent (ENTRY, entry == parent) and closes any other open modal.
+    // Returns true when the open state changed.
+    bool setOpen(int m, bool wantOpen, const PageStack& ps) {
+        if (!valid(m)) return false;
+        if (wantOpen) {
+            if (ps.state != ENTRY || ps.entry != parent[m] || open == m) return false;
+            open = m;
+            return true;
+        }
+        if (open != m) return false;
+        open = -1;
+        return true;
+    }
+    // Back / Escape: closes the open modal and reports true (the press is consumed); false when none is open.
+    bool closeFirst() {
+        if (open < 0) return false;
+        open = -1;
+        return true;
+    }
+    void clear() { open = -1; }
+    int shownSlot(const PageStack& ps) const {
+        if (ps.state != ENTRY || ps.entry < 0 || ps.entry >= kMaxEntries) return -1;
+        if (open >= 0 && parent[open] == ps.entry) return slotOf(open);
+        return ps.entry;
+    }
+};
 
 // ---------------------------------------------------------------------------------------------------- hover edge
 struct HoverEvent {
@@ -544,6 +599,24 @@ inline int rowHitZone(const RowGeom& g, int px, int py) {
     if (rectHas(g.right, px, py)) return Z_RIGHT;
     if (rectHas(g.label, px, py)) return Z_LABEL;
     return Z_NONE;
+}
+
+// ---------------------------------------------------------------------------------------------------- gear button (K2MenuUiApi.AddGear)
+// The provider-drawn settings gear: a square in the top-right corner of a pane (the preview pane, else the description pane), the same on every page.
+// side = 85 % of the row slot height (slotH, 32/284 of the column height) so it reads as one of the option rows' controls; margin = max(2, side/6) from the
+// top and right edges; the side shrinks to fit a small pane (min(w, h) - 2 * margin); a pane with no room (side < 1) gives an empty rect.
+inline Rect gearButtonRect(const Rect& pane, int slotH) {
+    Rect r = {pane.x, pane.y, 0, 0};
+    int side = (slotH * 85) / 100;
+    const int margin = (side / 6) > 2 ? side / 6 : 2;
+    const int room = (pane.w < pane.h ? pane.w : pane.h) - 2 * margin;
+    if (side > room) side = room;
+    if (side < 1) return r;
+    r.x = pane.x + pane.w - margin - side;
+    r.y = pane.y + margin;
+    r.w = side;
+    r.h = side;
+    return r;
 }
 
 // ---------------------------------------------------------------------------------------------------- scroll window

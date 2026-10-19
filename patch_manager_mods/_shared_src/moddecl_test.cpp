@@ -77,7 +77,8 @@ static void* KPATCH_CALL fCtl(uint32_t, int32_t) { return nullptr; }
 static int32_t KPATCH_CALL fSplit(uint32_t, int32_t) { return 0; }
 
 static K2MenuUiApi g_table = {sizeof(K2MenuUiApi), fNewPage, fNoopI, fNoopL, fNoopC, fClicked, fNoopT, fNoopR, fNoopD, fPane, fCtl, fSplit,
-                              fAddRow, fSetHandler, fGet, fSet, fSetText, fSetState, fSetRange};
+                              fAddRow, fSetHandler, fGet, fSet, fSetText, fSetState, fSetRange,
+                              nullptr, nullptr, nullptr, nullptr};   // slots 19..22 (SetItemShown, NewModal, SetModalOpen, AddGear): not used by the declarative layer
 
 static k2mc::MenuClient g_client;
 static void connectFake(const K2MenuUiApi* t) {

@@ -346,7 +346,8 @@ static void test_page_table_full() {
     for (int i = 0; i < kMaxPages; ++i) KT_CHECK_EQ(pt.addPage(), i);
     KT_CHECK_EQ(pt.addPage(), -1);                       // one page past the table
     KT_CHECK_EQ(pt.pageCount(), kMaxPages);
-    KT_CHECK_EQ(kMaxPages, 2 + kMaxEntries);             // MAIN, LIST, one ENTRY page per registry slot
+    KT_CHECK_EQ(kMaxPages, 2 + kMaxEntries + kMaxModals);   // MAIN, LIST, one ENTRY page per registry slot, one page per modal
+    KT_CHECK_EQ(kMaxModals, 8); KT_CHECK_EQ(kMaxSlots, 32); KT_CHECK_EQ(kMaxPages, 34);
 }
 
 static void test_item_table_full_and_bad_pages() {
@@ -893,6 +894,74 @@ static void test_tickreset() {
     KT_CHECK(tickResetDue(1001, 0x40, false, false, 200, 1000));
 }
 
+// ---------------------------------------------------------------- modal pages (NewModal / SetModalOpen)
+static void test_modal_table() {
+    ModalTable md;
+    PageStack ps;
+    KT_CHECK_EQ(md.shownSlot(ps), -1);                             // MAIN: no entry page
+    KT_CHECK_EQ(md.add(-1), -1); KT_CHECK_EQ(md.add(kMaxEntries), -1);   // parent must be an entry slot
+    const int a = md.add(3), b = md.add(3), c = md.add(7);
+    KT_CHECK_EQ(a, 0); KT_CHECK_EQ(b, 1); KT_CHECK_EQ(c, 2);
+    KT_CHECK_EQ(ModalTable::slotOf(a), kMaxEntries); KT_CHECK_EQ(ModalTable::slotOf(c), kMaxEntries + 2);
+    KT_CHECK(ModalTable::isModalSlot(kMaxEntries) && ModalTable::isModalSlot(kMaxSlots - 1));
+    KT_CHECK(!ModalTable::isModalSlot(kMaxEntries - 1) && !ModalTable::isModalSlot(kMaxSlots));
+    KT_CHECK_EQ(ModalTable::indexOf(kMaxEntries + 2), 2);
+    KT_CHECK_EQ(md.parentOfSlot(3), 3); KT_CHECK_EQ(md.parentOfSlot(kMaxEntries + 2), 7); KT_CHECK_EQ(md.parentOfSlot(kMaxEntries + 5), -1);
+    KT_CHECK_EQ(md.parentOfSlot(-1), -1); KT_CHECK_EQ(md.parentOfSlot(kMaxSlots), -1);
+    // not shown yet: the parent is not the shown page, so opening is refused
+    KT_CHECK(!md.setOpen(a, true, ps));
+    ps.push(LIST, -1);
+    KT_CHECK(!md.setOpen(a, true, ps));                            // LIST is not an entry page
+    ps.push(ENTRY, 7);
+    KT_CHECK(!md.setOpen(a, true, ps));                            // a belongs to entry 3, entry 7 is shown
+    KT_CHECK_EQ(md.shownSlot(ps), 7);
+    KT_CHECK(md.setOpen(c, true, ps));
+    KT_CHECK_EQ(md.open, c); KT_CHECK_EQ(md.shownSlot(ps), kMaxEntries + 2);
+    KT_CHECK(!md.setOpen(c, true, ps));                            // already open: no change
+    KT_CHECK(!md.setOpen(99, true, ps)); KT_CHECK(!md.setOpen(-1, false, ps));
+    KT_CHECK(!md.setOpen(a, false, ps));                           // a is not the open one
+    KT_CHECK_EQ(md.open, c);
+    KT_CHECK(md.setOpen(c, false, ps));
+    KT_CHECK_EQ(md.open, -1); KT_CHECK_EQ(md.shownSlot(ps), 7);
+    KT_CHECK(!md.setOpen(c, false, ps));                           // closing twice is a no-op
+    // closeFirst consumes exactly one Back
+    KT_CHECK(md.setOpen(c, true, ps));
+    KT_CHECK(md.closeFirst()); KT_CHECK_EQ(md.open, -1); KT_CHECK(!md.closeFirst());
+    // a second modal of the same parent replaces the first only through close + open (one open at a time)
+    ps.back();
+    ps.push(ENTRY, 3);
+    KT_CHECK(md.setOpen(a, true, ps)); KT_CHECK(md.setOpen(b, true, ps));
+    KT_CHECK_EQ(md.open, b);
+    // a page change clears: clear() then shownSlot is the entry page; an open modal never shows for another entry
+    md.clear(); KT_CHECK_EQ(md.open, -1);
+    KT_CHECK(md.setOpen(a, true, ps));
+    ps.reset();
+    KT_CHECK_EQ(md.shownSlot(ps), -1);                             // MAIN
+    ps.push(LIST, -1); ps.push(ENTRY, 7);
+    KT_CHECK_EQ(md.shownSlot(ps), 7);                              // stale open modal of entry 3 does not capture entry 7
+    // full table
+    ModalTable full;
+    for (int i = 0; i < kMaxModals; ++i) KT_CHECK_EQ(full.add(0), i);
+    KT_CHECK_EQ(full.add(0), -1);
+}
+
+static void test_gear_rect() {
+    // slot height 32 (column 284 px tall): side 27, margin 4, pane 300x200 at (100,50) -> right edge 100+300-4 = 396, top 54
+    Rect g = gearButtonRect(Rect{100, 50, 300, 200}, 32);
+    KT_CHECK_EQ(g.w, 27); KT_CHECK_EQ(g.h, 27); KT_CHECK_EQ(g.x, 396 - 27); KT_CHECK_EQ(g.y, 54);
+    // larger slot: 64 -> side 54, margin 9
+    g = gearButtonRect(Rect{0, 0, 400, 300}, 64);
+    KT_CHECK_EQ(g.w, 54); KT_CHECK_EQ(g.x, 400 - 9 - 54); KT_CHECK_EQ(g.y, 9);
+    // small pane: side shrinks to min(w,h) - 2*margin (50 - 8 = 42 > 27, so no shrink; 20 - 8 = 12 does)
+    g = gearButtonRect(Rect{0, 0, 300, 20}, 32);
+    KT_CHECK_EQ(g.w, 12); KT_CHECK_EQ(g.h, 12); KT_CHECK_EQ(g.y, 4);
+    // no room: empty rect at the pane origin
+    g = gearButtonRect(Rect{5, 6, 6, 6}, 32);
+    KT_CHECK_EQ(g.w, 0); KT_CHECK_EQ(g.h, 0); KT_CHECK_EQ(g.x, 5); KT_CHECK_EQ(g.y, 6);
+    g = gearButtonRect(Rect{0, 0, 100, 100}, 0);                   // zero slot height: nothing to draw
+    KT_CHECK_EQ(g.w, 0);
+}
+
 int main() {
     test_registry_basic();
     test_registry_null_and_empty_ids();
@@ -933,5 +1002,7 @@ int main() {
     test_scroll_thumb();
     test_scroll_list_rebind_maths();
     test_tickreset();
+    test_modal_table();
+    test_gear_rect();
     return kt::Report("menu_ui_logic_test");
 }

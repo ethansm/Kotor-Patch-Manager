@@ -38,10 +38,15 @@ void KPATCH_CALL stubSetRowText(uint32_t, int32_t, const char*) {}
 void KPATCH_CALL stubSetRowState(uint32_t, int32_t, int32_t) {}
 void KPATCH_CALL stubSetRowRange(uint32_t, int32_t, int32_t, int32_t) {}
 
+void KPATCH_CALL stubSetItemShown(uint32_t, int32_t, int32_t) {}
+uint32_t KPATCH_CALL stubNewModal(uint32_t, const K2MuiRect*, const char*) { return 0; }
+void KPATCH_CALL stubSetModalOpen(uint32_t, int32_t) {}
+int32_t KPATCH_CALL stubAddGear(uint32_t, const char*) { return -1; }
 const K2ModConfigApi kCfgTable = { sizeof(K2ModConfigApi), stubRegister, stubUnregister };
 const K2MenuUiApi kMuiTable = { sizeof(K2MenuUiApi), stubNewPage, stubAddButton, stubAddLabel, stubAddCustom, stubClicked,
                                 stubSetText, stubSetRect, stubSetDesc, stubPaneRect, stubControl, stubSetDescSplit,
-                                stubAddRow, stubSetChangeHandler, stubGetValue, stubSetValue, stubSetRowText, stubSetRowState, stubSetRowRange };
+                                stubAddRow, stubSetChangeHandler, stubGetValue, stubSetValue, stubSetRowText, stubSetRowState, stubSetRowRange,
+                                nullptr, nullptr, nullptr, nullptr };   // slots 19..22 (modal / gear) are not exercised here
 
 // onConnect capture for the not-provided message.
 bool g_connOk = true;
@@ -72,7 +77,7 @@ int main() {
     MEQ("K2ModConfigApi.Unregister at slot 2", offsetof(K2ModConfigApi, Unregister), 2 * sizeof(void*));
     MEQ("K2MuiRect is 16 bytes", sizeof(K2MuiRect), 16);
     MEQ("K2MuiRect.h at byte 12", offsetof(K2MuiRect, h), 12);
-    MEQ("K2MenuUiApi is 19 pointer slots", sizeof(K2MenuUiApi), 19 * sizeof(void*));
+    MEQ("K2MenuUiApi is 23 pointer slots", sizeof(K2MenuUiApi), 23 * sizeof(void*));
     MEQ("K2MenuUiApi.SetDescSplit at slot 11", offsetof(K2MenuUiApi, SetDescSplit), 11 * sizeof(void*));
     MEQ("K2MenuUiApi.AddRow at slot 12", offsetof(K2MenuUiApi, AddRow), 12 * sizeof(void*));
     MEQ("K2MenuUiApi.SetChangeHandler at slot 13", offsetof(K2MenuUiApi, SetChangeHandler), 13 * sizeof(void*));
@@ -80,7 +85,11 @@ int main() {
     MEQ("K2MenuUiApi.SetValue at slot 15", offsetof(K2MenuUiApi, SetValue), 15 * sizeof(void*));
     MEQ("K2MenuUiApi.SetRowText at slot 16", offsetof(K2MenuUiApi, SetRowText), 16 * sizeof(void*));
     MEQ("K2MenuUiApi.SetRowState at slot 17", offsetof(K2MenuUiApi, SetRowState), 17 * sizeof(void*));
-    MEQ("K2MenuUiApi.SetRowRange at slot 18 (the last field)", offsetof(K2MenuUiApi, SetRowRange), 18 * sizeof(void*));
+    MEQ("K2MenuUiApi.SetRowRange at slot 18", offsetof(K2MenuUiApi, SetRowRange), 18 * sizeof(void*));
+    MEQ("K2MenuUiApi.SetItemShown at slot 19", offsetof(K2MenuUiApi, SetItemShown), 19 * sizeof(void*));
+    MEQ("K2MenuUiApi.NewModal at slot 20", offsetof(K2MenuUiApi, NewModal), 20 * sizeof(void*));
+    MEQ("K2MenuUiApi.SetModalOpen at slot 21", offsetof(K2MenuUiApi, SetModalOpen), 21 * sizeof(void*));
+    MEQ("K2MenuUiApi.AddGear at slot 22 (the last field)", offsetof(K2MenuUiApi, AddGear), 22 * sizeof(void*));
     MEQ("MUI_ROW_TOGGLE == 0 / MUI_ROW_STEPPER == 1", MUI_ROW_TOGGLE * 10 + MUI_ROW_STEPPER, 1);
     MEQ("MUI_RF_WRAP/RESTART/DISABLED/HIDDEN == 1/2/4/8", MUI_RF_WRAP | MUI_RF_RESTART | MUI_RF_DISABLED | MUI_RF_HIDDEN, 15);
     MEQ("MUI_RF_WRAP == 1", MUI_RF_WRAP, 1);
@@ -222,6 +231,17 @@ int main() {
     MCHECK("MenuClient::hasRows false for a 12-slot table", !k2mc::MenuClient::hasRows(&shortRows));
     MCHECK("MenuClient::hasRows true for the current table", k2mc::MenuClient::hasRows(&kMuiTable));
     MCHECK("MenuClient::hasRows false for a null table", !k2mc::MenuClient::hasRows(static_cast<const K2MenuUiApi*>(nullptr)));
+    {   // MCF9: the four modal / gear slots (19..22) are gated by hasModal(), which needs every one non-null and a table that reaches AddGear
+        K2MenuUiApi full = kMuiTable;
+        full.SetItemShown = stubSetItemShown; full.NewModal = stubNewModal; full.SetModalOpen = stubSetModalOpen; full.AddGear = stubAddGear;   // only presence is checked
+        MCHECK("MenuClient::hasModal true when slots 19..22 are present", k2mc::MenuClient::hasModal(&full));
+        MCHECK("MenuClient::hasModal false while those slots are null", !k2mc::MenuClient::hasModal(&kMuiTable));
+        K2MenuUiApi noGear = full; noGear.AddGear = nullptr;
+        MCHECK("MenuClient::hasModal false with AddGear null", !k2mc::MenuClient::hasModal(&noGear));
+        K2MenuUiApi old = full; old.struct_size = static_cast<uint32_t>(offsetof(K2MenuUiApi, SetItemShown));
+        MCHECK("MenuClient::hasModal false for a 19-slot table (rows without modal)", !k2mc::MenuClient::hasModal(&old) && k2mc::MenuClient::hasRows(&old));
+        MCHECK("MenuClient::hasModal false for a null table", !k2mc::MenuClient::hasModal(static_cast<const K2MenuUiApi*>(nullptr)));
+    }
     K2MenuUiApi endsInside = kMuiTable;
     endsInside.struct_size = static_cast<uint32_t>(offsetof(K2MenuUiApi, SetRowRange) + 1);
     MCHECK("MenuClient::hasRows false when struct_size ends inside SetRowRange", !k2mc::MenuClient::hasRows(&endsInside));
