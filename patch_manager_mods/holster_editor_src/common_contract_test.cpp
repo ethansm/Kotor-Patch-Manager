@@ -83,7 +83,8 @@ int32_t KPATCH_CALL stubMuiSetDescSplit(uint32_t, int32_t) { return 1; }
 
 const K2ModConfigApi kCfgTable = { sizeof(K2ModConfigApi), stubCfgRegister, stubCfgUnregister };
 const K2MenuUiApi kMuiTable = { sizeof(K2MenuUiApi), stubMuiNewPage, stubMuiAddButton, stubMuiAddLabel, stubMuiAddCustom,
-                                stubMuiClicked, stubMuiSetText, stubMuiSetRect, stubMuiSetDesc, stubMuiPaneRect, stubMuiControl, nullptr };   // SetDescSplit unused here
+                                stubMuiClicked, stubMuiSetText, stubMuiSetRect, stubMuiSetDesc, stubMuiPaneRect, stubMuiControl,
+                                nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };   // SetDescSplit + the 7 row slots (12..18) are unused here
 
 // ---- Preview3dApi stubs ----
 uint32_t KPATCH_CALL stubP3CreateView(void*, const char*) { return 1; }
@@ -275,7 +276,9 @@ int main() {
 
         HEQ("K2ModConfigEntry is 10 pointer slots", sizeof(K2ModConfigEntry), 10 * sizeof(void*));
         HEQ("K2ModConfigApi is 3 pointer slots", sizeof(K2ModConfigApi), 3 * sizeof(void*));
-        HEQ("K2MenuUiApi is 12 pointer slots (SetDescSplit appended after Control)", sizeof(K2MenuUiApi), 12 * sizeof(void*));
+        // The table only grows (append-only ABI; the row slots 12..18 came after SetDescSplit): this mod needs the first 12 slots in place.
+        HCHECK("K2MenuUiApi has at least 12 pointer slots (SetDescSplit appended after Control)", sizeof(K2MenuUiApi) >= 12 * sizeof(void*));
+        HEQ("SetDescSplit is slot 11", offsetof(K2MenuUiApi, SetDescSplit), 11 * sizeof(void*));
 
         // ConfigClient::usable
         HCHECK("ConfigClient::usable true for valid table", k2mc::ConfigClient::usable(&kCfgTable));
