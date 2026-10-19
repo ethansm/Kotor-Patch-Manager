@@ -2,8 +2,13 @@
 """Recipe and user-config loader/validator for the install-time K1 -> K2 character importer (doc 38 s26).
 
 A recipe (recipes/<id>.toml) is committed per-NPC instructions: resrefs, texture list, template row, gender,
-soundset. It carries NO assets and NO 2DA row numbers (appearance/heads row ids are assigned by the builder
-from the live K2 tables). The user config (k1_imports.example.toml -> your private copy) names the game dirs,
+soundset, and optionally an [audio] table. It carries NO assets and NO 2DA row numbers (appearance/heads/soundset
+row ids are assigned by the builder from the live K2 tables).
+
+[audio] (optional) imports the character's own K1 bark audio: k1_ssf = the K1 SSF resref (e.g. p_carth), k2_ssf =
+the K2 SSF resref the pack serves. Both required. The builder then appends a NEW soundset.2da row for the character
+and the pack serves the SSF plus the K1 voice wavs. `character.soundset` stays required: it is the fallback K2 row
+used when the recipe has no [audio] (and documents the stand-in voice); with [audio] it is ignored for the UTC and pack. The user config (k1_imports.example.toml -> your private copy) names the game dirs,
 the output dir and the build order.
 
 API: load_recipe(path) -> Recipe, load_recipes(dir, ids) -> list[Recipe], load_config(path) -> Config,
@@ -36,7 +41,7 @@ BUILD_KEYS = ("out", "characters", "recipes_dir", "texture_source", "first_appea
 TEXTURE_SOURCES = ("vanilla", "cr")
 
 ROW_HINT = "row ids are assigned by the builder from the live K2 tables"
-AUDIO_WARNING = "audio reserved for a later pass, not parsed"
+AUDIO_KEYS = ("k1_ssf", "k2_ssf")
 
 
 class RecipeError(ValueError):
@@ -58,6 +63,12 @@ class TextureRef:
 
 
 @dataclass(frozen=True)
+class AudioRef:
+    k1_ssf: str  # K1 SSF resref read from the K1 install
+    k2_ssf: str  # K2 SSF resref the pack serves (the new soundset.2da row's resref column)
+
+
+@dataclass(frozen=True)
 class Recipe:
     id: str
     display_name: str
@@ -74,12 +85,15 @@ class Recipe:
     textures: tuple[TextureRef, ...]
     warnings: tuple[str, ...]
     source: str  # path the recipe was loaded from (diagnostics only)
+    audio: AudioRef | None = None
 
     def k2_names(self) -> tuple[str, ...]:
-        """Every k2 resref this recipe introduces (models, textures, utc), in declaration order."""
+        """Every k2 resref this recipe introduces (models, textures, utc, ssf), in declaration order."""
         names = [m.k2 for m in (self.body_a, self.body_b, self.head) if m is not None]
         names += [t.k2 for t in self.textures]
         names.append(self.utc)
+        if self.audio is not None:
+            names.append(self.audio.k2_ssf)
         return tuple(names)
 
 
@@ -190,9 +204,12 @@ def parse_recipe(data: dict, path: Path) -> Recipe:
     ctx = _Ctx(path)
     ctx.unknown(data, TOP_KEYS, "")
     warnings: list[str] = []
+    audio: AudioRef | None = None
     if "audio" in data:
-        ctx.table(data["audio"], "audio")
-        warnings.append(f"{path.name}: {AUDIO_WARNING}")
+        at = ctx.table(data["audio"], "audio")
+        ctx.unknown(at, AUDIO_KEYS, "audio")
+        ctx.require(at, AUDIO_KEYS, "audio")
+        audio = AudioRef(k1_ssf=ctx.resref(at["k1_ssf"], "audio.k1_ssf"), k2_ssf=ctx.resref(at["k2_ssf"], "audio.k2_ssf"))
 
     if "character" not in data:
         raise ctx.err("character", "missing required table")
@@ -212,7 +229,7 @@ def parse_recipe(data: dict, path: Path) -> Recipe:
     sound = ch["soundset"]
     if isinstance(sound, str):
         if sound == "auto":
-            raise ctx.err("character.soundset", '"auto" is reserved: audio pass not implemented')
+            raise ctx.err("character.soundset", '"auto" is reserved: use an [audio] table (k1_ssf, k2_ssf) for a characters own barks')
         raise ctx.err("character.soundset", f"must be an integer row, got {sound!r}")
     soundset = ctx.integer(sound, "character.soundset", 0)
     template_row = ctx.integer(ch["template_row"], "character.template_row", 0)
@@ -275,6 +292,8 @@ def parse_recipe(data: dict, path: Path) -> Recipe:
         claim(head.k2, "models.head.k2")
     for i, t in enumerate(textures):
         claim(t.k2, f"textures[{i}].k2")
+    if audio is not None:
+        claim(audio.k2_ssf, "audio.k2_ssf")
 
     return Recipe(
         id=rid,
@@ -292,6 +311,7 @@ def parse_recipe(data: dict, path: Path) -> Recipe:
         textures=tuple(textures),
         warnings=tuple(warnings),
         source=str(path),
+        audio=audio,
     )
 
 
@@ -398,7 +418,8 @@ def main(argv: list[str]) -> int:
         data = _read_toml(p)
         if "character" in data:
             r = parse_recipe(data, p)
-            print(f"OK recipe {r.id}: converter={r.converter} textures={len(r.textures)} warnings={list(r.warnings)}")
+            print(f"OK recipe {r.id}: converter={r.converter} textures={len(r.textures)} "
+                  f"audio={r.audio.k1_ssf + '->' + r.audio.k2_ssf if r.audio else 'none'} warnings={list(r.warnings)}")
         else:
             c = load_config(p)
             load_recipes(c.recipes_dir, c.characters)

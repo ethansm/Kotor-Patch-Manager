@@ -78,6 +78,7 @@ class ShippedTests(unittest.TestCase):
         self.assertEqual([r.id for r in rs], ["carth", "juhani"])
         carth, juhani = rs
         self.assertEqual((carth.converter, carth.soundset, carth.gender), ("mdlops", 14, 0))
+        self.assertEqual(carth.audio, R.AudioRef(k1_ssf="p_carth", k2_ssf="k1p_carthssf"))
         self.assertEqual((juhani.converter, juhani.dlg, juhani.gender), ("mdlops", "", 1))
         for r in rs:
             self.assertEqual(r.template_row, 17)
@@ -180,7 +181,7 @@ class RecipeRuleTests(Base):
         self.bad(good().replace('"pykotor"', '"blender"'), "models.converter", "pykotor")
 
     def test_soundset_auto(self):
-        self.bad(good().replace("soundset = 11", 'soundset = "auto"'), "character.soundset", "audio pass not implemented")
+        self.bad(good().replace("soundset = 11", 'soundset = "auto"'), "character.soundset", "[audio] table")
         self.bad(good().replace("soundset = 11", 'soundset = "11"'), "character.soundset")
         self.bad(good().replace("soundset = 11", "soundset = -1"), "character.soundset")
         self.bad(good().replace("soundset = 11", "soundset = true"), "character.soundset")
@@ -195,10 +196,26 @@ class RecipeRuleTests(Base):
         self.bad(good().replace('id = "tst"', 'id = "other"'), "character.id", "file stem")
         self.bad(good("Up"), "character.id", rid="Up")
 
-    def test_audio_table_warns(self):
-        r = R.load_recipe(self.recipe(good() + '\n[audio]\nbarks = ["x"]\n'))
-        self.assertEqual(len(r.warnings), 1)
-        self.assertIn("audio reserved for a later pass, not parsed", r.warnings[0])
+    def test_audio_table_parsed(self):
+        r = R.load_recipe(self.recipe(good() + '\n[audio]\nk1_ssf = "p_tst"\nk2_ssf = "k1p_tstssf"\n'))
+        self.assertEqual(r.audio, R.AudioRef(k1_ssf="p_tst", k2_ssf="k1p_tstssf"))
+        self.assertEqual(r.warnings, ())
+        self.assertEqual(r.soundset, 11)  # the fallback stays required and parsed
+        self.assertEqual(r.k2_names()[-1], "k1p_tstssf")
+        self.assertIsNone(R.load_recipe(self.recipe(good())).audio)
+
+    def test_audio_table_rejects(self):
+        a = '\n[audio]\nk1_ssf = "p_tst"\nk2_ssf = "k1p_tstssf"\n'
+        self.bad(good() + '\n[audio]\nk1_ssf = "p_tst"\n', "audio.k2_ssf", "missing required key")
+        self.bad(good() + '\n[audio]\nk2_ssf = "k1p_tstssf"\n', "audio.k1_ssf", "missing required key")
+        self.bad(good() + '\n[audio]\n', "audio.k1_ssf", "missing required key")
+        self.bad(good() + a.replace("p_tst", "P_Tst", 1), "audio.k1_ssf", "bad resref")
+        self.bad(good() + a.replace("k1p_tstssf", "k1p_far_too_long_ssf"), "audio.k2_ssf", "bad resref")
+        self.bad(good() + a.replace('"k1p_tstssf"', "5"), "audio.k2_ssf", "must be a string")
+        self.bad(good() + a + 'barks = ["x"]\n', "audio.barks", "unknown key")
+        self.bad(good() + a.replace("k1p_tstssf", "tst_ba"), "audio.k2_ssf", "duplicate k2 name")
+        self.bad(good() + a.replace("k1p_tstssf", "k1p_tst"), "audio.k2_ssf", "duplicate k2 name")  # clashes with the utc
+        self.bad('audio = 3\n' + good(), "audio", "must be a table")
 
     def test_gender_and_ints(self):
         self.bad(good().replace("gender = 0", "gender = 2"), "character.gender")

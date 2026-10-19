@@ -14,6 +14,7 @@ import contextlib
 import io
 import json
 import os
+import struct
 import sys
 import tempfile
 import textwrap
@@ -147,6 +148,11 @@ if script == "k1_port_char_build.py":
     if len(heads["rows"]) != nh:
         print("error: live heads.2da has %d rows but --new-head-row is %d" % (len(heads["rows"]), nh), file=sys.stderr)
         sys.exit(1)
+    sst = opt("--soundset-table")
+    snd_path = pathlib.Path(sst) if sst else game / "override" / "soundset.2da"
+    if snd_path.is_file() and int(opt("--soundset")) >= len(read2da(snd_path)["rows"]):
+        print("error: soundset %s is outside soundset.2da 0..%d" % (opt("--soundset"), len(read2da(snd_path)["rows"]) - 1), file=sys.stderr)
+        sys.exit(1)
     app["rows"].append([opt("--label"), opt("--body-b"), opt("--body-a"), opt("--body-a"), opt("--body-b"),
                         opt("--body-b"), str(nh), "", "", "", "B"])
     heads["rows"].append([opt("--head"), "", ""])
@@ -154,7 +160,7 @@ if script == "k1_port_char_build.py":
     out.mkdir(parents=True, exist_ok=True)
     write2da(out / "appearance.2da", app)
     write2da(out / "heads.2da", heads)
-    (out / (opt("--utc") + ".utc")).write_bytes(("UTC:" + opt("--utc") + ":" + opt("--name")).encode())
+    (out / (opt("--utc") + ".utc")).write_bytes(("UTC:" + opt("--utc") + ":" + opt("--name") + ":ss=" + opt("--soundset")).encode())
     (out / "char_build.json").write_text("{}")
     print(json.dumps({"appearance_row": nr, "heads_row": nh, "chained_from": chain, "sha256": {"appearance.2da": "x"}}))
     sys.exit(0)
@@ -209,7 +215,36 @@ if script == "k1_port_import.py" and args and args[0] == "_twoda":
             t["rows"].append([""] * len(t["headers"]))
         write2da(args[3], t)
         print(json.dumps({"height": len(t["rows"])}))
+    elif op == "soundset":
+        t = read2da(args[2])
+        row = int(args[4])
+        if len(t["rows"]) > row:
+            print("error: _twoda soundset: base table has %d rows, above the planned row %d" % (len(t["rows"]), row), file=sys.stderr)
+            sys.exit(1)
+        while len(t["rows"]) < row:
+            t["rows"].append([""] * len(t["headers"]))
+        cells = {"label": args[5], "resref": args[6], "strref": "-1", "gender": args[7]}
+        t["rows"].append([cells.get(h, "") for h in t["headers"]])
+        write2da(args[3], t)
+        print(json.dumps({"height": len(t["rows"])}))
     sys.exit(0)
+
+if script == "k1_port_import.py" and args and args[0] == "_audio":
+    import base64
+    if args[1] == "ssf":
+        k1 = pathlib.Path(args[2])
+        for rel in ("_bif", "Override"):
+            f = k1 / rel / (args[3] + ".ssf")
+            if f.is_file():
+                print("pykotor log noise")
+                print(json.dumps({"data_b64": base64.b64encode(f.read_bytes()).decode()}))
+                sys.exit(0)
+        print("error: _audio ssf: %s.ssf not found" % args[3], file=sys.stderr)
+        sys.exit(1)
+    if args[1] == "tlk":
+        tlk = json.loads(pathlib.Path(args[2]).read_text())
+        print(json.dumps({r: tlk.get(r) for r in args[3:]}))
+        sys.exit(0)
 
 print("fake interpreter: unhandled script %s %s" % (script, args), file=sys.stderr)
 sys.exit(3)
@@ -767,6 +802,270 @@ class AssignmentTests(Base):
         cb = self.script_calls("k1_port_char_build.py")[0]
         self.assertEqual(cb[cb.index("--chain-from") + 1], str(self.out / "tsu" / "base"))
         self.assertEqual(self.load_pack("tsu")[0].appearance_id, LIVE_APP + 1)
+
+
+AUDIO_RECIPE = """
+[audio]
+k1_ssf = "p_{id}"
+k2_ssf = "k1p_{id}ssf"
+"""
+SND_HEADERS = ["label", "resref", "strref", "gender", "type"]
+LIVE_SND = 12
+
+
+class AudioTests(Base):
+    """Recipes with [audio]: K1 SSF + TLK + streamsounds wavs -> ssf asset, STREAM wavs, a new soundset row."""
+    audio_chars = ("tst", "tsu")
+    base_ref = {"tst": 1000, "tsu": 2000}
+
+    def setUp(self):
+        super().setUp()
+        self.write_table("soundset.2da", SND_HEADERS, LIVE_SND)
+        (self.k1 / "StreamSounds").mkdir()  # mixed case on purpose: the lookup is case-insensitive
+        tlk = {}
+        for cid in self.chars:
+            if cid in self.audio_chars:
+                (self.recipes / f"{cid}.toml").write_text(
+                    RECIPE.format(id=cid, name=cid.capitalize(), conv="pykotor") + AUDIO_RECIPE.format(id=cid))
+                tlk.update(self.put_audio(cid))
+        for d in (self.k1, self.k2):
+            (d / "dialog.tlk").write_text(json.dumps(tlk))
+
+    def ssf_bytes(self, cid):
+        """172-byte SSF V1.1: 5 voiced slots (slots 3 and 4 share one voiceover), the rest empty (0xFFFFFFFF)."""
+        base = self.base_ref[cid]
+        refs = [base + i for i in range(5)] + [0xFFFFFFFF] * 23
+        return b"SSF V1.1" + struct.pack("<I", 12) + struct.pack("<28I", *refs) + struct.pack("<12I", *([0xFFFFFFFF] * 12))
+
+    def put_audio(self, cid):
+        data = self.ssf_bytes(cid)
+        self.assertEqual(len(data), 172)
+        self.put_k1(f"p_{cid}.ssf", data)
+        base, tlk = self.base_ref[cid], {}
+        names = [f"p_{cid}_bat1", f"p_{cid}_bat2", f"p_{cid}_hit1", f"p_{cid}_dead", f"p_{cid}_dead"]
+        for i, vo in enumerate(names):
+            tlk[str(base + i)] = vo
+        for vo in sorted(set(names)):
+            (self.k1 / "StreamSounds" / f"{vo.upper()}.wav").write_bytes(b"\xff\xfbK1MP3:" + vo.encode())
+        return tlk
+
+    def vos(self, cid):
+        return [f"p_{cid}_bat1", f"p_{cid}_bat2", f"p_{cid}_dead", f"p_{cid}_hit1"]
+
+    def table(self, path):
+        return json.loads(Path(path).read_text())
+
+    def test_pack_has_ssf_stream_wavs_soundset_cells_and_utc_row(self):
+        self.build_ok()
+        for cid, row in (("tst", LIVE_SND), ("tsu", LIVE_SND + 1)):
+            info, assets, cells = self.load_pack(cid)
+            self.assertEqual(info.soundset_id, row)  # the new row, not the recipe fallback 11
+            ssf = [a for a in assets if a.res_type == 2060]
+            self.assertEqual([(a.resref, a.flags, a.data) for a in ssf], [(f"k1p_{cid}ssf", kp.FLAG_RESMAN, self.ssf_bytes(cid))])
+            wavs = [a for a in assets if a.res_type == kp.RES_TYPE_WAV]
+            self.assertEqual(sorted(a.resref for a in wavs), self.vos(cid))
+            self.assertTrue(all(a.flags == kp.FLAG_STREAM == 1 for a in wavs))
+            self.assertTrue(all(a.data.startswith(b"\xff\xfbK1MP3:") for a in wavs))
+            by = {(c.table, c.row, c.column): c for c in cells if c.table == "soundset"}
+            self.assertEqual({col: c.value for (_, r, col), c in by.items() if r == row},
+                             {"label": f"K1P_{cid.capitalize()}", "resref": f"k1p_{cid}ssf", "strref": "-1", "gender": "0", "type": ""})
+            self.assertEqual({c.template_row for c in by.values()}, {-1})
+            self.assertEqual({r for (_, r, _) in by}, {row})
+            utc = next(a for a in assets if a.res_type == 2027)
+            self.assertTrue(utc.data.endswith(f":ss={row}".encode()), utc.data)
+            self.assertEqual(len(assets), 6 + 3 + 1 + 1 + 4)  # models + tpc + utc + ssf + wavs
+            self.assertEqual(len(cells), 11 + 3 + 5)  # appearance row + heads row + soundset row
+
+    def test_soundset_tables_chained_and_passed_to_char_build(self):
+        self.build_ok()
+        assign = json.loads((self.out / "assignments.json").read_text())
+        self.assertEqual(assign["tst"], {"appearance": LIVE_APP, "head": LIVE_HEAD, "soundset": LIVE_SND})
+        self.assertEqual(assign["tsu"], {"appearance": LIVE_APP + 1, "head": LIVE_HEAD + 1, "soundset": LIVE_SND + 1})
+        cb = self.script_calls("k1_port_char_build.py")
+        for c, cid, row in ((cb[0], "tst", LIVE_SND), (cb[1], "tsu", LIVE_SND + 1)):
+            self.assertEqual(c[c.index("--soundset") + 1], str(row))
+            self.assertEqual(c[c.index("--soundset-table") + 1], str(self.out / cid / "override" / "soundset.2da"))
+        t_tst = self.table(self.out / "tst" / "override" / "soundset.2da")["rows"]
+        t_tsu = self.table(self.out / "tsu" / "override" / "soundset.2da")["rows"]
+        self.assertEqual((len(t_tst), len(t_tsu)), (LIVE_SND + 1, LIVE_SND + 2))
+        self.assertEqual(t_tsu[LIVE_SND][:2], ["K1P_Tst", "k1p_tstssf"])  # tsu chained on tst's staged table
+        self.assertEqual(t_tsu[LIVE_SND + 1][:2], ["K1P_Tsu", "k1p_tsussf"])
+        self.assertEqual(self.table(self.k2 / "override" / "soundset.2da")["rows"][:LIVE_SND], t_tst[:LIVE_SND])
+
+    def test_rebuild_reuses_the_soundset_assignment(self):
+        self.build_ok()
+        first = (self.out / "assignments.json").read_text()
+        sha1 = imp.sha256_file(self.out / "tst.k2pack")
+        self.build_ok()
+        self.assertEqual((self.out / "assignments.json").read_text(), first)
+        self.assertEqual(imp.sha256_file(self.out / "tst.k2pack"), sha1)
+
+    def test_only_second_character_pads_the_soundset_table(self):
+        self.build_ok("--only", "tsu")
+        self.assertEqual(json.loads((self.out / "assignments.json").read_text())["tsu"]["soundset"], LIVE_SND + 1)
+        rows = self.table(self.out / "tsu" / "override" / "soundset.2da")["rows"]
+        self.assertEqual(len(rows), LIVE_SND + 2)
+        self.assertEqual(rows[LIVE_SND], [""] * 5)  # the gap row the first character would own
+        self.assertEqual(self.load_pack("tsu")[0].soundset_id, LIVE_SND + 1)
+
+    def test_live_soundset_count_change_is_refused_then_reassigned(self):
+        self.build_ok()
+        pack_before = imp.sha256_file(self.out / "tst.k2pack")
+        self.write_table("soundset.2da", SND_HEADERS, LIVE_SND + 2)  # another mod appended soundset rows
+        rc, out, err = self.run_cli("build")
+        self.assertEqual(rc, 1, out + err)
+        self.assertIn("soundset.2da", err)
+        self.assertIn("--reassign", err)
+        self.assertEqual(imp.sha256_file(self.out / "tst.k2pack"), pack_before)
+        self.build_ok("--reassign")
+        self.assertEqual(self.load_pack("tst")[0].soundset_id, LIVE_SND + 2)
+
+    def test_recipe_gaining_audio_keeps_rows_and_adds_a_soundset(self):
+        for cid in self.chars:
+            (self.recipes / f"{cid}.toml").write_text(RECIPE.format(id=cid, name=cid.capitalize(), conv="pykotor"))
+        self.build_ok()
+        before = json.loads((self.out / "assignments.json").read_text())
+        self.assertNotIn("soundset", before["tst"])
+        self.assertEqual(self.load_pack("tst")[0].soundset_id, 11)  # the recipe fallback
+        for cid in self.chars:
+            (self.recipes / f"{cid}.toml").write_text(
+                RECIPE.format(id=cid, name=cid.capitalize(), conv="pykotor") + AUDIO_RECIPE.format(id=cid))
+        self.build_ok()
+        after = json.loads((self.out / "assignments.json").read_text())
+        self.assertEqual(after["tst"], {**before["tst"], "soundset": LIVE_SND})
+        self.assertEqual(self.load_pack("tst")[0].soundset_id, LIVE_SND)
+
+    def test_manifest_records_ssf_wavs_and_row(self):
+        self.build_ok()
+        m = self.manifest("tst")
+        a = m["audio"]
+        self.assertEqual((a["k1_ssf"], a["k2_ssf"], a["origin"]), ("p_tst", "k1p_tstssf", "vanilla_k1"))
+        self.assertEqual(a["ssf_sha256"], imp.sha256_bytes(self.ssf_bytes("tst")))
+        self.assertEqual(a["strrefs"][:5], [1000, 1001, 1002, 1003, 1004])
+        self.assertEqual([w["resref"] for w in a["wavs"]], self.vos("tst"))
+        for w in a["wavs"]:
+            staged = self.out / "tst" / "audio" / "streamsounds" / f"{w['resref']}.wav"
+            self.assertEqual((w["sha256"], w["origin"], w["pack_flags"]), (imp.sha256_file(staged), "vanilla_k1", 1))
+            self.assertEqual(imp.sha256_file(self.k1 / "StreamSounds" / f"{w['resref'].upper()}.wav"), w["sha256"])
+        self.assertEqual(m["assigned"]["soundset"], LIVE_SND)
+        self.assertEqual(a["missing_optional"], [])
+        self.assertTrue((self.out / "tst" / "audio" / "k1p_tstssf.ssf").is_file())
+
+    def test_missing_wav_warns_and_is_recorded(self):
+        (self.k1 / "StreamSounds" / "P_TST_BAT2.wav").unlink()
+        out, err = self.build_ok("--only", "tst")
+        self.assertIn("WARN: tst: K1 voice wav p_tst_bat2.wav is not in streamsounds", err)
+        m = self.manifest("tst")
+        self.assertEqual(m["audio"]["missing_optional"], ["p_tst_bat2.wav"])
+        self.assertIn("p_tst_bat2.wav", m["missing_optional"])
+        _, assets, _ = self.load_pack("tst")
+        self.assertEqual(sorted(a.resref for a in assets if a.res_type == kp.RES_TYPE_WAV),
+                         ["p_tst_bat1", "p_tst_dead", "p_tst_hit1"])
+
+    def test_no_wavs_at_all_fails(self):
+        for f in (self.k1 / "StreamSounds").glob("P_TST_*.wav"):
+            f.unlink()
+        rc, out, err = self.run_cli("build", "--only", "tst")
+        self.assertEqual(rc, 1, out + err)
+        self.assertIn("none of the 4 K1 voice wavs", err)
+        self.assertFalse((self.out / "tst.k2pack").exists())
+
+    def test_symlinked_wav_is_not_used(self):
+        real = self.root / "elsewhere.wav"
+        real.write_bytes(b"x")
+        (self.k1 / "StreamSounds" / "P_TST_BAT1.wav").unlink()
+        (self.k1 / "StreamSounds" / "P_TST_BAT1.wav").symlink_to(real)
+        out, err = self.build_ok("--only", "tst")
+        self.assertIn("p_tst_bat1.wav is not in streamsounds", err)
+
+    def test_k2_tlk_missing_the_row_fails(self):
+        tlk = json.loads((self.k2 / "dialog.tlk").read_text())
+        del tlk["1002"]
+        (self.k2 / "dialog.tlk").write_text(json.dumps(tlk))
+        rc, out, err = self.run_cli("build", "--only", "tst")
+        self.assertEqual(rc, 1, out + err)
+        self.assertIn("strref 1002", err)
+        self.assertIn("missing in the K2 dialog.tlk", err)
+        self.assertIn("this K2 TLK lacks the K1 row", err)
+        self.assertFalse((self.out / "tst.k2pack").exists())
+        self.assertFalse((self.out / "tst").exists())  # failed before the work dir was created
+
+    def test_k2_tlk_with_a_different_voiceover_fails(self):
+        tlk = json.loads((self.k2 / "dialog.tlk").read_text())
+        tlk["1001"] = "p_other_bat2"
+        (self.k2 / "dialog.tlk").write_text(json.dumps(tlk))
+        rc, out, err = self.run_cli("build", "--only", "tst")
+        self.assertEqual(rc, 1, out + err)
+        self.assertIn("strref 1001", err)
+        self.assertIn("voiceover differs", err)
+
+    def test_k1_tlk_missing_the_row_fails(self):
+        tlk = json.loads((self.k1 / "dialog.tlk").read_text())
+        del tlk["1000"]
+        (self.k1 / "dialog.tlk").write_text(json.dumps(tlk))
+        rc, out, err = self.run_cli("build", "--only", "tst")
+        self.assertEqual(rc, 1, out + err)
+        self.assertIn("not in the K1 dialog.tlk", err)
+
+    def test_bad_ssf_and_missing_ssf_fail(self):
+        self.put_k1("p_tst.ssf", b"SSF V1.1" + b"\0" * 100)
+        rc, out, err = self.run_cli("build", "--only", "tst")
+        self.assertEqual(rc, 1, out + err)
+        self.assertIn("expected 172 bytes", err)
+        (self.k1 / "_bif" / "p_tst.ssf").unlink()
+        rc, out, err = self.run_cli("build", "--only", "tst")
+        self.assertEqual(rc, 1, out + err)
+        self.assertIn("p_tst.ssf not found", err)
+
+    def test_build_leaves_k1_and_k2_untouched(self):
+        before = (snapshot(self.k1), snapshot(self.k2))
+        self.build_ok()
+        self.assertEqual((snapshot(self.k1), snapshot(self.k2)), before)
+        wavs = sorted(p.name for p in (self.out / "tst" / "audio" / "streamsounds").iterdir())
+        self.assertEqual(wavs, [f"{v}.wav" for v in self.vos("tst")])  # lowercase staging names
+
+    def test_dry_run_prints_the_audio_plan_and_writes_nothing(self):
+        before = snapshot(self.root)
+        rc, out, err = self.run_cli("build", "--dry-run")
+        self.assertEqual(rc, 0, out + err)
+        self.assertEqual(snapshot(self.root), before)
+        self.assertIn("soundset row 12", out)
+        self.assertIn("soundset row 13", out)
+        self.assertIn("audio: K1 p_tst.ssf (172 bytes, 5 strrefs 1000..1004", out)
+        self.assertIn("4/4 K1 voice wavs from streamsounds/ -> STREAM assets", out)
+        self.assertIn("audio: new soundset.2da row 12 (label K1P_Tst, resref k1p_tstssf, gender 0)", out)
+        self.assertIn("--soundset 12", out)
+        self.assertIn("--soundset-table", out)
+        self.assertEqual(self.script_calls("k1_port_char_build.py"), [])
+
+    def test_list_remove_and_assignments(self):
+        self.build_ok()
+        self.assertEqual(self.run_cli("install")[0], 0)
+        rc, out, _ = self.run_cli("list", "--json")
+        self.assertEqual(rc, 0)
+        listed = {c["id"]: c for c in json.loads(out)["characters"]}
+        self.assertEqual(listed["tst"]["assigned"]["soundset"], LIVE_SND)
+        rc, out, _ = self.run_cli("list")
+        self.assertIn(f"rows {LIVE_APP}/{LIVE_HEAD}/{LIVE_SND}", out)
+        rc, out, err = self.run_cli("remove", "tst")
+        self.assertEqual(rc, 0, out + err)
+        self.assertIn(f"soundset {LIVE_SND}", out)
+        assign = json.loads((self.out / "assignments.json").read_text())
+        self.assertNotIn("tst", assign)
+        self.assertEqual(assign["tsu"]["soundset"], LIVE_SND + 1)
+
+    def test_doctor_checks_the_live_soundset_table_only_with_audio(self):
+        (self.k2 / "override" / "soundset.2da").unlink()
+        rc, out, _ = self.run_cli("doctor")
+        self.assertEqual(rc, 1)
+        self.assertIn("FAIL K2 soundset.2da", out)
+
+    def test_audio_recipe_without_it_in_a_plain_config_is_unaffected(self):
+        for cid in self.chars:
+            (self.recipes / f"{cid}.toml").write_text(RECIPE.format(id=cid, name=cid.capitalize(), conv="pykotor"))
+        self.build_ok()
+        self.assertEqual([c for c in self.calls() if "_audio" in c], [])
+        self.assertIsNone(self.manifest("tst")["audio"])
 
 
 class InstallTests(Base):

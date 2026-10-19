@@ -20,12 +20,18 @@ build, per character in config order (every step logs to <out>/<id>/logs/):
              symlink on the path, not inside the K1/K2 dir), else exit 2. Flagged sources (K1 Override files, an HD
              overlay, Characters Revisited / anything pending_author_approval) are allowed in a private out only:
              WARN + recorded in the manifest. k1_port_prune gate runs (non-strict) on the staged files.
-  3 models   converter pykotor -> k1_port_ingest (per model, with its textures); converter mdlops -> k1_port_mdlops
+  3 models   (+ audio, when the recipe has [audio]: the K1 SSF is read from the K1 install and checked against both
+             dialog.tlk files (every strref must carry the same voiceover in K2), the K1 voice wavs are copied from
+             <K1>/streamsounds/ (read only) to <out>/<id>/audio/streamsounds/, a missing wav is a WARN, none = failure)
+             converter pykotor -> k1_port_ingest (per model, with its textures); converter mdlops -> k1_port_mdlops
              extract/pass1/rename/pass2, then validate + copy into the stage (the script's own `finish` writes into
              the shared hand-path stage, so the driver does that step itself)
   4 textures <k2>.tpc per recipe texture: DXT1 (k1_port_tex_tpc tga-to-tpc for TGA input, --force-opaque, --txi
              with the recipe text; a staged DXT1 TPC is used as is, its TXI trailer replaced by the recipe txi when one is set)
-  5 rows     appearance/heads row ids come from the live K2 tables (<K2>/override/appearance.2da, heads.2da) in
+  5 rows     (+ a new soundset.2da row for a recipe with [audio], assigned at the live row count in config order among
+             the audio recipes and chained like appearance/heads; the UTC gets it, the pack serves <k2_ssf>.ssf as a
+             RESMAN asset and the wavs as STREAM assets (flags 1, res_type 4), plus the row's 2DA cells)
+             appearance/heads row ids come from the live K2 tables (<K2>/override/appearance.2da, heads.2da) in
              config order, chained with --chain-from (a pad step covers [build] first_appearance_row/first_head_row
              above the live count); ids are persisted in <out>/assignments.json and reused. If the live counts moved
              the build refuses unless --reassign (then every configured character is rebuilt).
@@ -42,6 +48,7 @@ Exit: 0 ok, 1 failure (message = location, cause, fix), 2 safety refusal.
 from __future__ import annotations
 
 import argparse
+import base64
 import datetime
 import hashlib
 import json
@@ -49,6 +56,7 @@ import os
 import re
 import shlex
 import shutil
+import struct
 import subprocess
 import sys
 import tempfile
@@ -89,6 +97,8 @@ STEP_TOOLS = (RESOLVE_TOOL, INGEST_TOOL, MDLOPS_TOOL, CHAR_BUILD_TOOL, TEX_TOOL,
 ID_RE = krecipe.ID_RE
 GATE_RE = re.compile(r"gate: scanned (\d+) file\(s\), blocked (\d+), warned (\d+)")
 PACK_SUFFIX = ".k2pack"
+SSF_SIZE, SSF_MAGIC, SSF_SLOTS, SSF_EMPTY = 172, b"SSF V1.1", 28, 0xFFFFFFFF
+STREAM_DIR = "streamsounds"
 IMPORT_DIR = "k1_imports"
 
 
@@ -357,11 +367,57 @@ def _twoda_main(argv: list) -> int:
                 table.add_row(str(table.get_height()), {c: "" for c in headers})
             Path(argv[2]).write_bytes(bytes_2da(table))
             print(json.dumps({"height": table.get_height()}))
+        elif op == "soundset":  # soundset BASE OUT ROW LABEL RESREF GENDER: pad to ROW, append the character's row
+            from pykotor.resource.formats.twoda import bytes_2da, read_2da
+            table = read_2da(Path(argv[1]).read_bytes())
+            headers = list(table.get_headers())
+            row = int(argv[3])
+            if table.get_height() > row:
+                raise ValueError(f"base table has {table.get_height()} rows, above the planned row {row}")
+            while table.get_height() < row:
+                table.add_row(str(table.get_height()), {c: "" for c in headers})
+            cells = {"label": argv[4], "resref": argv[5], "strref": "-1", "gender": argv[6]}
+            table.add_row(str(row), {h: cells.get(h, "") for h in headers})
+            Path(argv[2]).write_bytes(bytes_2da(table))
+            print(json.dumps({"height": table.get_height()}))
         else:
             print(f"unknown _twoda op {op!r}", file=sys.stderr)
             return 2
     except Exception as e:  # noqa: BLE001  pykotor raises several error types
         print(f"error: _twoda {op}: {type(e).__name__}: {e}", file=sys.stderr)
+        return 1
+    return 0
+
+
+def _audio_main(argv: list) -> int:
+    """Hidden helper, run under the k1port venv python: ssf K1DIR RESREF | tlk FILE STRREF... (pykotor, read only).
+    Prints one JSON object as its LAST stdout line (pykotor may log above it)."""
+    op = argv[0]
+    try:
+        if op == "ssf":
+            import logging
+            logging.disable(logging.CRITICAL)
+            from pykotor.extract.installation import Installation, SearchLocation
+            from pykotor.resource.type import ResourceType
+            res = Installation(str(Path(argv[1]))).resource(argv[2], ResourceType.SSF,
+                                                            [SearchLocation.CHITIN, SearchLocation.OVERRIDE])
+            if res is None:
+                print(f"error: _audio ssf: {argv[2]}.ssf not found in the K1 chitin or Override", file=sys.stderr)
+                return 1
+            print(json.dumps({"data_b64": base64.b64encode(bytes(res.data)).decode("ascii")}))
+        elif op == "tlk":
+            from pykotor.resource.formats.tlk import read_tlk
+            tlk = read_tlk(Path(argv[1]).read_bytes())
+            out = {}
+            for ref in argv[2:]:
+                entry = tlk.get(int(ref))
+                out[ref] = None if entry is None else str(entry.voiceover)
+            print(json.dumps(out))
+        else:
+            print(f"unknown _audio op {op!r}", file=sys.stderr)
+            return 2
+    except Exception as e:  # noqa: BLE001  pykotor raises several error types
+        print(f"error: _audio {op}: {type(e).__name__}: {e}", file=sys.stderr)
         return 1
     return 0
 
@@ -389,7 +445,9 @@ def live_tables(k2: Path) -> Path:
 
 
 def plan_assignments(loaded: Loaded, runner: Runner, reassign: bool) -> tuple[dict, dict, dict]:
-    """(planned {id: {appearance, head}}, live {appearance, head}, stored). Refuses when stored ids no longer fit."""
+    """(planned {id: {appearance, head[, soundset]}}, live {appearance, head[, soundset]}, stored). Refuses when stored
+    ids no longer fit. A soundset row is planned only for recipes with [audio] (live soundset.2da height, then +1 per
+    audio recipe in config order)."""
     cfg = loaded.cfg
     live_dir = live_tables(cfg.k2_dir)
     live = {"appearance": twoda_height(runner, live_dir / "appearance.2da"),
@@ -402,21 +460,33 @@ def plan_assignments(loaded: Loaded, runner: Runner, reassign: bool) -> tuple[di
             raise Failure(f"[build] {key} = {start}", f"below the live {what}.2da row count ({height}); it would overwrite rows",
                           f"use {height} or higher, or remove the key")
     planned = {cid: {"appearance": start_a + i, "head": start_h + i} for i, cid in enumerate(cfg.characters)}
+    audio_ids = [r.id for cid in cfg.characters for r in loaded.recipes if r.id == cid and r.audio is not None]
+    if audio_ids:
+        live["soundset"] = twoda_height(runner, live_dir / "soundset.2da")
+        for i, cid in enumerate(audio_ids):
+            planned[cid]["soundset"] = live["soundset"] + i
     stored = read_json(loaded.out / "assignments.json", "assignments") or {}
     if not isinstance(stored, dict):
         raise Failure(str(loaded.out / "assignments.json"), "not a JSON object", "delete it (rows are reassigned on the next build)")
     clash = []
     for cid in cfg.characters:
         old = stored.get(cid)
-        if old is not None and old != planned[cid]:
-            clash.append(f"{cid}: stored appearance {old.get('appearance')}/head {old.get('head')}, "
-                         f"plan now {planned[cid]['appearance']}/{planned[cid]['head']}")
+        if old is not None and rows_differ(old, planned[cid]):
+            clash.append(f"{cid}: stored appearance {old.get('appearance')}/head {old.get('head')}/soundset {old.get('soundset')}, "
+                         f"plan now {planned[cid]['appearance']}/{planned[cid]['head']}/{planned[cid].get('soundset')}")
     if clash and not reassign:
         warn("assigned rows no longer fit the live K2 tables or the config order: " + "; ".join(clash))
         raise Failure(str(loaded.out / "assignments.json"),
-                      f"stored row ids differ from the plan (live appearance.2da has {live['appearance']} rows, heads.2da {live['head']})",
+                      f"stored row ids differ from the plan (live appearance.2da has {live['appearance']} rows, heads.2da {live['head']}"
+                      + (f", soundset.2da {live['soundset']}" if "soundset" in live else "") + ")",
                       "remove the installed packs and rebuild everything with --reassign, or restore the tables/config order")
     return planned, live, stored
+
+
+def rows_differ(old: dict, new: dict) -> bool:
+    """True when a stored assignment no longer matches the plan. A soundset row the stored entry never had (the recipe
+    gained [audio] since the last build) is new, not a clash; a stored soundset the plan no longer wants is ignored."""
+    return any(old.get(k) != v for k, v in new.items() if not (k == "soundset" and "soundset" not in old))
 
 
 def save_assignment(loaded: Loaded, stored: dict, cid: str, rows: dict) -> dict:
@@ -666,6 +736,130 @@ def tpc_argv(ctx: "Ctx", tex, src: Path, dest: Path) -> list:
     return argv
 
 
+# ------------------------------------------------------------------------------------------- audio (K1 barks)
+
+TLK_HINT = "this K2 TLK lacks the K1 row; the importer needs the K2 dialog.tlk that still carries the K1 character rows"
+
+
+def find_child_ci(parent: Path, name: str) -> Path | None:
+    """Case-insensitive child of parent (any kind), or None."""
+    try:
+        for e in os.scandir(parent):
+            if e.name.lower() == name.lower():
+                return Path(e.path)
+    except OSError:
+        return None
+    return None
+
+
+def audio_call(runner: Runner, label: str, *args) -> dict:
+    """Run the hidden `_audio` helper under the k1port venv; parse the JSON object on its last stdout line."""
+    proc = runner.run(label, [str(k1port_py()), "-I", "-B", str(DRIVER), "_audio", *[str(a) for a in args]],
+                      fix="run the importer's doctor: the k1port venv (pykotor) must work and the K1 install must hold the SSF")
+    lines = [ln for ln in proc.stdout.splitlines() if ln.strip()]
+    try:
+        return json.loads(lines[-1])
+    except (IndexError, json.JSONDecodeError) as e:
+        raise Failure(label, f"helper printed no JSON: {e}", "re-run doctor") from None
+
+
+def tlk_voiceovers(runner: Runner, tlk: Path, strrefs: list, which: str) -> dict:
+    got = audio_call(runner, f"audio tlk {which}", "tlk", tlk, *strrefs)
+    return {int(k): v for k, v in got.items()}
+
+
+def audio_inspect(runner: Runner, recipe, k1: Path, k2: Path) -> dict:
+    """Read-only audio resolution: the K1 SSF bytes, its strrefs checked against both dialog.tlk files, and the K1
+    voice wavs in <K1>/streamsounds/. Raises Failure on anything unusable. Writes nothing."""
+    a, cid = recipe.audio, recipe.id
+    got = audio_call(runner, f"audio ssf {a.k1_ssf}", "ssf", k1, a.k1_ssf)
+    try:
+        data = base64.b64decode(got["data_b64"], validate=True)
+    except (KeyError, ValueError) as e:
+        raise Failure(f"audio {cid}", f"bad SSF payload from the helper: {e}", "re-run doctor") from None
+    if len(data) != SSF_SIZE or data[:8] != SSF_MAGIC:
+        raise Failure(f"audio {cid}: K1 {a.k1_ssf}.ssf", f"is {len(data)} bytes / magic {data[:8]!r}, expected {SSF_SIZE} bytes {SSF_MAGIC!r}",
+                      "check [audio] k1_ssf names a K1 soundset file")
+    strrefs = struct.unpack_from(f"<{SSF_SLOTS}I", data, 12)
+    wanted = sorted({x for x in strrefs if x != SSF_EMPTY})
+    if not wanted:
+        raise Failure(f"audio {cid}: K1 {a.k1_ssf}.ssf", "holds no strrefs (all 28 slots empty)", "check [audio] k1_ssf")
+    k1_tlk, k2_tlk = find_child_ci(k1, "dialog.tlk"), find_child_ci(k2, "dialog.tlk")
+    for which, path, root in (("K1", k1_tlk, k1), ("K2", k2_tlk, k2)):
+        if path is None or not path.is_file():
+            raise Failure(f"audio {cid}", f"no dialog.tlk in the {which} dir {root}", f"set [{which.lower()}] dir to a full install")
+    vo1 = tlk_voiceovers(runner, k1_tlk, wanted, "K1")
+    vo2 = tlk_voiceovers(runner, k2_tlk, wanted, "K2")
+    for ref in wanted:
+        if vo1.get(ref) is None:
+            raise Failure(f"audio {cid}: strref {ref}", f"not in the K1 dialog.tlk {k1_tlk}", "check [k1] dir is a full KOTOR 1 install")
+        if vo2.get(ref) is None:
+            raise Failure(f"audio {cid}: strref {ref}", f"missing in the K2 dialog.tlk {k2_tlk}", TLK_HINT)
+        if vo1[ref].lower() != vo2[ref].lower():
+            raise Failure(f"audio {cid}: strref {ref}", f"voiceover differs: K1 {vo1[ref]!r}, K2 {vo2[ref]!r}", TLK_HINT)
+    voiceovers = sorted({vo1[r].lower() for r in wanted if vo1[r]})
+    for vo in voiceovers:
+        if not krecipe.RESREF_RE.fullmatch(vo):
+            raise Failure(f"audio {cid}: voiceover {vo!r}", "is not a valid resref [a-z0-9_]{1,16}", "the pack cannot serve this wav")
+    sdir = find_child_ci(k1, STREAM_DIR)
+    index = {}
+    if sdir is not None and sdir.is_dir() and not sdir.is_symlink():
+        for e in os.scandir(sdir):
+            if e.is_file(follow_symlinks=False):
+                index[e.name.lower()] = Path(e.path)
+    found = {vo: index[f"{vo}.wav"] for vo in voiceovers if f"{vo}.wav" in index}
+    missing = [f"{vo}.wav" for vo in voiceovers if vo not in found]
+    if not found:
+        raise Failure(f"audio {cid}", f"none of the {len(voiceovers)} K1 voice wavs are in {sdir or k1 / STREAM_DIR}",
+                      "check [k1] dir is a full KOTOR 1 install with a streamsounds/ folder")
+    return {"ssf": data, "strrefs": list(strrefs), "voiceovers": voiceovers, "found": found, "missing": missing}
+
+
+def stage_audio(ctx: "Ctx", info: dict) -> dict:
+    """Copy the SSF and the K1 wavs into <cdir>/audio (the K1 dir is only read). Returns the manifest record + file lists."""
+    a = ctx.recipe.audio
+    adir = ctx.cdir / "audio"
+    sdir = adir / STREAM_DIR  # a path part named streamsounds is what makes collect_assets mark the wavs STREAM
+    sdir.mkdir(parents=True, exist_ok=True)
+    ssf = adir / f"{a.k2_ssf}.ssf"
+    ssf.write_bytes(info["ssf"])
+    wavs, rec = [], []
+    for vo, src in sorted(info["found"].items()):
+        dst = sdir / f"{vo}.wav"
+        shutil.copyfile(src, dst)
+        wavs.append(dst)
+        rec.append({"resref": vo, "file": f"{STREAM_DIR}/{src.name}", "sha256": sha256_file(dst), "size": dst.stat().st_size,
+                    "origin": VANILLA_ID, "pack_flags": kpack.FLAG_STREAM})
+    for w in info["missing"]:
+        warn(f"{ctx.recipe.id}: K1 voice wav {w} is not in {STREAM_DIR}/; that bark stays silent (recorded in the manifest)")
+    return {"ssf": ssf, "wavs": wavs,
+            "manifest": {"k1_ssf": a.k1_ssf, "k2_ssf": a.k2_ssf, "ssf_sha256": sha256_bytes(info["ssf"]), "ssf_size": len(info["ssf"]),
+                         "strrefs": info["strrefs"], "origin": VANILLA_ID, "wavs": rec, "missing_optional": list(info["missing"])}}
+
+
+def soundset_row_cmd(ctx: "Ctx", base: Path, row: int) -> list:
+    r = ctx.recipe
+    return [str(k1port_py()), "-I", "-B", str(DRIVER), "_twoda", "soundset", str(base), str(ctx.cdir / "override" / "soundset.2da"),
+            str(row), label_for(r), r.audio.k2_ssf, str(r.gender)]
+
+
+def prepare_soundset_base(ctx: "Ctx", order: list, idx: int, row: int) -> Path:
+    """The table the new soundset row is appended to: the nearest previous audio character's staged table, else the
+    live <K2>/override/soundset.2da. It must not be taller than the planned row (the helper pads below it)."""
+    cands = []
+    for prev in reversed(order[:idx]):
+        rec = next((x for x in ctx.loaded.recipes if x.id == prev), None)
+        f = ctx.loaded.out / prev / "override" / "soundset.2da"
+        if rec is not None and rec.audio is not None and f.is_file():
+            cands.append(f)
+            break
+    cands.append(live_tables(ctx.loaded.cfg.k2_dir) / "soundset.2da")
+    for f in cands:
+        if twoda_height(ctx.runner, f) <= row:
+            return f
+    raise Failure(f"{ctx.recipe.id} soundset row", f"no base soundset.2da fits the planned row {row}", "build with --reassign")
+
+
 # ------------------------------------------------------------------------------------------- per-character context
 
 @dataclass
@@ -676,6 +870,7 @@ class Ctx:
     cdir: Path
     runner: Runner
     env: dict
+    audio: dict | None = None  # stage_audio() result when the recipe has [audio]
 
     @property
     def stage(self) -> Path:
@@ -694,14 +889,17 @@ def label_for(recipe) -> str:
 def char_build_argv(ctx: Ctx, rows: dict, chain_from: Path | None) -> list:
     r = ctx.recipe
     body_b = r.body_b or r.body_a
+    soundset = rows["soundset"] if r.audio is not None else r.soundset  # [audio]: the new row; else the recipe fallback
     argv = py_cmd(k1port_py(), CHAR_BUILD_TOOL, "--game-dir", ctx.loaded.cfg.k2_dir, "--tag", r.id,
                   "--label", label_for(r), "--new-row", rows["appearance"], "--new-head-row", rows["head"],
-                  "--body-a", r.body_a.k2, "--body-b", body_b.k2, "--head", r.head.k2, "--soundset", r.soundset,
+                  "--body-a", r.body_a.k2, "--body-b", body_b.k2, "--head", r.head.k2, "--soundset", soundset,
                   "--gender", r.gender, "--name", r.display_name, "--utc", r.utc, "--template-row", r.template_row)
     if r.dlg:
         argv += ["--conversation", r.dlg]
     if chain_from is not None:
         argv += ["--chain-from", chain_from]
+    if r.audio is not None:
+        argv += ["--soundset-table", ctx.cdir / "override" / "soundset.2da"]
     return argv + ["--out", ctx.cdir / "override", "--json"]
 
 
@@ -741,8 +939,10 @@ def cells_for(ctx: Ctx, rows: dict) -> list:
     r = ctx.recipe
     from k1_port_vfs_pack import TwoDaCell
     tds = []
-    for table, fname, row, template in (("appearance", "appearance.2da", rows["appearance"], r.template_row),
-                                        ("heads", "heads.2da", rows["head"], -1)):
+    specs = [("appearance", "appearance.2da", rows["appearance"], r.template_row), ("heads", "heads.2da", rows["head"], -1)]
+    if r.audio is not None:  # the new soundset row: no template, every other column stays empty
+        specs.append(("soundset", "soundset.2da", rows["soundset"], -1))
+    for table, fname, row, template in specs:
         got = twoda_call(ctx.runner, f"2da-rows {table}", "rows", f"{table}={ctx.cdir / 'override' / fname}:{row}")
         for col, val in got[table][str(row)].items():
             tds.append(TwoDaCell(table, row, col, str(val), template_row=template))
@@ -759,6 +959,8 @@ def stage_files(ctx: Ctx) -> list:
         files += [ctx.stage / "models" / f"{m.k2}.mdl", ctx.stage / "models" / f"{m.k2}.mdx"]
     files += [ctx.cdir / "tpc" / f"{t.k2.lower()}.tpc" for t in r.textures]
     files.append(ctx.cdir / "override" / f"{r.utc}.utc")
+    if ctx.audio is not None:
+        files += [ctx.audio["ssf"], *ctx.audio["wavs"]]
     missing = [str(f) for f in files if not f.is_file()]
     if missing:
         raise Failure(f"{r.id} pack inputs", "missing: " + ", ".join(missing), f"see {ctx.cdir / 'logs'}")
@@ -815,11 +1017,24 @@ def print_plan(ctx: Ctx, idx: int, order: list, rows: dict, resolved: dict) -> N
         cmds += mdlops_steps(ctx, r)
         cmds.append(("ingest textures", ingest_argv(ctx, r.body_a.k1, None, list(r.textures), no_model=True, supermodel_map=[])))
     chain = ctx.loaded.out / order[idx - 1] / "override" if idx else None
+    audio = None
+    if r.audio is not None:
+        audio = audio_inspect(ctx.runner, r, ctx.k1, ctx.loaded.cfg.k2_dir)  # read only
+        base = ctx.loaded.out / order[idx - 1] / "override" / "soundset.2da" if idx else live_tables(ctx.loaded.cfg.k2_dir) / "soundset.2da"
+        cmds.append(("soundset row", soundset_row_cmd(ctx, base, rows["soundset"])))
     cmds.append(("char_build", char_build_argv(ctx, rows, chain)))
     for t in r.textures:
         cmds.append((f"tex {t.k2}", tpc_argv(ctx, t, ctx.stage / "override" / f"{t.k2.lower()}.<tga>", ctx.cdir / "tpc" / f"{t.k2.lower()}.tpc")))
-    say(f"[{r.id}] dry run: appearance row {rows['appearance']}, heads row {rows['head']}, converter {r.converter}, "
+    say(f"[{r.id}] dry run: appearance row {rows['appearance']}, heads row {rows['head']}"
+        + (f", soundset row {rows['soundset']}" if audio else "") + f", converter {r.converter}, "
         f"texture_source {ctx.loaded.cfg.texture_source}")
+    if audio:
+        refs = [x for x in audio["strrefs"] if x != SSF_EMPTY]
+        say(f"[{r.id}]   audio: K1 {r.audio.k1_ssf}.ssf (172 bytes, {len(refs)} strrefs {min(refs)}..{max(refs)}, same voiceovers in the K2 dialog.tlk) "
+            f"-> {r.audio.k2_ssf}.ssf; {len(audio['found'])}/{len(audio['voiceovers'])} K1 voice wavs from {STREAM_DIR}/ -> STREAM assets"
+            + (f"; missing (WARN): {', '.join(audio['missing'])}" if audio["missing"] else ""))
+        say(f"[{r.id}]   audio: new soundset.2da row {rows['soundset']} (label {label_for(r)}, resref {r.audio.k2_ssf}, gender {r.gender}); "
+            f"the UTC uses it instead of recipe soundset {r.soundset}")
     say(f"[{r.id}]   resolved {len(resolved['rows'])} K1 items, {len(resolved['flagged'])} flagged")
     for f in resolved["flagged"]:
         warn(f"{r.id}: flagged source {f['item']} ({f['reason']}); allowed because the out dir is private")
@@ -845,6 +1060,9 @@ def build_character(loaded: Loaded, recipe, idx: int, order: list, rows: dict, k
     say(f"[{cid}] 1/6 resolve K1 sources")
     resolver = Runner(None)  # logged into the manifest only: the work dir is wiped below
     resolved = resolve_character(resolver, loaded, recipe, k1)
+    audio_info = None
+    if recipe.audio is not None and not dry_run:  # read only; fails before the work dir is wiped
+        audio_info = audio_inspect(resolver, recipe, k1, loaded.cfg.k2_dir)
     if dry_run:
         print_plan(ctx, idx, order, rows, resolved)
         return {}
@@ -882,6 +1100,12 @@ def build_character(loaded: Loaded, recipe, idx: int, order: list, rows: dict, k
             runner.run(label, argv, env=ctx.env, fix="MDLOps needs Proton and the mdlops tools (doctor)")
         mdlops_finish(ctx, recipe)
         ingests.append(run_ingest(ctx, "ingest textures", ingest_argv(ctx, recipe.body_a.k1, None, list(recipe.textures), no_model=True, supermodel_map=[])))
+    audio_man = None
+    if recipe.audio is not None:
+        say(f"[{cid}] 3/6 audio: K1 {recipe.audio.k1_ssf}.ssf + K1 voice wavs -> {recipe.audio.k2_ssf}.ssf, soundset row {rows['soundset']}")
+        ctx.audio = stage_audio(ctx, audio_info)
+        audio_man = ctx.audio["manifest"]
+        say(f"[{cid}]   {len(ctx.audio['wavs'])} wav(s) staged as STREAM assets, {len(audio_man['missing_optional'])} missing")
     for data in ingests:
         flagged += ingest_flagged(data)
     seen, uniq = set(), []
@@ -898,8 +1122,12 @@ def build_character(loaded: Loaded, recipe, idx: int, order: list, rows: dict, k
     say(f"[{cid}] 4/6 textures -> DXT1 TPC")
     tex_info = [make_tpc(ctx, t) for t in recipe.textures]
 
-    say(f"[{cid}] 5/6 rows {rows['appearance']}/{rows['head']} + UTC")
+    say(f"[{cid}] 5/6 rows {rows['appearance']}/{rows['head']}" + (f" + soundset {rows['soundset']}" if recipe.audio else "") + " + UTC")
     chain = prepare_base(ctx, order, idx, rows)
+    if recipe.audio is not None:
+        (cdir / "override").mkdir(parents=True, exist_ok=True)
+        runner.run(f"soundset row {cid}", soundset_row_cmd(ctx, prepare_soundset_base(ctx, order, idx, rows["soundset"]), rows["soundset"]),
+                   env=ctx.env, fix="the live K2 soundset.2da changed? re-run; if the count moved use --reassign")
     proc = runner.run(f"char_build {cid}", char_build_argv(ctx, rows, chain), env=ctx.env,
                       fix="the live K2 appearance/heads tables changed? re-run; if the counts moved use --reassign")
     try:
@@ -914,7 +1142,8 @@ def build_character(loaded: Loaded, recipe, idx: int, order: list, rows: dict, k
         assets = kpack.assets_from_stage(files)
         info = kpack.CharacterInfo(character_id=recipe.id, display_name=recipe.display_name, default_tag=recipe.tag,
                                    default_utc=recipe.utc, default_dlg=recipe.dlg, appearance_id=rows["appearance"],
-                                   head_id=rows["head"], soundset_id=recipe.soundset)
+                                   head_id=rows["head"],
+                                   soundset_id=rows["soundset"] if recipe.audio is not None else recipe.soundset)
         pack_path = loaded.out / f"{recipe.id}{PACK_SUFFIX}"
         summary = kpack.write_pack(pack_path, info, assets, cells)
         data = pack_path.read_bytes()
@@ -931,7 +1160,9 @@ def build_character(loaded: Loaded, recipe, idx: int, order: list, rows: dict, k
         "schema": 1, "id": cid, "built_at": now_iso(),
         "recipe": {"path": recipe.source, "sha256": recipe_file_sha(recipe), "converter": recipe.converter},
         "k1_dir": str(k1), "k2_dir": str(loaded.cfg.k2_dir), "texture_source": loaded.cfg.texture_source,
-        "sources": resolved["rows"], "missing_optional": resolved["missing"],
+        "sources": resolved["rows"],
+        "missing_optional": resolved["missing"] + (audio_man["missing_optional"] if audio_man else []),
+        "audio": audio_man,
         "ingest": [summarize_ingest(d) for d in ingests],
         "textures": tex_info,
         "flagged": flagged,
@@ -946,7 +1177,7 @@ def build_character(loaded: Loaded, recipe, idx: int, order: list, rows: dict, k
     }
     write_json(loaded.out / f"{recipe.id}.import_manifest.json", manifest)
     say(f"[{cid}] built {pack_path} ({summary['size']} bytes, {summary['asset_count']} assets, {summary['cell_count']} cells, "
-        f"rows {rows['appearance']}/{rows['head']}), sha256 {summary['sha256'][:16]}")
+        f"rows {rows['appearance']}/{rows['head']}" + (f"/{rows['soundset']}" if recipe.audio else "") + f"), sha256 {summary['sha256'][:16]}")
     return manifest
 
 
@@ -971,7 +1202,8 @@ def cmd_build(args) -> int:
     if ids and juhani_rows_clash(rows):
         warn(JUHANI_WARN.format(ids=", ".join(ids)))
     order = list(loaded.cfg.characters)
-    say(f"live K2 tables: appearance.2da {live['appearance']} rows, heads.2da {live['head']} rows")
+    say(f"live K2 tables: appearance.2da {live['appearance']} rows, heads.2da {live['head']} rows"
+        + (f", soundset.2da {live['soundset']} rows" if "soundset" in live else ""))
     if args.dry_run:
         say("dry run: nothing is written")
     elif not loaded.out.exists():
@@ -1107,7 +1339,8 @@ def cmd_remove(args) -> int:
     if isinstance(stored, dict) and args.id in stored:
         old = stored.pop(args.id)
         write_json(loaded.out / "assignments.json", stored)
-        say(f"dropped the assignment (appearance {old.get('appearance')}, heads {old.get('head')}); those row ids stay unused "
+        say(f"dropped the assignment (appearance {old.get('appearance')}, heads {old.get('head')}"
+            + (f", soundset {old['soundset']}" if "soundset" in old else "") + "); those row ids stay unused "
             f"until a rebuild of {args.id} (rows are positional in config order)")
     say("Close the game before relaunching.")
     return EXIT_OK
@@ -1137,7 +1370,7 @@ def cmd_list(args) -> int:
     say(f"out: {loaded.out}")
     for x in rows:
         a = x["assigned"]
-        rowtxt = f"rows {a['appearance']}/{a['head']}" if a else "rows unassigned"
+        rowtxt = (f"rows {a['appearance']}/{a['head']}" + (f"/{a['soundset']}" if "soundset" in a else "")) if a else "rows unassigned"
         state = ("built" + (" (stale: recipe changed)" if x["stale"] else "")) if x["built"] else "not built"
         inst_txt = ("installed" + ("" if x["installed_matches_build"] else " (differs from build)")) if x["installed"] else "not installed"
         sha = (x["pack_sha256"] or "-")[:16]
@@ -1180,7 +1413,8 @@ def cmd_doctor(args) -> int:
             ok("K2 dir", str(cfg.k2_dir))
         else:
             bad("K2 dir", f"{cfg.k2_dir}: no swkotor2.exe or chitin.key", "set [k2] dir to the KOTOR II install folder")
-        for fname in ("appearance.2da", "heads.2da"):
+        tables = ("appearance.2da", "heads.2da") + (("soundset.2da",) if any(r.audio is not None for r in loaded.recipes) else ())
+        for fname in tables:
             f = live_tables(cfg.k2_dir) / fname
             if f.is_file():
                 ok(f"K2 {fname}", str(f))
@@ -1276,6 +1510,8 @@ def main(argv: list | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     if argv and argv[0] == "_twoda":  # hidden helper, runs under the k1port venv python
         return _twoda_main(argv[1:])
+    if argv and argv[0] == "_audio":  # hidden helper (SSF / TLK reads), same interpreter
+        return _audio_main(argv[1:])
     args = build_parser().parse_args(argv)
     try:
         return args.fn(args)

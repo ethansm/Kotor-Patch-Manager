@@ -6,7 +6,7 @@ display_name = "Carth"
 tag = "k1p_carth"          # spawn-probe roster tag (k1_client_core_test.cpp)
 utc = "k1p_carth"
 dlg = ""
-soundset = 14              # K2 soundset.2da row 14 = n_repoff (Republic_Officer); row 11 n_commm sounded like an Ithorian (play 10-18). Own K1 SSF is a later audio pass
+soundset = 14              # FALLBACK only: K2 soundset.2da row 14 = n_repoff (Republic_Officer); row 11 n_commm sounded like an Ithorian (play 10-18). With [audio] below the builder appends a new row and the UTC uses that instead
 template_row = 17          # appearance.2da row copied for the new row
 gender = 0
 
@@ -33,3 +33,10 @@ k1 = "p_carthh01"
 k2 = "k1p_carthh01"
 force_opaque = true
 txi = "clamp 1"
+
+# Carth's own K1 barks (doc 38 s24, same route as the Juhani hand path): the builder reads K1 SSF p_carth (strrefs
+# 37192..37232 are identical in the K2 dialog.tlk), copies the K1 streamsounds/P_CARTH_*.wav as STREAM assets, appends
+# a soundset.2da row (resref = k2_ssf) and points the UTC at it.
+[audio]
+k1_ssf = "p_carth"
+k2_ssf = "k1p_carthssf"
