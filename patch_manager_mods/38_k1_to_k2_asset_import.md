@@ -337,9 +337,9 @@ Anchors are in `~/Games/KOTOR2_Mod_Workspace/ghidra_dumps/steam_6a522e71/`.
 
 **baseitems +0x18 recon (10-18, 1 Haiku, recon contract, Opus spot-checked 2 rows + loader asm; $0):** CONFIRMED. The byte at baseitem +0x18 is the `baseitems.2da` column `ModelType` (loader `0x6d5240`: cell `ModelType` (string `0x99a864`) stored by `MOV [EAX+0x18],CL` at `0x6d553e`; row stride 0xC8 via `0x6d5200`). Save `0x602dd0`, server writer `0x633ec0` and client reader `0x80fde0` all gate on `== 1`. 16 rows have ModelType 1, all body-slot (equipableslots 0x2): 35-43 (Jedi robes, Armor_Class_4..9), 85 Basic_Clothing, 89 Revan_Armor, 98 flight suit, and others. Live `Override/baseitems.2da` (109 rows) keeps the same 16 indices; Override `appearance.2da` and 55 Override armor UTIs shadow chitin (e.g. `a_light_42..49` base 38 TV 42..49, `a_light_x02` base 85 TV 102), so TextureVar values above 15 are already in use. Vanilla UTIs: `a_light_02` (base 38, BV 3, TV 1), `a_medium_01` (40, BV 5), `a_heavy_01` (42, BV 7), `a_light_x02` (85, BV 2). K2 humanoid appearance rows (Commoner_*, Twilek_*) have modeltype `B`, body meshes in `modela..modeln`. Data-only test: give the NPC UTC an `Equip_ItemList` body armor UTI (base 38 or 85) with TextureVar = N. Unverified: BodyVariation N -> appearance column `model<letter N>` (inferred from 2DA data, not RE), and that creature creation goes through `0x804f10`.
 
-## 26. Automated K1 -> K2 import: recipes + install-time builder + character-packs loader (10-18, built, not installed)
+## 26. Automated K1 -> K2 import: recipes + install-time builder + character-packs loader (10-18, INSTALLED, Carth played)
 
-**Status.** Built, not installed. The builder (`k1_port/k1_port_import.py`) and the `character-packs` loader (0.1.0-dev) exist. No pack is in the live game. The live check waits for VFS-CT2. Tracking rows: doc 44 section 4, VFS-B3 and VFS-B4.
+**Status.** INSTALLED 10-18 17:26 (loader + asset-vfs 0.1.3-dev); `carth.k2pack` and `juhani.k2pack` re-installed 22:00 at 5ed93049. Carth PLAYED (body, head, own K1 barks, voiced dialog: "carths dialog is good"). Juhani through the pack route awaits a play check (play row VFS-B5). Tracking rows: doc 44 section 4, VFS-B3 to VFS-B5.
 
 **Goal.** A contributor with a K1 install runs one tool and gets a character that `asset-vfs` serves from their own machine.
 
@@ -368,13 +368,19 @@ Usage and the user steps: README section "Import a character from your K1 instal
 **Loader.** `character-packs` runs in `KPatchInit`, synchronously, so its 2DA cells are in place before the engine loads `appearance.2da` and `heads.2da`. Reason (user decision 10-18): `asset-vfs` drops 2DA cells registered after a table was serviced, and its character catalog has no lock, so a worker thread would race both. The loader uses kernel32 file calls only. It checks each pack against the format rules and skips a bad pack alone, with one log line in `character-packs_log.txt`. It checks the shared pools (192 assets, 1024 cells since asset-vfs 0.1.3-dev, 64 characters) before it registers anything.
 
 **Not in scope now.**
-- Audio. The format can hold WAV, LIP and SSF. The importer does not produce them yet.
 - Spawner. A patch spawns the character through `k2.characterlib@1` `Spawn`. No spawn is set from the config.
 - DLL source emit (the `--emit dll-source` mode from the first plan, decision D5). Not built.
+
+**Added after the first install (10-18 evening).**
+- Any K1 NPC: `npcs [--grep X]`, `scan <k1_utc>`, config entries `utc:<resref>` write auto recipes to `<out>/recipes_auto/<id>.toml` (7d6f69cc).
+- Recipe `[audio]`: K1 SSF + its STREAM wavs + extra `<ssf>_*` barks + a new soundset row (`first_soundset_row` config key). K1 bark strrefs are identical in the K2 TLK (Carth 37192..37232, Juhani 36914..36942), so no TLK work (ca1e5df4, 5ed93049).
+- Recipe `[dialog]` (`k1_port_dialog.py`, 90abbad5): K1 conversation text does NOT match the K2 TLK (0 of 722 Carth strrefs), so text is embedded; every script is stripped; only nodes reachable without a condition script survive (Carth 6 of 978, Juhani 6 of 1272). VO wavs from `<K1>/streamwaves/<module>/<speaker>/` go in as flat StreamVoice assets (budget `dialog.max_voiced`, default 30); lips from `<K1>/lips/*.mod` must pass `kvoice_lip.check_lip` (a corrupt lip crashed the game at 0x0091CF5B) and are RESMAN assets. VO names with a leading underscore (`_m35aacart04014_`, `_m35aajuha11434_`) are missing from streamwaves: Carth 3 and Juhani 2 lines stay silent.
+- Carth uses `converter = "mdlops"`: the pykotor bodies gave "left arm out / shards" when played (10-18). MDLOps models are byte-identical to the hand build; the head MDL differs only by the 10-15 danglymesh demotion.
+- Override test rig retired (user 10-18, "feature parity"): `k1_port_probe.py rollback` plus explicit-path deletes of the Juhani harness files; backups in `k1_port_stage/rig_cleanup_20261018/`. `juhani-char` (DLL bundles) is still installed and redundant for both characters.
 
 **Open risks.**
 1. Converter choice. Each recipe sets `converter`; there is no default. Juhani uses `mdlops` because the pykotor writer breaks `p_juhaniba` (section 22). Whether pykotor becomes the default after VFS-CT2 is open.
 2. Cell pool. 1024 cells since asset-vfs 0.1.3-dev (256 before), shared by every asset-vfs client. A character uses about 102. `juhani-char` takes cells from the same pool.
 3. Row-id fragility. Ids follow config order and live table counts. A change to either makes `build` refuse until `--reassign`, which rebuilds every character.
 
-**Next.** Install and live check after VFS-CT2 passes (user GO). Then doc 44 VFS-B3 and VFS-B4 move from "built, not installed" to done.
+**Next.** Play check of Juhani via the pack (VFS-B5), decide whether to uninstall `juhani-char`, raise the static asset pool (192) if full conversations are wanted, and replace MDLOps by a fixed pykotor writer (Haiku recon wave launched 10-18, results pending).
