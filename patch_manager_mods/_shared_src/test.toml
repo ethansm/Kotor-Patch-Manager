@@ -57,3 +57,6 @@ cxxflags = ["-I../../research/companion_levelup/tools/parity/stub", "-DGUIKIT_HO
 
 [slider_art_test]
 cxxflags = ["-I../../research/companion_levelup/tools/parity/stub", "-DGUIKIT_HOST", "-DEMBTEX_HOST", "-Werror"]
+
+[providerclient_test]
+cxxflags = ["-I$HOME/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common", "-Werror"]
