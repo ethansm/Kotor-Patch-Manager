@@ -181,16 +181,17 @@ struct PreviewLayout {
 // exactly as the HUD places it (layoutRow with the name bar as the name label); the block (row + pill + name bar) is centred in the pane and
 // never leaves it: icons are dropped from the right until the row (plus pill padding) fits the width, and the row is hidden when it does not
 // fit the height. An empty pane gives ok = false.
-inline PreviewLayout previewLayout(const RowRect& pane, int enabled, int maxIcons, int iconPx, int gapPx, int spacePx, int pillPad, bool backing) {
+inline PreviewLayout previewLayout(const RowRect& pane, int enabled, int maxIcons, int iconPx, int gapPx, int spacePx, int pillPad, bool backing,
+                                   int nameWBase = kPreviewNameW, int nameHBase = kPreviewNameH) {
     PreviewLayout p;
     memset(&p, 0, sizeof p);
     if (pane.w <= 0 || pane.h <= 0) return p;
     if (gapPx < 0) gapPx = 0;
     if (spacePx < 0) spacePx = 0;
     if (pillPad < 0) pillPad = 0;
-    const int nameW = pane.w < kPreviewNameW ? pane.w : kPreviewNameW;
-    const int nameH = pane.h < kPreviewNameH ? pane.h : kPreviewNameH;
-    const int s = iconPx > 0 ? iconPx : kPreviewNameH;
+    const int nameW = pane.w < nameWBase ? pane.w : nameWBase;
+    const int nameH = pane.h < nameHBase ? pane.h : nameHBase;
+    const int s = iconPx > 0 ? iconPx : nameHBase;
     const int pad = backing ? pillPad : 0;
     int n = enabled ? maxIcons : 0;
     if (n > kPreviewMaxIcons) n = kPreviewMaxIcons;
@@ -209,6 +210,40 @@ inline PreviewLayout previewLayout(const RowRect& pane, int enabled, int maxIcon
     if (n > 0) p.row = layoutRow(0, 0, p.name.x, p.name.y, p.name.w, p.name.h, n, s, gapPx, spacePx, pillPad);
     p.ok = true;
     return p;
+}
+
+// Zoom for the settings-page preview, in percent (100 = 1:1 engine px, the real HUD size; clamped to 100..600). The real strip is tiny on a
+// large display (default icon edge 14 px), so the page draws the whole example (icons, gaps, spacing, pill padding and the mock name bar)
+// scaled up: the mock name bar takes about 55 % of the pane width, shrunk when the scaled icon row (90 % of the width) or the scaled block
+// (90 % of the height) would not fit. Only the sizes scale; the ratios between settings stay as in the HUD.
+inline int previewZoomPct(const RowRect& pane, int maxIcons, int iconPx, int gapPx, int spacePx, int pillPad, bool backing) {
+    if (pane.w <= 0 || pane.h <= 0) return 100;
+    if (gapPx < 0) gapPx = 0;
+    if (spacePx < 0) spacePx = 0;
+    if (pillPad < 0) pillPad = 0;
+    const int s = iconPx > 0 ? iconPx : kPreviewNameH;
+    const int pad = backing ? pillPad : 0;
+    int n = maxIcons;
+    if (n > kPreviewMaxIcons) n = kPreviewMaxIcons;
+    if (n < 1) n = 1;
+    long z = static_cast<long>(pane.w) * 55 / kPreviewNameW;
+    const long rowW = static_cast<long>(n) * s + static_cast<long>(n - 1) * spacePx + 2L * pad;
+    const long zr = rowW > 0 ? static_cast<long>(pane.w) * 9000 / 100 / rowW : z;
+    const long blockH = static_cast<long>(kPreviewNameH) + gapPx + s + pad;
+    const long zh = blockH > 0 ? static_cast<long>(pane.h) * 90 / blockH : z;
+    if (zr < z) z = zr;
+    if (zh < z) z = zh;
+    if (z < 100) z = 100;
+    if (z > 600) z = 600;
+    return static_cast<int>(z);
+}
+
+// previewLayout with every size scaled by previewZoomPct (rounded to whole px). At 100 % the result equals previewLayout exactly.
+inline PreviewLayout previewLayoutZoomed(const RowRect& pane, int enabled, int maxIcons, int iconPx, int gapPx, int spacePx, int pillPad, bool backing) {
+    const int z = previewZoomPct(pane, maxIcons, iconPx, gapPx, spacePx, pillPad, backing);
+    auto sc = [z](int v) { return v <= 0 ? v : static_cast<int>((static_cast<long>(v) * z + 50) / 100); };
+    return previewLayout(pane, enabled, maxIcons, iconPx > 0 ? sc(iconPx) : 0, sc(gapPx), sc(spacePx), sc(pillPad), backing,
+                         sc(kPreviewNameW), sc(kPreviewNameH));
 }
 
 // ---------------------------------------------------------------- cooldown overlay

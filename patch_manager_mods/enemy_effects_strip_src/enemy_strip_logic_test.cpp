@@ -537,6 +537,43 @@ static void testPreview() {
       KT_CHECK(shown > 1000); }
 }
 
+// previewZoomPct / previewLayoutZoomed: hand-computed. zw = pane.w*55/200; zr = pane.w*90/rowW; zh = pane.h*90/blockH; clamp 100..600; sc(v) = (v*z+50)/100.
+static void testPreviewZoom() {
+    const RowRect big = { 0, 0, 1600, 900 };
+    // Defaults (icon 14, gap 4, spacing 4, no backing): zw = 440, zr = 144000/86 = 1674, zh = 81000/42 = 1928 -> 440.
+    KT_CHECK_EQ(previewZoomPct(big, 5, 14, 4, 4, 4, false), 440);
+    { PreviewLayout p = previewLayoutZoomed(big, 1, 5, 14, 4, 4, 4, false);
+      // icon (14*440+50)/100 = 62, gap 18, spacing 18, name 880 x 106 (24*440+50 = 10610 -> 106).
+      KT_CHECK(p.ok && p.n == 5 && p.name.w == 880 && p.name.h == 106);
+      KT_CHECK(p.row.icon[0].w == 62 && p.row.icon[0].h == 62);
+      KT_CHECK_EQ(p.row.icon[1].x - p.row.icon[0].x, 62 + 18);
+      KT_CHECK_EQ(p.name.y - (p.row.icon[0].y + p.row.icon[0].h), 18); }
+    // A big icon edge shrinks the zoom so the row fits: icon 100 -> rowW 516, zr = 144000/516 = 279, zh = 81000/128 = 632 -> 279.
+    KT_CHECK_EQ(previewZoomPct(big, 5, 100, 4, 4, 4, false), 279);
+    // Backing adds 2*pad to the row width: rowW 94 -> zr = 144000/94 = 1531, still 440 (zw wins).
+    KT_CHECK_EQ(previewZoomPct(big, 5, 14, 4, 4, 4, true), 440);
+    // Small panes never go below 1:1, and an empty pane answers 100.
+    KT_CHECK_EQ(previewZoomPct({ 0, 0, 300, 200 }, 5, 14, 4, 4, 4, false), 100);
+    KT_CHECK_EQ(previewZoomPct({ 0, 0, 0, 200 }, 5, 14, 4, 4, 4, false), 100);
+    // The ceiling is 600: pane 5000 wide -> zw 1375 -> 600.
+    KT_CHECK_EQ(previewZoomPct({ 0, 0, 5000, 3000 }, 5, 14, 4, 4, 4, false), 600);
+    // At 100 % the zoomed layout equals the 1:1 layout (same name bar, icons, pill).
+    { const RowRect small = { 100, 50, 300, 200 };
+      PreviewLayout a = previewLayout(small, 1, 5, 0, 4, 4, 4, true);
+      PreviewLayout b = previewLayoutZoomed(small, 1, 5, 0, 4, 4, 4, true);
+      KT_CHECK(a.ok == b.ok && a.n == b.n && a.pill == b.pill && rr(b.name, a.name.x, a.name.y, a.name.w, a.name.h));
+      KT_CHECK(rr(b.row.pill, a.row.pill.x, a.row.pill.y, a.row.pill.w, a.row.pill.h));
+      for (int i = 0; i < a.n; ++i) KT_CHECK(rr(b.row.icon[i], a.row.icon[i].x, a.row.icon[i].y, a.row.icon[i].w, a.row.icon[i].h)); }
+    // Zoomed blocks stay inside the pane for every setting combination on a coarse grid.
+    for (int s = 0; s <= 64; s += 16) for (int g = 0; g <= 16; g += 8) for (int sp = 0; sp <= 16; sp += 8) for (int bk = 0; bk < 2; ++bk) {
+        PreviewLayout p = previewLayoutZoomed(big, 1, 5, s, g, sp, 4, bk != 0);
+        if (!p.ok) continue;
+        KT_CHECK(insideRect(p.name, big));
+        for (int i = 0; i < p.n; ++i) KT_CHECK(insideRect(p.row.icon[i], big));
+        if (p.pill) KT_CHECK(insideRect(p.row.pill, big));
+    }
+}
+
 int main() {
     testConfig();
     testParseFloat();
@@ -548,5 +585,6 @@ int main() {
     testOverlay();
     testSettings();
     testPreview();
+    testPreviewZoom();
     return kt::Report("enemy_strip_logic");
 }

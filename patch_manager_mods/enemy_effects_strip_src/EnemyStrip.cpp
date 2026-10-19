@@ -13,7 +13,7 @@
 // mod-config never does): Enabled, IconSize, Gap, Spacing, Backing, BackingAlpha, DrainAlpha apply at once through esl::sanitize; MaxIcons is
 // written only (the label pool is built per HUD, so it needs a restart). ForceTier, Verbose and the Tier* thresholds are INI-only.
 // 0.4.1: with a provider that has SetDescSplit the page also shows a live example of the strip (mock name bar, pill, five sample icons with drain
-// overlays; esl::previewLayout) in the top 75 % of the right half, redrawn from the current settings every tick; the description keeps the rest.
+// overlays; esl::previewLayout) in the top 75 % of the right half, redrawn from the current settings every tick; the description keeps the rest. 0.4.2: the example is drawn zoomed (esl::previewZoomPct, 1x to 6x) so it is readable on large displays.
 #include <windows.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -1025,7 +1025,7 @@ void refreshPreview() {
         pvHideAll();
     } else {
         const esl::RowRect pane = { r.x, r.y, r.w, r.h };
-        const esl::PreviewLayout pl = esl::previewLayout(pane, g_cfg.enabled ? 1 : 0, g_cfg.maxIcons, g_cfg.iconSize, g_cfg.gap, g_cfg.spacing,
+        const esl::PreviewLayout pl = esl::previewLayoutZoomed(pane, g_cfg.enabled ? 1 : 0, g_cfg.maxIcons, g_cfg.iconSize, g_cfg.gap, g_cfg.spacing,
                                                           g_cfg.backingPad, g_cfg.backing);
         if (!pl.ok) {
             pvHideAll();
