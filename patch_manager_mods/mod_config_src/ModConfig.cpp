@@ -85,7 +85,7 @@ struct Config {
     bool reflow = true;        // insert the root button after GAMEPLAY and move the later rows (else place it below QUIT)
     bool desc = true;          // write the hover description through the vanilla path
     bool freeLabels = true;    // free our labels and buttons in McDestroy (r7 recipe)
-    bool arrowIcons = false;   // row arrows: false = "<" ">" glyph text on the button clone (proven live), true = the embedded chevron textures
+    bool arrowIcons = false;   // row arrows: false = "<" ">" glyph text on the button clone; true = chevron textures (NOT built yet: logged only)
     int selftest = 0;          // 1 = register the built-in "Mod-config self test" entry (6 rows); never on in a shipped config
 };
 Config g_cfg;
@@ -1334,8 +1334,19 @@ void releaseRowCtl(ItemX& it) {
     it.ctl = 0;
 }
 
+// The ABI values are copied straight into mui::RowCfg (kind, flags): pin the two enum sets to each other.
+static_assert(MUI_ROW_TOGGLE == mui::RK_TOGGLE && MUI_ROW_STEPPER == mui::RK_STEPPER, "MUI_ROW_* == mui::RK_*");
+static_assert(MUI_RF_WRAP == mui::RF_WRAP && MUI_RF_RESTART == mui::RF_RESTART && MUI_RF_DISABLED == mui::RF_DISABLED && MUI_RF_HIDDEN == mui::RF_HIDDEN,
+              "MUI_RF_* == mui::RF_*");
+// The v1 spec ends at zeroText. A later, longer spec must keep accepting v1 callers: compare struct_size with this floor (not with a
+// grown sizeof) and read any newer field only when struct_size covers it.
+constexpr size_t kRowSpecV1 = offsetof(K2MuiRowSpec, zeroText) + sizeof(static_cast<const K2MuiRowSpec*>(nullptr)->zeroText);
+static_assert(kRowSpecV1 == sizeof(K2MuiRowSpec), "K2MuiRowSpec grew: gate the new fields on struct_size");
+static_assert(sizeof(void*) != 4 || (sizeof(K2MuiRowSpec) == 52 && offsetof(K2MuiRowSpec, fmt) == 36 && offsetof(K2MuiRowSpec, zeroText) == 48),
+              "K2MuiRowSpec 32-bit layout (13 x 4 bytes, no padding under pack(8))");
+
 int32_t KPATCH_CALL muiAddRow(uint32_t page, const K2MuiRowSpec* sp) {
-    if (!sp || sp->struct_size < sizeof(K2MuiRowSpec) || (sp->kind != MUI_ROW_TOGGLE && sp->kind != MUI_ROW_STEPPER)) return -1;
+    if (!sp || sp->struct_size < kRowSpecV1 ||(sp->kind != MUI_ROW_TOGGLE && sp->kind != MUI_ROW_STEPPER)) return -1;
     if (!rowPageGate(page, "AddRow")) return -1;
     McState& e = g_mc;
     const int k = static_cast<int>(page) - 2;
@@ -1395,7 +1406,8 @@ int32_t KPATCH_CALL muiAddRow(uint32_t page, const K2MuiRowSpec* sp) {
         e.itemRow[k][id] = static_cast<unsigned char>(rp.n + 1);
         e.itemPart[k][id] = static_cast<unsigned char>(p);
     }
-    if (rp.n == 0) KP_LOG(chMain, "ARROWPATH text fallback=0 page=%u", static_cast<unsigned>(page));
+    // Only the "<" ">" text path exists in 0.2.0-dev: arrow_icons is read and logged but not built yet (MCR1 decides whether it is needed).
+    if (rp.n == 0) KP_LOG(chMain, "ARROWPATH text page=%u arrow_icons=%d (icons not built: text path used)", static_cast<unsigned>(page), g_cfg.arrowIcons ? 1 : 0);
     const int row = rp.n;
     rp.rows[rp.n++] = r;
     rowCaption(k, rp.rows[row]);
@@ -1445,6 +1457,11 @@ void KPATCH_CALL muiSetRowRange(uint32_t page, int32_t row, int32_t minV, int32_
     RowX* r = rowAt(page, row);
     if (!r || r->cfg.kind != mui::RK_STEPPER) return;
     saferead::beginScope();
+    if (r->nChoices > 0) {   // a choice stepper stores an index: keep the range inside [0, nChoices - 1] (a subset is fine)
+        const int top = r->nChoices - 1;
+        minV = minV < 0 ? 0 : (minV > top ? top : minV);
+        maxV = maxV < 0 ? 0 : (maxV > top ? top : maxV);
+    }
     r->cfg.minV = minV;
     r->cfg.maxV = maxV;
     r->cfg.value = mui::rowClamp(r->cfg, r->cfg.value);

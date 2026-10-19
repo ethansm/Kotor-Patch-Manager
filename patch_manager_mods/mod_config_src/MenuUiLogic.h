@@ -423,12 +423,13 @@ inline int rowStep(const RowCfg& c, int v, int dir) {
     if (hi < lo) { const int t = lo; lo = hi; hi = t; }
     const int st = c.step < 1 ? 1 : c.step;
     const bool wrap = (c.flags & RF_WRAP) != 0;
+    // Distances in 64 bits: a consumer range wider than INT_MAX (e.g. INT_MIN..INT_MAX) must not overflow hi - cur / cur - lo.
     if (dir > 0) {
         if (cur >= hi) return wrap ? lo : hi;
-        return (hi - cur < st) ? (wrap ? lo : hi) : cur + st;
+        return ((long long)hi - cur < st) ? (wrap ? lo : hi) : cur + st;
     }
     if (cur <= lo) return wrap ? hi : lo;
-    return (cur - lo < st) ? (wrap ? hi : lo) : cur - st;
+    return ((long long)cur - lo < st) ? (wrap ? hi : lo) : cur - st;
 }
 
 inline int rowApplyHandlerResult(const RowCfg& c, int requested, int handlerFinal, bool haveHandler) {

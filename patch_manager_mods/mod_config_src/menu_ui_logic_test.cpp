@@ -3,6 +3,7 @@
 // (flicker, same item, out of range), release-edge click tracker (press/release item pairs, held across ticks), per-page
 // item table (full, visibility, hit test), page table (full), and the truncate guard.
 #include "MenuUiLogic.h"
+#include <limits.h>
 #include "check.h"
 
 using namespace mui;
@@ -536,6 +537,16 @@ static void test_row_clamp_step() {
     KT_CHECK_EQ(rowStep(stepper(9, 3, 1, 5), 5, 1), 6);           // swapped range reads as min..max
     KT_CHECK_EQ(rowClamp(stepper(9, 3, 1, 5), 100), 9);
     KT_CHECK_EQ(rowStep(stepper(4, 4, 1, 4, RF_WRAP), 4, 1), 4);  // one-value range
+    // Ranges wider than INT_MAX: the distance math must not overflow (review MCF1/MCF2).
+    const RowCfg wide = stepper(INT_MIN, INT_MAX, 10, 0);
+    KT_CHECK_EQ(rowStep(wide, INT_MIN, 1), INT_MIN + 10);
+    KT_CHECK_EQ(rowStep(wide, INT_MAX, -1), INT_MAX - 10);
+    KT_CHECK_EQ(rowStep(wide, INT_MAX - 3, 1), INT_MAX);          // lands on max, no wrap past INT_MAX
+    KT_CHECK_EQ(rowStep(wide, INT_MIN + 3, -1), INT_MIN);
+    KT_CHECK_EQ(rowStep(stepper(INT_MIN, INT_MAX, 10, 0, RF_WRAP), INT_MAX - 3, 1), INT_MIN);
+    KT_CHECK_EQ(rowStep(stepper(INT_MIN, INT_MAX, 10, 0, RF_WRAP), INT_MIN + 3, -1), INT_MAX);
+    KT_CHECK_EQ(rowStep(stepper(0, 10, INT_MAX, 5), 5, 1), 10);   // a huge step clamps at the end
+    KT_CHECK_EQ(rowStep(stepper(0, 10, INT_MAX, 5), 5, -1), 0);
 }
 
 static void test_row_toggle() {
@@ -607,6 +618,17 @@ static void test_row_format() {
     KT_CHECK(!rowFormat(b, 1, "Heal", hp, nullptr, nullptr, 0, nullptr) && b[0] == 0);
     KT_CHECK(!rowFormat(nullptr, 10, "x", hp, nullptr, nullptr, 0, nullptr));
     KT_CHECK(!rowFormat(b, 0, "x", hp, nullptr, nullptr, 0, nullptr));
+    // Edge cases (review MCF1/MCF2): toggle choices, null choice strings, index past nChoices, zeroText on a toggle, INT_MIN.
+    const char* yn[] = {"No", "Yes"};
+    KT_CHECK(rowFormat(b, sizeof b, "Loot", toggle(1), nullptr, yn, 2, nullptr) && strcmp(b, "Loot: Yes") == 0);
+    KT_CHECK(rowFormat(b, sizeof b, "Loot", toggle(0), nullptr, yn, 2, "Auto") && strcmp(b, "Loot: No") == 0);   // choices beat zeroText
+    KT_CHECK(rowFormat(b, sizeof b, "Loot", toggle(0), nullptr, nullptr, 0, "Auto") && strcmp(b, "Loot: Off") == 0);   // zeroText: steppers only
+    const char* holes[] = {"A", nullptr};
+    KT_CHECK(rowFormat(b, sizeof b, "H", stepper(0, 1, 1, 1), nullptr, holes, 2, nullptr) && strcmp(b, "H: ") == 0);   // null choice = empty
+    KT_CHECK(rowFormat(b, sizeof b, "H", stepper(0, 9, 1, 7), nullptr, ch, 3, nullptr) && strcmp(b, "H: Fast") == 0);   // index past nChoices = last
+    KT_CHECK(rowFormat(b, sizeof b, "", stepper(INT_MIN, 0, 1, INT_MIN), nullptr, nullptr, 0, nullptr) && strcmp(b, "-2147483648") == 0);
+    KT_CHECK(rowFormat(b, sizeof b, nullptr, stepper(0, 9, 1, 3), "%", nullptr, 0, nullptr) && strcmp(b, "%") == 0);   // a lone trailing % is literal
+    KT_CHECK(rowFormat(b, sizeof b, "Z", stepper(0, 9, 1, 0), "%d left", nullptr, 0, "None") && strcmp(b, "Z: None") == 0);   // zeroText beats fmt at 0
 }
 
 static void test_row_geometry() {
