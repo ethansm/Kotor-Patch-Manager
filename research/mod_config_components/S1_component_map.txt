@@ -1,0 +1,256 @@
+S1 RECON: shared mod-config component map (synthesis of R1-R4, six claims spot-checked)
+Contract: recon. Write scope: this file only. Read-only elsewhere. No builds, no edits.
+Paths relative to patch_manager_mods/ unless shown. Line numbers are as read on 2026-10-18 (branch KOTOR-II). "est" = rough estimate, not measured.
+Short names: API = _shared_src/ModConfigApi.h, MC = mod_config_src/ModConfig.cpp, HE = holster_editor_src/HolsterEditor.cpp, ES = enemy_effects_strip_src/EnemyStrip.cpp.
+
+======================================================================
+1) CONFIRMED FACTS AND CORRECTIONS
+======================================================================
+
+Spot checks (6), each against source:
+
+C1 CONFIRMED (R2, with R4 wrong). MC:1263 `if (gap > kTickGapMs) resetPages("tick gap");` runs BEFORE the 0x40 guard at MC:1266-1269
+   (`if (e.appended && !(flags48 & 0x40)) { if (state != MAIN) resetPages("panel hidden"); return; }`). The guard runs after the gap reset, so a
+   shown panel with a gap over 500 ms (kTickGapMs, MC:69) is reset to MAIN. Gap is computed at MC:1248-1250, lastTick updated at MC:1250.
+   CORRECTION to R4 T8: R4 says the visible-flag guard is "NOT in code (RFC:178 planned)". It IS in code (MC:1264-1269, comment "live logs 10-17").
+   The RFC text is stale. Only the ORDER is wrong, not the absence.
+   Also noted: the two comments disagree. MC:1258-1259 says a hidden panel "is not drawn"; MC:1264-1265 says an Esc-hidden panel is "still drawn, ~22 ms
+   gaps" with flags48 0x0d. That disagreement is the whole risk of the reorder (see section 6, Q1, and tension (e) in section 3A).
+C2 CONFIRMED (R2). K2MenuUiApi has 12 slots (API:95-120); offsetof asserts API:159-170; sizeof assert API:171; MenuClient::usable gates up to Control
+   (API:245-248) and hasDescSplit is a separate check (API:251-254). Client poll() runs connect() on every 256th call (API:216-218).
+C3 CONFIRMED (R4 T3). guikit::setFont (_shared_src/GuiKit.h:282-287) checks only textObjOk and passes any resref through. No whitelist. HE:2350-2352 avoids it.
+C4 CONFIRMED (R1 A14, E1). HE:2742-2748: g_cfgClient.init and g_menu.init, then connect() once. No `g_menu.poll`, `g_cfgClient.poll`, or retry anywhere
+   in HE (grep of g_menu / g_cfgClient shows only .ok() uses). Contrast ES:1257-1280 (tryRegisterPage: poll both, Register once) with the retry at
+   ES:1283 (`if (!g_mcRegistered) tryRegisterPage();` inside the HUD frame callback) and ES:1306.
+   NEW FACT neither researcher stated: holster-editor's manifest says `requires = ["holster","preview-3d","mod-config"]` and
+   `requires_interfaces` includes k2.modconfig@1 and k2.menuui@1 (holster_editor_src/manifest.toml:9-10), while ES lists them as OPTIONAL
+   (enemy_effects_strip_src/manifest.toml:8-9 comment). So holster-editor never retries because it is a hard dependent. Whether KPM orders init by `requires`
+   was NOT verified in the KPM loader (not in this repo scope).
+C5 CONFIRMED (R1 section C). No production caller found for EditKit.h sliderToValue (16), repeatTick (40), midClick (72), fmtValue (79); HseView.h zoomIn (46),
+   rawToNorm (271), leftStrip (98); SliderArt.h sliderWedgeWidth (60), sliderMarkLeft (61, only slider_art_test.cpp:136-138); ResetIcon.h
+   resetIconTextures (22). `sliderArtApply` is called only from slider_art_test.cpp:124,131. NOT independently re-verified: EditKit dragMode,
+   the other ~15 helpers R1 lists, and HseLayout.h as wholly dead (R1 says HE includes only HseLayoutV3.h).
+C6 CONTRADICTION (R3 vs R4/RFC), unresolved. ES:1181-1183 builds stepper rows as AddLabel + AddButton("<") + AddButton(">"). R4 T2 and the RFC
+   (new_issue_drafts/issue_rfc_mod_configuration_menu.md:119) say glyph-only captions "<", ">" render blank on this GUI, and HE:436-438 uses icon art for
+   that reason. R4 gives the only candidate cause as a box height smaller than the line height (compact rows), not decoded. The strip steppers use default
+   row rects, so they may render. Not shown by any log in the files read. Treat "<" ">" text steppers as UNVERIFIED until one play row confirms (section 6, Q3).
+
+Other corrections and refinements:
+
+K1 R3 census double counts holster. Its 21 rows include 2 holster placeholders (rows 1 bone ENUM, 2 3D toggle) that are not settings rows. Real generic rows = 19:
+   TOGGLE 12, ENUM 3 (rows 7, 12, 13), STEPPER 1 (row 6), SLIDER 2 (rows 3, 15), PAIR 1 (row 18). Row 3 (HealThreshold) already lists presets 25..80 and row 15
+   is tagged WEAK, so both "sliders" fit a preset cycle. Generic slider demand = 0. Only the holster page needs a real slider.
+K2 R2 says a slider row "needs SetItemDesc and Held". Not needed. The holster editor already does sliders with ZERO new ABI: it polls guikit::g_gk.lbuttonDown
+   (R4 T6: HE:698) and does its own hover desc (HE:1792-1828, refreshHints). The slots would only save declarative pages from polling. Same for paging:
+   no registered page has more rows than fit one screen (largest generic page is the strip). So slider/paging slots have no demand today.
+K3 R1 A12 proposes a new IniLite.h. _shared_src/IniKit.h already exists (trim, splitIniLine, forEachLine, enabledFlag; used by inv3d, equip3d, inikit_test.cpp)
+   and _shared_src/FileWatch.h has atomicWrite and ReloadPoll. Extend those; do not add a third ini header.
+K4 R1 A13 / R3 section D: holster.ini is written by the holster PROVIDER (HolsterApi.h Save/ResetScope), not by the editor. So "ini write-through" has no code in
+   HolsterEditor.cpp to extract; the writer helper to share is holster_src/HolsterIniWrite.h (host-tested, holster_src/holster_iniwrite_test.cpp).
+K5 R4 T9 / R2 Q6.5 "ItemCap slot": the only provider that lacks the 80-item page is mod-config < 0.1.3, which also lacks SetDescSplit. hasDescSplit() is already a
+   reliable proxy for "80 items" (HE:548 uses it). A new slot is not needed.
+K6 R1 A9 / R4 T1: provider SetRect does not re-fix captions (R4 cites applyOne MC:277-297; not re-read here, taken as stated). Holster fixes captions per tick
+   through its own cache; moving it into the provider needs a handshake with holster's caption_fix ini (section 5).
+K7 Writer trade-offs not stated by R3 (see tension (d)): WritePrivateProfileStringA adds a kernel32 import to a DLL that may not have it. The repo already learned
+   that new imports break DLL hot-swap (commit 16bb3c62: "resolve user32 calls at run time (no new DLL import, keeps hot-swap)").
+K8 Stale items worth fixing while in the file: HE:381 status text says "0.4.5 dev" vs 0.4.8-dev elsewhere (R1 D1, not re-read).
+K9 Unverified by this session: R2 section Q4 (PaneRect semantics, paneViewRect/paneStatusFloor untested), R4 Part 2 (native controls, all unproven for runtime creation),
+   R3 section D reload behaviour per mod, queue_hud.ini 4095-byte cut (R3 finding 1, not re-read).
+
+======================================================================
+2) COMPONENT LIST (8)
+======================================================================
+Key: P = provider-side (mod-config DLL, hot-swap of mod-config), H = shared header (_shared_src, consumers recompile).
+Rule used: provider-side only when it needs provider internals (re-apply loop, tick gate, rect application). Everything a consumer can do with the existing 12 slots
+is a shared header. NO component below needs a new K2MenuUiApi slot.
+
+CMP1 Shown-state tick gate (the 500 ms bounce fix)
+  Where: P (MC:1263-1269 plus a pure function in mod_config_src/MenuUiLogic.h).
+  New ABI slots: 0. Consumers: holster (unsaved slider drag), every long page.
+  Size: MC about 10 lines changed; MenuUiLogic.h about 20 lines; menu_ui_logic_test.cpp about 60 lines (est).
+  Test: pure host test of `mui::tickResetDue(gap, flags48, appended, lmbDown)` over the table gap x shown x appended x lmb. Engine part only by one play row.
+  Risk: MEDIUM. Exact change in 3A(e).
+
+CMP2 IniWrite.h (section-aware text rewrite plus atomic save)
+  Where: H, lifted from holster_src/HolsterIniWrite.h (+ _shared_src/FileWatch.h atomicWrite).
+  New ABI slots: 0. Consumers: strip (replaces WritePrivateProfileStringA, ES:1152), combat-hotbar, inventory-sort, queue-hud, inv3d, equip3d; action-hotbar and holster keep
+  their own full writers. Size: about 150 lines new/lifted plus about 120 lines of test (est). Adds `[Section]` targeting (HolsterIniWrite today ignores sections).
+  Test: pure host test (copy holster_iniwrite_test.cpp cases, add section cases: key in other section, key missing, new section appended, CRLF/LF, dup lines).
+  Risk: LOW. Policy in 3A(d).
+
+CMP3 ProviderClient.h (one client template plus one register-once helper)
+  Where: H. New ABI slots: 0 (ModConfigApi.h client structs stay as they are; the template wraps them).
+  Consumers: holster-editor (4 copies of the same connect/poll/ok shape: p3, holster, ConfigClient, MenuClient), strip (ES:1257-1288), every new adopter.
+  Size: about 70 lines plus about 60 test (est); removes about 180 duplicated lines (R1 A14, est).
+  Test: pure host test with stub KPatchApi::require (same technique as common_contract_test.cpp:77-189).
+  Risk: LOW. Must not change struct layouts that the contract tests pin.
+
+CMP4 GuiKit public widget ops
+  Where: H (_shared_src/GuiKit.h, GuiButton.h). New ABI slots: 0.
+  Content: setButtonBorderTint (replaces HE:1338-1357 reaching into guikit::detail), setButtonOrLabelFill(ctl, hi, lo, style), hitAny(items[]), constants block
+  for desc fill/edge/text and button caption colours with source lines (R4 T12), setFont resref whitelist that refuses and logs (R4 T3, C3 above), one "refused" log per gate
+  (R4 T13). Consumers: holster now; the future icon/radio helpers and any page that fills a button.
+  Size: about 80 lines plus about 60 test (est). Test: GUIKIT_HOST stub tests (holster_editor_src/test.toml already uses -DGUIKIT_HOST).
+  Risk: LOW to MEDIUM. A setFont whitelist could refuse a font another mod relies on today: grep consumers first.
+
+CMP5 ModRowPage.h (row-spec runtime; the layer a TOML loader targets)
+  Where: H. New ABI slots: 0.
+  Content: RowSpec kinds TOGGLE, CYCLE (n presets, each preset may write 1 or 2 keys; a toggle is a 2-preset cycle), STEPPER (min,max,step, optional sentinel label such as Auto),
+  CUSTOM (callback, for cross-field rules like strip tier ordering). Build rows from spec, generic column layout (generalizes ES:1196-1228), Clicked dispatch each tick
+  (ES:1231-1247), label formatting ("Key: value", Auto, On/Off, "(restart)"), clamp with a per-row policy, ini write via CMP2, onChanged callback for live apply.
+  Consumers: strip first (migrated, ES about 140 generic lines removed), then combat-hotbar (4 rows), action-hotbar (3), inventory-sort (3), queue-hud (3), inv3d (3), equip3d (3).
+  Size: about 350 lines of pure logic plus thin glue, about 250 lines test (est).
+  Test: pure host test of step/cycle/format/clamp/key-write tables; glue tested with a fake K2MenuUiApi.
+  Risk: MEDIUM. Row cost against the 80-item page cap (MenuUiLogic.h:37): TOGGLE/CYCLE 1 item, STEPPER 3 items (label plus two buttons) or 1 if rendered as cycle-on-click.
+  Do not build the "<" ">" variant as the only stepper until C6 is resolved.
+
+CMP6 Provider-side button caption fix
+  Where: P (applyOne / SetRect path, MC:277-297 per R4) + a pure `captionRect` moved from HseView.h:107 into a shared header + guikit::setButtonCaptionRect gated on ButtonVtable/TextVtable.
+  New ABI slots: 0. Consumers: holster (replaces HE:1598-1682, about 85 lines), any page with compact rows (strip when its slotH is small).
+  Size: about 60 lines provider + 30 lines helper + 40 lines test (est). Test: captionRect already pure and host-tested (hse_view_test.cpp); the provider part needs a play row.
+  Risk: MEDIUM. Double application with holster's own fix (section 5). Applies only to items that had SetRect called (Target.hasRect), never to list/root buttons.
+
+CMP7 IconButton.h and RadioGroup (selected-look helper)
+  Where: H. New ABI slots: 0.
+  Content: reset/arrow/flip icon art with the control passed as an argument (removes the g_artCtl global, HE:2299), pooled image handles (ResetIcon.h), button-or-label fill order
+  (button fill first, label second, ResetIcon.h:62-65), selected look via hover-frame border tint (HE:1338-1475: setSelFrame, setItemColor, setSel, refreshSelectors).
+  Consumers: holster (5 selector groups, 8 icon textures); a stepper with icon arrows if C6 proves glyphs blank. Size: about 120 lines plus 80 test (est).
+  Test: GUIKIT_HOST stub tests (reset_icon_test.cpp already does this). Risk: MEDIUM: visual only, needs play rows.
+
+CMP8 SliderRow and ScrubDrag
+  Where: H. New ABI slots: 0 (hold state from guikit lbuttonDown, hover desc from SetDesc, as holster does today; K2 above).
+  Content: SliderArt.h look (frame/wedge/thumb), HseView.h Scrub (937-1052, pure) parameterised by window and hard limits instead of constants (kScrubLimitOff 3 m, kScrubLimitRot 720 deg), value maths
+  (one of inspValueText / fmtValue, delete the other), thumb geometry (HseLayoutV3.h:167-219).
+  Consumers: holster only today. Build only as part of the holster migration (phase 5); no generic page needs it (K1).
+  Size: about 250 lines mostly moved, plus existing tests moved (est). Test: pure host tests (hse_view_test.cpp, slider_art_test.cpp already cover Scrub and art). Risk: MEDIUM.
+
+Not components (stay as they are): PaneLayout.h / Deadline / LogBudget / ItemTextCache are small utilities (about 20-40 lines each). Fold into CMP5 (layout, text cache) and
+EditKit.h (Deadline, LogBudget) during phases 2 and 5 rather than naming them. ABI slots SetItemDesc, Held, SetVisible, ItemCap, SetText-with-result are deferred (section 6, Q5).
+
+======================================================================
+3) BUILD ORDER
+======================================================================
+Each phase is independently shippable. "Hot-swap" = replace the DLL in the live game via kpm_hotswap.py (needs no new DLL imports); "reinstall" = a full KPM install (manifest or imports change).
+
+PHASE 1 (small, no ABI, no new dependency)
+  1a CMP1 tick-gate fix. SHIP: hot-swap mod-config (0.1.4-dev). Then one play row: hold a slider drag across a forced 1+ s hitch, and a normal Esc/Esc reopen.
+  1b Dead-code prune in holster-editor: delete HseLayout.h plus hse_layout_test.cpp, the unused EditKit/HseView/SliderArt/ResetIcon helpers (C5), update their tests, fix HE:381 version text.
+     SHIP: hot-swap holster-editor (behaviour unchanged; verify with `run_tests.py holster` filter, scoped).
+  1c CMP2 IniWrite.h lifted and made section-aware, host tests only. SHIP: nothing live (header + tests); adoption starts in phase 2.
+
+PHASE 2 (consumer-only; first real adopter is the strip)
+  2a CMP3 ProviderClient.h and CMP4 GuiKit public ops (headers and host tests). SHIP: nothing live by itself.
+  2b CMP5 ModRowPage.h (pure logic and glue) with host tests.
+  2c Migrate the strip onto 2a + 2b + CMP2 (drops WritePrivateProfileStringA). SHIP: hot-swap enemy-effects-strip if the DLL import list does not grow, otherwise reinstall;
+     enemy_strip_draw_test.cpp stays green first (existing behaviour is the characterization test).
+
+PHASE 3 (real demand: 12 toggles, 3 enums, 1 stepper)
+  3a combat-hotbar page: 4 rows (BtnPx stepper with Auto sentinel, ColsTotal cycle, two toggles). Reinstall or hot-swap per import check.
+  3b inventory-sort page: 3 rows. Note missing keys read OFF (R3 finding 3): Reset must write explicit values.
+  3c action-hotbar (3 rows) through the onChanged callback to its own Serialize/atomicWrite (it keeps unknown lines and .bak, HotbarConfig.h:450); do not force it onto CMP2.
+  Queue-hud needs its ini reader fixed first (4095-byte cut, R3 finding 1) so it is a later item.
+
+PHASE 4 (holster migration, step 1: safe blocks)
+  4a CMP7 IconButton.h and RadioGroup, switch holster to them.
+  4b CMP6 provider caption fix with a handshake (provider applies, holster `caption_fix=0` via a probe row, then holster block deleted). SHIP: hot-swap mod-config first, then holster-editor.
+  4c Holster uses CMP3 (replaces 4 client copies) and CMP4 (stop reaching into guikit::detail). SHIP: hot-swap holster-editor.
+
+PHASE 5 (holster migration, step 2: input blocks)
+  5a CMP8 SliderRow and ScrubDrag extraction (parameters instead of constants).
+  5b Orbit core split from weapon acts (HseView.h Chord 370-598; weapon acts CA_WEAPON/CA_DEPTH stay in holster) and PaneLayout (HE:1518-1580) into a header.
+  5c Probes (about 500 lines, R1 B7) behind a probe header or removed before any public PR. SHIP: hot-swap holster-editor.
+  Optional phase 6 only if a second slider consumer or a >8-row page appears: append ABI slots (cost list in R2 Q1: API, MC, common_contract_test.cpp pins in mod-config, holster-editor, enemy-effects-strip).
+
+3A) THE SIX KNOWN TENSIONS, RESOLVED
+
+(a) What is left in HolsterEditor.cpp worth extracting. R1 is right that the pure maths is header-only already. Left inside the 2770-line cpp (rough, est, from R1 line ranges):
+    selection look and selectors HE:1338-1475 (about 140 lines) -> CMP7;  caption fix HE:1598-1682 (about 85) -> CMP6;  icon art and fills HE:2299-2391 (about 90) -> CMP7;
+    scrub plumbing HE:1777-1938 (about 160, part holster-only) -> CMP8;  layout and PaneRect HE:518-644, 1518-1580 (about 110) -> CMP5 layout / PaneLayout;
+    client copies and connect HE:2738-2767 (about 30 plus the 4 template copies) -> CMP3;  hit lists 1763-1802 and text cache 1318-1333 (about 55) -> CMP4/CMP5;
+    ini line parser 321-378 (about 58) -> extend IniKit.h (K3);  log plumbing, two-click guard, input reset (about 110) -> EditKit.h utilities.
+    That is roughly 600-650 lines of generic code. Holster-only stays: 3D preview, HolsterApi calls, bone/stance/row tables, weapon gestures, PI_* page table.
+    Dead/prune (phase 1b): EditKit (6 fns), HseView (about 11 helpers), HseLayout.h (93 lines + test), SliderArt/ResetIcon extras (about 12 fns), and the log-only probes
+    (about 500 lines; keep or remove is Q4). Do the prune BEFORE extracting so nothing dead gets copied into a shared header.
+(b) Provider vs header. Provider-side only CMP1 and CMP6 (both need the provider's tick/SetRect loop). Everything else is a consumer header. Stepper and toggle = CMP5 rows
+    (zero ABI). Slider = CMP8 with polling (zero ABI, K2). Paging = not built (no page needs it). Reason: each K2MenuUiApi slot costs edits in API, MC, mod-config contract test and the
+    pins in holster-editor and enemy-effects-strip contract tests (R2 Q1 list), and a missed initializer silently zero-fills.
+(c) Priority by demand. 12 toggles + 3 enum cycles + 1 pair = 16 of 19 rows fit CYCLE (n>=2 presets, preset may write 2 keys). 1 stepper (combat BtnPx, plus the strip's numeric rows already in tree).
+    The 2 "sliders" fit CYCLE presets. So order: CYCLE/TOGGLE first, STEPPER second (strip is the live consumer), CUSTOM third (strip tier ordering), slider never in the generic layer.
+(d) INI writer. Recommend ONE: text rewrite (IniWrite.h from HolsterIniWrite.h), per key, atomic, section optional. Reasons: (1) pure and host-testable, WritePrivateProfileStringA is not;
+    (2) no new kernel32 import, so hot-swap keeps working (K7); (3) the same code handles the flat files (holster, inv3d, equip3d, queue-hud) and [Section] files (strip, combat, sort, action), which the Win32 API
+    cannot do for flat files; (4) comments, order and unknown lines are copied byte for byte by contract, whereas R3 itself says it did not verify comment handling on this Wine build; (5) atomicWrite keeps the
+    old file on failure. Cost: about 80 lines to add section awareness. Action-hotbar keeps its own writer through onChanged.
+(e) 500 ms bounce. Minimal reorder: change MC:1263 so the watchdog fires only when the panel is not shown. Concretely, replace
+    `if (gap > kTickGapMs) resetPages("tick gap");` with `if (mui::tickResetDue(gap, flags48, lmbDown)) resetPages("tick gap");` where, for a shown panel (flags48 & 0x40),
+    due = gap > 5000 and !lmbDown (long backstop, not removed); for a not-shown panel due = gap > 500 (current behaviour). Equivalent literal form: move MC:1266-1269 above MC:1263 and
+    drop the watchdog for shown panels; the pure function is preferred because it can be host-tested and keeps the backstop.
+    Risk: the two comments at MC:1258 and MC:1264 disagree on whether a hidden panel is drawn. If a panel closed by a path other than Esc is NOT drawn while hidden, its first draw on reopen has
+    0x40 set and gap over 500 ms, and with the fix it would reopen on the stale mod page (the Esc key edge at MC:1260-1262 covers only Esc). Mitigations: the 5000 ms backstop; the existing HIDDENDRAW
+    log (cap 32, MC:1254-1256) will show the gap and flags48 of a reopen. Collect that log from one non-Esc close (Back button, game-menu key) BEFORE shipping. Not verified: whether a gap over 500 ms
+    really occurs while shown other than the one 1.1 s hitch R4 cites (RFC:123).
+(f) holster-editor ClientS connect. CONFIRMED (C4): connects once at HE:2748, no retry. Because the manifest hard-requires mod-config, a missing provider is a configuration error and the existing
+    `REGISTER fail why=noapi` log (HE:2749-2751) is sufficient. If init order cannot be guaranteed by `requires` (unverified), the fix is NOT 15 lines: holster-editor is hookless (no per-frame callback
+    before the page exists), so a retry needs a frame source, e.g. a k2.hud@1 hook like ES (ES:1305-1306) plus `requires = ["hud-host"]`: about 25 lines in HE and a manifest change (reinstall, not
+    hot-swap). With CMP3 the retry is a 3-line call instead. Recommend: verify KPM init order for `requires` once; if guaranteed, do nothing in phase 1.
+
+======================================================================
+4) INTERFACE POINTS FOR THE TOML SESSION
+======================================================================
+This session does not design the schema or parser. It defines what the parser's OUTPUT must be so a TOML loader and a hand-written C++ table are interchangeable.
+
+I1 Output type. A plain-old-data PageSpec built from fixed arrays and static strings, no heap, no STL (DLL rules in this repo), with `struct_size` first so it can be versioned like K2ModConfigEntry (API:67-83).
+   PageSpec { struct_size, id, title, desc, ini {path, dialect = FLAT | SECTIONED, section}, rows[], rowCount, hooks }.
+I2 RowSpec fields (all static strings): id (stable, for logs), label, desc, kind (TOGGLE | CYCLE | STEPPER | CUSTOM), restart (static bool; dynamic predicate via hook), keys[1..2] each
+   {key, type = BOOL | INT | FLOAT | ENUMSTR}, presets[] each {valueLabel, writes[1..2] values} for CYCLE (a TOGGLE is two presets), range {min, max, step, sentinel value + label} for STEPPER, default per key,
+   clamp policy = CLAMP_TO_BOUND | RESET_TO_DEFAULT | WARN_KEEP (three policies exist in tree, R3 D; a loader that picks one silently changes inv3d/equip3d behaviour).
+I3 Caps agreed in advance: rows per page, presets per row, string lengths. Provider truncates silently at text 95 chars, desc 191, title 63 (MC:570-575, :1031, :1058). The loader should lint and fail the page loudly,
+   and respect the 80-item page cap (MenuUiLogic.h:37): TOGGLE/CYCLE 1 item, STEPPER 3 items.
+I4 Hooks a pure TOML page cannot express (function pointers in `hooks`, null allowed): onChanged(rowId, presetIndex or value) for live apply (strip pool rebuild), validate(rowId, candidate) for cross-field rules
+   (strip tier ordering ES/EnemyStripLogic.h:287-288), restartPredicate(rowId) (strip Enabled), previewPaint(page) (strip 12 owned labels, SetDescSplit 750, ES:985-1109). Specs with hooks=null are the "simple page".
+I5 Ini contract: path is relative to the game dir; flat vs sectioned is explicit; the write is per click, through IniWrite.h (CMP2), atomic, never at page leave; Reset writes explicit values (R3 finding 3);
+   the reader stays in the mod (readers differ: 3 clamp policies, 4 duplicated clamp helpers). The loader does not read mod ini at startup; it only reads the current value to show the row text.
+I6 Live-apply contract (needs a decision, Q2): 5 of 7 target mods re-read their ini by mtime poll (action-hotbar about 1 s, combat-hotbar ReloadPoll, inv3d/equip3d mtime stamp, sort on refresh), so an ini write alone is enough for them.
+   Queue-hud reads once at load (QueueHud.cpp:2114), the strip applies in-process: those need onChanged or a restart marker.
+I7 Where the runtime lives. Today the whole page runtime would be a consumer header (CMP5) compiled into each mod, so the spec is passed by pointer in-process. If the owner wants TOML-hosted pages read by mod-config itself
+   (mods ship no page code), the PageSpec must cross DLL boundaries, so it must be a C struct with struct_size and static pointers, delivered through a NEW interface (e.g. k2.modconfig.spec@1) or a new K2ModConfigApi slot.
+   That is a provider-side ABI addition and a decision for the owner (Q2). Also open: whether KPM can ship a .toml next to the DLL at all (memory: KPM cannot ship Override files; a game-dir file may differ).
+I8 Provider must expose to either route: nothing new for the in-DLL route (existing 12 slots suffice, K2/K5). For the provider-hosted route: Register-with-spec, a per-page ini path resolver, and onChanged delivery.
+I9 Strings and fonts: no font control in the spec (setFont crash, C3); text colour/align from the constants block of CMP4. Glyph-only captions are not allowed in the spec until C6 is resolved (stepper must offer a cycle-on-click
+   rendering as an alternative).
+I10 Errors fail soft: an invalid row is dropped with a WARN, an invalid page stays inert, and the mod keeps working (matches ES behaviour, ES:1189 "page left inert").
+
+======================================================================
+5) HOLSTER CONFIG MIGRATION
+======================================================================
+Stays a custom page. It reuses provider components; it does NOT become a spec-driven page (about 70 widgets, 3D view, mouse chords, edit session).
+
+Switches to shared components (in this order, one block per commit, characterization tests first):
+  1. CMP3 ProviderClient / registrar: replaces HE:2738-2767 plus the four client copies it depends on.
+  2. CMP4 GuiKit ops: setSelFrame / setItemColor (HE:1338-1390) stop using guikit::detail; hit lists (HE:1763-1802); setFont whitelist (HE already avoids setFont).
+  3. CMP7 IconButton / RadioGroup: icon art (HE:2299-2391), selectors (HE:1436-1475); removes the g_artCtl global (HE:2299).
+  4. CMP6 caption fix in the provider: HE:1598-1682 deleted once the provider applies it.
+  5. CMP8 Slider look and Scrub: HE:1777-1938 parameterised; keeps holster limits as arguments.
+  6. PaneLayout / EditKit utilities: HE:518-644, 1518-1580, plus text cache (HE:1318-1333 vs HseView.h:923-935, keep one), Deadline, LogBudget.
+  7. Ini key parser (HE:321-378) onto IniKit.h.
+Stays custom in holster_editor_src: 3D preview binding (cbBuild 514-630, tickBody 2560-2660), HolsterApi edit session (B2), bone/stance/row tables (B3), weapon gestures and the weapon half of the chord (B4, HseView.h 599-764),
+  scope/hand captions (B5), the PI_* page table and HseLayoutV3 geometry (B6), item name probe, probes behind a probe header (B7), party picker (HseParty.h).
+
+Regression risks (ranked):
+  R-1 Selection look and icon fills: visual only, no host test can see them; needs play rows (batch in PLAY_TEST_QUEUE.md, not a blocker).
+  R-2 Caption fix moved to the provider: double application while both are active. Whether applying twice is idempotent is unverified (it should be, as captionRect reads engine x/w and the button y/h each time).
+      Mitigate with the ini handshake (caption_fix=0) and a CAPTION log probe before deleting HE code.
+  R-3 Per-tick SetRect: keep it. The provider gives up after kMaxReapply 8 (MC:68, :283-291) for fixed targets, which is why HE re-applies each tick (HE:1544-1580).
+  R-4 Item budget: 76 of 80 items used (HE:98). Any shared overlay label counts. Keep a compile-time check.
+  R-5 Hot-swap: every extraction must avoid new DLL imports (resolve at run time like commit 16bb3c62), or holster-editor needs a reinstall.
+  R-6 Scrub and Chord pure parts are host-tested (hse_view_test.cpp, view_drag_test.cpp, slider_art_test.cpp, reset_icon_test.cpp): LOW if tests move with the code and stay green.
+  R-7 The 500 ms bounce (CMP1) is a prerequisite for trusting any slider test; do phase 1a first.
+
+======================================================================
+6) OPEN QUESTIONS NEEDING OWNER DECISIONS (5)
+======================================================================
+Q1 Tick gate: do you accept the 5000 ms backstop (shown panel) with the risk that a non-Esc close reopens on the stale page, or do you want a non-Esc close/reopen play row first to see HIDDENDRAW gap and flags48?
+Q2 Where does the TOML page runtime live: compiled into each mod as a header (zero ABI, each mod ships page code plus a small table) or hosted by mod-config (mods ship only a .toml and an onChanged hook; needs a new interface and a decision on how a .toml is
+   shipped next to the DLL given KPM cannot ship Override files)?
+Q3 Stepper rendering: may the first stepper be cycle-on-click (one button, no glyphs), or do you want "<" ">" text buttons first? One play row on the strip's current "<" ">" would settle whether glyph-only captions are blank at default row height (C6).
+Q4 Probes (about 500 lines of CAM/CAMENG/CALIB/ITEMNAME/PROJ in holster-editor): remove, keep behind a compile switch, or ship? And is the prune of the dead helpers in phase 1b approved (tests get deleted with them)?
+Q5 ABI growth: confirm that no K2MenuUiApi slot is added until a second consumer needs sliders (SetItemDesc, Held) or a page exceeds one screen (SetVisible), and that mod-config 0.1.4-dev (gate fix only) is the next provider version.

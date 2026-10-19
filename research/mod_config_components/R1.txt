@@ -1,0 +1,117 @@
+| Bucket | Blocks | Extract | Proposed home |
+|---|---|---|---|
+| Pure geometry, text fit, orbit math | EditKit Box and slider maths, TextFit, HseView captionRect and budgets, HseView orbit, HseLayoutV3 grid | EASY | already header-only in _shared_src or HseView.h; keep, move HseView generics |
+| Provider client boilerplate (4 copies) | p3d Client, k2holster Client, ConfigClient, MenuClient (connect/poll/ok) | EASY | one template ProviderClient.h in _shared_src; providers unchanged |
+| GuiKit-level widget ops | slider art fill, reset/arrow/flip fill, hover-frame border tint, caption-rect fix, hit list | EASY-MEDIUM | GuiKit public helpers: setButtonBorderTint, setButtonOrLabelFill, fixButtonCaption |
+| Input state machines | Scrub (value drag), Chord orbit core, two-click guard, resetInput | MEDIUM | consumer shared header; pass window, limits and act names as parameters |
+| Page build, tick and log plumbing | PaneRect layout, SetRect every tick, tick deadlines, build log caps, ini line parser | EASY-MEDIUM | consumer shared headers: PaneLayout.h, Deadline and LogBudget in EditKit.h, IniLite.h |
+| Dead or test-only helpers | EditKit fmt/slider/repeat/midClick/dragMode; HseView zoomIn/Out, leftStrip, half, stripSlot, compactSlot, CalibScript; HseLayout.h; SliderArt/ResetIcon extras | n/a | delete, or keep test-only (no production caller) |
+| Absent from the editor | ini write-through of one changed key: Save and ResetScope are provider calls (holster.ini written by holster) | n/a | holster provider only |
+| Holster-only | 3D preview binding, HolsterApi edit calls, bone/stance/row/scope tables, weapon gestures, PI_* page table, CAM/CALIB/ITEMNAME probes | HARD | stays in holster_editor_src |
+
+# R1 mod-config component inventory: holster editor (read-only recon)
+
+Repo root: /home/ethansm/orca/workspaces/local-setup/KOTOR-II. Paths below are relative to patch_manager_mods/ unless shown otherwise.
+Method: read the brief's files by range; grep non-test call sites (a count of 1 = definition only, no caller).
+Extract: EASY = pure or stateless; MEDIUM = needs a small state struct or parameters; HARD = tangled with the holster model.
+Provider = mod-config (k2.modconfig@1, k2.menuui@1) or holster (k2.holster@1). Consumer shared header = a _shared_src/*.h that any mod can include.
+
+## A. Generic building blocks (candidates to move)
+
+A1 slider look-alike (frame, wedge, thumb art) | holster_editor_src/SliderArt.h:21-47; HolsterEditor.cpp applyArt 2313-2391 (frame on track label PI_ROW+r*5+1, wedge e.wedge[r], mark on thumb label +2); applyLayout 1544-1580 cuts the wedge at the thumb centre | what: three embedded textures (512x64 frame, 512x64 wedge, 32x128 marker) painted as label fills | deps: embtex, guikit::setFill, setFillStyle(2), SliderArtTex.inc (scripts/gen_slider_art.py), item indexes | EASY for art and fill (sliderArtFill is one call); MEDIUM for geometry (needs row count and boxes) | home: consumer shared header SliderLook.h on GuiKit; geometry stays with pure layout.
+
+A2 slider track geometry and value maths | HseLayoutV3.h:39 (kV3ThumbW 10), 167-219 buildInspector (thumb clamped inside track); HseView.h:1147-1166 inspThumbFrac, inspTrackValue; EditKit.h:16-30 sliderToValue, valueToSlider | what: value <-> pixel mapping; thumb fraction; click-to-jump target | deps: inspWindow (HseView.h:1129, holster window +-0.30 m / +-180 deg) | EASY for EditKit pair (no production caller, see C1); inspThumb* pair is holster-tuned | home: EditKit.h for the generic pair; holster header for the inspector pair.
+
+A3 slider drag, scrub and click-jump | HseView.h:826-833 (kScrub* constants), 937-1052 (ScrubStep, Scrub::begin/step); HolsterEditor.cpp sliderRowAt 1777-1790, scrubBegin 1874-1892, scrubStepTick 1894-1907, scrubTick 1909-1938, applyRowValue 1843-1872 | what: LMB press on track jumps value; drag scrubs (1 px = 1 mm or 0.5 deg, or track mode), Shift x0.2, Ctrl snaps, window and hard-limit clamp | deps: Chord (CW_PRESS_OUTSIDE), refreshEdit, g_hol.h->SetValues, kScrubLimitOff 3 m and kScrubLimitRot 720 deg (holster.ini parser limits) | MEDIUM: Scrub is pure, but window and limits are constants; pass them per row | home: consumer shared header ScrubDrag.h; applyRowValue stays holster.
+
+A4 value text and format | HseView.h:1132-1146 inspValueText ("%.1f cm|deg", metres x100); EditKit.h:79-83 fmtValue ("%+.3f m", "%+.1f deg"; no production caller) | what: two formatters for one job | EASY | home: EditKit.h keeps one; delete the other.
+
+A5 icon buttons (reset, chevrons, flip) | ResetIcon.h:22-58 (8 textures; pooled handles via guikit::imageForRetry; arrowIconIndex 27); ResetIcon.h:62-65 resetIconApply (button fill first, label second); HolsterEditor.cpp artBtnFill 2300-2303, artLabelFill 2305-2311, applyArt member arrows and flip 2350-2390; g_artCtl global 2299 | what: one 32x32 arrow/flip image per control, stretched | deps: guikit::setButtonFill, setButtonFillStyle(2), setFill, setFillStyle; clearItemText 1328 | EASY once the g_artCtl global is removed (pass ctl as an argument; the callbacks take plain function pointers) | home: consumer shared header IconButton.h plus GuiKit guikit::setButtonOrLabelFill(ctl, hi, lo, style).
+
+A6 hover-frame selection (selected look) | HolsterEditor.cpp setSelFrame 1338-1363 (swaps normal border tint with hover border tint; refused when diff < 0.05); setItemColor 1365-1390 (label text colour, colorBad fallback); setSel 1392-1400 (lit caption becomes ">x<" when colour refused); refreshSelectors 1436-1475 (radio groups: weapon, bone, scope, stance, mode; memo selKey) | deps: guikit::detail::buttonBorder, detail::off(Border_Tint), detail::rd/wr (reaches into the detail namespace); Editor brdNormal, brdHover, brdOk, colState | EASY for setSelFrame once public in GuiKit; MEDIUM for refreshSelectors (per-item state, memo key) | home: GuiKit public guikit::setButtonBorderTint; consumer RadioGroup helper.
+
+A7 second (left) description box | HseLayoutV3.h:155-160 (hint[0] box under status line; hint[1] inset by kV3DescPad 12; kV3DescMinH 90, kV3DescMaxH 260, kV3DescWantH 130); HolsterEditor.cpp itemIsHintBox 438, itemIsHintText 439, applyArt 2313-2391 (SA_Box fill; text colour 37/200/164, align 9; SetFont deliberately not used, crash note at 2351), refreshHints 1810-1828 (text via setItemText; falls back to SetDesc on the right pane when no box), cbBuild 591 SetDescSplit(850) | deps: K2MenuUiApi SetRect, SetDesc, SetDescSplit (ModConfigApi.h:117); PI_HINT = 67 | EASY for box geometry (pure); MEDIUM for the hover fallback (leftTip state) | home: geometry in consumer header; SetDescSplit already provider-side.
+
+A8 caption fit and measure | TextFit.h:20-24 textPx, 26-34 fitText, 37-45 marqueeText, 48-72 wrapAppendW and wrapAppend (FontWidths.inc, generated); HseView.h:120-127 buttonTextPx (box - 2*(7+3)), labelTextPx (box - 8); HolsterEditor.cpp textCtx 1148, fitStatus 1151-1154, fitButton 1402-1407, buttonPx 1409, selPx 1412-1417, labelPx 1419 | deps: g_textK (ini text_k, default 2.65), g_statusFit; the label font is not measured, widths come from texel tables | EASY (TextFit already pure; HseView budgets are GuiButton facts) | home: _shared_src TextFit.h; move 7/3/4 px constants next to GuiButton.h; text_k stays a per-mod knob.
+
+A9 caption-rect fix after SetExtent | HseView.h:107-117 captionRect (pure: engine x and w, button y and h; 4 px fallback when engine x is outside the button); HolsterEditor.cpp 1598-1611 (text rect at +0x04, renderer at +0x14; renderer offsets probe-only), applyCaptions 1634-1682 (vtable gates guibutton::ButtonVtable on btn+0 and guikit::TextVtable on btn+Button_Text; moved-detection cache capBtn and capSeen; re-apply cap kCaptionReapplyMax 8; parked when x <= -9000), called at the end of applyLayout 1544-1580 | deps: guibutton::Button_Text, guikit::setRect on the text object; engine CSWGuiButton::SetExtent 0x419ED0 (comment at 1595) | EASY for captionRect; MEDIUM for applyCaptions (per-item cache arrays) | home: captionRect stays pure in a shared header; the fix is a generic engine workaround, so GuiButton.h or GuiKit, or mod-config applies it once (provider candidate).
+
+A10 hold-to-repeat (+/- buttons) | EditKit.h:32-53 editkit::Repeat and repeatTick (400 ms delay, then 60 ms interval, max 8 per tick) | what: press once, then repeat | deps: none | EASY | home: EditKit.h. Zero production callers (only EditKit.h and editkit_test.cpp); the V3 page has no +/- buttons (only the legacy HseLayout.h ModalRow had minus and plus). Keep as test-only or delete.
+
+A11 value stepper | none in the editor; values change by drag and scrub (A3), not by steppers | n/a | n/a.
+
+A12 ini line parser (readConfig) | HolsterEditor.cpp:321 iniBool, 323-378 readConfig (key=value; ; # [ comments; trims; clamps text_k 0.5-6, status_fit 0.5-8, margin_px 0-400; view_yaw, view_zoom, view_panz floats); file opened as relative "holster_editor.ini" at 336 | deps: fopen, atoi, atof, _stricmp | EASY (parser has no game deps) | home: consumer shared header IniLite.h; the key list stays holster.
+
+A13 ini write-through of one changed key | ABSENT from this editor. Save is g_hol.h->Save() at HolsterEditor.cpp:2495 and ResetScope() at 2510; both are provider calls that write holster.ini (_shared_src/HolsterApi.h:62-64, "1 written to holster.ini"). Nearest analogue: applyRowValue 1843-1872 (SetValues absolute, read-back via inspMatches, capped WARN) | n/a | home: holster provider only; no mod-config API needed unless another mod writes its ini.
+
+A14 lazy connect and poll (ConfigClient, MenuClient, holster, preview-3d) | HolsterEditor.cpp KPatchInit 2738-2767: init x4 at 2740-2743, cfg and menu connect once at 2748, no poll call for either anywhere in the file; cbBuild 545 eager connect for p3 and holster; cbTick 2675-2676 poll for p3 and holster only. Same client shape copied in: Preview3dApi.h:121-165, HolsterApi.h:91-133, ModConfigApi.h:180-225 (ConfigClient) and 227-280 (MenuClient) | deps: KPatchApi require(), struct_size checks | EASY: one template with init, usable, connect, poll, ok; each copy differs only in table type and usable() | home: consumer shared header ProviderClient.h; provider unchanged. See OPEN.
+
+A15 per-frame tick, provider-lost and deadlines | cbTick HolsterEditor.cpp 2674-2692 (poll, page gate, saferead::beginScope, embtex::heal at 2679, provider-lost branch 2680-2684 that calls resetInput and writes the status line, then tickBody, refreshPanes, applyLayout, applyArt); tickBody 2414-2672 (clicks, discard timer, mouse, NEEDBUILD and LIVE states); deadlines by counter: kArtMaxTicks 900 (2314), kProjRetryTicks 180 (132), kCaptionReapplyMax 8 (1606), EmbedTex.h:40 MaxHeals 20 | deps: g_p3, g_hol, embtex::heal | EASY for deadline counter and provider-lost check; HARD for the state machine | home: 3-line Deadline struct in EditKit.h; state machine stays holster.
+
+A16 layout from PaneRect, SetRect every tick | HolsterEditor.cpp refreshPanes 1518-1541 (PaneRect for MUI_PANE_COLUMN, VIEW, PREVIEW; LAYOUT log on change; one WARN); applyLayout 1544-1580 (margin_px widen; pageLayoutV3; SetRect on all items every tick because mod-config gives up after 8 re-applies; wedge cut; applyCaptions; wheel rect); placeItem 632-638, placeBox 640-644; HseLayoutV3.h:220-312 pageLayoutV3 (pure) | deps: g_menu.p->PaneRect, SetRect; guikit::g_wheel.setRect (GuiKit.h:629); g_marginPx | EASY for PaneRect to Box and place helpers; the page table is holster (B6) | home: consumer shared header PaneLayout.h; open whether provider should offer one "set all rects" call.
+
+A17 art embedding | EmbedTex.h:41 MaxTex 16, 43 Tex struct, 84 g_log, 87 supported() (Steam only), 120 ensure, 141 heal; SliderArt.h:32 sliderArtEnsure; ResetIcon.h:34 resetIconEnsure; HolsterEditor.cpp 593-595 (ensure both, BUILD log), 2679 heal per tick, 2744-2745 g_log | deps: gameaddr::New, EngineNewArr | EASY (already shared) | home: already _shared_src; holster uses 9 of the 16 slots (ResetIcon.h:9 comment).
+
+A18 build and tick log plumbing | HolsterEditor.cpp channels 69-73, BUILD, CONFIG and EMBED lines 514-630, embedLog 300-308 (adapter for embtex and embedgui g_log), warnOk 717-723 (per-kind cap kMaxWarnLogs 20), logRoom 1582-1596 (counter cap plus one "capped" line) | deps: KpLog.h (included at line 50; not found under /home/ethansm/orca) | EASY | home: one LogBudget struct in EditKit.h or KpLog; the per-kind WARN array stays consumer-side.
+
+A19 two-click confirm (unsaved edits; Reset Scope) | HolsterEditor.cpp guardTransition 2108-2125, guardConfirm 2127-2142; HseView.h:287-298 guardArmLive and guardProceed (pure) | deps: Editor discardArmed, discardAction, discardArmedAt; GetTickCount | EASY for the pure guards; MEDIUM for the three-field state | home: EditKit.h ArmedConfirm struct plus the pure guards.
+
+A20 mouse chord (LMB orbit, RMB+LMB act, MMB spin, wheel) | HseView.h:370-405 enums, 407-428 ChordIn and ChordOut, 430-598 Chord (step at 450); HolsterEditor.cpp weaponMouse 2171-2296; ViewDrag.h:60-71 p3d::dragBegin, dragMove | deps: CA_WEAPON and CA_DEPTH are holster acts; guikit::hit | MEDIUM: orbit, spin and zoom core is generic; weapon acts are not | home: consumer shared header split into orbit core plus holster acts.
+
+A21 orbit camera maths | HseView.h:12-88 (View, wrapYaw 25, spin 34, clampZoom 39, zoomIn 46 and zoomOut 50 (no caller), makeView 55, panStep 68, flipYaw 77, wrapIndex 82); ViewDrag.h:13-38 (fovForZoom, zoomStep 22, yawDrag 28 (no caller here), panDrag 32, dragAxis 38) | deps: none | EASY | home: merge into ViewDrag.h (p3d). The live wheel zoom is p3d::zoomStep at 0.9 per notch; hse zoomIn and zoomOut are unused.
+
+A22 world to screen projection | HseView.h:177-228 worldToScreen, 230 eyeOf, 256 rawPredict, 281 rawFrac, 271 rawToNorm (no caller); HolsterEditor.cpp logProj 753-761 and camEngProject 834-872 only | deps: none (pure) | EASY, but probe-only today | home: shared 3D view maths header if another mod needs it; otherwise keep with the probes.
+
+A23 item display name lookup | HolsterEditor.cpp callItemName 1049-1078 (ClientItemGetName, readExo, ExoDtor), probeItemNames 1080-1145 (AppGlobal, app+4 item table, ClientGetItemById, equipped ids at creature +0x238 and +0x23C, base index +0xC, model resref +0x128) | deps: gameaddr::ClientItemGetName, ClientGetItemById, AppGlobal, ExoDtor; offsets kCrRightItemOff, kCrLeftItemOff, kItemModelResOff, kItemBaseIdxOff at 145-148 are not in K2AddrTable | MEDIUM | home: provider-side candidate (preview-3d already exposes WeaponGob) or a shared engine helper; offsets belong in K2Addr.
+
+A24 party member picker | HolsterEditor.cpp member prev and next (PI_MEMBER_*), NEEDBUILD 2560-2566; HseParty.h memberCount, memberAt, memberName; HseView.h:145-153 memberLabel | deps: hse::wrapIndex | EASY | home: keep with HseParty.h (holster-side party iteration).
+
+A25 hit tests over item lists | HolsterEditor.cpp overItem 1763-1767, overAnyButton 1769-1775, sliderRowAt 1777-1790, hoverRowAt 1792-1802 | deps: guikit::hit (GuiKit.h:484), ctlOf 1313 | EASY | home: GuiKit helper for "any of these items hit".
+
+A26 input reset (drop all drags, re-read button levels) | HolsterEditor.cpp resetSnap 665-673, logGestureEnd 675-685, resetInput 687-703 | deps: Chord, Scrub, p3d::dragEnd, g_gk levels | MEDIUM | home: keep with A20; the pattern is generic.
+
+A27 SetText cache | HolsterEditor.cpp setItemText 1318-1326 (selText[70][64]), clearItemText 1328-1333 (sentinel \x01); HseView.h:923-935 TextCache (IR_COUNT x 48) | what: two caches doing one job | EASY | home: one ItemTextCache in a shared header; delete the duplicate.
+
+A28 text colour read and write | GuiKit.h:295 getTextColor, 302 setTextColor; HolsterEditor.cpp setItemColor 1365-1390 (defCol cache) | EASY | home: GuiKit already; keep.
+
+A29 wheel hook over the enlarged view | HolsterEditor.cpp applyLayout 1574 (setRect), cbLeave 2088 (clearRect), cbEnter 2045-2084 (wheelInstall, take, touch); GuiKit.h:581-629 WheelHook g_wheel | EASY | home: GuiKit already; keep.
+
+## B. Holster-specific (keep in holster_editor_src)
+
+B1 3D preview binding and page build | HolsterEditor.cpp cbBuild 514-630 (CreateView "HSE_VIEW", ViewControl, SetBeforeFree, SetWeapons), tickBody 2560-2660 (Bind, Rebuild, PlayAnim, SetView, WeaponGob), cbDestroy 2694-2735 (Destroy, FREEVIEW); HseViewGui.inc | HARD.
+
+B2 holster edit API | _shared_src/HolsterApi.h:49-66 (BeginEdit, EndEdit, SetScope, GetEdit, SetValues, CycleBone, NudgeWorld, NudgeLocal, RegisterPreview, Save, Revert, ResetScope); HolsterEditor.cpp enterEdit 2000-2029, exitEdit 2031-2043, refreshEdit 1296-1300, applyCalls 2144-2169, selectBone 2393-2412, Save 2495, ResetScope 2510 | HARD.
+
+B3 stance, bone and row tables | HolsterEditor.cpp kStanceList 82-95 (anim names), kCalibCand 152-160; HseView.h:815-858 InspRow and inspRowName, inspTip; 864-890 inspGet, inspSet, inspDiffers, inspMatches (rot and off arrays); 1092-1100 boneId and boneLabel (5 bones); 1168-1178 inspHint | HARD.
+
+B4 weapon gesture maths | HseView.h:599-604 SnapAcc, 609-614 weapon constants, 616-631 WeaponCall and WeaponStep, 639-644 moveDp, 662-748 weaponGesture, 749-764 wheelDepth | HARD.
+
+B5 scope, hand and member captions | HseView.h:156-164 scopeLabel, 802-812 handButtonText ("Right: X" or "R: X"), 1114-1127 scopeSegText, 1078-1081 leftMirrored (src bit 8, reserved) | HARD.
+
+B6 page item table | HseLayoutV3.h:29-58 (kV3 constants), 63-85 PageLayoutV3, 313-338 pageBoxesV3, 343-358 PageIdxV3 (PI_*), 369 kDescSplitPermille; HolsterEditor.cpp itemIsButton 410, itemIsResetIcon 426, itemIsLeftTip 441, itemInitText 448, itemTip 483 | HARD.
+
+B7 probes (log only, about 500 lines) | HolsterEditor.cpp PROJ 753-808, CAMENG 816-1047 (camEngProject 834, logCamEng 874), CAM2 1190-1295 (raw addresses 0xA309C0, 0xA309C8, 0xA309CE, 0xA32A54, 0xA32A30; not in K2AddrTable), CALIB 1156-1190, ITEMNAME 1049-1145 | HARD | move behind a probe header or remove before any PR.
+
+B8 holster ini keys | HolsterEditor.cpp readConfig 323-378: enabled, free_view, probe_names, log_verbose, probe_cam, probe_caption, caption_fix, text_k, status_fit, view_yaw, view_zoom, view_panz, margin_px | the key list only; parser is A12.
+
+## C. Dead or test-only (no production caller; a grep count of 1 = definition only)
+
+C1 EditKit.h: sliderToValue 16, valueToSlider 25, repeatTick 32-53, midClick 72, fmtValue 79, dragMode 59 (no caller in production; the inventory mod hit is a different symbol).
+C2 HseView.h: zoomIn 46, zoomOut 50, rawToNorm 271, leftStrip 98, half 137, stripSlot 130 (only a comment at 1053 mentions it), compactSlot 1054, inspRects 1066, idleStatusText 1083, CalibScript 299 and calibPrompt 326 (the editor's calibration uses kCalibCand instead).
+C3 HseLayout.h (whole file, legacy modal: modalLayout 31, legendText 89). HolsterEditor.cpp includes only HseLayoutV3.h.
+C4 SliderArt.h: sliderMarkLeft 61, sliderWedgeWidth 60 (applyLayout cuts the wedge itself), sliderClamp01 59 (used only by those two), sliderArtApply 50 (applyArt calls sliderArtFill per part), sliderArtTextures 26, sliderArtTextureCount 27, sliderArtResref 29.
+C5 ResetIcon.h: resetIconTextures 22, resetIconTextureCount 23, resetIconResref 24, arrowIconResref 28, flipIconResref 31 (no non-test callers).
+
+## D. Other observations
+
+D1 Stale version string on the page: HolsterEditor.cpp:381 statusText says "0.4.5 dev"; file header line 1 and KPatchInit log line 2746 say 0.4.8-dev. The status label shows the stale one.
+D2 GuiKit detail namespace used from the editor (HolsterEditor.cpp 1338-1357): promote the border-tint swap to a public GuiKit call.
+D3 Engine raw offsets outside K2AddrTable: HolsterEditor.cpp 145-148 (creature item ids 0x238/0x23C, item model 0x128, base index 0xC), 646-660 (gob +0x84, model +0x08), 1191-1194 (CAM2 addresses), 1598-1603 (CSWGuiText and renderer offsets). Move to K2Addr or mark probe-only.
+D4 Module-global g_artCtl (HolsterEditor.cpp:2299) exists only because resetIconApply takes plain function pointers (see A5).
+
+## E. Open questions
+
+E1 ConfigClient and MenuClient connect once in KPatchInit (HolsterEditor.cpp:2748) and are never polled. Does load order guarantee mod-config first, or should they get the poll retry the other clients have?
+E2 Should the caption-rect fix (A9) stay in each consumer, or move into mod-config's own SetRect path?
+E3 Should the roughly 500 lines of probes (B7) ship in a release build?
+E4 KpLog.h is included at line 50 but was not found under /home/ethansm/orca; its location is unverified.

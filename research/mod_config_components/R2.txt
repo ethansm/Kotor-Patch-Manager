@@ -1,0 +1,216 @@
+R2 RECON: mod-config provider map (k2.modconfig@1 / k2.menuui@1)
+Scope: read-only recon. No builds, no edits. Paths are relative to KOTOR-II/.
+Read: patch_manager_mods/_shared_src/ModConfigApi.h (all 284 lines), patch_manager_mods/mod_config_src/ModConfig.cpp (1-1374),
+MenuUiLogic.h, menu_ui_logic_test.cpp, common_contract_test.cpp. Consumer and helper checks: holster_editor_src/, enemy_effects_strip_src/,
+_shared_src/GuiButton.h, _shared_src/GuiKit.h, _shared_src/MenuLayout.h, patch_manager_mods/mod_config_src/kotor2-steam-aspyr.hooks.toml.
+Shorthand below: API = patch_manager_mods/_shared_src/ModConfigApi.h, MC = patch_manager_mods/mod_config_src/ModConfig.cpp, MUL = patch_manager_mods/mod_config_src/MenuUiLogic.h,
+MUT = patch_manager_mods/mod_config_src/menu_ui_logic_test.cpp, MCT = patch_manager_mods/mod_config_src/common_contract_test.cpp.
+
+==========================================================================================
+Q1. ABI today and how growth is pinned
+==========================================================================================
+K2ModConfigEntry (API:67-83), 10 pointer slots:
+  0 struct_size | 1 id (static) | 2 name (static, list button text) | 3 desc (static, list hover text) | 4 user
+  5 build(panel,user) | 6 enter(page,user) | 7 leave(page,user) | 8 tick(page,user) (may be 0) | 9 destroy(panel,user)
+  Register copies *e (MC:978-991, copy at MC:986). Refuses: null, struct_size < sizeof, empty id, all 8 slots used (MC:979-984).
+  Empty name -> id (MC:987). Null desc -> "" (MC:988).
+K2ModConfigApi (API:85-91): struct_size | Register (API:88) | Unregister (API:90). Impl MC:993-998, table MC:1000.
+K2MenuUiApi (API:95-121), 12 slots:
+  0 struct_size
+  1 NewPage(panel,title)->uint32 page id (API:98). MC:1017-1033. Build-only, panel must be bound. Returns 2+k; 0 = refused. Title copied to 64 chars (MC:1031).
+  2 AddButton(page,text,desc)->item (API:100). MC:1045-1066. Clones BTN_GAMEPLAY (MC:1054). Text 95 chars, desc 191 chars.
+  3 AddLabel(page,text) (API:102). MC:1068-1087. Clones LBL_TITLE label (MC:1077).
+  4 AddCustom(page,ctl,flags) (API:104). MC:1089-1099. Adopts ctl. No clone, no desc.
+  5 Clicked(page,item) (API:106). MC:1101-1106. Reads and clears the latch.
+  6 SetText(page,item,text) (API:108). MC:1108-1115.
+  7 SetRect(page,item,const K2MuiRect*) (API:110). MC:1117-1126.
+  8 SetDesc(page,text) (API:112). MC:1128-1131. Writes LB_DESC now. The page argument is ignored.
+  9 PaneRect(panel,which,out) (API:114). MC:1144-1154.
+  10 Control(page,item) (API:116). MC:1158-1162. Returns null once unlinked.
+  11 SetDescSplit(page,previewPermille) (API:117-120). MC:1133-1142. Documented as the LAST field.
+  Also: K2MuiRect 16 bytes (API:93); MUI_NOFREE=1 (API:49); MUI_PANE_COLUMN..PREVIEW = 0..6 (API:52-58).
+
+Pinning of struct growth:
+  - Provider table is positional and sized by sizeof: MC:1164-1165 ({sizeof(K2MenuUiApi), &muiNewPage, ... &muiSetDescSplit}).
+    A new slot must be appended to the struct AND to this initializer. If it is missing, the slot is silently zero (no compile error by default).
+  - Header hard asserts: offsetof per slot (API:159-170), sizeof == 12 pointers (API:171). A grown struct fails API:171 until edited by hand.
+    K2ModConfigApi = 3 slots (API:151). K2ModConfigEntry = 10 slots (API:146).
+  - Consumer gates: MenuClient::usable needs only up to Control (API:245-248). hasDescSplit = struct_size >= offsetof(SetDescSplit)+sizeof and non-null (API:251-254).
+    A new slot needs a new hasX in the same style (copy of API:251-254).
+  - MCT: stubs 20-32; positional tables 34-36; size pins 61-70 ("12 pointer slots" at MCT:67, "SetDescSplit at slot 11 (the last field)" at MCT:68);
+    too-small gate 114-135; grown table 137-143; null checks 146-159; SetDescSplit compat 161-189.
+  - Consumer pins that also break on growth:
+      holster_editor_src/common_contract_test.cpp:76-77 (positional table), :269 ("12 pointer slots").
+      enemy_effects_strip_src/common_contract_test.cpp:102-105 (tables), :233 and :277 (sizeof == 12 * sizeof(void*)).
+      enemy_effects_strip_src/enemy_strip_draw_test.cpp:935 (positional tMui); :954 uses offsetof(SetDescSplit) as the old size, which stays valid if the new slot is appended.
+Cost of one append-only K2MenuUiApi slot (files to touch):
+  1. API: new member after line 120; offsetof assert after :170; sizeof assert :171 becomes 13 pointers; hasX helper near :251-254; doc comments :12, :14-24, :117-119 ("last field").
+  2. MC: implementation after :1142; new entry in g_muiApi at :1164-1165 in the same order.
+  3. MCT: stub (:20-32), table (:35-36), pins (:67-68), new hasX check in the style of :161-189.
+  4. Consumer pins: holster_editor_src/common_contract_test.cpp (:76-77, :269); enemy_effects_strip_src/common_contract_test.cpp (:102-105, :233, :277); enemy_effects_strip_src/enemy_strip_draw_test.cpp (:935).
+  5. Only if pure logic is added: MUL and MUT (main at MUT:505-535).
+  6. Version strings MC:1 and MC:1362 (0.1.3-dev). Manifest and RFC draft (patch_manager_mods/new_issue_drafts/issue_rfc_mod_configuration_menu.md) were NOT read.
+K2ModConfigEntry and K2ModConfigApi grow the same way. ConfigClient::usable is API:197-199.
+
+==========================================================================================
+Q2. Item model
+==========================================================================================
+Two parallel tables per page:
+  - g_mc.pt: mui::PageTable of mui::Item {kind, ctl, flags, rect, visibleInPage} (MUL:272-278, :285-305). Filled at MC:1039.
+  - g_mc.items[k][i]: ItemX (MC:107-119). Fields: ctl, isButton, nofree, listed, unlinked, latched, hasRect, hasText, Target tg {ctl, Rect r, applied, gaveUp},
+    text[96], desc[192]. About 330 bytes each (estimate).
+  - addItemCommon (MC:1035-1043) writes both. pt rect is always zero (r0 at MC:1038). pt ctl duplicates items ctl (MC:1039 vs MC:1041).
+    unlinkOwn updates only items (MC:971-973), so pt and items can diverge.
+  - McState (MC:121-156) holds items[8][80] plus root, back, title and list[8]. Roughly 210 KB, reset by placement-new (MC:161, MC:1192, MC:1355).
+Caps:
+  - kMaxEntries = 8 (MUL:37). Registry full: Register returns 0 (API:87, MC:981-984).
+  - kMaxItems = 80 per page (MUL:37). Enforced in AddButton (MC:1050) and AddLabel (MC:1073). NOT checked in AddCustom (MC:1089-1099);
+    addItem returns -1 silently when full (MUL:310).
+  - kMaxPages = 10 (MUL:37). kMaxOwn = 651 (MC:75). kMaxTargets = 32 (MC:67). kMaxVanilla = 64 (MC:66).
+  - The 80-item cap is not in the header. Consumers infer it from version (holster_editor_src/HolsterEditor.cpp:10, :548).
+Creation (which vanilla control is cloned):
+  - root = clone BTN_GAMEPLAY (MC:1202). List rows = BTN_GAMEPLAY each (MC:1210). Back = BTN_EXIT (MC:1214). Title = LBL_TITLE label (MC:1215; kLabelTemplate at MC:71).
+  - Entry AddButton = BTN_GAMEPLAY (MC:1054). Entry AddLabel = LBL_TITLE label (MC:1077).
+  - cloneEntry falls back to a label if the button clone fails or button_clone=0 (MC:201-224).
+  - Clones are created hidden and click-through, not in the panel list (_shared_src/GuiButton.h:54-58, :88-95; _shared_src/GuiKit.h:173-175, :203).
+  - If the root clone fails, entries are not built (MC:1216-1219).
+AddCustom adoption:
+  - Stores the raw pointer and the nofree flag (MC:1096-1097). Appended in firstTick via appendItem (MC:584-599).
+  - MUI_NOFREE that is already listed (id equals list index) is not appended twice (MC:587-594). Otherwise guikit::appendToPanel.
+  - If the append fails and the item is not nofree, the provider drops its pointer (MC:598), which leaks the control.
+  - CUSTOM items have no desc. descFor returns null for them (MC:846-856). Descs come only from AddButton (MC:1058).
+Who frees, and MUI_NOFREE:
+  - McDestroy order (MC:1327-1356): leave callback (MC:1335), restoreDescRect (MC:1336), unlinkOwn (MC:1338), entry destroy() (MC:1340-1341),
+    then provider-owned frees (MC:1344-1352).
+  - unlinkOwn (MC:932-975): drops engine refs (MC:941), truncates the list only if canTruncate passes (MC:960), then marks items unlinked (MC:971-973).
+  - Frees: only items that are not nofree, and only if clean && freeLabels && unlinked (MC:1347). freeCtl calls vt[0] only for label or button vtables (MC:912-917).
+  - MUI_NOFREE: listed and shown/hidden with its page, never freed by the provider (MC:1346). Control() goes null after unlink (MC:1158-1162).
+    The consumer frees it after destroy() sees Control()==null. If the unlink is refused (clean=false), no frees happen and pointers stay (MC:1338, :1347).
+  - ini free_labels=0 disables provider frees (MC:258, :1347).
+
+==========================================================================================
+Q3. Tick path, kTickGapMs watchdog, the 0x40 guard, fragile spots
+==========================================================================================
+McTick = CSWGuiPanel::Draw 0x40EC90 (MC:1233-1234; hooks toml). Per draw, in order:
+  MC:1235  [ECX] == Options vtable, else return. Raw deref, not saferead.
+  MC:1240  panel bound check.
+  MC:1246-1247  clear every entry-item latch.
+  MC:1248-1250  gap = GetTickCount delta vs lastTick (0 on first draw; lastTick reset in resetState, MC:161, MC:1192).
+  MC:1251-1252  flags48 at ctlFlagsOff.
+  MC:1260-1262  Esc key edge: any non-MAIN page -> resetPages("esc key").
+  MC:1263       WATCHDOG: gap > kTickGapMs -> resetPages("tick gap"). kTickGapMs = 500 (MC:69).
+  MC:1266-1269  0x40 GUARD: appended && !(flags48 & 0x40) -> if not MAIN, resetPages("panel hidden"); return.
+  MC:1270       firstTick() once (MC:602-688).
+  MC:1271       applyTargets(e,false): drift re-apply of fixed targets (root, list, Back, title, moved rows).
+  MC:1272       syncDescSplit("tick").
+  MC:1273-1277  drift re-apply of entry-item rects while ENTRY is shown.
+  MC:1280-1286  cursorEngine, lmbDown, hitItem, overBack, hoverStep (hover enter -> writeDesc, MC:870-873).
+  MC:1293-1294  ClickTracker (release edge) for main and back.
+  MC:1300-1314  dispatch: MAIN item 0 -> LIST; LIST -> entryClicked (push ENTRY); ENTRY -> latch for Clicked (MC:1307-1308); Back on ENTRY -> back(); Back on LIST arms leaveAt = now+100 ms (MC:1313).
+  MC:1316-1319  leaveAt fires once LMB is up.
+  MC:1320-1323  ENTRY: g_ent[k].tick(2+k,user), called last.
+
+What resetPages does (MC:811-814 -> MUL:192-204 -> applyEvent MC:734-798):
+  - LEAVE ENTRY: calls leave(), then syncDescSplit("leave"), then hides items.
+  - ENTER MAIN: restoreVanilla, or defers it via restorePending while LMB is down (MC:745).
+  - pageChange also clears hover, click trackers and leaveAt (MC:800-809).
+  - NOT reset by the watchdog: restorePending, prevDown, prevEsc, lastFlags48.
+
+The 0x40 guard exists already (MC:1264-1269). Its comment (MC:1264-1265) says 0x40 is the shown bit, from live logs 10-17, and bit 0x2 is clear in both states.
+  It needs, to be authoritative:
+  (a) to run BEFORE the watchdog at MC:1263 (or the watchdog must be skipped when 0x40 is set). Today a visible panel with a >500 ms gap is reset to MAIN.
+  (b) to keep the appended==false exemption (MC:1266 comment), so the first draw always reaches firstTick.
+  (c) a host test or probe. The bit is evidenced only by a log comment. HIDDENDRAW (MC:1254-1256) logs flags48 changes, capped at 32.
+  Hidden draws already return before applyTargets, so no SetRect re-apply runs while hidden.
+
+Other fragile spots:
+  - kMaxReapply = 8 (MC:68) never resets for fixed targets: applyOne (MC:283-291), addTarget (MC:300-315). Entry items reset on enter (MC:781-785) and on SetRect (MC:1121).
+  - Clicked() latch is set only on ENTRY pages (MC:1307-1308) and cleared at the start of each tick (MC:1246-1247). Consumers must read it inside tick() (MC:1322) or in the same tick.
+  - Hover desc is not cleared on leave (MC:870-873 writes only on enter; MC:875 writes the list blurb only on LIST).
+  - describe() calls vanilla 8A2320 on every hover enter (MC:396-420, MC:872). That rewrites the LB_DESC rect, and syncDescSplit repairs it (MC:435).
+  - muiSetDesc ignores the page (MC:1128-1131) and writes into whatever page is shown.
+  - Silent truncation: text 95 chars (MC:570-575 via MC:1056, :1079, :1112); desc 191 chars (MC:1058); page title 63 chars (MC:1031).
+  - McTick raw vtable deref (MC:1235). fopen("mod_config.ini") is relative to CWD (MC:236).
+
+==========================================================================================
+Q4. Layout: default placement, SetRect, PaneRect, SetDescSplit, paging
+==========================================================================================
+MAIN: root "Mod Configuration" goes after GAMEPLAY via menulayout::columnReflow (MC:628-634).
+  kInsertAfter = 2. kColumnIdx (MC:64) = SAVEGAME LOADGAME GAMEPLAY FEEDBACK AUTOPAUSE GRAPHICS SOUND QUIT.
+  Five rows at positions 3-7 move down one pitch (kMovedN, MC:65). The new root takes col[3].
+  Fallbacks: pitch below QUIT (MC:635-641); QUIT-based 36/32 pitch when the column is unreadable (MC:642-651).
+  columnReflow rejects unless the pitch is uniform within +-2 px, and then writes nothing (_shared_src/MenuLayout.h:29-50).
+LIST: up to 8 list buttons on the 8 column rects, top to bottom (MC:654-655). Back on the BTN_EXIT rect (MC:656). Title on the LBL_TITLE rect (MC:657).
+  The list is capped at 8 by the registry, and it does not scroll.
+ENTRY: no default layout. Items are placed by SetRect (MC:1117-1126, stored in Target). Applied in firstTick (MC:660-668), on enter (MC:779-788),
+  and each tick while shown (MC:1273-1277).
+  Items without SetRect keep the clone's template rect. This is INFERRED from initControl on the template tag (_shared_src/GuiButton.h:59-95,
+  _shared_src/GuiKit.h:182-195). It is not seen in game. See OPEN.
+Description pane:
+  - LB_DESC rect is cached at McBind (MC:1199; descOriginal MC:328-337).
+  - Split: syncDescSplit (MC:359-382) uses mui::splitDesc (MUL:342-378). The desc keeps the bottom (1000-permille)/1000 of the original rect, with a 6 px gap scaled to a 336 px reference.
+  - restoreDescRect (MC:346-355) puts the original back when the page is left.
+PaneRect (MC:488-538):
+  - COLUMN = bounding box of the 8 column rects (MC:491-502).
+  - DESC = LIVE LB_DESC rect (MC:503). While a split is on, this is the SHRUNK rect.
+  - PREVIEW = top part of the ORIGINAL rect (MC:504-513).
+  - TITLE and BACK = vanilla rects (MC:514-515).
+  - VIEW = paneViewRect(original desc): 216x336 reference width, 12-unit gap, left of the desc (MC:445-455, MC:521-523).
+  - STATUS = menulayout::statusStrip below the view, floor from slider bars 8-12 (paneStatusFloor MC:459-469; MC:524-533).
+  - paneViewRect and paneStatusFloor are not host-tested. No test file references them.
+Paging or scrolling beyond 8 rows:
+  - No provider-side scroll or page. K2MenuUiApi has no SetVisible.
+  - PageTable::setVisible (MUL:325-329) and hitTest (MUL:331-340) exist and are host-tested (MUT:353-403). The provider never calls them. Hit tests use guikit::hit (_shared_src/GuiKit.h:484-486) via overCtl (MC:564). Show/hide uses setShown (MC:560-562).
+  - Paging today needs either SetRect off-screen (0 new slots, consumer-only) or one new slot wired to PageTable::setVisible.
+
+==========================================================================================
+Q5. Pure logic with host tests vs engine-touching
+==========================================================================================
+Pure and host-tested (MUL, MUT main at MUT:505-530):
+  - Registry: MUL:42-121, tests MUT:25-108.
+  - PageStack: MUL:126-204, tests MUT:127-247.
+  - HoverTracker: MUL:222-236, tests MUT:248-277.
+  - ClickTracker: MUL:239-260, tests MUT:278-330.
+  - PageTable add/item/setVisible/hitTest: MUL:262-340, tests MUT:331-403. setVisible and hitTest are unused by the provider.
+  - Split math clampSplit and splitDesc: MUL:342-378, tests MUT:431-484.
+  - canTruncate: MUL:380-390, tests MUT:404-426.
+  - menulayout columnReflow, slotBelow, statusStrip: _shared_src/MenuLayout.h, test _shared_src/menu_layout_test.cpp.
+  - Consumer helpers ConfigClient and MenuClient: API:180-279, tests MCT:77-189.
+Pure but not in MUL and not host-tested: paneViewRect (MC:445-455), paneStatusFloor (MC:459-469).
+Engine-touching (not host-testable): everything else in MC. That includes listCtl and ctlId (MC:177-190), cloneEntry (MC:201-224), describe (MC:396-420),
+  syncDescSplit (MC:359-382), appendItem (MC:584-599), firstTick (MC:602-688), restoreVanilla (MC:709-727), applyEvent (MC:734-798),
+  hitItem (MC:818-834), unlinkOwn (MC:932-975), freeCtl (MC:912-917), McBind/McTick/McDestroy (MC:1170-1356), KPatchInit (MC:1360-1371).
+
+==========================================================================================
+Q6. Candidate provider-side components, ABI-safe (all new slots appended after SetDescSplit)
+==========================================================================================
+  1. Stepper row ("<" value ">"): 0 new slots. Already done by the consumer in enemy_effects_strip_src/EnemyStrip.cpp:1180-1184 (AddButton/AddLabel/AddButton).
+  2. Toggle row: 0 new slots. AddButton text plus Clicked (MC:1101-1106) plus SetText (MC:1108-1115).
+  3. Slider row: 2 new slots. SetItemDesc(page,item,text), because CUSTOM has no desc (MC:846-856). Held(page,item), because ClickTracker is release-edge only (MUL:239-260; MC:1293).
+     Drawing and capture stay consumer-owned via AddCustom MUI_NOFREE (MC:1089-1099).
+  4. Paged column: 1 new slot SetVisible(page,item,int), wiring the existing PageTable::setVisible (MUL:325-329) and hitItem/setShown (MC:818-834, MC:560-562) to visibleInPage.
+     Or 0 new slots, using SetRect off-screen.
+  5. Item cap query: 1 new slot ItemCap() returning kMaxItems (80). This ends version guessing at holster_editor_src/HolsterEditor.cpp:548.
+  6. Ini service: 0 slots in K2MenuUiApi. Use a separate interface k2.modconfig.ini@1 provided the same way as KPatchInit (MC:1364-1366).
+     readConfig (MC:235-261) is provider-only and uses a CWD-relative path.
+  7. Safe text: SetText returns void (API:108). A safe variant needs 1 new slot that returns 0 on truncation (copyStr MC:570-575 is silent today).
+     A text-style slot needs an engine style call that is not in this file. SetText uses guibutton::setButtonText / guikit::setText (MC:226-231). OPEN.
+
+==========================================================================================
+OPEN (not settled by source reading)
+==========================================================================================
+  1. Clone rect when SetRect is not called: template rect (BTN_GAMEPLAY / LBL_TITLE). Inferred from GuiButton.h:59-95 and GuiKit.h:182-195. Not seen in game.
+  2. 0x40 as the shown bit: evidence is a log comment only (MC:1264-1265). No host test.
+  3. 80-item page cap is not in the ABI or header docs (API has no query). Consumers infer it from version (HolsterEditor.cpp:10, :548).
+  4. MUI_PANE_DESC returns the live (shrunk) rect during a split (MC:503), while VIEW and STATUS use the original (MC:519-520). The header does not say which (API:113).
+  5. kMaxReapply never resets for fixed targets (MC:283-291, MC:300-315). Confirm this is intended.
+  6. Hover desc is not cleared on leave (MC:870-875).
+  7. Whether a draw gap >500 ms can happen while the panel is shown (loading, autosave). The code has no evidence either way.
+
+==========================================================================================
+VERDICT
+==========================================================================================
+  - Attach stepper and toggle rows as consumer compositions now. Zero ABI change.
+  - Slider needs 2 append-only slots (SetItemDesc, Held). Paged column needs 1 (SetVisible). Item cap query is 1 more slot. Ini service is a new interface, not a slot.
+  - Do NOT build slider or paging until the 0x40 guard runs before the 500 ms watchdog (MC:1263 vs MC:1266). Otherwise a visible page can be reset by a hitch.
+  - Any new slot: follow the Q1 file list (API, MC, MCT, holster and enemy pins). Missing a positional initializer zero-fills silently.

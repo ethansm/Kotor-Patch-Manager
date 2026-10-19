@@ -1,0 +1,95 @@
+R3 - settings-UI patterns across mods (recon, read-only, 2026-10-18)
+Scope: patch_manager_mods/ sources. No builds, no edits. Input: 45_mod_config_onboarding_audit.md sec 3-4.
+Sources: enemy_effects_strip_src/{EnemyStrip.cpp,EnemyStripLogic.h}; action_hotbar_src/HotbarConfig.h; combat_hotbar_src/CombatHotbar.cpp; inventory_sort_filter_src/{InventorySortFilter.cpp,SortLogic.h}; inventory_3d_viewport_src/{Inventory3DViewport.cpp,Inv3dLogic.h}; equipment_3d_character_src/{EquipCharPreview.cpp,Equip3dLogic.h}; queue_hud_src/{QueueHud.cpp,QueueHudLogic.h,queue_hud.ini}; level_up_override_src/{LevelUpUi.h,OptionsLogic.h}; holster_editor_src/HolsterEditor.cpp; holster_src/{HolsterIniWrite.h,Holster.cpp}; _shared_src/{ModConfigApi.h,Preview3dApi.h,IniKit.h,FileWatch.h}.
+
+## A. Row-type census (7 planned entries, 21 rows)
+
+Types: TOGGLE = 2 values (button flips). ENUM = 3+ named or preset values (button cycles). STEPPER = one numeric key, uniform step or a sentinel, shown as label + "<" ">". SLIDER = wide numeric range wanting fine control. OTHER = multi-key pair, hotkey, or text.
+Tag = KEEP/WEAK from audit sec 3. Preview: STRONG = effect only visible on a 3D model; HELPFUL = effect only visible in a HUD strip or target menu; N = none needed.
+
+| # | Entry | Row (audit label) | Key(s) | Type | Tag | Preview |
+|---|---|---|---|---|---|---|
+| 1 | Holstered Weapons | Bone (5 bones) | holster editor page | ENUM (5) | KEEP | N (editor owns its 3D view) |
+| 2 | Holstered Weapons | 3D rot/off | holster editor page | TOGGLE | KEEP | N |
+| 3 | Action Hotbar | Heal item threshold | [General] HealThreshold (1..100) | SLIDER (presets 25..80) | KEEP | N |
+| 4 | Action Hotbar | Auto-fill Off/On | [General] AutoFill | TOGGLE | KEEP | N |
+| 5 | Action Hotbar | Heal fallback Self/Nobody | [General] HealFallback self/none | TOGGLE | WEAK | N |
+| 6 | Combat Hotbar | Button size Auto/24..48 | [Buttons] BtnPx (0=auto, 8..256) | STEPPER (sentinel Auto) | KEEP | HELPFUL |
+| 7 | Combat Hotbar | Columns 2/3/4/6 | [Buttons] ColsTotal (1..12) | ENUM (4 presets) | KEEP | HELPFUL |
+| 8 | Combat Hotbar | Invoke hotkeys On/Off | [Invoke] Enabled | TOGGLE | KEEP | N |
+| 9 | Combat Hotbar | Custom buttons On/Off | [Buttons] Enabled | TOGGLE | KEEP | N |
+| 10 | Inventory Sort | Backpack sort | [Inventory] sort | TOGGLE | KEEP | N |
+| 11 | Inventory Sort | Tint unusable | [Inventory] tint | TOGGLE | KEEP | N |
+| 12 | Inventory Sort | Filter cycle Off + 7 subsets | [Inventory] cycle + cycle_states (string) | ENUM (8 presets) | WEAK | N |
+| 13 | Inventory 3D | Auto-spin Off/Slow/Normal/Fast | spin_deg_s (float) | ENUM (4 presets) | KEEP | STRONG |
+| 14 | Inventory 3D | Weapons and armour only | only_weapons_armor | TOGGLE | KEEP | STRONG |
+| 15 | Inventory 3D | Drag speed | drag_deg_per_px (float) | SLIDER | WEAK | STRONG |
+| 16 | Equipment 3D | Idle gestures Off/On | flourish (also needs session Animate) | TOGGLE | KEEP | STRONG |
+| 17 | Equipment 3D | Helmet on preview Off/On | helmet | TOGGLE | KEEP | STRONG |
+| 18 | Equipment 3D | Gesture rate | flourish_min_s + flourish_max_s (pair) | OTHER (2-key pair) | WEAK | STRONG |
+| 19 | Queue HUD | Companion strips On/Off | companions (past the 4095-byte read cut) | TOGGLE | KEEP | HELPFUL |
+| 20 | Queue HUD | Icon style Kit/Flat | kit | TOGGLE | KEEP | HELPFUL |
+| 21 | Queue HUD | Cancel bars | cancel | TOGGLE | WEAK | HELPFUL |
+
+Totals (21): TOGGLE 13 (rows 2,4,5,8,9,10,11,14,16,17,19,20,21); ENUM 4 (1,7,12,13); STEPPER 1 (6); SLIDER 2 (3,15); OTHER 1 (18); hotkey or text 0 (combat Key0-2 and cycle_states are not menu rows).
+Tags: KEEP 16 (incl. the 2 holster rows), WEAK 5 (5,12,15,18,21). Audit sec 3 said "about 17"; 16 KEEP + 5 WEAK matches it.
+Preview: STRONG 6 (13-18), HELPFUL 5 (6,7,19,20,21), N 10.
+Implication: a toggle (button), a cycle (ENUM) and a +/- stepper cover 19 of 21 rows. SLIDER rows need a numeric control, and the pair row needs a two-key spec. v1 has no slider (ModConfigApi.h header: "Sliders and toggles are not in v1"); holster editor draws its own 6 slider rows (HolsterEditor.cpp header line 23, SliderArt.h).
+
+## B. Strip consumer shape (EnemyStrip.cpp page code 959-1309)
+
+| Responsibility | Lines | Row spec could absorb? |
+|---|---|---|
+| Lazy connect: poll ConfigClient + MenuClient, Register once, retry from HUD frame | tryRegisterPage 1257-1280; retry call 1283; KPatchInit 1300-1306; g_mcRegistered 968 | YES: one shared helper (holster_editor also registers, HolsterEditor.cpp:2764) |
+| Build rows: AddButton (toggle) or AddLabel + 2x AddButton (number) | cbBuild 1168-1194 (loop 1176-1188) | YES: from spec type |
+| Layout in enter: column math slotH/pitch/bw/lw, SetRect per item | cbEnter 1196-1228 (math 1201-1224) | YES: spec-independent, provider can own it |
+| Click polling in tick: Clicked() per item each tick -> dir | cbTick 1231-1247 (1235-1245) | YES: dispatch to spec step |
+| Value step: stepSetting by type; alpha 0.05 grid; IconSize 0->16->18 | stepAlpha EnemyStripLogic.h 336-343; stepIconSize 345-349; stepSetting 352-367; call 1146-1149 | PARTLY: uniform min/max/step absorbs Gap, Spacing, MaxIcons; IconSize and alpha need a custom step fn |
+| Clamp: sanitize per-field ranges + tier ordering | sanitize 271-290; clampInt 241; clampFloat 244; storeCfg 116-131 | PARTLY: ranges absorb; tier ordering is cross-field, stays consumer |
+| INI write: formatIniValue + WritePrivateProfileStringA("Strip", key) | 1151-1152; settingKey 297-309; formatIniValue 370-376; IniPath 102 | YES: provider ini service (section, key, type format) |
+| Row text "Key: value", Auto / On/Off | rowText 1131-1134; refreshRow 1136-1141; formatRowText 379-388 | YES: label format from spec |
+| Restart marking: MaxIcons always; Enabled only if skipped at build | rowNeedsRestart 1127-1129; suffix 387; log 1161-1163 | PARTLY: static flag absorbs MaxIcons; Enabled needs a dynamic predicate (g_skippedDisabled) |
+| Live apply: storeCfg, keep builtMax, g_lastRefresh=0, MaxIcons -> g_pendMax only | applySetting 1153-1160; refreshPreview 1165 | NO: consumer (effect re-read, pool rebuild) |
+| Preview: 12 owned MUI_NOFREE labels, previewLayout, SetDescSplit 750 | Preview struct 994-1005; pvResync 1010-1015; refreshPreview 1017-1060; buildPreview 1064-1093 (AddCustom 1078, SetDescSplit 1090) | NO: consumer draw; provider supplies PREVIEW pane + AddCustom |
+| Destroy: free owned preview labels after unlink; reset | destroyPreview 1097-1109; cbDestroy 1249-1253 | PARTLY: unlink is provider, free of owned labels is consumer |
+| Descriptions: page desc switches on preview; per-row desc | kPageDesc* 1111-1114; kRowDesc 1116-1125; SetDesc 1226 | YES: per-row desc field |
+
+Approximate split: about 140 lines generic (1116-1141, 1168-1194, 1196-1228, 1231-1247, 1249-1253, 1257-1288) and about 150 lines consumer-only (preview 985-1109, applySetting 1143-1166). Other precedent: level_up_override OptionsLogic.h cycle(row, dir) steps distinct preset values and hides rows with fewer than 2 values (the only in-repo ENUM cycle; its options page is save-bound, LevelUpUi.h:37-40 button labels).
+
+## C. Which mods need a live preview in the right pane
+
+- Enemy Effects Strip: has one (0.4.1). Uses SetDescSplit + PaneRect(MUI_PANE_PREVIEW) + AddCustom(MUI_NOFREE). Provider already supplies all three (ModConfigApi.h: MUI_PANE_PREVIEW=6, split clamped 600..850).
+- Holster Editor: largest consumer. 3D view as AddCustom in MUI_PANE_VIEW (HolsterEditor.cpp:598), SetDescSplit 850 (:591), preview_3d client (g_p3, :2675). Complexity ceiling for the shared layer (70 widgets, 6 sliders, 5 bones).
+- Inventory 3D (rows 13-15) and Equipment 3D (rows 16-18): STRONG. Effects show only on a 3D model. Neither uses the preview_3d provider today (they draw in their own panel code, Inventory3DViewport.cpp and EquipCharPreview.cpp). Row 17 is labelled "on preview". Preview_3d API (Preview3dApi.h): CreateView, Bind, SetView, PlayAnim, ViewControl.
+- Combat Hotbar (rows 6-7) and Queue HUD (rows 19-21): HELPFUL. Button grid / strip mock only.
+- Action Hotbar and Inventory Sort: no preview needed.
+Shared layer must leave PANE_PREVIEW (or a VIEW pane with AddCustom) in the layout; a 3D preview needs ViewControl placed there.
+
+## D. INI read, clamp and write per mod
+
+Two dialects: [Section] files (enemy, action, combat, sort) and flat-key files (inv3d, equip3d, queue_hud, holster). IniKit.h says it has no [sections].
+
+| Mod (file) | Read | Clamp / validate | Write | Reload |
+|---|---|---|---|---|
+| Enemy strip (enemy_strip.ini [Strip]) | GetPrivateProfileIntA/StringA per key, EnemyStrip.cpp:105-113, 153-172 | esl::sanitize EnemyStripLogic.h:271-290, clamp-to-bound; host-tested | WritePrivateProfileStringA per key, :1152 | read at load; page writes apply live (MaxIcons restart) |
+| Action hotbar (action_hotbar.ini) | own parser Config::Parse HotbarConfig.h:331-~410; keeps unknown sections and lines | warn-and-keep-default, no clamp: HealThreshold 1..100 (:379), SyncActionBar 0|1, HealFallback self|none; AutoFill accepts any int (:371-376) | full rewrite Serialize + filewatch::atomicWrite (:450); .bak files (:258) | ~1 s poll (audit) |
+| Combat hotbar (combat_hotbar.ini [Invoke] [Arrows] [Buttons] [Profile]) | GetPrivateProfile*A per key, CombatHotbar.cpp:127-152; [Profile] Pin/Hide/Sort :169 | local clampInt CombatHotbar.cpp:125 (clamp-to-bound: Cols 1..4, MaxRows 1..8, BtnPx 0 or 8..256, Pad 0..32, ColsTotal 1..12) | none in-tree | ReloadPoll g_iniPoll |
+| Inventory sort (inventory_sort_filter.ini [Inventory]) | GetPrivateProfileIntA per key, InventorySortFilter.cpp:119-130; cycle_states via parseCycleStates SortLogic.h:118 | none; missing key reads 0 (OFF), :124-126, shipped ini is 1 | none in-tree | loadIni(false) on refresh |
+| Inventory 3D (inv3d.ini, flat, not shipped) | fopen + fgets 255 chars + IniKit splitIniLine + parseIniLine Inv3dLogic.h:78 | clampCfg Inv3dLogic.h:124-137: RESET-to-default for margin, wheel_step, fov, screen, fill_min; CLAMP for zoom, dist, fill_ref, pitch | none in-tree | mtime stamp, maybeReloadIni Inventory3DViewport.cpp:151-159 |
+| Equipment 3D (equip3d.ini, flat, not shipped) | fopen + fgets 599 chars + IniKit + parseIniLine Equip3dLogic.h:87 | clampCfg Equip3dLogic.h:131: RESET-to-default for fov, wheel_step | none in-tree | mtime stamp, maybeReloadIni EquipCharPreview.cpp:168-176 |
+| Queue HUD (queue_hud.ini, flat, 5011 bytes) | fopen + fread 4095 bytes QueueHud.cpp:119-127, then qh::parseIni QueueHudLogic.h:553 | clamp01 :425; head pct 100..200 :464; border_px 1..6 (doc rule, comment 494-495) | none | load only (QueueHud.cpp:2114) |
+| Holster (holster.ini, flat) | own | n/a | HolsterIniWrite.h setKeys/removeKeys (in-place key replace, keeps other lines, host-tested) built into text, written by atomicWrite Holster.cpp:1495 | n/a |
+
+Shared pieces that exist: _shared_src/IniKit.h (trim, splitIniLine, forEachLine, enabledFlag; used by inv3d, equip3d); _shared_src/FileWatch.h (ReloadPoll, changed, atomicWrite; used by action hotbar, holster, companion_selfheal, combat hotbar). Not shared: clamp helpers (clampInt copied at EnemyStripLogic.h:241 and CombatHotbar.cpp:125; clamp01 at QueueHudLogic.h:425).
+Three clamp policies in tree: clamp-to-bound (enemy, combat, queue), reset-to-default (inv3d, equip3d), warn-and-keep (action hotbar). A shared helper needs a per-spec policy.
+Three writers in tree: per-key WritePrivateProfileStringA (enemy only), per-key text rewrite (HolsterIniWrite.h, host-tested, flat keys), full-file atomicWrite (action hotbar, holster, companion_selfheal).
+
+## Findings to act on (5 max)
+
+1. queue_hud.ini is 5011 bytes (audit sec 6 says 4718, stale). Reader fread stops at 4095. companions (byte 4289), strip_icon_px (4455), strip_side (4776), strip_max (4829) are past the cut. All four are commented defaults, so shipped behaviour is unchanged, but a menu write to companions is invisible until the reader is fixed (QueueHud.cpp:122-123).
+2. Rows need three control types the enemy page lacks: ENUM cycle (4 rows), SLIDER (2), pair (1, row 18: flourish_min_s + flourish_max_s, one row for two keys).
+3. Inventory sort: missing keys read OFF (InventorySortFilter.cpp:124-126) while the shipped ini sets sort, tint and cycle ON. A menu Reset must write explicit values (matches audit bug 4).
+4. Three clamp policies and four duplicated clamp helpers. Any shared clamp must carry a per-row policy, or the inv3d/equip3d reset-to-default rule will silently change for other rows.
+5. Enemy strip's tier-ordering rule (sanitize 287-288) and the holster slider rows show that cross-field rules and custom sliders stay in consumer code or in a slider type; the shared spec should not try to express them.
+
+Not verified: live game-dir ini copies; whether WritePrivateProfileStringA keeps comments on this Windows build; inv3d and equip3d key-to-menu mapping was checked by key name only, not by in-game effect.

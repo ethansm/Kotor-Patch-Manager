@@ -1,0 +1,189 @@
+R4 RECON: engine GUI traps and native-control facts for the shared mod-config components
+Contract: recon. Write Scope: research/mod_config_components/R4.txt only. Read-only elsewhere. No builds, no edits, no credential files read.
+Repo root: /home/ethansm/orca/workspaces/local-setup/KOTOR-II
+Address key: "steam" = Steam Aspyr swkotor2.exe (the only exe the consumers target). "[verified]" = steam-db batch verified in repo. "[name_map]" = DB name only. "[high|medium]" = DB confidence. "[GUESS]" / "[NOT DECODED]" = not confirmed.
+
+======================================================================
+PART 1. TRAP TABLE
+======================================================================
+
+Format: trap | symptom | cause (engine addr) | current workaround (file:line) | where a shared component should absorb it
+
+T1 caption rect inset by SetExtent
+- symptom: at compact (34 px) row heights the caption text vanishes or lands on the border seam. Holster page, 3840x1600.
+- cause: CSWGuiButton::SetExtent 0x419ED0 [name_map high] sets btn rect, calls border and hilight vt[1], then Intersect(inner extent of border, inner extent of hilight) and calls the caption (btn+0x160) vt[1]. Model: caption = (c, c, W-2c, H-2c), c = corner width; zero height when H-2c < c/2 (F3_R1 sec 3, static model, not live-checked). GetInnerExtent 0x414D80 [verified B0]. CSWGuiBorder::Draw 0x415300 [verified B0].
+- workaround: HolsterEditor.cpp:1594-1600 (comment), hse::captionRect at HseView.h:107, applyCaptions HolsterEditor.cpp:1632-1664, called after each rect set at HolsterEditor.cpp:1567. ini caption_fix default 1 at HolsterEditor.cpp:105. Fix = caption rect = engine x/w + button y/h, set through caption vt[1] via guikit::setRect (GuiKit.h:241).
+- absorb: provider AddButton/applyOne. ModConfig re-applies only the control RECT (applyOne ModConfig.cpp:277-297, per B_icon_fill sec 3), so a caption reset by SetExtent is never re-fixed centrally. Add guikit::setButtonCaptionRect(btn, x,y,w,h) gated on ButtonVtable (GuiButton.h:22) and TextVtable at btn+Button_Text (GuiButton.h:24). Run it inside the provider after every button SetRect.
+
+T2 glyph-only captions blank
+- symptom: captions "<", ">", "<>" draw nothing on this GUI (RFC issue_rfc_mod_configuration_menu.md:119).
+- cause: NOT DECODED. Only candidate: centre-aligned single line dropped when box height < line height (F2_H1 sec 3; CAurGUIStringInternal::Draw_2 0x47B500 [name_map medium]; Relayout 0x417800). No test shows glyph-only text takes that path.
+- workaround: icon art instead of text. Member arrows HolsterEditor.cpp:436-438 (comment says "<" ">" render as nothing). Reset icon art: B_icon_fill.txt sec 1-4. Clear text with guibutton::setButtonText(btn,"") at GuiButton.h:102-112.
+- absorb: widget header. AddButton should take an icon (fill image) plus an empty caption as one call. No GuiKit gate exists for glyph-only text.
+
+T3 SetFont null glyph data crash
+- symptom: "Unhandled page fault on read access to 00000024 at 0047AFA8" on opening the holster page (0.4.7-dev, 10-18 21:51). Game exits. CRASH_INVESTIGATION.md:884-889.
+- cause: guikit::setFont (GuiKit.h:282-287) -> CSWGuiTextParams::SetBaseFont 0x416DE0 [verified steam-db-B16] -> CAurGUIStringInternal::WrapStrings 0x47AF30 [name_map medium]. The wrap pass calls (this+0x18)->vtbl[0x38]() for glyph data, got 0, then "addl 0x24(%ecx)" with ECX=0. Font resref was fnt_d16x16b. WHY that resref gives null glyph data: NOT PROVEN (CRASH_INVESTIGATION.md:889).
+- workaround: setFont removed, colour and align kept. HolsterEditor.cpp:2350-2352 (comment cites the crash). Fixed 0.4.8-dev, dfdc343e, LIVE 21:57.
+- absorb: GuiKit.h:282 setFont gates only textObjOk (GuiKit.h:140-145), so any resref is passed through. Shared rule: allow only font resrefs seen working in a live vanilla template (dialogfont16x16 is used by vanilla BTN_GAMEPLAY, F3_R2.txt:38). Refuse and log otherwise. Note: the crash lives in a per-draw wrap pass, so it can show up on page open, not at the call.
+
+T4 border tint multiplying fills (and label-only helpers on buttons)
+- symptom (RFC claim): normal-state icons look dim; a hover frame is needed to show a selected button (RFC:120).
+- cause: engine effect of border COLOR (+0x28) on a fill image is NOT DECODED. Vanilla draw passes COLOR as the colour argument to the fill call (F4_R4 sec 4). Whether CAurGUIImageInternal slot +0x18 (0x47D210) multiplies by it is OPEN (F4_R4 OPEN list). The mockup assumes multiply (F3_R3.txt:11, 20). Treat "multiplied" as unverified.
+- workaround: lit selector copies the hover tint onto the normal border: HolsterEditor.cpp:1335-1349 (setSelFrame at :1338), refusal log :1373. Only tint copied; corner and edge art stay normal (F4_R3 sec 4, line 51).
+- absorb: GuiKit.h:345-353 setFill, :363-369 setBorderTint, :370-384 setAlpha / setFillStyle are label-only (borderOk GuiKit.h:136-139, label border +0x60). On a CSWGuiButton they return false with no log. Button path is buttonBorder (GuiKit.h:400-405, borders +0x70 and +0xE8) with setButtonFill (GuiKit.h:420-431), which leaves tint untouched when nullptr is passed. Shared: one resolver for "border of control" that writes both states, and a log line on refusal (GuiKit.h:390-392 comment).
+
+T5 word-wrap on narrow buttons
+- symptom: caption wraps onto a second line (lost at box height < line height) or gets cut to "All v..." (F3_V2_fixcheck.txt:24-54; RV1 item 14).
+- cause: engine word-wraps any text wider than its box in CAurGUIStringInternal::WrapStrings 0x47AF30 [name_map medium]. Engine has NO text-width call. Width estimate is a per-glyph factor: ini text_k default 2.65 (HolsterEditor.cpp:107, 1147-1148), "estimate" per HseView.h:121.
+- workaround: caption room = box W - 2*(7 inset + 3 slack): HseView.h:120-125 (buttonTextPx). Cut with "..." via textfit::fitText (TextFit.h:26-39). Label room = W - 2*4 (HseView.h:122, labelTextPx).
+- absorb: _shared_src/TextFit.h already exists. Move the button inset constants (kButtonTextInset 7, kTextSlack 3, kLabelPad 4, HseView.h:120-122) into GuiKit beside the caption helper. Add a provider-side fit step in AddButton so every consumer gets the same cut.
+
+T6 Clicked is release-only
+- symptom: press-and-drag never fires Clicked; a click latched on one tick and not read is dropped.
+- cause: ModConfigApi.h:105 "1 once per click on the item (on its release edge)". Latch ModConfig.cpp:113. Drop rule ModConfig.cpp:1245-1246 (comment: "Clicked answers 1 once, for one tick"). No native press query in K2MenuUiApi. Slider drag needs tick polling (H_vanilla_slider.txt:17).
+- workaround: editor polls LMB itself: e.pressed at HolsterEditor.cpp:698 (guikit::g_gk.lbuttonDown, GuiKit.h:92). Drag uses tick polling (HolsterEditor.cpp:1907 area).
+- absorb: K2MenuUiApi growth: a press/hold query per item, or a drag callback. GuiKit already has lbuttonDown. Until then every drag consumer re-implements the poll.
+
+T7 LB_DESC is a single description box
+- symptom: only one green hover-help box exists per Options panel. SetDesc writes only that right-hand box (RFC:122).
+- cause: LB_DESC is one CSWGuiListBox, panel index kIdxDesc=15 (ModConfig.cpp:60). describe() writes only P+kDescLabel 0x1030 and P+kDescStr 0x1120 (ModConfig.cpp:396-421; F4_R1:17). No list-box or label creator for the description pane in repo (F4_R1:25). Vanilla describe 0x8A2320 is not hooked; provider re-asserts split after it (RFC:165).
+- workaround: left box = PI_HINT label with SA_Box art (HolsterEditor.cpp:2344-2347; SliderArt.h:21, 44). Hover text for left-column buttons written by the editor (HolsterEditor.cpp:1809-1812, itemIsLeftTip :440-446). Right pane split 850 via SetDescSplit (F4_R1:8, HolsterEditor.cpp:573, 1980; syncDescSplit ModConfig.cpp:359-380).
+- absorb: k2.menuui description API: a second box owned by the provider (AddLabel + describe route), or SetDesc(page, boxIndex). The split must be re-asserted after every describe (ModConfig.cpp:359-380).
+
+T8 500 ms tick gap bounce
+- symptom: a 1.1 s frame hitch during a slider drag sent the player back to MAIN and discarded the unsaved edit (RFC:123).
+- cause: kTickGapMs = 500 (ModConfig.cpp:69). Gap computed ModConfig.cpp:1249; resetPages("tick gap") at ModConfig.cpp:1263 runs with no visibility check. HIDDENDRAW log at :1254-1256 uses flags48.
+- workaround: write each change through at once (RFC:123). Guard on panel visible flag NOT in code (RFC:178 "planned").
+- absorb: provider fix, in ModConfig.cpp:1263: only reset when the panel is hidden (flags48 bit check at :1254-1256), not on gap alone. Consumer side: checkpoint every edit as it happens.
+
+T9 per-page item cap
+- symptom: AddButton/AddLabel return -1 and the page is silently incomplete. Provider logs only "MUI refused: page %u is full" (ModConfig.cpp:1050, 1073), and releases the clone (OPUS_review_round.txt:31-33).
+- cause: kMaxItems = 80 (MenuUiLogic.h:37; raised from 40 per menu_ui_logic_test.cpp:345). Provider older than 0.1.3 has 40 items and no SetDescSplit (HolsterEditor.cpp:10, :548). kMaxEntries = 8 (MenuUiLogic.h:37). No cap query in the ABI (HolsterEditor.cpp:548 comment).
+- workaround: refuse the page and show "Needs a newer mod-config (0.1.3 or later)" (HolsterEditor.cpp:142 message, :553 AddLabel, :167 refused flag). Compile-time check kPageItemsV3Total 76 <= 80 (HolsterEditor.cpp:98). Overlay labels count against the cap (B_icon_fill PITFALL C, HseView.h:790-793 old values).
+- absorb: k2.menuui: expose the cap (query call or struct field) so a consumer checks before building. Shared components should count their own items and refuse early with a clear message.
+
+T10 texture registration after GL reset
+- symptom: custom art disappears after a GL reset (ResetAll / SetMem) or when the engine rebuilds textures first. Fills go blank.
+- cause: GL reset frees every registered texture and re-queues it. If the engine rebuilds first, its resource lookup misses the name (EmbedTex.h:6-7, DB lesson 290).
+- workaround: embtex::ensure(...) once at build, embtex::heal() every UI tick (B_icon_fill sec 2 and 4; SliderArt.h:6). heal gives up after MaxHeals=20 (EmbedTex.h:40, 147-148). Steam only (B_icon_fill sec 2, EmbedTex.h:119).
+- absorb: provider or GuiKit tick hook calls embtex::heal once per tick, so consumers do not each wire it. Also: GuiKit imageFor pool holds 256 resrefs and never releases them (GuiKit.h:51, 326-330); when full it returns nullptr. Shared pool needs a cap log.
+
+T11 hover vs pressed states
+- symptom: a selected button must look like the hover frame, not the normal frame. Pressed look: no evidence.
+- cause: vanilla hover = HILIGHT border (+0xE8) drawn instead of NORMAL (+0x70) when button flag bit0 (btn+0x48) is set by SetActive 0x41A290 [name_map high] (F4_R4 sec 4; F4_R3:25). Button Draw 0x41A0A0 [name_map high]. Pressed state: NOT DECODED.
+- workaround: lit selector copies hover tint to the normal border (HolsterEditor.cpp:1335-1349). Hover found by cursor-in-rect poll (GuiKit cursorClient, GuiKit.h:90). Pressed = LMB poll (HolsterEditor.cpp:698).
+- absorb: GuiKit setButtonSelected(btn, on) that sets bit0 instead of copying tint. Not used by any consumer (F4_R3:42). Not tested live: whether calling SetActive 0x41A290 from a DLL is safe. OPEN.
+
+T12 font and colour constants for the vanilla description style
+- desc box fill (0,17,11), 3-texel edge (0,105,81): sampled from vanilla, scripts/gen_slider_art.py:8, 71.
+- desc text colour (37,200,164) = (0.145, 0.784, 0.643), align 9 = top-left: HolsterEditor.cpp:2350-2352; GuiKit.h:289 (9 top-left, 17 top-centre, 18 centre).
+- vanilla button caption: dialogfont16x16, align 18 (centre), colour (0.102, 0.698, 0.549) = (26,178,140): F3_R2.txt:38 (optionsmain_p.gui BTN_GAMEPLAY). Note: differs from the description teal above.
+- frame NORMAL (0.051, 0.349, 0.271), HILIGHT (0.800, 0.800, 0.698), corner and edge uibit_brdr_16wc / 16we 32x32 TPC, DIMENSION 16, FILLSTYLE 2 (F3_R2.txt:19-34).
+- vanilla description font resref: NOT FOUND in ux_v3 research. Editor keeps the label's native font (HolsterEditor.cpp:2350-2351).
+- vanilla LB_DESC green: source unverified (F4_R1:29).
+- absorb: a GuiKit constants block (desc fill, desc edge, desc text, button caption, frame normal, frame hilite) with each value's source line. Keep "desc text" and "button text" as two named constants, since they differ.
+
+T13 text-object gates fail silently
+- symptom: setText / setFont / setAlign / setTextColor return false and nothing shows.
+- cause: textObjOk needs TextVtable at label+0xD8 and a non-null renderer at +0x14 (GuiKit.h:140-145). Label border gate borderOk (GuiKit.h:136-139).
+- workaround: callers check return values (GuiKit.h:273-304). Colour readback gate getTextColor (GuiKit.h:295-300).
+- absorb: one "refused" log per control and per gate, so a silent false is visible in a play log.
+
+T14 creation order for template clones
+- symptom: a cloned control stays hidden or unlinked if its steps run in the wrong order.
+- cause: createLabelFromTemplate must run BEFORE StopLoadFromLayout (K2Addr.h:38 comment). StopLoadFromLayout = 0x0090DA20 is the GOG value (K2Addr.h:433); the Steam value was not read in this recon.
+- workaround: GuiKit createLabelFromTemplate (GuiKit.h:178-210) runs the steps in order, hides the clone until shown (GuiKit.h:206), and releases on failure (releaseUnlinkedLabel, GuiKit.h:166-170).
+- absorb: keep as one provider function. Do not let consumers re-order.
+
+======================================================================
+PART 2. NATIVE CONTROL TYPES (what the engine has)
+======================================================================
+
+Format: control | engine class and addresses | known facts | create at runtime without .gui? | verdict
+
+C1 CSWGuiSlider
+- addresses: GOG ctor 0x918c90 (164 b), GOG dtor 0x56ab00, GOG deleting dtor 0x597840 (query_ghidra symbol, trusted). Steam deleting dtor 0x84df40 and Steam plain dtor 0x41ac10 (upstream_prs/gameapi_signatures/followup.md:27). Steam ctor: NOT FOUND.
+- known: members max_value, cur_value, gui_sound, border, border_hilight, image (simulate_init_output.txt:477-478, offsets missing). Steam Initialize, SetExtent, SetMaxValue, SetCurValue wrappers exist but Steam addresses not wired (steam_db_pr3/work/wrapper_lookups.tsv:550-553). Only vanilla record in repo: SLD_ALIGN, GFF type 8, vertical (S1_raw_character_p_controls.txt:13). No Sound Options slider record in repo.
+- create without .gui: NOT KNOWN. AddCustom takes a raw engine control (ModConfigApi.h:103-104). Panel binds tagged controls only (H6.md, per 01_inventory_3d_viewport.md:114).
+- verdict: LOW (H6.md:35; H_vanilla_slider.txt Q2). Look-alike from three labels is the working fallback (HolsterEditor.cpp:2340-2341).
+
+C2 CSWGuiListBox
+- addresses: GOG ctor 0x91aea0 (665 b), GOG dtor 0x91b1a0 (250 b). Steam ctor: NOT FOUND. Linux ctor 0x085fdc8e.
+- known: LB_DESC is the only instance used (ModConfig.cpp:60). Cannot be cloned (F4_R1:25, no creator in GuiKit.h, GuiButton.h, HolsterEditor.cpp, ModConfig.cpp).
+- create without .gui: NOT KNOWN, not tried.
+- verdict: UNKNOWN. Do not plan on a second list box.
+
+C3 CSWGuiEditbox (text input) and CSWGuiEditText
+- addresses: CSWGuiEditbox GOG ctor 0x91eea0 (131 b); CSWGuiEditText GOG ctor 0x915e00 (143 b). Steam: NOT read; only wrapper names (wrapper_lookups.tsv:394-410).
+- known: focus and key capture conflict with Esc and hotkeys (H6.md:36).
+- create without .gui: NOT KNOWN.
+- verdict: LOW, deferred (H6.md:36).
+
+C4 CSWGuiScrollBar
+- addresses: GOG ctor 0x919fe0 (179 b), GOG dtor 0x91a0a0 (44 b). Steam: NOT FOUND.
+- known: no consumer draws one. Scroll track art is known: edge and corner uibit_brdr_16ge / 16gc, fill uibit_fill_16g, arrow uibit_uparrowg (H_vanilla_slider.txt:7, from scripts/mirror_character_page.py:22,181).
+- create without .gui: NOT KNOWN.
+- verdict: UNKNOWN. A plain-label scroll would avoid it.
+
+C5 check box / toggle
+- addresses: no CSWGuiCheck* or CSWGuiToggle symbol found by query_ghidra. Nearest: CSWGuiButtonToggle GOG ctor 0x9185d0 (160 b), GOG dtor 0x0051bbe0 (141 b).
+- known: repo uses flip-text buttons as toggles (RFC:141). No native check box in repo.
+- create without .gui: NOT KNOWN.
+- verdict: UNKNOWN.
+
+C6 CSWGuiButton (reference, KNOWN and working)
+- addresses: GOG ctor 0x512a40 (134 b). Steam button vtable 0x987A1C (GuiButton.h:22 area, gameaddr::ButtonVtable).
+- known: created at runtime by cloning the BTN_GAMEPLAY template (ModConfig.cpp:201-215; button_clone=1 default, mod_config.ini:8). Caption, fill and hover all work on this path (holster page, live).
+- create without .gui: YES (template clone).
+- verdict: USE. This is the native control the shared components should build on.
+
+C7 CSWGuiLabel (reference, KNOWN and working)
+- known: created by cloning LBL_TITLE (ModConfig.cpp:192-198, template kLabelTemplate ModConfig.cpp:71). Used for frames, wedges, markers and the left description box.
+- create without .gui: YES (template clone via createLabelFromTemplate, GuiKit.h:178).
+- verdict: USE.
+
+======================================================================
+PART 3. ADDRESS ANCHORS USED ABOVE (Steam)
+======================================================================
+- SetBaseFont (SetFont) 0x416DE0 [verified steam-db-B16]; GameAddr.h:29
+- TextSet 0x416E30; GameAddr.h:28
+- SetAlign 0x416FA0; GameAddr.h:30
+- TextColor 0x417140; GameAddr.h:31
+- WrapStrings 0x47AF30 [name_map medium] (crash pass; 0x47AFA8 is inside it, no name)
+- Draw_2 0x47B500 [name_map medium]
+- Button SetExtent 0x419ED0 [name_map high]
+- Button SetActive 0x41A290 [name_map high]
+- Button Draw 0x41A0A0 [name_map high]
+- GetInnerExtent 0x414D80 [verified B0]
+- CSWGuiBorder Draw 0x415300 [verified B0]
+- Text SetRect 0x417780: only PTRS entry in dumps (gog_map_21b/dumps/steam_r2.txt:3555); no query_ghidra symbol.
+- Intersect 0x40E360: from F3_R1 decompile, not re-checked here.
+- Label SetRect 0x4199A0 (steam_r2.txt:3568, dump-verified).
+
+======================================================================
+PART 4. WHAT IS NOT KNOWN
+======================================================================
+1. Steam ctor addresses for CSWGuiSlider, CSWGuiListBox, CSWGuiEditbox, CSWGuiEditText, CSWGuiScrollBar, and any check box. Only GOG addresses exist in repo.
+2. Whether a DLL can build a CSWGuiSlider (or any native list control) with no .gui. Known blocker: panel binds tagged controls only.
+3. Whether the fill image is multiplied by border COLOR (vt[6], 0x47D210). OPEN (F4_R4).
+4. Why fnt_d16x16b gives null glyph data in WrapStrings. Not proven (CRASH_INVESTIGATION.md:889).
+5. Why glyph-only captions draw nothing. Not decoded.
+6. Pressed-state look of a CSWGuiButton. Not decoded.
+7. Whether SetActive 0x41A290 is safe to call on a mod-owned button. Not tested live.
+8. The vanilla description font resref and the vanilla LB_DESC green colour.
+9. Which corner width sets the caption inset for BTN_GAMEPLAY: DIMENSION 16 (F3_R2) or the 32x32 corner TPC. F3_R2 caveat and F3_R1 sec 5 both leave this open.
+10. Line height at 3840x1600. F3_R4 gives 32 px if the caption object's scale field (+0x54) is 1.0, and this init value is not pinned. F2_H3 says "34 units" but px figures conflict (F3_R4:44). Both need a screenshot check.
+11. Whether the caption fix holds at resolutions other than 3840x1600 (F3_RV4_otherres.txt exists; not read in this recon).
+12. Whether a mod-side fill on a button survives a re-layout without a tick re-apply (B_icon_fill sec 3 says ModConfig does not touch fills; not tested).
+13. Engine text-width call: none found. All width fits are estimates (text_k 2.65).
+14. Whether the 500 ms tick-gap guard fix is safe (not implemented).
+
+======================================================================
+PART 5. DISCREPANCIES FOUND IN SOURCES
+======================================================================
+- F2_H1 calls 0x419ED0 "SetRect"; name_map and F3_R1 call it SetExtent. Use SetExtent (F3_R1 is asm-checked).
+- H_vanilla_slider.txt cites Clicked at ModConfigApi.h:93; the current line is 105-106. Behaviour matches.
+- Description teal (37,200,164) and vanilla button text teal (26,178,140) are different colours. Do not merge them.
+- Old notes say per-page cap 40 (HseView.h static_assert, OPUS_review.txt:179). Current cap is 80 (MenuUiLogic.h:37). Old 40 remains only as the older-provider refusal path.
+- RFC says the border tint multiplies the fill. No decoded engine evidence in repo (see T4 and PART 4 item 3).
