@@ -628,6 +628,96 @@ static void testDescPane() {
         }
 }
 
+// coverDescPane (the right description box covers LB_DESC's own frame): grows on all four sides, clamped, 0 = unchanged, both boxes keep equal bottoms.
+static void testCoverDesc() {
+    const Geom g = realGeom();
+    const Box d = descFor(g);
+    const Box none{0, 0, 0, 0};
+    const Box screen{0, 0, 3840, 1600};
+    // cover 0 = the pane unchanged; a negative cover too; an absent pane stays absent
+    KT_CHECK(same(coverDescPane(d, g.preview, screen, 0), d));
+    KT_CHECK(same(coverDescPane(d, g.preview, screen, -5), d));
+    KT_CHECK(same(coverDescPane(none, g.preview, screen, 6), none));
+    KT_CHECK(same(coverDescPane(Box{10, 10, 0, 50}, g.preview, screen, 6), (Box{10, 10, 0, 50})));
+    // the preview pane the editor passes is widened into the right margin (and the screen leaves room below): all four sides grow by the cover
+    Box wide = g.preview;
+    wide.w += 120;
+    wide.h = d.y - wide.y;   // the preview ends where the pane starts: the top clamp = the preview bottom
+    {
+        const Box C = coverDescPane(d, wide, screen, 6);
+        KT_CHECK(C.x == d.x - 6 || C.x == wide.x - v3::kPad);                       // left: cover, or the view edge when that is tighter
+        KT_CHECK_EQ(C.x + C.w, d.x + d.w + 6);                                  // right
+        KT_CHECK_EQ(C.y, d.y);                                                  // top: clamped at the preview bottom (the pane already starts there)
+        KT_CHECK_EQ(C.y + C.h, d.y + d.h + 6);                                  // bottom
+        KT_CHECK(C.x <= d.x && C.y <= d.y && C.x + C.w >= d.x + d.w && C.y + C.h >= d.y + d.h);   // always contains the pane
+    }
+    // a pane starting below the preview bottom grows upward by the cover; one at the preview bottom does not go higher
+    {
+        const Box low{d.x, d.y + 40, d.w, d.h - 40};
+        const Box C = coverDescPane(low, wide, screen, 6);
+        KT_CHECK_EQ(C.y, low.y - 6);
+        KT_CHECK(C.y >= wide.y + wide.h);
+        const Box C2 = coverDescPane(Box{d.x, wide.y + wide.h + 2, d.w, 100}, wide, screen, 24);
+        KT_CHECK_EQ(C2.y, wide.y + wide.h);   // clamped at the preview bottom, never above
+    }
+    // clamps: the cover is limited to kV3CoverMax; never left of the view edge (preview.x - kPad); never right of the preview right; never off the screen
+    {
+        const Box C = coverDescPane(d, wide, screen, 1000);
+        KT_CHECK(C.x >= wide.x - v3::kPad && C.x >= 0);
+        KT_CHECK(C.x + C.w <= wide.x + wide.w && C.x + C.w <= screen.w);
+        KT_CHECK(C.y >= wide.y + wide.h);
+        KT_CHECK(C.y + C.h <= d.y + d.h + kV3CoverMax);
+        KT_CHECK(same(coverDescPane(d, wide, screen, 1000), coverDescPane(d, wide, screen, kV3CoverMax)));
+    }
+    {   // right edge at the preview right: no growth to the right (the margin ini margin_px 0 case), the other sides still grow
+        const Box C = coverDescPane(d, g.preview, screen, 6);
+        KT_CHECK_EQ(C.x + C.w, d.x + d.w);
+        KT_CHECK(C.y + C.h == d.y + d.h + 6);
+    }
+    {   // a pane at the screen edges never leaves the screen
+        const Box edge{3700, 1500, 140, 100};
+        const Box C = coverDescPane(edge, none, screen, 12);
+        KT_CHECK(C.x + C.w <= 3840 && C.y + C.h <= 1600 && C.x >= 0 && C.y >= 0);
+        KT_CHECK(C.x <= edge.x && C.y <= edge.y && C.x + C.w >= edge.x + edge.w && C.y + C.h >= edge.y + edge.h);
+        const Box E{0, 0, 100, 100};
+        const Box C0 = coverDescPane(E, none, screen, 12);
+        KT_CHECK(C0.x == 0 && C0.y == 0 && C0.w == 112 && C0.h == 112);
+    }
+    // no preview pane and no screen: the plain cover on all sides
+    {
+        const Box C = coverDescPane(d, none, none, 6);
+        KT_CHECK(same(C, (Box{d.x - 6, d.y - 6, d.w + 12, d.h + 12})));
+    }
+    // the cover never reaches into the enlarged view: with the real layout the view ends kPad short of the preview
+    {
+        const Box C = coverDescPane(d, wide, screen, kV3CoverMax);
+        const PageLayoutV3 L = pageLayoutV3(g.column, g.view, wide, g.hint, nullptr, C);
+        KT_CHECK(L.view.x + L.view.w <= C.x);
+        for (int i = 0; i < kV3Modes; ++i) KT_CHECK(L.modeBtn[i].x + L.modeBtn[i].w <= C.x || L.modeBtn[i].y + L.modeBtn[i].h <= C.y);
+    }
+    // layout with the inflated pane: both boxes keep equal bottoms (= the inflated pane bottom), the right box is the inflated pane, the rows do not change
+    for (int W = 800; W <= 3840; W += 320)
+        for (int H = 600; H <= 1600; H += 200) {
+            Geom gg = geomFor(W, H);
+            const Box dd = descFor(gg);
+            Box pv = gg.preview;
+            pv.w += 120;
+            const Box sc{0, 0, W, H};
+            const Box C = coverDescPane(dd, pv, sc, 6);
+            KT_CHECK(C.y >= std::min(dd.y, pv.y + pv.h));   // never above the preview bottom unless the pane itself started higher
+            const PageLayoutV3 L = pageLayoutV3(gg.column, gg.view, pv, gg.hint, nullptr, C);
+            const PageLayoutV3 L0 = pageLayoutV3(gg.column, gg.view, pv, gg.hint, nullptr, dd);
+            KT_CHECK_EQ(L.leftRowH, L0.leftRowH);
+            KT_CHECK_EQ(L.inspRowH, L0.inspRowH);
+            if (!isZeroBox(L.hintR[0])) KT_CHECK(same(L.hintR[0], C));
+            if (!isZeroBox(L.hint[0]) && !isZeroBox(L.hintR[0])) KT_CHECK_EQ(L.hint[0].y + L.hint[0].h, L.hintR[0].y + L.hintR[0].h);
+            if (!isZeroBox(L.hint[0])) KT_CHECK_EQ(L.hint[0].y + L.hint[0].h, C.y + C.h);
+            // cover 0 gives the same layout as the raw pane
+            const PageLayoutV3 L00 = pageLayoutV3(gg.column, gg.view, pv, gg.hint, nullptr, coverDescPane(dd, pv, sc, 0));
+            KT_CHECK(same(L00.hintR[0], L0.hintR[0]) && same(L00.hint[0], L0.hint[0]));
+        }
+}
+
 // The REAL pane rects of the 3840x1600 log (UI units): the layout must use the space and every label must fit its box.
 static Geom realGeom() {
     Geom r;
@@ -819,6 +909,7 @@ int main() {
     testDescBox();
     testDescBox3840();
     testDescPane();
+    testCoverDesc();
     testThumbs();
     testDegradation();
     return kt::Report("hse_layout_v3");

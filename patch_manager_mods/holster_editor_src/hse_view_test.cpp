@@ -1007,6 +1007,35 @@ static void testInspRowBasics() {
         KT_CHECK(hse::inspRowEnabled(r, 0) && hse::inspRowEnabled(r, 1));
         KT_CHECK_EQ(hse::inspRowEnabled(r, 2) ? 1 : 0, hse::inspIsRot(r) ? 0 : 1);
     }
+    // the body scope rule: rotationAllowed / modeEnabled / effectiveMode
+    KT_CHECK(hse::rotationAllowed(0) && hse::rotationAllowed(1) && !hse::rotationAllowed(2));
+    KT_CHECK(hse::rotationAllowed(-1) && hse::rotationAllowed(3));   // only the body scope id locks
+    for (int sc = 0; sc <= 2; ++sc)
+        for (int m = 0; m < hse::WPM_COUNT; ++m) {
+            const bool rot = m == hse::WPM_TILT || m == hse::WPM_ROLLTURN;
+            KT_CHECK_EQ(hse::modeIsRotation(m) ? 1 : 0, rot ? 1 : 0);
+            KT_CHECK_EQ(hse::modeEnabled(m, sc) ? 1 : 0, (sc == 2 && rot) ? 0 : 1);
+            KT_CHECK_EQ(hse::effectiveMode(m, sc), (sc == 2 && rot) ? static_cast<int>(hse::WPM_MOVE) : m);   // leaving BODY restores the mode itself
+            // the rule matches the inspector rows: a rotation row and a rotation mode lock together
+            KT_CHECK_EQ(hse::rotationAllowed(sc) ? 1 : 0, hse::inspRowEnabled(hse::IR_TILT, sc) ? 1 : 0);
+        }
+    KT_CHECK_EQ(hse::effectiveMode(hse::WPM_MOVE, 2), static_cast<int>(hse::WPM_MOVE));
+    KT_CHECK_EQ(hse::effectiveMode(hse::WPM_DEPTH, 2), static_cast<int>(hse::WPM_DEPTH));
+    KT_CHECK_EQ(hse::effectiveMode(hse::WPM_TILT, 2), static_cast<int>(hse::WPM_MOVE));
+    KT_CHECK_EQ(hse::effectiveMode(hse::WPM_ROLLTURN, 2), static_cast<int>(hse::WPM_MOVE));
+    KT_CHECK_EQ(hse::effectiveMode(hse::WPM_TILT, 0), static_cast<int>(hse::WPM_TILT));
+    KT_CHECK_EQ(hse::effectiveMode(hse::WPM_ROLLTURN, 1), static_cast<int>(hse::WPM_ROLLTURN));
+    KT_CHECK_EQ(hse::effectiveMode(99, 2), 99);   // an unknown mode is passed through (weaponGesture ignores it)
+    {   // a body-scope Tilt / Roll-Turn gesture is a Move: the same step as Move, never a local rotation call
+        hse::SnapAcc a1, a2;
+        const hse::WeaponStep mv = hse::weaponGesture(hse::WPM_MOVE, 10, 6, 1.0f, false, false, a1);
+        for (int m = hse::WPM_TILT; m <= hse::WPM_ROLLTURN; ++m) {
+            const hse::WeaponStep st = hse::weaponGesture(hse::effectiveMode(m, 2), 10, 6, 1.0f, false, false, a2);
+            KT_CHECK_EQ(st.n, mv.n);
+            for (int k = 0; k < st.n; ++k) KT_CHECK_EQ(st.c[k].kind, static_cast<int>(hse::WK_WORLD));
+        }
+    }
+    KT_CHECK(strstr(hse::rotationLockedHint(), "Rotation is not saved for 'This body'") && strstr(hse::rotationLockedHint(), "Pick 'This weapon'"));
     for (int r = 0; r < hse::IR_COUNT; ++r) {
         KT_CHECK(strlen(hse::inspTip(r)) > 20 && strlen(hse::inspTip(r)) < 190);
         for (const char* c = hse::inspTip(r); *c; ++c) KT_CHECK(static_cast<unsigned char>(*c) >= 0x20 && static_cast<unsigned char>(*c) < 0x7F);

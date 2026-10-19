@@ -69,9 +69,12 @@ def build_dump(build_dir=None):
     return exe
 
 
-def run_dump(col, view, preview, desc=None, build_dir=None):
+def run_dump(col, view, preview, desc=None, build_dir=None, cover=None):
+    """cover = ini desc_cover_px (None = the editor default hse::kV3CoverDefault, 6); only meaningful with a desc pane."""
     exe = build_dump(build_dir)
     args = [str(v) for v in (*col, *view, *preview, *(desc or ()))]
+    if desc and cover is not None:
+        args.append(str(cover))
     r = subprocess.run([str(exe)] + args, capture_output=True, text=True, check=True)
     return json.loads(r.stdout)
 
@@ -438,6 +441,7 @@ def main(argv=None):
     ap.add_argument("--preview", type=parse_rect)
     ap.add_argument("--desc", type=parse_rect, help="shrunk description pane (mod-config LB_DESC) X,Y,W,H in engine px (default: bottom 15%% of the original pane under the preview, see default_desc)")
     ap.add_argument("--no-desc", action="store_true", help="old layout without description boxes")
+    ap.add_argument("--desc-cover-px", type=int, default=None, help="ini desc_cover_px: the right description box is grown this far on every side to cover LB_DESC's frame (default 6, 0 = the pane itself)")
     ap.add_argument("--mode", choices=("engine-model", "ideal"), default="engine-model")
     ap.add_argument("--caption-fix", type=int, choices=(0, 1), default=0)
     ap.add_argument("--dim", type=int, default=16, help="border DIMENSION G (px)")
@@ -460,7 +464,7 @@ def main(argv=None):
         dump = json.loads(Path(a.dump_json).read_text())
     else:
         desc = None if a.no_desc else (a.desc or default_desc(panes[2]))
-        dump = run_dump(*panes, desc=desc, build_dir=a.build_dir)
+        dump = run_dump(*panes, desc=desc, build_dir=a.build_dir, cover=a.desc_cover_px)
     if a.legacy_fit:
         defaults = (LEGACY_BUTTON_FIT_PAD, LEGACY_LABEL_FIT_PAD, LEGACY_TEXT_K)
     else:

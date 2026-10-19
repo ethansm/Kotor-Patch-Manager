@@ -1,7 +1,8 @@
 // Host dump of the holster editor page layout (HseLayoutV3.h) as JSON, for scripts/holster_editor_mockup.py (offline caption/box renderer).
 // Build (from patch_manager_mods/holster_editor_src): g++ -std=c++17 -Wall -Wextra -I../_shared_src -Werror tools/hse_layout_dump.cpp -o <exe>
 // Usage: hse_layout_dump <col x y w h> <view x y w h> <preview x y w h> [<desc x y w h>]   (12 or 16 ints; hint = none, rowFrac = the editor default 0.5;
-// desc = the SHRUNK description pane (mod-config LB_DESC) -> left + right description boxes, omitted = the old layout without them)
+// desc = the SHRUNK description pane (mod-config LB_DESC) -> left + right description boxes, omitted = the old layout without them;
+// an optional 17th int = the ini desc_cover_px (default hse::kV3CoverDefault; the pane is grown by it with coverDescPane exactly like the editor does, no screen clamp))
 #include "../HseLayoutV3.h"
 #include <cstdio>
 #include <cstdlib>
@@ -30,16 +31,18 @@ static void pane(const char* name, const editkit::Box& b, bool last) {
 }
 
 int main(int argc, char** argv) {
-    if (argc != 13 && argc != 17) {
-        std::fprintf(stderr, "usage: %s <col x y w h> <view x y w h> <preview x y w h> [<desc x y w h>]\n", argv[0]);
+    if (argc != 13 && argc != 17 && argc != 18) {
+        std::fprintf(stderr, "usage: %s <col x y w h> <view x y w h> <preview x y w h> [<desc x y w h> [cover_px]]\n", argv[0]);
         return 2;
     }
-    int v[16] = {0};
+    int v[17] = {0};
     for (int i = 0; i < argc - 1; ++i) v[i] = std::atoi(argv[i + 1]);
     const editkit::Box col{v[0], v[1], v[2], v[3]}, view{v[4], v[5], v[6], v[7]}, prev{v[8], v[9], v[10], v[11]}, desc{v[12], v[13], v[14], v[15]};
     const editkit::Box none{0, 0, 0, 0};
     const float rowFrac[hse::kV3Rows] = {0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f};   // HolsterEditor.cpp Editor::rowFrac default
-    const hse::PageLayoutV3 L = hse::pageLayoutV3(col, view, prev, none, rowFrac, desc);
+    const int cover = argc == 18 ? v[16] : hse::kV3CoverDefault;
+    const editkit::Box covered = hse::coverDescPane(desc, prev, none, cover);   // HolsterEditor.cpp applyLayout (the screen size is unknown here)
+    const hse::PageLayoutV3 L = hse::pageLayoutV3(col, view, prev, none, rowFrac, covered);
     editkit::Box all[hse::kPageItemsV3];
     const int n = hse::pageBoxesV3(L, all);
     std::printf("{\"panes\":{");

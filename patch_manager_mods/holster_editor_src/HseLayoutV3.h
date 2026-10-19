@@ -49,6 +49,7 @@ constexpr int kV3LeftRowMax = 52, kV3InspRowMax = 60, kV3RowMin = 14;   // left 
 constexpr int kV3RoomyRowMin = 30;  // the roomy left column (2 bone columns, one scope per row) is used while its rows stay at least this high; below, the compact one
 constexpr int kV3BarMax = 44, kV3BarMin = 12;   // mode bar / stance row heights
 constexpr int kV3MinViewW = 8;    // the view area is at least this wide when the preview pane leaves any room
+constexpr int kV3CoverMax = 24, kV3CoverDefault = 6;   // description cover margin (coverDescPane; ini desc_cover_px)
 constexpr int kV3DescPad = 12;   // text inset inside the left description box
 constexpr int kV3DescMinH = 90, kV3DescMaxH = 360, kV3DescWantH = 130;   // left description box (hint[0], under the status line): shown from this height, at most this high
 constexpr int kV3MinViewH = 60;   // the bars shrink before the view gets lower than this
@@ -221,6 +222,40 @@ inline int buildInspector(editkit::Box Z, editkit::Box /*hintZone: unused, the h
 }
 
 }  // namespace v3
+
+// coverDescPane: grows the description pane by `cover` px on all four sides so the RIGHT description box (our framed label) fully covers the frame of
+// mod-config's LB_DESC list box underneath (its brighter, thicker border otherwise peeks out around the box). Pure; the result is what the editor passes
+// to pageLayoutV3 as `desc`, so the left box (bottom aligned on the pane) and the right box keep equal bottoms.
+//   cover   clamped to 0..kV3CoverMax; 0 = the pane unchanged (the 0.4.9 behaviour)
+//   top     never above the preview pane bottom (preview.h > 0); else only the cover
+//   left    never left of preview.x - kPad (where the enlarged view ends), and never left of the screen
+//   right   never right of max(pane right, preview right) (the editor widens the preview pane into the right margin), and never right of the screen
+//   bottom  never below the screen (screen.w/h <= 0 = unknown, no screen clamp)
+// A pane that is absent (w or h <= 0) is returned unchanged. The grown pane always contains the original (the clamps never cut into it).
+inline editkit::Box coverDescPane(editkit::Box desc, editkit::Box preview, editkit::Box screen, int cover) {
+    using editkit::Box;
+    if (desc.w <= 0 || desc.h <= 0) return desc;
+    const int c = v3::iclamp(cover, 0, kV3CoverMax);
+    if (c == 0) return desc;
+    int l = desc.x - c, t = desc.y - c, r = desc.x + desc.w + c, b = desc.y + desc.h + c;
+    if (preview.w > 0 && preview.h > 0) {
+        t = v3::imax(t, preview.y + preview.h);
+        l = v3::imax(l, v3::imin(desc.x, preview.x - v3::kPad));
+        r = v3::imin(r, v3::imax(desc.x + desc.w, preview.x + preview.w));
+    }
+    if (screen.w > 0 && screen.h > 0) {
+        l = v3::imax(l, screen.x);
+        t = v3::imax(t, screen.y);
+        r = v3::imin(r, screen.x + screen.w);
+        b = v3::imin(b, screen.y + screen.h);
+    }
+    // never smaller than the original pane (a pane already at the limit keeps its own edge)
+    l = v3::imin(l, desc.x);
+    t = v3::imin(t, desc.y);
+    r = v3::imax(r, desc.x + desc.w);
+    b = v3::imax(b, desc.y + desc.h);
+    return Box{l, t, r - l, b - t};
+}
 
 // pageLayoutV3: see the geometry contract at the top. thumbFrac: six fractions in [0,1] (clamped; NaN -> 0), null = 0.5.
 // hint: pass a zero Box {0,0,0,0} for none.

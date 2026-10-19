@@ -91,7 +91,8 @@ class DescBoxTests(unittest.TestCase):
         left, right = by[67]["box"], by[70]["box"]
         self.assertTrue(left[2] > 0 and left[3] > 0 and right[2] > 0 and right[3] > 0)
         self.assertEqual(left[1] + left[3], right[1] + right[3])
-        self.assertEqual(right, side["panes"]["desc"])
+        d = side["panes"]["desc"]   # the right box is the description pane grown by the cover (desc_cover_px 6): contains it, bottom + 6, left - 6, top stays under the preview
+        self.assertEqual(right, [d[0] - 6, d[1], d[2] + 6, d[3] + 6])   # the right edge stays at the preview right (the mockup has no right margin)
         self.assertEqual(by[68]["text"], M.LEFT_DESC_TEXT)
         self.assertEqual(by[71]["text"], M.RIGHT_DESC_TEXT)
         self.assertEqual((by[67]["text"], by[70]["text"]), ("", ""))   # the frames carry no caption (the old table put hint text on them -> two labels at one spot)
@@ -108,7 +109,11 @@ class DescBoxTests(unittest.TestCase):
     def test_desc_option_and_absent(self):
         side = self._side(["--desc", "1953,1103,1113,160"])
         by = {it["i"]: it for it in side["items"]}
-        self.assertEqual(by[70]["box"], [1953, 1103, 1113, 160])
+        self.assertEqual(by[70]["box"], [1947, 1103, 1119, 166])   # the pane grown by the default cover (6)
+        self.assertEqual(by[67]["box"][1] + by[67]["box"][3], 1269)
+        side = self._side(["--desc", "1953,1103,1113,160", "--desc-cover-px", "0"])
+        by = {it["i"]: it for it in side["items"]}
+        self.assertEqual(by[70]["box"], [1953, 1103, 1113, 160])   # cover 0 = the old behaviour
         self.assertEqual(by[67]["box"][1] + by[67]["box"][3], 1263)
         side = self._side(["--no-desc"])
         self.assertEqual(side["panes"]["desc"], [0, 0, 0, 0])

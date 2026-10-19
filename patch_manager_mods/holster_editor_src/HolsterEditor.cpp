@@ -1,4 +1,4 @@
-// HolsterEditor.cpp -- holster-editor 0.4.10-dev (Steam build): a HOOKLESS consumer of the mod-config provider (k2.modconfig@1, k2.menuui@1).
+// HolsterEditor.cpp -- holster-editor 0.4.11-dev (Steam build): a HOOKLESS consumer of the mod-config provider (k2.modconfig@1, k2.menuui@1).
 // (doc 42 HW-EDIT, plan .claude/plans/holster_editor_options.md; page rebuild: .claude/plans/holster_editor_layout_v3.md, holster_hw_ux3_build.md Wave B.)
 //
 // mod-config owns everything about the Options screen: the hooks, the root "Mod Configuration" button, the list page, control cloning,
@@ -109,6 +109,7 @@ float g_textK = 2.65f;      // ini text_k: vertical scale (sy) used when measuri
 float g_statusFit = 1.0f;  // ini status_fit: multiplier on the status pane width when fitting the status text (the label font is not measured)
 float g_cfgYaw = 180.0f;
 float g_cfgZoom = hse::kZoomFit;
+int g_descCoverPx = hse::kV3CoverDefault;   // ini desc_cover_px: the right description box is inflated this far on all four sides to cover LB_DESC's own frame (0 = off)
 int g_marginPx = 120;   // ini margin_px: the left column pane grows this far left and the preview (inspector) pane this far right
 float g_cfgPanZ = 0.0f;
 hse::View g_cfgView = {180.0f, hse::kZoomFit, 0.0f};
@@ -145,6 +146,11 @@ static_assert(kModeCount == hse::kV3Modes, "one mode button per weapon mode");
 constexpr const char* kNeedsModConfig = "Needs a newer mod-config (0.1.3 or later)";   // the refusal message (old provider: no SetDescSplit, 40-item cap)
 constexpr float kColLit[3] = {1.0f, 0.86f, 0.35f};     // lit selector button text
 constexpr float kColAmber[3] = {1.0f, 0.70f, 0.15f};   // value text that differs from the value when the edit opened
+constexpr float kColDim[3] = {0.42f, 0.42f, 0.42f};    // text of a locked control (rotation rows / Tilt and Roll-Turn modes in the body scope)
+constexpr float kDimTintK = 0.40f;                     // a locked BUTTON's frame tint (normal and hover) is its own normal tint times this
+constexpr float kDimAlpha = 0.35f;                     // a locked LABEL's border alpha is its own alpha times this (slider track / thumb / name / value)
+constexpr DWORD kNoteMs = 5000;                        // how long a click-notice stays in the left description box
+constexpr const char* kModeLockedNote = "Tilt and Roll/Turn are not saved for 'This body'. Pick 'This weapon' or a weapon class to rotate.";
 constexpr int kCrRightItemOff = 0x238, kCrLeftItemOff = 0x23C;   // client creature: equipped item ids (preview-3d CrRightItemOff/CrLeftItemOff)
 constexpr uint32_t kNoItemId = 0x7F000000u;
 constexpr int kItemModelResOff = 0x128;      // client item: model ResRef char[16]
@@ -190,6 +196,7 @@ struct Editor {
 
     // Panes (UI units, re-read every tick) and the layout built from them (hse::pageLayoutV3; the enlarged view is lay.view = viewRect)
     hse::HseRect paneCol = {0, 0, 0, 0}, paneView = {0, 0, 0, 0}, panePreview = {0, 0, 0, 0};
+    editkit::Box coverShown = {0, 0, 0, 0}; // the inflated description pane the last HINTR cover line was logged for
     hse::HseRect paneDesc = {0, 0, 0, 0};   // MUI_PANE_DESC: mod-config's shrunk LB_DESC (clipped under the preview pane); all zero = unavailable
     int hintRState = -1;                    // the right description box: -1 not decided, 0 absent (no pane / too small), 1 placed (logged on change)
     bool hintLHave = false, hintRHave = false;   // the left / right description box had room at the last hint refresh (a change rewrites the texts)
@@ -218,6 +225,13 @@ struct Editor {
 
     // Style caches (item index -> what was last applied): text colour state (-1 unknown, 0 default, 1 lit/amber), the control's own default colour, selector caption
     int8_t colState[hse::kPageItemsV3];
+    bool dimState[hse::kPageItemsV3] = {};   // the item is drawn locked (dimmed): see setItemDim
+    float dimAlpha[hse::kPageItemsV3] = {};  // a dimmed label's own border alpha (read on the first dim)
+    bool dimAlphaOk[hse::kPageItemsV3] = {};
+    bool dimBad = false;                     // a dim write was refused (logged once)
+    bool rotLocked = false;                  // the edit scope is BODY: rotation controls are disabled (syncRotationLock)
+    const char* leftNote = nullptr;          // click notice shown in the left description box until leftNoteAt + kNoteMs
+    DWORD leftNoteAt = 0;
     bool defColOk[hse::kPageItemsV3];
     float defCol[hse::kPageItemsV3][3];
     float brdNormal[hse::kPageItemsV3][3], brdHover[hse::kPageItemsV3][3];   // a selector button's own normal / hover frame tint (read once)
@@ -340,6 +354,7 @@ void readConfig() {
     g_cfgZoom = hse::kZoomFit;
     g_cfgPanZ = 0.0f;
     g_marginPx = 120;
+    g_descCoverPx = hse::kV3CoverDefault;
     FILE* f = fopen("holster_editor.ini", "r");
     if (!f) {
         g_cfgView = hse::makeView(g_cfgYaw, g_cfgZoom, g_cfgPanZ);
@@ -379,6 +394,7 @@ void readConfig() {
         else if (!_stricmp(k, "view_zoom")) g_cfgZoom = static_cast<float>(atof(v));
         else if (!_stricmp(k, "view_panz")) g_cfgPanZ = static_cast<float>(atof(v));
         else if (!_stricmp(k, "margin_px")) { const int m = atoi(v); g_marginPx = m < 0 ? 0 : (m > 400 ? 400 : m); }
+        else if (!_stricmp(k, "desc_cover_px")) { const int m = atoi(v); g_descCoverPx = m < 0 ? 0 : (m > hse::kV3CoverMax ? hse::kV3CoverMax : m); }
     }
     fclose(f);
     g_cfgView = hse::makeView(g_cfgYaw, g_cfgZoom, g_cfgPanZ);
@@ -520,8 +536,8 @@ const char* itemTip(int i) {
 // Options ctor window: the vanilla layout is open. Opens the embedded layout, binds the 3D view, restores the layout slot, builds the page.
 void KPATCH_CALL cbBuild(void* panel, void*) {
     readConfig();
-    KP_LOG(chMain, "CONFIG enabled=%d free_view=%d probe_names=%d probe_cam=%d probe_caption=%d caption_fix=%d log_verbose=%d text_k=%.2f status_fit=%.2f margin_px=%d view=(%.2f,%.2f,%.2f)",
-           g_enabled ? 1 : 0, g_freeView ? 1 : 0, g_probeNames, g_probeCam, g_probeCaption, g_captionFix, g_logVerbose, g_textK, g_statusFit, g_marginPx,
+    KP_LOG(chMain, "CONFIG enabled=%d free_view=%d probe_names=%d probe_cam=%d probe_caption=%d caption_fix=%d log_verbose=%d text_k=%.2f status_fit=%.2f margin_px=%d desc_cover_px=%d view=(%.2f,%.2f,%.2f)",
+           g_enabled ? 1 : 0, g_freeView ? 1 : 0, g_probeNames, g_probeCam, g_probeCaption, g_captionFix, g_logVerbose, g_textK, g_statusFit, g_marginPx, g_descCoverPx,
            g_cfgView.yaw, g_cfgView.zoom, g_cfgView.panZ);
     if (!g_enabled || !panel || !g_menu.ok()) {
         KP_LOG(chMain, "BUILD skipped enabled=%d panel=%p menuui=%d", g_enabled ? 1 : 0, panel, g_menu.ok() ? 1 : 0);
@@ -1342,12 +1358,10 @@ void clearItemText(Editor& e, int idx) {
 // Selected look of a selector BUTTON: the vanilla hover frame. The hover border (button +0xE8) is drawn only while the mouse is over the button, so a lit
 // selector gets the hover border's tint (border +0x28) on its normal border (+0x70); unlit puts the button's own tint back. Both tints are read once and logged.
 // False (nothing written) when the control is not a linked Steam button, a tint read/write is refused, or the two tints are the same (nothing would show).
-bool setSelFrame(Editor& e, int idx, bool on) {
-    const uintptr_t c = ctlOf(e, e.item[idx]);
+// Reads (once per item) the normal and hover frame tint of a selector / locked button into e.brdNormal / e.brdHover. False when a read is refused.
+bool readBrd(Editor& e, int idx, uintptr_t n, uintptr_t h) {
     const int oTint = guikit::detail::off(&K2AddrTable::Border_Tint);
-    if (!c || !oTint) return false;
-    const uintptr_t n = guikit::detail::buttonBorder(c, false), h = guikit::detail::buttonBorder(c, true);
-    if (!n || !h) return false;
+    if (!oTint) return false;
     if (!e.brdOk[idx]) {
         bool ok = true;
         for (int k = 0; k < 3 && ok; ++k)
@@ -1357,6 +1371,16 @@ bool setSelFrame(Editor& e, int idx, bool on) {
                 e.brdNormal[idx][2], e.brdHover[idx][0], e.brdHover[idx][1], e.brdHover[idx][2]);
         if (!ok) return false;
     }
+    return true;
+}
+
+bool setSelFrame(Editor& e, int idx, bool on) {
+    const uintptr_t c = ctlOf(e, e.item[idx]);
+    const int oTint = guikit::detail::off(&K2AddrTable::Border_Tint);
+    if (!c || !oTint) return false;
+    const uintptr_t n = guikit::detail::buttonBorder(c, false), h = guikit::detail::buttonBorder(c, true);
+    if (!n || !h) return false;
+    if (!readBrd(e, idx, n, h)) return false;
     float diff = 0.0f;
     for (int k = 0; k < 3; ++k) diff += fabsf(e.brdHover[idx][k] - e.brdNormal[idx][k]);
     if (diff < 0.05f) return false;
@@ -1392,6 +1416,49 @@ void setItemColor(Editor& e, int idx, bool on, const float* litCol) {
     if (!e.valueColorBad) {
         e.valueColorBad = true;
         KP_LOGV(chView, KPLOG_WARN, "STYLE WARN text colour refused on label item %d (default read=%d): changed values are not amber", idx, e.defColOk[idx] ? 1 : 0);
+    }
+}
+
+// Locked (dimmed) look of item idx, written only when the state changes. A BUTTON gets its frame tint (normal and hover) set to its own normal tint times
+// kDimTintK (so it neither lights up nor highlights on hover); unlocked puts back the normal tint (the hover tint when the button is a lit selector) and the
+// hover tint. A LABEL gets a dim text colour (setItemColor) and its border alpha times kDimAlpha (slider track / thumb art). A refused write is logged once and
+// the item stays clickable-but-ignored (the real lock is in the handlers, this is only the look).
+void setItemDim(Editor& e, int idx, bool dim) {
+    if (idx < 0 || idx >= hse::kPageItemsV3 || e.item[idx] < 0 || e.dimState[idx] == dim) return;
+    const uintptr_t c = ctlOf(e, e.item[idx]);
+    if (!c) return;
+    bool ok = false;
+    if (itemIsButton(idx)) {
+        const int oTint = guikit::detail::off(&K2AddrTable::Border_Tint);
+        const uintptr_t n = oTint ? guikit::detail::buttonBorder(c, false) : 0, h = oTint ? guikit::detail::buttonBorder(c, true) : 0;
+        if (n && h && readBrd(e, idx, n, h)) {
+            float tn[3], th[3];
+            for (int k = 0; k < 3; ++k) {
+                tn[k] = dim ? e.brdNormal[idx][k] * kDimTintK : (e.colState[idx] == 1 ? e.brdHover[idx][k] : e.brdNormal[idx][k]);
+                th[k] = dim ? e.brdNormal[idx][k] * kDimTintK : e.brdHover[idx][k];
+            }
+            ok = true;
+            for (int k = 0; k < 3 && ok; ++k)
+                ok = guikit::detail::wr<float>(n, oTint + 4 * k, tn[k]) && guikit::detail::wr<float>(h, oTint + 4 * k, th[k]);
+        }
+    }
+    if (!ok) {   // labels, and a reset-icon button that is a label clone
+        const int k = idx >= hse::PI_ROW && idx < hse::PI_NOTE ? (idx - hse::PI_ROW) % hse::kRowStride : -1;
+        const bool hasText = !itemIsButton(idx) && k != 1 && k != 2;   // the track and the thumb are art only (no text object to recolour)
+        bool textOk = false;
+        if (hasText) {
+            setItemColor(e, idx, false, kColDim);   // drop an amber state first, then (un)dim the text
+            setItemColor(e, idx, dim, kColDim);
+            textOk = e.defColOk[idx];
+        }
+        if (!e.dimAlphaOk[idx]) e.dimAlphaOk[idx] = guikit::getAlpha(c, &e.dimAlpha[idx]);
+        const bool alphaOk = e.dimAlphaOk[idx] && guikit::setAlpha(c, dim ? e.dimAlpha[idx] * kDimAlpha : e.dimAlpha[idx]);
+        ok = textOk || alphaOk;
+    }
+    e.dimState[idx] = dim;   // set even when refused: no retry every tick
+    if (!ok && !e.dimBad) {
+        e.dimBad = true;
+        KP_LOGV(chView, KPLOG_WARN, "STYLE WARN dim refused on item %d (button=%d): locked controls keep their normal look (they are still ignored)", idx, itemIsButton(idx) ? 1 : 0);
     }
 }
 
@@ -1488,6 +1555,32 @@ void setWeaponMode(Editor& e, int mode, const char* why) {
     refreshSelectors(e, true);
 }
 
+// Body scope (K2HOLSTER_SCOPE_BODY) saves the offset only (HolsterApi.h), so Tilt, Roll/Turn and the three rotation rows are locked while it is selected
+// (hse::rotationAllowed / modeEnabled / effectiveMode, host tested). Runs every tick: it logs once per scope change, moves a selected Tilt / Roll-Turn mode to
+// Move, and dims / undims the two mode buttons and the rotation rows (name, track, thumb, value, reset) and the Rotation group reset. The handlers ignore the
+// locked controls on their own (modeEnabled in the click loop, effectiveMode in the gesture, inspRowEnabled in the scrub / reset), this is the visible half.
+void syncRotationLock(Editor& e) {
+    if (!g_menu.ok() || !e.page || e.refused) return;
+    const bool locked = !hse::rotationAllowed(e.editScope);
+    if (locked != e.rotLocked) {
+        e.rotLocked = locked;
+        e.hintRow = -2;   // the right description text of the rotation rows differs
+        if (locked) {
+            if (e.scrub.active && hse::inspIsRot(e.scrub.row)) scrubCancel(e, "body_scope");
+        } else {
+            e.leftNote = nullptr;
+        }
+        KP_LOG(chView, "BODY scope: rotation controls %s", locked ? "disabled" : "enabled");
+    }
+    if (!hse::modeEnabled(e.weaponMode, e.editScope)) setWeaponMode(e, hse::effectiveMode(e.weaponMode, e.editScope), "body_scope");
+    for (int i = 0; i < kModeCount; ++i) setItemDim(e, hse::PI_MODE + i, !hse::modeEnabled(i, e.editScope));
+    for (int r = 0; r < hse::kV3Rows; ++r) {
+        if (!hse::inspIsRot(r)) continue;
+        for (int k = 0; k < hse::kRowStride; ++k) setItemDim(e, hse::PI_ROW + r * hse::kRowStride + k, locked);
+    }
+    setItemDim(e, hse::PI_GROUP + 1 * 2 + 1, locked);
+}
+
 // Stance back to Idle (a member rebuild starts from the idle pose).
 void resetStanceUi(Editor& e) {
     e.stanceIdx = 0;
@@ -1568,7 +1661,18 @@ void applyLayout(Editor& e) {
     editkit::Box col = hse::boxOf(e.paneCol), prev = hse::boxOf(e.panePreview);
     col.x -= g_marginPx; col.w += g_marginPx;   // into the empty screen margins (ini margin_px 0 = stay inside the panes)
     prev.w += g_marginPx;
-    const hse::PageLayoutV3 L = hse::pageLayoutV3(col, hse::boxOf(e.paneView), prev, none, e.rowFrac, hse::boxOf(e.paneDesc));
+    // The right description box covers LB_DESC's own frame: the pane is inflated by desc_cover_px (clamped under the preview pane and inside the screen) before the
+    // layout, so both description boxes (bottom aligned on that pane) keep equal bottoms.
+    editkit::Box screen = {0, 0, 0, 0};
+    {
+        int sw = 0, sh = 0;
+        if (guikit::g_gk.screenWAddr) (void)guikit::detail::rdInt(guikit::g_gk.screenWAddr, 0, &sw);
+        if (guikit::g_gk.screenHAddr) (void)guikit::detail::rdInt(guikit::g_gk.screenHAddr, 0, &sh);
+        if (sw >= 320 && sw <= 16384 && sh >= 200 && sh <= 16384) screen = editkit::Box{0, 0, sw, sh};
+    }
+    const editkit::Box paneBox = hse::boxOf(e.paneDesc);
+    const editkit::Box coverBox = hse::coverDescPane(paneBox, prev, screen, g_descCoverPx);
+    const hse::PageLayoutV3 L = hse::pageLayoutV3(col, hse::boxOf(e.paneView), prev, none, e.rowFrac, coverBox);
     const bool first = !e.layOk;
     const int rState = L.hintR[0].w > 0 ? 1 : 0;
     if (rState != e.hintRState) {   // the right description box (a framed label over mod-config's LB_DESC, hides its scrollbar) was created / lost
@@ -1579,6 +1683,11 @@ void applyLayout(Editor& e) {
         else
             KP_LOG(chView, "HINTR box absent (desc pane=(%d,%d,%d,%d) unavailable or too small): the right help goes through SetDesc only", e.paneDesc.x, e.paneDesc.y, e.paneDesc.w,
                    e.paneDesc.h);
+    }
+    if (L.hintR[0].w > 0 && (first || memcmp(&coverBox, &e.coverShown, sizeof coverBox) != 0)) {   // once per page build (and when the panes move)
+        e.coverShown = coverBox;
+        KP_LOG(chView, "HINTR cover=%d pane=(%d,%d,%d,%d) box=(%d,%d,%d,%d)", g_descCoverPx, paneBox.x, paneBox.y, paneBox.w, paneBox.h, L.hintR[0].x, L.hintR[0].y,
+               L.hintR[0].w, L.hintR[0].h);
     }
     e.lay = L;
     e.layOk = true;
@@ -1593,7 +1702,8 @@ void applyLayout(Editor& e) {
         // The wedge's tall end is the right edge of its texture: cut the rect at the centre of the thumb box (the layout clamps the thumb inside the track),
         // so the wedge always ends exactly where the marker sits.
         const int w = th.w > 0 ? th.x + th.w / 2 - t.x : 0;
-        placeBox(e.wedge[r], w > 0 && t.h > 0 ? editkit::Box{t.x, t.y, w, t.h} : editkit::Box{-9999, -9999, 0, 0});
+        const bool lockedRow = e.rotLocked && hse::inspIsRot(r);   // body scope: no teal fill on a locked rotation row
+        placeBox(e.wedge[r], w > 0 && t.h > 0 && !lockedRow ? editkit::Box{t.x, t.y, w, t.h} : editkit::Box{-9999, -9999, 0, 0});
     }
     applyCaptions(e);   // after every button rect is set: the engine's SetExtent just re-insetted each caption text rect
     const hse::HseRect vr = hse::rectOf<hse::HseRect>(L.view);
@@ -1773,7 +1883,7 @@ void refreshInspector(Editor& e, bool force) {
             setItemText(e, idx, fit);
             ++e.inspWinSets;
         }
-        setItemColor(e, idx, enabled && e.openValid && hse::inspDiffers(r, v, open), kColAmber);
+        if (enabled) setItemColor(e, idx, e.openValid && hse::inspDiffers(r, v, open), kColAmber);   // a locked row keeps its dim colour (setItemDim)
     }
 }
 
@@ -1783,7 +1893,7 @@ void showNoEdit(Editor& e) {
         e.rowFrac[r] = 0.5f;
         const int idx = hse::PI_ROW + r * hse::kRowStride + 3;
         setItemText(e, idx, "-");
-        setItemColor(e, idx, false, kColAmber);
+        if (!e.dimState[idx]) setItemColor(e, idx, false, kColAmber);
     }
     e.inspText.clear();
     e.inspForce = true;
@@ -1861,21 +1971,30 @@ void refreshHints(Editor& e, int x, int y) {
     int rtip = -1;   // a RIGHT-side button with help (the mode bar, the view icons, the stances, the group resets)
     for (int i = 0; row < 0 && i < hse::kPageItemsV3 && rtip < 0; ++i)
         if (itemIsButton(i) && !itemIsLeftTip(i) && itemTip(i)[0] && overItem(e, e.item[i], x, y)) rtip = i;
-    // key of what the right pane shows: a slider row, 100 + a right button, 200 + a left button (no left box), -1 the default
-    const int key = row >= 0 ? row : (rtip >= 0 ? 100 + rtip : ((!haveL && tip >= 0) ? 200 + tip : -1));
+    // Body scope: the rotation rows and the Tilt / Roll-Turn mode buttons answer with the lock text. A click notice (kModeLockedNote) shows in the left box for kNoteMs.
+    const bool rowLocked = row >= 0 && !hse::inspRowEnabled(row, e.editScope);
+    const bool modeLocked = rtip >= hse::PI_MODE && rtip < hse::PI_MODE + kModeCount && !hse::modeEnabled(rtip - hse::PI_MODE, e.editScope);
+    const bool noteLive = e.leftNote && GetTickCount() - e.leftNoteAt < kNoteMs;
+    // key of what the right pane shows: a slider row (+ 64 when locked), 100 + a right button (1000 + when locked), 200 + a left button (no left box), 300 a notice (no left box), -1 the default
+    const int key = row >= 0 ? row + (rowLocked ? 64 : 0)
+                             : (rtip >= 0 ? (modeLocked ? 1000 : 100) + rtip : ((!haveL && tip >= 0) ? 200 + tip : ((!haveL && noteLive) ? 300 : -1)));
     if (key != e.hintRow) {
         e.hintRow = key;
         char buf[240];
-        if (row >= 0) snprintf(buf, sizeof buf, "%s %s", hse::inspHint(row), kSliderHelp);
+        if (rowLocked) snprintf(buf, sizeof buf, "%s", hse::rotationLockedHint());
+        else if (row >= 0) snprintf(buf, sizeof buf, "%s %s", hse::inspHint(row), kSliderHelp);
+        else if (modeLocked) snprintf(buf, sizeof buf, "%s", hse::rotationLockedHint());
         else if (rtip >= 0) snprintf(buf, sizeof buf, "%s", itemTip(rtip));
+        else if (key == 300) snprintf(buf, sizeof buf, "%s", e.leftNote);
         else if (key >= 200) snprintf(buf, sizeof buf, "%s", itemTip(tip));
         else snprintf(buf, sizeof buf, "%s", kSliderHelp);
         g_menu.p->SetDesc(e.page, buf);
         if (haveR) setHintText(e, hse::PI_HINTR + 1, buf);
     }
-    if (tip == e.leftTip) return;
-    e.leftTip = tip;
-    const char* text = tip >= 0 ? itemTip(tip) : kLeftHelp;
+    const int ltip = tip >= 0 ? tip : (noteLive ? 500 : -1);
+    if (ltip == e.leftTip) return;
+    e.leftTip = ltip;
+    const char* text = tip >= 0 ? itemTip(tip) : (noteLive ? e.leftNote : kLeftHelp);
     if (haveL) setHintText(e, hse::PI_HINT + 1, text);
 }
 
@@ -1894,6 +2013,7 @@ void scrubCancel(Editor& e, const char* why) { scrubFinish(e, why, true); }
 // SetValues with ABSOLUTE values: the fresh edit values with ONE row set to `value`. SetValues returns void, so a failure shows as a missing provider, an edit that
 // is no longer open, or a read-back that is not the value sent; each is a WARN (capped per kind). False when the value did not take.
 bool applyRowValue(Editor& e, int row, float value, WarnKind kind, const char* what) {
+    if (hse::inspIsRot(row) && !hse::rotationAllowed(e.editScope)) return false;   // body scope: the provider is never asked to rotate
     if (!g_hol.ok()) {
         if (warnOk(e, kind)) KP_LOGV(chView, KPLOG_WARN, "%s WARN %s row=%s: holster provider missing, SetValues dropped", kind == W_SCRUB ? "SCRUB" : "INSP", what, hse::inspRowName(row));
         return false;
@@ -1976,6 +2096,10 @@ void scrubTick(Editor& e, const hse::ChordOut& co, bool lEdge, int x, int y, boo
     bool onThumb = false;
     const int row = sliderRowAt(e, x, y, &onThumb);
     if (row < 0) return;
+    if (!hse::inspRowEnabled(row, e.editScope)) {   // a locked rotation row: no jump, no scrub (the row's right description text says why)
+        if (logRoom(e.scrubLogs, kMaxScrubLogs, "SCRUB")) KP_LOG(chView, "SCRUB ignore row=%s: no rotation in the body scope at=(%d,%d)", hse::inspRowName(row), x, y);
+        return;
+    }
     if (!onThumb && refreshEdit(e) && hse::inspRowEnabled(row, e.editInfo.scope)) {
         const editkit::Box t = e.lay.rows[row].track;
         const float to = hse::inspTrackValue(row, x, t.x, t.w);
@@ -2297,7 +2421,7 @@ hse::ChordOut weaponMouse(Editor& e, int curX, int curY, bool insideView, bool f
     } else if (o.began == hse::CA_WEAPON) {
         refreshEdit(e);
         e.gActive = true;
-        e.gMode = e.weaponMode;   // the mode bar can change meanwhile; this gesture keeps the mode it began with
+        e.gMode = hse::effectiveMode(e.weaponMode, e.editScope);   // the mode bar can change meanwhile; this gesture keeps the mode it began with (Tilt / Roll-Turn in the body scope run as Move)
         e.gHand = e.editHand == 1 ? 1 : 0;
         e.gFrames = 0;
         e.gDx = e.gDy = 0;
@@ -2305,7 +2429,8 @@ hse::ChordOut weaponMouse(Editor& e, int curX, int curY, bool insideView, bool f
         resetSnap(e, "gesture_begin");
         if (e.gestureLogs < kMaxGestureLogs) {
             ++e.gestureLogs;
-            KP_LOG(chView, "GESTURE begin mode=%s hand=%s scope=%d zoom=%.2f shift=%d ctrl=%d how=%s", hse::weaponModeName(e.gMode), handName(e.gHand), e.editScope,
+            KP_LOG(chView, "GESTURE begin mode=%s%s hand=%s scope=%d zoom=%.2f shift=%d ctrl=%d how=%s", hse::weaponModeName(e.gMode),
+                   e.gMode != e.weaponMode ? " (body scope: rotation mode runs as Move)" : "", handName(e.gHand), e.editScope,
                    e.view.zoom, shift ? 1 : 0, ctrl ? 1 : 0, hse::chordWhyName(o.why));
         }
         updateStatusText(e);
@@ -2323,6 +2448,7 @@ hse::ChordOut weaponMouse(Editor& e, int curX, int curY, bool insideView, bool f
     } else if (o.act == hse::CA_SPIN && (o.dx != 0)) {
         e.view.yaw = hse::spin(e.view.yaw, static_cast<float>(o.dx));   // dx > 0 turns the yaw up, same sign as NAV and the equip screen
     } else if (o.act == hse::CA_WEAPON && e.gActive && (o.dx != 0 || o.dy != 0)) {
+        e.gMode = hse::effectiveMode(e.gMode, e.editScope);   // never a rotation call in the body scope, even if the scope changed mid-gesture
         const hse::WeaponStep st = hse::weaponGesture(e.gMode, o.dx, o.dy, e.view.zoom, o.fine, o.snap, e.snap);
         ++e.gFrames;
         e.gDx += o.dx;
@@ -2576,8 +2702,17 @@ void tickBody(Editor& e) {
                 for (int r = 0; r < hse::IR_COUNT && !didReset && e.mode == MODE_WEAPON; ++r)
                     if (clk[hse::PI_ROW + r * hse::kRowStride + 4]) { inspReset(e, r); didReset = true; }
             }
-            for (int i = 0; i < kModeCount; ++i)   // the mode bar picks what RMB + LMB does; it works with or without an open edit
-                if (clk[hse::PI_MODE + i]) setWeaponMode(e, i, "click");
+            for (int i = 0; i < kModeCount; ++i) {   // the mode bar picks what RMB + LMB does; it works with or without an open edit
+                if (!clk[hse::PI_MODE + i]) continue;
+                if (!hse::modeEnabled(i, e.editScope)) {   // Tilt / Roll-Turn in the body scope: nothing changes, the left description box says why
+                    e.leftNote = kModeLockedNote;
+                    e.leftNoteAt = GetTickCount();
+                    KP_LOG(chView, "MODE click %s ignored: rotation is not saved for the body scope", hse::weaponModeName(i));
+                    continue;
+                }
+                setWeaponMode(e, i, "click");
+            }
+            syncRotationLock(e);
         }
     }
 
@@ -2796,7 +2931,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     g_clients.init(api);
     embedgui::g_log = embedLog;
     embtex::g_log = embedLog;
-    KP_LOG(chMain, "holster-editor 0.4.10-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
+    KP_LOG(chMain, "holster-editor 0.4.11-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
            static_cast<unsigned>(sizeof kHseViewGui));
     g_clients.poll();   // the first poll() of every client tries to connect
     // This DLL is hookless: there is no frame hook to retry mod-config / menuui from later, so a missing provider now means no page this run.

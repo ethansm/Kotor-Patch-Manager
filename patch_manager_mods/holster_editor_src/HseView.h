@@ -860,6 +860,15 @@ inline const char* inspResetTip() { return "Put this value back to what it was w
 // Body scope edits the offset only: its rotation rows have nothing to scrub.
 inline bool inspRowEnabled(int row, int scope) { return !(scope == kScopeBodyId && inspIsRot(row)); }
 
+// Body scope saves the offset only (HolsterApi.h: the provider ignores rotation there), so every rotation control is locked in it:
+// rotationAllowed(scope) is the one rule; effectiveMode maps a rotation weapon mode (Tilt, Roll/Turn) to Move while it is locked, anything else is unchanged;
+// modeEnabled is false for the two rotation mode buttons while locked. Unknown modes / scopes: allowed (only kScopeBodyId locks).
+inline bool rotationAllowed(int scope) { return scope != kScopeBodyId; }
+inline bool modeIsRotation(int mode) { return mode == WPM_TILT || mode == WPM_ROLLTURN; }
+inline bool modeEnabled(int mode, int scope) { return rotationAllowed(scope) || !modeIsRotation(mode); }
+inline int effectiveMode(int mode, int scope) { return modeEnabled(mode, scope) ? mode : static_cast<int>(WPM_MOVE); }
+inline const char* rotationLockedHint() { return "Rotation is not saved for 'This body'. Pick 'This weapon' or a weapon class to rotate."; }
+
 // The value of a row in provider units (metres or degrees); NaN for a bad row.
 inline float inspGet(int row, const float rot[3], const float off[3]) {
     if (row < 0 || row >= IR_COUNT || !rot || !off) return NAN;
