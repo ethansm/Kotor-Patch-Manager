@@ -62,8 +62,10 @@ def ledger_hash() -> str:
     return f"{len(b)}:{hashlib.sha256(b).hexdigest()}"
 
 
-def ledger_same(token: str) -> bool:
-    """True when the ledger still matches the baseline token, allowing benign appended lines after it."""
+def ledger_same(token: str, any_event: bool = False) -> bool:
+    """True when the ledger still matches the baseline token, allowing benign appended lines after it.
+    any_event: also allow appended lines of any event type (other sessions installing or planning while the self-test runs); lines that
+    mention the fix pipeline are still refused."""
     if token == "absent":
         return not LEDGER.exists()
     try:
@@ -88,7 +90,7 @@ def ledger_same(token: str) -> bool:
             obj = json.loads(line)
         except ValueError:
             return False
-        if not isinstance(obj, dict) or obj.get("event") not in LEDGER_BENIGN_EVENTS:
+        if not isinstance(obj, dict) or (not any_event and obj.get("event") not in LEDGER_BENIGN_EVENTS):
             return False
         low = line.lower()
         if any(s in low for s in LEDGER_SUSPECT_SUBSTR):
@@ -1007,9 +1009,10 @@ def self_test_inner(T: Path) -> int:
 
 def main(argv: list[str]) -> int:
     if argv[:1] == ["--self-test"]:
-        real0 = fc.file_sha(fc.PRODUCTION_LEDGER)
+        real0 = ledger_hash()
         r = fw.reexec_selftest(str(Path(__file__).resolve()))
-        if fc.file_sha(fc.PRODUCTION_LEDGER) != real0:
+        # Append-only, not byte-identical: other sessions share this worktree and append BUILD_GATE / HOTSWAP_APPLY / PHASE_DONE lines at any time.
+        if not ledger_same(real0, any_event=True):
             print("fix_checks self-test: FAIL production ledger changed!")
             return 3
         return r
