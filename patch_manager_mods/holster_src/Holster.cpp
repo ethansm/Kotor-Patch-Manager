@@ -1,4 +1,4 @@
-// Holster.cpp -- holster 0.5.1-dev (Steam build): P0 probe for the holstered-weapons mod (patch_manager_mods/42_holstered_weapons.md).
+// Holster.cpp -- holster 0.5.2-dev (Steam build): P0 probe for the holstered-weapons mod (patch_manager_mods/42_holstered_weapons.md).
 // Plan: .claude/plans/holstered_weapons.md. Handlers are plain extern "C" void __cdecl functions; the detour wrappers in
 // kotor2-steam-aspyr.hooks.toml call them at function entry with the game arguments BEFORE the stolen bytes run.
 // Hard rules for P0 (exceptions, both default off: the bone_test code patch, and HolsterPlace's 28-byte pose write with probe=1 bone_test=1 place=1): no other writes to game memory or registers, no engine calls, reads only through saferead, and every handler returns at
@@ -28,6 +28,7 @@
 #include "HolsterLogRate.h"
 #include "HolsterDrawGate.h"
 #include "HolsterSlide.h"
+#include "HolsterAnimStyle.h"
 #include "HolsterToggle.h"
 #include "HolsterDelay.h"
 #include "Party.h"
@@ -448,7 +449,17 @@ extern "C" void __cdecl HolsterSwap(void* exec) {
 
 // 0x00863650 anim-id resolver (ECX = object, [esp+4] = u16 anim id). (H5 0x005644B0 was removed: A3 showed it is an action enqueue, not an anim sender.)
 // Only ids in the hold/ready/wield-transition family 0x2710..0x27FF are logged; the resolver runs for every animation in the game.
-static bool animInteresting(uint32_t id) { return (id & 0xFFFFu) >= 0x2710u && (id & 0xFFFFu) <= 0x27FFu; }
+// 0.5.2-dev (HW15 probe): also the extra ids 0x283C 0x283D 0x283E 0x2806 0x28BD (outside 0x27xx, so they get their own counters, g_animPerIdX).
+static const uint32_t kAnimExtra[5] = {0x283Cu, 0x283Du, 0x283Eu, 0x2806u, 0x28BDu};
+static volatile LONG g_animPerIdX[8] = {};   // one slot per kAnimExtra id; the same cap as g_animPerId
+static int animExtraSlot(uint32_t id) {
+    for (int i = 0; i < 5; ++i) if ((id & 0xFFFFu) == kAnimExtra[i]) return i;
+    return -1;
+}
+static bool animInteresting(uint32_t id) { return ((id & 0xFFFFu) >= 0x2710u && (id & 0xFFFFu) <= 0x27FFu) || animExtraSlot(id) >= 0; }
+
+// Filled by HolsterPlace each placement while the owner's weapon is on the hip; read by the resolver probe (ANIMRES hol=).
+static hs::HolsterSet g_holSet;
 
 static void maybeReload();
 
@@ -456,7 +467,8 @@ extern "C" void __cdecl HolsterAnimResolve(void* self, uint32_t animId) {
     if (g_probe) maybeReload();   // the resolver runs every frame; the 0x5047B0 handler only on attach events (live test 10-15: GOB lines=12)
     if (!g_onAnim || !animInteresting(animId)) return;
     // Quiet mode: 4 lines per id and 32 first-sightings of (creature, id, style); log_verbose=1: 20 and 64.
-    if (InterlockedIncrement(&g_animPerId[(animId & 0xFFFFu) - 0x2700u]) > (g_logVerbose ? 20 : 4)) {
+    const int xSlot = animExtraSlot(animId);
+    if (InterlockedIncrement(xSlot >= 0 ? &g_animPerIdX[xSlot] : &g_animPerId[(animId & 0xFFFFu) - 0x2700u]) > (g_logVerbose ? 20 : 4)) {
         // C6: past the per-id cap, still log the first sighting of each (creature, id, style) so every party member's wield style shows.
         struct Seen { uintptr_t self; uint32_t id; uint8_t style; };
         static Seen s_seen[64];
@@ -478,8 +490,14 @@ extern "C" void __cdecl HolsterAnimResolve(void* self, uint32_t animId) {
     uint8_t b[5] = {0, 0, 0, 0, 0};
     static const int offs[5] = {0xC5, 0xC6, 0xCC, 0xD4, 0xE8};
     for (int i = 0; i < 5; ++i) (void)saferead::readAt(kSiteAnim, s, offs[i], &b[i]);
-    KP_LOG(chAnim, "ANIMRES self=%x id=%x style=%u gate=%u cc=%u d4=%u e8=%u tick=%lu", U(self), static_cast<unsigned>(animId & 0xFFFFu), b[0], b[1], b[2],
-           b[3], b[4], static_cast<unsigned long>(GetTickCount()));
+    // HW15 probe: hol = this creature's weapon is on the hip (HolsterSet, filled by HolsterPlace), comb = client combat flag (-1 unreadable / no offset).
+    const unsigned long nowTick = GetTickCount();
+    const int hol = g_holSet.contains(s, rdU32(kSiteAnim, s, 0x68), static_cast<uint32_t>(nowTick)) ? 1 : 0;
+    const int combOff = k2addr::off(&K2AddrTable::Creature_ClientCombat);
+    uint32_t combRaw = 0;
+    const int comb = (combOff != 0 && rdU32Ok(kSiteAnim, s, combOff, &combRaw)) ? static_cast<int>(combRaw) : -1;
+    KP_LOG(chAnim, "ANIMRES self=%x id=%x style=%u gate=%u cc=%u d4=%u e8=%u hol=%d comb=%d tick=%lu", U(self), static_cast<unsigned>(animId & 0xFFFFu), b[0], b[1], b[2],
+           b[3], b[4], hol, comb, nowTick);
 }
 
 // Live reload of the tune keys (place, place_rot, place_off) when holster.ini changes. Throttled to 500 ms by ReloadPoll; a failed open keeps
@@ -1264,6 +1282,10 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
         const bool readable = owner != 0 && combatOff != 0 && rdU32Ok(kSitePlace, owner, combatOff, &combat);
         const bool hip = hs::shouldWriteHip(true, readable, combat,
                                         hs::holdActive(owner, g_holdOwner, g_holdUntil, GetTickCount()) || (g_flourishDraw && readable && combat == 0 && flourishOpenFor(owner)));
+        if (readable) {   // HW15 probe: track which owners have a weapon on the hip (read by the ANIMRES line)
+            if (hip) { const uintptr_t hb = rdU32(kSitePlace, owner, 0x68); if (hb) g_holSet.touch(owner, hb, GetTickCount()); }
+            else g_holSet.remove(owner);
+        }
         const bool first = ent->gate.hip < 0 || ent->gate.owner != owner;   // not evaluated yet, or a new owner: placed silently, no slide
         if (hs::gateUpdate(ent->gate, owner, hip)) {
             ent->seq = -1;   // state flip or new owner: the resolved placement is redone
@@ -1706,7 +1728,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     addName(names, sizeof(names), g_onGob, "gob");
     addName(names, sizeof(names), g_onPlace, "place");
     addName(names, sizeof(names), g_onToggle, "toggle");
-    KP_LOG(chMain, "holster 0.5.1-dev loaded (P0 probe, log-only): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_probe ? 1 : 0,
+    KP_LOG(chMain, "holster 0.5.2-dev loaded (P0 probe, log-only): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_probe ? 1 : 0,
            names[0] ? names : "none", static_cast<long>(g_maxLines), g_gobEvery, k2addr::get() ? "ok" : "none");
     {
         hs::TuneCfg t;
