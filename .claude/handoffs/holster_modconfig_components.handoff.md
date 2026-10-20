@@ -43,3 +43,8 @@ Read this file, research/mod_config_components/S2_reconcile_doc46.txt, doc 46. P
 
 ## State at 10-20 (remaining-work plan written)
 Plan `patch_manager_mods/42b_holster_remaining_plan.md` (master rows HW12-HW17): flourish window, slide (Slide replaces the unwired Fsm), unarmed probe then gated override, weapon-swap guard. Evidence: `research/holstered_weapons/hr1/R1..R5_review.md` (12 Haiku + 5 Sonnet swarm). Nothing built yet. Next: wave A (4 disjoint Sonnet workers), see plan sec 3. Unarmed scope shrank: holstered idle is already unarmed (R3).
+
+## State at 10-20 19:35 (doc 42b waves A-D INSTALLED)
+LIVE: holster 0.5.2-dev (rollback `kpm_hotswap.py --rollback holster_swap_20261020_193331`), holster-editor 0.5.0-dev. Commits 240f320d (A guards/Slide/AnimStyle/log-check), b16085e8 (B flourish window), baed1b86 (C slide + Fsm retired), f389c1cd (D unarmed probe), c8a6eac1 (play rows). KPM 2f85e8d. Gate PASS (378 tests). Reviews: B APPROVE, C APPROVE_MINOR (nits: flicker-unreadable gives a cosmetic stow slide; 60-line SLIDE log budget drops end lines; HolsterLogic.h:2 and docs still mention Fsm; FLOURISH s_open goes stale when a slot leaves the party).
+Pending (user plays): FL1-FL4, SL-DRAW/REENTRY/EDGE, SW1/SW2, HW7a-P (+ older BR1-3, SC1, RS1, HK1, HD1-3). After play: `holster_log_check.py` prints GOBREUSE/FLOURISH/SLIDE counters. HW16 (unarmed override, REINSTALL) only if HW7a-P shows gate=1 + style {2,3,4,7,9} on 2712/2714.
+Next: read play results; flip D1/D2/D3 defaults only on evidence; optional nit fixes.
