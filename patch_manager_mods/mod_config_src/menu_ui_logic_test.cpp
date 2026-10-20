@@ -411,6 +411,14 @@ static void test_hit_test() {
     KT_CHECK_EQ(pt.hitTest(p, 30, 20), -1); // only hidden A covers this point
     KT_CHECK_EQ(pt.hitTest(7, 25, 20), -1); // page not added
     KT_CHECK_EQ(pt.hitTest(-1, 25, 20), -1);
+
+    // A CUSTOM item (a preview label that covers the pane) must not shadow a button added after it (the gear).
+    PageTable pv;
+    int q = pv.addPage();
+    pv.addItem(q, CUSTOM, nullptr, 0, Rect{0, 0, 200, 100});   // id 0: preview backdrop
+    pv.addItem(q, BUTTON, nullptr, 0, Rect{170, 5, 20, 20});   // id 1: gear inside it
+    KT_CHECK_EQ(pv.hitTest(q, 180, 15), 1);   // the button wins over the earlier custom
+    KT_CHECK_EQ(pv.hitTest(q, 50, 50), 0);    // elsewhere the custom is still hit
 }
 
 // ---------------------------------------------------------------- truncate guard

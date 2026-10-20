@@ -1514,10 +1514,15 @@ int hitItem(int x, int y) {
     }
     const int k = shownSlot();
     if (k < 0) return -1;
-    for (int i = 0; i < e.pt.itemCount(2 + k); ++i) {
-        const ItemX& it = e.items[k][i];
-        if (e.pt.pages[2 + k].items[i].kind == mui::LABEL || it.userHidden || !mui::rowPartHittable(e.itemPart[k][i])) continue;   // the wedge and mark sit on the frame: the frame is the hit
-        if (overCtl(it, x, y)) return i;
+    // Two passes: real controls first, AddCustom controls (a preview's label pool covers the whole pane, gear included) only when nothing else is hit.
+    for (int pass = 0; pass < 2; ++pass) {
+        for (int i = 0; i < e.pt.itemCount(2 + k); ++i) {
+            const ItemX& it = e.items[k][i];
+            const int kind = e.pt.pages[2 + k].items[i].kind;
+            if (kind == mui::LABEL || (kind == mui::CUSTOM) != (pass == 1)) continue;
+            if (it.userHidden || !mui::rowPartHittable(e.itemPart[k][i])) continue;   // the wedge and mark sit on the frame: the frame is the hit
+            if (overCtl(it, x, y)) return i;
+        }
     }
     return -1;
 }

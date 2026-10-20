@@ -386,10 +386,13 @@ inline bool PageTable::setVisible(int page, int id, bool visible) {
 inline int PageTable::hitTest(int page, int px, int py) const {
     if (page < 0 || page >= nPages) return -1;
     const Page& p = pages[page];
-    for (int i = 0; i < p.nItems; ++i) {
-        const Item& it = p.items[i];
-        if (!it.visibleInPage) continue;
-        if (px >= it.rect.x && px < it.rect.x + it.rect.w && py >= it.rect.y && py < it.rect.y + it.rect.h) return i;
+    // Two passes: non-CUSTOM items first, CUSTOM (a preview's label pool covers the whole pane) only when nothing else is hit.
+    for (int pass = 0; pass < 2; ++pass) {
+        for (int i = 0; i < p.nItems; ++i) {
+            const Item& it = p.items[i];
+            if (!it.visibleInPage || (it.kind == CUSTOM) != (pass == 1)) continue;
+            if (px >= it.rect.x && px < it.rect.x + it.rect.w && py >= it.rect.y && py < it.rect.y + it.rect.h) return i;
+        }
     }
     return -1;
 }
