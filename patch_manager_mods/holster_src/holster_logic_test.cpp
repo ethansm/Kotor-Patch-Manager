@@ -123,63 +123,6 @@ static void testHilt() {
     KT_CHECK(gripOffsetFromOrigin("w_Dblsbr") > 0.2f && gripOffsetFromOrigin("w_Lghtsbr") == 0.f);
 }
 
-static void testFsmDrawIsInstant() {
-    Fsm f;
-    KT_CHECK(!f.inHand());
-    KT_CHECK(f.handFraction(0) == 0.f);
-    f.onCombat(1, 1000);
-    // requirement 3: the weapon is in the hand on the very edge, before any slide time passes
-    KT_CHECK(f.inHand());
-    KT_CHECK(f.phase == PhDrawing);
-    KT_CHECK(f.handFraction(1000) == 0.f);
-    KT_CHECK(f.handFraction(1000 + kDrawMs / 2) > 0.4f && f.handFraction(1000 + kDrawMs / 2) < 0.6f);
-    f.tick(1000 + kDrawMs);
-    KT_CHECK(f.phase == PhDrawn && f.handFraction(5000) == 1.f);
-}
-
-static void testFsmStowDelayAndCancel() {
-    Fsm f;
-    f.onCombat(1, 0);
-    f.tick(kDrawMs);
-    f.onCombat(0, 5000);
-    f.tick(5000 + kStowDelayMs - 1);
-    KT_CHECK(f.phase == PhDrawn);                       // still drawn during the exit countdown
-    f.tick(5000 + kStowDelayMs);
-    KT_CHECK(f.phase == PhStowing);
-    KT_CHECK(f.handFraction(5000 + kStowDelayMs) == 1.f);
-    f.tick(5000 + kStowDelayMs + kDrawMs);
-    KT_CHECK(f.phase == PhHolstered && f.handFraction(99999) == 0.f);
-    // combat re-entry during the exit countdown cancels the stow
-    Fsm g;
-    g.onCombat(1, 0); g.tick(kDrawMs);
-    g.onCombat(0, 2000);
-    g.onCombat(1, 2500);
-    KT_CHECK(!g.stowPending && g.phase == PhDrawing);
-    g.tick(2500 + kStowDelayMs + kDrawMs);
-    KT_CHECK(g.phase == PhDrawn);
-}
-
-static void testFsmSwapAndRollover() {
-    Fsm f;
-    f.onCombat(1, 0); f.tick(kDrawMs);
-    f.onSwap(2000);
-    KT_CHECK(f.phase == PhDrawing && f.phaseLen == kSwapMs);
-    f.tick(2000 + kSwapMs - 1);
-    KT_CHECK(f.phase == PhDrawing);
-    f.tick(2000 + kSwapMs);
-    KT_CHECK(f.phase == PhDrawn);
-    // tick wrap: stowAt computed across the 32-bit wrap still fires
-    Fsm w;
-    w.onCombat(1, 0xFFFFFF00u); w.tick(0xFFFFFF00u + kDrawMs);
-    w.onCombat(0, 0xFFFFFFF0u);
-    w.tick(0xFFFFFFF0u + kStowDelayMs);
-    KT_CHECK(w.phase == PhStowing);
-    // never-drawn creature never starts a stow
-    Fsm h;
-    h.onCombat(0, 100); h.tick(100 + kStowDelayMs * 2);
-    KT_CHECK(h.phase == PhHolstered);
-}
-
 static void testPlacementDefaults() {
     for (int c = 0; c < CatCount; ++c)
         for (int m = 0; m < MountCount; ++m) {
@@ -222,9 +165,6 @@ int main() {
     testChooseMount();
     testTwoSetsFillFourMounts();
     testHilt();
-    testFsmDrawIsInstant();
-    testFsmStowDelayAndCancel();
-    testFsmSwapAndRollover();
     testPlacementDefaults();
     testCombFields();
     return kt::Report("holster_logic");

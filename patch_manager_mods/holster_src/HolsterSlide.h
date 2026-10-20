@@ -1,7 +1,7 @@
-// HolsterSlide.h -- cosmetic draw/stow slide of the holstered-weapons mod (doc 42, P3): the weapon eases between the body mount pose
-// and the hand pose while Fsm (HolsterLogic.h) reports the hand fraction. Pure math, header-only, no engine calls. The slide never
-// gates the hand attach: Fsm::inHand() is already true on the combat edge; this file only shapes the pose. Host-tested by
-// holster_slide_test.cpp.
+// HolsterSlide.h -- cosmetic draw/stow slide of the holstered-weapons mod (doc 42, HW14): a weapon eases between the body mount (hip)
+// pose and the hand pose instead of snapping. One hs::Slide per weapon holds a time-based hand fraction (0 = hip, 1 = hand); the draw
+// gate (HolsterDrawGate.h) only chooses the target. The slide never gates the hand attach, it only shapes the written pose. Pure math,
+// header-only, no engine calls. Host-tested by holster_slide_test.cpp.
 #pragma once
 #include <stdint.h>
 #include "HolsterQuat.h"
@@ -33,12 +33,7 @@ inline Pose blendPose(const Pose& mount, const Pose& hand, float f) {
     return o;
 }
 
-// Slide pose at tick `now`: the mount at hand fraction 0, the hand at fraction 1, eased in between.
-inline Pose slidePose(const Fsm& fsm, uint32_t now, const Pose& mount, const Pose& hand) {
-    return blendPose(mount, hand, easeSmooth(fsm.handFraction(now)));
-}
-
-// ---- Per-weapon time-based slide (replaces the Fsm-driven path in a later wave; the Fsm path above stays until then) ----
+// ---- Per-weapon time-based slide ----
 // One Slide per weapon (left/right independent). `frac` is the hand fraction at a tick: 0 = hip/body mount, 1 = hand. A retarget
 // starts from the current fraction (no pop) and takes ms * remaining distance, so reversing half way takes half the time.
 // All tick compares are signed 32-bit differences, so the counter wrapping past 0xFFFFFFFF is harmless.

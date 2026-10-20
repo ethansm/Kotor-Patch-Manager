@@ -86,61 +86,6 @@ static void testShortArcOnAntipodalHand() {
     }
 }
 
-static void testFsmDrawSlide() {
-    const Pose m = mountPose(), h = handPose();
-    const uint32_t t = 100000u;
-    Fsm fsm;
-    fsm.onCombat(1, t);
-    KT_CHECK(fsm.inHand());                                  // usable at once; the slide is cosmetic
-    KT_CHECK(samePose(slidePose(fsm, t, m, h), m));          // t + 0: at the mount
-    const Pose mid = slidePose(fsm, t + kDrawMs / 2, m, h);  // half way: easeSmooth(0.5) = 0.5, so the midpoint
-    for (int c = 0; c < 3; ++c) KT_CHECK(closeTo(mid.pos[c], 0.5f * (m.pos[c] + h.pos[c])));
-    KT_CHECK(poseSane(mid));
-    KT_CHECK(samePose(slidePose(fsm, t + kDrawMs, m, h), h));  // t + kDrawMs: in the hand
-    fsm.tick(t + kDrawMs);
-    KT_CHECK(fsm.phase == PhDrawn && fsm.inHand());
-    KT_CHECK(samePose(slidePose(fsm, t + kDrawMs, m, h), h));
-}
-
-static void testFsmStowSlideReturnsToMount() {
-    const Pose m = mountPose(), h = handPose();
-    const uint32_t t = 200000u;
-    Fsm fsm;
-    fsm.onCombat(1, t);
-    fsm.tick(t + kDrawMs);                                   // PhDrawn: in the hand
-    fsm.onCombat(0, t + 400u);                               // combat ends: stow waits kStowDelayMs
-    fsm.tick(t + 400u + kStowDelayMs);                       // stow begins: starts at the hand
-    const uint32_t s = t + 400u + kStowDelayMs;
-    KT_CHECK(fsm.phase == PhStowing);
-    KT_CHECK(samePose(slidePose(fsm, s, m, h), h));
-    KT_CHECK(samePose(slidePose(fsm, s + kDrawMs, m, h), m));  // slide done: back at the mount
-    fsm.tick(s + kDrawMs);
-    KT_CHECK(fsm.phase == PhHolstered && !fsm.inHand());
-}
-
-static void testSlideAcrossCounterWrap() {
-    const Pose m = mountPose(), h = handPose();
-    const uint32_t t0 = 0xFFFFFFF0u;  // 16 ticks before the 32-bit counter wraps to 0
-    Fsm fsm;
-    fsm.onCombat(1, t0);
-    KT_CHECK(fsm.inHand());
-    float prevFrac = -1.f, prevX = m.pos[0];
-    for (uint32_t k = 0; k <= 40; ++k) {
-        const uint32_t now = t0 + k * 10u;  // wraps past 0 at k = 2
-        const float frac = fsm.handFraction(now);
-        KT_CHECK(closeTo(frac, std::fmin(1.f, k * 10.f / 350.f)));  // the same ramp as without the wrap
-        KT_CHECK(frac >= prevFrac);
-        prevFrac = frac;
-        const Pose p = slidePose(fsm, now, m, h);
-        KT_CHECK(poseSane(p));
-        KT_CHECK(p.pos[0] - prevX >= -1e-7f);  // x runs mount -> hand (0.1 -> 0.5): never backwards across the wrap
-        prevX = p.pos[0];
-    }
-    fsm.tick(t0 + kDrawMs);  // 350 ms after the start, across the wrap
-    KT_CHECK(fsm.phase == PhDrawn && fsm.inHand());
-    KT_CHECK(samePose(slidePose(fsm, t0 + kDrawMs, m, h), h));
-}
-
 // ---- per-weapon Slide ----
 
 static bool exactPos(const Pose& a, const Pose& b) { return a.pos[0] == b.pos[0] && a.pos[1] == b.pos[1] && a.pos[2] == b.pos[2]; }
@@ -495,9 +440,6 @@ int main() {
     testEaseSmooth();
     testBlendPosMonotoneAlongSegment();
     testShortArcOnAntipodalHand();
-    testFsmDrawSlide();
-    testFsmStowSlideReturnsToMount();
-    testSlideAcrossCounterWrap();
     testSlideResetIsSilent();
     testSlideEndpointsAndMid();
     testSlideRetargetContinuity();

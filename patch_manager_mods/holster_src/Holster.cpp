@@ -1,4 +1,4 @@
-// Holster.cpp -- holster 0.5.0-dev (Steam build): P0 probe for the holstered-weapons mod (patch_manager_mods/42_holstered_weapons.md).
+// Holster.cpp -- holster 0.5.1-dev (Steam build): P0 probe for the holstered-weapons mod (patch_manager_mods/42_holstered_weapons.md).
 // Plan: .claude/plans/holstered_weapons.md. Handlers are plain extern "C" void __cdecl functions; the detour wrappers in
 // kotor2-steam-aspyr.hooks.toml call them at function entry with the game arguments BEFORE the stolen bytes run.
 // Hard rules for P0 (exceptions, both default off: the bone_test code patch, and HolsterPlace's 28-byte pose write with probe=1 bone_test=1 place=1): no other writes to game memory or registers, no engine calls, reads only through saferead, and every handler returns at
@@ -27,6 +27,7 @@
 #include "HolsterTune.h"
 #include "HolsterLogRate.h"
 #include "HolsterDrawGate.h"
+#include "HolsterSlide.h"
 #include "HolsterToggle.h"
 #include "HolsterDelay.h"
 #include "Party.h"
@@ -63,6 +64,10 @@ static hs::PlaceMode g_placeMode = hs::PlaceDrawgate;
 static inline bool drawgateMode() { return g_placeMode == hs::PlaceDrawgate; }
 // flourish_draw (0.5.0-dev, HW13): 1 = a party member's weapon stays in the hand while its flourish window is open (flourishOpenFor, per owner).
 static bool g_flourishDraw = true;
+// draw_slide_ms / stow_slide_ms (0.5.1-dev, HW14): a weapon eases between the hip and the hand over this many ms (HolsterSlide.h Slide). 0 = instant for that
+// direction; 0 and 0 = the 0.5.0 snap exactly. Clamped by clampDrawSlideMs (0..570, the vanilla draw window) / clampStowSlideMs (0..1000).
+static uint32_t g_drawSlideMs = 350;
+static uint32_t g_stowSlideMs = 350;
 // Toggle-key draw hold (0.3.0-dev, HolsterDrawGate.h holdActive): the owner (client creature) whose weapons stay in the hand until g_holdUntil (GetTickCount ms,
 // wrap-safe). Written by the tick (g_holdUntil first, then g_holdOwner), read by HolsterPlace. 0 owner = no hold.
 static volatile uintptr_t g_holdOwner = 0;
@@ -298,6 +303,13 @@ static void readConfig() {
                 bool b = true;
                 if (hs::tuneParseBool(val, b)) g_flourishDraw = b;
                 else cfgWarn(key, val, "not a boolean word, keeping the default 1");
+            }
+            else if (!_stricmp(key, "draw_slide_ms") || !_stricmp(key, "stow_slide_ms")) {
+                char* end = nullptr;
+                const long v = strtol(val, &end, 10);
+                if (end == val || *end != 0) { cfgWarn(key, val, "not a number, keeping the default 350"); continue; }
+                if (!_stricmp(key, "draw_slide_ms")) g_drawSlideMs = hs::clampDrawSlideMs(v);
+                else g_stowSlideMs = hs::clampStowSlideMs(v);
             }
             else if (!_stricmp(key, "delay_party")) {
                 bool b = true;
@@ -1107,6 +1119,22 @@ static void gateLog(uintptr_t gob, uintptr_t owner, bool readable, uint32_t comb
            hip ? "hip" : "drawn", static_cast<unsigned>(combat), (g_flourishDraw && readable && combat == 0 && flourishOpenFor(owner)) ? 1 : 0, left ? 1 : 0);
 }
 
+// Millisecond tick for the draw/stow slide (HolsterSlide.h; wrap-safe 32-bit compares): QueryPerformanceCounter, frequency cached once.
+static uint32_t slideNowMs() {
+    static LONGLONG s_fq = 0;
+    if (!s_fq) {
+        LARGE_INTEGER f;
+        f.QuadPart = 0;
+        QueryPerformanceFrequency(&f);
+        s_fq = f.QuadPart > 0 ? f.QuadPart : 1;
+    }
+    LARGE_INTEGER c;
+    c.QuadPart = 0;
+    QueryPerformanceCounter(&c);
+    const unsigned long long q = static_cast<unsigned long long>(c.QuadPart), fq = static_cast<unsigned long long>(s_fq);
+    return static_cast<uint32_t>((q / fq) * 1000ull + (q % fq) * 1000ull / fq);
+}
+
 // H7 (hooks.toml H7, C4 recon): runs on EVERY per-frame refresh of an attach behavior (vtbl+0x08), right after the engine re-copied node N's WORLD
 // pose into gob+0xA4 (vec3) / gob+0xB0 (quat w-first). N = [beh+0x18]. For the target node (g_boneName) it composes the live-tuned placement onto
 // that pose and writes it back. Needs probe=1 AND bone_test=1 AND place=1; ch_place only gates the PLACE/PLACENODE/PLACEREFUSE log lines.
@@ -1130,7 +1158,7 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
     // Verdict cache keyed on node + gob + the node's name handle [N+4], so a freed and reused address pair is re-resolved. The full
     // resolve (weapon > type > global, plus the body delta) is cached with the tune sequence it was computed for and redone when it moves.
     // Repoint: both hands share the bone_name node; the hand comes from g_handRing (sticky via hs::resolveLeft when evicted). Drawgate: the node name (lhand) decides.
-    struct Ent { uintptr_t node, gob, handle, model; bool isTarget, left; hs::Category cat; char mname[17], body[17]; LONG seq; hs::Resolved r; hs::GateState gate; };
+    struct Ent { uintptr_t node, gob, handle, model; bool isTarget, left; hs::Category cat; char mname[17], body[17]; LONG seq; hs::Resolved r; hs::GateState gate; hs::Slide slide; uint32_t slFrames = 0, slMaxDt = 0, slPrev = 0; };
     static Ent s_cache[128];
     static unsigned s_next = 0;
     const uintptr_t g = reinterpret_cast<uintptr_t>(gob), n = reinterpret_cast<uintptr_t>(node);
@@ -1225,6 +1253,7 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
     // Drawgate target filter (C1 review B1): only weapon Gobs (model "w_...") are placed; menu previews / held props / hand VFX on rhand/lhand stay put.
     // Repoint mode is unaffected (its targets are the patched attach site's weapons only).
     if (drawgateMode() && !hs::isWeaponModel(ent->mname)) { refuse(PrNotWeapon, g, n, vt); return; }
+    float slideF = 0.f;   // hand fraction of the draw/stow slide (0 = hip); only the drawgate slide path sets it
     if (drawgateMode()) {
         // Draw gate (C1): owner creature = [parent+0x1D8]; drawn = client combat flag [owner+0x138] != 0 or a flourish window. Drawn (or anything
         // unreadable) returns with the hand pose the engine just wrote: the failure mode is a weapon in the hand (vanilla), never stuck on the hip.
@@ -1235,11 +1264,48 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
         const bool readable = owner != 0 && combatOff != 0 && rdU32Ok(kSitePlace, owner, combatOff, &combat);
         const bool hip = hs::shouldWriteHip(true, readable, combat,
                                         hs::holdActive(owner, g_holdOwner, g_holdUntil, GetTickCount()) || (g_flourishDraw && readable && combat == 0 && flourishOpenFor(owner)));
+        const bool first = ent->gate.hip < 0 || ent->gate.owner != owner;   // not evaluated yet, or a new owner: placed silently, no slide
         if (hs::gateUpdate(ent->gate, owner, hip)) {
             ent->seq = -1;   // state flip or new owner: the resolved placement is redone
             gateLog(g, owner, readable, combat, hip, ent->left);
         }
-        if (!hip) return;
+        if (g_drawSlideMs || g_stowSlideMs) {
+            // HW14: the gate only picks the slide's target; the pose is blended at the end. f == 1 is the hand (identical to the plain `if (!hip) return`).
+            const uint32_t now = slideNowMs();
+            if (first || !readable) {
+                ent->slide.reset(!hip, now);
+                ent->slFrames = 0;
+            } else {
+                const uint8_t dirBefore = ent->slide.dir;
+                ent->slide.touch(now);
+                ent->slide.target(!hip, now, g_drawSlideMs, g_stowSlideMs);
+                static volatile LONG s_slideLines = 0;
+                const bool logOk = g_onPlace && KP_ENABLED(chPlace, KPLOG_INFO);
+                if (ent->slide.dir != dirBefore) {
+                    ent->slFrames = 0;
+                    if (ent->slide.len > 0) {
+                        ent->slFrames = 1; ent->slMaxDt = 0; ent->slPrev = now;
+                        if (logOk && InterlockedIncrement(&s_slideLines) <= 60 && takeLine())
+                            KP_LOG(chPlace, "SLIDE start dir=%s owner=%x gob=%x left=%d from=%.2f ms=%u", ent->slide.dir ? "draw" : "stow", static_cast<unsigned>(owner),
+                                   static_cast<unsigned>(g), ent->left ? 1 : 0, static_cast<double>(ent->slide.from), static_cast<unsigned>(ent->slide.len));
+                    }
+                } else if (ent->slFrames) {
+                    if ((int32_t)(now - ent->slide.t0) < (int32_t)ent->slide.len) {   // still running (not yet at the end tick)
+                        const uint32_t dt = now - ent->slPrev;
+                        ++ent->slFrames;
+                        if (dt > ent->slMaxDt) ent->slMaxDt = dt;
+                        ent->slPrev = now;
+                    } else {
+                        if (logOk && InterlockedIncrement(&s_slideLines) <= 60 && takeLine())
+                            KP_LOG(chPlace, "SLIDE end dir=%s owner=%x ms=%u frames=%u maxdt=%u", ent->slide.dir ? "draw" : "stow", static_cast<unsigned>(owner),
+                                   static_cast<unsigned>(ent->slide.len), static_cast<unsigned>(ent->slFrames), static_cast<unsigned>(ent->slMaxDt));
+                        ent->slFrames = 0;
+                    }
+                }
+            }
+            slideF = ent->slide.frac(now);
+            if (slideF >= 1.f) return;
+        } else if (!hip) return;
     }
     hs::Pose in;
     if (!saferead::readAt(kSitePlace, g, 0xA4, &in)) { refuse(PrReadIn, g, n, vt); return; }
@@ -1264,7 +1330,9 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
         refuse(PrNoMount, g, n, vt);
         return;
     }
-    const hs::Pose out = hs::applyPlacement(base, pl);
+    const hs::Pose hipPose = hs::applyPlacement(base, pl);
+    // Mid-slide: ease between the hip pose and the engine's hand pose `in` (both world poses of this node slot; nothing accumulates, the engine rewrites it each frame).
+    const hs::Pose out = slideF > 0.f ? hs::blendPose(hipPose, in, hs::easeSmooth(slideF)) : hipPose;
     if (!hs::poseSane(out)) { refuse(PrInsaneOut, g, n, vt); return; }
     if (!saferead::probeWrite(kSitePlace, reinterpret_cast<void*>(g + 0xA4), sizeof(hs::Pose))) { refuse(PrNoWrite, g, n, vt); return; }
     memcpy(reinterpret_cast<void*>(g + 0xA4), &out, sizeof(hs::Pose));
@@ -1638,15 +1706,15 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     addName(names, sizeof(names), g_onGob, "gob");
     addName(names, sizeof(names), g_onPlace, "place");
     addName(names, sizeof(names), g_onToggle, "toggle");
-    KP_LOG(chMain, "holster 0.5.0-dev loaded (P0 probe, log-only): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_probe ? 1 : 0,
+    KP_LOG(chMain, "holster 0.5.1-dev loaded (P0 probe, log-only): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_probe ? 1 : 0,
            names[0] ? names : "none", static_cast<long>(g_maxLines), g_gobEvery, k2addr::get() ? "ok" : "none");
     {
         hs::TuneCfg t;
         LONG seq = 0;
         (void)loadTuneIfChanged(t, seq);
-        KP_LOG(chMain, "CONFIG toggle_key=0x%x draw_hold_ms=%u combat_exit_ms=%d flourish_exit_ms=%d hostile_range=%.1f hostile_backoff_ms=%u delay_party=%d flourish_draw=%d (active=%d: needs probe=1, bone_test=1 and place_mode=drawgate)",
+        KP_LOG(chMain, "CONFIG toggle_key=0x%x draw_hold_ms=%u combat_exit_ms=%d flourish_exit_ms=%d hostile_range=%.1f hostile_backoff_ms=%u delay_party=%d flourish_draw=%d draw_slide_ms=%u stow_slide_ms=%u (active=%d: needs probe=1, bone_test=1 and place_mode=drawgate)",
                static_cast<unsigned>(g_toggleKey), static_cast<unsigned>(g_drawHoldMs), g_delayCfg.combatExitMs, g_delayCfg.flourishExitMs, static_cast<double>(g_hostileRange),
-               static_cast<unsigned>(g_hostileBackoffMs), g_delayParty ? 1 : 0, g_flourishDraw ? 1 : 0, (g_boneTest && drawgateMode()) ? 1 : 0);
+               static_cast<unsigned>(g_hostileBackoffMs), g_delayParty ? 1 : 0, g_flourishDraw ? 1 : 0, static_cast<unsigned>(g_drawSlideMs), static_cast<unsigned>(g_stowSlideMs), (g_boneTest && drawgateMode()) ? 1 : 0);
         KP_LOG(chMain, "PLACEMODE %s (active=%d: needs probe=1 and bone_test=1)", hs::placeModeName(g_placeMode), g_boneTest ? 1 : 0);
         KP_LOG(chMain, "CONFIG left_extra_rot=%.1f bone_test_left=%d (ini=%d, active=%d: needs probe=1 and bone_test=1) log_verbose=%d", static_cast<double>(t.leftExtra),
                g_boneLeftCfg ? 1 : 0, g_boneLeftCfg ? 1 : 0, g_boneLeft ? 1 : 0, g_logVerbose ? 1 : 0);
