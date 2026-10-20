@@ -21,7 +21,6 @@ inline const RosterRow kRoster[] = {
     {"c_drdmouse01", "MouseDroid", "204tel", -39.0f, -63.1f, 0.0f, 0.0f},        // pet: vanilla mouse droid at WP_com_ith_01
     {"k1p_juhani", "k1p_juhani", "204tel", -37.5f, -63.1f, 0.0f, 0.0f},          // K1 Juhani (appearance 818) 1.5 m from the pet's known-good point
     {"k1p_carth", "k1p_carth", "204tel", -36.0f, -63.1f, 0.0f, 0.0f},            // K1 Carth (appearance 819), 1.5 m beside Juhani; resources come from the juhani-char VFS bundle
-    {"k1p_juhanv", "k1p_juhanv", "204tel", -34.5f, -63.1f, 0.0f, 0.0f},          // "Juhani DLL" (appearance 820): same Juhani rebuilt as renamed k1p_juhanv* resources served only by the juhani-char VFS bundle, 1.5 m beside Carth, to compare with the Override rig Juhani
     {"k1p_mission", "k1p_mission", "204tel", -40.5f, -63.1f, 0.0f, 0.0f},        // K1 Mission (appearance 823, importer pack): west of the pet; -33.0 was outside the walkmesh (user play 10-18), 204tele.wok checked 10-20 (0.8 m clearance)
     {"k1p_zaalbaru", "k1p_zaalbar", "204tel", -42.5f, -63.1f, 0.0f, 0.0f},       // K1 Zaalbar (appearance 824, importer pack; UTC k1p_zaalbaru, tag k1p_zaalbar): 2 m west of Mission, inside 204tele.wok with 0.8 m clearance
     {"k1p_bastilla", "k1p_bastilla", "204tel", -44.5f, -63.1f, 0.0f, 0.0f},      // K1 Bastilla (appearance 825, importer pack): 2 m west of Zaalbar, inside 204tele.wok with 0.8 m clearance
