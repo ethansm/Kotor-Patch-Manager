@@ -89,3 +89,8 @@ Owner decisions: keep all shared helpers (EditKit/SliderArt/ResetIcon) until MCF
 
 ## Update 10-19 02:05
 MCF5 slider merged to KOTOR-II (ff, now repo ~7ca9fdfe), shared headers synced (63, 0 drift), gate PASS (mod-config, companion-selfheal, combat-hotbar), `--prepare` mod-config 0.3.1-dev = SWAP, NOT installed (needs user GO, game closed): `python3 scripts/kpm_hotswap.py --mod mod-config --apply`. After install: set `selftest=1` (6 rows + 2 sliders) or `2` in the game-dir mod_config.ini, play the slider rows with holster-editor loaded (shared hse_sld_* texture names), then set it back to 0.
+
+## Update 10-20 13:16 - MCF5 INSTALLED
+- `kpm_hotswap.py --mod mod-config --apply`: mod-config 0.3.1-dev LIVE (658ea991). Rollback: `python3 scripts/kpm_hotswap.py --rollback mod-config_swap_20261020_131556`.
+- Play row MCR3 added to PLAY_TEST_QUEUE.md (selftest=1 then 2). Pending user play: slider art/drag feel, wheel delivery, hold-repeat, shared hse_sld_* names with holster-editor, SH-PG1 (Self-Heal + Combat Hotbar pages), MCR1/MCR2.
+- Shared-helper prune stays ON HOLD until MCR3 is played. Next rows: MCF6, MCF7 (need direction).
