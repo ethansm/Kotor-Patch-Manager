@@ -19,7 +19,6 @@ struct RosterRow {
 // Stage 2 roster (constant; Stage 3 moves it to a file). z = 0.0: every 204tel floor point in the GIT is z 0.0.
 inline const RosterRow kRoster[] = {
     {"c_drdmouse01", "MouseDroid", "204tel", -39.0f, -63.1f, 0.0f, 0.0f},        // pet: vanilla mouse droid at WP_com_ith_01
-    {"k1p_native_npc", "k1p_native_npc", "204tel", -21.1f, -31.1f, 0.0f, 0.0f},  // K1 NPC in the plant room
     {"k1p_juhani", "k1p_juhani", "204tel", -37.5f, -63.1f, 0.0f, 0.0f},          // K1 Juhani (appearance 818) 1.5 m from the pet's known-good point
     {"k1p_carth", "k1p_carth", "204tel", -36.0f, -63.1f, 0.0f, 0.0f},            // K1 Carth (appearance 819), 1.5 m beside Juhani; resources come from the juhani-char VFS bundle
     {"k1p_juhanv", "k1p_juhanv", "204tel", -34.5f, -63.1f, 0.0f, 0.0f},          // "Juhani DLL" (appearance 820): same Juhani rebuilt as renamed k1p_juhanv* resources served only by the juhani-char VFS bundle, 1.5 m beside Carth, to compare with the Override rig Juhani

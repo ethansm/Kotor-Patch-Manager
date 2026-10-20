@@ -57,12 +57,12 @@ void testTagEqualsThirtyTwoChars() {
 
 void testRowsForAreaMatch() {
     int idx[k1spawn::kMaxRowsPerArea];
-    KT_CHECK_EQ(k1spawn::RowsForArea("204tel", idx, k1spawn::kMaxRowsPerArea), 8);
+    KT_CHECK_EQ(k1spawn::RowsForArea("204tel", idx, k1spawn::kMaxRowsPerArea), 7);
     KT_CHECK_EQ(idx[0], 0);
     KT_CHECK_EQ(idx[1], 1);
     KT_CHECK_EQ(idx[2], 2);
-    KT_CHECK_EQ(idx[7], 7);  // the roster fills the 8-row area cap exactly
-    KT_CHECK_EQ(k1spawn::RowsForArea("204TEL", idx, k1spawn::kMaxRowsPerArea), 8);  // case does not matter
+    KT_CHECK_EQ(idx[6], 6);  // 7 rows, below the 8-row area cap
+    KT_CHECK_EQ(k1spawn::RowsForArea("204TEL", idx, k1spawn::kMaxRowsPerArea), 7);  // case does not matter
     KT_CHECK_EQ(k1spawn::RowsForArea("other", idx, k1spawn::kMaxRowsPerArea), 0);
     KT_CHECK_EQ(k1spawn::RowsForArea("", idx, k1spawn::kMaxRowsPerArea), 0);
     KT_CHECK_EQ(k1spawn::RowsForArea("204tel2", idx, k1spawn::kMaxRowsPerArea), 0);  // a longer name is not a match
@@ -121,14 +121,13 @@ void testRosterIntegrity() {
     }
     // the rows the play tests were written for (0.2.0: pet + native NPC; 0.3.2: K1 Juhani)
     KT_CHECK(k1spawn::ResrefEquals(k1spawn::kRoster[0].resref, "c_drdmouse01"));
-    KT_CHECK(k1spawn::ResrefEquals(k1spawn::kRoster[1].resref, "k1p_native_npc"));
-    KT_CHECK(k1spawn::ResrefEquals(k1spawn::kRoster[2].resref, "k1p_juhani"));
-    KT_CHECK(k1spawn::ResrefEquals(k1spawn::kRoster[4].resref, "k1p_juhanv"));
-    KT_CHECK(k1spawn::ResrefEquals(k1spawn::kRoster[5].resref, "k1p_mission"));
-    KT_CHECK(k1spawn::ResrefEquals(k1spawn::kRoster[6].resref, "k1p_zaalbaru"));
-    KT_CHECK(k1spawn::TagEquals(k1spawn::kRoster[6].tag, "k1p_zaalbar"));
-    KT_CHECK(k1spawn::ResrefEquals(k1spawn::kRoster[7].resref, "k1p_bastilla"));
-    KT_CHECK_EQ(k1spawn::kRosterCount, 8);
+    KT_CHECK(k1spawn::ResrefEquals(k1spawn::kRoster[1].resref, "k1p_juhani"));
+    KT_CHECK(k1spawn::ResrefEquals(k1spawn::kRoster[3].resref, "k1p_juhanv"));
+    KT_CHECK(k1spawn::ResrefEquals(k1spawn::kRoster[4].resref, "k1p_mission"));
+    KT_CHECK(k1spawn::ResrefEquals(k1spawn::kRoster[5].resref, "k1p_zaalbaru"));
+    KT_CHECK(k1spawn::TagEquals(k1spawn::kRoster[5].tag, "k1p_zaalbar"));
+    KT_CHECK(k1spawn::ResrefEquals(k1spawn::kRoster[6].resref, "k1p_bastilla"));
+    KT_CHECK_EQ(k1spawn::kRosterCount, 7);
 }
 
 }  // namespace
