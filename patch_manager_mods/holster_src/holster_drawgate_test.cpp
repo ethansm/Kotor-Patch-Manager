@@ -31,6 +31,22 @@ static void testTruthTable() {
     KT_CHECK(!shouldWriteHip(true, true, 0xFFFFFFFFu, false));
 }
 
+// HW13: the 4th argument is now (holdActive || flourish window open for this owner); an open window keeps the hand at combat 0, an unreadable owner never goes hip.
+static void testFlourishWindowArg() {
+    const bool windowOpen = true, windowShut = false;
+    KT_CHECK(!shouldWriteHip(true, true, 0, windowOpen));    // combat 0, window open: weapon stays in the hand
+    KT_CHECK(shouldWriteHip(true, true, 0, windowShut));     // window closed again: hip
+    KT_CHECK(!shouldWriteHip(true, false, 0, windowOpen));   // unreadable owner: hand
+    KT_CHECK(!shouldWriteHip(true, false, 0, windowShut));
+    KT_CHECK(!shouldWriteHip(true, true, 1, windowOpen));    // combat flag set: hand either way
+    KT_CHECK(shouldWriteHip(false, true, 0, windowOpen));    // repoint mode ignores the window (old behaviour)
+    // the window is combined with the toggle hold by OR: either one keeps the hand
+    const uintptr_t owner = 0xAB11A68;
+    KT_CHECK(!shouldWriteHip(true, true, 0, holdActive(owner, owner, 1000u, 500u) || windowShut));
+    KT_CHECK(!shouldWriteHip(true, true, 0, holdActive(owner, 0, 0u, 500u) || windowOpen));
+    KT_CHECK(shouldWriteHip(true, true, 0, holdActive(owner, 0, 0u, 500u) || windowShut));
+}
+
 static void testPlaceMode() {
     PlaceMode m = PlaceRepoint;
     KT_CHECK(placeModeParse("drawgate", m) && m == PlaceDrawgate);
@@ -195,6 +211,7 @@ static void testModelIdentity() {
 
 int main() {
     testTruthTable();
+    testFlourishWindowArg();
     testPlaceMode();
     testNodeAccepted();
     testGateKeyInvalidation();

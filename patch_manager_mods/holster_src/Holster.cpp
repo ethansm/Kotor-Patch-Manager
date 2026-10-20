@@ -1,4 +1,4 @@
-// Holster.cpp -- holster 0.4.1-dev (Steam build): P0 probe for the holstered-weapons mod (patch_manager_mods/42_holstered_weapons.md).
+// Holster.cpp -- holster 0.5.0-dev (Steam build): P0 probe for the holstered-weapons mod (patch_manager_mods/42_holstered_weapons.md).
 // Plan: .claude/plans/holstered_weapons.md. Handlers are plain extern "C" void __cdecl functions; the detour wrappers in
 // kotor2-steam-aspyr.hooks.toml call them at function entry with the game arguments BEFORE the stolen bytes run.
 // Hard rules for P0 (exceptions, both default off: the bone_test code patch, and HolsterPlace's 28-byte pose write with probe=1 bone_test=1 place=1): no other writes to game memory or registers, no engine calls, reads only through saferead, and every handler returns at
@@ -61,10 +61,8 @@ static bool g_boneTest = false, g_boneLeft = false, g_boneLeftCfg = true;
 // (HolsterDrawGate.h); repoint = the old global attach-node repoint (escape hatch, old behaviour unchanged). Needs probe=1 and bone_test=1 either way.
 static hs::PlaceMode g_placeMode = hs::PlaceDrawgate;
 static inline bool drawgateMode() { return g_placeMode == hs::PlaceDrawgate; }
-// Flourish window (Wave C2 drives this from the flourish detours; always false in C1): true keeps the weapon in the hand like combat does.
-// TODO(C2, Opus review C1 #8): this is ONE global bool, so one creature's flourish would draw every creature's weapons. C2 must make the window
-// per creature (keyed by the owner, like gate.owner) before any detour sets it.
-static bool g_flourishOpen = false;
+// flourish_draw (0.5.0-dev, HW13): 1 = a party member's weapon stays in the hand while its flourish window is open (flourishOpenFor, per owner).
+static bool g_flourishDraw = true;
 // Toggle-key draw hold (0.3.0-dev, HolsterDrawGate.h holdActive): the owner (client creature) whose weapons stay in the hand until g_holdUntil (GetTickCount ms,
 // wrap-safe). Written by the tick (g_holdUntil first, then g_holdOwner), read by HolsterPlace. 0 owner = no hold.
 static volatile uintptr_t g_holdOwner = 0;
@@ -295,6 +293,11 @@ static void readConfig() {
                 const long v = strtol(val, &end, 10);
                 if (end != val && *end == 0) g_hostileBackoffMs = static_cast<uint32_t>(v < 250 ? 250 : (v > 5000 ? 5000 : v));
                 else cfgWarn(key, val, "not a number, keeping the default 1000");
+            }
+            else if (!_stricmp(key, "flourish_draw")) {
+                bool b = true;
+                if (hs::tuneParseBool(val, b)) g_flourishDraw = b;
+                else cfgWarn(key, val, "not a boolean word, keeping the default 1");
             }
             else if (!_stricmp(key, "delay_party")) {
                 bool b = true;
@@ -573,6 +576,44 @@ static void refreshParty() {
     g_party = p;
 }
 
+// HW13 flourish window for one client owner creature (called from HolsterPlace). Party members only; the server creature is re-validated against the cached
+// object id (a recycled address never reads as open). Edge logs FLOURISH open/close per slot on the toggle channel.
+static bool flourishOpenFor(uintptr_t owner) {
+    if (owner == 0) return false;
+    int slot = -1;
+    for (int i = 0; i < g_party.n && i < 3; ++i)
+        if (g_party.cli[i] == owner) { slot = i; break; }
+    if (slot < 0 || g_party.srv[slot] == 0) return false;
+    const int combatOff = k2addr::off(&K2AddrTable::Creature_ClientCombat);
+    if (combatOff == 0) return false;
+    const uintptr_t S = g_party.srv[slot];
+    uint32_t id = 0, p520 = 0, p524 = 0, p528 = 0, p11E8 = 0, combat = 0;
+    const bool ok = rdU32Ok(kSitePlace, S, 0x04, &id) && id == g_party.id[slot] && rdU32Ok(kSitePlace, S, 0x520, &p520) && rdU32Ok(kSitePlace, S, 0x524, &p524) &&
+                    rdU32Ok(kSitePlace, S, 0x528, &p528) && rdU32Ok(kSitePlace, S, 0x11E8, &p11E8) && rdU32Ok(kSitePlace, owner, combatOff, &combat);
+    hs::DelayIn in;
+    in.plus520 = p520;
+    in.plus524 = static_cast<int32_t>(p524);
+    in.plus528 = p528;
+    in.plus11E8 = p11E8;
+    in.clientCombat = combat;
+    in.clientKnown = ok;
+    in.serverReadable = ok;
+    const bool open = hs::flourishWindow(in);
+    static bool s_open[3] = {false, false, false};
+    static volatile LONG s_lines = 0;
+    if (open != s_open[slot]) {
+        s_open[slot] = open;
+        if (g_probe && g_onToggle && KP_ENABLED(chToggle, KPLOG_INFO) && InterlockedIncrement(&s_lines) <= 40 && takeLine()) {
+            if (open)
+                KP_LOG(chToggle, "FLOURISH open slot=%d cli=%x srv=%x p524=%d p528=%u b11E8=%u", slot, U(reinterpret_cast<void*>(owner)), U(reinterpret_cast<void*>(S)),
+                       static_cast<int>(p524), static_cast<unsigned>(p528), static_cast<unsigned>(hs::stanceByte(p11E8)));
+            else
+                KP_LOG(chToggle, "FLOURISH close slot=%d p520=%u p524=%d", slot, static_cast<unsigned>(p520), static_cast<int>(p524));
+        }
+    }
+    return open;
+}
+
 // Engine nearest-enemy scan: CSWSCreature::GetNearestEnemy 0x0057C990 (Ghidra name), thiscall(self = server creature; float range, int exclude, int ref) RET 0xC.
 // Guards from S2 sec 2 (a null deref inside crashes): [S+0x380] != 0 and [[S+0x380]+8] readable. Returns false when the scan could not run (guards,
 // GOG table, null creature); then *hostile is untouched and the caller fails closed. The first 20 call durations are logged (QueryPerformanceCounter).
@@ -690,7 +731,7 @@ static void holsterTick() {
     if (!g_boneTest || !drawgateMode()) return;
     const bool keyOn = g_toggleKey != 0;
     const bool delayOn = g_delayCfg.combatExitMs > 0 || g_delayCfg.flourishExitMs > 0;
-    if (!keyOn && !delayOn) return;
+    if (!keyOn && !delayOn && !g_flourishDraw) return;   // flourish_draw alone still needs the 250 ms party cache
     static volatile LONG s_busy = 0;
     if (InterlockedCompareExchange(&s_busy, 1, 0) != 0) return;   // never re-enter (e.g. from inside an engine call)
     static DWORD s_partyAt = 0, s_delayAt = 0, s_keyAt = 0;
@@ -1053,7 +1094,7 @@ static bool previewPlace(uintptr_t g, uintptr_t beh) {
 // DRAWGATE transition line (drawgate mode): a placement entry's owner or hip/drawn state changed. Quiet mode: first 8 per creature, then every 10th
 // (log_verbose=1: all). An unreadable owner / combat flag stays a WARN (C1 review #9: rate-limited per gob, the first 3 hits then every 50th, so it is never
 // swallowed entirely; log_verbose=1 logs all).
-static void gateLog(uintptr_t gob, uintptr_t owner, bool readable, uint32_t combat, bool hip, bool left) {
+static void gateLog(uintptr_t gob, uintptr_t owner, bool readable, uint32_t combat, bool hip, bool left) {   // flourish= window open for the owner (flourishOpenFor)
     if (!readable) {
         if (!g_logVerbose && !hs::keyedWant(hs::keyBump(g_gateWarnKeys, hs::creatureKey(gob)), 3, 50)) return;
         KP_LOGV(chMain, KPLOG_WARN, "DRAWGATE owner/combat unreadable gob=%x owner=%x: weapon stays in the hand", static_cast<unsigned>(gob), static_cast<unsigned>(owner));
@@ -1063,7 +1104,7 @@ static void gateLog(uintptr_t gob, uintptr_t owner, bool readable, uint32_t comb
     if (!g_logVerbose && !hs::keyedWant(hs::keyBump(g_gateKeys, hs::creatureKey(owner)), 8, 10)) return;
     if (!KP_ENABLED(chPlace, KPLOG_INFO) || !takeLine()) return;
     KP_LOG(chPlace, "DRAWGATE creature=%x gob=%x state=%s combat=%u flourish=%d left=%d", static_cast<unsigned>(owner), static_cast<unsigned>(gob),
-           hip ? "hip" : "drawn", static_cast<unsigned>(combat), g_flourishOpen ? 1 : 0, left ? 1 : 0);
+           hip ? "hip" : "drawn", static_cast<unsigned>(combat), (g_flourishDraw && readable && combat == 0 && flourishOpenFor(owner)) ? 1 : 0, left ? 1 : 0);
 }
 
 // H7 (hooks.toml H7, C4 recon): runs on EVERY per-frame refresh of an attach behavior (vtbl+0x08), right after the engine re-copied node N's WORLD
@@ -1192,7 +1233,8 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
         const int combatOff = k2addr::off(&K2AddrTable::Creature_ClientCombat);
         uint32_t combat = 0;
         const bool readable = owner != 0 && combatOff != 0 && rdU32Ok(kSitePlace, owner, combatOff, &combat);
-        const bool hip = hs::shouldWriteHip(true, readable, combat, g_flourishOpen || hs::holdActive(owner, g_holdOwner, g_holdUntil, GetTickCount()));
+        const bool hip = hs::shouldWriteHip(true, readable, combat,
+                                        hs::holdActive(owner, g_holdOwner, g_holdUntil, GetTickCount()) || (g_flourishDraw && readable && combat == 0 && flourishOpenFor(owner)));
         if (hs::gateUpdate(ent->gate, owner, hip)) {
             ent->seq = -1;   // state flip or new owner: the resolved placement is redone
             gateLog(g, owner, readable, combat, hip, ent->left);
@@ -1596,15 +1638,15 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     addName(names, sizeof(names), g_onGob, "gob");
     addName(names, sizeof(names), g_onPlace, "place");
     addName(names, sizeof(names), g_onToggle, "toggle");
-    KP_LOG(chMain, "holster 0.4.1-dev loaded (P0 probe, log-only): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_probe ? 1 : 0,
+    KP_LOG(chMain, "holster 0.5.0-dev loaded (P0 probe, log-only): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_probe ? 1 : 0,
            names[0] ? names : "none", static_cast<long>(g_maxLines), g_gobEvery, k2addr::get() ? "ok" : "none");
     {
         hs::TuneCfg t;
         LONG seq = 0;
         (void)loadTuneIfChanged(t, seq);
-        KP_LOG(chMain, "CONFIG toggle_key=0x%x draw_hold_ms=%u combat_exit_ms=%d flourish_exit_ms=%d hostile_range=%.1f hostile_backoff_ms=%u delay_party=%d (active=%d: needs probe=1, bone_test=1 and place_mode=drawgate)",
+        KP_LOG(chMain, "CONFIG toggle_key=0x%x draw_hold_ms=%u combat_exit_ms=%d flourish_exit_ms=%d hostile_range=%.1f hostile_backoff_ms=%u delay_party=%d flourish_draw=%d (active=%d: needs probe=1, bone_test=1 and place_mode=drawgate)",
                static_cast<unsigned>(g_toggleKey), static_cast<unsigned>(g_drawHoldMs), g_delayCfg.combatExitMs, g_delayCfg.flourishExitMs, static_cast<double>(g_hostileRange),
-               static_cast<unsigned>(g_hostileBackoffMs), g_delayParty ? 1 : 0, (g_boneTest && drawgateMode()) ? 1 : 0);
+               static_cast<unsigned>(g_hostileBackoffMs), g_delayParty ? 1 : 0, g_flourishDraw ? 1 : 0, (g_boneTest && drawgateMode()) ? 1 : 0);
         KP_LOG(chMain, "PLACEMODE %s (active=%d: needs probe=1 and bone_test=1)", hs::placeModeName(g_placeMode), g_boneTest ? 1 : 0);
         KP_LOG(chMain, "CONFIG left_extra_rot=%.1f bone_test_left=%d (ini=%d, active=%d: needs probe=1 and bone_test=1) log_verbose=%d", static_cast<double>(t.leftExtra),
                g_boneLeftCfg ? 1 : 0, g_boneLeftCfg ? 1 : 0, g_boneLeft ? 1 : 0, g_logVerbose ? 1 : 0);

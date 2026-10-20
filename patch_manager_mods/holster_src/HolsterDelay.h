@@ -5,6 +5,7 @@
 //   DelayIn       raw reads of the server creature (+0x520 state, +0x524 countdown ms, +0x528, +0x11E8) and the client combat flag
 //   elapsedMs     kCombatMs - plus524: time spent in the countdown so far
 //   delayGate     cheap pre-check: None, or NeedHostileCheck (the caller then runs the costly hostile scan and calls shouldCut)
+//   flourishWindow true while a party member's flourish stance (no client combat flag) is open: the weapon stays in the hand
 //   Throttle      next-allowed tick with wrap-safe compare (back-off between hostile scans)
 //   shouldCut     the caller writes +0x524 = 0 only when the gate asked for a check AND nothing hostile is near
 // Failure mode rule: unreadable / unexpected values never cut (the engine keeps its own 8 s).
@@ -55,6 +56,16 @@ inline DelayAct delayGate(const DelayIn& in, const DelayCfg& cfg) {
         return DelayNone;
     }
     return DelayNone;   // client not in combat and not a flourish: unknown case, fail closed
+}
+
+// Flourish window (HW13): the player's Flourish puts a party member in an alert stance WITHOUT the client combat flag; the weapon must stay in the hand
+// while it lasts. Open = stance byte 2 with +0x520 == 1 and the client flag 0, and either +0x528 != 0 (script fake combat: the script owns its end) or the
+// engine countdown (+0x524 ms of server time, 1..8000) is still running. Unreadable / unknown state is never open (the caller then decides by combat flag).
+inline bool flourishWindow(const DelayIn& in) {
+    if (!in.serverReadable || !in.clientKnown || in.clientCombat != 0) return false;
+    if (in.plus520 != 1 || stanceByte(in.plus11E8) != 2) return false;
+    if (in.plus528 != 0) return true;                        // script fake combat (1,2,1): the script owns its end
+    return in.plus524 > 0 && in.plus524 <= 8000;             // engine countdown (ms of server time) still running
 }
 
 struct Throttle {

@@ -175,6 +175,39 @@ static void testShouldCut() {
     KT_CHECK(!shouldCut(delayGate(combatIn(100), cfg), false));
 }
 
+static DelayIn wIn(int32_t p524, uint32_t p520 = 1, uint32_t p528 = 0, uint32_t p11E8 = 2, uint32_t combat = 0, bool known = true, bool readable = true) {
+    return DelayIn{p520, p524, p528, p11E8, combat, known, readable};
+}
+
+static void testFlourishWindow() {
+    const int32_t open[] = {1, 1500, 7999, 8000};
+    for (int32_t v : open) KT_CHECK(flourishWindow(wIn(v)));
+    const int32_t shut[] = {0, -1, 8001};
+    for (int32_t v : shut) KT_CHECK(!flourishWindow(wIn(v)));
+    KT_CHECK(!flourishWindow(wIn(1500, 0)));            // plus520 != 1
+    KT_CHECK(!flourishWindow(wIn(1500, 2)));
+    KT_CHECK(!flourishWindow(wIn(1500, 1, 0, 1)));      // stance 1
+    KT_CHECK(!flourishWindow(wIn(1500, 1, 0, 0)));      // stance 0
+    KT_CHECK(!flourishWindow(wIn(1500, 1, 0, 2, 1)));   // client combat flag set: combat owns the draw
+    KT_CHECK(!flourishWindow(wIn(1500, 1, 0, 2, 0, false, true)));    // client unknown
+    KT_CHECK(!flourishWindow(wIn(1500, 1, 0, 2, 0, true, false)));    // server unreadable
+    KT_CHECK(!flourishWindow(wIn(1500, 1, 0, 2, 0, false, false)));
+    // +0x528 != 0 (script fake combat): open for stance 2 whatever the countdown says
+    KT_CHECK(flourishWindow(wIn(0, 1, 1)));
+    KT_CHECK(flourishWindow(wIn(-5, 1, 7)));
+    KT_CHECK(flourishWindow(wIn(99999, 1, 1)));
+    KT_CHECK(!flourishWindow(wIn(1500, 1, 1, 1)));      // stance 1 with +0x528: not a flourish
+    KT_CHECK(!flourishWindow(wIn(1500, 0, 1, 2)));      // +0x520 != 1 still closes it
+    KT_CHECK(!flourishWindow(wIn(1500, 1, 1, 2, 1)));   // combat flag still wins
+    // allocator residue in the upper 3 bytes of the +0x11E8 dword still counts as stance 2
+    KT_CHECK(flourishWindow(wIn(1500, 1, 0, 0xAB000002u)));
+    KT_CHECK(!flourishWindow(wIn(1500, 1, 0, 0xAB000001u)));
+    KT_CHECK(!flourishWindow(wIn(1500, 1, 0, 0xAB000003u)));
+    // consistent with the delay samples: a flourish sample from the delay tests is open
+    KT_CHECK(flourishWindow(flourishIn(1500)));
+    KT_CHECK(!flourishWindow(combatIn(1500)));
+}
+
 int main() {
     testElapsedAndClamp();
     testBoundary();
@@ -183,5 +216,6 @@ int main() {
     testConfig();
     testThrottle();
     testShouldCut();
+    testFlourishWindow();
     return kt::Report("holster_delay");
 }
