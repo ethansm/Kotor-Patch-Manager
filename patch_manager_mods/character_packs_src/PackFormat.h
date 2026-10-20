@@ -19,7 +19,7 @@ constexpr uint32_t kHeaderSize = 32;
 constexpr uint32_t kCharBlockSize = 208;
 constexpr uint32_t kAssetEntrySize = 32;
 constexpr uint32_t kCellEntrySize = 120;
-constexpr uint32_t kMaxAssets = 192;  // asset-vfs shared static pool
+constexpr uint32_t kMaxAssets = 448;  // asset-vfs shared static pool (Registry::kStaticSlots; was 192 until 10-20)
 constexpr uint32_t kMaxCells = 256;   // asset-vfs shared 2DA cell pool
 constexpr uint64_t kMaxFileBytes = 256ull * 1024 * 1024;
 

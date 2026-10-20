@@ -7,7 +7,7 @@
 // uses only kernel32 file calls (no library loads) under the loader lock and never waits on a thread.
 // asset-vfs does not copy pointers: each pack's file buffer, entry arrays and strings live in a heap Pack that is never
 // freed once registration was attempted. A bad pack is skipped alone (log "<file>: SKIP <reason>"); the shared pools
-// (192 static assets / 1024 2DA cells / 64 characters, used by ALL mods) are checked up front as a lower bound.
+// (448 static assets / 1024 2DA cells / 64 characters, used by ALL mods) are checked up front as a lower bound.
 // Log: character-packs_log.txt via KpLog.h (channel main).
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>

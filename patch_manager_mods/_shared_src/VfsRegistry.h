@@ -183,7 +183,7 @@ static constexpr int kRegServed     = -2; // key already registered AND already 
 static constexpr int kRegPoolFull   = -3; // no free slot in the requested pool
 
 struct Registry {
-    static constexpr size_t kMaxAssets = 256;
+    static constexpr size_t kMaxAssets = 512;
     // Top 64 slots are reserved for dynamic registrations (miss handler / stream filter);
     // static RegisterAsset(s) calls use 0..kStaticSlots-1 so dynamic traffic cannot starve them.
     static constexpr size_t kDynamicReserve = 64;

@@ -353,13 +353,13 @@ int main() {
         vfsreg::Registry reg;
         const uint8_t d[] = "data";
         char name[32];
-        // static pool: slots 0..191
+        // static pool: slots 0..447
         for (size_t i = 0; i < vfsreg::Registry::kStaticSlots; ++i) {
             snprintf(name, sizeof(name), "st_%03u", static_cast<unsigned>(i));
             int slot = reg.registerAsset(name, vfsreg::ResTypeUtc, d, sizeof(d));
             KT_CHECK_EQ(slot, static_cast<int>(i));
         }
-        KT_CHECK_EQ(vfsreg::Registry::kStaticSlots, 192u);
+        KT_CHECK_EQ(vfsreg::Registry::kStaticSlots, 448u);
         // static pool full even though the dynamic reserve is empty
         KT_CHECK_EQ(reg.registerAsset("st_overflow", vfsreg::ResTypeUtc, d, sizeof(d)), vfsreg::kRegPoolFull);
         KT_CHECK_EQ(vfsreg::kRegPoolFull, -3);
@@ -372,7 +372,7 @@ int main() {
         KT_CHECK_EQ(reg.registerAsset("dy_overflow", vfsreg::ResTypeUtc, d, sizeof(d), vfsreg::FlagResMan, true), vfsreg::kRegPoolFull);
         // an existing key still updates in place when both pools are full
         KT_CHECK_EQ(reg.registerAsset("st_000", vfsreg::ResTypeUtc, d, sizeof(d)), 0);
-        KT_CHECK_EQ(reg.registerAsset("dy_000", vfsreg::ResTypeUtc, d, sizeof(d), vfsreg::FlagResMan, true), 192);
+        KT_CHECK_EQ(reg.registerAsset("dy_000", vfsreg::ResTypeUtc, d, sizeof(d), vfsreg::FlagResMan, true), 448);
     }
     {
         // dynamic traffic cannot starve static registrations

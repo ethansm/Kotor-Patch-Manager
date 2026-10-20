@@ -153,13 +153,13 @@ void testValid() {
         CHECK_ERR(bt, k2pack::Err::Ok);
     }
 
-    // pool-limit packs: 192 assets and 256 cells fit
+    // pool-limit packs: 448 assets and 256 cells fit
     std::vector<TAsset> big; std::vector<TCell> bigc;
-    for (int i = 0; i < 192; ++i) big.push_back({"a" + std::to_string(i), 2002, 0, "d"});
+    for (int i = 0; i < 448; ++i) big.push_back({"a" + std::to_string(i), 2002, 0, "d"});
     for (int i = 0; i < 256; ++i) bigc.push_back({"tab", static_cast<uint32_t>(i), -1, "col", "v"});
     Bytes bb = build(big, bigc);
     CHECK_ERR(bb, k2pack::Err::Ok);
-    big.push_back({"a192", 2002, 0, "d"});
+    big.push_back({"a448", 2002, 0, "d"});
     Bytes bb2 = build(big, bigc);
     CHECK_ERR(bb2, k2pack::Err::BadAssetCount);
     big.pop_back();
@@ -181,7 +181,7 @@ void testHeader() {
     CHECK_ERR(mutated([](Bytes& b) { put32(b, 4, 0); }), k2pack::Err::BadVersion);
     CHECK_ERR(mutated([](Bytes& b) { put32(b, 8, 36); }), k2pack::Err::BadHeaderSize);
     CHECK_ERR(mutated([](Bytes& b) { put32(b, 12, 0); }), k2pack::Err::BadAssetCount);
-    CHECK_ERR(mutated([](Bytes& b) { put32(b, 12, 193); }), k2pack::Err::BadAssetCount);
+    CHECK_ERR(mutated([](Bytes& b) { put32(b, 12, 449); }), k2pack::Err::BadAssetCount);
     CHECK_ERR(mutated([](Bytes& b) { put32(b, 12, 0xFFFFFFFFu); }), k2pack::Err::BadAssetCount);
     CHECK_ERR(mutated([](Bytes& b) { put32(b, 16, 257); }), k2pack::Err::BadCellCount);
     CHECK_ERR(mutated([](Bytes& b) { put32(b, 16, 0xFFFFFFFFu); }), k2pack::Err::BadCellCount);
