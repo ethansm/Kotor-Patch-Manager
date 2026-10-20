@@ -36,6 +36,9 @@ inline bool placeModeParse(const char* s, PlaceMode& out) {
     if (ieq(s, "repoint")) { out = PlaceRepoint; return true; }
     return false;
 }
+// Placement-cache identity: a Gob address that was freed and reallocated keeps (node, gob, handle) but carries another weapon model.
+inline bool sameWeaponModel(uintptr_t entModel, uintptr_t liveModel) { return entModel == liveModel; }
+
 inline const char* placeModeName(PlaceMode m) { return m == PlaceDrawgate ? "drawgate" : "repoint"; }
 
 // True = write the hip pose. Repoint mode: always (old behaviour). Drawgate: only with a readable owner, combat flag 0 and no flourish window.

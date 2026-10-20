@@ -3,11 +3,11 @@
 
 Usage: holster_log_check.py [LOG | --log LOG] [--new [--no-advance] [--state PATH]]
   Default log: ~/.local/share/Steam/steamapps/common/Knights of the Old Republic II/holster_log.txt
-  Report (at most 40 lines): header, status (loaded / cap reached / BONETEST), COMB edges per creature (plus unreadable=N for `old=? edge=?` lines), ATTACH tags and
-  (body, handleR, handleL) tuples per creature, SWAP total, ANIMRES and ANIMSEND id histograms, GOB samples per gob
+  Report (at most 43 lines): header, status (loaded / cap reached / BONETEST), COMB edges per creature (plus unreadable=N for `old=? edge=?` lines), ATTACH tags and
+  (body, handleR, handleL) tuples per creature, SWAP total, GOBREUSE total, FLOURISH open/close, SLIDE start/end (draw/stow split, frames min/max, maxdt max), ANIMRES and ANIMSEND id histograms, GOB samples per gob
   (the 8 with the most samples: parent18, pos min/max/mean per axis, quat min/max per component, mean-quat angle),
   PLACE (only when PLACE lines exist: count, gobvt histogram, quat1 unit-norm check, last pos0/quat0 -> pos1/quat1 for the
-  4 gobs with the most samples; the GOB view then drops to 4 gobs so the report stays within 40 lines).
+  4 gobs with the most samples; the GOB view then drops to 4 gobs so the report stays within 43 lines).
   --new: only lines after the bookmark shared with log_triage (same state file, keyed by absolute path), then advance it.
   Exit 0 = analyzed, 2 = log missing ("no log: <path>").
 
@@ -33,7 +33,7 @@ import log_triage as LT  # noqa: E402  (--new bookmark: same state file and help
 
 DEFAULT_LOG = Path.home() / ".local/share/Steam/steamapps/common/Knights of the Old Republic II/holster_log.txt"
 CAPS = {"comb": 4, "attach": 3, "tuples": 3, "tags": 5, "ids": 10, "gobs": 8,
-        "gobs_with_place": 4, "place_gobs": 4}   # GOB view and PLACE view both shrink so the report stays <= 40 lines
+        "gobs_with_place": 4, "place_gobs": 4}   # GOB view and PLACE view both shrink so the report stays <= 43 lines
 UNIT_TOL = 2e-3   # PLACE quat1 |norm-1| limit: the DLL enforces 1e-3 (poseSane); %.3f printing adds up to ~1e-3 rounding
 HEX = r"[0-9a-fA-F]+"
 INT = r"-?\d+"
@@ -45,7 +45,7 @@ def _rx(template):
     return re.compile(template.replace("<H>", HEX).replace("<I>", INT).replace("<N>", NUM))
 
 
-KIND_RE = re.compile(r"\b(COMB|ATTACH|SWAP|ANIMRES|ANIMSEND|GOB|PLACE) ")
+KIND_RE = re.compile(r"\b(COMB|ATTACH|SWAP|ANIMRES|ANIMSEND|GOB|PLACE|GOBREUSE|FLOURISH|SLIDE) ")
 # Holster.cpp prints old=? edge=? when the COMB old-state read failed: counted as unreadable, never skipped.
 COMB_UNREAD = _rx(r"\bCOMB creature=<H> old=\? new=<I> edge=\? tick=\d+")
 FULL_RE = {
@@ -60,6 +60,11 @@ FULL_RE = {
     "PLACE": _rx(r"\bPLACE n=(?P<n><I>) gob=(?P<gob><H>) node=(?P<node><H>) beh=(?P<beh><H>) gobvt=(?P<gobvt><H>) "
                  r"pos0=\((?P<p0x><N>),(?P<p0y><N>),(?P<p0z><N>)\) quat0=\((?P<q0w><N>),(?P<q0x><N>),(?P<q0y><N>),(?P<q0z><N>)\) "
                  r"pos1=\((?P<p1x><N>),(?P<p1y><N>),(?P<p1z><N>)\) quat1=\((?P<q1w><N>),(?P<q1x><N>),(?P<q1y><N>),(?P<q1z><N>)\)(?: cat=(?P<cat>\w+))?"),
+    "GOBREUSE": _rx(r"\bGOBREUSE gob=(?P<gob><H>) node=(?P<node><H>) oldm=(?P<oldm>\S+) newm=(?P<newm>\S+)"),
+    "FLOURISH": _rx(r"\bFLOURISH (?:(?P<open>open) slot=(?P<oslot><I>) cli=<I> srv=<I> p524=<I> p528=<I> b11E8=<I>"
+                  r"|(?P<close>close) slot=(?P<cslot><I>) p520=<I> p524=<I>)"),
+    "SLIDE": _rx(r"\bSLIDE (?:(?P<start>start) dir=(?P<sdir>\w+) owner=<H> gob=<H> left=<I> from=<N> ms=<I>"
+                 r"|(?P<end>end) dir=(?P<edir>\w+) owner=<H> ms=<I> frames=(?P<frames><I>) maxdt=(?P<maxdt><I>))"),
 }
 MAIN_RES = {
     "loaded": re.compile(r"\bholster (\S+) loaded\b"),
@@ -102,6 +107,15 @@ def _record(kind, n, m):
                    quat0=[float(g[k]) for k in ("q0w", "q0x", "q0y", "q0z")],
                    pos1=[float(g[k]) for k in ("p1x", "p1y", "p1z")],
                    quat1=[float(g[k]) for k in ("q1w", "q1x", "q1y", "q1z")], cat=g["cat"] or "")
+    elif kind == "GOBREUSE":
+        rec.update(gob=_hex(g["gob"]), node=_hex(g["node"]), oldm=g["oldm"], newm=g["newm"])
+    elif kind == "FLOURISH":
+        rec.update(ev="open" if g["open"] else "close")
+    elif kind == "SLIDE":
+        if g["start"]:
+            rec.update(ev="start", dir=g["sdir"])
+        else:
+            rec.update(ev="end", dir=g["edir"], frames=int(g["frames"]), maxdt=int(g["maxdt"]))
     return rec
 
 
@@ -372,6 +386,20 @@ def _place_diag(f):
     return out
 
 
+def _events(recs):
+    """GOBREUSE / FLOURISH / SLIDE one-liners (always printed, so a 0 is a scanned zero, not a missing section)."""
+    reuse = sum(1 for r in recs if r["kind"] == "GOBREUSE")
+    fl = Counter(r["ev"] for r in recs if r["kind"] == "FLOURISH")
+    sl = [r for r in recs if r["kind"] == "SLIDE"]
+    starts = Counter(r["dir"] for r in sl if r["ev"] == "start")
+    ends = [r for r in sl if r["ev"] == "end"]
+    line = "SLIDE start=%d end=%d draw=%d stow=%d" % (sum(starts.values()), len(ends), starts["draw"], starts["stow"])
+    if ends:
+        line += " frames min=%d max=%d maxdt max=%d" % (min(r["frames"] for r in ends), max(r["frames"] for r in ends),
+                                                        max(r["maxdt"] for r in ends))
+    return ["GOBREUSE total=%d" % reuse, "FLOURISH open=%d close=%d" % (fl["open"], fl["close"]), line]
+
+
 def render(recs, skipped, main_facts, nlines, meta):
     has_place = any(r["kind"] == "PLACE" for r in recs) or any(k == "PLACE" for _, k, _ in skipped)
     out = ["HOLSTER lines=%d parsed=%d skipped=%d%s" % (nlines, len(recs), len(skipped), meta), _status(main_facts)]
@@ -383,6 +411,7 @@ def render(recs, skipped, main_facts, nlines, meta):
     out += comb
     out += _attach(recs)
     out.append("SWAP total=%d" % sum(1 for r in recs if r["kind"] == "SWAP"))
+    out += _events(recs)
     out.append(_hist("ANIMRES", recs))
     styles = Counter((r["self"], r["style"], r["gate"]) for r in recs if r["kind"] == "ANIMRES")
     if styles:   # C6: +0xC5 = wield style byte, +0xC6 = table gate; one entry per creature and value

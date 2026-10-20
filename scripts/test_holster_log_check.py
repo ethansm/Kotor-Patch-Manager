@@ -92,7 +92,7 @@ def fixture():
 
 
 def worst_case():
-    """Every section over its cap, plus one unparsable COMB line. The report must stay at 40 lines."""
+    """Every section over its cap, plus one unparsable COMB line. The report must stay at 43 lines (40 + the 3 GOBREUSE/FLOURISH/SLIDE lines)."""
     bodies = [LOADED, BONE]
     bodies += [comb(0x100 + c, 0, 1, 1) for c in range(6)]                       # 6 creatures, 4 shown
     for c in range(5):
@@ -265,10 +265,10 @@ class ReportTests(unittest.TestCase):
         self.assertIn("  gob=0xa09 samples=10 parent18=0x1 sign_flips=0 rot_mean=0.00 deg", out)
         self.assertFalse(any(s.startswith("  gob=0xa00 ") or s.startswith("  gob=0xa01 ") for s in out))
 
-    def test_worst_case_is_capped_at_40_lines(self):
+    def test_worst_case_is_capped_at_43_lines(self):
         rc, out = run_log(worst_case())
         self.assertEqual(rc, 0)
-        self.assertEqual(len(out), 40)
+        self.assertEqual(len(out), 43)
         self.assertIn("COMB edges=6 creatures=6 (top 4 shown)", out)
         self.assertIn("ATTACH n=20 creatures=5 tags: 't'=20 (first 3 creatures shown)", out)
         self.assertTrue(any(s.startswith("ANIMRES n=12 distinct=12 top10:") and "(+2 more ids) | style per creature" in s for s in out))
@@ -325,10 +325,10 @@ class PlaceTests(unittest.TestCase):
     def test_unrelated_place_words_are_ignored(self):
         self.assertEqual(parse(["PLACED ok", "PLACEHOLDER n=1"])[:2], ([], []))
 
-    def test_place_view_caps_gobs_and_report_stays_within_40_lines(self):
+    def test_place_view_caps_gobs_and_report_stays_within_43_lines(self):
         rc, out = run_log(worst_case()[:-1] + place_worst() + [CAP])
         self.assertEqual(rc, 0)
-        self.assertLessEqual(len(out), 40)
+        self.assertLessEqual(len(out), 43)
         self.assertIn("GOB lines=55 gobs=10 (top 4 by samples shown)", out)
         self.assertIn("PLACE lines=31 gobs=6 (top 4 by samples shown) gobvt distinct=12: 0x10 x4, 0x11 x3, 0x12 x3, "
                       "0x13 x3, 0x14 x3, 0x15 x3, 0x16 x2, 0x17 x2, 0x18 x2, 0x19 x2 (+2 more)", out)
@@ -461,6 +461,71 @@ class PlaceDiagTests(unittest.TestCase):
         self.assertIn("PREVIEW mname vs in-world target=1 mname: shared=w_lngswrd_001 preview-only=w_vibrobld_002", out)
         self.assertIn("PREVIEW body vs in-world body: shared=P_AttonBB preview-only=-", out)
         self.assertIn("CAMNODE parent=0x13 P_AttonBB camhook=0 | pparent=0x16 charrec_light camhook=abc0", out)
+
+def gob_reuse(gob=0x1A2B3C, node=0x4D5E6F, oldm="w_blaste_01", newm="w_vbsword_01"):
+    return "GOBREUSE gob=%x node=%x oldm=%s newm=%s" % (gob, node, oldm, newm)
+
+
+def flourish_open(slot=0):
+    return "FLOURISH open slot=%d cli=1234 srv=5678 p524=8000 p528=0 b11E8=2" % slot
+
+
+def flourish_close(slot=0):
+    return "FLOURISH close slot=%d p520=0 p524=0" % slot
+
+
+def slide_start(dir_="draw"):
+    return "SLIDE start dir=%s owner=1234 gob=5678 left=0 from=0.00 ms=350" % dir_
+
+
+def slide_end(dir_="stow", frames=21, maxdt=49):
+    return "SLIDE end dir=%s owner=1234 ms=350 frames=%d maxdt=%d" % (dir_, frames, maxdt)
+
+
+class EventTests(unittest.TestCase):
+    """GOBREUSE / FLOURISH / SLIDE report lines."""
+
+    def test_planted_positive_gobreuse_one_line(self):
+        rc, out = run_log([gob_reuse()])
+        self.assertEqual(rc, 0)
+        self.assertIn("GOBREUSE total=1", out)
+
+    def test_no_gobreuse_prints_zero(self):
+        rc, out = run_log([swap()])
+        self.assertIn("GOBREUSE total=0", out)
+        self.assertIn("FLOURISH open=0 close=0", out)
+        self.assertIn("SLIDE start=0 end=0 draw=0 stow=0", out)
+
+    def test_gobreuse_fields_and_stamp(self):
+        recs, skipped, _ = parse([stamped(gob_reuse(0x001A, 0x2B, "a_b", "c_d"))])
+        self.assertEqual(skipped, [])
+        self.assertEqual((recs[0]["gob"], recs[0]["node"], recs[0]["oldm"], recs[0]["newm"]), ("1a", "2b", "a_b", "c_d"))
+
+    def test_flourish_counts(self):
+        rc, out = run_log([flourish_open(0), stamped(flourish_open(1)), flourish_open(0), flourish_close(0), stamped(flourish_close(1))])
+        self.assertIn("FLOURISH open=3 close=2", out)
+
+    def test_slide_counts_split_and_extremes(self):
+        lines = [slide_start("draw"), slide_start("draw"), slide_start("stow"),
+                 slide_end("draw", frames=30, maxdt=20), stamped(slide_end("stow", frames=21, maxdt=49)),
+                 slide_end("draw", frames=5, maxdt=33)]
+        rc, out = run_log(lines)
+        self.assertIn("SLIDE start=3 end=3 draw=2 stow=1 frames min=5 max=30 maxdt max=49", out)
+
+    def test_malformed_lines_are_skipped_not_fatal(self):
+        bad = ["GOBREUSE gob=zz node=1 oldm=a newm=b", "GOBREUSE gob=1", "FLOURISH open slot=0 cli=1", "FLOURISH bogus slot=0",
+               "SLIDE end dir=stow owner=1 ms=350 frames=2x maxdt=4", "SLIDE start dir=draw owner=1", "SLIDE"]
+        rc, out = run_log(bad + [gob_reuse()])
+        self.assertEqual(rc, 0)
+        self.assertIn("GOBREUSE total=1", out)
+        self.assertIn("FLOURISH open=0 close=0", out)
+        self.assertIn("SLIDE start=0 end=0 draw=0 stow=0", out)
+        self.assertTrue(any(l.startswith("HOLSTER lines=8 parsed=1 skipped=6") for l in out), out)
+
+    def test_existing_gob_and_events_do_not_collide(self):
+        recs, _, _ = parse([gob_line(1, 0x9000, 0x1, (0.0, 0.0, 0.0), (1.0, 0.0, 0.0, 0.0)), gob_reuse()])
+        self.assertEqual([r["kind"] for r in recs], ["GOB", "GOBREUSE"])
+
 
 if __name__ == "__main__":
     unittest.main()

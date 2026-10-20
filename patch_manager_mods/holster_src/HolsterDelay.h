@@ -28,13 +28,16 @@ struct DelayIn {
     uint32_t plus520;      // server +0x520 combat state (1 = counting down)
     int32_t plus524;       // countdown ms
     uint32_t plus528;
-    uint32_t plus11E8;     // 2 = flourish-only
+    uint32_t plus11E8;     // raw dword read; low byte 2 = flourish-only (stanceByte)
     uint32_t clientCombat; // client +0x138
     bool clientKnown;      // client flag readable
     bool serverReadable;   // server creature fields readable
 };
 
 enum DelayAct : int { DelayNone = 0, DelayNeedHostileCheck = 1 };
+
+// The engine writes +0x11E8 as ONE byte; the 3 bytes after it are allocator residue, so the dword read is masked to the low byte.
+inline uint32_t stanceByte(uint32_t raw) { return raw & 0xFFu; }
 
 inline int elapsedMs(int32_t plus524) { return kCombatMs - plus524; }
 
@@ -47,7 +50,7 @@ inline DelayAct delayGate(const DelayIn& in, const DelayCfg& cfg) {
         if (cfg.combatExitMs > 0 && el >= cfg.combatExitMs) return DelayNeedHostileCheck;
         return DelayNone;
     }
-    if (in.plus11E8 == 2) {
+    if (stanceByte(in.plus11E8) == 2) {
         if (cfg.flourishExitMs > 0 && el >= cfg.flourishExitMs) return DelayNeedHostileCheck;
         return DelayNone;
     }

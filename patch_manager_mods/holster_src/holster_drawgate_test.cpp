@@ -185,6 +185,14 @@ static void testHoldActive() {
     KT_CHECK(!holdActive(o, o, 0xFFFFFFF0u, 0x10u));
 }
 
+static void testModelIdentity() {
+    KT_CHECK(sameWeaponModel(0x12345678u, 0x12345678u));    // same model: the cached entry is reused
+    KT_CHECK(!sameWeaponModel(0x12345678u, 0x12345680u));   // reallocated Gob with another model: rebuild
+    KT_CHECK(!sameWeaponModel(0x12345678u, 0u));
+    KT_CHECK(!sameWeaponModel(0u, 0x12345678u));
+    KT_CHECK(sameWeaponModel(0u, 0u));                      // unreadable matches unreadable only
+}
+
 int main() {
     testTruthTable();
     testPlaceMode();
@@ -195,5 +203,6 @@ int main() {
     testIsWeaponModel();
     testHandFromNode();
     testHoldActive();
+    testModelIdentity();
     return kt::Report("holster_drawgate");
 }

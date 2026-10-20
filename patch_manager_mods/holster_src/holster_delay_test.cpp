@@ -85,6 +85,17 @@ static void testClassification() {
         in.plus11E8 = v;
         KT_CHECK(delayGate(in, cfg) == DelayNone);
     }
+    // Width regression: the engine writes one byte at +0x11E8, the dword read carries allocator residue in the upper 3 bytes.
+    {
+        DelayIn r = flourishIn(5000);
+        r.plus11E8 = 0xAB000002u;
+        KT_CHECK(delayGate(r, cfg) == DelayNeedHostileCheck);
+        r.plus11E8 = 0xAB000001u;
+        KT_CHECK(delayGate(r, cfg) == DelayNone);
+        r.plus11E8 = 0x00000102u;   // low byte 2, bit 8 set: still flourish
+        KT_CHECK(delayGate(r, cfg) == DelayNeedHostileCheck);
+        KT_CHECK(stanceByte(0xAB000002u) == 2u);
+    }
     // Real combat wins over the flourish marker.
     DelayIn both = combatIn(5000);
     both.plus11E8 = 2;

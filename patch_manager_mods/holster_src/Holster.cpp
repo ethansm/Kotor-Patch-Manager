@@ -1,4 +1,4 @@
-// Holster.cpp -- holster 0.4.0-dev (Steam build): P0 probe for the holstered-weapons mod (patch_manager_mods/42_holstered_weapons.md).
+// Holster.cpp -- holster 0.4.1-dev (Steam build): P0 probe for the holstered-weapons mod (patch_manager_mods/42_holstered_weapons.md).
 // Plan: .claude/plans/holstered_weapons.md. Handlers are plain extern "C" void __cdecl functions; the detour wrappers in
 // kotor2-steam-aspyr.hooks.toml call them at function entry with the game arguments BEFORE the stolen bytes run.
 // Hard rules for P0 (exceptions, both default off: the bone_test code patch, and HolsterPlace's 28-byte pose write with probe=1 bone_test=1 place=1): no other writes to game memory or registers, no engine calls, reads only through saferead, and every handler returns at
@@ -1089,7 +1089,7 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
     // Verdict cache keyed on node + gob + the node's name handle [N+4], so a freed and reused address pair is re-resolved. The full
     // resolve (weapon > type > global, plus the body delta) is cached with the tune sequence it was computed for and redone when it moves.
     // Repoint: both hands share the bone_name node; the hand comes from g_handRing (sticky via hs::resolveLeft when evicted). Drawgate: the node name (lhand) decides.
-    struct Ent { uintptr_t node, gob, handle; bool isTarget, left; hs::Category cat; char mname[17], body[17]; LONG seq; hs::Resolved r; hs::GateState gate; };
+    struct Ent { uintptr_t node, gob, handle, model; bool isTarget, left; hs::Category cat; char mname[17], body[17]; LONG seq; hs::Resolved r; hs::GateState gate; };
     static Ent s_cache[128];
     static unsigned s_next = 0;
     const uintptr_t g = reinterpret_cast<uintptr_t>(gob), n = reinterpret_cast<uintptr_t>(node);
@@ -1099,8 +1099,23 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
     bool isTarget = false;
     hs::Category cat = hs::CatUnknown;
     Ent* ent = nullptr;
+    Ent* stale = nullptr;   // (node, gob, handle) matched but the weapon model differs: a reused Gob address, entry is rebuilt in place
+    const uintptr_t liveModel = rdU32(kSitePlace, g, 0x84);
     for (Ent& e : s_cache)
-        if (e.node == n && e.gob == g && e.handle == h) { isTarget = e.isTarget; cat = e.cat; ent = &e; break; }
+        if (e.node == n && e.gob == g && e.handle == h) {
+            if (hs::sameWeaponModel(e.model, liveModel)) { isTarget = e.isTarget; cat = e.cat; ent = &e; break; }
+            stale = &e;
+        }
+    if (!ent && stale) {
+        static volatile LONG s_reuseLines = 0;
+        if (g_onPlace && InterlockedIncrement(&s_reuseLines) <= 20 && KP_ENABLED(chPlace, KPLOG_INFO) && takeLine()) {
+            char newm[32];
+            newm[0] = 0;
+            if (liveModel) readTag(kSitePlace, reinterpret_cast<const char*>(liveModel + 0x08), newm, sizeof newm);
+            KP_LOG(chPlace, "GOBREUSE gob=%x node=%x oldm=%s newm=%s", static_cast<unsigned>(g), static_cast<unsigned>(n), stale->mname[0] ? stale->mname : "-",
+                   newm[0] ? newm : "-");
+        }
+    }
     if (ent) {
         // Repoint: sticky ring resolve (unchanged). Drawgate: the hand was fixed from the node name at creation and never changes (same node, same entry).
         if (!drawgateMode()) {
@@ -1117,12 +1132,16 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
         // classified by the itemclass stem table. Gob+0x64 = inline Gob name (log only). Unknown stem -> CatUnknown -> global place_rot / place_off.
         char mname[32];
         mname[0] = 0;
-        const uintptr_t model = rdU32(kSitePlace, g, 0x84);
-        if (model) readTag(kSitePlace, reinterpret_cast<const char*>(model + 0x08), mname, sizeof mname);
+        if (liveModel) readTag(kSitePlace, reinterpret_cast<const char*>(liveModel + 0x08), mname, sizeof mname);
         cat = hs::classify(mname, 0);
-        ent = &s_cache[s_next];
-        s_next = (s_next + 1) % 128u;
+        if (stale) {
+            ent = stale;
+        } else {
+            ent = &s_cache[s_next];
+            s_next = (s_next + 1) % 128u;
+        }
         *ent = Ent{};
+        ent->model = liveModel;
         ent->gate = hs::gateInit();   // drawgate: owner + hip/drawn state, "not evaluated" until the first placement
         ent->node = n; ent->gob = g; ent->handle = h; ent->isTarget = isTarget; ent->cat = cat;
         {
@@ -1577,7 +1596,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     addName(names, sizeof(names), g_onGob, "gob");
     addName(names, sizeof(names), g_onPlace, "place");
     addName(names, sizeof(names), g_onToggle, "toggle");
-    KP_LOG(chMain, "holster 0.4.0-dev loaded (P0 probe, log-only): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_probe ? 1 : 0,
+    KP_LOG(chMain, "holster 0.4.1-dev loaded (P0 probe, log-only): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_probe ? 1 : 0,
            names[0] ? names : "none", static_cast<long>(g_maxLines), g_gobEvery, k2addr::get() ? "ok" : "none");
     {
         hs::TuneCfg t;
