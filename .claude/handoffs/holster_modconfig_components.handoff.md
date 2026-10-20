@@ -40,3 +40,6 @@ Split agreed: WE do holster-only extractions and holster_editor_src/holster_src;
 
 ## Resume
 Read this file, research/mod_config_components/S2_reconcile_doc46.txt, doc 46. Plan file: ~/.claude/plans/ (body rotation + UX). Never post to GitHub without explicit approval.
+
+## State at 10-20 (remaining-work plan written)
+Plan `patch_manager_mods/42b_holster_remaining_plan.md` (master rows HW12-HW17): flourish window, slide (Slide replaces the unwired Fsm), unarmed probe then gated override, weapon-swap guard. Evidence: `research/holstered_weapons/hr1/R1..R5_review.md` (12 Haiku + 5 Sonnet swarm). Nothing built yet. Next: wave A (4 disjoint Sonnet workers), see plan sec 3. Unarmed scope shrank: holstered idle is already unarmed (R3).

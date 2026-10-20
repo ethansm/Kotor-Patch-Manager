@@ -31,6 +31,12 @@ Characters visibly stow weapons out of combat. ALL lightsabers on the hip, other
 | HW9 | P3 pseudo-draw slide (cosmetic, capped, never delays an attack) | HW8 | - | TODO | | |
 | HW10 | P4 stretch: arm pose via per-frame node rotation; authored clip only on user request | HW9 | user GO | DEFERRED | | |
 | HW11 | Hardening: log tightening, drop probe detours, release notes; KPM PR only after the public-PR decision | HW9 | user GO | TODO | | stage 4 of the milestone lifecycle (MASTER_KEY section 4) |
+| HW12 | Correctness guards: `+0x11E8` byte mask in `HolsterDelay.h`, weapon-model identity in the `Ent` cache key + `GOBREUSE` log, log-check counters (plan 42b sec 2.1) | - | - | PLANNED | | spec: `patch_manager_mods/42b_holster_remaining_plan.md`; resume `42:HW12` |
+| HW13 | Flourish draw window (C2): per-party-slot lazy window from server state, `flourish_draw` key, hot-swap (42b 2.2) | HW12 | - | PLANNED | | after HW12 |
+| HW14 | Draw/stow slide as `hs::Slide` per Ent, `draw_slide_ms`/`stow_slide_ms`, retire the unwired Fsm and its `onSwap` bug (42b 2.3); supersedes HW9 | HW13 | - | PLANNED | | after HW13 |
+| HW15 | Unarmed-locomotion probe: `HolsterAnimStyle.h`, holstered set, ANIMRES `hol=`/`comb=` (SWAP) (42b 2.4) | HW14 | - | PLANNED | | after HW14 |
+| HW16 | Unarmed override: detour 0x86367C writing the style byte, REINSTALL; ONLY if the HW15 probe gate passes | HW15 + play | user GO | GATED | | decide from probe logs |
+| HW17 | Install HW12-HW15 as one hot-swap (0.5.2-dev), play rows FL1-FL4, SL-*, SW1/SW2, HW7a-P | HW15 | user GO | PLANNED | | Opus gate + install |
 
 ## Sub-plan A — HW3 offline preview (no game, no install)
 Tool: `patch_manager_mods/k1_port/k1_port_tex_preview.py` (numpy + PIL software rasteriser; `mesh` runs in the k1port venv, renders in `.venv`). The `helmets` command already places one model at a named hook node of another; `weapons` reuses `HelmetKit.parts`, `hook_transform` and `compose_transforms`.
