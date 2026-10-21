@@ -103,3 +103,7 @@ MCF5 slider merged to KOTOR-II (ff, now repo ~7ca9fdfe), shared headers synced (
 ## Update 10-20 20:35 - mod-config 0.3.2-dev INSTALLED
 - `kpm_hotswap.py --mod mod-config --apply`: LIVE 4399c8b3. Rollback: `python3 scripts/kpm_hotswap.py --rollback mod-config_swap_20261020_203430`. `selftest=1` is still set in the game-dir mod_config.ini (set to 0 after the play check).
 - Play check: sliders stay inside the border at 0 and 100; Snap slider across its whole range incl. the rejected value.
+
+## Update 10-20 21:20 - slider wedge/thumb mismatch fixed (0.3.3-dev prepared)
+- User screenshot of 0.3.2-dev: inside the border now, but at 100% the wedge ran a little past the thumb arrow (wedge ended at the inner edge, thumb box stopped half a thumb short). Fix: thumb centre travels the inner run minus half a thumb (`sliderTravel`); wedge ends at the thumb centre (`sliderWedgeFor`), thumb via `sliderThumbFor`; mapping uses `sliderTravelOf`. Test `test_wedge_ends_at_thumb_centre` checks wedge end == thumb centre for every value 0..100.
+- Repo 9902c7f9 (mod-config 0.3.3-dev), KPM committed, `--prepare` SWAP, gate PASS. NOT installed (needs GO, game closed). Rollback of the current live 0.3.2-dev: `kpm_hotswap.py --rollback mod-config_swap_20261020_203430`.
