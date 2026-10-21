@@ -62,7 +62,7 @@ constexpr int kV3ResetMax = 60;   // reset icon squares are up to 60 x 60 (small
 // Page items that become mod-config items: left 19 (member 3, captions 3, weapons 2, bones 5, scopes 3, save/revert 2,
 // status 1) + view area 13 (mode 4, view reset + flip 2, view 1, stances 5, legend 1) + inspector 37 (group labels 2,
 // group resets 2, rows 6 x 5, note 1, hints 2) + the Reset Scope button 1 (left column, appended after the hints so no index shifts)
-// + the right description box and its text 2 (drawn over mod-config's LB_DESC) + the Remove button 1 (inspector zone, under the note) + the Pause button 1 (view area, third cell of the second stance row; appended last).
+// + the right description box and its text 2 (drawn over mod-config's LB_DESC) + the Remove button 1 (inspector zone, under the note) + the Pause button 1 (view area: full-width bar above the Idle row; the sixth cell on tiny screens; appended last).
 // kPageItemsV3 + kV3Rows (wedges) must stay <= 80 (kMaxItems).
 constexpr int kPageItemsV3 = 74;
 constexpr int kV3RemoveMaxW = 480;   // the Remove saved placement button is at most this wide (left aligned under the note)
@@ -83,7 +83,7 @@ struct PageLayoutV3 {
     editkit::Box viewReset, viewFlip;                     // small icon squares at the right end of the mode strip
     editkit::Box view;                                    // the enlarged view rect
     editkit::Box stance[kV3Stances];
-    editkit::Box pause;                                   // Pause / Play toggle for the preview animation (free third cell of the stance rows; appended last in pageBoxesV3)
+    editkit::Box pause;                                   // Pause / Play toggle for the preview animation (own full-width layer above the stance rows; appended last in pageBoxesV3)
     editkit::Box legend;
     // inspector
     editkit::Box groupLabel[kV3Groups], groupReset[kV3Groups];
@@ -328,7 +328,7 @@ inline PageLayoutV3 pageLayoutV3(editkit::Box column, editkit::Box view, editkit
     int b = kV3BarMax;
     bool two = false;
     for (int bb = kV3BarMax; bb >= kV3BarMin; --bb) {
-        if (view.h - (4 * bb + bb * 2 / 3 + 5 * 2) >= kV3MinViewH + bb) { b = bb; two = true; break; }
+        if (view.h - (5 * bb + bb * 2 / 3 + 6 * 2) >= kV3MinViewH + bb) { b = bb; two = true; break; }
     }
     if (!two) {
         for (b = kV3BarMax; b > kV3BarMin; --b) {
@@ -337,7 +337,7 @@ inline PageLayoutV3 pageLayoutV3(editkit::Box column, editkit::Box view, editkit
     }
     L.barH = b;
     const int lg = b * 2 / 3;
-    const int nb = two ? 4 : 2;   // bar rows above and below the view
+    const int nb = two ? 5 : 2;   // bar rows above and below the view (two-row: 2 mode rows + Pause, Idle Walk Run, Alert Combat)
     const int viewH = v3::imax(0, view.h - (nb * b + lg + (nb + 1) * 2));
     auto mkv = [&](int x, int y, int w, int h) { return v3::clipTo(Box{x, y, w, h}, vz); };
     int y0 = view.y;
@@ -351,13 +351,14 @@ inline PageLayoutV3 pageLayoutV3(editkit::Box column, editkit::Box view, editkit
         yv = y0 + 2 * (b + 2);
         L.view = mkv(vl, yv, vw, viewH);
         ys = yv + viewH + 2;
-        const int s3 = v3::cellW(vw, 3);
+        // three layers under the view: Pause / Play (one full-width bar), Idle Walk Run (3 cells), Alert Combat (2 cells)
+        const int s3 = v3::cellW(vw, 3), s2 = v3::cellW(vw, 2);
+        L.pause = mkv(vl, ys, vw, b);
         for (int i = 0; i < kV3Stances; ++i) {
-            const int row = i / 3, col = i % 3;
-            L.stance[i] = mkv(vl + col * (s3 + 2), ys + row * (b + 2), s3, b);
+            if (i < 3) L.stance[i] = mkv(vl + i * (s3 + 2), ys + (b + 2), s3, b);
+            else       L.stance[i] = mkv(vl + (i - 3) * (s2 + 2), ys + 2 * (b + 2), s2, b);
         }
-        L.pause = mkv(vl + 2 * (s3 + 2), ys + b + 2, s3, b);   // the free third cell of the second row
-        yl = ys + 2 * (b + 2);
+        yl = ys + 3 * (b + 2);
     } else {
         int mw = v3::iclamp((limit - vl - 3 * 2) / 4, 0, 190);
         for (int i = 0; i < kV3Modes; ++i) L.modeBtn[i] = mkv(vl + i * (mw + 2), y0, mw, b);
@@ -432,7 +433,7 @@ enum PageIdxV3 {
     PI_RESET_SCOPE = 69,  // the small "..." toggle next to Save / Revert (appended after the hints); opens the remove menu
     PI_HINTR = 70,        // + hint (2): the RIGHT description box (over mod-config's LB_DESC) and its text label
     PI_REMOVE = 72,       // the "Remove saved placement" button (inspector zone, under the note); shown only while the menu is open
-    PI_PAUSE = 73         // the Pause / Play toggle for the preview animation (view area, third cell of the second stance row; appended last)
+    PI_PAUSE = 73         // the Pause / Play toggle for the preview animation (view area: full-width bar above the Idle row; the sixth cell on tiny screens; appended last)
 };
 constexpr int kRowStride = 5;   // boxes per inspector row (name, track, thumb, value, reset)
 static_assert(PI_HINT + kV3Hints == PI_RESET_SCOPE && PI_RESET_SCOPE + 1 == PI_HINTR && PI_HINTR + kV3Hints == PI_REMOVE && PI_REMOVE + 1 == PI_PAUSE && PI_PAUSE + 1 == kPageItemsV3, "the PageIdxV3 table must cover exactly kPageItemsV3 boxes");

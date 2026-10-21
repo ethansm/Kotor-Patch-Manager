@@ -66,6 +66,22 @@ class DumpTests(unittest.TestCase):
         self.assertEqual(set(d["rows"]), {"leftRowH", "inspRowH", "barH"})
         self.assertGreaterEqual(d["rows"]["leftRowH"], 34)   # grows with the layout constants (34 in 0.4.3, 52 now)
 
+    def test_stance_layers(self):
+        """Three layers under the 3D view at 3840x1600: Pause (full width), Idle Walk Run (3 cells), Alert Combat (2 cells), then the legend."""
+        it = {x["i"]: x["box"] for x in dump()["items"]}
+        view, pause, legend = it[25], it[73], it[31]
+        b = dump()["rows"]["barH"]
+        self.assertEqual(b, 44)
+        self.assertEqual(view, [1256, 449, 681, 635])   # 896 high pane - (5 bars of 44 + legend 29 + 6 gaps)
+        self.assertEqual(pause, [1256, view[1] + view[3] + 2, 681, b])   # full width, directly under the view
+        idle = [it[26], it[27], it[28]]
+        alert = [it[29], it[30]]
+        self.assertEqual([x[1] for x in idle], [pause[1] + b + 2] * 3)
+        self.assertEqual([x[1] for x in alert], [idle[0][1] + b + 2] * 2)
+        self.assertEqual([x[2] for x in idle], [225] * 3)
+        self.assertEqual([x[2] for x in alert], [339] * 2)
+        self.assertEqual(legend[1], alert[0][1] + b + 2)
+
     def test_kinds_match_item_is_button(self):
         d = dump()
         buttons = {it["i"] for it in d["items"] if it["kind"] == "button"}

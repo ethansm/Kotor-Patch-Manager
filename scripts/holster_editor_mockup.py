@@ -84,7 +84,7 @@ def run_dump(col, view, preview, desc=None, build_dir=None, cover=None):
     return dump
 
 
-PI_PAUSE = 73    # HseLayoutV3.h PI_PAUSE: the Pause / Play toggle (third cell of the second stance row; a button, caption "Pause" while the preview runs)
+PI_PAUSE = 73    # HseLayoutV3.h PI_PAUSE: the Pause / Play toggle (full-width bar above the Idle row; a button, caption "Pause" while the preview runs)
 PI_REMOVE = 72   # HseLayoutV3.h PI_REMOVE: the Remove saved placement button (a button; shown only while the "..." menu is open)
 
 

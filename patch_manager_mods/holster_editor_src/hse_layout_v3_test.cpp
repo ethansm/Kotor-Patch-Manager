@@ -54,7 +54,7 @@ static int collect(const PageLayoutV3& L, Item* o) {
     for (int i = 19; i < 32; ++i) o[i].zone = 1;
     for (int i = 32; i < PI_RESET_SCOPE; ++i) o[i].zone = 2;
     o[PI_RESET_SCOPE].zone = 0;
-    o[PI_PAUSE].zone = 1;                             // the Pause button sits in the view area (third cell of the second stance row)
+    o[PI_PAUSE].zone = 1;                             // the Pause button sits in the view area (full-width bar above the stance rows)
     o[PI_REMOVE].zone = 2;                            // the Remove button sits in the inspector zone, under the note
     // inspector: groupLabel0, groupReset0, groupLabel1, groupReset1 (32..35), then rows 5 boxes each (36..65), note 66
     for (int r = 0; r < kV3Rows; ++r) {
@@ -818,7 +818,7 @@ static void testFill3840x1600() {
 }
 
 // Zero-cut captions at the real 3840x1600 panes: the bones sit in 2 columns, the scopes one per row, the modes 2 x 2 (icons at the right end of the first
-// row) and the stances 3 + 2, so every selector button is wide (bones, scopes, modes >= 220; the narrowest, a stance of the first row, is 199 px:
+// row) and the stances in layers (Pause full width, Idle Walk Run, Alert Combat), so every selector button is wide (bones, scopes, modes >= 220; the narrowest, a stance of the first row, is 199 px:
 // the wider column (kV3ColWantW 600, capped at the view pane's x) leaves the view vw = preview.x - kPad - view.x = 602, so (vw - 2 * 2) / 3; the text need is 148 px).
 static void testRoomyButtons3840() {
     const Geom g = realGeom();
@@ -855,10 +855,15 @@ static void testRoomyButtons3840() {
         KT_CHECK(fits("This weapon model", L.scope[0]) && fits("All heavy weapons", L.scope[1]) && fits("This body + armor", L.scope[2]));
     }
     KT_CHECK(L.view.h >= 600);
+    // bar-row accounting (independent model): 2 mode rows above, Pause + Idle Walk Run + Alert Combat below, the legend (2b/3) and 6 two-px gaps come off the view area
+    KT_CHECK_EQ(L.view.h, g.view.h - (5 * L.barH + L.barH * 2 / 3 + 6 * 2));
+    KT_CHECK(L.view.h >= kV3MinViewH + L.barH);
+    KT_CHECK_EQ(L.pause.y, L.view.y + L.view.h + 2);
+    KT_CHECK(L.legend.y + L.legend.h <= g.view.y + g.view.h);
 }
 
-// The Pause button (PI_PAUSE): the third cell of the second stance row (one row of 6 cells on tiny screens), inside the view area, overlapping no
-// other box, the same width as the first-row stances, and its captions "Pause" / "Play" fit like the other buttons (text_k 2.65 budget).
+// The Pause button (PI_PAUSE): its own full-width layer directly under the 3D view, above the Idle Walk Run row, which sits above the Alert Combat row
+// (one row of 6 cells on tiny screens); inside the view area, overlapping no other box; its captions "Pause" / "Play" fit like the other buttons (text_k 2.65 budget).
 static void testPauseBox() {
     struct Case { const char* what; Geom g; };
     const Case cases[] = {{"3840x1600 real", realGeom()}, {"3440x1440", geomFor(3440, 1440)}, {"1920x1080", geomFor(1920, 1080)}, {"1280x720", geomFor(1280, 720)}};
@@ -873,8 +878,16 @@ static void testPauseBox() {
         KT_CHECK(P.x >= L.view.x && P.x + P.w <= L.view.x + L.view.w);          // inside the view area columns
         for (int i = 0; i < kV3Stances; ++i) KT_CHECK(!overlaps(P, L.stance[i]));
         KT_CHECK(!overlaps(P, L.view) && !overlaps(P, L.legend));
-        if (L.stance[3].y > L.stance[0].y) {   // two-row layout: Alert, Combat, Pause share the second row; all six cells have the same width
-            KT_CHECK(P.y == L.stance[3].y && P.x > L.stance[4].x && P.w == L.stance[0].w && L.stance[3].w == L.stance[0].w);
+        if (L.stance[3].y > L.stance[0].y) {   // three layers: Pause (full width), Idle Walk Run (3 cells), Alert Combat (2 cells), each b + 2 apart, under the view
+            KT_CHECK_EQ(P.x, L.view.x); KT_CHECK_EQ(P.w, L.view.w); KT_CHECK_EQ(P.h, L.barH);
+            KT_CHECK_EQ(P.y, L.view.y + L.view.h + 2);                       // directly under the 3D view
+            KT_CHECK_EQ(L.stance[0].y, P.y + L.barH + 2);                    // Idle row under Pause
+            KT_CHECK_EQ(L.stance[3].y, L.stance[0].y + L.barH + 2);          // Alert Combat under Idle Walk Run
+            KT_CHECK(L.stance[0].y == L.stance[2].y && L.stance[3].y == L.stance[4].y);
+            KT_CHECK_EQ(L.stance[0].w, v3::cellW(L.view.w, 3));
+            KT_CHECK_EQ(L.stance[3].w, v3::cellW(L.view.w, 2));
+            KT_CHECK_EQ(L.stance[4].x, L.view.x + L.stance[3].w + 2);
+            KT_CHECK_EQ(L.legend.y, L.stance[3].y + L.barH + 2);             // the legend stays below the three layers
         } else {                               // tiny screens: one row of six cells
             KT_CHECK(P.y == L.stance[4].y && P.x > L.stance[4].x && P.w == L.stance[4].w);
         }
