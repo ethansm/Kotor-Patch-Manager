@@ -1,4 +1,4 @@
-// HolsterEditor.cpp -- holster-editor 0.5.1-dev (Steam build): a HOOKLESS consumer of the mod-config provider (k2.modconfig@1, k2.menuui@1).
+// HolsterEditor.cpp -- holster-editor 0.5.2-dev (Steam build): a HOOKLESS consumer of the mod-config provider (k2.modconfig@1, k2.menuui@1).
 // (doc 42 HW-EDIT, plan .claude/plans/holster_editor_options.md; page rebuild: .claude/plans/holster_editor_layout_v3.md, holster_hw_ux3_build.md Wave B.)
 //
 // mod-config owns everything about the Options screen: the hooks, the root "Mod Configuration" button, the list page, control cloning,
@@ -451,8 +451,7 @@ bool itemIsResetIcon(int i) {
     return false;
 }
 
-// The party member prev / next buttons: arrow art on the button (the "<" ">" captions render as nothing).
-bool itemIsMemberArrow(int i) { return i == hse::PI_MEMBER_PREV || i == hse::PI_MEMBER_NEXT; }
+// (The party member prev / next buttons carry the words "Prev" / "Next": the arrow art was invisible, the button border insets any fill by 16 px a side.)
 bool itemIsHintBox(int i) { return i == hse::PI_HINT || i == hse::PI_HINTR; }             // the left / right description box (fill art)
 bool itemIsHintText(int i) { return i == hse::PI_HINT + 1 || i == hse::PI_HINTR + 1; }   // its text label
 // Buttons whose hover help goes to the LEFT description box (the editor writes it) instead of mod-config's right pane (which then keeps the slider help).
@@ -466,8 +465,8 @@ bool itemIsLeftTip(int i) {
 const char* itemInitText(int i, char* buf, int cap) {
     using namespace hse;
     static const char* const kGroup[kV3Groups] = {"POSITION", "ROTATION"};
-    if (i == PI_MEMBER_PREV) return "<";
-    if (i == PI_MEMBER_NEXT) return ">";
+    if (i == PI_MEMBER_PREV) return "Prev";
+    if (i == PI_MEMBER_NEXT) return "Next";
     if (i == PI_MEMBER_NAME) return "";
     if (i == PI_CAP_WEAPON) return "WEAPON";
     if (i == PI_CAP_BONE) return "BONE";
@@ -2527,8 +2526,6 @@ void applyArt(Editor& e) {
     // The slider art and the reset arrows are separate texture sets: a set that is still missing at the deadline is skipped, the other one is applied.
     const bool timedOut = ++e.artTicks > kArtMaxTicks;
     bool haveIcon = hse::resetIconImage(false) && hse::resetIconImage(true) && hse::flipIconImage(false) && hse::flipIconImage(true);
-    for (int a = 0; a < 4; ++a)
-        if (!hse::arrowIconImage((a & 2) != 0, (a & 1) != 0)) haveIcon = false;
     bool haveSlider = true;
     for (int w = 0; w < hse::SA_Count; ++w)
         if (!hse::sliderArtImage(w)) haveSlider = false;
@@ -2539,12 +2536,12 @@ void applyArt(Editor& e) {
     for (int i = 0; i < hse::kPageItemsV3 && haveSlider; ++i)
         if ((itemIsHintBox(i) || itemIsHintText(i)) && !ctlOf(e, e.item[i])) haveSlider = false;
     for (int i = 0; i < hse::kPageItemsV3 && haveIcon; ++i)
-        if ((itemIsResetIcon(i) || itemIsMemberArrow(i) || i == hse::PI_VIEW_FLIP) && !ctlOf(e, e.item[i])) haveIcon = false;
+        if ((itemIsResetIcon(i) || i == hse::PI_VIEW_FLIP) && !ctlOf(e, e.item[i])) haveIcon = false;
     if (!timedOut && (!haveIcon || !haveSlider)) return;
     if (timedOut)
         KP_LOGV(chView, KPLOG_WARN, "ART WARN not ready after %d ticks (slider=%d reset_icon=%d): the missing part keeps its plain controls", kArtMaxTicks,
                 haveSlider ? 1 : 0, haveIcon ? 1 : 0);
-    int frame = 0, wedge = 0, mark = 0, icon = 0, icons = 0, arrow = 0, arrows = 0, flip = 0, hintBox = 0, descStyle = 0;
+    int frame = 0, wedge = 0, mark = 0, icon = 0, icons = 0, flip = 0, hintBox = 0, descStyle = 0, nameBox = 0;
     for (int r = 0; r < hse::kV3Rows && haveSlider; ++r) {
         const int b = hse::PI_ROW + r * hse::kRowStride;
         const uintptr_t tc = ctlOf(e, e.item[b + 1]), wc = ctlOf(e, e.wedge[r]), mc = ctlOf(e, e.item[b + 2]);
@@ -2565,6 +2562,15 @@ void applyArt(Editor& e) {
             }
         }
     }
+    if (haveSlider) {   // the party member name: the hint-box frame fill, centred, lit colour, so it reads as a name plate and not as a section title
+        const uintptr_t nc = ctlOf(e, e.item[hse::PI_MEMBER_NAME]);
+        if (nc && hse::sliderArtFill(nc, hse::SA_Box)) {
+            (void)guikit::setFillStyle(nc, 2);
+            (void)guikit::setAlign(nc, 18);
+            (void)guikit::setTextColor(nc, kColLit[0], kColLit[1], kColLit[2]);   // a refused colour only keeps the plain text colour
+            nameBox = 1;
+        }
+    }
     for (int i = 0; i < hse::kPageItemsV3 && haveIcon; ++i) {
         if (!itemIsResetIcon(i)) continue;
         ++icons;
@@ -2575,17 +2581,6 @@ void applyArt(Editor& e) {
         }
     }
     g_artCtl = 0;
-    for (int i = 0; i < hse::kPageItemsV3 && haveIcon; ++i) {
-        if (!itemIsMemberArrow(i)) continue;
-        ++arrows;
-        const bool next = i == hse::PI_MEMBER_NEXT;
-        const uintptr_t ac = ctlOf(e, e.item[i]);
-        if (ac && guikit::setButtonFill(ac, hse::arrowIconImage(next, false), hse::arrowIconImage(next, true))) {
-            (void)guikit::setButtonFillStyle(ac, 2);
-            clearItemText(e, i);
-            ++arrow;
-        }
-    }
     if (haveIcon) {
         const uintptr_t fc = ctlOf(e, e.item[hse::PI_VIEW_FLIP]);
         if (fc && guikit::setButtonFill(fc, hse::flipIconImage(false), hse::flipIconImage(true))) {
@@ -2595,8 +2590,9 @@ void applyArt(Editor& e) {
         }
     }
     e.artDone = true;
-    KP_LOG(chView, "ART applied frame=%d/%d wedge=%d/%d mark=%d/%d reset_icon=%d/%d member_arrow=%d/%d flip=%d/1 hint_box=%d/2 desc_style=%d/6 after %d ticks", frame, hse::kV3Rows, wedge, hse::kV3Rows, mark,
-           hse::kV3Rows, icon, icons, arrow, arrows, flip, hintBox, descStyle, e.artTicks);
+    KP_LOG(chView, "ART applied frame=%d/%d wedge=%d/%d mark=%d/%d reset_icon=%d/%d flip=%d/1 hint_box=%d/2 desc_style=%d/6 after %d ticks", frame, hse::kV3Rows, wedge, hse::kV3Rows, mark,
+           hse::kV3Rows, icon, icons, flip, hintBox, descStyle, e.artTicks);
+    KP_LOG(chView, "NAMEBOX art=%d", nameBox);
 }
 
 // Mounting bone `want` (0..4): HolsterApi has no absolute bone setter, so this cycles CycleBone until GetEdit reports the bone, at most
@@ -2966,7 +2962,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     g_clients.init(api);
     embedgui::g_log = embedLog;
     embtex::g_log = embedLog;
-    KP_LOG(chMain, "holster-editor 0.5.1-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
+    KP_LOG(chMain, "holster-editor 0.5.2-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
            static_cast<unsigned>(sizeof kHseViewGui));
     g_clients.poll();   // the first poll() of every client tries to connect
     // This DLL is hookless: there is no frame hook to retry mod-config / menuui from later, so a missing provider now means no page this run.

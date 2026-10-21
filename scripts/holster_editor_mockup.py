@@ -219,12 +219,14 @@ RIGHT_DESC_TEXT = "Drag or click a slider. Shift fine, Ctrl snap."
 DESC_EDGE = (0 / 255, 105 / 255, 81 / 255)   # description box frame colour 0,105,81
 DESC_FILL = (0, 17, 11, 255)                 # description box fill
 DESC_TEXT = (37 / 255, 200 / 255, 164 / 255)  # description text 37,200,164
+LIT_TEXT = (1.0, 0.86, 0.35)                  # HolsterEditor.cpp kColLit (member name text)
+PI_MEMBER_NAME = 1
 
 
 def caption_for(i, remove_open=False):
     """Plausible caption of page item i (strings from HolsterEditor.cpp itemInitText / HseView.h; sample values for composed ones)."""
-    # Items 0 / 2 (member arrows) are blank: the arrow art replaces their "<" ">" (HolsterEditor.cpp applyArt clearItemText), so no caption stays.
-    fixed = {0: "", 1: "Meetra Surik", 2: "", 3: "WEAPON", 4: "BONE", 5: "APPLIES TO", 6: "Right: Vibrosword", 7: "Left: Vibrosword",
+    # Items 0 / 2 (member buttons) carry the words "Prev" / "Next" (the arrow art was invisible inside the 16 px button border inset).
+    fixed = {0: "Prev", 1: "Meetra Surik", 2: "Next", 3: "WEAPON", 4: "BONE", 5: "APPLIES TO", 6: "Right: Vibrosword", 7: "Left: Vibrosword",
              13: "This weapon model", 14: "All melee weapons", 15: "This body + armor", 16: "Save", 17: "Revert",
              18: "Member 1/9 | Weapons: Right+Left", 19: ">Move<", 20: "Depth", 21: "Tilt", 22: "Roll/Turn", 23: "R", 24: "<>", 25: "",
              31: HELP_LINE, 32: "POSITION", 33: "R", 34: "ROTATION", 35: "R", 66: "Left: mirrored from right",
@@ -421,6 +423,9 @@ def render(W, H, panes, dump, mode="engine-model", fix=0, g=16, m=9, line_h=None
             continue
         if kind == "button":
             draw_border_px(canvas, box, g)
+        elif i == PI_MEMBER_NAME:   # name plate: the hint-box frame fill + edge (SA_Box), centred lit text (HolsterEditor.cpp applyArt NAMEBOX)
+            d.rectangle((X, Y, X + bw - 1, Y + bh - 1), fill=DESC_FILL)
+            draw_border_px(canvas, box, g, {**BTN_BORDER, "COLOR": DESC_EDGE})
         elif 36 <= i <= 65 and (i - 36) % 5 in (1, 2):   # slider track / thumb: plain shapes
             fill = (30, 60, 56, 255) if (i - 36) % 5 == 1 else (204, 204, 178, 255)
             d.rectangle((X, Y, X + bw - 1, Y + bh - 1), fill=fill)
@@ -434,7 +439,7 @@ def render(W, H, panes, dump, mode="engine-model", fix=0, g=16, m=9, line_h=None
                    text_rect=line_rects(lines, rect, y0, line_h, scale, False) if (drawn and shown) else None)
         if rec["drawn"]:
             for k, ln in enumerate(lines):
-                draw_line(canvas, ln, rect, y0 + k * line_h, scale, TEAL_TEXT if kind == "button" else CREAM)
+                draw_line(canvas, ln, rect, y0 + k * line_h, scale, TEAL_TEXT if kind == "button" else (LIT_TEXT if i == PI_MEMBER_NAME else CREAM))
         items.append(rec)
     side = {"width": W, "height": H, "mode": mode, "caption_fix": fix, "dim": g, "margin": m, "line_h": line_h, "text_scale": text_scale(W), "engine_px_per_texel": scale,
             "button_fit_pad": button_fit_pad, "label_fit_pad": label_fit_pad, "text_k": text_k, "fit_px_per_texel": fscale,

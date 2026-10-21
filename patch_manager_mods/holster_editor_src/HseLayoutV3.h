@@ -109,6 +109,7 @@ inline editkit::Box clipTo(editkit::Box b, editkit::Box z) {
     return editkit::Box{x0, y0, x1 - x0, y1 - y0};
 }
 constexpr int kPad = 6, kGap = 4, kSpacer = 6;
+constexpr int kMemberMinW = 106;   // member Prev / Next button width floor: "Next" is 83.5 px at text_k 2.65 and the engine box is the button width - 2 * (7 + 3)
 
 // n equal cells across w with `gap` px gaps; cell i starts at x + i * (cellW + gap)
 inline int cellW(int w, int n, int gap = 2) { return imax(0, (w - (n - 1) * gap) / n); }
@@ -124,7 +125,7 @@ inline int buildLeft(editkit::Box Z, int r, bool roomy, PageLayoutV3& L, bool fu
     int y = Z.y + kPad;
     auto mk = [&](int x, int yy, int w, int h) { return clipTo(Box{x, yy, w, h}, Z); };
 
-    int side = imin(r, imax(0, (W - 2 * kGap) / 3));
+    int side = imin(imax(2 * r + 12, kMemberMinW), imax(0, (W - 2 * kGap) / 3));   // wide enough for the words "Prev" / "Next" (kMemberMinW keeps them inside the engine text box at r = 39)
     L.memberPrev = mk(x0, y, side, r);
     L.memberName = mk(x0 + side + kGap, y, imax(0, W - 2 * side - 2 * kGap), r);
     L.memberNext = mk(x0 + W - side, y, side, r);

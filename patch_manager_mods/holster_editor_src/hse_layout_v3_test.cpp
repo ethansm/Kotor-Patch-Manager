@@ -255,8 +255,11 @@ static void testPinned3440() {
     const int P = v3::kPad, G = v3::kGap, r = 49;
     const int x0 = 150 + P, y0 = 357 + P, W = 400 - 2 * P;
     KT_CHECK_EQ(L.leftRowH, r);
-    KT_CHECK(same(L.memberPrev, Box{x0, y0, r, r}));   // side = min(r, (W - 2 * kGap) / 3) = r
-    KT_CHECK(same(L.memberNext, Box{x0 + W - r, y0, r, r}));
+    const int mside = 110;   // side = min(max(2 * r + 12, kMemberMinW), (W - 2 * kGap) / 3) = min(110, 126): wide enough for the words "Prev" / "Next"
+    KT_CHECK_EQ(mside, std::min(std::max(2 * r + 12, v3::kMemberMinW), (W - 2 * G) / 3));
+    KT_CHECK(same(L.memberPrev, Box{x0, y0, mside, r}));
+    KT_CHECK(same(L.memberNext, Box{x0 + W - mside, y0, mside, r}));
+    KT_CHECK(same(L.memberName, Box{x0 + mside + G, y0, W - 2 * mside - 2 * G, r}));
     const int cap = r;                                              // the captions are full rows (a shorter box drew no text)
     const int yCapW = y0 + r + G;                                   // below the member row
     KT_CHECK(same(L.capWeapon, Box{x0, yCapW, W, cap}));
@@ -765,6 +768,8 @@ static void testReal3840x1600() {
         Geom q = s == 0 ? g : geomFor(sizes[s][0], sizes[s][1]);
         PageLayoutV3 P = pageLayoutV3(q.column, q.view, q.preview, q.hint, nullptr);
         KT_CHECK(px("Save") <= static_cast<float>(buttonTextPx(P.save.w)));
+        KT_CHECK(px("Prev") <= static_cast<float>(buttonTextPx(P.memberPrev.w)) && px("Next") <= static_cast<float>(buttonTextPx(P.memberNext.w)));   // the member words fit
+        KT_CHECK(P.memberPrev.w > P.memberPrev.h && P.memberName.w > 0);
         if (s == 0) KT_CHECK(px("Revert") <= static_cast<float>(buttonTextPx(P.revert.w)));   // the synthetic 3440 column is 400 wide: its 129 px Revert gets cut
         KT_CHECK(px(removeToggleLabel()) <= static_cast<float>(buttonTextPx(P.reset.w)));
         KT_CHECK(px(removeLabel()) <= static_cast<float>(buttonTextPx(P.remove.w)));   // "Remove saved placement" fits its button
