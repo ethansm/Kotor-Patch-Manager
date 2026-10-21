@@ -42,6 +42,9 @@ struct Slide {
     uint32_t t0 = 0, len = 0, last = 0;
     uint8_t dir = 0;  // 0 = heading to the hip, 1 = heading to the hand
     uint8_t init = 0;
+    float pathFrom = 1;   // path position (0 mount .. 1 rest) at the last retarget; reachPlan starts from it
+    float carryFrom = 0;  // carry weight at the last retarget
+    float w0 = 0;         // reach weight at the last retarget (holdW), blended over the new slide's first ramp window
 
     // Silent placement: no motion, fraction is the target at once.
     void reset(bool hand, uint32_t now) {
@@ -50,6 +53,9 @@ struct Slide {
         len = 0;
         t0 = last = now;
         init = 1;
+        pathFrom = 1.f;
+        carryFrom = (float)dir;
+        w0 = 0.f;
     }
 
     // Hand fraction in [0, 1] at tick `now`. A tick before t0 (stale) reports `from`; endpoints are exact.
@@ -61,8 +67,9 @@ struct Slide {
         return from + ((float)dir - from) * (float)d / (float)len;
     }
 
-    // Head for the hand (true) or the hip (false). No-op when already heading there. ms == 0 moves instantly.
-    void target(bool hand, uint32_t now, uint32_t drawMs, uint32_t stowMs) {
+    // Head for the hand (true) or the hip (false). No-op when already heading there. ms == 0 moves instantly. holdW = the reach weight at
+    // this retarget (NaN -> 0); the new slide's reach weight blends from it (reachWeightRamp). Timing is unchanged by holdW.
+    void target(bool hand, uint32_t now, uint32_t drawMs, uint32_t stowMs, float holdW = 0.f) {
         const uint8_t want = hand ? 1 : 0;
         if (dir == want) return;
         const float f = frac(now);  // evaluated before dir changes
@@ -77,6 +84,7 @@ struct Slide {
         dir = want;
         t0 = last = now;
         len = l;
+        w0 = slideClamp01(holdW);
     }
 
     // Gap guard, call once per tick: a stall longer than 100 ms while a slide was running shifts t0 by the stall, so the slide

@@ -177,14 +177,18 @@ inline Q reachDeltaToLocal(const Q& parentWorld, const Q& deltaWorld, const Q& c
 
 // Reach ramp of a Slide-timed reach: 0 outside the slide, smoothstep ramps over the first and last 20% of its length, 1 in the
 // middle 60%. Uses the signed tick difference, so a counter wrap is harmless.
+// The first ramp window starts at the reach weight the slide was retargeted from (w0) and joins the normal ramp at w = 1, so a reversal does not pop.
 inline float reachWeightRamp(const Slide& s, uint32_t now, float ramp) {
-    if (!s.active(now) || !(ramp > 1e-3f)) return 0.f;
+    const int32_t d = (int32_t)(now - s.t0);
+    if (d < 0 || d >= (int32_t)s.len || !(ramp > 1e-3f)) return 0.f;   // len 0: always 0
     if (ramp > 0.5f) ramp = 0.5f;
-    const float p = (float)(int32_t)(now - s.t0) / (float)s.len;
+    const float p = (float)d / (float)s.len;
     const float up = p / ramp, down = (1.f - p) / ramp;
     float w = up < down ? up : down;
     if (w > 1.f) w = 1.f;
-    return easeSmooth(w);
+    const float g = easeSmooth(w);
+    if (up < 1.f) return 1.f - (1.f - s.w0) * (1.f - g);   // retarget window: starts at w0, joins the ramp at w = 1
+    return g;
 }
 inline float reachWeight(const Slide& s, uint32_t now) { return reachWeightRamp(s, now, 0.2f); }
 
@@ -313,32 +317,65 @@ inline bool reachHinge(const float* S, float L1, float L2, const float* up, cons
 // (kept for callers; 0 now: the reach and release walk the carry arc); carryW = how much the weapon follows the hand (0 = on the mount).
 struct ReachPlan { bool active; float pathF, restMix, carryW; };
 
+constexpr float kCarryEaseLen = 0.15f;   // L: share of the carry over which the carry weight eases in/out
+// Carry path position after carry fraction q (0..1 -> 0..1). Zero speed at both ends; slope v = 1/(1-L/2) in the middle.
+inline float reachCarryF(float q) {
+    const float L = kCarryEaseLen, v = 1.f / (1.f - L / 2.f);
+    q = slideClamp01(q);
+    if (q <= L) { const float x = q / L; return v * L * (x * x * x - x * x * x * x / 2.f); }
+    return v * (L / 2.f + q - L);
+}
+
+// The plan starts from the slide's stored retarget state (pathFrom, carryFrom), so a reversal continues where the arm was. The retarget tick
+// (d == 0) is active.
 inline ReachPlan reachPlan(const Slide& s, uint32_t now, float g) {
     ReachPlan r = { false, 0.f, 0.f, 0.f };
-    if (!s.active(now)) return r;
+    const int32_t d = (int32_t)(now - s.t0);
+    if (d < 0 || d >= (int32_t)s.len) return r;   // was s.active(now): the retarget tick (d == 0) is inside now
     if (!(g > 0.f)) g = 0.f;
     if (g > 0.6f) g = 0.6f;
-    const float p = slideClamp01((float)(int32_t)(now - s.t0) / (float)s.len);
-    const float from = slideClamp01(s.from);
+    const float p = slideClamp01((float)d / (float)s.len);
+    const float from = slideClamp01(s.from);      // frac: only the fresh / partial split uses it
     r.active = true;
     if (s.dir) {                                   // draw
-        if (from <= 0.001f && g > 0.f) {
-            if (p < g) { r.pathF = 1.f - easeSmooth(p / g); r.restMix = 0.f; r.carryW = 0.f; return r; }   // reach: the carry path walked backwards, rest -> mount
+        if (from <= 0.001f) {                      // fresh from the mount: reach if g > 0, then carry from 0
+            if (g > 0.f && p < g) { r.pathF = s.pathFrom * (1.f - easeSmooth(p / g)); return r; }
             const float q = (p - g) / (1.f - g);
-            r.pathF = q; r.restMix = 0.f; r.carryW = easeSmooth(q / 0.1f);
-            return r;
+            r.pathF = reachCarryF(q); r.carryW = easeSmooth(q / kCarryEaseLen); return r;
         }
-        r.pathF = from + (1.f - from) * p; r.restMix = 0.f; r.carryW = 1.f;
+        r.pathF = s.pathFrom + (1.f - s.pathFrom) * reachCarryF(p);     // partial: continues from the retarget
+        r.carryW = s.carryFrom + (1.f - s.carryFrom) * easeSmooth(p / kCarryEaseLen);
         return r;
     }
     const float c = 1.f - g;                       // stow: carry share of the slide
     if (p < c) {
         const float q = p / c;
-        r.pathF = from * (1.f - q); r.restMix = 0.f; r.carryW = easeSmooth(r.pathF / 0.1f);
+        r.pathF = s.pathFrom * reachCarryF(1.f - q);
+        r.carryW = s.carryFrom * easeSmooth((1.f - q) / kCarryEaseLen);
         return r;
     }
-    r.pathF = easeSmooth((p - c) / g); r.restMix = 0.f; r.carryW = 0.f;   // release: the same path again, mount -> rest, the weapon stays
+    r.pathF = easeSmooth((p - c) / g); r.carryW = 0.f;   // release: unchanged
     return r;
+}
+
+// Retarget with continuity. g must be the grab share the reader passes to reachPlan. ramp must equal the reader's reach ramp (the Holster.cpp
+// readers use g_reachCarry ? 0.04f : 0.2f); the default is the carry-mode value. Duration (Option B, this wrapper only): a reversal of a running
+// slide takes ms * path distance / 2 (stow (P0 + 1) / 2, draw (1 - P0) / 2), so arm speed stays normal.
+inline void reachRetarget(Slide& s, bool hand, uint32_t now, uint32_t drawMs, uint32_t stowMs, float g, float ramp = 0.04f) {
+    if (s.dir == (hand ? 1 : 0)) return;                    // same direction: target() is a no-op, store nothing
+    const ReachPlan old = reachPlan(s, now, g);             // read BEFORE target(), which resets t0
+    const float P0 = old.active ? old.pathF : 1.f;
+    const float C0 = old.active ? old.carryW : (float)s.dir;
+    const float w = reachWeightRamp(s, now, ramp);          // also before target()
+    s.target(hand, now, drawMs, stowMs, w);
+    s.pathFrom = P0; s.carryFrom = C0;
+    if (old.active) {                                       // reversal of a running slide only; fresh start keeps frac length
+        const uint32_t ms = hand ? drawMs : stowMs;
+        const float half = 0.5f * (hand ? 1.f - P0 : P0 + 1.f);
+        uint32_t l = 0;
+        if (ms > 0) { l = (uint32_t)((float)ms * half + 0.5f); if (l == 0 && half > 0.f) l = 1; }
+        s.len = l;
+    }
 }
 
 // Nlerp along the shorter arc. w is clamped to [0, 1] (NaN -> 0). w == 0 returns a bit for bit (no normalize). A non-finite a is

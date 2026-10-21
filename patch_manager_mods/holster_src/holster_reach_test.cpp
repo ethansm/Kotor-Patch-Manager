@@ -576,13 +576,14 @@ static void testReachPlanDraw() {
     Slide sl;
     sl.reset(false, 1000);
     sl.target(true, 1000, 400, 400);   // draw from the mount: 1000..1400
-    KT_CHECK(!reachPlan(sl, 1000, 0.3f).active && !reachPlan(sl, 1400, 0.3f).active);   // the ends are not active
+    ReachPlan z0 = reachPlan(sl, 1000, 0.3f);                         // the retarget tick (d == 0) is inside the plan: rest end, weapon on the mount
+    KT_CHECK(z0.active && z0.pathF == 1.f && z0.carryW == 0.f && !reachPlan(sl, 1400, 0.3f).active);
     ReachPlan a = reachPlan(sl, 1040, 0.3f);                          // p = 0.1: inside the reach phase
     KT_CHECK(a.active && a.carryW == 0.f && a.restMix == 0.f && a.pathF > 0.5f && a.pathF < 1.f);   // reach: walking the arc from the rest end toward the mount
     ReachPlan b = reachPlan(sl, 1120, 0.3f);                          // p = 0.3: the grab instant
     KT_CHECK(std::fabs(b.pathF) < 1e-5f && b.restMix < 1e-4f && b.carryW < 1e-4f);
     ReachPlan c = reachPlan(sl, 1260, 0.3f);                          // p = 0.65: q = 0.5 of the carry phase
-    KT_CHECK(std::fabs(c.pathF - 0.5f) < 1e-4f && c.restMix == 0.f && c.carryW == 1.f);
+    KT_CHECK(std::fabs(c.pathF - 0.45946f) < 1e-4f && c.restMix == 0.f && c.carryW == 1.f);
     ReachPlan d = reachPlan(sl, 1399, 0.3f);                          // almost at the end: at the rest hand, weapon carried
     KT_CHECK(d.pathF > 0.99f && d.carryW == 1.f && d.restMix == 0.f);
     float prev = 2.f;                                                  // draw: pathF falls to 0 during the reach, then rises to 1 during the carry
@@ -592,7 +593,7 @@ static void testReachPlanDraw() {
     prev = reachPlan(sl, 1125, 0.3f).pathF;
     for (uint32_t t = 1126; t < 1400; ++t) { const float pf = reachPlan(sl, t, 0.3f).pathF; KT_CHECK(pf >= prev - 1e-6f); prev = pf; }
     ReachPlan z = reachPlan(sl, 1200, 0.f);                           // no reach phase: carry from the start
-    KT_CHECK(std::fabs(z.pathF - 0.5f) < 1e-4f && z.carryW == 1.f);
+    KT_CHECK(std::fabs(z.pathF - 0.45946f) < 1e-4f && z.carryW == 1.f);
 }
 
 static void testReachPlanStow() {
@@ -602,7 +603,7 @@ static void testReachPlanStow() {
     ReachPlan a = reachPlan(sl, 1040, 0.3f);                          // p = 0.1: carrying, near the rest end of the path
     KT_CHECK(a.active && a.pathF > 0.8f && a.restMix == 0.f && a.carryW == 1.f);
     ReachPlan b = reachPlan(sl, 1196, 0.3f);                          // p = 0.49: q = 0.7 of the carry
-    KT_CHECK(std::fabs(b.pathF - 0.3f) < 2e-3f && b.carryW == 1.f);
+    KT_CHECK(std::fabs(b.pathF - 0.24324f) < 1e-4f && b.carryW == 1.f);
     ReachPlan c = reachPlan(sl, 1290, 0.3f);                          // p = 0.725: release phase, the weapon is on the mount
     KT_CHECK(c.carryW == 0.f && c.restMix == 0.f && c.pathF > 0.f && c.pathF < 1.f);   // release: walking the arc mount -> rest, weapon on the mount
     ReachPlan d = reachPlan(sl, 1399, 0.3f);
@@ -619,15 +620,183 @@ static void testReachPlanPartialDraw() {
     Slide sl;
     sl.reset(false, 1000);
     sl.target(true, 1000, 400, 400);
-    sl.target(false, 1200, 400, 400);   // reversed half way: a stow from f = 0.5
+    reachRetarget(sl, false, 1200, 400, 400, 0.3f);   // reversed half way: a stow from the draw's path position at 1200
+    KT_CHECK(std::fabs(reachPlan(sl, 1200, 0.3f).pathF - 0.2278f) < 1e-4f);   // the retarget tick equals the old plan
     ReachPlan a = reachPlan(sl, 1210, 0.3f);
-    KT_CHECK(a.active && a.pathF < 0.5f && a.pathF > 0.4f);          // continues from where the hand was (no jump back to the rest end)
+    KT_CHECK(a.active && std::fabs(a.pathF - 0.2135f) < 2e-3f);      // continues from where the arm was (no jump back to the rest end)
     sl.reset(false, 5000);
     sl.target(true, 5000, 400, 400);
-    sl.target(false, 5100, 400, 400);
-    sl.target(true, 5150, 400, 400);   // a draw from f > 0: no reach phase, carries on
+    reachRetarget(sl, false, 5100, 400, 400, 0.3f);
+    reachRetarget(sl, true, 5150, 400, 400, 0.3f);   // a draw from f > 0: no reach phase, carries on (the carry eases in from the stow's)
     ReachPlan b = reachPlan(sl, 5160, 0.3f);
-    KT_CHECK(b.active && b.restMix == 0.f && b.carryW == 1.f);
+    KT_CHECK(b.active && b.restMix == 0.f && std::fabs(b.carryW - 0.2804f) < 3e-3f);
+}
+
+// HW25: a retarget keeps the path position and carry weight continuous. Each case reverses a draw from the mount (1000..1400, g 0.3)
+// to a stow at tick t, then checks the plan at t and the next tick.
+static void testReachRetargetContinuity() {
+    const uint32_t ticks[4] = { 1008u, 1040u, 1060u, 1200u };
+    const float expPath[4] = { 0.98726f, 0.74074f, 0.50000f, 0.22780f };
+    const float expCarry[4] = { 0.f, 0.f, 0.f, 1.f };
+    for (int i = 0; i < 4; ++i) {
+        const uint32_t t = ticks[i];
+        Slide sl;
+        sl.reset(false, 1000);
+        sl.target(true, 1000, 400, 400);
+        const ReachPlan before = reachPlan(sl, t, 0.3f);
+        reachRetarget(sl, false, t, 400, 400, 0.3f);
+        const ReachPlan at = reachPlan(sl, t, 0.3f), next = reachPlan(sl, t + 1u, 0.3f);
+        KT_CHECK(std::fabs(at.pathF - before.pathF) < 1e-6f && std::fabs(at.carryW - before.carryW) < 1e-6f);   // no jump at the retarget
+        // the next tick moves at the stow's normal speed. Do NOT compare with the tick before: the old reach moves 0.011-0.013 per tick there, as it should.
+        KT_CHECK(std::fabs(next.pathF - at.pathF) < 0.01f && std::fabs(next.carryW - at.carryW) < 0.05f);
+        KT_CHECK(std::fabs(at.pathF - expPath[i]) < 1e-4f && std::fabs(at.carryW - expCarry[i]) < 1e-4f);
+    }
+}
+
+// HW25: the stow length after a reversal (Option B: ms * path distance / 2), the fresh-start lengths, the partial draw after a stow,
+// and the carry-stage monotonicity after a reversal.
+static void testReachRetargetEndsAndDuration() {
+    const uint32_t ticks[4] = { 1008u, 1040u, 1060u, 1200u };
+    const uint32_t lens[4] = { 397u, 348u, 300u, 246u };
+    for (int i = 0; i < 4; ++i) {
+        Slide sl;
+        sl.reset(false, 1000);
+        sl.target(true, 1000, 400, 400);
+        reachRetarget(sl, false, ticks[i], 400, 400, 0.3f);
+        KT_CHECK(sl.len == lens[i]);
+    }
+    Slide fs;                                                     // fresh stow from the hand: nothing running, frac length
+    fs.reset(true, 1000);
+    reachRetarget(fs, false, 1000, 400, 400, 0.3f);
+    KT_CHECK(fs.len == 400u && fs.pathFrom == 1.f && fs.carryFrom == 1.f);
+    Slide fd;                                                     // fresh draw from the mount: frac length
+    fd.reset(false, 1000);
+    reachRetarget(fd, true, 1000, 400, 400, 0.3f);
+    KT_CHECK(fd.len == 400u);
+    Slide same;                                                   // same direction: nothing stored, nothing changed
+    same.reset(false, 1000);
+    same.target(true, 1000, 400, 400);
+    const float pf0 = same.pathFrom, cf0 = same.carryFrom;
+    const uint32_t l0 = same.len;
+    reachRetarget(same, true, 1050, 400, 400, 0.3f);
+    KT_CHECK(same.pathFrom == pf0 && same.carryFrom == cf0 && same.len == l0);
+    KT_CHECK(std::fabs(reachCarryF(0.f)) < 1e-6f && std::fabs(reachCarryF(1.f) - 1.f) < 1e-6f);
+    // stow reversed from the carry at p 0.5 (len 246): over the carry share (172 ticks) pathF and carryW never rise; at 1200 pathF 0.2278, carryW 1
+    Slide cs;
+    cs.reset(false, 1000);
+    cs.target(true, 1000, 400, 400);
+    reachRetarget(cs, false, 1200, 400, 400, 0.3f);
+    ReachPlan prevC = reachPlan(cs, 1200, 0.3f);
+    KT_CHECK(std::fabs(prevC.pathF - 0.2278f) < 1e-4f && std::fabs(prevC.carryW - 1.f) < 1e-6f);
+    for (uint32_t t = 1201u; t < 1200u + 172u; ++t) {
+        const ReachPlan r = reachPlan(cs, t, 0.3f);
+        KT_CHECK(r.pathF <= prevC.pathF + 1e-6f && r.carryW <= prevC.carryW + 1e-6f);
+        prevC = r;
+    }
+    // stow from the hand at 1000, draw again at 1100: a partial draw (len 77) from P0 = 0.6139, pathF rises to 0.9946 with the carry on
+    Slide dr;
+    dr.reset(true, 1000);
+    reachRetarget(dr, false, 1000, 400, 400, 0.3f);
+    reachRetarget(dr, true, 1100, 400, 400, 0.3f);
+    KT_CHECK(dr.len == 77u && std::fabs(dr.pathFrom - 0.6139f) < 1e-4f);
+    float prevD = reachPlan(dr, 1100, 0.3f).pathF;
+    KT_CHECK(std::fabs(prevD - 0.6139f) < 1e-4f);
+    for (uint32_t t = 1101u; t < 1177u; ++t) {
+        const ReachPlan r = reachPlan(dr, t, 0.3f);
+        KT_CHECK(r.pathF >= prevD - 1e-6f && std::fabs(r.carryW - 1.f) < 1e-6f);
+        prevD = r.pathF;
+    }
+    KT_CHECK(std::fabs(prevD - 0.9946f) < 1e-4f);                 // last tick of the draw
+}
+
+// HW25: the reach-to-carry hand is continuous at the grab. Its first ticks after the grab step by a fraction of a normal carry step.
+static void testReachGrabSpeed() {
+    const float g = 0.3f;                                        // grab share of the draw
+    const float kSpeedFrac = 0.3f;                               // allowed first-tick step, as a share of the normal carry step 1 / ((1 - g) * 400)
+    const float limit = kSpeedFrac * (1.f / (1.f - g) / 400.f);  // 0.00107
+    Slide sl;
+    sl.reset(false, 1000);
+    sl.target(true, 1000, 400, 400);
+    for (uint32_t k = 0; k < 5; ++k) {
+        const float a = reachPlan(sl, 1120u + k, g).pathF, b = reachPlan(sl, 1121u + k, g).pathF;
+        KT_CHECK(std::fabs(b - a) < limit);
+    }
+}
+
+// HW25: holdW sets the reach weight at a retarget (w0). The weight starts there and joins the normal ramp at w = 1. Direct Slide::target calls
+// (frac timing); a reversal in a test is always one of these, or reachRetarget.
+static void testReachWeightHoldW() {
+    // (a) reversal to the hip with holdW 1 (reset(false,1000), draw at 1000, reversal at 1200 = len 200): weight holds at 1 through the window, then 0 at the end
+    Slide a;
+    a.reset(false, 1000);
+    a.target(true, 1000, 400, 400);
+    a.target(false, 1200, 400, 400, 1.0f);
+    KT_CHECK(closeF(reachWeight(a, 1200), 1.f) && closeF(reachWeight(a, 1210), 1.f) && closeF(reachWeight(a, 1220), 1.f) && closeF(reachWeight(a, 1240), 1.f));
+    KT_CHECK(reachWeight(a, 1400) == 0.f);
+    // (b) holdW = the weight at 1020 of the draw (0.15625): the value carries over at the retarget, then rises smoothly
+    Slide b;
+    b.reset(false, 1000);
+    b.target(true, 1000, 400, 400);
+    KT_CHECK(closeF(reachWeight(b, 1020), 0.15625f));
+    b.target(false, 1020, 400, 400, 0.15625f);
+    KT_CHECK(closeF(reachWeight(b, 1020), 0.15625f) && closeF(reachWeight(b, 1021), 0.28809f, 1e-4f));
+    for (uint32_t t = 1020u; t < 1040u; ++t) KT_CHECK(reachWeight(b, t) <= 1.f);
+    // (c) holdW 0: the weight is 0 at the draw's start and 1 mid-slide, as before HW25
+    Slide c;
+    c.reset(false, 1000);
+    c.target(true, 1000, 400, 400, 0.f);
+    KT_CHECK(reachWeight(c, 1000) == 0.f && reachWeight(c, 1200) == 1.f);
+    // (d) holdW 1 with a 0.5 ramp: every tick of the slide stays in [0, 1]
+    Slide d;
+    d.reset(false, 1000);
+    d.target(true, 1000, 400, 400, 1.f);
+    for (uint32_t t = 1000u; t < 1400u; ++t) { const float w = reachWeightRamp(d, t, 0.5f); KT_CHECK(w >= 0.f && w <= 1.f); }
+    // (e) NaN holdW: w0 is 0, so the weight starts at 0
+    Slide e;
+    e.reset(false, 1000);
+    e.target(true, 1000, 400, 400, NAN);
+    KT_CHECK(e.w0 == 0.f && reachWeight(e, 1000) == 0.f);
+    // (f) a second same-direction target with another holdW is a no-op: the weight is unchanged at 20 sampled ticks
+    Slide f;
+    f.reset(false, 1000);
+    f.target(true, 1000, 400, 400, 0.f);
+    float before[20];
+    for (uint32_t k = 0; k < 20u; ++k) before[k] = reachWeight(f, 1000u + 20u * k);
+    f.target(true, 1050, 400, 400, 0.9f);   // same direction: no-op
+    for (uint32_t k = 0; k < 20u; ++k) KT_CHECK(reachWeight(f, 1000u + 20u * k) == before[k]);
+    // (g) a reset after a reversal clears w0: the weight is 0 at the reset tick
+    Slide g;
+    g.reset(false, 1000);
+    g.target(true, 1000, 400, 400);
+    g.target(false, 1200, 400, 400, 1.f);
+    g.reset(true, 1210);
+    KT_CHECK(g.w0 == 0.f && reachWeight(g, 1210) == 0.f);
+    // (h) a zero-length reversal: the weight is 0 at every tick
+    Slide h;
+    h.reset(true, 1000);
+    h.target(false, 1200, 0, 0, 1.f);
+    KT_CHECK(h.len == 0u);
+    for (uint32_t t = 1190u; t <= 1300u; ++t) KT_CHECK(reachWeight(h, t) == 0.f);
+    // (i) a reversal across the counter wrap keeps holdW
+    Slide wr;
+    wr.reset(true, 0xFFFFFF00u - 10u);
+    wr.target(false, 0xFFFFFF00u, 400, 400, 0.8f);
+    KT_CHECK(closeF(reachWeight(wr, 0xFFFFFF00u), 0.8f, 1e-5f));
+}
+
+// HW25 review W2 (N1): reachRetarget captures the old arm weight into w0 before target(). A draw runs 1000..1400 (g 0.3); at tick 1010 the
+// reach ramp (0.04) is mid-window, about 0.68. Reversing there must keep that weight: w0 equals the pre-reversal weight, and the next tick does not drop it.
+static void testReachRetargetKeepsWeight() {
+    Slide sl;
+    sl.reset(false, 1000);
+    sl.target(true, 1000, 400, 400);                        // draw from the mount: 1000..1400
+    const uint32_t t = 1010u;
+    const float pre = reachWeightRamp(sl, t, 0.04f);        // the old arm weight at the reversal
+    KT_CHECK(pre > 0.3f);
+    reachRetarget(sl, false, t, 400, 400, 0.3f, 0.04f);     // reverse to the hip
+    KT_CHECK(std::fabs(sl.w0 - pre) < 1e-4f);               // (a) the stow starts at the old weight
+    const float next = reachWeightRamp(sl, t + 1u, 0.04f);  // (b) the next tick does not drop it
+    KT_CHECK(next >= sl.w0 - 0.05f);
 }
 
 // ---- wrist ----
@@ -825,6 +994,11 @@ int main() {
     testReachPlanDraw();
     testReachPlanStow();
     testReachPlanPartialDraw();
+    testReachRetargetContinuity();
+    testReachRetargetEndsAndDuration();
+    testReachGrabSpeed();
+    testReachWeightHoldW();
+    testReachRetargetKeepsWeight();
     testWristClampAndAngle();
     testWristDelta();
     testReachHinge();

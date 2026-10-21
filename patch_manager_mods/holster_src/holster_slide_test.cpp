@@ -435,6 +435,28 @@ static void testSlideExactEndSweep() {
     }
 }
 
+// HW25: the retarget fields. reset() gives path 1, carry = dir, w0 0. target() stores holdW (NaN -> 0, above 1 -> 1). A same-direction target keeps w0.
+static void testSlideRetargetFieldsAndHoldW() {
+    Slide s;
+    s.reset(false, 1000);
+    KT_CHECK(s.pathFrom == 1.f && s.carryFrom == 0.f && s.w0 == 0.f);
+    s.reset(true, 1000);
+    KT_CHECK(s.pathFrom == 1.f && s.carryFrom == 1.f && s.w0 == 0.f);
+    s.reset(false, 1000);                                              // heading to the hip: target(true) is a draw
+    s.target(true, 1000, 400, 400, 0.7f);
+    KT_CHECK(closeTo(s.w0, 0.7f));
+    s.target(true, 1010, 400, 400, 0.2f);                              // same direction: no-op, w0 kept
+    KT_CHECK(closeTo(s.w0, 0.7f));
+    Slide n;
+    n.reset(true, 1000);                                               // heading to the hand: target(false) is a stow reversal
+    n.target(false, 1000, 400, 400, std::numeric_limits<float>::quiet_NaN());
+    KT_CHECK(n.w0 == 0.f);
+    Slide big;
+    big.reset(false, 1000);                                            // heading to the hip: target(true) is a draw reversal
+    big.target(true, 1000, 400, 400, 2.f);
+    KT_CHECK(big.w0 == 1.f);
+}
+
 int main() {
     testBlendEndpointsAndClamp();
     testEaseSmooth();
@@ -454,5 +476,6 @@ int main() {
     testBlendShortArcPerTerm();
     testSlideDefaultsAndTinySlides();
     testSlideExactEndSweep();
+    testSlideRetargetFieldsAndHoldW();
     return kt::Report("holster_slide");
 }
