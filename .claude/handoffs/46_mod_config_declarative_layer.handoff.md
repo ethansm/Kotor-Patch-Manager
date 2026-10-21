@@ -124,3 +124,7 @@ MCF5 slider merged to KOTOR-II (ff, now repo ~7ca9fdfe), shared headers synced (
 ## Update 10-20 22:55 - mod-config 0.3.7-dev INSTALLED (Esc probe crash fixed)
 - `kpm_hotswap.py --mod mod-config --apply`: LIVE cca903f7. Rollback to 0.3.6-dev (crashes): `kpm_hotswap.py --rollback mod-config_swap_20261020_225536`; no-probe 0.3.4-dev: `--rollback mod-config_swap_20261020_212011`.
 - First launch check: game reaches the world; `kotor2_logs.py check mod-config_log.txt --new` shows `ESCPROBE stubs on N vtable slots` (N ~25) and no crash. Open Options once, press Esc, then read `ESCPROBE dump` rows.
+
+## Update 10-20 23:45 - Esc back handled by the Esc-probe session
+- User play result on 0.3.7-dev: everything good except Esc (it closed the whole GUI from an entry page). The other session (ESCPROBE owner) implemented it as mod-config 0.4.0-dev (02cffa1f: Options key-handler slot 14 hooked via vtable data patch, event 0x2a swallowed on non-MAIN pages, probe removed) and it is LIVE (0396f7c4). Not played by me; the probe/EscProbeStub.h work is superseded (header may be dead code now).
+- Still to play-verify with 0.4.0-dev: Esc from an entry page goes to the mod list, from the list to the Options root, from root closes; Esc with the combat-hotbar test modal open closes the modal first; sliders inside the border (0.3.2/0.3.3 fixes); Snap slider full range incl. the rejected value.
