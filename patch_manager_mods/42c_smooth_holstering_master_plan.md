@@ -66,13 +66,20 @@ Both reviews and the earlier Sonnet comparison missed: the reversal jump with ar
 | HW30 | Shape data: generated stem table `HolsterShape.inc` (axis, length, exit axis/len) from R17 / ItemFitTable; doc 42 sec 4 refreshed to K2 numbers | - | - | DONE | 18313018 | 18313018 b701008d; HolsterShape.inc from committed R17 (scripts/gen_holster_shape.py), shapeOf with family fallback; exitSign only known for melee sheaths; doc 42 sec 4 K2 sizes |
 | HW31 | Extraction + orientation schedule: extract share, T offset along the exit axis, hold mount orientation through extract, via-orientation for rifle/staff | HW29, HW30 | - | DONE | 9222a06e | 7ed618e5 headers + 9222a06e wiring, holster 0.18.0-dev gated (GATE PASS head=c64e0c5a), not installed; play SM-L12 |
 | HW32 | Offline sweep check in preview-3d: tip/butt clearance vs head/torso proxies per weapon x mount x hand | HW30 | - | DONE | 434cb1fd | offline sweep holster_sweep_test; back-mount quat is a GUESS (clips at rest), so back numbers are not tuning inputs |
-| HW33 | Two hands: `isTwoHandedStem`, dual stagger `dual_stagger_ms` (60), support-hand reach ONLY if play SM-L8 shows the left hand off the weapon | HW25 + play SM-L8 | - | TODO | | section 4.10 |
+| HW33 | Two hands, item 3 only: support-hand reach ONLY if play SM-L8 shows the left hand off the weapon (items 1, 2, 4 moved to HW33a) | HW33a + play SM-L8 | - | GATED | | section 4.10 item 3 |
+| HW33a | Two hands, safe parts: `isTwoHandedStem`, Slide pending target (`targetDelayed` + `pump`), dual stagger `dual_stagger_ms` (60), `party_jitter_ms` (0) | HW25 | - | TODO | | section 4.11; B5 -> 0.19.0-dev; play SM-L14 |
+| HW35 | Rest-pose MOUNT log (bone, bone quat, mount quat, owner facing, body-relative `rel=conj(oq)*mq`) + `holster_log_check.py` `mounts` summary | HW32 | - | TODO | | section 4.12; B5; play SM-L13 measures the real back-mount quat |
+| HW36 | Ini exit overrides `reach_exit_sign_<cat>` (-1/0/+1, auto) + `reach_exit_len_<cat>` (0..0.5 m, auto), so exit sign can be tried in play without a rebuild | HW31 | - | TODO | | section 4.13; B5; play SM-L14 |
+| HW31b | Via on the default residual path: two-segment residual `reachResidualVia` + outside-shoulder lateral offset `reachViaOffset` (`reach_via_out_m` 0.12) | HW31 | - | TODO | | section 4.14; B6 -> 0.20.0-dev; play SM-L15 |
+| HW29b | Pole from grip: `reachPoleBias` behind `reach_pole_from_grip` (0) + `reach_pole_bias_deg` (20), f <= 0.30 only, HW23 hinge rules kept | HW29 | - | TODO | | section 4.6 item 2; B6 |
+| HW32b | Re-run the sweep with the measured back-mount quat, re-tune hinge out + extract defaults | HW35 + play SM-L13 logs | - | GATED | | runs as its own phase once SM-L13 logs exist |
 | HW34 | Saber blade gate (ignite after the swing clears, douse before the stow carry) | play SM-L9 | user GO | GATED | | only if the blade shows at the hip |
 
 Install batches (each a hot-swap: DLL only, no hooks; `kpm_hotswap.py --mod holster`, user GO, game closed):
 - B1 = HW24 + HW25 -> `0.12.0-dev` (fixes the reported snapping; first, smallest).
 - B2 = HW26 + HW27 + HW28 -> `0.13.0-dev`.
 - B3 = HW29 -> `0.14.0-dev`. B4 = HW30 + HW31 (+ HW32 tool) -> `0.15.0-dev`. B5 = HW33 -> `0.16.0-dev`.
+- Actual versions after the peer's bumps: B3 = 0.17.0-dev, B4 = 0.18.0-dev. Next: B5 = HW35 + HW36 + HW33a -> `0.19.0-dev`; B6 = HW31b + HW29b -> `0.20.0-dev`; HW32b after SM-L13.
 
 ## 4. Batches
 
@@ -134,6 +141,21 @@ Pass: SM-L1 `g - cap` < 20 deg for saber, pistol, back sword.
 2. Dual stagger: `Slide::target` gains `startDelayMs` (t0 = now + delay) for the left Gob when the owner has a right Gob; `dual_stagger_ms` default 60.
 3. Support reach (only if SM-L8 shows the left hand off the weapon): second `reachArm(left=true)` at H:1500 / H:1758 with a foregrip target (weapon axis offset from HW30), catch window `offhand_catch_pct` 25 at the end of draw, release at the start of stow; skipped when a left weapon Gob exists; a w=0 call at slide end hands the arm back.
 4. Optional: `party_jitter_ms` (0-60) on non-leader party Gobs.
+Items 1, 2 and 4 moved to HW33a (4.11); HW33 keeps item 3 only.
+
+### 4.11 HW33a Two hands, safe parts
+1. `L::isTwoHandedStem(stem)`: CatQStaff / CatRifle / CatHeavy, plus family prefixes `w_Dblsbr`, `w_Dblswrd`, `w_VbrDblswd`, `w_gaffi`, `w_warblade`, `w_ForcePike` (case-insensitive); `w_waraxe` stays one-handed (D_twohand_dual.md:15).
+2. A raw `t0 = now + delay` is unsafe (`active()` false during the delay clears lockOn/cres, `touch` pushes t0, carryShownBase gets negative d). Instead `Slide::targetDelayed(hand, now, delayMs, drawMs, stowMs, holdW)` stores a pending target; `pump(now)` calls the real `target(..., pendAt, ...)` once `now >= pendAt` (wrap-safe); a newer `target()` or `reset()` cancels it; `delayMs == 0` is `target()` byte for byte.
+3. Wiring: left Gob whose owner also has a right Gob (scan `s_cache`) uses `targetDelayed(dual_stagger_ms)`; `party_jitter_ms` (default 0) = deterministic per-owner delay on non-leader party Gobs. REACH/SLIDE log `dly=`.
+
+### 4.12 HW35 Rest-pose MOUNT log
+Once per (bone, stem) settle at rest and on change, capped at once per 5 s per Gob: `MOUNT gob= stem= bone= bq= mq= oq= rel= cat=`, `rel = conj(oq) * mq` (body-relative). `holster_log_check.py mounts`: per (cat, bone) median `rel` + count. Answers the back-mount GUESS (HW32 README) through SM-L13.
+
+### 4.13 HW36 Exit overrides
+`reach_exit_sign_<cat>` and `reach_exit_len_<cat>` replace `sh->exitSign` / `sh->exitLen` at the exit-offset site in `reachArm` when set; an override of +1/-1 applies even to exitSign-0 families (guns, sabers, staffs); 0 disables even melee; out of range clamps with a CONFIG warn.
+
+### 4.14 HW31b Via on the residual path
+`carryShownBase` uses the hand-frame residual for fresh draws and full stows, so B4's via (carryBlend only) is inert there. `reachResidualVia(rres, viaH, t, ms, draw)`: two segments `rres -> viaH -> I` on draw (reverse on stow), hemisphere-locked, continuous at the join; identity via = `reachResidual` byte for byte. `reachViaOffset`: lateral T offset outside the shoulder (`reach_via_out_m` 0.12) as a bump over the via phase, 0 at both ends.
 
 ## 5. Play checks (queue rows added when the batch installs; never block)
 
