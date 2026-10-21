@@ -664,6 +664,127 @@ static void testWristDelta() {
     (void)x;
 }
 
+// ---- hinged back-mount reach ----
+static void testReachHinge() {
+    const float S[3] = {0.2f, 0.f, 1.4f}, up[3] = {0, 0, 1}, fwd[3] = {0, 1, 0}, ou[3] = {1, 0, 0};
+    const float L1 = 0.30f, L2 = 0.34f;
+    const float mount[3] = {0.12f, -0.12f, 1.38f};   // upper back, behind and inboard of the shoulder
+    const float rest[3] = {0.35f, 0.05f, 1.0f}, rpole[3] = {0.2f, -0.3f, -1.f};
+    float T[3], P[3];
+    // the ends: the mount at f = 0, the animation hand and elbow plane at f = 1
+    KT_CHECK(reachHinge(S, L1, L2, up, fwd, ou, mount, rest, rpole, 0.f, T, P));
+    KT_CHECK(closeV(T, mount, 1e-4f));
+    KT_CHECK(reachHinge(S, L1, L2, up, fwd, ou, mount, rest, rpole, 1.f, T, P));
+    KT_CHECK(closeV(T, rest, 1e-5f));
+    const float rl = r3len(rpole);
+    KT_CHECK(closeF(P[0], rpole[0] / rl, 1e-5f) && closeF(P[2], rpole[2] / rl, 1e-5f));
+    // stage joints are continuous (T and pole)
+    for (int k = 0; k < 2; ++k) {
+        const float j = k == 0 ? kHingeS3 : kHingeS2;
+        float Ta[3], Pa[3], Tb[3], Pb[3];
+        KT_CHECK(reachHinge(S, L1, L2, up, fwd, ou, mount, rest, rpole, j - 1e-4f, Ta, Pa));
+        KT_CHECK(reachHinge(S, L1, L2, up, fwd, ou, mount, rest, rpole, j + 1e-4f, Tb, Pb));
+        KT_CHECK(distV(Ta, Tb) < 5e-3f);
+        KT_CHECK(distV(Pa, Pb) < 5e-3f);
+    }
+    // the ready pose: upper arm hangs, forearm points forward, elbow tucked behind the arm line
+    float E[3], rr = 0.f, sh[3], fh[3];
+    KT_CHECK(reachHinge(S, L1, L2, up, fwd, ou, mount, rest, rpole, kHingeS2, T, P));
+    const float Eh[3] = {S[0], S[1], S[2] - L1}, Hh[3] = {S[0], S[1] + L2, S[2] - L1};
+    KT_CHECK(closeV(T, Hh, 1e-4f));
+    KT_CHECK(solveTwoBone(S, Eh, Hh, T, E, &rr, P));
+    KT_CHECK(closeV(E, Eh, 1e-3f));
+    (void)sh; (void)fh;
+    // stage 2: the elbow stays at 90 deg (|T-S| = sqrt(L1^2 + L2^2)) and the upper arm pitches monotonically from down to forward
+    float lastY = -2.f;
+    for (int i = 0; i <= 20; ++i) {
+        const float f = kHingeS3 + (kHingeS2 - kHingeS3) * (1.f - i / 20.f);
+        KT_CHECK(reachHinge(S, L1, L2, up, fwd, ou, mount, rest, rpole, f, T, P));
+        float ts[3];
+        sub3(T, S, ts);
+        const float want = std::sqrt(L1 * L1 + L2 * L2);
+        KT_CHECK(std::fabs(r3len(ts) - want) < 0.02f);   // the outward offset of the hand adds a few mm at most
+        KT_CHECK(solveTwoBone(S, Eh, Hh, T, E, &rr, P));
+        float es[3];
+        sub3(E, S, es);
+        KT_CHECK(closeF(r3len(es), L1, 1e-4f));
+        KT_CHECK(es[1] >= lastY - 1e-3f);                // the upper arm swings forward as f falls (i rises)
+        lastY = es[1];
+    }
+    KT_CHECK(lastY > 0.9f * L1);                         // ends pointing (almost) straight forward
+    // stage 3: the upper arm stays parked forward while the forearm closes; a mount behind the shoulder lifts the elbow up (not inboard) for the grab
+    for (int i = 0; i <= 20; ++i) {
+        const float f = kHingeS3 * i / 20.f;
+        KT_CHECK(reachHinge(S, L1, L2, up, fwd, ou, mount, rest, rpole, f, T, P));
+        KT_CHECK(solveTwoBone(S, Eh, Hh, T, E, &rr, P));
+        float es[3], eh[3];
+        sub3(E, S, es);
+        unit3(es, es);
+        KT_CHECK(es[0] > -0.05f);                        // the elbow never swings inboard across the face
+        KT_CHECK(es[2] > -0.05f);                        // nor drops below horizontal
+        if (f >= 0.5f * kHingeS3) KT_CHECK(es[1] > 0.8f);   // the first half of the close (from the top): upper arm parked forward
+        KT_CHECK(closeF(rr, 1.f, 1e-4f));                // the mount is reachable, never clamped
+        sub3(T, E, eh);
+        KT_CHECK(closeF(r3len(eh), L2, 1e-3f));
+    }
+    KT_CHECK(reachHinge(S, L1, L2, up, fwd, ou, mount, rest, rpole, 0.f, T, P));
+    KT_CHECK(solveTwoBone(S, Eh, Hh, T, E, &rr, P));
+    {
+        float es[3], te[3];
+        sub3(E, S, es);
+        sub3(T, E, te);
+        const float c = r3dot(es, te) / (r3len(es) * r3len(te));
+        const float interior = 180.f - std::acos(c) * 57.2957795f;   // angle at the elbow between upper arm and forearm
+        KT_CHECK(interior > 25.f && interior < 60.f);
+    }
+    // left arm mirrors: outward axis flipped and the mount mirrored give the mirrored path
+    {
+        const float SL[3] = {-0.2f, 0.f, 1.4f}, ouL[3] = {-1, 0, 0}, mL[3] = {-0.12f, -0.12f, 1.38f}, rL[3] = {-0.35f, 0.05f, 1.0f}, pL[3] = {-0.2f, -0.3f, -1.f};
+        for (int i = 0; i <= 10; ++i) {
+            const float f = i / 10.f;
+            float Tr[3], Pr[3], Tl[3], Pl[3];
+            KT_CHECK(reachHinge(S, L1, L2, up, fwd, ou, mount, rest, rpole, f, Tr, Pr));
+            KT_CHECK(reachHinge(SL, L1, L2, up, fwd, ouL, mL, rL, pL, f, Tl, Pl));
+            KT_CHECK(closeF(Tl[0], -Tr[0], 1e-4f) && closeF(Tl[1], Tr[1], 1e-4f) && closeF(Tl[2], Tr[2], 1e-4f));
+            KT_CHECK(closeF(Pl[0], -Pr[0], 1e-4f) && closeF(Pl[1], Pr[1], 1e-4f) && closeF(Pl[2], Pr[2], 1e-4f));
+        }
+    }
+    // several shoulder-height back mounts (upper back left / centre / right, behind the neck, above the shoulder): the whole path is smooth (no elbow flip), the
+    // mount is always reached, and during the grab the elbow never crosses inboard of the shoulder by more than a few cm (it stays off the face)
+    {
+        const float Ms[6][3] = {{.12f, -.12f, 1.38f}, {0, -.12f, 1.4f}, {.05f, -.15f, 1.3f}, {.3f, -.1f, 1.45f}, {-.05f, -.2f, 1.35f}, {.2f, -.05f, 1.5f}};
+        for (int m = 0; m < 6; ++m) {
+            float prev[3] = {0, 0, 0}, worst = 0.f, minX = 9.f;
+            bool okAll = true, reached = true;
+            for (int i = 0; i <= 600; ++i) {
+                const float f = i / 600.f;
+                okAll = okAll && reachHinge(S, L1, L2, up, fwd, ou, Ms[m], rest, rpole, f, T, P) && solveTwoBone(S, Eh, Hh, T, E, &rr, P);
+                if (f <= kHingeS3) { reached = reached && closeF(rr, 1.f, 1e-4f); if (E[0] < minX) minX = E[0]; }
+                if (i) { const float dd = distV(E, prev); if (dd > worst) worst = dd; }
+                for (int k = 0; k < 3; ++k) prev[k] = E[k];
+            }
+            KT_CHECK(okAll);
+            KT_CHECK(reached);
+            KT_CHECK(worst < 0.02f);
+            KT_CHECK(minX > S[0] - 0.06f);
+        }
+    }
+    // the height gate: shoulder height and above take the hinge, a mid / low back mount keeps the bowed line
+    KT_CHECK(reachHingeFits(0.f, 0.64f) && reachHingeFits(-0.15f, 0.64f) && reachHingeFits(0.3f, 0.64f));
+    KT_CHECK(!reachHingeFits(-0.2f, 0.64f) && !reachHingeFits(-0.5f, 0.64f));
+    KT_CHECK(!reachHingeFits(kNaN, 0.64f) && !reachHingeFits(0.f, 0.f) && !reachHingeFits(0.f, kNaN));
+    // degenerate input
+    KT_CHECK(!reachHinge(S, 0.f, L2, up, fwd, ou, mount, rest, rpole, 0.5f, T, P));
+    KT_CHECK(!reachHinge(S, L1, kNaN, up, fwd, ou, mount, rest, rpole, 0.5f, T, P));
+    const float bad[3] = {kNaN, 0, 0};
+    KT_CHECK(!reachHinge(S, L1, L2, up, fwd, ou, bad, rest, rpole, 0.5f, T, P));
+    KT_CHECK(!reachHinge(S, L1, L2, up, fwd, ou, mount, rest, rpole, kNaN, T, P));
+    const float zero[3] = {0, 0, 0};
+    KT_CHECK(reachHinge(S, L1, L2, up, fwd, ou, mount, rest, zero, 0.9f, T, P) && finiteV(T) && finiteV(P));   // zero rest pole falls back to the ready pole
+    KT_CHECK(reachHinge(S, L1, L2, up, fwd, ou, S, rest, rpole, 0.1f, T, P) && finiteV(T));                    // mount at the shoulder
+    KT_CHECK(reachHinge(S, L1, L2, up, fwd, ou, mount, rest, rpole, -3.f, T, P) && closeV(T, mount, 1e-4f));   // f clamps
+}
+
 int main() {
     testArcQuatMapsDirections();
     testArcQuatParallelAndAntiParallel();
@@ -706,5 +827,6 @@ int main() {
     testReachPlanPartialDraw();
     testWristClampAndAngle();
     testWristDelta();
+    testReachHinge();
     return kt::Report("holster_reach");
 }
