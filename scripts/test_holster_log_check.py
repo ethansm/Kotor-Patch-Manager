@@ -676,6 +676,23 @@ class Hw16AnimStyleTests(unittest.TestCase):
         self.assertEqual([r["hol"] for r in recs], [1, 0, -1])
         self.assertIn(" hol=1 ANIMRES=1", H._animstyle(main, recs))
 
+    def test_animres_with_trailing_own_parses(self):
+        """0.16.0-dev: own=<creature> is appended after tick=; older lines without it still parse (own = "")."""
+        withown = self.ANIMRES_HOL + " own=2a0"
+        zero = self.ANIMRES_HOL0 + " own=0"
+        recs, skipped, main = parse([withown, zero, self.ANIMRES_HOL])
+        self.assertEqual(skipped, [])
+        self.assertEqual([r["hol"] for r in recs], [1, 0, 1])
+        self.assertEqual([r["own"] for r in recs], ["2a0", "0", ""])
+        self.assertEqual([r["self"] for r in recs], ["2a1"] * 3)
+        self.assertIn(" hol=1 ANIMRES=2", H._animstyle(main, recs))
+
+    def test_animres_own_non_hex_tail_is_ignored(self):
+        """The ANIMRES pattern is not end-anchored (as before): a non-hex own= tail keeps the record and gives own = ""."""
+        recs, skipped, _ = parse([self.ANIMRES_HOL + " own=zz"])
+        self.assertEqual(skipped, [])
+        self.assertEqual([r["own"] for r in recs], [""])
+
     def test_report_line_cap_unchanged(self):
         recs, skipped, main = parse([LOADED, self.ANIMRES_HOL, "ANIMSTYLE owner=2a1 id=2714 style=4->8"])
         out = H.render(recs, skipped, main, 3, "")

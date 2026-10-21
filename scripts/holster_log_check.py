@@ -53,7 +53,7 @@ FULL_RE = {
     "ATTACH": _rx(r"\bATTACH obj=<H> tag='(?P<tag>[^']*)' creature=(?P<creature><H>) body=(?P<body><H>) "
                   r"handleR=(?P<hr><H>) handleL=(?P<hl><H>) tick=\d+"),
     "SWAP": _rx(r"\bSWAP exec=<H>" + "".join(" d%d=<H>" % i for i in range(8)) + r" tick=\d+"),
-    "ANIMRES": _rx(r"\bANIMRES self=(?P<self><H>) id=(?P<id><H>) style=(?P<style>\d+) gate=(?P<gate>\d+) cc=\d+ d4=\d+ e8=\d+(?: hol=(?P<hol>\d) comb=-?\d+)? tick=\d+"),
+    "ANIMRES": _rx(r"\bANIMRES self=(?P<self><H>) id=(?P<id><H>) style=(?P<style>\d+) gate=(?P<gate>\d+) cc=\d+ d4=\d+ e8=\d+(?: hol=(?P<hol>\d) comb=-?\d+)? tick=\d+(?: own=(?P<own><H>))?"),
     "ANIMSEND": _rx(r"\bANIMSEND creature=<H> id=(?P<id><H>) tick=\d+"),
     "GOB": _rx(r"\bGOB n=(?P<n><I>) gob=(?P<gob><H>) parent18=(?P<parent><H>) "
                r"pos=\((?P<px><N>),(?P<py><N>),(?P<pz><N>)\) quat=\((?P<qw><N>),(?P<qx><N>),(?P<qy><N>),(?P<qz><N>)\)"),
@@ -108,7 +108,8 @@ def _record(kind, n, m):
     elif kind in ("ANIMRES", "ANIMSEND"):
         rec.update(id=_hex(g["id"]))
         if kind == "ANIMRES":
-            rec.update(self=_hex(g["self"]), style=int(g["style"]), gate=int(g["gate"]), hol=int(g["hol"]) if g["hol"] else -1)
+            rec.update(self=_hex(g["self"]), style=int(g["style"]), gate=int(g["gate"]), hol=int(g["hol"]) if g["hol"] else -1,
+                       own=_hex(g["own"]) if g["own"] else "")
     elif kind == "GOB":
         rec.update(gob=_hex(g["gob"]), parent=_hex(g["parent"]),
                    pos=[float(g[k]) for k in ("px", "py", "pz")], quat=[float(g[k]) for k in ("qw", "qx", "qy", "qz")])

@@ -6,7 +6,9 @@
 //   decide               V_UNARMED only when every condition holds, otherwise V_KEEP (engine result untouched)
 //   frameOk / overrideStyle   HW16 (0.13.0-dev, hook H4b mid-function in the resolver, after the style byte was spilled to [ebp-1]): the resolver-frame guard and the byte to store
 //                        there (kStyleUnarmed) or "leave it" -- the handler writes ONE byte and only when overrideStyle says so
-//   HolsterSet           fixed 64-slot owner -> base map with a 500 ms TTL (wrap-safe ms ticks); full set refuses, never overwrites a live entry
+//   HolsterSet           fixed 64-slot owner -> base map with a 500 ms TTL (wrap-safe ms ticks); full set refuses, never overwrites a live entry.
+//                        owner = the CLIENT creature, base = its body object ([creature + Creature_BodyObj]). The resolver hook receives the BODY object, not the creature
+//                        (0.16.0-dev, .claude/waves/hr7/r3.md), so the resolver side asks ownerOfBase(body) to get the creature back.
 #pragma once
 #include <stdint.h>
 
@@ -81,6 +83,14 @@ public:
         for (int i = 0; i < kHolsterSetCap; ++i)
             if (e_[i].used && e_[i].owner == owner) return e_[i].base == base && live(e_[i], now);
         return false;
+    }
+
+    // 0.16.0-dev: the owner (client creature) of the live entry whose base (body object) equals `base`, else 0. base 0 never matches. Expired entries do not match.
+    uintptr_t ownerOfBase(uintptr_t base, uint32_t now) const {
+        if (base == 0) return 0;
+        for (int i = 0; i < kHolsterSetCap; ++i)
+            if (e_[i].used && e_[i].base == base && live(e_[i], now)) return e_[i].owner;
+        return 0;
     }
 
     int count(uint32_t now) const {

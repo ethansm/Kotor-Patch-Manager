@@ -292,6 +292,60 @@ static void testOverrideStyle() {
         }
 }
 
+// 0.16.0-dev: the resolver hook hands over the BODY object; ownerOfBase maps it back to the client creature that touched the set.
+static void testOwnerOfBase() {
+    HolsterSet s;
+    KT_CHECK(s.ownerOfBase(0x20, 1000) == 0);            // empty set
+    KT_CHECK(s.touch(0x10, 0x20, 1000));
+    KT_CHECK(s.ownerOfBase(0x20, 1000) == 0x10);         // hit: body -> creature
+    KT_CHECK(s.ownerOfBase(0x21, 1000) == 0);            // miss
+    KT_CHECK(s.ownerOfBase(0x10, 1000) == 0);            // the creature pointer itself is not a base
+    KT_CHECK(s.contains(0x10, 0x20, 1000));              // contains / touch / remove unchanged
+    // TTL: live through age 500 inclusive, gone at 501.
+    KT_CHECK(s.ownerOfBase(0x20, 1500) == 0x10);
+    KT_CHECK(s.ownerOfBase(0x20, 1501) == 0);
+    KT_CHECK(s.ownerOfBase(0x20, 999) == 0);             // stamp in the future
+    KT_CHECK(s.touch(0x10, 0x20, 1600));                 // refresh revives it
+    KT_CHECK(s.ownerOfBase(0x20, 1600) == 0x10);
+    // Base 0 never matches, even for a real owner stored with base 0.
+    HolsterSet z;
+    KT_CHECK(z.touch(5, 0, 1000));
+    KT_CHECK(z.ownerOfBase(0, 1000) == 0);
+    // Two owners, two bodies.
+    HolsterSet t;
+    KT_CHECK(t.touch(0x1, 0xA, 1000));
+    KT_CHECK(t.touch(0x2, 0xB, 1000));
+    KT_CHECK(t.ownerOfBase(0xA, 1000) == 0x1);
+    KT_CHECK(t.ownerOfBase(0xB, 1000) == 0x2);
+    t.remove(0x1);
+    KT_CHECK(t.ownerOfBase(0xA, 1000) == 0);
+    KT_CHECK(t.ownerOfBase(0xB, 1000) == 0x2);
+    // An expired owner does not shadow a live one with the same base.
+    HolsterSet u;
+    KT_CHECK(u.touch(0x1, 0xC, 1000));
+    KT_CHECK(u.touch(0x2, 0xC, 2000));
+    KT_CHECK(u.ownerOfBase(0xC, 2000) == 0x2);
+    // Body changed on a re-touch: the old base no longer maps.
+    KT_CHECK(u.touch(0x2, 0xD, 2100));
+    KT_CHECK(u.ownerOfBase(0xC, 2100) == 0);
+    KT_CHECK(u.ownerOfBase(0xD, 2100) == 0x2);
+    // Wrap-safe ticks: stamped just before the 32-bit wrap.
+    HolsterSet w;
+    KT_CHECK(w.touch(0x7, 0x70, 0xFFFFFF00u));
+    KT_CHECK(w.ownerOfBase(0x70, 0xFFFFFFFFu) == 0x7);
+    KT_CHECK(w.ownerOfBase(0x70, 0x0u) == 0x7);          // wrapped, age 256
+    KT_CHECK(w.ownerOfBase(0x70, 0xF4u) == 0x7);         // age 500 inclusive
+    KT_CHECK(w.ownerOfBase(0x70, 0xF5u) == 0);           // age 501
+    KT_CHECK(w.ownerOfBase(0x70, 0xFFFFFE00u) == 0);     // stamp in the future
+    // Agrees with contains for every stored pair.
+    HolsterSet f;
+    for (int i = 0; i < kHolsterSetCap; ++i) KT_CHECK(f.touch((uintptr_t)(0x100 + i), (uintptr_t)(0x900 + i), 1000));
+    for (int i = 0; i < kHolsterSetCap; ++i) {
+        KT_CHECK(f.ownerOfBase((uintptr_t)(0x900 + i), 1200) == (uintptr_t)(0x100 + i));
+        KT_CHECK(f.contains((uintptr_t)(0x100 + i), (uintptr_t)(0x900 + i), 1200));
+    }
+}
+
 int main() {
     testIdFilter();
     testStyles();
@@ -302,6 +356,7 @@ int main() {
     testSetCapacity();
     testSetFreeSlots();
     testOwnerZero();
+    testOwnerOfBase();
     testFrameOk();
     testAnimId16();
     testOverrideStyle();

@@ -1,4 +1,4 @@
-// Holster.cpp -- holster 0.13.0-dev (Steam build; 0.13.0-dev adds hook H4b HolsterAnimStyle = REINSTALL): P0 probe for the holstered-weapons mod (patch_manager_mods/42_holstered_weapons.md).
+// Holster.cpp -- holster 0.16.0-dev (Steam build; 0.13.0-dev added hook H4b HolsterAnimStyle = REINSTALL, so this stays a REINSTALL): P0 probe for the holstered-weapons mod (patch_manager_mods/42_holstered_weapons.md).
 // Plan: .claude/plans/holstered_weapons.md. Handlers are plain extern "C" void __cdecl functions; the detour wrappers in
 // kotor2-steam-aspyr.hooks.toml call them at function entry with the game arguments BEFORE the stolen bytes run.
 // Hard rules for P0 (exceptions: the bone_test code patch, and HolsterPlace's 28-byte pose write with probe=1 bone_test=1 place=1, both default off; and the 0.13.0-dev unarmed_anim
@@ -615,27 +615,33 @@ static int animExtraSlot(uint32_t id) {
 static bool animInteresting(uint32_t id) { return ((id & 0xFFFFu) >= 0x2710u && (id & 0xFFFFu) <= 0x27FFu) || animExtraSlot(id) >= 0; }
 
 // Filled by HolsterPlace each placement while the owner's weapon is on the hip; read by the resolver probe (ANIMRES hol=).
+// Keyed by the CLIENT creature (owner) with its body object as base. The resolver hook gets the BODY object as `self` (0.16.0-dev; .claude/waves/hr7/r3.md), so
+// resolver-side code asks g_holSet.ownerOfBase(self) for the creature and reads the combat flag from that creature, never from the body.
 static hs::HolsterSet g_holSet;
 
 static void maybeReload();
 
 // 0.6.0-dev: last locomotion sighting per creature (the resolver runs every frame for every animated creature). Single writer (the game thread), read by the tick.
+// 0.16.0-dev: keyed by the creature's BODY object (what the resolver hook receives), not the client creature; the tick looks it up with [creature + Creature_BodyObj].
 static hs::MoveTable g_move;
 
-// One ANIMRES line (caller has checked the channel and the budget): style / gate / cc / d4 / e8 bytes of the anim object plus hol= and comb=.
+// One ANIMRES line (caller has checked the channel and the budget): style / gate / cc / d4 / e8 bytes of the anim object (`self` = the creature's BODY object)
+// plus hol= (the body belongs to a creature whose weapon is on the hip), comb= (that creature's client combat flag, -1 when no owner / unreadable) and own= (the owner).
 static void logAnimRes(void* self, uint32_t animId) {
     const uintptr_t s = reinterpret_cast<uintptr_t>(self);
     uint8_t b[5] = {0, 0, 0, 0, 0};
     static const int offs[5] = {0xC5, 0xC6, 0xCC, 0xD4, 0xE8};
     for (int i = 0; i < 5; ++i) (void)saferead::readAt(kSiteAnim, s, offs[i], &b[i]);
-    // HW15 probe: hol = this creature's weapon is on the hip (HolsterSet, filled by HolsterPlace), comb = client combat flag (-1 unreadable / no offset).
+    // HW15 probe: hol = the creature that owns this body has its weapon on the hip (HolsterSet, filled by HolsterPlace), comb = that creature's client combat flag
+    // (-1: no owner in the set / unreadable / no offset), own = the owner (client creature), 0 when none.
     const unsigned long nowTick = GetTickCount();
-    const int hol = g_holSet.contains(s, rdU32(kSiteAnim, s, 0x68), static_cast<uint32_t>(nowTick)) ? 1 : 0;
+    const uintptr_t owner = g_holSet.ownerOfBase(s, static_cast<uint32_t>(nowTick));
+    const int hol = owner != 0 ? 1 : 0;
     const int combOff = k2addr::off(&K2AddrTable::Creature_ClientCombat);
     uint32_t combRaw = 0;
-    const int comb = (combOff != 0 && rdU32Ok(kSiteAnim, s, combOff, &combRaw)) ? static_cast<int>(combRaw) : -1;
-    KP_LOG(chAnim, "ANIMRES self=%x id=%x style=%u gate=%u cc=%u d4=%u e8=%u hol=%d comb=%d tick=%lu", U(self), static_cast<unsigned>(animId & 0xFFFFu), b[0], b[1], b[2],
-           b[3], b[4], hol, comb, nowTick);
+    const int comb = (owner != 0 && combOff != 0 && rdU32Ok(kSiteAnim, owner, combOff, &combRaw)) ? static_cast<int>(combRaw) : -1;
+    KP_LOG(chAnim, "ANIMRES self=%x id=%x style=%u gate=%u cc=%u d4=%u e8=%u hol=%d comb=%d tick=%lu own=%x", U(self), static_cast<unsigned>(animId & 0xFFFFu), b[0], b[1],
+           b[2], b[3], b[4], hol, comb, nowTick, static_cast<unsigned>(owner));
 }
 
 // 0.13.0-dev (HW16 verification): the first sighting of (creature, locomotion id 0x2711..0x2714) while its weapon is on the hip is logged as an ANIMRES line even
@@ -668,7 +674,7 @@ static bool locoHolProbe(void* self, uint32_t animId) {
     }
     e->next = now + 250;
     saferead::beginScope();
-    if (!g_holSet.contains(sp, rdU32(kSiteAnim, sp, 0x68), now)) return false;
+    if (g_holSet.ownerOfBase(sp, now) == 0) return false;   // `self` is the BODY object: map it back to the owning creature
     e->done = true;
     if (InterlockedIncrement(&g_locoLines) > kLocoLines || !KP_ENABLED(chAnim, KPLOG_INFO) || !takeLine()) return false;
     logAnimRes(self, animId);
@@ -711,11 +717,13 @@ static bool writeU8Safe(unsigned site, uint8_t* p, uint8_t v) {
 }
 
 // ---- 0.13.0-dev (HW16) hook H4b: mid-function in the resolver, after the weapon style byte was spilled to [ebp-1] and before any style switch reads it.
-// Params (hooks.toml): ebp = the resolver's frame, self = [ebp-0x34] (the client creature, ECX at entry), animIdRaw = [ebp+8] (u16 id, upper half is garbage).
+// Params (hooks.toml): ebp = the resolver's frame, self = [ebp-0x34] (the creature's BODY object, ECX at entry; NOT the client creature, 0.16.0-dev), animIdRaw = [ebp+8] (u16 id, upper half is garbage).
 // Frame facts (static dump of the resolver): gate byte [ebp-0xD] (anim object +0xC6; 1 selects the wield table), style byte [ebp-1] (+0xC5; 8 = unarmed).
 // Writes ONE byte ([ebp-1] = 8) and only when HolsterAnimStyle.h overrideStyle says so: gate 1, id in the locomotion filter, style with its own wield row, the creature's
-// weapon is on the hip (g_holSet entry for this creature with the same body object, <= 500 ms old) and its client combat flag reads 0. Attacks / ranged / flourish ids are not in
-// the filter, and the later second style read in the resolver is untouched. Any unreadable value refuses; no engine call, no register change.
+// weapon is on the hip (g_holSet.ownerOfBase(self): a live entry whose body object is `self`, <= 500 ms old) and the OWNER creature's client combat flag reads 0. Attacks /
+// ranged / flourish ids are not in the filter, and the later second style read in the resolver is untouched. Any unreadable value refuses; no engine call, no register change.
+// Known limitation (0.16.0-dev): the damage reaction clip (id 0x283E) is not in the filter and has no hook here: its style read feeds the clip choice directly and cannot be
+// overridden by a byte written beforehand (.claude/waves/hr7/r5.md).
 static const LONG kStyleLogLines = 40;
 static volatile LONG g_styleOverrides = 0;
 extern "C" void __cdecl HolsterAnimStyle(void* ebpv, void* selfv, uint32_t animIdRaw) {
@@ -730,17 +738,17 @@ extern "C" void __cdecl HolsterAnimStyle(void* ebpv, void* selfv, uint32_t animI
     if (!saferead::readAt(kSiteAnim, ebp, -0xD, &gate) || !saferead::readAt(kSiteAnim, ebp, -1, &style)) return;
     if (gate != 1) return;
     const uint32_t now = GetTickCount();
-    uint32_t body = 0;
-    const bool inSet = rdU32Ok(kSiteAnim, self, 0x68, &body) && g_holSet.contains(self, body, now);
+    const uintptr_t owner = g_holSet.ownerOfBase(self, now);   // self is the BODY object; owner = the client creature (0 = not holstered: no override)
+    const bool inSet = owner != 0;
     const int combOff = k2addr::off(&K2AddrTable::Creature_ClientCombat);
     uint32_t combat = 1;
-    const bool combZero = combOff != 0 && rdU32Ok(kSiteAnim, self, combOff, &combat) && combat == 0;
+    const bool combZero = inSet && combOff != 0 && rdU32Ok(kSiteAnim, owner, combOff, &combat) && combat == 0;
     uint8_t newStyle = 0;
     if (!hs::overrideStyle(animIdRaw, gate, style, inSet, combZero, &newStyle)) return;
     if (!writeU8Safe(kSiteAnim, reinterpret_cast<uint8_t*>(ebp) - 1, newStyle)) return;
     const LONG n = InterlockedIncrement(&g_styleOverrides);
     if (n <= kStyleLogLines && g_onAnim && KP_ENABLED(chAnim, KPLOG_INFO) && takeLine())
-        KP_LOG(chAnim, "ANIMSTYLE owner=%x id=%x style=%u->%u", U(selfv), static_cast<unsigned>(hs::animId16(animIdRaw)), static_cast<unsigned>(style), static_cast<unsigned>(newStyle));
+        KP_LOG(chAnim, "ANIMSTYLE owner=%x id=%x style=%u->%u", static_cast<unsigned>(owner), static_cast<unsigned>(hs::animId16(animIdRaw)), static_cast<unsigned>(style), static_cast<unsigned>(newStyle));
 }
 
 // Live reload of the tune keys (place, place_rot, place_off) when holster.ini changes. Throttled to 500 ms by ReloadPoll; a failed open keeps
@@ -973,7 +981,11 @@ static void runDelay(DWORD now) {
         // 0.6.0-dev move hold: a creature that is walking / running (or stopped less than move_hold_ms ago) keeps its stance; the cut waits.
         static bool s_moveLogged[3] = {false, false, false};
         static volatile LONG s_moveLines = 0;
-        const bool moving = hs::moveHoldBlocksCut(g_moveHoldMs > 0, g_move.movedWithin(C, static_cast<uint32_t>(now), g_moveHoldMs));
+        // 0.16.0-dev: g_move is keyed by the BODY object (the resolver hook's `self`), so look up with [C + Creature_BodyObj]; unreadable / 0 = not moving.
+        const int bodyOff = k2addr::off(&K2AddrTable::Creature_BodyObj);
+        uint32_t bodyPtr = 0;
+        const bool bodyOk = bodyOff != 0 && rdU32Ok(kSiteTick, C, bodyOff, &bodyPtr) && bodyPtr != 0;
+        const bool moving = hs::moveHoldBlocksCut(g_moveHoldMs > 0, bodyOk && g_move.movedWithin(bodyPtr, static_cast<uint32_t>(now), g_moveHoldMs));
         if (!moving) s_moveLogged[i] = false;
         if (a == hs::DelayNeedHostileCheck && moving) {
             if (!s_moveLogged[i]) {
@@ -2490,7 +2502,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     addName(names, sizeof(names), g_onGob, "gob");
     addName(names, sizeof(names), g_onPlace, "place");
     addName(names, sizeof(names), g_onToggle, "toggle");
-    KP_LOG(chMain, "holster 0.15.0-dev loaded (P0 probe + unarmed_anim=%d): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_unarmedAnim ? 1 : 0, g_probe ? 1 : 0,
+    KP_LOG(chMain, "holster 0.16.0-dev loaded (P0 probe + unarmed_anim=%d): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_unarmedAnim ? 1 : 0, g_probe ? 1 : 0,
            names[0] ? names : "none", static_cast<long>(g_maxLines), g_gobEvery, k2addr::get() ? "ok" : "none");
     {
         hs::TuneCfg t;
