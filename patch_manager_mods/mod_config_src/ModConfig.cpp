@@ -2365,8 +2365,9 @@ extern "C" void __cdecl McTick(int panelArg) {
     // Esc closes the whole in-game GUI, but the hidden panel is not drawn, so a quick Esc, Esc (< kTickGapMs) reopened on the old mod page
     // (live 10-18). Act on the Esc key edge itself: any non-MAIN page goes back to MAIN the moment Esc goes down. Esc is still not swallowed.
     const bool escDown = escHeld();
-    if (escDown && !e.prevEsc && e.appended && e.ps.state != mui::MAIN &&
-        !(g_escHooked && static_cast<LONG>(GetTickCount() - g_escConsumedAt) < 300))   // the key hook already stepped back: do not reset on top of it
+    // With the key hook installed the hook owns Esc: the tick can run BEFORE the key event reaches it (live 10-21: page 4 reset to MAIN first, then
+    // the hook saw MAIN and vanilla closed the menu), so this edge reset is the fallback for a failed hook only.
+    if (escDown && !e.prevEsc && e.appended && e.ps.state != mui::MAIN && !g_escHooked)
         resetPages("esc key");
     e.prevEsc = escDown;
     {   // A long gap used to always mean "the panel was closed". While the panel is still marked shown (flags48 bit 0x40) a game hitch under a held
@@ -2507,7 +2508,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
     embtex::g_log = embedLog;   // gear + slider art textures (EmbedTex) log through the main channel
     guikit::initGuiInput(api, "mod-config");   // optional: the wheel provider (k2.guiinput); a missing provider only means no wheel
-    KP_LOG(chMain, "mod-config 0.4.2-dev loaded (Mod Configuration button under Gameplay; k2.modconfig@1 + k2.menuui@1; config mod_config.ini is read at the first Options panel: enabled debug button_clone reflow desc free_labels)");
+    KP_LOG(chMain, "mod-config 0.4.3-dev loaded (Mod Configuration button under Gameplay; k2.modconfig@1 + k2.menuui@1; config mod_config.ini is read at the first Options panel: enabled debug button_clone reflow desc free_labels)");
     int rcC = -1, rcM = -1;
     if (api && api->struct_size >= offsetof(KPatchApi, require) + sizeof(api->require) && api->provide) {
         rcC = api->provide(K2MODCONFIG_IFACE, K2MODCONFIG_VERSION, &g_mcApi);
