@@ -24,12 +24,12 @@ struct Geom { Box column, view, preview, hint; };   // hint: still passed to pag
 static Geom realGeom();
 
 // Independent model of the left column height (rows only; derived from the layout formula, not by calling buildLeft): the distance from the column top to
-// the bottom of the content plus the bottom pad, at row height r. cap = r * 2 / 3; kPad above and below; every row is followed by kGap.
-//   roomy:   member 1 row, 3 captions, 2 weapons, 3 bone rows, 3 scope rows + spacer, save row, status (no gap) = 10 (r + kGap) + r + 3 (cap + kGap) + kSpacer + 2 kPad
-//   compact: member 1 row, 3 captions, 2 weapons, 2 bone rows, 1 scope row + spacer, save row, status           =  7 (r + kGap) + r + 3 (cap + kGap) + kSpacer + 2 kPad
+// the bottom of the content plus the bottom pad, at row height r. The three section captions are full row boxes (a shorter box drew no text in game);
+// kPad above and below; every row is followed by kGap.
+//   roomy:   member 1 row, 3 captions, 2 weapons, 3 bone rows, 3 scope rows + spacer, save row, status (no gap) = 13 (r + kGap) + r + kSpacer + 2 kPad = 14 r + 70
+//   compact: member 1 row, 3 captions, 2 weapons, 2 bone rows, 1 scope row + spacer, save row, status           = 10 (r + kGap) + r + kSpacer + 2 kPad = 11 r + 58
 static int leftNeed(int r, bool roomy) {
-    const int cap = r * 2 / 3;
-    return (roomy ? 10 : 7) * (r + 4) + r + 3 * (cap + 4) + 6 + 2 * 6;
+    return (roomy ? 13 : 10) * (r + 4) + r + 6 + 2 * 6;
 }
 // The two-pass fit, restated: pass 0 keeps kV3DescWantH + kGap free under the status line (the bound is the column height minus that); only when no row height
 // from kV3LeftRowMax down to kV3RowMin fits it, pass 1 uses the whole column height. Roomy form from kV3RoomyRowMin up, compact below; none fits -> kV3RowMin.
@@ -162,9 +162,9 @@ static void testGeometries() {
         else KT_CHECK(L.leftRowH >= kV3RoomyRowMin);
         KT_CHECK_EQ(g.column.h, sizes[s][1] * 896 / 1440);
         KT_CHECK_EQ(L.leftRowH, expectedLeftRowH(g.column.h));
-        KT_CHECK_EQ(L.leftRowH, sizes[s][0] == 1280 ? 25 : (sizes[s][0] == 1920 ? 36 : 52));
+        KT_CHECK_EQ(L.leftRowH, sizes[s][0] == 1280 ? 23 : (sizes[s][0] == 1920 ? 33 : 49));
         KT_CHECK(L.leftRowH <= kV3LeftRowMax && L.inspRowH >= 30 && L.inspRowH <= kV3InspRowMax && L.barH == kV3BarMax);
-        if (sizes[s][0] == 3440) KT_CHECK(L.leftRowH == kV3LeftRowMax && L.inspRowH == kV3InspRowMax);
+        if (sizes[s][0] == 3440) KT_CHECK(L.leftRowH == 49 && L.inspRowH == 66);   // the inspector pane (700 px) fits rows up to 66, below kV3InspRowMax
         // the rows are the largest that fit with the description reserve: the content ends kV3DescWantH + kGap above the column bottom (pass 0; each of these
         // columns has a row height that fits it), and one row more (roomy from kV3RoomyRowMin up) would not fit that bound
         {
@@ -184,7 +184,7 @@ static void testGeometries() {
             const int free = g.column.y + g.column.h - v3::kPad - (L.status.y + L.status.h + v3::kGap);
             // pass 0 reserved kV3DescWantH: free = pane - leftNeed - kGap (1280: 448 - 306 - 4 = 138, 1920: 672 - 538 - 4 = 130, 3440: 896 - 744 - 4 = 148)
             KT_CHECK_EQ(free, g.column.h - leftNeed(L.leftRowH, L.leftRowH >= kV3RoomyRowMin) - v3::kGap);
-            KT_CHECK_EQ(free, sizes[s][0] == 1280 ? 138 : (sizes[s][0] == 1920 ? 130 : 148));
+            KT_CHECK_EQ(free, sizes[s][0] == 1280 ? 133 : (sizes[s][0] == 1920 ? 136 : 136));
             KT_CHECK(free >= kV3DescWantH);
             if (free >= kV3DescMinH) {
                 KT_CHECK(L.hint[0].y == L.status.y + L.status.h + v3::kGap && L.hint[0].h == std::min(free, kV3DescMaxH));
@@ -251,15 +251,15 @@ static void testPinned3440() {
     KT_CHECK(same(g.column, Box{150, 357, 400, 896}));
     KT_CHECK(same(g.view, Box{1345, 357, 576, 896}));
     PageLayoutV3 L = pageLayoutV3(g.column, g.view, g.preview, g.hint, nullptr);
-    // left column: the column pane is 400 wide (under kV3ColWantW 600), content W = 400 - 2 * kPad = 388 wide from x0 = 150 + kPad, rows r = 52 high (kV3LeftRowMax)
-    const int P = v3::kPad, G = v3::kGap, r = kV3LeftRowMax;
+    // left column: the column pane is 400 wide (under kV3ColWantW 600), content W = 400 - 2 * kPad = 388 wide from x0 = 150 + kPad, rows r = 49 high (the largest roomy row whose content, with the captions as full rows, ends kV3DescWantH + kGap above the column bottom: 14 r + 70 <= 896 - 134)
+    const int P = v3::kPad, G = v3::kGap, r = 49;
     const int x0 = 150 + P, y0 = 357 + P, W = 400 - 2 * P;
-    KT_CHECK_EQ(r, 52);
+    KT_CHECK_EQ(L.leftRowH, r);
     KT_CHECK(same(L.memberPrev, Box{x0, y0, r, r}));   // side = min(r, (W - 2 * kGap) / 3) = r
     KT_CHECK(same(L.memberNext, Box{x0 + W - r, y0, r, r}));
-    const int cap = r * 2 / 3;                                      // 34
+    const int cap = r;                                              // the captions are full rows (a shorter box drew no text)
     const int yCapW = y0 + r + G;                                   // below the member row
-    KT_CHECK(L.capWeapon.y == yCapW && L.capWeapon.h == cap);
+    KT_CHECK(same(L.capWeapon, Box{x0, yCapW, W, cap}));
     const int yW0 = yCapW + cap + G;
     KT_CHECK(same(L.weapon[0], Box{x0, yW0, W, r}));
     KT_CHECK(L.weapon[1].y == yW0 + r + G);
@@ -268,11 +268,13 @@ static void testPinned3440() {
     KT_CHECK(same(L.bone[0], Box{x0, yB0, c2, r}));                 // roomy column: 2 bone columns
     KT_CHECK(same(L.bone[1], Box{x0 + c2 + G, yB0, c2, r}));
     KT_CHECK(L.bone[3].y == L.bone[0].y + r + G && L.bone[3].w == c2);
+    KT_CHECK(same(L.capBone, Box{x0, yB0 - cap - G, W, cap}));
+    KT_CHECK(same(L.capScope, Box{x0, yB0 + 3 * (r + G), W, cap}));
     // under the bones: caption, 3 scope rows, spacer, Save row, status; then the description box fills down to the column bottom pad (357 + 896 - kPad)
     const int yS0 = yB0 + 3 * (r + G) + cap + G + 3 * (r + G) + v3::kSpacer;      // Save row
     KT_CHECK(L.save.y == yS0 && L.status.y == yS0 + r + G);
     const int dTop = yS0 + r + G + r + G, dH = 357 + 896 - P - dTop;               // below the status line
-    KT_CHECK_EQ(dH, 148);
+    KT_CHECK_EQ(dH, 136);
     KT_CHECK(same(L.hint[0], Box{x0, dTop, W, dH}));
     KT_CHECK(same(L.hint[1], Box{x0 + kV3DescPad, dTop + kV3DescPad, W - 2 * kV3DescPad, dH - 2 * kV3DescPad}));
     // view area: starts 4 px right of the 400 wide column (the literal gap in pageLayoutV3), ends kPad short of the preview pane
@@ -409,15 +411,16 @@ static void testViewVsPreview() {
 // The left description box (hint[0]) and its text area (hint[1]): the free part of the left column below the status line.
 static void testDescBox() {
     const int P = v3::kPad, G = v3::kGap;
-    Geom g = geomFor(3440, 1440);   // column {150,357,400,896}: rows at kV3LeftRowMax, 148 px free under the status line
+    Geom g = geomFor(3440, 1440);   // column {150,357,400,896}: rows 49 high, 136 px free under the status line
     PageLayoutV3 L = pageLayoutV3(g.column, g.view, g.preview, g.hint, nullptr);
-    const int r = kV3LeftRowMax, cap = r * 2 / 3;
-    // roomy column content height above the status bottom, from the header constants: member row, 3 captions, 2 weapons, 3 bone rows, 3 scope rows, spacer, save row, status
+    const int r = 49, cap = r;   // the 896 px pane fits 49 rows (14 r + 70 <= 896 - 134); the captions are full rows
+    // roomy column content height above the status bottom, from the header constants: member row, 3 captions (full rows), 2 weapons, 3 bone rows, 3 scope rows, spacer, save row, status
     const int statusBottom = g.column.y + P + (r + G) + 3 * (cap + G) + 2 * (r + G) + 3 * (r + G) + 3 * (r + G) + v3::kSpacer + (r + G) + r;
     KT_CHECK_EQ(L.status.y + L.status.h, statusBottom);
     const int x0 = g.column.x + P, W = g.column.w - 2 * P;
     const int free = g.column.y + g.column.h - P - (statusBottom + G);
-    KT_CHECK_EQ(free, 148);
+    KT_CHECK_EQ(L.leftRowH, r);
+    KT_CHECK_EQ(free, 136);
     KT_CHECK(free >= kV3DescMinH && free <= kV3DescMaxH);
     KT_CHECK(same(L.hint[0], Box{x0, statusBottom + G, W, free}));
     KT_CHECK(same(L.hint[1], Box{x0 + kV3DescPad, statusBottom + G + kV3DescPad, W - 2 * kV3DescPad, free - 2 * kV3DescPad}));
@@ -432,32 +435,32 @@ static void testDescBox() {
     // the inspector no longer holds hints: the note is its last item
     KT_CHECK(L.note.y + L.note.h <= g.preview.y + g.preview.h);
 
-    // boundary of the fit: the largest r whose content ends kV3DescWantH + kGap above the column bottom. leftNeed(52) = 744, so the column is exactly
-    // 744 + 134 = 878 high -> still 52 rows and the box is exactly kV3DescWantH (130) high; one px less -> 51 rows (leftNeed(51) = 561 + 102 + 70 = 733 <= 743),
-    // whose status line is 11 px higher, so the box is 877 - 733 - 4 = 140 high
-    KT_CHECK_EQ(leftNeed(r, true), 744);
-    KT_CHECK_EQ(leftNeed(r - 1, true), 733);
+    // boundary of the fit: the largest r whose content ends kV3DescWantH + kGap above the column bottom. leftNeed(49) = 756, so the column is exactly
+    // 756 + 134 = 890 high -> still 49 rows and the box is exactly kV3DescWantH (130) high; one px less -> 48 rows (leftNeed(48) = 14 * 48 + 70 = 742 <= 755),
+    // whose status line is 14 px higher, so the box is 889 - 742 - 4 = 143 high
+    KT_CHECK_EQ(leftNeed(r, true), 756);
+    KT_CHECK_EQ(leftNeed(r - 1, true), 742);
     Geom e = g; e.column.h = leftNeed(r, true) + kV3DescWantH + G;
-    KT_CHECK_EQ(e.column.h, 878);
+    KT_CHECK_EQ(e.column.h, 890);
     PageLayoutV3 E = pageLayoutV3(e.column, e.view, e.preview, e.hint, nullptr);
-    KT_CHECK_EQ(E.leftRowH, kV3LeftRowMax);
+    KT_CHECK_EQ(E.leftRowH, r);
     KT_CHECK_EQ(E.status.y + E.status.h, statusBottom);
     KT_CHECK_EQ(E.hint[0].h, kV3DescWantH);
     KT_CHECK_EQ(E.hint[1].h, kV3DescWantH - 2 * kV3DescPad);
     KT_CHECK_EQ(violations(e, E, true, true), 0);
     Geom u = e; u.column.h -= 1;
     PageLayoutV3 U = pageLayoutV3(u.column, u.view, u.preview, u.hint, nullptr);
-    KT_CHECK_EQ(U.leftRowH, kV3LeftRowMax - 1);
+    KT_CHECK_EQ(U.leftRowH, r - 1);
     KT_CHECK_EQ(U.status.y + U.status.h, g.column.y + leftNeed(r - 1, true) - P);
     KT_CHECK_EQ(U.hint[0].h, u.column.h - leftNeed(r - 1, true) - G);
-    KT_CHECK_EQ(U.hint[0].h, 140);
+    KT_CHECK_EQ(U.hint[0].h, 143);
     KT_CHECK_EQ(violations(u, U, true, true), 0);
     // pass 0 never leaves less than kV3DescWantH, so the kV3DescMinH threshold shows only in buildLeft itself (pass 1 sizes the rows to the whole column, which
     // leaves a few px at most): exactly kV3DescMinH free under the status line -> box; one px less -> both boxes all-zero
     {
         PageLayoutV3 B;
         const Box zb{g.column.x, g.column.y, g.column.w, leftNeed(r, true) + G + kV3DescMinH};   // content + bottom pad, kGap, kV3DescMinH
-        KT_CHECK_EQ(zb.h, 744 + 4 + 90);
+        KT_CHECK_EQ(zb.h, 756 + 4 + 90);
         v3::buildLeft(zb, r, true, B);
         KT_CHECK_EQ(B.hint[0].h, kV3DescMinH);
         KT_CHECK_EQ(B.hint[1].h, kV3DescMinH - 2 * kV3DescPad);
@@ -476,24 +479,25 @@ static void testDescBox() {
     KT_CHECK_EQ(violations(t, T, true, true), 0);
 
     // (b) a tiny column (height 180): no room, both hint boxes are all-zero, rest of the page stays valid
-    // The smallest compact row (14) needs leftNeed = 112 + 27 + 58 = 197 > 180 - 134 and > 180 itself, so no row fits either pass: kV3RowMin, box absent.
+    // The smallest compact row (14) needs leftNeed = 11 * 14 + 58 = 212 > 180 - 134 and > 180 itself, so no row fits either pass: kV3RowMin (with the old r * 2 / 3 captions, 197 high), box absent.
     Geom s = g; s.column.h = 180;
     PageLayoutV3 S = pageLayoutV3(s.column, s.view, s.preview, s.hint, nullptr);
-    KT_CHECK_EQ(leftNeed(kV3RowMin, false), 197);
+    KT_CHECK_EQ(leftNeed(kV3RowMin, false), 212);
+    KT_CHECK_EQ(S.capWeapon.h, kV3RowMin * 2 / 3);   // the fallback keeps the short captions (the full ones would push the status line out of a 180 px column)
     KT_CHECK_EQ(S.leftRowH, kV3RowMin);
     KT_CHECK(isZeroBox(S.hint[0]) && isZeroBox(S.hint[1]));
     KT_CHECK_EQ(violations(s, S, false, true), 0);
-    // pass 1 fallback (no row fits the bound minus 134 but some fit the whole column): 300 high column, pass 0 bound 166 < 197. Compact leftNeed(24) = 192 + 48 + 58 = 298
-    // <= 300 < leftNeed(25) = 306, so the rows are 24 (not 14); 300 - 298 - 4 < kV3DescMinH leaves no box
+    // pass 1 fallback (no row fits the bound minus 134 but some fit the whole column): 300 high column, pass 0 bound 166 < 212. Compact leftNeed(22) = 11 * 22 + 58 = 300
+    // <= 300 < leftNeed(23) = 311, so the rows are 22 (not 14); 300 - 300 - 4 < kV3DescMinH leaves no box
     {
         Geom f = g; f.column.h = 300;
         bool p1 = false;
-        KT_CHECK_EQ(expectedLeftRowH(300, &p1), 24);
+        KT_CHECK_EQ(expectedLeftRowH(300, &p1), 22);
         KT_CHECK(p1);
         PageLayoutV3 F = pageLayoutV3(f.column, f.view, f.preview, f.hint, nullptr);
-        KT_CHECK_EQ(leftNeed(24, false), 298);
-        KT_CHECK_EQ(leftNeed(25, false), 306);
-        KT_CHECK_EQ(F.leftRowH, 24);
+        KT_CHECK_EQ(leftNeed(22, false), 300);
+        KT_CHECK_EQ(leftNeed(23, false), 311);
+        KT_CHECK_EQ(F.leftRowH, 22);
         KT_CHECK(isZeroBox(F.hint[0]) && isZeroBox(F.hint[1]));
         KT_CHECK_EQ(violations(f, F, false, true), 0);
     }
@@ -505,11 +509,11 @@ static void testDescBox() {
     KT_CHECK(isZeroBox(mb[PI_HINT]) && isZeroBox(mb[PI_HINT + 1]));
 }
 
-// (a) A 3840x1600-style pane taller than the real one (900 vs 757): the box exists, kV3DescMinH..kV3DescMaxH high (the real pane is checked in testFill3840x1600).
+// (a) A 3840x1600-style pane taller than the real one (940 vs 757): the box exists, kV3DescMinH..kV3DescMaxH high (the real pane is checked in testFill3840x1600).
 static void testDescBox3840() {
     const int P = v3::kPad, G = v3::kGap;
     Geom g = realGeom();
-    g.column.h = 900;   // same x and width as the real pane, taller: rows stay at kV3LeftRowMax and what is left under the status line is well above kV3DescMinH
+    g.column.h = 940;   // same x and width as the real pane, taller: rows stay at kV3LeftRowMax and what is left under the status line is well above kV3DescMinH
     PageLayoutV3 L = pageLayoutV3(g.column, g.view, g.preview, g.hint, nullptr);
     KT_CHECK_EQ(L.leftRowH, kV3LeftRowMax);
     KT_CHECK(!isZeroBox(L.hint[0]) && !isZeroBox(L.hint[1]));
@@ -779,10 +783,10 @@ static void testFill3840x1600() {
     const Geom g = realGeom();
     PageLayoutV3 L = pageLayoutV3(g.column, g.view, g.preview, g.hint, nullptr);
     KT_CHECK(L.leftRowH > 34 && L.inspRowH > 34 && L.barH > 34);
-    // the rows leave kV3DescWantH + kGap under the status line: leftNeed(r) <= 757 - 134 = 623 -> roomy r=42 (11 * 42 + 3 * 28 + 70 = 616), r=43 needs 11 * 43 + 3 * 28 + 70 = 627
-    KT_CHECK_EQ(leftNeed(42, true), 616);
-    KT_CHECK_EQ(leftNeed(43, true), 627);
-    KT_CHECK_EQ(L.leftRowH, 42);
+    // the rows leave kV3DescWantH + kGap under the status line: leftNeed(r) <= 757 - 134 = 623 -> roomy r=39 (14 * 39 + 70 = 616; the captions are full rows), r=40 needs 14 * 40 + 70 = 630
+    KT_CHECK_EQ(leftNeed(39, true), 616);
+    KT_CHECK_EQ(leftNeed(40, true), 630);
+    KT_CHECK_EQ(L.leftRowH, 39);
     KT_CHECK_EQ(L.leftRowH, expectedLeftRowH(g.column.h));
     KT_CHECK(L.reset.y + L.reset.h <= g.column.y + g.column.h && L.status.y + L.status.h <= g.column.y + g.column.h);
     KT_CHECK(L.status.y + L.status.h > g.column.y + g.column.h / 2);   // and it uses more than half of the pane
@@ -790,10 +794,14 @@ static void testFill3840x1600() {
     // the inspector has no hint space any more: its rows are at the max where inspNeed(kV3InspRowMax) fits the pane
     KT_CHECK(inspNeed(kV3InspRowMax) <= g.preview.h);
     KT_CHECK_EQ(L.inspRowH, kV3InspRowMax);
+    KT_CHECK_EQ(kV3InspRowMax, 70);   // the cap grew from 60 so the rows fill the pane below the Turn slider: 3840 rows 70, 3440 rows 66
+    KT_CHECK_EQ(g.preview.h - inspNeed(70), 16);   // slack left under the Remove button (inspNeed counts the last gap; 71 would not fit with the cap lifted: the pane takes rows up to 70)
+    // the three section captions (WEAPON, BONE, APPLIES TO) are full row boxes: a shorter box drew no text in game
+    KT_CHECK(L.capWeapon.h == L.leftRowH && L.capBone.h == L.leftRowH && L.capScope.h == L.leftRowH);
     // the left description box: shown only when kV3DescMinH px are free under the status line in the column pane (decided from the pane and the status line)
     const int free = g.column.y + g.column.h - v3::kPad - (L.status.y + L.status.h + v3::kGap);
     // (a) the real pane HAS the box: free = 757 - 616 - 4 = 137, within kV3DescMinH..kV3DescMaxH
-    KT_CHECK_EQ(free, g.column.h - leftNeed(42, true) - v3::kGap);
+    KT_CHECK_EQ(free, g.column.h - leftNeed(39, true) - v3::kGap);
     KT_CHECK_EQ(free, 137);
     KT_CHECK(free >= kV3DescMinH && free <= kV3DescMaxH);
     KT_CHECK_EQ(L.hint[0].h, free);
@@ -808,7 +816,7 @@ static void testFill3840x1600() {
 static void testRoomyButtons3840() {
     const Geom g = realGeom();
     PageLayoutV3 L = pageLayoutV3(g.column, g.view, g.preview, g.hint, nullptr);
-    KT_CHECK(L.leftRowH >= 40 && L.inspRowH >= 40);
+    KT_CHECK(L.leftRowH >= 39 && L.inspRowH >= 40);
     KT_CHECK_EQ(violations(g, L, true, true), 0);
     for (int i = 0; i < kV3Bones; ++i) KT_CHECK(L.bone[i].w >= 220);
     for (int i = 0; i < kV3Scopes; ++i) KT_CHECK(L.scope[i].w >= 220);

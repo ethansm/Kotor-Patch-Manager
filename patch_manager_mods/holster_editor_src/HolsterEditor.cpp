@@ -1,4 +1,4 @@
-// HolsterEditor.cpp -- holster-editor 0.5.0-dev (Steam build): a HOOKLESS consumer of the mod-config provider (k2.modconfig@1, k2.menuui@1).
+// HolsterEditor.cpp -- holster-editor 0.5.1-dev (Steam build): a HOOKLESS consumer of the mod-config provider (k2.modconfig@1, k2.menuui@1).
 // (doc 42 HW-EDIT, plan .claude/plans/holster_editor_options.md; page rebuild: .claude/plans/holster_editor_layout_v3.md, holster_hw_ux3_build.md Wave B.)
 //
 // mod-config owns everything about the Options screen: the hooks, the root "Mod Configuration" button, the list page, control cloning,
@@ -274,6 +274,7 @@ struct Editor {
     uint32_t camEngKeyCam = 0;
     int camEngKeyEdit = 0;            // 0 = no edit, 1 = right-hand edit, 2 = left-hand edit
     bool camEngCfgLogged = false;     // CAMPTR was logged once
+    bool capBoxLogged = false;        // CAPBOX (the three section caption heights) was logged once
     bool camEngCapNoted = false;
     int cam2Logs = 0;                 // CAM2 line sets logged (capped at kMaxCam2Logs)
 
@@ -1633,6 +1634,12 @@ void applyLayout(Editor& e) {
         placeBox(e.wedge[r], w > 0 && t.h > 0 ? editkit::Box{t.x, t.y, w, t.h} : editkit::Box{-9999, -9999, 0, 0});
     }
     applyCaptions(e);   // after every button rect is set: the engine's SetExtent just re-insetted each caption text rect
+    if (!e.capBoxLogged) {   // once per Editor: the section titles (WEAPON, BONE, APPLIES TO) are full row boxes; a play check reads their heights here
+        e.capBoxLogged = true;
+        const int capIdx[3] = {hse::PI_CAP_WEAPON, hse::PI_CAP_BONE, hse::PI_CAP_SCOPE};
+        for (int k = 0; k < 3; ++k)
+            KP_LOG(chView, "CAPBOX i=%d h=%d rect=(%d,%d,%d,%d) rowH=%d", capIdx[k], all[capIdx[k]].h, all[capIdx[k]].x, all[capIdx[k]].y, all[capIdx[k]].w, all[capIdx[k]].h, L.leftRowH);
+    }
     const hse::HseRect vr = hse::rectOf<hse::HseRect>(L.view);
     if (first || memcmp(&vr, &e.viewRect, sizeof vr) != 0) {
         KP_LOG(chView, "LAYOUT v3 view=(%d,%d,%d,%d) rows left=%d insp=%d bar=%d", vr.x, vr.y, vr.w, vr.h, L.leftRowH, L.inspRowH, L.barH);
@@ -1943,14 +1950,19 @@ void refreshRemoveButton(Editor& e) {
     setItemText(e, hse::PI_REMOVE, fit);
 }
 
+// The English name of the weapon being edited (the one on its button), or "" when none is cached / no hand is open: the sentences then show the model resref.
+const char* editedItemName(const Editor& e) {
+    return (e.mode == MODE_WEAPON && e.editHand >= 0 && e.editHand < 2) ? e.itemName[e.editHand] : "";
+}
+
 // Left description text of a hovered left-column button: the scope buttons and the Remove button answer with their sentence, the rest with itemTip.
 void leftTipText(const Editor& e, int tip, char* buf, int cap) {
     const bool editing = e.mode == MODE_WEAPON;
     const char* model = editing ? e.editInfo.model : "";
     const char* type = editing ? e.editInfo.type : "";
     const char* body = editing ? e.editInfo.body : "";
-    if (tip >= hse::PI_SCOPE && tip < hse::PI_SCOPE + hse::kV3Scopes) hse::scopeSentence(buf, cap, tip - hse::PI_SCOPE, model, type, body);
-    else if (tip == hse::PI_REMOVE) hse::removeSentence(buf, cap, e.editScope, model, type, body, removeArmed(e));
+    if (tip >= hse::PI_SCOPE && tip < hse::PI_SCOPE + hse::kV3Scopes) hse::scopeSentence(buf, cap, tip - hse::PI_SCOPE, model, type, body, editedItemName(e));
+    else if (tip == hse::PI_REMOVE) hse::removeSentence(buf, cap, e.editScope, model, type, body, removeArmed(e), editedItemName(e));
     else snprintf(buf, cap, "%s", itemTip(tip));
 }
 
@@ -1983,10 +1995,10 @@ void leftDefaultText(const Editor& e, char* buf, int cap) {
         return;
     }
     if (e.removeMenu.open) {
-        hse::removeSentence(buf, cap, e.editScope, e.editInfo.model, e.editInfo.type, e.editInfo.body, removeArmed(e));
+        hse::removeSentence(buf, cap, e.editScope, e.editInfo.model, e.editInfo.type, e.editInfo.body, removeArmed(e), editedItemName(e));
         return;
     }
-    hse::scopeSentence(buf, cap, e.editScope, e.editInfo.model, e.editInfo.type, e.editInfo.body);
+    hse::scopeSentence(buf, cap, e.editScope, e.editInfo.model, e.editInfo.type, e.editInfo.body, editedItemName(e));
     const size_t n = strlen(buf), h = strlen(kLeftHelp);
     if (n + 1 + h >= static_cast<size_t>(cap) || e.lay.hint[1].w <= 0 || e.lay.hint[1].h <= 0) return;
     char both[256];
@@ -2954,7 +2966,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     g_clients.init(api);
     embedgui::g_log = embedLog;
     embtex::g_log = embedLog;
-    KP_LOG(chMain, "holster-editor 0.5.0-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
+    KP_LOG(chMain, "holster-editor 0.5.1-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
            static_cast<unsigned>(sizeof kHseViewGui));
     g_clients.poll();   // the first poll() of every client tries to connect
     // This DLL is hookless: there is no frame hook to retry mod-config / menuui from later, so a missing provider now means no page this run.

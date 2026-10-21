@@ -123,6 +123,10 @@ class DescBoxTests(unittest.TestCase):
     def test_default_desc_derivation(self):
         # bottom 15% of the original pane (preview = top 85%): 746 * 150 // 850 = 131 px, right under the preview, same x / width
         self.assertEqual(M.default_desc((1953, 357, 1113, 746)), (1953, 1103, 1113, 131))
+        # the default 3840x1600 panes carry the live ini margin_px 120 (column grows left, preview grows right), so the offline page matches the live one
+        col, view, prev = M.DEFAULT_PANES_3840x1600
+        self.assertEqual((M.MARGIN_PX, col, view, prev), (120, (652, 357, 1252, 757), (1345, 357, 576, 896), (1953, 357, 1233, 746)))
+        self.assertEqual(M.default_desc(prev), (1953, 1103, 1233, 131))
 
     def test_both_boxes_same_bottom_and_no_text_overlap(self):
         side = self._side()
@@ -148,7 +152,7 @@ class DescBoxTests(unittest.TestCase):
     def test_desc_option_and_absent(self):
         side = self._side(["--desc", "1953,1103,1113,160"])
         by = {it["i"]: it for it in side["items"]}
-        self.assertEqual(by[70]["box"], [1947, 1103, 1119, 166])   # the pane grown by the default cover (6)
+        self.assertEqual(by[70]["box"], [1947, 1103, 1125, 166])   # the pane grown by the default cover (6) on all four sides: the margin-widened preview (live) no longer clamps its right edge
         self.assertEqual(by[67]["box"][1] + by[67]["box"][3], 1269)
         side = self._side(["--desc", "1953,1103,1113,160", "--desc-cover-px", "0"])
         by = {it["i"]: it for it in side["items"]}

@@ -1472,9 +1472,10 @@ static void testScopeSentences() {
     hse::scopeSentence(t, sizeof t, 1, model, "mystery", "PFBCM");
     KT_CHECK(!strcmp(t, "Save changes go to all weapons of this type, on every character."));
     hse::scopeSentence(t, sizeof t, 2, model, "rifle", "PFBCM");
-    KT_CHECK(!strcmp(t, "Save changes go to every weapon on PFBCM bodies (Armor Class 4 / Miner), added on top of the weapon placement."));
-    hse::scopeSentence(t, sizeof t, 2, model, "rifle", "N_KREIA");   // non-P*B* body: no armor parenthesis
-    KT_CHECK(!strcmp(t, "Save changes go to every weapon on N_KREIA bodies, added on top of the weapon placement."));
+    KT_CHECK(!strcmp(t, "Save changes go to every weapon on Armor Class 4 / Miner bodies, added on top of the weapon placement."));   // never the raw PFBCM
+    hse::scopeSentence(t, sizeof t, 2, model, "rifle", "N_KREIA");   // non-P*B* body (no armor label): this character's body, never the raw resref
+    KT_CHECK(!strcmp(t, "Save changes go to every weapon on this character's body, added on top of the weapon placement."));
+    KT_CHECK(!strstr(t, "KREIA"));
     hse::scopeSentence(t, sizeof t, 2, model, "rifle", "");
     KT_CHECK(!strcmp(t, "This character's body is not known yet: body saves are off."));
     hse::scopeSentence(t, sizeof t, 2, model, "rifle", nullptr);
@@ -1483,6 +1484,22 @@ static void testScopeSentences() {
     KT_CHECK(!strcmp(t, "Save changes go to this weapon model only, on every character."));
     hse::scopeSentence(t, sizeof t, 0, nullptr, nullptr, nullptr);
     KT_CHECK(!strcmp(t, "Save changes go to this weapon model only, on every character."));
+    // the English name (the one on the weapon button) replaces the model resref; the resref is the fallback only when the name is empty
+    hse::scopeSentence(t, sizeof t, 0, model, "melee", "PFBCM", "Vibroblade");
+    KT_CHECK(!strcmp(t, "Save changes go to this weapon model only (Vibroblade), on every character."));
+    KT_CHECK(!strstr(t, "W_VBLADE_01"));
+    hse::scopeSentence(t, sizeof t, 0, model, "melee", "PFBCM", "");           // name empty -> the resref
+    KT_CHECK(!strcmp(t, "Save changes go to this weapon model only (W_VBLADE_01), on every character."));
+    hse::scopeSentence(t, sizeof t, 0, model, "melee", "PFBCM", nullptr);
+    KT_CHECK(!strcmp(t, "Save changes go to this weapon model only (W_VBLADE_01), on every character."));
+    hse::scopeSentence(t, sizeof t, 0, "", "melee", "PFBCM", "Vibroblade");    // name without a model still shows the name
+    KT_CHECK(!strcmp(t, "Save changes go to this weapon model only (Vibroblade), on every character."));
+    hse::scopeSentence(t, sizeof t, 0, "", "melee", "PFBCM", "");              // both empty -> no parenthesis
+    KT_CHECK(!strcmp(t, "Save changes go to this weapon model only, on every character."));
+    hse::scopeSentence(t, sizeof t, 1, model, "melee", "PFBCM", "Vibroblade"); // scope 1 and 2 ignore the name
+    KT_CHECK(!strcmp(t, "Save changes go to all melee weapons, on every character."));
+    hse::scopeSentence(t, sizeof t, 2, model, "melee", "PFBCM", "Vibroblade");
+    KT_CHECK(!strstr(t, "Vibroblade") && !strstr(t, "PFBCM"));
     hse::scopeSentence(t, sizeof t, 9, model, "rifle", "PFBCM");   // unknown scope reads as weapon
     KT_CHECK(!strncmp(t, "Save changes go to this weapon model only", 40));
     char tiny[12];
@@ -1494,15 +1511,45 @@ static void testScopeSentences() {
     const char* types[] = {"lightsaber", "melee", "qstaff", "pistol", "rifle", "heavy", "", "mystery", nullptr};
     const char* m16 = "ABCDEFGHIJKLMNOP";
     const char* b16 = "PMBNABCDEFGHIJKL";
+    const char* n63 = "0123456789012345678901234567890123456789012345678901234567890AB";   // the itemName cache holds up to 63 characters
+    KT_CHECK_EQ(strlen(n63), 63u);
     for (const char* ty : types)
         for (int sc = 0; sc <= 2; ++sc) {
             hse::scopeSentence(t, sizeof t, sc, m16, ty, b16);
+            KT_CHECK(strlen(t) < 190 && asciiOk(t));
+            hse::scopeSentence(t, sizeof t, sc, m16, ty, b16, n63);
+            KT_CHECK(strlen(t) < 190 && asciiOk(t));
+            hse::removeSentence(t, sizeof t, sc, m16, ty, b16, true, n63);
+            KT_CHECK(strlen(t) < 190 && asciiOk(t));
+            hse::removeSentence(t, sizeof t, sc, m16, ty, b16, false, n63);
             KT_CHECK(strlen(t) < 190 && asciiOk(t));
             hse::removeSentence(t, sizeof t, sc, m16, ty, b16, false);
             KT_CHECK(strlen(t) < 190 && asciiOk(t));
             hse::removeSentence(t, sizeof t, sc, m16, ty, b16, true);
             KT_CHECK(strlen(t) < 190 && asciiOk(t));
         }
+}
+
+static void testRemoveSentenceNames() {
+    char t[256];
+    hse::removeSentence(t, sizeof t, 0, "W_VBLADE_01", "melee", "PFBCM", false, "Vibroblade");
+    KT_CHECK(!strcmp(t, "Removes the saved placement of Vibroblade. It falls back to the melee weapons default."));
+    hse::removeSentence(t, sizeof t, 0, "W_VBLADE_01", "melee", "PFBCM", false, "");        // name empty -> the resref
+    KT_CHECK(!strcmp(t, "Removes the saved placement of W_VBLADE_01. It falls back to the melee weapons default."));
+    hse::removeSentence(t, sizeof t, 0, "", "melee", "PFBCM", false, "");                   // both empty
+    KT_CHECK(!strcmp(t, "Removes the saved placement of this weapon model. It falls back to the melee weapons default."));
+    hse::removeSentence(t, sizeof t, 0, "W_VBLADE_01", "melee", "PFBCM", true, "Vibroblade");
+    KT_CHECK(strstr(t, "of Vibroblade.") && strstr(t, "Click again to remove."));
+    hse::removeSentence(t, sizeof t, 2, "W_VBLADE_01", "melee", "PFBCM", false, "Vibroblade");   // body scope: armor label, never the resref
+    KT_CHECK(!strcmp(t, "Removes the saved nudge for Armor Class 4 / Miner bodies (offset and rotation). Weapons there show without a body nudge."));
+    hse::removeSentence(t, sizeof t, 2, "W_VBLADE_01", "melee", "N_KREIA", false);
+    KT_CHECK(!strcmp(t, "Removes the saved nudge for this character's body (offset and rotation). Weapons there show without a body nudge."));
+    hse::removeSentence(t, sizeof t, 2, "W_VBLADE_01", "melee", "", false);
+    KT_CHECK(!strncmp(t, "Removes the saved body nudge", 28));
+    // a 63 character name is not cut by the local buffer
+    const char* n63 = "0123456789012345678901234567890123456789012345678901234567890AB";
+    hse::removeSentence(t, sizeof t, 0, "W_VBLADE_01", "melee", "PFBCM", false, n63);
+    KT_CHECK(strstr(t, n63) != nullptr);
 }
 
 static void testArmorClassLabel() {
@@ -1541,7 +1588,7 @@ static void testRemoveMenu() {
     hse::removeSentence(t, sizeof t, 1, "W_VBLADE_01", "mystery", "PFBCM", true);
     KT_CHECK(strstr(t, "this weapon type") && strstr(t, "Click again to remove."));
     hse::removeSentence(t, sizeof t, 2, "W_VBLADE_01", "rifle", "PFBCM", false);
-    KT_CHECK(!strcmp(t, "Removes the saved nudge for PFBCM bodies (offset and rotation). Weapons there show without a body nudge."));
+    KT_CHECK(!strcmp(t, "Removes the saved nudge for Armor Class 4 / Miner bodies (offset and rotation). Weapons there show without a body nudge."));   // the label, never the raw PFBCM
     hse::removeSentence(t, sizeof t, 2, "W_VBLADE_01", "rifle", "", false);
     KT_CHECK(strstr(t, "saved body nudge") && !strstr(t, "for  bodies"));
     hse::removeSentence(t, sizeof t, 2, nullptr, nullptr, nullptr, true);
@@ -1670,6 +1717,7 @@ int main() {
     testUx3Bones();
     testUx3ScopeSeg();
     testScopeSentences();
+    testRemoveSentenceNames();
     testArmorClassLabel();
     testRemoveMenu();
     testUx3ValueText();

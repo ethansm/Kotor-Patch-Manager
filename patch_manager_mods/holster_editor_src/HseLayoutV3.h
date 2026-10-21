@@ -45,7 +45,7 @@ constexpr int kV3ThumbW = 10;     // slider thumb width
 
 constexpr int kV3ColWantW = 600;  // widest the left column content grows (the editor widens the column pane into the left margin by ini margin_px)
 constexpr int kV3InspWantW = 1100; // widest the inspector grows (the editor widens the preview pane into the right margin by ini margin_px)
-constexpr int kV3LeftRowMax = 52, kV3InspRowMax = 60, kV3RowMin = 14;   // left column and inspector row heights (pick the largest that fits)
+constexpr int kV3LeftRowMax = 52, kV3InspRowMax = 70, kV3RowMin = 14;   // left column and inspector row heights (pick the largest that fits)
 constexpr int kV3RoomyRowMin = 30;  // the roomy left column (2 bone columns, one scope per row) is used while its rows stay at least this high; below, the compact one
 constexpr int kV3BarMax = 44, kV3BarMin = 12;   // mode bar / stance row heights
 constexpr int kV3MinViewW = 8;    // the view area is at least this wide when the preview pane leaves any room
@@ -114,9 +114,11 @@ inline int cellW(int w, int n, int gap = 2) { return imax(0, (w - (n - 1) * gap)
 
 // Left column at row height r. Returns the y just below the content plus the bottom pad.
 // roomy: bones in 2 columns (3 rows) and one scope per row (3 rows) so every caption gets a wide button; else the compact grid (3 + 2 bones, 3 scopes in one row).
-inline int buildLeft(editkit::Box Z, int r, bool roomy, PageLayoutV3& L) {
+// fullCaps: the three section captions are full row boxes (the engine label's text inset leaves less than one 32 px line in a shorter box, so a r * 2 / 3 caption never drew its title).
+// Only the last-resort fallback (no row height fits; the documented minimum panes) passes false and keeps the old r * 2 / 3 captions so the content still ends inside a tiny column.
+inline int buildLeft(editkit::Box Z, int r, bool roomy, PageLayoutV3& L, bool fullCaps = true) {
     using editkit::Box;
-    const int cap = r * 2 / 3;
+    const int cap = fullCaps ? r : r * 2 / 3;
     const int x0 = Z.x + kPad, W = imax(0, Z.w - 2 * kPad);
     int y = Z.y + kPad;
     auto mk = [&](int x, int yy, int w, int h) { return clipTo(Box{x, yy, w, h}, Z); };
@@ -287,7 +289,7 @@ inline PageLayoutV3 pageLayoutV3(editkit::Box column, editkit::Box view, editkit
                 fitted = v3::buildLeft(colZ, r, false, L) <= bottom;
             }
         }
-        if (!fitted) { L.leftRowH = kV3RowMin; v3::buildLeft(colZ, kV3RowMin, false, L); }
+        if (!fitted) { L.leftRowH = kV3RowMin; v3::buildLeft(colZ, kV3RowMin, false, L, false); }
     }
 
     // ---- description boxes: bottom aligned on the desc pane (mod-config's shrunk LB_DESC)

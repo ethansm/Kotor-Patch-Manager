@@ -85,7 +85,13 @@ PI_REMOVE = 72   # HseLayoutV3.h PI_REMOVE: the Remove saved placement button (a
 
 # ---- pane sets -------------------------------------------------------------------------------------------------------
 
-DEFAULT_PANES_3840x1600 = ((772, 357, 1132, 757), (1345, 357, 576, 896), (1953, 357, 1113, 746))
+# The raw pane set widened the way the live editor does (HolsterEditor.cpp applyLayout: column.x -= margin_px, column.w += margin_px, preview.w += margin_px;
+# holster_editor.ini margin_px 120): (652, 357, 1252, 757) and (1953, 357, 1233, 746). The dump is called with these, so the offline render matches the live page.
+MARGIN_PX = 120
+_RAW_PANES_3840x1600 = ((772, 357, 1132, 757), (1345, 357, 576, 896), (1953, 357, 1113, 746))
+DEFAULT_PANES_3840x1600 = ((_RAW_PANES_3840x1600[0][0] - MARGIN_PX, _RAW_PANES_3840x1600[0][1], _RAW_PANES_3840x1600[0][2] + MARGIN_PX, _RAW_PANES_3840x1600[0][3]),
+                           _RAW_PANES_3840x1600[1],
+                           (_RAW_PANES_3840x1600[2][0], _RAW_PANES_3840x1600[2][1], _RAW_PANES_3840x1600[2][2] + MARGIN_PX, _RAW_PANES_3840x1600[2][3]))
 
 
 def geom_for(W, H):
@@ -217,7 +223,8 @@ DESC_TEXT = (37 / 255, 200 / 255, 164 / 255)  # description text 37,200,164
 
 def caption_for(i, remove_open=False):
     """Plausible caption of page item i (strings from HolsterEditor.cpp itemInitText / HseView.h; sample values for composed ones)."""
-    fixed = {0: "<", 1: "Meetra Surik", 2: ">", 3: "WEAPON", 4: "BONE", 5: "APPLIES TO", 6: "Right: Vibrosword", 7: "Left: Vibrosword",
+    # Items 0 / 2 (member arrows) are blank: the arrow art replaces their "<" ">" (HolsterEditor.cpp applyArt clearItemText), so no caption stays.
+    fixed = {0: "", 1: "Meetra Surik", 2: "", 3: "WEAPON", 4: "BONE", 5: "APPLIES TO", 6: "Right: Vibrosword", 7: "Left: Vibrosword",
              13: "This weapon model", 14: "All melee weapons", 15: "This body + armor", 16: "Save", 17: "Revert",
              18: "Member 1/9 | Weapons: Right+Left", 19: ">Move<", 20: "Depth", 21: "Tilt", 22: "Roll/Turn", 23: "R", 24: "<>", 25: "",
              31: HELP_LINE, 32: "POSITION", 33: "R", 34: "ROTATION", 35: "R", 66: "Left: mirrored from right",

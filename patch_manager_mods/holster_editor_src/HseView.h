@@ -1044,12 +1044,14 @@ inline void scopeAllText_(char* out, int cap, const char* type) {
     else snprintf(out, cap, "all %s", p);
 }
 
-// The live "Save changes: ..." sentence for one scope (also the tooltip of that scope's button). ASCII, < 190 characters for a 16-char model / body.
-inline void scopeSentence(char* out, int cap, int scope, const char* model, const char* type, const char* body) {
+// The live "Save changes: ..." sentence for one scope (also the tooltip of that scope's button). ASCII, < 190 characters for a 16-char model / body and a 63-char name.
+// name: the weapon's English name (the one on its button); the model resref is the fallback only when the name is empty. The body resref never shows: an armor label
+// (armorClassLabel) or "this character's body" stands for it.
+inline void scopeSentence(char* out, int cap, int scope, const char* model, const char* type, const char* body, const char* name = "") {
     if (!out || cap <= 0) return;
     char all[48];
     scopeAllText_(all, sizeof all, type);
-    const bool hasModel = model && model[0];
+    const char* label = (name && name[0]) ? name : ((model && model[0]) ? model : "");
     const bool hasBody = body && body[0];
     if (scope == 1) {
         snprintf(out, cap, "Save changes go to %s, on every character.", all);
@@ -1058,11 +1060,11 @@ inline void scopeSentence(char* out, int cap, int scope, const char* model, cons
             snprintf(out, cap, "This character's body is not known yet: body saves are off.");
         } else {
             const char* a = armorClassLabel(body);
-            if (a[0]) snprintf(out, cap, "Save changes go to every weapon on %s bodies (%s), added on top of the weapon placement.", body, a);
-            else snprintf(out, cap, "Save changes go to every weapon on %s bodies, added on top of the weapon placement.", body);
+            if (a[0]) snprintf(out, cap, "Save changes go to every weapon on %s bodies, added on top of the weapon placement.", a);
+            else snprintf(out, cap, "Save changes go to every weapon on this character's body, added on top of the weapon placement.");
         }
-    } else if (hasModel) {
-        snprintf(out, cap, "Save changes go to this weapon model only (%s), on every character.", model);
+    } else if (label[0]) {
+        snprintf(out, cap, "Save changes go to this weapon model only (%s), on every character.", label);
     } else {
         snprintf(out, cap, "Save changes go to this weapon model only, on every character.");
     }
@@ -1074,22 +1076,25 @@ inline const char* removeToggleLabel() { return "..."; }
 inline const char* removeToggleTip() { return "More: remove the saved placement for this scope."; }
 inline const char* removeLabel() { return "Remove saved placement"; }
 
-// What Remove does for a scope; armed appends the second-click prompt. ASCII, < 190 characters for a 16-char model / body.
-inline void removeSentence(char* out, int cap, int scope, const char* model, const char* type, const char* body, bool armed) {
+// What Remove does for a scope; armed appends the second-click prompt. ASCII, < 190 characters for a 16-char model / body and a 63-char name.
+// name: the weapon's English name, as for scopeSentence (the model resref is the fallback only).
+inline void removeSentence(char* out, int cap, int scope, const char* model, const char* type, const char* body, bool armed, const char* name = "") {
     if (!out || cap <= 0) return;
     const char* p = categoryPlural(type);
     const bool known = strcmp(p, "of this type") != 0;
-    const bool hasModel = model && model[0];
+    const char* label = (name && name[0]) ? name : ((model && model[0]) ? model : "");
     char t[200];
     if (scope == 1) {
         if (known) snprintf(t, sizeof t, "Removes the saved %s placement. Those weapons fall back to the global default (weapon-model saves stay).", p);
         else snprintf(t, sizeof t, "Removes the saved placement for this weapon type. Those weapons fall back to the global default (weapon-model saves stay).");
     } else if (scope == 2) {
-        if (body && body[0]) snprintf(t, sizeof t, "Removes the saved nudge for %s bodies (offset and rotation). Weapons there show without a body nudge.", body);
+        const char* a = (body && body[0]) ? armorClassLabel(body) : "";
+        if (a[0]) snprintf(t, sizeof t, "Removes the saved nudge for %s bodies (offset and rotation). Weapons there show without a body nudge.", a);
+        else if (body && body[0]) snprintf(t, sizeof t, "Removes the saved nudge for this character's body (offset and rotation). Weapons there show without a body nudge.");
         else snprintf(t, sizeof t, "Removes the saved body nudge (offset and rotation). Weapons show without a body nudge.");
     } else {
-        char who[40];
-        if (hasModel) snprintf(who, sizeof who, "of %s", model); else snprintf(who, sizeof who, "of this weapon model");
+        char who[80];
+        if (label[0]) snprintf(who, sizeof who, "of %s", label); else snprintf(who, sizeof who, "of this weapon model");
         if (known) snprintf(t, sizeof t, "Removes the saved placement %s. It falls back to the %s default.", who, p);
         else snprintf(t, sizeof t, "Removes the saved placement %s. It falls back to the type default.", who);
     }
