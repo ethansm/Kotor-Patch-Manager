@@ -496,6 +496,15 @@ static void testReachOverWeight() {
     KT_CHECK(mid > 0.f && mid < 1.f);
     KT_CHECK(reachOverWeight(-0.55f * 0.64f, 0.64f) <= mid);            // monotone
     KT_CHECK(reachOverWeight(NAN, 0.64f) == 0.f && reachOverWeight(0.f, 0.f) == 0.f);
+    // band -0.60..-0.38 (HW27): pelvis_g (-0.54) keeps the hip pole, an upper-back mount (-0.36) is fully over, and the weight never falls over -0.8..0.3
+    KT_CHECK(reachOverWeight(-0.54f * 0.64f, 0.64f) < 0.2f);
+    KT_CHECK(reachOverWeight(-0.36f * 0.64f, 0.64f) >= 0.999f);
+    float prevW = -1.f;
+    for (int i = 0; i <= 110; ++i) {
+        const float w = reachOverWeight((-0.8f + 0.01f * i) * 0.64f, 0.64f);
+        KT_CHECK(w >= prevW);
+        prevW = w;
+    }
 }
 
 static void testReachPoleStyleAndMirror() {
@@ -954,6 +963,68 @@ static void testReachHinge() {
     KT_CHECK(reachHinge(S, L1, L2, up, fwd, ou, mount, rest, rpole, -3.f, T, P) && closeV(T, mount, 1e-4f));   // f clamps
 }
 
+// ---- back-mount reach topology (HW27) ----
+static void testReachTopology() {
+    // dzArm = mount height above the shoulder in arm lengths (male arm 0.630 m), hingeFits = reachHingeFits; fy / fx are not inputs
+    KT_CHECK(reachTopology(-0.006f, true) == ReachTopo::HingeBack);    // torsoUpr_g + 0.22 melee: the hinge fits
+    KT_CHECK(reachTopology(-0.36f, false) == ReachTopo::OverBack);     // torsoUpr_g no offset: hinge fails, over the shoulder
+    // torso_g is Hip: it sits 0.01-0.02 arm from pelvis_g, so LowBack needs a bone-name hint (see the hw27 card); both take the hip pole
+    KT_CHECK(reachTopology(-0.52f, false) == ReachTopo::Hip);          // torso_g no offset
+    KT_CHECK(reachTopology(-0.54f, false) == ReachTopo::Hip);          // pelvis_g (x-only offset)
+    KT_CHECK(reachTopology(-0.77f, false) == ReachTopo::Thigh);        // rthigh_g: below the thigh line
+    KT_CHECK(reachTopology(-0.30f, false) == ReachTopo::OverBack);     // synthetic
+    KT_CHECK(reachTopology(kNaN, false) == ReachTopo::Hip);            // non-finite dzArm: Hip, no throw
+    KT_CHECK(reachTopology(kNaN, true) == ReachTopo::Hip);
+    // boundary ties: -0.45 is OverBack (inclusive), -0.66 is not Thigh (exclusive), the next float below -0.66 is Thigh
+    KT_CHECK(reachTopology(-0.45f, false) == ReachTopo::OverBack);
+    KT_CHECK(reachTopology(-0.66f, false) == ReachTopo::Hip);
+    KT_CHECK(reachTopology(std::nextafter(-0.66f, -1.f), false) == ReachTopo::Thigh);
+    // Thigh is checked before the hinge: a mount below the thigh line is never HingeBack; a hinge-fitting mount above it is
+    KT_CHECK(reachTopology(-0.77f, true) == ReachTopo::Thigh);
+    KT_CHECK(reachTopology(0.30f, true) == ReachTopo::HingeBack);
+}
+
+// ---- back-mount reach: per-category outward parameters (HW27) ----
+static void testReachHingeOutParams() {
+    const float S[3] = {0.2f, 0.f, 1.4f}, up[3] = {0, 0, 1}, fwd[3] = {0, 1, 0}, ou[3] = {1, 0, 0};
+    const float L1 = 0.30f, L2 = 0.34f;
+    const float mount[3] = {0.12f, -0.12f, 1.38f};
+    const float rest[3] = {0.35f, 0.05f, 1.0f}, rpole[3] = {0.2f, -0.3f, -1.f};
+    // goldens captured at HEAD (before the out parameters existed), default out values: the output must not move (tol 1e-6)
+    struct Gold { float f; float T[3]; float P[3]; };
+    const Gold gold[4] = {
+        { 0.0f,  { 0.11999999f, -0.120000035f, 1.38f },       { 0.611836731f, 0.517095149f, 0.598555326f } },
+        { 0.5f,  { 0.221216008f, 0.438516498f, 1.51533997f }, { 0.23872155f, 0.78227216f, -0.575380147f } },
+        { 0.85f, { 0.230468765f, 0.281093717f, 1.07968736f }, { 0.0388822816f, -0.287130594f, -0.957101941f } },
+        { 1.0f,  { 0.349999994f, 0.0500000007f, 1.f },        { 0.188144162f, -0.282216251f, -0.940720856f } },
+    };
+    for (int k = 0; k < 4; ++k) {
+        float T[3], P[3];
+        KT_CHECK(reachHinge(S, L1, L2, up, fwd, ou, mount, rest, rpole, gold[k].f, T, P));
+        KT_CHECK(closeV(T, gold[k].T, 1e-6f) && closeV(P, gold[k].P, 1e-6f));
+    }
+    // outT moves the hand outward in stage 3 (f = 0.1) and stage 2 (f = 0.6): 0.0 against the default 0.10
+    float T0[3], T1[3], Ta[3], Tb[3], Pa[3], Pb[3];
+    KT_CHECK(reachHinge(S, L1, L2, up, fwd, ou, mount, rest, rpole, 0.1f, T0, Pa, 0.f));
+    KT_CHECK(reachHinge(S, L1, L2, up, fwd, ou, mount, rest, rpole, 0.1f, T1, Pb));
+    KT_CHECK(distV(T0, T1) > 1e-3f);
+    KT_CHECK(reachHinge(S, L1, L2, up, fwd, ou, mount, rest, rpole, 0.6f, Ta, Pa, 0.f));
+    KT_CHECK(reachHinge(S, L1, L2, up, fwd, ou, mount, rest, rpole, 0.6f, Tb, Pb));
+    KT_CHECK(distV(Ta, Tb) > 1e-3f);
+    // outPole moves the parked pole in stage 2 (f = 0.5): rifle 0.25 against heavy 0.45
+    float Pr[3], Ph[3], Tr[3], Th[3];
+    KT_CHECK(reachHinge(S, L1, L2, up, fwd, ou, mount, rest, rpole, 0.5f, Tr, Pr, kHingeOutT, kHingeOutPoleRifle));
+    KT_CHECK(reachHinge(S, L1, L2, up, fwd, ou, mount, rest, rpole, 0.5f, Th, Ph, kHingeOutT, kHingeOutPoleHeavy));
+    KT_CHECK(distV(Pr, Ph) > 1e-3f);
+    // every category's out values keep the path finite across the whole sweep
+    const float outPoles[3] = { kHingeOutPole, kHingeOutPoleRifle, kHingeOutPoleHeavy };
+    for (int k = 0; k < 3; ++k)
+        for (int i = 0; i <= 10; ++i) {
+            float T[3], P[3];
+            KT_CHECK(reachHinge(S, L1, L2, up, fwd, ou, mount, rest, rpole, i / 10.f, T, P, kHingeOutT, outPoles[k]) && finiteV(T) && finiteV(P));
+        }
+}
+
 int main() {
     testArcQuatMapsDirections();
     testArcQuatParallelAndAntiParallel();
@@ -1002,5 +1073,7 @@ int main() {
     testWristClampAndAngle();
     testWristDelta();
     testReachHinge();
+    testReachTopology();
+    testReachHingeOutParams();
     return kt::Report("holster_reach");
 }

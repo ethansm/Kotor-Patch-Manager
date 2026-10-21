@@ -134,11 +134,12 @@ inline ReachStyle reachDefaultStyle(int cat) {
 }
 
 // 0 = hip style, 1 = over-the-shoulder style. `dz` = height of the mount above the shoulder (body frame), `arm` = shoulder-to-hand reach.
-// Smooth between -0.75 and -0.45 arm lengths below the shoulder (a hip mount sits ~0.8 or more below, an upper-back mount ~0.1 below, a mid-back
-// rifle ~0.5); the caller forces 1 for a back bone, this is the fallback for a custom mount height.
+// Smooth between -0.60 and -0.38 arm lengths below the shoulder: pelvis_g sits at -0.54 (u about 0.18, so a pelvis pistol or lightsaber keeps the hip pole),
+// a mid-back rifle at -0.50 gives u about 0.43, and an upper-back mount at -0.36 or higher is fully over (u 1). The caller forces 1 for a back bone; this is the
+// fallback for a custom mount height.
 inline float reachOverWeight(float dz, float arm) {
     if (!std::isfinite(dz) || !(arm > 1e-4f)) return 0.f;
-    return easeSmooth((dz / arm + 0.75f) / 0.3f);
+    return easeSmooth((dz / arm + 0.60f) / 0.22f);
 }
 
 // World-space pole for the elbow: blends the style's hip / over directions by u, mirrors x for the left arm, rotates by the body
@@ -218,9 +219,12 @@ inline void reachCarryTarget(const float* mount, const float* hand, const float*
 //   f in [kHingeS2, 1]       STAGE 1: the L-shaped ready pose (upper arm down, forearm forward, elbow tucked) settles into the animation's resting hand and elbow plane.
 // Axes are unit world vectors (`out` points away from the body's midline on this arm's side). `restPole` = the animation's own elbow direction (any length). T and pole
 // are for solveTwoBone. Finite for any finite input; false when an input is non-finite or a segment is shorter than 1e-4.
+// `outT` / `outPole` (defaults kHingeOutT / kHingeOutPole) set the outward offset of the hand and the outward share of the parked pole; per-category values
+// and config keys are deferred to the caller wiring card.
 constexpr float kHingeS3 = 0.30f, kHingeS2 = 0.80f;
 constexpr float kHingeOutPole = 0.25f;   // outward share of the parked pole (the elbow stays out of the head's way)
 constexpr float kHingeOutT = 0.10f;      // outward offset of the raised hand at the top of the pitch, in forearm lengths
+constexpr float kHingeOutPoleRifle = 0.25f, kHingeOutPoleHeavy = 0.45f;   // interim per-category outward pole shares (check in play; caller wiring and config keys come in a later card)
 constexpr float kHingeMinOut = 0.35f;   // stage 3: smallest outward share of the elbow bend direction (keeps the elbow off the face)
 constexpr float kHingeLiftPole = 1.0f, kHingeLiftOut = 0.5f;   // stage 3: up / outward share added to the pole at the mount (the elbow rises when the mount is out of the parked reach)
 
@@ -243,8 +247,25 @@ inline void hingeNlerp(const float* a, const float* b, float x, float* out) {
 constexpr float kHingeMinDz = -0.25f;   // in arm lengths
 inline bool reachHingeFits(float dz, float arm) { return std::isfinite(dz) && std::isfinite(arm) && arm > 1e-4f && dz >= kHingeMinDz * arm; }
 
+// ---- Back-mount reach topology (HW27) ----
+// Which reach a mount takes. dzArm = mount height above the shoulder in arm lengths, hingeFits = reachHingeFits(dz, arm). First match wins: below kThighDz ->
+// Thigh (the hip pole for now; the drop-and-piston path is deferred); hingeFits -> HingeBack; at or above kOverDz -> OverBack; otherwise Hip. A non-finite dzArm is Hip.
+// There is no fy / fx input: torso_g and pelvis_g differ by only 0.01-0.02 arm in height and side offset, so a LowBack class would need a bone-name hint (the
+// signature is fixed here); both resolve to Hip, and LowBack is not in the enum.
+// Interim thresholds, check in play: kThighDz sits between pelvis_g (-0.54) and rthigh_g (-0.77), midpoint -0.655; kOverDz is the old over-the-shoulder band top.
+constexpr float kThighDz = -0.66f;   // in arm lengths
+constexpr float kOverDz = -0.45f;    // in arm lengths
+enum class ReachTopo { HingeBack, OverBack, Hip, Thigh };
+inline ReachTopo reachTopology(float dzArm, bool hingeFits) {
+    if (!std::isfinite(dzArm)) return ReachTopo::Hip;
+    if (dzArm < kThighDz) return ReachTopo::Thigh;
+    if (hingeFits) return ReachTopo::HingeBack;
+    if (dzArm >= kOverDz) return ReachTopo::OverBack;
+    return ReachTopo::Hip;
+}
+
 inline bool reachHinge(const float* S, float L1, float L2, const float* up, const float* fwd, const float* out3, const float* mount, const float* rest, const float* restPole,
-                       float f, float* T, float* pole) {
+                       float f, float* T, float* pole, float outT = kHingeOutT, float outPole = kHingeOutPole) {
     if (!(L1 > 1e-4f) || !(L2 > 1e-4f) || !std::isfinite(L1) || !std::isfinite(L2) || !std::isfinite(f)) return false;
     for (int i = 0; i < 3; ++i)
         if (!std::isfinite(S[i]) || !std::isfinite(up[i]) || !std::isfinite(fwd[i]) || !std::isfinite(out3[i]) || !std::isfinite(mount[i]) || !std::isfinite(rest[i]) || !std::isfinite(restPole[i])) return false;
@@ -252,7 +273,7 @@ inline bool reachHinge(const float* S, float L1, float L2, const float* up, cons
     float poleReady[3], poleHigh[3], tReady[3], ePark[3];
     for (int i = 0; i < 3; ++i) {
         poleReady[i] = -0.3f * fwd[i] - up[i];
-        poleHigh[i] = fwd[i] + kHingeOutPole * out3[i];
+        poleHigh[i] = fwd[i] + outPole * out3[i];
         tReady[i] = S[i] + L2 * fwd[i] - L1 * up[i];
         ePark[i] = S[i] + L1 * fwd[i];
     }
@@ -266,7 +287,7 @@ inline bool reachHinge(const float* S, float L1, float L2, const float* up, cons
         else { for (int i = 0; i < 3; ++i) dB[i] = dA[i]; rB = L2; }
         hingeNlerp(dA, dB, x, d);
         r = (1.f - x) * L2 + x * rB;
-        for (int i = 0; i < 3; ++i) tv[i] = ePark[i] + r * d[i] + (1.f - x) * kHingeOutT * L2 * out3[i];
+        for (int i = 0; i < 3; ++i) tv[i] = ePark[i] + r * d[i] + (1.f - x) * outT * L2 * out3[i];
         // a mount behind the shoulder is past the parked forearm's reach: the elbow lifts up and out (never inboard across the face) as the hand closes on it
         float pr[3];
         for (int i = 0; i < 3; ++i) pr[i] = poleHigh[i] + x * (kHingeLiftPole * up[i] + kHingeLiftOut * out3[i]);
@@ -292,7 +313,7 @@ inline bool reachHinge(const float* S, float L1, float L2, const float* up, cons
     } else if (f <= kHingeS2) {   // stage 2: elbow locked at 90 deg, the whole arm pitches from forward (x = 1) down to hanging (x = 0)
         const float x = 1.f - hingeEase((f - kHingeS3) / (kHingeS2 - kHingeS3));
         const float th = x * 1.57079632679f, c = std::cos(th), s = std::sin(th);
-        for (int i = 0; i < 3; ++i) tv[i] = S[i] + L1 * (-up[i] * c + fwd[i] * s) + L2 * (fwd[i] * c + up[i] * s) + x * kHingeOutT * L2 * out3[i];
+        for (int i = 0; i < 3; ++i) tv[i] = S[i] + L1 * (-up[i] * c + fwd[i] * s) + L2 * (fwd[i] * c + up[i] * s) + x * outT * L2 * out3[i];
         hingeNlerp(poleReady, poleHigh, x, pv);
     } else {   // stage 1: the ready pose settles into the animation's hand and elbow plane
         const float x = hingeEase((f - kHingeS2) / (1.f - kHingeS2));
