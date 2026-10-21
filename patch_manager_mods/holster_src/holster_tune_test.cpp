@@ -1107,6 +1107,198 @@ static void testScopeCountAndBufferCaps() {
         if (big[i] != 'Z') { KT_CHECK(false); break; }
 }
 
+// HW28 slide timing (SlideTune). Rows in Category enum order so the table itself is checked against slideDefault.
+struct SlideRow { Category c; uint32_t draw, stow, grab; };
+static const SlideRow kSlideRows[6] = {
+    {CatLightsaber, 350, 350, 30}, {CatMelee, 520, 600, 45}, {CatQStaff, 570, 700, 45},
+    {CatPistol, 300, 350, 30}, {CatRifle, 520, 600, 45}, {CatHeavy, 570, 700, 45},
+};
+
+static void testSlideDefaultsPerCategory() {
+    SlideTune s;
+    for (const SlideRow& r : kSlideRows) {
+        const SlideRes x = slideResolve(s, r.c);
+        KT_CHECK_EQ(x.drawMs, r.draw);
+        KT_CHECK_EQ(x.stowMs, r.stow);
+        KT_CHECK_EQ(x.grabPct, r.grab);
+        KT_CHECK_EQ(slideDefault(r.c).drawMs, r.draw);
+        KT_CHECK_EQ(slideDefault(r.c).stowMs, r.stow);
+        KT_CHECK_EQ(slideDefault(r.c).grabPct, r.grab);
+        // Defaults are inside their clamp ranges: feeding them back through the setters never flags a clamp.
+        SlideTune t;
+        KT_CHECK(!slideSetDraw(t, r.c, r.draw));
+        KT_CHECK(!slideSetStow(t, r.c, r.stow));
+        KT_CHECK(!slideSetGrab(t, r.c, r.grab));
+    }
+    const SlideRes u = slideResolve(s, CatUnknown);
+    KT_CHECK_EQ(u.drawMs, 350u);
+    KT_CHECK_EQ(u.stowMs, 350u);
+    KT_CHECK_EQ(u.grabPct, 30u);
+    for (int i = 0; i < CatCount; ++i)
+        KT_CHECK(!s.hasDraw[i] && !s.hasStow[i] && !s.hasGrab[i]);
+}
+
+static void testSlideGlobalBeatsDefault() {
+    // Global draw 200 and grab 45 reach every category; stow keeps the table.
+    SlideTune s;
+    KT_CHECK(!slideSetDraw(s, CatUnknown, 200));
+    KT_CHECK(!slideSetGrab(s, CatUnknown, 45));
+    for (const SlideRow& r : kSlideRows) {
+        KT_CHECK_EQ(slideDrawMsFor(s, r.c), 200u);
+        KT_CHECK_EQ(grabPctFor(s, r.c), 45u);
+        KT_CHECK_EQ(slideStowMsFor(s, r.c), r.stow);
+    }
+    KT_CHECK_EQ(slideStowMsFor(s, CatUnknown), 350u);
+    // A stored global 0 is a real value: it beats the default for every category.
+    SlideTune z;
+    KT_CHECK(!slideSetDraw(z, CatUnknown, 0));
+    KT_CHECK(!slideSetStow(z, CatUnknown, 0));
+    for (const SlideRow& r : kSlideRows) {
+        KT_CHECK_EQ(slideDrawMsFor(z, r.c), 0u);
+        KT_CHECK_EQ(slideStowMsFor(z, r.c), 0u);
+        KT_CHECK_EQ(grabPctFor(z, r.c), r.grab);
+    }
+}
+
+static void testSlideCategoryBeatsGlobal() {
+    // Every category, every field: its own value wins over the global, and the other five keep the global.
+    for (int k = 0; k < 6; ++k) {
+        const Category own = kSlideRows[k].c;
+        {   // all three fields: global draw 200 / stow 500 / grab 45, category 100+k / 300+k / 10+k
+            SlideTune s;
+            KT_CHECK(!slideSetDraw(s, CatUnknown, 200));
+            KT_CHECK(!slideSetStow(s, CatUnknown, 500));
+            KT_CHECK(!slideSetGrab(s, CatUnknown, 45));
+            KT_CHECK(!slideSetDraw(s, own, 100 + k));
+            KT_CHECK(!slideSetStow(s, own, 300 + k));
+            KT_CHECK(!slideSetGrab(s, own, 10 + k));
+            for (int j = 0; j < 6; ++j) {
+                const bool mine = (j == k);
+                KT_CHECK_EQ(slideDrawMsFor(s, kSlideRows[j].c), mine ? 100u + k : 200u);
+                KT_CHECK_EQ(slideStowMsFor(s, kSlideRows[j].c), mine ? 300u + k : 500u);
+                KT_CHECK_EQ(grabPctFor(s, kSlideRows[j].c), mine ? 10u + k : 45u);
+            }
+        }
+        {   // a field the category did not set falls through to the global, not the table
+            SlideTune s;
+            KT_CHECK(!slideSetDraw(s, CatUnknown, 200));
+            KT_CHECK(!slideSetStow(s, CatUnknown, 500));
+            KT_CHECK(!slideSetGrab(s, CatUnknown, 45));
+            KT_CHECK(!slideSetDraw(s, own, 100 + k));
+            KT_CHECK_EQ(slideStowMsFor(s, own), 500u);
+            KT_CHECK_EQ(grabPctFor(s, own), 45u);
+        }
+        {   // no global: the category beats the built-in default, the other five keep their default
+            SlideTune s;
+            KT_CHECK(!slideSetDraw(s, own, 100 + k));
+            for (int j = 0; j < 6; ++j)
+                KT_CHECK_EQ(slideDrawMsFor(s, kSlideRows[j].c), (j == k) ? 100u + k : kSlideRows[j].draw);
+        }
+    }
+    // Zero is a value: a category 0 beats a non-zero global (heavy stow, pistol grab, melee draw).
+    SlideTune z;
+    KT_CHECK(!slideSetStow(z, CatUnknown, 500));
+    KT_CHECK(!slideSetStow(z, CatHeavy, 0));
+    KT_CHECK_EQ(slideStowMsFor(z, CatHeavy), 0u);
+    KT_CHECK_EQ(slideStowMsFor(z, CatPistol), 500u);
+    KT_CHECK(!slideSetGrab(z, CatUnknown, 45));
+    KT_CHECK(!slideSetGrab(z, CatPistol, 0));
+    KT_CHECK_EQ(grabPctFor(z, CatPistol), 0u);
+    KT_CHECK_EQ(grabPctFor(z, CatRifle), 45u);
+    KT_CHECK(!slideSetDraw(z, CatUnknown, 200));
+    KT_CHECK(!slideSetDraw(z, CatMelee, 0));
+    KT_CHECK_EQ(slideDrawMsFor(z, CatMelee), 0u);
+    KT_CHECK_EQ(slideDrawMsFor(z, CatRifle), 200u);
+}
+
+static void testSlideClampFlags() {
+    SlideTune s;
+    // draw: 0..570, category key
+    KT_CHECK(slideSetDraw(s, CatPistol, 900));
+    KT_CHECK_EQ(slideDrawMsFor(s, CatPistol), 570u);   // clamped value stored, and the flag is set (not the 300 default)
+    KT_CHECK(!slideSetDraw(s, CatPistol, 570));
+    KT_CHECK_EQ(slideDrawMsFor(s, CatPistol), 570u);
+    KT_CHECK(slideSetDraw(s, CatPistol, -5));
+    KT_CHECK_EQ(slideDrawMsFor(s, CatPistol), 0u);
+    KT_CHECK(!slideSetDraw(s, CatPistol, 0));
+    KT_CHECK_EQ(slideDrawMsFor(s, CatPistol), 0u);
+    // draw: global key
+    KT_CHECK(slideSetDraw(s, CatUnknown, 900));
+    KT_CHECK_EQ(slideDrawMsFor(s, CatUnknown), 570u);
+    KT_CHECK(!slideSetDraw(s, CatUnknown, 570));
+    // stow: 0..1000, category and global
+    KT_CHECK(slideSetStow(s, CatHeavy, 1001));
+    KT_CHECK_EQ(slideStowMsFor(s, CatHeavy), 1000u);
+    KT_CHECK(!slideSetStow(s, CatHeavy, 1000));
+    KT_CHECK(slideSetStow(s, CatHeavy, -1));
+    KT_CHECK_EQ(slideStowMsFor(s, CatHeavy), 0u);
+    KT_CHECK(!slideSetStow(s, CatHeavy, 0));
+    KT_CHECK(slideSetStow(s, CatUnknown, 1001));
+    KT_CHECK_EQ(slideStowMsFor(s, CatUnknown), 1000u);
+    KT_CHECK(!slideSetStow(s, CatUnknown, 1000));
+    // grab: 0..60, category and global
+    KT_CHECK(slideSetGrab(s, CatRifle, 61));
+    KT_CHECK_EQ(grabPctFor(s, CatRifle), 60u);
+    KT_CHECK(!slideSetGrab(s, CatRifle, 60));
+    KT_CHECK(slideSetGrab(s, CatRifle, -1));
+    KT_CHECK_EQ(grabPctFor(s, CatRifle), 0u);
+    KT_CHECK(!slideSetGrab(s, CatRifle, 0));
+    KT_CHECK(slideSetGrab(s, CatUnknown, 61));
+    KT_CHECK_EQ(grabPctFor(s, CatUnknown), 60u);
+    KT_CHECK(!slideSetGrab(s, CatUnknown, 60));
+}
+
+static void testSlideUnknownAndOutOfRange() {
+    SlideTune s;
+    KT_CHECK_EQ(grabPctFor(s, CatUnknown), 30u);
+    KT_CHECK(!slideSetGrab(s, CatUnknown, 45));
+    KT_CHECK_EQ(grabPctFor(s, CatUnknown), 45u);
+    const Category over = static_cast<Category>(CatCount);
+    const Category under = static_cast<Category>(-1);
+    KT_CHECK_EQ(grabPctFor(s, over), 45u);      // out of range reads as the global
+    KT_CHECK_EQ(grabPctFor(s, under), 45u);
+    KT_CHECK_EQ(slideDefault(over).grabPct, 30u);   // and as the CatUnknown default row
+    KT_CHECK_EQ(slideDefault(under).drawMs, 350u);
+    // Setters map an out-of-range cat to the global too: no out-of-bounds write, the value is visible to every category.
+    SlideTune t;
+    KT_CHECK(!slideSetDraw(t, over, 200));
+    KT_CHECK_EQ(slideDrawMsFor(t, CatUnknown), 200u);
+    KT_CHECK_EQ(slideDrawMsFor(t, CatPistol), 200u);
+    KT_CHECK(!slideSetStow(t, under, 500));
+    KT_CHECK_EQ(slideStowMsFor(t, CatMelee), 500u);
+    KT_CHECK(slideSetGrab(t, over, 61));
+    const SlideRes r = slideResolve(t, over);
+    KT_CHECK_EQ(r.grabPct, 60u);
+}
+
+static void testSlideResolveMatchesGetters() {
+    SlideTune s;
+    KT_CHECK(!slideSetDraw(s, CatUnknown, 200));
+    KT_CHECK(!slideSetStow(s, CatQStaff, 900));
+    KT_CHECK(!slideSetGrab(s, CatPistol, 12));
+    KT_CHECK(!slideSetDraw(s, CatMelee, 0));
+    for (int i = 0; i < CatCount; ++i) {
+        const Category c = static_cast<Category>(i);
+        const SlideRes r = slideResolve(s, c);
+        KT_CHECK_EQ(r.drawMs, slideDrawMsFor(s, c));
+        KT_CHECK_EQ(r.stowMs, slideStowMsFor(s, c));
+        KT_CHECK_EQ(r.grabPct, grabPctFor(s, c));
+    }
+    // Explicit expectations as well, so a getter wrong in the same way as slideResolve still fails.
+    const SlideRes m = slideResolve(s, CatMelee);
+    KT_CHECK_EQ(m.drawMs, 0u);
+    KT_CHECK_EQ(m.stowMs, 600u);
+    KT_CHECK_EQ(m.grabPct, 45u);
+    const SlideRes q = slideResolve(s, CatQStaff);
+    KT_CHECK_EQ(q.drawMs, 200u);
+    KT_CHECK_EQ(q.stowMs, 900u);
+    KT_CHECK_EQ(q.grabPct, 45u);
+    const SlideRes p = slideResolve(s, CatPistol);
+    KT_CHECK_EQ(p.drawMs, 200u);
+    KT_CHECK_EQ(p.stowMs, 350u);
+    KT_CHECK_EQ(p.grabPct, 12u);
+}
+
 int main() {
     testCategoryBone();
     testCategoryOverride();
@@ -1153,5 +1345,11 @@ int main() {
     testScopeRangeBoundary();
     testScopeNameBoundary();
     testScopeCountAndBufferCaps();
+    testSlideDefaultsPerCategory();
+    testSlideGlobalBeatsDefault();
+    testSlideCategoryBeatsGlobal();
+    testSlideClampFlags();
+    testSlideUnknownAndOutOfRange();
+    testSlideResolveMatchesGetters();
     return kt::Report("holster_tune");
 }

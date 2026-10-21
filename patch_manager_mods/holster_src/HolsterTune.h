@@ -30,6 +30,9 @@
 //                 and the text buffer (kScopeTextMax bytes is enough for one scope). Raw values, printed %.1f (rot) / %.3f (off).
 //                 At most 3 set and 3 unset entries per call. Returns false, with both counts 0, on a bad name, a value outside the
 //                 caps, or an array or buffer that is too small.
+//   draw_slide_ms_<cat>   HW28 draw slide ms, 0..570, clamped at set time (SlideTune below; the key parse is not in this header yet)
+//   stow_slide_ms_<cat>   HW28 stow slide ms, 0..1000, clamped at set time (same)
+//   reach_grab_pct_<cat>  HW28 reach grab percent, 0..60, clamped at set time (same; percent, not the g_reachGrab fraction)
 #pragma once
 #include <stddef.h>
 #include <stdint.h>
@@ -39,6 +42,7 @@
 #include "IniKit.h"
 #include "HolsterIniWrite.h"
 #include "HolsterLogic.h"
+#include "HolsterSlide.h"
 #include "HolsterEdit.h"
 
 namespace hs {
@@ -638,6 +642,97 @@ inline bool scopeKeys(const BodyTune& b, ScopeOut& o) {
         return scopeFail(o);
     }
     return true;
+}
+
+// HW28 slide timing: per-category draw/stow ms and reach grab percent. Kept out of TuneCfg (memcpy'd every frame).
+// Index 0 (CatUnknown) holds the global key; indexes 1..6 hold the categories. A category value beats the global, which beats
+// slideDefault. Every set call, clamped or not, sets the has-flag and stores the clamped value, so a stored 0 is a real value.
+struct SlideTune {
+    bool hasDraw[CatCount] = {};
+    bool hasStow[CatCount] = {};
+    bool hasGrab[CatCount] = {};
+    uint32_t draw[CatCount] = {};   // ms
+    uint32_t stow[CatCount] = {};   // ms
+    uint32_t grab[CatCount] = {};   // percent (0..60)
+};
+
+// Array index for a category: a real category maps to itself; anything outside (CatUnknown, CatCount) maps to CatUnknown (the global).
+inline int slideIdx(Category cat) {
+    return (cat > CatUnknown && cat < CatCount) ? static_cast<int>(cat) : static_cast<int>(CatUnknown);
+}
+
+inline constexpr uint32_t kSlideGrabPctMax = 60;   // reach_grab_pct_<cat> range, inclusive
+
+// Setters: each call stores the clamped value, sets the has-flag, and returns true when raw was out of range (the caller warns).
+inline bool slideSetDraw(SlideTune& s, Category cat, long raw) {
+    const int i = slideIdx(cat);
+    const uint32_t stored = clampDrawSlideMs(raw);
+    s.draw[i] = stored;
+    s.hasDraw[i] = true;
+    return static_cast<long>(stored) != raw;
+}
+
+inline bool slideSetStow(SlideTune& s, Category cat, long raw) {
+    const int i = slideIdx(cat);
+    const uint32_t stored = clampStowSlideMs(raw);
+    s.stow[i] = stored;
+    s.hasStow[i] = true;
+    return static_cast<long>(stored) != raw;
+}
+
+inline bool slideSetGrab(SlideTune& s, Category cat, long raw) {
+    const int i = slideIdx(cat);
+    const uint32_t stored = raw < 0 ? 0u : (raw > static_cast<long>(kSlideGrabPctMax) ? kSlideGrabPctMax : static_cast<uint32_t>(raw));
+    s.grab[i] = stored;
+    s.hasGrab[i] = true;
+    return static_cast<long>(stored) != raw;
+}
+
+struct SlideRes { uint32_t drawMs, stowMs, grabPct; };
+
+// Built-in timing, rows in Category enum order (CatUnknown, Lightsaber, Melee, QStaff, Pistol, Rifle, Heavy).
+// CatUnknown keeps the pre-HW28 globals (350/350/30). A cat outside (CatUnknown, CatCount) maps to the CatUnknown row.
+inline SlideRes slideDefault(Category cat) {
+    static const SlideRes kRows[CatCount] = {
+        {350, 350, 30},   // CatUnknown
+        {350, 350, 30},   // CatLightsaber
+        {520, 600, 45},   // CatMelee
+        {570, 700, 45},   // CatQStaff
+        {300, 350, 30},   // CatPistol
+        {520, 600, 45},   // CatRifle
+        {570, 700, 45},   // CatHeavy
+    };
+    return kRows[slideIdx(cat)];
+}
+
+// Per field: the category's own value when its has-flag is set, else the global (index 0) when set, else slideDefault(cat). Never clamps.
+inline uint32_t slideDrawMsFor(const SlideTune& s, Category cat) {
+    const int i = slideIdx(cat);
+    if (s.hasDraw[i]) return s.draw[i];
+    if (s.hasDraw[CatUnknown]) return s.draw[CatUnknown];
+    return slideDefault(cat).drawMs;
+}
+
+inline uint32_t slideStowMsFor(const SlideTune& s, Category cat) {
+    const int i = slideIdx(cat);
+    if (s.hasStow[i]) return s.stow[i];
+    if (s.hasStow[CatUnknown]) return s.stow[CatUnknown];
+    return slideDefault(cat).stowMs;
+}
+
+inline uint32_t grabPctFor(const SlideTune& s, Category cat) {
+    const int i = slideIdx(cat);
+    if (s.hasGrab[i]) return s.grab[i];
+    if (s.hasGrab[CatUnknown]) return s.grab[CatUnknown];
+    return slideDefault(cat).grabPct;
+}
+
+inline SlideRes slideResolve(const SlideTune& s, Category cat) {
+    SlideRes r;
+    r.drawMs = slideDrawMsFor(s, cat);
+    r.stowMs = slideStowMsFor(s, cat);
+    r.grabPct = grabPctFor(s, cat);
+    return r;
 }
 
 } // namespace hs
