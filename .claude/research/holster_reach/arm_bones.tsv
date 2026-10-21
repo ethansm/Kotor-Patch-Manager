@@ -1,0 +1,25 @@
+# Positions: accumulated model space (root N_CommM at origin, rootdummy z ~1.13 M / 1.06 F), NOT local; from k1_port_tex_preview.py mesh nodes_all t (model-space, meters)
+# rest_quat: accumulated model-space world rotation (w,x,y,z), canonical w>=0, from nodes_all R; len_to_child = |child rest - this rest| (meters); NA = no child in chain
+# roles: upper_arm_shoulder=rbicep_g/lbicep_g (shoulder); upper_arm_elbow=RbicepL_g/rbicepL_g (lower upper arm); forearm; hand=skin hand mesh; hand_hook=mesh-less rhand/lhand dummy under hand (weapon hold point)
+# skin: the 4 arm nodes per side are skin bones of the ArmR/ArmL skin nodes (bone_indices contain their node ids; ArmL/ArmR are node_type skin). Hand hook rhand/lhand is NOT a skin bone.
+body	side	bone	parent	rest_x	rest_y	rest_z	len_to_child	rest_quat
+n_commm	R	rbicep_g	rcollar_g	0.176197	-0.022379	1.468155	0.2124	0.958589,-0.015017,-0.283958,-0.015825
+n_commm	R	RbicepL_g	rbicep_g	0.290514	-0.037963	1.289770	0.0868	0.957752,-0.012988,-0.286095,-0.026294
+n_commm	R	Rforearm_g	RbicepL_g	0.346399	-0.033026	1.223581	0.2491	0.966803,-0.054169,-0.246869,-0.037587
+n_commm	R	Rhand_g	Rforearm_g	0.503976	-0.026824	1.030784	0.0921	0.945438,0.023949,-0.272461,-0.177027
+n_commm	R	rhand	Rhand_g	0.519811	-0.032447	0.940237	NA	0.712875,-0.609576,-0.073090,-0.338945
+n_commm	L	lbicep_g	lcollar_g	-0.164214	-0.017455	1.462280	0.2163	0.954874,-0.017087,0.296497,0.003554
+n_commm	L	LbicepL_g	lbicep_g	-0.296001	-0.017726	1.290721	0.0835	0.953355,-0.022239,0.301014,0.003232
+n_commm	L	Lforearm_g	LbicepL_g	-0.347398	-0.032375	1.226612	0.2562	0.965789,-0.067535,0.249770,0.017466
+n_commm	L	Lhand_g	Lforearm_g	-0.503775	-0.031443	1.023648	0.0836	0.948766,-0.010224,0.265798,0.170557
+n_commm	L	lhand	Lhand_g	-0.509687	-0.032446	0.940238	NA	0.699738,-0.649257,0.065294,0.290806
+n_commf	R	rbicep_g	rcollar_g	0.173138	-0.022379	1.348236	0.1799	0.958589,-0.015012,-0.283958,-0.015823
+n_commf	R	rbicepL_g	rbicep_g	0.262206	-0.028909	1.192013	0.0772	0.954875,-0.012811,-0.296497,0.011848
+n_commf	R	rforearm_g	rbicepL_g	0.298511	-0.032618	1.123976	0.2330	0.967448,-0.056632,-0.245156,-0.027120
+n_commf	R	rhand_g	rforearm_g	0.439412	-0.042218	0.938606	0.0842	0.965229,0.081229,-0.246773,-0.028932
+n_commf	R	rhand	rhand_g	0.461646	-0.026654	0.858896	NA	0.706273,-0.655997,-0.104776,-0.244681
+n_commf	L	lbicep_g	lcollar_g	-0.160778	-0.017454	1.344701	0.1857	0.954874,-0.017088,0.296499,0.003554
+n_commf	L	lbicepL_g	lbicep_g	-0.260737	-0.036854	1.189450	0.0787	0.963483,-0.017189,0.267200,0.003030
+n_commf	L	lforearm_g	lbicepL_g	-0.303863	-0.032376	1.123789	0.2437	0.965788,-0.067536,0.249773,0.017465
+n_commf	L	lhand_g	lforearm_g	-0.453866	-0.030044	0.931749	0.0565	0.951735,0.012544,0.240120,0.190749
+n_commf	L	lhand	lhand_g	-0.457712	-0.024539	0.875676	NA	0.687841,-0.635188,-0.042682,0.348697
