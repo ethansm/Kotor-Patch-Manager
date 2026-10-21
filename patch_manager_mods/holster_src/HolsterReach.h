@@ -533,4 +533,25 @@ inline Q reachResidual(const Q& Rres, float t, float ms) {
     return blendQ(Q{ 1, 0, 0, 0 }, Rres, 1.f - s);     // w <= 0 returns identity bit for bit
 }
 
+// HW31b (doc 42c 4.14): reachResidual routed through a via quat. Rres -> viaH -> identity as t runs 0 -> ms, eased by easeSmooth. The
+// via is sign-aligned to Rres (hemisphere lock), so each leg turns <= 90 deg and the join at s = 0.5 is continuous. viaH null or
+// non-finite, a bad ms or a non-finite Rres give reachResidual bit for bit.
+inline Q reachResidualVia(const Q& Rres, const Q* viaH, float t, float ms) {
+    if (!viaH || !qfinite(*viaH) || !qfinite(Rres) || !(ms > 0.f) || !std::isfinite(ms)) return reachResidual(Rres, t, ms);
+    const Q via = qdot(Rres, *viaH) < 0.f ? Q{ -viaH->w, -viaH->x, -viaH->y, -viaH->z } : *viaH;
+    const float s = easeSmooth(t / ms);                 // clamps to [0, 1]; NaN -> 0, t < 0 -> Rres
+    if (s < 0.5f) return blendQ(Rres, via, 2.f * s);
+    return blendQ(via, Q{ 1, 0, 0, 0 }, 2.f * s - 1.f);   // lands on -identity (same rotation) when via.w < 0
+}
+
+// Outside-shoulder lateral offset of the via pose, metres (default for ini reach_via_out_m).
+constexpr float kReachViaOutM = 0.12f;
+// HW31b: lateral bump of the via pose, outM * 16 s^2 (1 - s)^2 with s = clamp01(t / ms) (linear, not eased). 0 at both ends, outM at
+// s = 0.5. Bad ms, non-finite values or outM <= 0 give 0.
+inline float reachViaOffset(float t, float ms, float outM) {
+    if (!(ms > 0.f) || !std::isfinite(ms) || !(outM > 0.f) || !std::isfinite(outM)) return 0.f;
+    const float s = slideClamp01(t / ms);               // NaN -> 0
+    return outM * 16.f * s * s * (1.f - s) * (1.f - s);
+}
+
 }  // namespace hs
