@@ -112,3 +112,6 @@ MCF5 slider merged to KOTOR-II (ff, now repo ~7ca9fdfe), shared headers synced (
 - The combat-hud session committed mod-config 0.3.4-dev (32d1e9dc: Combat Hotbar test modal gear) on top of my 0.3.3-dev (9902c7f9) before my apply, so `kpm_hotswap.py --mod mod-config --apply` installed 0.3.4-dev (f64b39b6), which contains the slider fix (sliderWedgeFor/sliderThumbFor present) plus their gear change. Rollback: `python3 scripts/kpm_hotswap.py --rollback mod-config_swap_20261020_212011`.
 - combat-hotbar 0.11.1-dev is still SWAP (not installed): that session owns its install.
 - Play check: both sliders stay inside the border and the wedge end meets the thumb arrow at 0, mid and max; Snap slider full range incl. the rejected value.
+
+## Update 10-20 21:22 - combat-hotbar 0.11.1-dev INSTALLED (user "install", only staged item)
+- The slider fix was already live (mod-config 0.3.4-dev). The only SWAP left in `kpm_status` was combat-hotbar 0.11.1-dev (combat-hud session's build, pairs with mod-config 0.3.4-dev). Gate PASS, `kpm_hotswap.py --mod combat-hotbar --apply`: LIVE e5afadac. Rollback: `python3 scripts/kpm_hotswap.py --rollback combat-hotbar_swap_20261020_212120`.
