@@ -114,3 +114,9 @@ MCF5 slider merged to KOTOR-II (ff, now repo ~7ca9fdfe), shared headers synced (
 
 ## Update 10-20 21:22 - combat-hotbar 0.11.1-dev INSTALLED (user "install", only staged item)
 - The slider fix was already live (mod-config 0.3.4-dev). The only SWAP left in `kpm_status` was combat-hotbar 0.11.1-dev (combat-hud session's build, pairs with mod-config 0.3.4-dev). Gate PASS, `kpm_hotswap.py --mod combat-hotbar --apply`: LIVE e5afadac. Rollback: `python3 scripts/kpm_hotswap.py --rollback combat-hotbar_swap_20261020_212120`.
+
+## Update 10-20 23:05 - ESCPROBE crash fix prepared (mod-config 0.3.7-dev)
+- Peer kotor-ii-e6 reported a fresh-load crash (page fault in the code cave at 0x09BA0000) from the Esc probe stubs added in 0.3.5/0.3.6-dev (other session's commits 2e2fe1d6, 381c60ea). Verified: 48-byte stub at a 40-byte stride overlapped its neighbours and the cave was 8 bytes short.
+- Fix: `mod_config_src/EscProbeStub.h` (kStubLen/kStride, static_assert, emitStub, caveBytes) + `escprobe_stub_test.cpp`; `installInputProbe` uses it. Repo 86d455bc, KPM cf0306c, `--prepare` SWAP, GATE PASS.
+- LIVE mod-config is still 0.3.6-dev (afa73345) and contains ESCPROBE: do NOT launch the game until 0.3.7-dev is installed (`python3 scripts/kpm_hotswap.py --mod mod-config --apply`, needs user GO) or the probe is rolled back (`kpm_hotswap.py --rollback mod-config_swap_20261020_212011` = 0.3.4-dev, no probe, loses nothing of the slider/gear work).
+- Unexplained: the earlier 21:47 crash (peer's open item); at that time the live build was 0.3.4-dev (no probe).
