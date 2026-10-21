@@ -114,6 +114,7 @@ constexpr uintptr_t ResManFreeData = 0x007120C0;         // CExoResMan::FreeReso
 constexpr uintptr_t ResRelease = 0x007112B0;             // CRes::Release (R1-static, high) fastcall(obj)
 
 constexpr uintptr_t OptionsInGameVtable = 0x009A701C;    // in-game Options panel vtable: ctor 0x8A1170 writes it at 0x8A11BA (static asm); holster-editor filters CSWGuiPanel::Draw on it
+constexpr uintptr_t OptionsInGameKeyHandler = 0x008A2070; // CSWGuiInGameOptions vtable slot 14: thiscall(this, eventId, state) RET 8; case 0x2a closes the GUI (REA ledger options-esc, confirmed)
 
 // ---- 3D character preview (equip3d EquipCharPreview.cpp, live since 10-05; preview-3d provider copies the recipe) ----
 constexpr uintptr_t ClientGetItemById = 0x0073F530;      // CClientExoApp::GetItemByGameObjectID (verified B11a) thiscall(mgr = [[AppGlobal]+4], id) -> client item*

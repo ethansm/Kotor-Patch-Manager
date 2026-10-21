@@ -17,7 +17,7 @@
 //   McTick     CSWGuiPanel::Draw 40EC90, every panel every frame: returns at once unless [ECX] is the Options vtable.
 //   McDestroy  8A1930, the Options scalar deleting dtor, on entry: leave callback, clear engine references, truncate the list, entry
 //              destroy() callbacks, free our controls (never a MUI_NOFREE one).
-// Esc is never intercepted (it closes the whole in-game GUI); its key edge resets a non-MAIN page to MAIN. Reopening the Options screen starts at MAIN.
+// Esc on a non-MAIN page is swallowed at the Options panel's key-handler slot and steps back one page (entry -> list -> main); on MAIN the game handles it. Fallback: the Esc key edge resets a non-MAIN page to MAIN. Reopening the Options screen starts at MAIN.
 //
 // Option rows (AddRow): toggle, stepper and slider (kind 2, MCF5: caption + wedge + frame + mark in one row slot, press / drag on the track sets the
 // value through the page's change handler; a kind this build does not know makes AddRow return < 0 so the caller can fall back to a stepper).
@@ -46,11 +46,10 @@
 #include "ModConfigApi.h"
 #include "MenuUiLogic.h"
 #include "SliderRowLogic.h"   // MCF5: the look-alike slider row maths (kind 2)
-#include "EscProbeStub.h"     // Esc probe stub bytes (host-tested layout)
 #include "SliderArt.h"        // MCF5: frame / wedge / mark art (EmbedTex textures)
 #include "EditKit.h"
 #include "GearButton.h"   // the shared gear: art names + EmbedTex registration (AddGear)
-#include "CodePatch.h"    // the Esc probe wraps one vtable slot of the Options panel
+#include "CodePatch.h"    // Esc: the Options panel's key-handler vtable slot is pointed at escKeyHook (data patch, no code hook)
 
 KP_LOG_PATCH("mod-config");
 
@@ -194,7 +193,7 @@ struct McState {
     int nTg = 0;
     int relayouts = 0;
     bool prevDown = false;
-    bool prevEsc = false;      // Esc key state last tick (edge = reset to MAIN)
+    bool prevEsc = false;      // Esc key state last tick (edge = one page back)
     DWORD leaveAt = 0;         // Back released on LIST: go to MAIN at this tick count (0 = none)
     Rect col[kColumnN] = {};   // vanilla column rects, measured BEFORE the reflow (PaneRect COLUMN)
     bool colOk = false;
@@ -2190,62 +2189,62 @@ const K2MenuUiApi g_muiApi = {sizeof(K2MenuUiApi), &muiNewPage, &muiAddButton, &
 }  // namespace
 
 namespace {
-// ---- Esc probe (0.3.7-dev): slot 14 of the Options vtable turned out to be a per-frame update (its first arg was a frame-time float), not the key
-// handler, so this build puts a generic stub on every other slot (except 0 dtor and 12 Draw). A stub bumps the slot's call counter and a global
-// sequence number, stores the first two stack args, then jumps to the original unchanged (so any calling convention / arg count works). The state is
-// dumped when Esc goes down (McTick) and when the panel is destroyed (McDestroy): the slots ordered by their last call, newest first. The call
-// made right before the GUI closes should be the Esc handler. Rows: `ESCPROBE slot=.. cnt=.. seq=.. a1=.. a2=..`.
-struct ProbeSlot { uint32_t cnt, seq, a1, a2, orig; };
-constexpr int kProbeSlots = 27;
-ProbeSlot g_ps[kProbeSlots];
-uint32_t g_pseq = 0;
-bool g_probeOn = false;
+// ---- Esc steps back one page (0.4.0-dev). The Options panel's vtable slot 14 (gameaddr::OptionsInGameKeyHandler, thiscall(this, eventId, state), RET 8) is its input-event
+// handler: case 0x2a calls FUN_004122a0(1) (closes the whole in-game GUI), 0x28/0x2d/0x2e/0xdf are navigation/click. The slot is pointed at escKeyHook
+// (a data patch of the shared vtable, so mod-config stays hot-swappable). On a non-MAIN page, Esc going down with event 0x2a performs the Back action
+// and is swallowed, so the GUI stays open; on MAIN (and for every other event) the original runs, i.e. vanilla Esc behaviour. The first calls are
+// logged (KEYEV) so the event id of Esc is confirmed from the log; the McTick Esc edge stays as the fallback (reset to MAIN) when the hook did not act.
+constexpr int kVtKeySlot = 14;
+constexpr uint32_t kKeyHandlerOrig = static_cast<uint32_t>(gameaddr::OptionsInGameKeyHandler);
+constexpr int kEscEventId = 0x2a;
+using KeyFn = void(__fastcall*)(void* self, void* edx, int id, int state);
+KeyFn g_keyOrig = nullptr;
+bool g_escHooked = false;
+DWORD g_escConsumedAt = 0;
 
-void probeDump(const char* why) {
-    if (!g_probeOn) return;
-    bool used[kProbeSlots] = {};
-    KP_LOG(chInput, "ESCPROBE dump (%s) seq=%u", why, static_cast<unsigned>(g_pseq));
-    for (int n = 0; n < 12; ++n) {
-        int best = -1;
-        for (int s = 0; s < kProbeSlots; ++s)
-            if (!used[s] && g_ps[s].cnt && (best < 0 || g_ps[s].seq > g_ps[best].seq)) best = s;
-        if (best < 0) break;
-        used[best] = true;
-        KP_LOG(chInput, "ESCPROBE slot=%d cnt=%u seq=%u a1=%08x a2=%08x orig=%08x", best, static_cast<unsigned>(g_ps[best].cnt), static_cast<unsigned>(g_ps[best].seq),
-               static_cast<unsigned>(g_ps[best].a1), static_cast<unsigned>(g_ps[best].a2), static_cast<unsigned>(g_ps[best].orig));
-    }
+bool escHeld() { return guikit::g_gk.gameForeground && guikit::g_gk.gameForeground() && (GetAsyncKeyState(VK_ESCAPE) & 0x8000) != 0; }
+
+// Esc on a mod-config page: close an open modal, else go back one page. False on MAIN (the game handles Esc).
+bool escStepBack() {
+    McState& e = g_mc;
+    if (!e.appended || e.ps.state == mui::MAIN) return false;
+    const int from = curPageId();
+    const int om = e.md.open;
+    if (e.ps.state == mui::ENTRY && e.md.closeFirst()) modalApply(om, false);   // an open modal closes first, the page stays
+    else pageChange(from, e.ps.back(), "esc key");
+    return true;
 }
 
-void installInputProbe() {
-    static bool s_done = false;
-    if (s_done) return;
-    s_done = true;
-    const uintptr_t vt = static_cast<uintptr_t>(kOptionsVtable);
-    uint8_t* cave = codepatch::allocCave(escprobe::caveBytes(kProbeSlots));
-    if (!cave) { KP_LOG(chMain, "ESCPROBE no code cave: probe off"); return; }
-    int patched = 0;
-    for (int s = 1; s < kProbeSlots; ++s) {
-        if (s == 12) continue;   // Draw (per frame, already detoured by us)
-        uint32_t cur = 0;
-        if (!saferead::readAt<uint32_t>(0xE70200u, vt + s * 4, 0, &cur) || cur < 0x401000u || cur > 0x9A0000u) continue;
-        ProbeSlot& ps = g_ps[s];
-        ps.orig = cur;
-        uint8_t* c = cave + s * escprobe::kStride;
-        auto addr = [](const void* a) { return static_cast<uint32_t>(reinterpret_cast<uintptr_t>(a)); };
-        if (escprobe::emitStub(c, addr(&ps.cnt), addr(&g_pseq), addr(&ps.seq), addr(&ps.a1), addr(&ps.a2), addr(&ps.orig)) > escprobe::kStride) { ps.orig = 0; continue; }
-        const uint32_t mine = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(c));
-        if (codepatch::write(vt + s * 4, reinterpret_cast<const uint8_t*>(&mine), 4) == 1) ++patched;
-        else ps.orig = 0;
+void __fastcall escKeyHook(void* self, void* edx, int id, int state) {
+    static volatile LONG s_n = 0;
+    const bool held = escHeld();
+    if (InterlockedIncrement(&s_n) <= 120)
+        KP_LOG(chInput, "KEYEV id=%02x state=%d page=%d esc=%d", id, state, g_mc.appended ? curPageId() : -1, held ? 1 : 0);
+    if (id == kEscEventId && state != 0 && held && escStepBack()) {
+        g_escConsumedAt = GetTickCount();
+        return;   // swallowed: the GUI stays open
     }
-    g_probeOn = patched > 0;
-    KP_LOG(chMain, "ESCPROBE stubs on %d vtable slots at %08x (cave %p)", patched, static_cast<unsigned>(vt), static_cast<void*>(cave));
+    g_keyOrig(self, edx, id, state);
 }
 
+void installEscHook() {
+    if (g_escHooked) return;
+    const uintptr_t at = kOptionsVtable + kVtKeySlot * 4;
+    const uint32_t hook = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(&escKeyHook));
+    uint8_t expect[4], repl[4], seen[4];
+    memcpy(expect, &kKeyHandlerOrig, 4);
+    memcpy(repl, &hook, 4);
+    const int r = codepatch::writeChecked(at, expect, repl, 4, seen);
+    if (r != 1) { KP_LOG(chMain, "ESCHOOK vtable slot %d not patched r=%d seen=%02x%02x%02x%02x", kVtKeySlot, r, seen[3], seen[2], seen[1], seen[0]); return; }
+    g_keyOrig = reinterpret_cast<KeyFn>(kKeyHandlerOrig);
+    g_escHooked = true;
+    KP_LOG(chMain, "ESCHOOK vtable slot %d -> %08x (orig %08x)", kVtKeySlot, hook, kKeyHandlerOrig);
+}
 }  // namespace
 
 // H-O1 8A16FE: Options ctor, layout open, all vanilla InitControl calls done; panel = [ebp-0xAC].
 extern "C" void __cdecl McBind(int panelArg) {
-    installInputProbe();
+    installEscHook();
     static bool s_cfgRead = false;
     if (!s_cfgRead) {   // lazily, on the first Options panel (KPatchInit must not do file I/O)
         s_cfgRead = true;
@@ -2364,9 +2363,10 @@ extern "C" void __cdecl McTick(int panelArg) {
     e.lastFlags48 = flags48;
     // Esc closes the whole in-game GUI, but the hidden panel is not drawn, so a quick Esc, Esc (< kTickGapMs) reopened on the old mod page
     // (live 10-18). Act on the Esc key edge itself: any non-MAIN page goes back to MAIN the moment Esc goes down. Esc is still not swallowed.
-    const bool escDown = guikit::g_gk.gameForeground && guikit::g_gk.gameForeground() && (GetAsyncKeyState(VK_ESCAPE) & 0x8000) != 0;
-    if (escDown && !e.prevEsc) probeDump("esc down");
-    if (escDown && !e.prevEsc && e.appended && e.ps.state != mui::MAIN) resetPages("esc key");
+    const bool escDown = escHeld();
+    if (escDown && !e.prevEsc && e.appended && e.ps.state != mui::MAIN &&
+        !(g_escHooked && static_cast<LONG>(GetTickCount() - g_escConsumedAt) < 300))   // the key hook already stepped back: do not reset on top of it
+        resetPages("esc key");
     e.prevEsc = escDown;
     {   // A long gap used to always mean "the panel was closed". While the panel is still marked shown (flags48 bit 0x40) a game hitch under a held
         // button looks the same, so only a very long gap with no button held counts then (mui::tickResetDue). Every decision past 500 ms is logged.
@@ -2469,7 +2469,6 @@ extern "C" void __cdecl McTick(int panelArg) {
 
 // H-O4 8A1930: Options scalar deleting dtor (ECX = this), on entry, before the children are freed.
 extern "C" void __cdecl McDestroy(int panelArg) {
-    probeDump("panel destroyed");
     if (!g_enabled || !panelArg) return;
     const uintptr_t P = static_cast<uintptr_t>(static_cast<unsigned>(panelArg));
     if (P != g_mc.panel) return;
@@ -2507,7 +2506,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
     embtex::g_log = embedLog;   // gear + slider art textures (EmbedTex) log through the main channel
     guikit::initGuiInput(api, "mod-config");   // optional: the wheel provider (k2.guiinput); a missing provider only means no wheel
-    KP_LOG(chMain, "mod-config 0.3.7-dev loaded (Mod Configuration button under Gameplay; k2.modconfig@1 + k2.menuui@1; config mod_config.ini is read at the first Options panel: enabled debug button_clone reflow desc free_labels)");
+    KP_LOG(chMain, "mod-config 0.4.0-dev loaded (Mod Configuration button under Gameplay; k2.modconfig@1 + k2.menuui@1; config mod_config.ini is read at the first Options panel: enabled debug button_clone reflow desc free_labels)");
     int rcC = -1, rcM = -1;
     if (api && api->struct_size >= offsetof(KPatchApi, require) + sizeof(api->require) && api->provide) {
         rcC = api->provide(K2MODCONFIG_IFACE, K2MODCONFIG_VERSION, &g_mcApi);
