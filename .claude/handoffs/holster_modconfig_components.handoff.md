@@ -76,3 +76,6 @@ LIVE now: holster 0.5.2-dev, holster-editor 0.6.0-dev, preview-3d 0.2.0-dev (rol
 
 ### Still pending from before
 User play rows: FL1-FL4, SL-DRAW/REENTRY/EDGE, SW1/SW2, HW7a-P, UX4, UX5, BR1-3, SC1, RS1, HK1, HD1-3. HW16 (unarmed override, REINSTALL) only if HW7a-P shows gate=1 with style {2,3,4,7,9} on 2712/2714. Page item budget: holster-editor is at 80/80 (no spare). Plan doc: patch_manager_mods/42b_holster_remaining_plan.md; master rows HW12-HW17 INSTALLED. Resume: python3 scripts/plan_manager.py resume "42:HW12".
+
+## State at 10-20 ~22:15 (INSTALLED)
+holster 0.6.0-dev (move_hold_ms, party_combat_hold) + holster-editor 0.6.1-dev (three-layer stance bars) LIVE via batch_swap_20261020_221335 (repo 45e26618/cac3a056, KPM 7a01fc7/a3cff04). Play rows FL5, PC1, UX6 added (1b006fdf). Open: Pause "only when active" interpretation (kept always visible); tune hostile_range/combat_exit_ms if PC1 fails; HW16 only if HW7a-P shows gate=1.
