@@ -673,6 +673,26 @@ class Hw29TwistTests(unittest.TestCase):
         self.assertNotIn(" tw max=", " ".join(H._reach_events(main)))
 
 
+class Hw31ExtractTests(unittest.TestCase):
+    """HW31 (0.18.0-dev): REACH ex= of= tail after sw=; older lines without it are unaffected."""
+
+    EX_REACH = (Hw25HoldTests.HOLD0_REACH + " topo=hinge bk=1 tw=74 sw=41 ex=0.62 of=0.35")
+    EX0_REACH = (Hw25HoldTests.HOLD0_REACH + " topo=hip bk=0 tw=0 sw=12 ex=0.00 of=0.50")
+
+    def test_planted_ex_of_tail_counted(self):
+        _, skipped, main = parse([self.EX_REACH, self.EX0_REACH])
+        self.assertEqual(skipped, [])
+        self.assertEqual(main["reachex"], [(0.62, 0.35), (0.0, 0.5)])
+        self.assertEqual(main["reachtw"], [(74.0, 41.0), (0.0, 12.0)])   # the 0.17 tail is undisturbed
+        out = " ".join(H._reach_events(main))
+        self.assertIn("ex max=0.62 extracting=1 of max=0.50", out)
+
+    def test_planted_negative_old_tail_no_suffix(self):
+        _, _, main = parse([Hw29TwistTests.TW_REACH, Hw24ReachTests.NEW_REACH])
+        self.assertEqual(main["reachex"], [])
+        self.assertNotIn(" ex max=", " ".join(H._reach_events(main)))
+
+
 class Hw16AnimStyleTests(unittest.TestCase):
     """HW16 (0.13.0-dev): ANIMSTYLE counter and the hol/comb tail of the ANIMRES line."""
     ANIMRES_HOL = "ANIMRES self=2a1 id=2714 style=4 gate=1 cc=2 d4=3 e8=4 hol=1 comb=0 tick=1500"

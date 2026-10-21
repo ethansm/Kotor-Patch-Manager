@@ -86,6 +86,7 @@ MAIN_RES = {
     "reach": re.compile(r"\bREACH owner=\w+ w=([\d.]+) reach=([\d.]+) .*?err=(-?[\d.]+) persist=(\d) wrote=(\d)"
                        r"(?: wr=(-?[\d.]+) hg=(\d) f=(-?[\d.]+))?(?: dzA=(-?[\d.]+) fy=(-?[\d.]+) fx=(-?[\d.]+) g=(-?[\d.]+) cap=(-?[\d.]+))?(?: hold=(\d+))?"),
     "reachtw": re.compile(r"\bREACH owner=\w+ w=[\d.]+ .*? bk=\d tw=(-?[\d.]+) sw=(-?[\d.]+)"),   # HW29 (0.17.0-dev): forearm twist and wrist swing written this frame, degrees
+    "reachex": re.compile(r"\bREACH owner=\w+ w=[\d.]+ .*? sw=-?[\d.]+ ex=(-?[\d.]+) of=(-?[\d.]+)"),   # HW31 (0.18.0-dev): extract bump (extractK) and orientation progress (oriF) of the frame; optional
     "reachhold": re.compile(r"\bREACH owner=\w+ hold=(\d+) why=(\w+)"),   # HW25 (0.14.0-dev): a frame where a transient refusal re-applied the last arm
     "reachrefuse": re.compile(r"\bREACH owner=\w+ refuse=(\w+)"),
     "reachtopo": re.compile(r"\bREACH owner=\w+ w=[\d.]+ .*? topo=(\w+) bk=(\d)"),   # HW27 (0.15.0-dev): which reach the mount height chose (hinge / over / hip / thigh), bk=1 = a back bone
@@ -137,7 +138,7 @@ def parse_lines(window):
     recs, skipped = [], []
     main = {"loaded": [], "cap": [], "bonetest": Counter(), "unreadable": 0, "tid": {}, "reload": [], "tune": [], "refuse": {}, "node": Counter(), "mount": Counter(),
             "owner": Counter(), "combc": set(), "partyhold": Counter(), "movehold": 0, "delay": Counter(),
-            "reach": [], "slidecut": Counter(), "resid": [], "reachfound": 0, "reachrefuse": Counter(), "reachhold": Counter(), "reachtw": [],
+            "reach": [], "slidecut": Counter(), "resid": [], "reachfound": 0, "reachrefuse": Counter(), "reachhold": Counter(), "reachtw": [], "reachex": [],
             "reachtopo": Counter(), "slidecfg": [],
             "preview": [], "camnode": [], "wmname": set()}
     for n, raw in window:
@@ -198,6 +199,9 @@ def parse_lines(window):
         m = MAIN_RES["reachtw"].search(text)
         if m:
             main["reachtw"].append((float(m.group(1)), float(m.group(2))))
+        m = MAIN_RES["reachex"].search(text)
+        if m:
+            main["reachex"].append((float(m.group(1)), float(m.group(2))))
         m = MAIN_RES["reach"].search(text)
         if m:
             main["reach"].append((float(m.group(1)), float(m.group(2)), float(m.group(3)), int(m.group(4)), int(m.group(5)))
@@ -511,6 +515,9 @@ def _reach_events(f):
     tws = f.get("reachtw", [])
     if tws:   # HW29 (0.17.0-dev): tw= forearm twist (<= reach_twist_deg), sw= wrist swing (<= reach_wrist_max_deg); twisted = frames with a twist above 1 deg
         line += " tw max=%.0f sw max=%.0f twisted=%d" % (max(x[0] for x in tws), max(x[1] for x in tws), sum(1 for x in tws if x[0] > 1.0))
+    exs = f.get("reachex", [])
+    if exs:   # HW31 (0.18.0-dev): ex= extract bump (0..1, 0 = no lift), of= orientation progress; extracting = frames with a bump above 0.05
+        line += " ex max=%.2f extracting=%d of max=%.2f" % (max(x[0] for x in exs), sum(1 for x in exs if x[0] > 0.05), max(x[1] for x in exs))
     cfg = f.get("slidecfg", [])
     if cfg:
         line += " slide=%s resid_ms=%d wrist_max=%d" % cfg[-1]
