@@ -118,6 +118,9 @@ def _hex(s):
 
 
 def _quat_of(g, name):
+    """The four components, or None for a literal `nan` (the DLL never prints one for bq/mq, but a hand-made line may)."""
+    if g["%s0" % name] is None:
+        return None
     return [float(g["%s%d" % (name, i)]) for i in range(4)]
 
 
@@ -256,7 +259,7 @@ def parse_lines(window):
         if MOUNT_HEAD_RE.search(text):   # HW35: a bad quat or a zero quat (cannot be normalized) is skipped, never raises
             f = FULL_RE["MOUNT"].search(text)
             rec = _record("MOUNT", n, f) if f else None
-            if rec is not None and not all(_norm(q) > 1e-9 for q in _mount_quats(rec)):
+            if rec is not None and not all(q is not None and _norm(q) > 1e-9 for q in _mount_quats(rec)):
                 rec = None
             if rec is None:
                 skipped.append((n, "MOUNT", text))

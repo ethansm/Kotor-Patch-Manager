@@ -105,6 +105,14 @@ static float g_reachWristPct = 1.0f, g_reachWristMax = 60.f, g_reachTwist = 80.f
 // Needs reach_test=1 and reach_carry=1. reach_via_<cat> (0/1, default 0 for every category: untested, play row SM-L12) routes the turn through the weapon axis pointing up.
 static float g_extractBack = 0.20f, g_extractHip = 0.10f;
 static uint8_t g_reachVia[hs::CatCount];
+// reach_exit_sign_<cat> (-1/0/1/auto) and reach_exit_len_<cat> (0..0.5 m / auto) (0.19.0-dev, HW36): per-category override of the HolsterShape exit direction / length at the HW31 exit
+// offset. g_exitSignOv: 0 = auto (the table), 1 = +axis, 2 = -axis, 3 = 0 (no exit offset). g_exitLenSet: the length override is g_exitLenOv.
+static uint8_t g_exitSignOv[hs::CatCount];
+static uint8_t g_exitLenSet[hs::CatCount];
+static float g_exitLenOv[hs::CatCount];
+// dual_stagger_ms (0.19.0-dev, HW33a): the left-hand weapon of a dual wielder starts its draw / stow this many ms after the right-hand one (0 = together, as 0.18).
+// party_jitter_ms: a further deterministic 0..N ms (hash of the owner id) for every owner except the controlled creature, so a party does not move in lockstep.
+static uint32_t g_dualStagger = 60, g_partyJitter = 0;
 // reach_resid_ms (0.15.0-dev, HW26): a carried draw starts with the weapon at its mount orientation and position in the HAND frame; that offset unwinds over this many ms
 // (and a holster lands on the mount the same way) instead of the 15% world blend of the carry weight. 0 = the old world blend. Default hs::kReachResidMs.
 static uint32_t g_reachResidMs = hs::kReachResidMs;
@@ -132,6 +140,7 @@ static void cfgWarn(const char* key, const char* val, const char* why) {
 static bool g_editor = true;            // editor=0: RegisterPreview refuses and the preview fast path never runs (no probe needed)
 static char g_boneName[32] = "pelvis_g";              // attach node name; its ADDRESS becomes the push immediate, so it must stay static
 static LONG g_maxLines = 3000;
+static bool g_logMount = false;         // log_mount=1 (or log_verbose=1): HW35 MOUNT gob= lines (bone / mount / owner facing quats), once per rest, on change, and every 5 s per Gob at most
 static bool g_logVerbose = false;       // log_verbose=1: the old per-sample COMB/ATTACH/ANIMRES/PLACE/PLACEREFUSE volume; 0 = rate-limited (HolsterLogRate.h)
 static hs::KeyCounts<256> g_combKeys, g_attachKeys, g_gateKeys, g_gateWarnKeys;   // quiet mode: per-creature hit counts (COMB, ATTACH)
 static hs::PlaceTable g_placeTab;
@@ -415,6 +424,40 @@ static void readConfig() {
                     if (c != v) cfgWarn(key, val, "outside 0..0.5, clamped");
                 } else cfgWarn(key, val, "not a number, keeping the default");
             }
+            else if (!_strnicmp(key, "reach_exit_sign_", 16) || !_strnicmp(key, "reach_exit_len_", 15)) {   // 0.19.0-dev (HW36): per-category exit offset override
+                const bool isSign = !_strnicmp(key, "reach_exit_sign_", 16);
+                const char* catName = key + (isSign ? 16 : 15);
+                int ci = -1;
+                for (int i = hs::CatUnknown + 1; i < hs::CatCount; ++i)
+                    if (!_stricmp(catName, hs::categoryName(static_cast<hs::Category>(i)))) ci = i;
+                if (ci < 0) cfgWarn(key, val, "unknown category suffix (lightsaber melee qstaff pistol rifle heavy)");
+                else if (!_stricmp(val, "auto")) { if (isSign) g_exitSignOv[ci] = 0; else g_exitLenSet[ci] = 0; }
+                else {
+                    char* end = nullptr;
+                    const float v = strtof(val, &end);
+                    if (end == val || *end != 0 || v != v) cfgWarn(key, val, "not a number or auto, keeping auto");
+                    else if (isSign) {
+                        if (v == 1.f) g_exitSignOv[ci] = 1; else if (v == -1.f) g_exitSignOv[ci] = 2; else if (v == 0.f) g_exitSignOv[ci] = 3;
+                        else cfgWarn(key, val, "need -1, 0, 1 or auto, keeping auto");
+                    } else {
+                        const float c = v < 0.f ? 0.f : (v > 0.5f ? 0.5f : v);
+                        g_exitLenOv[ci] = c;
+                        g_exitLenSet[ci] = 1;
+                        if (c != v) cfgWarn(key, val, "outside 0..0.5, clamped");
+                    }
+                }
+            }
+            else if (!_stricmp(key, "dual_stagger_ms") || !_stricmp(key, "party_jitter_ms")) {   // 0.19.0-dev (HW33a)
+                const bool dual = !_stricmp(key, "dual_stagger_ms");
+                const long hi = dual ? 200 : 60;
+                char* end = nullptr;
+                const long v = strtol(val, &end, 10);
+                if (end != val && *end == 0) {
+                    const uint32_t c = static_cast<uint32_t>(v < 0 ? 0 : (v > hi ? hi : v));
+                    if (dual) g_dualStagger = c; else g_partyJitter = c;
+                    if (v < 0 || v > hi) cfgWarn(key, val, dual ? "outside 0..200, clamped" : "outside 0..60, clamped");
+                } else cfgWarn(key, val, dual ? "not a number, keeping the default 60" : "not a number, keeping the default 0");
+            }
             else if (!_strnicmp(key, "reach_via_", 10)) {   // 0.18.0-dev (HW31): reach_via_<category>=0|1, route the turn through the weapon axis pointing up
                 int ci = -1;
                 for (int i = hs::CatUnknown + 1; i < hs::CatCount; ++i)
@@ -509,6 +552,7 @@ static void readConfig() {
             }
             else if (!_stricmp(key, "editor")) g_editor = flagValue(val);
             else if (!_stricmp(key, "log_verbose")) g_logVerbose = flagValue(val);
+            else if (!_stricmp(key, "log_mount")) g_logMount = flagValue(val);   // 0.19.0-dev (HW35)
             else if (!_stricmp(key, "place_gobvt")) {
                 char* end = nullptr;
                 const unsigned long v = strtoul(val, &end, 16);   // accepts a 0x prefix; blank or junk = no check
@@ -1587,9 +1631,22 @@ static bool reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w,
     }
     // HW31 exit offset: lift the aimed point out of the mount along the weapon's own long axis (world space), by the plan's extract bump. No shape or an unknown exit sign (guns, sabers,
     // staffs): no offset. extractK is 0 outside the carry window and whenever the extract share is 0, so reach_extract_pct_*=0 is the 0.17 path.
-    if (carry && plp && sh && sh->exitSign != 0 && sh->axis <= 2 && plp->extractK > 0.f && mountQ && hs::qfinite(*mountQ)) {
+    // HW36: reach_exit_sign_<cat> / reach_exit_len_<cat> override the table (+-1 applies without a shape too, on axis 1; 0 disables); all auto = the HW31 path.
+    int exSign = sh ? sh->exitSign : 0;
+    float exLen = sh ? sh->exitLen : 0.f;
+    unsigned exAxis = sh ? sh->axis : 1u;
+    if (cat >= 0 && cat < hs::CatCount) {
+        const uint8_t so = g_exitSignOv[cat];
+        if (so == 3) exSign = 0;
+        else if (so == 1 || so == 2) {
+            if (exSign == 0) exLen = sh ? sh->exitLen : 0.15f;
+            exSign = so == 1 ? 1 : -1;
+        }
+        if (g_exitLenSet[cat]) exLen = g_exitLenOv[cat];
+    }
+    if (carry && plp && exSign != 0 && exAxis <= 2 && plp->extractK > 0.f && mountQ && hs::qfinite(*mountQ)) {
         float ax[3] = {0.f, 0.f, 0.f}, wv[3];
-        ax[sh->axis] = static_cast<float>(sh->exitSign) * sh->exitLen;
+        ax[exAxis] = static_cast<float>(exSign) * exLen;
         hs::qrotate(hs::qnormalize(*mountQ), ax, wv);
         for (int i = 0; i < 3; ++i) T[i] += wv[i] * plp->extractK;
     }
@@ -1988,9 +2045,27 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
     // Verdict cache keyed on node + gob + the node's name handle [N+4], so a freed and reused address pair is re-resolved. The full
     // resolve (weapon > type > global, plus the body delta) is cached with the tune sequence it was computed for and redone when it moves.
     // Repoint: both hands share the bone_name node; the hand comes from g_handRing (sticky via hs::resolveLeft when evicted). Drawgate: the node name (lhand) decides.
-    struct Ent { uintptr_t node, gob, handle, model; bool isTarget, left; hs::Category cat; char mname[17], body[17]; LONG seq; hs::Resolved r; hs::GateState gate; hs::Slide slide; uint32_t slFrames = 0, slMaxDt = 0, slPrev = 0; uint8_t graceN = 0; CarryResid cres = {}; };   // graceN: HW25 hard-reset grace, frames held so far; cres: HW26 hand-frame residual of the running carry
+    struct Ent { uintptr_t node, gob, handle, model; bool isTarget, left; hs::Category cat; char mname[17], body[17]; LONG seq; hs::Resolved r; hs::GateState gate; hs::Slide slide; uint32_t slFrames = 0, slMaxDt = 0, slPrev = 0; uint8_t graceN = 0; CarryResid cres = {}; uint32_t dly = 0, mTick = 0, mKey = 0; bool mSeen = false; };   // graceN: HW25 hard-reset grace, frames held so far; cres: HW26 hand-frame residual of the running carry
     static Ent s_cache[128];
     static unsigned s_next = 0;
+    // HW33a: ms to hold back this Gob's draw / stow target. The left-hand weapon of a dual wielder waits dual_stagger_ms behind the right-hand one (another live cache entry of the same
+    // owner on the right hand); a party member that is not the controlled creature adds a deterministic 0..party_jitter_ms from a hash of its server id. 0 = the 0.18 path.
+    auto staggerFor = [&](const Ent* self, uintptr_t owner) -> uint32_t {
+        uint32_t d = 0;
+        if (g_dualStagger > 0 && self->left && owner != 0) {
+            for (const Ent& e : s_cache)
+                if (&e != self && e.node != 0 && e.isTarget && !e.left && e.gate.owner == owner) { d = g_dualStagger; break; }
+        }
+        if (g_partyJitter > 0 && owner != 0 && g_party.n > 0 && owner != g_party.cli[0]) {
+            for (int i = 1; i < g_party.n && i < 3; ++i)
+                if (g_party.cli[i] == owner) {
+                    const uint32_t id = g_party.id[i] ? g_party.id[i] : static_cast<uint32_t>(owner);
+                    d += ((id * 2654435761u) >> 8) % (g_partyJitter + 1u);
+                    break;
+                }
+        }
+        return d;
+    };
     const uintptr_t g = reinterpret_cast<uintptr_t>(gob), n = reinterpret_cast<uintptr_t>(node);
     if (!g || !n) { refuse(PrNull, g, n, 0); return; }
     const uintptr_t h = rdU32(kSitePlace, n, 0x04);
@@ -2103,6 +2178,23 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
         }
         const bool first = ent->gate.hip < 0 || ent->gate.owner != owner;   // not evaluated yet, or a new owner: placed silently, no slide
         const uint32_t now = slideNowMs();
+        // HW33a: fire a due delayed target before any read of ent->slide (grace / active / reset below). dirPre = the direction before it fired, so the SLIDE start bookkeeping below sees the change.
+        // reach_test + reach_carry: pump() would call target() and skip the reach continuity (path / carry / arm weight from the running slide), so a due target is retargeted through
+        // reachRetarget at the same tick pump() would use; pump() then has nothing left to fire. No pending target (every dual_stagger_ms / party_jitter_ms = 0 case) = nothing here runs.
+        const uint8_t dirPre = ent->slide.dir;
+        bool firedEarly = false;
+        if (ent->slide.pending()) {
+            ent->slide.touch(now);   // a stall > 100 ms shifts pendAt like the touch below would (touch twice in a frame is harmless: the second gap is 0)
+            if (g_reachTest && g_reachCarry && (int32_t)(now - ent->slide.pendAt) >= 0) {
+                const uint32_t at = (int32_t)(now - ent->slide.pendAt) > 100 ? now : ent->slide.pendAt;   // pump()'s own late-fire guard
+                const float grabE = static_cast<float>(hs::slideResolve(g_slideTune, cat).grabPct) / 100.f;
+                if (!ent->slide.active(at)) { ent->slide.lockOn = 0; ent->cres = CarryResid(); }
+                hs::reachRetarget(ent->slide, ent->slide.pendWant != 0, at, ent->slide.pendDraw, ent->slide.pendStow, grabE, 0.04f,
+                                  reachExtractPct(reinterpret_cast<uintptr_t>(beh), ent->left, reachIsBackBone(hs::boneNameOf(ent->r.boneIdx ? ent->r.boneIdx : hs::defaultBone(s_tune)))));
+            }
+        }
+        ent->slide.pump(now);   // once per Gob per frame; fires a due delayed target (non-reach path)
+        firedEarly = ent->slide.dir != dirPre;
         // HW25 (reach_test only): an owner / combat read that fails for a few frames while a slide runs must not snap the weapon to the hand. The running slide is
         // kept (touched, no retarget, no reset) for up to 3 frames and the gate is not updated, so recovery sees the same owner and no first-placement snap.
         const bool grace = g_reachTest && hs::slideGraceHold(readable, ent->slide.active(now), ent->graceN);
@@ -2126,20 +2218,29 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
                 ent->slFrames = 0;
             } else {
                 const uint8_t dirBefore = ent->slide.dir;
+                // HW33a stagger: d = 0 is the 0.18 path unchanged. d > 0 arms the target (targetDelayed is idempotent per want); the reachRetarget continuity then runs
+                // when it fires (block above), not when it is armed.
+                const uint32_t d = staggerFor(ent, owner);
                 if (!ent->slide.active(now)) { ent->slide.lockOn = 0; ent->cres = CarryResid(); }   // HW26: a slide that starts from rest picks its hemisphere afresh; only a reversal of a running slide keeps the lock
                 ent->slide.touch(now);
-                if (g_reachTest && g_reachCarry) hs::reachRetarget(ent->slide, !hip, now, sres.drawMs, sres.stowMs, grab, 0.04f,
+                if (d > 0) { if (!ent->slide.pending() || ent->slide.pendWant != (hip ? 0 : 1)) ent->dly = d; ent->slide.targetDelayed(!hip, now, d, sres.drawMs, sres.stowMs); }
+                else if (g_reachTest && g_reachCarry) hs::reachRetarget(ent->slide, !hip, now, sres.drawMs, sres.stowMs, grab, 0.04f,
                                                                   reachExtractPct(reinterpret_cast<uintptr_t>(beh), ent->left, reachIsBackBone(hs::boneNameOf(ent->r.boneIdx ? ent->r.boneIdx : hs::defaultBone(s_tune)))));   // HW25: the reversal keeps path, carry and arm weight continuous
                 else ent->slide.target(!hip, now, sres.drawMs, sres.stowMs);
                 static volatile LONG s_slideLines = 0;
                 const bool logOk = g_onPlace && KP_ENABLED(chPlace, KPLOG_INFO);
-                if (ent->slide.dir != dirBefore) {
+                if (ent->slide.dir != dirBefore || firedEarly) {
                     ent->slFrames = 0;
                     if (ent->slide.len > 0) {
                         ent->slFrames = 1; ent->slMaxDt = 0; ent->slPrev = now;
                         if (logOk && InterlockedIncrement(&s_slideLines) <= 60 && takeLine())
-                            KP_LOG(chPlace, "SLIDE start dir=%s owner=%x gob=%x left=%d from=%.2f ms=%u", ent->slide.dir ? "draw" : "stow", static_cast<unsigned>(owner),
-                                   static_cast<unsigned>(g), ent->left ? 1 : 0, static_cast<double>(ent->slide.from), static_cast<unsigned>(ent->slide.len));
+                        {
+                            char dlyS[24];
+                            dlyS[0] = 0;
+                            if (firedEarly && ent->dly) snprintf(dlyS, sizeof dlyS, " dly=%u", static_cast<unsigned>(ent->dly));   // HW33a: a delayed target fired
+                            KP_LOG(chPlace, "SLIDE start dir=%s owner=%x gob=%x left=%d from=%.2f ms=%u%s", ent->slide.dir ? "draw" : "stow", static_cast<unsigned>(owner),
+                                   static_cast<unsigned>(g), ent->left ? 1 : 0, static_cast<double>(ent->slide.from), static_cast<unsigned>(ent->slide.len), dlyS);
+                        }
                     }
                 } else if (ent->slFrames) {
                     if ((int32_t)(now - ent->slide.t0) < (int32_t)ent->slide.len) {   // still running (not yet at the end tick)
@@ -2219,6 +2320,36 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
                 }
             }
             if (hs::poseSane(rid) && saferead::probeWrite(kSitePlace, reinterpret_cast<void*>(g + 0xA4), sizeof(hs::Pose))) memcpy(reinterpret_cast<void*>(g + 0xA4), &rid, sizeof(hs::Pose));
+        }
+    }
+    // HW35: mount orientation sample for the holster_log_check MOUNT section. Only at rest on the mount (slideF == 0, out == hipPose). Once when the Gob first settles, again when (bone, stem)
+    // changes, otherwise at most every 5000 ms per Gob; never per frame. oq = the parent Gob's world quat (the body facing, not verified live: the checker counts oq=nan as nofacing).
+    if ((g_logMount || g_logVerbose) && slideF <= 0.f && mountBone && KP_ENABLED(chMain, KPLOG_INFO) && hs::qfinite(hipPose.q)) {
+        uint32_t key = 2166136261u;
+        for (const char* c = ent->mname; *c; ++c) key = (key ^ static_cast<unsigned char>(*c)) * 16777619u;
+        for (const char* c = mountBone; *c; ++c) key = (key ^ static_cast<unsigned char>(*c)) * 16777619u;
+        const uint32_t tk = GetTickCount();
+        if (!ent->mSeen || key != ent->mKey || static_cast<int32_t>(tk - ent->mTick) >= 5000) {
+            ent->mSeen = true; ent->mKey = key; ent->mTick = tk;
+            if (takeLine()) {
+                auto fq = [](char* b, size_t nb, const hs::Q& q) {
+                    if (hs::qfinite(q)) snprintf(b, nb, "(%.4f,%.4f,%.4f,%.4f)", static_cast<double>(q.w), static_cast<double>(q.x), static_cast<double>(q.y), static_cast<double>(q.z));
+                    else snprintf(b, nb, "nan");
+                };
+                char sb[56], sm[56], so[56], sr[56];
+                fq(sb, sizeof sb, base.q);
+                fq(sm, sizeof sm, hipPose.q);
+                snprintf(so, sizeof so, "nan");
+                snprintf(sr, sizeof sr, "nan");
+                hs::Pose bodyP;
+                const uintptr_t mpar = rdU32(kSitePlace, reinterpret_cast<uintptr_t>(beh), 0x14);
+                if (mpar && saferead::readAt(kSitePlace, mpar, 0xA4, &bodyP) && hs::poseSane(bodyP) && hs::qfinite(bodyP.q)) {
+                    const hs::Q rel = hs::qnormalize(hs::qmul(hs::reachConj(bodyP.q), hipPose.q));
+                    if (hs::qfinite(rel)) { fq(so, sizeof so, bodyP.q); fq(sr, sizeof sr, rel); }
+                }
+                KP_LOG(chMain, "MOUNT gob=%x stem=%s bone=%s bq=%s mq=%s oq=%s rel=%s cat=%d", static_cast<unsigned>(g), ent->mname[0] ? ent->mname : "-", mountBone, sb, sm,
+                       so, sr, static_cast<int>(cat));
+            }
         }
     }
     if (!g_onPlace) return;
@@ -2615,7 +2746,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     addName(names, sizeof(names), g_onGob, "gob");
     addName(names, sizeof(names), g_onPlace, "place");
     addName(names, sizeof(names), g_onToggle, "toggle");
-    KP_LOG(chMain, "holster 0.17.0-dev loaded (P0 probe + unarmed_anim=%d): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_unarmedAnim ? 1 : 0, g_probe ? 1 : 0,
+    KP_LOG(chMain, "holster 0.19.0-dev loaded (P0 probe + unarmed_anim=%d): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_unarmedAnim ? 1 : 0, g_probe ? 1 : 0,
            names[0] ? names : "none", static_cast<long>(g_maxLines), g_gobEvery, k2addr::get() ? "ok" : "none");
     {
         hs::TuneCfg t;
@@ -2634,6 +2765,20 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
                static_cast<unsigned>(g_hostileBackoffMs), g_delayParty ? 1 : 0, g_flourishDraw ? 1 : 0, slideCfg, static_cast<unsigned>(g_reachResidMs), static_cast<double>(g_reachWristMax), static_cast<double>(g_reachTwist), static_cast<double>(g_extractBack), static_cast<double>(g_extractHip), static_cast<unsigned>(g_moveHoldMs),
                g_partyCombatHold ? 1 : 0, g_reachTest ? 1 : 0, g_reachCarry ? 1 : 0, g_reachHinge ? 1 : 0, g_unarmedAnim ? 1 : 0, (g_boneTest && drawgateMode()) ? 1 : 0);
         KP_LOG(chMain, "PLACEMODE %s (active=%d: needs probe=1 and bone_test=1)", hs::placeModeName(g_placeMode), g_boneTest ? 1 : 0);
+        {
+            char exitCfg[160];   // HW36: only the reach_exit_* overrides that are set, as <category>:<sign>/<len m>; sign + - 0 or a (auto), len a when auto
+            exitCfg[0] = 0;
+            for (int i = hs::CatUnknown + 1; i < hs::CatCount; ++i) {
+                if (!g_exitSignOv[i] && !g_exitLenSet[i]) continue;
+                const size_t en = strlen(exitCfg);
+                char lenS[16];
+                if (g_exitLenSet[i]) snprintf(lenS, sizeof lenS, "%.2f", static_cast<double>(g_exitLenOv[i])); else snprintf(lenS, sizeof lenS, "a");
+                snprintf(exitCfg + en, sizeof exitCfg - en, "%s%s:%s/%s", en ? "," : "", hs::categoryName(static_cast<hs::Category>(i)),
+                         g_exitSignOv[i] == 1 ? "+1" : (g_exitSignOv[i] == 2 ? "-1" : (g_exitSignOv[i] == 3 ? "0" : "a")), lenS);
+            }
+            KP_LOG(chMain, "CONFIG dual_stagger_ms=%u party_jitter_ms=%u log_mount=%d exit=%s", static_cast<unsigned>(g_dualStagger), static_cast<unsigned>(g_partyJitter),
+                   (g_logMount || g_logVerbose) ? 1 : 0, exitCfg[0] ? exitCfg : "auto");
+        }
         KP_LOG(chMain, "CONFIG left_extra_rot=%.1f bone_test_left=%d (ini=%d, active=%d: needs probe=1 and bone_test=1) log_verbose=%d", static_cast<double>(t.leftExtra),
                g_boneLeftCfg ? 1 : 0, g_boneLeftCfg ? 1 : 0, g_boneLeft ? 1 : 0, g_logVerbose ? 1 : 0);
         for (int i = hs::CatUnknown + 1; i < hs::CatCount; ++i)
