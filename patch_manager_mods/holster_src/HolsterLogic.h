@@ -95,6 +95,24 @@ inline bool isLong(Category c, int weaponWield) {
     return c == CatQStaff || c == CatRifle || c == CatHeavy || (c == CatMelee && weaponWield == 3);
 }
 
+// Case-insensitive prefix test with NO boundary check. stemIs() is not usable here: "w_cr" would not match "w_crslash".
+inline bool stemStartsWith(const char* s, const char* prefix) {
+    if (!s || !prefix) return false;
+    while (*prefix) {
+        if (lower(*s) != lower(*prefix)) return false;
+        ++s; ++prefix;
+    }
+    return true;
+}
+
+// HW27 mount sense: a known category, minus creature weapons (w_cr*). Unknown -> not holsterable: no placement, no reach.
+// The w_cr prefix is intentional: it excludes w_crslash, w_crpierce, w_crbite (all CatMelee in the table) and any future stem that
+// starts with w_cr, with no boundary check. Shipped weapon itemclasses never start with w_cr, so no real weapon is lost today.
+inline bool holsterable(Category c, const char* stem) {
+    if (c <= CatUnknown || c >= CatCount) return false;
+    return !stemStartsWith(stem, "w_cr");
+}
+
 // ---- mounts ----
 enum Mount : int { MountNone = -1, MountHipR = 0, MountHipL = 1, MountBackR = 2, MountBackL = 3, MountCount = 4 };
 enum Zone : int { ZoneHip = 0, ZoneBack = 1 };

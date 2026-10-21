@@ -156,6 +156,27 @@ static void testCombFields() {
     KT_CHECK(k.oldKnown && k.old == 5 && k.edge == 0);
 }
 
+// HW27 mount sense (holsterable): CatUnknown and creature weapons (w_cr*) are not holsterable; known categories are.
+static void testHolsterable() {
+    KT_CHECK(!holsterable(CatUnknown, "w_Lghtsbr_001"));
+    KT_CHECK(!holsterable(CatMelee, "w_crslash"));
+    KT_CHECK(!holsterable(CatMelee, "w_crpierce"));
+    KT_CHECK(!holsterable(CatMelee, "w_crbite"));
+    KT_CHECK(!holsterable(CatMelee, "W_CRSLASH_002"));   // case-insensitive, digit suffix
+    KT_CHECK(!holsterable(CatMelee, "w_cr"));            // bare prefix: the test is a prefix test, not stemIs
+    KT_CHECK(holsterable(CatMelee, "w_c"));              // short stem that is not w_cr: holsterable
+    KT_CHECK(holsterable(CatMelee, "xw_crslash"));       // substring match only: not a w_cr stem, holsterable
+    KT_CHECK(holsterable(CatLightsaber, "w_Lghtsbr_001"));
+    KT_CHECK(holsterable(CatMelee, "w_Lngswrd"));
+    KT_CHECK(holsterable(CatQStaff, "w_Qtrstaff"));
+    KT_CHECK(holsterable(CatPistol, "w_BlstrPstl"));
+    KT_CHECK(holsterable(CatRifle, "w_IonRfl"));
+    KT_CHECK(holsterable(CatHeavy, "w_RptnBlstr"));
+    KT_CHECK(holsterable(CatMelee, ""));                 // empty stem, known category
+    KT_CHECK(holsterable(CatMelee, nullptr));            // null-safe
+    KT_CHECK(!holsterable(CatCount, "w_Lngswrd"));       // out of range
+}
+
 int main() {
     testClassifyTable();
     testClassifyCaseAndBoundary();
@@ -167,5 +188,6 @@ int main() {
     testHilt();
     testPlacementDefaults();
     testCombFields();
+    testHolsterable();
     return kt::Report("holster_logic");
 }
