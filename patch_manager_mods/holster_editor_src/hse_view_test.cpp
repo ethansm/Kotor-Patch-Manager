@@ -944,7 +944,7 @@ static void testInspItemBudget() {
     KT_CHECK_EQ(hse::kInspItems, 12);
     KT_CHECK_EQ(hse::kPageItemsBase + hse::kInspItems, 38);
     KT_CHECK(hse::kPageItemsBase + hse::kInspItems <= hse::kPageItemCap);
-    KT_CHECK_EQ(hse::kPageItemCap, 80);   // mod-config kMaxItems 0.1.3+ (the v3 page needs 80: HseLayoutV3.h kPageItemsV3Total)
+    KT_CHECK_EQ(hse::kPageItemCap, 96);   // mod-config kMaxItems 96 (0.3.7-dev+; 80 in 0.1.3-0.3.6): HseView.h kPageItemCap, pinned in common_contract_test.cpp
     KT_CHECK_EQ(hse::kStripRowsInsp, 15);
 }
 
