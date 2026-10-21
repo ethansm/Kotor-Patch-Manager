@@ -5,6 +5,7 @@
 #include "check.h"
 #include <cmath>
 #include <cstdio>
+#include <cstring>
 #include <limits>
 #include <stddef.h>
 #include <stdint.h>
@@ -1145,6 +1146,85 @@ static void testResidualStepBound() {
     KT_CHECK(residualStepMaxDeg(180.f, 130.f) > 25.f);
 }
 
+// ---- elbow pole bias from the target grip (HW29b) ----
+static bool sameBits(const float* a, const float* b) { return std::memcmp(a, b, 3 * sizeof(float)) == 0; }
+static float angleDeg(const float* a, const float* b) {   // unsigned angle between two 3-vectors (lengths need not be 1), degrees
+    const float c[3] = { a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0] };
+    return std::atan2(r3len(c), r3dot(a, b)) * 57.2957795f;
+}
+
+static void testPoleBiasDisabled() {
+    const float pole[3] = {0.2f, -0.3f, -1.f}, grip[3] = {0.5f, 0.8660254f, 0.f};
+    const float nanPole[3] = {kNaN, -0.3f, -1.f}, nanGrip[3] = {0.5f, kNaN, 0.f};
+    float out[3];
+    reachPoleBias(pole, grip, 0.f, 0.f, kPoleBiasDeg, out);            KT_CHECK(sameBits(out, pole));      // amount 0
+    reachPoleBias(pole, grip, 0.f, 1.f, 0.f, out);                     KT_CHECK(sameBits(out, pole));      // maxDeg 0
+    reachPoleBias(pole, grip, kPoleBiasEndF, 1.f, kPoleBiasDeg, out); KT_CHECK(sameBits(out, pole));      // f at the end of the bias
+    reachPoleBias(pole, grip, 0.9f, 1.f, kPoleBiasDeg, out);           KT_CHECK(sameBits(out, pole));      // f past the end
+    reachPoleBias(pole, nanGrip, 0.f, 1.f, kPoleBiasDeg, out);         KT_CHECK(sameBits(out, pole));      // NaN grip
+    reachPoleBias(nanPole, grip, 0.f, 1.f, kPoleBiasDeg, out);         KT_CHECK(sameBits(out, nanPole));   // NaN pole
+}
+
+static void testPoleBiasBoundAndPlane() {
+    int n = 0;
+    while (n < 200) {   // deterministic (pole, grip) pairs; near-zero vectors are redrawn
+        const float p[3] = { rndSigned(), rndSigned(), rndSigned() }, g[3] = { rndSigned(), rndSigned(), rndSigned() };
+        if (r3len(p) < 0.1f || r3len(g) < 0.1f) continue;
+        ++n;
+        const float f = 0.3f * rnd01(), amount = rnd01();   // f in [0, 0.3), amount in [0, 1)
+        float out[3];
+        reachPoleBias(p, g, f, amount, kPoleBiasDeg, out);
+        KT_CHECK(angleDeg(out, p) <= kPoleBiasDeg * 1.0001f);            // never turns past the cap
+        KT_CHECK(angleDeg(out, p) <= angleDeg(p, g) + 1e-4f);            // never past the grip
+        KT_CHECK(angleDeg(out, g) <= angleDeg(p, g) + 1e-4f);            // turns toward the grip, never away
+        KT_CHECK(std::fabs(r3len(out) - 1.f) < 1e-5f);                   // unit
+        const float nrm[3] = { p[1] * g[2] - p[2] * g[1], p[2] * g[0] - p[0] * g[2], p[0] * g[1] - p[1] * g[0] };
+        const float ln = r3len(nrm);
+        if (ln > 1e-3f) KT_CHECK(std::fabs(r3dot(out, nrm)) / ln < 1e-5f);   // in the plane of p and g
+    }
+}
+
+static void testPoleBiasFades() {
+    const float pole[3] = {1.f, 0.f, 0.f}, grip[3] = {0.5f, 0.8660254f, 0.f};   // 60 deg away, past the 20 deg cap
+    float o0[3], o1[3], o2[3], o3[3];
+    reachPoleBias(pole, grip, 0.f, 1.f, kPoleBiasDeg, o0);
+    reachPoleBias(pole, grip, 0.15f, 1.f, kPoleBiasDeg, o1);
+    reachPoleBias(pole, grip, 0.29f, 1.f, kPoleBiasDeg, o2);
+    reachPoleBias(pole, grip, kPoleBiasEndF, 1.f, kPoleBiasDeg, o3);
+    const float a0 = angleDeg(o0, pole), a1 = angleDeg(o1, pole), a2 = angleDeg(o2, pole), a3 = angleDeg(o3, pole);
+    KT_CHECK(closeF(a0, kPoleBiasDeg, 1e-3f));    // full cap at the start of the reach
+    KT_CHECK(closeF(a1, 0.5f * kPoleBiasDeg, 1e-2f));   // half weight at f = 0.15 (easeSmooth(0.5) = 0.5)
+    KT_CHECK(a0 >= a1 && a1 >= a2 && a2 > a3);
+    KT_CHECK(a3 == 0.f);
+}
+
+static void testPoleBiasHingeInvariant() {
+    // the testReachHinge setup
+    const float S[3] = {0.2f, 0.f, 1.4f}, up[3] = {0, 0, 1}, fwd[3] = {0, 1, 0}, ou[3] = {1, 0, 0};
+    const float L1 = 0.30f, L2 = 0.34f;
+    const float mount[3] = {0.12f, -0.12f, 1.38f};
+    const float rest[3] = {0.35f, 0.05f, 1.0f}, rpole[3] = {0.2f, -0.3f, -1.f};
+    const float grip[3] = {-1.f, 0.f, 0.f};   // worst case: the bias pulls the pole inboard, toward the face
+    float biased[3];
+    reachPoleBias(rpole, grip, 0.f, 1.f, kPoleBiasDeg, biased);
+    KT_CHECK(!sameBits(biased, rpole));
+    float T0[3], P0[3], T[3], P[3], E[3], rr = 0.f;
+    KT_CHECK(reachHinge(S, L1, L2, up, fwd, ou, mount, rest, rpole, 0.f, T0, P0));
+    KT_CHECK(reachHinge(S, L1, L2, up, fwd, ou, mount, rest, biased, 0.f, T, P));
+    KT_CHECK(closeV(T, T0, 1e-6f) && closeV(P, P0, 1e-6f));   // restPole is read only past kHingeS2, so the stage 3 hinge output does not move
+    const float Eh[3] = {S[0], S[1], S[2] - L1}, Hh[3] = {S[0], S[1] + L2, S[2] - L1};
+    for (int i = 0; i <= 20; ++i) {
+        const float f = kHingeS3 * i / 20.f;
+        KT_CHECK(reachHinge(S, L1, L2, up, fwd, ou, mount, rest, biased, f, T, P));
+        KT_CHECK(solveTwoBone(S, Eh, Hh, T, E, &rr, P));
+        float es[3];
+        sub3(E, S, es);
+        unit3(es, es);
+        KT_CHECK(es[0] > -0.05f);   // the elbow never swings inboard across the face (kHingeMinOut)
+        KT_CHECK(es[2] > -0.05f);   // nor drops below horizontal
+    }
+}
+
 int main() {
     testArcQuatMapsDirections();
     testArcQuatParallelAndAntiParallel();
@@ -1200,5 +1280,9 @@ int main() {
     testWristDeltaHintSweep();
     testResidualDecay();
     testResidualStepBound();
+    testPoleBiasDisabled();
+    testPoleBiasBoundAndPlane();
+    testPoleBiasFades();
+    testPoleBiasHingeInvariant();
     return kt::Report("holster_reach");
 }

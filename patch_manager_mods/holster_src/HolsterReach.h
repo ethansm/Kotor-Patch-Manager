@@ -169,6 +169,37 @@ inline bool reachPole(const ReachStyle& st, float u, bool left, const Q& bodyQ, 
     return true;
 }
 
+// HW29b: bias the elbow pole toward `grip` (unit world direction the caller derives from the target hand orientation) early in the
+// reach only. weight = amount * (1 - easeSmooth(f / kPoleBiasEndF)); the pole turns toward grip by min(angle, maxDeg) * weight degrees
+// about cross(poleIn, grip). amount <= 0, f >= kPoleBiasEndF, maxDeg <= 0, or any non-finite input -> out = poleIn bit for bit.
+constexpr float kPoleBiasEndF = 0.30f;
+constexpr float kPoleBiasDeg = 20.f;     // ini reach_pole_bias_deg
+inline void reachPoleBias(const float* poleIn, const float* grip, float f, float amount, float maxDeg, float* out) {
+    float r[3] = { poleIn[0], poleIn[1], poleIn[2] };   // the unchanged pole
+    const float a = slideClamp01(amount);
+    const bool allFinite = std::isfinite(f) && std::isfinite(amount) && std::isfinite(maxDeg) && std::isfinite(poleIn[0]) && std::isfinite(poleIn[1]) &&
+                           std::isfinite(poleIn[2]) && std::isfinite(grip[0]) && std::isfinite(grip[1]) && std::isfinite(grip[2]);
+    const float lp = r3len(poleIn), lg = r3len(grip);
+    if (allFinite && a > 0.f && maxDeg > 0.f && f < kPoleBiasEndF && lp > 1e-6f && lg > 1e-6f) {
+        float p[3], g[3];
+        for (int i = 0; i < 3; ++i) { p[i] = poleIn[i] / lp; g[i] = grip[i] / lg; }
+        // cross(p, g) = sin(angle) * axis; a parallel or antiparallel grip has nothing to turn toward
+        const float c[3] = { p[1] * g[2] - p[2] * g[1], p[2] * g[0] - p[0] * g[2], p[0] * g[1] - p[1] * g[0] };
+        const float sc = r3len(c);
+        if (sc >= 1e-6f) {
+            const float angle = std::atan2(sc, r3dot(p, g)) * 57.2957795f;   // degrees, 0..180
+            const float weight = a * (1.f - easeSmooth(f / kPoleBiasEndF));
+            const float turn = (angle < maxDeg ? angle : maxDeg) * weight;
+            const float axis[3] = { c[0] / sc, c[1] / sc, c[2] / sc };
+            float rot[3];
+            qrotate(qaxis(axis, turn), p, rot);
+            const float lr = r3len(rot);
+            if (lr > 1e-6f && std::isfinite(lr)) for (int i = 0; i < 3; ++i) r[i] = rot[i] / lr;
+        }
+    }
+    for (int i = 0; i < 3; ++i) out[i] = r[i];
+}
+
 // Local rotation that makes a bone's world orientation change by deltaWorld, given its parent's world orientation and its current
 // local orientation: parent * newLocal = deltaWorld * parent * curLocal. A non-finite input leaves the bone where it is.
 inline Q reachDeltaToLocal(const Q& parentWorld, const Q& deltaWorld, const Q& curLocal) {
