@@ -20,6 +20,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -33,6 +34,7 @@
 #include "GuiKit.h"
 #include "ModConfigApi.h"
 #include "EnemyStripLogic.h"
+#include "SliderArt.h"
 
 KP_LOG_PATCH("enemy-effects-strip");
 
@@ -901,6 +903,14 @@ void drawPost(const K2HudContext* ctx) {
 }
 
 KP_CHANNEL(chCfg, "config");
+void embedLog(const char* fmt, ...) {   // EmbedTex.h's logger-neutral sink
+    char buf[512];
+    va_list ap;
+    va_start(ap, fmt);
+    vsnprintf(buf, sizeof buf, fmt, ap);
+    va_end(ap);
+    KP_LOGV(chCfg, KPLOG_INFO, "EMBED %s", buf);
+}
 
 // Creates one hidden, click-through label from `tmpl` (draw order = creation order). HUD labels (onHud, template LBL_QUEUE1) are appended to
 // the panel here; settings-page preview labels (template LBL_TITLE in the Options ctor) are NOT: mod-config lists them through AddCustom, and
@@ -1158,38 +1168,40 @@ void refreshRow(int s) {
 // page enter. Dragging is polled here: a press edge inside the track rect starts it, the cursor x then sets the value on the 0.05 grid until the
 // button is released. No hover sound or highlight: the fill turns brighter while dragging.
 Wid g_slGroove[esl::S_Count], g_slFill[esl::S_Count], g_slThumb[esl::S_Count];
-const float TintSlider[3] = { 0.10f, 0.75f, 0.65f };
-const float TintSliderHot[3] = { 0.30f, 0.95f, 0.85f };
 void clearSliderWids() { for (int s = 0; s < esl::S_Count; ++s) { g_slGroove[s] = Wid(); g_slFill[s] = Wid(); g_slThumb[s] = Wid(); } }   // the labels belong to the provider and die with the panel
 bool inTrack(const esl::RowRect& r, int x, int y) { return r.w > 0 && r.h > 0 && x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h; }
 
 void refreshSlider(int s) {
     if (!g_mcMenu.ok() || !g_pg.page || g_pg.fill[s] < 0) return;
     const esl::RowRect& tr = g_pg.track[s];
-    void* overImg = imageCached(TexOverlay);
     Wid& gr = g_slGroove[s];
     Wid& f = g_slFill[s];
     Wid& th = g_slThumb[s];
     if (tr.w <= 0 || !gr.c || !f.c || !th.c) return;
-    const int ih = tr.h * 24 / 100 < 4 ? 4 : tr.h * 24 / 100;
-    const esl::RowRect inner = { tr.x + 6, tr.y + (tr.h - ih) / 2, tr.w - 12 > 0 ? tr.w - 12 : 1, ih };
-    const int fillPx = esl::sliderFillPx(esl::settingFloat(g_edit, s), inner.w);
     guikit::setClickable(gr.c, false);   // the labels must never swallow a click meant for the rows around them
     guikit::setClickable(f.c, false);
     guikit::setClickable(th.c, false);
-    void* pillImg = imageCached(TexPill);
-    if (pillImg) { widFill(gr, pillImg); widTint(gr, TintTeal); widAlpha(gr, 1.0f); widRect(gr, tr); }
-    if (!overImg) return;
-    if (fillPx > 0) {
-        widFill(f, overImg); widTint(f, g_pg.drag == s ? TintSliderHot : TintSlider); widAlpha(f, 1.0f); widRect(f, { inner.x, inner.y, fillPx, inner.h });
-    } else {
-        widRect(f, { inner.x, inner.y, 1, 1 });   // an empty bar: a 1 px dot rather than a zero-size label
+    // The holster editor's slider art (frame outline, wedge, marker): embedded textures that exist a few ticks after the page opens. Until then the
+    // groove is the plain pill and the fill / marker labels stay empty.
+    void* frameImg = hse::sliderArtImage(hse::SA_Frame);
+    void* wedgeImg = hse::sliderArtImage(hse::SA_Wedge);
+    void* markImg = hse::sliderArtImage(hse::SA_Mark);
+    if (!frameImg || !wedgeImg || !markImg) {
+        void* pillImg = imageCached(TexPill);
+        if (pillImg) { widFill(gr, pillImg); widTint(gr, TintTeal); widAlpha(gr, 1.0f); widRect(gr, tr); }
+        return;
     }
-    int tx = inner.x + fillPx - 3;
-    if (tx < inner.x) tx = inner.x;
-    if (tx + 6 > inner.x + inner.w) tx = inner.x + inner.w - 6;
-    const int thh = tr.h * 56 / 100 < 6 ? 6 : tr.h * 56 / 100;
-    widFill(th, overImg); widTint(th, TintWhite); widAlpha(th, 1.0f); widRect(th, { tx, tr.y + (tr.h - thh) / 2, 6, thh });
+    const esl::RowRect inner = { tr.x + 6, tr.y, tr.w - 12 > 0 ? tr.w - 12 : 1, tr.h };
+    const int fillPx = esl::sliderFillPx(esl::settingFloat(g_edit, s), inner.w);   // the same mapping the drag uses (sliderHundredths)
+    const int markW = 8;
+    int center = inner.x + fillPx;
+    if (center < tr.x + markW / 2) center = tr.x + markW / 2;
+    if (center > tr.x + tr.w - markW / 2) center = tr.x + tr.w - markW / 2;
+    widFill(gr, frameImg); widAlpha(gr, 1.0f); widRect(gr, tr);
+    widFill(f, wedgeImg); widAlpha(f, 1.0f);
+    const int wedgeW = center - tr.x;   // the wedge is the track cut at the marker centre: its tall end always meets the marker
+    widRect(f, wedgeW > 0 ? esl::RowRect{ tr.x, tr.y, wedgeW, tr.h } : esl::RowRect{ -9999, -9999, 1, 1 });
+    widFill(th, markImg); widAlpha(th, 1.0f); widRect(th, { center - markW / 2, tr.y, markW, tr.h });
 }
 
 void refreshSaveButton() {
@@ -1267,6 +1279,7 @@ void KPATCH_CALL cbBuild(void* panel, void*) {
     const uint32_t page = ui->NewPage(panel, "Enemy Effects Strip");
     if (!page) { KP_LOGV(chCfg, KPLOG_WARN, "page BUILD: NewPage failed"); return; }
     g_edit = g_saved;   // the page always starts from the saved values
+    KP_LOGV(chCfg, KPLOG_INFO, "slider art textures ensure=%d", hse::sliderArtEnsure() ? 1 : 0);
     bool ok = true;
     for (int s = 0; s < esl::S_Count; ++s) {
         char b[64];
@@ -1275,8 +1288,8 @@ void KPATCH_CALL cbBuild(void* panel, void*) {
             g_pg.text[s] = ui->AddButton(page, b, kRowDesc[s]);
         } else if (esl::settingIsSlider(s)) {
             g_pg.text[s] = ui->AddLabel(page, b);
-            g_pg.prev[s] = ui->AddLabel(page, "");   // the groove (draw order: groove, fill, marker)
-            g_pg.fill[s] = ui->AddLabel(page, "");
+            g_pg.fill[s] = ui->AddLabel(page, "");   // draw order: wedge, frame outline, marker
+            g_pg.prev[s] = ui->AddLabel(page, "");   // the groove / frame
             g_pg.thumb[s] = ui->AddLabel(page, "");
             if (g_pg.prev[s] < 0 || g_pg.fill[s] < 0 || g_pg.thumb[s] < 0) ok = false;
         } else {
@@ -1369,6 +1382,7 @@ bool leftDown() {
 void KPATCH_CALL cbTick(uint32_t page, void*) {
     if (!g_pg.panel || page != g_pg.page || !g_mcMenu.ok()) return;
     saferead::beginScope();
+    embtex::heal();   // the slider art textures survive a GL reset
     const K2MenuUiApi* ui = g_mcMenu.p;
     for (int s = 0; s < esl::S_Count; ++s) {
         if (esl::settingIsSlider(s)) continue;   // the track is driven by the polled press / drag below
@@ -1458,6 +1472,7 @@ extern "C" {
 
 __declspec(dllexport) void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
+    embtex::g_log = embedLog;
     g_hud.init(api, "enemy-effects-strip");
     loadIni();
     g_saved = currentRaw(g_cfg.maxIcons);
@@ -1465,7 +1480,7 @@ __declspec(dllexport) void __cdecl KPatchInit(const KPatchApi* api) {
     g_pg.reset();
     g_mcCfg.init(api);
     g_mcMenu.init(api);
-    KP_LOGV(chMain, KPLOG_INFO, "enemy-effects-strip 0.4.5-dev loaded (Enabled=%d Verbose=%d MaxIcons=%d)", g_cfg.enabled ? 1 : 0, g_cfg.verbose ? 1 : 0, g_cfg.maxIcons);
+    KP_LOGV(chMain, KPLOG_INFO, "enemy-effects-strip 0.4.6-dev loaded (Enabled=%d Verbose=%d MaxIcons=%d)", g_cfg.enabled ? 1 : 0, g_cfg.verbose ? 1 : 0, g_cfg.maxIcons);
     g_hud.add(K2HUD_BUILD, 300, onHudBuild);
     g_hud.add(K2HUD_TARGET_MENU_POST, 100, onTargetMenuPost);
     g_hud.connect();
