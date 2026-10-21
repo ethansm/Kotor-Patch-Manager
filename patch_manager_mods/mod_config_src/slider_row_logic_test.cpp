@@ -139,6 +139,28 @@ static void test_inner_inside_frame() {
     KT_CHECK(small.x >= 2 && small.y >= 2 && small.w > 0 && small.h > 0);
 }
 
+static void test_wedge_ends_at_thumb_centre() {
+    const Rect fr = {100, 20, 640, 80};
+    const Rect in = sliderInner(fr), tr = sliderTravelOf(fr);
+    const RowCfg c = cfg(0, 100, 1, 0);
+    for (int v = 0; v <= 100; ++v) {
+        const Rect w = sliderWedgeFor(c, fr, v), th = sliderThumbFor(c, fr, v);
+        KT_CHECK(th.x >= in.x && th.x + th.w <= in.x + in.w);        // thumb box never leaves the inner run
+        if (v == 0) { KT_CHECK_EQ(w.w, 0); continue; }                // hidden at the minimum
+        KT_CHECK(w.x == in.x && w.x + w.w <= in.x + in.w);
+        KT_CHECK_EQ(w.x + w.w, th.x + th.w / 2);                      // the wedge ends exactly at the thumb centre, at every value
+    }
+    KT_CHECK_EQ(sliderThumbFor(c, fr, 0).x, in.x);                   // box flush with the inner left at min, inner right at max
+    KT_CHECK_EQ(sliderThumbFor(c, fr, 100).x + sliderThumbFor(c, fr, 100).w, in.x + in.w);
+    KT_CHECK_EQ(sliderValueAt(c, tr, tr.x), 0);                      // pointer at the travel ends is min / max
+    KT_CHECK_EQ(sliderValueAt(c, tr, tr.x + tr.w), 100);
+    const RowCfg snap = cfg(5, 95, 5, 50);                            // the Snap row: max reachable, 95 is the last notch
+    KT_CHECK_EQ(sliderValueAt(snap, tr, tr.x + tr.w), 95);
+    const Rect small = {0, 0, 24, 16};                                // narrower than a thumb: falls back, no overflow
+    const Rect w2 = sliderWedgeFor(c, small, 100), t2 = sliderThumbFor(c, small, 100);
+    KT_CHECK(w2.w >= 0 && t2.w >= 0 && t2.w <= small.w);
+}
+
 static void test_drag() {
     const Rect tr = {0, 0, 100, 32};
     const RowCfg c = cfg(0, 100, 1, 0);
@@ -172,6 +194,7 @@ int main() {
     test_pos_roundtrip();
     test_wedge_and_thumb();
     test_inner_inside_frame();
+    test_wedge_ends_at_thumb_centre();
     test_drag();
     return kt::Report("slider_row_logic_test");
 }

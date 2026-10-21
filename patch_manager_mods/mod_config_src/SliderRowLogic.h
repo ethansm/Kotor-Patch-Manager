@@ -40,6 +40,14 @@ inline Rect sliderInner(const Rect& frame) {
     return Rect{frame.x + ix, frame.y + iy, frame.w - 2 * ix, frame.h - 2 * iy};
 }
 
+// The thumb centre travels the inner run minus half a thumb at each end, so the thumb box stays inside the frame at both ends AND its centre is
+// where the wedge ends (the wedge's tall end sits under the thumb). Value mapping, thumb and wedge all use this run. Too narrow to inset: unchanged.
+inline Rect sliderTravel(const Rect& inner, int thumbW = kSliderThumbW) {
+    if (inner.w <= thumbW) return inner;
+    return Rect{inner.x + thumbW / 2, inner.y, inner.w - (thumbW / 2) * 2, inner.h};
+}
+inline Rect sliderTravelOf(const Rect& frame) { return sliderTravel(sliderInner(frame)); }
+
 inline bool sliderHit(const SliderGeom& g, int px, int py) { return rectHas(g.track, px, py); }
 
 inline void sliderRange(const RowCfg& c, int& lo, int& hi) {
@@ -88,6 +96,29 @@ inline Rect sliderThumbRect(const RowCfg& c, const Rect& track, int value, int t
     if (x < track.x) x = track.x;
     if (x > track.x + track.w - w) x = track.x + track.w - w;
     return Rect{x, track.y, w, track.h};
+}
+
+// The wedge for the look-alike row: starts at the inner left edge and ends at the thumb centre (travel pos + half a thumb); 0 wide at the minimum.
+inline Rect sliderWedgeFor(const RowCfg& c, const Rect& frame, int value, int thumbW = kSliderThumbW) {
+    const Rect in = sliderInner(frame), tr = sliderTravel(in, thumbW);
+    int lo, hi;
+    sliderRange(c, lo, hi);
+    int w = 0;
+    if (rowClamp(c, value) != lo) {
+        w = sliderPosOf(c, tr.w, value) + (tr.x - in.x);
+        if (w > in.w) w = in.w;
+    }
+    return Rect{in.x, frame.y, w, frame.h};
+}
+
+// The thumb for the look-alike row: kSliderThumbW wide, centred on the travel position, so its box spans the inner run exactly from min to max.
+inline Rect sliderThumbFor(const RowCfg& c, const Rect& frame, int value, int thumbW = kSliderThumbW) {
+    const Rect in = sliderInner(frame), tr = sliderTravel(in, thumbW);
+    const int w = thumbW < in.w ? thumbW : in.w;
+    int x = tr.x + sliderPosOf(c, tr.w, value) - w / 2;
+    if (x < in.x) x = in.x;
+    if (x > in.x + in.w - w) x = in.x + in.w - w;
+    return Rect{x, in.y, w, in.h};
 }
 
 // ---- drag state (one slider can be held at a time) ----

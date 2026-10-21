@@ -1,4 +1,4 @@
-// ModConfig.cpp -- mod-config 0.3.2-dev (Steam build): the "Mod Configuration" provider on the in-game Options screen (doc 42,
+// ModConfig.cpp -- mod-config 0.3.3-dev (Steam build): the "Mod Configuration" provider on the in-game Options screen (doc 42,
 // plan .claude/plans/holster_editor_options.md, card c18). Provides two interfaces declared in ModConfigApi.h:
 //   k2.modconfig@1  K2ModConfigApi  Register / Unregister: a mod adds one entry (name, description, build/enter/leave/tick/destroy).
 //   k2.menuui@1     K2MenuUiApi     NewPage / AddButton / AddLabel / AddCustom / Clicked / SetText / SetRect / SetDesc / PaneRect / Control /
@@ -855,20 +855,18 @@ void embedLog(const char* fmt, ...) {   // embtex::g_log sink
     KP_LOG(chMain, "EMBED %s", buf);
 }
 
-int sliderWedgeW(const RowX& r) { return mui::sliderPosOf(r.cfg, mui::sliderInner(r.track).w, r.cfg.value); }
+int sliderWedgeW(const RowX& r) { return mui::sliderWedgeFor(r.cfg, r.track, r.cfg.value).w; }
 
 // Puts the wedge and the mark of a laid-out slider row (slot >= 0, track set) on their rects for the current value. The wedge is 0 px wide at the
 // minimum: it is parked 1 px wide and hidden there (a label cannot be 0 wide).
 void sliderPlaceParts(int k, RowX& r) {
     if (r.cfg.kind != mui::RK_SLIDER || r.slot < 0 || r.item[2] < 0 || r.item[3] < 0) return;
-    const mui::Rect in = mui::sliderInner(r.track);   // wedge and thumb stay inside the frame stroke
-    mui::Rect w = mui::sliderWedgeRect(r.cfg, in, r.cfg.value);
-    w.y = r.track.y;   // the wedge texture already keeps clear of the stroke vertically: full frame height
-    w.h = r.track.h;
+    // wedge and thumb stay inside the frame stroke; the wedge ends at the thumb centre (the wedge texture keeps clear of the stroke vertically)
+    mui::Rect w = mui::sliderWedgeFor(r.cfg, r.track, r.cfg.value);
     const bool wedgeOn = w.w > 0;
     if (w.w < 1) w.w = 1;
     setPartRect(k, r.item[2], w);
-    setPartRect(k, r.item[3], mui::sliderThumbRect(r.cfg, in, r.cfg.value));
+    setPartRect(k, r.item[3], mui::sliderThumbFor(r.cfg, r.track, r.cfg.value));
     if (entryShown(k)) setShown(g_mc.items[k][r.item[2]], wedgeOn);
 }
 
@@ -1159,7 +1157,7 @@ bool sliderTick(bool down, bool haveCur, int x, int y) {
         if (haveCur) {
             bool moved = false;
             const int row = e.sd.row;
-            const int v = mui::sliderMove(e.sd, r->cfg, mui::sliderInner(r->track), x, &moved);
+            const int v = mui::sliderMove(e.sd, r->cfg, mui::sliderTravelOf(r->track), x, &moved);
             if (mui::sliderAskHandler(moved, v, e.sdAsked)) {
                 e.sdAsked = v;
                 sliderCommit(k, row, v);
@@ -1174,7 +1172,7 @@ bool sliderTick(bool down, bool haveCur, int x, int y) {
     for (int i = 0; i < rp.n; ++i) {
         RowX& r = rp.rows[i];
         if (r.slot < 0 || !mui::sliderGrabbable(r.cfg.kind, r.cfg.flags) || !mui::rectHas(r.track, x, y)) continue;
-        const int v = mui::sliderBegin(e.sd, i, r.cfg, mui::sliderInner(r.track), x);
+        const int v = mui::sliderBegin(e.sd, i, r.cfg, mui::sliderTravelOf(r.track), x);
         e.sdSlot = k;
         e.sdAsked = v;
         e.dragging = true;
@@ -2428,7 +2426,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
     embtex::g_log = embedLog;   // gear + slider art textures (EmbedTex) log through the main channel
     guikit::initGuiInput(api, "mod-config");   // optional: the wheel provider (k2.guiinput); a missing provider only means no wheel
-    KP_LOG(chMain, "mod-config 0.3.2-dev loaded (Mod Configuration button under Gameplay; k2.modconfig@1 + k2.menuui@1; config mod_config.ini is read at the first Options panel: enabled debug button_clone reflow desc free_labels)");
+    KP_LOG(chMain, "mod-config 0.3.3-dev loaded (Mod Configuration button under Gameplay; k2.modconfig@1 + k2.menuui@1; config mod_config.ini is read at the first Options panel: enabled debug button_clone reflow desc free_labels)");
     int rcC = -1, rcM = -1;
     if (api && api->struct_size >= offsetof(KPatchApi, require) + sizeof(api->require) && api->provide) {
         rcC = api->provide(K2MODCONFIG_IFACE, K2MODCONFIG_VERSION, &g_mcApi);
