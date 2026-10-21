@@ -39,6 +39,22 @@ Characters visibly stow weapons out of combat. ALL lightsabers on the hip, other
 | HW17 | Install HW12-HW15 as one hot-swap (0.5.2-dev), play rows FL1-FL4, SL-*, SW1/SW2, HW7a-P | HW15 | user GO | INSTALLED | c8a6eac1 | installed as 0.5.2-dev; play rows FL1-4 SL-* SW1/2 HW7a-P pending (user) |
 | HW18 | Arm-reach spike recon (procedural IK, no clips): engine point that writes node transforms after animation sampling and before skinning; arm bone names and lengths on N_CommM / N_CommF | HW17 | - | DONE | | PASS w/ open Q3. Bone pose is part-local P+0x14 (quat)/P+0x08 (pos), NOT Gob+0xA4/B0. Writer chain Gob::Animate 0x4E1D40 (vt+0x14 slot 0x98B5E0; 5-byte CALL seam 0x481073). World recomputed on demand by 0x457510 so children follow. Skin consumer unlocated (0x45C810/0x4626D0). Write P+0x14 directly, never SetPartLocalPosition (freezes via +0x48). Files .claude/research/holster_reach/ |
 | HW19 | Arm-reach probe build: `HolsterReach.h` (two-bone solver + blend, pure, tested) and a probe-gated detour that bends ONE arm toward the existing hip pose; log-only elsewhere (SWAP) | HW18 | user GO | DONE | c4f385dd | probe built holster 0.7.0-dev, GATE PASS, not installed; awaits install GO + play row RCH1; fallback seams in .claude/research/holster_reach/hw19_fallback_seams.md |
+| HW19b | Both arms, elbow pole by category and mount height, REACH log summary (0.7.1-dev) | HW19 | - | INSTALLED | 7e617a64 | superseded by later builds |
+| HW20 | Draw / Holster toggle under the editor 3D view (holster 0.8.0-dev + holster-editor 0.6.2-dev) | HW19b | - | INSTALLED | 56988b2d | play row DRW1 pending (mod-config 96-item cap) |
+| HW21 | reach_carry: weapon rides the hand, arc over the shoulder (0.9.0-dev); HW21b phased carry, reach_grab_pct (0.9.1-dev) | HW20 | - | INSTALLED | 1051cb11 | superseded by later builds |
+| HW22 | Wrist rotation, reach follows the carry arc, per-type bulge (0.10.0-dev) | HW21 | - | INSTALLED | 36516e26 | superseded by HW23 |
+| HW23 | reach_hinge: hinged back-mount reach (L pose, 90 deg pitch, parked upper arm) (0.11.0-dev) | HW22 | - | INSTALLED | 916c54b1 | LIVE; play row SM-L0 (42c) |
+| HW24 | Smooth holstering: instrumentation (see 42c) | HW23 | - | TODO | | `42c_smooth_holstering_master_plan.md` 4.1 |
+| HW25 | Smooth holstering: reversal / reset continuity, carry easing (see 42c) | HW24 | - | TODO | | 42c 4.2; installs with HW24 as 0.12.0-dev |
+| HW26 | Smooth holstering: hemisphere lock, hand-frame residual (see 42c) | HW25 | - | TODO | | 42c 4.3 |
+| HW27 | Smooth holstering: holsterable filter, geometry topology, per-category hinge params (see 42c) | HW24 | - | TODO | | 42c 4.4 |
+| HW28 | Smooth holstering: per-category slide and grab timing (see 42c) | HW25 | - | TODO | | 42c 4.5; HW28b cap raise GATED |
+| HW29 | Smooth holstering: swing/twist split (see 42c) | HW26 | - | TODO | | 42c 4.6 |
+| HW30 | Smooth holstering: stem shape table, doc 42 sec 4 K2 numbers (see 42c) | - | - | TODO | | 42c 4.7 |
+| HW31 | Smooth holstering: extraction + orientation schedule (see 42c) | HW29, HW30 | - | TODO | | 42c 4.8 |
+| HW32 | Smooth holstering: offline sweep clearance check (see 42c) | HW30 | - | TODO | | 42c 4.9 |
+| HW33 | Smooth holstering: two-handed flag, dual stagger, support hand gated (see 42c) | HW25 | - | TODO | | 42c 4.10 |
+| HW34 | Smooth holstering: saber blade gate (see 42c) | play SM-L9 | user GO | GATED | | 42c 4.10 / 5 |
 
 ## Sub-plan A — HW3 offline preview (no game, no install)
 Tool: `patch_manager_mods/k1_port/k1_port_tex_preview.py` (numpy + PIL software rasteriser; `mesh` runs in the k1port venv, renders in `.venv`). The `helmets` command already places one model at a named hook node of another; `weapons` reuses `HelmetKit.parts`, `hook_transform` and `compose_transforms`.
