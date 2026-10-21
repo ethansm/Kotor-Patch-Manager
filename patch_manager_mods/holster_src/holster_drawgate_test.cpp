@@ -212,6 +212,45 @@ static void testModelIdentity() {
     KT_CHECK(sameWeaponModel(0u, 0u));                      // unreadable matches unreadable only
 }
 
+// r3 section 4 vectors (HW25 item 3), in order. Rows 12-14 are one sequence on the same h; each row sets h to its input first.
+static void testSlideGrace() {
+    uint8_t h = 0;
+    h = 2; KT_CHECK(slideGraceHold(true, true, h, 3) == false && h == 0);
+    h = 0; KT_CHECK(slideGraceHold(true, false, h, 3) == false && h == 0);
+    h = 0; KT_CHECK(slideGraceHold(false, false, h, 3) == false && h == 0);
+    h = 0; KT_CHECK(slideGraceHold(false, true, h, 3) == true && h == 1);
+    h = 1; KT_CHECK(slideGraceHold(false, true, h, 3) == true && h == 2);
+    h = 2; KT_CHECK(slideGraceHold(false, true, h, 3) == true && h == 3);
+    h = 3; KT_CHECK(slideGraceHold(false, true, h, 3) == false && h == 0);
+    h = 2; KT_CHECK(slideGraceHold(false, false, h, 3) == false && h == 0);
+    h = 0; KT_CHECK(slideGraceHold(false, true, h, 0) == false && h == 0);
+    h = 0; KT_CHECK(slideGraceHold(false, true, h, 1) == true && h == 1);
+    h = 1; KT_CHECK(slideGraceHold(false, true, h, 1) == false && h == 0);
+    h = 0; KT_CHECK(slideGraceHold(false, true, h) == true && h == 1);
+    h = 1; KT_CHECK(slideGraceHold(true, true, h) == false && h == 0);
+    h = 0; KT_CHECK(slideGraceHold(false, true, h) == true && h == 1);
+}
+
+// r4 section 4 case list (HW25 item 5), rows 1-16 in order. Row 9 and rows 12-15 are the solved==0 and carry-bit cases.
+static void testReachHoldAllowed() {
+    KT_CHECK(reachHoldAllowed(ReachHoldPose, 0x01, 0, 0.5f, 3));
+    KT_CHECK(reachHoldAllowed(ReachHoldQuatRead, 0x03, 2, 0.5f, 3));
+    KT_CHECK(!reachHoldAllowed(ReachHoldSolve, 0x03, 3, 0.5f, 3));
+    KT_CHECK(!reachHoldAllowed(ReachHoldSolve, 0x03, 4, 0.5f, 3));
+    KT_CHECK(!reachHoldAllowed(ReachHoldNone, 0x03, 0, 0.5f, 3));
+    KT_CHECK(!reachHoldAllowed(ReachHoldSolve, 0x03, 0, 0.0f, 3));
+    KT_CHECK(!reachHoldAllowed(ReachHoldSolve, 0x03, 0, -0.5f, 3));
+    KT_CHECK(!reachHoldAllowed(ReachHoldSolve, 0x03, 0, NAN, 3));
+    KT_CHECK(!reachHoldAllowed(ReachHoldPose, 0x00, 0, 0.5f, 3));
+    KT_CHECK(!reachHoldAllowed(ReachHoldQuatRead, 0x03, 0, 0.5f, 0));
+    KT_CHECK(reachHoldAllowed(ReachHoldSolve, 0x03, 0, 0.5f, 3, true));
+    KT_CHECK(!reachHoldAllowed(ReachHoldSolve, 0x01, 0, 0.5f, 3, true));
+    KT_CHECK(!reachHoldAllowed(ReachHoldSolve, 0x02, 0, 0.5f, 3, true));
+    KT_CHECK(reachHoldAllowed(ReachHoldSolve, 0x07, 0, 0.5f, 3, true));
+    KT_CHECK(!reachHoldAllowed(ReachHoldSolve, 0x04, 0, 0.5f, 3, true));
+    KT_CHECK(reachHoldAllowed(ReachHoldSolve, 0x01, 0, 0.5f, 3, false));
+}
+
 int main() {
     testTruthTable();
     testFlourishWindowArg();
@@ -224,5 +263,7 @@ int main() {
     testHandFromNode();
     testHoldActive();
     testModelIdentity();
+    testSlideGrace();
+    testReachHoldAllowed();
     return kt::Report("holster_drawgate");
 }

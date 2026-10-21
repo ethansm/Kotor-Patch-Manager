@@ -90,6 +90,30 @@ inline bool gateUpdate(GateState& s, uintptr_t owner, bool hip) {
     return true;
 }
 
+// Hard-reset grace for the draw slide (HW25 item 3, r3 section 3). While the owner or combat flag is unreadable and a slide runs, hold the
+// running slide for up to maxFrames frames instead of snapping to the hand. held = frames already held (caller-owned, 0 = none).
+// true = keep the running slide (caller touches the slide, no target, no reset). Readable, at rest, or expired: held = 0, false.
+inline bool slideGraceHold(bool readable, bool slideActive, uint8_t& held, uint8_t maxFrames = 3) {
+    if (readable || !slideActive || held >= maxFrames) { held = 0; return false; }
+    ++held;
+    return true;
+}
+
+// Reach refusal kinds (HW25 item 5, r4 section 1). Only the transient sites hold: quat read (reachReadQ), pose (parB/parF), two-bone solve.
+// Every other refusal (owner gone, findslot, nobone, cooldown, stale, slide end, structural, carry-invalid) passes ReachHoldNone and is never held.
+enum ReachHoldKind : int { ReachHoldNone = 0, ReachHoldQuatRead = 1, ReachHoldPose = 2, ReachHoldSolve = 3 };
+
+// true = re-apply the last solved arm (hold this frame) instead of refusing. solved = write bits of the last successful solve
+// (bicep=1, forearm=2, wrist=4; 0 = nothing to hold). w = slide weight, must be > 0 (NaN refused). holdN = consecutive held frames.
+// maxHold = cap (3, r4 section 3). carry = the carried weapon needs the bicep AND forearm writes, so (solved & 3) must be 3.
+inline bool reachHoldAllowed(ReachHoldKind kind, uint8_t solved, uint8_t holdN, float w, uint8_t maxHold, bool carry = false) {
+    if (kind != ReachHoldQuatRead && kind != ReachHoldPose && kind != ReachHoldSolve) return false;
+    if (!(w > 0.0f)) return false;
+    if (solved == 0) return false;
+    if (carry && (solved & 3) != 3) return false;
+    return holdN < maxHold;
+}
+
 // Same world position (metres) and orientation (degrees, q and -q equal) within tolerance.
 inline bool poseBaseEqual(const Pose& a, const Pose& b, float posTol, float angTolDeg) {
     for (int i = 0; i < 3; ++i)
