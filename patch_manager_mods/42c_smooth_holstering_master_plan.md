@@ -56,7 +56,7 @@ Both reviews and the earlier Sonnet comparison missed: the reversal jump with ar
 
 | Id | Batch | Deps | Owner gate | Status | Commit | Next |
 |---|---|---|---|---|---|---|
-| HW24 | Instrument: log checker parses `wr= hg= f=` + wrist bit; REACH adds `dzA fy fx g resid`; `SLIDE cut` on resets; flip dot (no behaviour change) | HW23 | - | TODO | | section 4.1 |
+| HW24 | Instrument: log checker parses `wr= hg= f=` + wrist bit; REACH adds `dzA fy fx g resid`; `SLIDE cut` on resets; flip dot (no behaviour change) | HW23 | - | DONE | 8c9c2b00 | logging only; committed hunks-only (peer HW16 hunks left in tree); RESID is its own line; not installed |
 | HW25 | Continuity: reversal keeps path position + arm weight, hard-reset grace (3 frames), ease draw-carry start and stow-carry end | HW24 | - | TODO | | section 4.2 |
 | HW26 | Orientation: hemisphere lock (slide + wrist), hand-frame residual decay replaces the 10% world blend, interim `reach_wrist_max_deg=120` | HW25 | - | TODO | | section 4.3 |
 | HW27 | Mount sense: `holsterable()` (no `w_cr*`, no CatUnknown), `reachTopology()` from placed point (height, depth, side), recentred hip band, per-category hinge out params | HW24 | - | TODO | | section 4.4 |
