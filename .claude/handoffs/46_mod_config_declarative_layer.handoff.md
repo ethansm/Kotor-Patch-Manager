@@ -120,3 +120,7 @@ MCF5 slider merged to KOTOR-II (ff, now repo ~7ca9fdfe), shared headers synced (
 - Fix: `mod_config_src/EscProbeStub.h` (kStubLen/kStride, static_assert, emitStub, caveBytes) + `escprobe_stub_test.cpp`; `installInputProbe` uses it. Repo 86d455bc, KPM cf0306c, `--prepare` SWAP, GATE PASS.
 - LIVE mod-config is still 0.3.6-dev (afa73345) and contains ESCPROBE: do NOT launch the game until 0.3.7-dev is installed (`python3 scripts/kpm_hotswap.py --mod mod-config --apply`, needs user GO) or the probe is rolled back (`kpm_hotswap.py --rollback mod-config_swap_20261020_212011` = 0.3.4-dev, no probe, loses nothing of the slider/gear work).
 - Unexplained: the earlier 21:47 crash (peer's open item); at that time the live build was 0.3.4-dev (no probe).
+
+## Update 10-20 22:55 - mod-config 0.3.7-dev INSTALLED (Esc probe crash fixed)
+- `kpm_hotswap.py --mod mod-config --apply`: LIVE cca903f7. Rollback to 0.3.6-dev (crashes): `kpm_hotswap.py --rollback mod-config_swap_20261020_225536`; no-probe 0.3.4-dev: `--rollback mod-config_swap_20261020_212011`.
+- First launch check: game reaches the world; `kotor2_logs.py check mod-config_log.txt --new` shows `ESCPROBE stubs on N vtable slots` (N ~25) and no crash. Open Options once, press Esc, then read `ESCPROBE dump` rows.
