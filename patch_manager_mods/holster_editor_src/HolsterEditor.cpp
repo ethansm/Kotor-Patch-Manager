@@ -1,4 +1,4 @@
-// HolsterEditor.cpp -- holster-editor 0.6.1-dev (Steam build): a HOOKLESS consumer of the mod-config provider (k2.modconfig@1, k2.menuui@1).
+// HolsterEditor.cpp -- holster-editor 0.6.2-dev (Steam build): a HOOKLESS consumer of the mod-config provider (k2.modconfig@1, k2.menuui@1).
 // (doc 42 HW-EDIT, plan .claude/plans/holster_editor_options.md; page rebuild: .claude/plans/holster_editor_layout_v3.md, holster_hw_ux3_build.md Wave B.)
 //
 // mod-config owns everything about the Options screen: the hooks, the root "Mod Configuration" button, the list page, control cloning,
@@ -234,7 +234,7 @@ struct Editor {
     bool colorBad = false;             // the selected-frame tint could not be applied on a button: lit selectors show >marks< instead
     bool valueColorBad = false;        // ... on a value label: changed values are not amber
     bool selKeyValid = false;
-    int selKey[17] = {};
+    int selKey[18] = {};
     char noteShown[48] = {0};
     char statusShown[100] = {0};
     bool artDone = false;              // slider / reset art applied (or given up)
@@ -242,6 +242,7 @@ struct Editor {
     bool paneWarned = false;
 
     int stanceIdx = 0;
+    bool drawn = false;                // the Draw / Holster toggle (holster 0.8.0-dev SetPreviewDraw): the preview weapons are heading to the hand; reset with the page
     bool paused = false;               // the preview animation is frozen (SetAnimPaused); every PlayAnim / rebuild resumes it in the provider, so those clear this too
 
     p3d::Drag drag;
@@ -428,7 +429,7 @@ void KPATCH_CALL cbBeforeFree(uint32_t token, void* user) {
 // Buttons of the page; every other item is a label (PI_VIEW is the 3D view control).
 bool itemIsButton(int i) {
     using namespace hse;
-    if (i == PI_MEMBER_PREV || i == PI_MEMBER_NEXT || i == PI_SAVE || i == PI_REVERT || i == PI_RESET_SCOPE || i == PI_REMOVE || i == PI_VIEW_RESET || i == PI_VIEW_FLIP || i == PI_PAUSE) return true;
+    if (i == PI_MEMBER_PREV || i == PI_MEMBER_NEXT || i == PI_SAVE || i == PI_REVERT || i == PI_RESET_SCOPE || i == PI_REMOVE || i == PI_VIEW_RESET || i == PI_VIEW_FLIP || i == PI_PAUSE || i == PI_DRAW) return true;
     if (i >= PI_WEAPON && i < PI_WEAPON + kV3Weapons) return true;
     if (i >= PI_BONE && i < PI_BONE + kV3Bones) return true;
     if (i >= PI_SCOPE && i < PI_SCOPE + kV3Scopes) return true;
@@ -485,6 +486,7 @@ const char* itemInitText(int i, char* buf, int cap) {
     if (i == PI_VIEW_FLIP) return "<>";
     if (i >= PI_STANCE && i < PI_STANCE + kV3Stances) return kStanceList[i - PI_STANCE].label;
     if (i == PI_PAUSE) return "Pause";
+    if (i == PI_DRAW) return "Draw";
     if (i == PI_LEGEND) return helpLine();
     for (int g = 0; g < kV3Groups; ++g) {
         if (i == PI_GROUP + g * 2) return kGroup[g];
@@ -523,6 +525,7 @@ const char* itemTip(int i) {
     if (i == PI_VIEW_FLIP) return "Flip view: turn the character around.";
     if (i >= PI_STANCE && i < PI_STANCE + kV3Stances) return "Preview this stance.";
     if (i == PI_PAUSE) return "Freeze the preview animation to check clipping. Click again to play.";
+    if (i == PI_DRAW) return "Draw: the preview weapons slide to the hand, with the arm reaching (reach_test) as in the game. Click again to holster them.";
     for (int g = 0; g < kV3Groups; ++g)
         if (i == PI_GROUP + g * 2 + 1) return "Put these three values back to what they were when the edit opened (or after the last Save).";
     for (int r = 0; r < kV3Rows; ++r)
@@ -566,6 +569,7 @@ void KPATCH_CALL cbBuild(void* panel, void*) {
     g_ed.panel = panel;
     const bool p3 = g_p3.connect(), hol = g_hol.connect();
     KP_LOG(chMain, "BUILD providers preview3d=%d holster=%d", p3 ? 1 : 0, hol ? 1 : 0);
+    if (hol && g_hol.canDraw()) (void)g_hol.h->SetPreviewDraw(0);   // a fresh page starts holstered (the toggle state lives in holster until its previews are gone)
 
     // An older mod-config has neither SetDescSplit nor the 80-item page cap (no cap query in the ABI; SetDescSplit shipped with the cap, 0.1.3): the page
     // only says so. A refused AddX further down ends the same way.
@@ -635,8 +639,9 @@ void KPATCH_CALL cbBuild(void* panel, void*) {
         char buf[64];
         const char* text = itemInitText(i, buf, sizeof buf);
         g_ed.item[i] = itemIsButton(i) ? ui->AddButton(g_ed.page, text, itemIsLeftTip(i) ? "" : itemTip(i)) : ui->AddLabel(g_ed.page, text);
-        if (g_ed.item[i] < 0) failedAt = i;
+        if (g_ed.item[i] < 0 && i != hse::PI_DRAW) failedAt = i;   // the Draw toggle is the last item: a mod-config with the old 80-item cap just leaves it out
     }
+    if (g_ed.item[hse::PI_DRAW] < 0) KP_LOGV(chMain, KPLOG_WARN, "BUILD WARN no Draw / Holster toggle: mod-config page cap below %d (needs the mod-config build after 0.3.7-dev)", hse::kPageItemsV3Total);
     int built = 0;
     for (int i = 0; i < hse::kPageItemsV3; ++i) if (g_ed.item[i] >= 0) ++built;
     for (int r = 0; r < hse::kV3Rows; ++r) if (g_ed.wedge[r] >= 0) ++built;
@@ -1469,8 +1474,8 @@ void refreshSelectors(Editor& e, bool force) {
     const int boneIdx = editing ? hse::boneIndexOf(e.editInfo.bone) : -1;
     int typeSum = 0;
     for (const char* c = e.editInfo.type; *c; ++c) typeSum = typeSum * 31 + static_cast<unsigned char>(*c);
-    const int key[17] = {editing ? e.editHand : -2, boneIdx, e.editScope, e.stanceIdx, e.weaponMode, e.regGob[0] ? 1 : 0, e.regGob[1] ? 1 : 0, e.lay.weapon[0].w,
-                         e.lay.bone[0].w, e.lay.scope[0].w, e.lay.stance[0].w, e.lay.modeBtn[0].w, e.colorBad ? 1 : 0, typeSum, editing ? 1 : 0, e.member, e.paused ? 1 : 0};
+    const int key[18] = {editing ? e.editHand : -2, boneIdx, e.editScope, e.stanceIdx, e.weaponMode, e.regGob[0] ? 1 : 0, e.regGob[1] ? 1 : 0, e.lay.weapon[0].w,
+                         e.lay.bone[0].w, e.lay.scope[0].w, e.lay.stance[0].w, e.lay.modeBtn[0].w, e.colorBad ? 1 : 0, typeSum, editing ? 1 : 0, e.member, e.paused ? 1 : 0, e.drawn ? 1 : 0};
     if (!force && e.selKeyValid && !memcmp(key, e.selKey, sizeof key)) return;
     memcpy(e.selKey, key, sizeof key);
     e.selKeyValid = true;
@@ -1500,6 +1505,11 @@ void refreshSelectors(Editor& e, bool force) {
         const bool lit = e.paused;
         fitButton(selPx(e, e.lay.pause, lit), lit ? "Play" : "Pause", fit, sizeof fit);
         setSel(e, hse::PI_PAUSE, lit, fit);
+    }
+    {   // Draw / Holster toggle: caption names the next action, lit while the weapons are drawn
+        const bool lit = e.drawn;
+        fitButton(selPx(e, e.lay.draw, lit), lit ? "Holster" : "Draw", fit, sizeof fit);
+        setSel(e, hse::PI_DRAW, lit, fit);
     }
     for (int i = 0; i < kModeCount; ++i) {
         const bool lit = e.weaponMode == i;
@@ -1632,7 +1642,8 @@ void applyLayout(Editor& e) {
     for (int i = 0; i < hse::kPageItemsV3; ++i) {
         const bool emptyHint = (itemIsHintBox(i) || itemIsHintText(i)) && (all[i].w <= 0 || all[i].h <= 0);   // no room for the left / right description box
         const bool hiddenRemove = i == hse::PI_REMOVE && !(e.removeMenu.open && e.mode == MODE_WEAPON);   // the Remove button exists only while the "..." menu is open
-        placeBox(e.item[i], (emptyHint || hiddenRemove) ? editkit::Box{-9999, -9999, 0, 0} : all[i]);
+        const bool hiddenDraw = i == hse::PI_DRAW && !g_hol.canDraw();   // an older holster has no SetPreviewDraw: no toggle
+        placeBox(e.item[i], (emptyHint || hiddenRemove || hiddenDraw) ? editkit::Box{-9999, -9999, 0, 0} : all[i]);
     }
     for (int r = 0; r < hse::kV3Rows; ++r) {   // the wedge is the track cut at the thumb centre (nothing at 0: parked off screen like the hidden items)
         const editkit::Box t = L.rows[r].track, th = L.rows[r].thumb;
@@ -2683,6 +2694,13 @@ void tickBody(Editor& e) {
                     KP_LOGV(chView, KPLOG_WARN, "PAUSE unavailable (provider too old)");
                 }
             }
+            // Draw / Holster: the preview weapons slide to the hand (and the arm reaches) or back to the mount (holster 0.8.0-dev SetPreviewDraw)
+            if (clk[hse::PI_DRAW] && g_hol.canDraw()) {
+                e.drawn = !e.drawn;
+                (void)g_hol.h->SetPreviewDraw(e.drawn ? 1 : 0);
+                KP_LOG(chView, "DRAW %s", e.drawn ? "draw" : "holster");
+                refreshSelectors(e, true);
+            }
             // Weapon buttons: a click on the other hand switches the edit (after the unsaved-edits guard)
             for (int h = 0; h < hse::kV3Weapons; ++h) {
                 if (!clk[hse::PI_WEAPON + h] || !e.regGob[h] || (e.mode == MODE_WEAPON && e.editHand == h)) continue;
@@ -2984,7 +3002,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     g_clients.init(api);
     embedgui::g_log = embedLog;
     embtex::g_log = embedLog;
-    KP_LOG(chMain, "holster-editor 0.6.1-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
+    KP_LOG(chMain, "holster-editor 0.6.2-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
            static_cast<unsigned>(sizeof kHseViewGui));
     g_clients.poll();   // the first poll() of every client tries to connect
     // This DLL is hookless: there is no frame hook to retry mod-config / menuui from later, so a missing provider now means no page this run.

@@ -64,7 +64,11 @@ typedef struct K2HolsterApi {
     void    (KPATCH_CALL *Revert)(void);                                               /* overlay back to the saved values */
     void    (KPATCH_CALL *ResetScope)(void);                                           /* delete this scope's keys, then save */
     void    (KPATCH_CALL *EndEdit)(void);                                              /* drop the overlay */
+    int32_t (KPATCH_CALL *SetPreviewDraw)(int32_t drawn);                              /* holster 0.8.0-dev: 1 = the preview weapons slide to the hand (draw), 0 = back to the mount (stow); returns the state now shown. Field newer than K2HOLSTER_V1_BASE_SIZE: check struct_size */
 } K2HolsterApi;
+
+/* struct_size of the first 16-pointer table (everything before SetPreviewDraw): the minimum a consumer accepts. */
+#define K2HOLSTER_V1_BASE_SIZE (16 * sizeof(void*))
 
 #pragma pack(pop)
 
@@ -81,7 +85,8 @@ typedef struct K2HolsterApi {
 #ifdef K2HOLSTER_STATIC_ASSERT
 K2HOLSTER_STATIC_ASSERT(offsetof(K2HolsterApi, RegisterPreview) == sizeof(void*), "K2HolsterApi.RegisterPreview offset");
 K2HOLSTER_STATIC_ASSERT(offsetof(K2HolsterApi, EndEdit) == 15 * sizeof(void*), "K2HolsterApi.EndEdit offset");
-K2HOLSTER_STATIC_ASSERT(sizeof(K2HolsterApi) == 16 * sizeof(void*), "K2HolsterApi size");
+K2HOLSTER_STATIC_ASSERT(offsetof(K2HolsterApi, SetPreviewDraw) == K2HOLSTER_V1_BASE_SIZE, "K2HolsterApi.SetPreviewDraw offset");
+K2HOLSTER_STATIC_ASSERT(sizeof(K2HolsterApi) == 17 * sizeof(void*), "K2HolsterApi size");
 #undef K2HOLSTER_STATIC_ASSERT
 #endif
 
@@ -106,7 +111,7 @@ struct Client {
     }
 
     static bool usable(const K2HolsterApi* p) {
-        return p && p->struct_size >= sizeof(K2HolsterApi) && p->RegisterPreview && p->UnregisterPreview && p->BeginEdit && p->NudgeWorld &&
+        return p && p->struct_size >= K2HOLSTER_V1_BASE_SIZE && p->RegisterPreview && p->UnregisterPreview && p->BeginEdit && p->NudgeWorld &&
                p->NudgeLocal && p->SetValues && p->CycleBone && p->GetEdit && p->GetMountWorld && p->GetNodeWorld && p->SetScope && p->Save &&
                p->Revert && p->ResetScope && p->EndEdit;
     }
@@ -129,6 +134,9 @@ struct Client {
         if (onConnect) onConnect(true, "connected");
         return true;
     }
+
+    // True when the provider is new enough for the preview draw / stow toggle (holster 0.8.0-dev+).
+    bool canDraw() const { return connected && h && h->struct_size >= sizeof(K2HolsterApi) && h->SetPreviewDraw; }
 
     void poll() { if (!connected && (pollCount++ & 255) == 0) connect(); }
     bool ok() const { return connected && h; }

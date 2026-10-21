@@ -50,11 +50,12 @@ static int collect(const PageLayoutV3& L, Item* o) {
     Box raw[kPageItemsV3];
     int n = pageBoxesV3(L, raw);
     for (int i = 0; i < n; ++i) o[i] = Item{raw[i], 0, 0, -1};
-    // order: left 19 (0..18), view area 13 (19..31), inspector 37 (32..68), then the "..." toggle (69, left column), the right description box (70, 71), Remove (72, inspector), Pause (73, view area)
+    // order: left 19 (0..18), view area 13 (19..31), inspector 37 (32..68), then the "..." toggle (69, left column), the right description box (70, 71), Remove (72, inspector), Pause (73, view area), Draw (74, view area)
     for (int i = 19; i < 32; ++i) o[i].zone = 1;
     for (int i = 32; i < PI_RESET_SCOPE; ++i) o[i].zone = 2;
     o[PI_RESET_SCOPE].zone = 0;
-    o[PI_PAUSE].zone = 1;                             // the Pause button sits in the view area (full-width bar above the stance rows)
+    o[PI_PAUSE].zone = 1;                             // the Pause button sits in the view area (left half of the bar above the stance rows)
+    o[PI_DRAW].zone = 1;                              // the Draw / Holster toggle: right half of that bar
     o[PI_REMOVE].zone = 2;                            // the Remove button sits in the inspector zone, under the note
     // inspector: groupLabel0, groupReset0, groupLabel1, groupReset1 (32..35), then rows 5 boxes each (36..65), note 66
     for (int r = 0; r < kV3Rows; ++r) {
@@ -207,9 +208,9 @@ static void testGeometries() {
         // item budget
         Box all[kPageItemsV3 + 8];
         KT_CHECK_EQ(pageBoxesV3(L, all), kPageItemsV3);
-        KT_CHECK_EQ(kPageItemsV3, 74);
-        KT_CHECK(kPageItemsV3 + kV3Rows <= 80);
-        KT_CHECK(kPageItemsV3 == 19 + 13 + 37 + 1 + 2 + 1 + 1);
+        KT_CHECK_EQ(kPageItemsV3, 75);
+        KT_CHECK(kPageItemsV3 + kV3Rows <= 96);
+        KT_CHECK(kPageItemsV3 == 19 + 13 + 37 + 1 + 2 + 1 + 1 + 1);
     }
 }
 
@@ -400,6 +401,7 @@ static void testViewVsPreview() {
     Box all[kPageItemsV3 + 8]; pageBoxesV3(O, all);
     for (int i = 19; i < 32; ++i) KT_CHECK(all[i].x + all[i].w <= po.x - kV3ViewGap);   // view area items (see collect())
     KT_CHECK(all[PI_PAUSE].x + all[PI_PAUSE].w <= po.x - kV3ViewGap);                  // the Pause button too
+    KT_CHECK(all[PI_DRAW].x + all[PI_DRAW].w <= po.x - kV3ViewGap);                    // and the Draw button
     for (int i = 32; i < PI_RESET_SCOPE; ++i) KT_CHECK(!overlaps(all[i], O.view));   // the "..." toggle sits in the left column
     KT_CHECK(!overlaps(all[PI_RESET_SCOPE], O.view));
     KT_CHECK(!overlaps(all[PI_REMOVE], O.view));
@@ -753,9 +755,9 @@ static void testReal3840x1600() {
     // the view stays left of the preview pane, never overlapping the inspector
     KT_CHECK(L.view.x + L.view.w < g.preview.x);
     KT_CHECK(L.view.x > L.status.x + L.status.w);
-    // item budget: 74 boxes + 6 wedges (the cap is 80)
-    KT_CHECK_EQ(kPageItemsV3Total, 80);
-    KT_CHECK(kPageItemsV3Total <= 80);
+    // item budget: 75 boxes + 6 wedges (the cap is 96 in the mod-config build after 0.3.7-dev)
+    KT_CHECK_EQ(kPageItemsV3Total, 81);
+    KT_CHECK(kPageItemsV3Total <= 96);
     Box all[kPageItemsV3];
     KT_CHECK_EQ(pageBoxesV3(L, all), kPageItemsV3);
 
@@ -862,7 +864,7 @@ static void testRoomyButtons3840() {
     KT_CHECK(L.legend.y + L.legend.h <= g.view.y + g.view.h);
 }
 
-// The Pause button (PI_PAUSE): its own full-width layer directly under the 3D view, above the Idle Walk Run row, which sits above the Alert Combat row
+// The Pause button (PI_PAUSE) and the Draw / Holster toggle (PI_DRAW): the two halves of one layer directly under the 3D view, above the Idle Walk Run row, which sits above the Alert Combat row
 // (one row of 6 cells on tiny screens); inside the view area, overlapping no other box; its captions "Pause" / "Play" fit like the other buttons (text_k 2.65 budget).
 static void testPauseBox() {
     struct Case { const char* what; Geom g; };
@@ -872,14 +874,19 @@ static void testPauseBox() {
         const Geom& g = c.g;
         PageLayoutV3 L = pageLayoutV3(g.column, g.view, g.preview, g.hint, nullptr);
         KT_CHECK_EQ(violations(g, L, true, true), 0);   // pairwise overlap of every box + zone containment (Pause is in the view zone)
-        const Box P = L.pause;
-        KT_CHECK(P.w > 0 && P.h > 0);
+        const Box P = L.pause, D = L.draw;
+        KT_CHECK(P.w > 0 && P.h > 0 && D.w > 0 && D.h > 0);
+        KT_CHECK(!overlaps(P, D) && inside(D, Box{g.column.x, g.view.y, g.preview.x - g.column.x, g.view.h}));
+        KT_CHECK(D.x >= L.view.x && D.x + D.w <= L.view.x + L.view.w);
+        for (int i = 0; i < kV3Stances; ++i) KT_CHECK(!overlaps(D, L.stance[i]));
+        KT_CHECK(!overlaps(D, L.view) && !overlaps(D, L.legend));
         KT_CHECK(inside(P, Box{g.column.x, g.view.y, g.preview.x - g.column.x, g.view.h}));
         KT_CHECK(P.x >= L.view.x && P.x + P.w <= L.view.x + L.view.w);          // inside the view area columns
         for (int i = 0; i < kV3Stances; ++i) KT_CHECK(!overlaps(P, L.stance[i]));
         KT_CHECK(!overlaps(P, L.view) && !overlaps(P, L.legend));
         if (L.stance[3].y > L.stance[0].y) {   // three layers: Pause (full width), Idle Walk Run (3 cells), Alert Combat (2 cells), each b + 2 apart, under the view
-            KT_CHECK_EQ(P.x, L.view.x); KT_CHECK_EQ(P.w, L.view.w); KT_CHECK_EQ(P.h, L.barH);
+            KT_CHECK_EQ(P.x, L.view.x); KT_CHECK_EQ(P.w, v3::cellW(L.view.w, 2)); KT_CHECK_EQ(P.h, L.barH);
+            KT_CHECK_EQ(D.x, L.view.x + P.w + 2); KT_CHECK_EQ(D.w, P.w); KT_CHECK_EQ(D.y, P.y); KT_CHECK_EQ(D.h, L.barH);   // Draw: the right half, same row, aligned with Combat
             KT_CHECK_EQ(P.y, L.view.y + L.view.h + 2);                       // directly under the 3D view
             KT_CHECK_EQ(L.stance[0].y, P.y + L.barH + 2);                    // Idle row under Pause
             KT_CHECK_EQ(L.stance[3].y, L.stance[0].y + L.barH + 2);          // Alert Combat under Idle Walk Run
@@ -890,9 +897,12 @@ static void testPauseBox() {
             KT_CHECK_EQ(L.legend.y, L.stance[3].y + L.barH + 2);             // the legend stays below the three layers
         } else {                               // tiny screens: one row of six cells
             KT_CHECK(P.y == L.stance[4].y && P.x > L.stance[4].x && P.w == L.stance[4].w);
+            KT_CHECK(D.y == P.y && D.x > P.x && D.w == P.w);
         }
         for (const char* t : {"Pause", "Play"})
             KT_CHECK(textfit::textPx(tc, t, static_cast<int>(strlen(t))) <= static_cast<float>(buttonTextPx(P.w)));
+        for (const char* t : {"Draw", "Holster"})
+            KT_CHECK(textfit::textPx(tc, t, static_cast<int>(strlen(t))) <= static_cast<float>(buttonTextPx(D.w)));
     }
 }
 
@@ -982,11 +992,12 @@ static void testAdaptersAndIndex() {
     for (int i = 0; i < kV3Hints; ++i) KT_CHECK(same(all[PI_HINTR + i], L.hintR[i]));
     KT_CHECK(PI_HINTR == 70 && PI_HINTR + kV3Hints == PI_REMOVE);
     KT_CHECK(same(all[PI_REMOVE], L.remove));
-    KT_CHECK(PI_REMOVE == 72 && PI_PAUSE == 73 && PI_PAUSE + 1 == kPageItemsV3 && kPageItemCap == 80);
+    KT_CHECK(PI_REMOVE == 72 && PI_PAUSE == 73 && PI_DRAW == 74 && PI_DRAW + 1 == kPageItemsV3 && kPageItemCap == 96);
     KT_CHECK(same(all[PI_PAUSE], L.pause));
+    KT_CHECK(same(all[PI_DRAW], L.draw));
 
-    // the page holds the 74 boxes plus one wedge per slider row, inside the consumer cap
-    KT_CHECK_EQ(kPageItemsV3Total, 80);
+    // the page holds the 75 boxes plus one wedge per slider row, inside the consumer cap
+    KT_CHECK_EQ(kPageItemsV3Total, 81);
     KT_CHECK(kPageItemsV3Total <= kPageItemCap);
 }
 

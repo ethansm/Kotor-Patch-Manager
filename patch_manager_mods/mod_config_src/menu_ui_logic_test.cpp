@@ -355,7 +355,7 @@ static void test_item_table_full_and_bad_pages() {
     int p = pt.addPage();
     Rect r = {10, 10, 20, 10};
     for (int i = 0; i < kMaxItems; ++i) KT_CHECK_EQ(pt.addItem(p, BUTTON, nullptr, i, r), i);
-    KT_CHECK_EQ(kMaxItems, 80);                              // HW-UX3 L0a: cap raised from 40 to 80
+    KT_CHECK_EQ(kMaxItems, 96);                              // HW-UX3 L0a: cap raised from 40 to 80; HW20: 96 for the editor Draw button
     KT_CHECK_EQ(pt.addItem(p, LABEL, nullptr, 0, r), -1);   // 81st item refused
     KT_CHECK_EQ(pt.itemCount(p), kMaxItems);
     KT_CHECK_EQ(pt.addItem(9, BUTTON, nullptr, 0, r), -1);  // page not added

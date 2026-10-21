@@ -768,7 +768,7 @@ enum InspRow { IR_SLIDE = 0, IR_DEPTH, IR_HEIGHT, IR_TILT, IR_ROLL, IR_TURN, IR_
 constexpr int kInspItems = 2 * IR_COUNT;     // page items: one scrub button + one reset button per row
 constexpr int kPageItemsBase = 26;           // items cbBuild creates before the inspector: view, status, 2 name/picker rows, hands, stance, emote, play,
                                              // bone, scope, save, revert, reset scope, done, reset/flip view, 4 mode buttons
-constexpr int kPageItemCap = 80;             // mod-config mui::kMaxItems (0.1.3+; 40 before): AddButton/AddLabel/AddCustom return -1 beyond it
+constexpr int kPageItemCap = 96;             // mod-config mui::kMaxItems (96 after mod-config 0.3.7-dev; 0.1.3: 80; 40 before): AddButton/AddLabel/AddCustom return -1 beyond it
 static_assert(kPageItemsBase + kInspItems <= kPageItemCap, "the editor page (base items + 12 inspector items) must fit mod-config's per-page item cap");
 constexpr int kStripRowsBase = 9;            // weapon mode strip rows without the inspector: name, hands, bone, scope, save/revert, reset scope/done, view, 2 mode rows
 constexpr int kStripRowsInsp = kStripRowsBase + IR_COUNT;

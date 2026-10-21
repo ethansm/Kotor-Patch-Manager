@@ -133,6 +133,7 @@ int32_t KPATCH_CALL stubHolSave() { return 1; }
 void KPATCH_CALL stubHolRevert() {}
 void KPATCH_CALL stubHolResetScope() {}
 void KPATCH_CALL stubHolEndEdit() {}
+int32_t KPATCH_CALL stubHolSetPreviewDraw(int32_t d) { return d; }
 
 const K2HolsterApi kHolTable = {
     sizeof(K2HolsterApi),
@@ -150,7 +151,8 @@ const K2HolsterApi kHolTable = {
     stubHolSave,
     stubHolRevert,
     stubHolResetScope,
-    stubHolEndEdit
+    stubHolEndEdit,
+    stubHolSetPreviewDraw
 };
 
 // ---- GuiKit mouse mock ----
@@ -229,6 +231,7 @@ int main() {
         // U3: the inspector rows send ABSOLUTE rot[3] + off[3] through SetValues (void) and read the six values back with GetEdit.
         HEQ("K2HolsterApi.SetValues is vtable slot 6", offsetof(K2HolsterApi, SetValues), 6 * sizeof(void*));
         HEQ("K2HolsterApi.GetEdit is vtable slot 8", offsetof(K2HolsterApi, GetEdit), 8 * sizeof(void*));
+        HEQ("K2HolsterApi.SetPreviewDraw is vtable slot 16 (HW20)", offsetof(K2HolsterApi, SetPreviewDraw), 16 * sizeof(void*));
         HEQ("K2HolsterEditInfo.left offset", offsetof(K2HolsterEditInfo, left), static_cast<size_t>(68));
         HEQ("K2HolsterEditInfo.dirty offset", offsetof(K2HolsterEditInfo, dirty), static_cast<size_t>(72));
         HEQ("K2HolsterEditInfo.rot is float[3]", sizeof(static_cast<K2HolsterEditInfo*>(nullptr)->rot), 3 * sizeof(float));
@@ -241,8 +244,8 @@ int main() {
         HEQ("K2HOLSTER_SRC_BODY is 4", K2HOLSTER_SRC_BODY, 4);
         HCHECK("hse::kSrcMirrorBit does not overlap the src levels or the body bit", (hse::kSrcMirrorBit & (K2HOLSTER_SRC_BODY | 3)) == 0);
         // U3 / HW-UX3: the page needs its items inside mod-config's per-page cap (kMaxItems 80 in 0.1.3+, 40 before); the editor refuses cleanly, never crashes, on a full page.
-        HCHECK("editor page items fit mod-config's 80-item cap", hse::kPageItemsBase + hse::kInspItems <= hse::kPageItemCap);
-        HEQ("consumer item cap is mod-config's kMaxItems 80", hse::kPageItemCap, 80);
+        HCHECK("editor page items fit mod-config's 96-item cap", hse::kPageItemsBase + hse::kInspItems <= hse::kPageItemCap);
+        HEQ("consumer item cap is mod-config's kMaxItems 96 (HW20; 80 in 0.1.3-0.3.6)", hse::kPageItemCap, 96);
         HCHECK("the v3 page (73 boxes + 6 wedges) fits the cap", hse::kPageItemsV3Total <= hse::kPageItemCap);
 
         // GuiKit input hooks: null under GUIKIT_HOST (the mod must check before calling); the assignment form the mod uses is callable.
@@ -427,18 +430,29 @@ int main() {
     {
         HCHECK("K2HOLSTER_IFACE is \"k2.holster\"", std::strcmp(K2HOLSTER_IFACE, "k2.holster") == 0);
         HEQ("K2HOLSTER_VERSION == 1", K2HOLSTER_VERSION, 1);
-        HEQ("K2HolsterApi is 16 pointer slots", sizeof(K2HolsterApi), 16 * sizeof(void*));
+        HEQ("K2HolsterApi is 17 pointer slots (HW20: SetPreviewDraw)", sizeof(K2HolsterApi), 17 * sizeof(void*));
 
         HCHECK("k2holster::Client::usable true for valid table", k2holster::Client::usable(&kHolTable));
         HCHECK("k2holster::Client::usable false for null table", !k2holster::Client::usable(nullptr));
 
         K2HolsterApi shortHol = kHolTable;
-        shortHol.struct_size = static_cast<uint32_t>(sizeof(K2HolsterApi) - sizeof(void*));
+        shortHol.struct_size = static_cast<uint32_t>(K2HOLSTER_V1_BASE_SIZE - sizeof(void*));
         HCHECK("k2holster::Client::usable false for short table", !k2holster::Client::usable(&shortHol));
 
         K2HolsterApi grownHol = kHolTable;
         grownHol.struct_size = static_cast<uint32_t>(sizeof(K2HolsterApi) + sizeof(void*));
         HCHECK("k2holster::Client::usable true for grown table", k2holster::Client::usable(&grownHol));
+
+        // HW20: a provider before SetPreviewDraw (16 slots) is still usable; the Draw toggle is then hidden (canDraw false).
+        K2HolsterApi v1Hol = kHolTable;
+        v1Hol.struct_size = static_cast<uint32_t>(K2HOLSTER_V1_BASE_SIZE);
+        HCHECK("k2holster::Client::usable true for the 16-slot table", k2holster::Client::usable(&v1Hol));
+        k2holster::Client dc;
+        dc.connected = true;
+        dc.h = &v1Hol;
+        HCHECK("k2holster::Client::canDraw false for the 16-slot table", !dc.canDraw());
+        dc.h = &kHolTable;
+        HCHECK("k2holster::Client::canDraw true for the full table", dc.canDraw());
 
         K2HolsterApi nullReg = kHolTable; nullReg.RegisterPreview = nullptr;
         HCHECK("k2holster::Client::usable false when RegisterPreview is null", !k2holster::Client::usable(&nullReg));

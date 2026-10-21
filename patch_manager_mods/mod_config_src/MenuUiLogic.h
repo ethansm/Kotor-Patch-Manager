@@ -35,7 +35,7 @@
 namespace mui {
 
 // Page ids: 0 MAIN, 1 LIST, 2 + slot. Slots 0..kMaxEntries-1 are the entry pages (slot = token - 1); slots kMaxEntries.. are modal pages (ModalTable).
-enum { kMaxEntries = 24, kMaxItems = 80, kMaxModals = 8, kMaxSlots = kMaxEntries + kMaxModals, kMaxPages = 2 + kMaxSlots, kMaxEvents = 4 };
+enum { kMaxEntries = 24, kMaxItems = 96, kMaxModals = 8, kMaxSlots = kMaxEntries + kMaxModals, kMaxPages = 2 + kMaxSlots, kMaxEvents = 4 };
 
 // ---------------------------------------------------------------------------------------------------- registry
 // A slot is live while registered. seq is the registration order of the id's first registration: removing an entry

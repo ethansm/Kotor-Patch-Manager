@@ -78,13 +78,14 @@ def run_dump(col, view, preview, desc=None, build_dir=None, cover=None):
         args.append(str(cover))
     r = subprocess.run([str(exe)] + args, capture_output=True, text=True, check=True)
     dump = json.loads(r.stdout)
-    for it in dump["items"]:   # tools/hse_layout_dump.cpp itemKind predates PI_PAUSE (73): it is a button in HolsterEditor.cpp itemIsButton
-        if it["i"] == 73 and it["kind"] == "label":
+    for it in dump["items"]:   # tools/hse_layout_dump.cpp itemKind predates PI_PAUSE (73) and PI_DRAW (74): it is a button in HolsterEditor.cpp itemIsButton
+        if it["i"] in (73, 74) and it["kind"] == "label":
             it["kind"] = "button"
     return dump
 
 
-PI_PAUSE = 73    # HseLayoutV3.h PI_PAUSE: the Pause / Play toggle (full-width bar above the Idle row; a button, caption "Pause" while the preview runs)
+PI_PAUSE = 73    # HseLayoutV3.h PI_PAUSE: the Pause / Play toggle (left half of the bar above the Idle row; a button, caption "Pause" while the preview runs)
+PI_DRAW = 74     # HseLayoutV3.h PI_DRAW: the Draw / Holster toggle (right half of that bar; a button, caption "Draw" while the weapons are holstered)
 PI_REMOVE = 72   # HseLayoutV3.h PI_REMOVE: the Remove saved placement button (a button; shown only while the "..." menu is open)
 
 
@@ -236,7 +237,7 @@ def caption_for(i, remove_open=False):
              18: "Member 1/9 | Weapons: Right+Left", 19: ">Move<", 20: "Depth", 21: "Tilt", 22: "Roll/Turn", 23: "R", 24: "<>", 25: "",
              31: HELP_LINE, 32: "POSITION", 33: "R", 34: "ROTATION", 35: "R", 66: "Left: mirrored from right",
              67: "", 68: REMOVE_DESC_TEXT if remove_open else LEFT_DESC_TEXT, 69: "...", 70: "", 71: RIGHT_DESC_TEXT,
-             PI_REMOVE: "Remove saved placement", PI_PAUSE: "Pause"}
+             PI_REMOVE: "Remove saved placement", PI_PAUSE: "Pause", PI_DRAW: "Draw"}
     if i in fixed:
         return fixed[i]
     if 8 <= i <= 12:

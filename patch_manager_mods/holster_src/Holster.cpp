@@ -1288,6 +1288,8 @@ static hs::EditOverlay g_edit;
 static void* g_editGob = nullptr;
 static hs::Pose g_editMount;              // world pose of the edited Gob's mount bone, refreshed by every placement of that Gob
 static bool g_editMountOk = false;
+static hs::Slide g_prevSlide;             // HW20: the editor's Draw / Holster toggle: one slide shared by every preview weapon (hand fraction, 0 = mount); guarded by g_edLock
+static uint32_t slideNowMs();
 static volatile uintptr_t g_refFind = 0, g_refPose = 0;   // FindPart (Gob vtbl+0x10C) / node pose (vtbl+0xC) slots seen on a placed weapon
 
 // In-world hand mapping is active: OnHandAttach records gob -> hand (R/L) into g_handRing,
@@ -1367,8 +1369,31 @@ static bool previewPlace(uintptr_t g, uintptr_t beh) {
         EdLock lk;
         if (g_editGob == reinterpret_cast<void*>(g)) { g_editMount = base; g_editMountOk = true; }
     }
-    if (!hs::poseSane(out) || !saferead::probeWrite(kSitePlace, reinterpret_cast<void*>(g + 0xA4), sizeof(hs::Pose))) return true;
-    memcpy(reinterpret_cast<void*>(g + 0xA4), &out, sizeof(hs::Pose));
+    // HW20: the editor's Draw / Holster toggle. The engine just wrote the HAND pose into the Gob (the preview weapon hangs on rhand / lhand), so it is the draw end of
+    // the slide; the mount pose `out` is the stow end. Same blend and the same arm reach as in the world (reach_test), so the preview shows what the game does.
+    float slideF = 0.f, reachW = 0.f;
+    {
+        const uint32_t now = slideNowMs();
+        EdLock lk;
+        if (g_prevSlide.init) {
+            g_prevSlide.touch(now);
+            slideF = g_prevSlide.frac(now);
+            reachW = hs::reachWeight(g_prevSlide, now);
+        }
+    }
+    hs::Pose shown = out;
+    bool atHand = false;
+    if (slideF > 0.f) {
+        hs::Pose in;
+        if (saferead::readAt(kSitePlace, g, 0xA4, &in) && hs::poseSane(in)) {
+            if (slideF >= 1.f) atHand = true;
+            else shown = hs::blendPose(out, in, hs::easeSmooth(slideF));
+        }
+    }
+    if (g_reachTest) reachArm(g, beh, atHand ? out : shown, reachW, left, static_cast<int>(cat), slideF, out.pos);   // w == 0 outside the slide: only undoes a leftover write
+    if (atHand) return true;   // fully drawn: the engine's hand pose stays
+    if (!hs::poseSane(shown) || !saferead::probeWrite(kSitePlace, reinterpret_cast<void*>(g + 0xA4), sizeof(hs::Pose))) return true;
+    memcpy(reinterpret_cast<void*>(g + 0xA4), &shown, sizeof(hs::Pose));
     if (logIt)
         KP_LOG(chEdit, "PREVIEW place gob=%x model=%s cat=%s body=%s left=%d bone=%s edit=%d rot=(%.1f,%.1f,%.1f) off=(%.3f,%.3f,%.3f) src=%u/%u/%u lsrc=%s extra=%.1f",
                static_cast<unsigned>(g), model, hs::categoryName(cat), body[0] ? body : "-", left ? 1 : 0, bone, editing ? 1 : 0, r.rot[0], r.rot[1], r.rot[2],
@@ -1685,6 +1710,7 @@ static void KPATCH_CALL apiUnregisterPreview(void* gob) {
         EdLock lk;
         if (!gob) {
             g_preview = hs::PreviewRegistry();
+            g_prevSlide = hs::Slide();   // a cleared preview starts holstered again (the editor resets its toggle with it)
         } else {
             (void)hs::previewUnregister(g_preview, gob);
         }
@@ -1695,6 +1721,7 @@ static void KPATCH_CALL apiUnregisterPreview(void* gob) {
             ended = true;
         }
         count = g_preview.n;
+        if (count == 0) g_prevSlide = hs::Slide();   // the last preview is gone: the next ones start holstered
         InterlockedExchange(&g_previewN, count);
     }
     if (takeEditLine()) KP_LOG(chEdit, "API unregister gob=%x n=%ld endedit=%d", U(gob), static_cast<long>(count), ended ? 1 : 0);
@@ -1949,9 +1976,23 @@ static void KPATCH_CALL apiEndEdit(void) {
     if (takeEditLine()) KP_LOG(chEdit, "API endedit");
 }
 
+// holster 0.8.0-dev: the editor's Draw / Holster toggle. 1 = every preview weapon slides to the hand over draw_slide_ms (and the arm reaches when reach_test=1), 0 = back to the mount
+// over stow_slide_ms. Returns the state now heading. Retargets from the current fraction, so a double click never pops.
+static int32_t KPATCH_CALL apiSetPreviewDraw(int32_t drawn) {
+    const uint32_t now = slideNowMs();
+    const bool want = drawn != 0;
+    {
+        EdLock lk;
+        if (!g_prevSlide.init) g_prevSlide.reset(false, now);
+        g_prevSlide.target(want, now, g_drawSlideMs, g_stowSlideMs);
+    }
+    if (takeEditLine()) KP_LOG(chEdit, "API previewdraw %s draw_ms=%u stow_ms=%u reach=%d", want ? "draw" : "stow", static_cast<unsigned>(g_drawSlideMs), static_cast<unsigned>(g_stowSlideMs), g_reachTest ? 1 : 0);
+    return want ? 1 : 0;
+}
+
 static const K2HolsterApi g_holsterApi = {
     sizeof(K2HolsterApi), apiRegisterPreview, apiUnregisterPreview, apiBeginEdit, apiNudgeWorld, apiNudgeLocal, apiSetValues, apiCycleBone,
-    apiGetEdit, apiGetMountWorld, apiGetNodeWorld, apiSetScope, apiSave, apiRevert, apiResetScope, apiEndEdit,
+    apiGetEdit, apiGetMountWorld, apiGetNodeWorld, apiSetScope, apiSave, apiRevert, apiResetScope, apiEndEdit, apiSetPreviewDraw,
 };
 
 // bone_test: repoint the rhand (and with bone_test_left the lhand) attach-node literal at g_boneName. Default OFF.
@@ -1988,7 +2029,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     addName(names, sizeof(names), g_onGob, "gob");
     addName(names, sizeof(names), g_onPlace, "place");
     addName(names, sizeof(names), g_onToggle, "toggle");
-    KP_LOG(chMain, "holster 0.7.1-dev loaded (P0 probe, log-only): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_probe ? 1 : 0,
+    KP_LOG(chMain, "holster 0.8.0-dev loaded (P0 probe, log-only): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_probe ? 1 : 0,
            names[0] ? names : "none", static_cast<long>(g_maxLines), g_gobEvery, k2addr::get() ? "ok" : "none");
     {
         hs::TuneCfg t;
