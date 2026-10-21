@@ -1388,13 +1388,16 @@ static void scenario14_staged_edits_and_sliders() {
     cbEnter(2, nullptr);
     KT_CHECK(g_pg.track[dr].x == 170 && g_pg.track[dr].y == 326 && g_pg.track[dr].w == 110 && g_pg.track[dr].h == 33);
     KT_CHECK(g_edit.drainAlpha == 0.65f);
-    // The groove is a label (a button would draw OVER the fill: mod-config pre-clones all buttons before all labels): framed pill art, teal, the whole track.
+    // The groove is a label (a button would draw OVER the fill: mod-config pre-clones all buttons before all labels): the holster editor's slider frame art over the whole track.
     KT_CHECK(rectEq(lastOn(trec::O_Rect, track), { 170, 326, 110, 33 }));
-    KT_CHECK(lastOn(trec::O_Fill, track) && lastOn(trec::O_Fill, track)->img == tImgPtr("lbl_miscroll_f") && clickThrough(track));
+    KT_CHECK(lastOn(trec::O_Fill, track) && lastOn(trec::O_Fill, track)->img == tImgPtr("hse_sld_frame") && clickThrough(track));
     KT_CHECK_EQ(tm.addButton, 2 + 4 * 2 + 3);   // 2 toggles, 4 number rows x ('<', '>'), Save / Reset / Defaults: no slider button any more
-    // 0.65 of the inner 98 px = 64 px of fill (int(0.65*98+0.5) = 64); marker 6 px wide centred on its end: x 176+64-3 = 237, 18 px tall at y 333.
-    KT_CHECK(rectEq(lastOn(trec::O_Rect, fillC), { 176, 339, 64, 7 }));
-    KT_CHECK(rectEq(lastOn(trec::O_Rect, thumbC), { 237, 333, 6, 18 }));
+    // 0.65 of the inner 98 px = 64 px (int(0.65*98+0.5) = 64): the marker centre is x 176+64 = 240; the wedge is the track cut there (170..240 = 70 px, the
+    // track's height), the marker 8 px wide and the track's height, centred on it (x 236).
+    KT_CHECK(rectEq(lastOn(trec::O_Rect, fillC), { 170, 326, 70, 33 }));
+    KT_CHECK(rectEq(lastOn(trec::O_Rect, thumbC), { 236, 326, 8, 33 }));
+    KT_CHECK(lastOn(trec::O_Fill, fillC) && lastOn(trec::O_Fill, fillC)->img == tImgPtr("hse_sld_wedge"));
+    KT_CHECK(lastOn(trec::O_Fill, thumbC) && lastOn(trec::O_Fill, thumbC)->img == tImgPtr("hse_sld_mark"));
     KT_CHECK(clickThrough(fillC) && clickThrough(thumbC));
     // Not pressed: moving the cursor over the track does nothing.
     tCurX = 225; tCurY = 340; tMouseDown = false;
@@ -1404,7 +1407,7 @@ static void scenario14_staged_edits_and_sliders() {
     tMouseDown = true;
     cbTick(2, nullptr);
     KT_CHECK(g_pg.drag == dr && g_edit.drainAlpha == 0.50f && g_cfg.drainAlpha == 0.65f);
-    KT_CHECK(rectEq(lastOn(trec::O_Rect, fillC), { 176, 339, 49, 7 }));
+    KT_CHECK(rectEq(lastOn(trec::O_Rect, fillC), { 170, 326, 55, 33 }));   // 0.50: centre 176+49 = 225
     // Drag past both ends: clamped 1.00 / 0.00; 0.05 grid in between (x 190 = 14 px = 14.3 % -> 0.15).
     tCurX = 400; cbTick(2, nullptr);
     KT_CHECK(g_edit.drainAlpha == 1.0f);
