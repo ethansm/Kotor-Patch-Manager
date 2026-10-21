@@ -53,9 +53,15 @@ struct Slide {
     // lockOn is cleared only by reset(), so target() keeps both.
     Q lockH{ 1, 0, 0, 0 };
     uint8_t lockOn = 0;   // 1 once blendPoseLocked ran since the last reset()
+    // HW33a pending target (targetDelayed / pump). pendAt is the tick the armed target fires; pendWant is its direction; the rest
+    // are the target() arguments. pendOn is cleared by reset() and target(), so a pending target never outlives a direct retarget.
+    uint32_t pendAt = 0, pendDraw = 0, pendStow = 0;
+    float pendHoldW = 0;
+    uint8_t pendWant = 0, pendOn = 0;
 
     // Silent placement: no motion, fraction is the target at once.
     void reset(bool hand, uint32_t now) {
+        pendOn = 0;
         dir = hand ? 1 : 0;
         from = (float)dir;
         len = 0;
@@ -82,6 +88,7 @@ struct Slide {
     // Head for the hand (true) or the hip (false). No-op when already heading there. ms == 0 moves instantly. holdW = the reach weight at
     // this retarget (NaN -> 0); the new slide's reach weight blends from it (reachWeightRamp). Timing is unchanged by holdW.
     void target(bool hand, uint32_t now, uint32_t drawMs, uint32_t stowMs, float holdW = 0.f) {
+        pendOn = 0;
         const uint8_t want = hand ? 1 : 0;
         if (dir == want) return;
         const float f = frac(now);  // evaluated before dir changes
@@ -102,11 +109,49 @@ struct Slide {
         oriOn = 0;
     }
 
+    // HW33a stagger: head for the target after delayMs (dual-wield left hand, party jitter). delayMs == 0 is target() itself.
+    // Idempotent per want: the same want called every tick keeps the armed target (it fires at its first pendAt). A want equal to the
+    // current dir cancels a pending target (reversing during the delay = stay as is). pump() fires it.
+    void targetDelayed(bool hand, uint32_t now, uint32_t delayMs, uint32_t drawMs, uint32_t stowMs, float holdW = 0.f) {
+        if (delayMs == 0) {
+            target(hand, now, drawMs, stowMs, holdW);
+            return;
+        }
+        const uint8_t want = hand ? 1 : 0;
+        if (pendOn && pendWant == want) return;
+        if (dir == want) {
+            pendOn = 0;
+            return;
+        }
+        pendOn = 1;
+        pendWant = want;
+        pendAt = now + delayMs;
+        pendDraw = drawMs;
+        pendStow = stowMs;
+        pendHoldW = holdW;
+    }
+
+    // Fires the pending target once now >= pendAt (signed compare, wrap-safe). It fires at pendAt, so t0 = pendAt and the slide loses
+    // no time. A pump more than 100 ms late (a stall with no touch) fires at now instead, so the slide never starts in the past.
+    void pump(uint32_t now) {
+        if (!pendOn || (int32_t)(now - pendAt) < 0) return;
+        const uint8_t want = pendWant;
+        const uint32_t at = (int32_t)(now - pendAt) > 100 ? now : pendAt;
+        const uint32_t drawMs = pendDraw, stowMs = pendStow;
+        const float holdW = pendHoldW;
+        target(want != 0, at, drawMs, stowMs, holdW);  // clears pendOn
+    }
+
+    // True while a targetDelayed() is armed (not yet fired, cancelled, or reset).
+    bool pending() const { return pendOn != 0; }
+
     // Gap guard, call once per tick: a stall longer than 100 ms while a slide was running shifts t0 by the stall, so the slide
-    // resumes from the fraction it had at the last call instead of finishing during the pause.
+    // resumes from the fraction it had at the last call instead of finishing during the pause. An armed targetDelayed() shifts its
+    // pendAt by the same stall, so a pause does not fire it early. last is updated on every call.
     void touch(uint32_t now) {
         const int32_t gap = (int32_t)(now - last);
         if (gap > 100 && len > 0 && (int32_t)(last - t0) < (int32_t)len) t0 += (uint32_t)gap;
+        if (gap > 100 && pendOn) pendAt += (uint32_t)gap;
         last = now;
     }
 

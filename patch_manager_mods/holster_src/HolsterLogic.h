@@ -89,6 +89,19 @@ inline Category classify(const char* stem, int weaponWield) {
     return fromWeaponWield(weaponWield);
 }
 
+// HW33a (doc 42c 4.11): two-handed stem = QStaff / Rifle / Heavy from the table, plus the doubles the table files under other
+// categories (double blades, double-bladed vibro, gaffi, warblade, pike). Family prefix with the stemIs boundary, so w_Dblsbr_003
+// matches and w_Dblsbrx does not. w_waraxe stays one-handed (not in the D_twohand_dual.md right-hand-only list). Null or empty -> false.
+inline bool isTwoHandedStem(const char* stem) {
+    if (!stem || !*stem) return false;
+    const Category c = classify(stem, 0);
+    if (c == CatQStaff || c == CatRifle || c == CatHeavy) return true;
+    static const char* const kDoubles[] = {"w_Dblsbr", "w_Dblswrd", "w_VbrDblswd", "w_gaffi", "w_warblade", "w_ForcePike"};
+    for (const char* d : kDoubles)
+        if (stemIs(stem, d)) return true;
+    return false;
+}
+
 // Two-handed = long weapon. weaponwield 3 (quarterstaff, double blades, pike, gaffi, warblade) or a lightsaber-class double
 // (never: sabers are hip by requirement). Pure shape test; the 0.6 m mesh-bounds refinement lands in P2.
 inline bool isLong(Category c, int weaponWield) {
