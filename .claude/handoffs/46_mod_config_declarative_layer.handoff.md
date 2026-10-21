@@ -9,16 +9,15 @@ Execute MCF1: [Mod-config] Pure logic in MenuUiLogic.h: row kinds (toggle/steppe
 - **Waves:** .claude/waves/WI-46-a2/
 - **Waves:** .claude/waves/WI-46-a3/
 - **Waves:** .claude/waves/w1-46-prev/
-- **Branch:** `KOTOR-II` (2a4d126c doc 46 + PLAY_TEST_QUEUE: mod-config 0.3.0-dev + combat-hotbar 0.11.0-dev INSTALLED 10-19 01:28 (rollback batch_swap_20261019_012850))
-- **Generated:** 2026-10-19 01:41:58 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (bcff4263 play queue: CH-PV1 retest after mod-config 0.3.4-dev (gear toggles the modal) + combat-hotbar 0.11.1-dev (thin hugging frame))
+- **Generated:** 2026-10-20 22:24:30 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-2a4d126c doc 46 + PLAY_TEST_QUEUE: mod-config 0.3.0-dev + combat-hotbar 0.11.0-dev INSTALLED 10-19 01:28 (rollback batch_swap_20261019_012850)
- patch_manager_mods/46_mod_config_declarative_layer.md | 4 ++--
- patch_manager_mods/PLAY_TEST_QUEUE.md                 | 2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+bcff4263 play queue: CH-PV1 retest after mod-config 0.3.4-dev (gear toggles the modal) + combat-hotbar 0.11.1-dev (thin hugging frame)
+ patch_manager_mods/PLAY_TEST_QUEUE.md | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 ```
-- **Dirty Files (180):**
+- **Dirty Files (185):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
   - ` M .claude/handoffs/DECOMP_PLAN.handoff.md`
@@ -29,7 +28,7 @@ Execute MCF1: [Mod-config] Pure logic in MenuUiLogic.h: row kinds (toggle/steppe
   - ` M .claude/reviews/gemini_20261014/tools/fix3_items.tsv`
   - ` M .claude/settings.json`
   - ` M CLAUDE.md`
-  - ... +170 more (run `git status --short`)
+  - ... +175 more (run `git status --short`)
 
 ## 2. Immediate Objective (MCF1)
 **[Mod-config] Pure logic in MenuUiLogic.h: row kinds (toggle/stepper), ScrollWindow (offset clamp, wheel step, ensure-visible, thumb px), `mui::tickResetDue(gap, flags48, lmbDown)` + tests**
