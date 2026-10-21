@@ -37,6 +37,8 @@ Characters visibly stow weapons out of combat. ALL lightsabers on the hip, other
 | HW15 | Unarmed-locomotion probe: `HolsterAnimStyle.h`, holstered set, ANIMRES `hol=`/`comb=` (SWAP) (42b 2.4) | HW14 | - | INSTALLED | f389c1cd | holster 0.5.2-dev LIVE 10-20 19:33, rollback holster_swap_20261020_193331; play rows in PLAY_TEST_QUEUE |
 | HW16 | Unarmed override: detour 0x86367C writing the style byte, REINSTALL; ONLY if the HW15 probe gate passes | HW15 + play | user GO | GATED | | decide from probe logs |
 | HW17 | Install HW12-HW15 as one hot-swap (0.5.2-dev), play rows FL1-FL4, SL-*, SW1/SW2, HW7a-P | HW15 | user GO | INSTALLED | c8a6eac1 | installed as 0.5.2-dev; play rows FL1-4 SL-* SW1/2 HW7a-P pending (user) |
+| HW18 | Arm-reach spike recon (procedural IK, no clips): engine point that writes node transforms after animation sampling and before skinning; arm bone names and lengths on N_CommM / N_CommF | HW17 | - | TODO | | user said "spike" 10-20; static dumps first, REA only for the write point |
+| HW19 | Arm-reach probe build: `HolsterReach.h` (two-bone solver + blend, pure, tested) and a probe-gated detour that bends ONE arm toward the existing hip pose; log-only elsewhere (SWAP) | HW18 | user GO | TODO | | gate: HW18 names a write point with a safe detour span |
 
 ## Sub-plan A — HW3 offline preview (no game, no install)
 Tool: `patch_manager_mods/k1_port/k1_port_tex_preview.py` (numpy + PIL software rasteriser; `mesh` runs in the k1port venv, renders in `.venv`). The `helmets` command already places one model at a named hook node of another; `weapons` reuses `HelmetKit.parts`, `hook_transform` and `compose_transforms`.

@@ -1,7 +1,7 @@
 # Session Handoff & Plan State: patch_manager_mods/42_holstered_weapons_master_plan.md
 
 ## 0. Next-Phase Direction
-user play run (bone_test=1 pelvis_g), then read holster_log.txt; run 3 place=1 live tuning per category; then T4/HW6
+holster arm-reach spike (procedural IK): recon the engine point that writes bone/node transforms after animation sampling and before skinning, confirm arm bone names (rbicep_g, rforearm_g, lforearm_g, hands) on N_CommM and N_CommF, and plan a log-only/probe build that bends one arm toward the existing holster pose. Execute HW18 then HW19.
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/42_holstered_weapons_master_plan.md`
@@ -9,48 +9,51 @@ user play run (bone_test=1 pelvis_g), then read holster_log.txt; run 3 place=1 l
 - **Waves:** .claude/waves/WI-42-a2/
 - **Waves:** .claude/waves/WI-42-b2/
 - **Waves:** .claude/waves/w1-42-HWB/
-- **Branch:** `KOTOR-II` (021b2c3 WI-24: Active effects panel: logging and shared-helper migration (manual close))
-- **Generated:** 2026-10-15 20:38:45 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (45e26618 holster 0.6.0-dev: move_hold_ms (no DELAY cut while walking/running) + party_combat_hold (weapons stay drawn while any member fights); HolsterMove.h + tests; log-check counters PARTYHOLD/MOVEHOLD/DELAY)
+- **Generated:** 2026-10-20 22:08:01 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-021b2c3 WI-24: Active effects panel: logging and shared-helper migration (manual close)
- .claude/work_items/dev_work_items.md                             | 2 +-
- .claude/work_items/runs.jsonl                                    | 1 +
- .claude/work_items/state.jsonl                                   | 1 +
- patch_manager_mods/PLAY_TEST_QUEUE.md                            | 1 +
- patch_manager_mods/active_effects_panel_src/CharEffectsPanel.cpp | 6 +++---
- 5 files changed, 7 insertions(+), 4 deletions(-)
+45e26618 holster 0.6.0-dev: move_hold_ms (no DELAY cut while walking/running) + party_combat_hold (weapons stay drawn while any member fights); HolsterMove.h + tests; log-check counters PARTYHOLD/MOVEHOLD/DELAY
+ patch_manager_mods/holster_src/Holster.cpp         |  76 ++++++-
+ patch_manager_mods/holster_src/HolsterMove.h       |  65 ++++++
+ patch_manager_mods/holster_src/holster.ini         |   6 +
+ .../holster_src/holster_drawgate_test.cpp          |   3 +
+ .../holster_src/holster_move_test.cpp              | 225 +++++++++++++++++++++
+ patch_manager_mods/holster_src/manifest.toml       |   4 +-
+ scripts/holster_log_check.py                       |  30 ++-
+ scripts/test_holster_log_check.py                  |  64 +++++-
+ 8 files changed, 454 insertions(+), 19 deletions(-)
 ```
-- **Dirty Files (154):**
+- **Dirty Files (186):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
-  - ` M .claude/handoffs/33_ui_queue_hotbar_fixes.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
-  - ` M .claude/handoffs/42_holstered_weapons_master_plan.handoff.md`
   - ` M .claude/handoffs/DECOMP_PLAN.handoff.md`
   - ` M .claude/handoffs/PHASE7_COMMON_MASTER.handoff.md`
   - ` M .claude/handoffs/deep_haiku_review_skill.handoff.md`
+  - ` M .claude/handoffs/variant_fix_wave_skill.handoff.md`
   - ` M .claude/plans/swarm_library_architecture.md`
   - ` M .claude/reviews/gemini_20261014/tools/fix3_items.tsv`
-  - ` M patch_manager_mods/34_npc_diversity_dispatcher.md`
-  - ... +144 more (run `git status --short`)
+  - ` M .claude/settings.json`
+  - ` M CLAUDE.md`
+  - ... +176 more (run `git status --short`)
 
-## 2. Immediate Objective (HW6)
-**Answer gates G2-G7 in doc 42 from logs + preview; choose placement rotation + offsets and bone per category**
+## 2. Immediate Objective (HW18)
+**Arm-reach spike recon (procedural IK, no clips): engine point that writes node transforms after animation sampling and before skinning; arm bone names and lengths on N_CommM / N_CommF**
 
 Status: TODO
-Task: Answer gates G2-G7 in doc 42 from logs + preview; choose placement rotation + offsets and bone per category
+Task: Arm-reach spike recon (procedural IK, no clips): engine point that writes node transforms after animation sampling and before skinning; arm bone names and lengths on N_CommM / N_CommF
 
 ## 2b. Upcoming Batches in Pipeline
 - **HW5** : P0 play runs 1 (probe) and 2 (bone test) by the user; read logs
+- **HW6** : Answer gates G2-G7 in doc 42 from logs + preview; choose placement rotation + offsets and bone per category
 - **HW7** : P1 MVP: instant hip<->hand swap, PC then party, all weapons on hip (sub-plan C)
-- **HW8** : P2 placement: per-category mounts, hilt-only bounds, alt-set mounts
 
 ## 3. Strict Context Budget & Read Policy
 - **Fresh Session Bootstrap**: Run `python3 scripts/plan_manager.py resume patch_manager_mods/42_holstered_weapons_master_plan.md`.
 
 ## 4. Subagent Delegation Direction
 - **Claude Code**: parallel `model: haiku` Agent subagents; brief = `Contract` + `Write Scope` + `python3 scripts/agent_contract.py print worker|recon`.
-- **Other backends** (only when the user asks): `python3 scripts/plan_manager.py delegate HW6` or `oc-subagent <scout|code|ghidra|verify|gate|doc>`.
+- **Other backends** (only when the user asks): `python3 scripts/plan_manager.py delegate HW18` or `oc-subagent <scout|code|ghidra|verify|gate|doc>`.
 
 ## 5. Dead Ends & Verification (manual)
 - Dead end: `k1_port_tex_preview.py mesh --models P_BastilaBA ...` -> "MDL/MDX not found" (model name not in the K2 install; note head_wearability.tsv also spells it `P_BastillaBB`/`P_BastilaBA` inconsistently). The batch aborted on the first model, so NO weapon/body JSON exists yet; check each name alone.
@@ -122,3 +125,4 @@ Task: Answer gates G2-G7 in doc 42 from logs + preview; choose placement rotatio
   - Next: GO -> `kpm_hotswap.py --mod holster --apply`; then HE2 holster wiring (provide k2.holster, preview fast path, overlay, Save; set bootBoneIdx in readConfig).
 - Session 10-16 14:30 (HW-EDIT PIVOT): user chose a dedicated in-game Options screen patch `holster-editor` (independent of equip3d and of the ultrawide GUI). New plan `.claude/plans/holster_editor_options.md` replaces v1 HE3/HE4/HE5; HE0/HE1/HE2/HE6 carry over. Study `.claude/research/holster_edit/UX_OPTIONS.md` (85845ae). D2 Haiku recon running (d2b Options hooks/Esc/pause, d2c optionsingame_p.gui + ultrawide + generator, d2d party picker + Preview3d.h API + weapon model name). HE0 --apply still awaits GO.
 - Session 10-16 15:10: user confirmed IN-GAME Options (not title screen); equip-screen editor abandoned; NEW: shared provider `preview-3d` (k2.preview3d@1) used by holster-editor, follow-up P-MIG migrates equip3d onto it. Equip3dEdit.h split into _shared_src/EditKit.h + holster_editor_src/HseLayout.h (Haiku worker).
+- Session 10-20 arm-reach spike (HW18 recon, HW19 probe build; rows added to the master plan table): user wants the character to reach the arm toward each holster spot (per arm, per side; dual wield; two-handed melee/ranged), then the existing HolsterSlide weapon move. Decision: procedural two-bone arm solver in the DLL, NOT authored clips (133 byte-unique body MDLs, supermodel edits do not reach bodies, KPM cannot ship Override files, no holster clip exists, idle/combat anim queue can cut a clip). Reach target = existing place_bone_*/place_off_*/place_rot_* pose. Arm bone names seen in research/holstered_weapons/wave2_3.md: rbicep_g, rbicepL_g, rforearm_g, lforearm_g; CONFIRM on N_CommM and N_CommF (HW18). Unknown to resolve: the engine point that writes node transforms after animation sampling and before skinning (start from creature tick 0x7664B0 -> 0x777E30 / 0x7675B0, blend 0x769780; ledger rea_findings/20261018_nb2-anim-driver.tsv). Static dumps first (RE_AGENT_GUIDE 2.1), REA only for the indirect write point. Back/over-shoulder targets need joint limits: hips first, back last.
