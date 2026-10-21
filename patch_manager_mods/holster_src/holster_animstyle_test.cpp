@@ -238,6 +238,60 @@ static void testOwnerZero() {
     KT_CHECK(!t.contains(5, 1, 1000));
 }
 
+static void testFrameOk() {
+    KT_CHECK(!frameOk(0));
+    KT_CHECK(!frameOk(4));
+    KT_CHECK(!frameOk(0xFFFC));          // below 64 KiB
+    KT_CHECK(frameOk(0x10000));          // lowest accepted
+    KT_CHECK(!frameOk(0x10001));
+    KT_CHECK(!frameOk(0x10002));
+    KT_CHECK(!frameOk(0x10003));
+    KT_CHECK(frameOk(0x10004));
+    KT_CHECK(frameOk(0x0019FF50));
+    KT_CHECK(!frameOk(0x0019FF52));
+    KT_CHECK(frameOk(0xFFFFFFFCu));
+    KT_CHECK(!frameOk(0xFFFFFFFFu));
+}
+
+static void testAnimId16() {
+    KT_CHECK(animId16(0x2714) == 0x2714u);
+    KT_CHECK(animId16(0xABCD2714u) == 0x2714u);   // stack garbage above the u16 argument
+    KT_CHECK(animId16(0x00012714u) == 0x2714u);
+    KT_CHECK(animId16(0xFFFFFFFFu) == 0xFFFFu);
+    KT_CHECK(animId16(0) == 0u);
+}
+
+static void testOverrideStyle() {
+    uint8_t out = 0x55;
+    KT_CHECK(overrideStyle(0x2714, 1, 4, true, true, &out));
+    KT_CHECK(out == kStyleUnarmed && out == 8);
+    // Upper garbage on the id is ignored (masked), upper garbage on the style byte too.
+    out = 0x55;
+    KT_CHECK(overrideStyle(0xBEEF2712u, 1, 0x107, true, true, &out));
+    KT_CHECK(out == 8);
+    // Every refusal leaves *out untouched.
+    const uint8_t sentinel = 0x77;
+    out = sentinel;
+    KT_CHECK(!overrideStyle(0x2714, 0, 4, true, true, &out) && out == sentinel);       // gate
+    KT_CHECK(!overrideStyle(0x2714, 1, 8, true, true, &out) && out == sentinel);       // already unarmed
+    KT_CHECK(!overrideStyle(0x2714, 1, 1, true, true, &out) && out == sentinel);       // single-weapon style has no own row
+    KT_CHECK(!overrideStyle(0x2715, 1, 4, true, true, &out) && out == sentinel);       // id outside the filter
+    KT_CHECK(!overrideStyle(0x2714, 1, 4, false, true, &out) && out == sentinel);      // not in the holster set
+    KT_CHECK(!overrideStyle(0x2714, 1, 4, true, false, &out) && out == sentinel);      // combat flag set
+    KT_CHECK(!overrideStyle(0x2714, 1, 4, true, true, 0));                             // null out pointer
+    // The id filter looks at the low 16 bits only (a high-bit id 0x12714 is the same id as 0x2714 to the engine's u16 compare).
+    out = sentinel;
+    KT_CHECK(overrideStyle(0x00012714u, 1, 9, true, true, &out) && out == 8);
+    // Sweep: the override fires exactly where decide() says V_UNARMED.
+    for (uint32_t id = 0x2700; id < 0x27C0; ++id)
+        for (uint32_t st = 0; st < 12; ++st) {
+            out = sentinel;
+            const bool fired = overrideStyle(id, 1, st, true, true, &out);
+            KT_CHECK(fired == (decide(id, 1, st, true, true) == V_UNARMED));
+            KT_CHECK(fired ? out == 8 : out == sentinel);
+        }
+}
+
 int main() {
     testIdFilter();
     testStyles();
@@ -248,5 +302,8 @@ int main() {
     testSetCapacity();
     testSetFreeSlots();
     testOwnerZero();
+    testFrameOk();
+    testAnimId16();
+    testOverrideStyle();
     return kt::Report("holster_animstyle");
 }

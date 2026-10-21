@@ -4,6 +4,8 @@
 //   idInFilter           the animation ids the override looks at: 0x2711 (armed idle), 0x27A4, 0x2712, 0x2713 (walk rows), 0x2714 (run)
 //   styleHasOwnLocoRow   styles with their OWN wield-dependent locomotion row: {2,3,4,7,9} (style compared as a byte)
 //   decide               V_UNARMED only when every condition holds, otherwise V_KEEP (engine result untouched)
+//   frameOk / overrideStyle   HW16 (0.13.0-dev, hook H4b mid-function in the resolver, after the style byte was spilled to [ebp-1]): the resolver-frame guard and the byte to store
+//                        there (kStyleUnarmed) or "leave it" -- the handler writes ONE byte and only when overrideStyle says so
 //   HolsterSet           fixed 64-slot owner -> base map with a 500 ms TTL (wrap-safe ms ticks); full set refuses, never overwrites a live entry
 #pragma once
 #include <stdint.h>
@@ -22,11 +24,27 @@ inline bool styleHasOwnLocoRow(uint32_t style) {
     return s == 2u || s == 3u || s == 4u || s == 7u || s == 9u;
 }
 
+static const uint8_t kStyleUnarmed = 8;   // +0xC5 / [ebp-1] value the resolver treats as "no weapon style"
+
 enum Verdict { V_KEEP = 0, V_UNARMED = 1 };
 
 inline Verdict decide(uint32_t id, uint32_t gate, uint32_t style, bool inHolsterSet, bool ownerCombatZero) {
     if (gate == 1u && idInFilter(id) && styleHasOwnLocoRow(style) && inHolsterSet && ownerCombatZero) return V_UNARMED;
     return V_KEEP;
+}
+
+// The resolver frame pointer handed to the H4b handler: non-null, above the low 64 KiB, dword aligned (an MSVC EBP frame always is). Anything else is refused untouched.
+inline bool frameOk(uintptr_t ebp) { return ebp >= 0x10000u && (ebp & 3u) == 0; }
+
+// The anim id the resolver compares: the u16 argument at [ebp+8], upper half is garbage.
+inline uint32_t animId16(uint32_t raw) { return raw & 0xFFFFu; }
+
+// True and *out = kStyleUnarmed when the style byte [ebp-1] should be overwritten, else false (*out untouched). style is the byte just read from [ebp-1].
+inline bool overrideStyle(uint32_t idRaw, uint32_t gate, uint32_t style, bool inHolsterSet, bool ownerCombatZero, uint8_t* out) {
+    if (out == 0) return false;
+    if (decide(animId16(idRaw), gate, style, inHolsterSet, ownerCombatZero) != V_UNARMED) return false;
+    *out = kStyleUnarmed;
+    return true;
 }
 
 class HolsterSet {

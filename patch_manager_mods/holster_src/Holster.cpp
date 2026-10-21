@@ -1,7 +1,8 @@
-// Holster.cpp -- holster 0.6.0-dev (Steam build): P0 probe for the holstered-weapons mod (patch_manager_mods/42_holstered_weapons.md).
+// Holster.cpp -- holster 0.13.0-dev (Steam build; 0.13.0-dev adds hook H4b HolsterAnimStyle = REINSTALL): P0 probe for the holstered-weapons mod (patch_manager_mods/42_holstered_weapons.md).
 // Plan: .claude/plans/holstered_weapons.md. Handlers are plain extern "C" void __cdecl functions; the detour wrappers in
 // kotor2-steam-aspyr.hooks.toml call them at function entry with the game arguments BEFORE the stolen bytes run.
-// Hard rules for P0 (exceptions, both default off: the bone_test code patch, and HolsterPlace's 28-byte pose write with probe=1 bone_test=1 place=1): no other writes to game memory or registers, no engine calls, reads only through saferead, and every handler returns at
+// Hard rules for P0 (exceptions: the bone_test code patch, and HolsterPlace's 28-byte pose write with probe=1 bone_test=1 place=1, both default off; and the 0.13.0-dev unarmed_anim
+// style byte, ONE byte in the resolver's stack frame written by HolsterAnimStyle, default on but inert until a holster set exists): no other writes to game memory or registers, no engine calls, reads only through saferead, and every handler returns at
 // once while its channel is off (holster.ini: probe=1 AND ch_<name>=1; the one deliberate state-only exception is the hand record, which runs with probe=1 alone). All channels share one line budget (max_lines).
 //
 // Gates this probe answers (doc 42):
@@ -75,6 +76,10 @@ static uint32_t g_stowSlideMs = 350;
 // it stops; 0 = off (the 0.5.x behaviour). party_combat_hold (0.6.0-dev): 1 = while ANY party member's client combat flag is set, every party member's weapons stay drawn.
 static uint32_t g_moveHoldMs = 1500;
 static bool g_partyCombatHold = true;
+// unarmed_anim (0.13.0-dev, HW16, hook H4b): 1 = a holstered party member (weapon on the hip, not in combat) resolves its walk / run clips (rifle / heavy / dual-wield rows)
+// as unarmed, so it no longer runs around holding an invisible weapon. 0 = off (the 0.11 behaviour). Read once at boot; needs probe=1, bone_test=1 and place_mode=drawgate
+// (the holster set is filled by the drawgate placement), otherwise the handler never finds an owner and changes nothing.
+static bool g_unarmedAnim = true;
 // reach_test (0.7.0-dev, HW19): 1 = bend the owner's RIGHT arm toward the weapon while it slides between the hip and the hand (probe; needs probe=1, bone_test=1,
 // place_mode=drawgate and a non-zero slide). Default 0 = no arm writes.
 static bool g_reachTest = false;
@@ -339,6 +344,11 @@ static void readConfig() {
                 if (end != val && *end == 0) g_moveHoldMs = static_cast<uint32_t>(v < 0 ? 0 : (v > 10000 ? 10000 : v));
                 else cfgWarn(key, val, "not a number, keeping the default 1500");
             }
+            else if (!_stricmp(key, "unarmed_anim")) {
+                bool b = true;
+                if (hs::tuneParseBool(val, b)) g_unarmedAnim = b;
+                else cfgWarn(key, val, "not a boolean word, keeping the default 1");
+            }
             else if (!_stricmp(key, "party_combat_hold")) {
                 bool b = true;
                 if (hs::tuneParseBool(val, b)) g_partyCombatHold = b;
@@ -566,10 +576,64 @@ static void maybeReload();
 // 0.6.0-dev: last locomotion sighting per creature (the resolver runs every frame for every animated creature). Single writer (the game thread), read by the tick.
 static hs::MoveTable g_move;
 
+// One ANIMRES line (caller has checked the channel and the budget): style / gate / cc / d4 / e8 bytes of the anim object plus hol= and comb=.
+static void logAnimRes(void* self, uint32_t animId) {
+    const uintptr_t s = reinterpret_cast<uintptr_t>(self);
+    uint8_t b[5] = {0, 0, 0, 0, 0};
+    static const int offs[5] = {0xC5, 0xC6, 0xCC, 0xD4, 0xE8};
+    for (int i = 0; i < 5; ++i) (void)saferead::readAt(kSiteAnim, s, offs[i], &b[i]);
+    // HW15 probe: hol = this creature's weapon is on the hip (HolsterSet, filled by HolsterPlace), comb = client combat flag (-1 unreadable / no offset).
+    const unsigned long nowTick = GetTickCount();
+    const int hol = g_holSet.contains(s, rdU32(kSiteAnim, s, 0x68), static_cast<uint32_t>(nowTick)) ? 1 : 0;
+    const int combOff = k2addr::off(&K2AddrTable::Creature_ClientCombat);
+    uint32_t combRaw = 0;
+    const int comb = (combOff != 0 && rdU32Ok(kSiteAnim, s, combOff, &combRaw)) ? static_cast<int>(combRaw) : -1;
+    KP_LOG(chAnim, "ANIMRES self=%x id=%x style=%u gate=%u cc=%u d4=%u e8=%u hol=%d comb=%d tick=%lu", U(self), static_cast<unsigned>(animId & 0xFFFFu), b[0], b[1], b[2],
+           b[3], b[4], hol, comb, nowTick);
+}
+
+// 0.13.0-dev (HW16 verification): the first sighting of (creature, locomotion id 0x2711..0x2714) while its weapon is on the hip is logged as an ANIMRES line even
+// after the per-id and first-sighting caps are used up (separate budget kLocoLines), so a play session shows which loco ids a holstered creature still resolves and
+// with which style byte (before the H4b override, which acts one step later; the line shows the engine's style, not the overridden one). Cheap path: a counter test,
+// then a compare scan of a small table; the holster-set read happens at most every 250 ms per (creature, id) until the hol=1 line is out.
+static const LONG kLocoLines = 60;
+static const int kLocoSeenCap = 256;
+struct LocoSeen { uintptr_t self; uint32_t id; uint32_t next; bool done; };
+static LocoSeen s_locoSeen[kLocoSeenCap];
+static volatile LONG s_nLocoSeen = 0;
+static volatile LONG g_locoLines = 0;
+static bool isLocoId(uint32_t id) { const uint32_t i = id & 0xFFFFu; return i >= 0x2711u && i <= 0x2714u; }
+static bool locoHolProbe(void* self, uint32_t animId) {
+    if (g_locoLines >= kLocoLines) return false;
+    const uintptr_t sp = reinterpret_cast<uintptr_t>(self);
+    const uint32_t id = animId & 0xFFFFu;
+    const uint32_t now = GetTickCount();
+    LocoSeen* e = nullptr;
+    const LONG n = s_nLocoSeen < kLocoSeenCap ? s_nLocoSeen : kLocoSeenCap;
+    for (LONG i = 0; i < n; ++i)
+        if (s_locoSeen[i].self == sp && s_locoSeen[i].id == id) { e = &s_locoSeen[i]; break; }
+    if (e) {
+        if (e->done || static_cast<int32_t>(now - e->next) < 0) return false;
+    } else {
+        const LONG slot = InterlockedIncrement(&s_nLocoSeen) - 1;
+        if (slot >= kLocoSeenCap) return false;
+        e = &s_locoSeen[slot];
+        e->self = sp; e->id = id; e->done = false;
+    }
+    e->next = now + 250;
+    saferead::beginScope();
+    if (!g_holSet.contains(sp, rdU32(kSiteAnim, sp, 0x68), now)) return false;
+    e->done = true;
+    if (InterlockedIncrement(&g_locoLines) > kLocoLines || !KP_ENABLED(chAnim, KPLOG_INFO) || !takeLine()) return false;
+    logAnimRes(self, animId);
+    return true;
+}
+
 extern "C" void __cdecl HolsterAnimResolve(void* self, uint32_t animId) {
     if (g_moveHoldMs > 0 && hs::isLocoAnim(animId)) g_move.note(reinterpret_cast<uintptr_t>(self), GetTickCount());   // before every early return; no reads, no logging
     if (g_probe) maybeReload();   // the resolver runs every frame; the 0x5047B0 handler only on attach events (live test 10-15: GOB lines=12)
     if (!g_onAnim || !animInteresting(animId)) return;
+    if (isLocoId(animId) && locoHolProbe(self, animId)) return;   // 0.13.0-dev: hol=1 first sighting of a locomotion id (own cap, logged even past the caps below)
     // Quiet mode: 4 lines per id and 32 first-sightings of (creature, id, style); log_verbose=1: 20 and 64.
     const int xSlot = animExtraSlot(animId);
     if (InterlockedIncrement(xSlot >= 0 ? &g_animPerIdX[xSlot] : &g_animPerId[(animId & 0xFFFFu) - 0x2700u]) > (g_logVerbose ? 20 : 4)) {
@@ -590,18 +654,47 @@ extern "C" void __cdecl HolsterAnimResolve(void* self, uint32_t animId) {
     }
     saferead::beginScope();
     if (!KP_ENABLED(chAnim, KPLOG_INFO) || !takeLine()) return;
-    const uintptr_t s = reinterpret_cast<uintptr_t>(self);
-    uint8_t b[5] = {0, 0, 0, 0, 0};
-    static const int offs[5] = {0xC5, 0xC6, 0xCC, 0xD4, 0xE8};
-    for (int i = 0; i < 5; ++i) (void)saferead::readAt(kSiteAnim, s, offs[i], &b[i]);
-    // HW15 probe: hol = this creature's weapon is on the hip (HolsterSet, filled by HolsterPlace), comb = client combat flag (-1 unreadable / no offset).
-    const unsigned long nowTick = GetTickCount();
-    const int hol = g_holSet.contains(s, rdU32(kSiteAnim, s, 0x68), static_cast<uint32_t>(nowTick)) ? 1 : 0;
+    logAnimRes(self, animId);
+}
+
+// One byte into the game's memory, only when VirtualQuery says the page is committed and writable (probeWrite). The 0.13.0-dev style override is the only user.
+static bool writeU8Safe(unsigned site, uint8_t* p, uint8_t v) {
+    if (p == nullptr || !saferead::probeWrite(site, p, sizeof(uint8_t))) return false;
+    *reinterpret_cast<volatile uint8_t*>(p) = v;
+    return true;
+}
+
+// ---- 0.13.0-dev (HW16) hook H4b: mid-function in the resolver, after the weapon style byte was spilled to [ebp-1] and before any style switch reads it.
+// Params (hooks.toml): ebp = the resolver's frame, self = [ebp-0x34] (the client creature, ECX at entry), animIdRaw = [ebp+8] (u16 id, upper half is garbage).
+// Frame facts (static dump of the resolver): gate byte [ebp-0xD] (anim object +0xC6; 1 selects the wield table), style byte [ebp-1] (+0xC5; 8 = unarmed).
+// Writes ONE byte ([ebp-1] = 8) and only when HolsterAnimStyle.h overrideStyle says so: gate 1, id in the locomotion filter, style with its own wield row, the creature's
+// weapon is on the hip (g_holSet entry for this creature with the same body object, <= 500 ms old) and its client combat flag reads 0. Attacks / ranged / flourish ids are not in
+// the filter, and the later second style read in the resolver is untouched. Any unreadable value refuses; no engine call, no register change.
+static const LONG kStyleLogLines = 40;
+static volatile LONG g_styleOverrides = 0;
+extern "C" void __cdecl HolsterAnimStyle(void* ebpv, void* selfv, uint32_t animIdRaw) {
+    if (!g_unarmedAnim) return;
+    const uintptr_t ebp = reinterpret_cast<uintptr_t>(ebpv);
+    const uintptr_t self = reinterpret_cast<uintptr_t>(selfv);
+    if (!hs::frameOk(ebp) || self == 0) return;
+    if (g_probe) maybeReload();
+    if (!hs::idInFilter(hs::animId16(animIdRaw))) return;   // the cheap exit: most animations never reach a read
+    saferead::beginScope();
+    uint8_t gate = 0, style = 0;
+    if (!saferead::readAt(kSiteAnim, ebp, -0xD, &gate) || !saferead::readAt(kSiteAnim, ebp, -1, &style)) return;
+    if (gate != 1) return;
+    const uint32_t now = GetTickCount();
+    uint32_t body = 0;
+    const bool inSet = rdU32Ok(kSiteAnim, self, 0x68, &body) && g_holSet.contains(self, body, now);
     const int combOff = k2addr::off(&K2AddrTable::Creature_ClientCombat);
-    uint32_t combRaw = 0;
-    const int comb = (combOff != 0 && rdU32Ok(kSiteAnim, s, combOff, &combRaw)) ? static_cast<int>(combRaw) : -1;
-    KP_LOG(chAnim, "ANIMRES self=%x id=%x style=%u gate=%u cc=%u d4=%u e8=%u hol=%d comb=%d tick=%lu", U(self), static_cast<unsigned>(animId & 0xFFFFu), b[0], b[1], b[2],
-           b[3], b[4], hol, comb, nowTick);
+    uint32_t combat = 1;
+    const bool combZero = combOff != 0 && rdU32Ok(kSiteAnim, self, combOff, &combat) && combat == 0;
+    uint8_t newStyle = 0;
+    if (!hs::overrideStyle(animIdRaw, gate, style, inSet, combZero, &newStyle)) return;
+    if (!writeU8Safe(kSiteAnim, reinterpret_cast<uint8_t*>(ebp) - 1, newStyle)) return;
+    const LONG n = InterlockedIncrement(&g_styleOverrides);
+    if (n <= kStyleLogLines && g_onAnim && KP_ENABLED(chAnim, KPLOG_INFO) && takeLine())
+        KP_LOG(chAnim, "ANIMSTYLE owner=%x id=%x style=%u->%u", U(selfv), static_cast<unsigned>(hs::animId16(animIdRaw)), static_cast<unsigned>(style), static_cast<unsigned>(newStyle));
 }
 
 // Live reload of the tune keys (place, place_rot, place_off) when holster.ini changes. Throttled to 500 ms by ReloadPoll; a failed open keeps
@@ -1294,6 +1387,7 @@ static bool reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w,
     // Elbow pole: the style of this weapon category blended by how high the MOUNT sits (hip bends back and out, over-the-shoulder bends up and out), eased into the
     // animation's own elbow direction as the weapon reaches the hand. Body frame: x right, y forward, z up (parent Gob +0xA4 pose); not verified live yet (see u= / lt= in the log).
     float poleV[3], u = 0.f, lt[3] = {0, 0, 0};
+    float dzA = 0.f, fyA = 0.f, fxA = 0.f;   // HW24: the placed mount point in the body frame, in arm lengths (z up, y forward: <0 = behind, x right)
     float T[3] = {tgt.pos[0], tgt.pos[1], tgt.pos[2]};   // the point the hand is aimed at: the shown weapon (chase) or the carry path point
     const float* pole = nullptr;
     bool hinge = false;
@@ -1307,6 +1401,7 @@ static bool reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w,
         const float he0[3] = {pH.pos[0] - pE.pos[0], pH.pos[1] - pE.pos[1], pH.pos[2] - pE.pos[2]};
         const float arm = hs::r3len(es0) + hs::r3len(he0);
         u = hs::reachOverWeight(mlt[2], arm);
+        if (arm > 1e-4f) { dzA = mlt[2] / arm; fyA = mlt[1] / arm; fxA = mlt[0] / arm; }
         if (backMount) u = 1.f;   // any back bone (Upper back / Back): the hand reaches up and over the shoulder, whatever the weapon (a rifle slung low still has its grip behind the shoulder)
         const hs::ReachStyle& st = g_reachStyle[(cat >= 0 && cat < hs::CatCount) ? cat : 0];
         if (carry) {   // the hand walks mount -> animation hand along an arc bowed up / forward / outward for a high mount (reach: backwards along it, carry: forwards); restMix pulls it to the resting hand
@@ -1359,6 +1454,7 @@ static bool reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w,
         hs::Pose pHn, pWp;
         const uintptr_t parW = rdU32(kSitePlace, e->wrist, 0x3C);
         if (parW && reachNodePose(e->hand, e->poseFn, pHn) && reachNodePose(parW, e->poseFn, pWp)) {
+            gDeg = hs::reachQAngleDeg(hs::qmul(*mountQ, hs::reachConj(pHn.q)));
             const hs::Q dq = hs::reachWristDelta(*mountQ, pH.q, pathF, pHn.q, g_reachWristMax, w * g_reachWristPct);
             const hs::Q outW = hs::reachDeltaToLocal(pWp.q, dq, baseW);
             if (reachWriteQ(e->wrist, outW)) { hs::reachNoteWrite(e->wb, outW); wrote |= 4; wristDeg = hs::reachQAngleDeg(dq); }
@@ -1388,7 +1484,6 @@ static SRWLOCK g_edLock = SRWLOCK_INIT;
 static hs::PreviewRegistry g_preview;
 static volatile LONG g_previewN = 0;     // g_preview.n mirror for the lock-free "no preview" test on every placement
 static hs::EditOverlay g_edit;
-    float dzA = 0.f, fyA = 0.f, fxA = 0.f;   // HW24: the placed mount point in the body frame, in arm lengths (z up, y forward: <0 = behind, x right)
 static void* g_editGob = nullptr;
 static hs::Pose g_editMount;              // world pose of the edited Gob's mount bone, refreshed by every placement of that Gob
 static bool g_editMountOk = false;
@@ -1402,7 +1497,6 @@ static const bool kWorldKnowsHand = true;
 // The editor preview resolves the hand as it is (S2/H4, 10-18): a left preview weapon is always the left resolve (mirror + left_extra_rot, or the
 // explicit l_ keys), whatever bone_test_left says. bone_test_left=0 only keeps the in-world lhand attach node unpatched (that weapon stays in the
 // hand and HolsterPlace refuses it as not-target); it no longer changes what the editor shows. The old gate (left && g_boneLeft) resolved a left
-        if (arm > 1e-4f) { dzA = mlt[2] / arm; fyA = mlt[1] / arm; fxA = mlt[0] / arm; }
 // preview as the right hand, so the two weapons overlapped at the same spot and angle.
 static bool effLeft(bool left) {
     return left;
@@ -1455,7 +1549,6 @@ static bool previewPlace(uintptr_t g, uintptr_t beh) {
     gobNames(g, parent, model, body);
     const hs::Category cat = hs::classify(model, 0);
     if (!editing) hs::resolveFull(s_tune, model, cat, body, left, false, r);
-            gDeg = hs::reachQAngleDeg(hs::qmul(*mountQ, hs::reachConj(pHn.q)));
     const uint8_t boneIdx = r.boneIdx ? r.boneIdx : hs::defaultBone(s_tune);
     const char* const bone = hs::boneNameOf(boneIdx) ? hs::boneNameOf(boneIdx) : g_boneName;
     const uintptr_t gvt = rdU32(kSitePlace, g, 0), nvt = n ? rdU32(kSitePlace, n, 0) : 0;
@@ -1686,6 +1779,10 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
             // HW14: the gate only picks the slide's target; the pose is blended at the end. f == 1 is the hand (identical to the plain `if (!hip) return`).
             const uint32_t now = slideNowMs();
             if (first || !readable) {
+                static volatile LONG s_cutLines = 0;   // HW24: a hard reset that lands on a running slide is the visible pop; say why
+                if (ent->slide.active(now) && g_onPlace && KP_ENABLED(chPlace, KPLOG_INFO) && InterlockedIncrement(&s_cutLines) <= 40 && takeLine())
+                    KP_LOG(chPlace, "SLIDE cut reason=%s owner=%x gob=%x left=%d dir=%s frac=%.2f", readable ? "first" : "unreadable",
+                           static_cast<unsigned>(owner), static_cast<unsigned>(g), ent->left ? 1 : 0, ent->slide.dir ? "draw" : "stow", static_cast<double>(ent->slide.frac(now)));
                 ent->slide.reset(!hip, now);
                 ent->slFrames = 0;
             } else {
@@ -1760,6 +1857,19 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
         if (reachArm(g, reinterpret_cast<uintptr_t>(beh), out, wa, ent->left, static_cast<int>(cat), pl.pathF, pl.restMix, hipPose.pos, &hipPose.q, reachIsBackBone(mountBone), n, g_reachCarry && pl.active, &carried)) {
             // carry: the weapon rides the moved hand (the engine's hand pose, recomputed after the arm write), pl.carryW: 0 while the hand is still reaching the mount (draw) or already releasing it (stow), 1 while it carries; at the draw end the arm has released, so the carried hand IS the engine hand
             const hs::Pose rid = hs::blendPose(hipPose, carried, pl.carryW);
+            if (pl.carryW > 0.f && pl.carryW < 1.f && g_onPlace && KP_ENABLED(chPlace, KPLOG_INFO)) {   // HW24: residual between the carried hand pose and the mount at the carryW step, the flip dot, the style byte
+                static volatile LONG s_resLines = 0;
+                if (InterlockedIncrement(&s_resLines) <= 40 && takeLine()) {
+                    const float dp[3] = {carried.pos[0] - hipPose.pos[0], carried.pos[1] - hipPose.pos[1], carried.pos[2] - hipPose.pos[2]};
+                    uint8_t style = 0;
+                    const uintptr_t sPar = rdU32(kSitePlace, reinterpret_cast<uintptr_t>(beh), 0x14);
+                    if (sPar) (void)saferead::readAt(kSitePlace, sPar, 0xC5, &style);
+                    KP_LOG(chPlace, "RESID gob=%x left=%d dir=%s carryW=%.2f f=%.2f pos_cm=%.1f ang=%.0f dq=%.3f style=%u", static_cast<unsigned>(g), ent->left ? 1 : 0,
+                           ent->slide.dir ? "draw" : "stow", static_cast<double>(pl.carryW), static_cast<double>(pl.pathF), static_cast<double>(hs::r3len(dp) * 100.f),
+                           static_cast<double>(hs::reachQAngleDeg(hs::qmul(carried.q, hs::reachConj(hipPose.q)))), static_cast<double>(hs::qdot(hipPose.q, carried.q)),
+                           static_cast<unsigned>(style));
+                }
+            }
             if (hs::poseSane(rid) && saferead::probeWrite(kSitePlace, reinterpret_cast<void*>(g + 0xA4), sizeof(hs::Pose))) memcpy(reinterpret_cast<void*>(g + 0xA4), &rid, sizeof(hs::Pose));
         }
     }
@@ -1779,10 +1889,6 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
     KP_LOG(chPlace, "PLACE n=%ld gob=%x node=%x beh=%x gobvt=%x pos0=(%.3f,%.3f,%.3f) quat0=(%.3f,%.3f,%.3f,%.3f) pos1=(%.3f,%.3f,%.3f) quat1=(%.3f,%.3f,%.3f,%.3f) cat=%s left=%d src=%s extra=%.1f",
            static_cast<long>(c), U(gob), U(node), U(beh), static_cast<unsigned>(vt), in.pos[0], in.pos[1], in.pos[2], in.q.w, in.q.x, in.q.y, in.q.z,
            out.pos[0], out.pos[1], out.pos[2], out.q.w, out.q.x, out.q.y, out.q.z, hs::categoryName(cat), ent->left ? 1 : 0, hs::leftSrcName(ent->r, ent->left),
-                static volatile LONG s_cutLines = 0;   // HW24: a hard reset that lands on a running slide is the visible pop; say why
-                if (ent->slide.active(now) && g_onPlace && KP_ENABLED(chPlace, KPLOG_INFO) && InterlockedIncrement(&s_cutLines) <= 40 && takeLine())
-                    KP_LOG(chPlace, "SLIDE cut reason=%s owner=%x gob=%x left=%d dir=%s frac=%.2f", readable ? "first" : "unreadable",
-                           static_cast<unsigned>(owner), static_cast<unsigned>(g), ent->left ? 1 : 0, ent->slide.dir ? "draw" : "stow", static_cast<double>(ent->slide.frac(now)));
            static_cast<double>(ent->r.extraDeg));
 }
 
@@ -1857,19 +1963,6 @@ static int32_t KPATCH_CALL apiBeginEdit(void* gob, int32_t scope) {
     if (!loadTune(c)) return 0;
     void* parent = nullptr;
     bool left = false;
-            if (pl.carryW > 0.f && pl.carryW < 1.f && g_onPlace && KP_ENABLED(chPlace, KPLOG_INFO)) {   // HW24: residual between the carried hand pose and the mount at the carryW step, the flip dot, the style byte
-                static volatile LONG s_resLines = 0;
-                if (InterlockedIncrement(&s_resLines) <= 40 && takeLine()) {
-                    const float dp[3] = {carried.pos[0] - hipPose.pos[0], carried.pos[1] - hipPose.pos[1], carried.pos[2] - hipPose.pos[2]};
-                    uint8_t style = 0;
-                    const uintptr_t sPar = rdU32(kSitePlace, reinterpret_cast<uintptr_t>(beh), 0x14);
-                    if (sPar) (void)saferead::readAt(kSitePlace, sPar, 0xC5, &style);
-                    KP_LOG(chPlace, "RESID gob=%x left=%d dir=%s carryW=%.2f f=%.2f pos_cm=%.1f ang=%.0f dq=%.3f style=%u", static_cast<unsigned>(g), ent->left ? 1 : 0,
-                           ent->slide.dir ? "draw" : "stow", static_cast<double>(pl.carryW), static_cast<double>(pl.pathF), static_cast<double>(hs::r3len(dp) * 100.f),
-                           static_cast<double>(hs::reachQAngleDeg(hs::qmul(carried.q, hs::reachConj(hipPose.q)))), static_cast<double>(hs::qdot(hipPose.q, carried.q)),
-                           static_cast<unsigned>(style));
-                }
-            }
     {
         EdLock lk;
         const int i = hs::previewFind(g_preview, gob);
@@ -2166,16 +2259,16 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     addName(names, sizeof(names), g_onGob, "gob");
     addName(names, sizeof(names), g_onPlace, "place");
     addName(names, sizeof(names), g_onToggle, "toggle");
-    KP_LOG(chMain, "holster 0.11.0-dev loaded (P0 probe, log-only): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_probe ? 1 : 0,
+    KP_LOG(chMain, "holster 0.13.0-dev loaded (P0 probe + unarmed_anim=%d): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_unarmedAnim ? 1 : 0, g_probe ? 1 : 0,
            names[0] ? names : "none", static_cast<long>(g_maxLines), g_gobEvery, k2addr::get() ? "ok" : "none");
     {
         hs::TuneCfg t;
         LONG seq = 0;
         (void)loadTuneIfChanged(t, seq);
-        KP_LOG(chMain, "CONFIG toggle_key=0x%x draw_hold_ms=%u combat_exit_ms=%d flourish_exit_ms=%d hostile_range=%.1f hostile_backoff_ms=%u delay_party=%d flourish_draw=%d draw_slide_ms=%u stow_slide_ms=%u move_hold_ms=%u party_combat_hold=%d reach_test=%d reach_carry=%d reach_hinge=%d (active=%d: needs probe=1, bone_test=1 and place_mode=drawgate)",
+        KP_LOG(chMain, "CONFIG toggle_key=0x%x draw_hold_ms=%u combat_exit_ms=%d flourish_exit_ms=%d hostile_range=%.1f hostile_backoff_ms=%u delay_party=%d flourish_draw=%d draw_slide_ms=%u stow_slide_ms=%u move_hold_ms=%u party_combat_hold=%d reach_test=%d reach_carry=%d reach_hinge=%d unarmed_anim=%d (active=%d: needs probe=1, bone_test=1 and place_mode=drawgate)",
                static_cast<unsigned>(g_toggleKey), static_cast<unsigned>(g_drawHoldMs), g_delayCfg.combatExitMs, g_delayCfg.flourishExitMs, static_cast<double>(g_hostileRange),
                static_cast<unsigned>(g_hostileBackoffMs), g_delayParty ? 1 : 0, g_flourishDraw ? 1 : 0, static_cast<unsigned>(g_drawSlideMs), static_cast<unsigned>(g_stowSlideMs), static_cast<unsigned>(g_moveHoldMs),
-               g_partyCombatHold ? 1 : 0, g_reachTest ? 1 : 0, g_reachCarry ? 1 : 0, g_reachHinge ? 1 : 0, (g_boneTest && drawgateMode()) ? 1 : 0);
+               g_partyCombatHold ? 1 : 0, g_reachTest ? 1 : 0, g_reachCarry ? 1 : 0, g_reachHinge ? 1 : 0, g_unarmedAnim ? 1 : 0, (g_boneTest && drawgateMode()) ? 1 : 0);
         KP_LOG(chMain, "PLACEMODE %s (active=%d: needs probe=1 and bone_test=1)", hs::placeModeName(g_placeMode), g_boneTest ? 1 : 0);
         KP_LOG(chMain, "CONFIG left_extra_rot=%.1f bone_test_left=%d (ini=%d, active=%d: needs probe=1 and bone_test=1) log_verbose=%d", static_cast<double>(t.leftExtra),
                g_boneLeftCfg ? 1 : 0, g_boneLeftCfg ? 1 : 0, g_boneLeft ? 1 : 0, g_logVerbose ? 1 : 0);

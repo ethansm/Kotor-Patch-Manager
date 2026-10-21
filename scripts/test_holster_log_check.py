@@ -616,5 +616,37 @@ class Hw24ReachTests(unittest.TestCase):
         self.assertIn("resid max=3.2cm/40deg", " ".join(H._reach_events(main)))
 
 
+class Hw16AnimStyleTests(unittest.TestCase):
+    """HW16 (0.13.0-dev): ANIMSTYLE counter and the hol/comb tail of the ANIMRES line."""
+    ANIMRES_HOL = "ANIMRES self=2a1 id=2714 style=4 gate=1 cc=2 d4=3 e8=4 hol=1 comb=0 tick=1500"
+    ANIMRES_HOL0 = "ANIMRES self=2a1 id=2714 style=4 gate=1 cc=2 d4=3 e8=4 hol=0 comb=-1 tick=1500"
+
+    def test_planted_positive_animstyle_counted(self):
+        lines = ["ANIMSTYLE owner=2a1 id=2714 style=4->8", "ANIMSTYLE owner=2a1 id=2713 style=7->8", "ANIMSTYLE owner=1f0 id=2712 style=2->8"]
+        recs, skipped, main = parse(lines)
+        self.assertEqual((recs, skipped), ([], []))   # not a keyword record, not a malformed line
+        self.assertEqual(len(main["animstyle"]), 3)
+        out = H._animstyle(main, recs)
+        self.assertIn("ANIMSTYLE n=3 owners=2", out)
+        self.assertIn("styles 2->8,4->8,7->8", out)
+
+    def test_planted_negative_no_animstyle_no_suffix(self):
+        recs, _, main = parse(["ANIMSTYLE owner=zz id=2714 style=x->y", comb(1, 0, 1, 1)])
+        self.assertEqual(H._animstyle(main, recs), "")
+        self.assertEqual(main.get("animstyle", []), [])
+
+    def test_animres_with_hol_comb_parses_and_counts_hol1(self):
+        recs, skipped, main = parse([self.ANIMRES_HOL, self.ANIMRES_HOL0, anim_res(0x10, "2714")])
+        self.assertEqual(skipped, [])   # the 0.5.2+ line used to land in skipped
+        self.assertEqual([r["hol"] for r in recs], [1, 0, -1])
+        self.assertIn(" hol=1 ANIMRES=1", H._animstyle(main, recs))
+
+    def test_report_line_cap_unchanged(self):
+        recs, skipped, main = parse([LOADED, self.ANIMRES_HOL, "ANIMSTYLE owner=2a1 id=2714 style=4->8"])
+        out = H.render(recs, skipped, main, 3, "")
+        self.assertTrue(any(l.startswith("ANIMRES n=1") and "ANIMSTYLE n=1 owners=1" in l for l in out))
+        self.assertLessEqual(len(out), 47)
+
+
 if __name__ == "__main__":
     unittest.main()

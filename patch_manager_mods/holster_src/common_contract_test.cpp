@@ -36,6 +36,10 @@ KADDR(GobUpdateDependent, 0x005047B0);
 KADDR(GobAttachByName, 0x00461670);
 KADDR(GobSetPosition, 0x00461490);
 KADDR(GobSetOrientation, 0x004614E0);
+// HW16 (0.13.0-dev) H4b: the unarmed-style override detours a MID-FUNCTION site inside the resolver (MOV EAX,[EDX+0xD4], 6 bytes, right after the style byte is spilled to [ebp-1]),
+// 0x2C bytes past the entry. It is a gameaddr constant only (no K2Addr table field): the hook and the DLL do not read it back.
+static_assert(gameaddr::AnimStyleSite == 0x0086367C, "holster relies on: gameaddr::AnimStyleSite == 0x0086367C (H4b mid-function site)");
+static_assert(gameaddr::AnimStyleSite - kSteam.AnimResolve == 0x2C, "holster relies on: H4b sits 0x2C bytes after the resolver entry (H4 and H4b spans must not overlap)");
 #define KOFF(f, val) static_assert(kSteam.f == (val), "holster relies on: kSteam." #f " == " #val " (creature offset)")
 KOFF(Creature_ClientCombat, 0x138);
 KOFF(Creature_BodyObj, 0x68);

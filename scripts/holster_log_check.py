@@ -53,7 +53,7 @@ FULL_RE = {
     "ATTACH": _rx(r"\bATTACH obj=<H> tag='(?P<tag>[^']*)' creature=(?P<creature><H>) body=(?P<body><H>) "
                   r"handleR=(?P<hr><H>) handleL=(?P<hl><H>) tick=\d+"),
     "SWAP": _rx(r"\bSWAP exec=<H>" + "".join(" d%d=<H>" % i for i in range(8)) + r" tick=\d+"),
-    "ANIMRES": _rx(r"\bANIMRES self=(?P<self><H>) id=(?P<id><H>) style=(?P<style>\d+) gate=(?P<gate>\d+) cc=\d+ d4=\d+ e8=\d+ tick=\d+"),
+    "ANIMRES": _rx(r"\bANIMRES self=(?P<self><H>) id=(?P<id><H>) style=(?P<style>\d+) gate=(?P<gate>\d+) cc=\d+ d4=\d+ e8=\d+(?: hol=(?P<hol>\d) comb=-?\d+)? tick=\d+"),
     "ANIMSEND": _rx(r"\bANIMSEND creature=<H> id=(?P<id><H>) tick=\d+"),
     "GOB": _rx(r"\bGOB n=(?P<n><I>) gob=(?P<gob><H>) parent18=(?P<parent><H>) "
                r"pos=\((?P<px><N>),(?P<py><N>),(?P<pz><N>)\) quat=\((?P<qw><N>),(?P<qx><N>),(?P<qy><N>),(?P<qz><N>)\)"),
@@ -81,6 +81,7 @@ MAIN_RES = {
     # toggle-channel events (Holster.cpp); counted from the raw line, never skipped: a malformed line simply does not count
     "partyhold": re.compile(r"\bPARTYHOLD (on|off) n=\d+"),
     "movehold": re.compile(r"\bMOVEHOLD slot=-?\d+ skip cut \(moving\)"),
+    "animstyle": re.compile(r"\bANIMSTYLE owner=(\w+) id=(\w+) style=(\d+)->(\d+)"),   # HW16 (0.13.0-dev): the unarmed override fired
     "delay": re.compile(r"\bDELAY slot=-?\d+ cut before=\d+ elapsed=\d+ kind=(combat|flourish) wrote=1\b"),
     "reach": re.compile(r"\bREACH owner=\w+ w=([\d.]+) reach=([\d.]+) .*?err=(-?[\d.]+) persist=(\d) wrote=(\d)"
                        r"(?: wr=(-?[\d.]+) hg=(\d) f=(-?[\d.]+))?(?: dzA=(-?[\d.]+) fy=(-?[\d.]+) fx=(-?[\d.]+) g=(-?[\d.]+) cap=(-?[\d.]+))?"),
@@ -104,7 +105,7 @@ def _record(kind, n, m):
     elif kind in ("ANIMRES", "ANIMSEND"):
         rec.update(id=_hex(g["id"]))
         if kind == "ANIMRES":
-            rec.update(self=_hex(g["self"]), style=int(g["style"]), gate=int(g["gate"]))
+            rec.update(self=_hex(g["self"]), style=int(g["style"]), gate=int(g["gate"]), hol=int(g["hol"]) if g["hol"] else -1)
     elif kind == "GOB":
         rec.update(gob=_hex(g["gob"]), parent=_hex(g["parent"]),
                    pos=[float(g[k]) for k in ("px", "py", "pz")], quat=[float(g[k]) for k in ("qw", "qx", "qy", "qz")])
@@ -171,6 +172,9 @@ def parse_lines(window):
         m = MAIN_RES["delay"].search(text)
         if m:
             main["delay"][m.group(1)] += 1
+        m = MAIN_RES["animstyle"].search(text)
+        if m:
+            main.setdefault("animstyle", []).append((_hex(m.group(1)), _hex(m.group(2)), int(m.group(3)), int(m.group(4))))
         if text.find(" SLIDE cut ") >= 0 or text.startswith("SLIDE cut "):   # HW24: a hard reset that hit a running slide
             mc = re.search(r"\bSLIDE cut reason=(\w+)", text)
             if mc:
@@ -234,6 +238,19 @@ def _status(f):
     rl = f.get("reload", [])
     reload = ("%d last: %s" % (len(rl), rl[-1][:70])) if rl else "0"
     return "status: loaded=%s | cap reached=%s | BONETEST=%s | TID %s | RELOAD %s" % (loaded, cap, bone, tids, reload)
+
+
+def _animstyle(f, recs):
+    """HW16: ANIMSTYLE lines (the unarmed override fired; the DLL logs only the first 40, so n is a floor) and the hol=1 ANIMRES lines of locomotion ids
+    (a holstered creature still resolving an armed row shows up as style 2/3/4/7/9 there). Appended to the ANIMRES line: no extra report line."""
+    ev = f.get("animstyle", [])
+    hol = sum(1 for r in recs if r["kind"] == "ANIMRES" and r.get("hol") == 1)
+    if not ev and not hol:
+        return ""
+    txt = " | ANIMSTYLE n=%d owners=%d" % (len(ev), len({e[0] for e in ev}))
+    if ev:
+        txt += " styles " + ",".join("%d->%d" % kv for kv in sorted({(e[2], e[3]) for e in ev}))
+    return txt + " hol=1 ANIMRES=%d" % hol
 
 
 def _comb(recs):
@@ -486,6 +503,7 @@ def render(recs, skipped, main_facts, nlines, meta):
     if styles:   # C6: +0xC5 = wield style byte, +0xC6 = table gate; one entry per creature and value
         out[-1] += " | style per creature (self style/gate): " + ", ".join("%s %d/%d x%d" % (k[0], k[1], k[2], v)
                                                                             for k, v in styles.most_common(8))
+    out[-1] += _animstyle(main_facts, recs)
     out.append(_hist("ANIMSEND", recs))
     out += _gobs(recs, CAPS["gobs_with_place"] if has_place else CAPS["gobs"])
     if has_place:

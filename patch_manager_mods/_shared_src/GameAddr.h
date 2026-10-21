@@ -76,6 +76,7 @@ constexpr uintptr_t ClientCombatStateSet = 0x007682B0;   // thiscall(client crea
 constexpr uintptr_t WeaponAttach = 0x007637E0;           // cdecl(u32 obj, char* tag, int* creature): in-world rhand/lhand attach, RET 0
 constexpr uintptr_t SwapWeaponsExec = 0x005DF920;        // thiscall(action executor): swaps 0x10<->0x40000, 0x20<->0x80000
 constexpr uintptr_t AnimResolve = 0x00863650;            // thiscall(client creature; u16 animId): ready-idle / wield-transition row resolver
+constexpr uintptr_t AnimStyleSite = 0x0086367C;       // MID-FUNCTION inside AnimResolve (not an entry): MOV EAX,[EDX+0xD4] (6 bytes) right after the style byte is spilled to [ebp-1]; holster H4b (HW16) detours it to override the locomotion style
 constexpr uintptr_t AnimSend = 0x005644B0;               // thiscall(client creature; animId, pos[3], speed): anim message sender
 constexpr uintptr_t GobUpdateDependent = 0x005047B0;     // thiscall(Gob): UpdateDependentPosition copy of the attach-node transform
 constexpr uintptr_t GobAttachByName = 0x00461670;        // thiscall(parent Gob; node name, kind): named-node attach, miss = silent no-attach
