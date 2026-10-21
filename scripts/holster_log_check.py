@@ -84,7 +84,8 @@ MAIN_RES = {
     "animstyle": re.compile(r"\bANIMSTYLE owner=(\w+) id=(\w+) style=(\d+)->(\d+)"),   # HW16 (0.13.0-dev): the unarmed override fired
     "delay": re.compile(r"\bDELAY slot=-?\d+ cut before=\d+ elapsed=\d+ kind=(combat|flourish) wrote=1\b"),
     "reach": re.compile(r"\bREACH owner=\w+ w=([\d.]+) reach=([\d.]+) .*?err=(-?[\d.]+) persist=(\d) wrote=(\d)"
-                       r"(?: wr=(-?[\d.]+) hg=(\d) f=(-?[\d.]+))?(?: dzA=(-?[\d.]+) fy=(-?[\d.]+) fx=(-?[\d.]+) g=(-?[\d.]+) cap=(-?[\d.]+))?"),
+                       r"(?: wr=(-?[\d.]+) hg=(\d) f=(-?[\d.]+))?(?: dzA=(-?[\d.]+) fy=(-?[\d.]+) fx=(-?[\d.]+) g=(-?[\d.]+) cap=(-?[\d.]+))?(?: hold=(\d+))?"),
+    "reachhold": re.compile(r"\bREACH owner=\w+ hold=(\d+) why=(\w+)"),   # HW25 (0.14.0-dev): a frame where a transient refusal re-applied the last arm
     "reachrefuse": re.compile(r"\bREACH owner=\w+ refuse=(\w+)"),
     "node": re.compile(r"\bPLACENODE node=\w+ gob=\w+ t=(\d+) step=(-?\d+) name=(\S+) target=(\d)(?: bvt=(\w+))?(?: gname=(\S+) mname=(\S+))?(?: cat=(\w+))?"),
 }
@@ -132,7 +133,7 @@ def parse_lines(window):
     recs, skipped = [], []
     main = {"loaded": [], "cap": [], "bonetest": Counter(), "unreadable": 0, "tid": {}, "reload": [], "tune": [], "refuse": {}, "node": Counter(), "mount": Counter(),
             "owner": Counter(), "combc": set(), "partyhold": Counter(), "movehold": 0, "delay": Counter(),
-            "reach": [], "slidecut": Counter(), "resid": [], "reachfound": 0, "reachrefuse": Counter(),
+            "reach": [], "slidecut": Counter(), "resid": [], "reachfound": 0, "reachrefuse": Counter(), "reachhold": Counter(),
             "preview": [], "camnode": [], "wmname": set()}
     for n, raw in window:
         text = raw.strip()
@@ -190,6 +191,9 @@ def parse_lines(window):
         elif " REACH found " in text or text.startswith("REACH found "):
             main["reachfound"] += 1
         else:
+            mh = MAIN_RES["reachhold"].search(text)
+            if mh:
+                main["reachhold"][mh.group(2)] += 1
             m = MAIN_RES["reachrefuse"].search(text)
             if m:
                 main["reachrefuse"][m.group(1)] += 1
@@ -481,6 +485,11 @@ def _reach_events(f):
     cuts = f.get("slidecut", Counter())
     if cuts:
         line += " cut=%s" % ",".join("%s:%d" % kv for kv in sorted(cuts.items()))
+    # HW25 (0.14.0-dev): held frames by refusal kind, and the solves that followed a hold episode (hold=N on the full REACH line)
+    held = f.get("reachhold", Counter())
+    after = [int(x[13]) for x in r if len(x) > 13 and x[13] is not None and x[13] > 0]
+    if held or after:
+        line += " hold=%s after_hold=%d max=%d" % (",".join("%s:%d" % kv for kv in sorted(held.items())) or "none", len(after), max(after) if after else 0)
     return [line]
 
 

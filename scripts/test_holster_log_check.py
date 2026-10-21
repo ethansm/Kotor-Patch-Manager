@@ -616,6 +616,41 @@ class Hw24ReachTests(unittest.TestCase):
         self.assertIn("resid max=3.2cm/40deg", " ".join(H._reach_events(main)))
 
 
+class Hw25HoldTests(unittest.TestCase):
+    """HW25 (0.14.0-dev): REACH hold= tail on the full line, held-frame lines by refusal kind; SLIDE cut and RESID counting unaffected."""
+
+    HOLD_REACH = ("REACH owner=1a w=0.50 reach=1.00 S=(0,0,0) E=(0,0,0) H=(0,0,0) T=(0,0,0) Enew=(0,0,0) side=R cat=2 "
+                  "u=1.00 lt=(0,0,0) err=0.010 persist=0 wrote=7 wr=88 hg=1 f=0.40 dzA=0.22 fy=-0.10 fx=0.05 g=130 cap=90 hold=2")
+    HOLD0_REACH = HOLD_REACH.replace("hold=2", "hold=0")
+
+    def test_planted_hold_tail_and_held_lines_counted(self):
+        lines = [self.HOLD_REACH, self.HOLD0_REACH,
+                 "REACH owner=1a hold=1 why=pose solved=7 w=0.50", "REACH owner=1a hold=2 why=pose solved=7 w=0.50", "REACH owner=1a hold=1 why=solve solved=3 w=0.40"]
+        _, skipped, main = parse(lines)
+        self.assertEqual(skipped, [])
+        self.assertEqual(len(main["reach"]), 2)          # the short held lines are not full REACH steps
+        self.assertEqual(main["reachhold"], {"pose": 2, "solve": 1})
+        out = " ".join(H._reach_events(main))
+        self.assertIn("hold=pose:2,solve:1 after_hold=1 max=2", out)
+        self.assertIn("wrist=2", out)                    # the hold= tail did not disturb the older fields
+        self.assertIn("g max=130", out)
+
+    def test_planted_negative_no_hold_no_suffix(self):
+        _, _, main = parse([Hw24ReachTests.NEW_REACH, Hw24ReachTests.OLD_REACH, self.HOLD0_REACH])
+        self.assertEqual(len(main["reach"]), 3)
+        self.assertEqual(sum(main["reachhold"].values()), 0)
+        self.assertNotIn(" hold=", " ".join(H._reach_events(main)))
+
+    def test_slide_cut_and_resid_still_counted_next_to_hold(self):
+        _, skipped, main = parse(["SLIDE cut reason=first owner=1 gob=2 left=0 dir=stow frac=0.40", self.HOLD_REACH,
+                                  "RESID gob=2 left=0 dir=draw carryW=0.50 f=0.50 pos_cm=3.2 ang=40 dq=0.900 style=3"])
+        self.assertEqual(skipped, [])
+        out = " ".join(H._reach_events(main))
+        self.assertIn("cut=first:1", out)
+        self.assertIn("resid max=3.2cm/40deg", out)
+        self.assertIn("after_hold=1 max=2", out)
+
+
 class Hw16AnimStyleTests(unittest.TestCase):
     """HW16 (0.13.0-dev): ANIMSTYLE counter and the hol/comb tail of the ANIMRES line."""
     ANIMRES_HOL = "ANIMRES self=2a1 id=2714 style=4 gate=1 cc=2 d4=3 e8=4 hol=1 comb=0 tick=1500"

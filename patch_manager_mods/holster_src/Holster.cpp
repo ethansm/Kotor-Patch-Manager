@@ -1271,7 +1271,9 @@ struct ReachEnt {
     hs::Base bb, fb, wb;
     bool dirty, refused, left;
     uint32_t refusedAt;
+    uint8_t solved, holdN;   // HW25: write bits (bicep 1, forearm 2, wrist 4) of the last successful solve, and the consecutive frames held since (cleared at slide end / entry drop)
 };
+static const uint8_t kReachHoldFrames = 3;   // HW25: a transient refusal re-applies the last solved arm for up to this many frames (about 50 ms), then lets go
 static struct ReachStyleInit { ReachStyleInit() { for (int i = 0; i < hs::CatCount; ++i) g_reachStyle[i] = hs::reachDefaultStyle(i); } } g_reachStyleInit;
 static ReachEnt g_reach[64];
 static unsigned g_reachNext = 0;
@@ -1363,16 +1365,36 @@ static bool reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w,
         if (static_cast<int32_t>(GetTickCount() - e->refusedAt) > 5000) e->parent = 0;   // retry later
         return false;
     }
-    if (reachStale(*e)) { e->parent = 0; return false; }
+    if (reachStale(*e)) { e->parent = 0; e->solved = e->holdN = 0; return false; }
+
+    // HW25: a transient refusal (quat read, pose, solve) while the slide still runs re-applies the last solved local quats instead of dropping the arm to the animation for
+    // a frame. Nothing world-space is stored: the carried hand is recomputed from the attach node. Never at slide end (w <= 0) or on a permanent refusal.
+    auto holdLast = [&](hs::ReachHoldKind kind, const char* why) -> bool {
+        if (!(w > 0.f)) { e->solved = e->holdN = 0; return false; }   // slide over: nothing to hold, and the next slide starts clean
+        if (!hs::reachHoldAllowed(kind, e->solved, e->holdN, w, kReachHoldFrames, carry)) return false;
+        bool ok = true;
+        if (e->solved & 1) ok = reachWriteQ(e->bic, e->bb.wrote) && ok;
+        if (e->solved & 2) ok = reachWriteQ(e->fore, e->fb.wrote) && ok;
+        if ((e->solved & 4) && e->wrist) ok = reachWriteQ(e->wrist, e->wb.wrote) && ok;
+        if (!ok) return false;
+        ++e->holdN;
+        static volatile LONG s_holdLines = 0;
+        if (KP_ENABLED(chMain, KPLOG_INFO) && InterlockedIncrement(&s_holdLines) <= 40 && takeLine())
+            KP_LOG(chMain, "REACH owner=%x hold=%u why=%s solved=%u w=%.2f", static_cast<unsigned>(e->owner), static_cast<unsigned>(e->holdN), why, static_cast<unsigned>(e->solved), static_cast<double>(w));
+        if (!(carry && carried && attachNode && (e->solved & 3) == 3)) return false;
+        const uintptr_t avt = rdU32(kSitePlace, attachNode, 0);
+        return avt && rdU32(kSitePlace, avt, 0x0C) == e->poseFn && reachNodePose(attachNode, e->poseFn, *carried);
+    };
 
     hs::Q curB, curF, curW = {1, 0, 0, 0};
-    if (!reachReadQ(e->bic, curB) || !reachReadQ(e->fore, curF)) return false;
+    if (!reachReadQ(e->bic, curB) || !reachReadQ(e->fore, curF)) return holdLast(hs::ReachHoldQuatRead, "read");
     const bool wristOk = e->wrist != 0 && reachReadQ(e->wrist, curW);
     auto same = [](const hs::Q& a, const hs::Q& b) { return std::fabs(a.w * b.w + a.x * b.x + a.y * b.y + a.z * b.z) > 0.99999f; };
     const bool persist = (e->bb.have && same(curB, e->bb.wrote)) || (e->fb.have && same(curF, e->fb.wrote)) || (wristOk && e->wb.have && same(curW, e->wb.wrote));
     if (!(w > 0.f)) {   // slide not running: undo what we left behind and go quiet
         if (e->dirty && persist) { (void)reachWriteQ(e->bic, e->bb.q); (void)reachWriteQ(e->fore, e->fb.q); if (wristOk && e->wb.have) (void)reachWriteQ(e->wrist, e->wb.q); }
         e->dirty = false;
+        e->solved = e->holdN = 0;
         e->bb.have = e->fb.have = e->wb.have = false;
         return false;
     }
@@ -1383,7 +1405,7 @@ static bool reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w,
     const uintptr_t parB = rdU32(kSitePlace, e->bic, 0x3C), parF = rdU32(kSitePlace, e->fore, 0x3C);
     hs::Pose pPB, pPF;
     if (!parB || !parF || !reachNodePose(e->bic, e->poseFn, pS) || !reachNodePose(e->fore, e->poseFn, pE) || !reachNodePose(e->hand, e->poseFn, pH) ||
-        !reachNodePose(parB, e->poseFn, pPB)) { reachRefuse("pose", e->owner); return false; }
+        !reachNodePose(parB, e->poseFn, pPB)) { reachRefuse("pose", e->owner); return holdLast(hs::ReachHoldPose, "pose"); }
     // Elbow pole: the style of this weapon category blended by how high the MOUNT sits (hip bends back and out, over-the-shoulder bends up and out), eased into the
     // animation's own elbow direction as the weapon reaches the hand. Body frame: x right, y forward, z up (parent Gob +0xA4 pose); not verified live yet (see u= / lt= in the log).
     float poleV[3], u = 0.f, lt[3] = {0, 0, 0};
@@ -1426,7 +1448,7 @@ static bool reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w,
         for (int i = 0; i < 3; ++i) T[i] = (1.f - restMix) * ((1.f - pathF) * mountPos[i] + pathF * pH.pos[i]) + restMix * pH.pos[i];   // no body frame: the straight line
     }
     float enew[3], reach = 1.f;
-    if (!hs::solveTwoBone(pS.pos, pE.pos, pH.pos, T, enew, &reach, pole)) { reachRefuse("solve", e->owner); return false; }
+    if (!hs::solveTwoBone(pS.pos, pE.pos, pH.pos, T, enew, &reach, pole)) { reachRefuse("solve", e->owner); return holdLast(hs::ReachHoldSolve, "solve"); }
     const float es[3] = {pE.pos[0] - pS.pos[0], pE.pos[1] - pS.pos[1], pE.pos[2] - pS.pos[2]};
     const float ns[3] = {enew[0] - pS.pos[0], enew[1] - pS.pos[1], enew[2] - pS.pos[2]};
     const hs::Q outB = hs::blendQ(baseB, hs::reachDeltaToLocal(pPB.q, hs::arcQuat(es, ns), baseB), w);
@@ -1466,14 +1488,17 @@ static bool reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w,
         const uintptr_t avt = rdU32(kSitePlace, attachNode, 0);
         carriedOk = avt && rdU32(kSitePlace, avt, 0x0C) == e->poseFn && reachNodePose(attachNode, e->poseFn, *carried);
     }
+    const uint8_t heldBefore = e->holdN;   // frames held just before this solve (0 = no hold episode)
+    e->solved = static_cast<uint8_t>(wrote);
+    e->holdN = 0;
     if (!reachLogDue()) return carriedOk;
-    KP_LOG(chMain, "REACH owner=%x w=%.2f reach=%.2f S=(%.3f,%.3f,%.3f) E=(%.3f,%.3f,%.3f) H=(%.3f,%.3f,%.3f) T=(%.3f,%.3f,%.3f) Enew=(%.3f,%.3f,%.3f) side=%c cat=%d u=%.2f lt=(%.3f,%.3f,%.3f) err=%.3f persist=%d wrote=%d wr=%.0f hg=%d f=%.2f dzA=%.2f fy=%.2f fx=%.2f g=%.0f cap=%.0f",
+    KP_LOG(chMain, "REACH owner=%x w=%.2f reach=%.2f S=(%.3f,%.3f,%.3f) E=(%.3f,%.3f,%.3f) H=(%.3f,%.3f,%.3f) T=(%.3f,%.3f,%.3f) Enew=(%.3f,%.3f,%.3f) side=%c cat=%d u=%.2f lt=(%.3f,%.3f,%.3f) err=%.3f persist=%d wrote=%d wr=%.0f hg=%d f=%.2f dzA=%.2f fy=%.2f fx=%.2f g=%.0f cap=%.0f hold=%u",
            static_cast<unsigned>(e->owner), static_cast<double>(w), static_cast<double>(reach), static_cast<double>(pS.pos[0]), static_cast<double>(pS.pos[1]),
            static_cast<double>(pS.pos[2]), static_cast<double>(pE.pos[0]), static_cast<double>(pE.pos[1]), static_cast<double>(pE.pos[2]), static_cast<double>(pH.pos[0]),
            static_cast<double>(pH.pos[1]), static_cast<double>(pH.pos[2]), static_cast<double>(T[0]), static_cast<double>(T[1]), static_cast<double>(T[2]),
            static_cast<double>(enew[0]), static_cast<double>(enew[1]), static_cast<double>(enew[2]), left ? 'L' : 'R', cat, static_cast<double>(u), static_cast<double>(lt[0]), static_cast<double>(lt[1]), static_cast<double>(lt[2]),
            static_cast<double>(err), persist ? 1 : 0, wrote, static_cast<double>(wristDeg), hinge ? 1 : 0, static_cast<double>(pathF), static_cast<double>(dzA), static_cast<double>(fyA), static_cast<double>(fxA),
-           static_cast<double>(gDeg), static_cast<double>(g_reachWristMax));
+           static_cast<double>(gDeg), static_cast<double>(g_reachWristMax), static_cast<unsigned>(heldBefore));
     return carriedOk;
 }
 
@@ -1659,7 +1684,7 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
     // Verdict cache keyed on node + gob + the node's name handle [N+4], so a freed and reused address pair is re-resolved. The full
     // resolve (weapon > type > global, plus the body delta) is cached with the tune sequence it was computed for and redone when it moves.
     // Repoint: both hands share the bone_name node; the hand comes from g_handRing (sticky via hs::resolveLeft when evicted). Drawgate: the node name (lhand) decides.
-    struct Ent { uintptr_t node, gob, handle, model; bool isTarget, left; hs::Category cat; char mname[17], body[17]; LONG seq; hs::Resolved r; hs::GateState gate; hs::Slide slide; uint32_t slFrames = 0, slMaxDt = 0, slPrev = 0; };
+    struct Ent { uintptr_t node, gob, handle, model; bool isTarget, left; hs::Category cat; char mname[17], body[17]; LONG seq; hs::Resolved r; hs::GateState gate; hs::Slide slide; uint32_t slFrames = 0, slMaxDt = 0, slPrev = 0; uint8_t graceN = 0; };   // graceN: HW25 hard-reset grace, frames held so far
     static Ent s_cache[128];
     static unsigned s_next = 0;
     const uintptr_t g = reinterpret_cast<uintptr_t>(gob), n = reinterpret_cast<uintptr_t>(node);
@@ -1771,14 +1796,19 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
             else g_holSet.remove(owner);
         }
         const bool first = ent->gate.hip < 0 || ent->gate.owner != owner;   // not evaluated yet, or a new owner: placed silently, no slide
-        if (hs::gateUpdate(ent->gate, owner, hip)) {
+        const uint32_t now = slideNowMs();
+        // HW25 (reach_test only): an owner / combat read that fails for a few frames while a slide runs must not snap the weapon to the hand. The running slide is
+        // kept (touched, no retarget, no reset) for up to 3 frames and the gate is not updated, so recovery sees the same owner and no first-placement snap.
+        const bool grace = g_reachTest && hs::slideGraceHold(readable, ent->slide.active(now), ent->graceN);
+        if (!grace && hs::gateUpdate(ent->gate, owner, hip)) {
             ent->seq = -1;   // state flip or new owner: the resolved placement is redone
             gateLog(g, owner, readable, combat, hip, ent->left);
         }
         if (g_drawSlideMs || g_stowSlideMs) {
             // HW14: the gate only picks the slide's target; the pose is blended at the end. f == 1 is the hand (identical to the plain `if (!hip) return`).
-            const uint32_t now = slideNowMs();
-            if (first || !readable) {
+            if (grace) {
+                ent->slide.touch(now);
+            } else if (first || !readable) {
                 static volatile LONG s_cutLines = 0;   // HW24: a hard reset that lands on a running slide is the visible pop; say why
                 if (ent->slide.active(now) && g_onPlace && KP_ENABLED(chPlace, KPLOG_INFO) && InterlockedIncrement(&s_cutLines) <= 40 && takeLine())
                     KP_LOG(chPlace, "SLIDE cut reason=%s owner=%x gob=%x left=%d dir=%s frac=%.2f", readable ? "first" : "unreadable",
@@ -1788,7 +1818,8 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
             } else {
                 const uint8_t dirBefore = ent->slide.dir;
                 ent->slide.touch(now);
-                ent->slide.target(!hip, now, g_drawSlideMs, g_stowSlideMs);
+                if (g_reachTest && g_reachCarry) hs::reachRetarget(ent->slide, !hip, now, g_drawSlideMs, g_stowSlideMs, g_reachGrab, 0.04f);   // HW25: the reversal keeps path, carry and arm weight continuous
+                else ent->slide.target(!hip, now, g_drawSlideMs, g_stowSlideMs);
                 static volatile LONG s_slideLines = 0;
                 const bool logOk = g_onPlace && KP_ENABLED(chPlace, KPLOG_INFO);
                 if (ent->slide.dir != dirBefore) {
@@ -2214,7 +2245,8 @@ static int32_t KPATCH_CALL apiSetPreviewDraw(int32_t drawn) {
     {
         EdLock lk;
         if (!g_prevSlide.init) g_prevSlide.reset(false, now);
-        g_prevSlide.target(want, now, g_drawSlideMs, g_stowSlideMs);
+        if (g_reachTest && g_reachCarry) hs::reachRetarget(g_prevSlide, want, now, g_drawSlideMs, g_stowSlideMs, g_reachGrab, 0.04f);   // HW25: same continuity as the world
+        else g_prevSlide.target(want, now, g_drawSlideMs, g_stowSlideMs);
     }
     if (takeEditLine()) KP_LOG(chEdit, "API previewdraw %s draw_ms=%u stow_ms=%u reach=%d", want ? "draw" : "stow", static_cast<unsigned>(g_drawSlideMs), static_cast<unsigned>(g_stowSlideMs), g_reachTest ? 1 : 0);
     return want ? 1 : 0;
