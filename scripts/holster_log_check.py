@@ -82,7 +82,8 @@ MAIN_RES = {
     "partyhold": re.compile(r"\bPARTYHOLD (on|off) n=\d+"),
     "movehold": re.compile(r"\bMOVEHOLD slot=-?\d+ skip cut \(moving\)"),
     "delay": re.compile(r"\bDELAY slot=-?\d+ cut before=\d+ elapsed=\d+ kind=(combat|flourish) wrote=1\b"),
-    "reach": re.compile(r"\bREACH owner=\w+ w=([\d.]+) reach=([\d.]+) .*?err=(-?[\d.]+) persist=(\d) wrote=(\d)"),
+    "reach": re.compile(r"\bREACH owner=\w+ w=([\d.]+) reach=([\d.]+) .*?err=(-?[\d.]+) persist=(\d) wrote=(\d)"
+                       r"(?: wr=(-?[\d.]+) hg=(\d) f=(-?[\d.]+))?(?: dzA=(-?[\d.]+) fy=(-?[\d.]+) fx=(-?[\d.]+) g=(-?[\d.]+) cap=(-?[\d.]+))?"),
     "reachrefuse": re.compile(r"\bREACH owner=\w+ refuse=(\w+)"),
     "node": re.compile(r"\bPLACENODE node=\w+ gob=\w+ t=(\d+) step=(-?\d+) name=(\S+) target=(\d)(?: bvt=(\w+))?(?: gname=(\S+) mname=(\S+))?(?: cat=(\w+))?"),
 }
@@ -130,7 +131,7 @@ def parse_lines(window):
     recs, skipped = [], []
     main = {"loaded": [], "cap": [], "bonetest": Counter(), "unreadable": 0, "tid": {}, "reload": [], "tune": [], "refuse": {}, "node": Counter(), "mount": Counter(),
             "owner": Counter(), "combc": set(), "partyhold": Counter(), "movehold": 0, "delay": Counter(),
-            "reach": [], "reachfound": 0, "reachrefuse": Counter(),
+            "reach": [], "slidecut": Counter(), "resid": [], "reachfound": 0, "reachrefuse": Counter(),
             "preview": [], "camnode": [], "wmname": set()}
     for n, raw in window:
         text = raw.strip()
@@ -170,9 +171,18 @@ def parse_lines(window):
         m = MAIN_RES["delay"].search(text)
         if m:
             main["delay"][m.group(1)] += 1
+        if text.find(" SLIDE cut ") >= 0 or text.startswith("SLIDE cut "):   # HW24: a hard reset that hit a running slide
+            mc = re.search(r"\bSLIDE cut reason=(\w+)", text)
+            if mc:
+                main["slidecut"][mc.group(1)] += 1
+        if " RESID " in text or text.startswith("RESID "):   # HW24: carried-hand vs mount residual at the carryW step
+            mr = re.search(r"\bRESID .*?\bpos_cm=(-?[\d.]+) ang=(-?[\d.]+) dq=(-?[\d.]+)", text)
+            if mr:
+                main["resid"].append(tuple(float(v) for v in mr.groups()))
         m = MAIN_RES["reach"].search(text)
         if m:
-            main["reach"].append((float(m.group(1)), float(m.group(2)), float(m.group(3)), int(m.group(4)), int(m.group(5))))
+            main["reach"].append((float(m.group(1)), float(m.group(2)), float(m.group(3)), int(m.group(4)), int(m.group(5)))
+                                 + tuple(None if v is None else float(v) for v in m.groups()[5:]))
         elif " REACH found " in text or text.startswith("REACH found "):
             main["reachfound"] += 1
         else:
@@ -195,6 +205,8 @@ def parse_lines(window):
         if k is None:
             continue
         kind = k.group(1)
+        if kind == "SLIDE" and k.end() < len(text) and text.startswith("cut ", k.end()):   # HW24 SLIDE cut: counted above, not a start/end record
+            continue
         if kind == "COMB" and COMB_UNREAD.search(text):
             main["unreadable"] += 1
             continue
@@ -441,6 +453,17 @@ def _reach_events(f):
     errs = [x[2] for x in r if x[2] >= 0]
     if errs:
         line += " err min=%.3f med=%.3f max=%.3f reach<1=%d" % (min(errs), sorted(errs)[len(errs) // 2], max(errs), sum(1 for x in r if x[1] < 0.999))
+    # HW24 (0.12.0-dev): wrist bit (wrote & 4), hinge, g (mount vs post-IK hand), cap, residual, hard-reset cuts, all on the one line
+    line += " wrist=%d hg=%d" % (sum(1 for x in r if x[4] & 4), sum(1 for x in r if len(x) > 6 and x[6] == 1.0))
+    gs = [x[11] for x in r if len(x) > 12 and x[11] is not None and x[11] >= 0]
+    if gs:
+        line += " g max=%.0f over_cap=%d" % (max(gs), sum(1 for x in r if len(x) > 12 and x[11] is not None and x[12] is not None and x[11] - x[12] > 20))
+    rs = f.get("resid", [])
+    if rs:
+        line += " resid max=%.1fcm/%.0fdeg" % (max(x[0] for x in rs), max(x[1] for x in rs))
+    cuts = f.get("slidecut", Counter())
+    if cuts:
+        line += " cut=%s" % ",".join("%s:%d" % kv for kv in sorted(cuts.items()))
     return [line]
 
 

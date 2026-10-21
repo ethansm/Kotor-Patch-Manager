@@ -581,5 +581,40 @@ class ToggleEventTests(unittest.TestCase):
         self.assertEqual((recs, skipped), ([], []))
 
 
+class Hw24ReachTests(unittest.TestCase):
+    """HW24 (0.12.0-dev): REACH wrist/hinge/g/cap fields, SLIDE cut and RESID one-liners."""
+
+    NEW_REACH = ("REACH owner=1a w=0.50 reach=1.00 S=(0,0,0) E=(0,0,0) H=(0,0,0) T=(0,0,0) Enew=(0,0,0) side=R cat=2 "
+                 "u=1.00 lt=(0,0,0) err=0.010 persist=0 wrote=7 wr=88 hg=1 f=0.40 dzA=0.22 fy=-0.10 fx=0.05 g=130 cap=90")
+    OLD_REACH = ("REACH owner=1a w=0.50 reach=1.00 S=(0,0,0) E=(0,0,0) H=(0,0,0) T=(0,0,0) Enew=(0,0,0) side=R cat=2 "
+                 "u=1.00 lt=(0,0,0) err=0.010 persist=0 wrote=3")
+
+    def test_new_reach_line_parses_wrist_hinge_g_cap(self):
+        _, _, main = parse([self.NEW_REACH])
+        self.assertEqual(len(main["reach"]), 1)
+        out = " ".join(H._reach_events(main))
+        self.assertIn("wrist=1", out)
+        self.assertIn("hg=1", out)
+        self.assertIn("g max=130", out)
+        self.assertIn("over_cap=1", out)
+
+    def test_old_reach_line_still_parses_without_wrist_or_g(self):
+        _, _, main = parse([self.OLD_REACH])
+        self.assertEqual(len(main["reach"]), 1)
+        out = " ".join(H._reach_events(main))
+        self.assertIn("wrist=0", out)
+        self.assertNotIn("g max", out)
+
+    def test_slide_cut_unreadable_counted(self):
+        recs, skipped, main = parse(["SLIDE cut reason=unreadable owner=1 gob=2 left=0 dir=draw frac=0.40"])
+        self.assertEqual((recs, skipped), ([], []))   # counted, not a skipped malformed SLIDE line
+        self.assertEqual(main["slidecut"]["unreadable"], 1)
+        self.assertIn("cut=unreadable:1", " ".join(H._reach_events(main)))
+
+    def test_resid_line_reports_max_position_and_angle(self):
+        _, _, main = parse(["RESID gob=2 left=0 dir=draw carryW=0.50 f=0.50 pos_cm=3.2 ang=40 dq=0.900 style=3"])
+        self.assertIn("resid max=3.2cm/40deg", " ".join(H._reach_events(main)))
+
+
 if __name__ == "__main__":
     unittest.main()

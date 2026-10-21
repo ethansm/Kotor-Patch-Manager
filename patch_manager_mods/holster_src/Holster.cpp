@@ -1354,7 +1354,7 @@ static bool reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w,
     }
     // Wrist: turn the hand from the weapon's mount orientation (at the grab / the landing) to its resting orientation (at the rest end of the path), so the weapon swings
     // with the wrist instead of keeping the hand's orientation and clipping the head; limited to reach_wrist_max_deg, scaled by reach_wrist_pct.
-    float wristDeg = 0.f;
+    float wristDeg = 0.f, gDeg = -1.f;   // gDeg (HW24): angle between the mount orientation and the post-IK hand = what the wrist cap has to cover
     if (carry && wristOk && mountQ && wrote == 3 && g_reachWristPct > 0.f) {
         hs::Pose pHn, pWp;
         const uintptr_t parW = rdU32(kSitePlace, e->wrist, 0x3C);
@@ -1371,12 +1371,13 @@ static bool reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w,
         carriedOk = avt && rdU32(kSitePlace, avt, 0x0C) == e->poseFn && reachNodePose(attachNode, e->poseFn, *carried);
     }
     if (!reachLogDue()) return carriedOk;
-    KP_LOG(chMain, "REACH owner=%x w=%.2f reach=%.2f S=(%.3f,%.3f,%.3f) E=(%.3f,%.3f,%.3f) H=(%.3f,%.3f,%.3f) T=(%.3f,%.3f,%.3f) Enew=(%.3f,%.3f,%.3f) side=%c cat=%d u=%.2f lt=(%.3f,%.3f,%.3f) err=%.3f persist=%d wrote=%d wr=%.0f hg=%d f=%.2f",
+    KP_LOG(chMain, "REACH owner=%x w=%.2f reach=%.2f S=(%.3f,%.3f,%.3f) E=(%.3f,%.3f,%.3f) H=(%.3f,%.3f,%.3f) T=(%.3f,%.3f,%.3f) Enew=(%.3f,%.3f,%.3f) side=%c cat=%d u=%.2f lt=(%.3f,%.3f,%.3f) err=%.3f persist=%d wrote=%d wr=%.0f hg=%d f=%.2f dzA=%.2f fy=%.2f fx=%.2f g=%.0f cap=%.0f",
            static_cast<unsigned>(e->owner), static_cast<double>(w), static_cast<double>(reach), static_cast<double>(pS.pos[0]), static_cast<double>(pS.pos[1]),
            static_cast<double>(pS.pos[2]), static_cast<double>(pE.pos[0]), static_cast<double>(pE.pos[1]), static_cast<double>(pE.pos[2]), static_cast<double>(pH.pos[0]),
            static_cast<double>(pH.pos[1]), static_cast<double>(pH.pos[2]), static_cast<double>(T[0]), static_cast<double>(T[1]), static_cast<double>(T[2]),
            static_cast<double>(enew[0]), static_cast<double>(enew[1]), static_cast<double>(enew[2]), left ? 'L' : 'R', cat, static_cast<double>(u), static_cast<double>(lt[0]), static_cast<double>(lt[1]), static_cast<double>(lt[2]),
-           static_cast<double>(err), persist ? 1 : 0, wrote, static_cast<double>(wristDeg), hinge ? 1 : 0, static_cast<double>(pathF));
+           static_cast<double>(err), persist ? 1 : 0, wrote, static_cast<double>(wristDeg), hinge ? 1 : 0, static_cast<double>(pathF), static_cast<double>(dzA), static_cast<double>(fyA), static_cast<double>(fxA),
+           static_cast<double>(gDeg), static_cast<double>(g_reachWristMax));
     return carriedOk;
 }
 
@@ -1387,6 +1388,7 @@ static SRWLOCK g_edLock = SRWLOCK_INIT;
 static hs::PreviewRegistry g_preview;
 static volatile LONG g_previewN = 0;     // g_preview.n mirror for the lock-free "no preview" test on every placement
 static hs::EditOverlay g_edit;
+    float dzA = 0.f, fyA = 0.f, fxA = 0.f;   // HW24: the placed mount point in the body frame, in arm lengths (z up, y forward: <0 = behind, x right)
 static void* g_editGob = nullptr;
 static hs::Pose g_editMount;              // world pose of the edited Gob's mount bone, refreshed by every placement of that Gob
 static bool g_editMountOk = false;
@@ -1400,6 +1402,7 @@ static const bool kWorldKnowsHand = true;
 // The editor preview resolves the hand as it is (S2/H4, 10-18): a left preview weapon is always the left resolve (mirror + left_extra_rot, or the
 // explicit l_ keys), whatever bone_test_left says. bone_test_left=0 only keeps the in-world lhand attach node unpatched (that weapon stays in the
 // hand and HolsterPlace refuses it as not-target); it no longer changes what the editor shows. The old gate (left && g_boneLeft) resolved a left
+        if (arm > 1e-4f) { dzA = mlt[2] / arm; fyA = mlt[1] / arm; fxA = mlt[0] / arm; }
 // preview as the right hand, so the two weapons overlapped at the same spot and angle.
 static bool effLeft(bool left) {
     return left;
@@ -1452,6 +1455,7 @@ static bool previewPlace(uintptr_t g, uintptr_t beh) {
     gobNames(g, parent, model, body);
     const hs::Category cat = hs::classify(model, 0);
     if (!editing) hs::resolveFull(s_tune, model, cat, body, left, false, r);
+            gDeg = hs::reachQAngleDeg(hs::qmul(*mountQ, hs::reachConj(pHn.q)));
     const uint8_t boneIdx = r.boneIdx ? r.boneIdx : hs::defaultBone(s_tune);
     const char* const bone = hs::boneNameOf(boneIdx) ? hs::boneNameOf(boneIdx) : g_boneName;
     const uintptr_t gvt = rdU32(kSitePlace, g, 0), nvt = n ? rdU32(kSitePlace, n, 0) : 0;
@@ -1775,6 +1779,10 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
     KP_LOG(chPlace, "PLACE n=%ld gob=%x node=%x beh=%x gobvt=%x pos0=(%.3f,%.3f,%.3f) quat0=(%.3f,%.3f,%.3f,%.3f) pos1=(%.3f,%.3f,%.3f) quat1=(%.3f,%.3f,%.3f,%.3f) cat=%s left=%d src=%s extra=%.1f",
            static_cast<long>(c), U(gob), U(node), U(beh), static_cast<unsigned>(vt), in.pos[0], in.pos[1], in.pos[2], in.q.w, in.q.x, in.q.y, in.q.z,
            out.pos[0], out.pos[1], out.pos[2], out.q.w, out.q.x, out.q.y, out.q.z, hs::categoryName(cat), ent->left ? 1 : 0, hs::leftSrcName(ent->r, ent->left),
+                static volatile LONG s_cutLines = 0;   // HW24: a hard reset that lands on a running slide is the visible pop; say why
+                if (ent->slide.active(now) && g_onPlace && KP_ENABLED(chPlace, KPLOG_INFO) && InterlockedIncrement(&s_cutLines) <= 40 && takeLine())
+                    KP_LOG(chPlace, "SLIDE cut reason=%s owner=%x gob=%x left=%d dir=%s frac=%.2f", readable ? "first" : "unreadable",
+                           static_cast<unsigned>(owner), static_cast<unsigned>(g), ent->left ? 1 : 0, ent->slide.dir ? "draw" : "stow", static_cast<double>(ent->slide.frac(now)));
            static_cast<double>(ent->r.extraDeg));
 }
 
@@ -1849,6 +1857,19 @@ static int32_t KPATCH_CALL apiBeginEdit(void* gob, int32_t scope) {
     if (!loadTune(c)) return 0;
     void* parent = nullptr;
     bool left = false;
+            if (pl.carryW > 0.f && pl.carryW < 1.f && g_onPlace && KP_ENABLED(chPlace, KPLOG_INFO)) {   // HW24: residual between the carried hand pose and the mount at the carryW step, the flip dot, the style byte
+                static volatile LONG s_resLines = 0;
+                if (InterlockedIncrement(&s_resLines) <= 40 && takeLine()) {
+                    const float dp[3] = {carried.pos[0] - hipPose.pos[0], carried.pos[1] - hipPose.pos[1], carried.pos[2] - hipPose.pos[2]};
+                    uint8_t style = 0;
+                    const uintptr_t sPar = rdU32(kSitePlace, reinterpret_cast<uintptr_t>(beh), 0x14);
+                    if (sPar) (void)saferead::readAt(kSitePlace, sPar, 0xC5, &style);
+                    KP_LOG(chPlace, "RESID gob=%x left=%d dir=%s carryW=%.2f f=%.2f pos_cm=%.1f ang=%.0f dq=%.3f style=%u", static_cast<unsigned>(g), ent->left ? 1 : 0,
+                           ent->slide.dir ? "draw" : "stow", static_cast<double>(pl.carryW), static_cast<double>(pl.pathF), static_cast<double>(hs::r3len(dp) * 100.f),
+                           static_cast<double>(hs::reachQAngleDeg(hs::qmul(carried.q, hs::reachConj(hipPose.q)))), static_cast<double>(hs::qdot(hipPose.q, carried.q)),
+                           static_cast<unsigned>(style));
+                }
+            }
     {
         EdLock lk;
         const int i = hs::previewFind(g_preview, gob);
