@@ -5,13 +5,14 @@ Execute HW28b: Draw cap raise (`draw_slide_cap`, default 570)
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/42c_smooth_holstering_master_plan.md`
-- **Branch:** `KOTOR-II` (11b5a018 play queue: SM-L15 (via on the default residual path, pole from grip) for holster 0.20.0-dev)
-- **Generated:** 2026-10-21 18:46:40 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (7e14dfe5 CLAUDE.md + play queue: advertise holster_log_check --row / --mounts --json and holster_sweep --back-quat / --mounts-json / --dir / --pole-grip (HW38, HW32c); SM-L13..L15 rows carry their verdict command)
+- **Generated:** 2026-10-21 19:40:09 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-11b5a018 play queue: SM-L15 (via on the default residual path, pole from grip) for holster 0.20.0-dev
- patch_manager_mods/PLAY_TEST_QUEUE.md | 1 +
- 1 file changed, 1 insertion(+)
+7e14dfe5 CLAUDE.md + play queue: advertise holster_log_check --row / --mounts --json and holster_sweep --back-quat / --mounts-json / --dir / --pole-grip (HW38, HW32c); SM-L13..L15 rows carry their verdict command
+ CLAUDE.md                             | 2 +-
+ patch_manager_mods/PLAY_TEST_QUEUE.md | 6 +++---
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 ```
 - **Dirty Files (186):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
