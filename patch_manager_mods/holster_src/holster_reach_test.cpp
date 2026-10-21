@@ -530,6 +530,44 @@ static void testReachPoleStyleAndMirror() {
     }
 }
 
+// ---- carry mode ----
+static void testReachWeightRamp() {
+    Slide sl;
+    sl.reset(false, 1000);
+    sl.target(true, 1000, 400, 400);   // draw: len 400, running 1000..1400
+    KT_CHECK(reachWeightRamp(sl, 1000, 0.1f) == 0.f && reachWeightRamp(sl, 1400, 0.1f) == 0.f);
+    KT_CHECK(reachWeightRamp(sl, 1200, 0.1f) == 1.f);
+    const float a = reachWeightRamp(sl, 1020, 0.1f), b = reachWeightRamp(sl, 1020, 0.2f);
+    KT_CHECK(a > b && a > 0.f && a < 1.f);                            // a shorter ramp is further along at the same time
+    KT_CHECK(reachWeightRamp(sl, 1200, 0.f) == 0.f);                  // no ramp: off (never divides by zero)
+    KT_CHECK(reachWeight(sl, 1020) == reachWeightRamp(sl, 1020, 0.2f));
+}
+
+static void testReachAnimMix() {
+    KT_CHECK(reachAnimMix(0.f) == 0.f && reachAnimMix(0.5f) == 0.f && reachAnimMix(0.8f) == 0.f);   // the mount style holds up to 0.8
+    KT_CHECK(reachAnimMix(1.f) == 1.f);
+    KT_CHECK(reachAnimMix(0.9f) > 0.f && reachAnimMix(0.9f) < 1.f);
+    KT_CHECK(reachAnimMix(0.85f) < reachAnimMix(0.95f));              // monotone
+    KT_CHECK(reachAnimMix(-1.f) == 0.f && reachAnimMix(2.f) == 1.f && reachAnimMix(NAN) == 0.f);
+}
+
+static void testReachCarryTarget() {
+    const float m[3] = {1, 2, 3}, h[3] = {4, 2, 0}, up[3] = {0, 0, 1};
+    float o[3];
+    reachCarryTarget(m, h, up, 1.f, 0.64f, 0.f, o);
+    KT_CHECK(std::fabs(o[0] - 1) < 1e-6f && std::fabs(o[1] - 2) < 1e-6f && std::fabs(o[2] - 3) < 1e-6f);   // mount at f = 0
+    reachCarryTarget(m, h, up, 1.f, 0.64f, 1.f, o);
+    KT_CHECK(std::fabs(o[0] - 4) < 1e-5f && std::fabs(o[1] - 2) < 1e-5f && std::fabs(o[2] - 0) < 1e-5f);   // hand at f = 1
+    float flat[3], arc[3];
+    reachCarryTarget(m, h, up, 0.f, 0.64f, 0.5f, flat);                // hip mount: no lift
+    reachCarryTarget(m, h, up, 1.f, 0.64f, 0.5f, arc);                 // high mount: lifted along up, 0.25 * arm at the middle
+    KT_CHECK(std::fabs(arc[2] - flat[2] - 0.25f * 0.64f) < 1e-5f && std::fabs(arc[0] - flat[0]) < 1e-6f);
+    reachCarryTarget(m, h, nullptr, 1.f, 0.64f, 0.5f, arc);            // no up axis: the straight line, finite
+    KT_CHECK(std::isfinite(arc[0]) && std::isfinite(arc[1]) && std::isfinite(arc[2]));
+    reachCarryTarget(m, h, up, NAN, NAN, 0.5f, arc);
+    KT_CHECK(std::isfinite(arc[2]));
+}
+
 int main() {
     testArcQuatMapsDirections();
     testArcQuatParallelAndAntiParallel();
@@ -564,5 +602,8 @@ int main() {
     testSolvePoleParallelAndBadFallBack();
     testReachOverWeight();
     testReachPoleStyleAndMirror();
+    testReachWeightRamp();
+    testReachAnimMix();
+    testReachCarryTarget();
     return kt::Report("holster_reach");
 }

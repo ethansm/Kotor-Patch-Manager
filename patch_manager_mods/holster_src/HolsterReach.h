@@ -174,13 +174,29 @@ inline Q reachDeltaToLocal(const Q& parentWorld, const Q& deltaWorld, const Q& c
 
 // Reach ramp of a Slide-timed reach: 0 outside the slide, smoothstep ramps over the first and last 20% of its length, 1 in the
 // middle 60%. Uses the signed tick difference, so a counter wrap is harmless.
-inline float reachWeight(const Slide& s, uint32_t now) {
-    if (!s.active(now)) return 0.f;
+inline float reachWeightRamp(const Slide& s, uint32_t now, float ramp) {
+    if (!s.active(now) || !(ramp > 1e-3f)) return 0.f;
+    if (ramp > 0.5f) ramp = 0.5f;
     const float p = (float)(int32_t)(now - s.t0) / (float)s.len;
-    const float up = p / 0.2f, down = (1.f - p) / 0.2f;
+    const float up = p / ramp, down = (1.f - p) / ramp;
     float w = up < down ? up : down;
     if (w > 1.f) w = 1.f;
     return easeSmooth(w);
+}
+inline float reachWeight(const Slide& s, uint32_t now) { return reachWeightRamp(s, now, 0.2f); }
+
+// How much of the animation's own elbow plane is mixed into the pole at hand fraction f (0 = mount, 1 = hand): none up to 0.8, then eased to 1 at the
+// hand. The mount style therefore holds for the whole swing in BOTH directions (draw and stow), so a sword drawn over the shoulder is also stowed over it.
+inline float reachAnimMix(float f) { return easeSmooth((f - 0.8f) / 0.2f); }
+
+// Hand path of the carried weapon: from the mount point to the animation's hand along a straight line, lifted by an arc along the body's up axis
+// (`up`, unit) so a high mount is reached up and over the shoulder instead of straight through the body. lift = 0.25 * arm * over * sin(pi f), over in 0..1.
+// Output is the point at hand fraction f (eased); finite for any finite input, mount at f = 0, hand at f = 1.
+inline void reachCarryTarget(const float* mount, const float* hand, const float* up, float over, float arm, float f, float* out) {
+    const float e = easeSmooth(f);
+    float lift = 0.f;
+    if (std::isfinite(arm) && std::isfinite(over) && arm > 0.f) lift = 0.25f * arm * slideClamp01(over) * std::sin(3.14159265358979f * slideClamp01(f));
+    for (int i = 0; i < 3; ++i) out[i] = (1.f - e) * mount[i] + e * hand[i] + (up ? lift * up[i] : 0.f);
 }
 
 // Nlerp along the shorter arc. w is clamped to [0, 1] (NaN -> 0). w == 0 returns a bit for bit (no normalize). A non-finite a is

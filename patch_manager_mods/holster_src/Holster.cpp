@@ -78,6 +78,9 @@ static bool g_partyCombatHold = true;
 // reach_test (0.7.0-dev, HW19): 1 = bend the owner's RIGHT arm toward the weapon while it slides between the hip and the hand (probe; needs probe=1, bone_test=1,
 // place_mode=drawgate and a non-zero slide). Default 0 = no arm writes.
 static bool g_reachTest = false;
+// reach_carry (0.9.0-dev): 1 = the weapon rides the real hand bone while it slides (the arm swings between the mount and the animation's hand and the blade goes with it,
+// spinning with the wrist); 0 = the weapon slides on its own line and the arm chases it (0.7.x). Only with reach_test=1.
+static bool g_reachCarry = true;
 static hs::ReachStyle g_reachStyle[hs::CatCount];   // elbow bend per category (right arm, body frame); defaults from hs::reachDefaultStyle, reach_pole_<hip|over>_<cat> in holster.ini
 // Toggle-key draw hold (0.3.0-dev, HolsterDrawGate.h holdActive): the owner (client creature) whose weapons stay in the hand until g_holdUntil (GetTickCount ms,
 // wrap-safe). Written by the tick (g_holdUntil first, then g_holdOwner), read by HolsterPlace. 0 owner = no hold.
@@ -351,6 +354,11 @@ static void readConfig() {
                 }
                 if (ok && hs::r3len(v) > 1e-3f) { dst[0] = v[0]; dst[1] = v[1]; dst[2] = v[2]; }
                 else cfgWarn(key, val, "need <hip|over>_<lightsaber|melee|qstaff|pistol|rifle|heavy>=x,y,z (non-zero), keeping the default");
+            }
+            else if (!_stricmp(key, "reach_carry")) {
+                bool b = true;
+                if (hs::tuneParseBool(val, b)) g_reachCarry = b;
+                else cfgWarn(key, val, "not a boolean word, keeping the default 1");
             }
             else if (!_stricmp(key, "reach_test")) {
                 bool b = false;
@@ -1168,15 +1176,17 @@ static bool reachStale(const ReachEnt& e) {
     }
     return false;
 }
-// w == 0: only undo a leftover write (a body the engine did not resample); w > 0: one reach step toward tgt.pos.
-static void reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w, bool left, int cat, float slideF, const float* mountPos) {
+// w == 0: only undo a leftover write (a body the engine did not resample); w > 0: one reach step toward tgt.pos, or (carry) toward the point on the mount -> hand path at
+// slideF. carry: *carried receives the world pose of the attach node (the hand the weapon hangs on) AFTER the arm write; the return value says it is valid.
+static bool reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w, bool left, int cat, float slideF, const float* mountPos, uintptr_t attachNode = 0,
+                     bool carry = false, hs::Pose* carried = nullptr) {
     const uintptr_t parent = rdU32(kSitePlace, beh, 0x14);
-    if (!parent) return;
+    if (!parent) return false;
     ReachEnt* e = nullptr;
     for (ReachEnt& x : g_reach)
         if (x.parent == parent && x.left == left) { e = &x; break; }
     if (!e) {
-        if (!(w > 0.f)) return;
+        if (!(w > 0.f)) return false;
         const uintptr_t pvt = rdU32(kSitePlace, parent, 0), gvt = rdU32(kSitePlace, gob, 0);
         const uintptr_t find = pvt ? rdU32(kSitePlace, pvt, 0x10C) : 0, findRef = gvt ? rdU32(kSitePlace, gvt, 0x10C) : 0;
         e = &g_reach[g_reachNext];
@@ -1190,14 +1200,14 @@ static void reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w,
         static const char* const kFore[2][3] = {{"Rforearm_g", "rforearm_g", nullptr}, {"Lforearm_g", "lforearm_g", nullptr}};
         static const char* const kHand[2][2] = {{"rhand", nullptr}, {"lhand", nullptr}};
         const int sd = left ? 1 : 0;
-        if (!find || find != findRef) { reachRefuse("findslot", parent); return; }
+        if (!find || find != findRef) { reachRefuse("findslot", parent); return false; }
         // The first part fixes the pose slot and owner every other part must share.
         const uintptr_t bic = reinterpret_cast<uintptr_t>(reinterpret_cast<void*(__thiscall*)(void*, const char*)>(find)(reinterpret_cast<void*>(parent), kBic[sd][0]));
         const uintptr_t bvt = bic ? rdU32(kSitePlace, bic, 0) : 0;
         const uintptr_t fn = bvt ? rdU32(kSitePlace, bvt, 0x0C) : 0, owner = bic ? rdU32(kSitePlace, bic, 0x40) : 0;
-        if (!bic || !fn || !owner) { reachRefuse("nobone", parent); return; }
+        if (!bic || !fn || !owner) { reachRefuse("nobone", parent); return false; }
         const uintptr_t fore = reachFind(parent, find, kFore[sd], owner, fn), hand = reachFind(parent, find, kHand[sd], owner, fn);
-        if (!fore || !hand) { reachRefuse("nobone", parent); return; }
+        if (!fore || !hand) { reachRefuse("nobone", parent); return false; }
         e->owner = owner; e->bic = bic; e->fore = fore; e->hand = hand; e->poseFn = fn;
         e->refused = false;
         if (KP_ENABLED(chMain, KPLOG_INFO) && takeLine())
@@ -1206,19 +1216,19 @@ static void reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w,
     }
     if (e->refused) {
         if (static_cast<int32_t>(GetTickCount() - e->refusedAt) > 5000) e->parent = 0;   // retry later
-        return;
+        return false;
     }
-    if (reachStale(*e)) { e->parent = 0; return; }
+    if (reachStale(*e)) { e->parent = 0; return false; }
 
     hs::Q curB, curF;
-    if (!reachReadQ(e->bic, curB) || !reachReadQ(e->fore, curF)) return;
+    if (!reachReadQ(e->bic, curB) || !reachReadQ(e->fore, curF)) return false;
     const bool persist = (e->bb.have && std::fabs(curB.w * e->bb.wrote.w + curB.x * e->bb.wrote.x + curB.y * e->bb.wrote.y + curB.z * e->bb.wrote.z) > 0.99999f) ||
                          (e->fb.have && std::fabs(curF.w * e->fb.wrote.w + curF.x * e->fb.wrote.x + curF.y * e->fb.wrote.y + curF.z * e->fb.wrote.z) > 0.99999f);
     if (!(w > 0.f)) {   // slide not running: undo what we left behind and go quiet
         if (e->dirty && persist) { (void)reachWriteQ(e->bic, e->bb.q); (void)reachWriteQ(e->fore, e->fb.q); }
         e->dirty = false;
         e->bb.have = e->fb.have = false;
-        return;
+        return false;
     }
     const hs::Q baseB = hs::reachBase(e->bb, curB), baseF = hs::reachBase(e->fb, curF);
     if (persist) { (void)reachWriteQ(e->bic, baseB); (void)reachWriteQ(e->fore, baseF); }   // poses below must come from the animation
@@ -1227,28 +1237,37 @@ static void reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w,
     const uintptr_t parB = rdU32(kSitePlace, e->bic, 0x3C), parF = rdU32(kSitePlace, e->fore, 0x3C);
     hs::Pose pPB, pPF;
     if (!parB || !parF || !reachNodePose(e->bic, e->poseFn, pS) || !reachNodePose(e->fore, e->poseFn, pE) || !reachNodePose(e->hand, e->poseFn, pH) ||
-        !reachNodePose(parB, e->poseFn, pPB)) { reachRefuse("pose", e->owner); return; }
+        !reachNodePose(parB, e->poseFn, pPB)) { reachRefuse("pose", e->owner); return false; }
     // Elbow pole: the style of this weapon category blended by how high the MOUNT sits (hip bends back and out, over-the-shoulder bends up and out), eased into the
     // animation's own elbow direction as the weapon reaches the hand. Body frame: x right, y forward, z up (parent Gob +0xA4 pose); not verified live yet (see u= / lt= in the log).
     float poleV[3], u = 0.f, lt[3] = {0, 0, 0};
+    float T[3] = {tgt.pos[0], tgt.pos[1], tgt.pos[2]};   // the point the hand is aimed at: the shown weapon (chase) or the carry path point
     const float* pole = nullptr;
     hs::Pose body;
     const float es0[3] = {pE.pos[0] - pS.pos[0], pE.pos[1] - pS.pos[1], pE.pos[2] - pS.pos[2]};
     if (saferead::readAt(kSitePlace, parent, 0xA4, &body) && hs::poseSane(body)) {
         const float ms[3] = {mountPos[0] - pS.pos[0], mountPos[1] - pS.pos[1], mountPos[2] - pS.pos[2]};
-        const float ts[3] = {tgt.pos[0] - pS.pos[0], tgt.pos[1] - pS.pos[1], tgt.pos[2] - pS.pos[2]};
         float mlt[3];
         const hs::Q inv = hs::reachConj(body.q);
         hs::qrotate(inv, ms, mlt);
-        hs::qrotate(inv, ts, lt);
         const float he0[3] = {pH.pos[0] - pE.pos[0], pH.pos[1] - pE.pos[1], pH.pos[2] - pE.pos[2]};
         const float arm = hs::r3len(es0) + hs::r3len(he0);
         u = hs::reachOverWeight(mlt[2], arm);
+        if (carry) {   // the hand goes mount -> animation hand, lifted along the body's up axis for a high mount (over the shoulder)
+            const float upL[3] = {0.f, 0.f, 1.f};
+            float upW[3];
+            hs::qrotate(hs::qnormalize(body.q), upL, upW);
+            hs::reachCarryTarget(mountPos, pH.pos, upW, u, arm, slideF, T);
+        }
+        const float ts[3] = {T[0] - pS.pos[0], T[1] - pS.pos[1], T[2] - pS.pos[2]};
+        hs::qrotate(inv, ts, lt);
         const hs::ReachStyle& st = g_reachStyle[(cat >= 0 && cat < hs::CatCount) ? cat : 0];
-        if (hs::reachPole(st, u, left, body.q, es0, slideF, poleV)) pole = poleV;
+        if (hs::reachPole(st, u, left, body.q, es0, hs::reachAnimMix(slideF), poleV)) pole = poleV;   // the mount style holds the whole swing, draw and stow alike
+    } else if (carry) {
+        for (int i = 0; i < 3; ++i) T[i] = (1.f - slideF) * mountPos[i] + slideF * pH.pos[i];   // no body frame: the straight line
     }
     float enew[3], reach = 1.f;
-    if (!hs::solveTwoBone(pS.pos, pE.pos, pH.pos, tgt.pos, enew, &reach, pole)) { reachRefuse("solve", e->owner); return; }
+    if (!hs::solveTwoBone(pS.pos, pE.pos, pH.pos, T, enew, &reach, pole)) { reachRefuse("solve", e->owner); return false; }
     const float es[3] = {pE.pos[0] - pS.pos[0], pE.pos[1] - pS.pos[1], pE.pos[2] - pS.pos[2]};
     const float ns[3] = {enew[0] - pS.pos[0], enew[1] - pS.pos[1], enew[2] - pS.pos[2]};
     const hs::Q outB = hs::blendQ(baseB, hs::reachDeltaToLocal(pPB.q, hs::arcQuat(es, ns), baseB), w);
@@ -1260,22 +1279,29 @@ static void reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w,
     float err = -1.f;
     if (wrote && parF && reachNodePose(e->fore, e->poseFn, pE2) && reachNodePose(e->hand, e->poseFn, pH2) && reachNodePose(parF, e->poseFn, pPF)) {
         const float he[3] = {pH2.pos[0] - pE2.pos[0], pH2.pos[1] - pE2.pos[1], pH2.pos[2] - pE2.pos[2]};
-        const float te[3] = {tgt.pos[0] - pE2.pos[0], tgt.pos[1] - pE2.pos[1], tgt.pos[2] - pE2.pos[2]};
+        const float te[3] = {T[0] - pE2.pos[0], T[1] - pE2.pos[1], T[2] - pE2.pos[2]};
         const hs::Q outF = hs::blendQ(baseF, hs::reachDeltaToLocal(pPF.q, hs::arcQuat(he, te), baseF), w);
         if (reachWriteQ(e->fore, outF)) { hs::reachNoteWrite(e->fb, outF); wrote |= 2; }
         hs::Pose pH3;
         if (reachNodePose(e->hand, e->poseFn, pH3)) {
-            const float d[3] = {pH3.pos[0] - tgt.pos[0], pH3.pos[1] - tgt.pos[1], pH3.pos[2] - tgt.pos[2]};
+            const float d[3] = {pH3.pos[0] - T[0], pH3.pos[1] - T[1], pH3.pos[2] - T[2]};
             err = hs::r3len(d);
         }
     }
-    if (!reachLogDue()) return;
+    // carry: the hand the weapon hangs on, after both writes (the attach node shares the pose slot with the arm parts, same guard as everywhere else)
+    bool carriedOk = false;
+    if (carry && carried && attachNode && wrote == 3) {
+        const uintptr_t avt = rdU32(kSitePlace, attachNode, 0);
+        carriedOk = avt && rdU32(kSitePlace, avt, 0x0C) == e->poseFn && reachNodePose(attachNode, e->poseFn, *carried);
+    }
+    if (!reachLogDue()) return carriedOk;
     KP_LOG(chMain, "REACH owner=%x w=%.2f reach=%.2f S=(%.3f,%.3f,%.3f) E=(%.3f,%.3f,%.3f) H=(%.3f,%.3f,%.3f) T=(%.3f,%.3f,%.3f) Enew=(%.3f,%.3f,%.3f) side=%c cat=%d u=%.2f lt=(%.3f,%.3f,%.3f) err=%.3f persist=%d wrote=%d",
            static_cast<unsigned>(e->owner), static_cast<double>(w), static_cast<double>(reach), static_cast<double>(pS.pos[0]), static_cast<double>(pS.pos[1]),
            static_cast<double>(pS.pos[2]), static_cast<double>(pE.pos[0]), static_cast<double>(pE.pos[1]), static_cast<double>(pE.pos[2]), static_cast<double>(pH.pos[0]),
-           static_cast<double>(pH.pos[1]), static_cast<double>(pH.pos[2]), static_cast<double>(tgt.pos[0]), static_cast<double>(tgt.pos[1]), static_cast<double>(tgt.pos[2]),
+           static_cast<double>(pH.pos[1]), static_cast<double>(pH.pos[2]), static_cast<double>(T[0]), static_cast<double>(T[1]), static_cast<double>(T[2]),
            static_cast<double>(enew[0]), static_cast<double>(enew[1]), static_cast<double>(enew[2]), left ? 'L' : 'R', cat, static_cast<double>(u), static_cast<double>(lt[0]), static_cast<double>(lt[1]), static_cast<double>(lt[2]),
            static_cast<double>(err), persist ? 1 : 0, wrote);
+    return carriedOk;
 }
 
 // ---- editor preview (k2.holster v1, HE2): registered preview Gobs are placed from the full resolve, or from the open edit overlay ----
@@ -1378,7 +1404,7 @@ static bool previewPlace(uintptr_t g, uintptr_t beh) {
         if (g_prevSlide.init) {
             g_prevSlide.touch(now);
             slideF = g_prevSlide.frac(now);
-            reachW = hs::reachWeight(g_prevSlide, now);
+            reachW = hs::reachWeightRamp(g_prevSlide, now, g_reachCarry ? 0.08f : 0.2f);
         }
     }
     hs::Pose shown = out;
@@ -1390,8 +1416,10 @@ static bool previewPlace(uintptr_t g, uintptr_t beh) {
             else shown = hs::blendPose(out, in, hs::easeSmooth(slideF));
         }
     }
-    if (g_reachTest) reachArm(g, beh, atHand ? out : shown, reachW, left, static_cast<int>(cat), slideF, out.pos);   // w == 0 outside the slide: only undoes a leftover write
+    hs::Pose carried;
+    const bool carryOk = g_reachTest && reachArm(g, beh, atHand ? out : shown, reachW, left, static_cast<int>(cat), slideF, out.pos, n, g_reachCarry && reachW > 0.f, &carried);   // w == 0 outside the slide: only undoes a leftover write
     if (atHand) return true;   // fully drawn: the engine's hand pose stays
+    if (carryOk) shown = hs::blendPose(out, carried, hs::easeSmooth(slideF / 0.08f));   // carry: the weapon rides the moved hand; it leaves the mount (and lands on it) over the first 8% of the hand fraction, and stays on the hand at the draw end
     if (!hs::poseSane(shown) || !saferead::probeWrite(kSitePlace, reinterpret_cast<void*>(g + 0xA4), sizeof(hs::Pose))) return true;
     memcpy(reinterpret_cast<void*>(g + 0xA4), &shown, sizeof(hs::Pose));
     if (logIt)
@@ -1642,7 +1670,15 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
     if (!hs::poseSane(out)) { refuse(PrInsaneOut, g, n, vt); return; }
     if (!saferead::probeWrite(kSitePlace, reinterpret_cast<void*>(g + 0xA4), sizeof(hs::Pose))) { refuse(PrNoWrite, g, n, vt); return; }
     memcpy(reinterpret_cast<void*>(g + 0xA4), &out, sizeof(hs::Pose));
-    if (g_reachTest && drawgateMode()) reachArm(g, reinterpret_cast<uintptr_t>(beh), out, hs::reachWeight(ent->slide, slideNowMs()), ent->left, static_cast<int>(cat), slideF, hipPose.pos);   // HW19 probe
+    if (g_reachTest && drawgateMode()) {   // HW19 probe
+        const float wa = hs::reachWeightRamp(ent->slide, slideNowMs(), g_reachCarry ? 0.08f : 0.2f);
+        hs::Pose carried;
+        if (reachArm(g, reinterpret_cast<uintptr_t>(beh), out, wa, ent->left, static_cast<int>(cat), slideF, hipPose.pos, n, g_reachCarry && wa > 0.f, &carried)) {
+            // carry: the weapon rides the moved hand (the engine's hand pose, recomputed after the arm write), blended from / to the mount over the first 8% of the hand fraction; at the draw end the arm has released, so the carried hand IS the engine hand
+            const hs::Pose rid = hs::blendPose(hipPose, carried, hs::easeSmooth(slideF / 0.08f));
+            if (hs::poseSane(rid) && saferead::probeWrite(kSitePlace, reinterpret_cast<void*>(g + 0xA4), sizeof(hs::Pose))) memcpy(reinterpret_cast<void*>(g + 0xA4), &rid, sizeof(hs::Pose));
+        }
+    }
     if (!g_onPlace) return;
     const LONG c = InterlockedIncrement(&g_placeCalls);
     if (g_logVerbose) {
@@ -2029,16 +2065,16 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     addName(names, sizeof(names), g_onGob, "gob");
     addName(names, sizeof(names), g_onPlace, "place");
     addName(names, sizeof(names), g_onToggle, "toggle");
-    KP_LOG(chMain, "holster 0.8.0-dev loaded (P0 probe, log-only): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_probe ? 1 : 0,
+    KP_LOG(chMain, "holster 0.9.0-dev loaded (P0 probe, log-only): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_probe ? 1 : 0,
            names[0] ? names : "none", static_cast<long>(g_maxLines), g_gobEvery, k2addr::get() ? "ok" : "none");
     {
         hs::TuneCfg t;
         LONG seq = 0;
         (void)loadTuneIfChanged(t, seq);
-        KP_LOG(chMain, "CONFIG toggle_key=0x%x draw_hold_ms=%u combat_exit_ms=%d flourish_exit_ms=%d hostile_range=%.1f hostile_backoff_ms=%u delay_party=%d flourish_draw=%d draw_slide_ms=%u stow_slide_ms=%u move_hold_ms=%u party_combat_hold=%d reach_test=%d (active=%d: needs probe=1, bone_test=1 and place_mode=drawgate)",
+        KP_LOG(chMain, "CONFIG toggle_key=0x%x draw_hold_ms=%u combat_exit_ms=%d flourish_exit_ms=%d hostile_range=%.1f hostile_backoff_ms=%u delay_party=%d flourish_draw=%d draw_slide_ms=%u stow_slide_ms=%u move_hold_ms=%u party_combat_hold=%d reach_test=%d reach_carry=%d (active=%d: needs probe=1, bone_test=1 and place_mode=drawgate)",
                static_cast<unsigned>(g_toggleKey), static_cast<unsigned>(g_drawHoldMs), g_delayCfg.combatExitMs, g_delayCfg.flourishExitMs, static_cast<double>(g_hostileRange),
                static_cast<unsigned>(g_hostileBackoffMs), g_delayParty ? 1 : 0, g_flourishDraw ? 1 : 0, static_cast<unsigned>(g_drawSlideMs), static_cast<unsigned>(g_stowSlideMs), static_cast<unsigned>(g_moveHoldMs),
-               g_partyCombatHold ? 1 : 0, g_reachTest ? 1 : 0, (g_boneTest && drawgateMode()) ? 1 : 0);
+               g_partyCombatHold ? 1 : 0, g_reachTest ? 1 : 0, g_reachCarry ? 1 : 0, (g_boneTest && drawgateMode()) ? 1 : 0);
         KP_LOG(chMain, "PLACEMODE %s (active=%d: needs probe=1 and bone_test=1)", hs::placeModeName(g_placeMode), g_boneTest ? 1 : 0);
         KP_LOG(chMain, "CONFIG left_extra_rot=%.1f bone_test_left=%d (ini=%d, active=%d: needs probe=1 and bone_test=1) log_verbose=%d", static_cast<double>(t.leftExtra),
                g_boneLeftCfg ? 1 : 0, g_boneLeftCfg ? 1 : 0, g_boneLeft ? 1 : 0, g_logVerbose ? 1 : 0);
