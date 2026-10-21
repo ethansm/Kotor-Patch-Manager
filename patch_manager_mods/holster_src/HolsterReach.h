@@ -440,10 +440,15 @@ inline float reachQAngleDeg(const Q& q) {
 }
 
 // Limit a rotation to `maxDeg` (same axis, shorter angle). Within the limit it is returned normalized, unchanged. Non-finite -> identity.
-inline Q reachClampRot(const Q& dq0, float maxDeg) {
+// hint == nullptr: the sign is the shorter arc (w >= 0). With a hint (the previous output of this wrist) the sign follows the hint, so
+// the axis stays put while the input passes 180 deg. The hint snaps the sign once the continued input passes 180 + maxDeg (~300 deg at
+// the 120 deg limit); nothing caps the input. With a hint, w < 0 reads above 180 deg, so the clamp branch always takes it (maxDeg <= 180).
+inline Q reachClampRot(const Q& dq0, float maxDeg, const Q* hint = nullptr) {
     if (!qfinite(dq0)) return { 1, 0, 0, 0 };
     Q dq = qnormalize(dq0);
-    if (dq.w < 0.f) { dq.w = -dq.w; dq.x = -dq.x; dq.y = -dq.y; dq.z = -dq.z; }   // shorter arc
+    if (hint && qfinite(*hint)) {
+        if (qdot(*hint, dq) < 0.f) { dq.w = -dq.w; dq.x = -dq.x; dq.y = -dq.y; dq.z = -dq.z; }
+    } else if (dq.w < 0.f) { dq.w = -dq.w; dq.x = -dq.x; dq.y = -dq.y; dq.z = -dq.z; }   // shorter arc
     const float ang = 2.f * std::acos(dq.w > 1.f ? 1.f : dq.w) * 57.29577951308232f;
     if (!(maxDeg >= 0.f) || ang <= maxDeg) return dq;
     const float s2 = std::sqrt(dq.x * dq.x + dq.y * dq.y + dq.z * dq.z);
@@ -454,11 +459,24 @@ inline Q reachClampRot(const Q& dq0, float maxDeg) {
 
 // World rotation to apply to a hand so its orientation `cur` becomes the target blend(from, to, t): dq = target * conj(cur), then limited to maxDeg and
 // scaled by `weight` (0 = none). The hand is turned from the weapon's mount orientation (t = 0, at the grab) to its resting orientation (t = 1) over the carry.
-inline Q reachWristDelta(const Q& from, const Q& to, float t, const Q& cur, float maxDeg, float weight) {
+// hint: the previous return value, passed to reachClampRot. The sign guarantee needs maxDeg in [0, 180]: the clamped dq then has w >= 0, so blendQ keeps it.
+inline Q reachWristDelta(const Q& from, const Q& to, float t, const Q& cur, float maxDeg, float weight, const Q* hint = nullptr) {
     if (!qfinite(from) || !qfinite(to) || !qfinite(cur)) return { 1, 0, 0, 0 };
     const Q target = blendQ(from, to, easeSmooth(t));
-    const Q dq = reachClampRot(qmul(target, reachConj(cur)), maxDeg);
+    const Q dq = reachClampRot(qmul(target, reachConj(cur)), maxDeg, hint);
     return blendQ(Q{ 1, 0, 0, 0 }, dq, weight);
+}
+
+// Residual of a retarget (HW26): the rotation still to undo t ms after the retarget. Rres at t = 0, identity at t = ms, eased by
+// easeSmooth. A later card multiplies it onto the carried rotation in place of the 10% world carry blend. Non-positive or non-finite ms,
+// or a non-finite Rres, give identity. nlerp (blendQ) is deliberate: plan 42c 4.3 wrote slerp, but the step numbers were taken with nlerp.
+// kReachResidMs = 240: at 60 fps the worst step over grabs 60..180 is 23.6 deg (180 deg grab); 230 ms gives 24.5. The 1.4 deg margin
+// keeps the 25 deg bound.
+constexpr uint32_t kReachResidMs = 240;
+inline Q reachResidual(const Q& Rres, float t, float ms) {
+    if (!(ms > 0.f) || !std::isfinite(ms)) return { 1, 0, 0, 0 };
+    const float s = easeSmooth(t / ms);                 // clamps to [0, 1]; NaN -> 0, t < 0 -> Rres
+    return blendQ(Q{ 1, 0, 0, 0 }, Rres, 1.f - s);     // w <= 0 returns identity bit for bit
 }
 
 }  // namespace hs

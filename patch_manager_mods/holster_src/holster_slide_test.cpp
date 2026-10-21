@@ -3,6 +3,7 @@
 #include "HolsterSlide.h"
 #include "check.h"
 #include <cmath>
+#include <cstdio>
 #include <limits>
 #include <stdint.h>
 
@@ -457,6 +458,154 @@ static void testSlideRetargetFieldsAndHoldW() {
     KT_CHECK(big.w0 == 1.f);
 }
 
+// ---- hemisphere lock (HW26) ----
+// Angle in degrees between two quats, sign-agnostic (the same rotation).
+static float angDeg(const Q& a, const Q& b) {
+    float d = std::fabs(dot(a, b));
+    if (d > 1.f) d = 1.f;
+    return 2.f * std::acos(d) * 57.29577951308232f;
+}
+// Hand quat turned `ang` deg about the mount's z (the mount is mountPose()).
+static Pose handAtDeg(float ang) {
+    const Pose m = mountPose();
+    const float z[3] = {0.f, 0.f, 1.f};
+    Pose hand = handPose();
+    hand.q = qnormalize(qmul(m.q, qaxis(z, ang)));
+    return hand;
+}
+
+// Hand swept 180 +- 0.5 deg about the mount's z for 400 frames. Plain blendPose flips the output sign each time the hand crosses 180 deg;
+// blendPoseLocked must not flip, and at f = 0.5 consecutive frames must stay within 0.99 of each other (smooth, no flip).
+static void testBlendPoseLockedNoFlipAtHalfTurn() {
+    const Pose m = mountPose();
+    const float z[3] = {0.f, 0.f, 1.f};
+    Slide s;
+    Pose prevL = m, prevP = m;
+    int lockedFlips = 0, plainFlips = 0;
+    for (int k = 0; k < 400; ++k) {
+        const float ang = 180.f + 0.5f * std::sin(0.37f * k);
+        Pose hand = handPose();
+        hand.q = qnormalize(qmul(m.q, qaxis(z, ang)));
+        const Pose L = blendPoseLocked(s, m, hand, 1.f);
+        const Pose P = blendPose(m, hand, 1.f);
+        KT_CHECK(poseSane(L));
+        if (k > 0) {
+            if (dot(L.q, prevL.q) < 0.f) ++lockedFlips;
+            if (dot(P.q, prevP.q) < 0.f) ++plainFlips;
+        }
+        prevL = L;
+        prevP = P;
+    }
+    KT_CHECK(lockedFlips == 0);
+    KT_CHECK(plainFlips >= 1);  // control: the sweep does cross the flip for plain blendPose
+    Slide h5;
+    Pose p5 = m;
+    for (int k = 0; k < 400; ++k) {
+        const float ang = 180.f + 0.5f * std::sin(0.37f * k);
+        const Pose L = blendPoseLocked(h5, m, handAtDeg(ang), 0.5f);
+        if (k > 0) KT_CHECK(dot(L.q, p5.q) > 0.99f);
+        p5 = L;
+    }
+}
+
+// Endpoints as blendPose (f clamp, NaN -> mount), the lock flag, and its lifecycle: reset() clears it, a same-direction target() keeps it,
+// a real target() keeps it too and leaves lockH untouched.
+static void testBlendPoseLockedEndpointsAndLifecycle() {
+    const Pose m = mountPose(), h = handPose();
+    Slide s;
+    KT_CHECK(s.lockOn == 0);
+    KT_CHECK(samePose(blendPoseLocked(s, m, h, 0.f), m));   // f = 0: the mount
+    KT_CHECK(s.lockOn == 1);                                 // after one call the lock is set
+    Slide e;
+    const Pose end = blendPoseLocked(e, m, h, 1.f);
+    KT_CHECK(samePos(end.pos, h.pos) && sameQuat(end.q, h.q));   // f = 1: the hand (the hand is 60 deg from the mount: no flip)
+    Slide c;
+    KT_CHECK(samePose(blendPoseLocked(c, m, h, -0.5f), m));                                   // f clamps below 0
+    KT_CHECK(samePos(blendPoseLocked(c, m, h, 2.f).pos, h.pos));                              // and above 1
+    KT_CHECK(samePose(blendPoseLocked(c, m, h, std::numeric_limits<float>::quiet_NaN()), m));  // NaN maps to the mount
+    Slide p;
+    for (int i = 0; i <= 10; ++i) KT_CHECK(poseSane(blendPoseLocked(p, m, h, i * 0.1f)));
+    Slide t;
+    t.reset(false, 1000u);
+    KT_CHECK(t.lockOn == 0);
+    blendPoseLocked(t, m, h, 0.5f);
+    KT_CHECK(t.lockOn == 1);
+    t.target(false, 1010u, 400u, 400u);                      // no-op: already heading to the hip
+    KT_CHECK(t.lockOn == 1);
+    const Q before = t.lockH;
+    t.target(true, 1020u, 400u, 400u);                       // a real retarget
+    KT_CHECK(t.lockOn == 1 && sameQuat(t.lockH, before));
+    t.reset(true, 1030u);
+    KT_CHECK(t.lockOn == 0);
+}
+
+// Known-risk check (decision b). The hand sweeps 170 -> 190 deg through a running draw at f = 0.5 (1 deg steps), the slide reverses with
+// target() on the 190 deg tick, and the hand sweeps back to 170. A lock cleared by target() re-picks the mount hemisphere on the first
+// post-reversal tick and jumps 180 deg there. The kept lock steps under 1 deg at the reversal and under 25 deg everywhere.
+static void testLockReversalJump() {
+    Slide s;
+    s.reset(false, 1000u);
+    s.target(true, 1000u, 400u, 400u);                       // draw 1000..1400: running
+    Pose last = mountPose();
+    float sweepMax = 0.f;
+    for (int k = 0; k <= 20; ++k) {                           // 170 .. 190 deg
+        const Pose L = blendPoseLocked(s, mountPose(), handAtDeg(170.f + (float)k), 0.5f);
+        if (k > 0) sweepMax = std::fmax(sweepMax, angDeg(L.q, last.q));
+        last = L;
+    }
+    s.target(false, 1100u, 400u, 400u);                      // reversal on the 190 deg tick
+    const Pose R = blendPoseLocked(s, mountPose(), handAtDeg(190.f), 0.5f);
+    const float jump = angDeg(R.q, last.q);
+    if (!(jump < 1.f)) std::printf("reversal jump %.3f deg (sweep max step %.3f deg)\n", jump, sweepMax);
+    KT_CHECK(jump < 1.f);
+    last = R;
+    float backMax = 0.f;
+    for (int k = 1; k <= 20; ++k) {                           // back 190 .. 170 deg
+        const Pose L = blendPoseLocked(s, mountPose(), handAtDeg(190.f - (float)k), 0.5f);
+        backMax = std::fmax(backMax, angDeg(L.q, last.q));
+        last = L;
+    }
+    if (!(sweepMax < 25.f && backMax < 25.f)) std::printf("sweep max %.3f deg, back max %.3f deg\n", sweepMax, backMax);
+    KT_CHECK(sweepMax < 25.f && backMax < 25.f);
+    KT_CHECK(s.dir == 0);
+}
+
+// Hand at `ang` deg about the mount's z, presented in hemisphere `sgn` (+1 or -1: the same rotation, quat negated).
+static Pose handAtDegSigned(float ang, float sgn) {
+    Pose hand = handAtDeg(ang);
+    hand.q = { sgn * hand.q.w, sgn * hand.q.x, sgn * hand.q.y, sgn * hand.q.z };
+    return hand;
+}
+
+// A NaN hand quat on one tick must not poison the lock: lockH and lockOn stay as they were, so the next finite frames keep the locked
+// sign. The hand then jitters 179.5..180.5 deg with the quat presented in alternating hemispheres. Each output must stay on the locked
+// side of the previous frame (no flip), and lockH stays finite. Unguarded, the NaN lockH makes slideDot NaN, so the first frame after it
+// skips the flip and comes out negated.
+static void testBlendPoseLockedNaNTickKeepsLock() {
+    const Pose m = mountPose();
+    const float nan = std::numeric_limits<float>::quiet_NaN();
+    Slide s;
+    s.reset(true, 0u);
+    const Pose first = blendPoseLocked(s, m, handAtDeg(179.5f), 1.f);
+    KT_CHECK(s.lockOn == 1 && dot(first.q, m.q) > 0.f);
+    const Q lockBefore = s.lockH;
+    Pose bad = handAtDeg(180.f);
+    bad.q = { nan, nan, nan, nan };
+    blendPoseLocked(s, m, bad, 0.5f);                                   // NaN tick
+    KT_CHECK(s.lockOn == 1 && sameQuat(s.lockH, lockBefore));
+    KT_CHECK(std::isfinite(s.lockH.w) && std::isfinite(s.lockH.x) && std::isfinite(s.lockH.y) && std::isfinite(s.lockH.z));
+    const float angs[] = {180.5f, 180.f, 179.5f, 180.5f, 180.f, 179.5f};
+    Pose prev = first;
+    float sgn = -1.f;
+    for (float ang : angs) {
+        const Pose L = blendPoseLocked(s, m, handAtDegSigned(ang, sgn), 1.f);
+        KT_CHECK(std::isfinite(s.lockH.w) && std::isfinite(s.lockH.x) && std::isfinite(s.lockH.y) && std::isfinite(s.lockH.z));
+        KT_CHECK(dot(L.q, prev.q) > 0.f);                               // no hemisphere flip against the previous frame
+        prev = L;
+        sgn = -sgn;
+    }
+}
+
 int main() {
     testBlendEndpointsAndClamp();
     testEaseSmooth();
@@ -477,5 +626,9 @@ int main() {
     testSlideDefaultsAndTinySlides();
     testSlideExactEndSweep();
     testSlideRetargetFieldsAndHoldW();
+    testBlendPoseLockedNoFlipAtHalfTurn();
+    testBlendPoseLockedEndpointsAndLifecycle();
+    testLockReversalJump();
+    testBlendPoseLockedNaNTickKeepsLock();
     return kt::Report("holster_slide");
 }

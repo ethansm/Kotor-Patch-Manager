@@ -4,6 +4,7 @@
 #include "HolsterReach.h"
 #include "check.h"
 #include <cmath>
+#include <cstdio>
 #include <limits>
 #include <stddef.h>
 #include <stdint.h>
@@ -1025,6 +1026,125 @@ static void testReachHingeOutParams() {
         }
 }
 
+// ---- wrist sign hint (HW26) ----
+// Continued input: the wrist turns 0..299 deg about +z in 1 deg steps. The input quat is the raw qaxis (its sign flips past 180 deg) and
+// every odd step is negated (the same rotation). With the previous output as the hint, the axis stays +z and the angle clamps at 120 deg.
+static void testWristHintKeepsAxis() {
+    const float z[3] = {0, 0, 1};
+    Q prev{ 1, 0, 0, 0 };
+    for (int a = 0; a <= 299; ++a) {
+        Q dq = qaxis(z, (float)a);
+        if (a & 1) dq = negQ(dq);
+        const Q out = reachClampRot(dq, 120.f, &prev);
+        if (a > 0) KT_CHECK(out.z > 0.f);
+        KT_CHECK(std::fabs(reachQAngleDeg(out) - (float)(a < 120 ? a : 120)) < 0.01f);
+        prev = out;
+    }
+    // edge: at 299 the hint still holds (clamped, +z); at 301 it has snapped (documented; the input is not capped)
+    const Q rot120 = qaxis(z, 120.f);
+    KT_CHECK(reachClampRot(qaxis(z, 299.f), 120.f, &rot120).z > 0.f);
+    KT_CHECK(reachClampRot(qaxis(z, 301.f), 120.f, &rot120).z < 0.f);
+    // control: without the hint the same input past 180 deg takes the other sign (the old flip)
+    KT_CHECK(reachClampRot(qaxis(z, 200.f), 120.f).z < 0.f);
+}
+
+// The no-hint forms are the old behaviour: the default argument equals an explicit nullptr bit for bit, and hard-coded values pin the
+// no-hint path (the existing wrist tests pin it too).
+static void testWristHintDefaultsUnchanged() {
+    const float z[3] = {0, 0, 1}, x[3] = {1, 0, 0};
+    const Q in = qaxis(z, 80.f);
+    KT_CHECK(closeQ(reachClampRot(in, 80.f), in, 1e-6f) && reachClampRot(in, 80.f).z > 0.f);   // within the limit: input, sign kept
+    const Q in30 = qaxis(z, 30.f);
+    KT_CHECK(closeQ(reachClampRot(negQ(in30), 80.f), in30, 1e-6f));                             // negated input: shorter arc, sign kept
+    const Q dqs[4] = { qaxis(z, 150.f), negQ(qaxis(z, 150.f)), qaxis(x, 40.f), Q{ 0.3f, 0.5f, -0.2f, 0.7f } };
+    for (int k = 0; k < 4; ++k) {
+        KT_CHECK(exactQ(reachClampRot(dqs[k], 80.f), reachClampRot(dqs[k], 80.f, nullptr)));
+        KT_CHECK(exactQ(reachClampRot(dqs[k], 120.f), reachClampRot(dqs[k], 120.f, nullptr)));
+    }
+    const Q mount = qaxis(z, 90.f), rest = Q{ 1, 0, 0, 0 }, cur = qaxis(x, 25.f);
+    const float ts[3] = { 0.f, 0.4f, 1.f };
+    for (int k = 0; k < 3; ++k)
+        KT_CHECK(exactQ(reachWristDelta(mount, rest, ts[k], cur, 120.f, 0.6f), reachWristDelta(mount, rest, ts[k], cur, 120.f, 0.6f, nullptr)));
+}
+
+// reachWristDelta with the hint: cur = mount * qaxis(z, a) (raw input, sign flips past 180 deg), the hint is the previous return (identity
+// at the start). Each return's axis (xyz part) must keep a positive dot with the first return's axis, and the angle must be min(a, 120).
+// Control: the same input without the hint flips the axis.
+static void testWristDeltaHintSweep() {
+    const float z[3] = {0, 0, 1};
+    const Q mount = qaxis(z, 90.f), rest = Q{ 1, 0, 0, 0 };
+    Q prev{ 1, 0, 0, 0 }, ref{ 1, 0, 0, 0 };
+    bool haveRef = false;
+    for (int a = 1; a <= 299; ++a) {
+        const Q cur = qmul(mount, qaxis(z, (float)a));
+        const Q out = reachWristDelta(mount, rest, 0.f, cur, 120.f, 1.f, &prev);
+        if (!haveRef) { ref = out; haveRef = true; }
+        KT_CHECK(out.x * ref.x + out.y * ref.y + out.z * ref.z > 0.f);
+        KT_CHECK(std::fabs(reachQAngleDeg(out) - (float)(a < 120 ? a : 120)) < 0.01f);
+        prev = out;
+    }
+    const Q flipped = reachWristDelta(mount, rest, 0.f, qmul(mount, qaxis(z, 200.f)), 120.f, 1.f);
+    KT_CHECK(flipped.x * ref.x + flipped.y * ref.y + flipped.z * ref.z < 0.f);
+}
+
+// ---- hand-frame residual (HW26) ----
+// Largest angle between consecutive frames of reachResidual(qaxis(x, grab), t, ms), frames at t = k * 1000 / 60 and at t = ms (60 fps).
+static float residualStepMaxDeg(float grab, float ms) {
+    const float x[3] = {1, 0, 0};
+    const Q R = qaxis(x, grab);
+    Q prev = reachResidual(R, 0.f, ms);
+    float worst = 0.f;
+    for (int k = 1;; ++k) {
+        const float t = (float)k * 1000.f / 60.f;
+        const bool last = t >= ms;
+        const Q cur = reachResidual(R, last ? ms : t, ms);
+        const float step = reachQAngleDeg(qmul(reachConj(prev), cur));
+        if (step > worst) worst = step;
+        prev = cur;
+        if (last) break;
+    }
+    return worst;
+}
+
+static void testResidualDecay() {
+    const float x[3] = {1, 0, 0};
+    const float ms = (float)kReachResidMs;
+    const Q id{ 1, 0, 0, 0 };
+    const float thetas[3] = { 60.f, 120.f, 180.f };
+    for (int k = 0; k < 3; ++k) {
+        const float th = thetas[k];
+        const Q R = qaxis(x, th);
+        KT_CHECK(std::fabs(reachQAngleDeg(reachResidual(R, 0.f, ms)) - th) < 1e-3f);   // Rres at t = 0
+        KT_CHECK(exactQ(reachResidual(R, ms, ms), id));                                 // identity at t = ms, exactly
+        KT_CHECK(exactQ(reachResidual(R, ms + 50.f, ms), id));                          // and after it
+        KT_CHECK(closeQSign(reachResidual(R, -20.f, ms), R, 1e-5f));                    // t < 0: Rres (sign may be the other one)
+        float prevA = reachQAngleDeg(reachResidual(R, 0.f, ms));
+        for (float t = 5.f; t <= ms; t += 5.f) {                                        // non-increasing angle, 5 ms steps
+            const float a = reachQAngleDeg(reachResidual(R, t, ms));
+            KT_CHECK(a <= prevA + 1e-3f);
+            prevA = a;
+        }
+    }
+    const Q R90 = qaxis(x, 90.f);
+    KT_CHECK(exactQ(reachResidual(R90, 0.f, 0.f), id) && exactQ(reachResidual(R90, 0.f, -5.f), id));   // ms <= 0: identity
+    KT_CHECK(exactQ(reachResidual(R90, 0.f, kInf), id));                                                // ms = +inf: identity
+    KT_CHECK(exactQ(reachResidual(R90, 0.f, kNaN), id));                                                // ms NaN: identity
+    KT_CHECK(exactQ(reachResidual(Q{ kNaN, 0, 0, 0 }, 0.f, ms), id));                                   // non-finite Rres: identity
+}
+
+// Residual alone, 1 deg grab steps 60..180 at kReachResidMs: no frame step of 25 deg or more. Control: the old 130 ms default fails at 180 deg.
+static void testResidualStepBound() {
+    float worst = 0.f;
+    int worstGrab = 0;
+    for (int g = 60; g <= 180; ++g) {
+        const float s = residualStepMaxDeg((float)g, (float)kReachResidMs);
+        if (s > worst) { worst = s; worstGrab = g; }
+    }
+    if (!(worst < 25.f)) std::printf("residual step %.3f deg at grab %d\n", worst, worstGrab);
+    KT_CHECK(worst < 25.f);
+    KT_CHECK(residualStepMaxDeg(180.f, 130.f) > 25.f);
+}
+
 int main() {
     testArcQuatMapsDirections();
     testArcQuatParallelAndAntiParallel();
@@ -1075,5 +1195,10 @@ int main() {
     testReachHinge();
     testReachTopology();
     testReachHingeOutParams();
+    testWristHintKeepsAxis();
+    testWristHintDefaultsUnchanged();
+    testWristDeltaHintSweep();
+    testResidualDecay();
+    testResidualStepBound();
     return kt::Report("holster_reach");
 }

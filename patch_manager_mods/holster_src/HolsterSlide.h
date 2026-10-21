@@ -3,6 +3,7 @@
 // gate (HolsterDrawGate.h) only chooses the target. The slide never gates the hand attach, it only shapes the written pose. Pure math,
 // header-only, no engine calls. Host-tested by holster_slide_test.cpp.
 #pragma once
+#include <cmath>
 #include <stdint.h>
 #include "HolsterQuat.h"
 
@@ -45,6 +46,10 @@ struct Slide {
     float pathFrom = 1;   // path position (0 mount .. 1 rest) at the last retarget; reachPlan starts from it
     float carryFrom = 0;  // carry weight at the last retarget
     float w0 = 0;         // reach weight at the last retarget (holdW), blended over the new slide's first ramp window
+    // Hemisphere lock (blendPoseLocked). lockH is the hand quat after the sign flip of the last locked call (the sign reference);
+    // lockOn is cleared only by reset(), so target() keeps both.
+    Q lockH{ 1, 0, 0, 0 };
+    uint8_t lockOn = 0;   // 1 once blendPoseLocked ran since the last reset()
 
     // Silent placement: no motion, fraction is the target at once.
     void reset(bool hand, uint32_t now) {
@@ -56,6 +61,7 @@ struct Slide {
         pathFrom = 1.f;
         carryFrom = (float)dir;
         w0 = 0.f;
+        lockOn = 0;
     }
 
     // Hand fraction in [0, 1] at tick `now`. A tick before t0 (stale) reports `from`; endpoints are exact.
@@ -102,6 +108,32 @@ struct Slide {
         return d > 0 && d < (int32_t)len;
     }
 };
+
+// Dot of two quats. Named slideDot: HolsterReach.h already defines hs::qdot with the same meaning.
+inline float slideDot(const Q& a, const Q& b) { return a.w * b.w + a.x * b.x + a.y * b.y + a.z * b.z; }
+
+// Locked blend (HW26): blendPose with the hand quat's sign tied to the previous call of the slide instead of the mount. Position lerp,
+// f clamp and nlerp are those of blendPose. The first call after reset() picks the hemisphere nearest the mount, as blendPose does.
+// Every later call negates h when slideDot(lockH, h) < 0, so the sign stays continuous while the hand turns past 180 deg from the
+// mount. After the first call the blend may therefore take the long arc from the mount (dot(mount, h) < 0): that is the continuous
+// path, not an error. The nlerp norm at f = 0.5 is |cos(turn/4)|, so the output degenerates as the hand nears 360 deg of turn.
+// lockH is the post-flip h of every call with a finite h; a non-finite h leaves lockH and lockOn as they were.
+// target() leaves lockOn and lockH alone, so a reversal keeps the hand's sign.
+inline Pose blendPoseLocked(Slide& s, const Pose& mount, const Pose& hand, float f) {
+    f = slideClamp01(f);
+    Pose o;
+    for (int i = 0; i < 3; ++i) o.pos[i] = (1.f - f) * mount.pos[i] + f * hand.pos[i];
+    Q h = hand.q;
+    const Q& m = mount.q;
+    const bool flip = s.lockOn ? slideDot(s.lockH, h) < 0.f : m.w * h.w + m.x * h.x + m.y * h.y + m.z * h.z < 0.f;
+    if (flip) { h.w = -h.w; h.x = -h.x; h.y = -h.y; h.z = -h.z; }
+    if (std::isfinite(h.w) && std::isfinite(h.x) && std::isfinite(h.y) && std::isfinite(h.z)) {
+        s.lockH = h;
+        s.lockOn = 1;
+    }
+    o.q = qnormalize({ (1.f - f) * m.w + f * h.w, (1.f - f) * m.x + f * h.x, (1.f - f) * m.y + f * h.y, (1.f - f) * m.z + f * h.z });
+    return o;
+}
 
 // Shown pose of one weapon: eased blend of its hip pose and its hand pose. Exactly hip / hand at the slide ends.
 inline Pose slideShown(const Slide& s, uint32_t now, const Pose& hip, const Pose& hand) {
