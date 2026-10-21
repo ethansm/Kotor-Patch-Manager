@@ -2189,48 +2189,67 @@ const K2MenuUiApi g_muiApi = {sizeof(K2MenuUiApi), &muiNewPage, &muiAddButton, &
 }  // namespace
 
 namespace {
-// ---- Esc probe (0.3.5-dev): CSWGuiInGameOptions vtable slot 14 (+0x38) is the panel's input-event handler (0x8A2070 in the Steam exe: a switch on the
-// event id, then the shared base 0x40EAA0). Esc closes the whole in-game GUI and its event id is not known, so this build only LOGS: every distinct
-// (id, arg, Esc held, mod page) the handler sees while the Options panel is up (first kProbeMax), then calls the original unchanged. The slot is
-// wrapped once, at the first Options panel. Rows: `ESCPROBE id=.. arg=.. escHeld=.. page=.. n=..`. Remove or turn into the real fix once the id is known.
-typedef int(__fastcall* InputFn)(void* self, void* edx, int id, int arg);   // thiscall with two stack args, callee cleans (ret 8): the fastcall shape is identical
-constexpr int kProbeSlot = 14, kProbeMax = 48;
-InputFn g_origInput = nullptr;
-struct ProbeSeen { int id, arg, esc, page; };
-ProbeSeen g_probeSeen[kProbeMax];
-int g_probeN = 0;
-volatile LONG g_probeCalls = 0;
+// ---- Esc probe (0.3.6-dev): slot 14 of the Options vtable turned out to be a per-frame update (its first arg was a frame-time float), not the key
+// handler, so this build puts a generic stub on every other slot (except 0 dtor and 12 Draw). A stub bumps the slot's call counter and a global
+// sequence number, stores the first two stack args, then jumps to the original unchanged (so any calling convention / arg count works). The state is
+// dumped when Esc goes down (McTick) and when the panel is destroyed (McDestroy): the slots ordered by their last call, newest first. The call
+// made right before the GUI closes should be the Esc handler. Rows: `ESCPROBE slot=.. cnt=.. seq=.. a1=.. a2=..`.
+struct ProbeSlot { uint32_t cnt, seq, a1, a2, orig; };
+constexpr int kProbeSlots = 27;
+ProbeSlot g_ps[kProbeSlots];
+uint32_t g_pseq = 0;
+bool g_probeOn = false;
 
-int __fastcall wrapInput(void* self, void* edx, int id, int arg) {
-    InterlockedIncrement(&g_probeCalls);
-    const int esc = (GetAsyncKeyState(VK_ESCAPE) & 0x8000) ? 1 : 0;
-    const int page = curPageId();
-    bool fresh = true;
-    for (int i = 0; i < g_probeN; ++i)
-        if (g_probeSeen[i].id == id && g_probeSeen[i].arg == arg && g_probeSeen[i].esc == esc && g_probeSeen[i].page == page) { fresh = false; break; }
-    if (fresh && g_probeN < kProbeMax) {
-        g_probeSeen[g_probeN++] = { id, arg, esc, page };
-        KP_LOG(chInput, "ESCPROBE id=%d (0x%x) arg=%d (0x%x) escHeld=%d page=%d n=%d calls=%ld", id, static_cast<unsigned>(id), arg, static_cast<unsigned>(arg), esc, page, g_probeN,
-               static_cast<long>(g_probeCalls));
+void probeDump(const char* why) {
+    if (!g_probeOn) return;
+    bool used[kProbeSlots] = {};
+    KP_LOG(chInput, "ESCPROBE dump (%s) seq=%u", why, static_cast<unsigned>(g_pseq));
+    for (int n = 0; n < 12; ++n) {
+        int best = -1;
+        for (int s = 0; s < kProbeSlots; ++s)
+            if (!used[s] && g_ps[s].cnt && (best < 0 || g_ps[s].seq > g_ps[best].seq)) best = s;
+        if (best < 0) break;
+        used[best] = true;
+        KP_LOG(chInput, "ESCPROBE slot=%d cnt=%u seq=%u a1=%08x a2=%08x orig=%08x", best, static_cast<unsigned>(g_ps[best].cnt), static_cast<unsigned>(g_ps[best].seq),
+               static_cast<unsigned>(g_ps[best].a1), static_cast<unsigned>(g_ps[best].a2), static_cast<unsigned>(g_ps[best].orig));
     }
-    return g_origInput(self, edx, id, arg);
 }
 
 void installInputProbe() {
     static bool s_done = false;
     if (s_done) return;
     s_done = true;
-    const uintptr_t slot = static_cast<uintptr_t>(kOptionsVtable) + kProbeSlot * sizeof(uint32_t);
-    uint32_t cur = 0;
-    if (!saferead::readAt<uint32_t>(0xE70200u, slot, 0, &cur) || cur < 0x401000u || cur > 0x9A0000u) {
-        KP_LOG(chMain, "ESCPROBE slot %d at %08x unreadable or not code (%08x): probe off", kProbeSlot, static_cast<unsigned>(slot), static_cast<unsigned>(cur));
-        return;
+    const uintptr_t vt = static_cast<uintptr_t>(kOptionsVtable);
+    uint8_t* cave = codepatch::allocCave(kProbeSlots * 40);
+    if (!cave) { KP_LOG(chMain, "ESCPROBE no code cave: probe off"); return; }
+    int patched = 0;
+    for (int s = 1; s < kProbeSlots; ++s) {
+        if (s == 12) continue;   // Draw (per frame, already detoured by us)
+        uint32_t cur = 0;
+        if (!saferead::readAt<uint32_t>(0xE70200u, vt + s * 4, 0, &cur) || cur < 0x401000u || cur > 0x9A0000u) continue;
+        ProbeSlot& ps = g_ps[s];
+        ps.orig = cur;
+        uint8_t* c = cave + s * 40;
+        uint8_t* q = c;
+        auto u32 = [&](const void* a) { const uint32_t v = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(a)); memcpy(q, &v, 4); q += 4; };
+        *q++ = 0xFF; *q++ = 0x05; u32(&ps.cnt);                       // inc dword [cnt]
+        *q++ = 0x50;                                                  // push eax
+        *q++ = 0xA1; u32(&g_pseq);                                    // mov eax,[seq]
+        *q++ = 0x40;                                                  // inc eax
+        *q++ = 0xA3; u32(&g_pseq);                                    // mov [seq],eax
+        *q++ = 0xA3; u32(&ps.seq);                                    // mov [slot seq],eax
+        *q++ = 0x8B; *q++ = 0x44; *q++ = 0x24; *q++ = 0x08;           // mov eax,[esp+8]   first stack arg
+        *q++ = 0xA3; u32(&ps.a1);
+        *q++ = 0x8B; *q++ = 0x44; *q++ = 0x24; *q++ = 0x0C;           // mov eax,[esp+12]  second stack arg
+        *q++ = 0xA3; u32(&ps.a2);
+        *q++ = 0x58;                                                  // pop eax
+        *q++ = 0xFF; *q++ = 0x25; u32(&ps.orig);                      // jmp [orig]
+        const uint32_t mine = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(c));
+        if (codepatch::write(vt + s * 4, reinterpret_cast<const uint8_t*>(&mine), 4) == 1) ++patched;
+        else ps.orig = 0;
     }
-    g_origInput = reinterpret_cast<InputFn>(static_cast<uintptr_t>(cur));
-    const uint32_t mine = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(&wrapInput));
-    const int rc = codepatch::write(slot, reinterpret_cast<const uint8_t*>(&mine), 4);
-    if (rc != 1) g_origInput = nullptr;
-    KP_LOG(chMain, "ESCPROBE slot %d at %08x: was %08x, now %08x rc=%d", kProbeSlot, static_cast<unsigned>(slot), static_cast<unsigned>(cur), static_cast<unsigned>(mine), rc);
+    g_probeOn = patched > 0;
+    KP_LOG(chMain, "ESCPROBE stubs on %d vtable slots at %08x (cave %p)", patched, static_cast<unsigned>(vt), static_cast<void*>(cave));
 }
 
 }  // namespace
@@ -2357,6 +2376,7 @@ extern "C" void __cdecl McTick(int panelArg) {
     // Esc closes the whole in-game GUI, but the hidden panel is not drawn, so a quick Esc, Esc (< kTickGapMs) reopened on the old mod page
     // (live 10-18). Act on the Esc key edge itself: any non-MAIN page goes back to MAIN the moment Esc goes down. Esc is still not swallowed.
     const bool escDown = guikit::g_gk.gameForeground && guikit::g_gk.gameForeground() && (GetAsyncKeyState(VK_ESCAPE) & 0x8000) != 0;
+    if (escDown && !e.prevEsc) probeDump("esc down");
     if (escDown && !e.prevEsc && e.appended && e.ps.state != mui::MAIN) resetPages("esc key");
     e.prevEsc = escDown;
     {   // A long gap used to always mean "the panel was closed". While the panel is still marked shown (flags48 bit 0x40) a game hitch under a held
@@ -2460,6 +2480,7 @@ extern "C" void __cdecl McTick(int panelArg) {
 
 // H-O4 8A1930: Options scalar deleting dtor (ECX = this), on entry, before the children are freed.
 extern "C" void __cdecl McDestroy(int panelArg) {
+    probeDump("panel destroyed");
     if (!g_enabled || !panelArg) return;
     const uintptr_t P = static_cast<uintptr_t>(static_cast<unsigned>(panelArg));
     if (P != g_mc.panel) return;
@@ -2497,7 +2518,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
     embtex::g_log = embedLog;   // gear + slider art textures (EmbedTex) log through the main channel
     guikit::initGuiInput(api, "mod-config");   // optional: the wheel provider (k2.guiinput); a missing provider only means no wheel
-    KP_LOG(chMain, "mod-config 0.3.5-dev loaded (Mod Configuration button under Gameplay; k2.modconfig@1 + k2.menuui@1; config mod_config.ini is read at the first Options panel: enabled debug button_clone reflow desc free_labels)");
+    KP_LOG(chMain, "mod-config 0.3.6-dev loaded (Mod Configuration button under Gameplay; k2.modconfig@1 + k2.menuui@1; config mod_config.ini is read at the first Options panel: enabled debug button_clone reflow desc free_labels)");
     int rcC = -1, rcM = -1;
     if (api && api->struct_size >= offsetof(KPatchApi, require) + sizeof(api->require) && api->provide) {
         rcC = api->provide(K2MODCONFIG_IFACE, K2MODCONFIG_VERSION, &g_mcApi);
