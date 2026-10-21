@@ -336,7 +336,7 @@ inline bool reachHinge(const float* S, float L1, float L2, const float* up, cons
 // Stow (dir 0): CARRY (rest -> mount, the weapon lands on the mount at the end of it), then RELEASE (the last `g`: the hand goes from the mount back to rest,
 // the weapon stays). pathF = position on the carry path (0 mount .. 1 rest); restMix = how far the aimed point has been pulled toward the resting hand
 // (kept for callers; 0 now: the reach and release walk the carry arc); carryW = how much the weapon follows the hand (0 = on the mount).
-struct ReachPlan { bool active; float pathF, restMix, carryW; };
+struct ReachPlan { bool active; float pathF, restMix, carryW; float extractK = 0.f; float oriF = 0.f; };
 
 constexpr float kCarryEaseLen = 0.15f;   // L: share of the carry over which the carry weight eases in/out
 // Carry path position after carry fraction q (0..1 -> 0..1). Zero speed at both ends; slope v = 1/(1-L/2) in the middle.
@@ -347,49 +347,80 @@ inline float reachCarryF(float q) {
     return v * (L / 2.f + q - L);
 }
 
+// HW31 extract bump: 16 x^2 (1 - x)^2 on x in [0, 1] (0 at both ends, 1 at the middle); x is clamped.
+inline float extractBump(float x) { x = slideClamp01(x); return 16.f * x * x * (1.f - x) * (1.f - x); }
+
+// HW31 orientation progress (D2), applied only inside the carry window (reachPlan uses oriF = pathF in reach and release).
+// e = clamped extract share. e == 0 returns pathF (today's behaviour). In the carry: 0 while pathF <= X (the extract window's
+// path end), then smooth 0 -> 1 to the hand end.
+inline float reachOriF(float pathF, float e) {
+    if (!(e > 0.f)) return pathF;
+    const float X = reachCarryF(e);            // pathF at the end of the extract window
+    if (pathF <= X) return 0.f;                // mount orientation held through the extract
+    return easeSmooth((pathF - X) / (1.f - X));
+}
+
 // The plan starts from the slide's stored retarget state (pathFrom, carryFrom), so a reversal continues where the arm was. The retarget tick
 // (d == 0) is active.
-inline ReachPlan reachPlan(const Slide& s, uint32_t now, float g) {
-    ReachPlan r = { false, 0.f, 0.f, 0.f };
+inline ReachPlan reachPlan(const Slide& s, uint32_t now, float g, float extractPct = 0.f) {
+    ReachPlan r = { false, 0.f, 0.f, 0.f, 0.f, 0.f };
     const int32_t d = (int32_t)(now - s.t0);
     if (d < 0 || d >= (int32_t)s.len) return r;   // was s.active(now): the retarget tick (d == 0) is inside now
     if (!(g > 0.f)) g = 0.f;
     if (g > 0.6f) g = 0.6f;
+    float e = extractPct;                          // D1: NaN and negatives -> 0, at most 1 - g - 0.05
+    if (!(e > 0.f)) e = 0.f;
+    if (e > 1.f - g - 0.05f) e = 1.f - g - 0.05f;
     const float p = slideClamp01((float)d / (float)s.len);
     const float from = slideClamp01(s.from);      // frac: only the fresh / partial split uses it
     r.active = true;
+    float bump = 0.f;                              // D3 fresh extract bump (time-based)
+    bool carry = true;                             // true inside the carry window; reach and release keep oriF = pathF
     if (s.dir) {                                   // draw
         if (from <= 0.001f) {                      // fresh from the mount: reach if g > 0, then carry from 0
-            if (g > 0.f && p < g) { r.pathF = s.pathFrom * (1.f - easeSmooth(p / g)); return r; }
-            const float q = (p - g) / (1.f - g);
-            r.pathF = reachCarryF(q); r.carryW = easeSmooth(q / kCarryEaseLen); return r;
+            if (g > 0.f && p < g) {
+                r.pathF = s.pathFrom * (1.f - easeSmooth(p / g));
+                carry = false;
+            } else {
+                const float q = (p - g) / (1.f - g);
+                r.pathF = reachCarryF(q); r.carryW = easeSmooth(q / kCarryEaseLen);
+                if (e > 0.f && q <= e) bump = extractBump(q / e);
+            }
+        } else {                                   // partial: continues from the retarget, no fresh extract
+            r.pathF = s.pathFrom + (1.f - s.pathFrom) * reachCarryF(p);
+            r.carryW = s.carryFrom + (1.f - s.carryFrom) * easeSmooth(p / kCarryEaseLen);
         }
-        r.pathF = s.pathFrom + (1.f - s.pathFrom) * reachCarryF(p);     // partial: continues from the retarget
-        r.carryW = s.carryFrom + (1.f - s.carryFrom) * easeSmooth(p / kCarryEaseLen);
-        return r;
+    } else {                                       // stow
+        const float c = 1.f - g;                   // stow: carry share of the slide
+        if (p < c) {
+            const float q = p / c;
+            r.pathF = s.pathFrom * reachCarryF(1.f - q);
+            r.carryW = s.carryFrom * easeSmooth((1.f - q) / kCarryEaseLen);
+            if (e > 0.f && q >= 1.f - e) bump = extractBump((q - (1.f - e)) / e);
+        } else {                                   // release: unchanged
+            r.pathF = easeSmooth((p - c) / g); r.carryW = 0.f;
+            carry = false;
+        }
     }
-    const float c = 1.f - g;                       // stow: carry share of the slide
-    if (p < c) {
-        const float q = p / c;
-        r.pathF = s.pathFrom * reachCarryF(1.f - q);
-        r.carryW = s.carryFrom * easeSmooth((1.f - q) / kCarryEaseLen);
-        return r;
-    }
-    r.pathF = easeSmooth((p - c) / g); r.carryW = 0.f;   // release: unchanged
+    r.oriF = carry ? reachOriF(r.pathF, e) : r.pathF;   // hold only in the carry window; reach and release follow pathF
+    if (s.oriOn) r.oriF = s.oriFrom + (r.oriF - s.oriFrom) * easeSmooth(p / 0.1f);   // B1: the join keeps oriF continuous (blend over 10%)
+    r.extractK = s.extractFrom > 0.f ? s.extractFrom * (1.f - easeSmooth(p)) : bump;   // D4
     return r;
 }
 
 // Retarget with continuity. g must be the grab share the reader passes to reachPlan. ramp must equal the reader's reach ramp (the Holster.cpp
 // readers use g_reachCarry ? 0.04f : 0.2f); the default is the carry-mode value. Duration (Option B, this wrapper only): a reversal of a running
 // slide takes ms * path distance / 2 (stow (P0 + 1) / 2, draw (1 - P0) / 2), so arm speed stays normal.
-inline void reachRetarget(Slide& s, bool hand, uint32_t now, uint32_t drawMs, uint32_t stowMs, float g, float ramp = 0.04f) {
+inline void reachRetarget(Slide& s, bool hand, uint32_t now, uint32_t drawMs, uint32_t stowMs, float g, float ramp = 0.04f, float extractPct = 0.f) {
     if (s.dir == (hand ? 1 : 0)) return;                    // same direction: target() is a no-op, store nothing
-    const ReachPlan old = reachPlan(s, now, g);             // read BEFORE target(), which resets t0
+    const ReachPlan old = reachPlan(s, now, g, extractPct); // read BEFORE target(), which resets t0; extractPct = the reader's extract share
     const float P0 = old.active ? old.pathF : 1.f;
     const float C0 = old.active ? old.carryW : (float)s.dir;
     const float w = reachWeightRamp(s, now, ramp);          // also before target()
     s.target(hand, now, drawMs, stowMs, w);
-    s.pathFrom = P0; s.carryFrom = C0;
+    s.pathFrom = P0; s.carryFrom = C0; s.extractFrom = old.extractK;   // HW31 D4: target() cleared extractFrom, so this comes after it
+    // HW31 B1: only with an extract share (e > 0 is the only case where the carry target differs from pathF); extractPct 0 leaves oriOn 0.
+    s.oriFrom = old.oriF; s.oriOn = (old.active && extractPct > 0.f) ? 1 : 0;
     if (old.active) {                                       // reversal of a running slide only; fresh start keeps frac length
         const uint32_t ms = hand ? drawMs : stowMs;
         const float half = 0.5f * (hand ? 1.f - P0 : P0 + 1.f);
@@ -408,6 +439,14 @@ inline Q blendQ(const Q& a0, const Q& b0, float w) {
     Q b = b0;
     if (qdot(a, b) < 0.f) { b.w = -b.w; b.x = -b.x; b.y = -b.y; b.z = -b.z; }
     return qnormalize({ (1.f - w) * a.w + w * b.w, (1.f - w) * a.x + w * b.x, (1.f - w) * a.y + w * b.y, (1.f - w) * a.z + w * b.z });
+}
+
+// HW31 item 3: mount a -> via -> hand b. Continuous at t = 0.5 and sign-aligned (see slideViaQ in HolsterSlide.h).
+// Non-finite a is taken as identity and a non-finite b keeps a (as blendQ). via must be finite (blendPoseLocked2 checks it).
+inline Q reachViaQ(const Q& a0, const Q& b, const Q& via, float t) {
+    const Q a = qfinite(a0) ? a0 : Q{ 1, 0, 0, 0 };
+    if (!qfinite(b)) return a;
+    return slideViaQ(a, via, b, t);
 }
 
 // Cache of a bone's sampled base orientation. The engine resamples the bone each frame; when it did not (the read still matches
