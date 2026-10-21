@@ -1,11 +1,11 @@
 [patch]
 id = "preview-3d"
 name = "Preview 3D (shared 3D character preview provider)"
-version = "0.1.1-dev"
+version = "0.2.0-dev"
 kind = "provider"
 provides = ["k2.preview3d@1"]
 author = "local"
-description = "Shared 3D character preview viewers for GUI panels (per-token viewer: bind a creature, rebuild its model, set weapons, camera view and animation). Provides k2.preview3d v1. Needs a KotorPatcher with the patch registry (KPatchInit)."
+description = "Shared 3D character preview viewers for GUI panels (per-token viewer: bind a creature, rebuild its model, set weapons, camera view and animation). Provides k2.preview3d v1 (additive SetAnimPaused slot). Needs a KotorPatcher with the patch registry (KPatchInit)."
 
 requires = []
 conflicts = []

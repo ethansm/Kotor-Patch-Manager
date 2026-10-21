@@ -99,6 +99,7 @@ void* KPATCH_CALL stubP3RigGob(uint32_t, int32_t) { return nullptr; }
 void KPATCH_CALL stubP3Destroy(uint32_t) {}
 void KPATCH_CALL stubP3SetBeforeFree(K2Preview3dBeforeFree, void*) {}
 void* KPATCH_CALL stubP3ViewControl(uint32_t) { return nullptr; }
+void KPATCH_CALL stubP3SetAnimPaused(uint32_t, int32_t) {}
 
 const K2Preview3dApi kP3Table = {
     sizeof(K2Preview3dApi),
@@ -112,7 +113,8 @@ const K2Preview3dApi kP3Table = {
     stubP3RigGob,
     stubP3Destroy,
     stubP3SetBeforeFree,
-    stubP3ViewControl
+    stubP3ViewControl,
+    stubP3SetAnimPaused
 };
 
 // ---- HolsterApi stubs ----
@@ -208,6 +210,8 @@ int main() {
         HEQ("K2PREVIEW3D_PART_BODY is 0", K2PREVIEW3D_PART_BODY, 0);
         HEQ("K2PREVIEW3D_PART_HEAD is 1", K2PREVIEW3D_PART_HEAD, 1);
         HEQ("K2Preview3dApi.PlayAnim is vtable slot 7", offsetof(K2Preview3dApi, PlayAnim), 7 * sizeof(void*));
+        HEQ("K2Preview3dApi.ViewControl is slot 11 (end of the original v1 table)", offsetof(K2Preview3dApi, ViewControl), 11 * sizeof(void*));
+        HEQ("K2Preview3dApi.SetAnimPaused is slot 12 (appended, additive)", offsetof(K2Preview3dApi, SetAnimPaused), 12 * sizeof(void*));
         HEQ("K2HOLSTER_SCOPE_WEAPON is 0", K2HOLSTER_SCOPE_WEAPON, 0);
         HEQ("K2HOLSTER_SCOPE_TYPE is 1", K2HOLSTER_SCOPE_TYPE, 1);
         HEQ("K2HOLSTER_SCOPE_BODY is 2", K2HOLSTER_SCOPE_BODY, 2);
@@ -347,14 +351,20 @@ int main() {
     {
         HCHECK("K2PREVIEW3D_IFACE is \"k2.preview3d\"", std::strcmp(K2PREVIEW3D_IFACE, "k2.preview3d") == 0);
         HEQ("K2PREVIEW3D_VERSION == 1", K2PREVIEW3D_VERSION, 1);
-        HEQ("K2Preview3dApi is 12 pointer slots", sizeof(K2Preview3dApi), 12 * sizeof(void*));
+        HEQ("K2Preview3dApi is 13 pointer slots (12 original + SetAnimPaused)", sizeof(K2Preview3dApi), 13 * sizeof(void*));
+        HEQ("k2p3::Client::kBaseSize is the 12 original slots", k2p3::Client::kBaseSize, 12 * sizeof(void*));
 
         HCHECK("k2p3::Client::usable true for valid table", k2p3::Client::usable(&kP3Table));
         HCHECK("k2p3::Client::usable false for null table", !k2p3::Client::usable(nullptr));
 
+        // compatibility both ways: an older provider (12 slots) still connects but cannot pause; a table shorter than 12 does not connect
+        K2Preview3dApi oldP3 = kP3Table;
+        oldP3.struct_size = static_cast<uint32_t>(12 * sizeof(void*));
+        oldP3.SetAnimPaused = nullptr;
+        HCHECK("k2p3::Client::usable true for an older 12-slot provider table", k2p3::Client::usable(&oldP3));
         K2Preview3dApi shortP3 = kP3Table;
-        shortP3.struct_size = static_cast<uint32_t>(sizeof(K2Preview3dApi) - sizeof(void*));
-        HCHECK("k2p3::Client::usable false for short table", !k2p3::Client::usable(&shortP3));
+        shortP3.struct_size = static_cast<uint32_t>(11 * sizeof(void*));
+        HCHECK("k2p3::Client::usable false for short table (11 slots)", !k2p3::Client::usable(&shortP3));
 
         K2Preview3dApi grownP3 = kP3Table;
         grownP3.struct_size = static_cast<uint32_t>(sizeof(K2Preview3dApi) + 2 * sizeof(void*));
@@ -393,6 +403,22 @@ int main() {
         HCHECK("k2p3::Client connects when provided", p3Client.connect());
         HCHECK("k2p3::Client ok() after connect", p3Client.ok());
         HCHECK("k2p3::Client holds table pointer", p3Client.p == &kP3Table);
+        HCHECK("k2p3::Client canPause() with the 13-slot table", p3Client.canPause());
+        {
+            K2Preview3dApi noPause = kP3Table; noPause.SetAnimPaused = nullptr;
+            fakekp::reset();
+            fakekp::provide(K2PREVIEW3D_IFACE, K2PREVIEW3D_VERSION, &noPause);
+            k2p3::Client c2; c2.init(fakekp::api());
+            HCHECK("k2p3::Client connects when SetAnimPaused is null (optional slot)", c2.connect());
+            HCHECK("k2p3::Client canPause() false when SetAnimPaused is null", !c2.canPause());
+            fakekp::reset();
+            fakekp::provide(K2PREVIEW3D_IFACE, K2PREVIEW3D_VERSION, &oldP3);
+            k2p3::Client c3; c3.init(fakekp::api());
+            HCHECK("k2p3::Client connects to an older 12-slot provider", c3.connect());
+            HCHECK("k2p3::Client canPause() false for an older 12-slot provider", !c3.canPause());
+            k2p3::Client c4;
+            HCHECK("k2p3::Client canPause() false when never connected", !c4.canPause());
+        }
     }
 
     // ============================================================

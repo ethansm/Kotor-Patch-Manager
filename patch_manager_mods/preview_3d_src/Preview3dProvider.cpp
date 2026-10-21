@@ -63,6 +63,13 @@ constexpr int ItemBaseIdxOff = 0xc, ItemVariationOff = 0x11c;   // diagnostics o
 constexpr int GobAttachSlot = 0x50, GobDetachSlot = 0x4c;
 constexpr int CrSetScene = 0x94, CrSetPos = 0x8c, CrSetFacing = 0x88;
 constexpr int PartPlaySlot = 0x18;
+// Gob animation entries (static dumps steam_6a522e71 decomp/4e/004e3270.c = Gob::PlayAnimation, decomp/4e/004e1d40.c = per-frame advance;
+// REA ledger 20261018_nb2-play-semantics.tsv): list data ptr Gob+0xDC, count Gob+0xE0, entry[0] = descriptor (name char[] at desc+8, clip
+// length float at desc+0x50), entry+0x04 speed FLOAT, +0x08 flags, +0x10 playback position FLOAT. Read-only here (diagnostics).
+constexpr int GobAnimListOff = 0xDC, GobAnimCountOff = 0xE0;
+constexpr int AnimEntrySpeedOff = 0x4, AnimEntryFlagsOff = 0x8, AnimEntryPosOff = 0x10;
+constexpr int AnimDescNameOff = 0x8, AnimDescLenOff = 0x50;
+constexpr int MaxAnimEntries = 64;
 constexpr int AppCopyBytes = 0x3c;
 constexpr int PartBodyId = 0xff, PartHeadId = 0xfe;
 constexpr short kNeutralAlign = 50;         // stats unreadable -> neutral idle, not evil (Equip3dLogic.h:180)
@@ -155,6 +162,9 @@ struct Viewer {
     void* helm = nullptr;
     char helmName[20] = "";
     char idleName[16] = "";
+    // animation freeze (SetAnimPaused): the clip PlayAnim last started on the body and head, and its wall-clock bookkeeping
+    char animName[40] = "";
+    p3d::AnimClock animClock;
 };
 
 p3d::Viewers g_tokens;            // token table (Preview3dLogic.h); index = position in g_view
@@ -202,6 +212,30 @@ void playPart(void* part, const char* name, float speed, unsigned flags) {
     void** pv = vtOf(part);
     if (!pv || !saferead::probeRead(SiteP3d, pv + PartPlaySlot / 4, 4)) return;
     reinterpret_cast<PartPlayFn>(pv[PartPlaySlot / 4])(part, name, speed, flags, 0.0f);
+}
+
+// Read-only look at the Gob's animation entry named `name` (the engine's own lookup: newest entry first, case-insensitive). Every pointer
+// is probed; a Gob that does not match the layout simply yields found=false. Never writes.
+struct AnimProbe { bool found = false; float speed = 0, pos = 0, len = 0; unsigned flags = 0; };
+AnimProbe probeAnim(void* gob, const char* name) {
+    AnimProbe r;
+    int base = reinterpret_cast<int>(gob), list = 0, count = 0;
+    if (!base || !name || !readAt<int>(base, GobAnimListOff, &list) || !list || !readAt<int>(base, GobAnimCountOff, &count)) return r;
+    if (count <= 0 || count > MaxAnimEntries) return r;
+    for (int i = count - 1; i >= 0; --i) {
+        int entry = 0, desc = 0;
+        if (!readAt<int>(list, i * 4, &entry) || !entry || !readAt<int>(entry, 0, &desc) || !desc) continue;
+        char nm[40]; int n = 0;
+        for (; n < 39; ++n) { char c = 0; if (!readAt<char>(desc, AnimDescNameOff + n, &c)) { n = -1; break; } nm[n] = c; if (!c) break; }
+        if (n < 0) continue;
+        nm[39] = 0;
+        if (_stricmp(nm, name) != 0) continue;
+        if (!readAt<float>(entry, AnimEntrySpeedOff, &r.speed) || !readAt<unsigned>(entry, AnimEntryFlagsOff, &r.flags) ||
+            !readAt<float>(entry, AnimEntryPosOff, &r.pos) || !readAt<float>(desc, AnimDescLenOff, &r.len)) return AnimProbe();
+        r.found = true;
+        return r;
+    }
+    return r;
 }
 
 int appRow(const Viewer* v) { return static_cast<int>(*reinterpret_cast<const unsigned short*>(v->app + 0x18)); }
@@ -335,6 +369,7 @@ void destroyCreature(Viewer* v, const char* why) {
     else logw("creature: vtable mismatch, NOT calling dtor (leak instead of crash)");
     saferead::beginScope();
     v->creature = nullptr; v->built = false; v->real = 0; v->baseModels = -1;
+    p3d::clockReset(&v->animClock); v->animName[0] = 0;   // the clip died with the creature's Gobs
 }
 
 bool allocCreature(Viewer* v) {
@@ -397,6 +432,7 @@ void applyView(Viewer* v) {
 bool buildPreview(Viewer* v, int real, const char* why) {
     detachWeapons(v, "before rebuild", true);   // our weapon models hang off the old body Gob: free them first
     detachHelmet(v, "before rebuild");          // likewise the helmet on the old head Gob
+    p3d::clockReset(&v->animClock); v->animName[0] = 0;   // a rebuild re-creates the body and head Gobs: no clip is playing (paused flag cleared)
     if (v->creature && v->real != real) destroyCreature(v, "character change");
     if (!allocCreature(v)) return false;
     unsigned char copy[AppCopyBytes]; short al = 0;
@@ -439,7 +475,7 @@ bool buildPreview(Viewer* v, int real, const char* why) {
 }
 
 // ---- API entries ----
-int g_nCreate, g_nBind, g_nRebuild, g_nWeapons, g_nWeaponGob, g_nSetView, g_nPlay, g_nRigGob, g_nDestroy, g_nSetCb;
+int g_nCreate, g_nBind, g_nRebuild, g_nWeapons, g_nWeaponGob, g_nSetView, g_nPlay, g_nRigGob, g_nDestroy, g_nSetCb, g_nPause;
 
 void freeViewer(Viewer* v, const char* why) {
     destroyCreature(v, why);
@@ -606,7 +642,59 @@ void KPATCH_CALL apiPlayAnim(uint32_t token, const char* anim) {
     if (body) playPart(body, toPlay, 1.0f, 0);   // flags 0 = cross-fade in
     if (head) playPart(head, toPlay, 1.0f, 0);
     saferead::beginScope();
+    snprintf(v->animName, sizeof v->animName, "%s", toPlay);
+    p3d::clockStart(&v->animClock, GetTickCount());   // a new clip runs; this also clears a pause
     logf("PlayAnim: token=%u '%s' body=%p head=%p", token, toPlay, body, head);
+}
+
+// Freeze / resume the body and head animation at the CURRENT pose.
+// Mechanism (a): re-issue the SAME clip name with speed 0 (pause) or 1 (resume) and flags 0. Evidence, Gob::PlayAnimation 0x004E3270
+// (static dump decomp/4e/004e3270.c, asm 0x004e37ec..0x004e37f5; REA ledger 20261018_nb2-play-semantics.tsv):
+//   * the call first searches the Gob's entries by name (stricmp on desc+8; skipped only by flags 0x40); a found entry is unlinked and
+//     RE-INSERTED, and only a NEW entry runs the init block (start position = param5 or 0, blend weight 0). So a same-name replay keeps the
+//     entry's playback position (+0x10) and blend weight (+0x14): no restart at frame 0, and the 5th argument (start offset, new entries
+//     only) is irrelevant and stays 0.0f.
+//   * speed is stored at entry+0x04 by FLD float [ebp+0xc]; FSTP float [ecx+4] (asm 0x004e37e9). It is a FLOAT, not the "(int)" the
+//     decompile shows (that cast, and the ledger row "stored as integer", are a decompiler artifact; 0 and 1 are exact either way).
+//   * the per-frame advance 0x004e1d40 does pos += dt*speed (decomp L231) and re-applies the pose at the (unchanged) pos every tick,
+//     so speed 0 holds the pose exactly. The entry flags are overwritten with the passed flags (0 = looping, as PlayAnim plays it).
+//   * side effects of any replay (same as PlayAnim): the `start<name>` event fires, and entries BEHIND this one (a still-fading cross-fade
+//     source) are freed, so pausing inside the first blend-in moves the pose to the new clip at once.
+// Fallback (c): if no entry of that name exists any more (the engine dropped it), the replay creates a NEW entry at position 0 with speed 0
+// = frozen at the first pose of the clip. The read-only probeAnim before the call tells which of the two applies (a / c in the log).
+// The helmet visor ("default") is not frozen. Not proven live: that the pose then stays put over many ticks (the log shows speed/pos).
+void KPATCH_CALL apiSetAnimPaused(uint32_t token, int32_t paused) {
+    ensureInit();
+    Viewer* v = find(token);
+    const bool want = paused != 0;
+    if (!v || !v->built || !v->animClock.started || !v->animName[0]) {
+        if (firstN(&g_nPause, 12)) logf("API SetAnimPaused token=%u paused=%d mech=none elapsed_ms=0 (%s)", token, want ? 1 : 0, !v ? "unknown view" : !v->built ? "not built" : "no clip played");
+        return;
+    }
+    if (v->animClock.paused == want) {
+        if (firstN(&g_nPause, 12)) logf("API SetAnimPaused token=%u paused=%d mech=none elapsed_ms=%u (already %s)", token, want ? 1 : 0, p3d::clockElapsed(&v->animClock, GetTickCount()), want ? "paused" : "running");
+        return;
+    }
+    saferead::beginScope();
+    const uint32_t now = GetTickCount();
+    void* body = partGob(v, PartBodyId); void* head = partGob(v, PartHeadId);
+    AnimProbe b0 = body ? probeAnim(body, v->animName) : AnimProbe();
+    AnimProbe h0 = head ? probeAnim(head, v->animName) : AnimProbe();
+    // 'a' only when every part that exists still holds the entry (the engine then keeps its position); otherwise 'c' (first pose)
+    const char mech = (body || head) && (!body || b0.found) && (!head || h0.found) ? 'a' : 'c';
+    const float speed = want ? 0.0f : 1.0f;
+    if (body) playPart(body, v->animName, speed, 0);
+    if (head) playPart(head, v->animName, speed, 0);
+    saferead::beginScope();
+    uint32_t elapsed;
+    if (want) { elapsed = p3d::clockElapsed(&v->animClock, now); p3d::clockPause(&v->animClock, now); }
+    else { p3d::clockResume(&v->animClock, now); elapsed = p3d::clockElapsed(&v->animClock, now); }
+    if (firstN(&g_nPause, 12)) logf("API SetAnimPaused token=%u paused=%d mech=%c elapsed_ms=%u", token, want ? 1 : 0, mech, elapsed);
+    AnimProbe b1 = body ? probeAnim(body, v->animName) : AnimProbe();
+    AnimProbe h1 = head ? probeAnim(head, v->animName) : AnimProbe();
+    logf("SetAnimPaused: token=%u '%s' %s body=%p found=%d pos %.4f->%.4f speed %.1f->%.1f len=%.4f | head=%p found=%d pos %.4f->%.4f speed %.1f->%.1f",
+         token, v->animName, want ? "PAUSE" : "RESUME", body, b0.found, b0.pos, b1.pos, b0.speed, b1.speed, b1.len,
+         head, h0.found, h0.pos, h1.pos, h0.speed, h1.speed);
 }
 
 void* KPATCH_CALL apiRigGob(uint32_t token, int32_t part) {
@@ -663,7 +751,8 @@ const K2Preview3dApi g_apiTable = {
     apiRigGob,
     apiDestroy,
     apiSetBeforeFree,
-    apiViewControl
+    apiViewControl,
+    apiSetAnimPaused
 };
 
 } // anonymous namespace

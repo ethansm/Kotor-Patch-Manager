@@ -145,5 +145,41 @@ int main() {
         for (int r : droids) { KT_CHECK_EQ(idleFor(r, 0), "pause1"); KT_CHECK_EQ(idleFor(r, 50), "pause1"); KT_CHECK_EQ(idleFor(r, 100), "pause1"); KT_CHECK_EQ(idleFor(r, -1), "pause1"); }
     }
 
+    // ---- animation clock: wrap-safe elapsed, pause freezes, resume cuts the paused interval ----
+    {
+        KT_CHECK_EQ(tickDiff(1500u, 1000u), 500u);
+        KT_CHECK_EQ(tickDiff(5u, 0xFFFFFFFBu), 10u);            // now wrapped past 2^32
+        KT_CHECK_EQ(tickDiff(7u, 7u), 0u);
+        AnimClock c; clockReset(&c);
+        KT_CHECK_EQ(clockElapsed(&c, 12345u), 0u);               // nothing started
+        KT_CHECK(!clockPause(&c, 100u));                         // pausing with no clip is a no-op
+        KT_CHECK(!clockResume(&c, 100u));
+        clockStart(&c, 1000u);
+        KT_CHECK_EQ(clockElapsed(&c, 1000u), 0u);
+        KT_CHECK_EQ(clockElapsed(&c, 1750u), 750u);
+        KT_CHECK(clockPause(&c, 1750u));
+        KT_CHECK(!clockPause(&c, 1800u));                        // idempotent: the first pause instant stays
+        KT_CHECK_EQ(clockElapsed(&c, 1750u), 750u);
+        KT_CHECK_EQ(clockElapsed(&c, 9000u), 750u);              // frozen while paused
+        KT_CHECK(clockResume(&c, 5750u));                        // 4000 ms paused
+        KT_CHECK(!clockResume(&c, 5800u));                       // idempotent
+        KT_CHECK_EQ(clockElapsed(&c, 5750u), 750u);              // resumes from the same pose time
+        KT_CHECK_EQ(clockElapsed(&c, 6000u), 1000u);
+        clockStart(&c, 7000u);                                   // a new clip clears a pause
+        KT_CHECK(clockPause(&c, 7100u));
+        clockStart(&c, 8000u);
+        KT_CHECK(!c.paused);
+        KT_CHECK_EQ(clockElapsed(&c, 8200u), 200u);
+        // tick counter wraps while playing and across a pause
+        clockStart(&c, 0xFFFFFF00u);
+        KT_CHECK_EQ(clockElapsed(&c, 0x100u), 0x200u);
+        KT_CHECK(clockPause(&c, 0x100u));
+        KT_CHECK(clockResume(&c, 0x300u));                       // 0x200 paused across the wrap
+        KT_CHECK_EQ(clockElapsed(&c, 0x300u), 0x200u);
+        KT_CHECK_EQ(clockElapsed(&c, 0x400u), 0x300u);
+        clockReset(&c);
+        KT_CHECK(!c.started && !c.paused);
+    }
+
     return kt::Report("preview3d_logic_test");
 }

@@ -28,7 +28,10 @@
  * Size guard (one rule, both sides): before reading any field of KPatchApi, check
  *   api->struct_size >= offsetof(KPatchApi, require) + sizeof(api->require)
  * This is the same check the provider makes in KPatchInit (GuiInputProvider.cpp:218). Before using any K2Preview3dApi function, the
- * consumer checks struct_size >= sizeof(K2Preview3dApi) and that every function pointer is non-null (Client::usable).
+ * consumer checks struct_size >= the end of ViewControl (the 12 original slots) and that every one of them is non-null (Client::usable).
+ * Slots appended after ViewControl (SetAnimPaused, provider 0.2.0) are OPTIONAL: an editor built against this header still connects to
+ * an older provider (shorter table), and an older editor works against a newer provider (longer table). Check Client::canPause()
+ * before calling SetAnimPaused.
  *
  * Plain C ABI (kpatch_api.h rules): fixed-width ints, floats and function pointers only, KPATCH_CALL (cdecl), structs only grow,
  * check struct_size before reading a field newer than your oldest supported provider.
@@ -91,6 +94,14 @@ typedef struct K2Preview3dApi {
     /* The CSWGui3DSceneView control CreateView bound (the GUI control the consumer lists with appendToPanel when the layout control
      * had ID -1, and resizes with its rect slot), or 0 for an unknown token. */
     void*    (KPATCH_CALL *ViewControl)(uint32_t token);
+    /* ---- appended after v1 shipped (additive, K2PREVIEW3D_VERSION stays 1; slots 12+ are optional: see Client::canPause) ---- */
+    /* paused != 0 freezes the body and head animation at its CURRENT pose (no restart at frame 0, no slow motion); 0 resumes from that
+     * same pose. Idempotent (pausing a paused view or resuming a running one is a no-op). The weapon Gobs ride the frozen body, so the
+     * pose can be inspected for clipping. A PlayAnim always starts the new clip running and clears the paused state (it never starts
+     * paused: re-send SetAnimPaused(token, 1) after it if the pause should survive a clip change). Rebuild and Destroy also clear it.
+     * No-op for an unknown token, an unbuilt view, or before the first PlayAnim (nothing to freeze). The helmet visor animation is not
+     * frozen. */
+    void     (KPATCH_CALL *SetAnimPaused)(uint32_t token, int32_t paused);
 } K2Preview3dApi;
 
 #pragma pack(pop)
@@ -109,7 +120,8 @@ typedef struct K2Preview3dApi {
 K2PREVIEW3D_STATIC_ASSERT(offsetof(K2Preview3dApi, CreateView) == sizeof(void*), "K2Preview3dApi.CreateView offset");
 K2PREVIEW3D_STATIC_ASSERT(offsetof(K2Preview3dApi, SetBeforeFree) == 10 * sizeof(void*), "K2Preview3dApi.SetBeforeFree offset");
 K2PREVIEW3D_STATIC_ASSERT(offsetof(K2Preview3dApi, ViewControl) == 11 * sizeof(void*), "K2Preview3dApi.ViewControl offset");
-K2PREVIEW3D_STATIC_ASSERT(sizeof(K2Preview3dApi) == 12 * sizeof(void*), "K2Preview3dApi size");
+K2PREVIEW3D_STATIC_ASSERT(offsetof(K2Preview3dApi, SetAnimPaused) == 12 * sizeof(void*), "K2Preview3dApi.SetAnimPaused offset");
+K2PREVIEW3D_STATIC_ASSERT(sizeof(K2Preview3dApi) == 13 * sizeof(void*), "K2Preview3dApi size");
 #undef K2PREVIEW3D_STATIC_ASSERT
 #endif
 
@@ -134,9 +146,15 @@ struct Client {
         reportedMissing = false;
     }
 
-    // Every field the consumer calls is present and non-null, and the table is at least the v1 size.
+    // Size of the original 12-slot v1 table (through ViewControl). A provider older than SetAnimPaused still reports at least this.
+    static constexpr size_t kBaseSize = offsetof(K2Preview3dApi, ViewControl) + sizeof(void*);
+    // Size a table needs for SetAnimPaused to be readable.
+    static constexpr size_t kPauseSize = offsetof(K2Preview3dApi, SetAnimPaused) + sizeof(void*);
+
+    // Every ORIGINAL v1 field the consumer calls is present and non-null, and the table covers at least those 12 slots. Newer
+    // appended slots are optional (canPause).
     static bool usable(const K2Preview3dApi* t) {
-        return t && t->struct_size >= sizeof(K2Preview3dApi) && t->CreateView && t->Bind && t->Rebuild && t->SetWeapons && t->WeaponGob &&
+        return t && t->struct_size >= kBaseSize && t->CreateView && t->Bind && t->Rebuild && t->SetWeapons && t->WeaponGob &&
                t->SetView && t->PlayAnim && t->RigGob && t->Destroy && t->SetBeforeFree && t->ViewControl;
     }
 
@@ -163,6 +181,8 @@ struct Client {
         if (!connected && (pollCount++ & 255) == 0) connect();
     }
     bool ok() const { return connected && p; }
+    // The connected provider also has SetAnimPaused (provider 0.2.0+). Never read the slot without this.
+    bool canPause() const { return connected && p && p->struct_size >= kPauseSize && p->SetAnimPaused; }
 };
 
 } // namespace k2p3

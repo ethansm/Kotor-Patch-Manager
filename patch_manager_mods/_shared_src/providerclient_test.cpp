@@ -196,6 +196,7 @@ int main() {
         set.init(fakekp::api());
         set.poll();                                             // first poll connects whatever is provided
         KT_CHECK(cfg.ok() && menu.ok() && pv.ok());
+        KT_CHECK(pv.canPause());                                // fillAllSlots fills all 13 slots incl. the appended SetAnimPaused
         KT_CHECK(!hc.ok());
         KT_CHECK(set.anyMissing());
         fakekp::provide(K2HOLSTER_IFACE, K2HOLSTER_VERSION, &hol);

@@ -10,6 +10,7 @@
 #include "FakeKPatchApi.h"
 #include "GameAddr.h"
 #include "K2Addr.h"
+#include "Preview3dApi.h"
 #include <cstddef>
 #include <cstdint>
 
@@ -59,6 +60,14 @@ int main() {
     static_assert(gameaddr::ClientCreatureVtable == 0x0099EE14, "preview-3d relies on: gameaddr::ClientCreatureVtable == 0x0099EE14 (creature alloc / dtor guard)");
     PEQ("K2Addr Steam Creature_HandleR (logged next to the +0x238 item id)", ::kSteam.Creature_HandleR, 0x278);
     PEQ("K2Addr Steam Creature_HandleL (logged next to the +0x23C item id)", ::kSteam.Creature_HandleL, 0x27C);
+
+    // 5. K2Preview3dApi layout the provider table fills (Preview3dApi.h): 12 original slots + the appended SetAnimPaused (additive, version stays 1).
+    PEQ("K2PREVIEW3D_VERSION stays 1 (SetAnimPaused is additive)", K2PREVIEW3D_VERSION, 1);
+    PEQ("K2Preview3dApi.ViewControl is slot 11 (end of the original table)", offsetof(K2Preview3dApi, ViewControl), 11 * sizeof(void*));
+    PEQ("K2Preview3dApi.SetAnimPaused is slot 12", offsetof(K2Preview3dApi, SetAnimPaused), 12 * sizeof(void*));
+    PEQ("K2Preview3dApi is 13 pointer slots", sizeof(K2Preview3dApi), 13 * sizeof(void*));
+    PEQ("k2p3::Client original-table size = 12 slots", k2p3::Client::kBaseSize, 12 * sizeof(void*));
+    PEQ("k2p3::Client pause-slot size = 13 slots", k2p3::Client::kPauseSize, 13 * sizeof(void*));
 
     return ::kt::Report("common_contract_test (preview-3d)");
 }

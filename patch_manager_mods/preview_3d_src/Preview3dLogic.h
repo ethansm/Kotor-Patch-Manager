@@ -73,4 +73,46 @@ inline const char* idleFor(int appearanceRow, short align) {
     return isDroidRow(appearanceRow) ? "pause1" : (align < 40 ? "evil" : (align < 60 ? "neutral" : "good"));
 }
 
+// ---------------------------------------------------------------- animation clock
+// Wall-clock bookkeeping of the clip a viewer is playing, so SetAnimPaused can log how far into the clip the freeze happened. The ticks
+// are GetTickCount-style uint32 milliseconds that wrap every ~49.7 days, so every difference is taken in unsigned arithmetic
+// (tickDiff). The engine, not this clock, decides the frozen pose: the provider re-issues the same clip with speed 0 and the engine keeps
+// the entry's own playback position (Preview3dProvider.cpp, setAnimPaused); this clock is diagnostic only. It does not model the
+// clip length, so elapsedMs is the raw time since the clip started and may exceed the clip length (the engine wraps loops itself).
+struct AnimClock {
+    uint32_t startTick = 0;   // tick when the clip started (shifted forward by every paused interval, so now - startTick = time played)
+    uint32_t pauseTick = 0;   // tick of the pause while paused
+    bool     started = false;     // a clip was played
+    bool     paused = false;
+};
+
+inline void clockReset(AnimClock* c) { c->startTick = 0; c->pauseTick = 0; c->started = false; c->paused = false; }
+
+// Wrap-safe elapsed milliseconds from `then` to `now` (now taken after then, modulo 2^32).
+inline uint32_t tickDiff(uint32_t now, uint32_t then) { return static_cast<uint32_t>(now - then); }
+
+// A new clip started running at `now` (clears any pause).
+inline void clockStart(AnimClock* c, uint32_t now) { c->startTick = now; c->pauseTick = 0; c->started = true; c->paused = false; }
+
+// Milliseconds the clip has played at `now` (frozen at the pause instant while paused). 0 when no clip started.
+inline uint32_t clockElapsed(const AnimClock* c, uint32_t now) {
+    if (!c->started) return 0;
+    return tickDiff(c->paused ? c->pauseTick : now, c->startTick);
+}
+
+// Freeze at `now`. Returns false (no change) when no clip started or already paused.
+inline bool clockPause(AnimClock* c, uint32_t now) {
+    if (!c->started || c->paused) return false;
+    c->pauseTick = now; c->paused = true;
+    return true;
+}
+
+// Resume at `now`: the paused interval is cut out of the played time. Returns false (no change) when not paused.
+inline bool clockResume(AnimClock* c, uint32_t now) {
+    if (!c->started || !c->paused) return false;
+    c->startTick = static_cast<uint32_t>(c->startTick + tickDiff(now, c->pauseTick));
+    c->paused = false;
+    return true;
+}
+
 }  // namespace p3d
