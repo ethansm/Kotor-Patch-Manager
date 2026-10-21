@@ -107,3 +107,8 @@ MCF5 slider merged to KOTOR-II (ff, now repo ~7ca9fdfe), shared headers synced (
 ## Update 10-20 21:20 - slider wedge/thumb mismatch fixed (0.3.3-dev prepared)
 - User screenshot of 0.3.2-dev: inside the border now, but at 100% the wedge ran a little past the thumb arrow (wedge ended at the inner edge, thumb box stopped half a thumb short). Fix: thumb centre travels the inner run minus half a thumb (`sliderTravel`); wedge ends at the thumb centre (`sliderWedgeFor`), thumb via `sliderThumbFor`; mapping uses `sliderTravelOf`. Test `test_wedge_ends_at_thumb_centre` checks wedge end == thumb centre for every value 0..100.
 - Repo 9902c7f9 (mod-config 0.3.3-dev), KPM committed, `--prepare` SWAP, gate PASS. NOT installed (needs GO, game closed). Rollback of the current live 0.3.2-dev: `kpm_hotswap.py --rollback mod-config_swap_20261020_203430`.
+
+## Update 10-20 21:20 - slider wedge/thumb fix INSTALLED (as mod-config 0.3.4-dev)
+- The combat-hud session committed mod-config 0.3.4-dev (32d1e9dc: Combat Hotbar test modal gear) on top of my 0.3.3-dev (9902c7f9) before my apply, so `kpm_hotswap.py --mod mod-config --apply` installed 0.3.4-dev (f64b39b6), which contains the slider fix (sliderWedgeFor/sliderThumbFor present) plus their gear change. Rollback: `python3 scripts/kpm_hotswap.py --rollback mod-config_swap_20261020_212011`.
+- combat-hotbar 0.11.1-dev is still SWAP (not installed): that session owns its install.
+- Play check: both sliders stay inside the border and the wedge end meets the thumb arrow at 0, mid and max; Snap slider full range incl. the rejected value.
