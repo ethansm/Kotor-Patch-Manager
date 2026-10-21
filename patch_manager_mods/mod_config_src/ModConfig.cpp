@@ -2205,10 +2205,21 @@ DWORD g_escConsumedAt = 0;
 
 bool escHeld() { return guikit::g_gk.gameForeground && guikit::g_gk.gameForeground() && (GetAsyncKeyState(VK_ESCAPE) & 0x8000) != 0; }
 
+// Vanilla Esc plays GUI sound 5 (FUN_007CA060 close branch -> PlayGuiSound(5), REA 20261021_options-esc-sound); the hook swallows that path, so play it here.
+constexpr int kEscSoundIdx = 5;
+void playEscSound() {
+    uint32_t mgr = 0;
+    const bool ok = guikit::g_gk.playSound && guikit::g_gk.guiSoundMgrAddr && guikit::detail::rd32(guikit::g_gk.guiSoundMgrAddr, 0, &mgr) && mgr;
+    static volatile LONG s_n = 0;
+    if (InterlockedIncrement(&s_n) <= 8) KP_LOG(chInput, "ESCSOUND idx=%d ok=%d", kEscSoundIdx, ok ? 1 : 0);
+    if (ok) guikit::g_gk.playSound(reinterpret_cast<void*>(static_cast<uintptr_t>(mgr)), kEscSoundIdx);
+}
+
 // Esc on a mod-config page: close an open modal, else go back one page. False on MAIN (the game handles Esc).
 bool escStepBack() {
     McState& e = g_mc;
     if (!e.appended || e.ps.state == mui::MAIN) return false;
+    playEscSound();
     const int from = curPageId();
     const int om = e.md.open;
     if (e.ps.state == mui::ENTRY && e.md.closeFirst()) modalApply(om, false);   // an open modal closes first, the page stays
@@ -2508,7 +2519,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
     embtex::g_log = embedLog;   // gear + slider art textures (EmbedTex) log through the main channel
     guikit::initGuiInput(api, "mod-config");   // optional: the wheel provider (k2.guiinput); a missing provider only means no wheel
-    KP_LOG(chMain, "mod-config 0.4.3-dev loaded (Mod Configuration button under Gameplay; k2.modconfig@1 + k2.menuui@1; config mod_config.ini is read at the first Options panel: enabled debug button_clone reflow desc free_labels)");
+    KP_LOG(chMain, "mod-config 0.4.4-dev loaded (Mod Configuration button under Gameplay; k2.modconfig@1 + k2.menuui@1; config mod_config.ini is read at the first Options panel: enabled debug button_clone reflow desc free_labels)");
     int rcC = -1, rcM = -1;
     if (api && api->struct_size >= offsetof(KPatchApi, require) + sizeof(api->require) && api->provide) {
         rcC = api->provide(K2MODCONFIG_IFACE, K2MODCONFIG_VERSION, &g_mcApi);
