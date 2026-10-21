@@ -5,17 +5,13 @@ Execute HW28b: Draw cap raise (`draw_slide_cap`, default 570)
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/42c_smooth_holstering_master_plan.md`
-- **Branch:** `KOTOR-II` (9222a06e holster 0.18.0-dev (B4 wiring HW31): extraction + orientation schedule in the runtime: reach_extract_pct_back 0.20 / _hip 0.10 into both reachPlan and both reachRetarget calls (topology latched per slide), exit offset along the mount's long axis scaled by extractK only for exitSign != 0 shapes, oriF drives the wrist delta and the carry blend rotation (position stays carryW), reach_via_<cat> keys default 0 (via acts on reversals/partial slides unless reach_resid_ms=0), REACH ex= of=, CONFIG extract=; all behind reach_test, extract 0 = 0.17 byte for byte)
-- **Generated:** 2026-10-21 17:36:03 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (11b5a018 play queue: SM-L15 (via on the default residual path, pole from grip) for holster 0.20.0-dev)
+- **Generated:** 2026-10-21 18:46:40 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-9222a06e holster 0.18.0-dev (B4 wiring HW31): extraction + orientation schedule in the runtime: reach_extract_pct_back 0.20 / _hip 0.10 into both reachPlan and both reachRetarget calls (topology latched per slide), exit offset along the mount's long axis scaled by extractK only for exitSign != 0 shapes, oriF drives the wrist delta and the carry blend rotation (position stays carryW), reach_via_<cat> keys default 0 (via acts on reversals/partial slides unless reach_resid_ms=0), REACH ex= of=, CONFIG extract=; all behind reach_test, extract 0 = 0.17 byte for byte
- patch_manager_mods/holster_src/Holster.cpp   | 116 ++++++++++++++++++++++-----
- patch_manager_mods/holster_src/holster.ini   |   8 ++
- patch_manager_mods/holster_src/manifest.toml |   4 +-
- scripts/holster_log_check.py                 |   9 ++-
- scripts/test_holster_log_check.py            |  20 +++++
- 5 files changed, 132 insertions(+), 25 deletions(-)
+11b5a018 play queue: SM-L15 (via on the default residual path, pole from grip) for holster 0.20.0-dev
+ patch_manager_mods/PLAY_TEST_QUEUE.md | 1 +
+ 1 file changed, 1 insertion(+)
 ```
 - **Dirty Files (186):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
@@ -37,7 +33,8 @@ Status: GATED
 Task: Draw cap raise (`draw_slide_cap`, default 570)
 
 ## 2b. Upcoming Batches in Pipeline
-- **HW33** : Two hands: `isTwoHandedStem`, dual stagger `dual_stagger_ms` (60), support-hand reach ONLY if play SM-L8 shows the left hand off the weapon
+- **HW33** : Two hands, item 3 only: support-hand reach ONLY if play SM-L8 shows the left hand off the weapon (items 1, 2, 4 moved to HW33a)
+- **HW32b** : Re-run the sweep with the measured back-mount quat, re-tune hinge out + extract defaults
 - **HW34** : Saber blade gate (ignite after the swing clears, douse before the stow carry)
 
 ## 3. Strict Context Budget & Read Policy
