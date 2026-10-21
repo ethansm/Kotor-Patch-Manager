@@ -1,4 +1,4 @@
-// Holster.cpp -- holster 0.16.0-dev (Steam build; 0.13.0-dev added hook H4b HolsterAnimStyle = REINSTALL, so this stays a REINSTALL): P0 probe for the holstered-weapons mod (patch_manager_mods/42_holstered_weapons.md).
+// Holster.cpp -- holster 0.17.0-dev (Steam build; 0.13.0-dev added hook H4b HolsterAnimStyle = REINSTALL, so this stays a REINSTALL): P0 probe for the holstered-weapons mod (patch_manager_mods/42_holstered_weapons.md).
 // Plan: .claude/plans/holstered_weapons.md. Handlers are plain extern "C" void __cdecl functions; the detour wrappers in
 // kotor2-steam-aspyr.hooks.toml call them at function entry with the game arguments BEFORE the stolen bytes run.
 // Hard rules for P0 (exceptions: the bone_test code patch, and HolsterPlace's 28-byte pose write with probe=1 bone_test=1 place=1, both default off; and the 0.13.0-dev unarmed_anim
@@ -95,7 +95,10 @@ static bool g_reachHinge = true;
 static inline float grabFor(hs::Category c) { return static_cast<float>(hs::grabPctFor(g_slideTune, c)) / 100.f; }
 // reach_wrist_pct / reach_wrist_max_deg (0.10.0-dev): the hand bone is turned from the weapon's mount orientation (at the grab) to its resting orientation, so the weapon
 // swings with the wrist. pct 0..100 scales the turn (0 = no wrist), max_deg 0..180 limits it (a real wrist twists far less than the weapon may need).
-static float g_reachWristPct = 1.0f, g_reachWristMax = 120.f;   // 0.15.0-dev (HW26): max 90 -> 120
+// reach_twist_deg (0.17.0-dev, HW29): the part of that turn about the forearm axis (elbow -> hand) is a forearm roll, written on the forearm (clamped to this, 0..120);
+// only the rest, the swing across the axis, goes to the wrist (clamped to reach_wrist_max_deg). 0 = no forearm twist: the whole turn is on the wrist, as 0.15/0.16
+// (with reach_wrist_max_deg=120 that restores 0.15.0-dev / 0.16.0-dev exactly).
+static float g_reachWristPct = 1.0f, g_reachWristMax = 60.f, g_reachTwist = 80.f;   // 0.15.0-dev (HW26): wrist max 90 -> 120; 0.17.0-dev (HW29): wrist max 120 -> 60, twist 80
 // reach_resid_ms (0.15.0-dev, HW26): a carried draw starts with the weapon at its mount orientation and position in the HAND frame; that offset unwinds over this many ms
 // (and a holster lands on the mount the same way) instead of the 15% world blend of the carry weight. 0 = the old world blend. Default hs::kReachResidMs.
 static uint32_t g_reachResidMs = hs::kReachResidMs;
@@ -394,7 +397,15 @@ static void readConfig() {
                 char* end = nullptr;
                 const long v = strtol(val, &end, 10);
                 if (end != val && *end == 0) g_reachWristMax = static_cast<float>(v < 0 ? 0 : (v > 180 ? 180 : v));
-                else cfgWarn(key, val, "not a number, keeping the default 120");
+                else cfgWarn(key, val, "not a number, keeping the default 60");
+                if (end != val && *end == 0 && (v < 0 || v > 180)) cfgWarn(key, val, "outside 0..180, clamped");
+            }
+            else if (!_stricmp(key, "reach_twist_deg")) {   // 0.17.0-dev (HW29): forearm roll limit, 0 = off
+                char* end = nullptr;
+                const long v = strtol(val, &end, 10);
+                if (end != val && *end == 0) g_reachTwist = static_cast<float>(v < 0 ? 0 : (v > 120 ? 120 : v));
+                else cfgWarn(key, val, "not a number, keeping the default 80");
+                if (end != val && *end == 0 && (v < 0 || v > 120)) cfgWarn(key, val, "outside 0..120, clamped");
             }
             else if (!_strnicmp(key, "reach_bulge_", 12)) {   // reach_bulge_<category>=up,forward,outward : how far the hand path bows for a high mount (arm lengths)
                 float* dst = nullptr;
@@ -1332,6 +1343,8 @@ struct ReachEnt {
     uint8_t solved, holdN;   // HW25: write bits (bicep 1, forearm 2, wrist 4) of the last successful solve, and the consecutive frames held since (cleared at slide end / entry drop)
     uint8_t wristOn;         // HW26: wristDq holds the last wrist delta of this slide (the reachClampRot sign hint); cleared together with solved / holdN
     hs::Q wristDq;
+    uint8_t twistOn;         // HW29: twistQ holds the last forearm twist of this slide (the reachClampRot sign hint of reachSplitWrist); cleared together with wristOn
+    hs::Q twistQ;
 };
 static const uint8_t kReachHoldFrames = 3;   // HW25: a transient refusal re-applies the last solved arm for up to this many frames (about 50 ms), then lets go
 static struct ReachStyleInit {
@@ -1441,12 +1454,12 @@ static bool reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w,
         if (static_cast<int32_t>(GetTickCount() - e->refusedAt) > 5000) e->parent = 0;   // retry later
         return false;
     }
-    if (reachStale(*e)) { e->parent = 0; e->solved = e->holdN = e->wristOn = 0; return false; }
+    if (reachStale(*e)) { e->parent = 0; e->solved = e->holdN = e->wristOn = e->twistOn = 0; return false; }
 
     // HW25: a transient refusal (quat read, pose, solve) while the slide still runs re-applies the last solved local quats instead of dropping the arm to the animation for
     // a frame. Nothing world-space is stored: the carried hand is recomputed from the attach node. Never at slide end (w <= 0) or on a permanent refusal.
     auto holdLast = [&](hs::ReachHoldKind kind, const char* why) -> bool {
-        if (!(w > 0.f)) { e->solved = e->holdN = e->wristOn = 0; return false; }   // slide over: nothing to hold, and the next slide starts clean
+        if (!(w > 0.f)) { e->solved = e->holdN = e->wristOn = e->twistOn = 0; return false; }   // slide over: nothing to hold, and the next slide starts clean
         if (!hs::reachHoldAllowed(kind, e->solved, e->holdN, w, kReachHoldFrames, carry)) return false;
         bool ok = true;
         if (e->solved & 1) ok = reachWriteQ(e->bic, e->bb.wrote) && ok;
@@ -1470,7 +1483,7 @@ static bool reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w,
     if (!(w > 0.f)) {   // slide not running: undo what we left behind and go quiet
         if (e->dirty && persist) { (void)reachWriteQ(e->bic, e->bb.q); (void)reachWriteQ(e->fore, e->fb.q); if (wristOk && e->wb.have) (void)reachWriteQ(e->wrist, e->wb.q); }
         e->dirty = false;
-        e->solved = e->holdN = e->wristOn = 0;
+        e->solved = e->holdN = e->wristOn = e->twistOn = 0;
         e->bb.have = e->fb.have = e->wb.have = false;
         return false;
     }
@@ -1538,12 +1551,13 @@ static bool reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w,
 
     // The forearm now hangs from the moved bicep: re-read it and aim the hook at the target from the real elbow.
     hs::Pose pE2, pH2;
+    hs::Q outFw = {1, 0, 0, 0};   // HW29: the forearm local last written (the aim; the wrist block composes the twist onto it)
     float err = -1.f;
     if (wrote && parF && reachNodePose(e->fore, e->poseFn, pE2) && reachNodePose(e->hand, e->poseFn, pH2) && reachNodePose(parF, e->poseFn, pPF)) {
         const float he[3] = {pH2.pos[0] - pE2.pos[0], pH2.pos[1] - pE2.pos[1], pH2.pos[2] - pE2.pos[2]};
         const float te[3] = {T[0] - pE2.pos[0], T[1] - pE2.pos[1], T[2] - pE2.pos[2]};
         const hs::Q outF = hs::blendQ(baseF, hs::reachDeltaToLocal(pPF.q, hs::arcQuat(he, te), baseF), w);
-        if (reachWriteQ(e->fore, outF)) { hs::reachNoteWrite(e->fb, outF); wrote |= 2; }
+        if (reachWriteQ(e->fore, outF)) { hs::reachNoteWrite(e->fb, outF); outFw = outF; wrote |= 2; }
         hs::Pose pH3;
         if (reachNodePose(e->hand, e->poseFn, pH3)) {
             const float d[3] = {pH3.pos[0] - T[0], pH3.pos[1] - T[1], pH3.pos[2] - T[2]};
@@ -1553,15 +1567,41 @@ static bool reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w,
     // Wrist: turn the hand from the weapon's mount orientation (at the grab / the landing) to its resting orientation (at the rest end of the path), so the weapon swings
     // with the wrist instead of keeping the hand's orientation and clipping the head; limited to reach_wrist_max_deg, scaled by reach_wrist_pct.
     float wristDeg = 0.f, gDeg = -1.f;   // gDeg (HW24): angle between the mount orientation and the post-IK hand = what the wrist cap has to cover
+    float twistDeg = 0.f;                // HW29: the forearm roll written this frame (tw= in the log); wristDeg (wr=) is the swing written on the wrist bone (sw=)
     if (carry && wristOk && mountQ && wrote == 3 && g_reachWristPct > 0.f) {
         hs::Pose pHn, pWp;
         const uintptr_t parW = rdU32(kSitePlace, e->wrist, 0x3C);
         if (parW && reachNodePose(e->hand, e->poseFn, pHn) && reachNodePose(parW, e->poseFn, pWp)) {
             gDeg = hs::reachQAngleDeg(hs::qmul(*mountQ, hs::reachConj(pHn.q)));
-            // HW26: the previous delta of this slide is the sign hint, so the wrist axis does not flip when the turn passes 180 deg
-            const hs::Q dq = hs::reachWristDelta(*mountQ, pH.q, pathF, pHn.q, g_reachWristMax, w * g_reachWristPct, e->wristOn ? &e->wristDq : nullptr);
-            const hs::Q outW = hs::reachDeltaToLocal(pWp.q, dq, baseW);
-            if (reachWriteQ(e->wrist, outW)) { hs::reachNoteWrite(e->wb, outW); wrote |= 4; wristDeg = hs::reachQAngleDeg(dq); e->wristDq = dq; e->wristOn = 1; }
+            hs::Q sw, dqTot;   // dqTot: the wrist delta before the split (the next frame's sign hint)
+            bool wristGo = true;
+            if (!(g_reachTwist > 0.f)) {
+                // reach_twist_deg=0: the 0.16 path byte for byte, the whole turn (capped at reach_wrist_max_deg) on the wrist. No split, no forearm write.
+                // HW26: the previous delta of this slide is the sign hint, so the wrist axis does not flip when the turn passes 180 deg
+                sw = dqTot = hs::reachWristDelta(*mountQ, pH.q, pathF, pHn.q, g_reachWristMax, w * g_reachWristPct, e->wristOn ? &e->wristDq : nullptr);
+            } else {
+                // HW29: the whole turn is computed uncapped (180 = the shorter arc; the sign hint keeps the axis across 180 deg), then split about the forearm axis (elbow -> hand,
+                // after the aim; the elbow does not move with the forearm's own rotation): the twist (<= reach_twist_deg) rolls the forearm, the swing (<= reach_wrist_max_deg) is the
+                // wrist. Hook ends at sw * tw * pHn.q = dq * pHn.q (the target) unless a cap bites. The twist axis passes through the hook, so T is unaffected.
+                const hs::Q dq = dqTot = hs::reachWristDelta(*mountQ, pH.q, pathF, pHn.q, 180.f, w * g_reachWristPct, e->wristOn ? &e->wristDq : nullptr);
+                const float ax[3] = {pHn.pos[0] - pE2.pos[0], pHn.pos[1] - pE2.pos[1], pHn.pos[2] - pE2.pos[2]};
+                hs::Q tw;
+                hs::reachSplitWrist(dq, ax, g_reachTwist, g_reachWristMax, e->twistOn ? &e->twistQ : nullptr, tw, sw);
+                // Second forearm write (the aim is written first: the turn depends on the hand orientation it produces). pPF is the forearm's parent pose, unchanged by writes on the
+                // forearm itself, so outF2 = P^-1 * tw * P * outF stacks on the aim. reachNoteWrite after it keeps fb.wrote = the final value (persist / hold replay / undo restore fb.q).
+                const hs::Q outF2 = hs::reachDeltaToLocal(pPF.q, tw, outFw);
+                if (reachWriteQ(e->fore, outF2)) {
+                    hs::reachNoteWrite(e->fb, outF2);
+                    twistDeg = hs::reachQAngleDeg(tw); e->twistQ = tw; e->twistOn = 1;
+                    wristGo = reachNodePose(parW, e->poseFn, pWp);   // the wrist's parent is the rolled forearm: re-read it before the swing
+                } else {
+                    sw = hs::reachClampRot(dq, g_reachWristMax);   // no roll landed: the whole turn on the wrist, as with reach_twist_deg=0
+                }
+            }
+            if (wristGo) {
+                const hs::Q outW = hs::reachDeltaToLocal(pWp.q, sw, baseW);
+                if (reachWriteQ(e->wrist, outW)) { hs::reachNoteWrite(e->wb, outW); wrote |= 4; wristDeg = hs::reachQAngleDeg(sw); e->wristDq = dqTot; e->wristOn = 1; }
+            }
         }
     }
     // carry: the hand the weapon hangs on, after both writes (the attach node shares the pose slot with the arm parts, same guard as everywhere else)
@@ -1574,13 +1614,14 @@ static bool reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w,
     e->solved = static_cast<uint8_t>(wrote);
     e->holdN = 0;
     if (!reachLogDue()) return carriedOk;
-    KP_LOG(chMain, "REACH owner=%x w=%.2f reach=%.2f S=(%.3f,%.3f,%.3f) E=(%.3f,%.3f,%.3f) H=(%.3f,%.3f,%.3f) T=(%.3f,%.3f,%.3f) Enew=(%.3f,%.3f,%.3f) side=%c cat=%d u=%.2f lt=(%.3f,%.3f,%.3f) err=%.3f persist=%d wrote=%d wr=%.0f hg=%d f=%.2f dzA=%.2f fy=%.2f fx=%.2f g=%.0f cap=%.0f hold=%u topo=%s bk=%d",
+    KP_LOG(chMain, "REACH owner=%x w=%.2f reach=%.2f S=(%.3f,%.3f,%.3f) E=(%.3f,%.3f,%.3f) H=(%.3f,%.3f,%.3f) T=(%.3f,%.3f,%.3f) Enew=(%.3f,%.3f,%.3f) side=%c cat=%d u=%.2f lt=(%.3f,%.3f,%.3f) err=%.3f persist=%d wrote=%d wr=%.0f hg=%d f=%.2f dzA=%.2f fy=%.2f fx=%.2f g=%.0f cap=%.0f hold=%u topo=%s bk=%d tw=%.0f sw=%.0f",
            static_cast<unsigned>(e->owner), static_cast<double>(w), static_cast<double>(reach), static_cast<double>(pS.pos[0]), static_cast<double>(pS.pos[1]),
            static_cast<double>(pS.pos[2]), static_cast<double>(pE.pos[0]), static_cast<double>(pE.pos[1]), static_cast<double>(pE.pos[2]), static_cast<double>(pH.pos[0]),
            static_cast<double>(pH.pos[1]), static_cast<double>(pH.pos[2]), static_cast<double>(T[0]), static_cast<double>(T[1]), static_cast<double>(T[2]),
            static_cast<double>(enew[0]), static_cast<double>(enew[1]), static_cast<double>(enew[2]), left ? 'L' : 'R', cat, static_cast<double>(u), static_cast<double>(lt[0]), static_cast<double>(lt[1]), static_cast<double>(lt[2]),
            static_cast<double>(err), persist ? 1 : 0, wrote, static_cast<double>(wristDeg), hinge ? 1 : 0, static_cast<double>(pathF), static_cast<double>(dzA), static_cast<double>(fyA), static_cast<double>(fxA),
-           static_cast<double>(gDeg), static_cast<double>(g_reachWristMax), static_cast<unsigned>(heldBefore), reachTopoName(topo), backMount ? 1 : 0);
+           static_cast<double>(gDeg), static_cast<double>(g_reachWristMax + g_reachTwist), static_cast<unsigned>(heldBefore), reachTopoName(topo), backMount ? 1 : 0,
+           static_cast<double>(twistDeg), static_cast<double>(wristDeg));
     return carriedOk;
 }
 
@@ -2502,7 +2543,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     addName(names, sizeof(names), g_onGob, "gob");
     addName(names, sizeof(names), g_onPlace, "place");
     addName(names, sizeof(names), g_onToggle, "toggle");
-    KP_LOG(chMain, "holster 0.16.0-dev loaded (P0 probe + unarmed_anim=%d): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_unarmedAnim ? 1 : 0, g_probe ? 1 : 0,
+    KP_LOG(chMain, "holster 0.17.0-dev loaded (P0 probe + unarmed_anim=%d): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_unarmedAnim ? 1 : 0, g_probe ? 1 : 0,
            names[0] ? names : "none", static_cast<long>(g_maxLines), g_gobEvery, k2addr::get() ? "ok" : "none");
     {
         hs::TuneCfg t;
@@ -2516,9 +2557,9 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
             snprintf(slideCfg + sn, sizeof slideCfg - sn, "%s%s:%u/%u/%u", sn ? "," : "", hs::categoryName(static_cast<hs::Category>(i)), static_cast<unsigned>(sr.drawMs),
                      static_cast<unsigned>(sr.stowMs), static_cast<unsigned>(sr.grabPct));
         }
-        KP_LOG(chMain, "CONFIG toggle_key=0x%x draw_hold_ms=%u combat_exit_ms=%d flourish_exit_ms=%d hostile_range=%.1f hostile_backoff_ms=%u delay_party=%d flourish_draw=%d slide=%s resid_ms=%u wrist_max=%.0f move_hold_ms=%u party_combat_hold=%d reach_test=%d reach_carry=%d reach_hinge=%d unarmed_anim=%d (active=%d: needs probe=1, bone_test=1 and place_mode=drawgate)",
+        KP_LOG(chMain, "CONFIG toggle_key=0x%x draw_hold_ms=%u combat_exit_ms=%d flourish_exit_ms=%d hostile_range=%.1f hostile_backoff_ms=%u delay_party=%d flourish_draw=%d slide=%s resid_ms=%u wrist_max=%.0f twist=%.0f move_hold_ms=%u party_combat_hold=%d reach_test=%d reach_carry=%d reach_hinge=%d unarmed_anim=%d (active=%d: needs probe=1, bone_test=1 and place_mode=drawgate)",
                static_cast<unsigned>(g_toggleKey), static_cast<unsigned>(g_drawHoldMs), g_delayCfg.combatExitMs, g_delayCfg.flourishExitMs, static_cast<double>(g_hostileRange),
-               static_cast<unsigned>(g_hostileBackoffMs), g_delayParty ? 1 : 0, g_flourishDraw ? 1 : 0, slideCfg, static_cast<unsigned>(g_reachResidMs), static_cast<double>(g_reachWristMax), static_cast<unsigned>(g_moveHoldMs),
+               static_cast<unsigned>(g_hostileBackoffMs), g_delayParty ? 1 : 0, g_flourishDraw ? 1 : 0, slideCfg, static_cast<unsigned>(g_reachResidMs), static_cast<double>(g_reachWristMax), static_cast<double>(g_reachTwist), static_cast<unsigned>(g_moveHoldMs),
                g_partyCombatHold ? 1 : 0, g_reachTest ? 1 : 0, g_reachCarry ? 1 : 0, g_reachHinge ? 1 : 0, g_unarmedAnim ? 1 : 0, (g_boneTest && drawgateMode()) ? 1 : 0);
         KP_LOG(chMain, "PLACEMODE %s (active=%d: needs probe=1 and bone_test=1)", hs::placeModeName(g_placeMode), g_boneTest ? 1 : 0);
         KP_LOG(chMain, "CONFIG left_extra_rot=%.1f bone_test_left=%d (ini=%d, active=%d: needs probe=1 and bone_test=1) log_verbose=%d", static_cast<double>(t.leftExtra),
