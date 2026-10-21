@@ -46,6 +46,7 @@
 #include "ModConfigApi.h"
 #include "MenuUiLogic.h"
 #include "SliderRowLogic.h"   // MCF5: the look-alike slider row maths (kind 2)
+#include "EscProbeStub.h"     // Esc probe stub bytes (host-tested layout)
 #include "SliderArt.h"        // MCF5: frame / wedge / mark art (EmbedTex textures)
 #include "EditKit.h"
 #include "GearButton.h"   // the shared gear: art names + EmbedTex registration (AddGear)
@@ -2189,7 +2190,7 @@ const K2MenuUiApi g_muiApi = {sizeof(K2MenuUiApi), &muiNewPage, &muiAddButton, &
 }  // namespace
 
 namespace {
-// ---- Esc probe (0.3.6-dev): slot 14 of the Options vtable turned out to be a per-frame update (its first arg was a frame-time float), not the key
+// ---- Esc probe (0.3.7-dev): slot 14 of the Options vtable turned out to be a per-frame update (its first arg was a frame-time float), not the key
 // handler, so this build puts a generic stub on every other slot (except 0 dtor and 12 Draw). A stub bumps the slot's call counter and a global
 // sequence number, stores the first two stack args, then jumps to the original unchanged (so any calling convention / arg count works). The state is
 // dumped when Esc goes down (McTick) and when the panel is destroyed (McDestroy): the slots ordered by their last call, newest first. The call
@@ -2220,7 +2221,7 @@ void installInputProbe() {
     if (s_done) return;
     s_done = true;
     const uintptr_t vt = static_cast<uintptr_t>(kOptionsVtable);
-    uint8_t* cave = codepatch::allocCave(kProbeSlots * 40);
+    uint8_t* cave = codepatch::allocCave(escprobe::caveBytes(kProbeSlots));
     if (!cave) { KP_LOG(chMain, "ESCPROBE no code cave: probe off"); return; }
     int patched = 0;
     for (int s = 1; s < kProbeSlots; ++s) {
@@ -2229,21 +2230,9 @@ void installInputProbe() {
         if (!saferead::readAt<uint32_t>(0xE70200u, vt + s * 4, 0, &cur) || cur < 0x401000u || cur > 0x9A0000u) continue;
         ProbeSlot& ps = g_ps[s];
         ps.orig = cur;
-        uint8_t* c = cave + s * 40;
-        uint8_t* q = c;
-        auto u32 = [&](const void* a) { const uint32_t v = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(a)); memcpy(q, &v, 4); q += 4; };
-        *q++ = 0xFF; *q++ = 0x05; u32(&ps.cnt);                       // inc dword [cnt]
-        *q++ = 0x50;                                                  // push eax
-        *q++ = 0xA1; u32(&g_pseq);                                    // mov eax,[seq]
-        *q++ = 0x40;                                                  // inc eax
-        *q++ = 0xA3; u32(&g_pseq);                                    // mov [seq],eax
-        *q++ = 0xA3; u32(&ps.seq);                                    // mov [slot seq],eax
-        *q++ = 0x8B; *q++ = 0x44; *q++ = 0x24; *q++ = 0x08;           // mov eax,[esp+8]   first stack arg
-        *q++ = 0xA3; u32(&ps.a1);
-        *q++ = 0x8B; *q++ = 0x44; *q++ = 0x24; *q++ = 0x0C;           // mov eax,[esp+12]  second stack arg
-        *q++ = 0xA3; u32(&ps.a2);
-        *q++ = 0x58;                                                  // pop eax
-        *q++ = 0xFF; *q++ = 0x25; u32(&ps.orig);                      // jmp [orig]
+        uint8_t* c = cave + s * escprobe::kStride;
+        auto addr = [](const void* a) { return static_cast<uint32_t>(reinterpret_cast<uintptr_t>(a)); };
+        if (escprobe::emitStub(c, addr(&ps.cnt), addr(&g_pseq), addr(&ps.seq), addr(&ps.a1), addr(&ps.a2), addr(&ps.orig)) > escprobe::kStride) { ps.orig = 0; continue; }
         const uint32_t mine = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(c));
         if (codepatch::write(vt + s * 4, reinterpret_cast<const uint8_t*>(&mine), 4) == 1) ++patched;
         else ps.orig = 0;
@@ -2518,7 +2507,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
     embtex::g_log = embedLog;   // gear + slider art textures (EmbedTex) log through the main channel
     guikit::initGuiInput(api, "mod-config");   // optional: the wheel provider (k2.guiinput); a missing provider only means no wheel
-    KP_LOG(chMain, "mod-config 0.3.6-dev loaded (Mod Configuration button under Gameplay; k2.modconfig@1 + k2.menuui@1; config mod_config.ini is read at the first Options panel: enabled debug button_clone reflow desc free_labels)");
+    KP_LOG(chMain, "mod-config 0.3.7-dev loaded (Mod Configuration button under Gameplay; k2.modconfig@1 + k2.menuui@1; config mod_config.ini is read at the first Options panel: enabled debug button_clone reflow desc free_labels)");
     int rcC = -1, rcM = -1;
     if (api && api->struct_size >= offsetof(KPatchApi, require) + sizeof(api->require) && api->provide) {
         rcC = api->provide(K2MODCONFIG_IFACE, K2MODCONFIG_VERSION, &g_mcApi);
