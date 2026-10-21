@@ -49,6 +49,7 @@
 #include "SliderArt.h"        // MCF5: frame / wedge / mark art (EmbedTex textures)
 #include "EditKit.h"
 #include "GearButton.h"   // the shared gear: art names + EmbedTex registration (AddGear)
+#include "CodePatch.h"    // the Esc probe wraps one vtable slot of the Options panel
 
 KP_LOG_PATCH("mod-config");
 
@@ -2187,8 +2188,56 @@ const K2MenuUiApi g_muiApi = {sizeof(K2MenuUiApi), &muiNewPage, &muiAddButton, &
 
 }  // namespace
 
+namespace {
+// ---- Esc probe (0.3.5-dev): CSWGuiInGameOptions vtable slot 14 (+0x38) is the panel's input-event handler (0x8A2070 in the Steam exe: a switch on the
+// event id, then the shared base 0x40EAA0). Esc closes the whole in-game GUI and its event id is not known, so this build only LOGS: every distinct
+// (id, arg, Esc held, mod page) the handler sees while the Options panel is up (first kProbeMax), then calls the original unchanged. The slot is
+// wrapped once, at the first Options panel. Rows: `ESCPROBE id=.. arg=.. escHeld=.. page=.. n=..`. Remove or turn into the real fix once the id is known.
+typedef int(__fastcall* InputFn)(void* self, void* edx, int id, int arg);   // thiscall with two stack args, callee cleans (ret 8): the fastcall shape is identical
+constexpr int kProbeSlot = 14, kProbeMax = 48;
+InputFn g_origInput = nullptr;
+struct ProbeSeen { int id, arg, esc, page; };
+ProbeSeen g_probeSeen[kProbeMax];
+int g_probeN = 0;
+volatile LONG g_probeCalls = 0;
+
+int __fastcall wrapInput(void* self, void* edx, int id, int arg) {
+    InterlockedIncrement(&g_probeCalls);
+    const int esc = (GetAsyncKeyState(VK_ESCAPE) & 0x8000) ? 1 : 0;
+    const int page = curPageId();
+    bool fresh = true;
+    for (int i = 0; i < g_probeN; ++i)
+        if (g_probeSeen[i].id == id && g_probeSeen[i].arg == arg && g_probeSeen[i].esc == esc && g_probeSeen[i].page == page) { fresh = false; break; }
+    if (fresh && g_probeN < kProbeMax) {
+        g_probeSeen[g_probeN++] = { id, arg, esc, page };
+        KP_LOG(chInput, "ESCPROBE id=%d (0x%x) arg=%d (0x%x) escHeld=%d page=%d n=%d calls=%ld", id, static_cast<unsigned>(id), arg, static_cast<unsigned>(arg), esc, page, g_probeN,
+               static_cast<long>(g_probeCalls));
+    }
+    return g_origInput(self, edx, id, arg);
+}
+
+void installInputProbe() {
+    static bool s_done = false;
+    if (s_done) return;
+    s_done = true;
+    const uintptr_t slot = static_cast<uintptr_t>(kOptionsVtable) + kProbeSlot * sizeof(uint32_t);
+    uint32_t cur = 0;
+    if (!saferead::readAt<uint32_t>(0xE70200u, slot, 0, &cur) || cur < 0x401000u || cur > 0x9A0000u) {
+        KP_LOG(chMain, "ESCPROBE slot %d at %08x unreadable or not code (%08x): probe off", kProbeSlot, static_cast<unsigned>(slot), static_cast<unsigned>(cur));
+        return;
+    }
+    g_origInput = reinterpret_cast<InputFn>(static_cast<uintptr_t>(cur));
+    const uint32_t mine = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(&wrapInput));
+    const int rc = codepatch::write(slot, reinterpret_cast<const uint8_t*>(&mine), 4);
+    if (rc != 1) g_origInput = nullptr;
+    KP_LOG(chMain, "ESCPROBE slot %d at %08x: was %08x, now %08x rc=%d", kProbeSlot, static_cast<unsigned>(slot), static_cast<unsigned>(cur), static_cast<unsigned>(mine), rc);
+}
+
+}  // namespace
+
 // H-O1 8A16FE: Options ctor, layout open, all vanilla InitControl calls done; panel = [ebp-0xAC].
 extern "C" void __cdecl McBind(int panelArg) {
+    installInputProbe();
     static bool s_cfgRead = false;
     if (!s_cfgRead) {   // lazily, on the first Options panel (KPatchInit must not do file I/O)
         s_cfgRead = true;
@@ -2448,7 +2497,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
     embtex::g_log = embedLog;   // gear + slider art textures (EmbedTex) log through the main channel
     guikit::initGuiInput(api, "mod-config");   // optional: the wheel provider (k2.guiinput); a missing provider only means no wheel
-    KP_LOG(chMain, "mod-config 0.3.4-dev loaded (Mod Configuration button under Gameplay; k2.modconfig@1 + k2.menuui@1; config mod_config.ini is read at the first Options panel: enabled debug button_clone reflow desc free_labels)");
+    KP_LOG(chMain, "mod-config 0.3.5-dev loaded (Mod Configuration button under Gameplay; k2.modconfig@1 + k2.menuui@1; config mod_config.ini is read at the first Options panel: enabled debug button_clone reflow desc free_labels)");
     int rcC = -1, rcM = -1;
     if (api && api->struct_size >= offsetof(KPatchApi, require) + sizeof(api->require) && api->provide) {
         rcC = api->provide(K2MODCONFIG_IFACE, K2MODCONFIG_VERSION, &g_mcApi);

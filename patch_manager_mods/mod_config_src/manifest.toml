@@ -1,7 +1,7 @@
 [patch]
 id = "mod-config"
 name = "Mod Configuration"
-version = "0.3.4-dev"
+version = "0.3.5-dev"
 author = "local"
 description = "Shared Options-menu provider: adds a Mod Configuration button under Gameplay and vanilla-styled pages that other mods register into."
 kind = "provider"
