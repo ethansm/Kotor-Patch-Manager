@@ -229,4 +229,62 @@ inline uint32_t clampStowSlideMs(long v) {
     return (uint32_t)v;
 }
 
+// ---- HW37: host-testable copies of the residual / via clock of Holster.cpp (carryShownBase, viaProgress). ----
+// Each helper copies one Holster.cpp function or guard, condition by condition. Plain values stand in for the DLL globals (g_reachResidMs is
+// residMs) and for CarryResid / ReachPlan, which live in Holster.cpp / HolsterReach.h (this header cannot include HolsterReach.h).
+
+// The carry branch carryShownBase takes this frame. ResidNone = the plain carryBlend; ResidDraw = the hand-frame residual of a fresh draw;
+// ResidStow = the hand-frame residual of a full stow (carryShownBase's own early returns still apply after it).
+enum SlideResidBranch : int { ResidNone = 0, ResidDraw = 1, ResidStow = 2 };
+
+// HW37: copy of Holster.cpp residDrawWindow. Draw clock: t = ms since the offset was captured at capStartMs, ms = capMsEff.
+inline void slideResidDrawWindow(uint32_t now, uint32_t capStartMs, uint32_t capMsEff, float& t, float& ms) {
+    t = static_cast<float>(static_cast<int32_t>(now - capStartMs));
+    ms = static_cast<float>(capMsEff);
+}
+
+// HW37: copy of Holster.cpp residStowWindow. Stow clock: t = time left in the carry, ms = min(carry length, residMs). The carry length is
+// (1 - gg) * len with the grab share gg clamped to [0, 0.6] (NaN -> 0). t0 is the slide's start tick.
+inline void slideResidStowWindow(uint32_t now, uint32_t t0, uint32_t len, float grab, uint32_t residMs, float& t, float& ms) {
+    const int32_t d = static_cast<int32_t>(now - t0);
+    const float gg = grab > 0.6f ? 0.6f : (grab > 0.f ? grab : 0.f);
+    const float carryLen = (1.f - gg) * static_cast<float>(len);
+    const float resMsF = static_cast<float>(residMs);
+    ms = carryLen < resMsF ? carryLen : resMsF;
+    t = carryLen - static_cast<float>(d);
+}
+
+// HW37: copy of the guard chain at the top of Holster.cpp carryShownBase, then its dir / from / carryFrom split. residMs is g_reachResidMs;
+// carriedFinite is hs::qfinite(carried.q) (viaProgress has no carried pose and passes true). dir is sl.dir != 0.
+inline SlideResidBranch slideResidBranch(bool dir, float from, float carryFrom, float carryW, bool active, uint32_t residMs, bool carriedFinite = true) {
+    if (residMs == 0 || !active || !(carryW > 0.f) || !carriedFinite) return ResidNone;
+    if (dir) {
+        if (from > 0.001f) return ResidNone;
+        return ResidDraw;
+    }
+    if (!(carryFrom >= 0.999f)) return ResidNone;
+    return ResidStow;
+}
+
+// HW37: copy of Holster.cpp viaProgress, the via progress s in 0..1 of the weapon's turn (0 outside the carry window). Branch choice comes from
+// slideResidBranch. A draw reads the capture of the previous frame (capOn, capStartMs, capMsEff); len is the slide length for the stale check.
+// fRot is carryBlend's orientation share, used when neither residual branch applies.
+inline float slideViaProgress(bool active, uint32_t residMs, float carryW, float oriF, bool exOn, bool dir, float from, float carryFrom,
+                              uint32_t now, uint32_t t0, uint32_t len, float grab, bool capOn, uint32_t capStartMs, uint32_t capMsEff) {
+    if (!active) return 0.f;
+    const SlideResidBranch br = slideResidBranch(dir, from, carryFrom, carryW, active, residMs);
+    if (br == ResidDraw) {
+        if (!capOn || static_cast<int32_t>(now - capStartMs) > static_cast<int32_t>(len) + 100) return 0.f;
+        float t, ms;
+        slideResidDrawWindow(now, capStartMs, capMsEff, t, ms);
+        return ms > 0.f ? slideClamp01(t / ms) : 0.f;
+    }
+    if (br == ResidStow) {
+        float t, ms;
+        slideResidStowWindow(now, t0, len, grab, residMs, t, ms);
+        return (ms > 1.f && t < ms) ? slideClamp01(t / ms) : 0.f;
+    }
+    return slideClamp01(exOn ? (carryW > 0.f ? oriF : 0.f) : carryW);   // carryBlend's fRot
+}
+
 }  // namespace hs
