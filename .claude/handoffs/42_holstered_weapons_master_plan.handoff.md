@@ -9,17 +9,18 @@ Execute HW5: P0 play runs 1 (probe) and 2 (bone test) by the user; read logs
 - **Waves:** .claude/waves/WI-42-a2/
 - **Waves:** .claude/waves/WI-42-b2/
 - **Waves:** .claude/waves/w1-42-HWB/
-- **Branch:** `KOTOR-II` (01535a6c handoff: holster 0.6.0-dev + editor 0.6.1-dev installed)
-- **Generated:** 2026-10-20 22:23:47 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (e69ae903 play queue: RCH1 holster 0.7.0-dev right-arm reach probe)
+- **Generated:** 2026-10-20 22:42:12 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-01535a6c handoff: holster 0.6.0-dev + editor 0.6.1-dev installed
- .claude/handoffs/holster_modconfig_components.handoff.md | 3 +++
- 1 file changed, 3 insertions(+)
+e69ae903 play queue: RCH1 holster 0.7.0-dev right-arm reach probe
+ patch_manager_mods/PLAY_TEST_QUEUE.md | 1 +
+ 1 file changed, 1 insertion(+)
 ```
-- **Dirty Files (186):**
+- **Dirty Files (185):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
+  - ` M .claude/handoffs/42_holstered_weapons_master_plan.handoff.md`
   - ` M .claude/handoffs/DECOMP_PLAN.handoff.md`
   - ` M .claude/handoffs/PHASE7_COMMON_MASTER.handoff.md`
   - ` M .claude/handoffs/deep_haiku_review_skill.handoff.md`
@@ -27,8 +28,7 @@ Execute HW5: P0 play runs 1 (probe) and 2 (bone test) by the user; read logs
   - ` M .claude/plans/swarm_library_architecture.md`
   - ` M .claude/reviews/gemini_20261014/tools/fix3_items.tsv`
   - ` M .claude/settings.json`
-  - ` M CLAUDE.md`
-  - ... +176 more (run `git status --short`)
+  - ... +175 more (run `git status --short`)
 
 ## 2. Immediate Objective (HW5)
 **P0 play runs 1 (probe) and 2 (bone test) by the user; read logs**
@@ -119,3 +119,11 @@ Task: P0 play runs 1 (probe) and 2 (bone test) by the user; read logs
 - Session 10-16 14:30 (HW-EDIT PIVOT): user chose a dedicated in-game Options screen patch `holster-editor` (independent of equip3d and of the ultrawide GUI). New plan `.claude/plans/holster_editor_options.md` replaces v1 HE3/HE4/HE5; HE0/HE1/HE2/HE6 carry over. Study `.claude/research/holster_edit/UX_OPTIONS.md` (85845ae). D2 Haiku recon running (d2b Options hooks/Esc/pause, d2c optionsingame_p.gui + ultrawide + generator, d2d party picker + Preview3d.h API + weapon model name). HE0 --apply still awaits GO.
 - Session 10-16 15:10: user confirmed IN-GAME Options (not title screen); equip-screen editor abandoned; NEW: shared provider `preview-3d` (k2.preview3d@1) used by holster-editor, follow-up P-MIG migrates equip3d onto it. Equip3dEdit.h split into _shared_src/EditKit.h + holster_editor_src/HseLayout.h (Haiku worker).
 - Session 10-20 arm-reach spike (HW18 recon, HW19 probe build; rows added to the master plan table): user wants the character to reach the arm toward each holster spot (per arm, per side; dual wield; two-handed melee/ranged), then the existing HolsterSlide weapon move. Decision: procedural two-bone arm solver in the DLL, NOT authored clips (133 byte-unique body MDLs, supermodel edits do not reach bodies, KPM cannot ship Override files, no holster clip exists, idle/combat anim queue can cut a clip). Reach target = existing place_bone_*/place_off_*/place_rot_* pose. Arm bone names seen in research/holstered_weapons/wave2_3.md: rbicep_g, rbicepL_g, rforearm_g, lforearm_g; CONFIRM on N_CommM and N_CommF (HW18). Unknown to resolve: the engine point that writes node transforms after animation sampling and before skinning (start from creature tick 0x7664B0 -> 0x777E30 / 0x7675B0, blend 0x769780; ledger rea_findings/20261018_nb2-anim-driver.tsv). Static dumps first (RE_AGENT_GUIDE 2.1), REA only for the indirect write point. Back/over-shoulder targets need joint limits: hips first, back last.
+
+### Session 10-20 lessons (HW18 arm-reach recon, 4eb6abe7)
+- Premise was wrong: Gob+0xA4/+0xB0 is the OWNER's world pose. A bone is a part node P; local pos P+0x08, local quat (w,x,y,z) P+0x14, scale P+0x24, parent P+0x3C, owner Gob P+0x40. World is recomputed per call by 0x457510 (part vt+0x0C), no cache, so writing a bicep quat moves forearm/hand.
+- Dead end: SetPartLocalPosition 0x462C50 sets P+0x48=1 and 0x4DFF2E then skips controller writes (bone freezes). Write P+0x14 directly.
+- Dead end: new hook at 0x481073 / Gob::Animate entry runs the handler BEFORE the animation (skip_original_bytes=false order). A post-Animate write needs a return-site hook (0x481078 after the CALL) or the AnimateExternal path (0x451E60 `CALL EAX`); not recon'd yet.
+- Manifest is already 0.6.0-dev (move hold + party combat hold, 45e26618, not installed; live is 0.5.2-dev). The reach probe is 0.7.0-dev.
+- Open: skin consumer unlocated (0x45C810 / 0x4626D0); whether NPC Gobs pass the ControlDispatch gate 0x4DFF1C-0x4DFF25. Both answered by the probe's REACH log + a play row, not by REA.
+- Verify: `python3 scripts/run_tests.py holster_reach`, `python3 scripts/compat_check.py patch_manager_mods/holster_src/*.h`, scratch-copy `build_check`, `scripts/pre_install_gate.sh --mod holster_src --skip-default`.
