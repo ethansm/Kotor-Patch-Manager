@@ -1,4 +1,4 @@
-// ModConfig.cpp -- mod-config 0.3.3-dev (Steam build): the "Mod Configuration" provider on the in-game Options screen (doc 42,
+// ModConfig.cpp -- mod-config 0.3.4-dev (Steam build): the "Mod Configuration" provider on the in-game Options screen (doc 42,
 // plan .claude/plans/holster_editor_options.md, card c18). Provides two interfaces declared in ModConfigApi.h:
 //   k2.modconfig@1  K2ModConfigApi  Register / Unregister: a mod adds one entry (name, description, build/enter/leave/tick/destroy).
 //   k2.menuui@1     K2MenuUiApi     NewPage / AddButton / AddLabel / AddCustom / Clicked / SetText / SetRect / SetDesc / PaneRect / Control /
@@ -181,7 +181,7 @@ struct McState {
     Rect modalBox[mui::kMaxModals] = {};         // NewModal box (w > 0: the modal's rows lay out in it instead of the column pane)
     mui::PageStack ps;
     mui::HoverTracker hov;
-    mui::ClickTracker clk, clkBack;
+    mui::ClickTracker clk, clkBack, clkGear;   // clkGear: the page's gear while its modal is open (a click there closes the modal)
     bool appended = false;
     int savedFlags[kMaxVanilla] = {};
     bool haveSaved = false;
@@ -1358,7 +1358,8 @@ void gearFill(ItemX& it) {
 }
 
 // Shows slot k's controls the way ENTER(ENTRY) does: rows on their column slots, rects re-applied, everything shown, then unslotted rows hidden again.
-// underModal: k is the parent of an open modal: only its AddCustom controls stay (a preview must keep drawing); rows, buttons, labels and the gear hide.
+// underModal: k is the parent of an open modal: only its AddCustom controls (a preview must keep drawing) and its gear (the toggle that closes the modal) stay;
+// rows, buttons and labels hide.
 void showSlot(int k, bool underModal) {
     McState& e = g_mc;
     layoutRows(k);
@@ -1372,7 +1373,7 @@ void showSlot(int k, bool underModal) {
             it.tg.gaveUp = false;
             applyOne(e, it.tg, true);
         }
-        const bool keep = !underModal || e.pt.pages[2 + k].items[i].kind == mui::CUSTOM;
+        const bool keep = !underModal || it.gear || e.pt.pages[2 + k].items[i].kind == mui::CUSTOM;
         setShown(it, keep && !it.userHidden);
     }
     if (!underModal) showRows(k);   // after the show-all loop: hidden / unslotted rows and the arrows of disabled rows go back to hidden
@@ -1392,6 +1393,7 @@ void resetPageInput() {
     e.hov = mui::HoverTracker();
     e.clk = mui::ClickTracker();
     e.clkBack = mui::ClickTracker();
+    e.clkGear = mui::ClickTracker();
 }
 
 // The on-screen half of opening / closing modal m (md.open is already updated): swap the parent's controls for the modal's and the title text.
@@ -1526,6 +1528,17 @@ int hitItem(int x, int y) {
         }
     }
     return -1;
+}
+
+// While a modal is open: the owning page's gear (it stays on screen and a click on it closes the modal, like Back), else null.
+ItemX* modalGear() {
+    McState& e = g_mc;
+    if (e.md.open < 0 || e.ps.state != mui::ENTRY) return nullptr;
+    const int k = e.md.parent[e.md.open];
+    if (k < 0) return nullptr;
+    for (int i = 0; i < e.pt.itemCount(2 + k); ++i)
+        if (e.items[k][i].gear && !e.items[k][i].userHidden) return &e.items[k][i];
+    return nullptr;
 }
 
 ItemX* shownItem(int item) {
@@ -2332,7 +2345,9 @@ extern "C" void __cdecl McTick(int panelArg) {
     const bool cur = guikit::cursorEngine(&x, &y);
     // Clicks act on the RELEASE: LMB up over the control the press went down on. Not-foreground counts as up (GuiKit clickEdge rule).
     if (e.restorePending && !down) restoreVanilla("lmb up");
-    const int hit = cur ? hitItem(x, y) : -1;
+    const ItemX* gearUnder = cur ? modalGear() : nullptr;
+    const bool overGear = gearUnder && overCtl(*gearUnder, x, y);   // the gear is not a control of the shown (modal) page: its click is handled apart below
+    const int hit = (cur && !overGear) ? hitItem(x, y) : -1;
     const bool overBack = cur && e.ps.state != mui::MAIN && overCtl(e.back, x, y);
     hoverStep(overBack ? -1 : hit);
     if (shownSlot() >= 0 && e.rp[shownSlot()].n > 0) rowArrowInput(shownSlot(), down, overBack ? -1 : hit, now);
@@ -2346,6 +2361,13 @@ extern "C" void __cdecl McTick(int panelArg) {
     e.prevDown = down;
     const int clicked = e.clk.tick(down, (overBack || sliderGrab) ? -1 : hit);
     const int backClicked = e.clkBack.tick(down, overBack ? 0 : -1);
+    if (e.clkGear.tick(down, overGear ? 0 : -1) >= 0 && e.md.open >= 0) {   // the gear of the modal's page: a second click closes the modal
+        const int om = e.md.open;
+        if (e.md.closeFirst()) {
+            KP_LOG(chMain, "MODAL gear click closes page=%d", 2 + mui::ModalTable::slotOf(om));
+            modalApply(om, false);
+        }
+    }
     if (clicked >= 0 || backClicked >= 0) {
         static volatile LONG s_up = 0;
         if (InterlockedIncrement(&s_up) <= 40)
@@ -2426,7 +2448,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
     embtex::g_log = embedLog;   // gear + slider art textures (EmbedTex) log through the main channel
     guikit::initGuiInput(api, "mod-config");   // optional: the wheel provider (k2.guiinput); a missing provider only means no wheel
-    KP_LOG(chMain, "mod-config 0.3.3-dev loaded (Mod Configuration button under Gameplay; k2.modconfig@1 + k2.menuui@1; config mod_config.ini is read at the first Options panel: enabled debug button_clone reflow desc free_labels)");
+    KP_LOG(chMain, "mod-config 0.3.4-dev loaded (Mod Configuration button under Gameplay; k2.modconfig@1 + k2.menuui@1; config mod_config.ini is read at the first Options panel: enabled debug button_clone reflow desc free_labels)");
     int rcC = -1, rcM = -1;
     if (api && api->struct_size >= offsetof(KPatchApi, require) + sizeof(api->require) && api->provide) {
         rcC = api->provide(K2MODCONFIG_IFACE, K2MODCONFIG_VERSION, &g_mcApi);

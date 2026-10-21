@@ -190,7 +190,9 @@ typedef struct K2MenuUiApi {
        handling); it closes any other open modal. Back closes the open modal first; Escape, a tick gap and leaving the entry clear it. */
     void     (KPATCH_CALL *SetModalOpen)(uint32_t modalPage, int32_t open);
     /* Adds the shared settings gear to an entry page: a provider-drawn square button in the top-right corner of the preview pane (the
-       description pane without a split), same look on every page. build() only. Item id >= 0 (read clicks with Clicked); < 0 = fail. */
+       description pane without a split), same look on every page. build() only. Item id >= 0 (read clicks with Clicked); < 0 = fail.
+       The gear stays on screen while one of the page's modals is open and then works as the toggle: a click on it closes the modal (Back does
+       too) and is NOT latched for Clicked; with no modal open a click latches as usual. */
     int32_t  (KPATCH_CALL *AddGear)(uint32_t page, const char* desc);
 } K2MenuUiApi;
 

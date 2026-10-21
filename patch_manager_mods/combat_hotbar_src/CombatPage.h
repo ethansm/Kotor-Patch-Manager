@@ -108,6 +108,33 @@ constexpr ModalRowDef kModalRows[MR_COUNT] = {
     {0, "Reset demo", "Back to the starting demo target (4 attacks, 3 force powers, 2 items, none unusable, 1920x1080).", 0, 1, 1, 0, false, nullptr, 0},
 };
 
+// ---- modal frame geometry (pane px). The frame hugs a heading band plus the rows (mod-config lays rows in the NewModal box: pitch 36/284, slot 32/284 of
+// the box height, kRowPitchRef / kRowSlotRef / kRowRefH in MenuUiLogic.h); a changed provider constant only makes the frame a little loose or tight.
+struct ModalGeom {
+    int fx, fy, fw, fh;      // frame outline (the dark fill and the thin border around it)
+    int edge;                // border thickness
+    int headY, headH;        // heading band (the title text); the divider sits on its bottom edge
+    int bx, by, bw, bh;      // NewModal box: where the rows lay out
+};
+inline ModalGeom modalGeom(int cx, int cy, int cw, int chh, int rows) {
+    ModalGeom g;
+    const int pad = chprev::clampi(cw / 20, 12, 40);
+    const int padV = pad * 3 / 4;
+    g.edge = chprev::clampi(chh / 150, 2, 5);
+    g.headH = chprev::clampi(chh * 34 / 284, 24, 72);
+    g.headY = cy + g.edge;
+    g.bx = cx + pad; g.bw = cw - 2 * pad;
+    g.by = g.headY + g.headH + padV;
+    g.bh = chh - 2 * g.edge - g.headH - 2 * padV;
+    if (g.bh < 1) g.bh = 1;
+    const int n = rows < 1 ? 1 : rows;
+    const int rowsH = ((n - 1) * 36 + 32) * g.bh / 284;
+    g.fx = cx; g.fw = cw; g.fy = cy;
+    g.fh = (g.by - cy) + rowsH + padV + g.edge;
+    if (g.fh > chh) g.fh = chh;
+    return g;
+}
+
 // The demo field a modal row edits. MR_RESET and out-of-range rows are not fields (value ignored).
 inline void demoApply(chprev::Demo& d, int row, int value) {
     switch (row) {

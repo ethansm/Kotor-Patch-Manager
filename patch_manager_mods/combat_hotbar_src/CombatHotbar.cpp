@@ -1000,34 +1000,53 @@ int32_t KPATCH_CALL pvModalChange(uint32_t page, int32_t row, int32_t requested,
     return requested;
 }
 
-// The modal's frame: two labels listed on the MODAL page (so the provider shows and hides them with the modal), made before the rows so the rows draw
-// above them: a dark fill and a teal border over the column pane. The rows lay out in a box inset by a padding inside it (NewModal's box).
+// The modal's frame: labels listed on the MODAL page (so the provider shows and hides them with the modal), made before the rows so the rows draw
+// above them: 0 dark fill, 1..4 thin teal border strips (top, bottom, left, right), 5 divider under the heading, 6 the heading text. The frame hugs the
+// heading and the rows (chpage::modalGeom) and the rows lay out in a padded box inside it (NewModal's box); the gear stays visible beside it.
 pvc::Canvas g_mf;
+constexpr int kMfLabels = 7, kMfHead = 6;
 constexpr float kPvFrameFill[3] = {0.02f, 0.05f, 0.06f}, kPvFrameEdge[3] = {0.10f, 0.58f, 0.62f};
+constexpr const char* kPvHeading = "Preview test state";
 
 // Per tick while the modal is open (the provider shows the frame labels with it): follow the column pane. Never changes visibility.
 void pvFramePlace() {
     if (!g_mf.ok() || !g_mcMenu.ok() || !g_pagePanel || !pvc::ops().isVisible(g_mf.w[0].c)) return;
     K2MuiRect col = {0, 0, 0, 0};
     if (!g_mcMenu.p->PaneRect(g_pagePanel, MUI_PANE_COLUMN, &col) || col.w <= 0 || col.h <= 0) return;
-    const pvc::Rect r = {col.x, col.y, col.w, col.h};
-    void* fill = pvImage(kPvSolid);
-    void* edge = pvImage(kPvPill);
-    if (fill) g_mf.style(0, r, fill, kPvFrameFill, 0.97f);
-    if (edge) g_mf.style(1, r, edge, kPvFrameEdge, 1.f);
-    for (int i = 0; i < 2; ++i) pvc::ops().setClickable(g_mf.w[i].c, false);
+    const chpage::ModalGeom g = chpage::modalGeom(col.x, col.y, col.w, col.h, chpage::MR_COUNT);
+    void* solid = pvImage(kPvSolid);
+    if (solid) {
+        g_mf.style(0, pvc::Rect{g.fx, g.fy, g.fw, g.fh}, solid, kPvFrameFill, 0.97f);
+        g_mf.style(1, pvc::Rect{g.fx, g.fy, g.fw, g.edge}, solid, kPvFrameEdge, 1.f);
+        g_mf.style(2, pvc::Rect{g.fx, g.fy + g.fh - g.edge, g.fw, g.edge}, solid, kPvFrameEdge, 1.f);
+        g_mf.style(3, pvc::Rect{g.fx, g.fy, g.edge, g.fh}, solid, kPvFrameEdge, 1.f);
+        g_mf.style(4, pvc::Rect{g.fx + g.fw - g.edge, g.fy, g.edge, g.fh}, solid, kPvFrameEdge, 1.f);
+        g_mf.style(5, pvc::Rect{g.fx + g.edge, g.headY + g.headH, g.fw - 2 * g.edge, g.edge}, solid, kPvFrameEdge, 0.6f);
+    }
+    pvc::Wid& h = g_mf.w[kMfHead];   // the text label has no fill: a change-only rect only
+    const pvc::Rect hr = {g.fx + g.edge, g.headY, g.fw - 2 * g.edge, g.headH};
+    if (!h.rectSet || h.rect.x != hr.x || h.rect.y != hr.y || h.rect.w != hr.w || h.rect.h != hr.h) {
+        pvc::ops().setRect(h.c, hr.x, hr.y, hr.w, hr.h);
+        h.rect = hr; h.rectSet = true;
+    }
+    for (int i = 0; i < kMfLabels; ++i) pvc::ops().setClickable(g_mf.w[i].c, false);
 }
 
 void pvBuildModal(const K2MenuUiApi* ui, uint32_t page) {
     K2MuiRect col = {0, 0, 0, 0}, box = {0, 0, 0, 0};
     const bool haveCol = ui->PaneRect(g_pagePanel, MUI_PANE_COLUMN, &col) && col.w > 0 && col.h > 0;
     if (haveCol) {
-        const int pad = chprev::clampi(col.w / 20, 16, 48);
-        box = K2MuiRect{col.x + pad, col.y + pad, col.w - 2 * pad, col.h - 2 * pad};
+        const chpage::ModalGeom g = chpage::modalGeom(col.x, col.y, col.w, col.h, chpage::MR_COUNT);
+        box = K2MuiRect{g.bx, g.by, g.bw, g.bh};
     }
     g_modalPage = ui->NewModal(page, haveCol ? &box : nullptr, chpage::kModalTitle);
     if (!g_modalPage) { KP_LOGV(chMain, KPLOG_WARN, "PREVIEW: NewModal refused: no gear"); return; }
-    if (!g_mf.build(ui, g_pagePanel, g_modalPage, 2)) KP_LOGV(chMain, KPLOG_WARN, "PREVIEW: modal frame labels not made (%d of 2): the modal has no frame", g_mf.n);
+    if (g_mf.build(ui, g_pagePanel, g_modalPage, kMfLabels)) {
+        pvc::ops().setText(g_mf.w[kMfHead].c, kPvHeading);
+        guikit::setAlign(g_mf.w[kMfHead].c, 18);
+    } else {
+        KP_LOGV(chMain, KPLOG_WARN, "PREVIEW: modal frame labels not made (%d of %d): the modal has no frame", g_mf.n, kMfLabels);
+    }
     KP_LOGV(chMain, KPLOG_INFO, "PREVIEW modal box=%d,%d,%d,%d col=%d,%d,%d,%d frame=%d", box.x, box.y, box.w, box.h, col.x, col.y, col.w, col.h, g_mf.ok() ? 1 : 0);
     bool all = true;
     for (int r = 0; r < chpage::MR_COUNT; ++r) {

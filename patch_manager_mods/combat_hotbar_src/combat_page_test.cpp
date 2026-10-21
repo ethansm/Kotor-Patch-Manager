@@ -93,10 +93,31 @@ static void test_modal_rows() {
     KT_CHECK(chprev::kPoolSize + 4 * 3 + 1 <= 80);
 }
 
+static void test_modal_geom() {
+    // frame, heading and rows stay inside the column pane for every plausible size; the rows (not the nominal box) end inside the frame
+    const int cols[][2] = {{1113, 611}, {2000, 1100}, {600, 330}, {400, 220}, {300, 160}};
+    for (const auto& c : cols) {
+        const chpage::ModalGeom g = chpage::modalGeom(50, 80, c[0], c[1], chpage::MR_COUNT);
+        KT_CHECK(g.fx == 50 && g.fy == 80 && g.fw == c[0]);
+        KT_CHECK(g.fh > 0 && g.fh <= c[1]);
+        KT_CHECK(g.edge >= 2 && g.edge <= 5);
+        KT_CHECK(g.headY >= g.fy + g.edge && g.headY + g.headH <= g.fy + g.fh);
+        KT_CHECK(g.bx >= g.fx + g.edge && g.bx + g.bw <= g.fx + g.fw - g.edge);
+        KT_CHECK(g.by >= g.headY + g.headH);                                   // rows start below the heading
+        const int rowsH = ((chpage::MR_COUNT - 1) * 36 + 32) * g.bh / 284;
+        KT_CHECK(g.by + rowsH <= g.fy + g.fh - g.edge);                        // and end above the bottom border
+        KT_CHECK(g.fh < c[1]);                                                 // hugs: the frame is shorter than the pane for six rows
+    }
+    // fewer rows -> shorter frame; more rows never exceed the pane
+    const chpage::ModalGeom a = chpage::modalGeom(0, 0, 1113, 611, 3), b = chpage::modalGeom(0, 0, 1113, 611, 6), z = chpage::modalGeom(0, 0, 1113, 611, 8);
+    KT_CHECK(a.fh < b.fh && b.fh < z.fh && z.fh <= 611);
+}
+
 int main() {
     test_modal_rows();
     test_parse_and_bindings();
     test_size_row_auto_and_floor();
     test_text_budgets();
+    test_modal_geom();
     return kt::Report("combat_page_test");
 }
