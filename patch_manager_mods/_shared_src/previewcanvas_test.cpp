@@ -117,6 +117,29 @@ int main() {
     for (int i = 1; i <= 4; ++i) C(i)->vis = true;
     KT_CHECK(cv.begin(&ui, reinterpret_cast<void*>(1), 1920, 1080)); cv.put(0, Rect{0, 0, 10, 10}, &img1, tintA, 0.25f); cv.end();
     KT_CHECK(C(1)->vis && !C(2)->vis && !C(3)->vis && !C(4)->vis);
+    // zoomed view: only a 960x540 part of the virtual screen, starting at (900, 400), fills the pane; what lies outside is clipped away
+    KT_CHECK(cv.beginView(&ui, reinterpret_cast<void*>(1), 900, 400, 960, 540));
+    cv.put(0, Rect{900, 400, 960, 540}, &img1, tintA, 1.f);
+    KT_CHECK_EQ(C(1)->r.x, 133); KT_CHECK_EQ(C(1)->r.y, 50); KT_CHECK_EQ(C(1)->r.w, 533); KT_CHECK_EQ(C(1)->r.h, 300);
+    cv.put(2, Rect{1380, 670, 480, 270}, &img2, nullptr, 1.f);             // lower-right quarter of the view
+    KT_CHECK_EQ(C(3)->r.x, 400); KT_CHECK_EQ(C(3)->r.y, 200); KT_CHECK_EQ(C(3)->r.w, 266); KT_CHECK_EQ(C(3)->r.h, 150);
+    cv.put(1, Rect{0, 0, 100, 100}, &img1, nullptr, 1.f);                  // left of / above the view: clipped away, stays hidden
+    cv.end();
+    KT_CHECK(!C(2)->vis);
+    // putPx: engine px, clipped to the pane, shown like put()
+    KT_CHECK(cv.begin(&ui, reinterpret_cast<void*>(1), 1920, 1080));
+    cv.putPx(1, Rect{90, 330, 200, 40}, &img1, tintA, 1.f);                // sticks out left of the pane {100,50,600,300}: x clipped to 100, y to 350
+    KT_CHECK(C(2)->vis); KT_CHECK_EQ(C(2)->r.x, 100); KT_CHECK_EQ(C(2)->r.y, 330); KT_CHECK_EQ(C(2)->r.w, 190); KT_CHECK_EQ(C(2)->r.h, 20);
+    cv.putPx(2, Rect{0, 0, 50, 50}, &img1, tintA, 1.f);                    // entirely outside the pane
+    cv.end();
+    KT_CHECK(C(2)->vis && !C(3)->vis);
+    // style: writes rect / fill / tint / alpha change-only and never shows or hides, outside a frame and without a pane
+    { const bool v3 = C(4)->vis; const int r1 = g_setRect, v1 = g_setVis;
+      cv.style(3, Rect{7, 8, 90, 40}, &img1, tintA, 0.5f);
+      KT_CHECK_EQ(C(4)->r.x, 7); KT_CHECK_EQ(C(4)->r.w, 90); KT_CHECK(C(4)->fill == &img1); KT_CHECK(C(4)->alpha == 0.5f);
+      KT_CHECK_EQ(g_setRect, r1 + 1); KT_CHECK_EQ(g_setVis, v1); KT_CHECK(C(4)->vis == v3);
+      cv.style(3, Rect{7, 8, 90, 40}, &img1, tintA, 0.5f); KT_CHECK_EQ(g_setRect, r1 + 1);   // unchanged: nothing written
+      cv.style(9, Rect{0, 0, 1, 1}, &img1, tintA, 1.f); KT_CHECK_EQ(g_setRect, r1 + 1); }    // out of range: ignored
     // begin failures: no pane, empty pane, bad virtual size; hideAll hides everything
     g_paneOk = false; KT_CHECK(!cv.begin(&ui, reinterpret_cast<void*>(1), 1920, 1080));
     g_paneOk = true; g_pane = K2MuiRect{0, 0, 0, 10}; KT_CHECK(!cv.begin(&ui, reinterpret_cast<void*>(1), 1920, 1080));

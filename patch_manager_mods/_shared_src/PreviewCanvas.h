@@ -125,6 +125,7 @@ struct Canvas {
     bool used[kMaxLabels];        // put() this frame
     int n = 0;                    // labels made AND listed (the first n of w[])
     Fit fit;
+    int viewX = 0, viewY = 0;     // virtual origin of the current frame's view
     Rect pane = {0, 0, 0, 0};
     bool inFrame = false;
     bool paneWarned = false;
@@ -132,7 +133,7 @@ struct Canvas {
     Canvas() { reset(); }
     void reset() {
         for (int i = 0; i < kMaxLabels; ++i) { w[i] = Wid(); item[i] = -1; used[i] = false; }
-        n = 0; fit = Fit(); pane = Rect{0, 0, 0, 0}; inFrame = false; paneWarned = false;
+        n = 0; fit = Fit(); viewX = viewY = 0; pane = Rect{0, 0, 0, 0}; inFrame = false; paneWarned = false;
     }
 
     // Options ctor window, after the rows: clone `want` labels (1..kMaxLabels) and list them on the page. All or nothing: when any clone or AddCustom
@@ -170,7 +171,10 @@ struct Canvas {
 
     // Start of a frame: read the preview pane and fit the virtual screen into it. false = nothing to draw (no pane, bad size, canvas not built):
     // the caller then calls hideAll(). Every label is click-through; mod-config shows page items on entry, so a stale visibility cache is resynced.
-    bool begin(const K2MenuUiApi* ui, void* panel, int vw, int vh) {
+    bool begin(const K2MenuUiApi* ui, void* panel, int vw, int vh) { return beginView(ui, panel, 0, 0, vw, vh); }
+    // Same, but only the part of the virtual screen starting at (vx, vy) and vw x vh big is fitted into the pane (a zoomed view; put() takes the
+    // virtual screen's own coordinates and clips what falls outside the view).
+    bool beginView(const K2MenuUiApi* ui, void* panel, int vx, int vy, int vw, int vh) {
         if (!ok() || !ui || !ui->PaneRect) return false;
         resync();
         K2MuiRect r = {0, 0, 0, 0};
@@ -178,6 +182,7 @@ struct Canvas {
         pane = Rect{r.x, r.y, r.w, r.h};
         fit = fitScreen(vw, vh, pane);
         if (!fit.ok) return false;
+        viewX = vx; viewY = vy;
         for (int i = 0; i < n; ++i) used[i] = false;
         inFrame = true;
         return true;
@@ -186,8 +191,21 @@ struct Canvas {
     // Label i draws `v` (virtual units; clipped to the pane) with this fill, tint (3 floats, null = keep) and alpha. A rect with no area hides it.
     void put(int i, const Rect& v, void* img, const float* tint, float alpha) {
         if (!inFrame || i < 0 || i >= n || !w[i].c) return;
+        putPx(i, mapRect(fit, Rect{v.x - viewX, v.y - viewY, v.w, v.h}), img, tint, alpha);
+    }
+    // Same in engine px (not scaled, not offset; still clipped to the pane): captions and frames that sit on the pane, not on the virtual screen.
+    void putPx(int i, const Rect& px, void* img, const float* tint, float alpha) {
+        if (!inFrame || i < 0 || i >= n || !w[i].c) return;
         Rect r;
-        if (!clipRect(mapRect(fit, v), pane, &r)) return;   // stays unused: end() hides it
+        if (!clipRect(px, pane, &r)) return;   // stays unused: end() hides it
+        style(i, r, img, tint, alpha);
+        show(i);
+        used[i] = true;
+    }
+    // Rect, fill, tint and alpha of label i in engine px with change-only setters; never touches visibility or the frame (no clip, no pane needed). For a
+    // canvas whose labels something else shows and hides (a frame listed on a modal page: the provider shows it with the modal).
+    void style(int i, const Rect& r, void* img, const float* tint, float alpha) {
+        if (i < 0 || i >= n || !w[i].c) return;
         Wid& x = w[i];
         Ops& o = ops();
         if (!x.rectSet || x.rect.x != r.x || x.rect.y != r.y || x.rect.w != r.w || x.rect.h != r.h) { o.setRect(x.c, r.x, r.y, r.w, r.h); x.rect = r; x.rectSet = true; }
@@ -196,8 +214,6 @@ struct Canvas {
             o.setTint(x.c, tint); x.tint[0] = tint[0]; x.tint[1] = tint[1]; x.tint[2] = tint[2]; x.tintSet = true;
         }
         if (x.alpha != alpha) { o.setAlpha(x.c, alpha); x.alpha = alpha; }
-        show(i);
-        used[i] = true;
     }
     // Text on a label already put this frame (centred captions: the caller sets the alignment once at build through the engine).
     void text(int i, const char* t) { if (inFrame && i >= 0 && i < n && w[i].c) ops().setText(w[i].c, t ? t : ""); }

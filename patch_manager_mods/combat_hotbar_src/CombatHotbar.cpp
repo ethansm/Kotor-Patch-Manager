@@ -916,8 +916,9 @@ void* g_pagePanel = nullptr;
 bool g_pvOn = false;              // canvas built, description split asked: the preview draws
 unsigned g_pvFrame = 0;
 bool g_pvLogged = false;
+char g_pvCaption[48] = "";
 
-constexpr const char* kPvFill = "uibit_fill_2bt";      // solid black, baked alpha 0.78 (same fill as the enemy strip preview)
+constexpr const char* kPvSolid = "uibit_fill_2wt";     // solid WHITE: the tint is the colour (the black 2bt fill cannot be tinted, bars drawn on it stay black)
 constexpr const char* kPvPill = "lbl_miscroll_f";      // the live pills' art
 constexpr const char* kPvIcons[3][4] = {               // placeholder entry icons per group (force power icons exist in the stock icon set); a miss falls back to a tinted fill
     {"ip_flurry", "ip_speedburst", "ip_knightspeed", "ip_cure"},
@@ -925,7 +926,8 @@ constexpr const char* kPvIcons[3][4] = {               // placeholder entry icon
     {"ip_armor", "ip_shield", "ip_mind", "ip_cure"},
 };
 constexpr float kPvGroupTint[3][3] = {{0.80f, 0.30f, 0.25f}, {0.25f, 0.50f, 0.85f}, {0.30f, 0.70f, 0.35f}};   // fallback fills: attacks red, powers blue, items green
-constexpr float kPvScreenTint[3] = {0.10f, 0.12f, 0.16f}, kPvBlack[3] = {0.f, 0.f, 0.f}, kPvHealth[3] = {0.75f, 0.12f, 0.12f}, kPvPillTint[3] = {0.035f, 0.415f, 0.34f};
+constexpr float kPvScreenTint[3] = {0.07f, 0.10f, 0.14f}, kPvNameTint[3] = {0.02f, 0.06f, 0.07f}, kPvHealth[3] = {0.80f, 0.12f, 0.12f}, kPvPillTint[3] = {0.035f, 0.415f, 0.34f};
+constexpr float kPvWhite[3] = {1.f, 1.f, 1.f};          // icons: an explicit white tint (a label keeps its last tint, so a fallback square's colour would stick)
 
 // resref -> image, pooled by imageForRetry once non-null; a miss is retried every 30th frame, at most 20 times, then given up.
 struct PvImg { const char* name; void* img; int tries; };
@@ -952,7 +954,8 @@ void pvRefresh() {
     s.cols = g_cfg.cols; s.maxRows = g_cfg.maxRows; s.capPad = g_cfg.capPad; s.sidePad = g_cfg.sidePad; s.hideEmpty = g_cfg.hideEmpty;
     s.btnPx = g_page.get(chpage::kRowSize); s.colsTotal = g_page.get(chpage::kRowCols); s.pad = g_page.get(chpage::kRowPad); s.groupGap = g_page.get(chpage::kRowGap);
     const chprev::Model m = chprev::build(g_demo, s);
-    if (!g_cv.begin(g_mcMenu.p, g_pagePanel, m.sw, m.sh)) { g_cv.hideAll(); return; }
+    const chprev::View vw = chprev::viewOf(m);
+    if (!g_cv.beginView(g_mcMenu.p, g_pagePanel, vw.x, vw.y, vw.w, vw.h)) { g_cv.hideAll(); return; }
     chprev::Prim pr[chprev::kMaxPrims];
     const int n = chprev::buildPrims(m, pr, chprev::kMaxPrims);
     int missing = 0;
@@ -960,18 +963,24 @@ void pvRefresh() {
         const chprev::Prim& p = pr[i];
         const pvc::Rect r = {p.r.x, p.r.y, p.r.w, p.r.h};
         switch (p.kind) {
-            case chprev::PK_SCREEN: g_cv.put(p.label, r, pvImage(kPvFill), kPvScreenTint, 1.f); break;
-            case chprev::PK_NAME: g_cv.put(p.label, r, pvImage(kPvFill), kPvBlack, 0.9f); break;
-            case chprev::PK_HEALTH: g_cv.put(p.label, r, pvImage(kPvFill), kPvHealth, 0.95f); break;
+            case chprev::PK_SCREEN: g_cv.put(p.label, r, pvImage(kPvSolid), kPvScreenTint, 1.f); break;
+            case chprev::PK_NAME: g_cv.put(p.label, r, pvImage(kPvSolid), kPvNameTint, 0.95f); break;
+            case chprev::PK_HEALTH: g_cv.put(p.label, r, pvImage(kPvSolid), kPvHealth, 1.f); break;
             case chprev::PK_PILL: g_cv.put(p.label, r, pvImage(kPvPill), kPvPillTint, p.alpha); break;
             default: {
                 void* img = pvImage(kPvIcons[p.group][p.slot & 3]);
-                if (img) g_cv.put(p.label, r, img, nullptr, p.alpha);
-                else { ++missing; g_cv.put(p.label, r, pvImage(kPvFill), kPvGroupTint[p.group], p.alpha); }
+                if (img) g_cv.put(p.label, r, img, kPvWhite, p.alpha);
+                else { ++missing; g_cv.put(p.label, r, pvImage(kPvSolid), kPvGroupTint[p.group], p.alpha); }
                 break;
             }
         }
     }
+    // a caption strip at the bottom of the pane says which screen and counts are drawn (the name bar carries no text: the 17 px bar cannot hold the font)
+    char cap[48];
+    snprintf(cap, sizeof cap, "%dx%d   %d / %d / %d shown", m.sw, m.sh, m.outN[0], m.outN[1], m.outN[2]);
+    if (strcmp(cap, g_pvCaption) != 0) { snprintf(g_pvCaption, sizeof g_pvCaption, "%s", cap); g_cv.text(chprev::kLblCaption, g_pvCaption); }
+    const int capH = 34, capPad = 6;
+    g_cv.putPx(chprev::kLblCaption, pvc::Rect{g_cv.pane.x + capPad, g_cv.pane.y + g_cv.pane.h - capH - capPad, g_cv.pane.w - 2 * capPad, capH}, pvImage(kPvSolid), kPvNameTint, 0.85f);
     g_cv.end();
     if (!g_pvLogged && g_pvFrame > 60) {   // once, after the lookups had time to settle: which placeholder icons resolved
         g_pvLogged = true;
@@ -991,9 +1000,35 @@ int32_t KPATCH_CALL pvModalChange(uint32_t page, int32_t row, int32_t requested,
     return requested;
 }
 
+// The modal's frame: two labels listed on the MODAL page (so the provider shows and hides them with the modal), made before the rows so the rows draw
+// above them: a dark fill and a teal border over the column pane. The rows lay out in a box inset by a padding inside it (NewModal's box).
+pvc::Canvas g_mf;
+constexpr float kPvFrameFill[3] = {0.02f, 0.05f, 0.06f}, kPvFrameEdge[3] = {0.10f, 0.58f, 0.62f};
+
+// Per tick while the modal is open (the provider shows the frame labels with it): follow the column pane. Never changes visibility.
+void pvFramePlace() {
+    if (!g_mf.ok() || !g_mcMenu.ok() || !g_pagePanel || !pvc::ops().isVisible(g_mf.w[0].c)) return;
+    K2MuiRect col = {0, 0, 0, 0};
+    if (!g_mcMenu.p->PaneRect(g_pagePanel, MUI_PANE_COLUMN, &col) || col.w <= 0 || col.h <= 0) return;
+    const pvc::Rect r = {col.x, col.y, col.w, col.h};
+    void* fill = pvImage(kPvSolid);
+    void* edge = pvImage(kPvPill);
+    if (fill) g_mf.style(0, r, fill, kPvFrameFill, 0.97f);
+    if (edge) g_mf.style(1, r, edge, kPvFrameEdge, 1.f);
+    for (int i = 0; i < 2; ++i) pvc::ops().setClickable(g_mf.w[i].c, false);
+}
+
 void pvBuildModal(const K2MenuUiApi* ui, uint32_t page) {
-    g_modalPage = ui->NewModal(page, nullptr, chpage::kModalTitle);
+    K2MuiRect col = {0, 0, 0, 0}, box = {0, 0, 0, 0};
+    const bool haveCol = ui->PaneRect(g_pagePanel, MUI_PANE_COLUMN, &col) && col.w > 0 && col.h > 0;
+    if (haveCol) {
+        const int pad = chprev::clampi(col.w / 20, 16, 48);
+        box = K2MuiRect{col.x + pad, col.y + pad, col.w - 2 * pad, col.h - 2 * pad};
+    }
+    g_modalPage = ui->NewModal(page, haveCol ? &box : nullptr, chpage::kModalTitle);
     if (!g_modalPage) { KP_LOGV(chMain, KPLOG_WARN, "PREVIEW: NewModal refused: no gear"); return; }
+    if (!g_mf.build(ui, g_pagePanel, g_modalPage, 2)) KP_LOGV(chMain, KPLOG_WARN, "PREVIEW: modal frame labels not made (%d of 2): the modal has no frame", g_mf.n);
+    KP_LOGV(chMain, KPLOG_INFO, "PREVIEW modal box=%d,%d,%d,%d col=%d,%d,%d,%d frame=%d", box.x, box.y, box.w, box.h, col.x, col.y, col.w, col.h, g_mf.ok() ? 1 : 0);
     bool all = true;
     for (int r = 0; r < chpage::MR_COUNT; ++r) {
         const chpage::ModalRowDef& d = chpage::kModalRows[r];
@@ -1015,12 +1050,11 @@ void pvBuildModal(const K2MenuUiApi* ui, uint32_t page) {
 
 // DeclHooks::onBuilt (the Options ctor window, after the rows): the preview labels, then the description split, then the modal and the gear.
 void pvOnBuilt(void*, uint32_t page, void* panel) {
-    g_pvOn = false; g_modalPage = 0; g_gearItem = -1; g_pagePanel = panel; g_pvFrame = 0; g_pvLogged = false;
+    g_pvOn = false; g_modalPage = 0; g_gearItem = -1; g_pagePanel = panel; g_pvFrame = 0; g_pvLogged = false; g_pvCaption[0] = 0;
     if (!g_mcMenu.hasModal() || !g_mcMenu.hasDescSplit()) { KP_LOGV(chMain, KPLOG_INFO, "PREVIEW skipped: provider has no modal / gear / description split (older mod-config); the four rows work as before"); return; }
     const K2MenuUiApi* ui = g_mcMenu.p;
     if (!g_cv.build(ui, panel, page, chprev::kPoolSize)) { KP_LOGV(chMain, KPLOG_WARN, "PREVIEW skipped: label pool not complete (%d of %d listed)", g_cv.n, chprev::kPoolSize); return; }
-    guikit::setAlign(g_cv.w[chprev::kLblName].c, 18);
-    pvc::ops().setText(g_cv.w[chprev::kLblName].c, "Sith Assassin");
+    guikit::setAlign(g_cv.w[chprev::kLblCaption].c, 18);
     if (!ui->SetDescSplit(page, chpage::kPreviewPermille)) { KP_LOGV(chMain, KPLOG_WARN, "PREVIEW skipped: SetDescSplit(%u, %d) refused (listed labels stay hidden)", page, chpage::kPreviewPermille); return; }
     pvBuildModal(ui, page);
     g_pvOn = true;
@@ -1030,16 +1064,19 @@ void pvOnBuilt(void*, uint32_t page, void* panel) {
 // Every Options draw while the page is shown: the gear opens the modal, then the preview redraws from the page's current rows and the demo.
 void pvOnTick(void*) {
     if (g_pvOn && g_gearItem >= 0 && g_modalPage && g_mcMenu.ok() && g_mcMenu.p->Clicked(g_page.page, g_gearItem)) g_mcMenu.p->SetModalOpen(g_modalPage, 1);
+    pvFramePlace();
     pvRefresh();
 }
 
 // Options dtor entry (mod-config has unlinked its controls by now): free the preview labels it listed MUI_NOFREE, then the declarative page's own teardown.
 void KPATCH_CALL pvDestroy(void* panel, void* user) {
     if (g_mcMenu.ok()) {
+        const int freedF = g_modalPage ? g_mf.destroy(g_mcMenu.p, g_modalPage) : 0;   // the modal page's frame labels
         const int freed = g_cv.destroy(g_mcMenu.p, g_page.page);
-        if (freed) KP_LOGV(chMain, KPLOG_INFO, "PREVIEW DESTROY freed=%d", freed);
+        if (freed || freedF) KP_LOGV(chMain, KPLOG_INFO, "PREVIEW DESTROY freed=%d frame=%d", freed, freedF);
     } else {
         g_cv.reset();
+        g_mf.reset();
     }
     g_pvOn = false; g_modalPage = 0; g_gearItem = -1; g_pagePanel = nullptr;
     mcdecl::Page::cbDestroy(panel, user);

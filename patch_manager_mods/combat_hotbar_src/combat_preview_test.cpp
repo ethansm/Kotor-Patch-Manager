@@ -130,6 +130,22 @@ int main() {
       s.hideEmpty = 0; m = build(d, s); const int n2 = buildPrims(m, pr, kMaxPrims); int pills = 0; for (int i = 0; i < n2; ++i) if (pr[i].kind == PK_PILL) ++pills; KT_CHECK_EQ(pills, 3);
       // all empty: only the backdrop and the banner
       Demo e; e.count[0] = e.count[1] = e.count[2] = 0; m = build(e, Settings()); KT_CHECK_EQ(buildPrims(m, pr, kMaxPrims), 3); }
+    // ---- the zoomed view: the top-centre 760 x 420 (1080p units) of every screen, fixed per preset, and the whole HUD of the default page lies inside it ----
+    for (int sc = 0; sc < kNumScreens; ++sc) {
+        Demo d; d.count[0] = 8; d.count[1] = 8; d.count[2] = 8; d.screen = sc; Settings s;   // default page: cols 2 x 4 rows = 8 per group, full
+        Model m = build(d, s); const View v = viewOf(m);
+        KT_CHECK_EQ(v.w, scaled(760, m.sh)); KT_CHECK_EQ(v.h, scaled(420, m.sh)); KT_CHECK_EQ(v.y, 0); KT_CHECK_EQ(v.x + v.w / 2, m.sw / 2);
+        KT_CHECK(v.x >= 0 && v.x + v.w <= m.sw && v.h <= m.sh);
+        Prim pr[kMaxPrims]; const int n = buildPrims(m, pr, kMaxPrims);
+        for (int i = 0; i < n; ++i) {
+            if (pr[i].kind == PK_SCREEN) continue;
+            KT_CHECK(pr[i].r.x >= v.x && pr[i].r.x + pr[i].r.w <= v.x + v.w);      // every banner / pill / button is fully inside the view
+            KT_CHECK(pr[i].r.y >= v.y && pr[i].r.y + pr[i].r.h <= v.y + v.h);
+        }
+        Demo e; e.screen = sc; const View ve = viewOf(build(e, s));                // the view never depends on the counts
+        KT_CHECK(ve.x == v.x && ve.y == v.y && ve.w == v.w && ve.h == v.h);
+    }
+    KT_CHECK_EQ(kLblCaption, kLblBtn + 3 * kDrawPerGroup); KT_CHECK_EQ(kPoolSize, kLblCaption + 1);   // the caption label is the last one, put by the glue
     // the pool plus the page's rows and gear fit mod-config's 80 items per page (4 steppers x 3 items + 1 gear)
     KT_CHECK(kPoolSize + 4 * 3 + 1 <= 80);
     KT_CHECK(g_cases > 1000);

@@ -106,7 +106,19 @@ inline Model build(const Demo& demo, const Settings& s) {
 // live HUD adds a frame label under it, which the page's 80-item cap cannot afford). Entries are capped at 16 per group by the live ordering anyway.
 enum PrimKind { PK_SCREEN = 0, PK_NAME, PK_HEALTH, PK_PILL, PK_BUTTON };
 constexpr int kLblScreen = 0, kLblName = 1, kLblHealth = 2, kLblPill = 3, kLblBtn = 6, kDrawPerGroup = 16;
-constexpr int kPoolSize = kLblBtn + 3 * kDrawPerGroup;   // 54 labels
+constexpr int kLblCaption = kLblBtn + 3 * kDrawPerGroup;   // 54: a text caption under everything else's feet, put by the glue in pane px (not a Prim)
+constexpr int kPoolSize = kLblCaption + 1;                 // 55 labels
+
+// The part of the virtual screen the preview shows: the top-centre area where the target menu lives, 760 x 420 units of a 1080p screen (scaled by
+// height, clamped to the screen). Fixed per screen preset (it never depends on the counts), so the menu does not jump when entries come and go.
+struct View { int x, y, w, h; };
+inline View viewOf(const Model& m) {
+    View v;
+    v.w = scaled(760, m.sh); if (v.w > m.sw) v.w = m.sw;
+    v.h = scaled(420, m.sh); if (v.h > m.sh) v.h = m.sh;
+    v.x = m.sw / 2 - v.w / 2; v.y = 0;
+    return v;
+}
 constexpr int kMaxPrims = kPoolSize;
 struct Prim { int label; int kind; ch::Rect r; int group; int slot; float alpha; };
 
