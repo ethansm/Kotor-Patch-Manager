@@ -3,11 +3,11 @@
 
 Usage: holster_log_check.py [LOG | --log LOG] [--new [--no-advance] [--state PATH]]
   Default log: ~/.local/share/Steam/steamapps/common/Knights of the Old Republic II/holster_log.txt
-  Report (at most 43 lines): header, status (loaded / cap reached / BONETEST), COMB edges per creature (plus unreadable=N for `old=? edge=?` lines), ATTACH tags and
-  (body, handleR, handleL) tuples per creature, SWAP total, GOBREUSE total, FLOURISH open/close, SLIDE start/end (draw/stow split, frames min/max, maxdt max), ANIMRES and ANIMSEND id histograms, GOB samples per gob
+  Report (at most 46 lines): header, status (loaded / cap reached / BONETEST), COMB edges per creature (plus unreadable=N for `old=? edge=?` lines), ATTACH tags and
+  (body, handleR, handleL) tuples per creature, SWAP total, GOBREUSE total, FLOURISH open/close, SLIDE start/end (draw/stow split, frames min/max, maxdt max), PARTYHOLD on/off, MOVEHOLD total, DELAY cuts (combat/flourish), ANIMRES and ANIMSEND id histograms, GOB samples per gob
   (the 8 with the most samples: parent18, pos min/max/mean per axis, quat min/max per component, mean-quat angle),
   PLACE (only when PLACE lines exist: count, gobvt histogram, quat1 unit-norm check, last pos0/quat0 -> pos1/quat1 for the
-  4 gobs with the most samples; the GOB view then drops to 4 gobs so the report stays within 43 lines).
+  4 gobs with the most samples; the GOB view then drops to 4 gobs so the report stays within 46 lines).
   --new: only lines after the bookmark shared with log_triage (same state file, keyed by absolute path), then advance it.
   Exit 0 = analyzed, 2 = log missing ("no log: <path>").
 
@@ -33,7 +33,7 @@ import log_triage as LT  # noqa: E402  (--new bookmark: same state file and help
 
 DEFAULT_LOG = Path.home() / ".local/share/Steam/steamapps/common/Knights of the Old Republic II/holster_log.txt"
 CAPS = {"comb": 4, "attach": 3, "tuples": 3, "tags": 5, "ids": 10, "gobs": 8,
-        "gobs_with_place": 4, "place_gobs": 4}   # GOB view and PLACE view both shrink so the report stays <= 43 lines
+        "gobs_with_place": 4, "place_gobs": 4}   # GOB view and PLACE view both shrink so the report stays <= 46 lines
 UNIT_TOL = 2e-3   # PLACE quat1 |norm-1| limit: the DLL enforces 1e-3 (poseSane); %.3f printing adds up to ~1e-3 rounding
 HEX = r"[0-9a-fA-F]+"
 INT = r"-?\d+"
@@ -78,6 +78,10 @@ MAIN_RES = {
     "owner": re.compile(r"\bPLACENODE .*\btarget=1 .*\bowner=(\w+) body=(\S+)"),
     "preview": re.compile(r"\bPREVIEWNODE gob=\w+ node=\w+ name=(\w+) parent=(\w+) owner=(\w+) body=(\S+) mname=(\S+) cat=(\w+) gobvt=(\w+) tid=(\d+)"),
     "camnode": re.compile(r"\bCAMNODE parent=(\w+) pmodel=(\S+) pvt=\w+ pparent=(\w+) ppmodel=(\S+) ppvt=\w+ camhook_p=(\w+) camhook_pp=(\w+)"),
+    # toggle-channel events (Holster.cpp); counted from the raw line, never skipped: a malformed line simply does not count
+    "partyhold": re.compile(r"\bPARTYHOLD (on|off) n=\d+"),
+    "movehold": re.compile(r"\bMOVEHOLD slot=-?\d+ skip cut \(moving\)"),
+    "delay": re.compile(r"\bDELAY slot=-?\d+ cut before=\d+ elapsed=\d+ kind=(combat|flourish) wrote=1\b"),
     "node": re.compile(r"\bPLACENODE node=\w+ gob=\w+ t=(\d+) step=(-?\d+) name=(\S+) target=(\d)(?: bvt=(\w+))?(?: gname=(\S+) mname=(\S+))?(?: cat=(\w+))?"),
 }
 
@@ -123,7 +127,7 @@ def parse_lines(window):
     """window: [(line_no, raw)] -> (records in log order, skipped [(line_no, kind, text)], main facts)."""
     recs, skipped = [], []
     main = {"loaded": [], "cap": [], "bonetest": Counter(), "unreadable": 0, "tid": {}, "reload": [], "tune": [], "refuse": {}, "node": Counter(), "mount": Counter(),
-            "owner": Counter(), "combc": set(),
+            "owner": Counter(), "combc": set(), "partyhold": Counter(), "movehold": 0, "delay": Counter(),
             "preview": [], "camnode": [], "wmname": set()}
     for n, raw in window:
         text = raw.strip()
@@ -155,6 +159,14 @@ def parse_lines(window):
                    + (" cat=%s" % m.group(8) if m.group(8) else "")] += 1
         if m and m.group(4) == "1" and m.group(7):
             main["wmname"].add(m.group(7).lower())
+        m = MAIN_RES["partyhold"].search(text)
+        if m:
+            main["partyhold"][m.group(1)] += 1
+        if MAIN_RES["movehold"].search(text):
+            main["movehold"] += 1
+        m = MAIN_RES["delay"].search(text)
+        if m:
+            main["delay"][m.group(1)] += 1
         m = MAIN_RES["preview"].search(text)
         if m:
             main["preview"].append(m.groups())
@@ -400,6 +412,13 @@ def _events(recs):
     return ["GOBREUSE total=%d" % reuse, "FLOURISH open=%d close=%d" % (fl["open"], fl["close"]), line]
 
 
+def _toggle_events(f):
+    """PARTYHOLD / MOVEHOLD / DELAY one-liners (always printed, so a 0 is a scanned zero)."""
+    ph, dl = f.get("partyhold", Counter()), f.get("delay", Counter())
+    return ["PARTYHOLD on=%d off=%d" % (ph["on"], ph["off"]), "MOVEHOLD total=%d" % f.get("movehold", 0),
+            "DELAY cuts=%d combat=%d flourish=%d" % (sum(dl.values()), dl["combat"], dl["flourish"])]
+
+
 def render(recs, skipped, main_facts, nlines, meta):
     has_place = any(r["kind"] == "PLACE" for r in recs) or any(k == "PLACE" for _, k, _ in skipped)
     out = ["HOLSTER lines=%d parsed=%d skipped=%d%s" % (nlines, len(recs), len(skipped), meta), _status(main_facts)]
@@ -412,6 +431,7 @@ def render(recs, skipped, main_facts, nlines, meta):
     out += _attach(recs)
     out.append("SWAP total=%d" % sum(1 for r in recs if r["kind"] == "SWAP"))
     out += _events(recs)
+    out += _toggle_events(main_facts)
     out.append(_hist("ANIMRES", recs))
     styles = Counter((r["self"], r["style"], r["gate"]) for r in recs if r["kind"] == "ANIMRES")
     if styles:   # C6: +0xC5 = wield style byte, +0xC6 = table gate; one entry per creature and value

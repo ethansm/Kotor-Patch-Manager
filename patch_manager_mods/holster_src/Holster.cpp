@@ -1,4 +1,4 @@
-// Holster.cpp -- holster 0.5.2-dev (Steam build): P0 probe for the holstered-weapons mod (patch_manager_mods/42_holstered_weapons.md).
+// Holster.cpp -- holster 0.6.0-dev (Steam build): P0 probe for the holstered-weapons mod (patch_manager_mods/42_holstered_weapons.md).
 // Plan: .claude/plans/holstered_weapons.md. Handlers are plain extern "C" void __cdecl functions; the detour wrappers in
 // kotor2-steam-aspyr.hooks.toml call them at function entry with the game arguments BEFORE the stolen bytes run.
 // Hard rules for P0 (exceptions, both default off: the bone_test code patch, and HolsterPlace's 28-byte pose write with probe=1 bone_test=1 place=1): no other writes to game memory or registers, no engine calls, reads only through saferead, and every handler returns at
@@ -31,6 +31,7 @@
 #include "HolsterAnimStyle.h"
 #include "HolsterToggle.h"
 #include "HolsterDelay.h"
+#include "HolsterMove.h"
 #include "Party.h"
 #include "HolsterPreview.h"
 #include "HolsterApi.h"
@@ -69,6 +70,10 @@ static bool g_flourishDraw = true;
 // direction; 0 and 0 = the 0.5.0 snap exactly. Clamped by clampDrawSlideMs (0..570, the vanilla draw window) / clampStowSlideMs (0..1000).
 static uint32_t g_drawSlideMs = 350;
 static uint32_t g_stowSlideMs = 350;
+// move_hold_ms (0.6.0-dev): no DELAY cut while the creature is moving (a walk / run animation resolved for it, HolsterMove.h MoveTable) and for this many ms after
+// it stops; 0 = off (the 0.5.x behaviour). party_combat_hold (0.6.0-dev): 1 = while ANY party member's client combat flag is set, every party member's weapons stay drawn.
+static uint32_t g_moveHoldMs = 1500;
+static bool g_partyCombatHold = true;
 // Toggle-key draw hold (0.3.0-dev, HolsterDrawGate.h holdActive): the owner (client creature) whose weapons stay in the hand until g_holdUntil (GetTickCount ms,
 // wrap-safe). Written by the tick (g_holdUntil first, then g_holdOwner), read by HolsterPlace. 0 owner = no hold.
 static volatile uintptr_t g_holdOwner = 0;
@@ -312,6 +317,17 @@ static void readConfig() {
                 if (!_stricmp(key, "draw_slide_ms")) g_drawSlideMs = hs::clampDrawSlideMs(v);
                 else g_stowSlideMs = hs::clampStowSlideMs(v);
             }
+            else if (!_stricmp(key, "move_hold_ms")) {
+                char* end = nullptr;
+                const long v = strtol(val, &end, 10);
+                if (end != val && *end == 0) g_moveHoldMs = static_cast<uint32_t>(v < 0 ? 0 : (v > 10000 ? 10000 : v));
+                else cfgWarn(key, val, "not a number, keeping the default 1500");
+            }
+            else if (!_stricmp(key, "party_combat_hold")) {
+                bool b = true;
+                if (hs::tuneParseBool(val, b)) g_partyCombatHold = b;
+                else cfgWarn(key, val, "not a boolean word, keeping the default 1");
+            }
             else if (!_stricmp(key, "delay_party")) {
                 bool b = true;
                 if (hs::tuneParseBool(val, b)) g_delayParty = b;
@@ -463,7 +479,11 @@ static hs::HolsterSet g_holSet;
 
 static void maybeReload();
 
+// 0.6.0-dev: last locomotion sighting per creature (the resolver runs every frame for every animated creature). Single writer (the game thread), read by the tick.
+static hs::MoveTable g_move;
+
 extern "C" void __cdecl HolsterAnimResolve(void* self, uint32_t animId) {
+    if (g_moveHoldMs > 0 && hs::isLocoAnim(animId)) g_move.note(reinterpret_cast<uintptr_t>(self), GetTickCount());   // before every early return; no reads, no logging
     if (g_probe) maybeReload();   // the resolver runs every frame; the 0x5047B0 handler only on attach events (live test 10-15: GOB lines=12)
     if (!g_onAnim || !animInteresting(animId)) return;
     // Quiet mode: 4 lines per id and 32 first-sightings of (creature, id, style); log_verbose=1: 20 and 64.
@@ -533,6 +553,7 @@ struct PartyCache {
     int n;
 };
 static PartyCache g_party = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, 0};
+static volatile LONG g_partyCombat = 0;   // 0.6.0-dev: any party member's client combat flag is set (holsterTick, 250 ms); read by HolsterPlace
 static hs::Throttle g_delayThrottle[3];
 static hs::KeyCounts<8> g_tickKeys;
 
@@ -604,6 +625,33 @@ static void refreshParty() {
         }
     }
     g_party = p;
+}
+
+// 0.6.0-dev: the owner is one of the cached party members (client creature).
+static bool ownerIsParty(uintptr_t owner) {
+    if (owner == 0) return false;
+    for (int i = 0; i < g_party.n && i < 3; ++i)
+        if (g_party.cli[i] == owner) return true;
+    return false;
+}
+
+// 0.6.0-dev party combat hold: recompute g_partyCombat from the cached members' client combat flags (unreadable counts as 0); log the edges.
+static void refreshPartyCombat() {
+    const int combatOff = k2addr::off(&K2AddrTable::Creature_ClientCombat);
+    uint32_t flags[3] = {0, 0, 0};
+    const int n = g_party.n < 3 ? g_party.n : 3;
+    if (combatOff != 0) {
+        saferead::beginScope();
+        for (int i = 0; i < n; ++i) {
+            uint32_t f = 0;
+            flags[i] = (g_party.cli[i] != 0 && rdU32Ok(kSiteTick, g_party.cli[i], combatOff, &f)) ? f : 0u;
+        }
+    }
+    const LONG on = hs::anyCombat(flags, n) ? 1 : 0;
+    if (on == g_partyCombat) return;
+    InterlockedExchange(&g_partyCombat, on);
+    static volatile LONG s_lines = 0;
+    if (InterlockedIncrement(&s_lines) <= 40 && tickLogOk()) KP_LOG(chToggle, "PARTYHOLD %s n=%d", on ? "on" : "off", n);
 }
 
 // HW13 flourish window for one client owner creature (called from HolsterPlace). Party members only; the server creature is re-validated against the cached
@@ -699,6 +747,18 @@ static void runDelay(DWORD now) {
         in.clientKnown = true;
         in.serverReadable = true;
         const hs::DelayAct a = hs::delayGate(in, g_delayCfg);
+        // 0.6.0-dev move hold: a creature that is walking / running (or stopped less than move_hold_ms ago) keeps its stance; the cut waits.
+        static bool s_moveLogged[3] = {false, false, false};
+        static volatile LONG s_moveLines = 0;
+        const bool moving = hs::moveHoldBlocksCut(g_moveHoldMs > 0, g_move.movedWithin(C, static_cast<uint32_t>(now), g_moveHoldMs));
+        if (!moving) s_moveLogged[i] = false;
+        if (a == hs::DelayNeedHostileCheck && moving) {
+            if (!s_moveLogged[i]) {
+                s_moveLogged[i] = true;
+                if (InterlockedIncrement(&s_moveLines) <= 40 && tickLogOk()) KP_LOG(chToggle, "MOVEHOLD slot=%d skip cut (moving)", i);
+            }
+            continue;
+        }
         if (a != hs::DelayNeedHostileCheck || !g_delayThrottle[i].due(now)) continue;
         bool hostile = false;
         if (!hostileScan(S, &hostile)) {   // scan could not run: fail closed, retry after the back-off
@@ -761,13 +821,13 @@ static void holsterTick() {
     if (!g_boneTest || !drawgateMode()) return;
     const bool keyOn = g_toggleKey != 0;
     const bool delayOn = g_delayCfg.combatExitMs > 0 || g_delayCfg.flourishExitMs > 0;
-    if (!keyOn && !delayOn && !g_flourishDraw) return;   // flourish_draw alone still needs the 250 ms party cache
+    if (!keyOn && !delayOn && !g_flourishDraw && !g_partyCombatHold) return;   // flourish_draw / party_combat_hold alone still need the 250 ms party cache
     static volatile LONG s_busy = 0;
     if (InterlockedCompareExchange(&s_busy, 1, 0) != 0) return;   // never re-enter (e.g. from inside an engine call)
     static DWORD s_partyAt = 0, s_delayAt = 0, s_keyAt = 0;
     static hs::KeyEdge s_edge;
     const DWORD now = GetTickCount();
-    if (tickDue(s_partyAt, now, 250)) refreshParty();
+    if (tickDue(s_partyAt, now, 250)) { refreshParty(); if (g_partyCombatHold) refreshPartyCombat(); }
     if (delayOn && tickDue(s_delayAt, now, 100)) runDelay(now);
     if (keyOn && tickDue(s_keyAt, now, 16)) {
         const bool down = winForeground() && (user32Fns().getAsyncKey(g_toggleKey) & 0x8000) != 0;
@@ -1281,7 +1341,8 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
         uint32_t combat = 0;
         const bool readable = owner != 0 && combatOff != 0 && rdU32Ok(kSitePlace, owner, combatOff, &combat);
         const bool hip = hs::shouldWriteHip(true, readable, combat,
-                                        hs::holdActive(owner, g_holdOwner, g_holdUntil, GetTickCount()) || (g_flourishDraw && readable && combat == 0 && flourishOpenFor(owner)));
+                                        hs::holdActive(owner, g_holdOwner, g_holdUntil, GetTickCount()) || (g_flourishDraw && readable && combat == 0 && flourishOpenFor(owner)) ||
+                                        (g_partyCombatHold && g_partyCombat != 0 && ownerIsParty(owner)));
         if (readable) {   // HW15 probe: track which owners have a weapon on the hip (read by the ANIMRES line)
             if (hip) { const uintptr_t hb = rdU32(kSitePlace, owner, 0x68); if (hb) g_holSet.touch(owner, hb, GetTickCount()); }
             else g_holSet.remove(owner);
@@ -1728,15 +1789,16 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     addName(names, sizeof(names), g_onGob, "gob");
     addName(names, sizeof(names), g_onPlace, "place");
     addName(names, sizeof(names), g_onToggle, "toggle");
-    KP_LOG(chMain, "holster 0.5.2-dev loaded (P0 probe, log-only): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_probe ? 1 : 0,
+    KP_LOG(chMain, "holster 0.6.0-dev loaded (P0 probe, log-only): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_probe ? 1 : 0,
            names[0] ? names : "none", static_cast<long>(g_maxLines), g_gobEvery, k2addr::get() ? "ok" : "none");
     {
         hs::TuneCfg t;
         LONG seq = 0;
         (void)loadTuneIfChanged(t, seq);
-        KP_LOG(chMain, "CONFIG toggle_key=0x%x draw_hold_ms=%u combat_exit_ms=%d flourish_exit_ms=%d hostile_range=%.1f hostile_backoff_ms=%u delay_party=%d flourish_draw=%d draw_slide_ms=%u stow_slide_ms=%u (active=%d: needs probe=1, bone_test=1 and place_mode=drawgate)",
+        KP_LOG(chMain, "CONFIG toggle_key=0x%x draw_hold_ms=%u combat_exit_ms=%d flourish_exit_ms=%d hostile_range=%.1f hostile_backoff_ms=%u delay_party=%d flourish_draw=%d draw_slide_ms=%u stow_slide_ms=%u move_hold_ms=%u party_combat_hold=%d (active=%d: needs probe=1, bone_test=1 and place_mode=drawgate)",
                static_cast<unsigned>(g_toggleKey), static_cast<unsigned>(g_drawHoldMs), g_delayCfg.combatExitMs, g_delayCfg.flourishExitMs, static_cast<double>(g_hostileRange),
-               static_cast<unsigned>(g_hostileBackoffMs), g_delayParty ? 1 : 0, g_flourishDraw ? 1 : 0, static_cast<unsigned>(g_drawSlideMs), static_cast<unsigned>(g_stowSlideMs), (g_boneTest && drawgateMode()) ? 1 : 0);
+               static_cast<unsigned>(g_hostileBackoffMs), g_delayParty ? 1 : 0, g_flourishDraw ? 1 : 0, static_cast<unsigned>(g_drawSlideMs), static_cast<unsigned>(g_stowSlideMs), static_cast<unsigned>(g_moveHoldMs),
+               g_partyCombatHold ? 1 : 0, (g_boneTest && drawgateMode()) ? 1 : 0);
         KP_LOG(chMain, "PLACEMODE %s (active=%d: needs probe=1 and bone_test=1)", hs::placeModeName(g_placeMode), g_boneTest ? 1 : 0);
         KP_LOG(chMain, "CONFIG left_extra_rot=%.1f bone_test_left=%d (ini=%d, active=%d: needs probe=1 and bone_test=1) log_verbose=%d", static_cast<double>(t.leftExtra),
                g_boneLeftCfg ? 1 : 0, g_boneLeftCfg ? 1 : 0, g_boneLeft ? 1 : 0, g_logVerbose ? 1 : 0);

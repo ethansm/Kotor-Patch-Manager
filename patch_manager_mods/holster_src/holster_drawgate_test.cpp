@@ -38,6 +38,9 @@ static void testFlourishWindowArg() {
     KT_CHECK(shouldWriteHip(true, true, 0, windowShut));     // window closed again: hip
     KT_CHECK(!shouldWriteHip(true, false, 0, windowOpen));   // unreadable owner: hand
     KT_CHECK(!shouldWriteHip(true, false, 0, windowShut));
+    // 0.6.0-dev: the party combat hold feeds the same 4th argument (ownerIsParty && any member in combat): a member with combat 0 keeps the hand while the hold is on.
+    const bool partyHold = true;
+    KT_CHECK(!shouldWriteHip(true, true, 0, partyHold));
     KT_CHECK(!shouldWriteHip(true, true, 1, windowOpen));    // combat flag set: hand either way
     KT_CHECK(shouldWriteHip(false, true, 0, windowOpen));    // repoint mode ignores the window (old behaviour)
     // the window is combined with the toggle hold by OR: either one keeps the hand

@@ -92,7 +92,7 @@ def fixture():
 
 
 def worst_case():
-    """Every section over its cap, plus one unparsable COMB line. The report must stay at 43 lines (40 + the 3 GOBREUSE/FLOURISH/SLIDE lines)."""
+    """Every section over its cap, plus one unparsable COMB line. The report must stay at 46 lines (40 + 3 GOBREUSE/FLOURISH/SLIDE lines + 3 PARTYHOLD/MOVEHOLD/DELAY lines)."""
     bodies = [LOADED, BONE]
     bodies += [comb(0x100 + c, 0, 1, 1) for c in range(6)]                       # 6 creatures, 4 shown
     for c in range(5):
@@ -265,10 +265,10 @@ class ReportTests(unittest.TestCase):
         self.assertIn("  gob=0xa09 samples=10 parent18=0x1 sign_flips=0 rot_mean=0.00 deg", out)
         self.assertFalse(any(s.startswith("  gob=0xa00 ") or s.startswith("  gob=0xa01 ") for s in out))
 
-    def test_worst_case_is_capped_at_43_lines(self):
+    def test_worst_case_is_capped_at_46_lines(self):
         rc, out = run_log(worst_case())
         self.assertEqual(rc, 0)
-        self.assertEqual(len(out), 43)
+        self.assertEqual(len(out), 46)
         self.assertIn("COMB edges=6 creatures=6 (top 4 shown)", out)
         self.assertIn("ATTACH n=20 creatures=5 tags: 't'=20 (first 3 creatures shown)", out)
         self.assertTrue(any(s.startswith("ANIMRES n=12 distinct=12 top10:") and "(+2 more ids) | style per creature" in s for s in out))
@@ -325,10 +325,10 @@ class PlaceTests(unittest.TestCase):
     def test_unrelated_place_words_are_ignored(self):
         self.assertEqual(parse(["PLACED ok", "PLACEHOLDER n=1"])[:2], ([], []))
 
-    def test_place_view_caps_gobs_and_report_stays_within_43_lines(self):
+    def test_place_view_caps_gobs_and_report_stays_within_46_lines(self):
         rc, out = run_log(worst_case()[:-1] + place_worst() + [CAP])
         self.assertEqual(rc, 0)
-        self.assertLessEqual(len(out), 43)
+        self.assertLessEqual(len(out), 46)
         self.assertIn("GOB lines=55 gobs=10 (top 4 by samples shown)", out)
         self.assertIn("PLACE lines=31 gobs=6 (top 4 by samples shown) gobvt distinct=12: 0x10 x4, 0x11 x3, 0x12 x3, "
                       "0x13 x3, 0x14 x3, 0x15 x3, 0x16 x2, 0x17 x2, 0x18 x2, 0x19 x2 (+2 more)", out)
@@ -525,6 +525,60 @@ class EventTests(unittest.TestCase):
     def test_existing_gob_and_events_do_not_collide(self):
         recs, _, _ = parse([gob_line(1, 0x9000, 0x1, (0.0, 0.0, 0.0), (1.0, 0.0, 0.0, 0.0)), gob_reuse()])
         self.assertEqual([r["kind"] for r in recs], ["GOB", "GOBREUSE"])
+
+
+def party_hold(state="on", n=1):
+    return "PARTYHOLD %s n=%d" % (state, n)
+
+
+def move_hold(slot=0):
+    return "MOVEHOLD slot=%d skip cut (moving)" % slot
+
+
+def delay_cut(kind="combat", wrote=1):
+    return "DELAY slot=0 cut before=6486 elapsed=1514 kind=%s wrote=%d" % (kind, wrote)
+
+
+class ToggleEventTests(unittest.TestCase):
+    """PARTYHOLD / MOVEHOLD / DELAY report lines."""
+
+    def test_planted_positive_movehold(self):
+        rc, out = run_log([move_hold()])
+        self.assertEqual(rc, 0)
+        self.assertIn("MOVEHOLD total=1", out)
+
+    def test_planted_negative_movehold_and_all_zero(self):
+        rc, out = run_log([swap()])
+        self.assertIn("MOVEHOLD total=0", out)
+        self.assertIn("PARTYHOLD on=0 off=0", out)
+        self.assertIn("DELAY cuts=0 combat=0 flourish=0", out)
+
+    def test_partyhold_counts(self):
+        rc, out = run_log([party_hold("on", 1), stamped(party_hold("off", 0)), party_hold("on", 2)])
+        self.assertIn("PARTYHOLD on=2 off=1", out)
+
+    def test_movehold_counts_with_stamp(self):
+        rc, out = run_log([move_hold(0), stamped(move_hold(1)), move_hold(0)])
+        self.assertIn("MOVEHOLD total=3", out)
+
+    def test_delay_counts_by_kind_and_wrote(self):
+        rc, out = run_log([delay_cut("combat"), stamped(delay_cut("flourish")), delay_cut("combat"), delay_cut("combat", wrote=0)])
+        self.assertIn("DELAY cuts=3 combat=2 flourish=1", out)
+
+    def test_malformed_lines_ignored(self):
+        bad = ["PARTYHOLD maybe n=1", "PARTYHOLD on", "MOVEHOLD slot=x skip cut (moving)", "MOVEHOLD slot=0 skip cut",
+               "DELAY slot=0 cut before=1 elapsed=2 kind=other wrote=1", "DELAY slot=0 cut before=a elapsed=2 kind=combat wrote=1",
+               "DELAY slot=0 cut before=1 elapsed=2 kind=combat", "PARTYHOLD", "MOVEHOLD", "DELAY"]
+        rc, out = run_log(bad + [party_hold("off", 0), move_hold(), delay_cut("flourish")])
+        self.assertEqual(rc, 0)
+        self.assertIn("PARTYHOLD on=0 off=1", out)
+        self.assertIn("MOVEHOLD total=1", out)
+        self.assertIn("DELAY cuts=1 combat=0 flourish=1", out)
+        self.assertTrue(any(l.startswith("HOLSTER lines=13 parsed=0 skipped=0") for l in out), out)
+
+    def test_toggle_events_do_not_become_records(self):
+        recs, skipped, _ = parse([party_hold(), move_hold(), delay_cut()])
+        self.assertEqual((recs, skipped), ([], []))
 
 
 if __name__ == "__main__":
