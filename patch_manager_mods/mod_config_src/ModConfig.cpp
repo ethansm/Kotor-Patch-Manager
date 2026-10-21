@@ -2196,7 +2196,8 @@ namespace {
 // logged (KEYEV) so the event id of Esc is confirmed from the log; the McTick Esc edge stays as the fallback (reset to MAIN) when the hook did not act.
 constexpr int kVtKeySlot = 15;   // 0x8A2070 is stored at 0x9A7058 = 0x9A701C + 15*4 (slot 14 is 0x40E770, the per-frame update)
 constexpr uint32_t kKeyHandlerOrig = static_cast<uint32_t>(gameaddr::OptionsInGameKeyHandler);
-constexpr int kEscEventId = 0x2a;
+constexpr int kEscEventId = 0x2a;       // the close case in the handler switch
+constexpr int kEscKeyDownId = 0x28;     // what Esc actually delivers (KEYEV log 10-21: id=28 state=1 with Esc held)
 using KeyFn = void(__fastcall*)(void* self, void* edx, int id, int state);
 KeyFn g_keyOrig = nullptr;
 bool g_escHooked = false;
@@ -2220,7 +2221,7 @@ void __fastcall escKeyHook(void* self, void* edx, int id, int state) {
     const bool held = escHeld();
     if (InterlockedIncrement(&s_n) <= 120)
         KP_LOG(chInput, "KEYEV id=%02x state=%d page=%d esc=%d", id, state, g_mc.appended ? curPageId() : -1, held ? 1 : 0);
-    if (id == kEscEventId && state != 0 && held && escStepBack()) {
+    if ((id == kEscKeyDownId || id == kEscEventId) && state != 0 && held && escStepBack()) {
         g_escConsumedAt = GetTickCount();
         return;   // swallowed: the GUI stays open
     }
@@ -2506,7 +2507,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
     embtex::g_log = embedLog;   // gear + slider art textures (EmbedTex) log through the main channel
     guikit::initGuiInput(api, "mod-config");   // optional: the wheel provider (k2.guiinput); a missing provider only means no wheel
-    KP_LOG(chMain, "mod-config 0.4.1-dev loaded (Mod Configuration button under Gameplay; k2.modconfig@1 + k2.menuui@1; config mod_config.ini is read at the first Options panel: enabled debug button_clone reflow desc free_labels)");
+    KP_LOG(chMain, "mod-config 0.4.2-dev loaded (Mod Configuration button under Gameplay; k2.modconfig@1 + k2.menuui@1; config mod_config.ini is read at the first Options panel: enabled debug button_clone reflow desc free_labels)");
     int rcC = -1, rcM = -1;
     if (api && api->struct_size >= offsetof(KPatchApi, require) + sizeof(api->require) && api->provide) {
         rcC = api->provide(K2MODCONFIG_IFACE, K2MODCONFIG_VERSION, &g_mcApi);
