@@ -146,7 +146,7 @@ static void testGeometries() {
         }
         // the view is enlarged: it contains the original rect's width range and keeps a sane height
         KT_CHECK(L.view.x < g.view.x);
-        KT_CHECK(L.view.x + L.view.w == g.preview.x - v3::kPad);   // kPad short of the preview (the scaled view rects can end closer than that)
+        KT_CHECK(L.view.x + L.view.w == g.preview.x - kV3ViewGap);   // kV3ViewGap short of the preview (the scaled view rects can end closer than that)
         KT_CHECK(L.view.y > g.view.y && L.view.y + L.view.h < g.view.y + g.view.h);
         KT_CHECK(L.view.w > g.view.w);
         // strips line up with the enlarged view
@@ -277,8 +277,8 @@ static void testPinned3440() {
     KT_CHECK_EQ(dH, 136);
     KT_CHECK(same(L.hint[0], Box{x0, dTop, W, dH}));
     KT_CHECK(same(L.hint[1], Box{x0 + kV3DescPad, dTop + kV3DescPad, W - 2 * kV3DescPad, dH - 2 * kV3DescPad}));
-    // view area: starts 4 px right of the 400 wide column (the literal gap in pageLayoutV3), ends kPad short of the preview pane
-    KT_CHECK(L.view.x == 150 + 400 + 4 && L.view.x + L.view.w == 1925 - P);
+    // view area: starts 4 px right of the 400 wide column (the literal gap in pageLayoutV3), ends kV3ViewGap short of the preview pane
+    KT_CHECK(L.view.x == 150 + 400 + 4 && L.view.x + L.view.w == 1925 - kV3ViewGap);
     KT_CHECK(L.modeBtn[0].y == 357 && L.modeBtn[0].h == kV3BarMax);
     KT_CHECK(L.view.y == 357 + 2 * (kV3BarMax + 2));   // two mode rows
     // inspector: the 500 wide pane: W = 500 - 2 * kPad, avail = W - sq - 3 * kGap (sq = kV3ResetMax), the track keeps kV3TrackWant (150),
@@ -382,19 +382,19 @@ static void testViewVsPreview() {
     // gap: view rect ends 1921, preview starts 1925 -> the enlarged view ends kPad short of the preview
     Geom g = geomFor(3440, 1440);
     PageLayoutV3 L = pageLayoutV3(g.column, g.view, g.preview, g.hint, nullptr);
-    KT_CHECK_EQ(L.view.x + L.view.w, g.preview.x - v3::kPad);
-    KT_CHECK_EQ(L.viewFlip.x + L.viewFlip.w, g.preview.x - v3::kPad);
+    KT_CHECK_EQ(L.view.x + L.view.w, g.preview.x - kV3ViewGap);
+    KT_CHECK_EQ(L.viewFlip.x + L.viewFlip.w, g.preview.x - kV3ViewGap);
     // a wide gap still ends kPad short (the view grows into it)
     Box pw = g.preview; pw.x = 2000;
     PageLayoutV3 W = pageLayoutV3(g.column, g.view, pw, g.hint, nullptr);
-    KT_CHECK_EQ(W.view.x + W.view.w, pw.x - v3::kPad);   // 1994
+    KT_CHECK_EQ(W.view.x + W.view.w, pw.x - kV3ViewGap);   // 1994
     // overlap: the given view rect reaches 40 px into the preview -> the view strip, mode strip and stances stop short of it
     Box po = g.preview; po.x = 1881;
     PageLayoutV3 O = pageLayoutV3(g.column, g.view, po, g.hint, nullptr);
-    KT_CHECK_EQ(O.view.x + O.view.w, po.x - v3::kPad);   // 1875
+    KT_CHECK_EQ(O.view.x + O.view.w, po.x - kV3ViewGap);   // 1875
     KT_CHECK(O.view.w > 0);
     Box all[kPageItemsV3 + 8]; pageBoxesV3(O, all);
-    for (int i = 19; i < 32; ++i) KT_CHECK(all[i].x + all[i].w <= po.x - v3::kPad);   // view area items (see collect())
+    for (int i = 19; i < 32; ++i) KT_CHECK(all[i].x + all[i].w <= po.x - kV3ViewGap);   // view area items (see collect())
     for (int i = 32; i < PI_RESET_SCOPE; ++i) KT_CHECK(!overlaps(all[i], O.view));   // the "..." toggle sits in the left column
     KT_CHECK(!overlaps(all[PI_RESET_SCOPE], O.view));
     KT_CHECK(!overlaps(all[PI_REMOVE], O.view));
@@ -821,8 +821,8 @@ static void testRoomyButtons3840() {
     for (int i = 0; i < kV3Bones; ++i) KT_CHECK(L.bone[i].w >= 220);
     for (int i = 0; i < kV3Scopes; ++i) KT_CHECK(L.scope[i].w >= 220);
     KT_CHECK_EQ(L.view.x, g.view.x);   // the column (pane 1132 wide) is capped at view.x - 4 - column.x, so the view starts where the view pane does
-    const int s3 = (g.preview.x - v3::kPad - g.view.x - 2 * 2) / 3;
-    KT_CHECK_EQ(s3, 199);
+    const int s3 = (g.preview.x - kV3ViewGap - g.view.x - 2 * 2) / 3;
+    KT_CHECK_EQ(s3, 196);   // 199 before the 16 px view gap
     for (int i = 0; i < kV3Stances; ++i) KT_CHECK(L.stance[i].w >= s3);
     for (int i = 0; i < kV3Modes; ++i) KT_CHECK(L.modeBtn[i].w >= 220);
     // grid shape: Upper back | Back / Pelvis | R hip / L hip; one scope per row; modes Move Depth / Tilt Roll/Turn; stances Idle Walk Run / Alert Combat

@@ -49,6 +49,7 @@ constexpr int kV3LeftRowMax = 52, kV3InspRowMax = 70, kV3RowMin = 14;   // left 
 constexpr int kV3RoomyRowMin = 30;  // the roomy left column (2 bone columns, one scope per row) is used while its rows stay at least this high; below, the compact one
 constexpr int kV3BarMax = 44, kV3BarMin = 12;   // mode bar / stance row heights
 constexpr int kV3MinViewW = 8;    // the view area is at least this wide when the preview pane leaves any room
+constexpr int kV3ViewGap = 16;    // the view area (and its bars) end this far short of the preview pane, so the right description box is not flush against them
 constexpr int kV3CoverMax = 24, kV3CoverDefault = 6;   // description cover margin (coverDescPane; ini desc_cover_px)
 constexpr int kV3DescPad = 12;   // text inset inside the left description box
 constexpr int kV3DescMinH = 90, kV3DescMaxH = 360, kV3DescWantH = 130;   // left description box (hint[0], under the status line): shown from this height, at most this high
@@ -311,11 +312,11 @@ inline PageLayoutV3 pageLayoutV3(editkit::Box column, editkit::Box view, editkit
 
     // ---- view area: from 4 px right of the used column to the preview pane (or the old right edge)
     const int vl = column.x + colW + 4;
-    // With a preview pane the view ends v3::kPad short of it (never beyond, so it cannot overlap the inspector even when the
+    // With a preview pane the view ends kV3ViewGap short of it (never beyond, so it cannot overlap the inspector even when the
     // given view rect reaches into the preview); only when that leaves less than kV3MinViewW the gap is given up (never past preview.x).
     int vr = view.x + view.w;
     if (preview.w > 0) {
-        vr = preview.x - v3::kPad;
+        vr = preview.x - kV3ViewGap;
         if (vr - vl < kV3MinViewW) vr = v3::imin(vl + kV3MinViewW, preview.x);
     }
     const int vw = v3::imax(0, vr - vl);
