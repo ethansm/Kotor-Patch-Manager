@@ -92,7 +92,7 @@ def fixture():
 
 
 def worst_case():
-    """Every section over its cap, plus one unparsable COMB line. The report must stay at 46 lines (40 + 3 GOBREUSE/FLOURISH/SLIDE lines + 3 PARTYHOLD/MOVEHOLD/DELAY lines)."""
+    """Every section over its cap, plus one unparsable COMB line. The report must stay at 47 lines (40 + 3 GOBREUSE/FLOURISH/SLIDE lines + 3 PARTYHOLD/MOVEHOLD/DELAY lines + 1 REACH line)."""
     bodies = [LOADED, BONE]
     bodies += [comb(0x100 + c, 0, 1, 1) for c in range(6)]                       # 6 creatures, 4 shown
     for c in range(5):
@@ -265,10 +265,10 @@ class ReportTests(unittest.TestCase):
         self.assertIn("  gob=0xa09 samples=10 parent18=0x1 sign_flips=0 rot_mean=0.00 deg", out)
         self.assertFalse(any(s.startswith("  gob=0xa00 ") or s.startswith("  gob=0xa01 ") for s in out))
 
-    def test_worst_case_is_capped_at_46_lines(self):
+    def test_worst_case_is_capped_at_47_lines(self):
         rc, out = run_log(worst_case())
         self.assertEqual(rc, 0)
-        self.assertEqual(len(out), 46)
+        self.assertEqual(len(out), 47)
         self.assertIn("COMB edges=6 creatures=6 (top 4 shown)", out)
         self.assertIn("ATTACH n=20 creatures=5 tags: 't'=20 (first 3 creatures shown)", out)
         self.assertTrue(any(s.startswith("ANIMRES n=12 distinct=12 top10:") and "(+2 more ids) | style per creature" in s for s in out))
@@ -325,10 +325,10 @@ class PlaceTests(unittest.TestCase):
     def test_unrelated_place_words_are_ignored(self):
         self.assertEqual(parse(["PLACED ok", "PLACEHOLDER n=1"])[:2], ([], []))
 
-    def test_place_view_caps_gobs_and_report_stays_within_46_lines(self):
+    def test_place_view_caps_gobs_and_report_stays_within_47_lines(self):
         rc, out = run_log(worst_case()[:-1] + place_worst() + [CAP])
         self.assertEqual(rc, 0)
-        self.assertLessEqual(len(out), 46)
+        self.assertLessEqual(len(out), 47)
         self.assertIn("GOB lines=55 gobs=10 (top 4 by samples shown)", out)
         self.assertIn("PLACE lines=31 gobs=6 (top 4 by samples shown) gobvt distinct=12: 0x10 x4, 0x11 x3, 0x12 x3, "
                       "0x13 x3, 0x14 x3, 0x15 x3, 0x16 x2, 0x17 x2, 0x18 x2, 0x19 x2 (+2 more)", out)

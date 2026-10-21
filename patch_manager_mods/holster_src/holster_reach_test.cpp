@@ -457,6 +457,79 @@ static void testReachBaseNonFiniteReadKeepsCache() {
     KT_CHECK(exactQ(bs.q, before));
 }
 
+// ---- elbow pole / style ----
+static float len3(const float* v) { return std::sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]); }
+static float dot3(const float* a, const float* b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
+
+static void testSolvePoleChoosesElbowSide() {
+    // Shoulder at origin, forearm hangs down; target out to the side at the same depth. The elbow may bend up or down: the pole picks.
+    const float S[3] = {0, 0, 0}, E[3] = {0, 0, -0.3f}, H[3] = {0, 0, -0.64f}, T[3] = {0.45f, 0, -0.2f};
+    const float up[3] = {0, 0, 1}, down[3] = {0, 0, -1};
+    float a[3], b[3], r = 0;
+    KT_CHECK(solveTwoBone(S, E, H, T, a, &r, up));
+    KT_CHECK(solveTwoBone(S, E, H, T, b, &r, down));
+    KT_CHECK(a[2] > b[2] + 0.05f);                                     // up pole puts the elbow higher than the down pole
+    KT_CHECK(std::fabs(len3(a) - 0.3f) < 1e-4f && std::fabs(len3(b) - 0.3f) < 1e-4f);   // bone length kept either way
+    float c[3];
+    KT_CHECK(solveTwoBone(S, E, H, T, c, &r, nullptr));                // null pole = old hint (current elbow side)
+    KT_CHECK(solveTwoBone(S, E, H, T, b, &r));
+    KT_CHECK(std::fabs(c[0] - b[0]) < 1e-6f && std::fabs(c[2] - b[2]) < 1e-6f);
+}
+
+static void testSolvePoleParallelAndBadFallBack() {
+    const float S[3] = {0, 0, 0}, E[3] = {0, 0.1f, -0.3f}, H[3] = {0, 0.1f, -0.64f}, T[3] = {0, 0, -0.5f};
+    const float axisPole[3] = {0, 0, -1};   // parallel to S->T: no usable side
+    const float nanPole[3] = {NAN, 0, 0};
+    float a[3], b[3], r = 0;
+    KT_CHECK(solveTwoBone(S, E, H, T, a, &r, axisPole));
+    KT_CHECK(std::isfinite(a[0]) && std::isfinite(a[1]) && std::isfinite(a[2]));
+    KT_CHECK(solveTwoBone(S, E, H, T, a, &r, nanPole));                // non-finite pole ignored
+    KT_CHECK(solveTwoBone(S, E, H, T, b, &r));
+    KT_CHECK(std::fabs(a[0] - b[0]) < 1e-6f && std::fabs(a[1] - b[1]) < 1e-6f && std::fabs(a[2] - b[2]) < 1e-6f);
+}
+
+static void testReachOverWeight() {
+    KT_CHECK(reachOverWeight(-0.8f * 0.64f, 0.64f) == 0.f);             // hip mount
+    KT_CHECK(reachOverWeight(-0.1f * 0.64f, 0.64f) == 1.f);             // upper back
+    KT_CHECK(reachOverWeight(0.3f, 0.64f) == 1.f);                      // above the shoulder
+    const float mid = reachOverWeight(-0.5f * 0.64f, 0.64f);
+    KT_CHECK(mid > 0.f && mid < 1.f);
+    KT_CHECK(reachOverWeight(-0.55f * 0.64f, 0.64f) <= mid);            // monotone
+    KT_CHECK(reachOverWeight(NAN, 0.64f) == 0.f && reachOverWeight(0.f, 0.f) == 0.f);
+}
+
+static void testReachPoleStyleAndMirror() {
+    const Q id = {1, 0, 0, 0};
+    ReachStyle st = reachDefaultStyle(2);   // melee
+    float h[3], o[3], l[3];
+    KT_CHECK(reachPole(st, 0.f, false, id, nullptr, 0.f, h));
+    KT_CHECK(reachPole(st, 1.f, false, id, nullptr, 0.f, o));
+    KT_CHECK(h[2] < 0.f && o[2] > 0.5f);                                // hip bends down, over bends up
+    KT_CHECK(std::fabs(len3(h) - 1.f) < 1e-5f && std::fabs(len3(o) - 1.f) < 1e-5f);
+    KT_CHECK(reachPole(st, 1.f, true, id, nullptr, 0.f, l));
+    KT_CHECK(std::fabs(l[0] + o[0]) < 1e-6f && std::fabs(l[2] - o[2]) < 1e-6f);   // left mirrors x only
+    // A body turned 90 deg about z (right becomes +y... any rotation): the pole follows the body.
+    const float z[3] = {0, 0, 1};
+    const Q turn = qaxis(z, 90.f);
+    float t[3], expect[3];
+    KT_CHECK(reachPole(st, 1.f, false, turn, nullptr, 0.f, t));
+    qrotate(turn, o, expect);
+    KT_CHECK(std::fabs(t[0] - expect[0]) < 1e-5f && std::fabs(t[1] - expect[1]) < 1e-5f && std::fabs(t[2] - expect[2]) < 1e-5f);
+    // animMix 1 = the animation direction; 0.5 lies between.
+    const float anim[3] = {0, -3.f, 0};
+    float a1[3], a5[3];
+    KT_CHECK(reachPole(st, 1.f, false, id, anim, 1.f, a1));
+    KT_CHECK(std::fabs(a1[1] + 1.f) < 1e-5f);
+    KT_CHECK(reachPole(st, 1.f, false, id, anim, 0.5f, a5));
+    KT_CHECK(dot3(a5, o) > 0.f && dot3(a5, a1) > 0.f && std::fabs(len3(a5) - 1.f) < 1e-5f);
+    KT_CHECK(!reachPole(st, 1.f, false, Q{NAN, 0, 0, 0}, nullptr, 0.f, a5));
+    // every category has a style with finite, non-zero directions
+    for (int c = 0; c <= 6; ++c) {
+        const ReachStyle s2 = reachDefaultStyle(c);
+        KT_CHECK(len3(s2.hip) > 0.5f && len3(s2.over) > 0.5f && s2.over[2] > 0.3f && s2.hip[2] < 0.f);
+    }
+}
+
 int main() {
     testArcQuatMapsDirections();
     testArcQuatParallelAndAntiParallel();
@@ -487,5 +560,9 @@ int main() {
     testReachBaseCachesWhenEngineDidNotResample();
     testReachBaseRefreshesWhenEngineChanged();
     testReachBaseNonFiniteReadKeepsCache();
+    testSolvePoleChoosesElbowSide();
+    testSolvePoleParallelAndBadFallBack();
+    testReachOverWeight();
+    testReachPoleStyleAndMirror();
     return kt::Report("holster_reach");
 }

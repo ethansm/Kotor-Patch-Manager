@@ -53,9 +53,10 @@ inline Q arcQuat(const float* from, const float* to) {
 // collinear with the axis). On success Enew satisfies |Enew-S| = len1 and |T'-Enew| = len2 for the clamped target T'. reach = 1
 // when T was reachable without clamping, else d_clamped / d_target (1 when d_target is ~0). Returns false, leaving Enew and reach
 // untouched, when any input is non-finite, a segment is shorter than 1e-4, or the result is not finite.
-inline bool solveTwoBone(const float* S, const float* E, const float* H, const float* T, float* Enew, float* reach) {
+inline bool solveTwoBone(const float* S, const float* E, const float* H, const float* T, float* Enew, float* reach, const float* pole = nullptr) {
     for (int i = 0; i < 3; ++i)
         if (!std::isfinite(S[i]) || !std::isfinite(E[i]) || !std::isfinite(H[i]) || !std::isfinite(T[i])) return false;
+    if (pole && !(std::isfinite(pole[0]) && std::isfinite(pole[1]) && std::isfinite(pole[2]))) pole = nullptr;
     float es[3], he[3], ts[3];
     for (int i = 0; i < 3; ++i) {
         es[i] = E[i] - S[i];
@@ -86,15 +87,22 @@ inline bool solveTwoBone(const float* S, const float* E, const float* H, const f
     const float h = std::sqrt(h2 > 0.f ? h2 : 0.f);
 
     // Side hint: the part of E-S across the axis keeps the elbow on its current side. Collinear: any perpendicular.
-    const float ad = r3dot(es, axis);
+    // A caller pole (world direction the elbow should bend toward) replaces the current-elbow hint; a pole parallel to the axis falls back.
     float perp[3];
-    for (int i = 0; i < 3; ++i) perp[i] = es[i] - ad * axis[i];
-    const float lp = r3len(perp);
-    if (lp > 1e-6f * len1) {
-        for (int i = 0; i < 3; ++i) perp[i] /= lp;
-    } else {
-        r3anyPerp(axis, perp);
+    bool havePerp = false;
+    for (int pass = 0; pass < 2 && !havePerp; ++pass) {
+        const float* hint = (pass == 0 && pole) ? pole : es;
+        const float hl = r3len(hint);
+        if (pass == 0 && !pole) continue;
+        const float ad = r3dot(hint, axis);
+        for (int i = 0; i < 3; ++i) perp[i] = hint[i] - ad * axis[i];
+        const float lp = r3len(perp);
+        if (lp > 1e-6f * hl && lp > 1e-9f) {
+            for (int i = 0; i < 3; ++i) perp[i] /= lp;
+            havePerp = true;
+        }
     }
+    if (!havePerp) r3anyPerp(axis, perp);
 
     float en[3];
     for (int i = 0; i < 3; ++i) en[i] = S[i] + axis[i] * a + perp[i] * h;
@@ -105,6 +113,55 @@ inline bool solveTwoBone(const float* S, const float* E, const float* H, const f
     if (!std::isfinite(rr)) return false;
     for (int i = 0; i < 3; ++i) Enew[i] = en[i];
     if (reach) *reach = rr;
+    return true;
+}
+
+// ---- Elbow style: which way the elbow bends, by weapon category and where the weapon is mounted ----
+// Directions are in the BODY frame of the owner (x right, y forward, z up) and are for the RIGHT arm; the left arm mirrors x. `hip`
+// is the bend for a mount at or below the waist (draw back and out), `over` for a mount at or above the shoulder (elbow up and out,
+// the hand goes up and over the shoulder to the hilt). The solver blends the two by how high the mount sits (reachOverWeight).
+struct ReachStyle { float hip[3]; float over[3]; };
+
+inline ReachStyle reachDefaultStyle(int cat) {
+    switch (cat) {
+        case 1: case 2: return { { 0.60f, -0.40f, -0.40f }, { 0.50f, 0.00f, 0.85f } };   // lightsaber, melee: sheath at the hip, hilt over the shoulder
+        case 3:         return { { 0.60f, -0.40f, -0.40f }, { 0.60f, -0.20f, 0.70f } };  // quarterstaff
+        case 4:         return { { 0.50f, -0.70f, -0.20f }, { 0.50f, 0.00f, 0.80f } };   // pistol: straight back from the holster
+        default:        return { { 0.60f, -0.50f, -0.30f }, { 0.70f, -0.10f, 0.65f } };  // rifle, heavy, unknown
+    }
+}
+
+// 0 = hip style, 1 = over-the-shoulder style. `dz` = height of the mount above the shoulder (body frame), `arm` = shoulder-to-hand reach.
+// Smooth between -0.7 and -0.3 arm lengths below the shoulder (a hip mount sits ~0.8 below, an upper-back mount ~0.1 below).
+inline float reachOverWeight(float dz, float arm) {
+    if (!std::isfinite(dz) || !(arm > 1e-4f)) return 0.f;
+    return easeSmooth((dz / arm + 0.7f) / 0.4f);
+}
+
+// World-space pole for the elbow: blends the style's hip / over directions by u, mirrors x for the left arm, rotates by the body
+// orientation, then blends toward the animation's own elbow direction `anim` (world, any length, may be null) by animMix in [0,1]
+// (1 = the animation's elbow plane, used as the weapon reaches the hand so the plane does not pop). Output is a unit vector, or
+// false when it cannot be formed.
+inline bool reachPole(const ReachStyle& st, float u, bool left, const Q& bodyQ, const float* anim, float animMix, float* out) {
+    if (!qfinite(bodyQ)) return false;
+    u = slideClamp01(u);
+    animMix = slideClamp01(animMix);
+    float loc[3];
+    for (int i = 0; i < 3; ++i) loc[i] = (1.f - u) * st.hip[i] + u * st.over[i];
+    if (left) loc[0] = -loc[0];
+    float w[3];
+    qrotate(qnormalize(bodyQ), loc, w);
+    const float lw = r3len(w);
+    if (!(lw > 1e-6f)) return false;
+    for (int i = 0; i < 3; ++i) w[i] /= lw;
+    if (anim && animMix > 0.f) {
+        const float la = r3len(anim);
+        if (la > 1e-6f && std::isfinite(la))
+            for (int i = 0; i < 3; ++i) w[i] = (1.f - animMix) * w[i] + animMix * anim[i] / la;
+    }
+    const float l = r3len(w);
+    if (!(l > 1e-6f) || !std::isfinite(l)) return false;
+    for (int i = 0; i < 3; ++i) out[i] = w[i] / l;
     return true;
 }
 
