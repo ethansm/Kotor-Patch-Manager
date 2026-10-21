@@ -457,6 +457,21 @@ inline Q reachClampRot(const Q& dq0, float maxDeg, const Q* hint = nullptr) {
     return { std::cos(h), dq.x * k, dq.y * k, dq.z * k };
 }
 
+// HW29 wrist split (recon r1 step 3): dq = swingOut * twistOut. twistOut = the part of dq about foreAxis (world frame; need not be unit), clamped to
+// twistMaxDeg by reachClampRot with twistHint (the previous twistOut), so its sign follows the hint across the 180 deg axis flip. swingOut = dq * conj(twistOut),
+// clamped to swingMaxDeg with no hint. twistMaxDeg <= 0 or NaN: twistOut identity and swingOut = reachClampRot(dq, swingMaxDeg, nullptr), the pre-HW29 path.
+// That path ignores foreAxis (may be null or NaN). Otherwise non-finite dq or a null/non-finite foreAxis: both identity. Zero foreAxis: twistOut identity and the whole dq goes to swing.
+inline void reachSplitWrist(const Q& dq, const float* foreAxis, float twistMaxDeg, float swingMaxDeg, const Q* twistHint, Q& twistOut, Q& swingOut) {
+    if (!(twistMaxDeg > 0.f)) { twistOut = { 1, 0, 0, 0 }; swingOut = reachClampRot(dq, swingMaxDeg, nullptr); return; }   // before the axis checks
+    const bool axisOk = foreAxis && std::isfinite(foreAxis[0]) && std::isfinite(foreAxis[1]) && std::isfinite(foreAxis[2]);
+    if (!qfinite(dq) || !axisOk) { twistOut = { 1, 0, 0, 0 }; swingOut = { 1, 0, 0, 0 }; return; }
+    const Q dqn = qnormalize(dq);
+    Q twistRaw, swingDiscard;                         // the swing from qSwingTwist is unused: swingOut is re-derived from the clamped twist
+    qSwingTwist(dqn, foreAxis, swingDiscard, twistRaw);
+    twistOut = reachClampRot(twistRaw, twistMaxDeg, twistHint);
+    swingOut = reachClampRot(qmul(dqn, { twistOut.w, -twistOut.x, -twistOut.y, -twistOut.z }), swingMaxDeg, nullptr);
+}
+
 // World rotation to apply to a hand so its orientation `cur` becomes the target blend(from, to, t): dq = target * conj(cur), then limited to maxDeg and
 // scaled by `weight` (0 = none). The hand is turned from the weapon's mount orientation (t = 0, at the grab) to its resting orientation (t = 1) over the carry.
 // hint: the previous return value, passed to reachClampRot. The sign guarantee needs maxDeg in [0, 180]: the clamped dq then has w >= 0, so blendQ keeps it.

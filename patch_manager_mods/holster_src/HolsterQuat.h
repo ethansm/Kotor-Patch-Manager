@@ -39,6 +39,23 @@ inline Q qbase(float rx, float ry, float rz) {
     return qmul(qaxis(Z, rz), qmul(qaxis(Y, ry), qaxis(X, rx)));
 }
 
+// Swing-twist split (HW29, doc 42 4.6): q = swing * twist. twist = the part of q about `axis` (normalised here), w-first, sign-normalised to w >= 0.
+// Degenerate (axis length ~ 0 or NaN, or the axis projection and w both ~ 0) -> twist identity, swing = q. q is not normalised here.
+inline void qSwingTwist(const Q& q, const float* axis, Q& swing, Q& twist) {
+    twist = { 1, 0, 0, 0 };
+    swing = q;
+    const float l = std::sqrt(axis[0] * axis[0] + axis[1] * axis[1] + axis[2] * axis[2]);
+    if (!(l > 1e-12f)) return;
+    const float ax = axis[0] / l, ay = axis[1] / l, az = axis[2] / l;
+    const float p = q.x * ax + q.y * ay + q.z * az;   // vector part projected on the axis
+    const float n = std::sqrt(q.w * q.w + p * p);
+    if (!(n > 1e-6f)) return;                         // also catches NaN
+    Q t = { q.w / n, p * ax / n, p * ay / n, p * az / n };
+    if (t.w < 0.f) { t.w = -t.w; t.x = -t.x; t.y = -t.y; t.z = -t.z; }
+    twist = t;
+    swing = qmul(q, { t.w, -t.x, -t.y, -t.z });       // q * conj(twist); swing * twist == q exactly (sign included) for unit twist
+}
+
 // Pose of a scene node: position (Gob+0xA4 vec3) and orientation (Gob+0xB0 quat, w-first).
 struct Pose { float pos[3]; Q q; };
 
