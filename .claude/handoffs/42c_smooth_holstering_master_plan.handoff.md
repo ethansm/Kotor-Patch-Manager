@@ -5,15 +5,15 @@ Execute HW28b: Draw cap raise (`draw_slide_cap`, default 570)
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/42c_smooth_holstering_master_plan.md`
-- **Branch:** `KOTOR-II` (517b450c play queue: SM-L3/L4/L5/L10 for holster 0.15.0-dev (HW26 orientation, HW27 topology + holsterable, HW28 per-category timing))
-- **Generated:** 2026-10-21 03:23:23 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (319a1143 play queue: SM-L11 for holster 0.17.0-dev (HW29 forearm twist + wrist swing))
+- **Generated:** 2026-10-21 16:51:10 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-517b450c play queue: SM-L3/L4/L5/L10 for holster 0.15.0-dev (HW26 orientation, HW27 topology + holsterable, HW28 per-category timing)
- patch_manager_mods/PLAY_TEST_QUEUE.md | 4 ++++
- 1 file changed, 4 insertions(+)
+319a1143 play queue: SM-L11 for holster 0.17.0-dev (HW29 forearm twist + wrist swing)
+ patch_manager_mods/PLAY_TEST_QUEUE.md | 1 +
+ 1 file changed, 1 insertion(+)
 ```
-- **Dirty Files (185):**
+- **Dirty Files (186):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
   - ` M .claude/handoffs/DECOMP_PLAN.handoff.md`
@@ -24,7 +24,7 @@ Execute HW28b: Draw cap raise (`draw_slide_cap`, default 570)
   - ` M .claude/reviews/gemini_20261014/tools/fix3_items.tsv`
   - ` M .claude/settings.json`
   - ` M CLAUDE.md`
-  - ... +175 more (run `git status --short`)
+  - ... +176 more (run `git status --short`)
 
 ## 2. Immediate Objective (HW28b)
 **Draw cap raise (`draw_slide_cap`, default 570)**
@@ -33,9 +33,9 @@ Status: GATED
 Task: Draw cap raise (`draw_slide_cap`, default 570)
 
 ## 2b. Upcoming Batches in Pipeline
-- **HW29** : Swing/twist split: twist on the forearm (cap 80), swing on the wrist (cap 60); optional pole bias from the target hand orientation at f<=0.30
-- **HW30** : Shape data: generated stem table `HolsterShape.inc` (axis, length, exit axis/len) from R17 / ItemFitTable; doc 42 sec 4 refreshed to K2 numbers
 - **HW31** : Extraction + orientation schedule: extract share, T offset along the exit axis, hold mount orientation through extract, via-orientation for rifle/staff
+- **HW32** : Offline sweep check in preview-3d: tip/butt clearance vs head/torso proxies per weapon x mount x hand
+- **HW33** : Two hands: `isTwoHandedStem`, dual stagger `dual_stagger_ms` (60), support-hand reach ONLY if play SM-L8 shows the left hand off the weapon
 
 ## 3. Strict Context Budget & Read Policy
 - **Fresh Session Bootstrap**: Run `python3 scripts/plan_manager.py resume patch_manager_mods/42c_smooth_holstering_master_plan.md`.
