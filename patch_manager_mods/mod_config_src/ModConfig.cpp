@@ -2189,12 +2189,12 @@ const K2MenuUiApi g_muiApi = {sizeof(K2MenuUiApi), &muiNewPage, &muiAddButton, &
 }  // namespace
 
 namespace {
-// ---- Esc steps back one page (0.4.0-dev). The Options panel's vtable slot 14 (gameaddr::OptionsInGameKeyHandler, thiscall(this, eventId, state), RET 8) is its input-event
+// ---- Esc steps back one page (0.4.0-dev; slot corrected 0.4.1-dev). The Options panel's vtable slot 15 (gameaddr::OptionsInGameKeyHandler, thiscall(this, eventId, state), RET 8) is its input-event
 // handler: case 0x2a calls FUN_004122a0(1) (closes the whole in-game GUI), 0x28/0x2d/0x2e/0xdf are navigation/click. The slot is pointed at escKeyHook
 // (a data patch of the shared vtable, so mod-config stays hot-swappable). On a non-MAIN page, Esc going down with event 0x2a performs the Back action
 // and is swallowed, so the GUI stays open; on MAIN (and for every other event) the original runs, i.e. vanilla Esc behaviour. The first calls are
 // logged (KEYEV) so the event id of Esc is confirmed from the log; the McTick Esc edge stays as the fallback (reset to MAIN) when the hook did not act.
-constexpr int kVtKeySlot = 14;
+constexpr int kVtKeySlot = 15;   // 0x8A2070 is stored at 0x9A7058 = 0x9A701C + 15*4 (slot 14 is 0x40E770, the per-frame update)
 constexpr uint32_t kKeyHandlerOrig = static_cast<uint32_t>(gameaddr::OptionsInGameKeyHandler);
 constexpr int kEscEventId = 0x2a;
 using KeyFn = void(__fastcall*)(void* self, void* edx, int id, int state);
@@ -2506,7 +2506,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
     embtex::g_log = embedLog;   // gear + slider art textures (EmbedTex) log through the main channel
     guikit::initGuiInput(api, "mod-config");   // optional: the wheel provider (k2.guiinput); a missing provider only means no wheel
-    KP_LOG(chMain, "mod-config 0.4.0-dev loaded (Mod Configuration button under Gameplay; k2.modconfig@1 + k2.menuui@1; config mod_config.ini is read at the first Options panel: enabled debug button_clone reflow desc free_labels)");
+    KP_LOG(chMain, "mod-config 0.4.1-dev loaded (Mod Configuration button under Gameplay; k2.modconfig@1 + k2.menuui@1; config mod_config.ini is read at the first Options panel: enabled debug button_clone reflow desc free_labels)");
     int rcC = -1, rcM = -1;
     if (api && api->struct_size >= offsetof(KPatchApi, require) + sizeof(api->require) && api->provide) {
         rcC = api->provide(K2MODCONFIG_IFACE, K2MODCONFIG_VERSION, &g_mcApi);
