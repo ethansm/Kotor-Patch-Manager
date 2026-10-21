@@ -119,6 +119,26 @@ static void test_wedge_and_thumb() {
     KT_CHECK(narrow.w == 6 && narrow.x == 10);
 }
 
+static void test_inner_inside_frame() {
+    const Rect fr = {100, 20, 640, 80};                              // typical 1080p-ish frame: stroke ~10 px each side
+    const Rect in = sliderInner(fr);
+    KT_CHECK(in.x > fr.x && in.y > fr.y);
+    KT_CHECK(in.x + in.w < fr.x + fr.w && in.y + in.h < fr.y + fr.h);
+    KT_CHECK_EQ(in.x - fr.x, (fr.x + fr.w) - (in.x + in.w));         // symmetric
+    KT_CHECK_EQ(in.y - fr.y, (fr.y + fr.h) - (in.y + in.h));
+    const RowCfg c = cfg(0, 100, 1, 0);
+    const Rect lo = sliderThumbRect(c, in, 0), hi = sliderThumbRect(c, in, 100);
+    KT_CHECK(lo.x >= in.x && hi.x + hi.w <= in.x + in.w);            // thumb never reaches the stroke at either end
+    KT_CHECK(lo.y >= in.y && lo.y + lo.h <= in.y + in.h);
+    KT_CHECK(sliderWedgeRect(c, in, 100).x + sliderWedgeRect(c, in, 100).w <= in.x + in.w);
+    KT_CHECK_EQ(sliderValueAt(c, in, fr.x), 0);                      // a press on the left stroke is the minimum, on the right stroke the maximum
+    KT_CHECK_EQ(sliderValueAt(c, in, fr.x + fr.w - 1), 100);
+    const Rect tiny = {5, 5, 4, 3};                                  // too small to inset: unchanged
+    KT_CHECK(sliderInner(tiny).x == 5 && sliderInner(tiny).w == 4 && sliderInner(tiny).h == 3);
+    const Rect small = sliderInner(Rect{0, 0, 100, 16});
+    KT_CHECK(small.x >= 2 && small.y >= 2 && small.w > 0 && small.h > 0);
+}
+
 static void test_drag() {
     const Rect tr = {0, 0, 100, 32};
     const RowCfg c = cfg(0, 100, 1, 0);
@@ -151,6 +171,7 @@ int main() {
     test_value_at_degenerate();
     test_pos_roundtrip();
     test_wedge_and_thumb();
+    test_inner_inside_frame();
     test_drag();
     return kt::Report("slider_row_logic_test");
 }

@@ -29,6 +29,17 @@ inline SliderGeom sliderGeom(const Rect& slot) {
     return g;
 }
 
+// The usable run inside the frame art: the frame texture (512x64) draws a ~8 px stroke, so the wedge, the thumb and the pointer-to-value mapping
+// live in the frame rect inset by that stroke plus a 2 px margin (fractions of the rect, so every resolution matches). The frame stays the hit area.
+// A rect too small to inset is returned unchanged.
+inline Rect sliderInner(const Rect& frame) {
+    int ix = (frame.w * 10) / 512, iy = (frame.h * 10) / 64;
+    if (ix < 2) ix = 2;
+    if (iy < 2) iy = 2;
+    if (frame.w <= 2 * ix || frame.h <= 2 * iy) return frame;
+    return Rect{frame.x + ix, frame.y + iy, frame.w - 2 * ix, frame.h - 2 * iy};
+}
+
 inline bool sliderHit(const SliderGeom& g, int px, int py) { return rectHas(g.track, px, py); }
 
 inline void sliderRange(const RowCfg& c, int& lo, int& hi) {
