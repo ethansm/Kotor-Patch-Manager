@@ -1,4 +1,4 @@
-// Mouse Probe 0.4.0 -- Wine mouse/camera fix + diagnostics
+// Mouse Probe 0.4.1 -- Wine mouse/camera fix + diagnostics
 // (patch_manager_mods/18_mouse_camera_investigation.md). Hooks read engine memory through SafeRead and
 // log through KpLog.h. There are two engine writes, both gated by [mouse_fix] enabled in mouse_probe.ini and
 // on by default: (1) sanitizeNorm (sanitize_norm=1) in ProbeMouseNorm, which overwrites the normalised
@@ -101,6 +101,7 @@ int g_drag = -1;                   // last drag flag value seen (always tracked,
 double g_dragSince = 0;
 bool g_stuckLogged = false;
 float g_lastPitch = 0; bool g_havePitch = false;
+int g_lastMode = -999; uintptr_t g_lastCtl = 0;   // 0.4.1 CAMMODE change tracking
 
 // ---- click channel state (0.3.0); always tracked so the WARN heuristics work with the channel off ----
 clicklogic::ClickState g_click;
@@ -257,6 +258,13 @@ void __cdecl ProbeCameraFrame(uintptr_t ebp) {
     uintptr_t self = 0, ctl = 0; float pitch = 0, yaw = 0; int mode = -1;
     bool haveCtl = rd(ebp, -0x130, &self) && rd(self, 0x18, &ctl) && ctl != 0 &&
                    rd(ctl, 0x94, &pitch) && rd(ctl, 0x98, &yaw) && rd(ctl, 0xC, &mode);
+    // 0.4.1: log every camera controller mode/instance change (not only during a drag), so a stuck
+    // special camera after a load can be dated against the other mods' logs.
+    if (haveCtl && (mode != g_lastMode || ctl != g_lastCtl)) {
+        KP_LOG(chCam, "CAMMODE %d -> %d ctl=%08x (was %08x) yaw=%.4f pitch=%.4f drag=%d",
+               g_lastMode, mode, (unsigned)ctl, (unsigned)g_lastCtl, yaw, pitch, drag);
+        g_lastMode = mode; g_lastCtl = ctl;
+    }
     bool pitchMoved = haveCtl && g_havePitch && fabsf(pitch - g_lastPitch) > 0.001f;
     if (drag || dx != 0.0f || dy != 0.0f || pitchMoved || (haveCtl && !g_havePitch)) {
         if (drag != g_drag || (haveCtl && !g_havePitch)) {
