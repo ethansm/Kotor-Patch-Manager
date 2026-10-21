@@ -72,6 +72,10 @@ Both reviews and the earlier Sonnet comparison missed: the reversal jump with ar
 | HW36 | Ini exit overrides `reach_exit_sign_<cat>` (-1/0/+1, auto) + `reach_exit_len_<cat>` (0..0.5 m, auto), so exit sign can be tried in play without a rebuild | HW31 | - | DONE | 724ea472 | B5 holster 0.19.0-dev gated (GATE PASS head=8bb5f3b7), not installed; play SM-L13/SM-L14 |
 | HW31b | Via on the default residual path: two-segment residual `reachResidualVia` + outside-shoulder lateral offset `reachViaOffset` (`reach_via_out_m` 0.12) | HW31 | - | DONE | 247b579f | 691fa25b header + 247b579f wiring; via on residual path + reach_via_out_m 0.12 shared clock; reach_via_<cat> default 0; holster 0.20.0-dev GATE PASS head=247b579f, not installed; play SM-L15; next HW32b after SM-L13 logs |
 | HW29b | Pole from grip: `reachPoleBias` behind `reach_pole_from_grip` (0) + `reach_pole_bias_deg` (20), f <= 0.30 only, HW23 hinge rules kept | HW29 | - | DONE | 247b579f | 7bdf9610 header + 247b579f wiring; reach_pole_from_grip 0 default; holster 0.20.0-dev GATE PASS head=247b579f, not installed; play SM-L15 |
+| HW39 | Queue the missing play rows SM-L6..SM-L9 (section 5) so HW28b, 4.7.4, HW33 item 3 and HW34 can unblock | - | - | TODO | | B7 inline |
+| HW37 | Via clock into `HolsterSlide.h` (`slideResidDrawWindow`, `slideResidStowWindow`, `slideViaProgress`, `slideResidBranch`) with host tests; Holster.cpp calls the helpers; no behaviour change -> 0.20.1-dev | HW31b | - | TODO | | B7 |
+| HW38 | `holster_log_check.py` summaries for `dly= vo= pb= wr f dzA fy fx`, per-row verdicts `--row SM-L11..SM-L15`, `--mounts --json` for the sweep | HW35, HW31b | - | TODO | | B7 |
+| HW32c | Sweep models 0.20: residual path + via offset + pole bias, stow direction, extract before the arm solve, `--back-quat` / `--mounts-json` | HW32, HW37, HW38 | - | TODO | | B7; makes HW32b a mechanical re-run |
 | HW32b | Re-run the sweep with the measured back-mount quat, re-tune hinge out + extract defaults | HW35 + play SM-L13 logs | - | GATED | | runs as its own phase once SM-L13 logs exist |
 | HW34 | Saber blade gate (ignite after the swing clears, douse before the stow carry) | play SM-L9 | user GO | GATED | | only if the blade shows at the hip |
 
@@ -156,6 +160,12 @@ Once per (bone, stem) settle at rest and on change, capped at once per 5 s per G
 
 ### 4.14 HW31b Via on the residual path
 `carryShownBase` uses the hand-frame residual for fresh draws and full stows, so B4's via (carryBlend only) is inert there. `reachResidualVia(rres, viaH, t, ms, draw)`: two segments `rres -> viaH -> I` on draw (reverse on stow), hemisphere-locked, continuous at the join; identity via = `reachResidual` byte for byte. `reachViaOffset`: lateral T offset outside the shoulder (`reach_via_out_m` 0.12) as a bump over the via phase, 0 at both ends.
+
+### 4.15 B7 offline prep (HW39, HW37, HW38, HW32c; no behaviour change)
+HW39: SM-L6..SM-L9 were only in section 5, never in `PLAY_TEST_QUEUE.md`, so four gated items could not unblock; B7 queues them against the current build (SM-L6 can only run its 570 ms half until an HW28b probe build exists).
+HW37: `residDrawWindow`, `residStowWindow` and `viaProgress` were `static` in Holster.cpp and `viaProgress` copied the carryShownBase branch guards by hand (R-W7 drift risk); they move into `HolsterSlide.h` as pure helpers plus one `slideResidBranch` (None / Draw / Stow) shared by both callers, host-tested; the DLL output is unchanged, so 0.20.1-dev is a patch bump.
+HW38: the checker summarises `dly= vo= pb= wr f dzA fy fx`, prints PASS / FAIL / NO-DATA per pass-signal clause with `--row SM-L11..SM-L15` (old logs without the field = NO-DATA, never FAIL), and `--mounts --json` emits `[{cat, bone, count, nofacing, rel, spread}]`.
+HW32c: the sweep takes `--back-quat w,x,y,z` / `--mounts-json <file>` (measured `rel` replaces the back-mount GUESS, `src=log|guess`), models the 0.20 hand-frame residual path with the via offset and pole bias, runs `--dir draw|stow|both`, and applies the extract offset before the arm solve; HW32b then runs `holster_log_check.py --mounts --json > m.json` and `holster_sweep --mounts-json m.json --table`.
 
 ## 5. Play checks (queue rows added when the batch installs; never block)
 
