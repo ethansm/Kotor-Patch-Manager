@@ -1,18 +1,23 @@
 #!/usr/bin/env python3
 """Holster probe log checker (holster route). Python 3, stdlib only; read-only (--new writes only its bookmark).
 
-Usage: holster_log_check.py [LOG | --log LOG] [--new [--no-advance] [--state PATH]] [--mounts]
+Usage: holster_log_check.py [LOG | --log LOG] [--new [--no-advance] [--state PATH]] [--mounts [--json]] [--row SM-L11..SM-L15]
   Default log: ~/.local/share/Steam/steamapps/common/Knights of the Old Republic II/holster_log.txt
-  Report (at most 47 lines): header, status (loaded / cap reached / BONETEST), COMB edges per creature (plus unreadable=N for `old=? edge=?` lines), ATTACH tags and
+  Report (at most 50 lines: the 47-line base report plus at most 3 HW38 lines, SLIDE dly / REACH HW38 / REACH min/median/max, each only when its
+  field appears in the window): header, status (loaded / cap reached / BONETEST), COMB edges per creature (plus unreadable=N for `old=? edge=?` lines), ATTACH tags and
   (body, handleR, handleL) tuples per creature, SWAP total, GOBREUSE total, FLOURISH open/close, SLIDE start/end (draw/stow split, frames min/max, maxdt max), PARTYHOLD on/off, MOVEHOLD total, DELAY cuts (combat/flourish), ANIMRES and ANIMSEND id histograms, GOB samples per gob
   (the 8 with the most samples: parent18, pos min/max/mean per axis, quat min/max per component, mean-quat angle),
   PLACE (only when PLACE lines exist: count, gobvt histogram, quat1 unit-norm check, last pos0/quat0 -> pos1/quat1 for the
   4 gobs with the most samples; the GOB view then drops to 4 gobs so the report stays within 47 lines). REACH (HW19 probe): found, steps, persist1, wrote_both, refusals, err range.
   MOUNT (HW35, only when `MOUNT gob=` lines exist; GOB view drops to 2 gobs): per (cat, bone) at most 3 rows: count (nofacing included), nofacing,
   component-wise median of rel (sign-aligned, normalized; nofacing excluded), spread = max angle of any rel from that median.
-  --mounts: print only the MOUNT section.
+  --mounts: print only the MOUNT section. --mounts --json: the same per (cat, bone) groups as a JSON list on stdout, nothing else (--json needs --mounts).
+  HW38 (0.19/0.20 fields, each line only when its field appears in the window): `SLIDE dly` (dly= on SLIDE start, count and max per Gob),
+  `REACH HW38` (vo= max and vo>0 outside mid-carry, pb= max and pb>0 at f>0.30), `REACH min/median/max` (wr, f, dzA, fy, fx).
+  --row SM-L11..SM-L15: pass-signal clauses of one play-test row (PLAY_TEST_QUEUE.md), `SM-Lnn <clause>: PASS|FAIL|NO-DATA <reason>`, then
+  `SM-Lnn verdict`. Exit 0 PASS, 1 FAIL, 3 NO-DATA; unknown row = exit 2.
   --new: only lines after the bookmark shared with log_triage (same state file, keyed by absolute path), then advance it.
-  Exit 0 = analyzed, 2 = log missing ("no log: <path>").
+  Exit 0 = analyzed, 2 = log missing ("no log: <path>") or a bad flag combination.
 
 Grammar: patch_manager_mods/holster_src/Holster.cpp. Each keyword is found with a regex search, so a KpLog stamp in front
 is fine. A keyword line whose fields do not parse is counted in skipped (one example line is shown).
@@ -23,6 +28,7 @@ counts samples whose sign disagrees with the first one (a flipped sample is the 
 from __future__ import annotations
 
 import argparse
+import json
 import math
 import os
 import re
@@ -53,6 +59,21 @@ KIND_RE = re.compile(r"\b(COMB|ATTACH|SWAP|ANIMRES|ANIMSEND|GOB|PLACE|GOBREUSE|F
 # HW35 MOUNT lines start with `gob=`; the older chPlace line `MOUNT <what> parent=...` is not a record (MAIN_RES["mount"] counts it).
 MOUNT_HEAD_RE = re.compile(r"\bMOUNT gob=")
 MOUNT_NUM = r"[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?"
+# HW38: SLIDE cut lines carry owner and gob (the start/end records do not all of them: end has no gob); REACH vo=/pb=/f= are read off the whole line.
+SLIDE_CUT_EV_RE = _rx(r"\bSLIDE cut reason=\w+ owner=(?P<owner><H>) gob=(?P<gob><H>) left=(?P<left><I>)")
+REACH_LINE_RE = re.compile(r"\bREACH owner=\w+ w=")
+REACH_VO_RE = re.compile(r"\bREACH owner=\w+ w=.*? vo=(%s)" % NUM)
+REACH_PB_RE = re.compile(r"\bREACH owner=\w+ w=.*? pb=(%s)" % NUM)
+REACH_F_RE = re.compile(r"\bREACH owner=\w+ w=.*? f=(%s)" % NUM)
+# HW38 edges of the carry: the printed f is 2 decimals, so 0.00 and 1.00 are reach/release (the via bump is 0 there); anything between is mid-carry.
+CARRY_EDGE_F = 0.005
+# SM-L15: vo comes from the via clock (viaProgress), not from the printed f= clock, so a tiny vo at a printed edge is not a FAIL:
+# vo below this (m) counts as 0 for "vo=0 at reach/release".
+VO_EDGE_TOL = 0.005
+# HW38 SM-L14: the stagger window for dly= on the left Gob (ms), and the via/pole limits of SM-L11..SM-L15
+DLY_LO_MS, DLY_HI_MS = 50, 70
+PB_F_MAX = 0.30          # HW29b kPoleBiasEndF: pb > 0 only at f <= this
+EX_EXTRACT = 0.05        # the existing "extracting" threshold on ex= (same as the summary)
 
 
 def _mount_quat(name):
@@ -80,8 +101,9 @@ FULL_RE = {
     "GOBREUSE": _rx(r"\bGOBREUSE gob=(?P<gob><H>) node=(?P<node><H>) oldm=(?P<oldm>\S+) newm=(?P<newm>\S+)"),
     "FLOURISH": _rx(r"\bFLOURISH (?:(?P<open>open) slot=(?P<oslot><I>) cli=<I> srv=<I> p524=<I> p528=<I> b11E8=<I>"
                   r"|(?P<close>close) slot=(?P<cslot><I>) p520=<I> p524=<I>)"),
-    "SLIDE": _rx(r"\bSLIDE (?:(?P<start>start) dir=(?P<sdir>\w+) owner=<H> gob=<H> left=<I> from=<N> ms=<I>"
-                 r"|(?P<end>end) dir=(?P<edir>\w+) owner=<H> ms=<I> frames=(?P<frames><I>) maxdt=(?P<maxdt><I>))"),
+    # HW38: start may end with dly=<ms> (dual stagger, left Gob); owner/gob/left are named for the SM-L14 open/close matching
+    "SLIDE": _rx(r"\bSLIDE (?:(?P<start>start) dir=(?P<sdir>\w+) owner=(?P<sowner><H>) gob=(?P<sgob><H>) left=(?P<sleft><I>) from=<N> ms=<I>(?: dly=(?P<dly><I>))?"
+                 r"|(?P<end>end) dir=(?P<edir>\w+) owner=(?P<eowner><H>) ms=<I> frames=(?P<frames><I>) maxdt=(?P<maxdt><I>))"),
 }
 MAIN_RES = {
     "loaded": re.compile(r"\bholster (\S+) loaded\b"),
@@ -169,7 +191,8 @@ def parse_lines(window):
             "owner": Counter(), "combc": set(), "partyhold": Counter(), "movehold": 0, "delay": Counter(),
             "reach": [], "slidecut": Counter(), "resid": [], "reachfound": 0, "reachrefuse": Counter(), "reachhold": Counter(), "reachtw": [], "reachex": [],
             "reachtopo": Counter(), "slidecfg": [],
-            "preview": [], "camnode": [], "wmname": set()}
+            "preview": [], "camnode": [], "wmname": set(),
+            "slide_seq": [], "vo": [], "pb": []}   # HW38: SLIDE start/end/cut events in log order; (f or None, vo) and (f or None, pb) per REACH line
     for n, raw in window:
         text = raw.strip()
         m = MAIN_RES["loaded"].search(text)
@@ -215,6 +238,9 @@ def parse_lines(window):
             mc = re.search(r"\bSLIDE cut reason=(\w+)", text)
             if mc:
                 main["slidecut"][mc.group(1)] += 1
+            mce = SLIDE_CUT_EV_RE.search(text)   # HW38: the cut closes the running slide of that Gob (SM-L14)
+            if mce:
+                main["slide_seq"].append({"ev": "cut", "owner": _hex(mce.group("owner")), "gob": _hex(mce.group("gob")), "left": int(mce.group("left")) == 1})
         if " RESID " in text or text.startswith("RESID "):   # HW24: carried-hand vs mount residual at the carryW step
             mr = re.search(r"\bRESID .*?\bpos_cm=(-?[\d.]+) ang=(-?[\d.]+) dq=(-?[\d.]+)", text)
             if mr:
@@ -244,6 +270,15 @@ def parse_lines(window):
             m = MAIN_RES["reachrefuse"].search(text)
             if m:
                 main["reachrefuse"][m.group(1)] += 1
+        if REACH_LINE_RE.search(text):   # HW38: vo= / pb= (0.20.0-dev) with the f= of the same line; a missing f is None (not classified)
+            mf = REACH_F_RE.search(text)
+            fval = float(mf.group(1)) if mf else None
+            mv = REACH_VO_RE.search(text)
+            if mv:
+                main["vo"].append((fval, float(mv.group(1))))
+            mp = REACH_PB_RE.search(text)
+            if mp:
+                main["pb"].append((fval, float(mp.group(1))))
         m = MAIN_RES["preview"].search(text)
         if m:
             main["preview"].append(m.groups())
@@ -282,6 +317,12 @@ def parse_lines(window):
             recs.append(_record(kind, n, f))
             if kind == "COMB":
                 main["combc"].add(recs[-1]["creature"])
+            if kind == "SLIDE":   # HW38: start (with its optional dly=) or end (owner only: the end line names no Gob)
+                if f.group("start"):
+                    main["slide_seq"].append({"ev": "start", "owner": _hex(f.group("sowner")), "gob": _hex(f.group("sgob")), "left": int(f.group("sleft")) == 1,
+                                              "dir": f.group("sdir"), "dly": int(f.group("dly")) if f.group("dly") else None})
+                else:
+                    main["slide_seq"].append({"ev": "end", "owner": _hex(f.group("eowner")), "dir": f.group("edir")})
     return recs, skipped, main
 
 
@@ -498,6 +539,259 @@ def _mounts(recs, skipped):
     return out
 
 
+def _jnum(x):
+    """A finite float for JSON, else None (inf/nan from an absurd exponent never reaches the JSON)."""
+    return float(x) if x is not None and math.isfinite(x) else None
+
+
+def _mounts_json(recs):
+    """HW38 --mounts --json: one entry per (cat, bone), sorted by cat then bone, no cap. rel = median (w, x, y, z) or null when no facing
+    sample; spread = deg (unrounded, the same value SM-L13 judges) or null."""
+    per = {}
+    for r in recs:
+        if r["kind"] == "MOUNT":
+            per.setdefault((r["cat"], r["bone"]), []).append(r)
+    out = []
+    for (cat, bone), samples in sorted(per.items(), key=lambda kv: (kv[0][0], kv[0][1])):
+        med, spread = _mount_stats(samples)
+        out.append({"cat": cat, "bone": bone, "count": len(samples), "nofacing": sum(1 for s in samples if s["nofacing"]),
+                    "rel": None if med is None else [_jnum(v) for v in med], "spread": _jnum(spread)})
+    return out
+
+
+def _slide_dly_lines(f):
+    """HW38: dly= on SLIDE start lines (dual stagger; the left Gob): count and max per Gob. [] when no start carries dly=."""
+    starts = [e for e in f.get("slide_seq", []) if e["ev"] == "start" and e["dly"] is not None]
+    if not starts:
+        return []
+    per = {}
+    for e in starts:
+        per.setdefault(e["gob"], []).append(e)
+    ordered = sorted(per.items(), key=lambda kv: -len(kv[1]))   # stable: ties keep first-seen order
+    parts = ["gob=0x%s %s n=%d max=%d" % (gid, "L" if v[0]["left"] else "R", len(v), max(e["dly"] for e in v)) for gid, v in ordered[:4]]
+    if len(ordered) > 4:
+        parts.append("+%d more gobs" % (len(ordered) - 4))
+    return ["SLIDE dly n=%d max=%d per Gob: %s" % (len(starts), max(e["dly"] for e in starts), "; ".join(parts))]
+
+
+def _mid_carry(fv):
+    """HW38: f strictly inside the carry. The printed f has 2 decimals, so 0.00 and 1.00 are the reach/release edges (CARRY_EDGE_F)."""
+    return CARRY_EDGE_F < fv < 1.0 - CARRY_EDGE_F
+
+
+def _reach_hw38_lines(f):
+    """HW38 REACH summaries: vo= (max, vo>0 outside mid-carry), pb= (max, pb>0 at f>0.30), wr/f/dzA/fy/fx min/median/max.
+    Each line is printed only when its field appears in the window."""
+    out = []
+    vo, pb = f.get("vo", []), f.get("pb", [])
+    parts = []
+    if vo:
+        outside = sum(1 for fv, v in vo if fv is not None and not _mid_carry(fv) and v > 0)
+        parts.append("vo max=%.3f vo>0 outside mid-carry=%d (%.1f%% of %d lines)" % (max(v for _, v in vo), outside, 100.0 * outside / len(vo), len(vo)))
+    if pb:
+        late = sum(1 for fv, v in pb if fv is not None and fv > PB_F_MAX and v > 0)
+        parts.append("pb max=%.1f pb>0 at f>%.2f=%d (of %d lines)" % (max(v for _, v in pb), PB_F_MAX, late, len(pb)))
+    if parts:
+        out.append("REACH HW38 " + " | ".join(parts))
+    stats = []
+    for name, idx, fmt in (("wr", 5, "%.0f"), ("f", 7, "%.2f"), ("dzA", 8, "%.2f"), ("fy", 9, "%.2f"), ("fx", 10, "%.2f")):
+        vals = [x[idx] for x in f.get("reach", []) if len(x) > idx and x[idx] is not None]
+        if vals:
+            stats.append("%s %s/%s/%s" % (name, fmt % min(vals), fmt % statistics.median(vals), fmt % max(vals)))
+    if stats:
+        out.append("REACH min/median/max: " + " | ".join(stats))
+    return out
+
+
+# ---- --row SM-Lnn: pass-signal clauses of the play-test rows (PLAY_TEST_QUEUE.md). Each clause is (label, PASS|FAIL|NO-DATA, reason).
+ROWS = ("SM-L11", "SM-L12", "SM-L13", "SM-L14", "SM-L15")
+ROW_EXIT = {"PASS": 0, "FAIL": 1, "NO-DATA": 3}
+
+
+def _max_clause(label, vals, limit, inclusive, fmt):
+    """PASS when max(vals) <= limit (inclusive) or < limit; FAIL otherwise; NO-DATA when no line carries the field."""
+    if not vals:
+        return (label, "NO-DATA", "no line carries the field")
+    worst = max(vals)
+    ok = worst <= limit if inclusive else worst < limit
+    return (label, "PASS" if ok else "FAIL", ("max " + fmt + " over %d line(s)") % (worst, len(vals)))
+
+
+def _sm_l11(main):
+    """Forearm twist and wrist swing caps (the REACH tw=/sw= tail, HW29) and the g-cap margin (the REACH g=/cap= fields, HW24)."""
+    tws = main.get("reachtw", [])
+    gc = [x[11] - x[12] for x in main.get("reach", []) if len(x) > 12 and x[11] is not None and x[12] is not None]
+    return [_max_clause("tw<=80", [t for t, _ in tws], 80.0, True, "%.0f"),
+            _max_clause("sw<=60", [s for _, s in tws], 60.0, True, "%.0f"),
+            _max_clause("g-cap<20", gc, 20.0, False, "%.0f")]
+
+
+def _sm_l12(main):
+    """Extraction (ex=) and orientation (of=, HW31): of stays 0 on every extracting frame (ex > 0.05), and of reaches 1 somewhere."""
+    ex = main.get("reachex", [])
+    if not ex:
+        return [("of=0 through lift", "NO-DATA", "no REACH line with ex="), ("of reaches 1", "NO-DATA", "no REACH line with ex=")]
+    lift = [(e, o) for e, o in ex if e > EX_EXTRACT]
+    if not lift:
+        c1 = ("of=0 through lift", "NO-DATA", "no extracting frame (ex<=%.2f on all %d lines): lift not seen" % (EX_EXTRACT, len(ex)))
+    else:
+        bad = [o for _, o in lift if o > EX_EXTRACT]
+        if bad:
+            c1 = ("of=0 through lift", "FAIL", "of>%.2f on %d of %d extracting frames (max of=%.2f)" % (EX_EXTRACT, len(bad), len(lift), max(bad)))
+        else:
+            c1 = ("of=0 through lift", "PASS", "of<=%.2f on all %d extracting frames (max ex=%.2f)" % (EX_EXTRACT, len(lift), max(e for e, _ in lift)))
+    top = max(o for _, o in ex)
+    if top >= 0.99:
+        c2 = ("of reaches 1", "PASS", "max of=%.2f" % top)
+    else:
+        c2 = ("of reaches 1", "NO-DATA", "max of=%.2f: no full orientation (a reversed draw stops short)" % top)
+    return [c1, c2]
+
+
+def _spread_clause(spreads):
+    """spreads: [(spread deg, cat, bone)] over the groups with a facing sample. FAIL when any spread >= 5.0 (exactly 5.0 fails);
+    NO-DATA when there is none."""
+    if not spreads:
+        return ("spread<5 deg", "NO-DATA", "no facing sample in any MOUNT group")
+    worst = max(spreads)
+    over = [g for g in spreads if g[0] >= 5.0]
+    if over:
+        return ("spread<5 deg", "FAIL", "%d group(s) at or above 5 deg; worst cat=%d bone=%s spread=%.2f" % (len(over), worst[1], worst[2], worst[0]))
+    return ("spread<5 deg", "PASS", "%d group(s), max spread=%.2f deg (cat=%d bone=%s)" % (len(spreads), worst[0], worst[1], worst[2]))
+
+
+def _sm_l13(recs):
+    """Rest-pose mount capture (HW35): spread < 5 deg per (cat, bone) (exactly 5.0 fails) and nofacing == 0. Old `MOUNT <what> parent=` lines are not records."""
+    per = {}
+    for r in recs:
+        if r["kind"] == "MOUNT":
+            per.setdefault((r["cat"], r["bone"]), []).append(r)
+    if not per:
+        return [("spread<5 deg", "NO-DATA", "no MOUNT gob= lines"), ("nofacing==0", "NO-DATA", "no MOUNT gob= lines")]
+    groups = sorted(per.items())
+    spreads = []
+    for (cat, bone), samples in groups:
+        _, sp = _mount_stats(samples)
+        if sp is not None:
+            spreads.append((sp, cat, bone))
+    c1 = _spread_clause(spreads)
+    nof = [(cat, bone, sum(1 for s in samples if s["nofacing"])) for (cat, bone), samples in groups]
+    bad = [g for g in nof if g[2] > 0]
+    if bad:
+        c2 = ("nofacing==0", "FAIL", "nofacing>0 in %d group(s); first cat=%d bone=%s nofacing=%d" % (len(bad), bad[0][0], bad[0][1], bad[0][2]))
+    else:
+        c2 = ("nofacing==0", "PASS", "nofacing=0 in all %d group(s)" % len(nof))
+    return [c1, c2]
+
+
+def _sm_l14(main):
+    """Dual stagger (HW33a): dly= on the left Gob in 50..70 ms; no dly= on a right Gob; every SLIDE start ends or is cut (a start with no end = stuck).
+    No dly= field at all = NO-DATA for the whole row. A reversal logs a second start for the same Gob: that supersedes the first (not stuck)."""
+    labels = ("dly 50..70 ms on left", "no dly on right", "every start ends or is cut")
+    seq = main.get("slide_seq", [])
+    starts = [e for e in seq if e["ev"] == "start"]
+    dly = [e for e in starts if e["dly"] is not None]
+    if not dly:
+        return [(lb, "NO-DATA", "no dly= field in window") for lb in labels]
+    left = [e["dly"] for e in dly if e["left"]]
+    if not left:
+        c1 = (labels[0], "NO-DATA", "no dly= on a left Gob")
+    else:
+        off = [v for v in left if not DLY_LO_MS <= v <= DLY_HI_MS]
+        if off:
+            c1 = (labels[0], "FAIL", "left dly=%d outside %d..%d ms (%d of %d left starts)" % (off[0], DLY_LO_MS, DLY_HI_MS, len(off), len(left)))
+        else:
+            c1 = (labels[0], "PASS", "left dly=%d..%d ms over %d left start(s)" % (min(left), max(left), len(left)))
+    right = [e for e in dly if not e["left"]]
+    if right:
+        c2 = (labels[1], "FAIL", "dly=%d on right Gob gob=0x%s (%d right starts)" % (right[0]["dly"], right[0]["gob"], len(right)))
+    else:
+        c2 = (labels[1], "PASS", "no dly= on a right Gob (%d left starts)" % len(left))
+    running, ended, superseded = [], 0, 0
+    for e in seq:
+        if e["ev"] == "start":
+            prev = [o for o in running if o["owner"] == e["owner"] and o["gob"] == e["gob"]]
+            if prev:
+                running.remove(prev[0])
+                superseded += 1
+            running.append(e)
+        elif e["ev"] == "cut":   # the cut names the Gob
+            hit = [o for o in running if o["owner"] == e["owner"] and o["gob"] == e["gob"]]
+            if hit:
+                running.remove(hit[0])
+                ended += 1
+        else:                    # the end names only the owner: the oldest running start of that owner
+            hit = [o for o in running if o["owner"] == e["owner"]]
+            if hit:
+                running.remove(hit[0])
+                ended += 1
+    if running:
+        c3 = (labels[2], "FAIL", "%d start(s) never ended (stuck): first gob=0x%s dir=%s" % (len(running), running[0]["gob"], running[0]["dir"]))
+    else:
+        c3 = (labels[2], "PASS", "%d start(s): %d ended or cut, %d superseded by a reversal" % (len(starts), ended, superseded))
+    return [c1, c2, c3]
+
+
+def _sm_l15(main):
+    """Via on the residual path (HW31b, vo=) and pole bias (HW29b, pb=): vo = 0 at reach/release and peaks mid-carry; pb > 0 only at f <= 0.30.
+    Lines without vo=/pb= (older logs) are NO-DATA, never FAIL."""
+    vo, pb = main.get("vo", []), main.get("pb", [])
+    if not vo:
+        out = [("vo=0 at reach/release", "NO-DATA", "no vo= field (older log)"), ("vo peaks mid-carry", "NO-DATA", "no vo= field (older log)")]
+    else:
+        known = [(fv, v) for fv, v in vo if fv is not None]
+        if not known:
+            out = [("vo=0 at reach/release", "NO-DATA", "no f= on the vo= lines"), ("vo peaks mid-carry", "NO-DATA", "no f= on the vo= lines")]
+        else:
+            edge = [v for fv, v in known if not _mid_carry(fv) and v >= VO_EDGE_TOL]
+            if edge:
+                c1 = ("vo=0 at reach/release", "FAIL", "vo>=%.3f m at reach/release on %d of %d lines (max vo=%.3f; vo<%.3f m counts as 0)"
+                      % (VO_EDGE_TOL, len(edge), len(known), max(edge), VO_EDGE_TOL))
+            else:
+                c1 = ("vo=0 at reach/release", "PASS", "vo=0 at reach/release on all %d lines (vo<%.3f m counts as 0)" % (len(known), VO_EDGE_TOL))
+            mid = [v for fv, v in known if _mid_carry(fv)]
+            if not mid:
+                c2 = ("vo peaks mid-carry", "NO-DATA", "no mid-carry frame in window")
+            elif max(mid) > 0:
+                c2 = ("vo peaks mid-carry", "PASS", "vo max=%.3f mid-carry over %d line(s)" % (max(mid), len(mid)))
+            else:
+                c2 = ("vo peaks mid-carry", "NO-DATA", "vo=0 mid-carry: no rifle or quarterstaff carry in window")
+            out = [c1, c2]
+    if not pb:
+        out.append(("pb>0 only at f<=0.30", "NO-DATA", "no pb= field (older log)"))
+    else:
+        known = [(fv, v) for fv, v in pb if fv is not None]
+        late = [v for fv, v in known if fv > PB_F_MAX and v > 0]
+        if late:
+            out.append(("pb>0 only at f<=0.30", "FAIL", "pb>0 at f>%.2f on %d line(s) (max pb=%.1f)" % (PB_F_MAX, len(late), max(late))))
+        elif not known:
+            out.append(("pb>0 only at f<=0.30", "NO-DATA", "no f= on the pb= lines"))
+        elif max(v for _, v in pb) > 0:
+            out.append(("pb>0 only at f<=0.30", "PASS", "pb>0 only at f<=%.2f (max pb=%.1f over %d line(s))" % (PB_F_MAX, max(v for _, v in pb), len(pb))))
+        else:
+            out.append(("pb>0 only at f<=0.30", "PASS", "pb=0 on all %d line(s): pole pass not run, clause holds vacuously" % len(pb)))
+    return out
+
+
+def _row_report(row, recs, main):
+    """(exit code, output lines) for one --row: one line per clause, then the verdict (FAIL > NO-DATA > PASS)."""
+    if row == "SM-L11":
+        clauses = _sm_l11(main)
+    elif row == "SM-L12":
+        clauses = _sm_l12(main)
+    elif row == "SM-L13":
+        clauses = _sm_l13(recs)
+    elif row == "SM-L14":
+        clauses = _sm_l14(main)
+    else:
+        clauses = _sm_l15(main)
+    lines = ["%s %s: %s %s" % (row, label, status, reason) for label, status, reason in clauses]
+    statuses = {status for _, status, _ in clauses}
+    verdict = "FAIL" if "FAIL" in statuses else "NO-DATA" if "NO-DATA" in statuses else "PASS"
+    lines.append("%s verdict: %s" % (row, verdict))
+    return ROW_EXIT[verdict], lines
+
+
 def _preview_diag(f):
     """HE0 (doc 42 HW-EDIT): PREVIEWNODE = weapon Gobs still on the engine's rhand/lhand node (equip-screen preview, or in-world without
     bone_test); CAMNODE = one line per distinct parent with FindPart("camerahook") results (0 = not found, 1 = FindPart slot mismatch)."""
@@ -621,8 +915,10 @@ def render(recs, skipped, main_facts, nlines, meta):
     out += _attach(recs)
     out.append("SWAP total=%d" % sum(1 for r in recs if r["kind"] == "SWAP"))
     out += _events(recs)
+    out += _slide_dly_lines(main_facts)   # HW38: each of these is [] unless its field is in the window
     out += _toggle_events(main_facts)
     out += _reach_events(main_facts)
+    out += _reach_hw38_lines(main_facts)
     out.append(_hist("ANIMRES", recs))
     styles = Counter((r["self"], r["style"], r["gate"]) for r in recs if r["kind"] == "ANIMRES")
     if styles:   # C6: +0xC5 = wield style byte, +0xC6 = table gate; one entry per creature and value
@@ -675,14 +971,33 @@ def main(argv=None):
     ap.add_argument("--no-advance", action="store_true", help="with --new: do not move the bookmark")
     ap.add_argument("--state", default=LT.DEFAULT_STATE, help="bookmark file for --new")
     ap.add_argument("--mounts", action="store_true", help="print only the MOUNT (cat, bone) summary section")
+    ap.add_argument("--json", action="store_true", help="with --mounts: the MOUNT groups as a JSON list, nothing else on stdout")
+    ap.add_argument("--row", metavar="SM-Lnn", help="pass-signal verdict of one play-test row (SM-L11..SM-L15); exit 0 PASS, 1 FAIL, 3 NO-DATA")
     a = ap.parse_args(argv)
+    if a.json and not a.mounts:
+        print("--json needs --mounts", file=sys.stderr)
+        return 2
+    if a.row is not None:
+        a.row = a.row.upper()
+        if a.row not in ROWS:
+            print("unknown row %s: expected one of %s" % (a.row, ", ".join(ROWS)), file=sys.stderr)
+            return 2
+        if a.mounts:
+            print("--row cannot be combined with --mounts", file=sys.stderr)
+            return 2
     path = Path(a.log or a.log_pos or DEFAULT_LOG)
     if not path.is_file():
-        print("no log: %s" % path)
+        print("no log: %s" % path, file=sys.stderr if a.json else sys.stdout)   # --json: stdout stays pure JSON (or empty)
         return 2
     window, meta = read_window(path, a)
     recs, skipped, main_facts = parse_lines(window)
-    if a.mounts:
+    if a.row is not None:
+        rc, lines = _row_report(a.row, recs, main_facts)
+        print("\n".join(lines))
+        return rc
+    if a.mounts and a.json:
+        print(json.dumps(_mounts_json(recs)))
+    elif a.mounts:
         print("\n".join(_mounts(recs, skipped)))
     else:
         print("\n".join(render(recs, skipped, main_facts, len(window), meta)))

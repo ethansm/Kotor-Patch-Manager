@@ -856,5 +856,305 @@ class Hw35MountTests(unittest.TestCase):
         self.assertIn("GOB lines=55 gobs=10 (top 2 by samples shown)", out)
 
 
+# HW38 golden: a window with no dly= / vo= / pb= and no wr/f/dzA/fy/fx on its REACH line prints the report captured before HW38.
+GOLDEN_REACH = ("REACH owner=1a w=0.50 reach=1.00 S=(0,0,0) E=(0,0,0) H=(0,0,0) T=(0,0,0) Enew=(0,0,0) side=R cat=2 "
+                "u=1.00 lt=(0,0,0) err=0.010 persist=0 wrote=3")
+GOLDEN_BODIES = (fixture_bodies()[:-1]
+                 + [slide_start("draw"), slide_end("draw"), "SLIDE cut reason=first owner=1234 gob=5678 left=0 dir=stow frac=0.40"]
+                 + MOUNT_BODIES[:2] + [GOLDEN_REACH, CAP])
+GOLDEN_REPORT = [
+    "HOLSTER lines=35 parsed=30 skipped=0",
+    "status: loaded=yes 0.1.0-dev | cap reached=yes max_lines=60000 | BONETEST=patched x1 | TID gobupdate=absent place=absent | RELOAD 0",
+    "COMB edges=5 creatures=2",
+    "  creature=0x2a1 edges=3 last new=1",
+    "  creature=0x1f0 edges=2 last new=0",
+    "ATTACH n=4 creatures=2 tags: 'hand_r'=3 'hand_l'=1",
+    "  creature=0x1f0 distinct=2 (body/handleR/handleL): 5/9/0 x2; 5/9/a x1",
+    "  creature=0x2a1 distinct=1 (body/handleR/handleL): 7/0/0 x1",
+    "SWAP total=3",
+    "GOBREUSE total=0",
+    "FLOURISH open=0 close=0",
+    "SLIDE start=1 end=1 draw=1 stow=0 frames min=21 max=21 maxdt max=49",
+    "PARTYHOLD on=0 off=0",
+    "MOVEHOLD total=0",
+    "DELAY cuts=0 combat=0 flourish=0",
+    "REACH found=0 steps=1 persist1=0 wrote_both=1 refuse=none err min=0.010 med=0.010 max=0.010 reach<1=0 wrist=0 hg=0 cut=first:1",
+    "ANIMRES n=4 distinct=2 top10: 0x1f x3, 0x7 x1 | style per creature (self style/gate): 10 0/1 x2, 11 0/1 x2",
+    "ANIMSEND n=2 distinct=1 top10: 0x1f x2",
+    "GOB lines=5 gobs=2",
+    "  gob=0x9000 samples=3 parent18=0x1234 sign_flips=1 rot_mean=13.37 deg",
+    "    pos x 0.000..0.200 mean 0.100 | y 1.000..1.000 mean 1.000 | z 2.000..2.400 mean 2.200",
+    "    quat w -0.985..1.000 | x 0.000..0.000 | y 0.000..0.000 | z -0.174..0.174",
+    "  gob=0x9100 samples=2 parent18=0x1234 sign_flips=0 rot_mean=0.00 deg",
+    "    pos x 5.000..5.000 mean 5.000 | y 5.000..5.000 mean 5.000 | z 5.000..5.500 mean 5.250",
+    "    quat w 1.000..1.000 | x 0.000..0.000 | y 0.000..0.000 | z 0.000..0.000",
+    "PLACE lines=3 gobs=2 gobvt distinct=2: 0x1f x2, 0x7 x1",
+    "PROBLEM PLACE quat1 |norm-1|>0.002: count=1 worst=0.0050 e.g. L27 gob=0x9300",
+    "  gob=0x9200 samples=2 last pos0=(0.100,0.000,0.000) quat0=(0.985,0.000,0.000,0.174)",
+    "    -> pos1=(0.200,0.000,0.000) quat1=(0.985,0.000,0.000,0.174)",
+    "  gob=0x9300 samples=1 last pos0=(1.000,1.000,1.000) quat0=(1.000,0.000,0.000,0.000)",
+    "    -> pos1=(1.000,1.000,1.500) quat1=(1.000,0.000,0.000,0.100)",
+    "MOUNT lines=2 nofacing=0 skipped=0 groups=1",
+    "  cat=1 bone=torso_g count=2 nofacing=0 median rel=(0.500,0.500,0.500,0.500) spread=0.00 deg",
+]
+
+
+def reach38(f=0.40, tw=40, sw=30, g=70, cap=90, ex=0.0, of_=0.0, vo=None, pb=None, wr=88):
+    """A 0.20-style REACH line in the Holster.cpp tail order. vo/pb None = the field is absent (an older log)."""
+    line = ("REACH owner=1a w=0.50 reach=1.00 S=(0,0,0) E=(0,0,0) H=(0,0,0) T=(0,0,0) Enew=(0,0,0) side=R cat=2 "
+            "u=1.00 lt=(0,0,0) err=0.010 persist=0 wrote=7 wr=%d hg=1 f=%.2f dzA=0.22 fy=-0.10 fx=0.05 g=%d cap=%d hold=0 "
+            "topo=hip bk=1 tw=%d sw=%d ex=%.2f of=%.2f") % (wr, f, g, cap, tw, sw, ex, of_)
+    if vo is not None:
+        line += " vo=%.3f" % vo
+    if pb is not None:
+        line += " pb=%.1f" % pb
+    return line
+
+
+def slide38(ev, owner=0x1F, gob=0x2A, left=1, dly=None, dir_="draw"):
+    """SLIDE start (dly= appended when given), end (owner only, as Holster.cpp prints it) or cut (names the Gob)."""
+    if ev == "start":
+        line = "SLIDE start dir=%s owner=%x gob=%x left=%d from=0.00 ms=520" % (dir_, owner, gob, left)
+        return line if dly is None else line + " dly=%d" % dly
+    if ev == "end":
+        return "SLIDE end dir=%s owner=%x ms=520 frames=30 maxdt=20" % (dir_, owner)
+    return "SLIDE cut reason=first owner=%x gob=%x left=%d dir=%s frac=0.10" % (owner, gob, left, dir_)
+
+
+def rel_deg(theta):
+    """A mount rel quat (w, x, y, z) for a rotation of theta degrees about x."""
+    h = math.radians(theta) / 2.0
+    return "(%.6f,%.6f,0,0)" % (math.cos(h), math.sin(h))
+
+
+def run_err(argv):
+    """(rc, stdout lines, stderr text) for argv that need no log file (the flag errors return before the file check)."""
+    err = io.StringIO()
+    with contextlib.redirect_stderr(err):
+        rc, out = run(argv)
+    return rc, out, err.getvalue()
+
+
+class Hw38RowTests(unittest.TestCase):
+    """HW38 --row SM-L11..SM-L15: a planted PASS and FAIL window per row, NO-DATA on an empty window, and the boundaries."""
+
+    def verdict(self, row, bodies, rc, word):
+        got_rc, out = run_log(bodies, ["--row", row])
+        self.assertEqual(got_rc, rc, out)
+        self.assertEqual(out[-1], "%s verdict: %s" % (row, word), out)
+        self.assertTrue(all(line.startswith(row + " ") for line in out), out)
+        return out
+
+    def test_sm_l11_pass_at_the_caps(self):
+        out = self.verdict("SM-L11", [reach38(tw=80, sw=60, g=85, cap=90), reach38(tw=40, sw=30, g=70, cap=90)], 0, "PASS")
+        self.assertIn("SM-L11 tw<=80: PASS max 80 over 2 line(s)", out)
+        self.assertIn("SM-L11 sw<=60: PASS max 60 over 2 line(s)", out)
+        self.assertIn("SM-L11 g-cap<20: PASS max -5 over 2 line(s)", out)
+
+    def test_sm_l11_fail_over_tw_and_gcap_of_exactly_20_fails(self):
+        out = self.verdict("SM-L11", [reach38(tw=95)], 1, "FAIL")
+        self.assertIn("SM-L11 tw<=80: FAIL max 95 over 1 line(s)", out)
+        out = self.verdict("SM-L11", [reach38(g=110, cap=90)], 1, "FAIL")   # g-cap = 20 exactly: the rule is < 20
+        self.assertIn("SM-L11 g-cap<20: FAIL max 20 over 1 line(s)", out)
+
+    def test_sm_l11_no_data_on_empty_window(self):
+        self.verdict("SM-L11", [LOADED], 3, "NO-DATA")
+
+    def test_sm_l12_pass_fail_no_data(self):
+        out = self.verdict("SM-L12", [reach38(ex=0.62, of_=0.00), reach38(ex=0.00, of_=1.00)], 0, "PASS")
+        self.assertIn("SM-L12 of=0 through lift: PASS of<=0.05 on all 1 extracting frames (max ex=0.62)", out)
+        self.assertIn("SM-L12 of reaches 1: PASS max of=1.00", out)
+        out = self.verdict("SM-L12", [reach38(ex=0.62, of_=0.35)], 1, "FAIL")
+        self.assertIn("SM-L12 of=0 through lift: FAIL of>0.05 on 1 of 1 extracting frames (max of=0.35)", out)
+        self.verdict("SM-L12", [LOADED], 3, "NO-DATA")
+
+    def test_sm_l13_pass_and_spread_fail_just_over_5(self):
+        out = self.verdict("SM-L13", [mount_line(rel=rel_deg(0)), mount_line(rel=rel_deg(0)), mount_line(rel=rel_deg(4.9))], 0, "PASS")
+        self.assertIn("SM-L13 spread<5 deg: PASS 1 group(s), max spread=4.90 deg (cat=1 bone=torso_g)", out)
+        self.assertIn("SM-L13 nofacing==0: PASS nofacing=0 in all 1 group(s)", out)
+        out = self.verdict("SM-L13", [mount_line(rel=rel_deg(0)), mount_line(rel=rel_deg(0)), mount_line(rel=rel_deg(5.2))], 1, "FAIL")
+        self.assertIn("SM-L13 spread<5 deg: FAIL 1 group(s) at or above 5 deg; worst cat=1 bone=torso_g spread=5.20", out)
+
+    def test_sm_l13_nofacing_fails_and_old_mount_lines_are_no_data(self):
+        out = self.verdict("SM-L13", [mount_line(rel=rel_deg(0)), MOUNT_NOFACING], 1, "FAIL")
+        self.assertIn("SM-L13 nofacing==0: FAIL nofacing>0 in 1 group(s); first cat=1 bone=torso_g nofacing=1", out)
+        self.verdict("SM-L13", [LOADED, "MOUNT 1a2b parent=5 bone=torso_g node=7 a=0 b=0"], 3, "NO-DATA")
+
+    def test_spread_exactly_five_degrees_is_a_fail(self):
+        self.assertEqual(H._spread_clause([(5.0, 1, "torso_g")])[1], "FAIL")
+        self.assertEqual(H._spread_clause([(4.999, 1, "torso_g")])[1], "PASS")
+        self.assertEqual(H._spread_clause([])[1], "NO-DATA")
+
+    def test_sm_l14_pass_with_dly_left_reversal_and_cut(self):
+        bodies = [slide38("start", gob=0x2A, left=1, dly=60), slide38("start", gob=0x2B, left=0), slide38("end"), slide38("end")]
+        out = self.verdict("SM-L14", bodies, 0, "PASS")
+        self.assertIn("SM-L14 dly 50..70 ms on left: PASS left dly=60..60 ms over 1 left start(s)", out)
+        self.assertIn("SM-L14 no dly on right: PASS no dly= on a right Gob (1 left starts)", out)
+        self.assertIn("SM-L14 every start ends or is cut: PASS 2 start(s): 2 ended or cut, 0 superseded by a reversal", out)
+        reversal = [slide38("start", gob=0x2A, left=1, dly=60), slide38("start", gob=0x2A, left=1), slide38("end")]
+        out = self.verdict("SM-L14", reversal, 0, "PASS")   # a second start on the same Gob supersedes the first: not stuck
+        self.assertIn("SM-L14 every start ends or is cut: PASS 2 start(s): 1 ended or cut, 1 superseded by a reversal", out)
+        self.verdict("SM-L14", [slide38("start", gob=0x2A, left=1, dly=60), slide38("cut", gob=0x2A, left=1)], 0, "PASS")
+
+    def test_sm_l14_stuck_slide_and_dly_on_right_gob_fail(self):
+        bodies = [slide38("start", gob=0x2A, left=1, dly=60), slide38("start", gob=0x2B, left=0, dly=40), slide38("end")]
+        out = self.verdict("SM-L14", bodies, 1, "FAIL")
+        self.assertIn("SM-L14 no dly on right: FAIL dly=40 on right Gob gob=0x2b (1 right starts)", out)
+        self.assertIn("SM-L14 every start ends or is cut: FAIL 1 start(s) never ended (stuck): first gob=0x2b dir=draw", out)
+        out = self.verdict("SM-L14", [slide38("start", gob=0x2A, left=1, dly=90), slide38("end")], 1, "FAIL")
+        self.assertIn("SM-L14 dly 50..70 ms on left: FAIL left dly=90 outside 50..70 ms (1 of 1 left starts)", out)
+
+    def test_sm_l14_no_dly_field_is_no_data_even_with_slides(self):
+        out = self.verdict("SM-L14", [slide38("start", gob=0x2A, left=1), slide38("end")], 3, "NO-DATA")
+        self.assertIn("SM-L14 dly 50..70 ms on left: NO-DATA no dly= field in window", out)
+        self.verdict("SM-L14", [LOADED], 3, "NO-DATA")
+
+    def test_sm_l15_pass_vo_zero_at_edges_and_pb_up_to_f_030(self):
+        ok = [reach38(f=0.00, vo=0.000, pb=0.0), reach38(f=0.50, vo=0.110, pb=0.0), reach38(f=1.00, vo=0.000, pb=0.0),
+              reach38(f=0.20, vo=0.080, pb=3.2), reach38(f=0.30, vo=0.000, pb=2.0)]
+        out = self.verdict("SM-L15", ok, 0, "PASS")
+        self.assertIn("SM-L15 vo=0 at reach/release: PASS vo=0 at reach/release on all 5 lines (vo<0.005 m counts as 0)", out)
+        self.assertIn("SM-L15 vo peaks mid-carry: PASS vo max=0.110 mid-carry over 3 line(s)", out)
+        self.assertIn("SM-L15 pb>0 only at f<=0.30: PASS pb>0 only at f<=0.30 (max pb=3.2 over 5 line(s))", out)
+
+    def test_sm_l15_fail_vo_at_edge_and_pb_past_f_030(self):
+        out = self.verdict("SM-L15", [reach38(f=1.00, vo=0.050, pb=0.0), reach38(f=0.50, vo=0.110, pb=5.0)], 1, "FAIL")
+        self.assertIn("SM-L15 vo=0 at reach/release: FAIL vo>=0.005 m at reach/release on 1 of 2 lines (max vo=0.050; vo<0.005 m counts as 0)", out)
+        self.assertIn("SM-L15 pb>0 only at f<=0.30: FAIL pb>0 at f>0.30 on 1 line(s) (max pb=5.0)", out)
+
+    def test_sm_l15_old_log_without_vo_is_no_data_never_fail(self):
+        out = self.verdict("SM-L15", [reach38(f=0.5), reach38(f=1.0)], 3, "NO-DATA")
+        self.assertIn("SM-L15 vo=0 at reach/release: NO-DATA no vo= field (older log)", out)
+        self.assertIn("SM-L15 pb>0 only at f<=0.30: NO-DATA no pb= field (older log)", out)
+        self.verdict("SM-L15", [LOADED], 3, "NO-DATA")
+
+    def test_carry_edges_are_the_printed_endpoints(self):
+        self.assertFalse(H._mid_carry(0.00))
+        self.assertFalse(H._mid_carry(1.00))
+        self.assertTrue(H._mid_carry(0.01))
+        self.assertTrue(H._mid_carry(0.99))
+
+    def test_sm_l14_dly_bounds_are_inclusive_50_to_70(self):
+        for v in (50, 70, 49, 71):
+            word = "PASS" if v in (50, 70) else "FAIL"
+            with self.subTest(dly=v):
+                out = self.verdict("SM-L14", [slide38("start", gob=0x2A, left=1, dly=v), slide38("end")], 0 if word == "PASS" else 1, word)
+                if word == "FAIL":
+                    self.assertIn("SM-L14 dly 50..70 ms on left: FAIL left dly=%d outside 50..70 ms (1 of 1 left starts)" % v, out)
+
+    def test_sm_l14_cut_closes_a_running_start_and_a_cut_on_the_other_gob_does_not(self):
+        out = self.verdict("SM-L14", [slide38("start", gob=0x2A, left=1, dly=60), slide38("cut", gob=0x2A, left=1)], 0, "PASS")
+        self.assertIn("SM-L14 every start ends or is cut: PASS 1 start(s): 1 ended or cut, 0 superseded by a reversal", out)
+        out = self.verdict("SM-L14", [slide38("start", gob=0x2A, left=1, dly=60), slide38("cut", gob=0x2B, left=0)], 1, "FAIL")
+        self.assertIn("SM-L14 every start ends or is cut: FAIL 1 start(s) never ended (stuck): first gob=0x2a dir=draw", out)
+
+    def test_sm_l15_pb_boundary_f_030_passes_and_031_fails(self):
+        rc, out = run_log([reach38(f=0.30, vo=0.000, pb=2.0)], ["--row", "SM-L15"])
+        self.assertIn("SM-L15 pb>0 only at f<=0.30: PASS pb>0 only at f<=0.30 (max pb=2.0 over 1 line(s))", out)
+        rc, out = run_log([reach38(f=0.31, vo=0.000, pb=2.0)], ["--row", "SM-L15"])
+        self.assertIn("SM-L15 pb>0 only at f<=0.30: FAIL pb>0 at f>0.30 on 1 line(s) (max pb=2.0)", out)
+        self.assertEqual(rc, 1)
+
+    def test_sm_l15_vo_edge_tolerance_0004_passes_and_0006_fails(self):
+        ok = [reach38(f=0.00, vo=0.004, pb=0.0), reach38(f=0.50, vo=0.110, pb=0.0)]
+        out = self.verdict("SM-L15", ok, 0, "PASS")
+        self.assertIn("SM-L15 vo=0 at reach/release: PASS vo=0 at reach/release on all 2 lines (vo<0.005 m counts as 0)", out)
+        bad = [reach38(f=1.00, vo=0.006, pb=0.0), reach38(f=0.50, vo=0.110, pb=0.0)]
+        out = self.verdict("SM-L15", bad, 1, "FAIL")
+        self.assertIn("SM-L15 vo=0 at reach/release: FAIL vo>=0.005 m at reach/release on 1 of 2 lines (max vo=0.006; vo<0.005 m counts as 0)", out)
+
+    def test_sm_l15_mid_carry_peak_present_passes_absent_is_no_data(self):
+        rc, out = run_log([reach38(f=0.50, vo=0.020, pb=0.0)], ["--row", "SM-L15"])
+        self.assertIn("SM-L15 vo peaks mid-carry: PASS vo max=0.020 mid-carry over 1 line(s)", out)
+        rc, out = run_log([reach38(f=0.00, vo=0.000, pb=0.0), reach38(f=0.50, vo=0.000, pb=0.0)], ["--row", "SM-L15"])
+        self.assertIn("SM-L15 vo peaks mid-carry: NO-DATA vo=0 mid-carry: no rifle or quarterstaff carry in window", out)
+        self.assertEqual(rc, 3)
+
+    def test_sm_l12_of_reaches_1_threshold_pinned_at_099(self):
+        rc, out = run_log([reach38(ex=0.00, of_=0.98)], ["--row", "SM-L12"])
+        self.assertIn("SM-L12 of reaches 1: NO-DATA max of=0.98: no full orientation (a reversed draw stops short)", out)
+        rc, out = run_log([reach38(ex=0.00, of_=0.99)], ["--row", "SM-L12"])
+        self.assertIn("SM-L12 of reaches 1: PASS max of=0.99", out)
+
+    def test_sm_l12_extract_lift_threshold_pinned_at_005(self):
+        rc, out = run_log([reach38(ex=0.05, of_=0.50)], ["--row", "SM-L12"])
+        self.assertIn("SM-L12 of=0 through lift: NO-DATA no extracting frame (ex<=0.05 on all 1 lines): lift not seen", out)
+        rc, out = run_log([reach38(ex=0.06, of_=0.50)], ["--row", "SM-L12"])
+        self.assertIn("SM-L12 of=0 through lift: FAIL of>0.05 on 1 of 1 extracting frames (max of=0.50)", out)
+        self.assertEqual(rc, 1)
+
+    def test_unknown_row_and_flag_errors_exit_2(self):
+        rc, out, err = run_err(["--row", "SM-L99", "/nonexistent.txt"])
+        self.assertEqual(rc, 2)
+        self.assertIn("unknown row SM-L99", err)
+        rc, out, err = run_err(["--json", "/nonexistent.txt"])
+        self.assertEqual(rc, 2)
+        self.assertIn("--json needs --mounts", err)
+        rc, out, err = run_err(["--row", "SM-L13", "--mounts", "/nonexistent.txt"])
+        self.assertEqual(rc, 2)
+
+
+class Hw38ReportTests(unittest.TestCase):
+    """HW38 default-report summaries: each line appears only when its field is in the window."""
+
+    def test_dly_vo_pb_and_stats_lines_when_fields_present(self):
+        rc, out = run_log([slide38("start", gob=0x2A, left=1, dly=60), slide38("end"), slide38("start", gob=0x2B, left=0), slide38("end"),
+                           reach38(f=0.2, vo=0.080, pb=3.2), reach38(f=0.5, vo=0.110, pb=0.0), reach38(f=1.0, vo=0.050, pb=0.0)])
+        self.assertEqual(rc, 0)
+        self.assertIn("SLIDE dly n=1 max=60 per Gob: gob=0x2a L n=1 max=60", out)
+        self.assertIn("REACH HW38 vo max=0.110 vo>0 outside mid-carry=1 (33.3% of 3 lines) | pb max=3.2 pb>0 at f>0.30=0 (of 3 lines)", out)
+        self.assertIn("REACH min/median/max: wr 88/88/88 | f 0.20/0.50/1.00 | dzA 0.22/0.22/0.22 | fy -0.10/-0.10/-0.10 | fx 0.05/0.05/0.05", out)
+
+    def test_worst_case_with_hw38_lines_stays_within_50(self):
+        """The 47-line worst case plus the three HW38 lines: the real cap is 50."""
+        bodies = worst_case()[:-1] + [slide38("start", gob=0x2A, left=1, dly=60), slide38("end"), reach38(f=0.20, vo=0.080, pb=3.2), CAP]
+        rc, out = run_log(bodies)
+        self.assertEqual(rc, 0)
+        self.assertLessEqual(len(out), 50)
+        self.assertEqual(sum(1 for line in out if line.startswith(("SLIDE dly", "REACH HW38", "REACH min/median/max"))), 3)
+
+    def test_no_hw38_line_for_old_reach_lines_without_vo_pb(self):
+        rc, out = run_log([reach38(f=0.5, tw=40, sw=30)])
+        self.assertFalse(any(line.startswith("REACH HW38") or line.startswith("SLIDE dly") for line in out))
+        self.assertIn("REACH min/median/max: wr 88/88/88 | f 0.50/0.50/0.50 | dzA 0.22/0.22/0.22 | fy -0.10/-0.10/-0.10 | fx 0.05/0.05/0.05", out)
+
+
+class Hw38JsonTests(unittest.TestCase):
+    """HW38 --mounts --json: exact keys, sorted by cat then bone, nothing else on stdout."""
+
+    def test_mounts_json_round_trips_with_exact_keys(self):
+        bodies = [mount_line(rel=rel_deg(0)), mount_line(rel=rel_deg(0)), mount_line(bone="a_bone", cat=2, rel=rel_deg(0)), MOUNT_NOFACING, MOUNT_BAD]
+        rc, out = run_log(bodies, ["--mounts", "--json"])
+        self.assertEqual(rc, 0)
+        self.assertEqual(len(out), 1)
+        data = json.loads(out[0])
+        self.assertEqual([list(d.keys()) for d in data], [["cat", "bone", "count", "nofacing", "rel", "spread"]] * 2)
+        self.assertEqual((data[0]["cat"], data[0]["bone"], data[0]["count"], data[0]["nofacing"]), (1, "torso_g", 3, 1))
+        self.assertAlmostEqual(data[0]["spread"], 0.0, places=6)
+        self.assertAlmostEqual(data[0]["rel"][0], 1.0, places=5)
+        self.assertEqual((data[1]["cat"], data[1]["bone"], data[1]["count"], data[1]["nofacing"]), (2, "a_bone", 1, 0))
+
+    def test_mounts_json_errors_go_to_stderr_and_stdout_stays_empty(self):
+        rc, out, err = run_err(["--mounts", "--json", "/nonexistent.txt"])
+        self.assertEqual(rc, 2)
+        self.assertEqual(out, [])
+        self.assertIn("no log: /nonexistent.txt", err)
+
+    def test_json_null_rel_and_spread_for_all_nofacing_and_empty_list_without_mounts(self):
+        rc, out = run_log([MOUNT_NOFACING], ["--mounts", "--json"])
+        self.assertEqual(json.loads(out[0]), [{"cat": 1, "bone": "torso_g", "count": 1, "nofacing": 1, "rel": None, "spread": None}])
+        rc, out = run_log([LOADED], ["--mounts", "--json"])
+        self.assertEqual(json.loads(out[0]), [])
+
+
+class Hw38GoldenTests(unittest.TestCase):
+    """A window with none of the HW38 fields prints the report captured before HW38 (line for line)."""
+
+    def test_window_without_new_fields_prints_the_pre_hw38_report(self):
+        rc, out = run_log(GOLDEN_BODIES)
+        self.assertEqual(rc, 0)
+        self.assertEqual(out, GOLDEN_REPORT)
+
+
 if __name__ == "__main__":
     unittest.main()
