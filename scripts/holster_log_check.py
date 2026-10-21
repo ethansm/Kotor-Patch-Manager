@@ -87,6 +87,8 @@ MAIN_RES = {
                        r"(?: wr=(-?[\d.]+) hg=(\d) f=(-?[\d.]+))?(?: dzA=(-?[\d.]+) fy=(-?[\d.]+) fx=(-?[\d.]+) g=(-?[\d.]+) cap=(-?[\d.]+))?(?: hold=(\d+))?"),
     "reachhold": re.compile(r"\bREACH owner=\w+ hold=(\d+) why=(\w+)"),   # HW25 (0.14.0-dev): a frame where a transient refusal re-applied the last arm
     "reachrefuse": re.compile(r"\bREACH owner=\w+ refuse=(\w+)"),
+    "reachtopo": re.compile(r"\bREACH owner=\w+ w=[\d.]+ .*? topo=(\w+) bk=(\d)"),   # HW27 (0.15.0-dev): which reach the mount height chose (hinge / over / hip / thigh), bk=1 = a back bone
+    "slidecfg": re.compile(r"\bCONFIG .*?\bslide=(\S+) resid_ms=(\d+) wrist_max=(\d+)"),   # HW28 (0.15.0-dev): resolved <cat>:<draw ms>/<stow ms>/<grab %>, residual ms, wrist cap
     "node": re.compile(r"\bPLACENODE node=\w+ gob=\w+ t=(\d+) step=(-?\d+) name=(\S+) target=(\d)(?: bvt=(\w+))?(?: gname=(\S+) mname=(\S+))?(?: cat=(\w+))?"),
 }
 
@@ -134,6 +136,7 @@ def parse_lines(window):
     main = {"loaded": [], "cap": [], "bonetest": Counter(), "unreadable": 0, "tid": {}, "reload": [], "tune": [], "refuse": {}, "node": Counter(), "mount": Counter(),
             "owner": Counter(), "combc": set(), "partyhold": Counter(), "movehold": 0, "delay": Counter(),
             "reach": [], "slidecut": Counter(), "resid": [], "reachfound": 0, "reachrefuse": Counter(), "reachhold": Counter(),
+            "reachtopo": Counter(), "slidecfg": [],
             "preview": [], "camnode": [], "wmname": set()}
     for n, raw in window:
         text = raw.strip()
@@ -184,6 +187,12 @@ def parse_lines(window):
             mr = re.search(r"\bRESID .*?\bpos_cm=(-?[\d.]+) ang=(-?[\d.]+) dq=(-?[\d.]+)", text)
             if mr:
                 main["resid"].append(tuple(float(v) for v in mr.groups()))
+        m = MAIN_RES["slidecfg"].search(text)
+        if m:
+            main["slidecfg"].append((m.group(1), int(m.group(2)), int(m.group(3))))
+        m = MAIN_RES["reachtopo"].search(text)
+        if m:
+            main["reachtopo"][(m.group(1), int(m.group(2)))] += 1
         m = MAIN_RES["reach"].search(text)
         if m:
             main["reach"].append((float(m.group(1)), float(m.group(2)), float(m.group(3)), int(m.group(4)), int(m.group(5)))
@@ -490,6 +499,13 @@ def _reach_events(f):
     after = [int(x[13]) for x in r if len(x) > 13 and x[13] is not None and x[13] > 0]
     if held or after:
         line += " hold=%s after_hold=%d max=%d" % (",".join("%s:%d" % kv for kv in sorted(held.items())) or "none", len(after), max(after) if after else 0)
+    # HW27 (0.15.0-dev): topo=<hinge|over|hip|thigh>[+bk]:N (+bk = a back bone, e.g. torso_g now resolves to hip); HW28: the last CONFIG slide= timing
+    topo = f.get("reachtopo", Counter())
+    if topo:
+        line += " topo=%s" % ",".join("%s%s:%d" % (k[0], "+bk" if k[1] else "", n) for k, n in sorted(topo.items()))
+    cfg = f.get("slidecfg", [])
+    if cfg:
+        line += " slide=%s resid_ms=%d wrist_max=%d" % cfg[-1]
     return [line]
 
 

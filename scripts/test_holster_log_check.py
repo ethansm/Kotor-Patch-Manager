@@ -683,5 +683,40 @@ class Hw16AnimStyleTests(unittest.TestCase):
         self.assertLessEqual(len(out), 47)
 
 
+class Hw27Hw28ConfigTests(unittest.TestCase):
+    """HW27/HW28 (0.15.0-dev): REACH topo=/bk= tail, CONFIG slide= timing, PLACEREFUSE notholsterable."""
+
+    TOPO_REACH = ("REACH owner=1a w=0.50 reach=1.00 S=(0,0,0) E=(0,0,0) H=(0,0,0) T=(0,0,0) Enew=(0,0,0) side=R cat=2 "
+                  "u=0.28 lt=(0,0,0) err=0.010 persist=0 wrote=7 wr=88 hg=0 f=0.40 dzA=-0.52 fy=-0.03 fx=-0.28 g=130 cap=120 hold=0 topo=hip bk=1")
+    HINGE_REACH = TOPO_REACH.replace("topo=hip bk=1", "topo=hinge bk=1").replace("hg=0", "hg=1")
+    CONFIG = ("CONFIG toggle_key=0x77 draw_hold_ms=8000 combat_exit_ms=1500 flourish_exit_ms=1500 hostile_range=30.0 hostile_backoff_ms=1000 delay_party=1 flourish_draw=1 "
+              "slide=lightsaber:350/350/30,melee:520/600/45,qstaff:570/700/45,pistol:300/350/30,rifle:520/600/45,heavy:570/700/45 resid_ms=240 wrist_max=120 "
+              "move_hold_ms=1500 party_combat_hold=1 reach_test=1 reach_carry=1 reach_hinge=1 unarmed_anim=1 (active=1: needs probe=1, bone_test=1 and place_mode=drawgate)")
+
+    def test_planted_topo_and_slide_config_reported(self):
+        _, skipped, main = parse([self.TOPO_REACH, self.TOPO_REACH, self.HINGE_REACH, self.CONFIG])
+        self.assertEqual(skipped, [])
+        self.assertEqual(len(main["reach"]), 3)              # the new tail did not break the full-line parse
+        self.assertEqual(main["reachtopo"], {("hip", 1): 2, ("hinge", 1): 1})
+        out = " ".join(H._reach_events(main))
+        self.assertIn("topo=hinge+bk:1,hip+bk:2", out)
+        self.assertIn("slide=lightsaber:350/350/30,melee:520/600/45,qstaff:570/700/45,pistol:300/350/30,rifle:520/600/45,heavy:570/700/45 resid_ms=240 wrist_max=120", out)
+        self.assertIn("g max=130", out)                      # older fields unaffected
+
+    def test_planted_negative_old_lines_have_no_topo_or_slide(self):
+        _, _, main = parse([Hw24ReachTests.NEW_REACH, Hw25HoldTests.HOLD_REACH, "CONFIG toggle_key=0x77 draw_slide_ms=350 stow_slide_ms=350 reach_test=1"])
+        self.assertEqual(sum(main["reachtopo"].values()), 0)
+        self.assertEqual(main["slidecfg"], [])
+        out = " ".join(H._reach_events(main))
+        self.assertNotIn(" topo=", out)
+        self.assertNotIn(" slide=", out)
+
+    def test_notholsterable_refusal_counted_with_max_n(self):
+        _, skipped, main = parse(["PLACEREFUSE reason=notholsterable n=1 gob=2a node=3b gobvt=4c", "PLACEREFUSE reason=notholsterable n=7 gob=2a node=3b gobvt=4c"])
+        self.assertEqual(skipped, [])
+        self.assertEqual(main["refuse"]["notholsterable"], 7)
+        self.assertIn("notholsterable=7", " ".join(H._place_diag(main)))
+
+
 if __name__ == "__main__":
     unittest.main()
