@@ -105,6 +105,11 @@ static float g_reachWristPct = 1.0f, g_reachWristMax = 60.f, g_reachTwist = 80.f
 // Needs reach_test=1 and reach_carry=1. reach_via_<cat> (0/1, default 0 for every category: untested, play row SM-L12) routes the turn through the weapon axis pointing up.
 static float g_extractBack = 0.20f, g_extractHip = 0.10f;
 static uint8_t g_reachVia[hs::CatCount];
+// reach_via_out_m (0.20.0-dev, HW31b): 0..0.30 m, default hs::kReachViaOutM. While reach_via_<cat> is on, the aimed hand point is pushed this far sideways (outward for the arm: right arm +x, left -x of the
+// body) at the via (the bump peaks when the weapon passes "up", 0 at both ends; clock = viaProgress), so the weapon turned through "up" clears the body. The via also reaches the hand-frame residual of a fresh draw / full stow now.
+// reach_pole_from_grip (0.20.0-dev, HW29b): 0..1, default 0 (off). Hip / Thigh reaches only: the elbow pole turns up to reach_pole_bias_deg (0..90, default 20) toward the side the forearm lies
+// when the hand holds the weapon at its mount (faded out by f 0.30 of the path). 0 = the 0.19 pole byte for byte.
+static float g_viaOut = hs::kReachViaOutM, g_poleFromGrip = 0.f, g_poleBiasDeg = hs::kPoleBiasDeg;
 // reach_exit_sign_<cat> (-1/0/1/auto) and reach_exit_len_<cat> (0..0.5 m / auto) (0.19.0-dev, HW36): per-category override of the HolsterShape exit direction / length at the HW31 exit
 // offset. g_exitSignOv: 0 = auto (the table), 1 = +axis, 2 = -axis, 3 = 0 (no exit offset). g_exitLenSet: the length override is g_exitLenOv.
 static uint8_t g_exitSignOv[hs::CatCount];
@@ -457,6 +462,17 @@ static void readConfig() {
                     if (dual) g_dualStagger = c; else g_partyJitter = c;
                     if (v < 0 || v > hi) cfgWarn(key, val, dual ? "outside 0..200, clamped" : "outside 0..60, clamped");
                 } else cfgWarn(key, val, dual ? "not a number, keeping the default 60" : "not a number, keeping the default 0");
+            }
+            else if (!_stricmp(key, "reach_via_out_m") || !_stricmp(key, "reach_pole_from_grip") || !_stricmp(key, "reach_pole_bias_deg")) {   // 0.20.0-dev (HW31b / HW29b); before the reach_via_<cat> prefix test
+                const bool isVia = !_stricmp(key, "reach_via_out_m"), isAmt = !_stricmp(key, "reach_pole_from_grip");
+                const float hi = isVia ? 0.30f : (isAmt ? 1.f : 90.f);
+                char* end = nullptr;
+                const float v = strtof(val, &end);
+                if (end != val && *end == 0 && v == v) {
+                    const float c = v < 0.f ? 0.f : (v > hi ? hi : v);
+                    if (isVia) g_viaOut = c; else if (isAmt) g_poleFromGrip = c; else g_poleBiasDeg = c;
+                    if (c != v) cfgWarn(key, val, isVia ? "outside 0..0.30, clamped" : (isAmt ? "outside 0..1, clamped" : "outside 0..90, clamped"));
+                } else cfgWarn(key, val, "not a number, keeping the default");
             }
             else if (!_strnicmp(key, "reach_via_", 10)) {   // 0.18.0-dev (HW31): reach_via_<category>=0|1, route the turn through the weapon axis pointing up
                 int ci = -1;
@@ -1498,7 +1514,7 @@ static bool reachStale(const ReachEnt& e) {
 // w == 0: only undo a leftover write (a body the engine did not resample); w > 0: one reach step toward tgt.pos, or (carry) toward the point on the mount -> hand path at
 // slideF. carry: *carried receives the world pose of the attach node (the hand the weapon hangs on) AFTER the arm write; the return value says it is valid.
 static bool reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w, bool left, int cat, float pathF, float restMix, const float* mountPos, const hs::Q* mountQ, bool backMount, uintptr_t attachNode = 0,
-                     bool carry = false, hs::Pose* carried = nullptr, const hs::ReachPlan* plp = nullptr, const hs::ShapeEntry* sh = nullptr) {
+                     bool carry = false, hs::Pose* carried = nullptr, const hs::ReachPlan* plp = nullptr, const hs::ShapeEntry* sh = nullptr, float viaS = 0.f) {
     const uintptr_t parent = rdU32(kSitePlace, beh, 0x14);
     if (!parent) return false;
     ReachEnt* e = nullptr;
@@ -1585,6 +1601,7 @@ static bool reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w,
     // Elbow pole: the style of this weapon category blended by how high the MOUNT sits (hip bends back and out, over-the-shoulder bends up and out), eased into the
     // animation's own elbow direction as the weapon reaches the hand. Body frame: x right, y forward, z up (parent Gob +0xA4 pose); not verified live yet (see u= / lt= in the log).
     float poleV[3], u = 0.f, lt[3] = {0, 0, 0};
+    float viaOffM = 0.f, poleBiasDeg = 0.f;   // 0.20.0-dev: the via lateral offset applied to T (m, vo= in the log) and the pole bias turned in (deg, pb=)
     float dzA = 0.f, fyA = 0.f, fxA = 0.f;   // HW24: the placed mount point in the body frame, in arm lengths (z up, y forward: <0 = behind, x right)
     float T[3] = {tgt.pos[0], tgt.pos[1], tgt.pos[2]};   // the point the hand is aimed at: the shown weapon (chase) or the carry path point
     const float* pole = nullptr;
@@ -1622,10 +1639,38 @@ static bool reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w,
                 pole = poleV;
                 hinge = true;
             }
+            // HW31b: while this weapon's via is on, push the aimed point sideways (outward for this arm) by a bump that peaks when the via orientation is reached (0 at both ends).
+            // viaS = the via progress 0..1 of viaProgress() (the clock carryShownBase uses; 0 = via off or outside the carry window), so the bump and the turn through "up" cannot drift.
+            if (g_viaOut > 0.f && viaS > 0.f) {
+                viaOffM = hs::reachViaOffset(viaS, 1.f, g_viaOut);
+                for (int i = 0; i < 3; ++i) T[i] += ouW[i] * viaOffM;
+            }
         }
         const float ts[3] = {T[0] - pS.pos[0], T[1] - pS.pos[1], T[2] - pS.pos[2]};
         hs::qrotate(inv, ts, lt);
-        if (!hinge && hs::reachPole(st, u, left, body.q, es0, (restMix > hs::reachAnimMix(pathF) ? restMix : hs::reachAnimMix(pathF)), poleV)) pole = poleV;   // the mount style holds the whole swing, draw and stow alike
+        if (!hinge && hs::reachPole(st, u, left, body.q, es0, (restMix > hs::reachAnimMix(pathF) ? restMix : hs::reachAnimMix(pathF)), poleV)) {   // the mount style holds the whole swing, draw and stow alike
+            pole = poleV;
+            // HW29b: Hip / Thigh only (the hinge reach builds and guards its own pole; OverBack has no outward guard): turn the pole toward the side the forearm lies when the hand holds the weapon at
+            // its mount, fading out by f 0.30. grip = the hand bone's elbow-side axis (hand -> elbow, the forearm axis of the twist split, in the hand frame) rotated by the mount orientation.
+            if (g_poleFromGrip > 0.f && mountQ && hs::qfinite(*mountQ) && (topo == hs::ReachTopo::Hip || topo == hs::ReachTopo::Thigh)) {
+                const float he[3] = {pE.pos[0] - pH.pos[0], pE.pos[1] - pH.pos[1], pE.pos[2] - pH.pos[2]};
+                float hl[3], gripW[3];
+                hs::qrotate(hs::reachConj(hs::qnormalize(pH.q)), he, hl);
+                hs::qrotate(hs::qnormalize(*mountQ), hl, gripW);
+                const float gl = hs::r3len(gripW);
+                if (gl > 1e-6f && std::isfinite(gl)) {
+                    for (int i = 0; i < 3; ++i) gripW[i] /= gl;
+                    const float before[3] = {poleV[0], poleV[1], poleV[2]};
+                    hs::reachPoleBias(before, gripW, pathF, g_poleFromGrip, g_poleBiasDeg, poleV);
+                    const float lb = hs::r3len(before), la = hs::r3len(poleV);
+                    if (lb > 1e-6f && la > 1e-6f) {
+                        float c = (before[0] * poleV[0] + before[1] * poleV[1] + before[2] * poleV[2]) / (lb * la);
+                        c = c > 1.f ? 1.f : (c < -1.f ? -1.f : c);
+                        poleBiasDeg = std::acos(c) * 57.29578f;
+                    }
+                }
+            }
+        }
     } else if (carry) {
         for (int i = 0; i < 3; ++i) T[i] = (1.f - restMix) * ((1.f - pathF) * mountPos[i] + pathF * pH.pos[i]) + restMix * pH.pos[i];   // no body frame: the straight line
     }
@@ -1724,14 +1769,14 @@ static bool reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w,
     e->solved = static_cast<uint8_t>(wrote);
     e->holdN = 0;
     if (!reachLogDue()) return carriedOk;
-    KP_LOG(chMain, "REACH owner=%x w=%.2f reach=%.2f S=(%.3f,%.3f,%.3f) E=(%.3f,%.3f,%.3f) H=(%.3f,%.3f,%.3f) T=(%.3f,%.3f,%.3f) Enew=(%.3f,%.3f,%.3f) side=%c cat=%d u=%.2f lt=(%.3f,%.3f,%.3f) err=%.3f persist=%d wrote=%d wr=%.0f hg=%d f=%.2f dzA=%.2f fy=%.2f fx=%.2f g=%.0f cap=%.0f hold=%u topo=%s bk=%d tw=%.0f sw=%.0f ex=%.2f of=%.2f",
+    KP_LOG(chMain, "REACH owner=%x w=%.2f reach=%.2f S=(%.3f,%.3f,%.3f) E=(%.3f,%.3f,%.3f) H=(%.3f,%.3f,%.3f) T=(%.3f,%.3f,%.3f) Enew=(%.3f,%.3f,%.3f) side=%c cat=%d u=%.2f lt=(%.3f,%.3f,%.3f) err=%.3f persist=%d wrote=%d wr=%.0f hg=%d f=%.2f dzA=%.2f fy=%.2f fx=%.2f g=%.0f cap=%.0f hold=%u topo=%s bk=%d tw=%.0f sw=%.0f ex=%.2f of=%.2f vo=%.3f pb=%.1f",
            static_cast<unsigned>(e->owner), static_cast<double>(w), static_cast<double>(reach), static_cast<double>(pS.pos[0]), static_cast<double>(pS.pos[1]),
            static_cast<double>(pS.pos[2]), static_cast<double>(pE.pos[0]), static_cast<double>(pE.pos[1]), static_cast<double>(pE.pos[2]), static_cast<double>(pH.pos[0]),
            static_cast<double>(pH.pos[1]), static_cast<double>(pH.pos[2]), static_cast<double>(T[0]), static_cast<double>(T[1]), static_cast<double>(T[2]),
            static_cast<double>(enew[0]), static_cast<double>(enew[1]), static_cast<double>(enew[2]), left ? 'L' : 'R', cat, static_cast<double>(u), static_cast<double>(lt[0]), static_cast<double>(lt[1]), static_cast<double>(lt[2]),
            static_cast<double>(err), persist ? 1 : 0, wrote, static_cast<double>(wristDeg), hinge ? 1 : 0, static_cast<double>(pathF), static_cast<double>(dzA), static_cast<double>(fyA), static_cast<double>(fxA),
            static_cast<double>(gDeg), static_cast<double>(g_reachWristMax + g_reachTwist), static_cast<unsigned>(heldBefore), reachTopoName(topo), backMount ? 1 : 0,
-           static_cast<double>(twistDeg), static_cast<double>(wristDeg), static_cast<double>(plp ? plp->extractK : 0.f), static_cast<double>(plp ? plp->oriF : pathF));
+           static_cast<double>(twistDeg), static_cast<double>(wristDeg), static_cast<double>(plp ? plp->extractK : 0.f), static_cast<double>(plp ? plp->oriF : pathF), static_cast<double>(viaOffM), static_cast<double>(poleBiasDeg));
     return carriedOk;
 }
 
@@ -1752,6 +1797,40 @@ static hs::Pose carryBlend(hs::Slide& lock, const hs::Pose& mount, const hs::Pos
     const float fRot = exOn ? (pl.carryW > 0.f ? pl.oriF : 0.f) : pl.carryW;
     return hs::blendPoseLocked2(lock, mount, carried, pl.carryW, fRot, via);
 }
+// The residual's clock, shared by carryShownBase and viaProgress. Draw: time since the offset was captured over the window msEff. Stow: t = time left in the carry, ms = min(carry length, resid).
+static void residDrawWindow(const CarryResid& cr, uint32_t now, float& t, float& ms) {
+    t = static_cast<float>(static_cast<int32_t>(now - cr.startMs));
+    ms = static_cast<float>(cr.msEff);
+}
+static void residStowWindow(const hs::Slide& sl, float grab, uint32_t now, float& t, float& ms) {
+    const int32_t d = static_cast<int32_t>(now - sl.t0);
+    const float gg = grab > 0.6f ? 0.6f : (grab > 0.f ? grab : 0.f);
+    const float carryLen = (1.f - gg) * static_cast<float>(sl.len);
+    const float resMs = static_cast<float>(g_reachResidMs);
+    ms = carryLen < resMs ? carryLen : resMs;
+    t = carryLen - static_cast<float>(d);
+}
+// HW31b: the via progress s in 0..1 of the weapon's turn this frame (the turn passes "up" at s = 0.5), 0 outside the carry window (reach, release, plan inactive, weapon already in the hand).
+// Mirrors which branch carryShownBase / carryBlend take: the hand-frame residual of a fresh draw / full stow (its t / ms window; s = t / ms, the stow runs 1 -> 0), else the world blend's fRot.
+// A fresh draw reads the capture of the previous frame (cr.on), so its first carry frame gives 0 (the bump is 0 there anyway).
+static float viaProgress(const hs::Slide& sl, const CarryResid& cr, const hs::ReachPlan& pl, float grab, uint32_t now, bool exOn) {
+    if (!pl.active) return 0.f;
+    if (g_reachResidMs != 0 && pl.carryW > 0.f) {
+        if (sl.dir) {
+            if (sl.from <= 0.001f) {
+                if (!cr.on || static_cast<int32_t>(now - cr.startMs) > static_cast<int32_t>(sl.len) + 100) return 0.f;
+                float t, ms;
+                residDrawWindow(cr, now, t, ms);
+                return ms > 0.f ? hs::slideClamp01(t / ms) : 0.f;
+            }
+        } else if (sl.carryFrom >= 0.999f) {
+            float t, ms;
+            residStowWindow(sl, grab, now, t, ms);
+            return (ms > 1.f && t < ms) ? hs::slideClamp01(t / ms) : 0.f;
+        }
+    }
+    return hs::slideClamp01(exOn ? (pl.carryW > 0.f ? pl.oriF : 0.f) : pl.carryW);   // carryBlend's fRot
+}
 static hs::Pose carryShownBase(const hs::Slide& sl, hs::Slide& lock, CarryResid& cr, const hs::Pose& mount, const hs::Pose& carried, const hs::ReachPlan& pl, float grab, uint32_t now, const hs::Q* via, bool exOn) {
     if (g_reachResidMs == 0 || !pl.active || !(pl.carryW > 0.f) || !hs::qfinite(carried.q)) { cr.on = 0; return carryBlend(lock, mount, carried, pl, via, exOn); }
     const hs::Q cq = hs::qnormalize(carried.q), inv = hs::reachConj(cq);
@@ -1770,17 +1849,13 @@ static hs::Pose carryShownBase(const hs::Slide& sl, hs::Slide& lock, CarryResid&
             cr.msEff = static_cast<uint32_t>(left < resMs ? (left > 1.f ? left : 1.f) : resMs);
             cr.on = 1;
         }
-        t = static_cast<float>(static_cast<int32_t>(now - cr.startMs));
-        ms = static_cast<float>(cr.msEff);
+        residDrawWindow(cr, now, t, ms);
         rres = cr.q;
         for (int i = 0; i < 3; ++i) off[i] = cr.pos[i];
     } else {        // holster: the offset to the mount, weighted by the time left until the carry ends
         cr.on = 0;
         if (!(sl.carryFrom >= 0.999f)) return carryBlend(lock, mount, carried, pl, via, exOn);
-        const float gg = grab > 0.6f ? 0.6f : (grab > 0.f ? grab : 0.f);
-        const float carryLen = (1.f - gg) * static_cast<float>(sl.len);
-        ms = carryLen < resMs ? carryLen : resMs;
-        t = carryLen - static_cast<float>(d);
+        residStowWindow(sl, grab, now, t, ms);
         if (!(ms > 1.f) || t >= ms) return carried;   // outside the landing window the weapon is in the hand
         const float dm[3] = {mount.pos[0] - carried.pos[0], mount.pos[1] - carried.pos[1], mount.pos[2] - carried.pos[2]};
         rres = hs::qmul(inv, mount.q);
@@ -1792,7 +1867,10 @@ static hs::Pose carryShownBase(const hs::Slide& sl, hs::Slide& lock, CarryResid&
     hs::qrotate(cq, o3, w3);
     hs::Pose o;
     for (int i = 0; i < 3; ++i) o.pos[i] = carried.pos[i] + w3[i];
-    o.q = hs::qnormalize(hs::qmul(cq, hs::reachResidual(rres, t, ms)));
+    // HW31b: with a via (world quat, same one carryBlend gets) the offset turns through it: the via in the hand frame is conj(carried) * via, the same transform rres got. Draw and stow pass the
+    // t / ms they always did; no via = reachResidual byte for byte.
+    const hs::Q viaH = via ? hs::qmul(inv, *via) : hs::Q{1, 0, 0, 0};
+    o.q = hs::qnormalize(hs::qmul(cq, via ? hs::reachResidualVia(rres, &viaH, t, ms) : hs::reachResidual(rres, t, ms)));
     if (!hs::poseSane(o)) { cr.on = 0; return carryBlend(lock, mount, carried, pl, via, exOn); }
     return o;
 }
@@ -1974,11 +2052,13 @@ static bool previewPlace(uintptr_t g, uintptr_t beh) {
         }
     }
     hs::Pose carried;
-    const bool carryOk = g_reachTest && reachArm(g, beh, atHand ? out : shown, reachW, left, static_cast<int>(cat), plan.pathF, plan.restMix, out.pos, &out.q, reachIsBackBone(bone), n, g_reachCarry && plan.active, &carried, &plan, hs::shapeOf(model));   // w == 0 outside the slide: only undoes a leftover write
+    hs::Q viaQ;
+    const bool viaOn = reachViaFor(hs::shapeOf(model), static_cast<int>(cat), out.q, viaQ);   // HW31: reach_via_<cat> (default off)
+    float viaS = 0.f;   // HW31b: the via progress for the arm's lateral bump (only when the via is on)
+    if (viaOn && g_viaOut > 0.f) { EdLock lk0; viaS = viaProgress(pslide, prevLockFor(g).cres, plan, g_prevGrab, pnow, exPct > 0.f); }
+    const bool carryOk = g_reachTest && reachArm(g, beh, atHand ? out : shown, reachW, left, static_cast<int>(cat), plan.pathF, plan.restMix, out.pos, &out.q, reachIsBackBone(bone), n, g_reachCarry && plan.active, &carried, &plan, hs::shapeOf(model), viaS);   // w == 0 outside the slide: only undoes a leftover write
     if (atHand) return true;   // fully drawn: the engine's hand pose stays
     if (carryOk) {
-        hs::Q viaQ;
-        const bool viaOn = reachViaFor(hs::shapeOf(model), static_cast<int>(cat), out.q, viaQ);   // HW31: reach_via_<cat> (default off)
         EdLock lk; PrevLock& pk = prevLockFor(g); shown = carryShown(pslide, pk.lk, pk.cres, out, carried, plan, g_prevGrab, pnow, viaOn ? &viaQ : nullptr, exPct > 0.f);
     }   // HW26: hand-frame residual / locked blend; carry: the weapon rides the moved hand only while it carries (plan.carryW); it stays on the mount during the reach / release phases
     if (!hs::poseSane(shown) || !saferead::probeWrite(kSitePlace, reinterpret_cast<void*>(g + 0xA4), sizeof(hs::Pose))) return true;
@@ -2301,10 +2381,11 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
         const hs::ShapeEntry* const shp = hs::shapeOf(ent->mname);
         const float wa = hs::reachWeightRamp(ent->slide, rnow, g_reachCarry ? 0.04f : 0.2f);
         hs::Pose carried;
-        if (reachArm(g, reinterpret_cast<uintptr_t>(beh), out, wa, ent->left, static_cast<int>(cat), pl.pathF, pl.restMix, hipPose.pos, &hipPose.q, reachIsBackBone(mountBone), n, g_reachCarry && pl.active, &carried, &pl, shp)) {
+        hs::Q viaQ;
+        const bool viaOn = reachViaFor(shp, static_cast<int>(cat), hipPose.q, viaQ);   // HW31: reach_via_<cat> (default off)
+        const float viaS = (viaOn && g_viaOut > 0.f) ? viaProgress(ent->slide, ent->cres, pl, rgrab, rnow, exPct > 0.f) : 0.f;   // HW31b: the arm's lateral bump follows the via
+        if (reachArm(g, reinterpret_cast<uintptr_t>(beh), out, wa, ent->left, static_cast<int>(cat), pl.pathF, pl.restMix, hipPose.pos, &hipPose.q, reachIsBackBone(mountBone), n, g_reachCarry && pl.active, &carried, &pl, shp, viaS)) {
             // carry: the weapon rides the moved hand (the engine's hand pose, recomputed after the arm write), pl.carryW: 0 while the hand is still reaching the mount (draw) or already releasing it (stow), 1 while it carries; at the draw end the arm has released, so the carried hand IS the engine hand
-            hs::Q viaQ;
-            const bool viaOn = reachViaFor(shp, static_cast<int>(cat), hipPose.q, viaQ);   // HW31: reach_via_<cat> (default off)
             const hs::Pose rid = carryShown(ent->slide, ent->slide, ent->cres, hipPose, carried, pl, rgrab, rnow, viaOn ? &viaQ : nullptr, exPct > 0.f);   // HW26: hand-frame residual (or the locked world blend)
             if (pl.carryW > 0.f && pl.carryW < 1.f && g_onPlace && KP_ENABLED(chPlace, KPLOG_INFO)) {   // HW24: residual between the carried hand pose and the mount at the carryW step, the flip dot, the style byte
                 static volatile LONG s_resLines = 0;
@@ -2746,7 +2827,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     addName(names, sizeof(names), g_onGob, "gob");
     addName(names, sizeof(names), g_onPlace, "place");
     addName(names, sizeof(names), g_onToggle, "toggle");
-    KP_LOG(chMain, "holster 0.19.0-dev loaded (P0 probe + unarmed_anim=%d): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_unarmedAnim ? 1 : 0, g_probe ? 1 : 0,
+    KP_LOG(chMain, "holster 0.20.0-dev loaded (P0 probe + unarmed_anim=%d): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_unarmedAnim ? 1 : 0, g_probe ? 1 : 0,
            names[0] ? names : "none", static_cast<long>(g_maxLines), g_gobEvery, k2addr::get() ? "ok" : "none");
     {
         hs::TuneCfg t;
@@ -2776,8 +2857,8 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
                 snprintf(exitCfg + en, sizeof exitCfg - en, "%s%s:%s/%s", en ? "," : "", hs::categoryName(static_cast<hs::Category>(i)),
                          g_exitSignOv[i] == 1 ? "+1" : (g_exitSignOv[i] == 2 ? "-1" : (g_exitSignOv[i] == 3 ? "0" : "a")), lenS);
             }
-            KP_LOG(chMain, "CONFIG dual_stagger_ms=%u party_jitter_ms=%u log_mount=%d exit=%s", static_cast<unsigned>(g_dualStagger), static_cast<unsigned>(g_partyJitter),
-                   (g_logMount || g_logVerbose) ? 1 : 0, exitCfg[0] ? exitCfg : "auto");
+            KP_LOG(chMain, "CONFIG dual_stagger_ms=%u party_jitter_ms=%u log_mount=%d exit=%s viaout=%.2f polegrip=%.2f polebias=%.0f", static_cast<unsigned>(g_dualStagger), static_cast<unsigned>(g_partyJitter),
+                   (g_logMount || g_logVerbose) ? 1 : 0, exitCfg[0] ? exitCfg : "auto", static_cast<double>(g_viaOut), static_cast<double>(g_poleFromGrip), static_cast<double>(g_poleBiasDeg));
         }
         KP_LOG(chMain, "CONFIG left_extra_rot=%.1f bone_test_left=%d (ini=%d, active=%d: needs probe=1 and bone_test=1) log_verbose=%d", static_cast<double>(t.leftExtra),
                g_boneLeftCfg ? 1 : 0, g_boneLeftCfg ? 1 : 0, g_boneLeft ? 1 : 0, g_logVerbose ? 1 : 0);
