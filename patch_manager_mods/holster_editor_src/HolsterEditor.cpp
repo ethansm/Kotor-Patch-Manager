@@ -1,4 +1,4 @@
-// HolsterEditor.cpp -- holster-editor 0.5.2-dev (Steam build): a HOOKLESS consumer of the mod-config provider (k2.modconfig@1, k2.menuui@1).
+// HolsterEditor.cpp -- holster-editor 0.6.0-dev (Steam build): a HOOKLESS consumer of the mod-config provider (k2.modconfig@1, k2.menuui@1).
 // (doc 42 HW-EDIT, plan .claude/plans/holster_editor_options.md; page rebuild: .claude/plans/holster_editor_layout_v3.md, holster_hw_ux3_build.md Wave B.)
 //
 // mod-config owns everything about the Options screen: the hooks, the root "Mod Configuration" button, the list page, control cloning,
@@ -151,7 +151,7 @@ constexpr uint32_t kNoItemId = 0x7F000000u;
 constexpr int kItemModelResOff = 0x128;      // client item: model ResRef char[16]
 constexpr int kItemBaseIdxOff = 0xC;         // client item: base item index (GetName's lookup branch dereferences its row)
 
-enum WarnKind { W_ITEMNAME = 0, W_PROJ, W_CAMHOOK, W_CALIB, W_NUDGE, W_SCRUB, W_INSP, W_CAMENG, W_KINDS };
+enum WarnKind { W_ITEMNAME = 0, W_PROJ, W_CAMHOOK, W_CALIB, W_NUDGE, W_SCRUB, W_INSP, W_CAMENG, W_PAUSE, W_KINDS };
 constexpr int kCalibNodes = 6;
 // Candidate engine node names per calibration target (tried in order; the first that GetNodeWorld resolves is kept). Short names rhand/lhand are the
 // ones the PROJ probe resolves; K2 skeletons also carry the *_g forms.
@@ -234,7 +234,7 @@ struct Editor {
     bool colorBad = false;             // the selected-frame tint could not be applied on a button: lit selectors show >marks< instead
     bool valueColorBad = false;        // ... on a value label: changed values are not amber
     bool selKeyValid = false;
-    int selKey[16] = {};
+    int selKey[17] = {};
     char noteShown[48] = {0};
     char statusShown[100] = {0};
     bool artDone = false;              // slider / reset art applied (or given up)
@@ -242,6 +242,7 @@ struct Editor {
     bool paneWarned = false;
 
     int stanceIdx = 0;
+    bool paused = false;               // the preview animation is frozen (SetAnimPaused); every PlayAnim / rebuild resumes it in the provider, so those clear this too
 
     p3d::Drag drag;
     p3d::DragCfg dragCfg;
@@ -427,7 +428,7 @@ void KPATCH_CALL cbBeforeFree(uint32_t token, void* user) {
 // Buttons of the page; every other item is a label (PI_VIEW is the 3D view control).
 bool itemIsButton(int i) {
     using namespace hse;
-    if (i == PI_MEMBER_PREV || i == PI_MEMBER_NEXT || i == PI_SAVE || i == PI_REVERT || i == PI_RESET_SCOPE || i == PI_REMOVE || i == PI_VIEW_RESET || i == PI_VIEW_FLIP) return true;
+    if (i == PI_MEMBER_PREV || i == PI_MEMBER_NEXT || i == PI_SAVE || i == PI_REVERT || i == PI_RESET_SCOPE || i == PI_REMOVE || i == PI_VIEW_RESET || i == PI_VIEW_FLIP || i == PI_PAUSE) return true;
     if (i >= PI_WEAPON && i < PI_WEAPON + kV3Weapons) return true;
     if (i >= PI_BONE && i < PI_BONE + kV3Bones) return true;
     if (i >= PI_SCOPE && i < PI_SCOPE + kV3Scopes) return true;
@@ -483,6 +484,7 @@ const char* itemInitText(int i, char* buf, int cap) {
     if (i == PI_VIEW_RESET) return "R";
     if (i == PI_VIEW_FLIP) return "<>";
     if (i >= PI_STANCE && i < PI_STANCE + kV3Stances) return kStanceList[i - PI_STANCE].label;
+    if (i == PI_PAUSE) return "Pause";
     if (i == PI_LEGEND) return helpLine();
     for (int g = 0; g < kV3Groups; ++g) {
         if (i == PI_GROUP + g * 2) return kGroup[g];
@@ -520,6 +522,7 @@ const char* itemTip(int i) {
     if (i == PI_VIEW_RESET) return "Reset view: back to the fit framing.";
     if (i == PI_VIEW_FLIP) return "Flip view: turn the character around.";
     if (i >= PI_STANCE && i < PI_STANCE + kV3Stances) return "Preview this stance.";
+    if (i == PI_PAUSE) return "Freeze the preview animation to check clipping. Click again to play.";
     for (int g = 0; g < kV3Groups; ++g)
         if (i == PI_GROUP + g * 2 + 1) return "Put these three values back to what they were when the edit opened (or after the last Save).";
     for (int r = 0; r < kV3Rows; ++r)
@@ -1466,8 +1469,8 @@ void refreshSelectors(Editor& e, bool force) {
     const int boneIdx = editing ? hse::boneIndexOf(e.editInfo.bone) : -1;
     int typeSum = 0;
     for (const char* c = e.editInfo.type; *c; ++c) typeSum = typeSum * 31 + static_cast<unsigned char>(*c);
-    const int key[16] = {editing ? e.editHand : -2, boneIdx, e.editScope, e.stanceIdx, e.weaponMode, e.regGob[0] ? 1 : 0, e.regGob[1] ? 1 : 0, e.lay.weapon[0].w,
-                         e.lay.bone[0].w, e.lay.scope[0].w, e.lay.stance[0].w, e.lay.modeBtn[0].w, e.colorBad ? 1 : 0, typeSum, editing ? 1 : 0, e.member};
+    const int key[17] = {editing ? e.editHand : -2, boneIdx, e.editScope, e.stanceIdx, e.weaponMode, e.regGob[0] ? 1 : 0, e.regGob[1] ? 1 : 0, e.lay.weapon[0].w,
+                         e.lay.bone[0].w, e.lay.scope[0].w, e.lay.stance[0].w, e.lay.modeBtn[0].w, e.colorBad ? 1 : 0, typeSum, editing ? 1 : 0, e.member, e.paused ? 1 : 0};
     if (!force && e.selKeyValid && !memcmp(key, e.selKey, sizeof key)) return;
     memcpy(e.selKey, key, sizeof key);
     e.selKeyValid = true;
@@ -1493,6 +1496,11 @@ void refreshSelectors(Editor& e, bool force) {
         fitButton(selPx(e, e.lay.stance[i], lit), kStanceList[i].label, fit, sizeof fit);
         setSel(e, hse::PI_STANCE + i, lit, fit);
     }
+    {   // Pause / Play toggle: caption "Play" and lit while the animation is frozen
+        const bool lit = e.paused;
+        fitButton(selPx(e, e.lay.pause, lit), lit ? "Play" : "Pause", fit, sizeof fit);
+        setSel(e, hse::PI_PAUSE, lit, fit);
+    }
     for (int i = 0; i < kModeCount; ++i) {
         const bool lit = e.weaponMode == i;
         fitButton(selPx(e, e.lay.modeBtn[i], lit), hse::weaponModeName(i), fit, sizeof fit);
@@ -1511,6 +1519,7 @@ void setWeaponMode(Editor& e, int mode, const char* why) {
 // Stance back to Idle (a member rebuild starts from the idle pose).
 void resetStanceUi(Editor& e) {
     e.stanceIdx = 0;
+    e.paused = false;   // a rebuild (Destroy / Rebuild) clears the pause in the provider
     e.selKeyValid = false;
 }
 
@@ -2657,10 +2666,22 @@ void tickBody(Editor& e) {
             for (int i = 0; i < hse::kV3Stances; ++i) {
                 if (!clk[hse::PI_STANCE + i] || i == e.stanceIdx) continue;
                 e.stanceIdx = i;
+                e.paused = false;   // PlayAnim always starts running and clears the provider pause
                 if (e.token && g_p3.p) g_p3.p->PlayAnim(e.token, kStanceList[i].anim);
                 KP_LOG(chView, "STANCE sel=%s anim=%s", kStanceList[i].label, kStanceList[i].anim);
                 refreshSelectors(e, true);
                 updateStatusText(e);
+            }
+            // Pause / Play: freeze the animation at the current pose (needs the provider's optional SetAnimPaused slot)
+            if (clk[hse::PI_PAUSE]) {
+                if (e.token && g_p3.canPause()) {
+                    e.paused = !e.paused;
+                    g_p3.p->SetAnimPaused(e.token, e.paused ? 1 : 0);
+                    KP_LOG(chView, "PAUSE %s ok=%d", e.paused ? "on" : "off", 1);
+                    refreshSelectors(e, true);
+                } else if (warnOk(e, W_PAUSE)) {
+                    KP_LOGV(chView, KPLOG_WARN, "PAUSE unavailable (provider too old)");
+                }
             }
             // Weapon buttons: a click on the other hand switches the edit (after the unsaved-edits guard)
             for (int h = 0; h < hse::kV3Weapons; ++h) {
@@ -2794,6 +2815,7 @@ void tickBody(Editor& e) {
             e.state = FAILED;
             return;
         }
+        e.paused = false;   // the rebuild above cleared the provider pause
         if (e.token && g_p3.ok()) g_p3.p->PlayAnim(e.token, kStanceList[e.stanceIdx].anim);
         for (int hand = 0; hand < 2; ++hand) {
             void* g = g_p3.p->WeaponGob(e.token, hand);
@@ -2962,7 +2984,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     g_clients.init(api);
     embedgui::g_log = embedLog;
     embtex::g_log = embedLog;
-    KP_LOG(chMain, "holster-editor 0.5.2-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
+    KP_LOG(chMain, "holster-editor 0.6.0-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
            static_cast<unsigned>(sizeof kHseViewGui));
     g_clients.poll();   // the first poll() of every client tries to connect
     // This DLL is hookless: there is no frame hook to retry mod-config / menuui from later, so a missing provider now means no page this run.
