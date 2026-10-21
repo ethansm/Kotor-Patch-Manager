@@ -552,20 +552,73 @@ static void testReachAnimMix() {
 }
 
 static void testReachCarryTarget() {
-    const float m[3] = {1, 2, 3}, h[3] = {4, 2, 0}, up[3] = {0, 0, 1};
+    const float m[3] = {1, 2, 3}, h[3] = {4, 2, 0}, up[3] = {0, 0, 1}, fw[3] = {0, 1, 0};
     float o[3];
-    reachCarryTarget(m, h, up, 1.f, 0.64f, 0.f, o);
+    reachCarryTarget(m, h, up, fw, 1.f, 0.64f, 0.f, o);
     KT_CHECK(std::fabs(o[0] - 1) < 1e-6f && std::fabs(o[1] - 2) < 1e-6f && std::fabs(o[2] - 3) < 1e-6f);   // mount at f = 0
-    reachCarryTarget(m, h, up, 1.f, 0.64f, 1.f, o);
+    reachCarryTarget(m, h, up, fw, 1.f, 0.64f, 1.f, o);
     KT_CHECK(std::fabs(o[0] - 4) < 1e-5f && std::fabs(o[1] - 2) < 1e-5f && std::fabs(o[2] - 0) < 1e-5f);   // hand at f = 1
     float flat[3], arc[3];
-    reachCarryTarget(m, h, up, 0.f, 0.64f, 0.5f, flat);                // hip mount: no lift
-    reachCarryTarget(m, h, up, 1.f, 0.64f, 0.5f, arc);                 // high mount: lifted along up, 0.25 * arm at the middle
-    KT_CHECK(std::fabs(arc[2] - flat[2] - 0.25f * 0.64f) < 1e-5f && std::fabs(arc[0] - flat[0]) < 1e-6f);
-    reachCarryTarget(m, h, nullptr, 1.f, 0.64f, 0.5f, arc);            // no up axis: the straight line, finite
+    reachCarryTarget(m, h, up, fw, 0.f, 0.64f, 0.5f, flat);           // hip mount: no bulge
+    reachCarryTarget(m, h, up, fw, 1.f, 0.64f, 0.5f, arc);            // high mount: up 0.15 and forward 0.45 of the arm at the middle
+    KT_CHECK(std::fabs(arc[2] - flat[2] - 0.15f * 0.64f) < 1e-5f && std::fabs(arc[1] - flat[1] - 0.45f * 0.64f) < 1e-5f && std::fabs(arc[0] - flat[0]) < 1e-6f);
+    reachCarryTarget(m, h, nullptr, nullptr, 1.f, 0.64f, 0.5f, arc);  // no axes: the straight line, finite
     KT_CHECK(std::isfinite(arc[0]) && std::isfinite(arc[1]) && std::isfinite(arc[2]));
-    reachCarryTarget(m, h, up, NAN, NAN, 0.5f, arc);
-    KT_CHECK(std::isfinite(arc[2]));
+    reachCarryTarget(m, h, up, fw, NAN, NAN, 0.5f, arc);
+    KT_CHECK(std::isfinite(arc[2]) && std::isfinite(arc[1]));
+}
+
+// reachPlan: draw = reach (weapon stays on the mount) then carry; stow = carry then release; both start and end with restMix 1 / pathF at rest.
+static void testReachPlanDraw() {
+    Slide sl;
+    sl.reset(false, 1000);
+    sl.target(true, 1000, 400, 400);   // draw from the mount: 1000..1400
+    KT_CHECK(!reachPlan(sl, 1000, 0.3f).active && !reachPlan(sl, 1400, 0.3f).active);   // the ends are not active
+    ReachPlan a = reachPlan(sl, 1040, 0.3f);                          // p = 0.1: inside the reach phase
+    KT_CHECK(a.active && a.pathF == 0.f && a.carryW == 0.f && a.restMix > 0.5f && a.restMix < 1.f);
+    ReachPlan b = reachPlan(sl, 1120, 0.3f);                          // p = 0.3: the grab instant
+    KT_CHECK(std::fabs(b.pathF) < 1e-5f && b.restMix < 1e-4f && b.carryW < 1e-4f);
+    ReachPlan c = reachPlan(sl, 1260, 0.3f);                          // p = 0.65: q = 0.5 of the carry phase
+    KT_CHECK(std::fabs(c.pathF - 0.5f) < 1e-4f && c.restMix == 0.f && c.carryW == 1.f);
+    ReachPlan d = reachPlan(sl, 1399, 0.3f);                          // almost at the end: at the rest hand, weapon carried
+    KT_CHECK(d.pathF > 0.99f && d.carryW == 1.f && d.restMix == 0.f);
+    float prev = 0.f;                                                  // pathF never goes backwards over the slide
+    for (uint32_t t = 1001; t < 1400; ++t) { const float pf = reachPlan(sl, t, 0.3f).pathF; KT_CHECK(pf >= prev - 1e-6f); prev = pf; }
+    ReachPlan z = reachPlan(sl, 1200, 0.f);                           // no reach phase: carry from the start
+    KT_CHECK(std::fabs(z.pathF - 0.5f) < 1e-4f && z.carryW == 1.f);
+}
+
+static void testReachPlanStow() {
+    Slide sl;
+    sl.reset(true, 1000);
+    sl.target(false, 1000, 400, 400);   // stow from the hand: 1000..1400
+    ReachPlan a = reachPlan(sl, 1040, 0.3f);                          // p = 0.1: carrying, near the rest end of the path
+    KT_CHECK(a.active && a.pathF > 0.8f && a.restMix == 0.f && a.carryW == 1.f);
+    ReachPlan b = reachPlan(sl, 1196, 0.3f);                          // p = 0.49: q = 0.7 of the carry
+    KT_CHECK(std::fabs(b.pathF - 0.3f) < 2e-3f && b.carryW == 1.f);
+    ReachPlan c = reachPlan(sl, 1290, 0.3f);                          // p = 0.725: release phase, the weapon is on the mount
+    KT_CHECK(c.pathF == 0.f && c.carryW == 0.f && c.restMix > 0.f && c.restMix < 1.f);
+    ReachPlan d = reachPlan(sl, 1399, 0.3f);
+    KT_CHECK(d.restMix > 0.99f && d.carryW == 0.f);
+    float prev = 1.f;                                                  // pathF never goes up over the slide
+    for (uint32_t t = 1001; t < 1400; ++t) { const float pf = reachPlan(sl, t, 0.3f).pathF; KT_CHECK(pf <= prev + 1e-6f); prev = pf; }
+    ReachPlan z = reachPlan(sl, 1399, 0.f);                           // no release phase: carry to the end
+    KT_CHECK(z.pathF < 0.01f && z.restMix == 0.f);
+}
+
+static void testReachPlanPartialDraw() {
+    Slide sl;
+    sl.reset(false, 1000);
+    sl.target(true, 1000, 400, 400);
+    sl.target(false, 1200, 400, 400);   // reversed half way: a stow from f = 0.5
+    ReachPlan a = reachPlan(sl, 1210, 0.3f);
+    KT_CHECK(a.active && a.pathF < 0.5f && a.pathF > 0.4f);          // continues from where the hand was (no jump back to the rest end)
+    sl.reset(false, 5000);
+    sl.target(true, 5000, 400, 400);
+    sl.target(false, 5100, 400, 400);
+    sl.target(true, 5150, 400, 400);   // a draw from f > 0: no reach phase, carries on
+    ReachPlan b = reachPlan(sl, 5160, 0.3f);
+    KT_CHECK(b.active && b.restMix == 0.f && b.carryW == 1.f);
 }
 
 int main() {
@@ -605,5 +658,8 @@ int main() {
     testReachWeightRamp();
     testReachAnimMix();
     testReachCarryTarget();
+    testReachPlanDraw();
+    testReachPlanStow();
+    testReachPlanPartialDraw();
     return kt::Report("holster_reach");
 }

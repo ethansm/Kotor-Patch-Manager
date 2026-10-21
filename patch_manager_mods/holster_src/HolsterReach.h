@@ -132,10 +132,11 @@ inline ReachStyle reachDefaultStyle(int cat) {
 }
 
 // 0 = hip style, 1 = over-the-shoulder style. `dz` = height of the mount above the shoulder (body frame), `arm` = shoulder-to-hand reach.
-// Smooth between -0.7 and -0.3 arm lengths below the shoulder (a hip mount sits ~0.8 below, an upper-back mount ~0.1 below).
+// Smooth between -0.75 and -0.45 arm lengths below the shoulder (a hip mount sits ~0.8 or more below, an upper-back mount ~0.1 below, a mid-back
+// rifle ~0.5); the caller forces 1 for a back bone, this is the fallback for a custom mount height.
 inline float reachOverWeight(float dz, float arm) {
     if (!std::isfinite(dz) || !(arm > 1e-4f)) return 0.f;
-    return easeSmooth((dz / arm + 0.7f) / 0.4f);
+    return easeSmooth((dz / arm + 0.75f) / 0.3f);
 }
 
 // World-space pole for the elbow: blends the style's hip / over directions by u, mirrors x for the left arm, rotates by the body
@@ -189,14 +190,55 @@ inline float reachWeight(const Slide& s, uint32_t now) { return reachWeightRamp(
 // hand. The mount style therefore holds for the whole swing in BOTH directions (draw and stow), so a sword drawn over the shoulder is also stowed over it.
 inline float reachAnimMix(float f) { return easeSmooth((f - 0.8f) / 0.2f); }
 
-// Hand path of the carried weapon: from the mount point to the animation's hand along a straight line, lifted by an arc along the body's up axis
-// (`up`, unit) so a high mount is reached up and over the shoulder instead of straight through the body. lift = 0.25 * arm * over * sin(pi f), over in 0..1.
-// Output is the point at hand fraction f (eased); finite for any finite input, mount at f = 0, hand at f = 1.
-inline void reachCarryTarget(const float* mount, const float* hand, const float* up, float over, float arm, float f, float* out) {
+// Hand path of the carried weapon: from the mount point to the animation's hand along a straight line, bulged by an arc so a high mount is
+// reached up and back, then swung up, forward and down to the hand (instead of dragged straight down through the body). `up` and `fwd` are unit
+// body axes (either may be null). bulge = arm * over * sin(pi f) * (0.15 up + 0.45 fwd), over in 0..1. f is eased; mount at f = 0, hand at f = 1.
+// Finite for any finite input.
+inline void reachCarryTarget(const float* mount, const float* hand, const float* up, const float* fwd, float over, float arm, float f, float* out) {
     const float e = easeSmooth(f);
-    float lift = 0.f;
-    if (std::isfinite(arm) && std::isfinite(over) && arm > 0.f) lift = 0.25f * arm * slideClamp01(over) * std::sin(3.14159265358979f * slideClamp01(f));
-    for (int i = 0; i < 3; ++i) out[i] = (1.f - e) * mount[i] + e * hand[i] + (up ? lift * up[i] : 0.f);
+    float bu = 0.f, bf = 0.f;
+    if (std::isfinite(arm) && std::isfinite(over) && arm > 0.f) {
+        const float k = arm * slideClamp01(over) * std::sin(3.14159265358979f * slideClamp01(f));
+        bu = 0.15f * k;
+        bf = 0.45f * k;
+    }
+    for (int i = 0; i < 3; ++i) out[i] = (1.f - e) * mount[i] + e * hand[i] + (up ? bu * up[i] : 0.f) + (fwd ? bf * fwd[i] : 0.f);
+}
+
+// ---- Phases of a carried draw / stow ----
+// Draw (dir 1) from the mount: REACH (the first `g` of the slide: the hand goes from its resting position to the mount, the weapon stays on the mount),
+// then CARRY (the hand brings the weapon along the path, mount -> rest). Draw from a partly drawn weapon: carry only.
+// Stow (dir 0): CARRY (rest -> mount, the weapon lands on the mount at the end of it), then RELEASE (the last `g`: the hand goes from the mount back to rest,
+// the weapon stays). pathF = position on the carry path (0 mount .. 1 rest); restMix = how far the aimed point has been pulled toward the resting hand
+// (1 at the slide ends in the reach / release phases); carryW = how much the weapon follows the hand (0 = on the mount).
+struct ReachPlan { bool active; float pathF, restMix, carryW; };
+
+inline ReachPlan reachPlan(const Slide& s, uint32_t now, float g) {
+    ReachPlan r = { false, 0.f, 0.f, 0.f };
+    if (!s.active(now)) return r;
+    if (!(g > 0.f)) g = 0.f;
+    if (g > 0.6f) g = 0.6f;
+    const float p = slideClamp01((float)(int32_t)(now - s.t0) / (float)s.len);
+    const float from = slideClamp01(s.from);
+    r.active = true;
+    if (s.dir) {                                   // draw
+        if (from <= 0.001f && g > 0.f) {
+            if (p < g) { r.pathF = 0.f; r.restMix = 1.f - easeSmooth(p / g); r.carryW = 0.f; return r; }
+            const float q = (p - g) / (1.f - g);
+            r.pathF = q; r.restMix = 0.f; r.carryW = easeSmooth(q / 0.1f);
+            return r;
+        }
+        r.pathF = from + (1.f - from) * p; r.restMix = 0.f; r.carryW = 1.f;
+        return r;
+    }
+    const float c = 1.f - g;                       // stow: carry share of the slide
+    if (p < c) {
+        const float q = p / c;
+        r.pathF = from * (1.f - q); r.restMix = 0.f; r.carryW = easeSmooth(r.pathF / 0.1f);
+        return r;
+    }
+    r.pathF = 0.f; r.restMix = easeSmooth((p - c) / g); r.carryW = 0.f;
+    return r;
 }
 
 // Nlerp along the shorter arc. w is clamped to [0, 1] (NaN -> 0). w == 0 returns a bit for bit (no normalize). A non-finite a is
