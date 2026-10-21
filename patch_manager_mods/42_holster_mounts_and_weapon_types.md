@@ -89,16 +89,18 @@ male body); rifle `45,0,-90` / `-0.20,-0.13,-0.21` (flatter `30,0,-90` untested)
 
 Measured from the model files (blade = model +z, barrel = model +y, single-axis pose solver `scripts/holster_pose_solve.py`).
 
+Sizes: K2 R17 survey (`patch_manager_mods/inventory_3d_viewport_src/research/R17_fit_survey_2026-09-29.txt`), `.claude/research/holster_smooth/C2_shape_evidence.md`.
+
 | Shape | Examples | Facts | Mount issue | Handling |
 |---|---|---|---|---|
-| Double-bladed saber | `w_dblsbr_001`, `_010` | hilt 0.544 m, origin at lower hilt end, grip centre +0.21 m; blades z -1.03..+1.39 (2.42 m total) | at identity on `torsoUpr_g` it pokes 0.48 m above the bone, over the neck; at the hip it is thigh length | hip by default (locked); back only by hand-set key |
-| Single / short saber | `w_lghtsbr_001` (1.30-1.54 m), `w_shortsbr_001` (1.01-1.07 m) | hilt 0.35 / 0.24 m; origin = grip | identity hides in the hip | rot 180,0,0 + x offset 0.20 |
+| Double-bladed saber | `w_dblsbr_001`, `_010` | hilt 0.544 m, origin at lower hilt end, grip centre +0.21 m; blades z -1.03..+1.44 (2.46 m total) | at identity on `torsoUpr_g` it pokes 0.48 m above the bone, over the neck; at the hip it is thigh length | hip by default (locked); back only by hand-set key |
+| Single / short saber | `w_lghtsbr_001` (1.31-1.33 m), `w_shortsbr_001` (0.96-0.98 m) | hilt 0.35 / 0.24 m; origin = grip | identity hides in the hip | rot 180,0,0 + x offset 0.20 |
 | Two-handed melee | `w_Dblswrd`, `w_VbrDblswd`, `w_ForcePike`, `w_warblade`, `w_gaffi` | unmeasured | long, back intended | shares the melee key (upper back) |
 | One-hand melee | swords, axe, `w_Stunbaton` (0.39-0.43 m) | swords unmeasured | same key as two-handed, so one change moves both | exact per-model keys only |
 | Quarterstaff | `w_Qtrstaff` | unmeasured long rod | needs the back | own `qstaff` key; no shipped seed |
-| Rifles / bowcaster | `w_Blstrrfl` (0.07 x 0.70 x 0.26, muzzle y 0.56), `w_BlstrCrbn` (barrel -0.05..0.58) | barrel +y, grip -z | on the thigh the barrel passes the knee; head clearance on the back unverified | upper back seeds |
+| Rifles / bowcaster | `w_Blstrrfl` (0.061 x 0.745 x 0.255 for `_001`, muzzle y 0.62), `w_BlstrCrbn` (barrel -0.05..0.58) | barrel +y, grip -z | on the thigh the barrel passes the knee; head clearance on the back unverified | upper back seeds |
 | Heavy repeaters | `w_RptnBlstr`, `w_HvRptBltr` | unmeasured | heavy, barrel up and back | upper back; reach path goes straight up and out |
-| Pistols | six models | 0.13 x 0.37 x 0.21, muzzle y 0.32 | thigh needs -90 about x and 0.2 m outward | pelvis, -100,0,0 |
+| Pistols | six models | 0.081 x 0.405 x 0.220 (`w_blstrpstl_001`, long axis y), muzzle y 0.34 | thigh needs -90 about x and 0.2 m outward | pelvis, -100,0,0 |
 
 Open: extents are unmeasured for the quarterstaff, long and vibro swords, pike, bowcaster, ion/sonic/disruptor rifles and repeaters. The planned 0.6 m "long"
 threshold is not implemented.
