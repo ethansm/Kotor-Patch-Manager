@@ -99,3 +99,7 @@ MCF5 slider merged to KOTOR-II (ff, now repo ~7ca9fdfe), shared headers synced (
 - MCR3 played (selftest=1): mod-config log CLEAN (no WARN/ERR). `SLIDER art applied parts=3/3 after 1 tries` for both rows (no text-mark fallback), 126 SLIDER drag commits (Volume row), art path = fill. The Snap slider (5..95 step 5) saw only 2 changes, so its handler snap/reject case is NOT exercised yet.
 - User screenshot: wedge and thumb overhang the frame border (wedge ran to the right frame edge, thumb arrows stuck out above and below). Fix: `mui::sliderInner(frame)` (inset ~10/512 of width, 10/64 of height); wedge x-run, thumb rect and the pointer->value mapping use it; frame stays the hit area. Tests added (test_inner_inside_frame). Repo 4279c35a (mod-config 0.3.2-dev), KPM side committed, `--prepare` = SWAP, gate PASS (md5 f008e6c9). NOT installed: needs the user's GO, game closed.
 - Re-check after install: both sliders sit inside the border at 0 and 100; drag the Snap slider across the range and hit the value the handler rejects.
+
+## Update 10-20 20:35 - mod-config 0.3.2-dev INSTALLED
+- `kpm_hotswap.py --mod mod-config --apply`: LIVE 4399c8b3. Rollback: `python3 scripts/kpm_hotswap.py --rollback mod-config_swap_20261020_203430`. `selftest=1` is still set in the game-dir mod_config.ini (set to 0 after the play check).
+- Play check: sliders stay inside the border at 0 and 100; Snap slider across its whole range incl. the rejected value.
