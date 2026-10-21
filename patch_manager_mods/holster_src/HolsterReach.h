@@ -120,14 +120,16 @@ inline bool solveTwoBone(const float* S, const float* E, const float* H, const f
 // Directions are in the BODY frame of the owner (x right, y forward, z up) and are for the RIGHT arm; the left arm mirrors x. `hip`
 // is the bend for a mount at or below the waist (draw back and out), `over` for a mount at or above the shoulder (elbow up and out,
 // the hand goes up and over the shoulder to the hilt). The solver blends the two by how high the mount sits (reachOverWeight).
-struct ReachStyle { float hip[3]; float over[3]; };
+// `bulge` = how far the hand path bows away from the straight mount -> hand line at its middle, in arm lengths, for a high mount: { up, forward, outward }
+// (outward = away from the body's midline on the arm's own side). Swords swing up and forward; heavy weapons go straight up and out so they clear the head.
+struct ReachStyle { float hip[3]; float over[3]; float bulge[3]; };
 
 inline ReachStyle reachDefaultStyle(int cat) {
     switch (cat) {
-        case 1: case 2: return { { 0.60f, -0.40f, -0.40f }, { 0.50f, 0.00f, 0.85f } };   // lightsaber, melee: sheath at the hip, hilt over the shoulder
-        case 3:         return { { 0.60f, -0.40f, -0.40f }, { 0.60f, -0.20f, 0.70f } };  // quarterstaff
-        case 4:         return { { 0.50f, -0.70f, -0.20f }, { 0.50f, 0.00f, 0.80f } };   // pistol: straight back from the holster
-        default:        return { { 0.60f, -0.50f, -0.30f }, { 0.70f, -0.10f, 0.65f } };  // rifle, heavy, unknown
+        case 1: case 2: return { { 0.60f, -0.40f, -0.40f }, { 0.50f, 0.00f, 0.85f }, { 0.20f, 0.40f, 0.10f } };   // lightsaber, melee: sheath at the hip, hilt over the shoulder
+        case 3:         return { { 0.60f, -0.40f, -0.40f }, { 0.60f, -0.20f, 0.70f }, { 0.40f, 0.20f, 0.20f } };   // quarterstaff
+        case 4:         return { { 0.50f, -0.70f, -0.20f }, { 0.50f, 0.00f, 0.80f }, { 0.20f, 0.40f, 0.10f } };    // pistol: straight back from the holster
+        default:        return { { 0.60f, -0.50f, -0.30f }, { 0.70f, -0.10f, 0.65f }, { 0.60f, 0.10f, 0.25f } };   // rifle, heavy, unknown: straight up and over, away from the head
     }
 }
 
@@ -186,31 +188,29 @@ inline float reachWeightRamp(const Slide& s, uint32_t now, float ramp) {
 }
 inline float reachWeight(const Slide& s, uint32_t now) { return reachWeightRamp(s, now, 0.2f); }
 
-// How much of the animation's own elbow plane is mixed into the pole at hand fraction f (0 = mount, 1 = hand): none up to 0.8, then eased to 1 at the
-// hand. The mount style therefore holds for the whole swing in BOTH directions (draw and stow), so a sword drawn over the shoulder is also stowed over it.
-inline float reachAnimMix(float f) { return easeSmooth((f - 0.8f) / 0.2f); }
+// How much of the animation's own elbow plane is mixed into the pole at path position f (0 = mount, 1 = rest hand): none up to 0.45, then eased to 1 at the
+// rest hand, so the elbow comes down out of the over-the-shoulder pose as the hand comes forward and down (and goes up again on the way back).
+inline float reachAnimMix(float f) { return easeSmooth((f - 0.45f) / 0.5f); }
 
-// Hand path of the carried weapon: from the mount point to the animation's hand along a straight line, bulged by an arc so a high mount is
-// reached up and back, then swung up, forward and down to the hand (instead of dragged straight down through the body). `up` and `fwd` are unit
-// body axes (either may be null). bulge = arm * over * sin(pi f) * (0.15 up + 0.45 fwd), over in 0..1. f is eased; mount at f = 0, hand at f = 1.
-// Finite for any finite input.
-inline void reachCarryTarget(const float* mount, const float* hand, const float* up, const float* fwd, float over, float arm, float f, float* out) {
+// Hand path of the carried weapon: from the mount point to the animation's hand along a straight line, bowed by `bulge` = { up, forward, outward } (arm lengths,
+// see ReachStyle) so a high mount is reached up and back, then swung up, out and forward and down to the hand (instead of dragged straight down through the body or
+// over the head). `up`, `fwd`, `out` are unit world axes (any may be null; `out` points away from the body's midline on this arm's side). The bow is
+// arm * over * sin(pi f) * bulge. f is eased; mount at f = 0, hand at f = 1. Finite for any finite input.
+inline void reachCarryTarget(const float* mount, const float* hand, const float* up, const float* fwd, const float* out3, const float* bulge, float over, float arm, float f, float* out) {
     const float e = easeSmooth(f);
-    float bu = 0.f, bf = 0.f;
-    if (std::isfinite(arm) && std::isfinite(over) && arm > 0.f) {
-        const float k = arm * slideClamp01(over) * std::sin(3.14159265358979f * slideClamp01(f));
-        bu = 0.15f * k;
-        bf = 0.45f * k;
-    }
-    for (int i = 0; i < 3; ++i) out[i] = (1.f - e) * mount[i] + e * hand[i] + (up ? bu * up[i] : 0.f) + (fwd ? bf * fwd[i] : 0.f);
+    float k = 0.f;
+    if (std::isfinite(arm) && std::isfinite(over) && arm > 0.f) k = arm * slideClamp01(over) * std::sin(3.14159265358979f * slideClamp01(f));
+    const float bu = bulge ? k * bulge[0] : 0.f, bf = bulge ? k * bulge[1] : 0.f, bo = bulge ? k * bulge[2] : 0.f;
+    for (int i = 0; i < 3; ++i)
+        out[i] = (1.f - e) * mount[i] + e * hand[i] + (up ? bu * up[i] : 0.f) + (fwd ? bf * fwd[i] : 0.f) + (out3 ? bo * out3[i] : 0.f);
 }
 
 // ---- Phases of a carried draw / stow ----
-// Draw (dir 1) from the mount: REACH (the first `g` of the slide: the hand goes from its resting position to the mount, the weapon stays on the mount),
+// Draw (dir 1) from the mount: REACH (the first `g` of the slide: the hand goes from its resting position to the mount ALONG THE CARRY ARC, the weapon stays on the mount),
 // then CARRY (the hand brings the weapon along the path, mount -> rest). Draw from a partly drawn weapon: carry only.
 // Stow (dir 0): CARRY (rest -> mount, the weapon lands on the mount at the end of it), then RELEASE (the last `g`: the hand goes from the mount back to rest,
 // the weapon stays). pathF = position on the carry path (0 mount .. 1 rest); restMix = how far the aimed point has been pulled toward the resting hand
-// (1 at the slide ends in the reach / release phases); carryW = how much the weapon follows the hand (0 = on the mount).
+// (kept for callers; 0 now: the reach and release walk the carry arc); carryW = how much the weapon follows the hand (0 = on the mount).
 struct ReachPlan { bool active; float pathF, restMix, carryW; };
 
 inline ReachPlan reachPlan(const Slide& s, uint32_t now, float g) {
@@ -223,7 +223,7 @@ inline ReachPlan reachPlan(const Slide& s, uint32_t now, float g) {
     r.active = true;
     if (s.dir) {                                   // draw
         if (from <= 0.001f && g > 0.f) {
-            if (p < g) { r.pathF = 0.f; r.restMix = 1.f - easeSmooth(p / g); r.carryW = 0.f; return r; }
+            if (p < g) { r.pathF = 1.f - easeSmooth(p / g); r.restMix = 0.f; r.carryW = 0.f; return r; }   // reach: the carry path walked backwards, rest -> mount
             const float q = (p - g) / (1.f - g);
             r.pathF = q; r.restMix = 0.f; r.carryW = easeSmooth(q / 0.1f);
             return r;
@@ -237,7 +237,7 @@ inline ReachPlan reachPlan(const Slide& s, uint32_t now, float g) {
         r.pathF = from * (1.f - q); r.restMix = 0.f; r.carryW = easeSmooth(r.pathF / 0.1f);
         return r;
     }
-    r.pathF = 0.f; r.restMix = easeSmooth((p - c) / g); r.carryW = 0.f;
+    r.pathF = easeSmooth((p - c) / g); r.restMix = 0.f; r.carryW = 0.f;   // release: the same path again, mount -> rest, the weapon stays
     return r;
 }
 
@@ -268,5 +268,39 @@ inline Q reachBase(Base& b, const Q& read) {
     return b.q;
 }
 inline void reachNoteWrite(Base& b, const Q& w) { b.wrote = w; }
+
+// ---- Wrist ----
+// Rotation angle of a unit quaternion in degrees (0..180, sign-agnostic). Non-finite -> 0.
+inline float reachQAngleDeg(const Q& q) {
+    if (!qfinite(q)) return 0.f;
+    float w = std::fabs(q.w);
+    const float n = std::sqrt(q.w * q.w + q.x * q.x + q.y * q.y + q.z * q.z);
+    if (!(n > 1e-12f)) return 0.f;
+    w /= n;
+    if (w > 1.f) w = 1.f;
+    return 2.f * std::acos(w) * 57.29577951308232f;
+}
+
+// Limit a rotation to `maxDeg` (same axis, shorter angle). Within the limit it is returned normalized, unchanged. Non-finite -> identity.
+inline Q reachClampRot(const Q& dq0, float maxDeg) {
+    if (!qfinite(dq0)) return { 1, 0, 0, 0 };
+    Q dq = qnormalize(dq0);
+    if (dq.w < 0.f) { dq.w = -dq.w; dq.x = -dq.x; dq.y = -dq.y; dq.z = -dq.z; }   // shorter arc
+    const float ang = 2.f * std::acos(dq.w > 1.f ? 1.f : dq.w) * 57.29577951308232f;
+    if (!(maxDeg >= 0.f) || ang <= maxDeg) return dq;
+    const float s2 = std::sqrt(dq.x * dq.x + dq.y * dq.y + dq.z * dq.z);
+    if (!(s2 > 1e-9f)) return { 1, 0, 0, 0 };
+    const float h = maxDeg * 3.14159265358979f / 360.f, k = std::sin(h) / s2;
+    return { std::cos(h), dq.x * k, dq.y * k, dq.z * k };
+}
+
+// World rotation to apply to a hand so its orientation `cur` becomes the target blend(from, to, t): dq = target * conj(cur), then limited to maxDeg and
+// scaled by `weight` (0 = none). The hand is turned from the weapon's mount orientation (t = 0, at the grab) to its resting orientation (t = 1) over the carry.
+inline Q reachWristDelta(const Q& from, const Q& to, float t, const Q& cur, float maxDeg, float weight) {
+    if (!qfinite(from) || !qfinite(to) || !qfinite(cur)) return { 1, 0, 0, 0 };
+    const Q target = blendQ(from, to, easeSmooth(t));
+    const Q dq = reachClampRot(qmul(target, reachConj(cur)), maxDeg);
+    return blendQ(Q{ 1, 0, 0, 0 }, dq, weight);
+}
 
 }  // namespace hs

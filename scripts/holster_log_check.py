@@ -436,7 +436,7 @@ def _reach_events(f):
     r = f.get("reach", [])
     ref = f.get("reachrefuse", Counter())
     line = "REACH found=%d steps=%d persist1=%d wrote_both=%d refuse=%s" % (
-        f.get("reachfound", 0), len(r), sum(1 for x in r if x[3]), sum(1 for x in r if x[4] == 3),
+        f.get("reachfound", 0), len(r), sum(1 for x in r if x[3]), sum(1 for x in r if (x[4] & 3) == 3),
         ",".join("%s:%d" % kv for kv in sorted(ref.items())) or "none")
     errs = [x[2] for x in r if x[2] >= 0]
     if errs:
