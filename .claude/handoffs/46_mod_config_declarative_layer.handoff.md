@@ -94,3 +94,8 @@ MCF5 slider merged to KOTOR-II (ff, now repo ~7ca9fdfe), shared headers synced (
 - `kpm_hotswap.py --mod mod-config --apply`: mod-config 0.3.1-dev LIVE (658ea991). Rollback: `python3 scripts/kpm_hotswap.py --rollback mod-config_swap_20261020_131556`.
 - Play row MCR3 added to PLAY_TEST_QUEUE.md (selftest=1 then 2). Pending user play: slider art/drag feel, wheel delivery, hold-repeat, shared hse_sld_* names with holster-editor, SH-PG1 (Self-Heal + Combat Hotbar pages), MCR1/MCR2.
 - Shared-helper prune stays ON HOLD until MCR3 is played. Next rows: MCF6, MCF7 (need direction).
+
+## Update 10-20 20:40 - MCR3 first play + slider inset fix
+- MCR3 played (selftest=1): mod-config log CLEAN (no WARN/ERR). `SLIDER art applied parts=3/3 after 1 tries` for both rows (no text-mark fallback), 126 SLIDER drag commits (Volume row), art path = fill. The Snap slider (5..95 step 5) saw only 2 changes, so its handler snap/reject case is NOT exercised yet.
+- User screenshot: wedge and thumb overhang the frame border (wedge ran to the right frame edge, thumb arrows stuck out above and below). Fix: `mui::sliderInner(frame)` (inset ~10/512 of width, 10/64 of height); wedge x-run, thumb rect and the pointer->value mapping use it; frame stays the hit area. Tests added (test_inner_inside_frame). Repo 4279c35a (mod-config 0.3.2-dev), KPM side committed, `--prepare` = SWAP, gate PASS (md5 f008e6c9). NOT installed: needs the user's GO, game closed.
+- Re-check after install: both sliders sit inside the border at 0 and 100; drag the Snap slider across the range and hit the value the handler rejects.
