@@ -648,15 +648,15 @@ void KPATCH_CALL apiPlayAnim(uint32_t token, const char* anim) {
 }
 
 // Freeze / resume the body and head animation at the CURRENT pose.
-// Mechanism (a): re-issue the SAME clip name with speed 0 (pause) or 1 (resume) and flags 0. Evidence, Gob::PlayAnimation 0x004E3270
-// (static dump decomp/4e/004e3270.c, asm 0x004e37ec..0x004e37f5; REA ledger 20261018_nb2-play-semantics.tsv):
+// Mechanism (a): re-issue the SAME clip name with speed 0 (pause) or 1 (resume) and flags 0. Evidence, Gob::PlayAnimation
+// (static dump decomp/4e/004e3270.c, REA ledger 20261018_nb2-play-semantics.tsv):
 //   * the call first searches the Gob's entries by name (stricmp on desc+8; skipped only by flags 0x40); a found entry is unlinked and
 //     RE-INSERTED, and only a NEW entry runs the init block (start position = param5 or 0, blend weight 0). So a same-name replay keeps the
 //     entry's playback position (+0x10) and blend weight (+0x14): no restart at frame 0, and the 5th argument (start offset, new entries
 //     only) is irrelevant and stays 0.0f.
-//   * speed is stored at entry+0x04 by FLD float [ebp+0xc]; FSTP float [ecx+4] (asm 0x004e37e9). It is a FLOAT, not the "(int)" the
+//   * speed is stored at entry+0x04 by FLD float param2; FSTP float [entry+4] (the FSTP in decomp/4e/004e3270.c). It is a FLOAT, not the "(int)" the
 //     decompile shows (that cast, and the ledger row "stored as integer", are a decompiler artifact; 0 and 1 are exact either way).
-//   * the per-frame advance 0x004e1d40 does pos += dt*speed (decomp L231) and re-applies the pose at the (unchanged) pos every tick,
+//   * the per-frame advance (decomp/4e/004e1d40.c) does pos += dt*speed (decomp L231) and re-applies the pose at the (unchanged) pos every tick,
 //     so speed 0 holds the pose exactly. The entry flags are overwritten with the passed flags (0 = looping, as PlayAnim plays it).
 //   * side effects of any replay (same as PlayAnim): the `start<name>` event fires, and entries BEHIND this one (a still-fading cross-fade
 //     source) are freed, so pausing inside the first blend-in moves the pose to the new clip at once.
