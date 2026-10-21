@@ -310,13 +310,15 @@ inline int stripRects(Rect card, Rect vit, int n, const Config& c, Rect out[kMax
         if (over > 0) x0 -= over;
         if (x0 < 0) x0 = 0;
     }
-    int x = x0;
+    // Head (index 0) sits at the RIGHT end of the row, next to the portrait; later actions extend left (x decreases with i).
+    int x = x0 + rowW;
     for (int i = 0; i < n; ++i) {
         const int sz = i == 0 ? hs : s;
+        x -= sz;
         out[i].x = x; out[i].w = sz; out[i].h = sz;
         // left: centred on the vit bar. above: bottom edges aligned (head size offset). below: top edges aligned.
         out[i].y = !edge ? vit.y + (vit.h - sz) / 2 : (c.stripSide == kSideBelow ? y : y + hs - sz);
-        x += sz + kStripGap;
+        x -= kStripGap;
     }
     return n;
 }
@@ -365,22 +367,23 @@ inline Rect cancelRect(Rect q0, Rect q1) {
     return Rect{ x, y, w, h };
 }
 
-// Companion Cancel: a square of the strip icon size placed just LEFT of the strip's first icon (gap = max(icon / 4, kStripGap)).
+// Companion Cancel: a square of the strip icon size placed just LEFT of the strip's leftmost icon (gap = max(icon / 4, kStripGap)).
 // strip_side left: the row already ends `reserve` left of the vit bar, so the cancel square lies further left, clear of the
 // selfheal button + ring; when it would leave the screen (x < 0) there is no cancel (never move it into the reserve). above / below:
-// the row starts at the card's left edge, nothing of selfheal is there; at x < 0 it goes just RIGHT of the last icon instead. A square
+// the row starts at the card's left edge, nothing of selfheal is there; at x < 0 it goes just RIGHT of the head icon instead. A square
 // that would pass screenW (> 0) is refused. {0,0,0,0} = none.
 // sq > 0 fixes the square edge (the head icon may be bigger than the strip icon size); the square is centred on icons[0] vertically.
 inline Rect stripCancelRect(const Rect* icons, int n, int side, int screenW = 0, int sq = 0) {
     if (!icons || n <= 0 || icons[0].w <= 0 || icons[0].h <= 0) return Rect{ 0, 0, 0, 0 };
+    // Icons run right to left (index 0 = head, rightmost): the Cancel square sits left of the leftmost icon (index n - 1).
+    const Rect& first = icons[n - 1];
     const int s = sq > 0 ? sq : icons[0].w;
     int gap = s / 4;
     if (gap < kStripGap) gap = kStripGap;
-    Rect r{ icons[0].x - gap - s, icons[0].y + (icons[0].h - s) / 2, s, s };
+    Rect r{ first.x - gap - s, icons[0].y + (icons[0].h - s) / 2, s, s };
     if (r.x < 0) {
         if (side == kSideLeft) return Rect{ 0, 0, 0, 0 };
-        const Rect& last = icons[n - 1];
-        r.x = last.x + last.w + gap;
+        r.x = icons[0].x + icons[0].w + gap;
     }
     if (screenW > 0 && r.x + r.w > screenW) return Rect{ 0, 0, 0, 0 };
     return r;

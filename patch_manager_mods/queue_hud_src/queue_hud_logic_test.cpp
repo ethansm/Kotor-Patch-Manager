@@ -531,12 +531,12 @@ void testStripGeometry() {
     // above: bottom edge 2px above the card top, left-aligned, 2px gap
     int n = stripRects(card, vit, 3, c, out);
     KT_CHECK_EQ(n, 3);
-    for (int i = 0; i < 3; ++i) { KT_CHECK_EQ(out[i].w, 58); KT_CHECK_EQ(out[i].h, 58); KT_CHECK_EQ(out[i].y + out[i].h, card.y - 2); KT_CHECK_EQ(out[i].x, 3711 + i * 60); }
+    for (int i = 0; i < 3; ++i) { KT_CHECK_EQ(out[i].w, 58); KT_CHECK_EQ(out[i].h, 58); KT_CHECK_EQ(out[i].y + out[i].h, card.y - 2); KT_CHECK_EQ(out[i].x, 3711 + (2 - i) * 60); }   // head rightmost
     // below: top edge 2px under the card bottom
     c.stripSide = kSideBelow;
     n = stripRects(card, vit, 2, c, out);
     KT_CHECK_EQ(n, 2);
-    KT_CHECK_EQ(out[0].y, 1285 + 96 + 2); KT_CHECK_EQ(out[1].y, out[0].y); KT_CHECK_EQ(out[1].x, out[0].x + 60);
+    KT_CHECK_EQ(out[0].y, 1285 + 96 + 2); KT_CHECK_EQ(out[1].y, out[0].y); KT_CHECK_EQ(out[0].x, out[1].x + 60);
     c.stripSide = kSideAbove;
     // clamps: n to strip_max and to 4; n <= 0 and bad inputs give 0
     c.stripMax = 1; KT_CHECK_EQ(stripRects(card, vit, 3, c, out), 1);
@@ -555,19 +555,19 @@ void testStripGeometry() {
     // an explicit icon size is used as is
     c.stripIconPx = 16;
     n = stripRects(card, vit, 4, c, out);
-    KT_CHECK_EQ(n, 4); KT_CHECK_EQ(out[3].x, 3711 + 3 * 18); KT_CHECK_EQ(out[0].y, 1285 - 2 - 16);
+    KT_CHECK_EQ(n, 4); KT_CHECK_EQ(out[0].x, 3711 + 3 * 18); KT_CHECK_EQ(out[0].y, 1285 - 2 - 16);
     // screen clamp: a row that would run off the right edge slides left; screenW 0 = no clamp
     c.stripIconPx = 0;
     n = stripRects(card, vit, 4, c, out, 3840);
-    KT_CHECK_EQ(n, 4); KT_CHECK_EQ(out[3].x + out[3].w, 3840); KT_CHECK_EQ(out[1].x - out[0].x, 60);
+    KT_CHECK_EQ(n, 4); KT_CHECK_EQ(out[0].x + out[0].w, 3840); KT_CHECK_EQ(out[0].x - out[1].x, 60);
     n = stripRects(card, vit, 2, c, out, 3840);                     // 3711 + 2*58 + 2 = 3829 <= 3840: unchanged
-    KT_CHECK_EQ(out[0].x, 3711);
+    KT_CHECK_EQ(out[1].x, 3711);
     n = stripRects(card, vit, 4, c, out, 3840 + 0);
-    KT_CHECK(out[3].x + out[3].w <= 3840);
+    KT_CHECK(out[0].x + out[0].w <= 3840);
     n = stripRects(Rect{ 10, 100, 85, 96 }, vit, 4, c, out, 50);   // a screen narrower than the row: pinned to x = 0, never negative
-    KT_CHECK_EQ(out[0].x, 0);
+    KT_CHECK_EQ(out[3].x, 0);
     n = stripRects(card, vit, 4, c, out, 0);
-    KT_CHECK_EQ(out[0].x, 3711);
+    KT_CHECK_EQ(out[3].x, 3711);
     n = stripRects(card, vit, 1, c, out, 3768);                     // overflow of exactly 1px still shifts
     KT_CHECK_EQ(out[0].x, 3710);
     n = stripRects(card, vit, 1, c, out, 3769);                     // fits exactly: unchanged
@@ -599,7 +599,7 @@ void testStripAvoidsSelfHeal() {
         for (int i = 0; i < n; ++i) {
             KT_CHECK(!overlaps(out[i], btn));
             KT_CHECK(!overlaps(out[i], ring));
-            if (i) KT_CHECK(out[i].x >= out[i - 1].x + out[i - 1].w + 2);   // icons never overlap each other
+            if (i) KT_CHECK(out[i - 1].x >= out[i].x + out[i].w + 2);   // icons never overlap each other (index i - 1 is to the right of i)
             if (side == kSideLeft) {                                         // left of the button / ring, never on the bar or card
                 KT_CHECK(out[i].x + out[i].w <= (btn.x < ring.x ? btn.x : ring.x) - 2);
                 KT_CHECK(!overlaps(out[i], cs.vit));
@@ -622,7 +622,7 @@ void testStripLeftLive() {
     KT_CHECK_EQ(stripRects(card2, vit2, 1, c, out), 1);
     KT_CHECK_EQ(out[0].x, 3671 - 66 - 58); KT_CHECK_EQ(out[0].y, 1285 + 19); KT_CHECK_EQ(out[0].w, 58);   // y centres 58 px on the 96 px bar (1285 + (96-58)/2 = 1285 + 19)
     KT_CHECK_EQ(stripRects(card2, vit2, 4, c, out), 4);
-    KT_CHECK_EQ(out[3].x + out[3].w, 3671 - 66); KT_CHECK_EQ(out[0].x, 3605 - 4 * 58 - 3 * 2);   // queue order left to right
+    KT_CHECK_EQ(out[0].x + out[0].w, 3671 - 66); KT_CHECK_EQ(out[3].x, 3605 - 4 * 58 - 3 * 2);   // head rightmost, next to the portrait
     const Rect* vits[] = { &vit2, &vit3 }; const Rect* cards[] = { &card2, &card3 };
     for (int k = 0; k < 2; ++k) {
         KT_CHECK_EQ(stripRects(*cards[k], *vits[k], 4, c, out), 4);
@@ -642,7 +642,7 @@ void testStripLeftLive() {
         KT_CHECK(r - 2 <= need + 3);
     }
     KT_CHECK_EQ(stripRects(Rect{ 40, 0, 85, 85 }, Rect{ 10, 0, 47, 96 }, 2, c, out), 2);   // too close to the left edge: pinned to x = 0
-    KT_CHECK_EQ(out[0].x, 0);
+    KT_CHECK_EQ(out[1].x, 0);
 }
 
 
@@ -675,7 +675,7 @@ void testStripHudHostSlots() {
         KT_CHECK_EQ(qh::stripRects(card, vit, n, c, oldOut, 0, oldSelfHealReserve(vit)), n);
         KT_CHECK_EQ(qh::stripRects(card, vit, n, c, newOut, 0, slotReserve(st, vit, n, c)), n);
         for (int i = 0; i < n; ++i) { KT_CHECK_EQ(newOut[i].x, oldOut[i].x); KT_CHECK_EQ(newOut[i].y, oldOut[i].y); KT_CHECK_EQ(newOut[i].w, oldOut[i].w); }
-        KT_CHECK_EQ(newOut[0].x, vit.x - 66 - (n * 58 + (n - 1) * 2));   // the literal live value: 3605 - rowW
+        KT_CHECK_EQ(newOut[n - 1].x, vit.x - 66 - (n * 58 + (n - 1) * 2));   // the literal live value: 3605 - rowW
     }
     // every bar height: the slot path is the old formula
     for (int h = 8; h <= 400; ++h) {
@@ -1274,14 +1274,15 @@ void testStripHead() {
     { Config c; c.stripSide = kSideLeft; c.stripHeadPct = 150; Rect out[4];   // n=3 left layout
       const int reserve = 66;
       KT_CHECK_EQ(stripRects(card, vit, 3, c, out, 3840, reserve), 3);
-      KT_CHECK(rectEq(out[0], 3398, 1289, 87, 87));
-      KT_CHECK(rectEq(out[1], 3487, 1304, 58, 58));
-      KT_CHECK(rectEq(out[2], 3547, 1304, 58, 58));
-      KT_CHECK_EQ(out[1].x, out[0].x + out[0].w + kStripGap);                // contiguous, 2 px gap
-      KT_CHECK_EQ(out[2].x, out[1].x + out[1].w + kStripGap);
-      KT_CHECK_EQ(out[2].x + out[2].w, vit.x - reserve);                      // row right edge unchanged
+      // Head (index 0) is the RIGHTMOST icon, next to the portrait; later actions extend left.
+      KT_CHECK(rectEq(out[0], 3518, 1289, 87, 87));
+      KT_CHECK(rectEq(out[1], 3458, 1304, 58, 58));
+      KT_CHECK(rectEq(out[2], 3398, 1304, 58, 58));
+      KT_CHECK_EQ(out[0].x, out[1].x + out[1].w + kStripGap);                // contiguous, 2 px gap
+      KT_CHECK_EQ(out[1].x, out[2].x + out[2].w + kStripGap);
+      KT_CHECK_EQ(out[0].x + out[0].w, vit.x - reserve);                      // row right edge unchanged
       KT_CHECK_EQ(stripRowWidth(vit, 3, c), 87 + 2 * (58 + kStripGap));
-      KT_CHECK_EQ(stripRowWidth(vit, 3, c), out[2].x + out[2].w - out[0].x);  // == sum of the placed rects
+      KT_CHECK_EQ(stripRowWidth(vit, 3, c), out[0].x + out[0].w - out[2].x);  // == sum of the placed rects
       KT_CHECK_EQ(stripRowWidth(vit, 1, c), 87); KT_CHECK_EQ(stripRowWidth(vit, 0, c), 0);
       KT_CHECK_EQ(stripRowWidth(vit, 9, c), 87 + 3 * (58 + kStripGap));       // n clamped to 4
       // Cancel: keeps the 58 px square, centred on the (bigger) head, same gap rule
@@ -1289,11 +1290,11 @@ void testStripHead() {
       KT_CHECK(rectEq(stripCancelRect(out, 3, kSideLeft, 3840, 0), 3398 - 21 - 87, 1289, 87, 87));   // sq=0: follows the head
       c.stripSide = kSideAbove;   // above: bottom edges aligned 2 px over the card
       KT_CHECK_EQ(stripRects(card, vit, 2, c, out, 0, 0), 2);
-      KT_CHECK(rectEq(out[0], 3711, 1196, 87, 87)); KT_CHECK(rectEq(out[1], 3800, 1225, 58, 58));
+      KT_CHECK(rectEq(out[0], 3771, 1196, 87, 87)); KT_CHECK(rectEq(out[1], 3711, 1225, 58, 58));
       KT_CHECK_EQ(out[0].y + out[0].h, out[1].y + out[1].h);
       c.stripSide = kSideBelow;   // below: top edges aligned 2 px under the card
       KT_CHECK_EQ(stripRects(card, vit, 2, c, out, 0, 0), 2);
-      KT_CHECK(rectEq(out[0], 3711, 1383, 87, 87)); KT_CHECK(rectEq(out[1], 3800, 1383, 58, 58)); }
+      KT_CHECK(rectEq(out[0], 3771, 1383, 87, 87)); KT_CHECK(rectEq(out[1], 3711, 1383, 58, 58)); }
     { // pct=100 regression pin: byte-identical to the pre-B3 rects on every side
       const int sides[] = { kSideLeft, kSideAbove, kSideBelow };
       for (int sd : sides) for (int n = 1; n <= 4; ++n) {
@@ -1303,7 +1304,7 @@ void testStripHead() {
           int x0 = sd == kSideLeft ? vit.x - 66 - rowW : card.x;
           int y = sd == kSideLeft ? vit.y + (vit.h - s) / 2 : (sd == kSideBelow ? card.y + card.h + kStripGap : card.y - kStripGap - s);
           const int over = x0 + rowW - 3840; if (over > 0) x0 -= over;
-          for (int i = 0; i < n; ++i) KT_CHECK(rectEq(out[i], x0 + i * (s + kStripGap), y, s, s));
+          for (int i = 0; i < n; ++i) KT_CHECK(rectEq(out[i], x0 + (n - 1 - i) * (s + kStripGap), y, s, s));   // head rightmost
           KT_CHECK_EQ(stripRowWidth(vit, n, c), rowW);
       } }
     { Config c; Rect icons[1] = { Rect{ 3700, 1285, 58, 58 } };   // default sq: identical to the old behaviour
@@ -1334,7 +1335,7 @@ void testStripCancel() {
         KT_CHECK_EQ(stripRects(*cards[k], *vits[k], n, c, icons, 3840), n);
         const Rect cr = stripCancelRect(icons, n, kSideLeft, 3840);
         KT_CHECK_EQ(cr.w, 58); KT_CHECK_EQ(cr.h, 58); KT_CHECK_EQ(cr.y, icons[0].y);
-        KT_CHECK_EQ(icons[0].x - (cr.x + cr.w), 14);                  // gap = 58 / 4 = 14
+        KT_CHECK_EQ(icons[n - 1].x - (cr.x + cr.w), 14);   // left of the leftmost icon                  // gap = 58 / 4 = 14
         for (int i = 0; i < n; ++i) KT_CHECK(!ov(cr, icons[i]));
         // clear of the real selfheal button + ring, the bars and cards
         const shui::Rect btn = shui::buttonRect(shui::Rect{ vits[k]->x, vits[k]->y, 47, vits[k]->h });
@@ -1349,8 +1350,8 @@ void testStripCancel() {
     // left: no room left of the row (x < 0) -> no cancel, never moved into the selfheal reserve
     { const Rect icons[1] = { Rect{ 20, 100, 38, 38 } };
       KT_CHECK(rectEq(stripCancelRect(icons, 1, kSideLeft, 3840), 0, 0, 0, 0)); }
-    // above / below: x < 0 falls back to just RIGHT of the last icon
-    { Rect icons[2] = { Rect{ 5, 100, 20, 20 }, Rect{ 27, 100, 20, 20 } };
+    // above / below: x < 0 falls back to just RIGHT of the head icon (icons[0] is the rightmost)
+    { Rect icons[2] = { Rect{ 27, 100, 20, 20 }, Rect{ 5, 100, 20, 20 } };
       KT_CHECK(rectEq(stripCancelRect(icons, 2, kSideAbove, 3840), 47 + 5, 100, 20, 20));
       KT_CHECK(rectEq(stripCancelRect(icons, 2, kSideBelow, 3840), 47 + 5, 100, 20, 20)); }
     // above / below with room: just left of the first icon
