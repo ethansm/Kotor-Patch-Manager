@@ -777,5 +777,84 @@ class Hw27Hw28ConfigTests(unittest.TestCase):
         self.assertIn("notholsterable=7", " ".join(H._place_diag(main)))
 
 
+def mount_line(rel="(0.5,0.5,0.5,0.5)", oq="(1,0,0,0)", bone="torso_g", cat=1, bq="(0.7071,0,0.7071,0)", mq="(0.5,0.5,0.5,0.5)"):
+    return "MOUNT gob=1a2b3c stem=w_lghtsbr_001 bone=%s bq=%s mq=%s oq=%s rel=%s cat=%d" % (bone, bq, mq, oq, rel, cat)
+
+
+MOUNT_OK = mount_line()
+MOUNT_FLIP = mount_line(rel="(-0.5,-0.5,-0.5,-0.5)")   # same rotation, opposite sign: must align to MOUNT_OK, not pull the median apart
+MOUNT_BAD = mount_line(rel="(0.5,0.5,abc,0.5)")         # unparsable quat: skipped
+MOUNT_NOFACING = mount_line(rel="nan", oq="nan")         # owner facing unknown: nofacing, excluded from the median
+MOUNT_BODIES = [MOUNT_OK, MOUNT_FLIP, MOUNT_BAD, MOUNT_NOFACING]
+MOUNT_HEAD = "MOUNT lines=3 nofacing=1 skipped=1 groups=1"
+MOUNT_ROW = "  cat=1 bone=torso_g count=3 nofacing=1 median rel=(0.500,0.500,0.500,0.500) spread=0.00 deg"
+
+
+class Hw35MountTests(unittest.TestCase):
+    def test_mount_records_parse_and_bad_quat_is_skipped_not_fatal(self):
+        recs, skipped, _ = parse(MOUNT_BODIES)
+        mounts = [r for r in recs if r["kind"] == "MOUNT"]
+        self.assertEqual([r["line"] for r in mounts], [1, 2, 4])
+        self.assertEqual([(s[0], s[1]) for s in skipped], [(3, "MOUNT")])
+        self.assertEqual((mounts[0]["gob"], mounts[0]["stem"], mounts[0]["bone"], mounts[0]["cat"]), ("1a2b3c", "w_lghtsbr_001", "torso_g", 1))
+        self.assertEqual(mounts[0]["rel"], [0.5, 0.5, 0.5, 0.5])
+        self.assertEqual(mounts[0]["bq"], [0.7071, 0.0, 0.7071, 0.0])
+
+    def test_nofacing_record_has_no_oq_or_rel(self):
+        recs, _, _ = parse([MOUNT_NOFACING])
+        self.assertEqual(len(recs), 1)
+        self.assertTrue(recs[0]["nofacing"])
+        self.assertIsNone(recs[0]["rel"])
+        self.assertIsNone(recs[0]["oq"])
+
+    def test_zero_or_short_quat_is_skipped(self):
+        recs, skipped, _ = parse([mount_line(rel="(0,0,0,0)"), mount_line(rel="(0.5,0.5,0.5)")])
+        self.assertEqual(recs, [])
+        self.assertEqual([(s[0], s[1]) for s in skipped], [(1, "MOUNT"), (2, "MOUNT")])
+
+    def test_old_chplace_mount_line_is_neither_record_nor_skipped(self):
+        recs, skipped, main = parse(["MOUNT 1a2b parent=5 bone=torso_g node=7 a=0 b=0"])
+        self.assertEqual((recs, skipped), ([], []))
+        self.assertEqual(main["mount"], Counter({("1a2b", "torso_g"): 1}))
+
+    def test_median_aligns_sign_and_spread_is_zero_for_same_rotation(self):
+        recs, skipped, _ = parse(MOUNT_BODIES)
+        self.assertEqual(H._mounts(recs, skipped), [MOUNT_HEAD, MOUNT_ROW])
+
+    def test_spread_is_angle_from_median(self):
+        # two samples at identity and one 10 deg about x: median is identity, spread is the 10 deg outlier
+        recs, skipped, _ = parse([mount_line(rel="(1,0,0,0)"), mount_line(rel="(1,0,0,0)"), mount_line(rel="(0.99619,0.08716,0,0)")])
+        self.assertEqual(H._mounts(recs, skipped)[1],
+                         "  cat=1 bone=torso_g count=3 nofacing=0 median rel=(1.000,0.000,0.000,0.000) spread=10.00 deg")
+
+    def test_report_has_mount_section_only_when_mount_lines_exist(self):
+        rc, out = run_log(MOUNT_BODIES)
+        self.assertEqual(rc, 0)
+        self.assertIn("parsed=3 skipped=1", out[0])
+        self.assertIn(MOUNT_HEAD, out)
+        self.assertIn(MOUNT_ROW, out)
+        self.assertEqual(out.index(MOUNT_HEAD) + 1, out.index(MOUNT_ROW))
+        rc, out = run_log(fixture_bodies())
+        self.assertFalse(any(s.startswith("MOUNT ") for s in out))
+
+    def test_mounts_flag_prints_only_the_mount_section(self):
+        rc, out = run_log(MOUNT_BODIES, ["--mounts"])
+        self.assertEqual(rc, 0)
+        self.assertEqual(out, [MOUNT_HEAD, MOUNT_ROW])
+
+    def test_mounts_flag_without_mount_lines_prints_zero_section(self):
+        rc, out = run_log([LOADED], ["--mounts"])
+        self.assertEqual(out, ["MOUNT lines=0 nofacing=0 skipped=0 groups=0"])
+
+    def test_worst_case_with_place_and_mounts_stays_within_47_lines(self):
+        mounts = [mount_line(bone="b%d" % i, cat=i % 2 + 1) for i in range(5)] + [MOUNT_NOFACING]
+        rc, out = run_log(worst_case()[:-1] + place_worst() + mounts + [CAP])
+        self.assertEqual(rc, 0)
+        self.assertLessEqual(len(out), 47)
+        self.assertIn("MOUNT lines=6 nofacing=1 skipped=0 groups=6 (top 3 by samples shown)", out)
+        self.assertEqual(len([s for s in out if s.startswith("  cat=")]), 3)
+        self.assertIn("GOB lines=55 gobs=10 (top 2 by samples shown)", out)
+
+
 if __name__ == "__main__":
     unittest.main()

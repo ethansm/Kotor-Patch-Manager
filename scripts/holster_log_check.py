@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 """Holster probe log checker (holster route). Python 3, stdlib only; read-only (--new writes only its bookmark).
 
-Usage: holster_log_check.py [LOG | --log LOG] [--new [--no-advance] [--state PATH]]
+Usage: holster_log_check.py [LOG | --log LOG] [--new [--no-advance] [--state PATH]] [--mounts]
   Default log: ~/.local/share/Steam/steamapps/common/Knights of the Old Republic II/holster_log.txt
   Report (at most 47 lines): header, status (loaded / cap reached / BONETEST), COMB edges per creature (plus unreadable=N for `old=? edge=?` lines), ATTACH tags and
   (body, handleR, handleL) tuples per creature, SWAP total, GOBREUSE total, FLOURISH open/close, SLIDE start/end (draw/stow split, frames min/max, maxdt max), PARTYHOLD on/off, MOVEHOLD total, DELAY cuts (combat/flourish), ANIMRES and ANIMSEND id histograms, GOB samples per gob
   (the 8 with the most samples: parent18, pos min/max/mean per axis, quat min/max per component, mean-quat angle),
   PLACE (only when PLACE lines exist: count, gobvt histogram, quat1 unit-norm check, last pos0/quat0 -> pos1/quat1 for the
   4 gobs with the most samples; the GOB view then drops to 4 gobs so the report stays within 47 lines). REACH (HW19 probe): found, steps, persist1, wrote_both, refusals, err range.
+  MOUNT (HW35, only when `MOUNT gob=` lines exist; GOB view drops to 2 gobs): per (cat, bone) at most 3 rows: count (nofacing included), nofacing,
+  component-wise median of rel (sign-aligned, normalized; nofacing excluded), spread = max angle of any rel from that median.
+  --mounts: print only the MOUNT section.
   --new: only lines after the bookmark shared with log_triage (same state file, keyed by absolute path), then advance it.
   Exit 0 = analyzed, 2 = log missing ("no log: <path>").
 
@@ -23,6 +26,7 @@ import argparse
 import math
 import os
 import re
+import statistics
 import sys
 from collections import Counter
 from pathlib import Path
@@ -33,7 +37,7 @@ import log_triage as LT  # noqa: E402  (--new bookmark: same state file and help
 
 DEFAULT_LOG = Path.home() / ".local/share/Steam/steamapps/common/Knights of the Old Republic II/holster_log.txt"
 CAPS = {"comb": 4, "attach": 3, "tuples": 3, "tags": 5, "ids": 10, "gobs": 8,
-        "gobs_with_place": 4, "place_gobs": 4}   # GOB view and PLACE view both shrink so the report stays <= 47 lines
+        "gobs_with_place": 4, "place_gobs": 4, "gobs_with_mount": 2, "mounts": 3}   # GOB view and PLACE view both shrink so the report stays <= 47 lines
 UNIT_TOL = 2e-3   # PLACE quat1 |norm-1| limit: the DLL enforces 1e-3 (poseSane); %.3f printing adds up to ~1e-3 rounding
 HEX = r"[0-9a-fA-F]+"
 INT = r"-?\d+"
@@ -46,6 +50,18 @@ def _rx(template):
 
 
 KIND_RE = re.compile(r"\b(COMB|ATTACH|SWAP|ANIMRES|ANIMSEND|GOB|PLACE|GOBREUSE|FLOURISH|SLIDE) ")
+# HW35 MOUNT lines start with `gob=`; the older chPlace line `MOUNT <what> parent=...` is not a record (MAIN_RES["mount"] counts it).
+MOUNT_HEAD_RE = re.compile(r"\bMOUNT gob=")
+MOUNT_NUM = r"[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?"
+
+
+def _mount_quat(name):
+    """(w,x,y,z) as named groups name0..name3, or the literal nan (groups stay None)."""
+    return r"(?:nan|\(" + ",".join(r"(?P<%s%d>%s)" % (name, i, MOUNT_NUM) for i in range(4)) + r"\))"
+
+
+MOUNT_RX = (r"\bMOUNT gob=(?P<gob><H>) stem=(?P<stem>\S+) bone=(?P<bone>\S+) bq=" + _mount_quat("bq") + " mq=" + _mount_quat("mq")
+            + r" (?:oq=nan rel=nan|oq=" + _mount_quat("oq") + " rel=" + _mount_quat("rel") + r") cat=(?P<cat><I>)")
 # Holster.cpp prints old=? edge=? when the COMB old-state read failed: counted as unreadable, never skipped.
 COMB_UNREAD = _rx(r"\bCOMB creature=<H> old=\? new=<I> edge=\? tick=\d+")
 FULL_RE = {
@@ -60,6 +76,7 @@ FULL_RE = {
     "PLACE": _rx(r"\bPLACE n=(?P<n><I>) gob=(?P<gob><H>) node=(?P<node><H>) beh=(?P<beh><H>) gobvt=(?P<gobvt><H>) "
                  r"pos0=\((?P<p0x><N>),(?P<p0y><N>),(?P<p0z><N>)\) quat0=\((?P<q0w><N>),(?P<q0x><N>),(?P<q0y><N>),(?P<q0z><N>)\) "
                  r"pos1=\((?P<p1x><N>),(?P<p1y><N>),(?P<p1z><N>)\) quat1=\((?P<q1w><N>),(?P<q1x><N>),(?P<q1y><N>),(?P<q1z><N>)\)(?: cat=(?P<cat>\w+))?"),
+    "MOUNT": _rx(MOUNT_RX),
     "GOBREUSE": _rx(r"\bGOBREUSE gob=(?P<gob><H>) node=(?P<node><H>) oldm=(?P<oldm>\S+) newm=(?P<newm>\S+)"),
     "FLOURISH": _rx(r"\bFLOURISH (?:(?P<open>open) slot=(?P<oslot><I>) cli=<I> srv=<I> p524=<I> p528=<I> b11E8=<I>"
                   r"|(?P<close>close) slot=(?P<cslot><I>) p520=<I> p524=<I>)"),
@@ -100,6 +117,10 @@ def _hex(s):
     return "%x" % int(s, 16)
 
 
+def _quat_of(g, name):
+    return [float(g["%s%d" % (name, i)]) for i in range(4)]
+
+
 def _record(kind, n, m):
     g = m.groupdict()
     rec = {"kind": kind, "line": n}
@@ -121,6 +142,11 @@ def _record(kind, n, m):
                    quat0=[float(g[k]) for k in ("q0w", "q0x", "q0y", "q0z")],
                    pos1=[float(g[k]) for k in ("p1x", "p1y", "p1z")],
                    quat1=[float(g[k]) for k in ("q1w", "q1x", "q1y", "q1z")], cat=g["cat"] or "")
+    elif kind == "MOUNT":   # HW35: oq/rel are None when the owner facing is unknown (`oq=nan rel=nan`): nofacing, not in the median
+        nofacing = g["oq0"] is None
+        rec.update(gob=_hex(g["gob"]), stem=g["stem"], bone=g["bone"], cat=int(g["cat"]), nofacing=nofacing,
+                   bq=_quat_of(g, "bq"), mq=_quat_of(g, "mq"),
+                   oq=None if nofacing else _quat_of(g, "oq"), rel=None if nofacing else _quat_of(g, "rel"))
     elif kind == "GOBREUSE":
         rec.update(gob=_hex(g["gob"]), node=_hex(g["node"]), oldm=g["oldm"], newm=g["newm"])
     elif kind == "FLOURISH":
@@ -227,6 +253,16 @@ def parse_lines(window):
         m = MAIN_RES["owner"].search(text)
         if m:
             main["owner"][(_hex(m.group(1)), m.group(2))] += 1
+        if MOUNT_HEAD_RE.search(text):   # HW35: a bad quat or a zero quat (cannot be normalized) is skipped, never raises
+            f = FULL_RE["MOUNT"].search(text)
+            rec = _record("MOUNT", n, f) if f else None
+            if rec is not None and not all(_norm(q) > 1e-9 for q in _mount_quats(rec)):
+                rec = None
+            if rec is None:
+                skipped.append((n, "MOUNT", text))
+            else:
+                recs.append(rec)
+            continue
         k = KIND_RE.search(text)
         if k is None:
             continue
@@ -413,6 +449,52 @@ def _place(recs):
     return out
 
 
+def _mount_quats(rec):
+    return [rec["bq"], rec["mq"]] + ([] if rec["nofacing"] else [rec["oq"], rec["rel"]])
+
+
+def _unit(q):
+    n = _norm(q)
+    return [c / n for c in q]
+
+
+def _mount_stats(samples):
+    """(median rel, spread deg) over the facing samples: each rel sign-aligned to the first, normalized, component-wise median,
+    normalized; spread = max angle between any rel and that median. (None, None) when there is no usable facing sample."""
+    facing = [_unit(s["rel"]) for s in samples if not s["nofacing"]]
+    if not facing:
+        return None, None
+    ref = facing[0]
+    aligned = [[(-1.0 if sum(a * b for a, b in zip(q, ref)) < 0 else 1.0) * c for c in q] for q in facing]
+    raw = [statistics.median(q[i] for q in aligned) for i in range(4)]
+    if _norm(raw) < 1e-9:
+        return None, None
+    med = _unit(raw)
+    spread = max(2.0 * math.degrees(math.acos(min(1.0, abs(sum(a * b for a, b in zip(q, med)))))) for q in facing)
+    return med, spread
+
+
+def _mounts(recs, skipped):
+    """MOUNT section (HW35): one row per (cat, bone), most samples first, at most CAPS["mounts"] rows."""
+    rows = [r for r in recs if r["kind"] == "MOUNT"]
+    per = {}
+    for r in rows:
+        per.setdefault((r["cat"], r["bone"]), []).append(r)
+    shown = sorted(per.items(), key=lambda kv: -len(kv[1]))[:CAPS["mounts"]]   # stable: ties keep first-seen order
+    bad = sum(1 for _, kind, _ in skipped if kind == "MOUNT")
+    head = "MOUNT lines=%d nofacing=%d skipped=%d groups=%d" % (len(rows), sum(1 for r in rows if r["nofacing"]), bad, len(per))
+    if len(per) > len(shown):
+        head += " (top %d by samples shown)" % len(shown)
+    out = [head]
+    for (cat, bone), samples in shown:
+        med, spread = _mount_stats(samples)
+        out.append("  cat=%d bone=%s count=%d nofacing=%d median rel=%s spread=%s" % (
+            cat, bone, len(samples), sum(1 for s in samples if s["nofacing"]),
+            "n/a" if med is None else "(%s)" % _vec(med),
+            "n/a" if spread is None else "%.2f deg" % spread))
+    return out
+
+
 def _preview_diag(f):
     """HE0 (doc 42 HW-EDIT): PREVIEWNODE = weapon Gobs still on the engine's rhand/lhand node (equip-screen preview, or in-world without
     bone_test); CAMNODE = one line per distinct parent with FindPart("camerahook") results (0 = not found, 1 = FindPart slot mismatch)."""
@@ -545,9 +627,13 @@ def render(recs, skipped, main_facts, nlines, meta):
                                                                             for k, v in styles.most_common(8))
     out[-1] += _animstyle(main_facts, recs)
     out.append(_hist("ANIMSEND", recs))
-    out += _gobs(recs, CAPS["gobs_with_place"] if has_place else CAPS["gobs"])
+    has_mount = any(r["kind"] == "MOUNT" for r in recs)
+    gob_cap = CAPS["gobs_with_mount"] if has_mount else CAPS["gobs_with_place"] if has_place else CAPS["gobs"]
+    out += _gobs(recs, gob_cap)
     if has_place:
         out += _place(recs)
+    if has_mount:
+        out += _mounts(recs, skipped)
     if skipped:
         n, kind, text = skipped[0]
         out.append("skipped e.g. L%d %s: %s" % (n, kind, text[:120]))
@@ -585,6 +671,7 @@ def main(argv=None):
     ap.add_argument("--new", action="store_true", help="only lines after the log_triage bookmark, then advance it")
     ap.add_argument("--no-advance", action="store_true", help="with --new: do not move the bookmark")
     ap.add_argument("--state", default=LT.DEFAULT_STATE, help="bookmark file for --new")
+    ap.add_argument("--mounts", action="store_true", help="print only the MOUNT (cat, bone) summary section")
     a = ap.parse_args(argv)
     path = Path(a.log or a.log_pos or DEFAULT_LOG)
     if not path.is_file():
@@ -592,7 +679,10 @@ def main(argv=None):
         return 2
     window, meta = read_window(path, a)
     recs, skipped, main_facts = parse_lines(window)
-    print("\n".join(render(recs, skipped, main_facts, len(window), meta)))
+    if a.mounts:
+        print("\n".join(_mounts(recs, skipped)))
+    else:
+        print("\n".join(render(recs, skipped, main_facts, len(window), meta)))
     return 0
 
 
