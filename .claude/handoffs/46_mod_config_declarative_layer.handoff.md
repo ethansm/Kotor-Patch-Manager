@@ -128,3 +128,12 @@ MCF5 slider merged to KOTOR-II (ff, now repo ~7ca9fdfe), shared headers synced (
 ## Update 10-20 23:45 - Esc back handled by the Esc-probe session
 - User play result on 0.3.7-dev: everything good except Esc (it closed the whole GUI from an entry page). The other session (ESCPROBE owner) implemented it as mod-config 0.4.0-dev (02cffa1f: Options key-handler slot 14 hooked via vtable data patch, event 0x2a swallowed on non-MAIN pages, probe removed) and it is LIVE (0396f7c4). Not played by me; the probe/EscProbeStub.h work is superseded (header may be dead code now).
 - Still to play-verify with 0.4.0-dev: Esc from an entry page goes to the mod list, from the list to the Options root, from root closes; Esc with the combat-hotbar test modal open closes the modal first; sliders inside the border (0.3.2/0.3.3 fixes); Snap slider full range incl. the rejected value.
+
+## Update 10-21 Esc step-back VERIFIED in game (mod-config 0.4.5-dev, 734f29bc, live 351333c2)
+- 0.4.0-dev never patched: the key handler 0x8A2070 is vtable slot **15** (stored at 0x9A7058), not 14 (slot 14 = 0x40E770 per-frame update). Fixed 0.4.1-dev. The REA ledger row and the `GameAddr.h` comment ("slot 14") are still wrong.
+- Real Esc arrives as event **0x28 state=1** (then 0xdf state 0), not 0x2a. Swallow 0x28/0x2a when Esc is held and the page is not MAIN (0.4.2-dev).
+- The tick-side Esc-edge reset raced ahead of the hook on some presses (hook then saw MAIN, vanilla closed the menu). It is now a fallback only when the hook is not installed (0.4.3-dev).
+- Vanilla Esc plays GUI sound 5 via FUN_007CA060 = the item-equip sound, wrong for menus. The menu boop is guisounds row 0 (same as the Back button); Esc step-back plays row 0 (0.4.5-dev). REA ledger: `ghidra_knowledge/rea_findings/20261021_options-esc-sound.tsv`. 0x4122A0 is PlayGuiSound, not a close function.
+- Play-verified: Esc steps back one page on every press, boop sound correct.
+- Still unplayed: sliders inside border / wedge meets thumb, Snap slider range + rejected value, SH-PG1, MCR1-3, hold-repeat, modal-closes-first on Esc. `selftest=1` is still set in the game-dir mod_config.ini.
+- KPM-side commit for mod-config not yet made (kpm_hotswap prints the command).
