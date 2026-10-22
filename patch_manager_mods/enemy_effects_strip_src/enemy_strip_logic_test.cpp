@@ -466,7 +466,7 @@ static void testPreview() {
     KT_CHECK(strcmp(previewSample(3).resref, kIconHold) == 0 && previewSample(3).ratio == 0.1f);
     KT_CHECK(strcmp(previewSample(4).resref, kIconSleep) == 0 && previewSample(4).ratio == 0.9f);
     KT_CHECK(strcmp(previewSample(-1).resref, kIconFear) == 0 && strcmp(previewSample(99).resref, kIconSleep) == 0);
-    KT_CHECK_EQ(kPreviewControls, 13);
+    KT_CHECK_EQ(kPreviewControls, 14);
     // Health fill inside the 200x24 bar at (150,152): inset 24/12 = 2, hh = 24*30/100 = 7, y = 152+24-7-2 = 167, x = 152, w = (200-4)*720/1000 = 141.
     { RowRect h = previewHealthRect({ 150, 152, 200, 24 }); KT_CHECK(rr(h, 152, 167, 141, 7)); }
     // Zoomed bar 880x106: inset 8, hh 31, y = y0+106-31-8, w = (880-16)*0.72 = 622; always inside the bar. A tiny bar (h 5) still yields a rect inside it.

@@ -155,10 +155,10 @@ inline Layout layoutRow(int menuX, int menuY, int nameX, int nameY, int nameW, i
 // ---------------------------------------------------------------- settings-page preview (0.4.1)
 // The mod-config page shows an example of the strip in the PREVIEW pane: a mock target name bar (the real one is the target menu's name
 // label) with the icon row above it, laid out by layoutRow from the CURRENT settings at 1:1 engine px, centred in the pane.
-constexpr int kPreviewMaxIcons = 5;      // page item budget: bar + pill + 5 x (icon, overlay) + health fill = 13 controls
+constexpr int kPreviewMaxIcons = 5;      // page item budget: bar + pill + 5 x (icon, overlay) + 2 stacked health fills = 14 controls
 constexpr int kPreviewNameW = 200;       // mock name bar edge sizes (about the vanilla target name label); iconSize 0 = auto = kPreviewNameH
 constexpr int kPreviewNameH = 24;
-constexpr int kPreviewControls = 3 + 2 * kPreviewMaxIcons;
+constexpr int kPreviewControls = 4 + 2 * kPreviewMaxIcons;
 constexpr int kPreviewHealthPermille = 720;   // mock health fill: share of the bar's width (the real bar is the vanilla target menu's PB_HEALTH under the name)
 
 // The mock health fill inside the name bar `bar`: the bottom ~30 % of the bar, inset by ~1/12 of its height, 72 % of the inner width (the rest of

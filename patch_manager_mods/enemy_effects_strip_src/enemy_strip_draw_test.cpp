@@ -239,7 +239,7 @@ static bool rectEq(const Rec* r, const esl::RowRect& e) { return r && r->r[0] ==
 // Expected colours as literals (the documented look: white icon, black drain overlay, grey pill, teal item disc), NOT the mod's own constants.
 static const float kRgbWhite[3] = { 1.0f, 1.0f, 1.0f };
 static const float kRgbBlack[3] = { 0.0f, 0.0f, 0.0f };
-static const float kRgbHealth[3] = { 0.80f, 0.12f, 0.12f };
+static const float kRgbHealth[3] = { 0.95f, 0.10f, 0.10f };
 static const float kRgbGrey[3] = { 0.5f, 0.5f, 0.5f };
 static const float kRgbTeal[3] = { 0.035f, 0.415f, 0.34f };
 static bool sameRgb(const Rec* r, const float* rgb) { return r && r->rgb[0] == rgb[0] && r->rgb[1] == rgb[1] && r->rgb[2] == rgb[2]; }
@@ -985,25 +985,25 @@ static void scenario12_page_preview() {
     KT_CHECK_EQ(tRegCount, 1);
     KT_CHECK(tRegEntry.build == cbBuild && tRegEntry.enter == cbEnter && tRegEntry.tick == cbTick && tRegEntry.destroy == cbDestroy && tRegEntry.leave == nullptr);
 
-    // --- BUILD: rows first (25 items: 2 toggles, 4 number rows of 3, 2 slider rows of 4, Save/Reset/Defaults), then 13 preview labels from LBL_TITLE, listed MUI_NOFREE and NOT appended by the mod; then the split.
+    // --- BUILD: rows first (25 items: 2 toggles, 4 number rows of 3, 2 slider rows of 4, Save/Reset/Defaults), then 14 preview labels from LBL_TITLE, listed MUI_NOFREE and NOT appended by the mod; then the split.
     const uintptr_t panel = pageBuild();
     KT_CHECK(g_pg.panel == reinterpret_cast<void*>(panel) && g_pg.page == 2);
     KT_CHECK_EQ(tm.addButton + tm.addLabel, 25);
-    KT_CHECK_EQ(createsOf("LBL_TITLE"), 13);
+    KT_CHECK_EQ(createsOf("LBL_TITLE"), 14);
     KT_CHECK_EQ(cnt(trec::O_Append), 0);
     KT_CHECK_EQ(tAt<int>(panel, real_gk::Panel_CtlCount), 0);
-    KT_CHECK_EQ(tm.addCustom, 13);
-    KT_CHECK_EQ(tm.items, 38);   // 25 rows + 13 preview <= the 40-item page cap
-    bool flagsOk = tm.customFlags.size() == 13;
+    KT_CHECK_EQ(tm.addCustom, 14);
+    KT_CHECK_EQ(tm.items, 39);   // 25 rows + 14 preview <= the 40-item page cap
+    bool flagsOk = tm.customFlags.size() == 14;
     for (int f : tm.customFlags) flagsOk = flagsOk && f == MUI_NOFREE;
     KT_CHECK(flagsOk);
     KT_CHECK_EQ(tm.splitCalls, 1);
     KT_CHECK_EQ(tm.lastSplit, 750);
-    KT_CHECK(g_pv.on && g_pv.n == 13);
+    KT_CHECK(g_pv.on && g_pv.n == 14);
     KT_CHECK_EQ(logCount("preview BUILD ok"), 1);
     bool made = true, hid = true, style = true, listedSame = true;
     const int oStyle = k2addr::off(&K2AddrTable::Border_FillStyle);
-    for (int i = 0; i < 13; ++i) {
+    for (int i = 0; i < 14; ++i) {
         const uintptr_t c = pv(i);
         made = made && c != 0;
         hid = hid && !vis(c) && clickThrough(c);
@@ -1014,7 +1014,7 @@ static void scenario12_page_preview() {
     KT_CHECK(lastOn(trec::O_Text, pv(0)) && !strcmp(lastOn(trec::O_Text, pv(0))->text, "Sith Assassin"));
     // The other 12 labels are clones of the Options title: their inherited text ("OPTIONS") must be blanked, or it draws over the icons.
     bool blank = true;
-    for (int i = 1; i < 13; ++i) blank = blank && lastOn(trec::O_Text, pv(i)) && !strcmp(lastOn(trec::O_Text, pv(i))->text, "");
+    for (int i = 1; i < 14; ++i) blank = blank && lastOn(trec::O_Text, pv(i)) && !strcmp(lastOn(trec::O_Text, pv(i))->text, "");
     KT_CHECK(blank);
 
     // --- ENTER: mod-config shows every item; the preview then draws the layout previewLayout gives (literals: pane 500,100,300,220, 3 icons).
@@ -1031,6 +1031,7 @@ static void scenario12_page_preview() {
     KT_CHECK(vis(pv(12)) && rectEq(lastOn(trec::O_Rect, pv(12)), { 552, 227, 141, 7 }));
     KT_CHECK(lastOn(trec::O_Fill, pv(12)) && lastOn(trec::O_Fill, pv(12))->img == tImgPtr("uibit_fill_2wt"));
     KT_CHECK(sameRgb(lastOn(trec::O_Tint, pv(12)), kRgbHealth));
+    KT_CHECK(vis(pv(13)) && rectEq(lastOn(trec::O_Rect, pv(13)), { 552, 227, 141, 7 }) && sameRgb(lastOn(trec::O_Tint, pv(13)), kRgbHealth));   // the second layer, same rect
     const char* const rs[3] = { "ip_fear", "ip_stun", "ip_slow" };
     const int oh[3] = { 18, 12, 6 };   // overlay heights for ratios 0.25 / 0.5 / 0.75 on a 24 px icon
     for (int k = 0; k < 3; ++k) {
@@ -1044,7 +1045,7 @@ static void scenario12_page_preview() {
     }
     KT_CHECK(!vis(pv(8)) && !vis(pv(9)) && !vis(pv(10)) && !vis(pv(11)));   // icons 4 and 5 are beyond MaxIcons 3
     bool ct = true;
-    for (int i = 0; i < 13; ++i) ct = ct && clickThrough(pv(i));
+    for (int i = 0; i < 14; ++i) ct = ct && clickThrough(pv(i));
     KT_CHECK(ct);
     KT_CHECK(allOk());
 
@@ -1091,7 +1092,7 @@ static void scenario12_page_preview() {
     bool rowHidden = true;
     for (int i = 1; i < 12; ++i) rowHidden = rowHidden && !vis(pv(i));   // not 12 (the health fill): it belongs to the name bar and stays
     KT_CHECK(rowHidden);
-    KT_CHECK(vis(pv(12)));
+    KT_CHECK(vis(pv(12)) && vis(pv(13)));
     KT_CHECK(vis(pv(0)) && rectEq(lastOn(trec::O_Rect, pv(0)), { 550, 198, 200, 24 }));
     tm.clicks.push_back(g_pg.text[esl::S_Enabled]);
     cbTick(2, nullptr);
@@ -1108,7 +1109,7 @@ static void scenario12_page_preview() {
     KT_CHECK(g_edit.gap == 4 && g_edit.maxIcons == 3 && !esl::pageDiffers(g_saved, g_edit));
     KT_CHECK(!vis(pv(8)) && !vis(pv(11)) && vis(pv(6)));
     ct = true;
-    for (int i = 0; i < 13; ++i) ct = ct && clickThrough(pv(i));
+    for (int i = 0; i < 14; ++i) ct = ct && clickThrough(pv(i));
     KT_CHECK(ct);
     real_gk::setVisible(pv(9), true);   // a late show, no enter
     cbTick(2, nullptr);
@@ -1122,7 +1123,7 @@ static void scenario12_page_preview() {
     cbTick(2, nullptr);
     cbTick(2, nullptr);
     bool allHid = true;
-    for (int i = 0; i < 13; ++i) allHid = allHid && !vis(pv(i));
+    for (int i = 0; i < 14; ++i) allHid = allHid && !vis(pv(i));
     KT_CHECK(allHid);
     KT_CHECK_EQ(warnCount("no PREVIEW pane rect"), 1);
     tm.previewOk = true;
@@ -1131,14 +1132,14 @@ static void scenario12_page_preview() {
 
     // --- DESTROY: mod-config unlinked the items (Control answers nullptr): the 12 labels are freed (slot-0 dtor, flags 1), then NO more writes.
     cbDestroy(reinterpret_cast<void*>(panel + 8), nullptr);   // another panel: ignored
-    KT_CHECK(g_pv.n == 13 && tDtors.empty());
+    KT_CHECK(g_pv.n == 14 && tDtors.empty());
     cbDestroy(reinterpret_cast<void*>(panel), nullptr);
-    KT_CHECK_EQ(tDtors.size(), static_cast<size_t>(13));
-    bool dtorOk = tDtors.size() == 13;
+    KT_CHECK_EQ(tDtors.size(), static_cast<size_t>(14));
+    bool dtorOk = tDtors.size() == 14;
     for (size_t i = 0; dtorOk && i < 12; ++i) dtorOk = tDtors[i].second == 1u && tDtors[i].first == reinterpret_cast<uintptr_t>(tm.customCtl[i]);
     KT_CHECK(dtorOk);
     KT_CHECK(g_pv.n == 0 && !g_pv.on && g_pg.panel == nullptr && g_pg.page == 0);
-    KT_CHECK_EQ(logCount("preview DESTROY: freed=13 kept=0"), 1);
+    KT_CHECK_EQ(logCount("preview DESTROY: freed=14 kept=0"), 1);
     L().clear();
     cbTick(2, nullptr);
     cbEnter(2, nullptr);
@@ -1150,7 +1151,7 @@ static void scenario12_page_preview() {
     tm.unlinked = false;
     cbDestroy(reinterpret_cast<void*>(panel2), nullptr);
     KT_CHECK(tDtors.empty());
-    KT_CHECK_EQ(logCount("freed=0 kept=13"), 1);
+    KT_CHECK_EQ(logCount("freed=0 kept=14"), 1);
     KT_CHECK_EQ(g_pv.n, 0);
 }
 
@@ -1195,35 +1196,35 @@ static void scenario12c_split_refused_and_failures() {
     g_pg.reset(); g_pv.reset();
     const uintptr_t panel = tAlloc(0x100);
     cbBuild(reinterpret_cast<void*>(panel), nullptr);
-    KT_CHECK(g_pv.n == 13 && !g_pv.on);
+    KT_CHECK(g_pv.n == 14 && !g_pv.on);
     KT_CHECK_EQ(warnCount("preview skipped: SetDescSplit"), 1);
     modconfigShowAll();
     cbEnter(2, nullptr);
     cbTick(2, nullptr);
     bool hid = true;
-    for (int i = 0; i < 13; ++i) hid = hid && !vis(pv(i)) && clickThrough(pv(i));
+    for (int i = 0; i < 14; ++i) hid = hid && !vis(pv(i)) && clickThrough(pv(i));
     KT_CHECK(hid);
     KT_CHECK_EQ(tm.previewPaneCalls, 0);
     KT_CHECK(tm.desc.find("Example") == std::string::npos);
     cbDestroy(reinterpret_cast<void*>(panel), nullptr);
-    KT_CHECK_EQ(tDtors.size(), static_cast<size_t>(13));
+    KT_CHECK_EQ(tDtors.size(), static_cast<size_t>(14));
 
-    // AddCustom fails on the 5th label: the 4 listed stay hidden; the 9 never listed are released at once; the split is never requested.
+    // AddCustom fails on the 5th label: the 4 listed stay hidden; the 10 never listed are released at once; the split is never requested.
     fresh(); tm.reset(); tDtors.clear(); tm.failAddCustomAt = 4;
     g_pg.reset(); g_pv.reset();
     const uintptr_t panel2 = tAlloc(0x100);
     L().clear();
     cbBuild(reinterpret_cast<void*>(panel2), nullptr);
     KT_CHECK(g_pv.n == 4 && !g_pv.on && tm.splitCalls == 0);
-    KT_CHECK_EQ(tDtors.size(), static_cast<size_t>(9));
-    KT_CHECK_EQ(warnCount("preview skipped: AddCustom listed 4/13"), 1);
+    KT_CHECK_EQ(tDtors.size(), static_cast<size_t>(10));
+    KT_CHECK_EQ(warnCount("preview skipped: AddCustom listed 4/14"), 1);
     modconfigShowAll();
     cbEnter(2, nullptr);
     hid = true;
     for (int i = 0; i < 4; ++i) hid = hid && !vis(pv(i));
     KT_CHECK(hid);
     cbDestroy(reinterpret_cast<void*>(panel2), nullptr);
-    KT_CHECK_EQ(tDtors.size(), static_cast<size_t>(13));   // 9 + the 4 that were listed
+    KT_CHECK_EQ(tDtors.size(), static_cast<size_t>(14));   // 10 + the 4 that were listed
 
     // A label allocation fails on the 7th label: the 6 created are released, nothing is listed, no split, the rows are intact.
     fresh(); tm.reset(); tDtors.clear();
