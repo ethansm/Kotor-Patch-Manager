@@ -154,6 +154,9 @@ static int g_cfgWarnN = 0;
 static void cfgWarn(const char* key, const char* val, const char* why) {
     if (g_cfgWarnN < 8) snprintf(g_cfgWarn[g_cfgWarnN++], sizeof g_cfgWarn[0], "ini %.40s=%.40s ignored: %s", key, val, why);
 }
+static void cfgNote(const char* key, const char* val, const char* why) {   // HW49 H5: a note that keeps the value (cfgWarn's text says "ignored")
+    if (g_cfgWarnN < 8) snprintf(g_cfgWarn[g_cfgWarnN++], sizeof g_cfgWarn[0], "ini %.40s=%.40s %s", key, val, why);
+}
 static bool g_editor = true;            // editor=0: RegisterPreview refuses and the preview fast path never runs (no probe needed)
 static char g_boneName[32] = "pelvis_g";              // attach node name; its ADDRESS becomes the push immediate, so it must stay static
 static LONG g_maxLines = 3000;
@@ -257,6 +260,13 @@ static void logSlowChange(const hs::TuneCfg& next) {
     if (next.slowHolsterX != g_tuneW.slowHolsterX) KP_LOG(chMain, "SLOWX %.2f->%.2f", static_cast<double>(g_tuneW.slowHolsterX), static_cast<double>(next.slowHolsterX));
 }
 
+// HW49 H5: any TkOff key (place_off_<cat>, and the other place_off shapes tuneParseKey accepts) whose vector has a component above 0.5 m. Parses only.
+static bool placeOffAdvisoryText(const char* key, const char* val) {
+    hs::TuneKeyRef r;
+    float v[3];
+    return hs::tuneParseKey(key, r) && r.kind == hs::TkOff && inikit::parseFloats(val, v, 3) && hs::placeOffAdvisory(v);
+}
+
 // The tune keys of an ini text applied onto t (the caller seeds t): every override is cleared first, so a deleted key falls back
 // to place_rot / place_off. maybeReload and the editor Save both use it, so a saved file parses exactly like a reloaded one.
 static void parseTuneText(const char* text, hs::TuneCfg& t) {
@@ -282,9 +292,14 @@ static void parseTuneText(const char* text, hs::TuneCfg& t) {
             const hs::SlowParse sp = hs::slowHolsterApply(t, val);
             if (sp == hs::SlowBad) KP_LOGV(chMain, KPLOG_WARN, "ini %.40s=%.40s ignored: not a number, slow_holster_x is 1", key, val);
             else if (sp == hs::SlowClamped) KP_LOGV(chMain, KPLOG_WARN, "ini %.40s=%.40s clamped to 1..8 (used %.2f)", key, val, static_cast<double>(t.slowHolsterX));
-        } else if (hs::isTuneKey(key) && !hs::applyTuneKey(t, key, val) && hs::isLeftExtraKey(key))
-            KP_LOGV(chMain, KPLOG_WARN, "ini %.40s=%.40s ignored: need one number within +-%.0f (known suffixes: lightsaber melee qstaff pistol rifle heavy)", key, val,
-                    static_cast<double>(hs::kLeftExtraParseMax));
+        } else if (hs::isTuneKey(key)) {
+            if (!hs::applyTuneKey(t, key, val)) {
+                if (hs::isLeftExtraKey(key))
+                    KP_LOGV(chMain, KPLOG_WARN, "ini %.40s=%.40s ignored: need one number within +-%.0f (known suffixes: lightsaber melee qstaff pistol rifle heavy)", key, val,
+                            static_cast<double>(hs::kLeftExtraParseMax));
+            } else if (placeOffAdvisoryText(key, val))
+                KP_LOGV(chMain, KPLOG_WARN, "ini %.40s=%.40s used as written: a place offset above 0.5 m is unusual (limit 3.0)", key, val);
+        }
     }
 }
 
@@ -635,7 +650,8 @@ static void readConfig() {
                 else if (sp == hs::SlowClamped) cfgWarn(key, val, "out of range: used clamped to 1..8");
             }
             else if (hs::isTuneKey(key)) {
-                if (!hs::applyTuneKey(tune, key, val) && hs::isLeftExtraKey(key)) cfgWarn(key, val, "need one number within +-720 and a known category suffix");
+                if (!hs::applyTuneKey(tune, key, val)) { if (hs::isLeftExtraKey(key)) cfgWarn(key, val, "need one number within +-720 and a known category suffix"); }
+                else if (placeOffAdvisoryText(key, val)) cfgNote(key, val, "used as written: a place offset above 0.5 m is unusual (limit 3.0)");
             }
             else if (!_stricmp(key, "max_lines") || !_stricmp(key, "gob_every")) {
                 char* end = nullptr;
@@ -1854,6 +1870,7 @@ static bool reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w,
             if (!wristWrote) e->combOn = 0;   // HW44c: the forearm may carry a new roll while the wrist kept the older rotation: no continuity reference, the next frame is candidate 0 (as a first frame)
         }
     }
+    else { e->combOn = 0; e->tgtOn = 0; e->wristOn = 0; }   // HW49 D6: the wrist block was skipped this frame: the last frame's continuity references must not survive the gap
     // carry: the hand the weapon hangs on, after both writes (the attach node shares the pose slot with the arm parts, same guard as everywhere else)
     bool carriedOk = false;
     if (carry && carried && attachNode && (wrote & 3) == 3) {
@@ -1952,13 +1969,13 @@ static hs::Pose carryShownBase(const hs::Slide& sl, hs::Slide& lock, CarryResid&
     return o;
 }
 
-static hs::Pose carryShown(const hs::Slide& sl, hs::Slide& lock, CarryResid& cr, const hs::Pose& mount, const hs::Pose& carried, const hs::ReachPlan& pl, float grab, uint32_t residMs, uint32_t now, const hs::Q* via = nullptr, bool exOn = false) {
+static hs::Pose carryShown(const hs::Slide& sl, hs::Slide& lock, CarryResid& cr, const hs::Pose& mount, const hs::Pose& carried, const hs::ReachPlan& pl, float grab, uint32_t residMs, uint32_t now, const hs::Q* via = nullptr, bool exOn = false, float slowX = 1.f) {
     const hs::Pose base = carryShownBase(sl, lock, cr, mount, carried, pl, grab, residMs, now, via, exOn);
     if (!hs::qfinite(carried.q) || !hs::poseSane(base)) { cr.lastOn = cr.fade = 0; return base; }
     const hs::Q cq = hs::qnormalize(carried.q), inv = hs::reachConj(cq);
     const int32_t d = static_cast<int32_t>(now - sl.t0);
     const float resMs = static_cast<float>(residMs);   // HW44: the reversal fade scales with the slow factor too
-    if (cr.lastOn && (cr.lastCarry || pl.carryW > 0.f) && resMs > 0.f && sl.dir != cr.lastDir && static_cast<int32_t>(now - cr.lastMs) <= 100) {   // the slide reversed since the last frame we showed
+    if (cr.lastOn && (cr.lastCarry || pl.carryW > 0.f) && resMs > 0.f && sl.dir != cr.lastDir && hs::reversalGapOk(static_cast<int32_t>(now - cr.lastMs), slowX)) {   // the slide reversed since the last frame we showed (HW49 X3: the gap gate scales with slow_holster_x)
         cr.seedQ = cr.lastQ;
         for (int i = 0; i < 3; ++i) cr.seedPos[i] = cr.lastPos[i];
         const float gg = grab > 0.6f ? 0.6f : (grab > 0.f ? grab : 0.f);
@@ -2278,7 +2295,7 @@ static bool previewPlace(uintptr_t g, uintptr_t beh) {
     snp.vo = viaS;
     if (atHand) { snp.why = "release"; previewHandLog(g, parent, n, left, model, slideF, true, carryOk, reachW, plan.carryW, pnow); return true; }   // fully drawn: the engine's hand pose stays
     if (carryOk) {
-        EdLock lk; PrevLock& pk = prevLockFor(g); shown = carryShown(pslide, pk.lk, pk.cres, out, carried, plan, g_prevGrab, presid, pnow, viaOn ? &viaQ : nullptr, exPct > 0.f);
+        EdLock lk; PrevLock& pk = prevLockFor(g); shown = carryShown(pslide, pk.lk, pk.cres, out, carried, plan, g_prevGrab, presid, pnow, viaOn ? &viaQ : nullptr, exPct > 0.f, pslow);
     }   // HW26: hand-frame residual / locked blend; carry: the weapon rides the moved hand only while it carries (plan.carryW); it stays on the mount during the reach / release phases
     if (!hs::poseSane(shown)) { snp.setRefuseName("insane"); return true; }
     if (!saferead::probeWrite(kSitePlace, reinterpret_cast<void*>(g + 0xA4), sizeof(hs::Pose))) { snp.setRefuse(PrNoWrite); return true; }
@@ -2623,7 +2640,7 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
         g_reachSlowX = ent->slowArm;   // 0.21.1-dev: REACH logging density for a slowed slide
         if (reachArm(g, reinterpret_cast<uintptr_t>(beh), out, wa, ent->left, static_cast<int>(cat), pl.pathF, pl.restMix, hipPose.pos, &hipPose.q, reachIsBackBone(mountBone), n, g_reachCarry && pl.active, &carried, &pl, shp, viaS)) {
             // carry: the weapon rides the moved hand (the engine's hand pose, recomputed after the arm write), pl.carryW: 0 while the hand is still reaching the mount (draw) or already releasing it (stow), 1 while it carries; at the draw end the arm has released, so the carried hand IS the engine hand
-            const hs::Pose rid = carryShown(ent->slide, ent->slide, ent->cres, hipPose, carried, pl, rgrab, residMs, rnow, viaOn ? &viaQ : nullptr, exPct > 0.f);   // HW26: hand-frame residual (or the locked world blend)
+            const hs::Pose rid = carryShown(ent->slide, ent->slide, ent->cres, hipPose, carried, pl, rgrab, residMs, rnow, viaOn ? &viaQ : nullptr, exPct > 0.f, ent->slowArm);   // HW26: hand-frame residual (or the locked world blend)
             if (ent->slide.dir == 0 && pl.active && (g_logVerbose || g_logMount) && KP_ENABLED(chMain, KPLOG_INFO)) {   // HW41: where the weapon is vs the hand during a stow (log only)
                 static volatile LONG s_stowHold = 0;
                 if (s_stowHold < 240 && InterlockedIncrement(&s_stowHold) <= 240 && takeLine()) {

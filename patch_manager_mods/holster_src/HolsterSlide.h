@@ -352,4 +352,17 @@ inline float slideViaProgress(bool active, uint32_t residMs, float carryW, float
     return slideClamp01(exOn ? (carryW > 0.f ? oriF : 0.f) : carryW);   // carryBlend's fRot
 }
 
+// ---- HW49: mid-carry reversal gate (scaled by slow_holster_x), via ease window, place_off advisory ----
+inline constexpr int32_t kReversalGapMs = 100;   // HW49: frame gap that counts as a mid-carry reversal (was the literal 100 in carryShown)
+inline constexpr uint32_t kViaEaseMs = 120;      // HW49 M1: ease window after a mid-carry reversal, ms (Opus approved 120)
+inline bool viaReversal(bool wasOn, bool lastDir, bool dir, int32_t gapMs) { return wasOn && lastDir != dir && gapMs >= 0 && gapMs <= kReversalGapMs; }
+// The gate is kReversalGapMs times the slow factor (clamped like slowMs: NaN or <= 1 gives 1). With slowX = 1 it is the old <= 100 check.
+inline bool reversalGapOk(int32_t gapMs, float slowX) { return static_cast<float>(gapMs) <= static_cast<float>(kReversalGapMs) * slowHolsterClamp(slowX); }
+inline float viaEaseS(float from, float to, uint32_t tMs, uint32_t windowMs) {
+    if (windowMs == 0 || tMs >= windowMs) return to;
+    return to + (from - to) * (1.f - easeSmooth(static_cast<float>(tMs) / static_cast<float>(windowMs)));
+}
+// True when any component of a place offset is above 0.5 m (an advisory only: the value is never changed).
+inline bool placeOffAdvisory(const float* v) { return std::fabs(v[0]) > 0.5f || std::fabs(v[1]) > 0.5f || std::fabs(v[2]) > 0.5f; }
+
 }  // namespace hs

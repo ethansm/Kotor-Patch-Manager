@@ -606,6 +606,29 @@ static void testBlendPoseLockedNaNTickKeepsLock() {
     }
 }
 
+// HW49 helpers: the reversal gate (scaled by slowX), the via ease window and the place_off advisory (HolsterSlide.h).
+static void testHW49Helpers() {
+    KT_CHECK(!viaReversal(false, false, true, 10));
+    KT_CHECK(!viaReversal(true, true, true, 10));                       // no direction change
+    KT_CHECK(viaReversal(true, false, true, 100));
+    KT_CHECK(!viaReversal(true, false, true, 101));
+    KT_CHECK(!viaReversal(true, false, true, -1));
+    KT_CHECK(reversalGapOk(100, 1.f) && !reversalGapOk(101, 1.f));      // slowX = 1: the old <= 100 gate
+    KT_CHECK(reversalGapOk(400, 4.f) && !reversalGapOk(401, 4.f));
+    KT_CHECK(reversalGapOk(800, 100.f) && !reversalGapOk(801, 100.f));  // factor clamped to 8
+    const float nan = std::numeric_limits<float>::quiet_NaN();
+    KT_CHECK(reversalGapOk(100, nan) && !reversalGapOk(101, nan));      // NaN factor behaves as 1
+    KT_CHECK(closeTo(viaEaseS(0.8f, 0.2f, 0u, 120u), 0.8f));
+    KT_CHECK(closeTo(viaEaseS(0.8f, 0.2f, 60u, 120u), 0.5f));
+    KT_CHECK(closeTo(viaEaseS(0.8f, 0.2f, 120u, 120u), 0.2f));
+    KT_CHECK(closeTo(viaEaseS(0.8f, 0.2f, 500u, 120u), 0.2f));
+    KT_CHECK(closeTo(viaEaseS(0.8f, 0.2f, 0u, 0u), 0.2f));              // no window: the target at once
+    const float onHalf[3] = {0.5f, -0.5f, 0.f}, sideOff[3] = {0.f, 0.51f, 0.f}, backOff[3] = {0.f, 0.f, -2.9f};
+    KT_CHECK(!placeOffAdvisory(onHalf));
+    KT_CHECK(placeOffAdvisory(sideOff));
+    KT_CHECK(placeOffAdvisory(backOff));
+}
+
 int main() {
     testBlendEndpointsAndClamp();
     testEaseSmooth();
@@ -630,5 +653,6 @@ int main() {
     testBlendPoseLockedEndpointsAndLifecycle();
     testLockReversalJump();
     testBlendPoseLockedNaNTickKeepsLock();
+    testHW49Helpers();
     return kt::Report("holster_slide");
 }
