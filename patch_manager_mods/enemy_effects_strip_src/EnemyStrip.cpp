@@ -562,11 +562,13 @@ constexpr int MaxStripLines = 300;            // 'strip:' lines per session
 constexpr int ImgCacheN = 16;
 
 const char* const TexOverlay = "uibit_fill_2bt";   // solid black, baked alpha 0.78
+const char* const TexSolid = "uibit_fill_2wt";     // solid WHITE: the tint is the colour (the black 2bt fill cannot be tinted); settings-page health fill only
 const char* const TexPill = "lbl_miscroll_f";
 const char* const TexDisc = "buffhud_circle";      // a DISC: item-ability icons only, never a rectangle background
 const float TintWhite[3] = { 1.0f, 1.0f, 1.0f };
 const float TintBlack[3] = { 0.0f, 0.0f, 0.0f };
 const float TintGrey[3] = { 0.5f, 0.5f, 0.5f };
+const float TintHealth[3] = { 0.80f, 0.12f, 0.12f };   // settings-page preview: mock health fill (same red as the combat-hotbar preview)
 const float TintTeal[3] = { 0.035f, 0.415f, 0.34f };
 
 // One engine label with change-only setters (cache = last value written). Same pattern as combat_hotbar_src/CombatHotbar.cpp.
@@ -1003,10 +1005,10 @@ struct SettingsPage {
 } g_pg;
 
 // ---- preview (0.4.1): an example of the strip in the PREVIEW pane, drawn from the page's PENDING edits (g_edit, 0.4.3) every tick (change-only setters) ----
-// 12 labels cloned from LBL_TITLE, listed on the page with AddCustom(MUI_NOFREE), so this mod OWNS them and frees them in cbDestroy once
+// 13 labels cloned from LBL_TITLE, listed on the page with AddCustom(MUI_NOFREE), so this mod OWNS them and frees them in cbDestroy once
 // mod-config reports them unlinked (Control() == nullptr). Creation order = draw order: bar, pill, then icon k / drain overlay k.
 constexpr int PvN = esl::kPreviewControls;
-constexpr int PvBar = 0, PvPill = 1;
+constexpr int PvBar = 0, PvPill = 1, PvHealth = PvN - 1;   // the health fill is created last (drawn after the bar; nothing else overlaps the bar)
 constexpr int pvIcon(int k) { return 2 + 2 * k; }
 constexpr int pvOver(int k) { return 3 + 2 * k; }
 constexpr int kPreviewPermille = 750;            // preview share of the description rect; the description keeps the bottom 25 %
@@ -1053,6 +1055,11 @@ void refreshPreview() {
             void* overImg = imageCached(TexOverlay);
             Wid& bar = g_pv.w[PvBar];
             widFill(bar, overImg); widTint(bar, TintBlack); widAlpha(bar, 1.0f); widRect(bar, pl.name); widShow(bar);
+            Wid& hp = g_pv.w[PvHealth];
+            const esl::RowRect hr = esl::previewHealthRect(pl.name);
+            void* solidImg = hr.w > 0 ? imageCached(TexSolid) : nullptr;
+            if (solidImg) { widFill(hp, solidImg); widTint(hp, TintHealth); widAlpha(hp, 1.0f); widRect(hp, hr); widShow(hp); }
+            else widHide(hp);
             void* pillImg = pl.pill ? imageCached(TexPill) : nullptr;
             Wid& pill = g_pv.w[PvPill];
             if (pillImg) { widFill(pill, pillImg); widTint(pill, TintGrey); widAlpha(pill, g_edit.backingAlpha); widRect(pill, pl.row.pill); widShow(pill); }
@@ -1089,7 +1096,7 @@ void buildPreview(void* panel, uint32_t page) {
     Wid tmp[PvN];
     int made = 0;
     for (; made < PvN; ++made) {
-        const char* what = made == PvBar ? "bar" : (made == PvPill ? "pill" : ((made - 2) % 2 == 0 ? "icon" : "overlay"));
+        const char* what = made == PvBar ? "bar" : (made == PvPill ? "pill" : (made == PvHealth ? "health" : ((made - 2) % 2 == 0 ? "icon" : "overlay")));
         if (!makeWid(pn, tmp[made], what, made, "LBL_TITLE", false)) break;
         if (made != PvBar) guikit::setText(tmp[made].c, "");   // the clone carries the Options title text ("OPTIONS"): blank it so it never shows over an icon
     }
@@ -1106,7 +1113,7 @@ void buildPreview(void* panel, uint32_t page) {
     for (int j = g_pv.n; j < made; ++j) guikit::releaseUnlinkedLabel(tmp[j].c, guikit::LabelVtable);   // created but never listed
     if (made != PvN) { KP_LOGV(chCfg, KPLOG_WARN, "preview skipped: %d/%d labels created", made, PvN); return; }
     if (g_pv.n != PvN) { KP_LOGV(chCfg, KPLOG_WARN, "preview skipped: AddCustom listed %d/%d labels (listed ones stay hidden)", g_pv.n, PvN); return; }
-    guikit::setAlign(g_pv.w[PvBar].c, 18);
+    guikit::setAlign(g_pv.w[PvBar].c, 17);   // top-centre: the health fill sits in the bottom of the bar
     guikit::setText(g_pv.w[PvBar].c, kPreviewBarText);
     if (!ui->SetDescSplit(page, kPreviewPermille)) { KP_LOGV(chCfg, KPLOG_WARN, "preview skipped: SetDescSplit(%u, %d) refused (listed labels stay hidden)", page, kPreviewPermille); return; }
     g_pv.on = true;
@@ -1480,7 +1487,7 @@ __declspec(dllexport) void __cdecl KPatchInit(const KPatchApi* api) {
     g_pg.reset();
     g_mcCfg.init(api);
     g_mcMenu.init(api);
-    KP_LOGV(chMain, KPLOG_INFO, "enemy-effects-strip 0.4.6-dev loaded (Enabled=%d Verbose=%d MaxIcons=%d)", g_cfg.enabled ? 1 : 0, g_cfg.verbose ? 1 : 0, g_cfg.maxIcons);
+    KP_LOGV(chMain, KPLOG_INFO, "enemy-effects-strip 0.4.7-dev loaded (Enabled=%d Verbose=%d MaxIcons=%d)", g_cfg.enabled ? 1 : 0, g_cfg.verbose ? 1 : 0, g_cfg.maxIcons);
     g_hud.add(K2HUD_BUILD, 300, onHudBuild);
     g_hud.add(K2HUD_TARGET_MENU_POST, 100, onTargetMenuPost);
     g_hud.connect();

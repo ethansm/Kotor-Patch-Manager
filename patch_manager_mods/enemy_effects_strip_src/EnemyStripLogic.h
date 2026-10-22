@@ -155,10 +155,22 @@ inline Layout layoutRow(int menuX, int menuY, int nameX, int nameY, int nameW, i
 // ---------------------------------------------------------------- settings-page preview (0.4.1)
 // The mod-config page shows an example of the strip in the PREVIEW pane: a mock target name bar (the real one is the target menu's name
 // label) with the icon row above it, laid out by layoutRow from the CURRENT settings at 1:1 engine px, centred in the pane.
-constexpr int kPreviewMaxIcons = 5;      // page item budget: bar + pill + 5 x (icon, overlay) = 12 controls
+constexpr int kPreviewMaxIcons = 5;      // page item budget: bar + pill + 5 x (icon, overlay) + health fill = 13 controls
 constexpr int kPreviewNameW = 200;       // mock name bar edge sizes (about the vanilla target name label); iconSize 0 = auto = kPreviewNameH
 constexpr int kPreviewNameH = 24;
-constexpr int kPreviewControls = 2 + 2 * kPreviewMaxIcons;
+constexpr int kPreviewControls = 3 + 2 * kPreviewMaxIcons;
+constexpr int kPreviewHealthPermille = 720;   // mock health fill: share of the bar's width (the real bar is the vanilla target menu's PB_HEALTH under the name)
+
+// The mock health fill inside the name bar `bar`: the bottom ~30 % of the bar, inset by ~1/12 of its height, 72 % of the inner width (the rest of
+// the black bar shows as the empty track). The name text is drawn top-centred above it. Never leaves `bar`.
+inline RowRect previewHealthRect(const RowRect& bar) {
+    const int inset = bar.h >= 12 ? bar.h / 12 : 1;
+    int hh = bar.h * 30 / 100;
+    if (hh < 2) hh = 2;
+    RowRect r = { bar.x + inset, bar.y + bar.h - hh - inset, (bar.w - 2 * inset) * kPreviewHealthPermille / 1000, hh };
+    if (r.w < 1 || r.y < bar.y) r = { bar.x, bar.y, 0, 0 };
+    return r;
+}
 
 struct PreviewSample { const char* resref; float ratio; };
 // The sample effects, in row order (the strip's real icons) with a spread of remaining-time ratios so the drain overlay is visible.

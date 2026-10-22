@@ -466,7 +466,13 @@ static void testPreview() {
     KT_CHECK(strcmp(previewSample(3).resref, kIconHold) == 0 && previewSample(3).ratio == 0.1f);
     KT_CHECK(strcmp(previewSample(4).resref, kIconSleep) == 0 && previewSample(4).ratio == 0.9f);
     KT_CHECK(strcmp(previewSample(-1).resref, kIconFear) == 0 && strcmp(previewSample(99).resref, kIconSleep) == 0);
-    KT_CHECK_EQ(kPreviewControls, 12);
+    KT_CHECK_EQ(kPreviewControls, 13);
+    // Health fill inside the 200x24 bar at (150,152): inset 24/12 = 2, hh = 24*30/100 = 7, y = 152+24-7-2 = 167, x = 152, w = (200-4)*720/1000 = 141.
+    { RowRect h = previewHealthRect({ 150, 152, 200, 24 }); KT_CHECK(rr(h, 152, 167, 141, 7)); }
+    // Zoomed bar 880x106: inset 8, hh 31, y = y0+106-31-8, w = (880-16)*0.72 = 622; always inside the bar. A tiny bar (h 5) still yields a rect inside it.
+    { const RowRect b = { 0, 100, 880, 106 }; RowRect h = previewHealthRect(b); KT_CHECK(rr(h, 8, 167, 622, 31) && insideRect(h, b)); }
+    { const RowRect b = { 10, 10, 40, 5 }; RowRect h = previewHealthRect(b); KT_CHECK(h.w == 0 || insideRect(h, b)); }
+    { const RowRect b = { 10, 10, 1, 24 }; RowRect h = previewHealthRect(b); KT_CHECK(h.w == 0); }
     // 1. Centred, 5 icons, auto edge, no backing: bw 200, bh 24+4+24 = 52, block (150,124); name y 124+52-24 = 152; row x0 = 150+100-68 = 182, y = 152-4-24 = 124.
     { PreviewLayout p = previewLayout(pane, 1, 5, 0, 4, 4, 4, false);
       KT_CHECK(p.ok && p.n == 5 && !p.pill);
