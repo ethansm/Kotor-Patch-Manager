@@ -58,7 +58,7 @@ inline void speedTextShort(char* out, size_t cap, int value) {
 
 // The hover help of the whole slider (track, thumb and label), shown in the right description pane.
 inline const char* speedTip() {
-    return "Holster and draw speed, in the preview and in game: 1x is normal, 8x is eight times slower. Click or drag; saved to holster.ini at once.";
+    return "Holster and draw speed, in the preview and in game: 1x is normal, 8x is eight times slower. Click or drag; saved to holster.ini at once. Takes effect at the next draw or stow.";
 }
 
 // One holster.ini value (the text after the '=', already cut and trimmed): an integer or a float, rounded to the nearest step and clamped to 1..8.
