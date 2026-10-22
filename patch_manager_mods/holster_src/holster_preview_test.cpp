@@ -685,6 +685,31 @@ static void testBodyRotWithLeftExtra() {
     KT_CHECK(closeV3(ww.body[0].rot, 5, -15, 40));
 }
 
+// HW45b: the preview entry keeps its weapon category; a new entry is CatUnknown, and the category follows the entry on removal.
+static void testPreviewEntryCategory() {
+    PreviewRegistry r;
+    KT_CHECK(previewRegister(r, &gGob[0], &gP0, &gN0, false));
+    KT_CHECK(previewRegister(r, &gGob[1], &gP0, &gN1, true));
+    KT_CHECK(previewRegister(r, &gGob[2], &gP1, &gN2, false));
+    KT_CHECK(r.e[0].cat == CatUnknown);
+    KT_CHECK(previewSetCat(r, &gGob[1], CatHeavy));
+    KT_CHECK(!previewSetCat(r, &gGob[9], CatHeavy));   // not registered
+    KT_CHECK(r.e[1].cat == CatHeavy);
+    KT_CHECK(previewUnregister(r, &gGob[0]));
+    KT_CHECK(r.e[0].gob == &gGob[1] && r.e[0].cat == CatHeavy);
+    KT_CHECK(r.e[1].gob == &gGob[2] && r.e[1].cat == CatUnknown);
+    KT_CHECK(previewUnregister(r, &gGob[1]));
+    KT_CHECK(previewRegister(r, &gGob[1], &gP0, &gN1, true));   // re-registering the same gob starts again at CatUnknown
+    KT_CHECK(r.e[r.n - 1].gob == &gGob[1] && r.e[r.n - 1].cat == CatUnknown);
+}
+
+// HW45b: a torn tune read keeps the previous slow factor; a good read takes the loaded value.
+static void testPreviewSlowFor() {
+    KT_CHECK(closeTo(previewSlowFor(true, 4.f, 2.f), 4.f));
+    KT_CHECK(closeTo(previewSlowFor(false, 1.f, 3.f), 3.f));
+    KT_CHECK(closeTo(previewSlowFor(false, 8.f, 1.f), 1.f));
+}
+
 int main() {
     testRegistryRegisterUnregister();
     testRegistrySweep();
@@ -712,5 +737,7 @@ int main() {
     testWeaponSaveDoesNotBakeBodyRot();
     testBodyRotRevert();
     testBodyRotWithLeftExtra();
+    testPreviewEntryCategory();
+    testPreviewSlowFor();
     return kt::Report("holster_preview");
 }

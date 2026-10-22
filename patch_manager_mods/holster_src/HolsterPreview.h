@@ -29,6 +29,7 @@ struct PreviewEntry {
     void* parent = nullptr;
     void* node = nullptr;
     bool left = false;
+    hs::Category cat = CatUnknown;   // HW45b: the weapon category the placement last saw (storage only; nothing reads it yet)
 };
 
 struct PreviewRegistry {
@@ -51,6 +52,7 @@ inline bool previewRegister(PreviewRegistry& r, void* gob, void* parent, void* n
     p.parent = parent;
     p.node = node;
     p.left = left;
+    p.cat = CatUnknown;
     return true;
 }
 
@@ -67,6 +69,17 @@ inline bool previewUnregister(PreviewRegistry& r, const void* gob) {
     previewRemoveAt(r, i);
     return true;
 }
+
+// Stores the weapon category of a registered gob. False when the gob is not registered.
+inline bool previewSetCat(PreviewRegistry& r, const void* gob, Category cat) {
+    const int i = previewFind(r, gob);
+    if (i < 0) return false;
+    r.e[i].cat = cat;
+    return true;
+}
+
+// Preview slow factor: the loaded slow_holster_x when the tune read succeeded, else the previous factor (a torn read keeps the last timing).
+inline float previewSlowFor(bool loaded, float read, float prev) { return loaded ? read : prev; }
 
 // Drops every entry whose gob is gone or whose live parent or node differs from the registered one. live(gob, parent, node)
 // writes the gob's current parent and node and returns false when the gob no longer exists. Returns the number dropped.

@@ -2275,6 +2275,7 @@ static bool previewPlace(uintptr_t g, uintptr_t beh) {
     }
     if (g_snapLogM > 0.f) { snapSl = pslide; snapSlow = pslow; snp.now = pnow; snp.w = reachW; snp.pathF = plan.pathF; }   // the slide after this frame's touch
     const uint32_t presid = hs::slowMs(g_reachResidMs, pslow);   // HW44: reach_resid_ms at the preview slide's slowed timing
+    { EdLock lk; hs::previewSetCat(g_preview, reinterpret_cast<void*>(g), cat); }   // HW45b: the entry's weapon category (storage only; C2 reads it)
     hs::Pose shown = out;
     bool atHand = false;
     if (slideF > 0.f) {
@@ -2291,7 +2292,7 @@ static bool previewPlace(uintptr_t g, uintptr_t beh) {
     float viaS = 0.f;   // HW31b: the via progress for the arm's lateral bump (only when the via is on)
     if (viaOn && viaOutFor(static_cast<int>(cat)) > 0.f) { EdLock lk0; const CarryResid& vcr = prevLockFor(g).cres; viaS = hs::slideViaProgress(plan.active, presid, plan.carryW, plan.oriF, exPct > 0.f, pslide.dir != 0, pslide.from, pslide.carryFrom, pnow, pslide.t0, pslide.len, g_prevGrab, vcr.on != 0, vcr.startMs, vcr.msEff, plan.pathF, stowRotEff()); }
     g_reachSlowX = pslow;   // 0.21.1-dev: REACH logging density for a slowed slide
-    const bool carryOk = g_reachTest && reachArm(g, beh, atHand ? out : shown, reachW, left, static_cast<int>(cat), plan.pathF, plan.restMix, out.pos, &out.q, reachIsBackBone(bone), n, g_reachCarry && plan.active, &carried, &plan, hs::shapeOf(model), viaS);   // w == 0 outside the slide: only undoes a leftover write
+    const bool carryOk = g_reachTest && drawgateMode() && reachArm(g, beh, atHand ? out : shown, reachW, left, static_cast<int>(cat), plan.pathF, plan.restMix, out.pos, &out.q, reachIsBackBone(bone), n, g_reachCarry && plan.active, &carried, &plan, hs::shapeOf(model), viaS);   // w == 0 outside the slide: only undoes a leftover write
     snp.vo = viaS;
     if (atHand) { snp.why = "release"; previewHandLog(g, parent, n, left, model, slideF, true, carryOk, reachW, plan.carryW, pnow); return true; }   // fully drawn: the engine's hand pose stays
     if (carryOk) {
@@ -3058,9 +3059,10 @@ static int32_t KPATCH_CALL apiSetPreviewDraw(int32_t drawn) {
         EdLock lk;
         if (!g_prevSlide.init) g_prevSlide.reset(false, now);
         // HW28: the shared preview slide takes the timing of the weapon being edited (the global / unknown timing when none is)
-        // HW44: and the published slow_holster_x (1 when the read tears: the unslowed timing); g_prevSlow scales the preview's residual window with it
+        // HW44: and the published slow_holster_x (a torn read keeps the previous factor; 1 until the first good read); g_prevSlow scales the preview's residual window with it
         hs::TuneCfg pc;
-        const float slowX = loadTune(pc) ? pc.slowHolsterX : hs::kSlowHolsterMin;
+        const bool pcOk = loadTune(pc);
+        const float slowX = hs::previewSlowFor(pcOk, pc.slowHolsterX, g_prevSlow);
         g_prevSlow = slowX;
         if (slowX != 1.f) { slowReachRearm(false); slowReachRearm(true); }   // 0.21.1-dev: REACH every-solve budget for this slowed slide, both hands
         const hs::SlideRes sres = hs::slideResolve(g_slideTune, g_edit.active ? g_edit.cat : hs::CatUnknown, slowX);
