@@ -1975,6 +1975,54 @@ static void gobNames(uintptr_t gob, uintptr_t parent, char model[17], char body[
     hs::tuneCopyName(body, b);
 }
 
+// HW43 PREVIEWHAND (log only, read-only: no writes to the Gob / arm / reach state, only the rate counters below). Called from previewPlace once the final pose is in the Gob
+// (or the engine's hand pose stays, atHand). Rate limit: one look per 250 ms per gob (4-entry table), 60 lines in all, the shared EDIT budget; the attach node pose is only
+// read when a line may go out. A line goes out when the weapon is drawn / carried, or when the measured distance exceeds 0.01 m. Holstered idle (no slide, no carry) is skipped.
+static void previewHandLog(uintptr_t g, uintptr_t parent, uintptr_t n, bool left, const char* model, float slideF, bool atHand, bool carryOk, float reachW, float carryW, uint32_t now) {
+    if (!KP_ENABLED(chEdit, KPLOG_INFO)) return;
+    if (!atHand && !carryOk && !(slideF > 0.f)) return;
+    static volatile LONG s_phLines = 0;
+    if (s_phLines >= 60) return;
+    static struct { uintptr_t gob; uint32_t last; bool seen; } s_tab[8];
+    static unsigned s_next = 0;
+    int slot = -1;
+    for (int i = 0; i < 8; ++i)
+        if (s_tab[i].seen && s_tab[i].gob == g) { slot = i; break; }
+    if (slot < 0) { slot = static_cast<int>(s_next); s_next = (s_next + 1) % 8u; s_tab[slot].seen = true; s_tab[slot].gob = g; s_tab[slot].last = now - 1000u; }
+    if (now - s_tab[slot].last < 250u) return;
+    s_tab[slot].last = now;
+    hs::PreviewHandVals v;
+    memset(&v, 0, sizeof v);
+    v.gob = static_cast<uint32_t>(g); v.model = model; v.hand = left ? 1 : 0; v.slideF = slideF; v.atHand = atHand ? 1 : 0; v.carryOk = carryOk ? 1 : 0; v.reachW = reachW; v.w = carryW;
+    v.hd = -1.f; v.dirty = -1;
+    const ReachEnt* e = nullptr;
+    for (const ReachEnt& x : g_reach)
+        if (x.parent == parent && x.left == left && parent) { e = &x; break; }
+    if (e) {
+        v.dirty = e->dirty ? 1 : 0; v.solved = e->solved;
+        hs::Pose gp, np;
+        const uintptr_t avt = n ? rdU32(kSitePlace, n, 0) : 0;
+        if (avt && rdU32(kSitePlace, avt, 0x0C) == e->poseFn && saferead::readAt(kSitePlace, g, 0xA4, &gp) && hs::poseSane(gp) && reachNodePose(n, e->poseFn, np)) {
+            const float dx = gp.pos[0] - np.pos[0], dy = gp.pos[1] - np.pos[1], dz = gp.pos[2] - np.pos[2];
+            v.hd = sqrtf(dx * dx + dy * dy + dz * dz);
+        }
+    }
+    if (!atHand && !carryOk && !(v.hd > 0.01f)) return;
+    {
+        EdLock lk;
+        v.prevInit = g_prevSlide.init; v.sdir = g_prevSlide.dir;
+        const int64_t age = static_cast<int64_t>(static_cast<int32_t>(now - g_prevSlide.t0));
+        v.t0age = age > 99999 ? 99999 : (age < -99999 ? -99999 : static_cast<int>(age));
+        for (const PrevLock& p : g_prevLock)
+            if (p.gob == g) { v.lockGob = 1; break; }
+    }
+    if (!takeEditLine()) return;
+    InterlockedIncrement(&s_phLines);
+    char lb[256];
+    hs::previewHandLine(lb, sizeof lb, v);
+    KP_LOG(chEdit, "%s", lb);
+}
+
 // Places a registered preview Gob. Returns false when the Gob is not a preview (in-world path continues), true when handled.
 static bool previewPlace(uintptr_t g, uintptr_t beh) {
     if (!g_editor || g_previewN == 0 || !g || !beh) return false;
@@ -2062,12 +2110,13 @@ static bool previewPlace(uintptr_t g, uintptr_t beh) {
     float viaS = 0.f;   // HW31b: the via progress for the arm's lateral bump (only when the via is on)
     if (viaOn && g_viaOut > 0.f) { EdLock lk0; const CarryResid& vcr = prevLockFor(g).cres; viaS = hs::slideViaProgress(plan.active, g_reachResidMs, plan.carryW, plan.oriF, exPct > 0.f, pslide.dir != 0, pslide.from, pslide.carryFrom, pnow, pslide.t0, pslide.len, g_prevGrab, vcr.on != 0, vcr.startMs, vcr.msEff, plan.pathF, stowRotEff()); }
     const bool carryOk = g_reachTest && reachArm(g, beh, atHand ? out : shown, reachW, left, static_cast<int>(cat), plan.pathF, plan.restMix, out.pos, &out.q, reachIsBackBone(bone), n, g_reachCarry && plan.active, &carried, &plan, hs::shapeOf(model), viaS);   // w == 0 outside the slide: only undoes a leftover write
-    if (atHand) return true;   // fully drawn: the engine's hand pose stays
+    if (atHand) { previewHandLog(g, parent, n, left, model, slideF, true, carryOk, reachW, plan.carryW, pnow); return true; }   // fully drawn: the engine's hand pose stays
     if (carryOk) {
         EdLock lk; PrevLock& pk = prevLockFor(g); shown = carryShown(pslide, pk.lk, pk.cres, out, carried, plan, g_prevGrab, pnow, viaOn ? &viaQ : nullptr, exPct > 0.f);
     }   // HW26: hand-frame residual / locked blend; carry: the weapon rides the moved hand only while it carries (plan.carryW); it stays on the mount during the reach / release phases
     if (!hs::poseSane(shown) || !saferead::probeWrite(kSitePlace, reinterpret_cast<void*>(g + 0xA4), sizeof(hs::Pose))) return true;
     memcpy(reinterpret_cast<void*>(g + 0xA4), &shown, sizeof(hs::Pose));
+    previewHandLog(g, parent, n, left, model, slideF, false, carryOk, reachW, plan.carryW, pnow);
     if (logIt)
         KP_LOG(chEdit, "PREVIEW place gob=%x model=%s cat=%s body=%s left=%d bone=%s edit=%d rot=(%.1f,%.1f,%.1f) off=(%.3f,%.3f,%.3f) src=%u/%u/%u lsrc=%s extra=%.1f",
                static_cast<unsigned>(g), model, hs::categoryName(cat), body[0] ? body : "-", left ? 1 : 0, bone, editing ? 1 : 0, r.rot[0], r.rot[1], r.rot[2],
@@ -2506,6 +2555,22 @@ static int32_t KPATCH_CALL apiRegisterPreview(void* gob, void* beh, int32_t left
         InterlockedExchange(&g_previewN, count);
     }
     if (takeEditLine()) KP_LOG(chEdit, "API register gob=%x beh=%x left=%d ok=%d n=%ld", U(gob), U(beh), left ? 1 : 0, ok ? 1 : 0, static_cast<long>(count));
+    if (ok && takeEditLine()) {   // HW43: PREVIEWHAND open (read-only: scans the lock table and the reach table without allocating)
+        saferead::beginScope();
+        char mn[32];
+        gobModelName(reinterpret_cast<uintptr_t>(gob), mn, sizeof mn);
+        int lockGob = 0, reachEntries = 0;
+        {
+            EdLock lk;
+            for (const PrevLock& p : g_prevLock)
+                if (p.gob == reinterpret_cast<uintptr_t>(gob)) { lockGob = 1; break; }
+        }
+        for (const ReachEnt& x : g_reach)
+            if (x.parent && x.parent == reinterpret_cast<uintptr_t>(parent)) ++reachEntries;
+        char lb[160];
+        hs::previewHandOpenLine(lb, sizeof lb, static_cast<uint32_t>(reinterpret_cast<uintptr_t>(gob)), mn, lockGob, reachEntries);
+        KP_LOG(chEdit, "%s", lb);
+    }
     return ok ? 1 : 0;
 }
 
@@ -2843,7 +2908,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     addName(names, sizeof(names), g_onGob, "gob");
     addName(names, sizeof(names), g_onPlace, "place");
     addName(names, sizeof(names), g_onToggle, "toggle");
-    KP_LOG(chMain, "holster 0.20.3-dev loaded (P0 probe + unarmed_anim=%d): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_unarmedAnim ? 1 : 0, g_probe ? 1 : 0,
+    KP_LOG(chMain, "holster 0.20.4-dev loaded (P0 probe + unarmed_anim=%d): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_unarmedAnim ? 1 : 0, g_probe ? 1 : 0,
            names[0] ? names : "none", static_cast<long>(g_maxLines), g_gobEvery, k2addr::get() ? "ok" : "none");
     {
         hs::TuneCfg t;

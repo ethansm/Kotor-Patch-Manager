@@ -55,4 +55,32 @@ inline int reachLogPiece3(char* buf, size_t cap, const ReachLogVals& v, uint32_t
                     static_cast<double>(v.tw), static_cast<double>(v.sw), static_cast<double>(v.ex), static_cast<double>(v.of), static_cast<double>(v.vo), static_cast<double>(v.pb));
 }
 
+// ---- HW43 PREVIEWHAND diagnostic (editor preview placement, log only). One line <= 200 bytes in the worst case (floats are clamped to +-999.99 / +-999.999 first, the model
+// name is cut at 20 chars). PREVIEWHAND open is the register-time companion line.
+//   PREVIEWHAND gob=%x model=%.20s hand=%d slideF=%.2f atHand=%d carryOk=%d reachW=%.2f w=%.2f hd=%.3f dirty=%d solved=%u prevInit=%d lockGob=%d sdir=%d t0age=%d
+//   PREVIEWHAND open gob=%x model=%.20s lockGob=%d reachEntries=%d
+struct PreviewHandVals {
+    uint32_t gob;
+    const char* model;
+    int hand, atHand, carryOk;
+    float slideF, reachW, w, hd;   // hd < 0 = the attach node pose could not be read (logged as -1)
+    int dirty;
+    uint32_t solved;
+    int prevInit, lockGob, sdir, t0age;
+};
+
+inline float phClampF(float x, float lim) { return x != x ? 0.f : (x > lim ? lim : (x < -lim ? -lim : x)); }
+
+inline int previewHandLine(char* buf, size_t cap, const PreviewHandVals& v) {
+    const int age = v.t0age > 99999 ? 99999 : (v.t0age < -99999 ? -99999 : v.t0age);
+    return snprintf(buf, cap, "PREVIEWHAND gob=%x model=%.20s hand=%d slideF=%.2f atHand=%d carryOk=%d reachW=%.2f w=%.2f hd=%.3f dirty=%d solved=%u prevInit=%d lockGob=%d sdir=%d t0age=%d",
+                    static_cast<unsigned>(v.gob), v.model ? v.model : "", v.hand, static_cast<double>(phClampF(v.slideF, 999.99f)), v.atHand, v.carryOk,
+                    static_cast<double>(phClampF(v.reachW, 999.99f)), static_cast<double>(phClampF(v.w, 999.99f)),
+                    static_cast<double>(v.hd < 0.f ? -1.f : phClampF(v.hd, 999.999f)), v.dirty, static_cast<unsigned>(v.solved), v.prevInit, v.lockGob, v.sdir, age);
+}
+
+inline int previewHandOpenLine(char* buf, size_t cap, uint32_t gob, const char* model, int lockGob, int reachEntries) {
+    return snprintf(buf, cap, "PREVIEWHAND open gob=%x model=%.20s lockGob=%d reachEntries=%d", static_cast<unsigned>(gob), model ? model : "", lockGob, reachEntries);
+}
+
 }  // namespace hs

@@ -2,6 +2,7 @@
 // single line byte for byte, prefixes and the shared seq. Build/run: python3 scripts/run_tests.py holster_reachlog
 #include "HolsterReachLog.h"
 #include "check.h"
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -143,9 +144,38 @@ static void testPrefixAndSeq() {
     KT_CHECK(reachLogPiece3(b, sizeof b, nv, 1u) > 0);
 }
 
+// (e) HW43 PREVIEWHAND: exact prefix, worst-case length <= 200, open line, hd<0 prints -1, NaN safe.
+static void testPreviewHand() {
+    PreviewHandVals v;
+    memset(&v, 0, sizeof v);
+    v.gob = 0x1a2b3c4du; v.model = "w_BlstrRfl_001"; v.hand = 0; v.slideF = 1.f; v.atHand = 1; v.carryOk = 0; v.reachW = 0.5f; v.w = 1.f; v.hd = 0.0123f;
+    v.dirty = 1; v.solved = 3; v.prevInit = 1; v.lockGob = 1; v.sdir = 1; v.t0age = 1234;
+    char b[512];
+    previewHandLine(b, sizeof b, v);
+    KT_CHECK(strcmp(b, "PREVIEWHAND gob=1a2b3c4d model=w_BlstrRfl_001 hand=0 slideF=1.00 atHand=1 carryOk=0 reachW=0.50 w=1.00 hd=0.012 dirty=1 solved=3 prevInit=1 lockGob=1 sdir=1 t0age=1234") == 0);
+    PreviewHandVals w = v;
+    w.gob = 0xffffffffu; w.model = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"; w.hand = -1; w.slideF = -1e30f; w.atHand = 1; w.carryOk = 1; w.reachW = 1e30f; w.w = -1e30f; w.hd = 1e30f;
+    w.dirty = -1; w.solved = 4294967295u; w.prevInit = 1; w.lockGob = 1; w.sdir = -1; w.t0age = -2000000000;
+    const int n = previewHandLine(b, sizeof b, w);
+    KT_CHECK(n > 0 && n <= 200);
+    KT_CHECK(strncmp(b, "PREVIEWHAND gob=ffffffff model=ABCDEFGHIJKLMNOPQRST hand=", 56) == 0);
+    KT_CHECK(strstr(b, "t0age=-99999") != nullptr);
+    char c[256];
+    KT_CHECK(previewHandLine(c, sizeof c, w) <= 200);
+    w.hd = -1.f; w.slideF = NAN;
+    previewHandLine(b, sizeof b, w);
+    KT_CHECK(strstr(b, " hd=-1.000 ") != nullptr && strstr(b, "slideF=0.00") != nullptr);
+    w.model = nullptr;
+    KT_CHECK(previewHandLine(b, sizeof b, w) > 0);
+    const int m = previewHandOpenLine(b, sizeof b, 0xdeadbeefu, "w_BlstrRfl_001", 1, 12);
+    KT_CHECK(m > 0 && m <= 200);
+    KT_CHECK(strcmp(b, "PREVIEWHAND open gob=deadbeef model=w_BlstrRfl_001 lockGob=1 reachEntries=12") == 0);
+}
+
 int main() {
     testWorstLengths();
     testJoinEqualsOld();
     testPrefixAndSeq();
+    testPreviewHand();
     return kt::Report("holster_reachlog");
 }
