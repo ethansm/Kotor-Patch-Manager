@@ -986,6 +986,20 @@ static void testReachTopology() {
     KT_CHECK(reachTopology(0.30f, true) == ReachTopo::HingeBack);
 }
 
+// ---- HW46: the slide's topology latch holds the whole enum and is recomputed at the next slide ----
+static void testReachTopoLatch() {
+    uint8_t set = 0, back = 0;
+    KT_CHECK(reachTopoLatch(ReachTopo::OverBack, set, back) == ReachTopo::OverBack && set != 0 && back == 1);   // slide start: latched
+    KT_CHECK(reachTopoLatch(ReachTopo::Hip, set, back) == ReachTopo::OverBack && back == 1);                   // mid-slide flip: kept
+    KT_CHECK(reachTopoLatch(ReachTopo::Thigh, set, back) == ReachTopo::OverBack && back == 1);                 // still kept
+    set = 0;                                                                                                    // clear site: slide ended
+    KT_CHECK(reachTopoLatch(ReachTopo::Hip, set, back) == ReachTopo::Hip && back == 0);                        // next slide: recomputed
+    set = 0;
+    KT_CHECK(reachTopoLatch(ReachTopo::HingeBack, set, back) == ReachTopo::HingeBack && back == 1);
+    set = 0;
+    KT_CHECK(reachTopoLatch(ReachTopo::Thigh, set, back) == ReachTopo::Thigh && back == 0);
+}
+
 // ---- back-mount reach: per-category outward parameters (HW27) ----
 static void testReachHingeOutParams() {
     const float S[3] = {0.2f, 0.f, 1.4f}, up[3] = {0, 0, 1}, fwd[3] = {0, 1, 0}, ou[3] = {1, 0, 0};
@@ -1314,6 +1328,7 @@ int main() {
     testWristDelta();
     testReachHinge();
     testReachTopology();
+    testReachTopoLatch();
     testReachHingeOutParams();
     testWristHintKeepsAxis();
     testWristHintDefaultsUnchanged();

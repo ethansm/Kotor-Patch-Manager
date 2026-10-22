@@ -297,6 +297,16 @@ inline ReachTopo reachTopology(float dzArm, bool hingeFits) {
     return ReachTopo::Hip;
 }
 
+// HW46: the slide's topology latch. topoSet 0 = not latched this slide: the live topo is stored as topoSet = 1 + enum (nonzero = latched, so the topoSet test in
+// reachExtractPct is unchanged). Later calls return the stored topo, so u, the hinge path, the pole and the log use one topo per slide. topoBack = the back bit
+// reachExtractPct reads. The three clear sites in Holster.cpp reset topoSet to 0 at slide end.
+inline ReachTopo reachTopoLatch(ReachTopo liveTopo, uint8_t& topoSet, uint8_t& topoBack) {
+    if (!topoSet) topoSet = static_cast<uint8_t>(1 + static_cast<int>(liveTopo));
+    const ReachTopo t = static_cast<ReachTopo>(topoSet - 1);
+    topoBack = (t == ReachTopo::HingeBack || t == ReachTopo::OverBack) ? 1 : 0;
+    return t;
+}
+
 inline bool reachHinge(const float* S, float L1, float L2, const float* up, const float* fwd, const float* out3, const float* mount, const float* rest, const float* restPole,
                        float f, float* T, float* pole, float outT = kHingeOutT, float outPole = kHingeOutPole) {
     if (!(L1 > 1e-4f) || !(L2 > 1e-4f) || !std::isfinite(L1) || !std::isfinite(L2) || !std::isfinite(f)) return false;

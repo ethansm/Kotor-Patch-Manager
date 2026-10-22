@@ -1487,7 +1487,7 @@ struct ReachEnt {
     uint8_t solved, holdN;   // HW25: write bits (bicep 1, forearm 2, wrist 4) of the last successful solve, and the consecutive frames held since (cleared at slide end / entry drop)
     uint8_t wristOn;         // HW26: wristDq holds the last wrist delta of this slide (the reachClampRot sign hint); cleared together with solved / holdN
     hs::Q wristDq;
-    uint8_t topoSet, topoBack;   // HW31: the last solve's topology (back = HingeBack / OverBack), read by the plan sites to pick reach_extract_pct_back / _hip
+    uint8_t topoSet, topoBack;   // HW31/HW46: this slide's latched topology (topoSet = 1 + enum, 0 = not latched; back = HingeBack / OverBack), read by the plan sites to pick reach_extract_pct_back / _hip
     uint8_t twistOn;         // HW29: twistQ holds the last forearm twist of this slide (the reachClampRot sign hint of reachSplitWrist); cleared together with wristOn
     hs::Q twistQ;
     uint8_t combOn;          // HW44: combQ holds the last written wrist rotation (swing * twist) of this slide, the continuity reference of reachPickContinuous; cleared with wristOn
@@ -1533,7 +1533,7 @@ static const char* reachTopoName(hs::ReachTopo t) {
     }
 }
 static bool reachIsBackBone(const char* b) { return b && (!_stricmp(b, "torsoUpr_g") || !_stricmp(b, "torso_g")); }
-// HW31: the extract share of this slide: _back when the last solve of this arm found a back topology (before the first solve: the mount bone name), else _hip.
+// HW31: the extract share of this slide: _back when this slide's latched topology is a back one (before the slide's first solve: the mount bone name), else _hip.
 static float reachExtractPct(uintptr_t beh, bool left, bool backBone) {
     const uintptr_t parent = beh ? rdU32(kSitePlace, beh, 0x14) : 0;
     if (parent)
@@ -1635,12 +1635,12 @@ static bool reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w,
         if (static_cast<int32_t>(GetTickCount() - e->refusedAt) > 5000) e->parent = 0;   // retry later
         return false;
     }
-    if (reachStale(*e)) { e->parent = 0; e->solved = e->holdN = e->wristOn = e->twistOn = e->combOn = e->tgtOn = 0; return false; }
+    if (reachStale(*e)) { e->parent = 0; e->solved = e->holdN = e->wristOn = e->twistOn = e->combOn = e->tgtOn = 0; e->topoSet = 0; return false; }
 
     // HW25: a transient refusal (quat read, pose, solve) while the slide still runs re-applies the last solved local quats instead of dropping the arm to the animation for
     // a frame. Nothing world-space is stored: the carried hand is recomputed from the attach node. Never at slide end (w <= 0) or on a permanent refusal.
     auto holdLast = [&](hs::ReachHoldKind kind, const char* why) -> bool {
-        if (!(w > 0.f)) { e->solved = e->holdN = e->wristOn = e->twistOn = e->combOn = e->tgtOn = 0; return false; }   // slide over: nothing to hold, and the next slide starts clean
+        if (!(w > 0.f)) { e->solved = e->holdN = e->wristOn = e->twistOn = e->combOn = e->tgtOn = 0; e->topoSet = 0; return false; }   // slide over: nothing to hold, and the next slide starts clean
         if (!hs::reachHoldAllowed(kind, e->solved, e->holdN, w, kReachHoldFrames, carry)) return false;
         bool ok = true;
         if (e->solved & 1) ok = reachWriteQ(e->bic, e->bb.wrote) && ok;
@@ -1665,6 +1665,7 @@ static bool reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w,
         if (e->dirty && persist) { (void)reachWriteQ(e->bic, e->bb.q); (void)reachWriteQ(e->fore, e->fb.q); if (wristOk && e->wb.have) (void)reachWriteQ(e->wrist, e->wb.q); }
         e->dirty = false;
         e->solved = e->holdN = e->wristOn = e->twistOn = e->combOn = e->tgtOn = 0;
+        e->topoSet = 0;
         e->bb.have = e->fb.have = e->wb.have = false;
         return false;
     }
@@ -1698,9 +1699,9 @@ static bool reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w,
         // HW27: the mount's height sense, not the bone name, picks the reach: HingeBack / OverBack (shoulder height or above) reach up and over the shoulder, whatever the weapon
         // (u = 1: a rifle slung low still has its grip behind the shoulder as long as it is above kOverDz); Hip and Thigh keep the hip pole weighted by reachOverWeight
         // (0 below the band). backMount (torsoUpr_g / torso_g) no longer forces it: torso_g sits at pelvis height and resolves to Hip. Logged as topo=.
-        topo = arm > 1e-4f ? hs::reachTopology(dzA, hs::reachHingeFits(mlt[2], arm)) : hs::ReachTopo::Hip;
-        u = (topo == hs::ReachTopo::HingeBack || topo == hs::ReachTopo::OverBack) ? 1.f : hs::reachOverWeight(mlt[2], arm);
-        if (!e->solved) { e->topoSet = 1; e->topoBack = (topo == hs::ReachTopo::HingeBack || topo == hs::ReachTopo::OverBack) ? 1 : 0; }   // HW31: latched at the first solve of a slide (solved is cleared at slide end), so a reversal and a threshold flip keep the extract share; the plan sites pick it from this
+        const hs::ReachTopo liveTopo = arm > 1e-4f ? hs::reachTopology(dzA, hs::reachHingeFits(mlt[2], arm)) : hs::ReachTopo::Hip;
+        topo = hs::reachTopoLatch(liveTopo, e->topoSet, e->topoBack);   // HW46: latched at the slide's first frame; the whole enum drives u, hinge, pole and log
+        u = (topo == hs::ReachTopo::HingeBack || topo == hs::ReachTopo::OverBack) ? 1.f : hs::reachOverWeight(mlt[2], arm);   // formula unchanged
         const int ci = (cat >= 0 && cat < hs::CatCount) ? cat : 0;
         const hs::ReachStyle& st = g_reachStyle[ci];
         if (carry) {   // the hand walks mount -> animation hand along an arc bowed up / forward / outward for a high mount (reach: backwards along it, carry: forwards); restMix pulls it to the resting hand
