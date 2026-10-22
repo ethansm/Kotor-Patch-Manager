@@ -2205,8 +2205,9 @@ DWORD g_escConsumedAt = 0;
 
 bool escHeld() { return guikit::g_gk.gameForeground && guikit::g_gk.gameForeground() && (GetAsyncKeyState(VK_ESCAPE) & 0x8000) != 0; }
 
-// Vanilla Esc plays GUI sound 5 (FUN_007CA060 close branch -> PlayGuiSound(5), REA 20261021_options-esc-sound); the hook swallows that path, so play it here.
-constexpr int kEscSoundIdx = 5;
+// Esc should sound like the Back button / every menu button: guisounds.2da row 0 (gui_click, the same index the Self-Heal popover plays). Index 5, which
+// the vanilla close function FUN_007CA060 plays, is the item-equip sound (live 10-21), so it is NOT used. The hook swallows the vanilla close path.
+constexpr int kEscSoundIdx = 0;
 void playEscSound() {
     uint32_t mgr = 0;
     const bool ok = guikit::g_gk.playSound && guikit::g_gk.guiSoundMgrAddr && guikit::detail::rd32(guikit::g_gk.guiSoundMgrAddr, 0, &mgr) && mgr;
@@ -2519,7 +2520,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
     embtex::g_log = embedLog;   // gear + slider art textures (EmbedTex) log through the main channel
     guikit::initGuiInput(api, "mod-config");   // optional: the wheel provider (k2.guiinput); a missing provider only means no wheel
-    KP_LOG(chMain, "mod-config 0.4.4-dev loaded (Mod Configuration button under Gameplay; k2.modconfig@1 + k2.menuui@1; config mod_config.ini is read at the first Options panel: enabled debug button_clone reflow desc free_labels)");
+    KP_LOG(chMain, "mod-config 0.4.5-dev loaded (Mod Configuration button under Gameplay; k2.modconfig@1 + k2.menuui@1; config mod_config.ini is read at the first Options panel: enabled debug button_clone reflow desc free_labels)");
     int rcC = -1, rcM = -1;
     if (api && api->struct_size >= offsetof(KPatchApi, require) + sizeof(api->require) && api->provide) {
         rcC = api->provide(K2MODCONFIG_IFACE, K2MODCONFIG_VERSION, &g_mcApi);
