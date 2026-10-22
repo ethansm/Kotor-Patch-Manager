@@ -920,13 +920,15 @@ char g_pvCaption[48] = "";
 
 constexpr const char* kPvSolid = "uibit_fill_2wt";     // solid WHITE: the tint is the colour (the black 2bt fill cannot be tinted, bars drawn on it stay black)
 constexpr const char* kPvPill = "lbl_miscroll_f";      // the live pills' art
-constexpr const char* kPvIcons[3][4] = {               // placeholder entry icons per group (force power icons exist in the stock icon set); a miss falls back to a tinted fill
-    {"ip_flurry", "ip_speedburst", "ip_knightspeed", "ip_cure"},
-    {"ip_mind", "ip_shield", "ip_cure", "ip_speedburst"},
-    {"ip_armor", "ip_shield", "ip_mind", "ip_cure"},
+// The preview mocks the ENEMY target menu, so every entry is offensive (all resrefs checked against the K2 texture packs): attacks, hostile force
+// powers, grenades and mines. A miss falls back to a tinted fill.
+constexpr const char* kPvIcons[3][4] = {
+    {"ip_whirlwind", "ip_advlsthrow", "ip_lsthrow", "ip_droiddestroy"},
+    {"ip_lightning", "ip_choke", "ip_drainlife", "ip_stun"},
+    {"iw_fraggren_001", "iw_firegren_001", "iw_sonicgren_001", "i_fragmine"},
 };
-constexpr float kPvGroupTint[3][3] = {{0.80f, 0.30f, 0.25f}, {0.25f, 0.50f, 0.85f}, {0.30f, 0.70f, 0.35f}};   // fallback fills: attacks red, powers blue, items green
-constexpr float kPvScreenTint[3] = {0.07f, 0.10f, 0.14f}, kPvNameTint[3] = {0.02f, 0.06f, 0.07f}, kPvHealth[3] = {0.80f, 0.12f, 0.12f}, kPvPillTint[3] = {0.035f, 0.415f, 0.34f};
+constexpr float kPvGroupTint[3][3] = {{0.80f, 0.30f, 0.25f}, {0.70f, 0.20f, 0.45f}, {0.75f, 0.50f, 0.20f}};   // fallback fills: attacks red, powers magenta, items amber
+constexpr float kPvScreenTint[3] = {0.07f, 0.10f, 0.14f}, kPvNameTint[3] = {0.02f, 0.06f, 0.07f}, kPvHealth[3] = {0.80f, 0.12f, 0.12f}, kPvPillTint[3] = {0.78f, 0.06f, 0.06f};   // pill outline art tinted red (hostile menu)
 constexpr float kPvWhite[3] = {1.f, 1.f, 1.f};          // icons: an explicit white tint (a label keeps its last tint, so a fallback square's colour would stick)
 
 // resref -> image, pooled by imageForRetry once non-null; a miss is retried every 30th frame, at most 20 times, then given up.
