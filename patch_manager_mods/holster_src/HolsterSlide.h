@@ -254,6 +254,28 @@ inline void slideResidStowWindow(uint32_t now, uint32_t t0, uint32_t len, float 
     t = carryLen - static_cast<float>(d);
 }
 
+// HW41: config clamp for ini reach_stow_land_f, the path fraction (ReachPlan.pathF: 1 = hand at the animation end, 0 = hand at the mount) over
+// which a stow lands the weapon on the mount. NaN -> 0.15 (the default); v <= 0 -> 0 (feature OFF: the old time window slideResidStowWindow);
+// otherwise clamped to [0.02, 0.5]. +inf clamps to 0.5, -inf is <= 0.
+inline float slideClampStowLandF(float v) {
+    if (v != v) return 0.15f;
+    if (v <= 0.f) return 0.f;
+    return v < 0.02f ? 0.02f : (v > 0.5f ? 0.5f : v);
+}
+
+// HW41: path-driven stow landing window, in the SAME convention as slideResidStowWindow (t = how far into the window, ms = window length;
+// t >= ms = weapon fully in the hand, offset share 0; t = 0 = weapon on the mount, offset share 1). Units are 1/1000 of a path fraction, so
+// callers' `ms > 1.f` tests keep working: ms = landF * 1000 (landF through slideClampStowLandF; 0 -> ms = 0, t = 0), t = clamp(pathF, 0, landF) * 1000.
+// A NaN / infinite pathF gives t = ms (the weapon stays in the hand, nothing is NaN).
+inline void slideStowLandWindow(float pathF, float landF, float& t, float& ms) {
+    const float lf = slideClampStowLandF(landF);
+    if (lf <= 0.f) { ms = 0.f; t = 0.f; return; }
+    ms = lf * 1000.f;
+    if (!(pathF - pathF == 0.f)) { t = ms; return; }   // NaN or +-inf
+    const float pf = pathF < 0.f ? 0.f : (pathF > lf ? lf : pathF);
+    t = pf * 1000.f;
+}
+
 // HW37: copy of the guard chain at the top of Holster.cpp carryShownBase, then its dir / from / carryFrom split. residMs is g_reachResidMs;
 // carriedFinite is hs::qfinite(carried.q) (viaProgress has no carried pose and passes true). dir is sl.dir != 0.
 inline SlideResidBranch slideResidBranch(bool dir, float from, float carryFrom, float carryW, bool active, uint32_t residMs, bool carriedFinite = true) {
@@ -269,8 +291,11 @@ inline SlideResidBranch slideResidBranch(bool dir, float from, float carryFrom, 
 // HW37: copy of Holster.cpp viaProgress, the via progress s in 0..1 of the weapon's turn (0 outside the carry window). Branch choice comes from
 // slideResidBranch. A draw reads the capture of the previous frame (capOn, capStartMs, capMsEff); len is the slide length for the stale check.
 // fRot is carryBlend's orientation share, used when neither residual branch applies.
+// HW41: pathF (ReachPlan.pathF) and stowLandF (reach_stow_land_f, already clamped; 0 = off) are optional. With stowLandF > 0 the stow branch reads
+// slideStowLandWindow(pathF, stowLandF, ...) instead of slideResidStowWindow; with 0 (default) the result is the pre-HW41 one.
 inline float slideViaProgress(bool active, uint32_t residMs, float carryW, float oriF, bool exOn, bool dir, float from, float carryFrom,
-                              uint32_t now, uint32_t t0, uint32_t len, float grab, bool capOn, uint32_t capStartMs, uint32_t capMsEff) {
+                              uint32_t now, uint32_t t0, uint32_t len, float grab, bool capOn, uint32_t capStartMs, uint32_t capMsEff,
+                              float pathF = 0.f, float stowLandF = 0.f) {
     if (!active) return 0.f;
     const SlideResidBranch br = slideResidBranch(dir, from, carryFrom, carryW, active, residMs);
     if (br == ResidDraw) {
@@ -281,7 +306,8 @@ inline float slideViaProgress(bool active, uint32_t residMs, float carryW, float
     }
     if (br == ResidStow) {
         float t, ms;
-        slideResidStowWindow(now, t0, len, grab, residMs, t, ms);
+        if (stowLandF > 0.f) slideStowLandWindow(pathF, stowLandF, t, ms);
+        else slideResidStowWindow(now, t0, len, grab, residMs, t, ms);
         return (ms > 1.f && t < ms) ? slideClamp01(t / ms) : 0.f;
     }
     return slideClamp01(exOn ? (carryW > 0.f ? oriF : 0.f) : carryW);   // carryBlend's fRot
