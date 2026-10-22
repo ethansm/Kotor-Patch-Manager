@@ -6,6 +6,8 @@
 #pragma once
 #include <cmath>
 #include <stdint.h>
+#include <stdio.h>
+#include <string.h>
 #include "HolsterSlide.h"
 
 namespace hs {
@@ -527,11 +529,43 @@ inline Q reachClampRot(const Q& dq0, float maxDeg, const Q* hint = nullptr) {
     return { std::cos(h), dq.x * k, dq.y * k, dq.z * k };
 }
 
+// HW44 continuity pick for the forearm roll and the wrist swing (q11 candidate A, W2 variant). On entry twist = the clamped, hint-aligned roll; on exit twist and swing
+// are the chosen pair with dqn ~= swing * twist. Four candidates: (twist, s), (twist, conj s), (conj twist, s'), (conj twist, conj s'), where s / s' is the shorter-arc clamp
+// of dqn * conj(twist) / dqn * twist. Each is scored by |qdot(prev, swing * twist)| against the previous combined rotation of this slide (nullptr or non-finite = first
+// frame: candidate 0). Candidate 0 keeps unless another beats it by more than 1e-4, so unclamped leftovers (both roll signs give the same combined rotation) stay put.
+// Returns true when a candidate other than 0 wins (pk=1). A jump comes from the swing's shorter-arc sign (natural w of the leftover crossing 0 while the clamp binds)
+// or from the roll's 4-D sign snap against its hint (the roll and the swing then flip together); the pick takes the continuous one.
+inline bool reachPickContinuous(const Q& dqn, Q& twist, Q& swing, float swingMaxDeg, const Q* prev) {
+    const Q t[2] = { twist, reachConj(twist) };
+    Q cT[4], cS[4];
+    for (int k = 0; k < 2; ++k) {
+        const Q s = reachClampRot(qmul(dqn, reachConj(t[k])), swingMaxDeg, nullptr);
+        cT[2 * k] = cT[2 * k + 1] = t[k];
+        cS[2 * k] = s;
+        cS[2 * k + 1] = reachConj(s);
+    }
+    int best = 0;
+    if (prev && qfinite(*prev)) {
+        float bestSc = std::fabs(qdot(*prev, qmul(cS[0], cT[0])));
+        for (int i = 1; i < 4; ++i) {
+            const float sc = std::fabs(qdot(*prev, qmul(cS[i], cT[i])));
+            if (sc > bestSc + 1e-4f) { bestSc = sc; best = i; }
+        }
+    }
+    twist = cT[best];
+    swing = cS[best];
+    return best != 0;
+}
+
 // HW29 wrist split (recon r1 step 3): dq = swingOut * twistOut. twistOut = the part of dq about foreAxis (world frame; need not be unit), clamped to
 // twistMaxDeg by reachClampRot with twistHint (the previous twistOut), so its sign follows the hint across the 180 deg axis flip. swingOut = dq * conj(twistOut),
-// clamped to swingMaxDeg with no hint. twistMaxDeg <= 0 or NaN: twistOut identity and swingOut = reachClampRot(dq, swingMaxDeg, nullptr), the pre-HW29 path.
+// clamped to swingMaxDeg (shorter arc), then reachPickContinuous against combPrev (HW44; nullptr = first frame = shorter arc). leftW = natural w of the leftover, overrode = the pick took the
+// opposite sign (diagnostics). twistMaxDeg <= 0 or NaN: twistOut identity and swingOut = reachClampRot(dq, swingMaxDeg, nullptr), the pre-HW29 path.
 // That path ignores foreAxis (may be null or NaN). Otherwise non-finite dq or a null/non-finite foreAxis: both identity. Zero foreAxis: twistOut identity and the whole dq goes to swing.
-inline void reachSplitWrist(const Q& dq, const float* foreAxis, float twistMaxDeg, float swingMaxDeg, const Q* twistHint, Q& twistOut, Q& swingOut) {
+inline void reachSplitWrist(const Q& dq, const float* foreAxis, float twistMaxDeg, float swingMaxDeg, const Q* twistHint, Q& twistOut, Q& swingOut,
+                            const Q* combPrev = nullptr, bool* overrode = nullptr, float* leftW = nullptr) {
+    if (overrode) *overrode = false;
+    if (leftW) *leftW = 0.f;
     if (!(twistMaxDeg > 0.f)) { twistOut = { 1, 0, 0, 0 }; swingOut = reachClampRot(dq, swingMaxDeg, nullptr); return; }   // before the axis checks
     const bool axisOk = foreAxis && std::isfinite(foreAxis[0]) && std::isfinite(foreAxis[1]) && std::isfinite(foreAxis[2]);
     if (!qfinite(dq) || !axisOk) { twistOut = { 1, 0, 0, 0 }; swingOut = { 1, 0, 0, 0 }; return; }
@@ -539,17 +573,56 @@ inline void reachSplitWrist(const Q& dq, const float* foreAxis, float twistMaxDe
     Q twistRaw, swingDiscard;                         // the swing from qSwingTwist is unused: swingOut is re-derived from the clamped twist
     qSwingTwist(dqn, foreAxis, swingDiscard, twistRaw);
     twistOut = reachClampRot(twistRaw, twistMaxDeg, twistHint);
-    swingOut = reachClampRot(qmul(dqn, { twistOut.w, -twistOut.x, -twistOut.y, -twistOut.z }), swingMaxDeg, nullptr);
+    if (leftW) *leftW = qmul(dqn, { twistOut.w, -twistOut.x, -twistOut.y, -twistOut.z }).w;
+    // HW44c release: candidate 0 is exact when neither cap binds (the roll is the raw roll, as a rotation, and the natural swing is within its cap): then the split recomposes
+    // to dq and there is nothing to keep continuous, so a stale previous rotation (a one-frame step in the target) can never pin the wrist on a wrong candidate.
+    const Q twN = qnormalize(twistRaw);
+    const Q swNat = qmul(dqn, reachConj(twistOut));
+    const bool exact = qfinite(twN) && std::fabs(qdot(twistOut, twN)) > 0.99999f && reachQAngleDeg(swNat) <= swingMaxDeg;
+    if (exact) { swingOut = reachClampRot(swNat, swingMaxDeg, nullptr); return; }
+    const bool picked = reachPickContinuous(dqn, twistOut, swingOut, swingMaxDeg, combPrev);
+    if (overrode) *overrode = picked;
+}
+
+// HW44 blend hemisphere (candidate B of q11). blendQ(from, to, easeSmooth(t)) aligns `to` to `from`, so the nlerp path changes when dot(from, to) crosses 0 (the hand
+// passes 180 deg from the mount): the target jumps by up to ~180 deg. Here the two signs of `to` give two candidate blends (sum with +to, sum with -to); each is normalized
+// and the one nearer prev (the previous blended target of this slide, same sign convention) is taken, so the path keeps its side. prev == nullptr (first frame), a
+// non-finite input or a degenerate sum: blendQ, bit for bit.
+inline Q reachTargetQ(const Q& from, const Q& to, float t, const Q* prev) {
+    const float s = easeSmooth(t);
+    if (!prev || !qfinite(*prev) || !qfinite(from) || !qfinite(to) || !(s > 0.f)) return blendQ(from, to, s);
+    const Q sp = { (1.f - s) * from.w + s * to.w, (1.f - s) * from.x + s * to.x, (1.f - s) * from.y + s * to.y, (1.f - s) * from.z + s * to.z };
+    const Q sm = { (1.f - s) * from.w - s * to.w, (1.f - s) * from.x - s * to.x, (1.f - s) * from.y - s * to.y, (1.f - s) * from.z - s * to.z };
+    const bool okP = qdot(sp, sp) > 1e-4f, okM = qdot(sm, sm) > 1e-4f;   // a near-zero sum has no usable direction
+    if (!okP && !okM) return blendQ(from, to, s);
+    const Q pn = qnormalize(*prev);
+    const float dp = okP ? qdot(pn, qnormalize(sp)) : -2.f;
+    const float dm = okM ? qdot(pn, qnormalize(sm)) : -2.f;
+    return dm > dp ? qnormalize(sm) : qnormalize(sp);
 }
 
 // World rotation to apply to a hand so its orientation `cur` becomes the target blend(from, to, t): dq = target * conj(cur), then limited to maxDeg and
 // scaled by `weight` (0 = none). The hand is turned from the weapon's mount orientation (t = 0, at the grab) to its resting orientation (t = 1) over the carry.
 // hint: the previous return value, passed to reachClampRot. The sign guarantee needs maxDeg in [0, 180]: the clamped dq then has w >= 0, so blendQ keeps it.
-inline Q reachWristDelta(const Q& from, const Q& to, float t, const Q& cur, float maxDeg, float weight, const Q* hint = nullptr) {
+// HW44: the target is reachTargetQ(from, to, t, prevTgt) (prevTgt null = blendQ, the old path); tgtOut receives it for the caller's next frame.
+inline Q reachWristDelta(const Q& from, const Q& to, float t, const Q& cur, float maxDeg, float weight, const Q* hint = nullptr, const Q* prevTgt = nullptr, Q* tgtOut = nullptr) {
     if (!qfinite(from) || !qfinite(to) || !qfinite(cur)) return { 1, 0, 0, 0 };
-    const Q target = blendQ(from, to, easeSmooth(t));
+    const Q target = reachTargetQ(from, to, t, prevTgt);
+    if (tgtOut) *tgtOut = target;
     const Q dq = reachClampRot(qmul(target, reachConj(cur)), maxDeg, hint);
     return blendQ(Q{ 1, 0, 0, 0 }, dq, weight);
+}
+
+// HW44 diagnostics: appends " lw=%.2f md=%d pk=%d" to a REACH piece already in buf (used = its length). Skipped when the result would pass 200 bytes, so a piece
+// stays <= 200. lw outside [-9.99, 9.99] or NaN prints 0. Returns the new length.
+inline int reachDiagTail(char* buf, size_t cap, int used, float lw, int md, int pk) {
+    if (!buf || used < 0 || static_cast<size_t>(used) >= cap) return used;
+    const float lwC = !(std::fabs(lw) <= 9.99f) ? 0.f : lw;
+    char tail[40];
+    const int n = snprintf(tail, sizeof tail, " lw=%.2f md=%d pk=%d", static_cast<double>(lwC), md, pk);
+    if (n <= 0 || used + n > 200 || static_cast<size_t>(used + n) >= cap) return used;
+    memcpy(buf + used, tail, static_cast<size_t>(n) + 1);
+    return used + n;
 }
 
 // Residual of a retarget (HW26): the rotation still to undo t ms after the retarget. Rres at t = 0, identity at t = ms, eased by
@@ -577,6 +650,9 @@ inline Q reachResidualVia(const Q& Rres, const Q* viaH, float t, float ms) {
 
 // Outside-shoulder lateral offset of the via pose, metres (default for ini reach_via_out_m).
 constexpr float kReachViaOutM = 0.12f;
+// HW44d: reach_via_out_m_<cat> (0..0.30 m, per category). Parse: clamp to 0..0.30 (NaN -> 0). Use: the category value when set (>= 0; -1 = unset), else the global reach_via_out_m.
+inline float reachViaOutClamp(float v) { return !(v >= 0.f) ? 0.f : (v > 0.30f ? 0.30f : v); }
+inline float reachViaOutFor(float catOut, float globalOut) { return catOut >= 0.f ? catOut : globalOut; }
 // HW31b: lateral bump of the via pose, outM * 16 s^2 (1 - s)^2 with s = clamp01(t / ms) (linear, not eased). 0 at both ends, outM at
 // s = 0.5. Bad ms, non-finite values or outM <= 0 give 0.
 inline float reachViaOffset(float t, float ms, float outM) {

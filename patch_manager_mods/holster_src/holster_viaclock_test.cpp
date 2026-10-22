@@ -272,6 +272,16 @@ static void testEdgeCases() {
     KT_CHECK(sProg(sn) == 0.f);
 }
 
+// (HW44d) reach_via_out_m_<cat>: unset (-1) -> the global value; set -> the category value (0 stays 0, i.e. off for that category); parse clamp 0..0.30, NaN -> 0.
+static void testViaOutPerCategory() {
+    KT_CHECK(closeF(reachViaOutFor(-1.f, kOut), kOut));                    // unset: byte-identical to the global
+    KT_CHECK(closeF(reachViaOutFor(0.20f, kOut), 0.20f));
+    KT_CHECK(reachViaOutFor(0.f, kOut) == 0.f);                            // an explicit 0 turns this category's bump off
+    KT_CHECK(closeF(reachViaOutClamp(0.20f), 0.20f) && reachViaOutClamp(0.5f) == 0.30f && reachViaOutClamp(-0.1f) == 0.f && reachViaOutClamp(NAN) == 0.f);
+    KT_CHECK(closeF(reachViaOffset(120.f, 240.f, reachViaOutFor(-1.f, kOut)), kOut));
+    KT_CHECK(closeF(reachViaOffset(120.f, 240.f, reachViaOutFor(0.2f, kOut)), 0.2f));
+}
+
 int main() {
     testZeroOutsideWindow();
     testDrawPeak();
@@ -281,5 +291,6 @@ int main() {
     testViaGridMatchesOriginal();
     testNaNFreeAndZeroLen();
     testEdgeCases();
+    testViaOutPerCategory();
     return kt::Report("holster_viaclock");
 }

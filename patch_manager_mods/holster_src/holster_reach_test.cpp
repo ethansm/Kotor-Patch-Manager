@@ -1088,6 +1088,46 @@ static void testWristDeltaHintSweep() {
     KT_CHECK(flipped.x * ref.x + flipped.y * ref.y + flipped.z * ref.z < 0.f);
 }
 
+// HW44c: the wrist target across the 180 deg crossing. The hand turns from the mount by 0 -> 300 deg in 0.1 deg steps (about x, under a non-identity mount). With
+// the previous target fed back (reachTargetQ / reachWristDelta prevTgt) the target moves < 5 deg per step at t = 0.25 / 0.5 / 0.75. Control: the blendQ path jumps
+// (> 90 deg). No previous target: reachWristDelta and the target are the old formula bit for bit.
+static void testWristTargetContinuity() {
+    const float x[3] = { 1, 0, 0 };
+    const float z[3] = { 0, 0, 1 };
+    const Q mount = qaxis(z, 37.f);
+    const float ts[3] = { 0.25f, 0.5f, 0.75f };
+    float worst = 0.f, ctlWorst = 0.f;
+    bool ok = true;
+    for (int k = 0; k < 3; ++k) {
+        Q prevT{ 1, 0, 0, 0 }, ctlPrev{ 1, 0, 0, 0 };
+        for (int i = 0; i <= 3000; ++i) {
+            Q hand = qmul(mount, qaxis(x, 0.1f * static_cast<float>(i)));
+            if (k == 2 && (i % 7) < 3) hand = { -hand.w, -hand.x, -hand.y, -hand.z };   // the engine matrix -> quat sign is arbitrary: the target must not care
+            const Q tgt = reachTargetQ(mount, hand, ts[k], i > 0 ? &prevT : nullptr);
+            const Q ctl = blendQ(mount, hand, easeSmooth(ts[k]));
+            if (i > 0) {
+                const float s = reachQAngleDeg(qmul(reachConj(prevT), tgt));
+                const float c = reachQAngleDeg(qmul(reachConj(ctlPrev), ctl));
+                if (s > worst) worst = s;
+                if (c > ctlWorst) ctlWorst = c;
+            }
+            ok = ok && exactQ(reachTargetQ(mount, hand, ts[k], nullptr), blendQ(mount, hand, easeSmooth(ts[k])));
+            prevT = tgt;
+            ctlPrev = ctl;
+        }
+    }
+    KT_CHECK(worst < 5.f);
+    KT_CHECK(ctlWorst > 90.f);
+    KT_CHECK(ok);
+    // reachWristDelta: no previous target is the old result; tgtOut is the target.
+    const Q cur = qmul(mount, qaxis(x, 50.f)), to = qmul(mount, qaxis(x, 200.f));
+    const Q old = blendQ(Q{ 1, 0, 0, 0 }, reachClampRot(qmul(blendQ(mount, to, easeSmooth(0.4f)), reachConj(cur)), 120.f, nullptr), 0.6f);
+    Q tgtOut{ 0, 0, 0, 0 };
+    KT_CHECK(exactQ(reachWristDelta(mount, to, 0.4f, cur, 120.f, 0.6f), old));
+    KT_CHECK(exactQ(reachWristDelta(mount, to, 0.4f, cur, 120.f, 0.6f, nullptr, nullptr, &tgtOut), old));
+    KT_CHECK(exactQ(tgtOut, blendQ(mount, to, easeSmooth(0.4f))));
+}
+
 // ---- hand-frame residual (HW26) ----
 // Largest angle between consecutive frames of reachResidual(qaxis(x, grab), t, ms), frames at t = k * 1000 / 60 and at t = ms (60 fps).
 static float residualStepMaxDeg(float grab, float ms) {
@@ -1278,6 +1318,7 @@ int main() {
     testWristHintKeepsAxis();
     testWristHintDefaultsUnchanged();
     testWristDeltaHintSweep();
+    testWristTargetContinuity();
     testResidualDecay();
     testResidualStepBound();
     testPoleBiasDisabled();
