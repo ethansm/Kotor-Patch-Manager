@@ -276,6 +276,27 @@ inline void slideStowLandWindow(float pathF, float landF, float& t, float& ms) {
     t = pf * 1000.f;
 }
 
+// HW42: config clamp for ini reach_stow_rot_f, the path fraction over which the stow TURNS the weapon from the hand orientation to the mount orientation
+// (a longer window than the position landing, so the shortest arc is not squeezed into the last few ms). land = the already clamped slideClampStowLandF
+// value (0 = feature off -> 0). NaN rot -> 0.6 (default); rot <= 0 -> land (rotation window == landing window, the 0.20.3 behaviour); otherwise [land, 1].
+inline float slideClampStowRotF(float rot, float land) {
+    if (!(land > 0.f)) return 0.f;
+    if (rot != rot) return 0.6f < land ? land : 0.6f;
+    if (rot <= 0.f) return land;
+    return rot < land ? land : (rot > 1.f ? 1.f : rot);
+}
+
+// HW42: the same window as slideStowLandWindow but for a fraction up to 1.0 (slideStowLandWindow clamps to 0.5, the landing range). f <= 0 / NaN -> ms = 0, t = 0;
+// otherwise f is clamped to [0.02, 1]. In range 0.02..0.5 the result equals slideStowLandWindow. Used for the rotation window (slideClampStowRotF) and the via clock.
+inline void slideStowFracWindow(float pathF, float f, float& t, float& ms) {
+    if (!(f > 0.f)) { ms = 0.f; t = 0.f; return; }
+    const float lf = f < 0.02f ? 0.02f : (f > 1.f ? 1.f : f);
+    ms = lf * 1000.f;
+    if (!(pathF - pathF == 0.f)) { t = ms; return; }
+    const float pf = pathF < 0.f ? 0.f : (pathF > lf ? lf : pathF);
+    t = pf * 1000.f;
+}
+
 // HW37: copy of the guard chain at the top of Holster.cpp carryShownBase, then its dir / from / carryFrom split. residMs is g_reachResidMs;
 // carriedFinite is hs::qfinite(carried.q) (viaProgress has no carried pose and passes true). dir is sl.dir != 0.
 inline SlideResidBranch slideResidBranch(bool dir, float from, float carryFrom, float carryW, bool active, uint32_t residMs, bool carriedFinite = true) {
@@ -306,7 +327,7 @@ inline float slideViaProgress(bool active, uint32_t residMs, float carryW, float
     }
     if (br == ResidStow) {
         float t, ms;
-        if (stowLandF > 0.f) slideStowLandWindow(pathF, stowLandF, t, ms);
+        if (stowLandF > 0.f) slideStowFracWindow(pathF, stowLandF, t, ms);   // HW42: callers pass the ROTATION window fraction (slideClampStowRotF)
         else slideResidStowWindow(now, t0, len, grab, residMs, t, ms);
         return (ms > 1.f && t < ms) ? slideClamp01(t / ms) : 0.f;
     }

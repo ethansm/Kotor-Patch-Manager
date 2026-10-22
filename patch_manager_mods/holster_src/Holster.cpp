@@ -114,6 +114,10 @@ static float g_viaOut = hs::kReachViaOutM, g_poleFromGrip = 0.f, g_poleBiasDeg =
 // reach_stow_land_f (0.21.0-dev, HW41): 0 = the stow lands the weapon on the mount through the 0.20 time window (g_reachResidMs); default 0.15 = the weapon stays in the hand until the hand path is within
 // that fraction of the mount (hs::slideStowLandWindow, HolsterSlide.h); always through hs::slideClampStowLandF (0 or 0.02..0.5).
 static float g_stowLandF = hs::slideClampStowLandF(0.15f);
+// reach_stow_rot_f (0.21.0-dev, HW42): the path fraction over which the stow TURNS the weapon to the mount orientation (position still lands in reach_stow_land_f); default 0.6, <= 0 = same as the landing window
+// (HW41), else clamped to [land, 1]. Always read through stowRotEff() (0 while the stow hold is off). Also the via clock (slideViaProgress).
+static float g_stowRotRaw = 0.6f;
+static float stowRotEff() { return hs::slideClampStowRotF(g_stowRotRaw, g_stowLandF); }
 // reach_exit_sign_<cat> (-1/0/1/auto) and reach_exit_len_<cat> (0..0.5 m / auto) (0.19.0-dev, HW36): per-category override of the HolsterShape exit direction / length at the HW31 exit
 // offset. g_exitSignOv: 0 = auto (the table), 1 = +axis, 2 = -axis, 3 = 0 (no exit offset). g_exitLenSet: the length override is g_exitLenOv.
 static uint8_t g_exitSignOv[hs::CatCount];
@@ -475,6 +479,14 @@ static void readConfig() {
                     g_stowLandF = c;
                     if (c != v) cfgWarn(key, val, "outside 0 (off) or 0.02..0.5, clamped");
                 } else cfgWarn(key, val, "not a number, keeping the default 0.15");
+            }
+            else if (!_stricmp(key, "reach_stow_rot_f")) {   // 0.21.0-dev (HW42); before the reach_via_<cat> prefix test
+                char* end = nullptr;
+                const float v = strtof(val, &end);
+                if (end != val && *end == 0 && v == v) {
+                    g_stowRotRaw = v;
+                    if (v <= 0.f || v > 1.f) cfgWarn(key, val, v <= 0.f ? "0 = same window as reach_stow_land_f" : "above 1, clamped");
+                } else cfgWarn(key, val, "not a number, keeping the default 0.6");
             }
             else if (!_stricmp(key, "reach_via_out_m") || !_stricmp(key, "reach_pole_from_grip") || !_stricmp(key, "reach_pole_bias_deg")) {   // 0.20.0-dev (HW31b / HW29b); before the reach_via_<cat> prefix test
                 const bool isVia = !_stricmp(key, "reach_via_out_m"), isAmt = !_stricmp(key, "reach_pole_from_grip");
@@ -1825,6 +1837,8 @@ static hs::Pose carryShownBase(const hs::Slide& sl, hs::Slide& lock, CarryResid&
     const int32_t d = static_cast<int32_t>(now - sl.t0);
     const float resMs = static_cast<float>(g_reachResidMs);
     float t = 0.f, ms = resMs, off[3];
+    float tR = 0.f, msR = resMs;   // HW42: orientation window (== t, ms except in a path-driven stow)
+    bool stowHold = false;
     hs::Q rres;
     if (br == hs::ResidDraw) {   // draw: fixed offset captured at the first carry frame
         if (!cr.on || static_cast<int32_t>(now - cr.startMs) > static_cast<int32_t>(sl.len) + 100) {   // not captured yet (or a stale capture from an earlier slide)
@@ -1837,18 +1851,22 @@ static hs::Pose carryShownBase(const hs::Slide& sl, hs::Slide& lock, CarryResid&
             cr.on = 1;
         }
         hs::slideResidDrawWindow(now, cr.startMs, cr.msEff, t, ms);
+        tR = t; msR = ms;
         rres = cr.q;
         for (int i = 0; i < 3; ++i) off[i] = cr.pos[i];
     } else {        // holster: the offset to the mount, weighted by the time left until the carry ends
         cr.on = 0;
-        if (g_stowLandF > 0.f) hs::slideStowLandWindow(pl.pathF, g_stowLandF, t, ms);   // HW41: the weapon leaves the hand by the hand's path progress, not by time
-        else hs::slideResidStowWindow(now, sl.t0, sl.len, grab, g_reachResidMs, t, ms);
-        if (!(ms > 1.f) || t >= ms) return carried;   // outside the landing window the weapon is in the hand
+        if (g_stowLandF > 0.f) {   // HW41: the weapon leaves the hand by the hand's path progress, not by time
+            hs::slideStowLandWindow(pl.pathF, g_stowLandF, t, ms);   // HW42: position lands in this window
+            hs::slideStowFracWindow(pl.pathF, stowRotEff(), tR, msR);   // HW42: the turn has its own, longer window
+            stowHold = true;
+        } else { hs::slideResidStowWindow(now, sl.t0, sl.len, grab, g_reachResidMs, t, ms); tR = t; msR = ms; }
+        if (!(msR > 1.f) || tR >= msR) return carried;   // outside the (rotation) window the weapon is in the hand
         const float dm[3] = {mount.pos[0] - carried.pos[0], mount.pos[1] - carried.pos[1], mount.pos[2] - carried.pos[2]};
         rres = hs::qmul(inv, mount.q);
         hs::qrotate(inv, dm, off);
     }
-    const float k = 1.f - hs::easeSmooth(t / ms);   // share of the offset that is still there
+    const float k = stowHold ? ((ms > 1.f && t < ms) ? 1.f - hs::easeSmooth(t / ms) : 0.f) : 1.f - hs::easeSmooth(t / ms);   // share of the offset that is still there
     float o3[3], w3[3];
     for (int i = 0; i < 3; ++i) o3[i] = off[i] * k;
     hs::qrotate(cq, o3, w3);
@@ -1857,7 +1875,7 @@ static hs::Pose carryShownBase(const hs::Slide& sl, hs::Slide& lock, CarryResid&
     // HW31b: with a via (world quat, same one carryBlend gets) the offset turns through it: the via in the hand frame is conj(carried) * via, the same transform rres got. Draw and stow pass the
     // t / ms they always did; no via = reachResidual byte for byte.
     const hs::Q viaH = via ? hs::qmul(inv, *via) : hs::Q{1, 0, 0, 0};
-    o.q = hs::qnormalize(hs::qmul(cq, via ? hs::reachResidualVia(rres, &viaH, t, ms) : hs::reachResidual(rres, t, ms)));
+    o.q = hs::qnormalize(hs::qmul(cq, via ? hs::reachResidualVia(rres, &viaH, tR, msR) : hs::reachResidual(rres, tR, msR)));
     if (!hs::poseSane(o)) { cr.on = 0; return carryBlend(lock, mount, carried, pl, via, exOn); }
     return o;
 }
@@ -2042,7 +2060,7 @@ static bool previewPlace(uintptr_t g, uintptr_t beh) {
     hs::Q viaQ;
     const bool viaOn = reachViaFor(hs::shapeOf(model), static_cast<int>(cat), out.q, viaQ);   // HW31: reach_via_<cat> (default off)
     float viaS = 0.f;   // HW31b: the via progress for the arm's lateral bump (only when the via is on)
-    if (viaOn && g_viaOut > 0.f) { EdLock lk0; const CarryResid& vcr = prevLockFor(g).cres; viaS = hs::slideViaProgress(plan.active, g_reachResidMs, plan.carryW, plan.oriF, exPct > 0.f, pslide.dir != 0, pslide.from, pslide.carryFrom, pnow, pslide.t0, pslide.len, g_prevGrab, vcr.on != 0, vcr.startMs, vcr.msEff, plan.pathF, g_stowLandF); }
+    if (viaOn && g_viaOut > 0.f) { EdLock lk0; const CarryResid& vcr = prevLockFor(g).cres; viaS = hs::slideViaProgress(plan.active, g_reachResidMs, plan.carryW, plan.oriF, exPct > 0.f, pslide.dir != 0, pslide.from, pslide.carryFrom, pnow, pslide.t0, pslide.len, g_prevGrab, vcr.on != 0, vcr.startMs, vcr.msEff, plan.pathF, stowRotEff()); }
     const bool carryOk = g_reachTest && reachArm(g, beh, atHand ? out : shown, reachW, left, static_cast<int>(cat), plan.pathF, plan.restMix, out.pos, &out.q, reachIsBackBone(bone), n, g_reachCarry && plan.active, &carried, &plan, hs::shapeOf(model), viaS);   // w == 0 outside the slide: only undoes a leftover write
     if (atHand) return true;   // fully drawn: the engine's hand pose stays
     if (carryOk) {
@@ -2370,7 +2388,7 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
         hs::Pose carried;
         hs::Q viaQ;
         const bool viaOn = reachViaFor(shp, static_cast<int>(cat), hipPose.q, viaQ);   // HW31: reach_via_<cat> (default off)
-        const float viaS = (viaOn && g_viaOut > 0.f) ? hs::slideViaProgress(pl.active, g_reachResidMs, pl.carryW, pl.oriF, exPct > 0.f, ent->slide.dir != 0, ent->slide.from, ent->slide.carryFrom, rnow, ent->slide.t0, ent->slide.len, rgrab, ent->cres.on != 0, ent->cres.startMs, ent->cres.msEff, pl.pathF, g_stowLandF) : 0.f;   // HW31b: the arm's lateral bump follows the via
+        const float viaS = (viaOn && g_viaOut > 0.f) ? hs::slideViaProgress(pl.active, g_reachResidMs, pl.carryW, pl.oriF, exPct > 0.f, ent->slide.dir != 0, ent->slide.from, ent->slide.carryFrom, rnow, ent->slide.t0, ent->slide.len, rgrab, ent->cres.on != 0, ent->cres.startMs, ent->cres.msEff, pl.pathF, stowRotEff()) : 0.f;   // HW31b: the arm's lateral bump follows the via
         if (reachArm(g, reinterpret_cast<uintptr_t>(beh), out, wa, ent->left, static_cast<int>(cat), pl.pathF, pl.restMix, hipPose.pos, &hipPose.q, reachIsBackBone(mountBone), n, g_reachCarry && pl.active, &carried, &pl, shp, viaS)) {
             // carry: the weapon rides the moved hand (the engine's hand pose, recomputed after the arm write), pl.carryW: 0 while the hand is still reaching the mount (draw) or already releasing it (stow), 1 while it carries; at the draw end the arm has released, so the carried hand IS the engine hand
             const hs::Pose rid = carryShown(ent->slide, ent->slide, ent->cres, hipPose, carried, pl, rgrab, rnow, viaOn ? &viaQ : nullptr, exPct > 0.f);   // HW26: hand-frame residual (or the locked world blend)
@@ -2381,8 +2399,8 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
                     p = p < 0.f ? 0.f : (p > 1.f ? 1.f : p);
                     const float dW[3] = {rid.pos[0] - carried.pos[0], rid.pos[1] - carried.pos[1], rid.pos[2] - carried.pos[2]};
                     const float dH[3] = {hipPose.pos[0] - carried.pos[0], hipPose.pos[1] - carried.pos[1], hipPose.pos[2] - carried.pos[2]};
-                    KP_LOG(chMain, "STOWHOLD p=%.2f pathF=%.3f carryW=%.2f wd=%.3f dm=%.3f lf=%.2f hold=%d", static_cast<double>(p), static_cast<double>(pl.pathF), static_cast<double>(pl.carryW),
-                           static_cast<double>(hs::r3len(dW)), static_cast<double>(hs::r3len(dH)), static_cast<double>(g_stowLandF), g_stowLandF > 0.f ? 1 : 0);
+                    KP_LOG(chMain, "STOWHOLD p=%.2f pathF=%.3f carryW=%.2f wd=%.3f dm=%.3f lf=%.2f hold=%d rf=%.2f", static_cast<double>(p), static_cast<double>(pl.pathF), static_cast<double>(pl.carryW),
+                           static_cast<double>(hs::r3len(dW)), static_cast<double>(hs::r3len(dH)), static_cast<double>(g_stowLandF), g_stowLandF > 0.f ? 1 : 0, static_cast<double>(stowRotEff()));
                 }
             }
             if (pl.carryW > 0.f && pl.carryW < 1.f && g_onPlace && KP_ENABLED(chPlace, KPLOG_INFO)) {   // HW24: residual between the carried hand pose and the mount at the carryW step, the flip dot, the style byte
@@ -2855,8 +2873,8 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
                 snprintf(exitCfg + en, sizeof exitCfg - en, "%s%s:%s/%s", en ? "," : "", hs::categoryName(static_cast<hs::Category>(i)),
                          g_exitSignOv[i] == 1 ? "+1" : (g_exitSignOv[i] == 2 ? "-1" : (g_exitSignOv[i] == 3 ? "0" : "a")), lenS);
             }
-            KP_LOG(chMain, "CONFIG dual_stagger_ms=%u party_jitter_ms=%u log_mount=%d exit=%s viaout=%.2f polegrip=%.2f polebias=%.0f stowland=%.2f", static_cast<unsigned>(g_dualStagger), static_cast<unsigned>(g_partyJitter),
-                   (g_logMount || g_logVerbose) ? 1 : 0, exitCfg[0] ? exitCfg : "auto", static_cast<double>(g_viaOut), static_cast<double>(g_poleFromGrip), static_cast<double>(g_poleBiasDeg), static_cast<double>(g_stowLandF));
+            KP_LOG(chMain, "CONFIG dual_stagger_ms=%u party_jitter_ms=%u log_mount=%d exit=%s viaout=%.2f polegrip=%.2f polebias=%.0f stowland=%.2f stowrot=%.2f", static_cast<unsigned>(g_dualStagger), static_cast<unsigned>(g_partyJitter),
+                   (g_logMount || g_logVerbose) ? 1 : 0, exitCfg[0] ? exitCfg : "auto", static_cast<double>(g_viaOut), static_cast<double>(g_poleFromGrip), static_cast<double>(g_poleBiasDeg), static_cast<double>(g_stowLandF), static_cast<double>(stowRotEff()));
         }
         KP_LOG(chMain, "CONFIG left_extra_rot=%.1f bone_test_left=%d (ini=%d, active=%d: needs probe=1 and bone_test=1) log_verbose=%d", static_cast<double>(t.leftExtra),
                g_boneLeftCfg ? 1 : 0, g_boneLeftCfg ? 1 : 0, g_boneLeft ? 1 : 0, g_logVerbose ? 1 : 0);

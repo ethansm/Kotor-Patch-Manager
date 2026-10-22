@@ -104,8 +104,66 @@ static void testViaProgress() {
     KT_CHECK(slideViaProgress(true, 240, 0.5f, 0.f, false, false, 0.f, 0.5f, 1105, 1000, 350, 0.3f, false, 0, 240, 0.05f, 0.15f) == 0.5f);
 }
 
+// HW42: the turn has its own, longer path window than the position landing.
+static void testRotClamp() {
+    const float L = 0.15f;
+    KT_CHECK(closeF(slideClampStowRotF(kNaN, L), 0.6f));
+    KT_CHECK(closeF(slideClampStowRotF(0.f, L), L));
+    KT_CHECK(closeF(slideClampStowRotF(-1.f, L), L));
+    KT_CHECK(closeF(slideClampStowRotF(0.05f, L), L));
+    KT_CHECK(closeF(slideClampStowRotF(0.6f, L), 0.6f));
+    KT_CHECK(closeF(slideClampStowRotF(5.f, L), 1.f));
+    KT_CHECK(slideClampStowRotF(0.6f, 0.f) == 0.f);           // land 0 = feature off
+    KT_CHECK(slideClampStowRotF(kNaN, 0.f) == 0.f);
+}
+
+static void testRotWindow() {
+    const float L = 0.15f, R = slideClampStowRotF(0.6f, L);
+    float t, ms, tR, msR;
+    slideStowLandWindow(0.4f, L, t, ms);
+    slideStowFracWindow(0.4f, R, tR, msR);
+    KT_CHECK(t >= ms && kOf(t, ms) == 0.f);                   // position already on the hand
+    KT_CHECK(tR < msR);                                       // still turning
+    const float s = easeSmooth(tR / msR);
+    KT_CHECK(s > 0.f && s < 1.f);
+    slideStowLandWindow(0.f, L, t, ms);
+    slideStowFracWindow(0.f, R, tR, msR);
+    KT_CHECK(t == 0.f && tR == 0.f && msR > 1.f);
+    slideStowFracWindow(0.6f, R, tR, msR);
+    KT_CHECK(tR >= msR);
+    slideStowFracWindow(0.9f, R, tR, msR);
+    KT_CHECK(tR >= msR);
+    float prev = 1e9f;
+    for (int i = 20; i >= 0; --i) {
+        slideStowFracWindow(i / 20.f, R, tR, msR);
+        KT_CHECK(tR <= prev + 1e-6f && tR >= 0.f && tR <= msR);
+        prev = tR;
+    }
+    slideStowFracWindow(kNaN, R, tR, msR);
+    KT_CHECK(tR == msR && std::isfinite(tR));
+    slideStowFracWindow(0.3f, 0.f, tR, msR);
+    KT_CHECK(msR == 0.f && tR == 0.f);
+    // In the landing range the two window functions agree.
+    slideStowLandWindow(0.07f, L, t, ms);
+    slideStowFracWindow(0.07f, L, tR, msR);
+    KT_CHECK(t == tR && ms == msR);
+    // The shown orientation at pathF 0.4 is not the hand orientation (120 deg residual still partly there) while the position share is 0.
+    const Q rres{ 0.5f, 0.f, 0.f, 0.8660254f };
+    slideStowLandWindow(0.4f, L, t, ms);
+    slideStowFracWindow(0.4f, R, tR, msR);
+    const Q o = reachResidual(rres, tR, msR);
+    KT_CHECK(qdot(o, Q{ 1, 0, 0, 0 }) < 0.9999f);             // differs from the hand orientation (identity residual)
+    KT_CHECK(qdot(o, rres) < 0.9999f);                        // and has moved off the mount-side Rres
+    KT_CHECK(kOf(t, ms) == 0.f);
+    // With the old shared window the residual at pathF 0.4 is fully gone (the HW41 flip at the very end).
+    const Q o41 = reachResidual(rres, t, ms);
+    KT_CHECK(closeF(qdot(o41, Q{ 1, 0, 0, 0 }), 1.f));
+}
+
 int main() {
     testClamp();
+    testRotClamp();
+    testRotWindow();
     testWindow();
     testShortStowBug();
     testViaProgress();
