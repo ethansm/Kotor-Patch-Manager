@@ -1252,5 +1252,171 @@ class Hw40SplitReachTests(unittest.TestCase):
         self.assertFalse(any("partial=" in x for x in out), out)
 
 
+# ---- HW41 (holster 0.20.3-dev): STOWHOLD lines, the summary line and --row SM-L16 ----
+
+# Captured BEFORE the HW41 edit (pre-edit checker output on this window): the default report and --row SM-L15 must not change for it.
+OLD_STYLE_BODIES = [
+    "T=1000 f=- holster/main holster 0.20.2-dev loaded (probe)",
+    "T=1001 f=- holster/place SLIDE start dir=draw owner=1f gob=2a left=1 from=0.00 ms=520 dly=60",
+    "T=1002 f=- holster/place SLIDE start dir=stow owner=1f gob=2b left=0 from=0.00 ms=520",
+    "T=1003 f=- holster/place SLIDE end dir=draw owner=1f ms=520 frames=30 maxdt=20",
+    "T=1004 f=- holster/place SLIDE end dir=stow owner=1f ms=520 frames=21 maxdt=49",
+    "T=1005 f=- holster/main REACH owner=1a w=0.50 reach=1.00 S=(0,0,0) E=(0,0,0) H=(0,0,0) T=(0,0,0) Enew=(0,0,0) side=R cat=2 u=1.00 lt=(0,0,0) err=0.010 "
+    "persist=0 wrote=7 wr=88 hg=1 f=0.20 dzA=0.22 fy=-0.10 fx=0.05 g=70 cap=90 hold=0 topo=hip bk=1 tw=40 sw=30 ex=0.62 of=0.00 vo=0.080 pb=3.2",
+    "T=1006 f=- holster/main REACH owner=1a w=0.50 reach=1.00 S=(0,0,0) E=(0,0,0) H=(0,0,0) T=(0,0,0) Enew=(0,0,0) side=R cat=2 u=1.00 lt=(0,0,0) err=0.010 "
+    "persist=0 wrote=7 wr=88 hg=1 f=0.50 dzA=0.22 fy=-0.10 fx=0.05 g=70 cap=90 hold=0 topo=hip bk=1 tw=40 sw=30 ex=0.00 of=0.50 vo=0.110 pb=0.0",
+    "T=1007 f=- holster/main REACH owner=1a w=0.50 reach=1.00 S=(0,0,0) E=(0,0,0) H=(0,0,0) T=(0,0,0) Enew=(0,0,0) side=R cat=2 u=1.00 lt=(0,0,0) err=0.010 "
+    "persist=0 wrote=7 wr=88 hg=1 f=1.00 dzA=0.22 fy=-0.10 fx=0.05 g=70 cap=90 hold=0 topo=hip bk=1 tw=40 sw=30 ex=0.00 of=1.00 vo=0.000 pb=0.0",
+    "T=1008 f=- holster/main SLIDE cut reason=first owner=1f gob=2a left=1 dir=draw frac=0.10",
+]
+OLD_STYLE_REPORT = [
+    "HOLSTER lines=9 parsed=4 skipped=0",
+    "status: loaded=yes 0.20.2-dev | cap reached=no | BONETEST=absent | TID gobupdate=absent place=absent | RELOAD 0",
+    "COMB edges=0 creatures=0",
+    "ATTACH n=0 creatures=0 tags: none",
+    "SWAP total=0",
+    "GOBREUSE total=0",
+    "FLOURISH open=0 close=0",
+    "SLIDE start=2 end=2 draw=1 stow=1 frames min=21 max=30 maxdt max=49",
+    "SLIDE dly n=1 max=60 per Gob: gob=0x2a L n=1 max=60",
+    "PARTYHOLD on=0 off=0",
+    "MOVEHOLD total=0",
+    "DELAY cuts=0 combat=0 flourish=0",
+    "REACH found=0 steps=3 persist1=0 wrote_both=3 refuse=none err min=0.010 med=0.010 max=0.010 reach<1=0 wrist=3 hg=3 g max=70 over_cap=0 cut=first:1 "
+    "topo=hip+bk:3 tw max=40 sw max=30 twisted=3 ex max=0.62 extracting=1 of max=1.00",
+    "REACH HW38 vo max=0.110 vo>0 outside mid-carry=0 (0.0% of 3 lines) | pb max=3.2 pb>0 at f>0.30=0 (of 3 lines)",
+    "REACH min/median/max: wr 88/88/88 | f 0.20/0.50/1.00 | dzA 0.22/0.22/0.22 | fy -0.10/-0.10/-0.10 | fx 0.05/0.05/0.05",
+    "ANIMRES n=0 distinct=0 top10: none",
+    "ANIMSEND n=0 distinct=0 top10: none",
+    "GOB lines=0 gobs=0",
+]
+OLD_STYLE_ROW_L15 = [
+    "SM-L15 vo=0 at reach/release: PASS vo=0 at reach/release on all 3 lines (vo<0.005 m counts as 0)",
+    "SM-L15 vo peaks mid-carry: PASS vo max=0.110 mid-carry over 2 line(s)",
+    "SM-L15 pb>0 only at f<=0.30: PASS pb>0 only at f<=0.30 (max pb=3.2 over 3 line(s))",
+    "SM-L15 verdict: PASS",
+]
+L16_A = "SM-L16 hold on:"
+L16_B = "SM-L16 weapon stays on the hand until the hand is near the mount:"
+L16_C = "SM-L16 lands on the mount:"
+
+
+def stowhold(pathf=0.90, wd=0.000, dm=0.300, lf=0.20, hold=1, p=0.50, carry=0.50):
+    """A HW41 STOWHOLD line in the DLL's print format (p and lf %.2f, pathF / wd / dm %.3f, carryW %.2f)."""
+    return "STOWHOLD p=%.2f pathF=%.3f carryW=%.2f wd=%.3f dm=%.3f lf=%.2f hold=%d" % (p, pathf, carry, wd, dm, lf, hold)
+
+
+# planted PASS window: hold on; wd 0 while the hand is past the landing (pathF 0.9 and 0.5); at the mount (pathF 0.01) wd == dm
+STOW_PASS = [stowhold(pathf=0.90, wd=0.000, dm=0.300), stowhold(pathf=0.50, wd=0.000, dm=0.250),
+             stowhold(pathf=0.20, wd=0.000, dm=0.200), stowhold(pathf=0.01, wd=0.050, dm=0.050)]
+STOW_NEAR = stowhold(pathf=0.01, wd=0.050, dm=0.050)   # a line at the mount, so (c) is judged and the verdict is PASS or FAIL
+
+
+class Hw41StowHoldTests(unittest.TestCase):
+    """HW41 STOWHOLD: the parse, the summary line (default report, only when STOWHOLD lines exist) and --row SM-L16."""
+
+    def verdict(self, bodies, rc, word):
+        got_rc, out = run_log(bodies, ["--row", "SM-L16"])
+        self.assertEqual(got_rc, rc, out)
+        self.assertEqual(out[-1], "SM-L16 verdict: %s" % word, out)
+        self.assertTrue(all(line.startswith("SM-L16 ") for line in out), out)
+        return out
+
+    def test_planted_pass_window(self):
+        out = self.verdict(STOW_PASS, 0, "PASS")
+        self.assertIn(L16_A + " PASS hold=1 on 4 of 4 line(s)", out)
+        self.assertIn(L16_B + " PASS wd <= 0.005 m on all 2 judged line(s) (max wd 0.000 m at pathF 0.900)", out)
+        self.assertIn(L16_C + " PASS |wd-dm| <= 0.020 m on all 1 line(s) with pathF <= 0.02 (max 0.000 m)", out)
+
+    def test_planted_fail_window_wd_019_at_pathf_09(self):
+        out = self.verdict([stowhold(pathf=0.90, wd=0.190, dm=0.300), STOW_NEAR], 1, "FAIL")
+        self.assertIn(L16_A + " PASS hold=1 on 2 of 2 line(s)", out)
+        self.assertIn(L16_B + " FAIL wd max 0.190 m at pathF 0.900 (1 of 1 judged line(s) above 0.005 m)", out)
+
+    def test_wd_boundary_0005_passes_and_0006_fails(self):
+        out = self.verdict([stowhold(pathf=0.90, wd=0.005, dm=0.300), STOW_NEAR], 0, "PASS")
+        self.assertIn(L16_B + " PASS wd <= 0.005 m on all 1 judged line(s) (max wd 0.005 m at pathF 0.900)", out)
+        out = self.verdict([stowhold(pathf=0.90, wd=0.006, dm=0.300), STOW_NEAR], 1, "FAIL")
+        self.assertIn(L16_B + " FAIL wd max 0.006 m at pathF 0.900 (1 of 1 judged line(s) above 0.005 m)", out)
+
+    def test_pathf_at_lf_plus_001_is_not_judged_and_lf_plus_0011_is_judged(self):
+        out = self.verdict([stowhold(pathf=0.210, wd=0.100, dm=0.300, lf=0.20), STOW_NEAR], 3, "NO-DATA")
+        self.assertIn(L16_B + " NO-DATA no hold=1 line with pathF > lf+0.01", out)
+        out = self.verdict([stowhold(pathf=0.211, wd=0.100, dm=0.300, lf=0.20), STOW_NEAR], 1, "FAIL")
+        self.assertIn(L16_B + " FAIL wd max 0.100 m at pathF 0.211 (1 of 1 judged line(s) above 0.005 m)", out)
+
+    def test_lands_on_the_mount_judges_wd_against_dm(self):
+        out = self.verdict([stowhold(pathf=0.90, wd=0.000), stowhold(pathf=0.01, wd=0.150, dm=0.170)], 0, "PASS")
+        self.assertIn(L16_C + " PASS |wd-dm| <= 0.020 m on all 1 line(s) with pathF <= 0.02 (max 0.020 m)", out)
+        out = self.verdict([stowhold(pathf=0.90, wd=0.000), stowhold(pathf=0.01, wd=0.150, dm=0.190)], 1, "FAIL")
+        self.assertIn(L16_C + " FAIL |wd-dm| max 0.040 m at pathF 0.010 (wd 0.150 dm 0.190; 1 of 1 line(s) above 0.020 m)", out)
+
+    def test_hold_off_is_no_data_never_fail(self):
+        out = self.verdict([stowhold(pathf=0.90, wd=0.190, hold=0), stowhold(pathf=0.01, wd=0.200, dm=0.050, hold=0)], 3, "NO-DATA")
+        self.assertIn(L16_A + " NO-DATA hold=0 on all 2 line(s): hold off or old build", out)
+        self.assertIn(L16_B + " NO-DATA no hold=1 line with pathF > lf+0.01", out)
+        self.assertIn(L16_C + " NO-DATA no hold=1 line with pathF <= 0.02", out)
+
+    def test_empty_window_is_no_data(self):
+        out = self.verdict([LOADED], 3, "NO-DATA")
+        self.assertIn(L16_A + " NO-DATA no STOWHOLD line (old build, or no stow in window)", out)
+
+    def test_unknown_row_message_lists_sm_l16(self):
+        rc, out, err = run_err(["--row", "SM-L17", "/nonexistent.txt"])
+        self.assertEqual(rc, 2)
+        self.assertIn("SM-L16", err)
+
+    def test_parse_reads_fields_and_tolerates_trailing_fields(self):
+        recs, skipped, main = H.parse_lines([(1, stowhold(pathf=0.5, wd=0.012, dm=0.2) + " ext=1 foo=2.5"), (2, stowhold(hold=0))])
+        self.assertEqual(skipped, [])
+        self.assertEqual(recs, [])   # a window fact, never a record
+        self.assertEqual(len(main["stowhold"]), 2)
+        first = main["stowhold"][0]
+        self.assertEqual((first["pathF"], first["wd"], first["dm"], first["lf"], first["hold"]), (0.5, 0.012, 0.2, 0.2, 1))
+
+    def test_unparsable_stowhold_is_skipped_and_counted(self):
+        rc, out = run_log(["STOWHOLD p=0.50 pathF=0.900"])
+        self.assertEqual(rc, 0)
+        self.assertEqual(out[0], "HOLSTER lines=1 parsed=0 skipped=1")
+        self.assertFalse(any(line.startswith("STOWHOLD") for line in out), out)
+
+    def test_summary_line_only_with_stowhold_lines(self):
+        rc, out = run_log(STOW_PASS)
+        self.assertEqual(rc, 0)
+        self.assertIn("STOWHOLD n=4 hold=4/4 | wd max while pathF>lf: 0.0 cm | wd max overall: 5.0 cm", out)
+        self.assertEqual(sum(1 for line in out if line.startswith("STOWHOLD ")), 1)
+
+    def test_summary_fail_window_and_hold_off_and_not_past_landing(self):
+        rc, out = run_log([stowhold(pathf=0.90, wd=0.190), STOW_NEAR])
+        self.assertIn("STOWHOLD n=2 hold=2/2 | wd max while pathF>lf: 19.0 cm | wd max overall: 19.0 cm", out)
+        rc, out = run_log([stowhold(pathf=0.90, wd=0.190, hold=0)])
+        self.assertIn("STOWHOLD n=1 hold=0/1 | wd max while pathF>lf: 19.0 cm | wd max overall: 19.0 cm", out)
+        rc, out = run_log([stowhold(pathf=0.10, wd=0.020)])
+        self.assertIn("STOWHOLD n=1 hold=1/1 | wd max while pathF>lf: n/a | wd max overall: 2.0 cm", out)
+
+    def test_old_style_window_report_and_row_are_unchanged(self):
+        rc, out = run_log(OLD_STYLE_BODIES)
+        self.assertEqual(rc, 0)
+        self.assertEqual(out, OLD_STYLE_REPORT)
+        self.assertFalse(any(line.startswith("STOWHOLD") for line in out), out)
+        rc, out = run_log(OLD_STYLE_BODIES, ["--row", "SM-L15"])
+        self.assertEqual(out, OLD_STYLE_ROW_L15)
+
+    def test_mounts_json_stays_pure_json_with_stowhold_lines(self):
+        rc, out = run_log(STOW_PASS + [mount_line(rel=rel_deg(0))], ["--mounts", "--json"])
+        self.assertEqual(rc, 0)
+        self.assertEqual(len(out), 1)
+        self.assertEqual([d["bone"] for d in json.loads(out[0])], ["torso_g"])
+
+    def test_worst_case_with_stowhold_stays_within_51(self):
+        """The 47-line worst case plus the three HW38 lines and the HW41 STOWHOLD line: the real cap is 51."""
+        bodies = worst_case()[:-1] + [slide38("start", gob=0x2A, left=1, dly=60), slide38("end"), reach38(f=0.20, vo=0.080, pb=3.2),
+                                      stowhold(pathf=0.90, wd=0.000), CAP]
+        rc, out = run_log(bodies)
+        self.assertEqual(rc, 0)
+        self.assertLessEqual(len(out), 51)
+        self.assertEqual(sum(1 for line in out if line.startswith("STOWHOLD ")), 1)
+
+
 if __name__ == "__main__":
     unittest.main()

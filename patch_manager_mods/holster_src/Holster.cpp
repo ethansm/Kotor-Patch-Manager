@@ -111,6 +111,9 @@ static uint8_t g_reachVia[hs::CatCount];
 // reach_pole_from_grip (0.20.0-dev, HW29b): 0..1, default 0 (off). Hip / Thigh reaches only: the elbow pole turns up to reach_pole_bias_deg (0..90, default 20) toward the side the forearm lies
 // when the hand holds the weapon at its mount (faded out by f 0.30 of the path). 0 = the 0.19 pole byte for byte.
 static float g_viaOut = hs::kReachViaOutM, g_poleFromGrip = 0.f, g_poleBiasDeg = hs::kPoleBiasDeg;
+// reach_stow_land_f (0.21.0-dev, HW41): 0 = the stow lands the weapon on the mount through the 0.20 time window (g_reachResidMs); default 0.15 = the weapon stays in the hand until the hand path is within
+// that fraction of the mount (hs::slideStowLandWindow, HolsterSlide.h); always through hs::slideClampStowLandF (0 or 0.02..0.5).
+static float g_stowLandF = hs::slideClampStowLandF(0.15f);
 // reach_exit_sign_<cat> (-1/0/1/auto) and reach_exit_len_<cat> (0..0.5 m / auto) (0.19.0-dev, HW36): per-category override of the HolsterShape exit direction / length at the HW31 exit
 // offset. g_exitSignOv: 0 = auto (the table), 1 = +axis, 2 = -axis, 3 = 0 (no exit offset). g_exitLenSet: the length override is g_exitLenOv.
 static uint8_t g_exitSignOv[hs::CatCount];
@@ -463,6 +466,15 @@ static void readConfig() {
                     if (dual) g_dualStagger = c; else g_partyJitter = c;
                     if (v < 0 || v > hi) cfgWarn(key, val, dual ? "outside 0..200, clamped" : "outside 0..60, clamped");
                 } else cfgWarn(key, val, dual ? "not a number, keeping the default 60" : "not a number, keeping the default 0");
+            }
+            else if (!_stricmp(key, "reach_stow_land_f")) {   // 0.21.0-dev (HW41); before the reach_via_<cat> prefix test
+                char* end = nullptr;
+                const float v = strtof(val, &end);
+                if (end != val && *end == 0 && v == v) {
+                    const float c = hs::slideClampStowLandF(v);
+                    g_stowLandF = c;
+                    if (c != v) cfgWarn(key, val, "outside 0 (off) or 0.02..0.5, clamped");
+                } else cfgWarn(key, val, "not a number, keeping the default 0.15");
             }
             else if (!_stricmp(key, "reach_via_out_m") || !_stricmp(key, "reach_pole_from_grip") || !_stricmp(key, "reach_pole_bias_deg")) {   // 0.20.0-dev (HW31b / HW29b); before the reach_via_<cat> prefix test
                 const bool isVia = !_stricmp(key, "reach_via_out_m"), isAmt = !_stricmp(key, "reach_pole_from_grip");
@@ -1829,7 +1841,8 @@ static hs::Pose carryShownBase(const hs::Slide& sl, hs::Slide& lock, CarryResid&
         for (int i = 0; i < 3; ++i) off[i] = cr.pos[i];
     } else {        // holster: the offset to the mount, weighted by the time left until the carry ends
         cr.on = 0;
-        hs::slideResidStowWindow(now, sl.t0, sl.len, grab, g_reachResidMs, t, ms);
+        if (g_stowLandF > 0.f) hs::slideStowLandWindow(pl.pathF, g_stowLandF, t, ms);   // HW41: the weapon leaves the hand by the hand's path progress, not by time
+        else hs::slideResidStowWindow(now, sl.t0, sl.len, grab, g_reachResidMs, t, ms);
         if (!(ms > 1.f) || t >= ms) return carried;   // outside the landing window the weapon is in the hand
         const float dm[3] = {mount.pos[0] - carried.pos[0], mount.pos[1] - carried.pos[1], mount.pos[2] - carried.pos[2]};
         rres = hs::qmul(inv, mount.q);
@@ -2029,7 +2042,7 @@ static bool previewPlace(uintptr_t g, uintptr_t beh) {
     hs::Q viaQ;
     const bool viaOn = reachViaFor(hs::shapeOf(model), static_cast<int>(cat), out.q, viaQ);   // HW31: reach_via_<cat> (default off)
     float viaS = 0.f;   // HW31b: the via progress for the arm's lateral bump (only when the via is on)
-    if (viaOn && g_viaOut > 0.f) { EdLock lk0; const CarryResid& vcr = prevLockFor(g).cres; viaS = hs::slideViaProgress(plan.active, g_reachResidMs, plan.carryW, plan.oriF, exPct > 0.f, pslide.dir != 0, pslide.from, pslide.carryFrom, pnow, pslide.t0, pslide.len, g_prevGrab, vcr.on != 0, vcr.startMs, vcr.msEff); }
+    if (viaOn && g_viaOut > 0.f) { EdLock lk0; const CarryResid& vcr = prevLockFor(g).cres; viaS = hs::slideViaProgress(plan.active, g_reachResidMs, plan.carryW, plan.oriF, exPct > 0.f, pslide.dir != 0, pslide.from, pslide.carryFrom, pnow, pslide.t0, pslide.len, g_prevGrab, vcr.on != 0, vcr.startMs, vcr.msEff, plan.pathF, g_stowLandF); }
     const bool carryOk = g_reachTest && reachArm(g, beh, atHand ? out : shown, reachW, left, static_cast<int>(cat), plan.pathF, plan.restMix, out.pos, &out.q, reachIsBackBone(bone), n, g_reachCarry && plan.active, &carried, &plan, hs::shapeOf(model), viaS);   // w == 0 outside the slide: only undoes a leftover write
     if (atHand) return true;   // fully drawn: the engine's hand pose stays
     if (carryOk) {
@@ -2357,10 +2370,21 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
         hs::Pose carried;
         hs::Q viaQ;
         const bool viaOn = reachViaFor(shp, static_cast<int>(cat), hipPose.q, viaQ);   // HW31: reach_via_<cat> (default off)
-        const float viaS = (viaOn && g_viaOut > 0.f) ? hs::slideViaProgress(pl.active, g_reachResidMs, pl.carryW, pl.oriF, exPct > 0.f, ent->slide.dir != 0, ent->slide.from, ent->slide.carryFrom, rnow, ent->slide.t0, ent->slide.len, rgrab, ent->cres.on != 0, ent->cres.startMs, ent->cres.msEff) : 0.f;   // HW31b: the arm's lateral bump follows the via
+        const float viaS = (viaOn && g_viaOut > 0.f) ? hs::slideViaProgress(pl.active, g_reachResidMs, pl.carryW, pl.oriF, exPct > 0.f, ent->slide.dir != 0, ent->slide.from, ent->slide.carryFrom, rnow, ent->slide.t0, ent->slide.len, rgrab, ent->cres.on != 0, ent->cres.startMs, ent->cres.msEff, pl.pathF, g_stowLandF) : 0.f;   // HW31b: the arm's lateral bump follows the via
         if (reachArm(g, reinterpret_cast<uintptr_t>(beh), out, wa, ent->left, static_cast<int>(cat), pl.pathF, pl.restMix, hipPose.pos, &hipPose.q, reachIsBackBone(mountBone), n, g_reachCarry && pl.active, &carried, &pl, shp, viaS)) {
             // carry: the weapon rides the moved hand (the engine's hand pose, recomputed after the arm write), pl.carryW: 0 while the hand is still reaching the mount (draw) or already releasing it (stow), 1 while it carries; at the draw end the arm has released, so the carried hand IS the engine hand
             const hs::Pose rid = carryShown(ent->slide, ent->slide, ent->cres, hipPose, carried, pl, rgrab, rnow, viaOn ? &viaQ : nullptr, exPct > 0.f);   // HW26: hand-frame residual (or the locked world blend)
+            if (ent->slide.dir == 0 && pl.active && (g_logVerbose || g_logMount) && KP_ENABLED(chMain, KPLOG_INFO)) {   // HW41: where the weapon is vs the hand during a stow (log only)
+                static volatile LONG s_stowHold = 0;
+                if (s_stowHold < 240 && InterlockedIncrement(&s_stowHold) <= 240 && takeLine()) {
+                    float p = ent->slide.len ? static_cast<float>(static_cast<int32_t>(rnow - ent->slide.t0)) / static_cast<float>(ent->slide.len) : 0.f;
+                    p = p < 0.f ? 0.f : (p > 1.f ? 1.f : p);
+                    const float dW[3] = {rid.pos[0] - carried.pos[0], rid.pos[1] - carried.pos[1], rid.pos[2] - carried.pos[2]};
+                    const float dH[3] = {hipPose.pos[0] - carried.pos[0], hipPose.pos[1] - carried.pos[1], hipPose.pos[2] - carried.pos[2]};
+                    KP_LOG(chMain, "STOWHOLD p=%.2f pathF=%.3f carryW=%.2f wd=%.3f dm=%.3f lf=%.2f hold=%d", static_cast<double>(p), static_cast<double>(pl.pathF), static_cast<double>(pl.carryW),
+                           static_cast<double>(hs::r3len(dW)), static_cast<double>(hs::r3len(dH)), static_cast<double>(g_stowLandF), g_stowLandF > 0.f ? 1 : 0);
+                }
+            }
             if (pl.carryW > 0.f && pl.carryW < 1.f && g_onPlace && KP_ENABLED(chPlace, KPLOG_INFO)) {   // HW24: residual between the carried hand pose and the mount at the carryW step, the flip dot, the style byte
                 static volatile LONG s_resLines = 0;
                 if (InterlockedIncrement(&s_resLines) <= 40 && takeLine()) {
@@ -2801,7 +2825,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     addName(names, sizeof(names), g_onGob, "gob");
     addName(names, sizeof(names), g_onPlace, "place");
     addName(names, sizeof(names), g_onToggle, "toggle");
-    KP_LOG(chMain, "holster 0.20.2-dev loaded (P0 probe + unarmed_anim=%d): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_unarmedAnim ? 1 : 0, g_probe ? 1 : 0,
+    KP_LOG(chMain, "holster 0.20.3-dev loaded (P0 probe + unarmed_anim=%d): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_unarmedAnim ? 1 : 0, g_probe ? 1 : 0,
            names[0] ? names : "none", static_cast<long>(g_maxLines), g_gobEvery, k2addr::get() ? "ok" : "none");
     {
         hs::TuneCfg t;
@@ -2831,8 +2855,8 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
                 snprintf(exitCfg + en, sizeof exitCfg - en, "%s%s:%s/%s", en ? "," : "", hs::categoryName(static_cast<hs::Category>(i)),
                          g_exitSignOv[i] == 1 ? "+1" : (g_exitSignOv[i] == 2 ? "-1" : (g_exitSignOv[i] == 3 ? "0" : "a")), lenS);
             }
-            KP_LOG(chMain, "CONFIG dual_stagger_ms=%u party_jitter_ms=%u log_mount=%d exit=%s viaout=%.2f polegrip=%.2f polebias=%.0f", static_cast<unsigned>(g_dualStagger), static_cast<unsigned>(g_partyJitter),
-                   (g_logMount || g_logVerbose) ? 1 : 0, exitCfg[0] ? exitCfg : "auto", static_cast<double>(g_viaOut), static_cast<double>(g_poleFromGrip), static_cast<double>(g_poleBiasDeg));
+            KP_LOG(chMain, "CONFIG dual_stagger_ms=%u party_jitter_ms=%u log_mount=%d exit=%s viaout=%.2f polegrip=%.2f polebias=%.0f stowland=%.2f", static_cast<unsigned>(g_dualStagger), static_cast<unsigned>(g_partyJitter),
+                   (g_logMount || g_logVerbose) ? 1 : 0, exitCfg[0] ? exitCfg : "auto", static_cast<double>(g_viaOut), static_cast<double>(g_poleFromGrip), static_cast<double>(g_poleBiasDeg), static_cast<double>(g_stowLandF));
         }
         KP_LOG(chMain, "CONFIG left_extra_rot=%.1f bone_test_left=%d (ini=%d, active=%d: needs probe=1 and bone_test=1) log_verbose=%d", static_cast<double>(t.leftExtra),
                g_boneLeftCfg ? 1 : 0, g_boneLeftCfg ? 1 : 0, g_boneLeft ? 1 : 0, g_logVerbose ? 1 : 0);

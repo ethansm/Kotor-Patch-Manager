@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Holster probe log checker (holster route). Python 3, stdlib only; read-only (--new writes only its bookmark).
 
-Usage: holster_log_check.py [LOG | --log LOG] [--new [--no-advance] [--state PATH]] [--mounts [--json]] [--row SM-L11..SM-L15]
+Usage: holster_log_check.py [LOG | --log LOG] [--new [--no-advance] [--state PATH]] [--mounts [--json]] [--row SM-L11..SM-L16]
   Default log: ~/.local/share/Steam/steamapps/common/Knights of the Old Republic II/holster_log.txt
-  Report (at most 50 lines: the 47-line base report plus at most 3 HW38 lines, SLIDE dly / REACH HW38 / REACH min/median/max, each only when its
-  field appears in the window): header, status (loaded / cap reached / BONETEST), COMB edges per creature (plus unreadable=N for `old=? edge=?` lines), ATTACH tags and
+  Report (at most 51 lines: the 47-line base report plus at most 3 HW38 lines, SLIDE dly / REACH HW38 / REACH min/median/max, each only when its
+  field appears in the window, plus the HW41 `STOWHOLD` summary line when any STOWHOLD line exists): header, status (loaded / cap reached / BONETEST), COMB edges per creature (plus unreadable=N for `old=? edge=?` lines), ATTACH tags and
   (body, handleR, handleL) tuples per creature, SWAP total, GOBREUSE total, FLOURISH open/close, SLIDE start/end (draw/stow split, frames min/max, maxdt max), PARTYHOLD on/off, MOVEHOLD total, DELAY cuts (combat/flourish), ANIMRES and ANIMSEND id histograms, GOB samples per gob
   (the 8 with the most samples: parent18, pos min/max/mean per axis, quat min/max per component, mean-quat angle),
   PLACE (only when PLACE lines exist: count, gobvt histogram, quat1 unit-norm check, last pos0/quat0 -> pos1/quat1 for the
@@ -15,8 +15,11 @@ Usage: holster_log_check.py [LOG | --log LOG] [--new [--no-advance] [--state PAT
   --mounts: print only the MOUNT section. --mounts --json: the same per (cat, bone) groups as a JSON list on stdout, nothing else (--json needs --mounts).
   HW38 (0.19/0.20 fields, each line only when its field appears in the window): `SLIDE dly` (dly= on SLIDE start, count and max per Gob),
   `REACH HW38` (vo= max and vo>0 outside mid-carry, pb= max and pb>0 at f>0.30), `REACH min/median/max` (wr, f, dzA, fy, fx).
-  --row SM-L11..SM-L15: pass-signal clauses of one play-test row (PLAY_TEST_QUEUE.md), `SM-Lnn <clause>: PASS|FAIL|NO-DATA <reason>`, then
-  `SM-Lnn verdict`. Exit 0 PASS, 1 FAIL, 3 NO-DATA; unknown row = exit 2.
+  HW41 (holster 0.20.3-dev, log only): `STOWHOLD p= pathF= carryW= wd= dm= lf= hold=` lines (first ~8 stows, log_verbose/reach_test) are a window
+  fact, not a record: one summary line `STOWHOLD n= hold=<n>/<n> | wd max while pathF>lf | wd max overall`; a line that does not parse is skipped.
+  --row SM-L11..SM-L16: pass-signal clauses of one play-test row (PLAY_TEST_QUEUE.md), `SM-Lnn <clause>: PASS|FAIL|NO-DATA <reason>`, then
+  `SM-Lnn verdict`. SM-L16 (STOWHOLD, hold=1 lines only): hold on; the weapon stays on the hand (wd <= 0.005 m) while pathF > lf + 0.01; lands on
+  the mount (|wd - dm| <= 0.02 m) at pathF <= 0.02. Exit 0 PASS, 1 FAIL, 3 NO-DATA; unknown row = exit 2.
   --new: only lines after the bookmark shared with log_triage (same state file, keyed by absolute path), then advance it.
   Exit 0 = analyzed, 2 = log missing ("no log: <path>") or a bad flag combination.
 
@@ -79,6 +82,16 @@ VO_EDGE_TOL = 0.005
 DLY_LO_MS, DLY_HI_MS = 50, 70
 PB_F_MAX = 0.30          # HW29b kPoleBiasEndF: pb > 0 only at f <= this
 EX_EXTRACT = 0.05        # the existing "extracting" threshold on ex= (same as the summary)
+# HW41 (holster 0.20.3-dev): STOWHOLD p=<slide progress 0..1> pathF=<hand path fraction, 1 hand end .. 0 mount> carryW=<carry weight>
+# wd=<m, shown weapon to carried hand> dm=<m, hand to mount> lf=<stow landing fraction> hold=<1 path-driven hold, 0 old time window>.
+# Trailing fields are tolerated (no end anchor). SM-L16 limits: margins are inclusive, EPS absorbs float noise on the %.2f/%.3f prints.
+STOWHOLD_HEAD_RE = re.compile(r"\bSTOWHOLD ")
+STOWHOLD_RE = _rx(r"\bSTOWHOLD p=(?P<p><N>) pathF=(?P<pathF><N>) carryW=(?P<carryW><N>) wd=(?P<wd><N>) dm=(?P<dm><N>) lf=(?P<lf><N>) hold=(?P<hold>\d+)")
+STOW_JUDGE_MARGIN = 0.01  # SM-L16 (b): a line is judged only when pathF > lf + this
+STOW_WD_MAX = 0.005       # SM-L16 (b): m, wd on a judged line must be <= this
+STOW_MOUNT_F = 0.02       # SM-L16 (c): pathF <= this is at the mount
+STOW_LAND_TOL = 0.02      # SM-L16 (c): m, |wd - dm| on a line at the mount must be <= this
+STOW_EPS = 1e-9
 
 
 def _mount_quat(name):
@@ -230,7 +243,8 @@ def parse_lines(window):
             "reach": [], "slidecut": Counter(), "resid": [], "reachfound": 0, "reachrefuse": Counter(), "reachhold": Counter(), "reachtw": [], "reachex": [],
             "reachtopo": Counter(), "slidecfg": [], "reach_partial": reach_partial,   # HW40: REACH steps cut by the window (partial=N on the REACH line when N > 0)
             "preview": [], "camnode": [], "wmname": set(),
-            "slide_seq": [], "vo": [], "pb": []}   # HW38: SLIDE start/end/cut events in log order; (f or None, vo) and (f or None, pb) per REACH line
+            "slide_seq": [], "vo": [], "pb": [],   # HW38: SLIDE start/end/cut events in log order; (f or None, vo) and (f or None, pb) per REACH line
+            "stowhold": []}   # HW41: one dict per parsed STOWHOLD line, in log order
     for n, raw in window:
         text = raw.strip()
         m = MAIN_RES["loaded"].search(text)
@@ -317,6 +331,12 @@ def parse_lines(window):
             mp = REACH_PB_RE.search(text)
             if mp:
                 main["pb"].append((fval, float(mp.group(1))))
+        if STOWHOLD_HEAD_RE.search(text):   # HW41: a window fact, not a record (so never in recs); a line whose fields do not parse is skipped
+            fs = STOWHOLD_RE.search(text)
+            if fs is None:
+                skipped.append((n, "STOWHOLD", text))
+            else:
+                main["stowhold"].append({k: (int(v) if k == "hold" else float(v)) for k, v in fs.groupdict().items()})
         m = MAIN_RES["preview"].search(text)
         if m:
             main["preview"].append(m.groups())
@@ -641,8 +661,20 @@ def _reach_hw38_lines(f):
     return out
 
 
+def _stowhold_lines(f):
+    """HW41: one STOWHOLD summary line, only when the window has a STOWHOLD line (else []). wd in cm; `n/a` when no line has pathF > lf."""
+    rows = f.get("stowhold", [])
+    if not rows:
+        return []
+    held = sum(1 for r in rows if r["hold"] == 1)
+    past = [r["wd"] for r in rows if r["pathF"] > r["lf"]]
+    past_txt = ("%.1f cm" % (100.0 * max(past))) if past else "n/a"
+    return ["STOWHOLD n=%d hold=%d/%d | wd max while pathF>lf: %s | wd max overall: %.1f cm"
+            % (len(rows), held, len(rows), past_txt, 100.0 * max(r["wd"] for r in rows))]
+
+
 # ---- --row SM-Lnn: pass-signal clauses of the play-test rows (PLAY_TEST_QUEUE.md). Each clause is (label, PASS|FAIL|NO-DATA, reason).
-ROWS = ("SM-L11", "SM-L12", "SM-L13", "SM-L14", "SM-L15")
+ROWS = ("SM-L11", "SM-L12", "SM-L13", "SM-L14", "SM-L15", "SM-L16")
 ROW_EXIT = {"PASS": 0, "FAIL": 1, "NO-DATA": 3}
 
 
@@ -811,6 +843,47 @@ def _sm_l15(main):
     return out
 
 
+def _sm_l16(main):
+    """HW41 stow hold (holster 0.20.3-dev, STOWHOLD lines): (a) the path-driven stow hold is on; (b) the shown weapon stays on the carried hand
+    (wd <= 0.005 m) while pathF > lf + 0.01; (c) at the mount (pathF <= 0.02) wd is within 0.02 m of dm. (b) and (c) judge hold=1 lines only,
+    so a hold=0 window (the old time-window stow) is NO-DATA for them, never FAIL."""
+    rows = main.get("stowhold", [])
+    held = [r for r in rows if r["hold"] == 1]
+    if not rows:
+        a = ("hold on", "NO-DATA", "no STOWHOLD line (old build, or no stow in window)")
+    elif not held:
+        a = ("hold on", "NO-DATA", "hold=0 on all %d line(s): hold off or old build" % len(rows))
+    else:
+        a = ("hold on", "PASS", "hold=1 on %d of %d line(s)" % (len(held), len(rows)))
+    label_b = "weapon stays on the hand until the hand is near the mount"
+    judged = [r for r in held if r["pathF"] > r["lf"] + STOW_JUDGE_MARGIN + STOW_EPS]
+    if not judged:
+        b = (label_b, "NO-DATA", "no hold=1 line with pathF > lf+%.2f" % STOW_JUDGE_MARGIN)
+    else:
+        worst = max(judged, key=lambda r: r["wd"])
+        over = sum(1 for r in judged if r["wd"] > STOW_WD_MAX + STOW_EPS)
+        if over:
+            b = (label_b, "FAIL", "wd max %.3f m at pathF %.3f (%d of %d judged line(s) above %.3f m)"
+                 % (worst["wd"], worst["pathF"], over, len(judged), STOW_WD_MAX))
+        else:
+            b = (label_b, "PASS", "wd <= %.3f m on all %d judged line(s) (max wd %.3f m at pathF %.3f)"
+                 % (STOW_WD_MAX, len(judged), worst["wd"], worst["pathF"]))
+    label_c = "lands on the mount"
+    near = [r for r in held if r["pathF"] <= STOW_MOUNT_F + STOW_EPS]
+    if not near:
+        c = (label_c, "NO-DATA", "no hold=1 line with pathF <= %.2f" % STOW_MOUNT_F)
+    else:
+        worst = max(near, key=lambda r: abs(r["wd"] - r["dm"]))
+        off = sum(1 for r in near if abs(r["wd"] - r["dm"]) > STOW_LAND_TOL + STOW_EPS)
+        if off:
+            c = (label_c, "FAIL", "|wd-dm| max %.3f m at pathF %.3f (wd %.3f dm %.3f; %d of %d line(s) above %.3f m)"
+                 % (abs(worst["wd"] - worst["dm"]), worst["pathF"], worst["wd"], worst["dm"], off, len(near), STOW_LAND_TOL))
+        else:
+            c = (label_c, "PASS", "|wd-dm| <= %.3f m on all %d line(s) with pathF <= %.2f (max %.3f m)"
+                 % (STOW_LAND_TOL, len(near), STOW_MOUNT_F, abs(worst["wd"] - worst["dm"])))
+    return [a, b, c]
+
+
 def _row_report(row, recs, main):
     """(exit code, output lines) for one --row: one line per clause, then the verdict (FAIL > NO-DATA > PASS)."""
     if row == "SM-L11":
@@ -821,8 +894,10 @@ def _row_report(row, recs, main):
         clauses = _sm_l13(recs)
     elif row == "SM-L14":
         clauses = _sm_l14(main)
-    else:
+    elif row == "SM-L15":
         clauses = _sm_l15(main)
+    else:
+        clauses = _sm_l16(main)
     lines = ["%s %s: %s %s" % (row, label, status, reason) for label, status, reason in clauses]
     statuses = {status for _, status, _ in clauses}
     verdict = "FAIL" if "FAIL" in statuses else "NO-DATA" if "NO-DATA" in statuses else "PASS"
@@ -959,6 +1034,7 @@ def render(recs, skipped, main_facts, nlines, meta):
     out += _toggle_events(main_facts)
     out += _reach_events(main_facts)
     out += _reach_hw38_lines(main_facts)
+    out += _stowhold_lines(main_facts)   # HW41: [] unless the window has a STOWHOLD line
     out.append(_hist("ANIMRES", recs))
     styles = Counter((r["self"], r["style"], r["gate"]) for r in recs if r["kind"] == "ANIMRES")
     if styles:   # C6: +0xC5 = wield style byte, +0xC6 = table gate; one entry per creature and value
@@ -1012,7 +1088,7 @@ def main(argv=None):
     ap.add_argument("--state", default=LT.DEFAULT_STATE, help="bookmark file for --new")
     ap.add_argument("--mounts", action="store_true", help="print only the MOUNT (cat, bone) summary section")
     ap.add_argument("--json", action="store_true", help="with --mounts: the MOUNT groups as a JSON list, nothing else on stdout")
-    ap.add_argument("--row", metavar="SM-Lnn", help="pass-signal verdict of one play-test row (SM-L11..SM-L15); exit 0 PASS, 1 FAIL, 3 NO-DATA")
+    ap.add_argument("--row", metavar="SM-Lnn", help="pass-signal verdict of one play-test row (SM-L11..SM-L16); exit 0 PASS, 1 FAIL, 3 NO-DATA")
     a = ap.parse_args(argv)
     if a.json and not a.mounts:
         print("--json needs --mounts", file=sys.stderr)
