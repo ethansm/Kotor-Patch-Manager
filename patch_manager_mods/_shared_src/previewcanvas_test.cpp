@@ -8,13 +8,15 @@
 #include <string.h>
 
 // ---- fake engine ----
-struct FakeCtl { bool vis = false; pvc::Rect r = {0, 0, 0, 0}; void* fill = nullptr; float alpha = -1.f; float tint[3] = {-1, -1, -1}; char text[32] = "OPTIONS"; bool released = false; };
+struct FakeCtl { bool vis = false; pvc::Rect r = {0, 0, 0, 0}; void* fill = nullptr; float alpha = -1.f; float tint[3] = {-1, -1, -1}; char text[32] = "OPTIONS"; bool released = false; void* fillAtRelease = nullptr; };
+static int g_orig[pvc::kMaxLabels + 4];   // each fake label's OWN fill image (its address is the pointer)
 static FakeCtl g_ctl[pvc::kMaxLabels + 4];
 static int g_nCtl = 0, g_failCreateAt = -1;
 static int g_setRect = 0, g_setFill = 0, g_setAlpha = 0, g_setTint = 0, g_setVis = 0, g_releases = 0;
 static FakeCtl* C(uintptr_t c) { return &g_ctl[c - 1]; }
-static uintptr_t fCreate(uintptr_t, const char* tmpl) { if (strcmp(tmpl, "LBL_TITLE")) return 0; if (g_nCtl == g_failCreateAt) return 0; g_ctl[g_nCtl] = FakeCtl(); return static_cast<uintptr_t>(++g_nCtl); }
-static void fRelease(uintptr_t c) { C(c)->released = true; ++g_releases; }
+static uintptr_t fCreate(uintptr_t, const char* tmpl) { if (strcmp(tmpl, "LBL_TITLE")) return 0; if (g_nCtl == g_failCreateAt) return 0; g_ctl[g_nCtl] = FakeCtl(); g_ctl[g_nCtl].fill = &g_orig[g_nCtl]; return static_cast<uintptr_t>(++g_nCtl); }
+static void fRelease(uintptr_t c) { C(c)->released = true; C(c)->fillAtRelease = C(c)->fill; ++g_releases; }
+static bool fGetFill(uintptr_t c, void** i) { *i = C(c)->fill; return true; }
 static void fVis(uintptr_t c, bool v) { C(c)->vis = v; ++g_setVis; }
 static void fClick(uintptr_t, bool) {}
 static void fRect(uintptr_t c, int x, int y, int w, int h) { C(c)->r = pvc::Rect{x, y, w, h}; ++g_setRect; }
@@ -61,7 +63,7 @@ int main() {
     // ---- canvas ----
     Ops& o = ops();
     o.create = fCreate; o.release = fRelease; o.setVisible = fVis; o.setClickable = fClick; o.setRect = fRect; o.setFill = fFill; o.setAlpha = fAlpha;
-    o.setTint = fTint; o.setText = fText; o.isVisible = fIsVis;
+    o.setTint = fTint; o.setText = fText; o.isVisible = fIsVis; o.getFill = fGetFill;
     K2MenuUiApi ui = {};
     ui.struct_size = sizeof ui; ui.AddCustom = mAddCustom; ui.PaneRect = mPane; ui.Control = mControl;
     static Canvas cv;
@@ -152,5 +154,13 @@ int main() {
     reset(); KT_CHECK(cv.build(&ui, reinterpret_cast<void*>(1), 7, 3)); g_unlinked = true;
     KT_CHECK_EQ(cv.destroy(&ui, 7), 3); KT_CHECK_EQ(g_releases, 3); KT_CHECK_EQ(cv.n, 0);
     KT_CHECK_EQ(cv.destroy(&ui, 7), 0);                                    // already reset
+    // a pooled image shared by several labels must never reach a label dtor: the label's own fill goes back before release (crash 10-21 23:26)
+    reset(); g_unlinked = false; KT_CHECK(cv.build(&ui, reinterpret_cast<void*>(1), 7, 4)); g_unlinked = true;
+    cv.style(0, Rect{0, 0, 10, 10}, &img1, tintA, 1.f); cv.style(1, Rect{0, 0, 10, 10}, &img1, tintA, 1.f); cv.style(2, Rect{0, 0, 10, 10}, &img2, tintA, 1.f);   // label 3 never styled
+    KT_CHECK(C(1)->fill == &img1 && C(2)->fill == &img1);
+    const int fillsBefore = g_setFill;
+    KT_CHECK_EQ(cv.destroy(&ui, 7), 4); KT_CHECK_EQ(g_releases, 4);
+    for (int i = 1; i <= 4; ++i) KT_CHECK(C(i)->released && C(i)->fillAtRelease == &g_orig[i - 1]);   // every label died holding its own image
+    KT_CHECK_EQ(g_setFill - fillsBefore, 3);                               // restored only where style() had replaced it
     return kt::Report("previewcanvas_test");
 }

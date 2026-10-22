@@ -351,6 +351,17 @@ inline bool setFill(uintptr_t ctl, void* image, const float* tint = nullptr) {
     if (tint) for (int k = 0; k < 3; ++k) if (!wr<float>(b, oTint + 4 * k, tint[k])) return false;
     return true;
 }
+// The label's current fill image (border+0x74). The border dtor deletes whatever sits there, so a caller that setFill()s a pooled image must put the
+// value read here back before it frees the label (see pvc::Canvas::destroy), or the process-wide pooled image is deleted with the label.
+inline bool getFill(uintptr_t ctl, void** image) {
+    using namespace detail;
+    const int oFill = off(&K2AddrTable::Border_Fill);
+    if (!ctl || !image || !oFill || !borderOk(ctl)) return false;
+    uint32_t v = 0;
+    if (!rd<uint32_t>(ctl + off(&K2AddrTable::Label_Border), oFill, &v)) return false;
+    *image = reinterpret_cast<void*>(static_cast<uintptr_t>(v));
+    return true;
+}
 inline bool getBorderTint(uintptr_t ctl, float* rgb) {
     using namespace detail;
     const int oTint = off(&K2AddrTable::Border_Tint);

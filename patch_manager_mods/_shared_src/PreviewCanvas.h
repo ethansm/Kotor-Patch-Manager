@@ -76,6 +76,7 @@ struct Ops {
     void (*setTint)(uintptr_t c, const float* rgb);
     void (*setText)(uintptr_t c, const char* text);
     bool (*isVisible)(uintptr_t c);
+    bool (*getFill)(uintptr_t c, void** img);                            // the label's own fill image (read once at create, restored before release)
 };
 
 namespace detail {
@@ -97,11 +98,12 @@ inline void defAlpha(uintptr_t c, float a) { guikit::setAlpha(c, a); }
 inline void defTint(uintptr_t c, const float* rgb) { guikit::setBorderTint(c, rgb); }
 inline void defText(uintptr_t c, const char* t) { guikit::setText(c, t); }
 inline bool defIsVisible(uintptr_t c) { return guikit::isVisible(c); }
+inline bool defGetFill(uintptr_t c, void** img) { return guikit::getFill(c, img); }
 }  // namespace detail
 
 inline Ops& ops() {
     static Ops o = { detail::defCreate, detail::defRelease, detail::defVisible, detail::defClickable, detail::defRect, detail::defFill,
-                     detail::defAlpha, detail::defTint, detail::defText, detail::defIsVisible };
+                     detail::defAlpha, detail::defTint, detail::defText, detail::defIsVisible, detail::defGetFill };
     return o;
 }
 
@@ -114,6 +116,8 @@ struct Wid {
     bool rectSet = false;
     void* fill = nullptr;
     bool fillSet = false;
+    void* origFill = nullptr;     // the label's own fill image at create: the border dtor deletes what sits in border+0x74, so it goes back before release
+    bool origSet = false;
     float alpha = -1.f;
     float tint[3] = {0.f, 0.f, 0.f};
     bool tintSet = false;
@@ -151,6 +155,7 @@ struct Canvas {
             if (!c) break;
             tmp[made] = Wid();
             tmp[made].c = c; tmp[made].vis = 0;
+            tmp[made].origSet = o.getFill && o.getFill(c, &tmp[made].origFill);
             o.setText(c, "");
         }
         int listed = 0;
@@ -246,6 +251,10 @@ struct Canvas {
             for (int i = 0; i < n; ++i) {
                 if (!w[i].c) continue;
                 if (ui->Control(page, item[i])) continue;
+                // style() put a POOLED image (shared by many labels, owned by no label) into border+0x74, and the label dtor deletes that image: the
+                // first label freed would delete it for all (crash 10-21 23:26: second label's border dtor called a deleted image). Give the label
+                // its own fill back first (null when it could not be read: a small leak, never a crash).
+                if (w[i].fillSet) ops().setFill(w[i].c, w[i].origSet ? w[i].origFill : nullptr);
                 ops().release(w[i].c);
                 ++freed;
             }
