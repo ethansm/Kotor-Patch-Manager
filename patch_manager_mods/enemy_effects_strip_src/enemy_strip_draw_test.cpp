@@ -1130,16 +1130,13 @@ static void scenario12_page_preview() {
     cbTick(2, nullptr);
     KT_CHECK(vis(pv(0)) && vis(pv(2)));
 
-    // --- DESTROY: mod-config unlinked the items (Control answers nullptr): the 12 labels are freed (slot-0 dtor, flags 1), then NO more writes.
+    // --- DESTROY: mod-config unlinked the items (Control answers nullptr): the 14 labels are NOT freed (kFreePreviewLabels = false after the 2026-10-22 crash), then NO more writes.
     cbDestroy(reinterpret_cast<void*>(panel + 8), nullptr);   // another panel: ignored
     KT_CHECK(g_pv.n == 14 && tDtors.empty());
     cbDestroy(reinterpret_cast<void*>(panel), nullptr);
-    KT_CHECK_EQ(tDtors.size(), static_cast<size_t>(14));
-    bool dtorOk = tDtors.size() == 14;
-    for (size_t i = 0; dtorOk && i < 12; ++i) dtorOk = tDtors[i].second == 1u && tDtors[i].first == reinterpret_cast<uintptr_t>(tm.customCtl[i]);
-    KT_CHECK(dtorOk);
+    KT_CHECK(tDtors.empty());
     KT_CHECK(g_pv.n == 0 && !g_pv.on && g_pg.panel == nullptr && g_pg.page == 0);
-    KT_CHECK_EQ(logCount("preview DESTROY: freed=14 kept=0"), 1);
+    KT_CHECK_EQ(logCount("preview DESTROY: freed=0 kept=0 leaked=14"), 1);
     L().clear();
     cbTick(2, nullptr);
     cbEnter(2, nullptr);
@@ -1151,7 +1148,7 @@ static void scenario12_page_preview() {
     tm.unlinked = false;
     cbDestroy(reinterpret_cast<void*>(panel2), nullptr);
     KT_CHECK(tDtors.empty());
-    KT_CHECK_EQ(logCount("freed=0 kept=14"), 1);
+    KT_CHECK_EQ(logCount("freed=0 kept=14 leaked=0"), 1);
     KT_CHECK_EQ(g_pv.n, 0);
 }
 
@@ -1207,7 +1204,7 @@ static void scenario12c_split_refused_and_failures() {
     KT_CHECK_EQ(tm.previewPaneCalls, 0);
     KT_CHECK(tm.desc.find("Example") == std::string::npos);
     cbDestroy(reinterpret_cast<void*>(panel), nullptr);
-    KT_CHECK_EQ(tDtors.size(), static_cast<size_t>(14));
+    KT_CHECK(tDtors.empty());   // listed labels are leaked, not freed
 
     // AddCustom fails on the 5th label: the 4 listed stay hidden; the 10 never listed are released at once; the split is never requested.
     fresh(); tm.reset(); tDtors.clear(); tm.failAddCustomAt = 4;
@@ -1224,7 +1221,7 @@ static void scenario12c_split_refused_and_failures() {
     for (int i = 0; i < 4; ++i) hid = hid && !vis(pv(i));
     KT_CHECK(hid);
     cbDestroy(reinterpret_cast<void*>(panel2), nullptr);
-    KT_CHECK_EQ(tDtors.size(), static_cast<size_t>(14));   // 10 + the 4 that were listed
+    KT_CHECK_EQ(tDtors.size(), static_cast<size_t>(10));   // only the 10 never listed; the 4 listed ones are leaked
 
     // A label allocation fails on the 7th label: the 6 created are released, nothing is listed, no split, the rows are intact.
     fresh(); tm.reset(); tDtors.clear();

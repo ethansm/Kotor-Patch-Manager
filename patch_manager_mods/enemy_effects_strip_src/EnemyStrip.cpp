@@ -1123,18 +1123,22 @@ void buildPreview(void* panel, uint32_t page) {
     KP_LOGV(chCfg, KPLOG_INFO, "preview BUILD ok: %d labels, split %d permille", PvN, kPreviewPermille);
 }
 
-// Options dtor, after mod-config unlinked its controls: free the preview labels it listed MUI_NOFREE. A label whose Control() still answers
-// is still in the panel list (the unlink was refused): it is leaked, never freed.
+// Options dtor, after mod-config unlinked its controls: the preview labels it listed MUI_NOFREE are LEAKED on purpose (kFreePreviewLabels).
+// 2026-10-22 crash: releaseUnlinkedLabel -> label dtor 0x7510b0 -> CSWGuiBorder dtor 0x414c60 called vtable[1] of an owned sub-object (label+0xCC/+0xD0)
+// that had already been freed and reused (object vtable 0x98C1F4, a CRT class), EIP 0x9BB0F0 in .rdata. Who freed it first is unproven, so the
+// labels (about 14 x 0x130 bytes per Options open, already unlinked from the panel) are no longer freed. Flip the constant to re-test.
+constexpr bool kFreePreviewLabels = false;
 void destroyPreview() {
-    int freed = 0, kept = 0;
+    int freed = 0, kept = 0, leaked = 0;
     if (g_pv.n && g_mcMenu.ok() && g_pg.page) {
         for (int i = 0; i < g_pv.n; ++i) {
             if (!g_pv.w[i].c) continue;
             if (g_mcMenu.p->Control(g_pg.page, g_pv.item[i])) { ++kept; continue; }
+            if (!kFreePreviewLabels) { ++leaked; continue; }
             guikit::releaseUnlinkedLabel(g_pv.w[i].c, guikit::LabelVtable);
             ++freed;
         }
-        KP_LOGV(chCfg, KPLOG_INFO, "preview DESTROY: freed=%d kept=%d", freed, kept);
+        KP_LOGV(chCfg, KPLOG_INFO, "preview DESTROY: freed=%d kept=%d leaked=%d", freed, kept, leaked);
     }
     g_pv.reset();
 }
@@ -1490,7 +1494,7 @@ __declspec(dllexport) void __cdecl KPatchInit(const KPatchApi* api) {
     g_pg.reset();
     g_mcCfg.init(api);
     g_mcMenu.init(api);
-    KP_LOGV(chMain, KPLOG_INFO, "enemy-effects-strip 0.4.8-dev loaded (Enabled=%d Verbose=%d MaxIcons=%d)", g_cfg.enabled ? 1 : 0, g_cfg.verbose ? 1 : 0, g_cfg.maxIcons);
+    KP_LOGV(chMain, KPLOG_INFO, "enemy-effects-strip 0.4.9-dev loaded (Enabled=%d Verbose=%d MaxIcons=%d)", g_cfg.enabled ? 1 : 0, g_cfg.verbose ? 1 : 0, g_cfg.maxIcons);
     g_hud.add(K2HUD_BUILD, 300, onHudBuild);
     g_hud.add(K2HUD_TARGET_MENU_POST, 100, onTargetMenuPost);
     g_hud.connect();
