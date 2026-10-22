@@ -1156,5 +1156,101 @@ class Hw38GoldenTests(unittest.TestCase):
         self.assertEqual(out, GOLDEN_REPORT)
 
 
+def split40(line, seq):
+    """HW40: one full REACH line as the three KPM-cut pieces of holster 0.20.2-dev: piece 1 is the head up to H=(..) with ` #<seq>`,
+    piece 2 `REACH+ #<seq> owner=.. T=(..)..wrote=N`, piece 3 `REACH+ #<seq> owner=.. wr=..` (the rest). Joined, they are the line again."""
+    head, after_t = line.split(" T=(", 1)
+    mid, tail = ("T=(" + after_t).split(" wr=", 1)
+    return ["%s #%d" % (head, seq), "REACH+ #%d owner=1a %s" % (seq, mid), "REACH+ #%d owner=1a wr=%s" % (seq, tail)]
+
+
+SPLIT_A = reach38(f=0.20, vo=0.080, pb=3.2, tw=80, sw=60, g=85, cap=90, ex=0.62, of_=0.00)
+SPLIT_B = reach38(f=1.00, vo=0.000, pb=0.0, tw=40, sw=30, g=70, cap=90, ex=0.00, of_=1.00)
+
+
+class Hw40SplitReachTests(unittest.TestCase):
+    """HW40 (holster 0.20.2-dev): a REACH step cut into three log lines by the KPM 232-byte limit joins back to the old single line."""
+
+    def test_three_pieces_for_two_seqs_with_a_slide_between_match_the_single_line_window(self):
+        single = [stamped(SPLIT_A, 1), stamped(slide38("start", gob=0x2A, left=1), 2), stamped(SPLIT_B, 3), stamped(slide38("end"), 4)]
+        a, b = split40(SPLIT_A, 1), split40(SPLIT_B, 2)
+        split = [stamped(a[0], 1), stamped(slide38("start", gob=0x2A, left=1), 2), stamped(a[1], 3), stamped(b[0], 4),
+                 stamped(a[2], 5), stamped(b[1], 6), stamped(slide38("end"), 7), stamped(b[2], 8)]
+        rc_s, out_s = run_log(single)
+        rc_p, out_p = run_log(split)
+        self.assertEqual(rc_p, rc_s)
+        self.assertEqual(out_p[1:], out_s[1:])   # line 1 carries the raw line count (8 vs 4); the rest of the report matches line for line
+        reach = [x for x in out_p if x.startswith("REACH found=")]
+        self.assertEqual(len(reach), 1, out_p)
+        self.assertIn("REACH found=0 steps=2 ", reach[0])
+        self.assertNotIn("partial=", reach[0])
+        _, _, main_s = parse(single)
+        _, _, main_p = parse(split)
+        self.assertEqual(main_p["reach"], main_s["reach"])
+        self.assertEqual(main_p["vo"], main_s["vo"])
+        self.assertEqual(main_p["pb"], main_s["pb"])
+        self.assertEqual(main_p["reach_partial"], 0)
+
+    def test_missing_piece_three_is_partial_and_steps_count_only_complete_steps(self):
+        a, b = split40(SPLIT_A, 1), split40(SPLIT_B, 2)
+        bodies = [stamped(a[0], 1), stamped(a[1], 2), stamped(a[2], 3), stamped(b[0], 4), stamped(b[1], 5)]   # seq 2 has no piece 3
+        rc, out = run_log(bodies)
+        reach = [x for x in out if x.startswith("REACH found=")]
+        self.assertIn("REACH found=0 steps=1 ", reach[0])
+        self.assertIn(" partial=1", reach[0])
+        _, _, main = parse(bodies)
+        self.assertEqual(main["reach_partial"], 1)
+        self.assertEqual(len(main["reach"]), 1)
+        rc, out = run_log([stamped(b[0], 1), stamped(b[2], 2)])   # seq 1 has no piece 2: head and piece 3 only
+        self.assertIn("REACH found=0 steps=0 ", [x for x in out if x.startswith("REACH found=")][0])
+        self.assertIn(" partial=1", [x for x in out if x.startswith("REACH found=")][0])
+
+    def test_orphan_continuations_are_dropped_silently_and_counted_as_partial(self):
+        a, b = split40(SPLIT_A, 1), split40(SPLIT_B, 2)
+        bodies = [stamped(a[1], 1), stamped(a[2], 2), stamped(b[0], 3), stamped(b[1], 4), stamped(b[2], 5)]   # seq 1's piece 1 is before the window
+        _, skipped, main = parse(bodies)
+        self.assertEqual(skipped, [])
+        self.assertEqual(main["reach_partial"], 1)
+        self.assertEqual(len(main["reach"]), 1)
+        rc, out = run_log(bodies)
+        self.assertIn(" partial=1", [x for x in out if x.startswith("REACH found=")][0])
+        # a continuation written before its piece 1 is an orphan too: the piece 1 that follows has no continuations after it
+        _, skipped, main = parse([stamped(a[1], 1), stamped(a[2], 2), stamped(a[0], 3)])
+        self.assertEqual((skipped, main["reach_partial"], len(main["reach"])), ([], 1, 0))
+
+    def test_sm_l15_passes_on_a_split_window_with_vo_mid_carry_and_zero_at_edges(self):
+        ok = [reach38(f=0.00, vo=0.000, pb=0.0), reach38(f=0.50, vo=0.110, pb=0.0), reach38(f=1.00, vo=0.000, pb=0.0),
+              reach38(f=0.20, vo=0.080, pb=3.2), reach38(f=0.30, vo=0.000, pb=2.0)]
+        bodies = [stamped(p, i) for i, line in enumerate(ok) for p in split40(line, i + 1)]
+        rc, out = run_log(bodies, ["--row", "SM-L15"])
+        self.assertEqual(rc, 0, out)
+        self.assertEqual(out[-1], "SM-L15 verdict: PASS")
+        self.assertIn("SM-L15 vo=0 at reach/release: PASS vo=0 at reach/release on all 5 lines (vo<0.005 m counts as 0)", out)
+        self.assertIn("SM-L15 vo peaks mid-carry: PASS vo max=0.110 mid-carry over 3 line(s)", out)
+        self.assertIn("SM-L15 pb>0 only at f<=0.30: PASS pb>0 only at f<=0.30 (max pb=3.2 over 5 line(s))", out)
+
+    def test_sm_l11_reads_tw_sw_and_g_cap_from_piece_three(self):
+        bodies = [stamped(p, 1) for p in split40(reach38(tw=80, sw=60, g=85, cap=90), 1)]
+        rc, out = run_log(bodies, ["--row", "SM-L11"])
+        self.assertEqual(rc, 0, out)
+        self.assertIn("SM-L11 tw<=80: PASS max 80 over 1 line(s)", out)
+        self.assertIn("SM-L11 sw<=60: PASS max 60 over 1 line(s)", out)
+        self.assertIn("SM-L11 g-cap<20: PASS max -5 over 1 line(s)", out)
+        rc, out = run_log([stamped(p, 1) for p in split40(reach38(g=110, cap=90), 1)], ["--row", "SM-L11"])
+        self.assertEqual(rc, 1, out)
+        self.assertIn("SM-L11 g-cap<20: FAIL max 20 over 1 line(s)", out)
+        rc, out = run_log([stamped(p, 1) for p in split40(SPLIT_A, 1)])
+        self.assertIn(" g max=85 over_cap=0", [x for x in out if x.startswith("REACH found=")][0])
+
+    def test_old_single_line_window_is_unchanged_and_shows_no_partial(self):
+        window = [(i + 1, s) for i, s in enumerate(GOLDEN_BODIES)]
+        joined, partial = H._join_reach(window)
+        self.assertEqual(joined, window)
+        self.assertEqual(partial, 0)
+        rc, out = run_log(GOLDEN_BODIES)
+        self.assertEqual(rc, 0)
+        self.assertFalse(any("partial=" in x for x in out), out)
+
+
 if __name__ == "__main__":
     unittest.main()

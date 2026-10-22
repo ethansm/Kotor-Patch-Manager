@@ -30,6 +30,7 @@
 #include "HolsterDrawGate.h"
 #include "HolsterSlide.h"
 #include "HolsterReach.h"
+#include "HolsterReachLog.h"
 #include "HolsterShape.h"
 #include "HolsterAnimStyle.h"
 #include "HolsterToggle.h"
@@ -1769,14 +1770,21 @@ static bool reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w,
     e->solved = static_cast<uint8_t>(wrote);
     e->holdN = 0;
     if (!reachLogDue()) return carriedOk;
-    KP_LOG(chMain, "REACH owner=%x w=%.2f reach=%.2f S=(%.3f,%.3f,%.3f) E=(%.3f,%.3f,%.3f) H=(%.3f,%.3f,%.3f) T=(%.3f,%.3f,%.3f) Enew=(%.3f,%.3f,%.3f) side=%c cat=%d u=%.2f lt=(%.3f,%.3f,%.3f) err=%.3f persist=%d wrote=%d wr=%.0f hg=%d f=%.2f dzA=%.2f fy=%.2f fx=%.2f g=%.0f cap=%.0f hold=%u topo=%s bk=%d tw=%.0f sw=%.0f ex=%.2f of=%.2f vo=%.3f pb=%.1f",
-           static_cast<unsigned>(e->owner), static_cast<double>(w), static_cast<double>(reach), static_cast<double>(pS.pos[0]), static_cast<double>(pS.pos[1]),
-           static_cast<double>(pS.pos[2]), static_cast<double>(pE.pos[0]), static_cast<double>(pE.pos[1]), static_cast<double>(pE.pos[2]), static_cast<double>(pH.pos[0]),
-           static_cast<double>(pH.pos[1]), static_cast<double>(pH.pos[2]), static_cast<double>(T[0]), static_cast<double>(T[1]), static_cast<double>(T[2]),
-           static_cast<double>(enew[0]), static_cast<double>(enew[1]), static_cast<double>(enew[2]), left ? 'L' : 'R', cat, static_cast<double>(u), static_cast<double>(lt[0]), static_cast<double>(lt[1]), static_cast<double>(lt[2]),
-           static_cast<double>(err), persist ? 1 : 0, wrote, static_cast<double>(wristDeg), hinge ? 1 : 0, static_cast<double>(pathF), static_cast<double>(dzA), static_cast<double>(fyA), static_cast<double>(fxA),
-           static_cast<double>(gDeg), static_cast<double>(g_reachWristMax + g_reachTwist), static_cast<unsigned>(heldBefore), reachTopoName(topo), backMount ? 1 : 0,
-           static_cast<double>(twistDeg), static_cast<double>(wristDeg), static_cast<double>(plp ? plp->extractK : 0.f), static_cast<double>(plp ? plp->oriF : pathF), static_cast<double>(viaOffM), static_cast<double>(poleBiasDeg));
+    {   // the old single line was ~480 bytes and the core cuts a message at 232, so it goes out as three pieces (HolsterReachLog.h); only piece 1 takes the line budget
+        static volatile LONG s_reachSeq = 0;
+        hs::ReachLogVals rv;
+        rv.owner = static_cast<uint32_t>(e->owner); rv.w = w; rv.reach = reach;
+        for (int i = 0; i < 3; ++i) { rv.S[i] = pS.pos[i]; rv.E[i] = pE.pos[i]; rv.H[i] = pH.pos[i]; rv.T[i] = T[i]; rv.Enew[i] = enew[i]; rv.lt[i] = lt[i]; }
+        rv.side = left ? 'L' : 'R'; rv.cat = cat; rv.u = u; rv.err = err; rv.persist = persist ? 1 : 0; rv.wrote = wrote;
+        rv.wr = wristDeg; rv.hg = hinge ? 1 : 0; rv.f = pathF; rv.dzA = dzA; rv.fy = fyA; rv.fx = fxA; rv.g = gDeg; rv.cap = g_reachWristMax + g_reachTwist;
+        rv.hold = static_cast<uint32_t>(heldBefore); rv.topo = reachTopoName(topo); rv.bk = backMount ? 1 : 0;
+        rv.tw = twistDeg; rv.sw = wristDeg; rv.ex = plp ? plp->extractK : 0.f; rv.of = plp ? plp->oriF : pathF; rv.vo = viaOffM; rv.pb = poleBiasDeg;
+        const uint32_t seq = static_cast<uint32_t>(InterlockedIncrement(&s_reachSeq));
+        char lb[256];
+        hs::reachLogPiece1(lb, sizeof lb, rv, seq); KP_LOG(chMain, "%s", lb);
+        hs::reachLogPiece2(lb, sizeof lb, rv, seq); KP_LOG(chMain, "%s", lb);
+        hs::reachLogPiece3(lb, sizeof lb, rv, seq); KP_LOG(chMain, "%s", lb);
+    }
     return carriedOk;
 }
 
@@ -2793,7 +2801,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     addName(names, sizeof(names), g_onGob, "gob");
     addName(names, sizeof(names), g_onPlace, "place");
     addName(names, sizeof(names), g_onToggle, "toggle");
-    KP_LOG(chMain, "holster 0.20.1-dev loaded (P0 probe + unarmed_anim=%d): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_unarmedAnim ? 1 : 0, g_probe ? 1 : 0,
+    KP_LOG(chMain, "holster 0.20.2-dev loaded (P0 probe + unarmed_anim=%d): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_unarmedAnim ? 1 : 0, g_probe ? 1 : 0,
            names[0] ? names : "none", static_cast<long>(g_maxLines), g_gobEvery, k2addr::get() ? "ok" : "none");
     {
         hs::TuneCfg t;

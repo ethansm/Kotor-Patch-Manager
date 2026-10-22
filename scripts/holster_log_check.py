@@ -9,6 +9,7 @@ Usage: holster_log_check.py [LOG | --log LOG] [--new [--no-advance] [--state PAT
   (the 8 with the most samples: parent18, pos min/max/mean per axis, quat min/max per component, mean-quat angle),
   PLACE (only when PLACE lines exist: count, gobvt histogram, quat1 unit-norm check, last pos0/quat0 -> pos1/quat1 for the
   4 gobs with the most samples; the GOB view then drops to 4 gobs so the report stays within 47 lines). REACH (HW19 probe): found, steps, persist1, wrote_both, refusals, err range.
+  HW40: a REACH step the KPM 232-byte cut split into three lines is joined back first; `partial=N` on the REACH line counts steps the window cut (shown only when N > 0).
   MOUNT (HW35, only when `MOUNT gob=` lines exist; GOB view drops to 2 gobs): per (cat, bone) at most 3 rows: count (nofacing included), nofacing,
   component-wise median of rel (sign-aligned, normalized; nofacing excluded), spread = max angle of any rel from that median.
   --mounts: print only the MOUNT section. --mounts --json: the same per (cat, bone) groups as a JSON list on stdout, nothing else (--json needs --mounts).
@@ -65,6 +66,10 @@ REACH_LINE_RE = re.compile(r"\bREACH owner=\w+ w=")
 REACH_VO_RE = re.compile(r"\bREACH owner=\w+ w=.*? vo=(%s)" % NUM)
 REACH_PB_RE = re.compile(r"\bREACH owner=\w+ w=.*? pb=(%s)" % NUM)
 REACH_F_RE = re.compile(r"\bREACH owner=\w+ w=.*? f=(%s)" % NUM)
+# HW40 (holster 0.20.2-dev): the KPM core cuts a log message at 232 bytes, so one REACH step is logged as three lines: piece 1 ends in ` #<seq>`,
+# pieces 2 and 3 start `REACH+ #<seq> owner=<hex> `. _join_reach() rebuilds the old single-line REACH text from them.
+REACH_HEAD_RE = re.compile(r"\bREACH owner=\w+ (?P<body>.*?) #(?P<seq>\d+)$")
+REACH_CONT_RE = re.compile(r"\bREACH\+ #(?P<seq>\d+) owner=\w+ (?P<body>.*)$")
 # HW38 edges of the carry: the printed f is 2 decimals, so 0.00 and 1.00 are reach/release (the via bump is 0 there); anything between is mid-carry.
 CARRY_EDGE_F = 0.005
 # SM-L15: vo comes from the via clock (viaProgress), not from the printed f= clock, so a tiny vo at a printed edge is not a FAIL:
@@ -184,13 +189,46 @@ def _record(kind, n, m):
     return rec
 
 
+def _join_reach(window):
+    """HW40: [(line_no, raw)] -> (window with each split REACH step joined into one line, partial).
+    A step is piece 1 (`REACH owner=.. ... #<seq>`) plus its two continuations (`REACH+ #<seq> owner=.. <rest>`), matched by seq, the
+    continuations after piece 1 in the same window (other lines may sit between). The joined line is piece 1 minus ` #<seq>` plus ONE space
+    and each continuation's rest, i.e. the old single-line REACH text. A piece 1 with fewer than two continuations stays as it was (it fails
+    the full REACH regexes, as a cut line always did) and its continuations are dropped. A continuation with no earlier piece 1 is dropped.
+    partial = the number of seqs cut this way (0 for old single-line logs, which get the same window back unchanged)."""
+    out = []                # [line_no, raw]; a piece 1 is rewritten below once its continuations are known
+    heads = {}              # seq -> [index in out, [continuation bodies], piece 1 text up to its body]
+    cut = set()             # seqs with a continuation whose piece 1 is not earlier in the window
+    for n, raw in window:
+        text = raw.strip()
+        mc = REACH_CONT_RE.search(text)
+        if mc:
+            if mc.group("seq") in heads:
+                heads[mc.group("seq")][1].append(mc.group("body"))
+            else:
+                cut.add(mc.group("seq"))
+            continue
+        mh = REACH_HEAD_RE.search(text)
+        if mh:
+            heads[mh.group("seq")] = [len(out), [], text[:mh.end("body")]]
+        out.append([n, raw])
+    partial = set(cut)
+    for seq, (idx, conts, head) in heads.items():
+        if len(conts) >= 2:
+            out[idx][1] = head + "".join(" " + c for c in conts)
+        else:
+            partial.add(seq)
+    return [(n, raw) for n, raw in out], len(partial)
+
+
 def parse_lines(window):
     """window: [(line_no, raw)] -> (records in log order, skipped [(line_no, kind, text)], main facts)."""
+    window, reach_partial = _join_reach(window)
     recs, skipped = [], []
     main = {"loaded": [], "cap": [], "bonetest": Counter(), "unreadable": 0, "tid": {}, "reload": [], "tune": [], "refuse": {}, "node": Counter(), "mount": Counter(),
             "owner": Counter(), "combc": set(), "partyhold": Counter(), "movehold": 0, "delay": Counter(),
             "reach": [], "slidecut": Counter(), "resid": [], "reachfound": 0, "reachrefuse": Counter(), "reachhold": Counter(), "reachtw": [], "reachex": [],
-            "reachtopo": Counter(), "slidecfg": [],
+            "reachtopo": Counter(), "slidecfg": [], "reach_partial": reach_partial,   # HW40: REACH steps cut by the window (partial=N on the REACH line when N > 0)
             "preview": [], "camnode": [], "wmname": set(),
             "slide_seq": [], "vo": [], "pb": []}   # HW38: SLIDE start/end/cut events in log order; (f or None, vo) and (f or None, pb) per REACH line
     for n, raw in window:
@@ -900,6 +938,8 @@ def _reach_events(f):
     cfg = f.get("slidecfg", [])
     if cfg:
         line += " slide=%s resid_ms=%d wrist_max=%d" % cfg[-1]
+    if f.get("reach_partial", 0):   # HW40: REACH steps the window cut (a piece missing, or a continuation whose piece 1 is before the window); shown only when > 0
+        line += " partial=%d" % f["reach_partial"]
     return [line]
 
 
