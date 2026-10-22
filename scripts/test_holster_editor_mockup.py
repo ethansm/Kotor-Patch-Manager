@@ -40,7 +40,7 @@ def cpp_button_indices():
     src = (M.SRC_DIR / "HolsterEditor.cpp").read_text()
     body = src[src.index("bool itemIsButton"):src.index("bool itemIsResetIcon")]
     out = set()
-    for i in range(75):
+    for i in range(78):
         ok = any(f"i == {n}" in body and i == pi[n] for n in ("PI_MEMBER_PREV", "PI_MEMBER_NEXT", "PI_SAVE", "PI_REVERT", "PI_RESET_SCOPE", "PI_REMOVE", "PI_VIEW_RESET", "PI_VIEW_FLIP", "PI_PAUSE", "PI_DRAW"))
         for name, base, cnt in (("PI_WEAPON", "PI_WEAPON", "kV3Weapons"), ("PI_BONE", "PI_BONE", "kV3Bones"), ("PI_SCOPE", "PI_SCOPE", "kV3Scopes"),
                                 ("PI_MODE", "PI_MODE", "kV3Modes"), ("PI_STANCE", "PI_STANCE", "kV3Stances")):
@@ -58,8 +58,8 @@ def cpp_button_indices():
 class DumpTests(unittest.TestCase):
     def test_json_and_counts(self):
         d = dump()
-        self.assertEqual(len(d["items"]), 75)
-        self.assertEqual([it["i"] for it in d["items"]], list(range(75)))
+        self.assertEqual(len(d["items"]), 78)
+        self.assertEqual([it["i"] for it in d["items"]], list(range(78)))
         for key in ("column", "view", "preview"):
             self.assertEqual(len(d["panes"][key]), 4)
         self.assertEqual(d["panes"]["desc"], list(M.default_desc(M.DEFAULT_PANES_3840x1600[2])))
@@ -67,27 +67,33 @@ class DumpTests(unittest.TestCase):
         self.assertGreaterEqual(d["rows"]["leftRowH"], 34)   # grows with the layout constants (34 in 0.4.3, 52 now)
 
     def test_stance_layers(self):
-        """Three layers under the 3D view at 3840x1600: Pause + Draw (two halves), Idle Walk Run (3 cells), Alert Combat (2 cells), then the legend."""
+        """Four layers under the 3D view at 3840x1600: Pause alone and centred, Idle Walk Run (3 cells), Alert Combat (2 cells), then Draw (left third) | Speed (right two thirds), then the legend."""
         it = {x["i"]: x["box"] for x in dump()["items"]}
         view, pause, draw, legend = it[25], it[73], it[74], it[31]
+        track, thumb, value = it[75], it[76], it[77]
         b = dump()["rows"]["barH"]
         self.assertEqual(b, 44)
-        self.assertEqual(view, [1256, 449, 681, 635])   # 896 high pane - (5 bars of 44 + legend 29 + 6 gaps)
-        self.assertEqual(pause, [1256, view[1] + view[3] + 2, 339, b])   # left half, directly under the view
-        self.assertEqual(draw, [1256 + 339 + 2, pause[1], 339, b])        # right half, same row (aligned with Combat)
+        self.assertEqual(view, [1256, 449, 681, 589])   # 896 high pane - (6 bars of 44 + legend 29 + 7 gaps); 635 px before the Speed row
+        self.assertEqual(pause, [1256 + (681 - 339) // 2, view[1] + view[3] + 2, 339, b])   # alone, centred, directly under the view
         idle = [it[26], it[27], it[28]]
         alert = [it[29], it[30]]
         self.assertEqual([x[1] for x in idle], [pause[1] + b + 2] * 3)
         self.assertEqual([x[1] for x in alert], [idle[0][1] + b + 2] * 2)
         self.assertEqual([x[2] for x in idle], [225] * 3)
         self.assertEqual([x[2] for x in alert], [339] * 2)
-        self.assertEqual(legend[1], alert[0][1] + b + 2)
+        self.assertEqual(draw, [1256, alert[0][1] + b + 2, 225, b])         # the left third, same row height as every bar
+        self.assertEqual(track[:2], [draw[0] + draw[2] + 2, draw[1]])       # the Speed slider starts one gap after Holster, same row
+        self.assertEqual((track[3], thumb[3], value[3]), (b, b, b))
+        self.assertEqual(value[0] + value[2], view[0] + view[2])            # and ends at the view's right edge
+        self.assertEqual(thumb[0], track[0])                                # 1x: the thumb at the left end of the track
+        self.assertEqual(legend[1], draw[1] + b + 2)
 
     def test_kinds_match_item_is_button(self):
         d = dump()
         buttons = {it["i"] for it in d["items"] if it["kind"] == "button"}
         self.assertEqual(buttons, cpp_button_indices())
         self.assertEqual(buttons, {0, 2, *range(6, 18), *range(19, 25), *range(26, 31), 33, 35, 40, 45, 50, 55, 60, 65, 69, 72, 73, 74})
+        self.assertEqual([it["i"] for it in d["items"] if it["kind"] == "label" and it["i"] >= 75], [75, 76, 77])   # the Speed slider: shapes and a label, no buttons
         self.assertEqual([it["i"] for it in d["items"] if it["kind"] == "view"], [25])
 
 
@@ -294,7 +300,7 @@ class SmokeTests(unittest.TestCase):
             self.assertEqual(M.main(["--panes", "3840x1600", "--mode", "engine-model", "--caption-fix", "1", "--crop", "--build-dir", _BUILD, "--out", str(out)]), 0)
             self.assertTrue(out.stat().st_size > 1000)
             side = json.loads(out.with_suffix(".json").read_text())
-            self.assertEqual(len(side["items"]), 75)
+            self.assertEqual(len(side["items"]), 78)
             self.assertIn("crop", side)
             btn = [it for it in side["items"] if it["kind"] == "button" and it["box"][3] >= 34]
             self.assertTrue(btn and all(it["drawn"] for it in btn if it["text"] and not it.get("hidden")))

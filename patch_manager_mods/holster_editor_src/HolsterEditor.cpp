@@ -1,4 +1,4 @@
-// HolsterEditor.cpp -- holster-editor 0.7.0-dev (Steam build): a HOOKLESS consumer of the mod-config provider (k2.modconfig@1, k2.menuui@1).
+// HolsterEditor.cpp -- holster-editor 0.7.1-dev (Steam build): a HOOKLESS consumer of the mod-config provider (k2.modconfig@1, k2.menuui@1).
 // (doc 42 HW-EDIT, plan .claude/plans/holster_editor_options.md; page rebuild: .claude/plans/holster_editor_layout_v3.md, holster_hw_ux3_build.md Wave B.)
 //
 // mod-config owns everything about the Options screen: the hooks, the root "Mod Configuration" button, the list page, control cloning,
@@ -56,11 +56,9 @@
 #include "EmbedGui.h"
 #include "HolsterApi.h"
 #include "Preview3dApi.h"
-#define INIW_FILE_API 1   // Slow holster page: ModConfigDecl's file writer (iniw::updateFile) must see this before its first IniWrite.h include
-#define MCDECL_FILE_API 1
+#define INIW_FILE_API 1   // the Speed slider writes holster.ini through iniw::updateFile (IniWrite.h); must come before the first include of it (HseSpeed.h, below)
 #include "ModConfigApi.h"
-#include "ModConfigDecl.h"    // mcdecl::Page: the declarative layer behind the second entry
-#include "HolsterSlowPage.h"  // the Slow holster schema + 64 KB ini reader (host-tested by slow_holster_page_test.cpp)
+#include "HseSpeed.h"         // the Speed slider's pure helpers: press -> 1..8, thumb place, the label, the holster.ini read (host-tested by hse_speed_test.cpp)
 #include "ProviderClient.h"   // k2pc::ClientSet / RegisterOnce: the lazy-connect plumbing for the four clients below
 #include "ViewDrag.h"
 #include "HseView.h"
@@ -124,8 +122,6 @@ k2mc::ConfigClient g_cfgClient;
 k2mc::MenuClient g_menu;
 k2pc::ClientSet<k2p3::Client, k2holster::Client, k2mc::ConfigClient, k2mc::MenuClient> g_clients(g_p3, g_hol, g_cfgClient, g_menu);   // pointers: the clients above outlive it
 k2pc::RegisterOnce g_reg;
-mcdecl::Page g_slowPage;   // "Slow holster" (HolsterSlowPage.h): schema, row state, ini io (static, ~35 KB)
-k2pc::RegisterOnce g_regSlow;
 
 enum State { IDLE, NEEDBUILD, LIVE, FAILED };
 // MODE_WEAPON = a weapon edit is open (the normal state of the page); MODE_NAV = none is (the member has no weapon, or the edit was refused or lost).
@@ -211,6 +207,11 @@ struct Editor {
 
     // Inspector (weapon mode): thumb fraction per row, value texts, the value the edit opened with (the reset target)
     float rowFrac[hse::kV3Rows] = {0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f};
+    // Speed slider (global, holster.ini slow_holster_x; HW44): the value (read at page open, written at each change), the drag state, the track's wedge item
+    int speed = hse::kSpeedDefault;
+    bool speedDrag = false;           // LMB is held from a press on the Speed track (the value follows the cursor)
+    int32_t speedWedge = -1;
+    int speedValW = -1;                // the value label's box width the text was fitted for (the label is refitted when the box changes)
     float openRot[3] = {0, 0, 0}, openOff[3] = {0, 0, 0};   // the values when the edit opened (or after the last Save / scope change): the reset target
     bool openValid = false;
     hse::Scrub scrub;                  // the running row scrub (pure state)
@@ -320,6 +321,10 @@ Editor g_ed;
 
 void scrubCancel(Editor& e, const char* why);   // defined with the inspector helpers below
 void exitEdit(Editor& e);                       // defined after enterEdit
+void speedReadNow(Editor& e);                   // defined with the Speed slider helpers (before the slider row helpers)
+void speedShowText(Editor& e);                  // ditto
+bool speedHover(const Editor& e, int x, int y); // ditto
+bool speedBuilt(const Editor& e);               // ditto
 
 void embedLog(const char* fmt, ...) {
     char buf[512];
@@ -448,6 +453,9 @@ bool itemIsButton(int i) {
     return false;
 }
 
+// Items a mod-config with a smaller page cap may leave out (the page works without them): the Draw / Holster toggle and the Speed slider (the last items).
+bool itemOptional(int i) { return i == hse::PI_DRAW || (i >= hse::PI_SPEED_TRACK && i < hse::PI_SPEED_TRACK + hse::kSpeedItems); }
+
 // The reset icon buttons: the view reset, the two group resets and the six row resets.
 bool itemIsResetIcon(int i) {
     using namespace hse;
@@ -493,6 +501,7 @@ const char* itemInitText(int i, char* buf, int cap) {
     if (i >= PI_STANCE && i < PI_STANCE + kV3Stances) return kStanceList[i - PI_STANCE].label;
     if (i == PI_PAUSE) return "Pause";
     if (i == PI_DRAW) return "Draw";
+    if (i == PI_SPEED_VALUE) { hse::speedText(buf, static_cast<size_t>(cap), g_ed.speed); return buf; }
     if (i == PI_LEGEND) return helpLine();
     for (int g = 0; g < kV3Groups; ++g) {
         if (i == PI_GROUP + g * 2) return kGroup[g];
@@ -632,6 +641,7 @@ void KPATCH_CALL cbBuild(void* panel, void*) {
         g_p3.p->SetBeforeFree(cbBeforeFree, &g_ed);
         g_p3.p->SetWeapons(g_ed.token, 1);
     }
+    speedReadNow(g_ed);   // the Speed label's first text comes from the saved value (the items below read it)
     int failedAt = (g_ed.statusItem < 0) ? hse::PI_STATUS : -1;
     for (int i = 0; i < hse::kPageItemsV3 && failedAt < 0; ++i) {
         if (i == hse::PI_STATUS || i == hse::PI_VIEW) continue;
@@ -642,15 +652,18 @@ void KPATCH_CALL cbBuild(void* panel, void*) {
             }
             if (failedAt >= 0) break;
         }
+        if (i == hse::PI_SPEED_TRACK) g_ed.speedWedge = ui->AddLabel(g_ed.page, "");   // the Speed track's wedge: just before the track and thumb, so they draw over it
         char buf[64];
         const char* text = itemInitText(i, buf, sizeof buf);
         g_ed.item[i] = itemIsButton(i) ? ui->AddButton(g_ed.page, text, itemIsLeftTip(i) ? "" : itemTip(i)) : ui->AddLabel(g_ed.page, text);
-        if (g_ed.item[i] < 0 && i != hse::PI_DRAW) failedAt = i;   // the Draw toggle is the last item: a mod-config with the old 80-item cap just leaves it out
+        if (g_ed.item[i] < 0 && !itemOptional(i)) failedAt = i;   // the Draw toggle and the Speed slider come last: a mod-config with a smaller cap just leaves them out
     }
     if (g_ed.item[hse::PI_DRAW] < 0) KP_LOGV(chMain, KPLOG_WARN, "BUILD WARN no Draw / Holster toggle: mod-config page cap below %d (needs the mod-config build after 0.3.7-dev)", hse::kPageItemsV3Total);
+    if (!speedBuilt(g_ed)) KP_LOGV(chMain, KPLOG_WARN, "BUILD WARN no Speed slider: mod-config page cap below %d", hse::kPageItemsV3Total);
     int built = 0;
     for (int i = 0; i < hse::kPageItemsV3; ++i) if (g_ed.item[i] >= 0) ++built;
     for (int r = 0; r < hse::kV3Rows; ++r) if (g_ed.wedge[r] >= 0) ++built;
+    if (g_ed.speedWedge >= 0) ++built;
     g_ed.itemsBuilt = built;
     KP_LOG(chMain, "BUILD items=%d/%d (page cap %d) page=%u view item=%d status item=%d token=%u", built, hse::kPageItemsV3Total, hse::kPageItemCap, g_ed.page,
            g_ed.viewItem, g_ed.statusItem, g_ed.token);
@@ -1624,7 +1637,7 @@ void applyLayout(Editor& e) {
     }
     const editkit::Box paneBox = hse::boxOf(e.paneDesc);
     const editkit::Box coverBox = hse::coverDescPane(paneBox, prev, screen, g_descCoverPx);
-    const hse::PageLayoutV3 L = hse::pageLayoutV3(col, hse::boxOf(e.paneView), prev, none, e.rowFrac, coverBox);
+    const hse::PageLayoutV3 L = hse::pageLayoutV3(col, hse::boxOf(e.paneView), prev, none, e.rowFrac, coverBox, e.speed);
     const bool first = !e.layOk;
     const int rState = L.hintR[0].w > 0 ? 1 : 0;
     if (rState != e.hintRState) {   // the right description box (a framed label over mod-config's LB_DESC, hides its scrollbar) was created / lost
@@ -1657,6 +1670,15 @@ void applyLayout(Editor& e) {
         // so the wedge always ends exactly where the marker sits.
         const int w = th.w > 0 ? th.x + th.w / 2 - t.x : 0;
         placeBox(e.wedge[r], w > 0 && t.h > 0 ? editkit::Box{t.x, t.y, w, t.h} : editkit::Box{-9999, -9999, 0, 0});
+    }
+    {   // the Speed track's wedge: the same cut as the rows' wedges
+        const editkit::Box t = L.speedTrack, th = L.speedThumb;
+        const int w = th.w > 0 ? th.x + th.w / 2 - t.x : 0;
+        placeBox(e.speedWedge, w > 0 && t.h > 0 ? editkit::Box{t.x, t.y, w, t.h} : editkit::Box{-9999, -9999, 0, 0});
+    }
+    if (e.speedValW != L.speedValue.w) {   // the value label box changed width (a resize): refit its text
+        e.speedValW = L.speedValue.w;
+        speedShowText(e);
     }
     applyCaptions(e);   // after every button rect is set: the engine's SetExtent just re-insetted each caption text rect
     if (!e.capBoxLogged) {   // once per Editor: the section titles (WEAPON, BONE, APPLIES TO) are full row boxes; a play check reads their heights here
@@ -1872,6 +1894,71 @@ bool overAnyButton(const Editor& e, int x, int y) {
     return false;
 }
 
+// ---- Speed slider (holster-editor 0.7.1-dev, HW44): a global 1..8 slider under the 3D view, beside the Draw / Holster toggle ----
+// Global: it does not depend on the weapon or the scope, and it never goes through the placement save or Revert, so it works in every mode. The value is
+// the flat key slow_holster_x in the game-dir holster.ini (HseSpeed.h); holster 0.21.0-dev polls that file, so the preview and the game follow at once.
+// A press (LMB edge) on the track or the thumb starts a drag: the value follows the cursor in whole steps (the thumb snaps to the step) and every step
+// change is written (a drag writes at most seven times). Nothing is written until the value changes; the page only reads the key when it is built and
+// whenever it is entered. The label and the wedge follow the value; the hover help covers the whole slider.
+
+// All three boxes of the slider exist (a mod-config with a smaller page cap leaves them out; the slider is then absent).
+bool speedBuilt(const Editor& e) {
+    return e.item[hse::PI_SPEED_TRACK] >= 0 && e.item[hse::PI_SPEED_THUMB] >= 0 && e.item[hse::PI_SPEED_VALUE] >= 0;
+}
+
+// The cursor is over the track, the thumb or the value label (the hover help covers all three).
+bool speedHover(const Editor& e, int x, int y) {
+    return speedBuilt(e) && (overItem(e, e.item[hse::PI_SPEED_TRACK], x, y) || overItem(e, e.item[hse::PI_SPEED_THUMB], x, y) || overItem(e, e.item[hse::PI_SPEED_VALUE], x, y));
+}
+
+// The value label, fitted to its box: "Speed 4x", else the short "4x" when the box is narrow (a "Spe..." cut would lose the number), else cut.
+void speedShowText(Editor& e) {
+    if (e.item[hse::PI_SPEED_VALUE] < 0) return;   // not built yet: the item text starts from g_ed.speed when it is added
+    char txt[32], fit[32];
+    const float px = labelPx(e, e.lay.speedValue);
+    hse::speedText(txt, sizeof txt, e.speed);
+    if (px > 0.0f && textfit::textPx(textCtx(), txt, static_cast<int>(strlen(txt))) > px) hse::speedTextShort(txt, sizeof txt, e.speed);
+    fitButton(px, txt, fit, sizeof fit);
+    setItemText(e, hse::PI_SPEED_VALUE, fit);
+}
+
+// Reads the key the page shows (build, or the page is entered). Writes nothing.
+void speedReadNow(Editor& e) {
+    e.speedDrag = false;
+    int bytes = 0;
+    e.speed = hse::speedReadIni(hse::kSpeedIniFile, &bytes);
+    speedShowText(e);
+    KP_LOG(chView, "SPEED read %s %s=%d bytes=%d", hse::kSpeedIniFile, hse::kSpeedIniKey, e.speed, bytes);
+}
+
+// Sets the value (clamped). A change is shown and written at once (one log line per write); an unchanged value does nothing.
+void speedSet(Editor& e, int v, const char* how) {
+    v = hse::speedClamp(v);
+    if (v == e.speed) return;
+    e.speed = v;
+    speedShowText(e);
+    char val[8];
+    snprintf(val, sizeof val, "%d", v);
+    const bool ok = iniw::updateFile(hse::kSpeedIniFile, nullptr, hse::kSpeedIniKey, val, false);
+    KP_LOG(chView, "SPEED write %s %s=%s ok=%d how=%s", hse::kSpeedIniFile, hse::kSpeedIniKey, val, ok ? 1 : 0, how);
+}
+
+// The Speed drag, once per tick after the mouse has been read. lEdge is the LMB press edge of this tick.
+void speedTick(Editor& e, int x, int y, bool fg, bool lmb, bool lEdge) {
+    if (!e.layOk || !e.page || !g_menu.ok() || !speedBuilt(e)) return;
+    const editkit::Box t = e.lay.speedTrack;
+    if (t.w <= 0) return;
+    if (e.speedDrag) {
+        if (!fg || !lmb) { e.speedDrag = false; return; }   // released, or the game lost the foreground (the value stays as it was written)
+        speedSet(e, hse::speedFromX(x, t.x, t.w, hse::kV3ThumbW), "drag");
+        return;
+    }
+    if (!fg || !lEdge) return;
+    if (!overItem(e, e.item[hse::PI_SPEED_TRACK], x, y) && !overItem(e, e.item[hse::PI_SPEED_THUMB], x, y)) return;
+    e.speedDrag = true;
+    speedSet(e, hse::speedFromX(x, t.x, t.w, hse::kV3ThumbW), "press");
+}
+
 // The slider row under the cursor (its track or thumb: where a press scrubs), else -1. *onThumb is true when the cursor is over the thumb itself.
 int sliderRowAt(const Editor& e, int x, int y, bool* onThumb) {
     if (onThumb) *onThumb = false;
@@ -2048,11 +2135,13 @@ void refreshHints(Editor& e, int x, int y) {
     int rtip = -1;   // a RIGHT-side button with help (the mode bar, the view icons, the stances, the group resets)
     for (int i = 0; row < 0 && i < hse::kPageItemsV3 && rtip < 0; ++i)
         if (itemIsButton(i) && !itemIsLeftTip(i) && itemTip(i)[0] && overItem(e, e.item[i], x, y)) rtip = i;
-    // key of what the right pane shows: a slider row, 100 + a right button, 200 + a left button (no left box), -1 the default
-    const int key = row >= 0 ? row : (rtip >= 0 ? 100 + rtip : ((!haveL && tip >= 0) ? 200 + tip : -1));
+    const bool speedHov = row < 0 && rtip < 0 && speedHover(e, x, y);   // the whole Speed slider (track, thumb, label), not only a part of it
+    // key of what the right pane shows: a slider row, 100 + a right button, 200 + a left button (no left box), 300 the Speed slider, -1 the default
+    const int key = row >= 0 ? row : (rtip >= 0 ? 100 + rtip : (speedHov ? 300 : ((!haveL && tip >= 0) ? 200 + tip : -1)));
     char buf[256];
     if (row >= 0) snprintf(buf, sizeof buf, "%s %s", hse::inspHint(row), kSliderHelp);
     else if (rtip >= 0) snprintf(buf, sizeof buf, "%s", itemTip(rtip));
+    else if (speedHov) snprintf(buf, sizeof buf, "%s", hse::speedTip());
     else if (key >= 200) leftTipText(e, tip, buf, sizeof buf);
     else snprintf(buf, sizeof buf, "%s", kSliderHelp);
     if (key != e.hintRow || strcmp(buf, e.hintRBuf)) {
@@ -2285,6 +2374,7 @@ void KPATCH_CALL cbEnter(uint32_t page, void*) {
             placeBox(g_ed.item[i], editkit::Box{-9999, -9999, 0, 0});
         }
         for (int r = 0; r < hse::kV3Rows; ++r) placeBox(g_ed.wedge[r], editkit::Box{-9999, -9999, 0, 0});
+        placeBox(g_ed.speedWedge, editkit::Box{-9999, -9999, 0, 0});
         placeItem(g_ed.statusItem, MUI_PANE_STATUS, "refusal message");
         if (g_ed.statusItem >= 0) g_menu.p->SetText(g_ed.page, g_ed.statusItem, kNeedsModConfig);
         KP_LOG(chView, "ENTER refused page: %s", kNeedsModConfig);
@@ -2297,6 +2387,7 @@ void KPATCH_CALL cbEnter(uint32_t page, void*) {
     g_ed.panesOk = false;
     g_ed.layOk = false;
     g_ed.paneWarned = false;
+    speedReadNow(g_ed);   // the Speed value is read on every open (holster.ini may have changed since the last one)
     g_ed.selKeyValid = false;
     g_ed.hintRow = -2;
     refreshPanes(g_ed);
@@ -2575,6 +2666,14 @@ void applyArt(Editor& e) {
         if (hse::sliderArtFill(wc, hse::SA_Wedge)) { ++wedge; (void)guikit::setFillStyle(wc, 2); }
         if (hse::sliderArtFill(mc, hse::SA_Mark)) { ++mark; (void)guikit::setFillStyle(mc, 2); }
     }
+    if (haveSlider) {   // the Speed slider (optional item, absent with a small page cap): the same frame, wedge and marker art as the inspector rows
+        const uintptr_t tc = ctlOf(e, e.item[hse::PI_SPEED_TRACK]), wc = ctlOf(e, e.speedWedge), mc = ctlOf(e, e.item[hse::PI_SPEED_THUMB]);
+        int speedArt = 0;
+        if (hse::sliderArtFill(tc, hse::SA_Frame)) { ++speedArt; (void)guikit::setFillStyle(tc, 2); }
+        if (hse::sliderArtFill(wc, hse::SA_Wedge)) { ++speedArt; (void)guikit::setFillStyle(wc, 2); }
+        if (hse::sliderArtFill(mc, hse::SA_Mark)) { ++speedArt; (void)guikit::setFillStyle(mc, 2); }
+        KP_LOG(chView, "ART speed slider=%d/3", speedArt);
+    }
     for (int i = 0; i < hse::kPageItemsV3 && haveSlider; ++i) {   // the left description box: the vanilla description colours as a stretched fill, its text in the description font
         if (itemIsHintBox(i)) {
             const uintptr_t hc = ctlOf(e, e.item[i]);
@@ -2813,6 +2912,7 @@ void tickBody(Editor& e) {
     {
         const bool lEdge = lmb && !e.pressed;   // weaponMouse updates the "was down" flags
         const hse::ChordOut co = weaponMouse(e, curX, curY, insideView, fg, shift, ctrl, lmb, rmb, mmb, w);
+        speedTick(e, curX, curY, fg, lmb, lEdge);   // every mode: the slider sits outside the 3D view, so its press is never a view gesture
         if (e.mode == MODE_WEAPON) scrubTick(e, co, lEdge, curX, curY, fg, lmb, rmb, mmb, shift, ctrl);
         if (e.mode == MODE_WEAPON) refreshInspector(e, false);
         syncRemoveMenu(e);
@@ -2999,29 +3099,6 @@ void KPATCH_CALL cbDestroy(void* panel, void*) {
 K2ModConfigEntry g_entry;   // Register copies it; the strings are static
 
 void regLog(int level, const char* msg) { KP_LOGV(chMain, level, "%s", msg); }
-void slowRegLog(int level, const char* msg) { KP_LOGV(chMain, level, "SLOW %s", msg); }   // "SLOW page REGISTER ok token=N" / "... refused ..."
-
-// The page's file write. ModConfigDecl calls it only for an accepted CHANGE (never on build, never for an unchanged value), so every line is a real save.
-bool slowWrite(const char* path, const char* section, const char* key, const char* val) {
-    const bool ok = mcdecl::fileWrite(path, section, key, val);
-    KP_LOG(chMain, "SLOW write %s %s=%s ok=%d", path, key, val, ok ? 1 : 0);
-    return ok;
-}
-
-// Second entry: Slow holster. Memory only (KPatchInit: no file I/O); the ini read happens in build(). Called after the Holstered Weapons
-// registration, so that entry keeps its list position. The caller has checked that mod-config and menuui are connected.
-void registerSlowHolster() {
-    char err[96] = {0};
-    if (!g_slowPage.load(hsp::kPageSchema, strlen(hsp::kPageSchema), err, sizeof err)) {
-        KP_LOG(chMain, "SLOW REGISTER fail why=schema %s", err);
-        return;
-    }
-    g_slowPage.menu = &g_menu;
-    g_slowPage.io = mcdecl::fileIo();
-    g_slowPage.io.read = hsp::readIni;   // the stock reader keeps 16 KB; the live holster.ini can be longer
-    g_slowPage.io.write = slowWrite;
-    k2pc::registerOnce(g_regSlow, g_cfgClient, g_slowPage.entry(hsp::kEntryId), slowRegLog);
-}
 
 }  // namespace
 
@@ -3031,7 +3108,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     g_clients.init(api);
     embedgui::g_log = embedLog;
     embtex::g_log = embedLog;
-    KP_LOG(chMain, "holster-editor 0.7.0-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
+    KP_LOG(chMain, "holster-editor 0.7.1-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
            static_cast<unsigned>(sizeof kHseViewGui));
     g_clients.poll();   // the first poll() of every client tries to connect
     // This DLL is hookless: there is no frame hook to retry mod-config / menuui from later, so a missing provider now means no page this run.
@@ -3051,7 +3128,6 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     g_entry.tick = cbTick;
     g_entry.destroy = cbDestroy;
     k2pc::registerOnce(g_reg, g_cfgClient, g_entry, regLog);   // logs "page REGISTER ok token=N" or "page REGISTER refused ..."
-    registerSlowHolster();   // the second entry (Slow holster), after Holstered Weapons
 }
 
 // No I/O here (loader lock). The config is read in build().

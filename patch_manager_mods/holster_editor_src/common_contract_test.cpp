@@ -8,7 +8,7 @@
 //   - party::table / partyCount / member / serverCreature (Party.h)
 //   - saferead::readExo (SafeRead.h)
 //   - sceneview::camera + the K2Addr Cam_* / SceneCamVt_MapToScreen fields (SceneView.h, K2Addr.h: the CAMENG probe)
-//   - mcdecl::parseSchema / Page::load / Page::entry / fileIo / fileWrite / iniGet (ModConfigDecl.h: the Slow holster entry; behaviour in slow_holster_page_test)
+//   - iniw::updateFile (IniWrite.h: the Speed slider's holster.ini write)
 // against the fake registry and host test environment.
 
 #ifndef GUIKIT_HOST
@@ -19,10 +19,9 @@
 #include "FakeKPatchApi.h"
 #include "Preview3dApi.h"
 #include "HolsterApi.h"
-#define INIW_FILE_API 1   // HolsterEditor.cpp defines the same two before ModConfigDecl.h; mcdecl::fileIo / fileWrite are pinned below
-#define MCDECL_FILE_API 1
+#define INIW_FILE_API 1   // HolsterEditor.cpp defines it too, before its IniWrite.h include: the Speed row writes holster.ini through iniw::updateFile
 #include "ModConfigApi.h"
-#include "ModConfigDecl.h"
+#include "IniWrite.h"
 #include "GuiKit.h"
 #include "Party.h"
 #include "SafeRead.h"
@@ -49,15 +48,8 @@ using HseClientSet = k2pc::ClientSet<k2p3::Client, k2holster::Client, k2mc::Conf
 SIG(HseClientSet::init, void (HseClientSet::*)(const KPatchApi*));
 SIG(HseClientSet::poll, void (HseClientSet::*)());
 SIG(k2pc::registerOnce<k2mc::ConfigClient>, bool (*)(k2pc::RegisterOnce&, k2mc::ConfigClient&, const K2ModConfigEntry&, void (*)(int, const char*)));
-// ModConfigDecl.h (doc 46): the Slow holster entry is built from these; its schema, io hooks and write path are pinned by slow_holster_page_test.cpp.
-SIG(mcdecl::parseSchema, bool (*)(const char*, size_t, mcdecl::PageDecl&, char*, int));
-SIG(mcdecl::Page::load, bool (mcdecl::Page::*)(const char*, size_t, char*, int));
-SIG(mcdecl::Page::entry, K2ModConfigEntry (mcdecl::Page::*)(const char*));
-SIG(mcdecl::fileIo, mcdecl::IniIo (*)());
-SIG(mcdecl::fileWrite, bool (*)(const char*, const char*, const char*, const char*));
-SIG(mcdecl::iniGet, bool (*)(const char*, size_t, const char*, const char*, char*, int));
-static_assert(std::is_same<decltype(mcdecl::IniIo::read), bool (*)(const char*, const char*, const char*, char*, int)>::value, "mcdecl::IniIo::read signature changed");
-static_assert(std::is_same<decltype(mcdecl::IniIo::write), bool (*)(const char*, const char*, const char*, const char*)>::value, "mcdecl::IniIo::write signature changed");
+// IniWrite.h: the Speed row's write of the flat holster.ini key slow_holster_x (HolsterEditor.cpp speedSet; the value logic is in hse_speed_test).
+SIG(iniw::updateFile, bool (*)(const char*, const char*, const char*, const char*, bool));
 
 namespace {
 

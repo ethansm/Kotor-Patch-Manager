@@ -78,14 +78,12 @@ def run_dump(col, view, preview, desc=None, build_dir=None, cover=None):
         args.append(str(cover))
     r = subprocess.run([str(exe)] + args, capture_output=True, text=True, check=True)
     dump = json.loads(r.stdout)
-    for it in dump["items"]:   # tools/hse_layout_dump.cpp itemKind predates PI_PAUSE (73) and PI_DRAW (74): it is a button in HolsterEditor.cpp itemIsButton
-        if it["i"] in (73, 74) and it["kind"] == "label":
-            it["kind"] = "button"
     return dump
 
 
-PI_PAUSE = 73    # HseLayoutV3.h PI_PAUSE: the Pause / Play toggle (left half of the bar above the Idle row; a button, caption "Pause" while the preview runs)
-PI_DRAW = 74     # HseLayoutV3.h PI_DRAW: the Draw / Holster toggle (right half of that bar; a button, caption "Draw" while the weapons are holstered)
+PI_PAUSE = 73    # HseLayoutV3.h PI_PAUSE: the Pause / Play toggle (alone and centred on the bar row under the view; a button, caption "Pause" while the preview runs)
+PI_DRAW = 74     # HseLayoutV3.h PI_DRAW: the Draw / Holster toggle (left third of the bottom bar row; a button, caption "Draw" while the weapons are holstered)
+PI_SPEED_TRACK, PI_SPEED_THUMB, PI_SPEED_VALUE = 75, 76, 77   # HseLayoutV3.h: the Speed slider (right two thirds of the bottom bar row): track, thumb, value label "Speed 1x"
 PI_REMOVE = 72   # HseLayoutV3.h PI_REMOVE: the Remove saved placement button (a button; shown only while the "..." menu is open)
 
 
@@ -237,7 +235,7 @@ def caption_for(i, remove_open=False):
              18: "Member 1/9 | Weapons: Right+Left", 19: ">Move<", 20: "Depth", 21: "Tilt", 22: "Roll/Turn", 23: "R", 24: "<>", 25: "",
              31: HELP_LINE, 32: "POSITION", 33: "R", 34: "ROTATION", 35: "R", 66: "Left: mirrored from right",
              67: "", 68: REMOVE_DESC_TEXT if remove_open else LEFT_DESC_TEXT, 69: "...", 70: "", 71: RIGHT_DESC_TEXT,
-             PI_REMOVE: "Remove saved placement", PI_PAUSE: "Pause", PI_DRAW: "Draw"}
+             PI_REMOVE: "Remove saved placement", PI_PAUSE: "Pause", PI_DRAW: "Draw", PI_SPEED_VALUE: "Speed 1x"}
     if i in fixed:
         return fixed[i]
     if 8 <= i <= 12:
@@ -432,11 +430,13 @@ def render(W, H, panes, dump, mode="engine-model", fix=0, g=16, m=9, line_h=None
         elif i == PI_MEMBER_NAME:   # name plate: the hint-box frame fill + edge (SA_Box), centred lit text (HolsterEditor.cpp applyArt NAMEBOX)
             d.rectangle((X, Y, X + bw - 1, Y + bh - 1), fill=DESC_FILL)
             draw_border_px(canvas, box, g, {**BTN_BORDER, "COLOR": DESC_EDGE})
-        elif 36 <= i <= 65 and (i - 36) % 5 in (1, 2):   # slider track / thumb: plain shapes
-            fill = (30, 60, 56, 255) if (i - 36) % 5 == 1 else (204, 204, 178, 255)
+        elif (36 <= i <= 65 and (i - 36) % 5 in (1, 2)) or i in (PI_SPEED_TRACK, PI_SPEED_THUMB):   # slider track / thumb (inspector rows and the Speed slider): plain shapes
+            fill = (30, 60, 56, 255) if i == PI_SPEED_TRACK or (i < PI_SPEED_TRACK and (i - 36) % 5 == 1) else (204, 204, 178, 255)
             d.rectangle((X, Y, X + bw - 1, Y + bh - 1), fill=fill)
         pad = button_fit_pad if kind == "button" else label_fit_pad
         shown = fit_text(text, bw - pad if bw > pad else 0, fscale) if text else ""
+        if i == PI_SPEED_VALUE and shown != text and text:   # HolsterEditor.cpp speedShowText: a box too narrow for "Speed 1x" shows the short form "1x" (no "Spe..." cut)
+            shown = fit_text(text.split()[-1], bw - pad if bw > pad else 0, fscale)
         rect0, _, _ = place_caption(kind, box, mode, fix, g, m, line_h, no_drop)
         lines = wrap_text(shown, wrap_width(kind, box, rect0, mode), scale) if shown else []
         n = max(1, len(lines))

@@ -13,7 +13,7 @@ static const char* itemKind(int i) {
     if (i == PI_VIEW) return "view";
     if (i == PI_HINT || i == PI_HINTR) return "frame";                   // the green description boxes (drawn as a frame, no caption)
     if (i == PI_HINT + 1 || i == PI_HINTR + 1) return "desctext";        // their text areas (top-left aligned, word wrapped)
-    if (i == PI_MEMBER_PREV || i == PI_MEMBER_NEXT || i == PI_SAVE || i == PI_REVERT || i == PI_RESET_SCOPE || i == PI_REMOVE || i == PI_VIEW_RESET || i == PI_VIEW_FLIP) return "button";
+    if (i == PI_MEMBER_PREV || i == PI_MEMBER_NEXT || i == PI_SAVE || i == PI_REVERT || i == PI_RESET_SCOPE || i == PI_REMOVE || i == PI_VIEW_RESET || i == PI_VIEW_FLIP || i == PI_PAUSE || i == PI_DRAW) return "button";
     if (i >= PI_WEAPON && i < PI_WEAPON + kV3Weapons) return "button";
     if (i >= PI_BONE && i < PI_BONE + kV3Bones) return "button";
     if (i >= PI_SCOPE && i < PI_SCOPE + kV3Scopes) return "button";
@@ -23,7 +23,7 @@ static const char* itemKind(int i) {
         if (i == PI_GROUP + g * 2 + 1) return "button";
     for (int r = 0; r < kV3Rows; ++r)
         if (i == PI_ROW + r * kRowStride + 4) return "button";
-    return "label";
+    return "label";   // incl. the Speed slider (PI_SPEED_TRACK / THUMB / VALUE): plain shapes and a label, as in HolsterEditor.cpp
 }
 
 static void pane(const char* name, const editkit::Box& b, bool last) {
@@ -42,7 +42,7 @@ int main(int argc, char** argv) {
     const float rowFrac[hse::kV3Rows] = {0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f};   // HolsterEditor.cpp Editor::rowFrac default
     const int cover = argc == 18 ? v[16] : hse::kV3CoverDefault;
     const editkit::Box covered = hse::coverDescPane(desc, prev, none, cover);   // HolsterEditor.cpp applyLayout (the screen size is unknown here)
-    const hse::PageLayoutV3 L = hse::pageLayoutV3(col, view, prev, none, rowFrac, covered);
+    const hse::PageLayoutV3 L = hse::pageLayoutV3(col, view, prev, none, rowFrac, covered, hse::kSpeedDefault);   // the Speed slider at its default (1x)
     editkit::Box all[hse::kPageItemsV3];
     const int n = hse::pageBoxesV3(L, all);
     std::printf("{\"panes\":{");

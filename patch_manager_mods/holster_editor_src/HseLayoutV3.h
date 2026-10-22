@@ -1,6 +1,6 @@
 // Holster editor page layout v3 (HW-UX3 L0c; pure: no Win32 types, no STL). Host-tested by hse_layout_v3_test.cpp.
 // One call returns every Box of the rebuilt page: the left column (member, weapon, bone, scope, save/revert, status),
-// the view area (mode bar in 2 x 2, enlarged view, stances 3 + 2, legend; one row each on tiny screens; the left column likewise has a roomy form (2 bone columns, one
+// the view area (mode bar in 2 x 2, enlarged view, Pause alone, stances 3 + 2, a bottom layer with Draw / Holster (left third) and the Speed slider (right two thirds, HW44), legend; one row each on tiny screens; the left column likewise has a roomy form (2 bone columns, one
 // scope per row) and a compact one below kV3RoomyRowMin rows) and the inspector in the right pane (two groups, six slider
 // rows with thumbs, value labels outside the track, reset squares, note, hint lines).
 // Integer math only (float rounding differed between x87 and SSE builds, F18); the only floats are the thumb fractions,
@@ -30,6 +30,7 @@
 #pragma once
 #include <math.h>
 #include "EditKit.h"
+#include "HseSpeed.h"   // speedThumbX: the Speed slider's thumb follows its value (integer math)
 
 namespace hse {
 
@@ -58,13 +59,17 @@ constexpr int kV3NameW = 170, kV3ValueW = 200;    // inspector name and value la
 constexpr int kV3TrackWant = 150;  // a narrow inspector keeps the track this wide before the labels take their full width
 constexpr int kV3TrackMin = 60;   // the inspector slider track keeps at least this width (the labels shrink first)
 constexpr int kV3ResetMax = 60;   // reset icon squares are up to 60 x 60 (smaller only when the row is): the button border insets the arrow by 16 px a side
+constexpr int kV3SpeedValueW = 184;   // the Speed value label ("Speed 8x" is 171 px at text_k 2.65 + 8 px label pad) is at most this wide; the track takes the rest of the two thirds
+constexpr int kV3SpeedTrackMin = 120; // the Speed track keeps this width before the label gives up its room (the label then shrinks to "8x"; see HolsterEditor.cpp speedShowText)
+constexpr int kV3SpeedWedge = 1;      // the Speed track's wedge: one extra item beside the boxes (the six inspector rows have one each)
 
 // Page items that become mod-config items: left 19 (member 3, captions 3, weapons 2, bones 5, scopes 3, save/revert 2,
 // status 1) + view area 13 (mode 4, view reset + flip 2, view 1, stances 5, legend 1) + inspector 37 (group labels 2,
 // group resets 2, rows 6 x 5, note 1, hints 2) + the Reset Scope button 1 (left column, appended after the hints so no index shifts)
-// + the right description box and its text 2 (drawn over mod-config's LB_DESC) + the Remove button 1 (inspector zone, under the note) + the Pause button 1 (view area: left half of the bar above the Idle row; the sixth cell on tiny screens) + the Draw / Holster toggle 1 (right half of that bar; the seventh cell on tiny screens; appended last).
-// kPageItemsV3 + kV3Rows (wedges) must stay <= 96 (kMaxItems; 80 up to mod-config 0.3.7-dev).
-constexpr int kPageItemsV3 = 75;
+// + the right description box and its text 2 (drawn over mod-config's LB_DESC) + the Remove button 1 (inspector zone, under the note) + the Pause button 1 (view area: alone and centred in the top layer under the view)
+// + the Draw / Holster toggle 1 (view area: the left third of the bottom layer) + the Speed slider 3 (HW44: track, thumb, value label; the right two thirds of that layer; appended last).
+// kPageItemsV3 + kV3Rows + kV3SpeedWedge (wedges) must stay <= 96 (kMaxItems; 80 up to mod-config 0.3.7-dev).
+constexpr int kPageItemsV3 = 78;
 constexpr int kV3RemoveMaxW = 480;   // the Remove saved placement button is at most this wide (left aligned under the note)
 
 struct InspRowV3 { editkit::Box name, track, thumb, value, reset; };
@@ -84,7 +89,8 @@ struct PageLayoutV3 {
     editkit::Box view;                                    // the enlarged view rect
     editkit::Box stance[kV3Stances];
     editkit::Box pause;                                   // Pause / Play toggle for the preview animation (left half of the bar above the stance rows; appended in pageBoxesV3)
-    editkit::Box draw;                                    // Draw / Holster toggle (HW20): the weapons slide to the hand / back to the mount in the preview (right half of that bar; appended last)
+    editkit::Box draw;                                    // Draw / Holster toggle (HW20): the weapons slide to the hand / back to the mount in the preview (left third of the bottom layer; appended)
+    editkit::Box speedTrack, speedThumb, speedValue;      // Speed slider (HW44, global, not per weapon): right two thirds of the bottom layer, beside draw; appended last
     editkit::Box legend;
     // inspector
     editkit::Box groupLabel[kV3Groups], groupReset[kV3Groups];
@@ -232,6 +238,21 @@ inline int buildInspector(editkit::Box Z, editkit::Box /*hintZone: unused, the h
     return y - kGap + kPad;
 }
 
+// The Speed slider (HW44): one horizontal row R of height R.h, all of it inside R (clipped to R). Left to right: the track, a gap, the value label
+// ("Speed 4x", at most kV3SpeedValueW) at the right end. The track keeps kV3SpeedTrackMin while the label keeps its full width; a narrower row takes the
+// room from the label first (never below a third of the row, so the short form "8x" still fits). speed = the value (1..8): the thumb sits at its step.
+inline void buildSpeed(editkit::Box R, int speed, PageLayoutV3& L) {
+    using editkit::Box;
+    auto mk = [&](int x, int yy, int w, int h) { return clipTo(Box{x, yy, w, h}, R); };
+    const int avail = imax(0, R.w - kGap);                                            // the track and the value label share this
+    const int vw = imin(kV3SpeedValueW, imax(avail / 3, avail - kV3SpeedTrackMin));   // the label keeps its full width while the track keeps kV3SpeedTrackMin
+    const int tw = imax(0, avail - vw);                                                // the track takes the rest on the left
+    L.speedTrack = mk(R.x, R.y, tw, R.h);
+    L.speedValue = mk(R.x + tw + kGap, R.y, vw, R.h);
+    const int thw = imin(kV3ThumbW, tw);
+    L.speedThumb = mk(speedThumbX(speed, R.x, tw, thw), R.y, thw, R.h);
+}
+
 }  // namespace v3
 
 // coverDescPane: grows the description pane by `cover` px on all four sides so the RIGHT description box (our framed label) fully covers the frame of
@@ -269,9 +290,9 @@ inline editkit::Box coverDescPane(editkit::Box desc, editkit::Box preview, editk
 }
 
 // pageLayoutV3: see the geometry contract at the top. thumbFrac: six fractions in [0,1] (clamped; NaN -> 0), null = 0.5.
-// hint: pass a zero Box {0,0,0,0} for none.
+// hint: pass a zero Box {0,0,0,0} for none. speed: the Speed slider value (HseSpeed.h), places its thumb.
 inline PageLayoutV3 pageLayoutV3(editkit::Box column, editkit::Box view, editkit::Box preview, editkit::Box hint,
-                                 const float* thumbFrac, editkit::Box desc = editkit::Box{0, 0, 0, 0}) {
+                                 const float* thumbFrac, editkit::Box desc = editkit::Box{0, 0, 0, 0}, int speed = kSpeedDefault) {
     using editkit::Box;
     PageLayoutV3 L = PageLayoutV3();
 
@@ -324,55 +345,62 @@ inline PageLayoutV3 pageLayoutV3(editkit::Box column, editkit::Box view, editkit
     }
     const int vw = v3::imax(0, vr - vl);
     const Box vz{vl, view.y, vw, view.h};
-    // Two-row bars while the view keeps kV3MinViewH + one bar of height at some bar height b >= kV3BarMin: modes 2 x 2 (the reset / flip icons at the
-    // right end of the first row), stances 3 + 2; otherwise the single rows (tiny screens). Cell widths are shared per row so the columns line up.
+    // Bar rows (HW44). Two-row bars while the view keeps kV3MinViewH + one bar of height at some bar height b >= kV3BarMin: modes 2 x 2 (the reset /
+    // flip icons at the right end of the first row); under the view Pause alone (centred), stances Idle Walk Run (3) and Alert Combat (2), then the bottom
+    // layer: Draw / Holster in its left third and the Speed slider in the right two thirds. Otherwise the single rows (tiny screens): one mode row, Pause,
+    // the five stances in one row, the bottom layer. Cell widths are shared per row so the columns line up.
+    auto barsNeed = [](int nb, int bb) { return nb * bb + bb * 2 / 3 + (nb + 1) * 2; };   // bar rows + the legend's third + the 2 px gaps around them
+    constexpr int kTwoBars = 6, kOneBars = 4;   // bar rows around the view: 2 mode rows, Pause, 2 stance rows, bottom layer / mode row, Pause, stances, bottom layer
     int b = kV3BarMax;
     bool two = false;
     for (int bb = kV3BarMax; bb >= kV3BarMin; --bb) {
-        if (view.h - (5 * bb + bb * 2 / 3 + 6 * 2) >= kV3MinViewH + bb) { b = bb; two = true; break; }
+        if (view.h - barsNeed(kTwoBars, bb) >= kV3MinViewH + bb) { b = bb; two = true; break; }
     }
     if (!two) {
         for (b = kV3BarMax; b > kV3BarMin; --b) {
-            if (view.h - (2 * b + b * 2 / 3 + 3 * 2) >= kV3MinViewH) break;
+            if (view.h - barsNeed(kOneBars, b) >= kV3MinViewH) break;
         }
     }
     L.barH = b;
     const int lg = b * 2 / 3;
-    const int nb = two ? 5 : 2;   // bar rows above and below the view (two-row: 2 mode rows + Pause, Idle Walk Run, Alert Combat)
+    const int nb = two ? kTwoBars : kOneBars;
     const int viewH = v3::imax(0, view.h - (nb * b + lg + (nb + 1) * 2));
     auto mkv = [&](int x, int y, int w, int h) { return v3::clipTo(Box{x, y, w, h}, vz); };
     int y0 = view.y;
     L.viewFlip = mkv(vr - b, y0, b, b);
     L.viewReset = mkv(vr - b - 2 - b, y0, b, b);
     const int limit = L.viewReset.x - 6;          // 6 px between the mode buttons and the icons
-    int yv, ys, yl;
+    int yv, ys, yb;
+    const int s3 = v3::cellW(vw, 3), s2 = v3::cellW(vw, 2);
     if (two) {
         int mw = v3::iclamp((limit - vl - 2) / 2, 0, 190 * 2);
         for (int i = 0; i < kV3Modes; ++i) L.modeBtn[i] = mkv(vl + (i % 2) * (mw + 2), y0 + (i / 2) * (b + 2), mw, b);
         yv = y0 + 2 * (b + 2);
         L.view = mkv(vl, yv, vw, viewH);
         ys = yv + viewH + 2;
-        // three layers under the view: Pause / Play + Draw / Holster (2 cells, the Alert Combat columns), Idle Walk Run (3 cells), Alert Combat (2 cells)
-        const int s3 = v3::cellW(vw, 3), s2 = v3::cellW(vw, 2);
-        L.pause = mkv(vl, ys, s2, b);
-        L.draw = mkv(vl + (s2 + 2), ys, s2, b);
+        // layers under the view: Pause / Play alone and centred (one half-width cell), Idle Walk Run (3 cells), Alert Combat (2 cells), then the bottom layer
+        L.pause = mkv(vl + (vw - s2) / 2, ys, s2, b);
         for (int i = 0; i < kV3Stances; ++i) {
             if (i < 3) L.stance[i] = mkv(vl + i * (s3 + 2), ys + (b + 2), s3, b);
             else       L.stance[i] = mkv(vl + (i - 3) * (s2 + 2), ys + 2 * (b + 2), s2, b);
         }
-        yl = ys + 3 * (b + 2);
+        yb = ys + 3 * (b + 2);
     } else {
         int mw = v3::iclamp((limit - vl - 3 * 2) / 4, 0, 190);
         for (int i = 0; i < kV3Modes; ++i) L.modeBtn[i] = mkv(vl + i * (mw + 2), y0, mw, b);
         yv = y0 + b + 2;
         L.view = mkv(vl, yv, vw, viewH);
         ys = yv + viewH + 2;
-        const int sw = v3::cellW(vw, kV3Stances + 2);
-        for (int i = 0; i < kV3Stances; ++i) L.stance[i] = mkv(vl + i * (sw + 2), ys, sw, b);
-        L.pause = mkv(vl + kV3Stances * (sw + 2), ys, sw, b);
-        L.draw = mkv(vl + (kV3Stances + 1) * (sw + 2), ys, sw, b);
-        yl = ys + b + 2;
+        L.pause = mkv(vl + (vw - s2) / 2, ys, s2, b);
+        const int sw = v3::cellW(vw, kV3Stances);
+        for (int i = 0; i < kV3Stances; ++i) L.stance[i] = mkv(vl + i * (sw + 2), ys + (b + 2), sw, b);
+        yb = ys + 2 * (b + 2);
     }
+    // the bottom layer: Draw / Holster in the left third (as wide as one Idle / Walk / Run cell), the Speed slider in the right two thirds, one gap apart
+    const int dw = s3;
+    L.draw = mkv(vl, yb, dw, b);
+    v3::buildSpeed(v3::clipTo(editkit::Box{vl + dw + 2, yb, v3::imax(0, vw - dw - 2), b}, vz), speed, L);
+    const int yl = yb + b + 2;
     L.legend = mkv(vl, yl, vw, lg);
 
     // ---- inspector
@@ -409,6 +437,7 @@ inline int pageBoxesV3(const PageLayoutV3& L, editkit::Box* out) {
     out[n++] = L.remove;
     out[n++] = L.pause;
     out[n++] = L.draw;
+    out[n++] = L.speedTrack; out[n++] = L.speedThumb; out[n++] = L.speedValue;
     return n;
 }
 
@@ -438,15 +467,19 @@ enum PageIdxV3 {
     PI_HINTR = 70,        // + hint (2): the RIGHT description box (over mod-config's LB_DESC) and its text label
     PI_REMOVE = 72,       // the "Remove saved placement" button (inspector zone, under the note); shown only while the menu is open
     PI_PAUSE = 73,        // the Pause / Play toggle for the preview animation (view area: left half of the bar above the Idle row; the sixth cell on tiny screens)
-    PI_DRAW = 74          // the Draw / Holster toggle (HW20; view area: right half of that bar; the seventh cell on tiny screens; appended last)
+    PI_DRAW = 74,         // the Draw / Holster toggle (HW20; view area: the left third of the bottom layer under the stances (HW44); appended after the hints)
+    PI_SPEED_TRACK = 75,  // the Speed slider (HW44, global): track, thumb, value label (the right two thirds of the bottom layer; appended last)
+    PI_SPEED_THUMB = 76,
+    PI_SPEED_VALUE = 77
 };
 constexpr int kRowStride = 5;   // boxes per inspector row (name, track, thumb, value, reset)
-static_assert(PI_HINT + kV3Hints == PI_RESET_SCOPE && PI_RESET_SCOPE + 1 == PI_HINTR && PI_HINTR + kV3Hints == PI_REMOVE && PI_REMOVE + 1 == PI_PAUSE && PI_PAUSE + 1 == PI_DRAW && PI_DRAW + 1 == kPageItemsV3, "the PageIdxV3 table must cover exactly kPageItemsV3 boxes");
+static_assert(PI_HINT + kV3Hints == PI_RESET_SCOPE && PI_RESET_SCOPE + 1 == PI_HINTR && PI_HINTR + kV3Hints == PI_REMOVE && PI_REMOVE + 1 == PI_PAUSE && PI_PAUSE + 1 == PI_DRAW && PI_DRAW + 1 == PI_SPEED_TRACK && PI_SPEED_TRACK + kSpeedItems == kPageItemsV3 && PI_SPEED_VALUE + 1 == kPageItemsV3, "the PageIdxV3 table must cover exactly kPageItemsV3 boxes");
 static_assert(PI_ROW + kV3Rows * kRowStride == PI_NOTE, "inspector rows end at the note");
 
-// The slider wedge (the teal fill behind each track) is a sixth item per row beside the 74 boxes: its rect is the track rect cut to the thumb fraction
-// (SliderArt.h sliderWedgeWidth). The page therefore holds kPageItemsV3 + kV3Rows items; the consumer cap (HseView.h kPageItemCap) must hold them.
-constexpr int kPageItemsV3Total = kPageItemsV3 + kV3Rows;
+// The slider wedge (the teal fill behind each track) is a sixth item per row beside the boxes: its rect is the track rect cut to the thumb fraction
+// (SliderArt.h sliderWedgeWidth). The Speed track has one wedge too (kV3SpeedWedge). The page therefore holds kPageItemsV3 + kV3Rows + kV3SpeedWedge
+// items (85); the consumer cap (HseView.h kPageItemCap, 96) must hold them.
+constexpr int kPageItemsV3Total = kPageItemsV3 + kV3Rows + kV3SpeedWedge;
 
 // SetDescSplit(page, kDescSplitPermille): the inspector gets the top 85% of the description pane (mod-config clamps the value to 600..850).
 constexpr int kDescSplitPermille = 850;

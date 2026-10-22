@@ -50,12 +50,16 @@ static int collect(const PageLayoutV3& L, Item* o) {
     Box raw[kPageItemsV3];
     int n = pageBoxesV3(L, raw);
     for (int i = 0; i < n; ++i) o[i] = Item{raw[i], 0, 0, -1};
-    // order: left 19 (0..18), view area 13 (19..31), inspector 37 (32..68), then the "..." toggle (69, left column), the right description box (70, 71), Remove (72, inspector), Pause (73, view area), Draw (74, view area)
+    // order: left 19 (0..18), view area 13 (19..31), inspector 37 (32..68), then the "..." toggle (69, left column), the right description box (70, 71), Remove (72, inspector),
+    // Pause (73, view area), Draw (74, view area), Speed track / thumb / value (75..77, view area)
     for (int i = 19; i < 32; ++i) o[i].zone = 1;
     for (int i = 32; i < PI_RESET_SCOPE; ++i) o[i].zone = 2;
     o[PI_RESET_SCOPE].zone = 0;
-    o[PI_PAUSE].zone = 1;                             // the Pause button sits in the view area (left half of the bar above the stance rows)
-    o[PI_DRAW].zone = 1;                              // the Draw / Holster toggle: right half of that bar
+    o[PI_PAUSE].zone = 1;                             // the Pause button: alone and centred in the top layer under the view (HW44)
+    o[PI_DRAW].zone = 1;                              // the Draw / Holster toggle: the left third of the bottom layer
+    for (int i = PI_SPEED_TRACK; i <= PI_SPEED_VALUE; ++i) o[i].zone = 1;   // the Speed slider: the right two thirds of the bottom layer
+    o[PI_SPEED_TRACK].kind = 2; o[PI_SPEED_TRACK].row = kV3Rows;           // track and thumb form one pair (the thumb must sit inside the track)
+    o[PI_SPEED_THUMB].kind = 1; o[PI_SPEED_THUMB].row = kV3Rows;
     o[PI_REMOVE].zone = 2;                            // the Remove button sits in the inspector zone, under the note
     // inspector: groupLabel0, groupReset0, groupLabel1, groupReset1 (32..35), then rows 5 boxes each (36..65), note 66
     for (int r = 0; r < kV3Rows; ++r) {
@@ -208,9 +212,9 @@ static void testGeometries() {
         // item budget
         Box all[kPageItemsV3 + 8];
         KT_CHECK_EQ(pageBoxesV3(L, all), kPageItemsV3);
-        KT_CHECK_EQ(kPageItemsV3, 75);
-        KT_CHECK(kPageItemsV3 + kV3Rows <= 96);
-        KT_CHECK(kPageItemsV3 == 19 + 13 + 37 + 1 + 2 + 1 + 1 + 1);
+        KT_CHECK_EQ(kPageItemsV3, 78);
+        KT_CHECK(kPageItemsV3Total <= 96);
+        KT_CHECK(kPageItemsV3 == 19 + 13 + 37 + 1 + 2 + 1 + 1 + 1 + 3);   // + the Speed slider's three boxes (HW44)
     }
 }
 
@@ -755,8 +759,8 @@ static void testReal3840x1600() {
     // the view stays left of the preview pane, never overlapping the inspector
     KT_CHECK(L.view.x + L.view.w < g.preview.x);
     KT_CHECK(L.view.x > L.status.x + L.status.w);
-    // item budget: 75 boxes + 6 wedges (the cap is 96 in the mod-config build after 0.3.7-dev)
-    KT_CHECK_EQ(kPageItemsV3Total, 81);
+    // item budget: 78 boxes + 6 row wedges + the Speed wedge (the cap is 96 in the mod-config build after 0.3.7-dev)
+    KT_CHECK_EQ(kPageItemsV3Total, 85);
     KT_CHECK(kPageItemsV3Total <= 96);
     Box all[kPageItemsV3];
     KT_CHECK_EQ(pageBoxesV3(L, all), kPageItemsV3);
@@ -856,9 +860,10 @@ static void testRoomyButtons3840() {
         scopeSegText(t, sizeof t, 2, "heavy"); KT_CHECK(!strcmp(t, "This body + armor")); KT_CHECK(fits(t, L.scope[2]));
         KT_CHECK(fits("This weapon model", L.scope[0]) && fits("All heavy weapons", L.scope[1]) && fits("This body + armor", L.scope[2]));
     }
-    KT_CHECK(L.view.h >= 600);
-    // bar-row accounting (independent model): 2 mode rows above, Pause + Idle Walk Run + Alert Combat below, the legend (2b/3) and 6 two-px gaps come off the view area
-    KT_CHECK_EQ(L.view.h, g.view.h - (5 * L.barH + L.barH * 2 / 3 + 6 * 2));
+    // bar-row accounting (independent model, HW44): 2 mode rows above, Pause + Idle Walk Run + Alert Combat + the bottom layer (Draw / Speed) below,
+    // the legend (2b/3) and 7 two-px gaps come off the view area. The bottom layer costs one bar row: 589 px at the real 3840x1600 size (635 before it).
+    KT_CHECK(L.view.h >= 580);
+    KT_CHECK_EQ(L.view.h, g.view.h - (6 * L.barH + L.barH * 2 / 3 + 7 * 2));
     KT_CHECK(L.view.h >= kV3MinViewH + L.barH);
     KT_CHECK_EQ(L.pause.y, L.view.y + L.view.h + 2);
     KT_CHECK(L.legend.y + L.legend.h <= g.view.y + g.view.h);
@@ -884,25 +889,69 @@ static void testPauseBox() {
         KT_CHECK(P.x >= L.view.x && P.x + P.w <= L.view.x + L.view.w);          // inside the view area columns
         for (int i = 0; i < kV3Stances; ++i) KT_CHECK(!overlaps(P, L.stance[i]));
         KT_CHECK(!overlaps(P, L.view) && !overlaps(P, L.legend));
-        if (L.stance[3].y > L.stance[0].y) {   // three layers: Pause (full width), Idle Walk Run (3 cells), Alert Combat (2 cells), each b + 2 apart, under the view
-            KT_CHECK_EQ(P.x, L.view.x); KT_CHECK_EQ(P.w, v3::cellW(L.view.w, 2)); KT_CHECK_EQ(P.h, L.barH);
-            KT_CHECK_EQ(D.x, L.view.x + P.w + 2); KT_CHECK_EQ(D.w, P.w); KT_CHECK_EQ(D.y, P.y); KT_CHECK_EQ(D.h, L.barH);   // Draw: the right half, same row, aligned with Combat
+        const Box S = L.speedTrack, T = L.speedThumb, V = L.speedValue;
+        const Box vz{g.column.x, g.view.y, g.preview.x - g.column.x, g.view.h};
+        KT_CHECK(S.w > 0 && V.w > 0 && T.w > 0);
+        const Box cluster[] = {P, D, S, T, V};
+        for (const Box& b : cluster) {   // every bottom control sits in the view area, clear of the stances, the view and the legend
+            KT_CHECK(inside(b, vz));
+            for (int i = 0; i < kV3Stances; ++i) KT_CHECK(!overlaps(b, L.stance[i]));
+            KT_CHECK(!overlaps(b, L.view) && !overlaps(b, L.legend));
+        }
+        const int s2 = v3::cellW(L.view.w, 2), s3 = v3::cellW(L.view.w, 3);
+        if (L.stance[3].y > L.stance[0].y) {   // two-row: Pause alone (centred), Idle Walk Run (3 cells), Alert Combat (2 cells), then the bottom layer; b + 2 apart
+            KT_CHECK_EQ(P.w, s2); KT_CHECK_EQ(P.h, L.barH);
+            KT_CHECK_EQ(P.x, L.view.x + (L.view.w - s2) / 2);                // Pause alone, centred in the cluster width
             KT_CHECK_EQ(P.y, L.view.y + L.view.h + 2);                       // directly under the 3D view
             KT_CHECK_EQ(L.stance[0].y, P.y + L.barH + 2);                    // Idle row under Pause
             KT_CHECK_EQ(L.stance[3].y, L.stance[0].y + L.barH + 2);          // Alert Combat under Idle Walk Run
             KT_CHECK(L.stance[0].y == L.stance[2].y && L.stance[3].y == L.stance[4].y);
-            KT_CHECK_EQ(L.stance[0].w, v3::cellW(L.view.w, 3));
-            KT_CHECK_EQ(L.stance[3].w, v3::cellW(L.view.w, 2));
+            KT_CHECK_EQ(L.stance[0].w, s3);
+            KT_CHECK_EQ(L.stance[3].w, s2);
             KT_CHECK_EQ(L.stance[4].x, L.view.x + L.stance[3].w + 2);
-            KT_CHECK_EQ(L.legend.y, L.stance[3].y + L.barH + 2);             // the legend stays below the three layers
-        } else {                               // tiny screens: one row of six cells
-            KT_CHECK(P.y == L.stance[4].y && P.x > L.stance[4].x && P.w == L.stance[4].w);
-            KT_CHECK(D.y == P.y && D.x > P.x && D.w == P.w);
+            KT_CHECK_EQ(D.y, P.y + 3 * (L.barH + 2));                        // the bottom layer under Alert Combat
+            KT_CHECK_EQ(L.legend.y, D.y + L.barH + 2);                       // the legend stays below the bottom layer
+        } else {                               // tiny screens: one mode row, Pause, the five stances in one row, then the bottom layer
+            KT_CHECK_EQ(P.w, s2); KT_CHECK_EQ(P.h, L.barH);
+            KT_CHECK_EQ(P.x, L.view.x + (L.view.w - s2) / 2);
+            KT_CHECK_EQ(P.y, L.view.y + L.view.h + 2);
+            KT_CHECK_EQ(L.stance[0].y, P.y + L.barH + 2);
+            KT_CHECK(L.stance[4].y == L.stance[0].y);
+            KT_CHECK_EQ(D.y, L.stance[0].y + L.barH + 2);
+            KT_CHECK_EQ(L.legend.y, D.y + L.barH + 2);
+        }
+        // the bottom layer (HW44): Draw / Holster = the left third (as wide as one Idle Walk Run cell), the Speed slider = the rest, one gap
+        // apart, same row and height; the Speed boxes run track | gap | value label, the thumb inside the track
+        KT_CHECK_EQ(D.x, L.view.x); KT_CHECK_EQ(D.w, s3); KT_CHECK_EQ(D.h, L.barH);
+        KT_CHECK_EQ(S.x, D.x + D.w + 2);
+        KT_CHECK_EQ(V.x + V.w, L.view.x + L.view.w);                          // the Speed row ends at the view's right edge
+        KT_CHECK_EQ(S.y, D.y); KT_CHECK_EQ(V.y, D.y); KT_CHECK_EQ(T.y, D.y);
+        KT_CHECK_EQ(S.h, L.barH); KT_CHECK_EQ(V.h, L.barH); KT_CHECK_EQ(T.h, L.barH);
+        KT_CHECK_EQ(V.x, S.x + S.w + v3::kGap);
+        KT_CHECK(V.w <= kV3SpeedValueW);                                      // the label is at most kV3SpeedValueW wide
+        KT_CHECK(inside(T, S));
+        const int speedRowW = V.x + V.w - S.x;                               // track through label: about two thirds of the bottom layer
+        KT_CHECK(speedRowW * 3 >= L.view.w * 2 - 6 && speedRowW * 3 <= L.view.w * 2 + 6);
+        // the thumb position follows the value: 1x at the left end of the track, 8x at the right end, every value in between on its step
+        for (int v = kSpeedMin; v <= kSpeedMax; ++v) {
+            const PageLayoutV3 lv = pageLayoutV3(g.column, g.view, g.preview, g.hint, nullptr, Box{0, 0, 0, 0}, v);
+            KT_CHECK(violations(g, lv, true, true) == 0);
+            KT_CHECK_EQ(lv.speedThumb.x, speedThumbX(v, lv.speedTrack.x, lv.speedTrack.w, kV3ThumbW));
+            KT_CHECK_EQ(speedFromX(lv.speedThumb.x + lv.speedThumb.w / 2, lv.speedTrack.x, lv.speedTrack.w, kV3ThumbW), v);   // a press on the thumb keeps the value
+            if (v == kSpeedMin) KT_CHECK_EQ(lv.speedThumb.x, lv.speedTrack.x);
+            if (v == kSpeedMax) KT_CHECK_EQ(lv.speedThumb.x + lv.speedThumb.w, lv.speedTrack.x + lv.speedTrack.w);
         }
         for (const char* t : {"Pause", "Play"})
             KT_CHECK(textfit::textPx(tc, t, static_cast<int>(strlen(t))) <= static_cast<float>(buttonTextPx(P.w)));
         for (const char* t : {"Draw", "Holster"})
             KT_CHECK(textfit::textPx(tc, t, static_cast<int>(strlen(t))) <= static_cast<float>(buttonTextPx(D.w)));
+        // the Speed value label (HW44): "Speed 8x" fits untruncated at its full width; a narrower box shows the short form "8x" (HolsterEditor.cpp speedShowText),
+        // which must fit at every tested size so the number is never cut away
+        if (V.w >= kV3SpeedValueW)
+            for (const char* t : {"Speed 1x", "Speed 8x"})
+                KT_CHECK(textfit::textPx(tc, t, static_cast<int>(strlen(t))) <= static_cast<float>(labelTextPx(V.w)));
+        for (const char* t : {"1x", "8x"})
+            KT_CHECK(textfit::textPx(tc, t, static_cast<int>(strlen(t))) <= static_cast<float>(labelTextPx(V.w)));
     }
 }
 
@@ -992,12 +1041,15 @@ static void testAdaptersAndIndex() {
     for (int i = 0; i < kV3Hints; ++i) KT_CHECK(same(all[PI_HINTR + i], L.hintR[i]));
     KT_CHECK(PI_HINTR == 70 && PI_HINTR + kV3Hints == PI_REMOVE);
     KT_CHECK(same(all[PI_REMOVE], L.remove));
-    KT_CHECK(PI_REMOVE == 72 && PI_PAUSE == 73 && PI_DRAW == 74 && PI_DRAW + 1 == kPageItemsV3 && kPageItemCap == 96);
+    KT_CHECK(PI_REMOVE == 72 && PI_PAUSE == 73 && PI_DRAW == 74 && PI_DRAW + 1 == PI_SPEED_TRACK && PI_SPEED_TRACK + kSpeedItems == kPageItemsV3 && PI_SPEED_VALUE + 1 == kPageItemsV3 && kPageItemCap == 96);
     KT_CHECK(same(all[PI_PAUSE], L.pause));
     KT_CHECK(same(all[PI_DRAW], L.draw));
+    KT_CHECK(same(all[PI_SPEED_TRACK], L.speedTrack));
+    KT_CHECK(same(all[PI_SPEED_THUMB], L.speedThumb));
+    KT_CHECK(same(all[PI_SPEED_VALUE], L.speedValue));
 
-    // the page holds the 75 boxes plus one wedge per slider row, inside the consumer cap
-    KT_CHECK_EQ(kPageItemsV3Total, 81);
+    // the page holds the 78 boxes plus one wedge per slider row and the Speed wedge, inside the consumer cap
+    KT_CHECK_EQ(kPageItemsV3Total, 85);
     KT_CHECK(kPageItemsV3Total <= kPageItemCap);
 }
 
