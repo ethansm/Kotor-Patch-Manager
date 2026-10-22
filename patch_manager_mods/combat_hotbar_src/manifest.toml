@@ -1,7 +1,7 @@
 [patch]
 id = "combat-hotbar"
 name = "Combat Action Hotbar"
-version = "0.11.2-dev"
+version = "0.11.3-dev"
 author = "local"
 description = "Replaces the target-menu action groups with clickable icon buttons in vanilla-style pills, with Ctrl+Shift+F9..F11 invoke keys and per-group pin/hide/sort configured by combat_hotbar.ini (needs hud-host)."
 

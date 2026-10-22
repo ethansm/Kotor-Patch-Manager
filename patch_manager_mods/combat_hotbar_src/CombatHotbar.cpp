@@ -919,16 +919,17 @@ bool g_pvLogged = false;
 char g_pvCaption[48] = "";
 
 constexpr const char* kPvSolid = "uibit_fill_2wt";     // solid WHITE: the tint is the colour (the black 2bt fill cannot be tinted, bars drawn on it stay black)
-constexpr const char* kPvPill = "lbl_miscroll_f";      // the live pills' art
-// The preview mocks the ENEMY target menu, so every entry is offensive (all resrefs checked against the K2 texture packs): attacks, hostile force
-// powers, grenades and mines. A miss falls back to a tinted fill.
+constexpr const char* kPvPill = "lbl_miscroll_hi";     // the live pills' art: the cream-bordered hi frame, so a red tint stays vibrant (lbl_miscroll_f has teal baked in)
+// The preview mocks the ENEMY target menu, so every entry is offensive (all resrefs checked against the K2 texture packs). Group 0 is ONE weapon's
+// attacks (melee here; the ranged set would be ib_ranged + blaster feats, never both at once), group 1 hostile force powers, group 2 grenades and
+// mines. A miss falls back to a tinted fill.
 constexpr const char* kPvIcons[3][4] = {
-    {"ip_whirlwind", "ip_advlsthrow", "ip_lsthrow", "ip_droiddestroy"},
+    {"i_attack", "if_flurry01", "if_crtstrk01", "if_dualstrk01"},
     {"ip_lightning", "ip_choke", "ip_drainlife", "ip_stun"},
     {"iw_fraggren_001", "iw_firegren_001", "iw_sonicgren_001", "i_fragmine"},
 };
 constexpr float kPvGroupTint[3][3] = {{0.80f, 0.30f, 0.25f}, {0.70f, 0.20f, 0.45f}, {0.75f, 0.50f, 0.20f}};   // fallback fills: attacks red, powers magenta, items amber
-constexpr float kPvScreenTint[3] = {0.07f, 0.10f, 0.14f}, kPvNameTint[3] = {0.02f, 0.06f, 0.07f}, kPvHealth[3] = {0.80f, 0.12f, 0.12f}, kPvPillTint[3] = {0.78f, 0.06f, 0.06f};   // pill outline art tinted red (hostile menu)
+constexpr float kPvScreenTint[3] = {0.07f, 0.10f, 0.14f}, kPvNameTint[3] = {0.02f, 0.06f, 0.07f}, kPvHealth[3] = {1.00f, 0.20f, 0.20f}, kPvPillTint[3] = {0.85f, 0.15f, 0.15f};   // pill tint = the live HUD's combat red (CombatHotbar.cpp:675)
 constexpr float kPvWhite[3] = {1.f, 1.f, 1.f};          // icons: an explicit white tint (a label keeps its last tint, so a fallback square's colour would stick)
 
 // resref -> image, pooled by imageForRetry once non-null; a miss is retried every 30th frame, at most 20 times, then given up.
