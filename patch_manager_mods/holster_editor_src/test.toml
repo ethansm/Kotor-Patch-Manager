@@ -3,3 +3,7 @@ cxxflags = ["-I../_shared_src", "-Werror"]
 
 [common_contract_test]
 cxxflags = ["-I../_shared_src", "-I$HOME/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common", "-I../../research/companion_levelup/tools/parity/stub", "-DGUIKIT_HOST", "-Werror"]
+
+# ModConfigApi.h includes kpatch_api.h from Patches/Common (the same path combat_hotbar_src/test.toml uses for its page test).
+[slow_holster_page_test]
+cxxflags = ["-I../_shared_src", "-I$HOME/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common", "-Werror"]

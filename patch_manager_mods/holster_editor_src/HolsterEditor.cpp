@@ -1,4 +1,4 @@
-// HolsterEditor.cpp -- holster-editor 0.6.2-dev (Steam build): a HOOKLESS consumer of the mod-config provider (k2.modconfig@1, k2.menuui@1).
+// HolsterEditor.cpp -- holster-editor 0.7.0-dev (Steam build): a HOOKLESS consumer of the mod-config provider (k2.modconfig@1, k2.menuui@1).
 // (doc 42 HW-EDIT, plan .claude/plans/holster_editor_options.md; page rebuild: .claude/plans/holster_editor_layout_v3.md, holster_hw_ux3_build.md Wave B.)
 //
 // mod-config owns everything about the Options screen: the hooks, the root "Mod Configuration" button, the list page, control cloning,
@@ -56,7 +56,11 @@
 #include "EmbedGui.h"
 #include "HolsterApi.h"
 #include "Preview3dApi.h"
+#define INIW_FILE_API 1   // Slow holster page: ModConfigDecl's file writer (iniw::updateFile) must see this before its first IniWrite.h include
+#define MCDECL_FILE_API 1
 #include "ModConfigApi.h"
+#include "ModConfigDecl.h"    // mcdecl::Page: the declarative layer behind the second entry
+#include "HolsterSlowPage.h"  // the Slow holster schema + 64 KB ini reader (host-tested by slow_holster_page_test.cpp)
 #include "ProviderClient.h"   // k2pc::ClientSet / RegisterOnce: the lazy-connect plumbing for the four clients below
 #include "ViewDrag.h"
 #include "HseView.h"
@@ -120,6 +124,8 @@ k2mc::ConfigClient g_cfgClient;
 k2mc::MenuClient g_menu;
 k2pc::ClientSet<k2p3::Client, k2holster::Client, k2mc::ConfigClient, k2mc::MenuClient> g_clients(g_p3, g_hol, g_cfgClient, g_menu);   // pointers: the clients above outlive it
 k2pc::RegisterOnce g_reg;
+mcdecl::Page g_slowPage;   // "Slow holster" (HolsterSlowPage.h): schema, row state, ini io (static, ~35 KB)
+k2pc::RegisterOnce g_regSlow;
 
 enum State { IDLE, NEEDBUILD, LIVE, FAILED };
 // MODE_WEAPON = a weapon edit is open (the normal state of the page); MODE_NAV = none is (the member has no weapon, or the edit was refused or lost).
@@ -2993,6 +2999,29 @@ void KPATCH_CALL cbDestroy(void* panel, void*) {
 K2ModConfigEntry g_entry;   // Register copies it; the strings are static
 
 void regLog(int level, const char* msg) { KP_LOGV(chMain, level, "%s", msg); }
+void slowRegLog(int level, const char* msg) { KP_LOGV(chMain, level, "SLOW %s", msg); }   // "SLOW page REGISTER ok token=N" / "... refused ..."
+
+// The page's file write. ModConfigDecl calls it only for an accepted CHANGE (never on build, never for an unchanged value), so every line is a real save.
+bool slowWrite(const char* path, const char* section, const char* key, const char* val) {
+    const bool ok = mcdecl::fileWrite(path, section, key, val);
+    KP_LOG(chMain, "SLOW write %s %s=%s ok=%d", path, key, val, ok ? 1 : 0);
+    return ok;
+}
+
+// Second entry: Slow holster. Memory only (KPatchInit: no file I/O); the ini read happens in build(). Called after the Holstered Weapons
+// registration, so that entry keeps its list position. The caller has checked that mod-config and menuui are connected.
+void registerSlowHolster() {
+    char err[96] = {0};
+    if (!g_slowPage.load(hsp::kPageSchema, strlen(hsp::kPageSchema), err, sizeof err)) {
+        KP_LOG(chMain, "SLOW REGISTER fail why=schema %s", err);
+        return;
+    }
+    g_slowPage.menu = &g_menu;
+    g_slowPage.io = mcdecl::fileIo();
+    g_slowPage.io.read = hsp::readIni;   // the stock reader keeps 16 KB; the live holster.ini can be longer
+    g_slowPage.io.write = slowWrite;
+    k2pc::registerOnce(g_regSlow, g_cfgClient, g_slowPage.entry(hsp::kEntryId), slowRegLog);
+}
 
 }  // namespace
 
@@ -3002,7 +3031,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     g_clients.init(api);
     embedgui::g_log = embedLog;
     embtex::g_log = embedLog;
-    KP_LOG(chMain, "holster-editor 0.6.2-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
+    KP_LOG(chMain, "holster-editor 0.7.0-dev loaded (hookless mod-config consumer): table=%s layout=%u bytes", k2addr::get() ? "ok" : "none",
            static_cast<unsigned>(sizeof kHseViewGui));
     g_clients.poll();   // the first poll() of every client tries to connect
     // This DLL is hookless: there is no frame hook to retry mod-config / menuui from later, so a missing provider now means no page this run.
@@ -3022,6 +3051,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     g_entry.tick = cbTick;
     g_entry.destroy = cbDestroy;
     k2pc::registerOnce(g_reg, g_cfgClient, g_entry, regLog);   // logs "page REGISTER ok token=N" or "page REGISTER refused ..."
+    registerSlowHolster();   // the second entry (Slow holster), after Holstered Weapons
 }
 
 // No I/O here (loader lock). The config is read in build().
