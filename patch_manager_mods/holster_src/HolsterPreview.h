@@ -30,6 +30,9 @@ struct PreviewEntry {
     void* node = nullptr;
     bool left = false;
     hs::Category cat = CatUnknown;   // HW45b: the weapon category the placement last saw (storage only; nothing reads it yet)
+    hs::Slide slide;                 // HW47: this entry's own Draw / Holster slide (hand fraction, 0 = mount); slide.init == 0 until the toggle or a seed starts it
+    float grab = 0.30f;              // HW47: grab share the slide was retargeted with (the entry's category); the readers pass the same value
+    float slowArm = 1.f;             // HW47: slow_holster_x the slide was armed with
 };
 
 struct PreviewRegistry {
@@ -76,6 +79,34 @@ inline bool previewSetCat(PreviewRegistry& r, const void* gob, Category cat) {
     if (i < 0) return false;
     r.e[i].cat = cat;
     return true;
+}
+
+// HW47: the wait before a left entry's slide starts when a right entry shares its parent: the world's dual stagger (dualMs) scaled by the
+// slow factor exactly as slowMs does; 0 for a right entry, a lone left entry, or a zero stagger.
+inline uint32_t previewStaggerMs(bool left, bool rightSameOwner, uint32_t dualMs, float slowX) {
+    return (left && rightSameOwner && dualMs > 0) ? slowMs(dualMs, slowX) : 0u;
+}
+
+// HW47: true when entry i has a right-hand partner. The preview has no owner key, so the shared parent stands in for the owner.
+// False for an index out of range or a null parent.
+inline bool previewHasRightPartner(const PreviewRegistry& r, int i) {
+    if (i < 0 || i >= r.n || !r.e[i].parent) return false;
+    for (int j = 0; j < r.n; ++j)
+        if (j != i && !r.e[j].left && r.e[j].parent == r.e[i].parent) return true;
+    return false;
+}
+
+// HW47: a newly registered entry (slide.init == 0) joins the state of the running toggle, as the old shared slide did: it copies
+// slide, grab and slowArm from the first other entry whose slide is running. No-op for a bad index, a seeded entry, or no running slide.
+inline void previewSeedSlide(PreviewRegistry& r, int i) {
+    if (i < 0 || i >= r.n || r.e[i].slide.init) return;
+    for (int j = 0; j < r.n; ++j) {
+        if (j == i || !r.e[j].slide.init) continue;
+        r.e[i].slide = r.e[j].slide;
+        r.e[i].grab = r.e[j].grab;
+        r.e[i].slowArm = r.e[j].slowArm;
+        return;
+    }
 }
 
 // Preview slow factor: the loaded slow_holster_x when the tune read succeeded, else the previous factor (a torn read keeps the last timing).

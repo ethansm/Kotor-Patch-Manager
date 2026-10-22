@@ -710,6 +710,54 @@ static void testPreviewSlowFor() {
     KT_CHECK(closeTo(previewSlowFor(false, 8.f, 1.f), 1.f));
 }
 
+// HW47: the preview form of the world stagger: only a left entry with a right partner waits, scaled by the slow factor like slowMs.
+static void testPreviewStaggerMs() {
+    KT_CHECK_EQ(previewStaggerMs(false, true, 60, 1.f), 0u);
+    KT_CHECK_EQ(previewStaggerMs(true, false, 60, 1.f), 0u);
+    KT_CHECK_EQ(previewStaggerMs(true, true, 0, 1.f), 0u);
+    KT_CHECK_EQ(previewStaggerMs(true, true, 60, 1.f), 60u);
+    KT_CHECK_EQ(previewStaggerMs(true, true, 60, 4.f), 240u);
+    KT_CHECK_EQ(previewStaggerMs(true, true, 60, 0.5f), 60u);
+}
+
+// HW47: a left entry has a partner when a right entry shares its parent (the preview has no owner key).
+static void testPreviewHasRightPartner() {
+    PreviewRegistry r;
+    KT_CHECK(previewRegister(r, &gGob[0], &gP0, &gN0, false));
+    KT_CHECK(previewRegister(r, &gGob[1], &gP0, &gN1, true));
+    KT_CHECK(previewRegister(r, &gGob[2], &gP1, &gN2, true));
+    KT_CHECK(previewRegister(r, &gGob[3], nullptr, &gN3, false));
+    KT_CHECK(previewHasRightPartner(r, 1));
+    KT_CHECK(!previewHasRightPartner(r, 2));
+    KT_CHECK(!previewHasRightPartner(r, 3));
+    KT_CHECK(!previewHasRightPartner(r, -1));
+    KT_CHECK(!previewHasRightPartner(r, 9));
+}
+
+// HW47: a new entry joins the state of the running toggle (slide, grab, slow factor) once; a seeded entry is left alone.
+static void testPreviewSeedSlide() {
+    PreviewRegistry r;
+    KT_CHECK(previewRegister(r, &gGob[0], &gP0, &gN0, false));
+    KT_CHECK(previewRegister(r, &gGob[1], &gP0, &gN1, true));
+    r.e[0].slide.reset(false, 1000u);
+    r.e[0].grab = 0.4f;
+    r.e[0].slowArm = 2.f;
+    KT_CHECK(!r.e[1].slide.init);
+    previewSeedSlide(r, 1);
+    KT_CHECK(r.e[1].slide.init != 0);
+    KT_CHECK(closeTo(r.e[1].grab, 0.4f));
+    KT_CHECK(closeTo(r.e[1].slowArm, 2.f));
+    r.e[1].grab = 0.2f;
+    previewSeedSlide(r, 1);
+    KT_CHECK(closeTo(r.e[1].grab, 0.2f));
+    previewSeedSlide(r, 5);
+    previewSeedSlide(r, -1);
+    PreviewRegistry q;   // no running toggle: nothing to join
+    KT_CHECK(previewRegister(q, &gGob[0], &gP0, &gN0, false));
+    previewSeedSlide(q, 0);
+    KT_CHECK(!q.e[0].slide.init);
+}
+
 int main() {
     testRegistryRegisterUnregister();
     testRegistrySweep();
@@ -739,5 +787,8 @@ int main() {
     testBodyRotWithLeftExtra();
     testPreviewEntryCategory();
     testPreviewSlowFor();
+    testPreviewStaggerMs();
+    testPreviewHasRightPartner();
+    testPreviewSeedSlide();
     return kt::Report("holster_preview");
 }

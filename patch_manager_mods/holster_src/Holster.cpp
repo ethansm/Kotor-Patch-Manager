@@ -2034,11 +2034,10 @@ static hs::EditOverlay g_edit;
 static void* g_editGob = nullptr;
 static hs::Pose g_editMount;              // world pose of the edited Gob's mount bone, refreshed by every placement of that Gob
 static bool g_editMountOk = false;
-static hs::Slide g_prevSlide;             // HW20: the editor's Draw / Holster toggle: one slide shared by every preview weapon (hand fraction, 0 = mount); guarded by g_edLock
+// HW47: the editor's Draw / Holster toggle keeps one slide per preview entry (hs::PreviewEntry::slide, hand fraction, 0 = mount); guarded by g_edLock
 static float g_prevExtract = -1.f;       // HW31: extract share the shared slide was last read with (the preview placement refreshes it each frame; < 0 = none yet); apiSetPreviewDraw's retarget must pass the same value
 static float g_prevSlow = 1.f;            // HW44: slow_holster_x the shared slide was armed with (apiSetPreviewDraw); scales the preview's residual window like the world's; guarded by g_edLock
-static float g_prevGrab = 0.30f;          // HW28: grab share the shared slide was retargeted with (the category of the edited weapon at the toggle); the readers must pass the same value
-// HW26: one hemisphere lock (a Slide used only for lockH / lockOn) and one hand-frame residual per preview Gob; the shared g_prevSlide can not carry a lock for several weapons.
+// HW26: one hemisphere lock (a Slide used only for lockH / lockOn) and one hand-frame residual per preview Gob; the entry slide can not carry a lock for several weapons.
 struct PrevLock { uintptr_t gob; hs::Slide lk; CarryResid cres; };
 static PrevLock g_prevLock[8];
 static unsigned g_prevLockNext = 0;
@@ -2192,8 +2191,10 @@ static void previewHandLog(uintptr_t g, uintptr_t parent, uintptr_t n, bool left
     if (!(v.hd > 0.01f)) return;   // 0.21.1-dev: only a weapon that is more than 1 cm off the hand (hd = -1 / ~0 lines carried no information)
     {
         EdLock lk;
-        v.prevInit = g_prevSlide.init; v.sdir = g_prevSlide.dir;
-        const int64_t age = static_cast<int64_t>(static_cast<int32_t>(now - g_prevSlide.t0));
+        const int hpi = hs::previewFind(g_preview, reinterpret_cast<void*>(g));
+        const hs::Slide hsl = hpi >= 0 ? g_preview.e[hpi].slide : hs::Slide();   // HW47: this entry's slide (a missing entry reads as a default one)
+        v.prevInit = hsl.init; v.sdir = hsl.dir;
+        const int64_t age = static_cast<int64_t>(static_cast<int32_t>(now - hsl.t0));
         v.t0age = age > 99999 ? 99999 : (age < -99999 ? -99999 : static_cast<int>(age));
         for (const PrevLock& p : g_prevLock)
             if (p.gob == g) { v.lockGob = 1; break; }
@@ -2235,7 +2236,7 @@ static bool previewPlace(uintptr_t g, uintptr_t beh) {
     float snapSlow = 1.f;
     SnapProbe snp;
     if (g_snapLogM > 0.f) {
-        { EdLock lk; if (g_prevSlide.init) { snapSl = g_prevSlide; snapSlow = g_prevSlow; } }
+        { EdLock lk; const int spi = hs::previewFind(g_preview, reinterpret_cast<void*>(g)); if (spi >= 0 && g_preview.e[spi].slide.init) { snapSl = g_preview.e[spi].slide; snapSlow = g_preview.e[spi].slowArm; } }
         snp.st = snapStateForPreview(g); snp.sl = &snapSl; snp.slowp = &snapSlow; snp.now = slideNowMs(); snp.g = g; snp.beh = beh; snp.n = n; snp.left = left;
     }
     if (moved && takeEditLine()) KP_LOG(chEdit, "PREVIEW reattach gob=%x parent=%x node=%x", static_cast<unsigned>(g), static_cast<unsigned>(parent), static_cast<unsigned>(n));
@@ -2271,20 +2272,37 @@ static bool previewPlace(uintptr_t g, uintptr_t beh) {
     float slideF = 0.f, reachW = 0.f;
     hs::ReachPlan plan = {false, 0.f, 0.f, 1.f};
     const float exPct = (g_reachTest && g_reachCarry) ? reachExtractPct(beh, left, reachIsBackBone(bone)) : 0.f;   // HW31 (reach_test + reach_carry only)
-    hs::Slide pslide;   // copy of g_prevSlide for the residual timing
-    float pslow = 1.f;  // HW44: copy of g_prevSlow (the factor that slide was armed with)
+    hs::Slide pslide;   // copy of this entry's slide for the residual timing
+    float pslow = 1.f;  // HW44: copy of the entry's slowArm (the factor that slide was armed with)
+    float pgrab = 0.30f;   // HW47: the entry's grab share (the category it was last retargeted with)
     const uint32_t pnow = slideNowMs();
     {
         const uint32_t now = pnow;
         EdLock lk;
-        if (g_prevSlide.init) {
-            g_prevSlide.touch(now);
-            slideF = g_prevSlide.frac(now);
-            reachW = hs::reachWeightRamp(g_prevSlide, now, g_reachCarry ? 0.04f : 0.2f);
-            if (!g_editGob || g_editGob == reinterpret_cast<void*>(g)) g_prevExtract = exPct;   // HW31: only the edited preview weapon (or any, when none is being edited) feeds the shared slide's retarget
-            plan = g_reachCarry ? hs::reachPlan(g_prevSlide, now, g_prevGrab, exPct) : hs::ReachPlan{g_prevSlide.active(now), slideF, 0.f, 1.f, 0.f, slideF};
-            pslide = g_prevSlide;
-            pslow = g_prevSlow;
+        const int pi = hs::previewFind(g_preview, reinterpret_cast<void*>(g));
+        hs::previewSeedSlide(g_preview, pi);   // HW47: a weapon registered after the toggle joins the running one
+        if (pi >= 0) {
+            hs::PreviewEntry& pe = g_preview.e[pi];
+            // HW47: fire a due delayed target (the left entry waits previewStaggerMs) the way the world does: through reachRetarget under reach_test + reach_carry, else pump() below
+            if (pe.slide.pending()) {
+                pe.slide.touch(now);
+                if (g_reachTest && g_reachCarry && (int32_t)(now - pe.slide.pendAt) >= 0) {
+                    const uint32_t at = (int32_t)(now - pe.slide.pendAt) > 100 ? now : pe.slide.pendAt;   // pump()'s own late-fire guard
+                    if (!pe.slide.active(at)) { PrevLock& pk0 = prevLockFor(g); pk0.lk.lockOn = 0; pk0.cres = CarryResid(); }
+                    hs::reachRetarget(pe.slide, pe.slide.pendWant != 0, at, pe.slide.pendDraw, pe.slide.pendStow, pe.grab, 0.04f, exPct);
+                }
+            }
+            pe.slide.pump(now);
+            if (pe.slide.init) {
+                pe.slide.touch(now);
+                slideF = pe.slide.frac(now);
+                reachW = hs::reachWeightRamp(pe.slide, now, g_reachCarry ? 0.04f : 0.2f);
+                if (!g_editGob || g_editGob == reinterpret_cast<void*>(g)) g_prevExtract = exPct;   // HW31: only the edited preview weapon (or any, when none is being edited) feeds the toggle's retarget
+                plan = g_reachCarry ? hs::reachPlan(pe.slide, now, pe.grab, exPct) : hs::ReachPlan{pe.slide.active(now), slideF, 0.f, 1.f, 0.f, slideF};
+                pslide = pe.slide;
+                pslow = pe.slowArm;
+                pgrab = pe.grab;
+            }
         }
     }
     if (g_snapLogM > 0.f) { snapSl = pslide; snapSlow = pslow; snp.now = pnow; snp.w = reachW; snp.pathF = plan.pathF; }   // the slide after this frame's touch
@@ -2304,13 +2322,13 @@ static bool previewPlace(uintptr_t g, uintptr_t beh) {
     hs::Q viaQ;
     const bool viaOn = reachViaFor(hs::shapeOf(model), static_cast<int>(cat), out.q, viaQ);   // HW31: reach_via_<cat> (default off)
     float viaS = 0.f;   // HW31b: the via progress for the arm's lateral bump (only when the via is on)
-    if (viaOn && viaOutFor(static_cast<int>(cat)) > 0.f) { EdLock lk0; const CarryResid& vcr = prevLockFor(g).cres; viaS = hs::slideViaProgress(plan.active, presid, plan.carryW, plan.oriF, exPct > 0.f, pslide.dir != 0, pslide.from, pslide.carryFrom, pnow, pslide.t0, pslide.len, g_prevGrab, vcr.on != 0, vcr.startMs, vcr.msEff, plan.pathF, stowRotEff()); }
+    if (viaOn && viaOutFor(static_cast<int>(cat)) > 0.f) { EdLock lk0; const CarryResid& vcr = prevLockFor(g).cres; viaS = hs::slideViaProgress(plan.active, presid, plan.carryW, plan.oriF, exPct > 0.f, pslide.dir != 0, pslide.from, pslide.carryFrom, pnow, pslide.t0, pslide.len, pgrab, vcr.on != 0, vcr.startMs, vcr.msEff, plan.pathF, stowRotEff()); }
     g_reachSlowX = pslow;   // 0.21.1-dev: REACH logging density for a slowed slide
     const bool carryOk = g_reachTest && drawgateMode() && reachArm(g, beh, atHand ? out : shown, reachW, left, static_cast<int>(cat), plan.pathF, plan.restMix, out.pos, &out.q, reachIsBackBone(bone), n, g_reachCarry && plan.active, &carried, &plan, hs::shapeOf(model), viaS, pslide.dir != 0 ? 1 : 0, pnow, pslow);   // w == 0 outside the slide: only undoes a leftover write
     snp.vo = viaS;
     if (atHand) { snp.why = "release"; previewHandLog(g, parent, n, left, model, slideF, true, carryOk, reachW, plan.carryW, pnow); return true; }   // fully drawn: the engine's hand pose stays
     if (carryOk) {
-        EdLock lk; PrevLock& pk = prevLockFor(g); shown = carryShown(pslide, pk.lk, pk.cres, out, carried, plan, g_prevGrab, presid, pnow, viaOn ? &viaQ : nullptr, exPct > 0.f, pslow);
+        EdLock lk; PrevLock& pk = prevLockFor(g); shown = carryShown(pslide, pk.lk, pk.cres, out, carried, plan, pgrab, presid, pnow, viaOn ? &viaQ : nullptr, exPct > 0.f, pslow);
     }   // HW26: hand-frame residual / locked blend; carry: the weapon rides the moved hand only while it carries (plan.carryW); it stays on the mount during the reach / release phases
     if (!hs::poseSane(shown)) { snp.setRefuseName("insane"); return true; }
     if (!saferead::probeWrite(kSitePlace, reinterpret_cast<void*>(g + 0xA4), sizeof(hs::Pose))) { snp.setRefuse(PrNoWrite); return true; }
@@ -2796,7 +2814,6 @@ static void KPATCH_CALL apiUnregisterPreview(void* gob) {
         EdLock lk;
         if (!gob) {
             g_preview = hs::PreviewRegistry();
-            g_prevSlide = hs::Slide();   // a cleared preview starts holstered again (the editor resets its toggle with it)
         } else {
             (void)hs::previewUnregister(g_preview, gob);
         }
@@ -2807,7 +2824,6 @@ static void KPATCH_CALL apiUnregisterPreview(void* gob) {
             ended = true;
         }
         count = g_preview.n;
-        if (count == 0) g_prevSlide = hs::Slide();   // the last preview is gone: the next ones start holstered
         InterlockedExchange(&g_previewN, count);
     }
     if (takeEditLine()) KP_LOG(chEdit, "API unregister gob=%x n=%ld endedit=%d", U(gob), static_cast<long>(count), ended ? 1 : 0);
@@ -3071,21 +3087,31 @@ static int32_t KPATCH_CALL apiSetPreviewDraw(int32_t drawn) {
     uint32_t drawMs = 0, stowMs = 0;
     {
         EdLock lk;
-        if (!g_prevSlide.init) g_prevSlide.reset(false, now);
-        // HW28: the shared preview slide takes the timing of the weapon being edited (the global / unknown timing when none is)
-        // HW44: and the published slow_holster_x (a torn read keeps the previous factor; 1 until the first good read); g_prevSlow scales the preview's residual window with it
+        // HW28: each preview entry takes the timing of its own weapon category (an entry without one uses the weapon being edited, the global / unknown timing when none is)
+        // HW44: and the published slow_holster_x (a torn read keeps the previous factor; 1 until the first good read); each entry keeps the factor it was armed with (slowArm)
+        // HW47: one slide per entry; a left entry with a right partner waits previewStaggerMs (the world's dual stagger x slow) before its slide starts. A toggle with no registered entry stores nothing.
         hs::TuneCfg pc;
         const bool pcOk = loadTune(pc);
         const float slowX = hs::previewSlowFor(pcOk, pc.slowHolsterX, g_prevSlow);
         g_prevSlow = slowX;
-        if (slowX != 1.f) { slowReachRearm(false); slowReachRearm(true); }   // 0.21.1-dev: REACH every-solve budget for this slowed slide, both hands
-        const hs::SlideRes sres = hs::slideResolve(g_slideTune, g_edit.active ? g_edit.cat : hs::CatUnknown, slowX);
-        drawMs = sres.drawMs;
-        stowMs = sres.stowMs;
-        g_prevGrab = static_cast<float>(sres.grabPct) / 100.f;
-        if (!g_prevSlide.active(now)) for (PrevLock& p : g_prevLock) { p.lk.lockOn = 0; p.cres = CarryResid(); }   // HW26: a slide from rest picks its hemisphere afresh
-        if (g_reachTest && g_reachCarry) hs::reachRetarget(g_prevSlide, want, now, drawMs, stowMs, g_prevGrab, 0.04f, g_prevExtract >= 0.f ? g_prevExtract : g_extractHip);   // HW25: same continuity as the world
-        else g_prevSlide.target(want, now, drawMs, stowMs);
+        const hs::Category editCat = g_edit.active ? g_edit.cat : hs::CatUnknown;
+        const hs::SlideRes editRes = hs::slideResolve(g_slideTune, editCat, slowX);   // the log line
+        drawMs = editRes.drawMs;
+        stowMs = editRes.stowMs;
+        for (int i = 0; i < g_preview.n; ++i) {
+            hs::PreviewEntry& e = g_preview.e[i];
+            const hs::Category ec = e.cat != hs::CatUnknown ? e.cat : editCat;
+            const hs::SlideRes sres = hs::slideResolve(g_slideTune, ec, slowX);
+            if (!e.slide.init) e.slide.reset(false, now);
+            e.grab = static_cast<float>(sres.grabPct) / 100.f;
+            e.slowArm = slowX;
+            if (slowX != 1.f) slowReachRearm(e.left);   // 0.21.1-dev: REACH every-solve budget for this slowed slide
+            if (!e.slide.active(now)) { PrevLock& pk = prevLockFor(reinterpret_cast<uintptr_t>(e.gob)); pk.lk.lockOn = 0; pk.cres = CarryResid(); }   // HW26: a slide from rest picks its hemisphere afresh
+            const uint32_t d = hs::previewStaggerMs(e.left, hs::previewHasRightPartner(g_preview, i), g_dualStagger, slowX);
+            if (d > 0) e.slide.targetDelayed(want, now, d, sres.drawMs, sres.stowMs);
+            else if (g_reachTest && g_reachCarry) hs::reachRetarget(e.slide, want, now, sres.drawMs, sres.stowMs, e.grab, 0.04f, g_prevExtract >= 0.f ? g_prevExtract : g_extractHip);   // HW25: same continuity as the world
+            else e.slide.target(want, now, sres.drawMs, sres.stowMs);
+        }
     }
     if (takeEditLine()) KP_LOG(chEdit, "API previewdraw %s draw_ms=%u stow_ms=%u reach=%d", want ? "draw" : "stow", static_cast<unsigned>(drawMs), static_cast<unsigned>(stowMs), g_reachTest ? 1 : 0);
     return want ? 1 : 0;
