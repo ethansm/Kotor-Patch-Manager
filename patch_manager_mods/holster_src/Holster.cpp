@@ -1510,6 +1510,9 @@ struct ReachEnt {
     hs::Q combQ;
     uint8_t tgtOn;           // HW44: tgtQ holds the last blended wrist target of this slide, the hemisphere reference of reachTargetQ; cleared with wristOn
     hs::Q tgtQ;
+    uint8_t viaOn, viaDir, viaEase;   // HW49 M1: the last carry frame had a via bump / its slide dir / an ease after a mid-carry reversal is running; cleared at the slide clear sites
+    uint32_t viaMs, viaEaseMs;        // HW49 M1: slide clock of the last bump frame / of the reversal that started the ease
+    float viaLast, viaFrom;           // HW49 M1: the via progress the bump used last frame / the value the ease starts from
 };
 static const uint8_t kReachHoldFrames = 3;   // HW25: a transient refusal re-applies the last solved arm for up to this many frames (about 50 ms), then lets go
 static struct ReachStyleInit {
@@ -1608,7 +1611,8 @@ static bool reachStale(const ReachEnt& e) {
 // w == 0: only undo a leftover write (a body the engine did not resample); w > 0: one reach step toward tgt.pos, or (carry) toward the point on the mount -> hand path at
 // slideF. carry: *carried receives the world pose of the attach node (the hand the weapon hangs on) AFTER the arm write; the return value says it is valid.
 static bool reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w, bool left, int cat, float pathF, float restMix, const float* mountPos, const hs::Q* mountQ, bool backMount, uintptr_t attachNode = 0,
-                     bool carry = false, hs::Pose* carried = nullptr, const hs::ReachPlan* plp = nullptr, const hs::ShapeEntry* sh = nullptr, float viaS = 0.f) {
+                     bool carry = false, hs::Pose* carried = nullptr, const hs::ReachPlan* plp = nullptr, const hs::ShapeEntry* sh = nullptr, float viaS = 0.f,
+                     int viaDir = -1, uint32_t nowMs = 0, float viaSlow = 1.f) {   // viaDir < 0: no reversal test, no via state write (undo / no slide)
     const uintptr_t parent = rdU32(kSitePlace, beh, 0x14);
     if (!parent) return false;
     ReachEnt* e = nullptr;
@@ -1651,12 +1655,12 @@ static bool reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w,
         if (static_cast<int32_t>(GetTickCount() - e->refusedAt) > 5000) e->parent = 0;   // retry later
         return false;
     }
-    if (reachStale(*e)) { e->parent = 0; e->solved = e->holdN = e->wristOn = e->twistOn = e->combOn = e->tgtOn = 0; e->topoSet = 0; return false; }
+    if (reachStale(*e)) { e->parent = 0; e->solved = e->holdN = e->wristOn = e->twistOn = e->combOn = e->tgtOn = 0; e->topoSet = 0; e->viaOn = e->viaEase = 0; return false; }
 
     // HW25: a transient refusal (quat read, pose, solve) while the slide still runs re-applies the last solved local quats instead of dropping the arm to the animation for
     // a frame. Nothing world-space is stored: the carried hand is recomputed from the attach node. Never at slide end (w <= 0) or on a permanent refusal.
     auto holdLast = [&](hs::ReachHoldKind kind, const char* why) -> bool {
-        if (!(w > 0.f)) { e->solved = e->holdN = e->wristOn = e->twistOn = e->combOn = e->tgtOn = 0; e->topoSet = 0; return false; }   // slide over: nothing to hold, and the next slide starts clean
+        if (!(w > 0.f)) { e->solved = e->holdN = e->wristOn = e->twistOn = e->combOn = e->tgtOn = 0; e->topoSet = 0; e->viaOn = e->viaEase = 0; return false; }   // slide over: nothing to hold, and the next slide starts clean
         if (!hs::reachHoldAllowed(kind, e->solved, e->holdN, w, kReachHoldFrames, carry)) return false;
         bool ok = true;
         if (e->solved & 1) ok = reachWriteQ(e->bic, e->bb.wrote) && ok;
@@ -1682,6 +1686,7 @@ static bool reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w,
         e->dirty = false;
         e->solved = e->holdN = e->wristOn = e->twistOn = e->combOn = e->tgtOn = 0;
         e->topoSet = 0;
+        e->viaOn = e->viaEase = 0;
         e->bb.have = e->fb.have = e->wb.have = false;
         return false;
     }
@@ -1736,10 +1741,19 @@ static bool reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w,
             }
             // HW31b: while this weapon's via is on, push the aimed point sideways (outward for this arm) by a bump that peaks when the via orientation is reached (0 at both ends).
             // viaS = the via progress 0..1 of slideViaProgress() (HolsterSlide.h, the clock carryShownBase uses; 0 = via off or outside the carry window), so the bump and the turn through "up" cannot drift.
-            if (viaOutFor(cat) > 0.f && viaS > 0.f) {
-                viaOffM = hs::reachViaOffset(viaS, 1.f, viaOutFor(cat));
+            // HW49 M1: a mid-carry reversal switches viaS from the residual clock to carryBlend's fRot, a step. The reversal gate is the slow-scaled hs::viaReversal (as the X3 fade),
+            // and the bump then eases from the last value used over kViaEaseMs. A non-reversed slide keeps viaUse == viaS, so the bump is unchanged. viaDir < 0 = unknown: no state use.
+            if (viaDir >= 0 && hs::viaReversal(e->viaOn != 0, e->viaDir != 0, viaDir != 0, static_cast<int32_t>(nowMs - e->viaMs), viaSlow)) { e->viaEase = 1; e->viaEaseMs = nowMs; e->viaFrom = e->viaLast; }
+            float viaUse = viaS;
+            if (e->viaEase) {
+                viaUse = hs::viaEaseS(e->viaFrom, viaS, nowMs - e->viaEaseMs, hs::kViaEaseMs);
+                if (nowMs - e->viaEaseMs >= hs::kViaEaseMs) e->viaEase = 0;
+            }
+            if (viaOutFor(cat) > 0.f && viaUse > 0.f) {
+                viaOffM = hs::reachViaOffset(viaUse, 1.f, viaOutFor(cat));
                 for (int i = 0; i < 3; ++i) T[i] += ouW[i] * viaOffM;
             }
+            if (viaDir >= 0) { e->viaOn = viaUse > 0.f; e->viaDir = viaDir != 0; e->viaMs = nowMs; e->viaLast = viaUse; }
         }
         const float ts[3] = {T[0] - pS.pos[0], T[1] - pS.pos[1], T[2] - pS.pos[2]};
         hs::qrotate(inv, ts, lt);
@@ -2292,7 +2306,7 @@ static bool previewPlace(uintptr_t g, uintptr_t beh) {
     float viaS = 0.f;   // HW31b: the via progress for the arm's lateral bump (only when the via is on)
     if (viaOn && viaOutFor(static_cast<int>(cat)) > 0.f) { EdLock lk0; const CarryResid& vcr = prevLockFor(g).cres; viaS = hs::slideViaProgress(plan.active, presid, plan.carryW, plan.oriF, exPct > 0.f, pslide.dir != 0, pslide.from, pslide.carryFrom, pnow, pslide.t0, pslide.len, g_prevGrab, vcr.on != 0, vcr.startMs, vcr.msEff, plan.pathF, stowRotEff()); }
     g_reachSlowX = pslow;   // 0.21.1-dev: REACH logging density for a slowed slide
-    const bool carryOk = g_reachTest && drawgateMode() && reachArm(g, beh, atHand ? out : shown, reachW, left, static_cast<int>(cat), plan.pathF, plan.restMix, out.pos, &out.q, reachIsBackBone(bone), n, g_reachCarry && plan.active, &carried, &plan, hs::shapeOf(model), viaS);   // w == 0 outside the slide: only undoes a leftover write
+    const bool carryOk = g_reachTest && drawgateMode() && reachArm(g, beh, atHand ? out : shown, reachW, left, static_cast<int>(cat), plan.pathF, plan.restMix, out.pos, &out.q, reachIsBackBone(bone), n, g_reachCarry && plan.active, &carried, &plan, hs::shapeOf(model), viaS, pslide.dir != 0 ? 1 : 0, pnow, pslow);   // w == 0 outside the slide: only undoes a leftover write
     snp.vo = viaS;
     if (atHand) { snp.why = "release"; previewHandLog(g, parent, n, left, model, slideF, true, carryOk, reachW, plan.carryW, pnow); return true; }   // fully drawn: the engine's hand pose stays
     if (carryOk) {
@@ -2639,7 +2653,7 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
         const float viaS = (viaOn && viaOutFor(static_cast<int>(cat)) > 0.f) ? hs::slideViaProgress(pl.active, residMs, pl.carryW, pl.oriF, exPct > 0.f, ent->slide.dir != 0, ent->slide.from, ent->slide.carryFrom, rnow, ent->slide.t0, ent->slide.len, rgrab, ent->cres.on != 0, ent->cres.startMs, ent->cres.msEff, pl.pathF, stowRotEff()) : 0.f;   // HW31b: the arm's lateral bump follows the via
         snp.w = wa; snp.vo = viaS; snp.pathF = pl.pathF;
         g_reachSlowX = ent->slowArm;   // 0.21.1-dev: REACH logging density for a slowed slide
-        if (reachArm(g, reinterpret_cast<uintptr_t>(beh), out, wa, ent->left, static_cast<int>(cat), pl.pathF, pl.restMix, hipPose.pos, &hipPose.q, reachIsBackBone(mountBone), n, g_reachCarry && pl.active, &carried, &pl, shp, viaS)) {
+        if (reachArm(g, reinterpret_cast<uintptr_t>(beh), out, wa, ent->left, static_cast<int>(cat), pl.pathF, pl.restMix, hipPose.pos, &hipPose.q, reachIsBackBone(mountBone), n, g_reachCarry && pl.active, &carried, &pl, shp, viaS, ent->slide.dir != 0 ? 1 : 0, rnow, ent->slowArm)) {
             // carry: the weapon rides the moved hand (the engine's hand pose, recomputed after the arm write), pl.carryW: 0 while the hand is still reaching the mount (draw) or already releasing it (stow), 1 while it carries; at the draw end the arm has released, so the carried hand IS the engine hand
             const hs::Pose rid = carryShown(ent->slide, ent->slide, ent->cres, hipPose, carried, pl, rgrab, residMs, rnow, viaOn ? &viaQ : nullptr, exPct > 0.f, ent->slowArm);   // HW26: hand-frame residual (or the locked world blend)
             if (ent->slide.dir == 0 && pl.active && (g_logVerbose || g_logMount) && KP_ENABLED(chMain, KPLOG_INFO)) {   // HW41: where the weapon is vs the hand during a stow (log only)

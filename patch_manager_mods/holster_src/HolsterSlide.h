@@ -355,9 +355,10 @@ inline float slideViaProgress(bool active, uint32_t residMs, float carryW, float
 // ---- HW49: mid-carry reversal gate (scaled by slow_holster_x), via ease window, place_off advisory ----
 inline constexpr int32_t kReversalGapMs = 100;   // HW49: frame gap that counts as a mid-carry reversal (was the literal 100 in carryShown)
 inline constexpr uint32_t kViaEaseMs = 120;      // HW49 M1: ease window after a mid-carry reversal, ms (Opus approved 120)
-inline bool viaReversal(bool wasOn, bool lastDir, bool dir, int32_t gapMs) { return wasOn && lastDir != dir && gapMs >= 0 && gapMs <= kReversalGapMs; }
 // The gate is kReversalGapMs times the slow factor (clamped like slowMs: NaN or <= 1 gives 1). With slowX = 1 it is the old <= 100 check.
 inline bool reversalGapOk(int32_t gapMs, float slowX) { return static_cast<float>(gapMs) <= static_cast<float>(kReversalGapMs) * slowHolsterClamp(slowX); }
+// HW49 M1: the last carry frame had a via bump, the slide direction flipped, and the frame gap passes the slow-scaled gate (same gate as the X3 reversal fade).
+inline bool viaReversal(bool wasOn, bool lastDir, bool dir, int32_t gapMs, float slowX) { return wasOn && lastDir != dir && gapMs >= 0 && reversalGapOk(gapMs, slowX); }
 inline float viaEaseS(float from, float to, uint32_t tMs, uint32_t windowMs) {
     if (windowMs == 0 || tMs >= windowMs) return to;
     return to + (from - to) * (1.f - easeSmooth(static_cast<float>(tMs) / static_cast<float>(windowMs)));

@@ -608,11 +608,15 @@ static void testBlendPoseLockedNaNTickKeepsLock() {
 
 // HW49 helpers: the reversal gate (scaled by slowX), the via ease window and the place_off advisory (HolsterSlide.h).
 static void testHW49Helpers() {
-    KT_CHECK(!viaReversal(false, false, true, 10));
-    KT_CHECK(!viaReversal(true, true, true, 10));                       // no direction change
-    KT_CHECK(viaReversal(true, false, true, 100));
-    KT_CHECK(!viaReversal(true, false, true, 101));
-    KT_CHECK(!viaReversal(true, false, true, -1));
+    KT_CHECK(!viaReversal(false, false, true, 10, 1.f));
+    KT_CHECK(!viaReversal(true, true, true, 10, 1.f));                  // no direction change
+    KT_CHECK(viaReversal(true, false, true, 100, 1.f));
+    KT_CHECK(!viaReversal(true, false, true, 101, 1.f));
+    KT_CHECK(!viaReversal(true, false, true, -1, 1.f));
+    KT_CHECK(viaReversal(true, true, false, 400, 4.f) && !viaReversal(true, true, false, 401, 4.f));   // the gate scales with slowX, as the X3 reversal fade
+    KT_CHECK(!viaReversal(true, false, true, 101, 1.f) && viaReversal(true, false, true, 101, 2.f));
+    KT_CHECK(!viaReversal(true, false, false, 400, 4.f) && !viaReversal(false, false, true, 400, 4.f));   // same dir / bump off: no reversal at any slowX
+    KT_CHECK(!viaReversal(true, false, true, -1, 4.f));                 // a negative gap never counts
     KT_CHECK(reversalGapOk(100, 1.f) && !reversalGapOk(101, 1.f));      // slowX = 1: the old <= 100 gate
     KT_CHECK(reversalGapOk(400, 4.f) && !reversalGapOk(401, 4.f));
     KT_CHECK(reversalGapOk(800, 100.f) && !reversalGapOk(801, 100.f));  // factor clamped to 8
