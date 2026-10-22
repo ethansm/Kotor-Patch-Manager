@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Holster probe log checker (holster route). Python 3, stdlib only; read-only (--new writes only its bookmark).
 
-Usage: holster_log_check.py [LOG | --log LOG] [--new [--no-advance] [--state PATH]] [--mounts [--json]] [--row SM-L11..SM-L16]
+Usage: holster_log_check.py [LOG | --log LOG] [--new [--no-advance] [--state PATH]] [--mounts [--json]] [--row SM-L11..SM-L17]
   Default log: ~/.local/share/Steam/steamapps/common/Knights of the Old Republic II/holster_log.txt
   Report (at most 51 lines: the 47-line base report plus at most 3 HW38 lines, SLIDE dly / REACH HW38 / REACH min/median/max, each only when its
   field appears in the window, plus the HW41 `STOWHOLD` summary line when any STOWHOLD line exists): header, status (loaded / cap reached / BONETEST), COMB edges per creature (plus unreadable=N for `old=? edge=?` lines), ATTACH tags and
@@ -17,12 +17,16 @@ Usage: holster_log_check.py [LOG | --log LOG] [--new [--no-advance] [--state PAT
   `REACH HW38` (vo= max and vo>0 outside mid-carry, pb= max and pb>0 at f>0.30), `REACH min/median/max` (wr, f, dzA, fy, fx).
   HW41 (holster 0.20.3-dev, log only): `STOWHOLD p= pathF= carryW= wd= dm= lf= hold=` lines (first ~8 stows, log_verbose/reach_test) are a window
   fact, not a record: one summary line `STOWHOLD n= hold=<n>/<n> | wd max while pathF>lf | wd max overall`; a line that does not parse is skipped.
-  --row SM-L11..SM-L16: pass-signal clauses of one play-test row (PLAY_TEST_QUEUE.md), `SM-Lnn <clause>: PASS|FAIL|NO-DATA <reason>`, then
+  --row SM-L11..SM-L17: pass-signal clauses of one play-test row (PLAY_TEST_QUEUE.md), `SM-Lnn <clause>: PASS|FAIL|NO-DATA <reason>`, then
   `SM-Lnn verdict`. SM-L16 (STOWHOLD, hold=1 lines only): hold on; the weapon stays on the hand (wd <= 0.005 m) while pathF > lf + 0.01; lands on
   the mount (|wd - dm| <= 0.02 m) at pathF <= 0.02. Exit 0 PASS, 1 FAIL, 3 NO-DATA; unknown row = exit 2.
   HW44 (holster 0.21.0-dev, slow_holster_x): `SLIDE start ... ms=<slowed> [dly=<scaled>] slowx=<v>` (the tag only when v != 1) adds `slow=<n> x=<min>..<max>` to the SLIDE line;
   `CONFIG slowx=<v>` and `SLOWX <old>-><new>` (a live change) give one `SLOWX cfg= changes=` line. SM-L14 scales the dly band by each start's slowx, and does not count a slow
   start that is still open at the last T= stamp of the window as stuck (its slowed ms runs past the window end); a normal start still is.
+  HW45 (holster 0.21.1-dev, log only): `SNAP gob= dir= f= dt= of= slowx= jump= why= w= vo= hand=<before>/<after> [pf= side= ps=]` (a weapon jumped further than snap_log_m in one frame
+  during a running slide, or on the frame after its end; cap 80 per session) gives one `SNAP n=<count> by why: <why>=<n>, ...` line (only when SNAP lines exist). `why` = write | noin |
+  release | reset-first | reset-unread | refuse:<code> | cut:retarget. --row SM-L17: PASS = no SNAP line in a slowed slide (slowx > 1); FAIL lists the first (why, f, dt/of, jump);
+  NO-DATA = no slowed slide that started and ended (SLIDE start slowx>1 + end; a slow CONFIG alone is not enough), a build older than 0.21.1-dev, or `CONFIG snaplog_m=0` (detector off).
   --new: only lines after the bookmark shared with log_triage (same state file, keyed by absolute path), then advance it.
   Exit 0 = analyzed, 2 = log missing ("no log: <path>") or a bad flag combination.
 
@@ -88,6 +92,13 @@ EX_EXTRACT = 0.05        # the existing "extracting" threshold on ex= (same as t
 # HW41 (holster 0.20.3-dev): STOWHOLD p=<slide progress 0..1> pathF=<hand path fraction, 1 hand end .. 0 mount> carryW=<carry weight>
 # wd=<m, shown weapon to carried hand> dm=<m, hand to mount> lf=<stow landing fraction> hold=<1 path-driven hold, 0 old time window>.
 # Trailing fields are tolerated (no end anchor). SM-L16 limits: margins are inclusive, EPS absorbs float noise on the %.2f/%.3f prints.
+# HW45 (holster 0.21.1-dev): SNAP gob=<hex> dir=<draw|stow> f=<slide frac> dt=<ms since start> of=<slide ms> slowx=<x> jump=<m> why=<cause> w=<reach weight> vo=<via> hand=<m before>/<m after> (-1 = unknown);
+# trailing pf= side= ps= are tolerated. A cap line (`SNAP cap reached`) does not match.
+SNAP_RE = _rx(r"\bSNAP gob=(?P<gob><H>) dir=(?P<dir>draw|stow) f=(?P<f><N>) dt=(?P<dt><I>) of=(?P<of><I>) slowx=(?P<slowx><N>) jump=(?P<jump><N>) why=(?P<why>\S+) "
+              r"w=(?P<w><N>) vo=(?P<vo><N>) hand=(?P<hb><N>)/(?P<ha><N>)")
+SNAP_HEAD_RE = re.compile(r"\bSNAP gob=")
+SNAP_CAP_RE = re.compile(r"\bSNAP cap reached (slowed|normal)\b")   # the per-session cap line (normal-speed and slowed slides have one 80-line cap each)
+SNAP_MIN_VERSION = (0, 21, 1)   # the first build with the detector
 STOWHOLD_HEAD_RE = re.compile(r"\bSTOWHOLD ")
 STOWHOLD_RE = _rx(r"\bSTOWHOLD p=(?P<p><N>) pathF=(?P<pathF><N>) carryW=(?P<carryW><N>) wd=(?P<wd><N>) dm=(?P<dm><N>) lf=(?P<lf><N>) hold=(?P<hold>\d+)")
 STOW_JUDGE_MARGIN = 0.01  # SM-L16 (b): a line is judged only when pathF > lf + this
@@ -154,6 +165,7 @@ MAIN_RES = {
     "reachtopo": re.compile(r"\bREACH owner=\w+ w=[\d.]+ .*? topo=(\w+) bk=(\d)"),   # HW27 (0.15.0-dev): which reach the mount height chose (hinge / over / hip / thigh), bk=1 = a back bone
     "slidecfg": re.compile(r"\bCONFIG .*?\bslide=(\S+) resid_ms=(\d+) wrist_max=(\d+)"),   # HW28 (0.15.0-dev): resolved <cat>:<draw ms>/<stow ms>/<grab %>, residual ms, wrist cap
     "slowcfg": re.compile(r"\bCONFIG slowx=(\d+(?:\.\d+)?)"),   # HW44 (0.21.0-dev): slow_holster_x at start (CONFIG slowx= is always logged)
+    "snapcfg": re.compile(r"\bCONFIG snaplog_m=(\d+(?:\.\d+)?)"),   # HW45 (0.21.1-dev): snap_log_m at start (0 = detector off)
     "slowchg": re.compile(r"\bSLOWX (\d+(?:\.\d+)?)->(\d+(?:\.\d+)?)"),   # HW44: a live change, old->new
     "node": re.compile(r"\bPLACENODE node=\w+ gob=\w+ t=(\d+) step=(-?\d+) name=(\S+) target=(\d)(?: bvt=(\w+))?(?: gname=(\S+) mname=(\S+))?(?: cat=(\w+))?"),
 }
@@ -251,7 +263,7 @@ def parse_lines(window):
     main = {"loaded": [], "cap": [], "bonetest": Counter(), "unreadable": 0, "tid": {}, "reload": [], "tune": [], "refuse": {}, "node": Counter(), "mount": Counter(),
             "owner": Counter(), "combc": set(), "partyhold": Counter(), "movehold": 0, "delay": Counter(),
             "reach": [], "slidecut": Counter(), "resid": [], "reachfound": 0, "reachrefuse": Counter(), "reachhold": Counter(), "reachtw": [], "reachex": [],
-            "reachtopo": Counter(), "slidecfg": [], "slowcfg": [], "slowchg": [], "t_last": None, "reach_partial": reach_partial,   # HW44: slowcfg = CONFIG slowx=, slowchg = SLOWX old->new, t_last = last T= stamp of the window
+            "reachtopo": Counter(), "slidecfg": [], "slowcfg": [], "snapcfg": [], "snaps": [], "snapcap": Counter(), "slowchg": [], "t_last": None, "reach_partial": reach_partial,   # HW44: slowcfg = CONFIG slowx=, slowchg = SLOWX old->new, t_last = last T= stamp of the window
                # HW40: REACH steps cut by the window (partial=N on the REACH line when N > 0)
             "preview": [], "camnode": [], "wmname": set(),
             "slide_seq": [], "vo": [], "pb": [],   # HW38: SLIDE start/end/cut events in log order; (f or None, vo) and (f or None, pb) per REACH line
@@ -314,6 +326,20 @@ def parse_lines(window):
         m = MAIN_RES["slowcfg"].search(text)
         if m:
             main["slowcfg"].append(float(m.group(1)))
+        m = MAIN_RES["snapcfg"].search(text)
+        if m:
+            main["snapcfg"].append(float(m.group(1)))
+        mcap = SNAP_CAP_RE.search(text)
+        if mcap:
+            main["snapcap"][mcap.group(1)] += 1
+        if SNAP_HEAD_RE.search(text):   # HW45: a window fact, not a record; a line whose fields do not parse is skipped
+            fs = SNAP_RE.search(text)
+            if fs is None:
+                skipped.append((n, "SNAP", text))
+            else:
+                g = fs.groupdict()
+                main["snaps"].append({"gob": _hex(g["gob"]), "dir": g["dir"], "f": float(g["f"]), "dt": int(g["dt"]), "of": int(g["of"]), "slowx": float(g["slowx"]),
+                                      "jump": float(g["jump"]), "why": g["why"], "w": float(g["w"]), "vo": float(g["vo"]), "hb": float(g["hb"]), "ha": float(g["ha"])})
         m = MAIN_RES["slowchg"].search(text)
         if m:
             main["slowchg"].append((float(m.group(1)), float(m.group(2))))
@@ -696,7 +722,7 @@ def _stowhold_lines(f):
 
 
 # ---- --row SM-Lnn: pass-signal clauses of the play-test rows (PLAY_TEST_QUEUE.md). Each clause is (label, PASS|FAIL|NO-DATA, reason).
-ROWS = ("SM-L11", "SM-L12", "SM-L13", "SM-L14", "SM-L15", "SM-L16")
+ROWS = ("SM-L11", "SM-L12", "SM-L13", "SM-L14", "SM-L15", "SM-L16", "SM-L17")
 ROW_EXIT = {"PASS": 0, "FAIL": 1, "NO-DATA": 3}
 
 
@@ -929,6 +955,53 @@ def _sm_l16(main):
     return [a, b, c]
 
 
+def _version_tuple(v):
+    m = re.match(r"(\d+)\.(\d+)\.(\d+)", v or "")
+    return tuple(int(x) for x in m.groups()) if m else None
+
+
+def _sm_l17(main):
+    """HW45 slow-draw snap (holster 0.21.1-dev, SNAP lines): PASS needs >= 1 slowed slide (SLIDE start slowx > 1 with its end) and no SNAP line at slowx > 1. FAIL = a SNAP line at slowx > 1. A snap at slowx = 1 is a NOTE.
+    NO-DATA: no slowed slide that started and ended (a slow CONFIG / SLOWX alone is not evidence), a build older than 0.21.1-dev, the detector off (CONFIG snaplog_m=0), or a slowed SNAP cap line with no slowed SNAP line.
+    A `SNAP cap reached` line is a WARN in the reason text."""
+    label = "no SNAP in slowed slides"
+    snaps = main.get("snaps", [])
+    slow_snaps = [r for r in snaps if r["slowx"] > 1.0]
+    slow_slides = [e for e in main.get("slide_seq", []) if e["ev"] == "start" and e.get("slowx", 1.0) > 1.0]
+    cfg, chg = main.get("slowcfg", []), main.get("slowchg", [])
+    slow_cfg = bool(cfg and cfg[-1] > 1.0) or any(new > 1.0 for _, new in chg)
+    ver = _version_tuple(main["loaded"][-1]) if main.get("loaded") else None
+    snapcfg = main.get("snapcfg", [])
+    if ver is not None and ver < SNAP_MIN_VERSION and not snaps:
+        return [(label, "NO-DATA", "build %s predates the SNAP detector (0.21.1-dev)" % main["loaded"][-1])]
+    if snapcfg and snapcfg[-1] == 0.0 and not snaps:
+        return [(label, "NO-DATA", "snap_log_m=0: detector off")]
+    cap = main.get("snapcap", Counter())
+    capnote = " (WARN snap cap reached: %s)" % ",".join(sorted(cap)) if cap else ""
+    if slow_snaps:
+        r = slow_snaps[0]
+        return [(label, "FAIL", "%d SNAP line(s) at slowx>1 (%d in the window): first gob=0x%s dir=%s why=%s f=%.3f dt=%d/%d ms slowx=%.2f jump=%.3f m hand=%.3f/%.3f%s"
+                 % (len(slow_snaps), len(snaps), r["gob"], r["dir"], r["why"], r["f"], r["dt"], r["of"], r["slowx"], r["jump"], r["hb"], r["ha"], capnote))]
+    if cap.get("slowed"):   # the slowed cap line without any slowed SNAP line: lines were lost (--new cut, max_lines), so no PASS
+        return [(label, "NO-DATA", "SNAP cap reached for slowed slides but no slowed SNAP line is in the window%s" % capnote)]
+    # PASS needs at least one slowed slide that started (slowx > 1) and ended; a slow CONFIG alone, or a slow start that never ended, is no evidence.
+    open_by_owner = {}
+    closed = 0
+    for e in main.get("slide_seq", []):
+        if e["ev"] == "start" and e.get("slowx", 1.0) > 1.0:
+            open_by_owner[e["owner"]] = open_by_owner.get(e["owner"], 0) + 1
+        elif e["ev"] == "end" and open_by_owner.get(e["owner"], 0) > 0:
+            open_by_owner[e["owner"]] -= 1
+            closed += 1
+    if not slow_slides:
+        why = "no slowed SLIDE start (slowx>1) in the window" + (" (CONFIG slowx / SLOWX above 1 alone is not enough)" if slow_cfg else "")
+        return [(label, "NO-DATA", why)]
+    if not closed:
+        return [(label, "NO-DATA", "%d slowed SLIDE start(s) but none ended in the window" % len(slow_slides))]
+    note = " (NOTE %d SNAP line(s) at slowx=1, not judged)" % len(snaps) if snaps else ""
+    return [(label, "PASS", "no SNAP line at slowx>1 (%d slowed SLIDE start(s), %d ended)%s%s" % (len(slow_slides), closed, note, capnote))]
+
+
 def _row_report(row, recs, main):
     """(exit code, output lines) for one --row: one line per clause, then the verdict (FAIL > NO-DATA > PASS)."""
     if row == "SM-L11":
@@ -941,6 +1014,8 @@ def _row_report(row, recs, main):
         clauses = _sm_l14(main)
     elif row == "SM-L15":
         clauses = _sm_l15(main)
+    elif row == "SM-L17":
+        clauses = _sm_l17(main)
     else:
         clauses = _sm_l16(main)
     lines = ["%s %s: %s %s" % (row, label, status, reason) for label, status, reason in clauses]
@@ -1026,6 +1101,18 @@ def _slowx_lines(f):
     return [line]
 
 
+def _snap_lines(f):
+    """HW45: one `SNAP n=<count> by why: <why>=<n>, ...` line, only when the window has a SNAP line (else []). Also the largest jump and how many were at slowx>1."""
+    rows = f.get("snaps", [])
+    if not rows:
+        return []
+    by = Counter(r["why"] for r in rows)
+    cap = f.get("snapcap", Counter())
+    return ["SNAP n=%d by why: %s | slowx>1: %d | max jump %.3f m%s" % (len(rows), ", ".join("%s=%d" % kv for kv in sorted(by.items(), key=lambda kv: (-kv[1], kv[0]))),
+                                                                         sum(1 for r in rows if r["slowx"] > 1.0), max(r["jump"] for r in rows),
+                                                                         " | WARN cap reached: %s" % ",".join(sorted(cap)) if cap else "")]
+
+
 def _toggle_events(f):
     """PARTYHOLD / MOVEHOLD / DELAY one-liners (always printed, so a 0 is a scanned zero)."""
     ph, dl = f.get("partyhold", Counter()), f.get("delay", Counter())
@@ -1095,6 +1182,7 @@ def render(recs, skipped, main_facts, nlines, meta):
     out += _reach_events(main_facts)
     out += _reach_hw38_lines(main_facts)
     out += _stowhold_lines(main_facts)   # HW41: [] unless the window has a STOWHOLD line
+    out += _snap_lines(main_facts)       # HW45: [] unless the window has a SNAP line
     out.append(_hist("ANIMRES", recs))
     styles = Counter((r["self"], r["style"], r["gate"]) for r in recs if r["kind"] == "ANIMRES")
     if styles:   # C6: +0xC5 = wield style byte, +0xC6 = table gate; one entry per creature and value
@@ -1148,7 +1236,7 @@ def main(argv=None):
     ap.add_argument("--state", default=LT.DEFAULT_STATE, help="bookmark file for --new")
     ap.add_argument("--mounts", action="store_true", help="print only the MOUNT (cat, bone) summary section")
     ap.add_argument("--json", action="store_true", help="with --mounts: the MOUNT groups as a JSON list, nothing else on stdout")
-    ap.add_argument("--row", metavar="SM-Lnn", help="pass-signal verdict of one play-test row (SM-L11..SM-L16); exit 0 PASS, 1 FAIL, 3 NO-DATA")
+    ap.add_argument("--row", metavar="SM-Lnn", help="pass-signal verdict of one play-test row (SM-L11..SM-L17); exit 0 PASS, 1 FAIL, 3 NO-DATA")
     a = ap.parse_args(argv)
     if a.json and not a.mounts:
         print("--json needs --mounts", file=sys.stderr)

@@ -1362,9 +1362,9 @@ class Hw41StowHoldTests(unittest.TestCase):
         self.assertIn(L16_A + " NO-DATA no STOWHOLD line (old build, or no stow in window)", out)
 
     def test_unknown_row_message_lists_sm_l16(self):
-        rc, out, err = run_err(["--row", "SM-L17", "/nonexistent.txt"])
+        rc, out, err = run_err(["--row", "SM-L18", "/nonexistent.txt"])
         self.assertEqual(rc, 2)
-        self.assertIn("SM-L16", err)
+        self.assertIn("SM-L17", err)
 
     def test_parse_reads_fields_and_tolerates_trailing_fields(self):
         recs, skipped, main = H.parse_lines([(1, stowhold(pathf=0.5, wd=0.012, dm=0.2) + " ext=1 foo=2.5"), (2, stowhold(hold=0))])
@@ -1513,6 +1513,105 @@ class Hw44SlowTests(unittest.TestCase):
         self.assertFalse(H._slow_cut_by_window({"slowx": 4.0, "t": 1000, "ms": 2080}, None))   # no stamp in the window: not excused
         self.assertTrue(H._slow_cut_by_window({"slowx": 4.0, "t": 1000, "ms": 2080}, 2000))
         self.assertFalse(H._slow_cut_by_window({"slowx": 4.0, "t": 1000, "ms": 2080}, 3500))   # the window outlasts the slide: it should have ended
+
+
+def snap45(why="release", slowx="8.00", f="1.000", dt=4160, of=4160, jump="0.412", dirn="draw", gob=0x2A, hand="0.000/0.412", extra=" pf=1.000 side=L ps=0.0031"):
+    """A SNAP line as Holster.cpp 0.21.1-dev logs it."""
+    return ("T=300 f=- holster/main SNAP gob=%x dir=%s f=%s dt=%d of=%d slowx=%s jump=%s why=%s w=0.00 vo=0.000 hand=%s%s"
+            % (gob, dirn, f, dt, of, slowx, jump, why, hand, extra))
+
+
+SNAP_CFG_ON = "T=2 f=- holster/main CONFIG snaplog_m=0.050 (snap_log_m: SNAP lines when a weapon jumps further than this in one frame during a slide; 0 = off)"
+SNAP_CFG_OFF = SNAP_CFG_ON.replace("0.050", "0.000")
+SLOW_START = "T=290 f=- holster/main SLIDE start dir=draw owner=1f gob=2a left=1 from=0.00 ms=4160 slowx=8.00"
+SLOW_END = "T=4450 f=- holster/main SLIDE end dir=draw owner=1f ms=4160 frames=200 maxdt=30"
+
+
+class Hw45SnapTests(unittest.TestCase):
+    """HW45 (holster 0.21.1-dev, log only): SNAP lines, the summary line and --row SM-L17."""
+
+    def row(self, bodies, rc, word):
+        got_rc, out = run_log(bodies, ["--row", "SM-L17"])
+        self.assertEqual(got_rc, rc, out)
+        self.assertEqual(out[-1], "SM-L17 verdict: %s" % word, out)
+        self.assertTrue(all(line.startswith("SM-L17 ") for line in out), out)
+        return out
+
+    def test_parse_reads_fields_and_tolerates_trailing_fields(self):
+        recs, skipped, main = H.parse_lines([(1, snap45(hand="-1.000/0.412", extra=" pf=0.500 side=R ps=0.0100 future=1")), (2, snap45(why="refuse:nomount", slowx="1.00"))])
+        self.assertEqual(skipped, [])
+        self.assertEqual(recs, [])   # a window fact, never a record
+        self.assertEqual(len(main["snaps"]), 2)
+        a = main["snaps"][0]
+        self.assertEqual((a["gob"], a["dir"], a["why"], a["dt"], a["of"], a["slowx"], a["jump"], a["hb"], a["ha"]), ("2a", "draw", "release", 4160, 4160, 8.0, 0.412, -1.0, 0.412))
+        self.assertEqual(main["snaps"][1]["why"], "refuse:nomount")
+
+    def test_unparsable_snap_is_skipped_and_cap_line_is_not_a_snap(self):
+        rc, out = run_log(["SNAP gob=2a dir=draw f=0.5", "T=9 f=- holster/main SNAP cap reached (80 lines): further snaps not logged"])
+        self.assertEqual(rc, 0)
+        self.assertEqual(out[0], "HOLSTER lines=2 parsed=0 skipped=1")
+        self.assertFalse(any(line.startswith("SNAP ") for line in out), out)
+
+    def test_summary_line_only_with_snap_lines(self):
+        rc, out = run_log([snap45("release"), snap45("release"), snap45("write", jump="0.060"), snap45("reset-unread", slowx="1.00")])
+        self.assertEqual(rc, 0)
+        self.assertIn("SNAP n=4 by why: release=2, reset-unread=1, write=1 | slowx>1: 3 | max jump 0.412 m", out)
+        self.assertEqual(sum(1 for line in out if line.startswith("SNAP ")), 1)
+        rc, out = run_log([SLOW_START])
+        self.assertFalse(any(line.startswith("SNAP ") for line in out), out)
+
+    def test_pass_with_slowed_slide_and_no_snap(self):
+        out = self.row([SNAP_CFG_ON, SLOW_START, SLOW_END], 0, "PASS")
+        self.assertIn("SM-L17 no SNAP in slowed slides: PASS no SNAP line at slowx>1 (1 slowed SLIDE start(s), 1 ended)", out)
+
+    def test_slow_config_alone_is_no_data(self):
+        out = self.row([SNAP_CFG_ON, "T=3 f=- holster/main CONFIG slowx=6.00 (slow_holster_x: draw / stow slides run this many times slower; 1 = normal; live with probe=1)"], 3, "NO-DATA")
+        self.assertIn("CONFIG slowx / SLOWX above 1 alone is not enough", " ".join(out))
+        self.row([SNAP_CFG_ON, "T=3 f=- holster/main SLOWX 1.00->6.00"], 3, "NO-DATA")
+
+    def test_slowed_start_without_an_end_is_no_data(self):
+        out = self.row([SNAP_CFG_ON, SLOW_START], 3, "NO-DATA")
+        self.assertIn("none ended in the window", " ".join(out))
+        # an end of another owner does not close it; a normal-speed slide's end does not either
+        self.row([SNAP_CFG_ON, SLOW_START, SLOW_END.replace("owner=1f", "owner=77")], 3, "NO-DATA")
+
+    def test_snap_cap_line_is_a_warn_and_never_a_vacuous_pass(self):
+        capn = "T=400 f=- holster/main SNAP cap reached normal (80 lines): further snaps not logged"
+        caps = capn.replace("normal", "slowed")
+        out = self.row([SNAP_CFG_ON, SLOW_START, SLOW_END, capn], 0, "PASS")
+        self.assertIn("(WARN snap cap reached: normal)", " ".join(out))
+        out = self.row([SNAP_CFG_ON, SLOW_START, SLOW_END, caps], 3, "NO-DATA")   # the slowed cap was hit but no slowed SNAP line survived in the window
+        self.assertIn("SNAP cap reached for slowed slides", " ".join(out))
+        out = self.row([SNAP_CFG_ON, SLOW_START, SLOW_END, snap45("release"), caps], 1, "FAIL")
+        self.assertIn("(WARN snap cap reached: slowed)", " ".join(out))
+        rc, rep = run_log([snap45("release"), capn, caps])
+        self.assertIn("| WARN cap reached: normal,slowed", " ".join(rep))
+
+    def test_fail_lists_the_first_snap(self):
+        out = self.row([SNAP_CFG_ON, SLOW_START, snap45("reset-unread", f="0.310", dt=1290, of=4160, jump="0.55"), snap45("release")], 1, "FAIL")
+        self.assertIn("SM-L17 no SNAP in slowed slides: FAIL 2 SNAP line(s) at slowx>1 (2 in the window): first gob=0x2a dir=draw why=reset-unread f=0.310 dt=1290/4160 ms "
+                      "slowx=8.00 jump=0.550 m hand=0.000/0.412", out)
+
+    def test_snap_at_normal_speed_is_a_note_not_a_fail(self):
+        out = self.row([SNAP_CFG_ON, SLOW_START, SLOW_END, snap45("write", slowx="1.00")], 0, "PASS")
+        self.assertIn("(NOTE 1 SNAP line(s) at slowx=1, not judged)", " ".join(out))
+
+    def test_no_data_without_a_slowed_slide(self):
+        out = self.row([SNAP_CFG_ON, "T=290 f=- holster/main SLIDE start dir=draw owner=1f gob=2a left=1 from=0.00 ms=520"], 3, "NO-DATA")
+        self.assertIn("no slowed SLIDE start (slowx>1) in the window", " ".join(out))
+        self.row([SNAP_CFG_ON, snap45("write", slowx="1.00")], 3, "NO-DATA")
+        self.row([LOADED], 3, "NO-DATA")
+
+    def test_no_data_when_detector_off_or_build_too_old(self):
+        out = self.row([SNAP_CFG_OFF, SLOW_START], 3, "NO-DATA")
+        self.assertIn("snap_log_m=0: detector off", " ".join(out))
+        out = self.row(["T=1 f=- holster/main holster 0.21.0-dev loaded (probe)", SLOW_START], 3, "NO-DATA")
+        self.assertIn("predates the SNAP detector", " ".join(out))
+        self.row(["T=1 f=- holster/main holster 0.21.1-dev loaded (probe)", SLOW_START, SLOW_END], 0, "PASS")
+
+    def test_default_report_unchanged_without_snap_lines(self):
+        rc, out = run_log(OLD_STYLE_BODIES)
+        self.assertEqual(out, OLD_STYLE_REPORT)
 
 
 if __name__ == "__main__":

@@ -36,6 +36,7 @@
 #include "HolsterToggle.h"
 #include "HolsterDelay.h"
 #include "HolsterMove.h"
+#include "HolsterSnap.h"
 #include "Party.h"
 #include "HolsterPreview.h"
 #include "HolsterApi.h"
@@ -154,6 +155,9 @@ static bool g_editor = true;            // editor=0: RegisterPreview refuses and
 static char g_boneName[32] = "pelvis_g";              // attach node name; its ADDRESS becomes the push immediate, so it must stay static
 static LONG g_maxLines = 3000;
 static bool g_logMount = false;         // log_mount=1 (or log_verbose=1): HW35 MOUNT gob= lines (bone / mount / owner facing quats), once per rest, on change, and every 5 s per Gob at most
+static float g_snapLogM = hs::kSnapLogDefaultM;   // snap_log_m (0.21.1-dev, log only): SNAP detector threshold in metres, 0 = off; boot-time
+static volatile LONG g_snapLines = 0, g_snapSlowLines = 0;   // SNAP lines this session: normal speed and slowed (slowx != 1) slides count separately, each with its own cap kSnapMaxLines
+static const LONG kSnapMaxLines = 80;
 static bool g_logVerbose = false;       // log_verbose=1: the old per-sample COMB/ATTACH/ANIMRES/PLACE/PLACEREFUSE volume; 0 = rate-limited (HolsterLogRate.h)
 static hs::KeyCounts<256> g_combKeys, g_attachKeys, g_gateKeys, g_gateWarnKeys;   // quiet mode: per-creature hit counts (COMB, ATTACH)
 static hs::PlaceTable g_placeTab;
@@ -604,6 +608,7 @@ static void readConfig() {
             else if (!_stricmp(key, "editor")) g_editor = flagValue(val);
             else if (!_stricmp(key, "log_verbose")) g_logVerbose = flagValue(val);
             else if (!_stricmp(key, "log_mount")) g_logMount = flagValue(val);   // 0.19.0-dev (HW35)
+            else if (!_stricmp(key, "snap_log_m")) { if (!hs::snapParse(val, g_snapLogM)) cfgWarn(key, val, "not a number, keeping the default 0.05"); }   // 0.21.1-dev: SNAP detector threshold (m), 0 = off
             else if (!_stricmp(key, "place_gobvt")) {
                 char* end = nullptr;
                 const unsigned long v = strtoul(val, &end, 16);   // accepts a 0x prefix; blank or junk = no check
@@ -1528,9 +1533,22 @@ static bool reachViaFor(const hs::ShapeEntry* sh, int cat, const hs::Q& mountQ, 
     out = hs::qnormalize(hs::qmul(hs::arcQuat(wv, up), mq));
     return hs::qfinite(out);
 }
-static bool reachLogDue() {
+// 0.21.1-dev (log only): a slide armed with slow_holster_x != 1 logs REACH on every solve of its second half (pathF >= 0.5) and on every 8th before it, up to 120 lines per hand and slide,
+// instead of 1 in gob_every (the slow end of a draw was invisible). g_reachSlowX = the factor of the slide the caller is solving for (set before each reachArm call; 1 = off);
+// the budget is refilled by slowReachRearm when such a slide is armed (world: the arm point of the Gob; preview: apiSetPreviewDraw).
+static float g_reachSlowX = 1.f;
+static const LONG kSlowReachLines = 120;
+static volatile LONG g_slowReachLeft[2] = {0, 0};
+static volatile LONG g_slowReachSeen[2] = {0, 0};
+static void slowReachRearm(bool left) { const int i = left ? 1 : 0; g_slowReachSeen[i] = 0; g_slowReachLeft[i] = kSlowReachLines; }
+static bool reachLogDue(bool left = false, float pathF = 0.f) {
     if (!KP_ENABLED(chMain, KPLOG_INFO)) return false;
     const LONG c = InterlockedIncrement(&g_reachLines);
+    if (g_reachSlowX != 1.f) {
+        const int i = left ? 1 : 0;
+        const LONG seen = InterlockedIncrement(&g_slowReachSeen[i]);
+        if ((pathF >= 0.5f || (seen % 8) == 1) && g_slowReachLeft[i] > 0 && InterlockedDecrement(&g_slowReachLeft[i]) >= 0 && takeLine()) return true;
+    }
     return (c <= 24 || (c % g_gobEvery) == 0) && takeLine();
 }
 static void reachRefuse(const char* why, uintptr_t owner) {
@@ -1809,7 +1827,7 @@ static bool reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w,
     const uint8_t heldBefore = e->holdN;   // frames held just before this solve (0 = no hold episode)
     e->solved = static_cast<uint8_t>(wrote);
     e->holdN = 0;
-    if (!reachLogDue()) return carriedOk;
+    if (!reachLogDue(left, pathF)) return carriedOk;
     {   // the old single line was ~480 bytes and the core cuts a message at 232, so it goes out as three pieces (HolsterReachLog.h); only piece 1 takes the line budget
         static volatile LONG s_reachSeq = 0;
         hs::ReachLogVals rv;
@@ -1992,14 +2010,92 @@ static void gobNames(uintptr_t gob, uintptr_t parent, char model[17], char body[
     hs::tuneCopyName(body, b);
 }
 
+// ---- 0.21.1-dev SNAP (log only, HW45): one line when a weapon jumps in a single frame during a running slide (HolsterSnap.h) ----
+// A SnapProbe lives for one placement call of a Gob (world HolsterPlace, editor previewPlace). Its destructor runs on EVERY return of that call, reads the weapon's final world position
+// (gob+0xA4: what our write left there, or the engine's pose when our write was skipped) and feeds the detector. Samples are taken while the slide runs and on the one call after its end
+// (the release frame); the state is reset after that frame, so a hand that moves on its own later never reports. `why` says which path produced the final pose:
+//   write            our blend / carry write landed (a jump here = the blend, the carry residual or the reach moved the weapon in one frame)
+//   noin             preview only: the engine hand pose was unreadable mid-slide, the mount pose was written instead
+//   release          the slide reached its end and our write is skipped (the engine's hand pose stays): the f >= 1 hand-off. The jump here = weapon vs hand mismatch at the hand-off
+//   reset-first      reset(hand) on a first placement / new owner while the slide ran (Holster.cpp "SLIDE cut reason=first"): engine pose shows at once
+//   reset-unread     reset(hand) because the owner / combat read failed (reason=unreadable); no grace unless reach_test=1
+//   refuse:<code>    a refuse return skipped our write: readin, insanein, nomount, insaneout, nowrite (preview: nomount, nowrite, insane): the engine pose shows for that frame
+//   cut:retarget     a write frame in which the slide was retargeted (reversal / delayed target fired): the jump coincides with a direction change
+static float snapHandDist(uintptr_t parent, bool left, uintptr_t n, const float p[3]) {   // weapon position to the hand (attach) node, m; -1 = not readable
+    if (!parent || !n) return -1.f;
+    for (const ReachEnt& x : g_reach) {
+        if (x.parent != parent || x.left != left) continue;
+        const uintptr_t avt = rdU32(kSitePlace, n, 0);
+        hs::Pose np;
+        if (!avt || rdU32(kSitePlace, avt, 0x0C) != x.poseFn || !reachNodePose(n, x.poseFn, np)) return -1.f;
+        const float dx = p[0] - np.pos[0], dy = p[1] - np.pos[1], dz = p[2] - np.pos[2];
+        return sqrtf(dx * dx + dy * dy + dz * dz);
+    }
+    return -1.f;
+}
+struct SnapProbe {
+    hs::SnapState* st = nullptr;     // null = detector off for this call
+    const hs::Slide* sl = nullptr;   // the slide the weapon follows (world: the entry's, preview: a copy of the shared one)
+    const float* slowp = nullptr;    // the slow_holster_x this slide was armed with
+    uint32_t now = 0;
+    uintptr_t g = 0, beh = 0, n = 0;
+    bool left = false, retarget = false;
+    float w = 0.f, vo = 0.f, pathF = -1.f;
+    const char* why = "write";
+    char whyBuf[28] = {0};
+    void setRefuse(PlaceRefuse r) { snprintf(whyBuf, sizeof whyBuf, "refuse:%s", kRefuseName[r]); why = whyBuf; }
+    void setRefuseName(const char* nm) { snprintf(whyBuf, sizeof whyBuf, "refuse:%s", nm); why = whyBuf; }
+    ~SnapProbe();
+};
+SnapProbe::~SnapProbe() {
+    if (!st || !sl || !(g_snapLogM > 0.f)) return;
+    const bool act = sl->active(now);
+    if (!act && st->n == 0) return;
+    hs::Pose cur;
+    if (!saferead::readAt(kSitePlace, g, 0xA4, &cur) || !hs::poseSane(cur)) { if (!act) hs::snapReset(*st); return; }
+    const float prev[3] = {st->pos[0], st->pos[1], st->pos[2]};
+    float jump = 0.f, ps = 0.f;
+    if (hs::snapStep(*st, cur.pos, g_snapLogM, &jump, &ps) && KP_ENABLED(chMain, KPLOG_INFO)) {
+        const bool slowed = slowp && *slowp != 1.f;   // slowed slides have their own 80, so normal-speed snaps can never hide them
+        const LONG c = InterlockedIncrement(slowed ? &g_snapSlowLines : &g_snapLines);
+        if (c <= kSnapMaxLines && takeLine()) {
+            const uintptr_t parent = beh ? rdU32(kSitePlace, beh, 0x14) : 0;
+            const int32_t dtS = static_cast<int32_t>(now - sl->t0);
+            const uint32_t dt = dtS < 0 ? 0u : (dtS > 999999 ? 999999u : static_cast<uint32_t>(dtS));
+            const char* const wy = (why[0] == 'w' && why[1] == 'r' && retarget) ? "cut:retarget" : why;
+            char lb[232];
+            snprintf(lb, sizeof lb, "SNAP gob=%x dir=%s f=%.3f dt=%u of=%u slowx=%.2f jump=%.3f why=%s w=%.2f vo=%.3f hand=%.3f/%.3f pf=%.3f side=%c ps=%.4f",
+                     static_cast<unsigned>(g), sl->dir ? "draw" : "stow", static_cast<double>(sl->frac(now)), static_cast<unsigned>(dt), static_cast<unsigned>(sl->len),
+                     static_cast<double>(slowp ? *slowp : 1.f), static_cast<double>(jump), wy, static_cast<double>(w), static_cast<double>(vo),
+                     static_cast<double>(snapHandDist(parent, left, n, prev)), static_cast<double>(snapHandDist(parent, left, n, cur.pos)), static_cast<double>(pathF), left ? 'L' : 'R',
+                     static_cast<double>(ps));
+            KP_LOG(chMain, "%s", lb);
+            if (c == kSnapMaxLines) KP_LOG(chMain, "SNAP cap reached %s (%ld lines): further snaps not logged", slowed ? "slowed" : "normal", static_cast<long>(kSnapMaxLines));
+        }
+    }
+    if (!act) hs::snapReset(*st);
+}
+// Preview Gobs: one detector state per Gob (8 entries, ring).
+static hs::SnapState* snapStateForPreview(uintptr_t g) {
+    static struct { uintptr_t gob; hs::SnapState st; } s_tab[8];
+    static unsigned s_next = 0;
+    for (auto& e : s_tab)
+        if (e.gob == g) return &e.st;
+    auto& e = s_tab[s_next];
+    s_next = (s_next + 1) % 8u;
+    e.gob = g;
+    hs::snapReset(e.st);
+    return &e.st;
+}
+
 // HW43 PREVIEWHAND (log only, read-only: no writes to the Gob / arm / reach state, only the rate counters below). Called from previewPlace once the final pose is in the Gob
-// (or the engine's hand pose stays, atHand). Rate limit: one look per 250 ms per gob (4-entry table), 60 lines in all, the shared EDIT budget; the attach node pose is only
+// (or the engine's hand pose stays, atHand). Rate limit: one look per 250 ms per gob (8-entry table), 200 lines in all (0.21.1-dev: own counter, only hd > 0.01 m, the shared max_lines budget); the attach node pose is only
 // read when a line may go out. A line goes out when the weapon is drawn / carried, or when the measured distance exceeds 0.01 m. Holstered idle (no slide, no carry) is skipped.
 static void previewHandLog(uintptr_t g, uintptr_t parent, uintptr_t n, bool left, const char* model, float slideF, bool atHand, bool carryOk, float reachW, float carryW, uint32_t now) {
     if (!KP_ENABLED(chEdit, KPLOG_INFO)) return;
     if (!atHand && !carryOk && !(slideF > 0.f)) return;
     static volatile LONG s_phLines = 0;
-    if (s_phLines >= 60) return;
+    if (s_phLines >= 200) return;   // 0.21.1-dev: own counter (was 60, shared with the EDIT budget, used up before a slow run)
     static struct { uintptr_t gob; uint32_t last; bool seen; } s_tab[8];
     static unsigned s_next = 0;
     int slot = -1;
@@ -2024,7 +2120,7 @@ static void previewHandLog(uintptr_t g, uintptr_t parent, uintptr_t n, bool left
             v.hd = sqrtf(dx * dx + dy * dy + dz * dz);
         }
     }
-    if (!atHand && !carryOk && !(v.hd > 0.01f)) return;
+    if (!(v.hd > 0.01f)) return;   // 0.21.1-dev: only a weapon that is more than 1 cm off the hand (hd = -1 / ~0 lines carried no information)
     {
         EdLock lk;
         v.prevInit = g_prevSlide.init; v.sdir = g_prevSlide.dir;
@@ -2033,7 +2129,7 @@ static void previewHandLog(uintptr_t g, uintptr_t parent, uintptr_t n, bool left
         for (const PrevLock& p : g_prevLock)
             if (p.gob == g) { v.lockGob = 1; break; }
     }
-    if (!takeEditLine()) return;
+    if (!takeLine()) return;   // 0.21.1-dev: the shared max_lines budget only; the 200-line EDIT budget is mostly spent by the earlier opens / API lines
     InterlockedIncrement(&s_phLines);
     char lb[256];
     hs::previewHandLine(lb, sizeof lb, v);
@@ -2065,6 +2161,14 @@ static bool previewPlace(uintptr_t g, uintptr_t beh) {
             r = v.r;
         }
     }
+    // 0.21.1-dev SNAP probe (log only): created before the first return that can leave the engine pose in the Gob; the slide copy is refreshed below once the touch ran.
+    hs::Slide snapSl;
+    float snapSlow = 1.f;
+    SnapProbe snp;
+    if (g_snapLogM > 0.f) {
+        { EdLock lk; if (g_prevSlide.init) { snapSl = g_prevSlide; snapSlow = g_prevSlow; } }
+        snp.st = snapStateForPreview(g); snp.sl = &snapSl; snp.slowp = &snapSlow; snp.now = slideNowMs(); snp.g = g; snp.beh = beh; snp.n = n; snp.left = left;
+    }
     if (moved && takeEditLine()) KP_LOG(chEdit, "PREVIEW reattach gob=%x parent=%x node=%x", static_cast<unsigned>(g), static_cast<unsigned>(parent), static_cast<unsigned>(n));
     static hs::TuneCfg s_tune;
     static LONG s_seq = 0;
@@ -2083,6 +2187,7 @@ static bool previewPlace(uintptr_t g, uintptr_t beh) {
     hs::Pose base;
     if (!n || !mountPose(g, n, beh, cat, bone, base)) {
         if (logIt) KP_LOG(chEdit, "PREVIEW nomount gob=%x model=%s body=%s bone=%s left=%d", static_cast<unsigned>(g), model, body, bone, left ? 1 : 0);
+        snp.setRefuseName("nomount");
         return true;
     }
     hs::Placement pl;
@@ -2113,6 +2218,7 @@ static bool previewPlace(uintptr_t g, uintptr_t beh) {
             pslow = g_prevSlow;
         }
     }
+    if (g_snapLogM > 0.f) { snapSl = pslide; snapSlow = pslow; snp.now = pnow; snp.w = reachW; snp.pathF = plan.pathF; }   // the slide after this frame's touch
     const uint32_t presid = hs::slowMs(g_reachResidMs, pslow);   // HW44: reach_resid_ms at the preview slide's slowed timing
     hs::Pose shown = out;
     bool atHand = false;
@@ -2122,19 +2228,22 @@ static bool previewPlace(uintptr_t g, uintptr_t beh) {
             if (slideF >= 1.f) atHand = true;
             else if (g_reachTest) { EdLock lk; shown = hs::blendPoseLocked(prevLockFor(g).lk, out, in, hs::easeSmooth(slideF)); }   // HW26 (reach_test only: off keeps the plain blend)
             else shown = hs::blendPose(out, in, hs::easeSmooth(slideF));
-        }
+        } else snp.why = "noin";   // slide running but the engine hand pose is unreadable: the mount pose is written
     }
     hs::Pose carried;
     hs::Q viaQ;
     const bool viaOn = reachViaFor(hs::shapeOf(model), static_cast<int>(cat), out.q, viaQ);   // HW31: reach_via_<cat> (default off)
     float viaS = 0.f;   // HW31b: the via progress for the arm's lateral bump (only when the via is on)
     if (viaOn && g_viaOut > 0.f) { EdLock lk0; const CarryResid& vcr = prevLockFor(g).cres; viaS = hs::slideViaProgress(plan.active, presid, plan.carryW, plan.oriF, exPct > 0.f, pslide.dir != 0, pslide.from, pslide.carryFrom, pnow, pslide.t0, pslide.len, g_prevGrab, vcr.on != 0, vcr.startMs, vcr.msEff, plan.pathF, stowRotEff()); }
+    g_reachSlowX = pslow;   // 0.21.1-dev: REACH logging density for a slowed slide
     const bool carryOk = g_reachTest && reachArm(g, beh, atHand ? out : shown, reachW, left, static_cast<int>(cat), plan.pathF, plan.restMix, out.pos, &out.q, reachIsBackBone(bone), n, g_reachCarry && plan.active, &carried, &plan, hs::shapeOf(model), viaS);   // w == 0 outside the slide: only undoes a leftover write
-    if (atHand) { previewHandLog(g, parent, n, left, model, slideF, true, carryOk, reachW, plan.carryW, pnow); return true; }   // fully drawn: the engine's hand pose stays
+    snp.vo = viaS;
+    if (atHand) { snp.why = "release"; previewHandLog(g, parent, n, left, model, slideF, true, carryOk, reachW, plan.carryW, pnow); return true; }   // fully drawn: the engine's hand pose stays
     if (carryOk) {
         EdLock lk; PrevLock& pk = prevLockFor(g); shown = carryShown(pslide, pk.lk, pk.cres, out, carried, plan, g_prevGrab, presid, pnow, viaOn ? &viaQ : nullptr, exPct > 0.f);
     }   // HW26: hand-frame residual / locked blend; carry: the weapon rides the moved hand only while it carries (plan.carryW); it stays on the mount during the reach / release phases
-    if (!hs::poseSane(shown) || !saferead::probeWrite(kSitePlace, reinterpret_cast<void*>(g + 0xA4), sizeof(hs::Pose))) return true;
+    if (!hs::poseSane(shown)) { snp.setRefuseName("insane"); return true; }
+    if (!saferead::probeWrite(kSitePlace, reinterpret_cast<void*>(g + 0xA4), sizeof(hs::Pose))) { snp.setRefuse(PrNoWrite); return true; }
     memcpy(reinterpret_cast<void*>(g + 0xA4), &shown, sizeof(hs::Pose));
     previewHandLog(g, parent, n, left, model, slideF, false, carryOk, reachW, plan.carryW, pnow);
     if (logIt)
@@ -2199,7 +2308,7 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
     // Verdict cache keyed on node + gob + the node's name handle [N+4], so a freed and reused address pair is re-resolved. The full
     // resolve (weapon > type > global, plus the body delta) is cached with the tune sequence it was computed for and redone when it moves.
     // Repoint: both hands share the bone_name node; the hand comes from g_handRing (sticky via hs::resolveLeft when evicted). Drawgate: the node name (lhand) decides.
-    struct Ent { uintptr_t node, gob, handle, model; bool isTarget, left; hs::Category cat; char mname[17], body[17]; LONG seq; hs::Resolved r; hs::GateState gate; hs::Slide slide; uint32_t slFrames = 0, slMaxDt = 0, slPrev = 0; uint8_t graceN = 0; CarryResid cres = {}; uint32_t dly = 0, mTick = 0, mKey = 0; bool mSeen = false; float slowArm = 1.f; };   // graceN: HW25 hard-reset grace, frames held so far; cres: HW26 hand-frame residual of the running carry; slowArm: HW44 slow_holster_x the running (or pending) slide was armed with
+    struct Ent { uintptr_t node, gob, handle, model; bool isTarget, left; hs::Category cat; char mname[17], body[17]; LONG seq; hs::Resolved r; hs::GateState gate; hs::Slide slide; uint32_t slFrames = 0, slMaxDt = 0, slPrev = 0; uint8_t graceN = 0; CarryResid cres = {}; uint32_t dly = 0, mTick = 0, mKey = 0; bool mSeen = false; float slowArm = 1.f; hs::SnapState snap; };   // graceN: HW25 hard-reset grace, frames held so far; cres: HW26 hand-frame residual of the running carry; slowArm: HW44 slow_holster_x the running (or pending) slide was armed with; snap: 0.21.1-dev SNAP detector state of the weapon
     static Ent s_cache[128];
     static unsigned s_next = 0;
     // HW33a: ms to hold back this Gob's draw / stow target. The left-hand weapon of a dual wielder waits dual_stagger_ms behind the right-hand one (another live cache entry of the same
@@ -2315,6 +2424,7 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
     // HW27 mount sense: creature weapons (w_cr*) and unclassified weapons are never put on a mount (no slide, no reach, no arm write): they stay in the hand as the engine drew them.
     if (drawgateMode() && !hs::holsterable(cat, ent->mname)) { refuse(PrNotHolsterable, g, n, vt); return; }
     float slideF = 0.f;   // hand fraction of the draw/stow slide (0 = hip); only the drawgate slide path sets it
+    SnapProbe snp;   // 0.21.1-dev (log only): checks the weapon's final position of this call on every return below (armed in the drawgate block once `now` is known)
     if (drawgateMode()) {
         // Draw gate (C1): owner creature = [parent+0x1D8]; drawn = client combat flag [owner+0x138] != 0 or a flourish window. Drawn (or anything
         // unreadable) returns with the hand pose the engine just wrote: the failure mode is a weapon in the hand (vanilla), never stuck on the hip.
@@ -2332,6 +2442,7 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
         }
         const bool first = ent->gate.hip < 0 || ent->gate.owner != owner;   // not evaluated yet, or a new owner: placed silently, no slide
         const uint32_t now = slideNowMs();
+        if (g_snapLogM > 0.f) { snp.st = &ent->snap; snp.sl = &ent->slide; snp.slowp = &ent->slowArm; snp.now = now; snp.g = g; snp.beh = reinterpret_cast<uintptr_t>(beh); snp.n = n; snp.left = ent->left; }
         // HW33a: fire a due delayed target before any read of ent->slide (grace / active / reset below). dirPre = the direction before it fired, so the SLIDE start bookkeeping below sees the change.
         // reach_test + reach_carry: pump() would call target() and skip the reach continuity (path / carry / arm weight from the running slide), so a due target is retargeted through
         // reachRetarget at the same tick pump() would use; pump() then has nothing left to fire. No pending target (every dual_stagger_ms / party_jitter_ms = 0 case) = nothing here runs.
@@ -2367,6 +2478,7 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
                 if (ent->slide.active(now) && g_onPlace && KP_ENABLED(chPlace, KPLOG_INFO) && InterlockedIncrement(&s_cutLines) <= 40 && takeLine())
                     KP_LOG(chPlace, "SLIDE cut reason=%s owner=%x gob=%x left=%d dir=%s frac=%.2f", readable ? "first" : "unreadable",
                            static_cast<unsigned>(owner), static_cast<unsigned>(g), ent->left ? 1 : 0, ent->slide.dir ? "draw" : "stow", static_cast<double>(ent->slide.frac(now)));
+                snp.why = readable ? "reset-first" : "reset-unread";
                 ent->slide.reset(!hip, now);
                 ent->cres = CarryResid();
                 ent->slFrames = 0;
@@ -2379,18 +2491,19 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
                 ent->slide.touch(now);
                 // HW44: the factor this slide is armed with (SLIDE start slowx=, the residual / fade window): taken when this frame arms a new target (the direction moves to want, or a
                 // delayed one is created below) and kept while that target is pending or running, so a live change never reshapes a running slide.
-                if (ent->slide.dir != (hip ? 0 : 1) && !(ent->slide.pending() && ent->slide.pendWant == (hip ? 0 : 1))) ent->slowArm = s_tune.slowHolsterX;
+                if (ent->slide.dir != (hip ? 0 : 1) && !(ent->slide.pending() && ent->slide.pendWant == (hip ? 0 : 1))) { ent->slowArm = s_tune.slowHolsterX; if (ent->slowArm != 1.f) slowReachRearm(ent->left); }   // 0.21.1-dev: REACH every-solve budget for this slowed slide
                 if (d > 0) { if (!ent->slide.pending() || ent->slide.pendWant != (hip ? 0 : 1)) ent->dly = d; ent->slide.targetDelayed(!hip, now, d, sres.drawMs, sres.stowMs); }
                 else if (g_reachTest && g_reachCarry) hs::reachRetarget(ent->slide, !hip, now, sres.drawMs, sres.stowMs, grab, 0.04f,
                                                                   reachExtractPct(reinterpret_cast<uintptr_t>(beh), ent->left, reachIsBackBone(hs::boneNameOf(ent->r.boneIdx ? ent->r.boneIdx : hs::defaultBone(s_tune)))));   // HW25: the reversal keeps path, carry and arm weight continuous
                 else ent->slide.target(!hip, now, sres.drawMs, sres.stowMs);
-                static volatile LONG s_slideLines = 0;
+                static volatile LONG s_slideStartLines = 0, s_slideEndLines = 0, s_slideSlowLines = 0;   // 0.21.1-dev: start and end have their own 60-line budgets; a slowed slide (slowx != 1) has a 200-line one
                 const bool logOk = g_onPlace && KP_ENABLED(chPlace, KPLOG_INFO);
                 if (ent->slide.dir != dirBefore || firedEarly) {
+                    snp.retarget = true;
                     ent->slFrames = 0;
                     if (ent->slide.len > 0) {
                         ent->slFrames = 1; ent->slMaxDt = 0; ent->slPrev = now;
-                        if (logOk && InterlockedIncrement(&s_slideLines) <= 60 && takeLine())
+                        if (logOk && (ent->slowArm != 1.f ? InterlockedIncrement(&s_slideSlowLines) <= 200 : InterlockedIncrement(&s_slideStartLines) <= 60) && takeLine())
                         {
                             char dlyS[24];
                             dlyS[0] = 0;
@@ -2409,7 +2522,7 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
                         if (dt > ent->slMaxDt) ent->slMaxDt = dt;
                         ent->slPrev = now;
                     } else {
-                        if (logOk && InterlockedIncrement(&s_slideLines) <= 60 && takeLine())
+                        if (logOk && (ent->slowArm != 1.f ? InterlockedIncrement(&s_slideSlowLines) <= 200 : InterlockedIncrement(&s_slideEndLines) <= 60) && takeLine())
                             KP_LOG(chPlace, "SLIDE end dir=%s owner=%x ms=%u frames=%u maxdt=%u", ent->slide.dir ? "draw" : "stow", static_cast<unsigned>(owner),
                                    static_cast<unsigned>(ent->slide.len), static_cast<unsigned>(ent->slFrames), static_cast<unsigned>(ent->slMaxDt));
                         ent->slFrames = 0;
@@ -2418,14 +2531,16 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
             }
             slideF = ent->slide.frac(now);
             if (slideF >= 1.f) {
+                if (strcmp(snp.why, "write") == 0) snp.why = "release";   // a reset above keeps its own reason
+                g_reachSlowX = 1.f;
                 if (g_reachTest) { const hs::Pose none = {}; reachArm(g, reinterpret_cast<uintptr_t>(beh), none, 0.f, ent->left, 0, 0.f, 0.f, none.pos, nullptr, false); }   // HW19: undo a leftover arm write
                 return;
             }
         } else if (!hip) return;
     }
     hs::Pose in;
-    if (!saferead::readAt(kSitePlace, g, 0xA4, &in)) { refuse(PrReadIn, g, n, vt); return; }
-    if (!hs::poseSane(in)) { refuse(PrInsaneIn, g, n, vt); return; }
+    if (!saferead::readAt(kSitePlace, g, 0xA4, &in)) { snp.setRefuse(PrReadIn); refuse(PrReadIn, g, n, vt); return; }
+    if (!hs::poseSane(in)) { snp.setRefuse(PrInsaneIn); refuse(PrInsaneIn, g, n, vt); return; }
     if (ent->seq != s_seq) {
         hs::resolveFull(s_tune, ent->mname, cat, ent->body, ent->left, false, ent->r);
         ent->seq = s_seq;
@@ -2439,6 +2554,7 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
     if (drawgateMode()) {
         // The node is the hand, so the hip pose always comes from mountPose of the configured bone (a custom bone_name has no mount: refused, weapon stays in the hand).
         if (!mountBone || !mountPose(g, n, reinterpret_cast<uintptr_t>(beh), cat, mountBone, base)) {
+            snp.setRefuse(PrNoMount);
             refuse(PrNoMount, g, n, vt);
             return;
         }
@@ -2450,8 +2566,8 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
     // Mid-slide: ease between the hip pose and the engine's hand pose `in` (both world poses of this node slot; nothing accumulates, the engine rewrites it each frame).
     // HW26 (reach_test only: off keeps the plain blend): blendPoseLocked picks the hand's hemisphere once per slide instead of per frame
     const hs::Pose out = slideF > 0.f ? (g_reachTest ? hs::blendPoseLocked(ent->slide, hipPose, in, hs::easeSmooth(slideF)) : hs::blendPose(hipPose, in, hs::easeSmooth(slideF))) : hipPose;
-    if (!hs::poseSane(out)) { refuse(PrInsaneOut, g, n, vt); return; }
-    if (!saferead::probeWrite(kSitePlace, reinterpret_cast<void*>(g + 0xA4), sizeof(hs::Pose))) { refuse(PrNoWrite, g, n, vt); return; }
+    if (!hs::poseSane(out)) { snp.setRefuse(PrInsaneOut); refuse(PrInsaneOut, g, n, vt); return; }
+    if (!saferead::probeWrite(kSitePlace, reinterpret_cast<void*>(g + 0xA4), sizeof(hs::Pose))) { snp.setRefuse(PrNoWrite); refuse(PrNoWrite, g, n, vt); return; }
     memcpy(reinterpret_cast<void*>(g + 0xA4), &out, sizeof(hs::Pose));
     if (g_reachTest && drawgateMode()) {   // HW19 probe
         const uint32_t rnow = slideNowMs();
@@ -2465,6 +2581,8 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
         hs::Q viaQ;
         const bool viaOn = reachViaFor(shp, static_cast<int>(cat), hipPose.q, viaQ);   // HW31: reach_via_<cat> (default off)
         const float viaS = (viaOn && g_viaOut > 0.f) ? hs::slideViaProgress(pl.active, residMs, pl.carryW, pl.oriF, exPct > 0.f, ent->slide.dir != 0, ent->slide.from, ent->slide.carryFrom, rnow, ent->slide.t0, ent->slide.len, rgrab, ent->cres.on != 0, ent->cres.startMs, ent->cres.msEff, pl.pathF, stowRotEff()) : 0.f;   // HW31b: the arm's lateral bump follows the via
+        snp.w = wa; snp.vo = viaS; snp.pathF = pl.pathF;
+        g_reachSlowX = ent->slowArm;   // 0.21.1-dev: REACH logging density for a slowed slide
         if (reachArm(g, reinterpret_cast<uintptr_t>(beh), out, wa, ent->left, static_cast<int>(cat), pl.pathF, pl.restMix, hipPose.pos, &hipPose.q, reachIsBackBone(mountBone), n, g_reachCarry && pl.active, &carried, &pl, shp, viaS)) {
             // carry: the weapon rides the moved hand (the engine's hand pose, recomputed after the arm write), pl.carryW: 0 while the hand is still reaching the mount (draw) or already releasing it (stow), 1 while it carries; at the draw end the arm has released, so the carried hand IS the engine hand
             const hs::Pose rid = carryShown(ent->slide, ent->slide, ent->cres, hipPose, carried, pl, rgrab, residMs, rnow, viaOn ? &viaQ : nullptr, exPct > 0.f);   // HW26: hand-frame residual (or the locked world blend)
@@ -2889,6 +3007,7 @@ static int32_t KPATCH_CALL apiSetPreviewDraw(int32_t drawn) {
         hs::TuneCfg pc;
         const float slowX = loadTune(pc) ? pc.slowHolsterX : hs::kSlowHolsterMin;
         g_prevSlow = slowX;
+        if (slowX != 1.f) { slowReachRearm(false); slowReachRearm(true); }   // 0.21.1-dev: REACH every-solve budget for this slowed slide, both hands
         const hs::SlideRes sres = hs::slideResolve(g_slideTune, g_edit.active ? g_edit.cat : hs::CatUnknown, slowX);
         drawMs = sres.drawMs;
         stowMs = sres.stowMs;
@@ -2940,7 +3059,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     addName(names, sizeof(names), g_onGob, "gob");
     addName(names, sizeof(names), g_onPlace, "place");
     addName(names, sizeof(names), g_onToggle, "toggle");
-    KP_LOG(chMain, "holster 0.21.0-dev loaded (P0 probe + unarmed_anim=%d): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_unarmedAnim ? 1 : 0, g_probe ? 1 : 0,
+    KP_LOG(chMain, "holster 0.21.1-dev loaded (P0 probe + unarmed_anim=%d): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_unarmedAnim ? 1 : 0, g_probe ? 1 : 0,
            names[0] ? names : "none", static_cast<long>(g_maxLines), g_gobEvery, k2addr::get() ? "ok" : "none");
     {
         hs::TuneCfg t;
@@ -2974,6 +3093,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
                    (g_logMount || g_logVerbose) ? 1 : 0, exitCfg[0] ? exitCfg : "auto", static_cast<double>(g_viaOut), static_cast<double>(g_poleFromGrip), static_cast<double>(g_poleBiasDeg), static_cast<double>(g_stowLandF), static_cast<double>(stowRotEff()));
         }
         KP_LOG(chMain, "CONFIG slowx=%.2f (slow_holster_x: draw / stow slides run this many times slower; 1 = normal; live with probe=1)", static_cast<double>(t.slowHolsterX));   // HW44: always printed, its own line (the CONFIG lines above are already long)
+        KP_LOG(chMain, "CONFIG snaplog_m=%.3f (snap_log_m: SNAP lines when a weapon jumps further than this in one frame during a slide; 0 = off)", static_cast<double>(g_snapLogM));   // 0.21.1-dev
         KP_LOG(chMain, "CONFIG left_extra_rot=%.1f bone_test_left=%d (ini=%d, active=%d: needs probe=1 and bone_test=1) log_verbose=%d", static_cast<double>(t.leftExtra),
                g_boneLeftCfg ? 1 : 0, g_boneLeftCfg ? 1 : 0, g_boneLeft ? 1 : 0, g_logVerbose ? 1 : 0);
         for (int i = hs::CatUnknown + 1; i < hs::CatCount; ++i)
