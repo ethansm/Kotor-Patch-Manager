@@ -1,28 +1,21 @@
 # Session Handoff & Plan State: patch_manager_mods/42c_smooth_holstering_master_plan.md
 
 ## 0. Next-Phase Direction
-grab a batch of HW45 - HW51 (not HW50) that can be completed in parallel batches leveraging Haiku5.5 sub agent swarms in parallel bubbling up to Sonnet5.5 validators and aggregators.
+Execute HW28b: Draw cap raise (`draw_slide_cap`, default 570)
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/42c_smooth_holstering_master_plan.md`
-- **Branch:** `KOTOR-II` (6e15f328 doc 42c: HW45-HW51 from the HW44e edge-case recon (8 read-only Haiku agents, 6 categories x 4 topologies, dual-wield, preview vs world) + heavy weapon feel item; reports in .claude/research/holster_hw44)
-- **Generated:** 2026-10-22 18:10:49 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Waves:** .claude/waves/w1-42c-HW45b/
+- **Waves:** .claude/waves/w2-42c-HW45b/
+- **Branch:** `KOTOR-II` (3323a86d play queue: SM-L18 (holster 0.21.3-dev batch HW46-HW49))
+- **Generated:** 2026-10-22 18:55:43 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-6e15f328 doc 42c: HW45-HW51 from the HW44e edge-case recon (8 read-only Haiku agents, 6 categories x 4 topologies, dual-wield, preview vs world) + heavy weapon feel item; reports in .claude/research/holster_hw44
- .claude/research/holster_hw44/RANKED.md            | 13 +++++++
- .claude/research/holster_hw44/cat_heavy.md         | 29 ++++++++++++++
- .claude/research/holster_hw44/cat_lightsaber.md    | 29 ++++++++++++++
- .claude/research/holster_hw44/cat_melee.md         | 32 +++++++++++++++
- .claude/research/holster_hw44/cat_pistol.md        | 31 +++++++++++++++
- .claude/research/holster_hw44/cat_qstaff.md        | 39 +++++++++++++++++++
- .claude/research/holster_hw44/cat_rifle.md         | 26 +++++++++++++
- .claude/research/holster_hw44/x_dual.md            | 27 +++++++++++++
- .claude/research/holster_hw44/x_preview_slow.md    | 45 ++++++++++++++++++++++
- .../42c_smooth_holstering_master_plan.md           | 22 +++++++++++
- 10 files changed, 293 insertions(+)
+3323a86d play queue: SM-L18 (holster 0.21.3-dev batch HW46-HW49)
+ patch_manager_mods/PLAY_TEST_QUEUE.md | 1 +
+ 1 file changed, 1 insertion(+)
 ```
-- **Dirty Files (183):**
+- **Dirty Files (184):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
   - ` M .claude/handoffs/DECOMP_PLAN.handoff.md`
@@ -33,7 +26,7 @@ grab a batch of HW45 - HW51 (not HW50) that can be completed in parallel batches
   - ` M .claude/reviews/gemini_20261014/tools/fix3_items.tsv`
   - ` M .claude/settings.json`
   - ` M CLAUDE.md`
-  - ... +173 more (run `git status --short`)
+  - ... +174 more (run `git status --short`)
 
 ## 2. Immediate Objective (HW28b)
 **Draw cap raise (`draw_slide_cap`, default 570)**
