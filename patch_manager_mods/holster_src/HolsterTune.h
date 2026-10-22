@@ -2,6 +2,7 @@
 // Host-tested by holster_tune_test.cpp. File reload and change stamps live in FileWatch.h, not here.
 //
 //   applyTuneKey  one "key = value" pair -> TuneCfg. Keys are case-insensitive:
+//                   slow_holster_x  one number (int or float text), clamped to 1..8, junk / nan -> 1 (HW44); slideResolve(..., x) scales the draw / stow ms by it
 //                   place      1/on/true/yes -> true, 0/off/false/no -> false
 //                   place_rot  exactly 3 comma floats, each |v| <= 720 (degrees)
 //                   place_off  exactly 3 comma floats, each |v| <= 3.0 (metres)
@@ -115,6 +116,7 @@ struct TuneCfg {
     float leftExtra = kLeftExtraDefault;   // left_extra_rot (raw; leftExtraFor clamps)
     float leftExtraCat[CatCount] = {};     // left_extra_rot_<cat> (raw), valid where hasLeftExtraCat
     bool hasLeftExtraCat[CatCount] = {};
+    float slowHolsterX = kSlowHolsterMin;   // slow_holster_x (HW44): slide-time multiplier, already clamped to 1..8; HolsterPlace reads the published copy, so a reload applies live
 };
 static_assert(sizeof(TuneCfg) <= 4096, "TuneCfg is memcpy'd every frame: keep it under 4 KiB");
 
@@ -206,18 +208,23 @@ inline bool isLeftExtraKey(const char* key) {
     return tuneEqCi(key, "left_extra_rot") || tunePrefixCi(key, "left_extra_rot_", rest);
 }
 
+// slow_holster_x (HW44): the one global slide-time key this header owns.
+inline bool isSlowHolsterKey(const char* key) { return key && tuneEqCi(key, "slow_holster_x"); }
+
 // Keys this header owns (the ini reader routes them to applyTuneKey; place_gobvt is NOT one of them).
 inline bool isTuneKey(const char* key) {
     if (!key) return false;
     if (tuneEqCi(key, "place") || tuneEqCi(key, "place_rot") || tuneEqCi(key, "place_off")) return true;
-    if (isLeftExtraKey(key)) return true;
+    if (isLeftExtraKey(key) || isSlowHolsterKey(key)) return true;
     TuneKeyRef r;
     return tuneParseKey(key, r);
 }
 
 // Drop every override (a reload re-reads them, so a deleted key falls back to the global value). Keeps place, place_rot, place_off and bootBoneIdx.
 // left_extra_rot returns to kLeftExtraDefault and the per-category extras are dropped, so a deleted left_extra_rot key also falls back.
+// slow_holster_x returns to 1 (HW44), so a deleted key falls back too.
 inline void clearCatTune(TuneCfg& c) {
+    c.slowHolsterX = kSlowHolsterMin;
     c.leftExtra = kLeftExtraDefault;
     for (int i = 0; i < CatCount; ++i) { c.leftExtraCat[i] = 0.f; c.hasLeftExtraCat[i] = false; }
     for (int i = 0; i < CatCount; ++i) { c.cat[i] = CatTune(); c.catL[i] = CatTune(); }
@@ -474,6 +481,16 @@ inline bool tuneApplyLeftExtra(TuneCfg& c, const char* key, const char* val) {
     return false;
 }
 
+// slow_holster_x value: one finite number as int or float text ("4", "2.5"); an Options stepper writes ints. Out of 1..8 is clamped (SlowClamped); junk, blank, nan and inf
+// give 1 (SlowBad), so a bad line never leaves an earlier duplicate in force. The caller warns on SlowBad / SlowClamped.
+enum SlowParse { SlowBad = 0, SlowOk = 1, SlowClamped = 2 };
+inline SlowParse slowHolsterApply(TuneCfg& c, const char* val) {
+    float v = 0.f;
+    if (!val || !inikit::parseFloats(val, &v, 1)) { c.slowHolsterX = kSlowHolsterMin; return SlowBad; }
+    c.slowHolsterX = slowHolsterClamp(v);
+    return c.slowHolsterX == v ? SlowOk : SlowClamped;
+}
+
 inline bool applyTuneKey(TuneCfg& c, const char* key, const char* val) {
     if (!key || !val) return false;
     if (tuneEqCi(key, "place")) {
@@ -484,6 +501,7 @@ inline bool applyTuneKey(TuneCfg& c, const char* key, const char* val) {
     }
     if (tuneEqCi(key, "place_rot")) return tuneSetVec3(val, c.rot, 720.f);
     if (tuneEqCi(key, "place_off")) return tuneSetVec3(val, c.off, 3.f);
+    if (isSlowHolsterKey(key)) return slowHolsterApply(c, val) != SlowBad;
     if (isLeftExtraKey(key)) return tuneApplyLeftExtra(c, key, val);
     TuneKeyRef r;
     if (!tuneParseKey(key, r)) return false;
@@ -727,10 +745,12 @@ inline uint32_t grabPctFor(const SlideTune& s, Category cat) {
     return slideDefault(cat).grabPct;
 }
 
-inline SlideRes slideResolve(const SlideTune& s, Category cat) {
+// HW44 slow_holster_x: slowX scales the draw / stow ms AFTER the set-time clamps (a slowed value may pass 570 / 1000); 0 stays instant; grabPct is a path share and never scales.
+// slowX defaults to 1, so every caller that does not pass the live multiplier keeps the 0.20.4 timing byte for byte.
+inline SlideRes slideResolve(const SlideTune& s, Category cat, float slowX = kSlowHolsterMin) {
     SlideRes r;
-    r.drawMs = slideDrawMsFor(s, cat);
-    r.stowMs = slideStowMsFor(s, cat);
+    r.drawMs = slowMs(slideDrawMsFor(s, cat), slowX);
+    r.stowMs = slowMs(slideStowMsFor(s, cat), slowX);
     r.grabPct = grabPctFor(s, cat);
     return r;
 }

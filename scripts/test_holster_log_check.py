@@ -1418,5 +1418,102 @@ class Hw41StowHoldTests(unittest.TestCase):
         self.assertEqual(sum(1 for line in out if line.startswith("STOWHOLD ")), 1)
 
 
+def _start44(t, ms, slowx=None, gob=0x2A, dly=60):
+    """A stamped SLIDE start on a left Gob with dly= (SM-L14 c1), optional slowx= tag (HW44)."""
+    return "T=%d f=- holster/main SLIDE start dir=draw owner=1f gob=%x left=1 from=0.00 ms=%d dly=%d%s" % (
+        t, gob, ms, dly, "" if slowx is None else " slowx=%s" % slowx)
+
+
+class Hw44SlowTests(unittest.TestCase):
+    """HW44 slow_holster_x (holster 0.21.0-dev): the slowx= tag on SLIDE start, CONFIG slowx= / SLOWX old->new, the SM-L14 dly band x slowx and the window-end excuse."""
+
+    def row14(self, bodies):
+        return run_log(bodies, ["--row", "SM-L14"])
+
+    def test_slowx_tag_parses_and_feeds_the_slide_summary(self):
+        bodies = ["T=5000 f=- holster/main SLIDE start dir=draw owner=1f gob=2a left=0 from=0.00 ms=1400 slowx=4.00",
+                  "T=6400 f=- holster/main SLIDE end dir=draw owner=1f ms=1400 frames=30 maxdt=20",
+                  "T=7000 f=- holster/main SLIDE start dir=stow owner=1f gob=2a left=0 from=1.00 ms=350",
+                  "T=7400 f=- holster/main SLIDE end dir=stow owner=1f ms=350 frames=20 maxdt=18"]
+        rc, out = run_log(bodies)
+        self.assertEqual(rc, 0, out)
+        slide = [line for line in out if line.startswith("SLIDE start=")]
+        self.assertEqual(len(slide), 1, out)
+        self.assertIn("SLIDE start=2 end=2 draw=1 stow=1", slide[0])
+        self.assertIn("slow=1 x=4.00..4.00", slide[0])
+        self.assertIn("frames min=20 max=30", slide[0])
+
+    def test_no_slowx_tag_means_no_slow_summary(self):
+        bodies = ["T=5000 f=- holster/main SLIDE start dir=draw owner=1f gob=2a left=0 from=0.00 ms=350",
+                  "T=5400 f=- holster/main SLIDE end dir=draw owner=1f ms=350 frames=20 maxdt=18"]
+        rc, out = run_log(bodies)
+        slide = [line for line in out if line.startswith("SLIDE start=")]
+        self.assertEqual(len(slide), 1, out)
+        self.assertNotIn("slow=", slide[0])
+        self.assertFalse([line for line in out if line.startswith("SLOWX")], out)
+
+    def test_slowx_line_from_config_and_live_change(self):
+        rc, out = run_log(["T=9 f=- holster/main CONFIG slowx=4.00 (slow_holster_x: draw / stow slides run this many times slower; 1 = normal; live with probe=1)",
+                           "T=99 f=- holster/main SLOWX 4.00->2.00"])
+        self.assertEqual(rc, 0, out)
+        self.assertIn("SLOWX cfg=4.00 changes=1 last=4.00->2.00", out)
+        rc, out = run_log(["T=9 f=- holster/main CONFIG slowx=1.00 (slow_holster_x: draw / stow slides run this many times slower; 1 = normal; live with probe=1)"])
+        self.assertFalse([line for line in out if line.startswith("SLOWX")], out)   # x = 1 and no change: the default log stays as it was
+        rc, out = run_log(["T=99 f=- holster/main SLOWX 1.00->4.00"])
+        self.assertIn("SLOWX cfg=- changes=1 last=1.00->4.00", out)
+
+    def test_sm_l14_dly_band_scales_with_slowx(self):
+        # x4: stagger 60 -> 240, band 199..281 (240 +-)
+        rc, out = self.row14([_start44(1000, 1400, "4.00", dly=240), "T=1100 f=- holster/main SLIDE end dir=draw owner=1f ms=1400 frames=9 maxdt=9"])
+        self.assertEqual(rc, 0, out)
+        self.assertIn("SM-L14 dly 50..70 ms on left: PASS left dly=240..240 ms over 1 left start(s) (NOTE slow run: band scaled by slowx=4.00)", out)
+        # an unscaled 60 on a slow start is outside the x4 band
+        rc, out = self.row14([_start44(1000, 1400, "4.00", dly=60), "T=1100 f=- holster/main SLIDE end dir=draw owner=1f ms=1400 frames=9 maxdt=9"])
+        self.assertEqual(rc, 1, out)
+        self.assertIn("SM-L14 dly 50..70 ms on left: FAIL left dly=60 outside 199..281 ms (1 of 1 left starts) (NOTE slow run: band scaled by slowx=4.00)", out)
+        # x = 1: dly=240 is still outside the plain band
+        rc, out = self.row14([_start44(1000, 350, None, dly=240), "T=1100 f=- holster/main SLIDE end dir=draw owner=1f ms=350 frames=9 maxdt=9"])
+        self.assertEqual(rc, 1, out)
+        self.assertIn("outside 50..70 ms", " ".join(out))
+        self.assertNotIn("slow run", " ".join(out))
+
+    def test_dly_band_function(self):
+        self.assertEqual(H._dly_band(1.0), (50, 70))
+        self.assertEqual(H._dly_band(None), (50, 70))
+        self.assertEqual(H._dly_band(4.0), (199, 281))
+        lo, hi = H._dly_band(2.5)   # 60 x 2.5 = 150
+        self.assertTrue(lo <= 150 <= hi)
+
+    def test_sm_l14_slow_start_cut_by_window_end_is_not_stuck(self):
+        # slowed ms 2080 from T=1000 runs past the last stamp (T=2000): cut by the window end, not stuck
+        rc, out = self.row14([_start44(1000, 2080, "4.00", dly=240), "T=2000 f=- holster/main unrelated line"])
+        self.assertEqual(rc, 0, out)
+        self.assertEqual(out[-1], "SM-L14 verdict: PASS", out)
+        self.assertIn("SM-L14 every start ends or is cut: PASS 1 start(s): 0 ended or cut, 0 superseded by a reversal, "
+                      "1 slow slide(s) cut by the window end (NOTE not stuck)", out)
+
+    def test_sm_l14_slow_start_still_open_well_inside_the_window_is_stuck(self):
+        rc, out = self.row14([_start44(1000, 2080, "4.00", dly=240), "T=5000 f=- holster/main unrelated line"])
+        self.assertEqual(rc, 1, out)
+        self.assertIn("SM-L14 every start ends or is cut: FAIL 1 start(s) never ended (stuck): first gob=0x2a dir=draw", out)
+
+    def test_sm_l14_normal_start_cut_by_window_end_stays_stuck(self):
+        rc, out = self.row14([_start44(1000, 520), "T=1100 f=- holster/main unrelated line"])
+        self.assertEqual(rc, 1, out)
+        self.assertIn("SM-L14 every start ends or is cut: FAIL 1 start(s) never ended (stuck): first gob=0x2a dir=draw", out)
+
+    def test_sm_l14_only_the_stuck_start_is_reported_when_a_slow_one_is_excused(self):
+        rc, out = self.row14([_start44(1000, 2080, "4.00", dly=240), _start44(1000, 520, None, gob=0x2B), "T=2000 f=- holster/main unrelated line"])
+        self.assertEqual(rc, 1, out)
+        self.assertIn("SM-L14 every start ends or is cut: FAIL 1 start(s) never ended (stuck): first gob=0x2b dir=draw", out)
+        self.assertNotIn("slow slide", " ".join(out))
+
+    def test_window_rule_helper(self):
+        self.assertFalse(H._slow_cut_by_window({"slowx": 1.0, "t": 1000, "ms": 2080}, 2000))   # not slow: never excused
+        self.assertFalse(H._slow_cut_by_window({"slowx": 4.0, "t": 1000, "ms": 2080}, None))   # no stamp in the window: not excused
+        self.assertTrue(H._slow_cut_by_window({"slowx": 4.0, "t": 1000, "ms": 2080}, 2000))
+        self.assertFalse(H._slow_cut_by_window({"slowx": 4.0, "t": 1000, "ms": 2080}, 3500))   # the window outlasts the slide: it should have ended
+
+
 if __name__ == "__main__":
     unittest.main()

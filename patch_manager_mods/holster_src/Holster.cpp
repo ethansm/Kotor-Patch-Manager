@@ -244,6 +244,12 @@ static bool loadTuneIfChanged(hs::TuneCfg& dst, LONG& lastSeq) {
     return true;
 }
 
+// HW44: a live slow_holster_x change (reload or editor Save) is logged once as SLOWX old->new, before publishTune. Slides armed from then on use the new value;
+// a running slide keeps its length and windows, so nothing jumps. Call it with the tune about to be published, while g_tuneW is still the old one.
+static void logSlowChange(const hs::TuneCfg& next) {
+    if (next.slowHolsterX != g_tuneW.slowHolsterX) KP_LOG(chMain, "SLOWX %.2f->%.2f", static_cast<double>(g_tuneW.slowHolsterX), static_cast<double>(next.slowHolsterX));
+}
+
 // The tune keys of an ini text applied onto t (the caller seeds t): every override is cleared first, so a deleted key falls back
 // to place_rot / place_off. maybeReload and the editor Save both use it, so a saved file parses exactly like a reloaded one.
 static void parseTuneText(const char* text, hs::TuneCfg& t) {
@@ -265,7 +271,11 @@ static void parseTuneText(const char* text, hs::TuneCfg& t) {
         *eq = 0;
         char* key = trimIni(p);
         char* val = trimIni(eq + 1);
-        if (hs::isTuneKey(key) && !hs::applyTuneKey(t, key, val) && hs::isLeftExtraKey(key))
+        if (hs::isSlowHolsterKey(key)) {   // HW44: live slow_holster_x; a bad value falls back to 1 (cleared above), out of 1..8 is clamped
+            const hs::SlowParse sp = hs::slowHolsterApply(t, val);
+            if (sp == hs::SlowBad) KP_LOGV(chMain, KPLOG_WARN, "ini %.40s=%.40s ignored: not a number, slow_holster_x is 1", key, val);
+            else if (sp == hs::SlowClamped) KP_LOGV(chMain, KPLOG_WARN, "ini %.40s=%.40s clamped to 1..8 (used %.2f)", key, val, static_cast<double>(t.slowHolsterX));
+        } else if (hs::isTuneKey(key) && !hs::applyTuneKey(t, key, val) && hs::isLeftExtraKey(key))
             KP_LOGV(chMain, KPLOG_WARN, "ini %.40s=%.40s ignored: need one number within +-%.0f (known suffixes: lightsaber melee qstaff pistol rifle heavy)", key, val,
                     static_cast<double>(hs::kLeftExtraParseMax));
     }
@@ -599,6 +609,11 @@ static void readConfig() {
                 const unsigned long v = strtoul(val, &end, 16);   // accepts a 0x prefix; blank or junk = no check
                 g_placeGobvt = (end == val) ? 0u : static_cast<uint32_t>(v);
             }
+            else if (hs::isSlowHolsterKey(key)) {   // 0.21.0-dev (HW44): slow_holster_x, int or float text, 1..8, junk -> 1; also re-read live by parseTuneText (needs probe=1)
+                const hs::SlowParse sp = hs::slowHolsterApply(tune, val);
+                if (sp == hs::SlowBad) cfgWarn(key, val, "not a number, using 1");
+                else if (sp == hs::SlowClamped) cfgWarn(key, val, "out of range: used clamped to 1..8");
+            }
             else if (hs::isTuneKey(key)) {
                 if (!hs::applyTuneKey(tune, key, val) && hs::isLeftExtraKey(key)) cfgWarn(key, val, "need one number within +-720 and a known category suffix");
             }
@@ -879,6 +894,7 @@ static void maybeReload() {
     if (readFileText("holster.ini", text)) {
         hs::TuneCfg t = g_tuneW;
         parseTuneText(text.c_str(), t);
+        logSlowChange(t);
         publishTune(t);
         KP_LOG(chMain, "RELOAD place=%d rot=(%.1f,%.1f,%.1f) off=(%.3f,%.3f,%.3f) left_extra_rot=%.1f", t.place ? 1 : 0, t.rot[0], t.rot[1], t.rot[2], t.off[0], t.off[1], t.off[2],
                static_cast<double>(t.leftExtra));
@@ -1830,12 +1846,12 @@ static hs::Pose carryBlend(hs::Slide& lock, const hs::Pose& mount, const hs::Pos
     return hs::blendPoseLocked2(lock, mount, carried, pl.carryW, fRot, via);
 }
 // HW37: the residual / via clock (residDrawWindow, residStowWindow, viaProgress, carryShownBase's branch guards) lives in HolsterSlide.h (hs::slideResid*, hs::slideViaProgress), host-tested by holster_viaclock.
-static hs::Pose carryShownBase(const hs::Slide& sl, hs::Slide& lock, CarryResid& cr, const hs::Pose& mount, const hs::Pose& carried, const hs::ReachPlan& pl, float grab, uint32_t now, const hs::Q* via, bool exOn) {
-    const hs::SlideResidBranch br = hs::slideResidBranch(sl.dir != 0, sl.from, sl.carryFrom, pl.carryW, pl.active, g_reachResidMs, hs::qfinite(carried.q));
+static hs::Pose carryShownBase(const hs::Slide& sl, hs::Slide& lock, CarryResid& cr, const hs::Pose& mount, const hs::Pose& carried, const hs::ReachPlan& pl, float grab, uint32_t residMs, uint32_t now, const hs::Q* via, bool exOn) {
+    const hs::SlideResidBranch br = hs::slideResidBranch(sl.dir != 0, sl.from, sl.carryFrom, pl.carryW, pl.active, residMs, hs::qfinite(carried.q));
     if (br == hs::ResidNone) { cr.on = 0; return carryBlend(lock, mount, carried, pl, via, exOn); }
     const hs::Q cq = hs::qnormalize(carried.q), inv = hs::reachConj(cq);
     const int32_t d = static_cast<int32_t>(now - sl.t0);
-    const float resMs = static_cast<float>(g_reachResidMs);
+    const float resMs = static_cast<float>(residMs);   // HW44: reach_resid_ms x the slow factor the slide was armed with (= g_reachResidMs at x = 1)
     float t = 0.f, ms = resMs, off[3];
     float tR = 0.f, msR = resMs;   // HW42: orientation window (== t, ms except in a path-driven stow)
     bool stowHold = false;
@@ -1860,7 +1876,7 @@ static hs::Pose carryShownBase(const hs::Slide& sl, hs::Slide& lock, CarryResid&
             hs::slideStowLandWindow(pl.pathF, g_stowLandF, t, ms);   // HW42: position lands in this window
             hs::slideStowFracWindow(pl.pathF, stowRotEff(), tR, msR);   // HW42: the turn has its own, longer window
             stowHold = true;
-        } else { hs::slideResidStowWindow(now, sl.t0, sl.len, grab, g_reachResidMs, t, ms); tR = t; msR = ms; }
+        } else { hs::slideResidStowWindow(now, sl.t0, sl.len, grab, residMs, t, ms); tR = t; msR = ms; }
         if (!(msR > 1.f) || tR >= msR) return carried;   // outside the (rotation) window the weapon is in the hand
         const float dm[3] = {mount.pos[0] - carried.pos[0], mount.pos[1] - carried.pos[1], mount.pos[2] - carried.pos[2]};
         rres = hs::qmul(inv, mount.q);
@@ -1880,12 +1896,12 @@ static hs::Pose carryShownBase(const hs::Slide& sl, hs::Slide& lock, CarryResid&
     return o;
 }
 
-static hs::Pose carryShown(const hs::Slide& sl, hs::Slide& lock, CarryResid& cr, const hs::Pose& mount, const hs::Pose& carried, const hs::ReachPlan& pl, float grab, uint32_t now, const hs::Q* via = nullptr, bool exOn = false) {
-    const hs::Pose base = carryShownBase(sl, lock, cr, mount, carried, pl, grab, now, via, exOn);
+static hs::Pose carryShown(const hs::Slide& sl, hs::Slide& lock, CarryResid& cr, const hs::Pose& mount, const hs::Pose& carried, const hs::ReachPlan& pl, float grab, uint32_t residMs, uint32_t now, const hs::Q* via = nullptr, bool exOn = false) {
+    const hs::Pose base = carryShownBase(sl, lock, cr, mount, carried, pl, grab, residMs, now, via, exOn);
     if (!hs::qfinite(carried.q) || !hs::poseSane(base)) { cr.lastOn = cr.fade = 0; return base; }
     const hs::Q cq = hs::qnormalize(carried.q), inv = hs::reachConj(cq);
     const int32_t d = static_cast<int32_t>(now - sl.t0);
-    const float resMs = static_cast<float>(g_reachResidMs);
+    const float resMs = static_cast<float>(residMs);   // HW44: the reversal fade scales with the slow factor too
     if (cr.lastOn && (cr.lastCarry || pl.carryW > 0.f) && resMs > 0.f && sl.dir != cr.lastDir && static_cast<int32_t>(now - cr.lastMs) <= 100) {   // the slide reversed since the last frame we showed
         cr.seedQ = cr.lastQ;
         for (int i = 0; i < 3; ++i) cr.seedPos[i] = cr.lastPos[i];
@@ -1933,6 +1949,7 @@ static hs::Pose g_editMount;              // world pose of the edited Gob's moun
 static bool g_editMountOk = false;
 static hs::Slide g_prevSlide;             // HW20: the editor's Draw / Holster toggle: one slide shared by every preview weapon (hand fraction, 0 = mount); guarded by g_edLock
 static float g_prevExtract = -1.f;       // HW31: extract share the shared slide was last read with (the preview placement refreshes it each frame; < 0 = none yet); apiSetPreviewDraw's retarget must pass the same value
+static float g_prevSlow = 1.f;            // HW44: slow_holster_x the shared slide was armed with (apiSetPreviewDraw); scales the preview's residual window like the world's; guarded by g_edLock
 static float g_prevGrab = 0.30f;          // HW28: grab share the shared slide was retargeted with (the category of the edited weapon at the toggle); the readers must pass the same value
 // HW26: one hemisphere lock (a Slide used only for lockH / lockOn) and one hand-frame residual per preview Gob; the shared g_prevSlide can not carry a lock for several weapons.
 struct PrevLock { uintptr_t gob; hs::Slide lk; CarryResid cres; };
@@ -2081,6 +2098,7 @@ static bool previewPlace(uintptr_t g, uintptr_t beh) {
     hs::ReachPlan plan = {false, 0.f, 0.f, 1.f};
     const float exPct = (g_reachTest && g_reachCarry) ? reachExtractPct(beh, left, reachIsBackBone(bone)) : 0.f;   // HW31 (reach_test + reach_carry only)
     hs::Slide pslide;   // copy of g_prevSlide for the residual timing
+    float pslow = 1.f;  // HW44: copy of g_prevSlow (the factor that slide was armed with)
     const uint32_t pnow = slideNowMs();
     {
         const uint32_t now = pnow;
@@ -2092,8 +2110,10 @@ static bool previewPlace(uintptr_t g, uintptr_t beh) {
             if (!g_editGob || g_editGob == reinterpret_cast<void*>(g)) g_prevExtract = exPct;   // HW31: only the edited preview weapon (or any, when none is being edited) feeds the shared slide's retarget
             plan = g_reachCarry ? hs::reachPlan(g_prevSlide, now, g_prevGrab, exPct) : hs::ReachPlan{g_prevSlide.active(now), slideF, 0.f, 1.f, 0.f, slideF};
             pslide = g_prevSlide;
+            pslow = g_prevSlow;
         }
     }
+    const uint32_t presid = hs::slowMs(g_reachResidMs, pslow);   // HW44: reach_resid_ms at the preview slide's slowed timing
     hs::Pose shown = out;
     bool atHand = false;
     if (slideF > 0.f) {
@@ -2108,11 +2128,11 @@ static bool previewPlace(uintptr_t g, uintptr_t beh) {
     hs::Q viaQ;
     const bool viaOn = reachViaFor(hs::shapeOf(model), static_cast<int>(cat), out.q, viaQ);   // HW31: reach_via_<cat> (default off)
     float viaS = 0.f;   // HW31b: the via progress for the arm's lateral bump (only when the via is on)
-    if (viaOn && g_viaOut > 0.f) { EdLock lk0; const CarryResid& vcr = prevLockFor(g).cres; viaS = hs::slideViaProgress(plan.active, g_reachResidMs, plan.carryW, plan.oriF, exPct > 0.f, pslide.dir != 0, pslide.from, pslide.carryFrom, pnow, pslide.t0, pslide.len, g_prevGrab, vcr.on != 0, vcr.startMs, vcr.msEff, plan.pathF, stowRotEff()); }
+    if (viaOn && g_viaOut > 0.f) { EdLock lk0; const CarryResid& vcr = prevLockFor(g).cres; viaS = hs::slideViaProgress(plan.active, presid, plan.carryW, plan.oriF, exPct > 0.f, pslide.dir != 0, pslide.from, pslide.carryFrom, pnow, pslide.t0, pslide.len, g_prevGrab, vcr.on != 0, vcr.startMs, vcr.msEff, plan.pathF, stowRotEff()); }
     const bool carryOk = g_reachTest && reachArm(g, beh, atHand ? out : shown, reachW, left, static_cast<int>(cat), plan.pathF, plan.restMix, out.pos, &out.q, reachIsBackBone(bone), n, g_reachCarry && plan.active, &carried, &plan, hs::shapeOf(model), viaS);   // w == 0 outside the slide: only undoes a leftover write
     if (atHand) { previewHandLog(g, parent, n, left, model, slideF, true, carryOk, reachW, plan.carryW, pnow); return true; }   // fully drawn: the engine's hand pose stays
     if (carryOk) {
-        EdLock lk; PrevLock& pk = prevLockFor(g); shown = carryShown(pslide, pk.lk, pk.cres, out, carried, plan, g_prevGrab, pnow, viaOn ? &viaQ : nullptr, exPct > 0.f);
+        EdLock lk; PrevLock& pk = prevLockFor(g); shown = carryShown(pslide, pk.lk, pk.cres, out, carried, plan, g_prevGrab, presid, pnow, viaOn ? &viaQ : nullptr, exPct > 0.f);
     }   // HW26: hand-frame residual / locked blend; carry: the weapon rides the moved hand only while it carries (plan.carryW); it stays on the mount during the reach / release phases
     if (!hs::poseSane(shown) || !saferead::probeWrite(kSitePlace, reinterpret_cast<void*>(g + 0xA4), sizeof(hs::Pose))) return true;
     memcpy(reinterpret_cast<void*>(g + 0xA4), &shown, sizeof(hs::Pose));
@@ -2179,7 +2199,7 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
     // Verdict cache keyed on node + gob + the node's name handle [N+4], so a freed and reused address pair is re-resolved. The full
     // resolve (weapon > type > global, plus the body delta) is cached with the tune sequence it was computed for and redone when it moves.
     // Repoint: both hands share the bone_name node; the hand comes from g_handRing (sticky via hs::resolveLeft when evicted). Drawgate: the node name (lhand) decides.
-    struct Ent { uintptr_t node, gob, handle, model; bool isTarget, left; hs::Category cat; char mname[17], body[17]; LONG seq; hs::Resolved r; hs::GateState gate; hs::Slide slide; uint32_t slFrames = 0, slMaxDt = 0, slPrev = 0; uint8_t graceN = 0; CarryResid cres = {}; uint32_t dly = 0, mTick = 0, mKey = 0; bool mSeen = false; };   // graceN: HW25 hard-reset grace, frames held so far; cres: HW26 hand-frame residual of the running carry
+    struct Ent { uintptr_t node, gob, handle, model; bool isTarget, left; hs::Category cat; char mname[17], body[17]; LONG seq; hs::Resolved r; hs::GateState gate; hs::Slide slide; uint32_t slFrames = 0, slMaxDt = 0, slPrev = 0; uint8_t graceN = 0; CarryResid cres = {}; uint32_t dly = 0, mTick = 0, mKey = 0; bool mSeen = false; float slowArm = 1.f; };   // graceN: HW25 hard-reset grace, frames held so far; cres: HW26 hand-frame residual of the running carry; slowArm: HW44 slow_holster_x the running (or pending) slide was armed with
     static Ent s_cache[128];
     static unsigned s_next = 0;
     // HW33a: ms to hold back this Gob's draw / stow target. The left-hand weapon of a dual wielder waits dual_stagger_ms behind the right-hand one (another live cache entry of the same
@@ -2336,7 +2356,7 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
             ent->seq = -1;   // state flip or new owner: the resolved placement is redone
             gateLog(g, owner, readable, combat, hip, ent->left);
         }
-        const hs::SlideRes sres = hs::slideResolve(g_slideTune, cat);   // HW28: this weapon's own draw / stow ms and grab percent
+        const hs::SlideRes sres = hs::slideResolve(g_slideTune, cat, s_tune.slowHolsterX);   // HW28: this weapon's own draw / stow ms and grab percent; HW44: draw / stow ms x slow_holster_x (live, from the published tune)
         const float grab = static_cast<float>(sres.grabPct) / 100.f;
         if (sres.drawMs || sres.stowMs) {
             // HW14: the gate only picks the slide's target; the pose is blended at the end. f == 1 is the hand (identical to the plain `if (!hip) return`).
@@ -2354,9 +2374,12 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
                 const uint8_t dirBefore = ent->slide.dir;
                 // HW33a stagger: d = 0 is the 0.18 path unchanged. d > 0 arms the target (targetDelayed is idempotent per want); the reachRetarget continuity then runs
                 // when it fires (block above), not when it is armed.
-                const uint32_t d = staggerFor(ent, owner);
+                const uint32_t d = hs::slowMs(staggerFor(ent, owner), s_tune.slowHolsterX);   // HW44: the stagger keeps its share of the slowed slide (0 stays 0)
                 if (!ent->slide.active(now)) { ent->slide.lockOn = 0; ent->cres = CarryResid(); }   // HW26: a slide that starts from rest picks its hemisphere afresh; only a reversal of a running slide keeps the lock
                 ent->slide.touch(now);
+                // HW44: the factor this slide is armed with (SLIDE start slowx=, the residual / fade window): taken when this frame arms a new target (the direction moves to want, or a
+                // delayed one is created below) and kept while that target is pending or running, so a live change never reshapes a running slide.
+                if (ent->slide.dir != (hip ? 0 : 1) && !(ent->slide.pending() && ent->slide.pendWant == (hip ? 0 : 1))) ent->slowArm = s_tune.slowHolsterX;
                 if (d > 0) { if (!ent->slide.pending() || ent->slide.pendWant != (hip ? 0 : 1)) ent->dly = d; ent->slide.targetDelayed(!hip, now, d, sres.drawMs, sres.stowMs); }
                 else if (g_reachTest && g_reachCarry) hs::reachRetarget(ent->slide, !hip, now, sres.drawMs, sres.stowMs, grab, 0.04f,
                                                                   reachExtractPct(reinterpret_cast<uintptr_t>(beh), ent->left, reachIsBackBone(hs::boneNameOf(ent->r.boneIdx ? ent->r.boneIdx : hs::defaultBone(s_tune)))));   // HW25: the reversal keeps path, carry and arm weight continuous
@@ -2372,8 +2395,11 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
                             char dlyS[24];
                             dlyS[0] = 0;
                             if (firedEarly && ent->dly) snprintf(dlyS, sizeof dlyS, " dly=%u", static_cast<unsigned>(ent->dly));   // HW33a: a delayed target fired
-                            KP_LOG(chPlace, "SLIDE start dir=%s owner=%x gob=%x left=%d from=%.2f ms=%u%s", ent->slide.dir ? "draw" : "stow", static_cast<unsigned>(owner),
-                                   static_cast<unsigned>(g), ent->left ? 1 : 0, static_cast<double>(ent->slide.from), static_cast<unsigned>(ent->slide.len), dlyS);
+                            char slowS[20];   // HW44: slowx=<v> only when the slide was armed slowed (ms= is then the slowed length, dly= the scaled stagger)
+                            slowS[0] = 0;
+                            if (ent->slowArm != 1.f) snprintf(slowS, sizeof slowS, " slowx=%.2f", static_cast<double>(ent->slowArm));
+                            KP_LOG(chPlace, "SLIDE start dir=%s owner=%x gob=%x left=%d from=%.2f ms=%u%s%s", ent->slide.dir ? "draw" : "stow", static_cast<unsigned>(owner),
+                                   static_cast<unsigned>(g), ent->left ? 1 : 0, static_cast<double>(ent->slide.from), static_cast<unsigned>(ent->slide.len), dlyS, slowS);
                         }
                     }
                 } else if (ent->slFrames) {
@@ -2430,6 +2456,7 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
     if (g_reachTest && drawgateMode()) {   // HW19 probe
         const uint32_t rnow = slideNowMs();
         const float rgrab = grabFor(cat);
+        const uint32_t residMs = hs::slowMs(g_reachResidMs, ent->slowArm);   // HW44: the residual window at the slow factor this slide was armed with
         const float exPct = g_reachCarry ? reachExtractPct(reinterpret_cast<uintptr_t>(beh), ent->left, reachIsBackBone(mountBone)) : 0.f;   // HW31
         const hs::ReachPlan pl = g_reachCarry ? hs::reachPlan(ent->slide, rnow, rgrab, exPct) : hs::ReachPlan{ent->slide.active(rnow), slideF, 0.f, 1.f, 0.f, slideF};
         const hs::ShapeEntry* const shp = hs::shapeOf(ent->mname);
@@ -2437,10 +2464,10 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
         hs::Pose carried;
         hs::Q viaQ;
         const bool viaOn = reachViaFor(shp, static_cast<int>(cat), hipPose.q, viaQ);   // HW31: reach_via_<cat> (default off)
-        const float viaS = (viaOn && g_viaOut > 0.f) ? hs::slideViaProgress(pl.active, g_reachResidMs, pl.carryW, pl.oriF, exPct > 0.f, ent->slide.dir != 0, ent->slide.from, ent->slide.carryFrom, rnow, ent->slide.t0, ent->slide.len, rgrab, ent->cres.on != 0, ent->cres.startMs, ent->cres.msEff, pl.pathF, stowRotEff()) : 0.f;   // HW31b: the arm's lateral bump follows the via
+        const float viaS = (viaOn && g_viaOut > 0.f) ? hs::slideViaProgress(pl.active, residMs, pl.carryW, pl.oriF, exPct > 0.f, ent->slide.dir != 0, ent->slide.from, ent->slide.carryFrom, rnow, ent->slide.t0, ent->slide.len, rgrab, ent->cres.on != 0, ent->cres.startMs, ent->cres.msEff, pl.pathF, stowRotEff()) : 0.f;   // HW31b: the arm's lateral bump follows the via
         if (reachArm(g, reinterpret_cast<uintptr_t>(beh), out, wa, ent->left, static_cast<int>(cat), pl.pathF, pl.restMix, hipPose.pos, &hipPose.q, reachIsBackBone(mountBone), n, g_reachCarry && pl.active, &carried, &pl, shp, viaS)) {
             // carry: the weapon rides the moved hand (the engine's hand pose, recomputed after the arm write), pl.carryW: 0 while the hand is still reaching the mount (draw) or already releasing it (stow), 1 while it carries; at the draw end the arm has released, so the carried hand IS the engine hand
-            const hs::Pose rid = carryShown(ent->slide, ent->slide, ent->cres, hipPose, carried, pl, rgrab, rnow, viaOn ? &viaQ : nullptr, exPct > 0.f);   // HW26: hand-frame residual (or the locked world blend)
+            const hs::Pose rid = carryShown(ent->slide, ent->slide, ent->cres, hipPose, carried, pl, rgrab, residMs, rnow, viaOn ? &viaQ : nullptr, exPct > 0.f);   // HW26: hand-frame residual (or the locked world blend)
             if (ent->slide.dir == 0 && pl.active && (g_logVerbose || g_logMount) && KP_ENABLED(chMain, KPLOG_INFO)) {   // HW41: where the weapon is vs the hand during a stow (log only)
                 static volatile LONG s_stowHold = 0;
                 if (s_stowHold < 240 && InterlockedIncrement(&s_stowHold) <= 240 && takeLine()) {
@@ -2808,6 +2835,7 @@ static bool edWrite(bool reset) {
         filewatch::accept(g_poll, "holster.ini");
         hs::TuneCfg t = g_tuneW;
         parseTuneText(b.c_str(), t);
+        logSlowChange(t);
         publishTune(t);
         warnLeftExtraClamp(t, "SAVE");
     }
@@ -2857,7 +2885,11 @@ static int32_t KPATCH_CALL apiSetPreviewDraw(int32_t drawn) {
         EdLock lk;
         if (!g_prevSlide.init) g_prevSlide.reset(false, now);
         // HW28: the shared preview slide takes the timing of the weapon being edited (the global / unknown timing when none is)
-        const hs::SlideRes sres = hs::slideResolve(g_slideTune, g_edit.active ? g_edit.cat : hs::CatUnknown);
+        // HW44: and the published slow_holster_x (1 when the read tears: the unslowed timing); g_prevSlow scales the preview's residual window with it
+        hs::TuneCfg pc;
+        const float slowX = loadTune(pc) ? pc.slowHolsterX : hs::kSlowHolsterMin;
+        g_prevSlow = slowX;
+        const hs::SlideRes sres = hs::slideResolve(g_slideTune, g_edit.active ? g_edit.cat : hs::CatUnknown, slowX);
         drawMs = sres.drawMs;
         stowMs = sres.stowMs;
         g_prevGrab = static_cast<float>(sres.grabPct) / 100.f;
@@ -2908,7 +2940,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     addName(names, sizeof(names), g_onGob, "gob");
     addName(names, sizeof(names), g_onPlace, "place");
     addName(names, sizeof(names), g_onToggle, "toggle");
-    KP_LOG(chMain, "holster 0.20.4-dev loaded (P0 probe + unarmed_anim=%d): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_unarmedAnim ? 1 : 0, g_probe ? 1 : 0,
+    KP_LOG(chMain, "holster 0.21.0-dev loaded (P0 probe + unarmed_anim=%d): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_unarmedAnim ? 1 : 0, g_probe ? 1 : 0,
            names[0] ? names : "none", static_cast<long>(g_maxLines), g_gobEvery, k2addr::get() ? "ok" : "none");
     {
         hs::TuneCfg t;
@@ -2941,6 +2973,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
             KP_LOG(chMain, "CONFIG dual_stagger_ms=%u party_jitter_ms=%u log_mount=%d exit=%s viaout=%.2f polegrip=%.2f polebias=%.0f stowland=%.2f stowrot=%.2f", static_cast<unsigned>(g_dualStagger), static_cast<unsigned>(g_partyJitter),
                    (g_logMount || g_logVerbose) ? 1 : 0, exitCfg[0] ? exitCfg : "auto", static_cast<double>(g_viaOut), static_cast<double>(g_poleFromGrip), static_cast<double>(g_poleBiasDeg), static_cast<double>(g_stowLandF), static_cast<double>(stowRotEff()));
         }
+        KP_LOG(chMain, "CONFIG slowx=%.2f (slow_holster_x: draw / stow slides run this many times slower; 1 = normal; live with probe=1)", static_cast<double>(t.slowHolsterX));   // HW44: always printed, its own line (the CONFIG lines above are already long)
         KP_LOG(chMain, "CONFIG left_extra_rot=%.1f bone_test_left=%d (ini=%d, active=%d: needs probe=1 and bone_test=1) log_verbose=%d", static_cast<double>(t.leftExtra),
                g_boneLeftCfg ? 1 : 0, g_boneLeftCfg ? 1 : 0, g_boneLeft ? 1 : 0, g_logVerbose ? 1 : 0);
         for (int i = hs::CatUnknown + 1; i < hs::CatCount; ++i)

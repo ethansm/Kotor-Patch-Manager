@@ -229,6 +229,24 @@ inline uint32_t clampStowSlideMs(long v) {
     return (uint32_t)v;
 }
 
+// ---- HW44 slow_holster_x: live time multiplier on the draw / stow paths (so a path can be watched slowed down) ----
+// 1 = real time (default), clamped to 1..8; NaN -> 1. slowMs scales a duration; slideResolve (HolsterTune.h) applies it after the set-time clamps (570 / 1000),
+// so a slowed slide may pass them. Consumers that scale with it: slide ms, the hand-frame residual window (reach_resid_ms), the reversal fade and the dual stagger.
+// Not scaled: the path-fraction windows (reach_stow_land_f, reach_stow_rot_f, reach_grab_pct), the 100 ms stall guards and the hold / cut timers (real time).
+inline constexpr float kSlowHolsterMin = 1.f;
+inline constexpr float kSlowHolsterMax = 8.f;
+
+inline float slowHolsterClamp(float v) {
+    if (!(v == v)) return kSlowHolsterMin;   // NaN
+    return v < kSlowHolsterMin ? kSlowHolsterMin : (v > kSlowHolsterMax ? kSlowHolsterMax : v);
+}
+
+// ms * x (x clamped to 1..8), rounded to the nearest ms. x <= 1 or NaN returns ms unchanged and 0 stays 0 (an instant slide stays instant), so x = 1 is byte-identical.
+inline uint32_t slowMs(uint32_t ms, float x) {
+    if (ms == 0 || !(x > kSlowHolsterMin)) return ms;
+    return (uint32_t)((float)ms * slowHolsterClamp(x) + 0.5f);
+}
+
 // ---- HW37: host-testable copies of the residual / via clock of Holster.cpp (carryShownBase, viaProgress). ----
 // Each helper copies one Holster.cpp function or guard, condition by condition. Plain values stand in for the DLL globals (g_reachResidMs is
 // residMs) and for CarryResid / ReachPlan, which live in Holster.cpp / HolsterReach.h (this header cannot include HolsterReach.h).

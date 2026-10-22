@@ -20,6 +20,9 @@ Usage: holster_log_check.py [LOG | --log LOG] [--new [--no-advance] [--state PAT
   --row SM-L11..SM-L16: pass-signal clauses of one play-test row (PLAY_TEST_QUEUE.md), `SM-Lnn <clause>: PASS|FAIL|NO-DATA <reason>`, then
   `SM-Lnn verdict`. SM-L16 (STOWHOLD, hold=1 lines only): hold on; the weapon stays on the hand (wd <= 0.005 m) while pathF > lf + 0.01; lands on
   the mount (|wd - dm| <= 0.02 m) at pathF <= 0.02. Exit 0 PASS, 1 FAIL, 3 NO-DATA; unknown row = exit 2.
+  HW44 (holster 0.21.0-dev, slow_holster_x): `SLIDE start ... ms=<slowed> [dly=<scaled>] slowx=<v>` (the tag only when v != 1) adds `slow=<n> x=<min>..<max>` to the SLIDE line;
+  `CONFIG slowx=<v>` and `SLOWX <old>-><new>` (a live change) give one `SLOWX cfg= changes=` line. SM-L14 scales the dly band by each start's slowx, and does not count a slow
+  start that is still open at the last T= stamp of the window as stuck (its slowed ms runs past the window end); a normal start still is.
   --new: only lines after the bookmark shared with log_triage (same state file, keyed by absolute path), then advance it.
   Exit 0 = analyzed, 2 = log missing ("no log: <path>") or a bad flag combination.
 
@@ -119,8 +122,10 @@ FULL_RE = {
     "GOBREUSE": _rx(r"\bGOBREUSE gob=(?P<gob><H>) node=(?P<node><H>) oldm=(?P<oldm>\S+) newm=(?P<newm>\S+)"),
     "FLOURISH": _rx(r"\bFLOURISH (?:(?P<open>open) slot=(?P<oslot><I>) cli=<I> srv=<I> p524=<I> p528=<I> b11E8=<I>"
                   r"|(?P<close>close) slot=(?P<cslot><I>) p520=<I> p524=<I>)"),
-    # HW38: start may end with dly=<ms> (dual stagger, left Gob); owner/gob/left are named for the SM-L14 open/close matching
-    "SLIDE": _rx(r"\bSLIDE (?:(?P<start>start) dir=(?P<sdir>\w+) owner=(?P<sowner><H>) gob=(?P<sgob><H>) left=(?P<sleft><I>) from=<N> ms=<I>(?: dly=(?P<dly><I>))?"
+    # HW38: start may end with dly=<ms> (dual stagger, left Gob); owner/gob/left are named for the SM-L14 open/close matching.
+    # HW44 (0.21.0-dev): start may end with slowx=<v> (slow_holster_x != 1); its ms= is then the slowed length and dly= the scaled stagger.
+    "SLIDE": _rx(r"\bSLIDE (?:(?P<start>start) dir=(?P<sdir>\w+) owner=(?P<sowner><H>) gob=(?P<sgob><H>) left=(?P<sleft><I>) from=<N> ms=(?P<sms><I>)(?: dly=(?P<dly><I>))?"
+                 r"(?: slowx=(?P<slowx><N>))?"
                  r"|(?P<end>end) dir=(?P<edir>\w+) owner=(?P<eowner><H>) ms=<I> frames=(?P<frames><I>) maxdt=(?P<maxdt><I>))"),
 }
 MAIN_RES = {
@@ -148,8 +153,13 @@ MAIN_RES = {
     "reachrefuse": re.compile(r"\bREACH owner=\w+ refuse=(\w+)"),
     "reachtopo": re.compile(r"\bREACH owner=\w+ w=[\d.]+ .*? topo=(\w+) bk=(\d)"),   # HW27 (0.15.0-dev): which reach the mount height chose (hinge / over / hip / thigh), bk=1 = a back bone
     "slidecfg": re.compile(r"\bCONFIG .*?\bslide=(\S+) resid_ms=(\d+) wrist_max=(\d+)"),   # HW28 (0.15.0-dev): resolved <cat>:<draw ms>/<stow ms>/<grab %>, residual ms, wrist cap
+    "slowcfg": re.compile(r"\bCONFIG slowx=(\d+(?:\.\d+)?)"),   # HW44 (0.21.0-dev): slow_holster_x at start (CONFIG slowx= is always logged)
+    "slowchg": re.compile(r"\bSLOWX (\d+(?:\.\d+)?)->(\d+(?:\.\d+)?)"),   # HW44: a live change, old->new
     "node": re.compile(r"\bPLACENODE node=\w+ gob=\w+ t=(\d+) step=(-?\d+) name=(\S+) target=(\d)(?: bvt=(\w+))?(?: gname=(\S+) mname=(\S+))?(?: cat=(\w+))?"),
 }
+
+
+_T_RE = re.compile(r"^T=(\d+)\b")   # HW44: the KpLog stamp in front of each line (T=<ms>); the window end is the largest one
 
 
 def _hex(s):
@@ -196,7 +206,7 @@ def _record(kind, n, m):
         rec.update(ev="open" if g["open"] else "close")
     elif kind == "SLIDE":
         if g["start"]:
-            rec.update(ev="start", dir=g["sdir"])
+            rec.update(ev="start", dir=g["sdir"], slowx=float(g["slowx"]) if g["slowx"] else 1.0)
         else:
             rec.update(ev="end", dir=g["edir"], frames=int(g["frames"]), maxdt=int(g["maxdt"]))
     return rec
@@ -241,12 +251,16 @@ def parse_lines(window):
     main = {"loaded": [], "cap": [], "bonetest": Counter(), "unreadable": 0, "tid": {}, "reload": [], "tune": [], "refuse": {}, "node": Counter(), "mount": Counter(),
             "owner": Counter(), "combc": set(), "partyhold": Counter(), "movehold": 0, "delay": Counter(),
             "reach": [], "slidecut": Counter(), "resid": [], "reachfound": 0, "reachrefuse": Counter(), "reachhold": Counter(), "reachtw": [], "reachex": [],
-            "reachtopo": Counter(), "slidecfg": [], "reach_partial": reach_partial,   # HW40: REACH steps cut by the window (partial=N on the REACH line when N > 0)
+            "reachtopo": Counter(), "slidecfg": [], "slowcfg": [], "slowchg": [], "t_last": None, "reach_partial": reach_partial,   # HW44: slowcfg = CONFIG slowx=, slowchg = SLOWX old->new, t_last = last T= stamp of the window
+               # HW40: REACH steps cut by the window (partial=N on the REACH line when N > 0)
             "preview": [], "camnode": [], "wmname": set(),
             "slide_seq": [], "vo": [], "pb": [],   # HW38: SLIDE start/end/cut events in log order; (f or None, vo) and (f or None, pb) per REACH line
             "stowhold": []}   # HW41: one dict per parsed STOWHOLD line, in log order
     for n, raw in window:
         text = raw.strip()
+        mt = _T_RE.match(text)   # HW44: the window end for the SM-L14 stuck test (largest stamp seen)
+        if mt:
+            main["t_last"] = max(main["t_last"] or 0, int(mt.group(1)))
         m = MAIN_RES["loaded"].search(text)
         if m:
             main["loaded"].append(m.group(1))
@@ -297,6 +311,12 @@ def parse_lines(window):
             mr = re.search(r"\bRESID .*?\bpos_cm=(-?[\d.]+) ang=(-?[\d.]+) dq=(-?[\d.]+)", text)
             if mr:
                 main["resid"].append(tuple(float(v) for v in mr.groups()))
+        m = MAIN_RES["slowcfg"].search(text)
+        if m:
+            main["slowcfg"].append(float(m.group(1)))
+        m = MAIN_RES["slowchg"].search(text)
+        if m:
+            main["slowchg"].append((float(m.group(1)), float(m.group(2))))
         m = MAIN_RES["slidecfg"].search(text)
         if m:
             main["slidecfg"].append((m.group(1), int(m.group(2)), int(m.group(3))))
@@ -378,7 +398,9 @@ def parse_lines(window):
             if kind == "SLIDE":   # HW38: start (with its optional dly=) or end (owner only: the end line names no Gob)
                 if f.group("start"):
                     main["slide_seq"].append({"ev": "start", "owner": _hex(f.group("sowner")), "gob": _hex(f.group("sgob")), "left": int(f.group("sleft")) == 1,
-                                              "dir": f.group("sdir"), "dly": int(f.group("dly")) if f.group("dly") else None})
+                                              "dir": f.group("sdir"), "dly": int(f.group("dly")) if f.group("dly") else None,
+                                              "ms": int(f.group("sms")), "slowx": float(f.group("slowx")) if f.group("slowx") else 1.0,   # HW44: slowed ms, factor (1.0 = no tag)
+                                              "t": int(mt.group(1)) if (mt := _T_RE.match(text)) else None})
                 else:
                     main["slide_seq"].append({"ev": "end", "owner": _hex(f.group("eowner")), "dir": f.group("edir")})
     return recs, skipped, main
@@ -756,22 +778,28 @@ def _sm_l13(recs):
 
 def _sm_l14(main):
     """Dual stagger (HW33a): dly= on the left Gob in 50..70 ms; no dly= on a right Gob; every SLIDE start ends or is cut (a start with no end = stuck).
-    No dly= field at all = NO-DATA for the whole row. A reversal logs a second start for the same Gob: that supersedes the first (not stuck)."""
+    No dly= field at all = NO-DATA for the whole row. A reversal logs a second start for the same Gob: that supersedes the first (not stuck).
+    HW44 (slow_holster_x): the stagger is scaled with the slide, so a start tagged slowx=<v> is held to the band x v (a slow run is a NOTE in the detail, not a FAIL); a slow
+    start still open at the window's last T= stamp is cut by the window end (its slowed ms runs past it), not stuck. A normal start still open at the end stays stuck."""
     labels = ("dly 50..70 ms on left", "no dly on right", "every start ends or is cut")
     seq = main.get("slide_seq", [])
     starts = [e for e in seq if e["ev"] == "start"]
     dly = [e for e in starts if e["dly"] is not None]
     if not dly:
         return [(lb, "NO-DATA", "no dly= field in window") for lb in labels]
-    left = [e["dly"] for e in dly if e["left"]]
+    lefts = [e for e in dly if e["left"]]
+    left = [e["dly"] for e in lefts]
     if not left:
         c1 = (labels[0], "NO-DATA", "no dly= on a left Gob")
     else:
-        off = [v for v in left if not DLY_LO_MS <= v <= DLY_HI_MS]
+        off = [e for e in lefts if not _dly_band(e.get("slowx", 1.0))[0] <= e["dly"] <= _dly_band(e.get("slowx", 1.0))[1]]
+        slowed = sorted({e.get("slowx", 1.0) for e in lefts if e.get("slowx", 1.0) != 1.0})
+        note = " (NOTE slow run: band scaled by slowx=%s)" % ",".join("%.2f" % x for x in slowed) if slowed else ""
         if off:
-            c1 = (labels[0], "FAIL", "left dly=%d outside %d..%d ms (%d of %d left starts)" % (off[0], DLY_LO_MS, DLY_HI_MS, len(off), len(left)))
+            lo, hi = _dly_band(off[0].get("slowx", 1.0))
+            c1 = (labels[0], "FAIL", "left dly=%d outside %d..%d ms (%d of %d left starts)%s" % (off[0]["dly"], lo, hi, len(off), len(lefts), note))
         else:
-            c1 = (labels[0], "PASS", "left dly=%d..%d ms over %d left start(s)" % (min(left), max(left), len(left)))
+            c1 = (labels[0], "PASS", "left dly=%d..%d ms over %d left start(s)%s" % (min(left), max(left), len(left), note))
     right = [e for e in dly if not e["left"]]
     if right:
         c2 = (labels[1], "FAIL", "dly=%d on right Gob gob=0x%s (%d right starts)" % (right[0]["dly"], right[0]["gob"], len(right)))
@@ -795,11 +823,28 @@ def _sm_l14(main):
             if hit:
                 running.remove(hit[0])
                 ended += 1
-    if running:
-        c3 = (labels[2], "FAIL", "%d start(s) never ended (stuck): first gob=0x%s dir=%s" % (len(running), running[0]["gob"], running[0]["dir"]))
+    stuck = [o for o in running if not _slow_cut_by_window(o, main.get("t_last"))]   # HW44
+    excused = len(running) - len(stuck)
+    if stuck:
+        c3 = (labels[2], "FAIL", "%d start(s) never ended (stuck): first gob=0x%s dir=%s" % (len(stuck), stuck[0]["gob"], stuck[0]["dir"]))
     else:
-        c3 = (labels[2], "PASS", "%d start(s): %d ended or cut, %d superseded by a reversal" % (len(starts), ended, superseded))
+        c3 = (labels[2], "PASS", "%d start(s): %d ended or cut, %d superseded by a reversal" % (len(starts), ended, superseded)
+              + (", %d slow slide(s) cut by the window end (NOTE not stuck)" % excused if excused else ""))
     return [c1, c2, c3]
+
+
+def _dly_band(slowx):
+    """HW44: the SM-L14 dly band (DLY_LO_MS..DLY_HI_MS) at a slow factor: scaled, widened by 1 ms for the rounding of the scaled stagger. x <= 1: the plain band."""
+    x = slowx if slowx and slowx > 1.0 else 1.0
+    return (int(math.floor(DLY_LO_MS * x)) - (1 if x > 1.0 else 0), int(math.ceil(DLY_HI_MS * x)) + (1 if x > 1.0 else 0))
+
+
+def _slow_cut_by_window(start, t_last):
+    """HW44: True for a slow start (slowx > 1, with its T= stamp and slowed ms) whose length runs past the window's last stamp. Only the slow case is excused:
+    a normal start that is still open at the window end stays a stuck start, as before."""
+    if start.get("slowx", 1.0) <= 1.0 or t_last is None or start.get("t") is None or start.get("ms") is None:
+        return False
+    return t_last < start["t"] + start["ms"]
 
 
 def _sm_l15(main):
@@ -964,7 +1009,21 @@ def _events(recs):
     if ends:
         line += " frames min=%d max=%d maxdt max=%d" % (min(r["frames"] for r in ends), max(r["frames"] for r in ends),
                                                         max(r["maxdt"] for r in ends))
+    slow = [r["slowx"] for r in sl if r["ev"] == "start" and r.get("slowx", 1.0) != 1.0]   # HW44: slow runs (SLIDE start slowx= != 1)
+    if slow:
+        line += " slow=%d x=%.2f..%.2f" % (len(slow), min(slow), max(slow))
     return ["GOBREUSE total=%d" % reuse, "FLOURISH open=%d close=%d" % (fl["open"], fl["close"]), line]
+
+
+def _slowx_lines(f):
+    """HW44: one `SLOWX cfg=<v> changes=<n> last=<old>-><new>` line, only when CONFIG slowx= is not 1 or a SLOWX old->new change is in the window ([] otherwise)."""
+    cfg, chg = f.get("slowcfg", []), f.get("slowchg", [])
+    if not chg and (not cfg or cfg[-1] == 1.0):
+        return []
+    line = "SLOWX cfg=%s changes=%d" % ("%.2f" % cfg[-1] if cfg else "-", len(chg))
+    if chg:
+        line += " last=%.2f->%.2f" % chg[-1]
+    return [line]
 
 
 def _toggle_events(f):
@@ -1030,6 +1089,7 @@ def render(recs, skipped, main_facts, nlines, meta):
     out += _attach(recs)
     out.append("SWAP total=%d" % sum(1 for r in recs if r["kind"] == "SWAP"))
     out += _events(recs)
+    out += _slowx_lines(main_facts)
     out += _slide_dly_lines(main_facts)   # HW38: each of these is [] unless its field is in the window
     out += _toggle_events(main_facts)
     out += _reach_events(main_facts)
