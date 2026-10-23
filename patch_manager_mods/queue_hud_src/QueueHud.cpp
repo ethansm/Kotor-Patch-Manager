@@ -79,7 +79,7 @@ qh::ActionBuffer g_itemQueue[3];
 bool g_dispatching = false;
 using PerformUseItemFn = void(__thiscall*)(void* creature, uint32_t itemId, int packedByte, uint32_t targetId, const float* pos);
 constexpr uintptr_t AddrPerformUseItem = gameaddr::PerformUseItem;
-using PerformCastSpellFn = void(__thiscall*)(void* creature, uint32_t spellId, int arg2, uint32_t targetId, int multispell, int metamagic, int domain, const float* pos);
+using PerformCastSpellFn = void(__thiscall*)(void* creature, uint32_t spellId, uint32_t targetClientId, const float* pos, int multispell, int metamagic, int domain, int flag);
 constexpr uintptr_t AddrPerformCastSpell = gameaddr::PerformCastSpell;
 // QL20 server route: CSWSCreature::AddUseTalentOnObjectActions (doc 27 R1 route A), ECX = the owner's SERVER creature, RET 0x20, returns 0 when refused.
 // Stack (talentType 0 = spell, spellId, targetServerId, multiclass byte, itemId 0x7F000000 = none, propIdx -1 = none, byte 0, metamagic byte):
@@ -1036,6 +1036,8 @@ static void endAction(qh::ActionBuffer& b) {
     b.eaten = false;
     b.eatenReInjects = 0;
     b.eatenUnpausedMs = 0;
+    b.dispatchDeferred = false;
+    b.deferUnpausedMs = 0;
 }
 
 // VANISH line: the active action left the engine without a RESOLVE (executed, unseen, eaten). No-op unless trace_queue is on.
@@ -1064,14 +1066,16 @@ static void resolveActive(int k, qh::ActionBuffer& buf, DWORD now) {
 void spellWatchArm(int k, uint32_t cmd, DWORD now);   // SPELL_OUT watch (defined with the HANDOFF_OUT watch below)
 
 // QL20: run a Force power on the NON-controlled member `slot` through its own server creature. Every pointer is saferead first.
-static bool serverCast(const qh::QueuedAction& a, int slot, uintptr_t tbl) {
+enum class SendResult : uint8_t { Sent, Retry, Refused };   // Refused = permanent
+static SendResult serverCast(const qh::QueuedAction& a, int slot, uintptr_t tbl, bool retry) {
     const uintptr_t cli = party::member(tbl, slot);
     const uintptr_t srv = cli ? party::serverCreature(cli) : 0;
     uint32_t commandable = 0, mask = 0, tgt = 0;
     const char* bad = nullptr;
+    bool perm = false;
     if (!srv) bad = "no_server_creature";
     else if (!rd(SiteSrvCast, srv, CrCommandable, &commandable) || !commandable) bad = "not_commandable";
-    else if (!rd(SiteSrvCast + 1, gameaddr::ServerIdMask, 0, &mask)) bad = "id_mask";
+    else if (!rd(SiteSrvCast + 1, gameaddr::ServerIdMask, 0, &mask)) { bad = "id_mask"; perm = true; }
     else tgt = static_cast<uint32_t>(a.arg2) & ~mask;
     if (!bad) {
         spellWatchArm(slot, a.cmdId, GetTickCount());
@@ -1086,47 +1090,40 @@ static bool serverCast(const qh::QueuedAction& a, int slot, uintptr_t tbl) {
         qh::fmtServerCast(line, sizeof line, a.cmdId, slot, a.spellId, tgt, bad == nullptr, bad);
         QTRACE("%s", line);
     }
-    if (bad) QLOGV(chMain, KPLOG_WARN, "server-route cast refused for member %d cmd=%u why=%s", slot, (unsigned)a.cmdId, bad);
-    return bad == nullptr;
+    if (bad && !retry) QLOGV(chMain, KPLOG_WARN, "server-route cast refused for member %d cmd=%u why=%s", slot, (unsigned)a.cmdId, bad);
+    if (!bad) return SendResult::Sent;
+    return perm ? SendResult::Refused : SendResult::Retry;
 }
 
 // Issue one queued command to the engine (our own call: the hooks pass it through via g_dispatching). k = party member (-1 unknown).
 // QL20: the client wrappers act on the CONTROLLED creature, so an action owned by member 1-2 goes through serverCast or is not sent at all.
-void dispatchAction(const qh::QueuedAction& a, int k) {
+SendResult dispatchAction(const qh::QueuedAction& a, int k, bool retry = false) {
     {
         party::Fail pf = party::F_None;
         const uintptr_t tbl = party::table(&pf);
         const int slot = tbl ? slotOfCreature(tbl, a.creature) : -1;
         if (slot != 0) {
-            if (slot > 0 && g_cfg.companionServerCast && qh::serverRouteEligible(a)) {
-                serverCast(a, slot, tbl);
-            } else if (g_logOn && g_cfg.traceQueue) {
+            if (slot > 0 && g_cfg.companionServerCast && qh::serverRouteEligible(a)) return serverCast(a, slot, tbl, retry);
+            if (g_logOn && g_cfg.traceQueue) {
                 char line[200];
                 qh::fmtServerCast(line, sizeof line, a.cmdId, slot, a.spellId, 0, false, "not_ctrl");
                 QTRACE("%s", line);
             }
-            return;
+            return SendResult::Sent;
         }
     }
     g_dispatching = true;
     if (a.kind == qh::ActionKind::Spell) {
-        const float* pp = qh::replayPos(a, g_cfg.spellReplayPos);
+        const qh::ReplayArgs ra = qh::buildReplayArgs(a);
         if (g_logOn && g_cfg.traceQueue) {
             char line[200];
-            qh::fmtSpellArgs(line, sizeof line, true, a.cmdId, k, a.spellId, a.arg2, a.targetId, a.multispell, a.metamagic, a.domain,
-                             static_cast<uint32_t>(reinterpret_cast<uintptr_t>(pp)), a.hasPos);
+            qh::fmtSpellArgs(line, sizeof line, true, a.cmdId, k, a.spellId, a.arg2, a.multispell, a.metamagic, a.domain,
+                             ra.pos, ra.flag, static_cast<uint32_t>(reinterpret_cast<uintptr_t>(ra.pos)));
             QTRACE("%s", line);
         }
         if (k >= 0) spellWatchArm(k, a.cmdId, GetTickCount());
-        reinterpret_cast<PerformCastSpellFn>(AddrPerformCastSpell)(
-            reinterpret_cast<void*>(a.creature),
-            a.spellId,
-            a.arg2,
-            a.targetId,
-            a.multispell,
-            a.metamagic,
-            a.domain,
-            pp);
+        reinterpret_cast<PerformCastSpellFn>(AddrPerformCastSpell)(reinterpret_cast<void*>(a.creature), a.spellId,
+            static_cast<uint32_t>(a.arg2), ra.pos, a.multispell, a.metamagic, a.domain, ra.flag);
     } else {
         reinterpret_cast<PerformUseItemFn>(AddrPerformUseItem)(
             reinterpret_cast<void*>(a.creature),
@@ -1136,6 +1133,19 @@ void dispatchAction(const qh::QueuedAction& a, int k) {
             a.pos);
     }
     g_dispatching = false;
+    return SendResult::Sent;
+}
+
+// RQ5: settle the active action after a send. Retry keeps it active and defers the next send; Refused (permanent) drops it with a DROP line.
+static void afterSend(int k, qh::ActionBuffer& buf, SendResult r, DWORD now) {
+    if (r == SendResult::Sent) { buf.dispatchDeferred = false; return; }
+    if (r == SendResult::Refused) {
+        if (g_logOn && g_cfg.traceQueue) { char line[200]; qh::fmtDrop(line, sizeof line, buf.activeAction.cmdId, k, qh::DR_REFUSED, 1); QTRACE("%s", line); }
+        endAction(buf);
+        return;
+    }
+    if (!buf.dispatchDeferred) { buf.dispatchDeferred = true; buf.deferTick = now; buf.deferUnpausedMs = 0; }
+    buf.deferLastTry = now;
 }
 
 // QL20 starvation kick (selfheal CS12 route B, live-proven 10-05: KICK before=[3d,3d,3f] after=[3f,3d,3d] then DONE): a follower's 0x3D
@@ -1193,7 +1203,7 @@ DWORD g_identLastTick[3] = {0, 0, 0};
 // headHeld: the head was still held by the engine at the edge; it waits there until the engine releases it (qh::heldHeadAction).
 // sawExec latches exec evidence (execEvidence) from the edge on; heldUnpausedMs / lastTick time a head that stays held.
 struct Handoff { bool detachTried = false; bool pending = false; bool headValid = false; bool headHeld = false; bool sawExec = false; DWORD edgeAt = 0; DWORD lastTick = 0;
-                 int heldUnpausedMs = 0; qh::QueuedAction head; int total = 0; int sent = 0; };
+                 int heldUnpausedMs = 0; qh::QueuedAction head; int total = 0; int sent = 0; bool waiting = false; DWORD waitUntil = 0; };
 Handoff g_handoff[3];
 bool g_handoffHold[3];   // B1: HANDOFF_HOLD already traced for this episode (reset when no hand-off is pending)
 // QL10 (handoff_keep_new): round nodes already pending at the first send (the player's new click); roundOrderTick keeps them behind our re-sent commands.
@@ -1291,7 +1301,7 @@ static void handoffHoldTrace(int k, uint32_t cmdId, int ownerSlot) {
     }
 }
 
-void detachRound(int k, uintptr_t srv, const Snapshot& s, DWORD now, const char* why);   // QL10 detach, defined after the hand-off code
+void detachRound(int k, uintptr_t srv, const Snapshot& s, DWORD now, const char* why, unsigned mask);   // QL10 detach, defined after the hand-off code
 void discardDetached(int k, const char* why);
 // Every frame in combat (readable HUD). The edge frame moves a member's buffer into g_handoff; then each pending member sends one command per frame.
 void handoffTick(DWORD now, const bool* edge) {
@@ -1324,12 +1334,17 @@ void handoffTick(DWORD now, const bool* edge) {
             const bool wasActive = buf.active;
             const uint32_t activeCmd = buf.activeAction.cmdId;
             if (wasActive) outWatchArm(k, activeCmd, now);   // ground truth for the command that was active at the edge
-            h.headHeld = buf.active && inEngine && g_cfg.handoffResendHeld;   // engine-held head: wait for the combat-start wipe, then re-send
             h.edgeAt = now;
             h.lastTick = now;
             h.heldUnpausedMs = 0;
             h.sawExec = gEdgeOk && execEvidence(s);
-            h.headValid = buf.active && (!inEngine || h.headHeld);
+            const qh::EdgeHeadAction eh = qh::edgeHeadAction(buf.active, inEngine, buf.sawExecuting, h.sawExec,
+                                                             now - buf.activeStartTick, gEdgeOk, buf.dispatchDeferred);
+            const bool waitOk = eh == qh::EDGE_WAIT && (!inEngine || g_cfg.handoffResendHeld);
+            h.headHeld = waitOk;
+            h.headValid = waitOk || eh == qh::EDGE_RESEND;
+            h.waiting = waitOk && !inEngine;     // not in the engine yet: give a late entry until waitUntil
+            h.waitUntil = h.waiting ? (gEdgeOk ? buf.activeStartTick : now) + qh::kMinActiveMs : 0;
             if (h.headValid) h.head = buf.activeAction;
             if (g_logOn && g_cfg.traceQueue) {
                 uint32_t ids[qh::kMaxActionQueue];
@@ -1338,8 +1353,12 @@ void handoffTick(DWORD now, const bool* edge) {
                 qh::fmtHandoff(line, sizeof line, k, wasActive, activeCmd, ids, buf.count);
                 QTRACE("%s", line);
             }
+            // after the HANDOFF line, so the checker's hand-off window (flag I) sees it
+            if (eh == qh::EDGE_DROP_EXEC && g_logOn && g_cfg.traceQueue) {
+                char line[200]; qh::fmtDrop(line, sizeof line, buf.activeAction.cmdId, k, qh::DR_EXECUTED, 1); QTRACE("%s", line);
+            }
             // The engine owns the active command now (or already did); the buffered ones stay queued and leave one per frame below.
-            buf.active = false; buf.seenInQueue = false; buf.eaten = false; buf.reInjectPending = false;
+            buf.active = false; buf.seenInQueue = false; buf.eaten = false; buf.reInjectPending = false; buf.dispatchDeferred = false;
             h.total = (h.headValid ? 1 : 0) + buf.count;
             h.sent = 0;
             h.pending = h.total > 0;
@@ -1370,15 +1389,18 @@ void handoffTick(DWORD now, const bool* edge) {
             if (held && !s.paused) { const DWORD d = now - h.lastTick; h.heldUnpausedMs += d < 1000u ? static_cast<int>(d) : 1000; }
             h.lastTick = now;
         }
-        if (g_cfg.handoffDetachHeld && g_cfg.handoffKeepNew && h.headValid && h.headHeld && !h.detachTried && qh::keepPathAllowed(true, s.paused, g_cfg.handoffKeepUnpaused) && s.nrn > 0) {
+        const unsigned dmask = qh::detachableMask(s.rn, s.nrn, h.head);
+        if (g_cfg.handoffDetachHeld && g_cfg.handoffKeepNew && h.headValid && h.headHeld && !h.detachTried && qh::keepPathAllowed(true, s.paused, g_cfg.handoffKeepUnpaused) && dmask != 0) {
             h.detachTried = true;   // once per hand-off: the nodes pending at the edge are the player's new click
-            detachRound(k, srv, s, now, "held_head");
+            detachRound(k, srv, s, now, "held_head", dmask);
         }
         if (s.nrn + 1 > qh::kMaxRound) continue;   // the engine's round list is full: retry next frame
         if (h.headValid && h.headHeld) {
             const int ms = static_cast<int>(now - h.edgeAt);
             const bool cancelClick = qh::cancelClickRecent(g_lastClickTick, h.edgeAt, now);
-            const qh::HeldHeadAction act = qh::heldHeadAction(engineHoldsAction(s), h.sawExec, s.paused, h.heldUnpausedMs, cancelClick);
+            if (engineHoldsAction(s)) h.waiting = false;   // it showed up: from now on a vanish means a real wipe
+            const bool holds = engineHoldsAction(s) || (h.waiting && static_cast<int>(h.waitUntil - now) > 0);
+            const qh::HeldHeadAction act = qh::heldHeadAction(holds, h.sawExec, s.paused, h.heldUnpausedMs, cancelClick);
             if (act == qh::HELD_WAIT) continue;
             if (g_logOn && g_cfg.traceQueue) {
                 char line[200];
@@ -1438,7 +1460,8 @@ void handoffTick(DWORD now, const bool* edge) {
             }
             ++h.sent;
             g_lastOurs[k].tag = "handoff"; g_lastOurs[k].tick = now;
-            dispatchAction(a, k);
+            const SendResult r = dispatchAction(a, k);
+            if (r != SendResult::Sent && g_logOn && g_cfg.traceQueue) { char line[200]; qh::fmtDrop(line, sizeof line, a.cmdId, k, qh::DR_REFUSED, 1); QTRACE("%s", line); }
             outWatchArm(k, a.cmdId, now);
             g_roundWatchUntil[k] = now + 15000;   // armed outside the trace gate: the watch runs with trace off too
             g_lastRound[k].n = -1;
@@ -1519,10 +1542,10 @@ void traceDetach(int k, int n, const char* act, bool ok, const char* why) {
 }
 
 // Take every pending round node of member k out of the list (identity-checked against the snapshot; put back untouched on any mismatch).
-void detachRound(int k, uintptr_t srv, const Snapshot& s, DWORD now, const char* why) {
+void detachRound(int k, uintptr_t srv, const Snapshot& s, DWORD now, const char* why, unsigned mask) {
     Detached& d = g_detached[k];
     uint32_t w = 0;
-    if (d.n != 0 || s.nrn <= 0 || !roundListHandle(srv, s.round, &w)) { traceDetach(k, s.nrn, "detach", false, "guard"); return; }
+    if (d.n != 0 || s.nrn <= 0 || mask == 0 || !roundListHandle(srv, s.round, &w)) { traceDetach(k, s.nrn, "detach", false, "guard"); return; }
     auto pop = reinterpret_cast<uint32_t(__thiscall*)(uintptr_t)>(gameaddr::ActListRemoveHead);
     auto push = reinterpret_cast<void(__thiscall*)(uintptr_t, uint32_t)>(gameaddr::ActListAddTail);
     uint32_t got[qh::kMaxRound];
@@ -1530,9 +1553,15 @@ void detachRound(int k, uintptr_t srv, const Snapshot& s, DWORD now, const char*
     for (; popped < s.nrn; ++popped) { got[popped] = pop(w); if (got[popped] == 0) break; }
     bool ok = popped == s.nrn;
     for (int i = 0; i < s.nrn && ok; ++i) ok = got[i] == s.rn[i].ptr;
-    if (ok) { for (int i = 0; i < s.nrn; ++i) { d.ptr[i] = got[i]; d.rn[i] = s.rn[i]; } d.n = s.nrn; d.at = now; }
-    else for (int i = 0; i < popped; ++i) if (got[i]) push(w, got[i]);   // put it back exactly as it was
-    traceDetach(k, s.nrn, "detach", ok, why);
+    int nDet = 0;
+    if (ok) {
+        for (int i = 0; i < s.nrn; ++i) {
+            if (mask & (1u << i)) { d.ptr[nDet] = got[i]; d.rn[nDet] = s.rn[i]; ++nDet; }
+            else push(w, got[i]);                       // the head's own node stays in the list
+        }
+        d.n = nDet; d.at = now;
+    } else for (int i = 0; i < popped; ++i) if (got[i]) push(w, got[i]);   // put it back exactly as it was
+    traceDetach(k, ok ? nDet : s.nrn, "detach", ok, why);
 }
 
 // Forget the detached nodes without re-adding them (the player cancelled, combat ended or restarted). The ~0x88 byte nodes are leaked on purpose: the free path is unverified.
@@ -1809,7 +1838,8 @@ void tickItemQueues(DWORD now, bool inMenu) {
         if (k > 0 && buf.active && g_cfg.companionServerCast) kickStarved(k, srv, s, now);
 
         // 2. Follower wipe protection & active completion tracking
-        qh::ReInjectWhy riWhy = qh::reInjectWhy(buf, actionInQueue, hasFollowLeader, s.paused, now);
+        qh::ReInjectWhy riWhy = qh::reInjectWhy(buf, actionInQueue, hasFollowLeader, s.paused, now, false,
+                                                qh::RiGate{ true, g_cfg.pauseEatenWait, g_cfg.pauseReinject });
         if (riWhy == qh::RI_OK && !ownerCtrl) riWhy = qh::RI_NOT_CTRL;
         if (bufBusy(buf)) {
             if (static_cast<int>(riWhy) != g_prevRiWhy[k]) {
@@ -1821,7 +1851,17 @@ void tickItemQueues(DWORD now, bool inMenu) {
             g_prevRiWhy[k] = -1;
         }
         if (buf.active) {
-            if (riWhy == qh::RI_OK) {
+            if (buf.dispatchDeferred) {   // RQ5: a refused server cast waits and retries; no verdict, no re-inject meanwhile
+                const qh::DeferStep ds = qh::deferStep(buf, s.paused, now);
+                if (ds == qh::DEFER_GIVE_UP) {
+                    if (g_logOn && g_cfg.traceQueue) { char line[200]; qh::fmtDrop(line, sizeof line, buf.activeAction.cmdId, k, qh::DR_REFUSED, 1); QTRACE("%s", line); }
+                    endAction(buf);
+                } else if (ds == qh::DEFER_RETRY) {
+                    const SendResult r = dispatchAction(buf.activeAction, k, true);
+                    if (r == SendResult::Sent) buf.markDispatched(now);
+                    afterSend(k, buf, r, now);
+                }
+            } else if (riWhy == qh::RI_OK) {
                 if (!saferead::probeRead(SiteQueue, reinterpret_cast<const void*>(buf.activeAction.creature), 4)) {
                     QLOGV(chMain, KPLOG_WARN, "re-inject skipped: creature %08x unreadable for member %d",
                           (unsigned)buf.activeAction.creature, k);
@@ -1834,15 +1874,17 @@ void tickItemQueues(DWORD now, bool inMenu) {
                     buf.seenInQueue = false;
                 } else {
                     buf.activeAction.reInjectCount++;
+                    buf.lastReInjectTick = now;
                     g_lastOurs[k].tag = "reinject"; g_lastOurs[k].tick = GetTickCount();
-                    QLOG(chMain, "re-injecting eaten %s action for member %d (id=%08x, target=%08x, attempt=%d) cmd=%u",
+                    QLOG(chMain, "re-injecting eaten %s action for member %d (id=%08x, target=%08x, attempt=%d, paused=%d) cmd=%u",
                          buf.activeAction.kind == qh::ActionKind::Spell ? "spell" : "item",
                          k, buf.activeAction.clientItem, buf.activeAction.targetId, buf.activeAction.reInjectCount,
-                         (unsigned)buf.activeAction.cmdId);
+                         s.paused ? 1 : 0, (unsigned)buf.activeAction.cmdId);
                     buf.reInjectPending = true;
-                    dispatchAction(buf.activeAction, k);
+                    const SendResult r = dispatchAction(buf.activeAction, k);
                     buf.activeStartTick = now;
                     buf.reInjectPending = false;
+                    afterSend(k, buf, r, now);
                 }
             } else if (s.round != 0) {
                 buf.noteView(actionInQueue, now);
@@ -1890,8 +1932,9 @@ void tickItemQueues(DWORD now, bool inMenu) {
                              buf.activeAction.kind == qh::ActionKind::Spell ? "spell" : "item",
                              k, buf.activeAction.clientItem, buf.activeAction.targetId, buf.eatenReInjects,
                              (unsigned)buf.activeAction.cmdId);
-                        dispatchAction(buf.activeAction, k);
+                        const SendResult r = dispatchAction(buf.activeAction, k);
                         buf.markDispatched(now);
+                        afterSend(k, buf, r, now);
                         break;
                     }
                     case qh::AV_GIVE_UP: {
@@ -1953,7 +1996,8 @@ void tickItemQueues(DWORD now, bool inMenu) {
                     buf.active = true;
                     buf.activeAction = nextA;
                     buf.markDispatched(now);
-                    dispatchAction(nextA, k);
+                    const SendResult r = dispatchAction(nextA, k);
+                    afterSend(k, buf, r, now);
                 }
             }
             g_flagGate[k].reset();
@@ -2222,8 +2266,9 @@ void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
     loadIni();
     g_logOn = g_cfg.log;
-    KP_LOG(chMain, "0.4.5-dev: kit=%d frame_alpha=%.2f cancel=%d enabled=%d waiting_dim=%d border_px=%d log=%d companions=%d strip_icon_px=%d strip_side=%s strip_max=%d waiting_icon_dim=%d strip_head_pct=%d", g_cfg.kit ? 1 : 0, g_cfg.frameAlpha, g_cfg.cancel ? 1 : 0, g_cfg.enabled ? 1 : 0, g_cfg.waitingDim ? 1 : 0, g_cfg.borderPx, g_cfg.log ? 1 : 0, g_cfg.companions ? 1 : 0, g_cfg.stripIconPx, g_cfg.stripSide == qh::kSideBelow ? "below" : g_cfg.stripSide == qh::kSideAbove ? "above" : "left", g_cfg.stripMax, g_cfg.waitingIconDim ? 1 : 0, g_cfg.stripHeadPct);
-    QLOG(chMain, "pause_eaten_wait=%d dispatch_wait_flags=%d spell_replay_pos=%d", g_cfg.pauseEatenWait ? 1 : 0, g_cfg.dispatchWaitFlags ? 1 : 0, g_cfg.spellReplayPos ? 1 : 0);
+    KP_LOG(chMain, "0.4.6-dev: kit=%d frame_alpha=%.2f cancel=%d enabled=%d waiting_dim=%d border_px=%d log=%d companions=%d strip_icon_px=%d strip_side=%s strip_max=%d waiting_icon_dim=%d strip_head_pct=%d", g_cfg.kit ? 1 : 0, g_cfg.frameAlpha, g_cfg.cancel ? 1 : 0, g_cfg.enabled ? 1 : 0, g_cfg.waitingDim ? 1 : 0, g_cfg.borderPx, g_cfg.log ? 1 : 0, g_cfg.companions ? 1 : 0, g_cfg.stripIconPx, g_cfg.stripSide == qh::kSideBelow ? "below" : g_cfg.stripSide == qh::kSideAbove ? "above" : "left", g_cfg.stripMax, g_cfg.waitingIconDim ? 1 : 0, g_cfg.stripHeadPct);
+    QLOG(chMain, "pause_eaten_wait=%d dispatch_wait_flags=%d", g_cfg.pauseEatenWait ? 1 : 0, g_cfg.dispatchWaitFlags ? 1 : 0);
+    if (g_cfg.spellReplayPosSeen) QLOG(chMain, "ini: spell_replay_pos is obsolete and ignored (0.4.6-dev)");
     QLOG(chMain, "pause_reinject=%d handoff_on_combat=%d handoff_clear_first=%d handoff_keep_new=%d handoff_resend_held=%d show_in_combat=%d handoff_keep_unpaused=%d trace_mode=%d mode_cap=%d",
          g_cfg.pauseReinject ? 1 : 0, g_cfg.handoffOnCombat ? 1 : 0, g_cfg.handoffClearFirst ? 1 : 0, g_cfg.handoffKeepNew ? 1 : 0, g_cfg.handoffResendHeld ? 1 : 0, g_cfg.showInCombat ? 1 : 0, g_cfg.handoffKeepUnpaused ? 1 : 0, g_cfg.traceMode ? 1 : 0, g_cfg.modeCap);
     QLOG(chMain, "companion_server_cast=%d", g_cfg.companionServerCast ? 1 : 0);
@@ -2361,26 +2406,28 @@ int __cdecl QueueHudPerformCastSpell(int clientCreature, int ebp) {
 
     uint32_t spellId = 0;
     int arg2 = 0;
-    uint32_t targetId = 0;
     int multispell = 0;
     int metamagic = 0;
     int domain = 0;
-    uintptr_t posPtr = 0;
+    uintptr_t posAddr = 0;
+    int flag = 0;
     float posVal[3] = {};
 
     if (!rd(SiteQueue + 0x30, static_cast<uintptr_t>(static_cast<uint32_t>(ebp)), 8, &spellId) ||
         !rd(SiteQueue + 0x31, static_cast<uintptr_t>(static_cast<uint32_t>(ebp)), 0xC, &arg2) ||
-        !rd(SiteQueue + 0x32, static_cast<uintptr_t>(static_cast<uint32_t>(ebp)), 0x10, &targetId) ||
         !rd(SiteQueue + 0x33, static_cast<uintptr_t>(static_cast<uint32_t>(ebp)), 0x14, &multispell) ||
         !rd(SiteQueue + 0x34, static_cast<uintptr_t>(static_cast<uint32_t>(ebp)), 0x18, &metamagic) ||
         !rd(SiteQueue + 0x35, static_cast<uintptr_t>(static_cast<uint32_t>(ebp)), 0x1C, &domain)) {
         traceCmd(cmd, -1, crPtr, qh::ActionKind::Spell, false, 0, 0, "pass_unreadable", false, 0, 0, false);
         return 0;
     }
-    if (rd(SiteQueue + 0x36, static_cast<uintptr_t>(static_cast<uint32_t>(ebp)), 0x20, &posPtr) && posPtr) {
-        rd(SiteQueue + 0x37, posPtr, 0, &posVal[0]);
-        rd(SiteQueue + 0x38, posPtr, 4, &posVal[1]);
-        rd(SiteQueue + 0x39, posPtr, 8, &posVal[2]);
+    const uint32_t tgt = static_cast<uint32_t>(arg2);
+    rd(SiteQueue + 0x32, static_cast<uintptr_t>(static_cast<uint32_t>(ebp)), 0x10, &posAddr);   // 3rd stack arg = caller's float[3] (stack address, dead after return)
+    rd(SiteQueue + 0x36, static_cast<uintptr_t>(static_cast<uint32_t>(ebp)), 0x20, &flag);      // 7th stack arg = int flag, NOT a pointer
+    if (posAddr) {
+        rd(SiteQueue + 0x37, posAddr, 0, &posVal[0]);
+        rd(SiteQueue + 0x38, posAddr, 4, &posVal[1]);
+        rd(SiteQueue + 0x39, posAddr, 8, &posVal[2]);
     }
 
     int memberK = -1;
@@ -2397,13 +2444,13 @@ int __cdecl QueueHudPerformCastSpell(int clientCreature, int ebp) {
         }
     }
     if (!qh::isPartyCaster(memberK)) {
-        traceCmd(cmd, -1, crPtr, qh::ActionKind::Spell, true, spellId, targetId, "pass_nonparty", true, 0, 0, false);
+        traceCmd(cmd, -1, crPtr, qh::ActionKind::Spell, true, spellId, tgt, "pass_nonparty", true, 0, 0, false);
         return 0;
     }
     if (g_logOn && g_cfg.traceQueue) {
         char line[200];
-        qh::fmtSpellArgs(line, sizeof line, false, cmd, memberK, spellId, arg2, targetId, multispell, metamagic, domain,
-                         static_cast<uint32_t>(posPtr), posPtr != 0);
+        qh::fmtSpellArgs(line, sizeof line, false, cmd, memberK, spellId, arg2, multispell, metamagic, domain,
+                         posVal, flag, static_cast<uint32_t>(posAddr));
         QTRACE("%s", line);
     }
     const bool fb = false;
@@ -2419,30 +2466,30 @@ int __cdecl QueueHudPerformCastSpell(int clientCreature, int ebp) {
         g_itemQueue[memberK].userCancelled = false;
         g_itemQueue[memberK].active = true;
         g_itemQueue[memberK].activeAction = qh::makeSpellAction(
-            crPtr, spellId, arg2, targetId, multispell, metamagic, domain, posPtr ? posVal : nullptr, GetTickCount(), cmd);
+            crPtr, spellId, arg2, multispell, metamagic, domain, posVal, flag, GetTickCount(), cmd);
         g_itemQueue[memberK].markDispatched(GetTickCount());
         g_lastOurs[memberK].tag = "hook"; g_lastOurs[memberK].tick = GetTickCount();
-        traceCmd(cmd, memberK, crPtr, qh::ActionKind::Spell, true, spellId, targetId, "dispatch_now", fb, engqLog, bufBefore, false);
+        traceCmd(cmd, memberK, crPtr, qh::ActionKind::Spell, true, spellId, tgt, "dispatch_now", fb, engqLog, bufBefore, false);
         return 0;
     }
 
     if (dec == qh::DECIDE_BUFFER) {
         qh::QueuedAction a = qh::makeSpellAction(
-            crPtr, spellId, arg2, targetId, multispell, metamagic, domain, posPtr ? posVal : nullptr, GetTickCount(), cmd);
+            crPtr, spellId, arg2, multispell, metamagic, domain, posVal, flag, GetTickCount(), cmd);
         g_itemQueue[memberK].push(a);
-        traceCmd(cmd, memberK, crPtr, qh::ActionKind::Spell, true, spellId, targetId, "buffer", fb, engqLog, bufBefore, false);
+        traceCmd(cmd, memberK, crPtr, qh::ActionKind::Spell, true, spellId, tgt, "buffer", fb, engqLog, bufBefore, false);
         QLOG(chMain, "buffered spell use for member %d (spell=%08x, target=%08x, count=%d) cmd=%u",
-             memberK, spellId, targetId, g_itemQueue[memberK].count, (unsigned)cmd);
+             memberK, spellId, tgt, g_itemQueue[memberK].count, (unsigned)cmd);
         return 1;
     }
 
     if (dec == qh::DECIDE_DROP_FULL) {
-        traceCmd(cmd, memberK, crPtr, qh::ActionKind::Spell, true, spellId, targetId, "drop_full", fb, engqLog, bufBefore, false);
+        traceCmd(cmd, memberK, crPtr, qh::ActionKind::Spell, true, spellId, tgt, "drop_full", fb, engqLog, bufBefore, false);
         QLOGV(chMain, KPLOG_WARN, "action buffer full for member %d, dropped spell %08x cmd=%u", memberK, spellId, (unsigned)cmd);
         return 1;
     }
 
-    traceCmd(cmd, memberK, crPtr, qh::ActionKind::Spell, true, spellId, targetId, "unknown", fb, engqLog, bufBefore, false);
+    traceCmd(cmd, memberK, crPtr, qh::ActionKind::Spell, true, spellId, tgt, "unknown", fb, engqLog, bufBefore, false);
 
     return 0;
 }

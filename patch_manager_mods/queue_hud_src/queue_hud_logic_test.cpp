@@ -395,7 +395,7 @@ bool configEqual(const Config& a, const Config& b) {
     auto s3 = [](const float* x, const float* y) { return x[0] == y[0] && x[1] == y[1] && x[2] == y[2]; };
     return a.enabled == b.enabled && a.bgAlpha == b.bgAlpha && a.borderAlpha == b.borderAlpha && a.borderPx == b.borderPx && a.waitingDim == b.waitingDim && a.waitingAlpha == b.waitingAlpha && a.log == b.log && a.traceQueue == b.traceQueue && a.companions == b.companions && a.stripIconPx == b.stripIconPx && a.stripSide == b.stripSide && a.stripMax == b.stripMax
         && a.kit == b.kit && a.frameAlpha == b.frameAlpha && a.cancel == b.cancel && a.pauseReinject == b.pauseReinject && a.dispatchWaitFlags == b.dispatchWaitFlags && a.traceClicks == b.traceClicks && a.pauseEatenWait == b.pauseEatenWait && a.handoffOnCombat == b.handoffOnCombat && a.showInCombat == b.showInCombat && a.handoffClearFirst == b.handoffClearFirst
-        && a.handoffKeepNew == b.handoffKeepNew && a.handoffKeepUnpaused == b.handoffKeepUnpaused && a.handoffDetachHeld == b.handoffDetachHeld && a.handoffResendHeld == b.handoffResendHeld && a.spellReplayPos == b.spellReplayPos && a.hideBannerSoft == b.hideBannerSoft && a.hideRedbarSoft == b.hideRedbarSoft && a.traceMode == b.traceMode && a.modeCap == b.modeCap && a.waitingIconDim == b.waitingIconDim && a.stripHeadPct == b.stripHeadPct && s3(a.bg, b.bg) && s3(a.border, b.border) && s3(a.waitingBg, b.waitingBg);
+        && a.handoffKeepNew == b.handoffKeepNew && a.handoffKeepUnpaused == b.handoffKeepUnpaused && a.handoffDetachHeld == b.handoffDetachHeld && a.handoffResendHeld == b.handoffResendHeld && a.spellReplayPosSeen == b.spellReplayPosSeen && a.hideBannerSoft == b.hideBannerSoft && a.hideRedbarSoft == b.hideRedbarSoft && a.traceMode == b.traceMode && a.modeCap == b.modeCap && a.waitingIconDim == b.waitingIconDim && a.stripHeadPct == b.stripHeadPct && s3(a.bg, b.bg) && s3(a.border, b.border) && s3(a.waitingBg, b.waitingBg);
 }
 
 // Positive control: configEqual must see a change in every member, else the checks that replaced memcmp prove nothing.
@@ -405,7 +405,7 @@ void testConfigEqualSeesEveryField() {
 #define CFG_FLIP(F) do { Config m; m.F = !m.F; KT_CHECK(!configEqual(m, ref)); } while (0)
     CFG_FLIP(enabled); CFG_FLIP(bgAlpha); CFG_FLIP(borderAlpha); CFG_FLIP(borderPx); CFG_FLIP(waitingDim); CFG_FLIP(waitingAlpha); CFG_FLIP(log); CFG_FLIP(traceQueue); CFG_FLIP(companions); CFG_FLIP(stripIconPx);
     CFG_FLIP(stripSide); CFG_FLIP(stripMax); CFG_FLIP(kit); CFG_FLIP(frameAlpha); CFG_FLIP(cancel); CFG_FLIP(pauseReinject); CFG_FLIP(dispatchWaitFlags); CFG_FLIP(traceClicks); CFG_FLIP(pauseEatenWait); CFG_FLIP(handoffOnCombat);
-    CFG_FLIP(showInCombat); CFG_FLIP(handoffClearFirst); CFG_FLIP(handoffKeepNew); CFG_FLIP(handoffKeepUnpaused); CFG_FLIP(handoffDetachHeld); CFG_FLIP(handoffResendHeld); CFG_FLIP(spellReplayPos); CFG_FLIP(hideBannerSoft); CFG_FLIP(hideRedbarSoft);
+    CFG_FLIP(showInCombat); CFG_FLIP(handoffClearFirst); CFG_FLIP(handoffKeepNew); CFG_FLIP(handoffKeepUnpaused); CFG_FLIP(handoffDetachHeld); CFG_FLIP(handoffResendHeld); CFG_FLIP(spellReplayPosSeen); CFG_FLIP(hideBannerSoft); CFG_FLIP(hideRedbarSoft);
     CFG_FLIP(traceMode); CFG_FLIP(modeCap); CFG_FLIP(waitingIconDim); CFG_FLIP(stripHeadPct);
 #undef CFG_FLIP
     for (int i = 0; i < 3; ++i) {
@@ -1396,6 +1396,21 @@ void fillBuf(ActionBuffer& b, int n) {
     for (int i = 0; i < n; ++i) KT_CHECK(b.push(makeItemAction(0x1000, 100 + i, 0, 1, nullptr, 1)));
 }
 
+void testReplayArgs() {
+    const float pos[3] = { 1.0f, 2.0f, 3.0f };
+    const QueuedAction a = makeSpellAction(0x2000, 0x55, 3, 0, 0, 0, pos, 0, 1);
+    const ReplayArgs ra = buildReplayArgs(a);
+    KT_CHECK(ra.pos == a.pos);
+    KT_CHECK(ra.pos != nullptr);
+    KT_CHECK(ra.pos[0] == 1.0f && ra.pos[1] == 2.0f && ra.pos[2] == 3.0f);
+    KT_CHECK_EQ(ra.flag, 0);
+    const QueuedAction n = makeSpellAction(0x2000, 0x55, 3, 0, 0, 0, nullptr, 5, 1);
+    const ReplayArgs rn = buildReplayArgs(n);
+    KT_CHECK(rn.pos != nullptr && rn.pos == n.pos);
+    KT_CHECK(rn.pos[0] == 0.0f && rn.pos[1] == 0.0f && rn.pos[2] == 0.0f);
+    KT_CHECK_EQ(rn.flag, 5);
+}
+
 void testUnifiedActionMake() {
     const float pos[3] = { 1.5f, 2.5f, 3.5f };
     QueuedAction it = makeItemAction(0x1000, 301, 4, 7, pos, 999);
@@ -1409,12 +1424,13 @@ void testUnifiedActionMake() {
     KT_CHECK_EQ(it.spellId, 0u); KT_CHECK_EQ(it.arg2, 0); KT_CHECK_EQ(it.multispell, 0);
     KT_CHECK_EQ(it.metamagic, 0); KT_CHECK_EQ(it.domain, 0); KT_CHECK_EQ(it.reInjectCount, 0);
 
-    QueuedAction sp = makeSpellAction(0x2000, 0x55, 3, 9, 2, 4, 5, pos, 77);
+    QueuedAction sp = makeSpellAction(0x2000, 0x55, 3, 2, 4, 5, pos, 7, 77);
     KT_CHECK_EQ(sp.creature, (uintptr_t)0x2000);
     KT_CHECK_EQ((int)sp.kind, (int)ActionKind::Spell);
     KT_CHECK_EQ(sp.clientItem, 0x55u);          // spellId mirrored into clientItem
     KT_CHECK_EQ(sp.packedByte, 3);              // arg2 mirrored into packedByte
-    KT_CHECK_EQ(sp.targetId, 9u);
+    KT_CHECK_EQ(sp.targetId, 3u);               // mirror of arg2
+    KT_CHECK_EQ(sp.flag, 7);
     KT_CHECK_EQ(sp.spellId, 0x55u);
     KT_CHECK_EQ(sp.arg2, 3);
     KT_CHECK_EQ(sp.multispell, 2);
@@ -1427,15 +1443,10 @@ void testUnifiedActionMake() {
     // null pos leaves zeros, for both kinds
     QueuedAction itNull = makeItemAction(0x1000, 1, 0, 0, nullptr, 0);
     KT_CHECK(itNull.pos[0] == 0.0f && itNull.pos[1] == 0.0f && itNull.pos[2] == 0.0f);
-    QueuedAction spNull = makeSpellAction(0x2000, 1, 0, 0, 0, 0, 0, nullptr, 0);
+    QueuedAction spNull = makeSpellAction(0x2000, 1, 0, 0, 0, 0, nullptr, 0, 0);
     KT_CHECK(spNull.pos[0] == 0.0f && spNull.pos[1] == 0.0f && spNull.pos[2] == 0.0f);
     KT_CHECK_EQ((int)spNull.kind, (int)ActionKind::Spell);
-    KT_CHECK(!spNull.hasPos && sp.hasPos && !it.hasPos);
-    // replayPos: only a spell whose engine original had a NULL position is replayed with NULL (and only with the flag on)
-    KT_CHECK(replayPos(spNull, true) == nullptr);
-    KT_CHECK(replayPos(spNull, false) == spNull.pos);
-    KT_CHECK(replayPos(sp, true) == sp.pos && replayPos(sp, false) == sp.pos);
-    KT_CHECK(replayPos(itNull, true) == itNull.pos && replayPos(it, true) == it.pos);
+    testReplayArgs();
 
     // default-constructed action is an Item with no re-inject history
     QueuedAction def;
@@ -1483,11 +1494,11 @@ void testFifoMixedKinds() {
     const float pos[3] = { 0.f, 0.f, 0.f };
     ActionBuffer b;
     KT_CHECK(b.push(makeItemAction(0x1000, 301, 0, 1, pos, 1)));
-    KT_CHECK(b.push(makeSpellAction(0x1000, 0x55, 2, 1, 0, 0, 0, pos, 2)));
+    KT_CHECK(b.push(makeSpellAction(0x1000, 0x55, 2, 0, 0, 0, pos, 0, 2)));
     KT_CHECK(b.push(makeItemAction(0x1000, 302, 0, 1, pos, 3)));
     KT_CHECK_EQ(b.count, 3);
     KT_CHECK(b.full());
-    KT_CHECK(!b.push(makeSpellAction(0x1000, 0x66, 0, 1, 0, 0, 0, pos, 4)));   // full: rejected
+    KT_CHECK(!b.push(makeSpellAction(0x1000, 0x66, 0, 0, 0, 0, pos, 0, 4)));   // full: rejected
     KT_CHECK_EQ(b.count, 3);
     KT_CHECK_EQ(b.queue[2].clientItem, 302u);                                  // rejected push did not overwrite
 
@@ -1505,7 +1516,7 @@ void testFifoMixedKinds() {
     KT_CHECK_EQ(b.count, 0);
     KT_CHECK(b.empty());
     KT_CHECK(!b.pop(&out));                                                    // pop on empty fails
-    KT_CHECK(b.push(makeSpellAction(0x1000, 0x66, 0, 1, 0, 0, 0, pos, 5)));    // room again after draining
+    KT_CHECK(b.push(makeSpellAction(0x1000, 0x66, 0, 0, 0, 0, pos, 0, 5)));    // room again after draining
     KT_CHECK_EQ(b.count, 1);
 }
 
@@ -1513,9 +1524,9 @@ void testReInjectEachCondition() {
     const float pos[3] = { 0.f, 0.f, 0.f };
     ActionBuffer base;
     base.active = true;
-    base.activeAction = makeSpellAction(0x1000, 0x55, 0, 1, 0, 0, 0, pos, 1);
+    base.activeAction = makeSpellAction(0x1000, 0x55, 0, 0, 0, 0, pos, 0, 1);
     KT_CHECK(shouldReInject(base, false, true));                              // true case
-    KT_CHECK(shouldReInject(base, false, true, /*paused=*/true, 999, false));  // paused/now are ignored by the header
+    KT_CHECK(shouldReInject(base, false, true, /*paused=*/true, 999, false));  // (no gate) paused/now are ignored
     KT_CHECK(!shouldReInject(base, false, false));                            // no follow leader
 
     ActionBuffer inactive = base; inactive.active = false;
@@ -1537,12 +1548,84 @@ void testReInjectEachCondition() {
     KT_CHECK_EQ(kMaxReInjectCount, 2);
 }
 
+void testReInjectGate() {
+    const float pos[3] = { 0.f, 0.f, 0.f };
+    ActionBuffer base;
+    base.active = true; base.activeStartTick = 1000;
+    base.activeAction = makeSpellAction(0x1000, 0x55, 0, 0, 0, 0, pos, 0, 1);
+    base.activeAction.reInjectCount = 0;
+    RiGate g; g.on = true; g.pauseEatenWait = true; g.pauseReinject = true;
+    KT_CHECK_EQ((int)reInjectWhy(base, false, true, true, 2000, false, g), (int)RI_PAUSED);
+    RiGate g2 = g; g2.pauseEatenWait = false;
+    KT_CHECK_EQ((int)reInjectWhy(base, false, true, true, 2000, false, g2), (int)RI_OK);
+    KT_CHECK_EQ((int)reInjectWhy(base, false, true, false, 1500, false, g), (int)RI_SETTLE);
+    KT_CHECK_EQ((int)reInjectWhy(base, false, true, false, 1501, false, g), (int)RI_OK);
+    ActionBuffer sp = base; sp.lastReInjectTick = 1800;
+    KT_CHECK_EQ((int)reInjectWhy(sp, false, true, false, 2049, false, g), (int)RI_SPACING);
+    KT_CHECK_EQ((int)reInjectWhy(sp, false, true, false, 2050, false, g), (int)RI_OK);
+    RiGate g3 = g; g3.pauseReinject = false;
+    KT_CHECK_EQ((int)reInjectWhy(base, false, true, false, 2000, false, g3), (int)RI_OFF);
+    ActionBuffer df = base; df.dispatchDeferred = true;
+    KT_CHECK_EQ((int)reInjectWhy(df, false, true, false, 2000, false, g), (int)RI_DEFERRED);
+    KT_CHECK(!shouldReInject(df, false, true));
+    KT_CHECK_EQ((int)reInjectWhy(base, false, false, false, 2000, false, g), (int)RI_NO_LEADER);
+    KT_CHECK_EQ((int)reInjectWhy(base, true, true, true, 1001, false, g), (int)RI_IN_QUEUE);   // the gate never masks it
+}
+
+void testDeferStep() {
+    ActionBuffer b; b.dispatchDeferred = true; b.deferTick = 1000; b.deferLastTry = 1000;
+    KT_CHECK_EQ((int)deferStep(b, false, 1100), (int)DEFER_WAIT);
+    KT_CHECK_EQ(b.deferUnpausedMs, 100u);
+    KT_CHECK_EQ((int)deferStep(b, false, 1250), (int)DEFER_RETRY);
+    KT_CHECK_EQ((int)deferStep(b, true, 1300), (int)DEFER_WAIT);
+    KT_CHECK_EQ(b.deferUnpausedMs, 250u);                  // 100 + 150, the paused step added nothing
+    ActionBuffer g; g.deferUnpausedMs = 4900; g.deferTick = 1000; g.deferLastTry = 1000;
+    KT_CHECK_EQ((int)deferStep(g, false, 1100), (int)DEFER_GIVE_UP);
+    ActionBuffer h; h.deferUnpausedMs = 4899; h.deferTick = 1000; h.deferLastTry = 1000;
+    KT_CHECK(deferStep(h, false, 1100) != DEFER_GIVE_UP);
+    ActionBuffer c; c.deferTick = 1000; c.deferLastTry = 1000;
+    deferStep(c, false, 9000);
+    KT_CHECK_EQ(c.deferUnpausedMs, 1000u);                 // dt cap
+    ActionBuffer w; w.deferTick = 0xFFFFFFF0u; w.deferLastTry = 0xFFFFFFF0u;
+    deferStep(w, false, 0x10u);
+    KT_CHECK_EQ(w.deferUnpausedMs, 32u);                   // wrap-safe
+}
+
+void testEdgeHeadAction() {
+    KT_CHECK_EQ((int)edgeHeadAction(false, false, false, false, 900, true), (int)EDGE_NONE);
+    KT_CHECK_EQ((int)edgeHeadAction(true, false, false, false, 900, true), (int)EDGE_RESEND);
+    KT_CHECK_EQ((int)edgeHeadAction(true, false, false, false, 80, true), (int)EDGE_WAIT);
+    KT_CHECK_EQ((int)edgeHeadAction(true, false, false, false, 500, true), (int)EDGE_WAIT);
+    KT_CHECK_EQ((int)edgeHeadAction(true, false, false, false, 501, true), (int)EDGE_RESEND);
+    KT_CHECK_EQ((int)edgeHeadAction(true, false, true, false, 80, true), (int)EDGE_DROP_EXEC);
+    KT_CHECK_EQ((int)edgeHeadAction(true, false, false, true, 900, true), (int)EDGE_DROP_EXEC);
+    KT_CHECK_EQ((int)edgeHeadAction(true, true, true, true, 900, true), (int)EDGE_WAIT);     // held path decides
+    KT_CHECK_EQ((int)edgeHeadAction(true, false, true, true, 900, false), (int)EDGE_WAIT);   // gather failed
+    KT_CHECK_EQ((int)edgeHeadAction(true, false, false, false, 80, true, true), (int)EDGE_RESEND);   // deferred
+}
+
+void testDetachableMask() {
+    QueuedAction sp = makeSpellAction(0x1000, 0x55, 0, 0, 0, 0, nullptr, 0, 1);
+    { const RNode rn[] = { N(9, 1, 0x55) }; KT_CHECK_EQ(detachableMask(rn, 1, sp), 0u); }
+    { const RNode rn[] = { N(9, 1, 0x55), N(9, 2, 0x66) }; KT_CHECK_EQ(detachableMask(rn, 2, sp), 2u); }
+    { const RNode rn[] = { N(9, 1, 0x66), N(9, 2, 0x55) }; KT_CHECK_EQ(detachableMask(rn, 2, sp), 1u); }
+    { const RNode rn[] = { N(9, 1, 0x55), N(9, 2, 0x55) }; KT_CHECK_EQ(detachableMask(rn, 2, sp), 2u); }   // only the first is kept
+    QueuedAction it = makeItemAction(0x1000, 0x80000860u, 0, 0, nullptr, 1);
+    { const RNode rn[] = { N(10, 1, 0, 0x00000860) }; KT_CHECK_EQ(detachableMask(rn, 1, it), 0u); }
+    { const RNode rn[] = { N(10, 1, 0, 0x860), N(1, 2) }; KT_CHECK_EQ(detachableMask(rn, 2, it), 2u); }
+    { const RNode rn[] = { N(1, 1), N(10, 2, 0, 0x860) }; KT_CHECK_EQ(detachableMask(rn, 2, it), 1u); }
+    { const RNode rn[] = { N(10, 1, 0, 0x861) }; KT_CHECK_EQ(detachableMask(rn, 1, it), 1u); }
+    { const RNode rn[] = { N(9, 1, 0x55) }; KT_CHECK_EQ(detachableMask(rn, 0, sp), 0u); }
+    KT_CHECK_EQ(detachableMask(nullptr, 2, sp), 0u);
+    { const RNode rn[] = { N(1, 1), N(1, 2), N(1, 3), N(1, 4) }; KT_CHECK_EQ(detachableMask(rn, 4, sp), 15u); }
+}
+
 // BG23: any spell/item in the engine suppresses re-inject (intended, doc 30 QH4); the suppression is transient.
 void testReInjectForeignCastSuppressionTransient() {
     const float pos[3] = { 0.f, 0.f, 0.f };
     ActionBuffer a;
     a.active = true;
-    a.activeAction = makeSpellAction(0x1000, 0x55, 0, 1, 0, 0, 0, pos, 1);
+    a.activeAction = makeSpellAction(0x1000, 0x55, 0, 0, 0, 0, pos, 0, 1);
     // Our action A was eaten (follow-leader wiped it) while an unrelated spell B holds the engine.
     KT_CHECK(!shouldReInject(a, /*actionInQueue=*/true, /*hasFollowLeader=*/true));
     KT_CHECK_EQ((int)reInjectWhy(a, true, true), (int)RI_IN_QUEUE);
@@ -1556,7 +1639,7 @@ void testReInjectNotAfterExecuting() {
     const float pos[3] = { 0.f, 0.f, 0.f };
     ActionBuffer b;
     b.active = true;
-    b.activeAction = makeSpellAction(0x1000, 0x55, 0, 1, 0, 0, 0, pos, 1);
+    b.activeAction = makeSpellAction(0x1000, 0x55, 0, 0, 0, 0, pos, 0, 1);
     KT_CHECK(shouldReInject(b, false, true));
     b.sawExecuting = true;                                                    // the engine showed it executing: finished, not eaten
     KT_CHECK(!shouldReInject(b, false, true));
@@ -1572,7 +1655,7 @@ void testReInjectNotAfterExecuting() {
     for (int m = 0; m < 8; ++m) {
         ActionBuffer c;
         c.active = true;
-        c.activeAction = makeSpellAction(0x1000, 0x55, 0, 1, 0, 0, 0, pos, 1);
+        c.activeAction = makeSpellAction(0x1000, 0x55, 0, 0, 0, 0, pos, 0, 1);
         c.sawExecuting = (m & 1) != 0;
         const bool inQ = (m & 2) != 0, lead = (m & 4) != 0;
         KT_CHECK((reInjectWhy(c, inQ, lead) == RI_OK) == shouldReInject(c, inQ, lead));
@@ -1583,7 +1666,7 @@ void testReInjectNotAfterExecuting() {
 void testDispatchNextEachCondition() {
     const float pos[3] = { 0.f, 0.f, 0.f };
     ActionBuffer b;
-    KT_CHECK(b.push(makeSpellAction(0x1000, 0x55, 0, 1, 0, 0, 0, pos, 1)));
+    KT_CHECK(b.push(makeSpellAction(0x1000, 0x55, 0, 0, 0, 0, pos, 0, 1)));
     KT_CHECK(shouldDispatchNext(b, 0));                                        // all clear
     KT_CHECK(shouldDispatchNext(b, 0, false, 0));
 
@@ -1619,7 +1702,7 @@ void testWhyParityMatrix() {
         b.sawExecuting = ex != 0;   // drives RI_EXECUTED
         b.reInjectPending = pend != 0;
         b.userCancelled = bcan != 0;
-        b.activeAction = makeSpellAction(0x1000, 0x55, 0, 1, 0, 0, 0, pos, 1);
+        b.activeAction = makeSpellAction(0x1000, 0x55, 0, 0, 0, 0, pos, 0, 1);
         b.activeAction.reInjectCount = rc;
         const uint32_t now = nowSet ? 999u : 0u;
         const bool want = shouldReInject(b, inq != 0, lead != 0, paused != 0, now, pcan != 0);
@@ -1637,7 +1720,7 @@ void testWhyParityMatrix() {
     for (int nrn = -1; nrn <= 1; ++nrn)
     for (int fh = 0; fh < 2; ++fh) {
         ActionBuffer b;
-        if (!isEmpty) KT_CHECK(b.push(makeSpellAction(0x1000, 0x55, 0, 1, 0, 0, 0, pos, 1)));
+        if (!isEmpty) KT_CHECK(b.push(makeSpellAction(0x1000, 0x55, 0, 0, 0, 0, pos, 0, 1)));
         b.active = active != 0;
         // shouldDispatchNext has no flagHold input (the flag gate is FlagGate); DS_FLAG_BUSY is the one extra reason after it passes
         const bool want = shouldDispatchNext(b, eng, cur != 0, nrn) && fh == 0;
@@ -1657,6 +1740,13 @@ void testWhyNames() {
     KT_CHECK_EQ(whyName(RI_IN_QUEUE), "in_queue");
     KT_CHECK_EQ(whyName(RI_NO_LEADER), "no_leader");
     KT_CHECK_EQ(whyName(RI_EXECUTED), "executed");
+    KT_CHECK_EQ(whyName(RI_DEFERRED), "deferred");
+    KT_CHECK_EQ(whyName(RI_OFF), "off");
+    KT_CHECK_EQ(whyName(RI_PAUSED), "paused");
+    KT_CHECK_EQ(whyName(RI_SETTLE), "settle");
+    KT_CHECK_EQ(whyName(RI_SPACING), "spacing");
+    KT_CHECK_EQ(whyName(DR_REFUSED), "refused");
+    KT_CHECK_EQ(whyName(DR_EXECUTED), "executed");
     KT_CHECK_EQ(whyName(DS_OK), "ok");
     KT_CHECK_EQ(whyName(DS_ACTIVE), "active");
     KT_CHECK_EQ(whyName(DS_EMPTY), "empty");
@@ -1710,7 +1800,7 @@ void testBufferedCmdIdsAndSeen() {
     const float pos[3] = { 0.f, 0.f, 0.f };
     ActionBuffer b;
     KT_CHECK(b.push(makeItemAction(0x1000, 301, 0, 1, pos, 1, 11)));
-    KT_CHECK(b.push(makeSpellAction(0x1000, 0x55, 0, 1, 0, 0, 0, pos, 1, 12)));
+    KT_CHECK(b.push(makeSpellAction(0x1000, 0x55, 0, 0, 0, 0, pos, 0, 1, 12)));
     b.active = true;
     b.activeAction = makeItemAction(0x1000, 9, 0, 1, pos, 1, 13);
     uint32_t ids[4] = { 0, 0, 0, 0 };
@@ -1725,8 +1815,8 @@ void testBufferedCmdIdsAndSeen() {
     KT_CHECK_EQ(bufferedCmdIds(e, ids, 4), 0);
     // cmdId: trailing parameter, default 0 keeps the legacy positional calls unchanged
     KT_CHECK_EQ(makeItemAction(0x1000, 301, 0, 1, pos, 1).cmdId, 0u);
-    KT_CHECK_EQ(makeSpellAction(0x1000, 0x55, 0, 1, 0, 0, 0, pos, 1).cmdId, 0u);
-    KT_CHECK_EQ(makeSpellAction(0x1000, 0x55, 0, 1, 0, 0, 0, pos, 1, 77).cmdId, 77u);
+    KT_CHECK_EQ(makeSpellAction(0x1000, 0x55, 0, 0, 0, 0, pos, 0, 1).cmdId, 0u);
+    KT_CHECK_EQ(makeSpellAction(0x1000, 0x55, 0, 0, 0, 0, pos, 0, 1, 77).cmdId, 77u);
     KT_CHECK_EQ(makeItemAction(0x1000, 301, 0, 1, pos, 1, 42).cmdId, 42u);
     // seenInQueue is reset by cancel() and clear() only
     ActionBuffer s;
@@ -2149,7 +2239,7 @@ void testFlagGate() {
     // dispatchWhy: flagHold is the last check; it never masks an earlier reason
     ActionBuffer b;
     float pf[3] = {0, 0, 0};
-    KT_CHECK(b.push(makeSpellAction(0x1000, 0x55, 0, 1, 0, 0, 0, pf, 1)));
+    KT_CHECK(b.push(makeSpellAction(0x1000, 0x55, 0, 0, 0, 0, pf, 0, 1)));
     KT_CHECK_EQ((int)dispatchWhy(b, 0, false, 0, true), (int)DS_FLAG_BUSY);
     KT_CHECK_EQ((int)dispatchWhy(b, 0, false, 0, false), (int)DS_OK);
     KT_CHECK_EQ((int)dispatchWhy(b, 1, false, 0, true), (int)DS_ENGINE_BUSY);
@@ -2446,15 +2536,16 @@ void testHeldHeadAction() {
     KT_CHECK_EQ(o2, "SPELL_OUT m=1 cmd=13 exec=1 firstExecMs=340 endMs=8001");
     fmtSpellOut(o2, sizeof o2, 0, 4, false, 77, 8000);
     KT_CHECK_EQ(o2, "SPELL_OUT m=0 cmd=4 exec=0 firstExecMs=- endMs=8000");
-    // SPELL_ARGS: hook with the engine's pointer, hook with NULL, replay of a zero copy, replay with NULL
-    fmtSpellArgs(o2, sizeof o2, false, 9, 0, 0x55, 3, 0xdbee74, 0, 2, 0, 0x12ab30, true);
-    KT_CHECK_EQ(o2, "SPELL_ARGS where=hook cmd=9 m=0 spell=55 arg2=3 tgt=dbee74 multi=0 meta=2 dom=0 posptr=12ab30 pos=orig");
-    fmtSpellArgs(o2, sizeof o2, false, 4, 2, 0x1a3, 0, 0xdbee74, 0, 0, 0, 0, false);
-    KT_CHECK_EQ(o2, "SPELL_ARGS where=hook cmd=4 m=2 spell=1a3 arg2=0 tgt=dbee74 multi=0 meta=0 dom=0 posptr=0 pos=null");
-    fmtSpellArgs(o2, sizeof o2, true, 4, 2, 0x1a3, 0, 0xdbee74, 0, 0, 0, 0x19f000, false);
-    KT_CHECK_EQ(o2, "SPELL_ARGS where=replay cmd=4 m=2 spell=1a3 arg2=0 tgt=dbee74 multi=0 meta=0 dom=0 posptr=19f000 pos=zero");
-    fmtSpellArgs(o2, sizeof o2, true, 4, -1, 0x1a3, -1, 0, 0, 0, 0, 0, false);
-    KT_CHECK_EQ(o2, "SPELL_ARGS where=replay cmd=4 m=? spell=1a3 arg2=ffffffff tgt=0 multi=0 meta=0 dom=0 posptr=0 pos=null");
+    // SPELL_ARGS: hook with the captured float[3], replay of a zero copy with a flag, null pos3
+    {
+        const float p123[3] = {1.0f, 2.0f, 3.0f}; const float pz[3] = {0.0f, 0.0f, 0.0f};
+        fmtSpellArgs(o2, sizeof o2, false, 9, 0, 0x55, 3, 0, 2, 0, p123, 0, 0x12ab30);
+        KT_CHECK_EQ(o2, "SPELL_ARGS where=hook cmd=9 m=0 spell=55 tgt=3 multi=0 meta=2 dom=0 pos=3f800000,40000000,40400000 flag=0 posaddr=12ab30");
+        fmtSpellArgs(o2, sizeof o2, true, 4, -1, 0x1a3, -1, 0, 0, 0, pz, 5, 0x19f000);
+        KT_CHECK_EQ(o2, "SPELL_ARGS where=replay cmd=4 m=? spell=1a3 tgt=ffffffff multi=0 meta=0 dom=0 pos=0,0,0 flag=5 posaddr=19f000");
+        fmtSpellArgs(o2, sizeof o2, false, 4, 2, 0x1a3, 0, 0, 0, 0, nullptr, 0, 0);
+        KT_CHECK_EQ(o2, "SPELL_ARGS where=hook cmd=4 m=2 spell=1a3 tgt=0 multi=0 meta=0 dom=0 pos=0,0,0 flag=0 posaddr=0");
+    }
     // softCandidate: none / party / hostile, sentinel + zero, low-24-bit match, null-safety
     {
         const uint32_t party3[3] = {0x800001afu, 0x800001b3u, 0x800001b5u};
@@ -2545,11 +2636,9 @@ void testHeldHeadAction() {
     KT_CHECK(parseIniLine(c, "handoff_resend_held=0") && !c.handoffResendHeld && c.handoffClearFirst && c.handoffOnCombat);
     KT_CHECK(parseIniLine(c, "Handoff_Resend_Held = yes") && c.handoffResendHeld);
     KT_CHECK(!parseIniLine(c, "handoff_resend_held=2") && c.handoffResendHeld);
-    // spell_replay_pos: default on, bool parsing
-    KT_CHECK(c.spellReplayPos);
-    KT_CHECK(parseIniLine(c, "spell_replay_pos=0") && !c.spellReplayPos && c.handoffResendHeld);
-    KT_CHECK(parseIniLine(c, "spell_replay_pos=1") && c.spellReplayPos);
-    KT_CHECK(!parseIniLine(c, "spell_replay_pos=x") && c.spellReplayPos);
+    // spell_replay_pos: legacy key, accepted and ignored (only noted)
+    KT_CHECK(!c.spellReplayPosSeen);
+    KT_CHECK(parseIniLine(c, "spell_replay_pos=0") && c.spellReplayPosSeen && c.handoffResendHeld);
     // hide_banner_soft / hide_redbar_soft: default on, bool parsing, each key independent of the other
     KT_CHECK(c.hideBannerSoft && c.hideRedbarSoft);
     KT_CHECK(parseIniLine(c, "hide_banner_soft=0") && !c.hideBannerSoft && c.hideRedbarSoft);
@@ -2671,11 +2760,11 @@ void testServerRouteQL20() {
     KT_CHECK(!ownerMayDispatch(-1, true));   // not in the party: never
     KT_CHECK(!ownerMayDispatch(3, true));
     const float* none = nullptr;
-    QueuedAction sp = makeSpellAction(0x1000, 0x28, (int)0x8000086Bu, 0xdbee94, 0, 0, 0, none, 0, 21);
+    QueuedAction sp = makeSpellAction(0x1000, 0x28, (int)0x8000086Bu, 0, 0, 0, none, 0, 0, 21);
     KT_CHECK(serverRouteEligible(sp));
-    QueuedAction loc = makeSpellAction(0x1000, 0x28, (int)kInvalidObjectId, 0xdbee94, 0, 0, 0, none, 0, 22);
+    QueuedAction loc = makeSpellAction(0x1000, 0x28, (int)kInvalidObjectId, 0, 0, 0, none, 0, 0, 22);
     KT_CHECK(!serverRouteEligible(loc));     // location target: still held
-    QueuedAction zero = makeSpellAction(0x1000, 0x28, 0, 0, 0, 0, 0, none, 0, 23);
+    QueuedAction zero = makeSpellAction(0x1000, 0x28, 0, 0, 0, 0, none, 0, 0, 23);
     KT_CHECK(!serverRouteEligible(zero));
     QueuedAction it = makeItemAction(0x1000, 0x865, 0, 0x80000860u, none, 0, 17);
     KT_CHECK(!serverRouteEligible(it));      // items: still held
@@ -2743,6 +2832,10 @@ int main() {
     testDecideBranches();
     testFifoMixedKinds();
     testReInjectEachCondition();
+    testReInjectGate();
+    testDeferStep();
+    testEdgeHeadAction();
+    testDetachableMask();
     testReInjectForeignCastSuppressionTransient();
     testReInjectNotAfterExecuting();
     testDispatchNextEachCondition();

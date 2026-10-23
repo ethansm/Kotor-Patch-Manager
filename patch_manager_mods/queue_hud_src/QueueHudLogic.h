@@ -215,7 +215,7 @@ struct Config {
     bool handoffDetachHeld = true;  // handoff_detach_held: while an engine-held command waits, take the player's new round nodes out of the list and put them back after the hand-off (new power/attack runs LAST)
     bool companionServerCast = true; // companion_server_cast: a non-controlled member's queued Force power runs on that member via the server route (QL20; 0 = hold until it leads, QL17)
     bool handoffResendHeld = true;  // handoff_resend_held: re-send an engine-held active command the engine wipes at combat start (default on)
-    bool spellReplayPos = true;     // spell_replay_pos: replay a buffered spell with a NULL position when the engine's original was NULL (0 = always pass the zero-filled copy)
+    bool spellReplayPosSeen = false;   // legacy key spell_replay_pos was in the ini (accepted, ignored)
     bool hideBannerSoft = true;     // hide_banner_soft: hide the top combat banner while combat is "soft" (only own-party targets, no hostile)
     bool hideRedbarSoft = true;     // hide_redbar_soft: hide the bottom red combat bar (Cancel Combat) while combat is soft
     bool traceMode = true;   // trace_mode: one MODE line per per-member state change (needs log + trace_queue)
@@ -552,7 +552,7 @@ inline bool parseIniLine(Config& c, const char* line) {
     if (detail::keyEq(kb, ke, "handoff_detach_held")) return detail::parseBool(vb, ve, &c.handoffDetachHeld);
     if (detail::keyEq(kb, ke, "companion_server_cast")) return detail::parseBool(vb, ve, &c.companionServerCast);
     if (detail::keyEq(kb, ke, "handoff_resend_held")) return detail::parseBool(vb, ve, &c.handoffResendHeld);
-    if (detail::keyEq(kb, ke, "spell_replay_pos")) return detail::parseBool(vb, ve, &c.spellReplayPos);
+    if (detail::keyEq(kb, ke, "spell_replay_pos")) { c.spellReplayPosSeen = true; return true; }
     if (detail::keyEq(kb, ke, "hide_banner_soft")) return detail::parseBool(vb, ve, &c.hideBannerSoft);
     if (detail::keyEq(kb, ke, "hide_redbar_soft")) return detail::parseBool(vb, ve, &c.hideRedbarSoft);
     if (detail::keyEq(kb, ke, "trace_mode")) return detail::parseBool(vb, ve, &c.traceMode);
@@ -598,7 +598,7 @@ struct QueuedAction {
     int metamagic = 0;
     int domain = 0;
     int reInjectCount = 0;
-    bool hasPos = false;     // the engine's original call carried a non-null position pointer (Spell capture)
+    int flag = 0;            // Spell: 7th stack arg of PerformCastSpell (int, vanilla always 0)
     uint32_t cmdId = 0;      // host command number (CMD#<n>); 0 = unassigned. Keep as the last member.
 };
 using QueuedItemAction = QueuedAction;
@@ -623,33 +623,22 @@ inline QueuedAction makeItemAction(uintptr_t creature, uint32_t itemId, int pack
     return a;
 }
 
-inline QueuedAction makeSpellAction(uintptr_t creature, uint32_t spellId, int arg2, uint32_t targetId,
-                                    int multispell, int metamagic, int domain, const float* pos, uint32_t queueTime,
-                                    uint32_t cmdId = 0) {
+inline QueuedAction makeSpellAction(uintptr_t creature, uint32_t spellId, int arg2, int multispell, int metamagic, int domain,
+                                    const float* pos, int flag, uint32_t queueTime, uint32_t cmdId = 0) {
     QueuedAction a;
-    a.creature = creature;
-    a.clientItem = spellId;
-    a.packedByte = arg2;
-    a.targetId = targetId;
+    a.creature = creature; a.clientItem = spellId; a.packedByte = arg2;
+    a.targetId = static_cast<uint32_t>(arg2);   // spells: the target client id (kept so the generic id/target logs stay meaningful)
     if (pos) { a.pos[0] = pos[0]; a.pos[1] = pos[1]; a.pos[2] = pos[2]; }
-    a.queueTime = queueTime;
-    a.kind = ActionKind::Spell;
-    a.hasPos = (pos != nullptr);
-    a.spellId = spellId;
-    a.arg2 = arg2;
-    a.multispell = multispell;
-    a.metamagic = metamagic;
-    a.domain = domain;
-    a.reInjectCount = 0;
-    a.cmdId = cmdId;
+    a.queueTime = queueTime; a.kind = ActionKind::Spell;
+    a.spellId = spellId; a.arg2 = arg2; a.multispell = multispell; a.metamagic = metamagic; a.domain = domain;
+    a.flag = flag; a.reInjectCount = 0; a.cmdId = cmdId;
     return a;
 }
 
-// Position pointer for the replayed call: a spell the engine itself called with a NULL position is replayed with NULL
-// (useOrigPos), never with a pointer to the zero-filled copy; everything else keeps the stored copy.
-inline const float* replayPos(const QueuedAction& a, bool useOrigPos) {
-    return (a.kind == ActionKind::Spell && useOrigPos && !a.hasPos) ? nullptr : a.pos;
-}
+// The two trailing args of the replayed PerformCastSpell: ALWAYS a valid pointer to our own copy of the caller's float[3] (the builder 0x87A5C0
+// dereferences it unconditionally) and the caller's int flag (vanilla 0; a nonzero flag sets bit 4 = server skips the cast, QL9).
+struct ReplayArgs { const float* pos; int flag; };
+inline ReplayArgs buildReplayArgs(const QueuedAction& a) { return ReplayArgs{ a.pos, a.flag }; }
 
 // QL20: a Force power on an object target can run on a NON-controlled member through the server route (AddUseTalentOnObjectActions 0x57D8B0 on
 // the owner's own server creature, the same path script ActionUseTalentOnObject takes). The hook's arg2 is the 2nd stack arg of PerformCastSpell
@@ -694,6 +683,8 @@ struct ActionBuffer {
     uint32_t staleCurSince = 0;     // first tick a flagless round node was seen as cur
     uint32_t eatenUnpausedMs = 0;   // accrued unpaused time while eaten
     uint32_t lastVerdictTick = 0;
+    bool dispatchDeferred = false;  // RQ5: a server-route send was refused; retry every kDeferRetryMs up to kDeferMaxMs unpaused
+    uint32_t deferTick = 0, deferLastTry = 0, deferUnpausedMs = 0;
 
     bool empty() const { return count == 0; }
     bool full() const { return count >= kMaxActionQueue; }
@@ -730,7 +721,7 @@ struct ActionBuffer {
         lastReInjectTick = 0;
         staleCurSince = 0;
         eatenUnpausedMs = 0;
-        lastVerdictTick = 0;
+        lastVerdictTick = 0; dispatchDeferred = false; deferTick = 0; deferLastTry = 0; deferUnpausedMs = 0;
     }
 
     void clear() {
@@ -750,7 +741,7 @@ struct ActionBuffer {
         lastReInjectTick = 0;
         staleCurSince = 0;
         eatenUnpausedMs = 0;
-        lastVerdictTick = 0;
+        lastVerdictTick = 0; dispatchDeferred = false; deferTick = 0; deferLastTry = 0; deferUnpausedMs = 0;
     }
 
     // Dispatch stamps the start and clears the per-action eaten flags.
@@ -828,6 +819,7 @@ inline ActionDecision decideItemAction(const ActionBuffer& buf, bool inCombat, i
 inline bool shouldReInject(const ActionBuffer& buf, bool actionInQueue, bool hasFollowLeader, bool paused = false, uint32_t now = 0, bool userCancelled = false) {
     (void)paused; (void)now;
     if (!buf.active || buf.reInjectPending || buf.userCancelled || userCancelled) return false;
+    if (buf.dispatchDeferred) return false;
     if (buf.activeAction.reInjectCount >= kMaxReInjectCount) return false;
     if (buf.sawExecuting) return false;   // engine showed it executing: it finished, it was not eaten
     if (actionInQueue) return false;
@@ -867,19 +859,38 @@ struct FlagGate {
 
 // ---- Why-codes (LOG GRAMMAR). Reason order = check order of the bool predicate above.
 // reInjectWhy(...) == RI_OK  <=>  shouldReInject(...);   dispatchWhy(...) == DS_OK  <=>  shouldDispatchNext(...).
-enum ReInjectWhy : uint8_t { RI_OK, RI_INACTIVE, RI_PENDING, RI_CANCEL, RI_MAX, RI_IN_QUEUE, RI_NO_LEADER, RI_EXECUTED, RI_NOT_CTRL };
+enum ReInjectWhy : uint8_t { RI_OK, RI_INACTIVE, RI_PENDING, RI_CANCEL, RI_MAX, RI_IN_QUEUE, RI_NO_LEADER, RI_EXECUTED, RI_NOT_CTRL, RI_DEFERRED, RI_OFF, RI_PAUSED, RI_SETTLE, RI_SPACING };
 enum DispatchWhy : uint8_t { DS_OK, DS_ACTIVE, DS_EMPTY, DS_ENGINE_BUSY, DS_CUR_BUSY, DS_NRN_BUSY, DS_FLAG_BUSY, DS_NOT_CTRL };
-enum DropWhy : uint8_t { DR_COMBAT_CLEAR, DR_NULL_CREATURE, DR_CANCEL, DR_BUFFER_FULL, DR_UNREADABLE_CREATURE, DR_REINJECT_EXHAUSTED, DR_EATEN_TIMEOUT, DR_IDENTITY_LOST };
+enum DropWhy : uint8_t { DR_COMBAT_CLEAR, DR_NULL_CREATURE, DR_CANCEL, DR_BUFFER_FULL, DR_UNREADABLE_CREATURE, DR_REINJECT_EXHAUSTED, DR_EATEN_TIMEOUT, DR_IDENTITY_LOST, DR_REFUSED, DR_EXECUTED };
 
-inline ReInjectWhy reInjectWhy(const ActionBuffer& buf, bool actionInQueue, bool hasFollowLeader, bool paused = false, uint32_t now = 0, bool userCancelled = false) {
-    (void)paused; (void)now;
+struct RiGate { bool on = false; bool pauseEatenWait = false; bool pauseReinject = true; };   // production passes on=true
+inline ReInjectWhy reInjectWhy(const ActionBuffer& buf, bool actionInQueue, bool hasFollowLeader, bool paused = false, uint32_t now = 0,
+                               bool userCancelled = false, const RiGate& gate = RiGate{}) {
     if (!buf.active) return RI_INACTIVE;
     if (buf.reInjectPending) return RI_PENDING;
     if (buf.userCancelled || userCancelled) return RI_CANCEL;
+    if (buf.dispatchDeferred) return RI_DEFERRED;          // the deferred retry owns the command; nothing is in the engine on purpose
     if (buf.activeAction.reInjectCount >= kMaxReInjectCount) return RI_MAX;
     if (buf.sawExecuting) return RI_EXECUTED;
     if (actionInQueue) return RI_IN_QUEUE;
-    return hasFollowLeader ? RI_OK : RI_NO_LEADER;
+    if (!hasFollowLeader) return RI_NO_LEADER;
+    if (gate.on) {                                          // RQ5: the same gates the verdict path has
+        if (!gate.pauseReinject) return RI_OFF;
+        if (paused && gate.pauseEatenWait) return RI_PAUSED;
+        if (now - buf.activeStartTick <= kMinActiveMs) return RI_SETTLE;
+        if (buf.lastReInjectTick != 0 && now - buf.lastReInjectTick < kReInjectSpacingMs) return RI_SPACING;
+    }
+    return RI_OK;
+}
+
+constexpr uint32_t kDeferRetryMs = 250, kDeferMaxMs = 5000;
+enum DeferStep : uint8_t { DEFER_WAIT, DEFER_RETRY, DEFER_GIVE_UP };
+inline DeferStep deferStep(ActionBuffer& b, bool paused, uint32_t now) {
+    const uint32_t dt = now - b.deferTick; b.deferTick = now;       // wrap-safe
+    if (!paused) b.deferUnpausedMs += dt < 1000u ? dt : 1000u;      // paused time is free (nothing pops while paused)
+    if (b.deferUnpausedMs >= kDeferMaxMs) return DEFER_GIVE_UP;
+    if (paused) return DEFER_WAIT;
+    return now - b.deferLastTry >= kDeferRetryMs ? DEFER_RETRY : DEFER_WAIT;
 }
 
 inline DispatchWhy dispatchWhy(const ActionBuffer& buf, int engineQueueLen, bool haveCur = false, int nrn = 0, bool flagHold = false) {
@@ -903,6 +914,11 @@ inline const char* whyName(ReInjectWhy w) {
         case RI_NO_LEADER: return "no_leader";
         case RI_EXECUTED: return "executed";
         case RI_NOT_CTRL: return "not_ctrl";
+        case RI_DEFERRED: return "deferred";
+        case RI_OFF: return "off";
+        case RI_PAUSED: return "paused";
+        case RI_SETTLE: return "settle";
+        case RI_SPACING: return "spacing";
     }
     return "?";
 }
@@ -931,6 +947,8 @@ inline const char* whyName(DropWhy w) {
         case DR_REINJECT_EXHAUSTED: return "reinject_exhausted";
         case DR_EATEN_TIMEOUT: return "eaten_timeout";
         case DR_IDENTITY_LOST: return "identity_lost";
+        case DR_REFUSED: return "refused";
+        case DR_EXECUTED: return "executed";
     }
     return "?";
 }
@@ -1222,6 +1240,34 @@ inline int fmtRoundRot(char* out, int cap, int m, int n, int moved, bool ok) {
 // Whether the keep-new / detach path may run for this hand-off: always while paused (nothing pops the round list), unpaused only with handoff_keep_unpaused.
 inline bool keepPathAllowed(bool keepNew, bool paused, bool keepUnpaused) { return keepNew && (paused || keepUnpaused); }
 
+// Combat-start edge: what to do with the active (non-engine-queued) head. NONE = no active head. WAIT = hold it one stage (engine entry may still appear).
+enum EdgeHeadAction : uint8_t { EDGE_NONE, EDGE_RESEND, EDGE_WAIT, EDGE_DROP_EXEC };
+inline EdgeHeadAction edgeHeadAction(bool active, bool inEngine, bool sawExecuting, bool sawExec, uint32_t ageMs, bool gatherOk, bool deferred = false) {
+    if (!active) return EDGE_NONE;
+    if (!gatherOk) return EDGE_WAIT;                     // unreadable engine state: not proof it is absent
+    if (inEngine) return EDGE_WAIT;                      // held path (caller applies handoff_resend_held)
+    if (deferred) return EDGE_RESEND;                    // a refused send never reached the engine
+    if (sawExecuting || sawExec) return EDGE_DROP_EXEC;  // it ran and left: a re-send would use it twice
+    if (ageMs <= kMinActiveMs) return EDGE_WAIT;         // same settle window as activeVerdict
+    return EDGE_RESEND;
+}
+
+// Is round node n the held head's own node? Spell: sub 9 + spell id. Item: sub 10 + item id compared on the low 24 bits (client vs server object id).
+inline bool nodeIsHead(const RNode& n, const QueuedAction& head) {
+    if (head.kind == ActionKind::Spell) return n.subType == 9 && n.spellId == head.spellId;
+    return n.subType == 10 && (n.itemId & 0xFFFFFFu) != 0 && (n.itemId & 0xFFFFFFu) == (head.clientItem & 0xFFFFFFu);
+}
+// Bit i set = rn[i] may be detached. Only the FIRST node matching the head is kept (a second identical node is the player's new click).
+inline unsigned detachableMask(const RNode* rn, int n, const QueuedAction& head) {
+    unsigned m = 0; bool headSeen = false;
+    if (!rn) return 0;
+    for (int i = 0; i < n && i < kMaxRound; ++i) {
+        if (!headSeen && nodeIsHead(rn[i], head)) { headSeen = true; continue; }
+        m |= 1u << i;
+    }
+    return m;
+}
+
 // QL10 detach: the player's new round nodes (power / attack) are taken out of the round list while an engine-held command and the buffered
 // commands run, and appended again when the hand-off is over. Ready = nothing of ours pending anywhere:
 //   no hand-off or buffer, no item/spell in the engine queue, no item/spell round node, the last send is >= kReattachQuietMs old
@@ -1270,23 +1316,19 @@ inline int fmtSpellOut(char* out, int cap, int m, uint32_t cmdId, bool exec, int
     return fmtOutLine(out, cap, "SPELL_OUT", m, cmdId, exec, firstExecMs, endMs);
 }
 
-// SPELL_ARGS where=<hook|replay> cmd=<n> m=<k> spell=<hex> arg2=<hex> tgt=<hex> multi=<n> meta=<n> dom=<n> posptr=<hex> pos=<orig|null|zero>
-// Every argument of a Force-power cast at capture (the engine's own call) and at replay (our call). posptr = the position pointer
-// passed (raw); pos = null (no pointer), orig (a copy of the engine's position) or zero (a pointer to our zero-filled copy).
-inline int fmtSpellArgs(char* out, int cap, bool replay, uint32_t cmdId, int m, uint32_t spellId, int arg2, uint32_t targetId,
-                        int multispell, int metamagic, int domain, uint32_t posPtrRaw, bool hasPos) {
+// SPELL_ARGS where=<hook|replay> cmd=<n> m=<k> spell=<hex> tgt=<hex> multi=<n> meta=<n> dom=<n> pos=<hex,hex,hex> flag=<n> posaddr=<hex>
+// tgt = the 2nd stack arg (target client id); pos = the 3 float bit patterns behind the 3rd arg (hook) / our copy (replay); flag = 7th arg;
+// posaddr = the pointer value passed (hook: the caller's dead-after-return stack address, replay: &a.pos).
+inline int fmtSpellArgs(char* out, int cap, bool replay, uint32_t cmdId, int m, uint32_t spellId, int arg2,
+                        int multispell, int metamagic, int domain, const float* pos3, int flag, uint32_t posAddr) {
     detail::LogWr w(out, cap);
     w.s("SPELL_ARGS where="); w.s(replay ? "replay" : "hook");
-    w.s(" cmd="); w.u(cmdId);
-    w.s(" m="); w.mm(m);
-    w.s(" spell="); w.x(spellId);
-    w.s(" arg2="); w.x(static_cast<uint32_t>(arg2));
-    w.s(" tgt="); w.x(targetId);
-    w.s(" multi="); w.i(multispell);
-    w.s(" meta="); w.i(metamagic);
-    w.s(" dom="); w.i(domain);
-    w.s(" posptr="); w.x(posPtrRaw);
-    w.s(" pos="); w.s(posPtrRaw == 0 ? "null" : hasPos ? "orig" : "zero");
+    w.s(" cmd="); w.u(cmdId); w.s(" m="); w.mm(m); w.s(" spell="); w.x(spellId);
+    w.s(" tgt="); w.x(static_cast<uint32_t>(arg2));
+    w.s(" multi="); w.i(multispell); w.s(" meta="); w.i(metamagic); w.s(" dom="); w.i(domain);
+    w.s(" pos=");
+    for (int i = 0; i < 3; ++i) { uint32_t b = 0; if (pos3) memcpy(&b, &pos3[i], 4); if (i) w.c(','); w.x(b); }
+    w.s(" flag="); w.i(flag); w.s(" posaddr="); w.x(posAddr);
     return w.done();
 }
 

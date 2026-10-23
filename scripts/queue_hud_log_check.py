@@ -28,7 +28,7 @@ these keywords are ignored; a keyword line with a missing or malformed field is 
     banner: vanilla|hidden|restored; why: edge|ended|menu|pause|target|hostile|ui; ? is also accepted for r and w)
   MODE cap reached   (counted in the MODES title, not flagged)
   pause_reinject=<n> ... show_in_combat=<0|1>   (the startup line, kept as context for flag M; not shown)
-  REINJECT_NO cmd=<n> m=<k> why=<ok|inactive|pending|cancel|max_reinject|in_queue|no_leader|executed>   (a why other than ok is a decline)
+  REINJECT_NO cmd=<n> m=<k> why=<ok|inactive|pending|cancel|max_reinject|in_queue|no_leader|executed|deferred|off|paused|settle|spacing>   (a why other than ok is a decline)
   VANISH cmd=<n> m=<k> kind=<executed|unseen|eaten_paused|eaten_wait> paused=<0|1> exec=<0|1> ne=<n> round=<n>
     cur=<hex|-> aa8=<n> ab8=<n> age=<ms>
   HANDOFF m=<k> active=<n|-> buffered=<n> cmds=<n,n,...|->
@@ -43,7 +43,7 @@ these keywords are ignored; a keyword line with a missing or malformed field is 
   HANDOFF_OUT m=<k> cmd=<n> exec=<0|1> firstExecMs=<n|-> endMs=<n>   (8 s ground truth per hand-off command; no lifecycle)
   CLICK t=<tick ms> x=<n|-> y=<n|->   (one per left-button press edge)
   CMBT_FIELDS m=<k> cr520=<hex|?,x12> t550=<hex|?> t564=<hex|?> t568=<hex|?>   (soft-combat evidence at a combat edge)
-  SPELL_ARGS where=<hook|replay> cmd=<n> m=<k> spell=<hex> arg2=<hex> tgt=<hex> multi=<n> meta=<n> dom=<n> posptr=<hex> pos=<orig|null|zero>
+  SPELL_ARGS where=<hook|replay> cmd=<n> m=<k> spell=<hex> tgt=<hex> multi=<n> meta=<n> dom=<n> pos=<hex,hex,hex> flag=<n> posaddr=<hex>
     (spell arguments: where=hook is the dispatch_now cast, where=replay is a buffered cast re-issued from the queue)
   SPELL_OUT m=<k> cmd=<n> exec=<0|1> firstExecMs=<n|-> endMs=<n>   (outcome of the spell command in SPELL_ARGS; same cmd=)
   SOFT_CAND m=<k> hostile=<0|1> party=<0|1> none=<0|1> cr0=<n|?> cr1=<hex|?>   (soft-combat candidate per member; no cmd, no lifecycle)
@@ -62,8 +62,8 @@ Flags:
   G double-exec (VANISH kind=executed or RESOLVE seen=1): one command (lifecycle) has two of either.
   H handoff-not-first (ROUND): within 1500 ms after a HANDOFF_ONE for member m (T= stamps; bare lines have none), the
     first ROUND of m with non-empty subs= has its first subtype outside {9,10} (an attack node is ahead of the item).
-  I trigger-lost (HANDOFF): active=<n> (not -) with neither HANDOFF_ONE cmd=<n> nor HANDOFF_HELD cmd=<n> act=drop in its
-    window (until the next HANDOFF of that member): the active command was never re-sent.
+  I trigger-lost (HANDOFF): active=<n> (not -) with none of HANDOFF_ONE cmd=<n>, HANDOFF_HELD cmd=<n> act=drop or
+    DROP cmd=<n> why=executed|refused in its window (until the next HANDOFF of that member): the active command was never re-sent.
   J combat-edge-silent (EDGE): what=combat new=1 with no ROUND line (any member) within 1500 ms after it (T= stamps; bare
     lines have none). The round watch is armed at every combat edge, so a silent edge means a build without that watch or
     members whose engine state was unreadable.
@@ -126,8 +126,8 @@ FIELD_RE = {
     "firstExecMs": r"-|\d+", "endMs": r"-?\d+", "t": r"\d+", "x": r"-|-?\d+", "y": r"-|-?\d+",
     "cr520": r"(?:[0-9a-fA-F]{8}|\?)(?:,(?:[0-9a-fA-F]{8}|\?))*", "t550": r"\?|[0-9a-fA-F]{8}",
     "t564": r"\?|[0-9a-fA-F]{8}", "t568": r"\?|[0-9a-fA-F]{8}",
-    "where": r"hook|replay", "spell": HEXV, "spell_tgt": HEXV, "arg2": HEXV, "multi": r"-?\d+", "meta": r"-?\d+",
-    "dom": r"-?\d+", "posptr": HEXV, "pos": r"orig|null|zero",
+    "where": r"hook|replay", "spell": HEXV, "spell_tgt": HEXV, "multi": r"-?\d+", "meta": r"-?\d+",
+    "dom": r"-?\d+", "pos": r"[0-9a-fA-F]+,[0-9a-fA-F]+,[0-9a-fA-F]+", "flag": r"-?\d+", "posaddr": HEXV,
     "hostile": r"[01]", "party": r"[01]", "none": r"[01]", "cr0": r"\?|-?\d+", "cr1": r"\?|[0-9a-fA-F]+",
     "banner_act": r"hide|restore|forget|reset", "soft": r"[01]", "ctl": r"\d+", "wr": r"\d+",
     # MODE and CANCEL (names below are used only through OVERRIDE where the key clashes with another line kind)
@@ -164,7 +164,7 @@ REQUIRED = {
     "HANDOFF_OUT": ("m", "cmd", "exec", "firstExecMs", "endMs"),
     "CLICK": ("t", "x", "y"),
     "CMBT_FIELDS": ("m", "cr520", "t550", "t564", "t568"),
-    "SPELL_ARGS": ("where", "cmd", "m", "spell", "arg2", "tgt", "multi", "meta", "dom", "posptr", "pos"),
+    "SPELL_ARGS": ("where", "cmd", "m", "spell", "tgt", "multi", "meta", "dom", "pos", "flag", "posaddr"),
     "SPELL_OUT": ("m", "cmd", "exec", "firstExecMs", "endMs"),
     "SOFT_CAND": ("m", "hostile", "party", "none", "cr0", "cr1"),
     "BANNER": ("act", "soft", "ctl", "wr"),
@@ -462,13 +462,16 @@ def handoff_order_flags(recs):
 
 def handoff_trigger_flags(recs):
     """[(line, text)] for flag I: HANDOFF active=<n> (not '-') whose window has neither HANDOFF_ONE cmd=<n> nor
-    HANDOFF_HELD cmd=<n> act=drop, so the active command was never re-sent. act=resend needs its HANDOFF_ONE too."""
+    HANDOFF_HELD cmd=<n> act=drop (or DROP cmd=<n> why=executed|refused), so the active command was never re-sent.
+    act=resend needs its HANDOFF_ONE too."""
     out = []
-    for h, follow in handoff_windows(recs, ("HANDOFF_ONE", "HANDOFF_HELD")):
+    for h, follow in handoff_windows(recs, ("HANDOFF_ONE", "HANDOFF_HELD", "DROP")):
         if h["f"]["active"] == "-":
             continue
         cmd = _num(h["f"]["active"])
-        settled = any(r["cmd"] == cmd and (r["kw"] == "HANDOFF_ONE" or (r["kw"] == "HANDOFF_HELD" and r["f"]["act"] == "drop"))
+        settled = any(r["cmd"] == cmd and (r["kw"] == "HANDOFF_ONE"
+                                           or (r["kw"] == "HANDOFF_HELD" and r["f"]["act"] == "drop")
+                                           or (r["kw"] == "DROP" and r["f"].get("why") in ("executed", "refused")))
                       for r in follow)
         if not settled:
             out.append((h["line"], "I L%d m=%s HANDOFF active=%s never re-sent (trigger lost at hand-off)" % (

@@ -570,6 +570,13 @@ class NewFormParseTests(unittest.TestCase):
         self.assertEqual([(r["kw"], r["cmd"], r["m"]) for r in recs], [("REINJECT", 7, 0)])
         self.assertEqual((recs[0]["f"]["why"], recs[0]["f"]["attempt"]), ("eaten_paused", "2"))
 
+    def test_follower_wipe_reinject_with_paused_field_keeps_cmd_tail(self):
+        recs, skipped = Q.parse_lines([(1, "re-injecting eaten item action for member 1 (id=00001234, target=00000000, attempt=2, paused=0) cmd=7")])
+        self.assertEqual(skipped, [])
+        self.assertEqual([(r["kw"], r["cmd"], r["m"]) for r in recs], [("REINJECT", 7, 1)])
+        self.assertEqual(recs[0]["f"]["attempt"], "2")
+        self.assertNotIn("why", recs[0]["f"])
+
     def test_old_free_form_reinject_without_why_has_no_why(self):
         recs, _ = Q.parse_lines([(1, "re-injecting eaten item action for member 1 (id=00001234, target=00000000, attempt=2) cmd=7")])
         self.assertNotIn("why", recs[0]["f"])
@@ -892,6 +899,16 @@ class HandoffTriggerFlagTests(unittest.TestCase):
     def test_I_quiet_when_held_drop_settles_active_without_handoff_one(self):
         self.assertEqual(all_flags_of([handoff(0, "8", 0, "-"), handoff_held(8, 0, "drop", 1500)]), [])
 
+    def test_I_quiet_when_active_dropped_executed(self):
+        self.assertEqual(all_flags_of([handoff(0, "8", 0, "-"), drop(8, 0, "executed")]), [])
+
+    def test_I_quiet_when_active_dropped_refused(self):
+        self.assertEqual(all_flags_of([handoff(0, "8", 0, "-"), drop(8, 0, "refused")]), [])
+
+    def test_I_fires_when_active_dropped_for_other_reason(self):
+        self.assertEqual(all_flags_of([handoff(0, "8", 0, "-"), drop(8, 0, "cancel")]),
+                         [(1, "I L1 m=0 HANDOFF active=8 never re-sent (trigger lost at hand-off)")])
+
     def test_I_fires_when_held_resend_has_no_handoff_one(self):
         self.assertEqual(all_flags_of([handoff(0, "8", 0, "-"), handoff_held(8, 0, "resend", 70)]),
                          [(1, "I L1 m=0 HANDOFF active=8 never re-sent (trigger lost at hand-off)")])
@@ -954,8 +971,8 @@ class T4TraceTests(unittest.TestCase):
         self.assertEqual(Q.edge_silent_flags(recs), [])
 
 
-def spell_args(n, where="hook", m=0, pos="orig"):
-    return ("SPELL_ARGS where=%s cmd=%d m=%d spell=2c arg2=0 tgt=00dbee74 multi=1 meta=0 dom=0 posptr=00a1b2c0 pos=%s"
+def spell_args(n, where="hook", m=0, pos="0,0,0"):
+    return ("SPELL_ARGS where=%s cmd=%d m=%d spell=2c tgt=00dbee74 multi=1 meta=0 dom=0 pos=%s flag=0 posaddr=00a1b2c0"
             % (where, n, m, pos))
 
 
@@ -965,9 +982,9 @@ def spell_out(n, m=0, exec_=1, first="120", end=8000):
 
 # Synthetic goldens for the three spell and soft-combat forms (copied from the spec lines; not yet in queue_hud_logic_test.cpp).
 SPELL_GOLDEN = [
-    "SPELL_ARGS where=hook cmd=9 m=0 spell=2c arg2=0 tgt=00dbee74 multi=1 meta=0 dom=0 posptr=00a1b2c0 pos=orig",
-    "SPELL_ARGS where=replay cmd=4 m=0 spell=2c arg2=0 tgt=00dbee74 multi=1 meta=0 dom=0 posptr=00a1b2c0 pos=null",
-    "SPELL_ARGS where=replay cmd=13 m=2 spell=1f arg2=ffffffff tgt=0 multi=0 meta=2 dom=0 posptr=0 pos=zero",
+    "SPELL_ARGS where=hook cmd=9 m=0 spell=2c tgt=00dbee74 multi=1 meta=0 dom=0 pos=3f800000,40000000,40400000 flag=0 posaddr=12ab30",
+    "SPELL_ARGS where=replay cmd=4 m=0 spell=2c tgt=00dbee74 multi=1 meta=0 dom=0 pos=0,0,0 flag=0 posaddr=19f000",
+    "SPELL_ARGS where=replay cmd=13 m=2 spell=1f tgt=ffffffff multi=0 meta=2 dom=0 pos=0,0,0 flag=5 posaddr=19f000",
     "SPELL_OUT m=0 cmd=4 exec=0 firstExecMs=- endMs=8000",
     "SPELL_OUT m=2 cmd=13 exec=1 firstExecMs=120 endMs=8003",
     "SOFT_CAND m=0 hostile=1 party=0 none=0 cr0=3 cr1=000000ab",
@@ -982,8 +999,9 @@ class SpellTraceTests(unittest.TestCase):
         recs, skipped = parse(SPELL_GOLDEN)
         self.assertEqual(skipped, [])
         self.assertEqual([r["kw"] for r in recs], ["SPELL_ARGS"] * 3 + ["SPELL_OUT"] * 2 + ["SOFT_CAND"] * 3)
-        self.assertEqual((recs[1]["f"]["where"], recs[1]["f"]["pos"], recs[1]["f"]["tgt"]), ("replay", "null", "00dbee74"))
-        self.assertEqual((recs[2]["cmd"], recs[2]["m"], recs[2]["f"]["pos"]), (13, 2, "zero"))
+        self.assertEqual((recs[1]["f"]["where"], recs[1]["f"]["pos"], recs[1]["f"]["tgt"]), ("replay", "0,0,0", "00dbee74"))
+        self.assertEqual((recs[1]["f"]["flag"], recs[1]["f"]["posaddr"]), ("0", "19f000"))
+        self.assertEqual((recs[2]["cmd"], recs[2]["m"], recs[2]["f"]["pos"], recs[2]["f"]["flag"]), (13, 2, "0,0,0", "5"))
         self.assertEqual((recs[3]["f"]["exec"], recs[3]["f"]["firstExecMs"], recs[4]["f"]["endMs"]), ("0", "-", "8003"))
         self.assertEqual((recs[5]["f"]["cr1"], recs[5]["cmd"]), ("000000ab", None))
 
@@ -994,11 +1012,13 @@ class SpellTraceTests(unittest.TestCase):
 
     def test_spell_bad_forms_are_skipped_not_fatal(self):
         bad = [
-            "SPELL_ARGS where=cast cmd=4 m=0 spell=2c arg2=0 tgt=0 multi=1 meta=0 dom=0 posptr=0 pos=orig",
-            "SPELL_ARGS where=replay cmd=4 m=0 spell=zz arg2=0 tgt=0 multi=1 meta=0 dom=0 posptr=0 pos=orig",
-            "SPELL_ARGS where=replay cmd=4 m=0 spell=2c arg2=0 tgt=- multi=1 meta=0 dom=0 posptr=0 pos=orig",
-            "SPELL_ARGS where=replay cmd=4 m=0 spell=2c arg2=0 tgt=0 multi=1 meta=0 dom=0 posptr=0 pos=bad",
-            "SPELL_ARGS where=hook cmd=9 m=0 spell=2c arg2=0 tgt=0 multi=1 meta=0 dom=0 posptr=0",
+            "SPELL_ARGS where=cast cmd=4 m=0 spell=2c tgt=0 multi=1 meta=0 dom=0 pos=0,0,0 flag=0 posaddr=0",
+            "SPELL_ARGS where=replay cmd=4 m=0 spell=zz tgt=0 multi=1 meta=0 dom=0 pos=0,0,0 flag=0 posaddr=0",
+            "SPELL_ARGS where=replay cmd=4 m=0 spell=2c tgt=- multi=1 meta=0 dom=0 pos=0,0,0 flag=0 posaddr=0",
+            "SPELL_ARGS where=replay cmd=4 m=0 spell=2c tgt=0 multi=1 meta=0 dom=0 pos=1,2 flag=0 posaddr=0",
+            "SPELL_ARGS where=replay cmd=4 m=0 spell=2c tgt=0 multi=1 meta=0 dom=0 pos=0,0,0 flag=x posaddr=0",
+            "SPELL_ARGS where=hook cmd=9 m=0 spell=2c arg2=0 tgt=0 multi=1 meta=0 dom=0 posptr=0 pos=orig",   # the pre-0.4.6 form
+            "SPELL_ARGS where=hook cmd=9 m=0 spell=2c tgt=0 multi=1 meta=0 dom=0 pos=0,0,0 flag=0",
             "SPELL_OUT m=0 cmd=4 exec=2 firstExecMs=- endMs=8000",
             "SPELL_OUT m=0 cmd=4 exec=1 firstExecMs=-",
             "SOFT_CAND m=0 hostile=2 party=0 none=0 cr0=3 cr1=0",
