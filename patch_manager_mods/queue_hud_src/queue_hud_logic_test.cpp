@@ -1747,6 +1747,7 @@ void testWhyNames() {
     KT_CHECK_EQ(whyName(RI_SPACING), "spacing");
     KT_CHECK_EQ(whyName(DR_REFUSED), "refused");
     KT_CHECK_EQ(whyName(DR_EXECUTED), "executed");
+    KT_CHECK_EQ(whyName(DR_PRESENT_TIMEOUT), "present_timeout");
     KT_CHECK_EQ(whyName(DS_OK), "ok");
     KT_CHECK_EQ(whyName(DS_ACTIVE), "active");
     KT_CHECK_EQ(whyName(DS_EMPTY), "empty");
@@ -2103,12 +2104,14 @@ int V(const ActionBuffer& b, const EngineView& e, uint32_t now) { return (int)ac
 
 bool verdictFieldsClear(const ActionBuffer& b) {
     return !b.sawExecuting && !b.eaten && !b.staleCurLogged && !b.pausedEaten && b.eatenReInjects == 0 && b.goneSinceTick == 0 &&
-           b.lastReInjectTick == 0 && b.staleCurSince == 0 && b.eatenUnpausedMs == 0 && b.lastVerdictTick == 0;
+           b.lastReInjectTick == 0 && b.staleCurSince == 0 && b.eatenUnpausedMs == 0 && b.lastVerdictTick == 0 &&
+           !b.sawExpanded && b.flagBase == -1 && b.activeUnpausedMs == 0 && b.totalReInjects == 0;
 }
 
 void dirtyVerdictFields(ActionBuffer& b) {
     b.sawExecuting = true; b.eaten = true; b.staleCurLogged = true; b.pausedEaten = true; b.eatenReInjects = 4;
     b.goneSinceTick = 9; b.lastReInjectTick = 9; b.staleCurSince = 9; b.eatenUnpausedMs = 9; b.lastVerdictTick = 9;
+    b.sawExpanded = true; b.flagBase = 3; b.activeUnpausedMs = 9; b.totalReInjects = 9;
 }
 
 void testActiveVerdictRules() {
@@ -2179,7 +2182,20 @@ void testActiveVerdictRules() {
     KT_CHECK(strcmp(verdictName(AV_EATEN_WAIT), "eaten_wait") == 0);
     KT_CHECK(strcmp(verdictName(AV_EATEN_REINJECT), "eaten_reinject") == 0);
     KT_CHECK(strcmp(verdictName(AV_GIVE_UP), "give_up") == 0);
+    KT_CHECK(strcmp(verdictName(AV_PRESENT_TIMEOUT), "present_timeout") == 0);
     KT_CHECK(strcmp(verdictName(static_cast<ActiveVerdict>(99)), "?") == 0);
+    // R6: after an expansion only ONE re-send is allowed; without it the cap stays kMaxEatenReInject
+    {
+        ActionBuffer c; c.eaten = true; c.goneSinceTick = 1; c.activeStartTick = 0;
+        c.sawExpanded = true; c.eatenReInjects = 1;
+        KT_CHECK_EQ(V(c, Ev(false), 10000), (int)AV_GIVE_UP);
+        c.eatenReInjects = 0;
+        KT_CHECK_EQ(V(c, Ev(false), 10000), (int)AV_EATEN_REINJECT);
+        c.sawExpanded = false; c.eatenReInjects = 1;
+        KT_CHECK_EQ(V(c, Ev(false), 10000), (int)AV_EATEN_REINJECT);
+        c.eatenReInjects = 6;
+        KT_CHECK_EQ(V(c, Ev(false), 10000), (int)AV_GIVE_UP);
+    }
 }
 
 // QL6a: while paused an eaten action waits (no re-inject, no budget); the unpause edge gives one re-inject with a fresh budget.
@@ -2232,6 +2248,236 @@ void testPauseEatenWait() {
     KT_CHECK(parseIniLine(c, "pause_eaten_wait=0") && !c.pauseEatenWait);
     KT_CHECK(parseIniLine(c, "pause_eaten_wait=1") && c.pauseEatenWait);
     KT_CHECK(!parseIniLine(c, "pause_eaten_wait=x") && c.pauseEatenWait);
+}
+
+// ---- RV2: orphan clock, present ceiling, combat tracking, exec tie, dispatch reset, total cap, paused flag gate, kick give-up ----
+void testOrphanRoundAge() {
+    UnpausedClock c;
+    KT_CHECK_EQ(orphanRoundAge(false, false, true, false, c, 1000), 0u);
+    KT_CHECK_EQ(orphanRoundAge(false, false, true, false, c, 1100), 100u);
+    KT_CHECK_EQ(orphanRoundAge(false, false, true, false, c, 1200), 200u);
+    UnpausedClock c2;   // 100 ms ticks from 1000
+    uint32_t a = 0;
+    for (uint32_t t = 1000; t <= 2400; t += 100) a = orphanRoundAge(false, false, true, false, c2, t);
+    KT_CHECK_EQ(a, 1400u); KT_CHECK(a < kOrphanMs);
+    KT_CHECK_EQ(orphanRoundAge(false, false, true, false, c2, 2499), 1499u);
+    KT_CHECK_EQ(orphanRoundAge(false, false, true, false, c2, 2500), 1500u);
+    KT_CHECK(orphanRoundAge(false, false, true, false, c2, 2500) >= kOrphanMs);
+    KT_CHECK_EQ(orphanRoundAge(true, false, true, false, c2, 2600), 0u);   // a consumer entry exists
+    KT_CHECK_EQ(c2.ms, 0u);
+    KT_CHECK_EQ(orphanRoundAge(false, true, true, false, c2, 2700), 0u);   // real cur
+    KT_CHECK_EQ(orphanRoundAge(false, false, false, false, c2, 2800), 0u); // no 9/10 node
+    // pause freezes; the first tick after the pause adds nothing
+    UnpausedClock p; uint32_t v = 0;
+    for (uint32_t t = 1000; t <= 1500; t += 100) v = orphanRoundAge(false, false, true, false, p, t);
+    KT_CHECK_EQ(v, 500u);
+    KT_CHECK_EQ(orphanRoundAge(false, false, true, true, p, 1600), 500u);
+    KT_CHECK_EQ(orphanRoundAge(false, false, true, true, p, 5000), 500u);
+    KT_CHECK_EQ(orphanRoundAge(false, false, true, false, p, 5100), 500u);
+    KT_CHECK_EQ(orphanRoundAge(false, false, true, false, p, 5200), 600u);
+    // a gap > kClockGapMs between ticks adds nothing
+    UnpausedClock g;
+    g.tick(false, 1000); g.tick(false, 1100);
+    KT_CHECK_EQ(g.tick(false, 3000), 100u);
+    KT_CHECK(entryConsumesRound(0x3F) && entryConsumesRound(0x0F) && entryConsumesRound(0x2E));
+    KT_CHECK(!entryConsumesRound(0x3D) && !entryConsumesRound(0x01) && !entryConsumesRound(-1));
+}
+
+void testPresentCeiling() {
+    ActionBuffer b;
+    b.activeUnpausedMs = 29999;
+    KT_CHECK_EQ(V(b, Ev(true), 100), (int)AV_PRESENT);
+    b.activeUnpausedMs = 30000;
+    KT_CHECK_EQ(V(b, Ev(true), 100), (int)AV_PRESENT_TIMEOUT);
+    KT_CHECK_EQ(V(b, Ev(true, true), 100), (int)AV_PRESENT);
+    b.goneSinceTick = 1;
+    KT_CHECK_EQ(V(b, Ev(false), 10000), (int)AV_UNSEEN);
+    ActionBuffer a;
+    a.accrueEaten(false, 1000);   // first call: d = 1000 (capped)
+    a.accrueEaten(false, 1500);
+    a.accrueEaten(false, 9000);   // d capped at 1000
+    KT_CHECK_EQ(a.activeUnpausedMs, 1000u + 500u + 1000u);
+    a.accrueEaten(true, 9500);
+    KT_CHECK_EQ(a.activeUnpausedMs, 2500u);
+    char out[120];
+    fmtDrop(out, sizeof out, 14, 0, DR_PRESENT_TIMEOUT, 1);
+    KT_CHECK_EQ(out, "DROP cmd=14 m=0 why=present_timeout n=1");
+}
+
+void testShouldTrackAfterCombat() {
+    KT_CHECK(shouldTrackAfterCombat(5000, 5000));
+    KT_CHECK(!shouldTrackAfterCombat(4999, 5000));
+    KT_CHECK(shouldTrackAfterCombat(5001, 5000));
+    KT_CHECK(shouldTrackAfterCombat(123, 0));
+    KT_CHECK(shouldTrackAfterCombat(0x10u, 0xFFFFFFF0u));
+    KT_CHECK(!shouldTrackAfterCombat(0xFFFFFFF0u, 0x10u));
+    char out[160];
+    fmtResolve(out, sizeof out, 5, 0, true, 1, 3400, "combat_end");
+    KT_CHECK_EQ(out, "RESOLVE cmd=5 m=0 seen=1 reinj=1 age=3400 why=combat_end");
+    fmtResolve(out, sizeof out, 5, 0, true, 1, 3400);
+    KT_CHECK_EQ(out, "RESOLVE cmd=5 m=0 seen=1 reinj=1 age=3400");
+}
+
+void testExecTie() {
+    ExecTie st; st.spell = true; st.id = 0x28; st.curSpell = 0; st.flagBase = 2;
+    const int t0f[] = {0x0F}, t2e[] = {0x2E};
+    const uint32_t p28[] = {0x28}, p99[] = {0x99};
+    EngineView e = makeEngineView(t0f, 1, false, false, 0, 0, 0, 0, false, 0, 1000, p28, &st);
+    KT_CHECK(e.expanded && !e.executing);
+    e = makeEngineView(t0f, 1, false, false, 0, 0, 0, 0, false, 0, 1000, p99, &st);
+    KT_CHECK(!e.expanded);
+    e = makeEngineView(t2e, 1, false, false, 0, 0, 0, 0, false, 0, 1000, p28, &st);
+    KT_CHECK(!e.expanded);
+    // flags: set at dispatch (flagBase=2) is not evidence; a rose bit is
+    e = makeEngineView(nullptr, 0, false, false, 0, 0, 0, 1, false, 0, 1000, nullptr, &st);
+    KT_CHECK(!e.executing);
+    st.flagBase = 0;
+    e = makeEngineView(nullptr, 0, false, false, 0, 0, 0, 1, false, 0, 1000, nullptr, &st);
+    KT_CHECK(e.executing);
+    st.flagBase = 1;
+    e = makeEngineView(nullptr, 0, false, false, 0, 0, 0, 1, false, 0, 1000, nullptr, &st);
+    KT_CHECK(e.executing);
+    st.flagBase = -1;
+    e = makeEngineView(nullptr, 0, false, false, 0, 0, 0, 1, false, 0, 1000, nullptr, &st);
+    KT_CHECK(e.executing);
+    st.flagBase = 0;
+    e = makeEngineView(nullptr, 0, false, false, 0, 0, 0, 1, true, 0, 1000, nullptr, &st);
+    KT_CHECK(!e.executing);
+    // cur node
+    st.flagBase = 3;
+    e = makeEngineView(nullptr, 0, false, true, 9, 0, 1, 0, false, 0, 1000, nullptr, &st);
+    st.curSpell = 0x28;
+    e = makeEngineView(nullptr, 0, false, true, 9, 0, 1, 0, false, 0, 1000, nullptr, &st);
+    KT_CHECK(e.executing);
+    st.curSpell = 0x99; st.flagBase = 0;
+    e = makeEngineView(nullptr, 0, false, true, 9, 0, 0, 0, false, 0, 1000, nullptr, &st);   // aa8/ab8 clear: stale-able cur, curReal true until stale
+    KT_CHECK(!e.executing);
+    st.curSpell = 0;
+    e = makeEngineView(nullptr, 0, false, true, 9, 0, 0, 0, false, 0, 1000, nullptr, &st);
+    KT_CHECK(e.executing);
+    // item tie is lenient
+    ExecTie it; it.spell = false; it.flagBase = 3;
+    e = makeEngineView(t2e, 1, false, false, 0, 0, 0, 0, false, 0, 1000, p99, &it);
+    KT_CHECK(e.expanded);
+    e = makeEngineView(nullptr, 0, false, true, 10, 0, 0, 0, false, 0, 1000, nullptr, &it);
+    KT_CHECK(e.executing);
+    // no tie: legacy reading unchanged
+    e = makeEngineView(t2e, 1, false, false, 0, 0, 0, 0, false, 0, 1000);
+    KT_CHECK(e.executing && e.expanded);
+    // noteFlags only shrinks the baseline
+    ActionBuffer b;
+    b.noteFlags(3); KT_CHECK_EQ(b.flagBase, 3);
+    b.noteFlags(1); KT_CHECK_EQ(b.flagBase, 1);
+    b.noteFlags(3); KT_CHECK_EQ(b.flagBase, 1);
+    b.noteFlags(0); KT_CHECK_EQ(b.flagBase, 0);
+    KT_CHECK(flagsRose(0, 0, 1));
+    KT_CHECK(!flagsRose(2, 0, 1) && flagsRose(2, 1, 0));   // ab8 was set at dispatch; aa8 (bit 0) is new
+    KT_CHECK_EQ(flagBits(1, 0), 1); KT_CHECK_EQ(flagBits(0, 5), 2); KT_CHECK_EQ(flagBits(1, 1), 3);
+    // verdict: expanded then wiped
+    ActionBuffer v; v.goneSinceTick = 1; v.sawExpanded = true;
+    KT_CHECK_EQ(V(v, Ev(false), 10000), (int)AV_EATEN_REINJECT);
+    v.sawExpanded = false;
+    KT_CHECK_EQ(V(v, Ev(false), 10000), (int)AV_UNSEEN);
+    ActionBuffer n;
+    n.notePresent(false, true, 1000, true);
+    KT_CHECK(n.sawExpanded);
+}
+
+void testMarkDispatchedResets() {
+    ActionBuffer b;
+    b.eatenReInjects = 5; b.eatenUnpausedMs = 15000; b.lastReInjectTick = 900; b.sawExpanded = true; b.totalReInjects = 7; b.activeUnpausedMs = 9;
+    b.active = false;
+    b.markDispatched(2000, 3);
+    KT_CHECK(b.eatenReInjects == 0 && b.eatenUnpausedMs == 0 && b.lastReInjectTick == 0 && !b.sawExpanded && b.totalReInjects == 0 && b.activeUnpausedMs == 0);
+    KT_CHECK_EQ(b.flagBase, 3);
+    // first eaten episode gets the full budget: 6 REINJECT verdicts before GIVE_UP
+    b.eaten = true; b.goneSinceTick = 1; b.activeStartTick = 0;
+    for (int i = 0; i < kMaxEatenReInject; ++i) {
+        KT_CHECK_EQ(V(b, Ev(false), 10000 + 1000u * i), (int)AV_EATEN_REINJECT);
+        b.eatenReInjects++; b.lastReInjectTick = 10000 + 1000u * i;
+    }
+    KT_CHECK_EQ(V(b, Ev(false), 20000), (int)AV_GIVE_UP);
+    ActionBuffer r;
+    r.eatenReInjects = 5; r.totalReInjects = 3; r.sawExecuting = true; r.eaten = true; r.goneSinceTick = 4; r.activeUnpausedMs = 77; r.sawExpanded = true;
+    r.markReInjected(3000, 1);
+    KT_CHECK_EQ(r.eatenReInjects, 5); KT_CHECK_EQ(r.totalReInjects, 3);
+    KT_CHECK(!r.sawExecuting && !r.eaten && r.goneSinceTick == 0 && r.activeUnpausedMs == 0 && !r.sawExpanded);
+    KT_CHECK_EQ(r.flagBase, 1); KT_CHECK_EQ(r.activeStartTick, 3000u);
+}
+
+void testTotalReInjectCap() {
+    ActionBuffer b; b.activeStartTick = 0;
+    for (int i = 0; i < 13; ++i) {
+        const uint32_t now = 10000u + 3000u * i;
+        b.eaten = true; b.goneSinceTick = 1;
+        if (i < 12) {
+            KT_CHECK_EQ(V(b, Ev(false), now), (int)AV_EATEN_REINJECT);
+            b.eatenReInjects++; b.totalReInjects++; b.lastReInjectTick = now;
+            b.markReInjected(now);
+            b.notePresent(false, true, now + 2500);
+        } else {
+            KT_CHECK_EQ(V(b, Ev(false), now), (int)AV_GIVE_UP);
+        }
+    }
+}
+
+void testFlagGatePaused() {
+    FlagGate g; bool cap = false;
+    KT_CHECK(!g.step(true, 1000));
+    KT_CHECK(!g.step(true, 2500));
+    KT_CHECK(!g.step(false, 2600, &cap, true));
+    KT_CHECK(!g.step(false, 5600, &cap, true));
+    KT_CHECK(!g.step(true, 5700, &cap));
+    KT_CHECK(!g.step(true, 6099, &cap));
+    KT_CHECK(g.step(true, 6100, &cap)); KT_CHECK(cap);
+    FlagGate f;   // paused first tick, never busy: dispatch
+    KT_CHECK(f.step(false, 100, &cap, true));
+    FlagGate c;   // pause mid clear-run restarts the run
+    KT_CHECK(!c.step(true, 1000));
+    KT_CHECK(!c.step(false, 1100));        // clearing
+    KT_CHECK(!c.step(false, 1200, &cap, true));
+    KT_CHECK(!c.step(false, 1300));        // new clear run starts
+    KT_CHECK(!c.step(false, 1449));
+    KT_CHECK(c.step(false, 1450));
+}
+
+void testKickGiveUp() {
+    const int a[] = {0x3D, 0x3D, 0x3D, 0x3D, 0x3F};
+    KT_CHECK_EQ(castStarvedAt(a, 5, true), 4);
+    int big[16]; for (int i = 0; i < 15; ++i) big[i] = 0x3D; big[15] = 0x3F;
+    KT_CHECK_EQ(castStarvedAt(big, 16, true), 15);
+    const int f[] = {0x3D, 0x01, 0x3F};
+    KT_CHECK_EQ(castStarvedAt(f, 3, true), 0);
+    const int d[] = {0x3D, 0x3F, 0x3F};
+    KT_CHECK_EQ(castStarvedAt(d, 3, true), 1);
+    UnpausedClock k; int first = -1; uint32_t t = 1000;
+    for (int i = 0; i < 60; ++i, t += 100) { if (k.tick(false, t) >= kKickGiveUpMs && first < 0) first = i; }
+    KT_CHECK_EQ(first, 50);   // the 51st tick
+    UnpausedClock pk; pk.tick(false, 1000); pk.tick(true, 2000); pk.tick(true, 9000);
+    KT_CHECK_EQ(pk.ms, 0u);
+    char out[160];
+    fmtOrphan(out, sizeof out, 0, 7, 1, 1500);
+    KT_CHECK_EQ(out, "ORPHAN m=0 cmd=7 n=1 age=1500 act=removed");
+    fmtOrphan(out, sizeof out, 1, 0, -1, 1500);
+    KT_CHECK_EQ(out, "ORPHAN m=1 cmd=0 n=0 age=1500 act=failed");
+    fmtKickGiveup(out, sizeof out, 1, 17, 5000, 1);
+    KT_CHECK_EQ(out, "SRV_KICK_GIVEUP m=1 cmd=17 ms=5000 n=1 act=removed");
+    char tiny[8];
+    const int n1 = fmtOrphan(tiny, sizeof tiny, 0, 7, 1, 1500);
+    KT_CHECK_EQ(n1, 41); KT_CHECK_EQ(strlen(tiny), (size_t)7);
+    KT_CHECK_EQ(fmtOrphan(nullptr, 0, 0, 7, 1, 1500), 41);
+    const int n2 = fmtKickGiveup(tiny, sizeof tiny, 1, 17, 5000, 1);
+    KT_CHECK_EQ(n2, 50); KT_CHECK_EQ(strlen(tiny), (size_t)7);
+    KT_CHECK_EQ(fmtKickGiveup(nullptr, 0, 1, 17, 5000, 1), 50);
+    // R3 masks
+    QueuedAction head = makeSpellAction(0x1000, 0x55, 0, 0, 0, 0, nullptr, 0, 1);
+    { const RNode rn[] = { N(9, 1, 0x66), N(9, 2, 0x55) }; KT_CHECK_EQ(headNodeMask(rn, 2, head), 2u); }
+    { const RNode rn[] = { N(9, 1, 0x55), N(9, 2, 0x55) }; KT_CHECK_EQ(headNodeMask(rn, 2, head), 1u); }
+    { const RNode rn[] = { N(9, 1, 0x66) }; KT_CHECK_EQ(headNodeMask(rn, 1, head), 0u); }
+    KT_CHECK_EQ(headNodeMask(nullptr, 0, head), 0u);
+    { const RNode rn[] = { N(1, 1), N(9, 2), N(10, 3) }; KT_CHECK_EQ(itemSpellMask(rn, 3), 6u); }
+    { const RNode rn[] = { N(1, 1) }; KT_CHECK_EQ(itemSpellMask(rn, 1), 0u); }
+    KT_CHECK_EQ(itemSpellMask(nullptr, 0), 0u);
 }
 
 // QL6b: the dispatch gate also waits for the engine's aa8/ab8 flags (cmd 4 / cmd 5 of the 10-11 18:xx session).
@@ -2779,7 +3025,7 @@ void testServerRouteQL20() {
     const int q4[] = {0x01, 0x3F};
     KT_CHECK_EQ(castStarvedAt(q4, 2, true), 0);    // a move ahead: mid-expansion, wait
     const int q5[] = {0x3D, 0x3D, 0x3D, 0x3D, 0x3F};
-    KT_CHECK_EQ(castStarvedAt(q5, 5, true), 0);    // deeper than 3: not the R8 shape
+    KT_CHECK_EQ(castStarvedAt(q5, 5, true), 4);    // 4th leading 0x3D now kicked (RL8)
     KT_CHECK_EQ(castStarvedAt(nullptr, 0, true), 0);
     char out[200];
     fmtServerCast(out, sizeof out, 21, 1, 0x28, 0x86b, true, nullptr);
@@ -2852,6 +3098,14 @@ int main() {
     testVerdictBookkeeping();
     testPauseEatenWait();
     testFlagGate();
+    testOrphanRoundAge();
+    testPresentCeiling();
+    testShouldTrackAfterCombat();
+    testExecTie();
+    testMarkDispatchedResets();
+    testTotalReInjectCap();
+    testFlagGatePaused();
+    testKickGiveUp();
     testClickAndCmbtFields();
     testCurReal();
     testMakeEngineView();

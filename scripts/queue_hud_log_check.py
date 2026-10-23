@@ -15,7 +15,10 @@ strings: patch_manager_mods/queue_hud_src/queue_hud_logic_test.cpp (testLogForma
 these keywords are ignored; a keyword line with a missing or malformed field is counted in SKIPPED, never a crash.
   CMD#<n> m=<k|?> cr=<hex> kind=item|spell|? id=<hex|-> tgt=<hex|-> dec=<dec> fb=<0|1> engq=<n|unreadable> buf=<n> paused=<0|1> combat=<0|1>
   WAIT cmd=<n> m=<k> why=<reason> buf=<n> engNe=<n> age=<ms>
-  RESOLVE cmd=<n> m=<k|?> seen=<0|1> reinj=<n> age=<ms>
+  RESOLVE cmd=<n> m=<k|?> seen=<0|1> reinj=<n> age=<ms> [why=combat_end]
+  ORPHAN m=<k> cmd=<n> n=<n> age=<ms> act=<removed|failed>   (RQ4 orphan round node removed; ignored, no lifecycle)
+  SRV_KICK_GIVEUP m=<k> cmd=<n> ms=<n> n=<n> act=<removed|failed>   (RL8 starved server-route cast abandoned; ignored)
+  EXEC_ID cmd=<n> m=<k> type=<hex> want=<hex> got=<hex>   (RQ7 item id trace; ignored)
   DROP cmd=<n> m=<k|?> why=<reason> n=<count>
   EDGE what=<combat|paused|menu|party_table|gather_m<k>|creature|journal_cap> old=<0|1> new=<0|1> src=<hud|unreadable> buf=<n,n,...|empty>
     (journal_cap is a marker: its old/new carry no meaning and the timeline shows it as a marker)
@@ -55,7 +58,7 @@ Flags:
   A follower-wiped (QJ): 0x3D in one member's shown types=, absent from that member's next QJ (only when that QJ is not
     +N truncated), and that next QJ's ours is not cancel. Types compare by hex value (3d == 3D).
   B orphan-round (QJ): the first QJ after an ours=cancel QJ has round >= that cancel QJ's round (cancel round > 0).
-  C unseen-reinject (RESOLVE): seen=0 with reinj>0.
+  C unseen-reinject (RESOLVE): seen=0 with reinj>0 (not why=combat_end).
   D eaten-loop (VANISH): one command (lifecycle) has >= 4 VANISH kind=eaten_paused. Anchored at the 4th.
   E stale-wait (WAIT why=cur_busy): age >= 3000 for a member with no STALE_CUR line in the window.
   F handoff-short (HANDOFF): buffered=n > 0 but fewer than n HANDOFF_ONE for that member before its next HANDOFF.
@@ -309,7 +312,7 @@ def qj_flags(recs):
     for r in recs:
         f = r["f"]
         if r["kw"] == "RESOLVE":
-            if _num(f["seen"]) == 0 and (_num(f["reinj"]) or 0) > 0:
+            if _num(f["seen"]) == 0 and (_num(f["reinj"]) or 0) > 0 and f.get("why") != "combat_end":
                 out.append((r["line"], "C L%d cmd=%s m=%s unseen-reinject seen=0 reinj=%s" % (
                     r["line"], r["cmd"], _ms(r["m"]), f["reinj"])))
             continue

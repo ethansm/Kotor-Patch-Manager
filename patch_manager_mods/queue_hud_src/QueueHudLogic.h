@@ -662,6 +662,12 @@ constexpr uint32_t kReInjectSpacingMs = 250;   // minimum gap between two re-inj
 constexpr uint32_t kEatenWaitMaxMs = 20000;    // unpaused time spent eaten before giving up
 constexpr uint32_t kStaleCurMs = 1500;         // a flagless item/spell round node older than this is stale
 constexpr uint32_t kReInjectResetMs = 2000;    // a present action this long after the last re-inject clears the budget
+constexpr int kMaxTotalReInjects = 12;          // RL5: verdict re-injects per action over its whole life (a present frame never resets it)
+constexpr uint32_t kPresentCeilingMs = 30000;   // RQ4: unpaused ms an action may stay PRESENT before tracking is abandoned
+constexpr uint32_t kOrphanMs = 1500;            // RQ4: unpaused ms a 9/10 round node may sit with no consumer entry and no real cur (= kStaleCurMs)
+constexpr uint32_t kKickGiveUpMs = 5000;        // RL8: unpaused ms a server-route cast may stay starved (selfheal gives up at 5 s too)
+constexpr uint32_t kClockGapMs = 500;           // UnpausedClock: a longer gap between two ticks (combat, menu, hitch) adds nothing
+constexpr int kKickMaxAt = kMaxEntries - 1;     // RL8: deepest index of the 0x3F a kick may rotate to the front
 
 struct ActionBuffer {
     QueuedAction queue[kMaxActionQueue];
@@ -685,6 +691,11 @@ struct ActionBuffer {
     uint32_t lastVerdictTick = 0;
     bool dispatchDeferred = false;  // RQ5: a server-route send was refused; retry every kDeferRetryMs up to kDeferMaxMs unpaused
     uint32_t deferTick = 0, deferLastTry = 0, deferUnpausedMs = 0;
+    // RQ4/RQ7/RL5 (appended; cancel() and clear() reset every one of them)
+    bool sawExpanded = false;        // a 0x0F/0x2E node of ours was seen: a wipe after it is eaten-eligible, not UNSEEN
+    int flagBase = -1;               // flagBits() that were set at dispatch and have not read clear since; -1 = unknown
+    uint32_t activeUnpausedMs = 0;   // unpaused ms since (re)dispatch: present ceiling
+    int totalReInjects = 0;          // verdict re-injects of this action; never reset by a present frame
 
     bool empty() const { return count == 0; }
     bool full() const { return count >= kMaxActionQueue; }
@@ -722,6 +733,7 @@ struct ActionBuffer {
         staleCurSince = 0;
         eatenUnpausedMs = 0;
         lastVerdictTick = 0; dispatchDeferred = false; deferTick = 0; deferLastTry = 0; deferUnpausedMs = 0;
+        sawExpanded = false; flagBase = -1; activeUnpausedMs = 0; totalReInjects = 0;
     }
 
     void clear() {
@@ -742,19 +754,31 @@ struct ActionBuffer {
         staleCurSince = 0;
         eatenUnpausedMs = 0;
         lastVerdictTick = 0; dispatchDeferred = false; deferTick = 0; deferLastTry = 0; deferUnpausedMs = 0;
+        sawExpanded = false; flagBase = -1; activeUnpausedMs = 0; totalReInjects = 0;
     }
 
     // Dispatch stamps the start and clears the per-action eaten flags.
-    void markDispatched(uint32_t now) { activeStartTick = now; sawExecuting = false; eaten = false; pausedEaten = false; goneSinceTick = 0; }
+    // A NEW action was sent: stamp the start, clear every per-action verdict counter (RL1: hand-off / overwrite exits left them spent) and record the flag baseline (-1 = unknown, the hooks).
+    void markDispatched(uint32_t now, int flags = -1) {
+        activeStartTick = now; sawExecuting = false; eaten = false; pausedEaten = false; goneSinceTick = 0;
+        eatenReInjects = 0; eatenUnpausedMs = 0; lastReInjectTick = 0;
+        sawExpanded = false; flagBase = flags; activeUnpausedMs = 0; totalReInjects = 0;
+    }
+    // The verdict re-sent the SAME action: restart the settle window only; the re-inject counters keep counting.
+    void markReInjected(uint32_t now, int flags = -1) {
+        activeStartTick = now; sawExecuting = false; eaten = false; pausedEaten = false; goneSinceTick = 0;
+        sawExpanded = false; flagBase = flags; activeUnpausedMs = 0;
+    }
+    // Baseline shrinks to the bits still set: only a bit that read clear and came back (or never was set) counts as "rose" (RQ7).
+    void noteFlags(int bits) { flagBase = flagBase < 0 ? bits : (flagBase & bits); }
     // Adds the unpaused time since the last verdict while eaten; one step is capped at 1000 ms.
     // Pause edges: eaten while paused latches pausedEaten; the first unpaused tick after it gives the action a fresh budget.
     void accrueEaten(bool paused, uint32_t now) {
         if (eaten && paused) pausedEaten = true;
         else if (pausedEaten && !paused) { pausedEaten = false; eatenReInjects = 0; lastReInjectTick = 0; }
-        if (eaten && !paused) {
-            const uint32_t d = now - lastVerdictTick;
-            eatenUnpausedMs += d < 1000u ? d : 1000u;
-        }
+        const uint32_t d = now - lastVerdictTick, step = d < 1000u ? d : 1000u;
+        if (eaten && !paused) eatenUnpausedMs += step;
+        if (!paused) activeUnpausedMs += step;   // RQ4 present ceiling
         lastVerdictTick = now;
     }
     // Starts the gone clock on the first absent frame; a present frame stops it.
@@ -764,8 +788,9 @@ struct ActionBuffer {
     }
     // Records that the engine showed the action executing; a present frame well after the last re-inject ends the eaten
     // episode (clears the re-inject budget and the unpaused wait, so the next command starts fresh).
-    void notePresent(bool executing, bool actionPresent, uint32_t now) {
+    void notePresent(bool executing, bool actionPresent, uint32_t now, bool expanded = false) {
         if (executing) sawExecuting = true;
+        if (expanded) sawExpanded = true;
         if (actionPresent && now - lastReInjectTick >= kReInjectResetMs) { eatenReInjects = 0; eatenUnpausedMs = 0; }
     }
 };
@@ -836,19 +861,24 @@ constexpr uint32_t kFlagBusyCapMs = 2000;   // hold at most this long, then disp
 // One per member. step() is called once per tick, only while every other dispatch gate passes (call reset() otherwise).
 // Flags that were never busy during the hold dispatch at once; once busy was seen, the flags must read clear on two ticks
 // >= kVanishDebounceMs apart. aa8/ab8 are ignored while paused (sticky in a frozen round), so the caller passes busy=false then.
+// RL3: paused time inside a hold never counts toward the cap.
 struct FlagGate {
-    uint32_t holdSince = 0;    // first tick of this hold
-    uint32_t clearSince = 0;   // first tick of the current clear run
+    uint32_t holdSince = 0, clearSince = 0, lastTick = 0, pausedMs = 0;   // pausedMs: paused time inside this hold (never counts toward the cap)
     bool holding = false, clearing = false, sawBusy = false;
-    void reset() { holdSince = 0; clearSince = 0; holding = false; clearing = false; sawBusy = false; }
+    void reset() { holdSince = 0; clearSince = 0; lastTick = 0; pausedMs = 0; holding = false; clearing = false; sawBusy = false; }
     // true = dispatch now. *capped is set when the dispatch is allowed only because the hold cap ran out.
-    bool step(bool busy, uint32_t now, bool* capped = nullptr) {
+    bool step(bool busy, uint32_t now, bool* capped = nullptr, bool paused = false) {
         if (capped) *capped = false;
-        if (!holding) { holding = true; holdSince = now; }
+        if (!holding) { holding = true; holdSince = now; lastTick = now; pausedMs = 0; }
+        const uint32_t d = now - lastTick; lastTick = now;
+        if (paused) {              // aa8/ab8 are sticky in a frozen round: once busy was seen keep holding, restart the clear run on unpause
+            pausedMs += d; clearing = false;
+            return !sawBusy;
+        }
         if (busy) {
             sawBusy = true;
             clearing = false;
-            if (now - holdSince >= kFlagBusyCapMs) { if (capped) *capped = true; return true; }
+            if (now - holdSince - pausedMs >= kFlagBusyCapMs) { if (capped) *capped = true; return true; }
             return false;
         }
         if (!sawBusy) return true;
@@ -861,7 +891,7 @@ struct FlagGate {
 // reInjectWhy(...) == RI_OK  <=>  shouldReInject(...);   dispatchWhy(...) == DS_OK  <=>  shouldDispatchNext(...).
 enum ReInjectWhy : uint8_t { RI_OK, RI_INACTIVE, RI_PENDING, RI_CANCEL, RI_MAX, RI_IN_QUEUE, RI_NO_LEADER, RI_EXECUTED, RI_NOT_CTRL, RI_DEFERRED, RI_OFF, RI_PAUSED, RI_SETTLE, RI_SPACING };
 enum DispatchWhy : uint8_t { DS_OK, DS_ACTIVE, DS_EMPTY, DS_ENGINE_BUSY, DS_CUR_BUSY, DS_NRN_BUSY, DS_FLAG_BUSY, DS_NOT_CTRL };
-enum DropWhy : uint8_t { DR_COMBAT_CLEAR, DR_NULL_CREATURE, DR_CANCEL, DR_BUFFER_FULL, DR_UNREADABLE_CREATURE, DR_REINJECT_EXHAUSTED, DR_EATEN_TIMEOUT, DR_IDENTITY_LOST, DR_REFUSED, DR_EXECUTED };
+enum DropWhy : uint8_t { DR_COMBAT_CLEAR, DR_NULL_CREATURE, DR_CANCEL, DR_BUFFER_FULL, DR_UNREADABLE_CREATURE, DR_REINJECT_EXHAUSTED, DR_EATEN_TIMEOUT, DR_IDENTITY_LOST, DR_REFUSED, DR_EXECUTED, DR_PRESENT_TIMEOUT };
 
 struct RiGate { bool on = false; bool pauseEatenWait = false; bool pauseReinject = true; };   // production passes on=true
 inline ReInjectWhy reInjectWhy(const ActionBuffer& buf, bool actionInQueue, bool hasFollowLeader, bool paused = false, uint32_t now = 0,
@@ -949,6 +979,7 @@ inline const char* whyName(DropWhy w) {
         case DR_IDENTITY_LOST: return "identity_lost";
         case DR_REFUSED: return "refused";
         case DR_EXECUTED: return "executed";
+        case DR_PRESENT_TIMEOUT: return "present_timeout";
     }
     return "?";
 }
@@ -1051,24 +1082,40 @@ inline int fmtWait(char* out, int cap, uint32_t cmdId, int m, DispatchWhy why, i
     return w.done();
 }
 
-// RESOLVE cmd=<n> m=<k> seen=<0|1> reinj=<n> age=<ms>
-inline int fmtResolve(char* out, int cap, uint32_t cmdId, int m, bool seen, int reinj, uint32_t ageMs) {
+// RESOLVE cmd=<n> m=<k> seen=<0|1> reinj=<n> age=<ms> [why=<text>]
+inline int fmtResolve(char* out, int cap, uint32_t cmdId, int m, bool seen, int reinj, uint32_t ageMs, const char* why = nullptr) {
     detail::LogWr w(out, cap);
     w.s("RESOLVE cmd="); w.u(cmdId);
     w.s(" m="); w.mm(m);
     w.s(" seen="); w.c(seen ? '1' : '0');
     w.s(" reinj="); w.i(reinj);
     w.s(" age="); w.u(ageMs);
+    if (why) { w.s(" why="); w.s(why); }
     return w.done();
 }
 
-// DROP cmd=<n> m=<k> why=combat_clear|null_creature|cancel|buffer_full|unreadable_creature|reinject_exhausted|eaten_timeout|identity_lost n=<count>
+// DROP cmd=<n> m=<k> why=combat_clear|null_creature|cancel|buffer_full|unreadable_creature|reinject_exhausted|eaten_timeout|identity_lost|present_timeout n=<count>
 inline int fmtDrop(char* out, int cap, uint32_t cmdId, int m, DropWhy why, int n) {
     detail::LogWr w(out, cap);
     w.s("DROP cmd="); w.u(cmdId);
     w.s(" m="); w.mm(m);
     w.s(" why="); w.s(whyName(why));
     w.s(" n="); w.i(n);
+    return w.done();
+}
+
+// ORPHAN m=<k> cmd=<n> n=<removed|0> age=<ms> act=removed|failed   (removed < 0 = guard/mismatch, list untouched)
+inline int fmtOrphan(char* out, int cap, int m, uint32_t cmdId, int removed, uint32_t ageMs) {
+    detail::LogWr w(out, cap);
+    w.s("ORPHAN m="); w.mm(m); w.s(" cmd="); w.u(cmdId); w.s(" n="); w.i(removed < 0 ? 0 : removed);
+    w.s(" age="); w.u(ageMs); w.s(removed < 0 ? " act=failed" : " act=removed");
+    return w.done();
+}
+// SRV_KICK_GIVEUP m=<k> cmd=<n> ms=<starved ms> n=<removed|0> act=removed|failed
+inline int fmtKickGiveup(char* out, int cap, int m, uint32_t cmdId, uint32_t ms, int removed) {
+    detail::LogWr w(out, cap);
+    w.s("SRV_KICK_GIVEUP m="); w.mm(m); w.s(" cmd="); w.u(cmdId); w.s(" ms="); w.u(ms); w.s(" n="); w.i(removed < 0 ? 0 : removed);
+    w.s(removed < 0 ? " act=failed" : " act=removed");
     return w.done();
 }
 
@@ -1162,12 +1209,12 @@ inline int fmtHandoffOne(char* out, int cap, uint32_t cmdId, int m, int seq, int
 }
 
 // QL20: a server-route cast on a follower starves: its 0x3F sits behind the self-re-adding 0x3D FollowLeader (doc 27 R8, same rule as actq::starved
-// but for any round node, spells included). Returns the index (1..3) of the first 0x3F when a round node is pending and only 0x3D sit before it, else 0.
+// but for any round node, spells included). Returns the index (1..kKickMaxAt) of the first 0x3F when a round node is pending and only 0x3D sit before it, else 0.
 inline int castStarvedAt(const int* types, int ne, bool roundPending) {
     if (!roundPending || !types) return 0;
     int k = -1;
     for (int i = 0; i < ne && i < kMaxEntries; ++i) if (types[i] == 0x3F) { k = i; break; }
-    if (k < 1 || k > 3) return 0;
+    if (k < 1 || k > kKickMaxAt) return 0;
     for (int i = 0; i < k; ++i) if (types[i] != 0x3D) return 0;
     return k;
 }
@@ -1498,9 +1545,48 @@ inline int fmtIdentSwap(char* out, int cap, int from, int to) {
 }
 
 // ---- Eaten-action verdict. PURE: the caller fills EngineView from engine memory and acts on the verdict. ----
-struct EngineView { bool paused = false, actionPresent = false, executing = false, foreign = false, idle = false; };
+// Unpaused-time clock for "this condition has held for N ms" (RQ4 orphan, RL8 kick). Paused = frozen; a gap > kClockGapMs between ticks adds nothing.
+struct UnpausedClock {
+    uint32_t ms = 0, last = 0; bool run = false;
+    void reset() { ms = 0; last = 0; run = false; }
+    uint32_t tick(bool paused, uint32_t now) {
+        if (paused) { run = false; return ms; }
+        if (run) { const uint32_t d = now - last; if (d <= kClockGapMs) ms += d; }
+        run = true; last = now;
+        return ms;
+    }
+};
+// An engine queue entry that can still consume a pending round node: the 0x3F placeholder or its expansion (0x0F cast / 0x2E item).
+inline bool entryConsumesRound(int type) { return type == 0x3F || type == T_CAST_SPELL || type == T_USE_ITEM; }
+// RQ4: age (unpaused ms) of an ORPHAN round node: a 9/10 node pending, no consumer entry, no real cur. Any other state resets the clock.
+inline uint32_t orphanRoundAge(bool hasConsumer, bool creal, bool nrn910, bool paused, UnpausedClock& c, uint32_t now) {
+    if (hasConsumer || creal || !nrn910) { c.reset(); return 0; }
+    return c.tick(paused, now);
+}
+// RQ6: is an action started at activeStartTick newer than the last combat tick? (false = history unknown, stop tracking). 0 = no combat seen; wrap-safe; equal counts as after.
+inline bool shouldTrackAfterCombat(uint32_t activeStartTick, uint32_t combatEndTick) {
+    return combatEndTick == 0 || static_cast<int32_t>(activeStartTick - combatEndTick) >= 0;
+}
+// RQ7: aa8/ab8 as bits; a flag "rose" when a bit is set now that was clear at dispatch (or read clear since).
+inline int flagBits(int aa8, int ab8) { return (aa8 != 0 ? 1 : 0) | (ab8 != 0 ? 2 : 0); }
+inline bool flagsRose(int flagBase, int aa8, int ab8) { return (flagBits(aa8, ab8) & ~(flagBase < 0 ? 0 : flagBase)) != 0; }
+// RL8/RQ4: round-node masks for removeRoundNodes. headNodeMask = bit of the FIRST node that is the active action's own (0 = none); itemSpellMask = bits of the 9/10 nodes.
+inline unsigned headNodeMask(const RNode* rn, int n, const QueuedAction& head) {   // nodeIsHead is RV1's
+    if (!rn) return 0;
+    for (int i = 0; i < n && i < kMaxRound; ++i) if (nodeIsHead(rn[i], head)) return 1u << i;
+    return 0;
+}
+inline unsigned itemSpellMask(const RNode* rn, int n) {
+    unsigned m = 0;
+    for (int i = 0; rn && i < n && i < kMaxRound; ++i) if (rn[i].subType == 9 || rn[i].subType == 10) m |= 1u << i;
+    return m;
+}
+// RQ7: what makeEngineView ties the executing evidence to. spell: strict by id; item: lenient (see Deviations).
+struct ExecTie { bool spell = false; uint32_t id = 0; uint32_t curSpell = 0; int flagBase = -1; };
 
-enum ActiveVerdict : uint8_t { AV_PRESENT, AV_EXECUTED, AV_UNSEEN, AV_EATEN_WAIT, AV_EATEN_REINJECT, AV_GIVE_UP };
+struct EngineView { bool paused = false, actionPresent = false, executing = false, foreign = false, idle = false, expanded = false; };
+
+enum ActiveVerdict : uint8_t { AV_PRESENT, AV_EXECUTED, AV_UNSEEN, AV_EATEN_WAIT, AV_EATEN_REINJECT, AV_GIVE_UP, AV_PRESENT_TIMEOUT };
 
 inline const char* verdictName(ActiveVerdict v) {
     switch (v) {
@@ -1510,21 +1596,23 @@ inline const char* verdictName(ActiveVerdict v) {
         case AV_EATEN_WAIT: return "eaten_wait";
         case AV_EATEN_REINJECT: return "eaten_reinject";
         case AV_GIVE_UP: return "give_up";
+        case AV_PRESENT_TIMEOUT: return "present_timeout";
     }
     return "?";
 }
 
 // Rules are checked in order; the first match wins. pauseEatenWait (ini pause_eaten_wait) adds rule 4b.
 inline ActiveVerdict activeVerdict(const ActionBuffer& buf, const EngineView& ev, uint32_t now, bool pauseEatenWait = false) {
+    if (ev.actionPresent && !ev.paused && buf.activeUnpausedMs >= kPresentCeilingMs) return AV_PRESENT_TIMEOUT;   // 0: RQ4 ceiling
     if (ev.actionPresent) return AV_PRESENT;                                              // 1
     if (buf.goneSinceTick == 0 || now - buf.goneSinceTick < kVanishDebounceMs) return AV_PRESENT;
     if (now - buf.activeStartTick <= kMinActiveMs) return AV_PRESENT;
     if (buf.sawExecuting) return AV_EXECUTED;                                             // 2
-    if (!buf.eaten && !ev.paused) return AV_UNSEEN;                                       // 3
+    if (!buf.eaten && !ev.paused && !buf.sawExpanded) return AV_UNSEEN;                   // 3
     if (buf.eatenUnpausedMs >= kEatenWaitMaxMs) return AV_GIVE_UP;                        // 4
     if (pauseEatenWait && ev.paused) return AV_EATEN_WAIT;                                // 4b: the engine eats it again while paused
     if (ev.foreign || !ev.idle) return AV_EATEN_WAIT;                                     // 5
-    if (buf.eatenReInjects >= kMaxEatenReInject) return AV_GIVE_UP;                       // 6
+    if (buf.eatenReInjects >= (buf.sawExpanded ? 1 : kMaxEatenReInject) || buf.totalReInjects >= kMaxTotalReInjects) return AV_GIVE_UP;   // 6 (the DROP why stays reinject_exhausted)
     if (now - buf.lastReInjectTick < kReInjectSpacingMs) return AV_EATEN_WAIT;            // 7
     return AV_EATEN_REINJECT;                                                             // 8
 }
@@ -1545,19 +1633,28 @@ inline bool curActionPresent(bool creal, int curSub) { return creal && (curSub =
 
 // Builds the EngineView from raw engine reads. aa8/ab8 are ignored while paused (sticky in a frozen round).
 inline EngineView makeEngineView(const int* entryTypes, int ne, bool actionPresent, bool haveCur, int curSub, int nrn,
-                                 int aa8, int ab8, bool paused, uint32_t staleSince, uint32_t now) {
-    bool execNode = false;
-    bool foreign = false;
+                                 int aa8, int ab8, bool paused, uint32_t staleSince, uint32_t now,
+                                 const uint32_t* entryParam0 = nullptr, const ExecTie* tie = nullptr) {
+    bool execNode = false, ours = false, foreign = false;
     for (int i = 0; entryTypes != nullptr && i < ne; ++i) {
         const int t = entryTypes[i];
-        if (t == 0x2E || t == 0x0F) execNode = true;
+        if (t == 0x2E || t == 0x0F) {
+            execNode = true;
+            if (!tie || !tie->spell || (t == 0x0F && entryParam0 && entryParam0[i] == tie->id)) ours = true;   // RQ7
+        }
         if (t != 0x3F && t != 0x3D && t != 0x2E && t != 0x0F) foreign = true;
     }
     const bool creal = curReal(haveCur, curSub, aa8, ab8, paused, staleSince, now);
+    const bool curNode = creal && (curSub == 9 || curSub == 10);
     EngineView ev;
     ev.paused = paused;
     ev.actionPresent = actionPresent;
-    ev.executing = execNode || (!paused && ((creal && (curSub == 9 || curSub == 10)) || aa8 != 0 || ab8 != 0));
+    if (!tie) ev.executing = execNode || (!paused && (curNode || aa8 != 0 || ab8 != 0));   // legacy creature-wide reading (tests, other callers)
+    else {   // RQ7: only evidence of OUR action: a matching cur node, or a flag that rose after dispatch; an expanded node is ev.expanded, not executing
+        const bool curOurs = curNode && (!tie->spell || (curSub == 9 && (tie->curSpell == 0 || tie->curSpell == tie->id)));
+        ev.executing = !paused && (curOurs || flagsRose(tie->flagBase, aa8, ab8));
+    }
+    ev.expanded = ours;
     ev.foreign = foreign;
     ev.idle = !foreign && !execNode && nrn == 0 && !creal;
     return ev;

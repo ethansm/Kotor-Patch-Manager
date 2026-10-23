@@ -357,6 +357,14 @@ class FlagTests(unittest.TestCase):
     def test_C_quiet(self):
         self.assertEqual(flags_of([resolve(5, seen=0, reinj=0), resolve(6, seen=1, reinj=2)]), [])
 
+    def test_C_quiet_when_combat_end(self):
+        line = resolve(5, seen=0, reinj=1) + " why=combat_end"
+        self.assertEqual(flags_of([line]), [])
+        recs, skipped = parse([line])   # parse guard: quiet because of the why, not because the line was skipped
+        self.assertEqual(len(recs), 1)
+        self.assertEqual(recs[0]["f"]["why"], "combat_end")
+        self.assertFalse(skipped)
+
 
 class ViewTests(unittest.TestCase):
     def test_lifecycle_line(self):

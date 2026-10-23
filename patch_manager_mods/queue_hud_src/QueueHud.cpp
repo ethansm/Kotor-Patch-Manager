@@ -1052,11 +1052,11 @@ static void traceVanish(int k, qh::VanishKind kind, const qh::ActionBuffer& buf,
 }
 
 // RESOLVE line, then clear the active action (normal completion, not an abandon).
-static void resolveActive(int k, qh::ActionBuffer& buf, DWORD now) {
+static void resolveActive(int k, qh::ActionBuffer& buf, DWORD now, const char* why = nullptr) {
     if (g_logOn && g_cfg.traceQueue) {
         char line[200];
         qh::fmtResolve(line, sizeof line, buf.activeAction.cmdId, k, buf.seenInQueue, buf.activeAction.reInjectCount,
-                       now - buf.activeAction.queueTime);
+                       now - buf.activeAction.queueTime, why);
         QTRACE("%s", line);
     }
     g_lastOurs[k].tag = "resolve"; g_lastOurs[k].tick = GetTickCount();
@@ -1155,26 +1155,46 @@ static void afterSend(int k, qh::ActionBuffer& buf, SendResult r, DWORD now) {
 // Never ClearAllActions. One rotate per 250 ms per member; one SRV_KICK line per rotate, one SRV_KICK_SKIP line per gate change.
 DWORD g_kickLast[3] = {0, 0, 0};
 int g_kickSkipWhy[3] = {0, 0, 0};
+qh::UnpausedClock g_orphanClk[3];   // RQ4: orphan round node clock per member
+qh::UnpausedClock g_kickClk[3];     // RL8: starved server-route cast clock per member
+uint32_t g_execIdCmd[3] = {0, 0, 0};   // RQ7: cmd whose EXEC_ID line was already traced
+DWORD g_lastCombatTick = 0;            // RQ6: last tick of a readable combat frame
+int removeRoundNodes(uintptr_t srv, const Snapshot& s, unsigned removeMask);   // defined after roundListHandle
 static void kickSkip(int k, int why, const char* gate) {
     if (g_kickSkipWhy[k] == why) return;
     g_kickSkipWhy[k] = why;
     if (g_logOn && g_cfg.traceQueue) QTRACE("SRV_KICK_SKIP m=%d gate=%s", k, gate);
 }
-static void kickStarved(int k, uintptr_t cr, const Snapshot& s, DWORD now) {
+static bool kickStarved(int k, uintptr_t cr, qh::ActionBuffer& buf, const Snapshot& s, DWORD now) {   // true = gave up (buf.active cleared, caller skips the rest of this member's tick)
+    if (buf.dispatchDeferred || !buf.active) { g_kickClk[k].reset(); return false; }   // R3: a deferred action was never sent; any starved 0x3F is another mod's (selfheal), not ours
     int types[qh::kMaxEntries];
     const int ne = s.engineNe < qh::kMaxEntries ? s.engineNe : qh::kMaxEntries;
     for (int i = 0; i < ne; ++i) types[i] = s.e[i].type;
     const int at = qh::castStarvedAt(types, ne, s.nrn > 0 || s.haveCur);
-    if (at == 0) { g_kickSkipWhy[k] = 0; return; }
-    if (s.paused) { kickSkip(k, 1, "paused"); return; }
-    if (now - g_kickLast[k] < 250u) return;
+    if (at == 0) { g_kickSkipWhy[k] = 0; g_kickClk[k].reset(); return false; }
+    const uint32_t starvedMs = g_kickClk[k].tick(s.paused, now);   // RL8: unpaused time this cast has been starved, gates included
+    if (starvedMs >= qh::kKickGiveUpMs) {
+        const unsigned rmask = qh::headNodeMask(s.rn, s.nrn, buf.activeAction);   // R3: only the active action's own node, never another subtype's
+        if (rmask == 0) { g_kickClk[k].reset(); return false; }   // not our cast starving (e.g. selfheal's 0x3F, which gives up on its own 5 s clock): do not drop, do not remove
+        const int removed = removeRoundNodes(cr, s, rmask);   // else the starved 0x3F fires late, when the member next leads
+        char line[200];
+        qh::fmtKickGiveup(line, sizeof line, k, buf.activeAction.cmdId, starvedMs, removed);
+        QLOG(chMain, "%s", line);
+        if (g_logOn && g_cfg.traceQueue) { qh::fmtDrop(line, sizeof line, buf.activeAction.cmdId, k, qh::DR_EATEN_TIMEOUT, 1); QTRACE("%s", line); }
+        endAction(buf);
+        g_kickClk[k].reset(); g_kickSkipWhy[k] = 0;
+        g_lastOurs[k].tag = "kick"; g_lastOurs[k].tick = now;
+        return true;
+    }
+    if (s.paused) { kickSkip(k, 1, "paused"); return false; }
+    if (now - g_kickLast[k] < 250u) return false;
     uint32_t running = 0, c11ac = 0;
-    if (!rd(SiteSrvCast + 2, cr, actq::CrRunning, &running) || running != 0) { kickSkip(k, 2, "running"); return; }
-    if (!rd(SiteSrvCast + 3, cr, actq::Cr11AC, &c11ac) || c11ac == 0) { kickSkip(k, 3, "cr11ac"); return; }
-    if (!s.round) { kickSkip(k, 4, "round"); return; }
-    if (s.aa8 != 0) { kickSkip(k, 5, "aa8"); return; }
-    if (s.ab8 >= 1) { kickSkip(k, 6, "ab8"); return; }
-    if (reinterpret_cast<uint32_t(__thiscall*)(uintptr_t)>(gameaddr::RoundHasPending)(s.round) == 0) { kickSkip(k, 7, "pending"); return; }
+    if (!rd(SiteSrvCast + 2, cr, actq::CrRunning, &running) || running != 0) { kickSkip(k, 2, "running"); return false; }
+    if (!rd(SiteSrvCast + 3, cr, actq::Cr11AC, &c11ac) || c11ac == 0) { kickSkip(k, 3, "cr11ac"); return false; }
+    if (!s.round) { kickSkip(k, 4, "round"); return false; }
+    if (s.aa8 != 0) { kickSkip(k, 5, "aa8"); return false; }
+    if (s.ab8 >= 1) { kickSkip(k, 6, "ab8"); return false; }
+    if (reinterpret_cast<uint32_t(__thiscall*)(uintptr_t)>(gameaddr::RoundHasPending)(s.round) == 0) { kickSkip(k, 7, "pending"); return false; }
     g_kickLast[k] = now;
     g_kickSkipWhy[k] = 0;
     int done = 0;
@@ -1186,6 +1206,7 @@ static void kickStarved(int k, uintptr_t cr, const Snapshot& s, DWORD now) {
     }
     g_lastOurs[k].tag = "kick"; g_lastOurs[k].tick = now;
     if (g_logOn && g_cfg.traceQueue) QTRACE("SRV_KICK m=%d at=%d rotated=%d ne=%d nrn=%d", k, at, done, s.engineNe, s.nrn);
+    return false;
 }
 
 // Last-value globals for the edge-only lines in tickItemQueues (-1 = unknown / nothing to report).
@@ -1534,6 +1555,26 @@ bool roundListHandle(uintptr_t srv, uintptr_t round, uint32_t* w) {
            saferead::readAt(SiteCancel + 0x35, *w, 0, &internal) && internal;
 }
 
+// Take the round nodes selected by removeMask (bit i = s.rn[i]) out of the list WITHOUT ServerClearAllActions (that also empties cr+0x100: a companion would lose its 0x3D, RQ12).
+// Same guards, ActListRemoveHead pop and identity check as detachRound; every node whose bit is clear is pushed straight back (list is empty after the pop, so order is kept); removed nodes
+// are leaked on purpose (free path unverified). Returns the count removed; 0 = empty mask (list untouched); -1 = guard/mismatch (all popped nodes restored).
+int removeRoundNodes(uintptr_t srv, const Snapshot& s, unsigned removeMask) {
+    uint32_t w = 0;
+    if (s.nrn <= 0 || s.nrn > qh::kMaxRound || (removeMask & ((1u << s.nrn) - 1u)) == 0) return 0;
+    if (!roundListHandle(srv, s.round, &w)) return -1;
+    auto pop = reinterpret_cast<uint32_t(__thiscall*)(uintptr_t)>(gameaddr::ActListRemoveHead);
+    auto push = reinterpret_cast<void(__thiscall*)(uintptr_t, uint32_t)>(gameaddr::ActListAddTail);
+    uint32_t got[qh::kMaxRound];
+    int popped = 0;
+    for (; popped < s.nrn; ++popped) { got[popped] = pop(w); if (got[popped] == 0) break; }
+    bool ok = popped == s.nrn;
+    for (int i = 0; i < s.nrn && ok; ++i) ok = got[i] == s.rn[i].ptr;
+    if (!ok) { for (int i = 0; i < popped; ++i) if (got[i]) push(w, got[i]); return -1; }
+    int removed = 0;
+    for (int i = 0; i < s.nrn; ++i) { if (removeMask & (1u << i)) ++removed; else push(w, got[i]); }
+    return removed;
+}
+
 void traceDetach(int k, int n, const char* act, bool ok, const char* why) {
     if (!g_logOn || !g_cfg.traceQueue) return;
     char line[160];
@@ -1712,7 +1753,7 @@ void tickItemQueues(DWORD now, bool inMenu) {
     // unreadable HUD flags: no edge and g_prevCombat is kept (QH-2a-07), so a gap cannot fake a rising edge
     for (int k = 0; k < 3; ++k) edgeFlags[k] = qh::combatEdgeStep(g_prevCombat[k], !g_combatUnreadable, g_combat != 0);
     if (inMenu || g_combat != 0) {
-        if (combatNow) { for (int k = 0; k < 3; ++k) if (edgeFlags[k]) { g_roundOrder[k] = RoundOrder(); discardDetached(k, "new_combat"); }   // a new combat starts clean
+        if (combatNow) { g_lastCombatTick = now; for (int k = 0; k < 3; ++k) if (edgeFlags[k]) { g_roundOrder[k] = RoundOrder(); discardDetached(k, "new_combat"); }   // a new combat starts clean
                          combatEdgeTrace(now, edgeFlags); handoffTick(now, edgeFlags); roundOrderTick(now, edgeFlags); detachTick(now); roundWatchTick(now); }   // unreadable HUD flags: no hand-off and no drop, the buffers wait
         return;
     }
@@ -1730,6 +1771,7 @@ void tickItemQueues(DWORD now, bool inMenu) {
 
     // Identity pre-pass: buffer k must hold the creature that party member k is now. Party rotation moves creatures between slots.
     bool skip[3] = {false, false, false};
+    bool swapped[3] = {false, false, false};
     for (int k = 0; k < 3; ++k) {
         qh::ActionBuffer& b = g_itemQueue[k];
         if (!bufBusy(b)) { g_identLostMs[k] = 0; g_identLastTick[k] = 0; continue; }
@@ -1738,6 +1780,10 @@ void tickItemQueues(DWORD now, bool inMenu) {
         if (slot >= 0) {   // the creature moved to another slot: swap the two buffers (and their g_lastOurs)
             std::swap(g_itemQueue[k], g_itemQueue[slot]);
             std::swap(g_lastOurs[k], g_lastOurs[slot]);
+            std::swap(g_flagGate[k], g_flagGate[slot]);   // RL2: per-buffer hold / throttle state travels with the buffer
+            std::swap(g_kickLast[k], g_kickLast[slot]); std::swap(g_kickSkipWhy[k], g_kickSkipWhy[slot]);
+            std::swap(g_lastWaitTick[k], g_lastWaitTick[slot]);
+            std::swap(g_orphanClk[k], g_orphanClk[slot]); std::swap(g_kickClk[k], g_kickClk[slot]);
             if (g_logOn && g_cfg.traceQueue) {
                 char line[64];
                 qh::fmtIdentSwap(line, sizeof line, k, slot);
@@ -1747,8 +1793,7 @@ void tickItemQueues(DWORD now, bool inMenu) {
             g_identLastTick[k] = g_identLastTick[slot] = 0;
             g_prevRiWhy[k] = g_prevRiWhy[slot] = -1;
             g_prevDsWhy[k] = g_prevDsWhy[slot] = -1;
-            // One swap per k per tick. If the buffer now at k still belongs to another slot, it is fixed next tick and must not run against member k's snapshot now.
-            skip[k] = bufBusy(g_itemQueue[k]) && slotOfCreature(tbl, bufOwner(g_itemQueue[k])) != k;
+            swapped[k] = swapped[slot] = true;   // judged after the loop
             continue;
         }
         // The creature is in no slot: never classify another creature's snapshot.
@@ -1766,9 +1811,18 @@ void tickItemQueues(DWORD now, bool inMenu) {
         }
     }
 
+    // RL2: judge swapped buffers after ALL swaps (a 3-way rotation left skip[0] set for a buffer that ended in place). Still in the wrong slot = wait one tick.
+    for (int k = 0; k < 3; ++k)
+        if (swapped[k]) skip[k] = bufBusy(g_itemQueue[k]) && slotOfCreature(tbl, bufOwner(g_itemQueue[k])) != k;
+
     // Combat ended before a hand-off drained: the held head is dropped; the still-buffered commands run through the sequential dispatch below.
     for (int k = 0; k < 3; ++k)
         if (g_handoff[k].pending) endHandoff(k, qh::DR_COMBAT_CLEAR);
+    // RQ6: an action still tracked from before the last combat (B1 hold keeps buf.active through a fight) has unknown history; stop tracking it, never re-inject it.
+    for (int k = 0; k < 3; ++k) {
+        qh::ActionBuffer& b = g_itemQueue[k];
+        if (!skip[k] && b.active && !qh::shouldTrackAfterCombat(b.activeStartTick, g_lastCombatTick)) resolveActive(k, b, now, "combat_end");
+    }
 
     for (int k = 0; k < 3; ++k) {
         qh::ActionBuffer& buf = g_itemQueue[k];
@@ -1817,9 +1871,28 @@ void tickItemQueues(DWORD now, bool inMenu) {
         }
         int types[qh::kMaxEntries];
         for (int i = 0; i < s.engineNe && i < qh::kMaxEntries; ++i) types[i] = s.e[i].type;
+        uint32_t p0[qh::kMaxEntries] = {};
+        for (int i = 0; i < s.engineNe && i < qh::kMaxEntries; ++i) p0[i] = s.e[i].param0;
+        qh::ExecTie tie;
+        const qh::ExecTie* tp = nullptr;
+        if (buf.active) {   // RQ7: tie the executing evidence to the active action
+            buf.noteFlags(qh::flagBits(s.aa8, s.ab8));
+            tie.spell = buf.activeAction.kind == qh::ActionKind::Spell;
+            tie.id = buf.activeAction.spellId;
+            tie.curSpell = s.haveCur ? s.cur.spellId : 0;
+            tie.flagBase = buf.flagBase;
+            tp = &tie;
+        }
         const qh::EngineView ev = qh::makeEngineView(types, s.engineNe < qh::kMaxEntries ? s.engineNe : qh::kMaxEntries, actionInQueue,
                                                      s.haveCur, s.haveCur ? (int)s.cur.subType : -1, s.nrn, s.aa8, s.ab8, s.paused,
-                                                     buf.staleCurSince, now);
+                                                     buf.staleCurSince, now, p0, tp);
+        if (tp && !tie.spell && g_execIdCmd[k] != buf.activeAction.cmdId && g_logOn && g_cfg.traceQueue)
+            for (int i = 0; i < s.engineNe && i < qh::kMaxEntries; ++i)
+                if (types[i] == 0x2E || types[i] == 0x0F) {
+                    g_execIdCmd[k] = buf.activeAction.cmdId;
+                    QTRACE("EXEC_ID cmd=%u m=%d type=%02x want=%08x got=%08x", (unsigned)buf.activeAction.cmdId, k, types[i], (unsigned)buf.activeAction.clientItem, (unsigned)p0[i]);
+                    break;
+                }
         // One STALE_CUR line per episode, only while the buffer is busy (idle path emits nothing).
         if (s.haveCur && !creal) {
             if (!buf.staleCurLogged && bufBusy(buf) && g_logOn && g_cfg.traceQueue) {
@@ -1834,8 +1907,29 @@ void tickItemQueues(DWORD now, bool inMenu) {
         }
 
         if (buf.active && actionInQueue) buf.seenInQueue = true;   // bookkeeping only (RESOLVE seen=)
+        // RQ4: orphan round node. ClearAllActions never empties the round list, so after a wipe a 9/10 node can sit with no 0x3F/0x0F/0x2E entry to consume it:
+        // it keeps the action PRESENT and blocks dispatch (DS_NRN_BUSY). kOrphanMs unpaused with no real cur: remove the list (no ServerClearAllActions), let the verdict re-send.
+        {
+            bool consumer = false;
+            for (int i = 0; i < s.engineNe && i < qh::kMaxEntries; ++i) consumer = consumer || qh::entryConsumesRound(s.e[i].type);
+            const unsigned omask = qh::itemSpellMask(s.rn, s.nrn);   // R3: remove only the 9/10 orphans, never another subtype's node
+            uint32_t age = 0;
+            if (bufBusy(buf)) age = qh::orphanRoundAge(consumer, creal, omask != 0, s.paused, g_orphanClk[k], now); else g_orphanClk[k].reset();
+            if (age >= qh::kOrphanMs) {
+                const int removed = removeRoundNodes(srv, s, omask);
+                char line[200];
+                const uint32_t cmd = buf.active ? buf.activeAction.cmdId : buf.queue[0].cmdId;
+                qh::fmtOrphan(line, sizeof line, k, cmd, removed, age);
+                QLOG(chMain, "%s", line);
+                if (removed >= 0 && buf.active) buf.eaten = true;   // else rule 3 would resolve it UNSEEN (lost)
+                g_orphanClk[k].reset();                             // a failed removal retries after another kOrphanMs, never every frame
+                g_lastOurs[k].tag = "orphan"; g_lastOurs[k].tick = now;
+                continue;                                           // s is stale: the next frame re-reads the queue
+            }
+        }
         // QL20: any tracked use/cast on a non-controlled member (server route, or one the engine took directly while the member still led) must not starve behind 0x3D
-        if (k > 0 && buf.active && g_cfg.companionServerCast) kickStarved(k, srv, s, now);
+        if (k > 0 && buf.active && g_cfg.companionServerCast) { if (kickStarved(k, srv, buf, s, now)) continue; }
+        else g_kickClk[k].reset();
 
         // 2. Follower wipe protection & active completion tracking
         qh::ReInjectWhy riWhy = qh::reInjectWhy(buf, actionInQueue, hasFollowLeader, s.paused, now, false,
@@ -1858,7 +1952,7 @@ void tickItemQueues(DWORD now, bool inMenu) {
                     endAction(buf);
                 } else if (ds == qh::DEFER_RETRY) {
                     const SendResult r = dispatchAction(buf.activeAction, k, true);
-                    if (r == SendResult::Sent) buf.markDispatched(now);
+                    if (r == SendResult::Sent) buf.markReInjected(now, qh::flagBits(s.aa8, s.ab8));
                     afterSend(k, buf, r, now);
                 }
             } else if (riWhy == qh::RI_OK) {
@@ -1894,7 +1988,11 @@ void tickItemQueues(DWORD now, bool inMenu) {
                 if (!ownerCtrl && av == qh::AV_EATEN_REINJECT) av = qh::AV_EATEN_WAIT;   // B1: hold, do not re-inject on the controlled creature
                 switch (av) {
                     case qh::AV_PRESENT:
-                        buf.notePresent(ev.executing, actionInQueue, now);
+                        buf.notePresent(ev.executing, actionInQueue, now, ev.expanded);
+                        break;
+                    case qh::AV_PRESENT_TIMEOUT:   // RQ4 ceiling: PRESENT for kPresentCeilingMs unpaused; abandon tracking (an orphan node, if any, goes through ORPHAN next)
+                        if (g_logOn && g_cfg.traceQueue) { char line[200]; qh::fmtDrop(line, sizeof line, buf.activeAction.cmdId, k, qh::DR_PRESENT_TIMEOUT, 1); QTRACE("%s", line); }
+                        endAction(buf);
                         break;
                     case qh::AV_EXECUTED:
                         traceVanish(k, qh::VK_EXECUTED, buf, s, ev, now);
@@ -1926,6 +2024,7 @@ void tickItemQueues(DWORD now, bool inMenu) {
                         }
                         if (first) traceVanish(k, qh::VK_EATEN_PAUSED, buf, s, ev, now);
                         buf.eatenReInjects++;
+                        buf.totalReInjects++;
                         buf.lastReInjectTick = now;
                         g_lastOurs[k].tag = "reinject"; g_lastOurs[k].tick = GetTickCount();
                         QLOG(chMain, "re-injecting eaten %s action for member %d (id=%08x, target=%08x, attempt=%d) cmd=%u why=eaten_paused",
@@ -1933,7 +2032,7 @@ void tickItemQueues(DWORD now, bool inMenu) {
                              k, buf.activeAction.clientItem, buf.activeAction.targetId, buf.eatenReInjects,
                              (unsigned)buf.activeAction.cmdId);
                         const SendResult r = dispatchAction(buf.activeAction, k);
-                        buf.markDispatched(now);
+                        buf.markReInjected(now, qh::flagBits(s.aa8, s.ab8));
                         afterSend(k, buf, r, now);
                         break;
                     }
@@ -1957,7 +2056,7 @@ void tickItemQueues(DWORD now, bool inMenu) {
         if (dsWhy == qh::DS_OK && !ownerCtrl) dsWhy = qh::DS_NOT_CTRL;   // B1: held until its owner leads again
         if (dsWhy == qh::DS_OK && g_cfg.dispatchWaitFlags) {
             const bool flagsBusy = !s.paused && (s.aa8 != 0 || s.ab8 != 0);
-            if (!g_flagGate[k].step(flagsBusy, now, &flagCapped)) dsWhy = qh::DS_FLAG_BUSY;
+            if (!g_flagGate[k].step(flagsBusy, now, &flagCapped, s.paused)) dsWhy = qh::DS_FLAG_BUSY;
         } else {
             g_flagGate[k].reset();
         }
@@ -1995,7 +2094,7 @@ void tickItemQueues(DWORD now, bool inMenu) {
                     if (flagCapped) QLOG(chMain, "dispatch hold=flag_cap member=%d cmd=%u aa8=%d ab8=%d", k, (unsigned)nextA.cmdId, s.aa8, s.ab8);
                     buf.active = true;
                     buf.activeAction = nextA;
-                    buf.markDispatched(now);
+                    buf.markDispatched(now, qh::flagBits(s.aa8, s.ab8));
                     const SendResult r = dispatchAction(nextA, k);
                     afterSend(k, buf, r, now);
                 }
@@ -2266,7 +2365,7 @@ void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
     loadIni();
     g_logOn = g_cfg.log;
-    KP_LOG(chMain, "0.4.6-dev: kit=%d frame_alpha=%.2f cancel=%d enabled=%d waiting_dim=%d border_px=%d log=%d companions=%d strip_icon_px=%d strip_side=%s strip_max=%d waiting_icon_dim=%d strip_head_pct=%d", g_cfg.kit ? 1 : 0, g_cfg.frameAlpha, g_cfg.cancel ? 1 : 0, g_cfg.enabled ? 1 : 0, g_cfg.waitingDim ? 1 : 0, g_cfg.borderPx, g_cfg.log ? 1 : 0, g_cfg.companions ? 1 : 0, g_cfg.stripIconPx, g_cfg.stripSide == qh::kSideBelow ? "below" : g_cfg.stripSide == qh::kSideAbove ? "above" : "left", g_cfg.stripMax, g_cfg.waitingIconDim ? 1 : 0, g_cfg.stripHeadPct);
+    KP_LOG(chMain, "0.4.7-dev: kit=%d frame_alpha=%.2f cancel=%d enabled=%d waiting_dim=%d border_px=%d log=%d companions=%d strip_icon_px=%d strip_side=%s strip_max=%d waiting_icon_dim=%d strip_head_pct=%d", g_cfg.kit ? 1 : 0, g_cfg.frameAlpha, g_cfg.cancel ? 1 : 0, g_cfg.enabled ? 1 : 0, g_cfg.waitingDim ? 1 : 0, g_cfg.borderPx, g_cfg.log ? 1 : 0, g_cfg.companions ? 1 : 0, g_cfg.stripIconPx, g_cfg.stripSide == qh::kSideBelow ? "below" : g_cfg.stripSide == qh::kSideAbove ? "above" : "left", g_cfg.stripMax, g_cfg.waitingIconDim ? 1 : 0, g_cfg.stripHeadPct);
     QLOG(chMain, "pause_eaten_wait=%d dispatch_wait_flags=%d", g_cfg.pauseEatenWait ? 1 : 0, g_cfg.dispatchWaitFlags ? 1 : 0);
     if (g_cfg.spellReplayPosSeen) QLOG(chMain, "ini: spell_replay_pos is obsolete and ignored (0.4.6-dev)");
     QLOG(chMain, "pause_reinject=%d handoff_on_combat=%d handoff_clear_first=%d handoff_keep_new=%d handoff_resend_held=%d show_in_combat=%d handoff_keep_unpaused=%d trace_mode=%d mode_cap=%d",
