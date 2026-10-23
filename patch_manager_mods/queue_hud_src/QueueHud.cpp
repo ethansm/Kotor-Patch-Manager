@@ -58,7 +58,7 @@ KP_CHANNEL(chTrace, "trace");
 const bool g_fallbackSet = (KpLog_SetFallbackFile("queue-hud_log.txt"), KpLog_SetFallbackLevel(KPLOG_INFO), true);
 
 // saferead site ids (0x7100+)
-constexpr unsigned SiteCap = 0x7100, SiteHud = 0x7101, SiteQueue = 0x7110, SiteRound = 0x7120, SitePause = 0x7130, SiteRules = 0x7140, SiteStrip = 0x7150, SiteCancel = 0x7160;
+constexpr unsigned SiteCap = 0x7100, SiteHud = 0x7101, SiteQueue = 0x7110, SiteRound = 0x7120, SitePause = 0x7130, SiteRules = 0x7140, SiteStrip = 0x7150, SiteCancel = 0x7160, SiteSrvCast = 0x7170;
 
 // Steam Aspyr addresses / offsets (RE.md; the manifest supports the Steam exe only).
 constexpr uintptr_t AddrIconResolver = 0x0074E0B0;   // thiscall(hud ignored) 6 stack args, RET 0x18
@@ -81,6 +81,13 @@ using PerformUseItemFn = void(__thiscall*)(void* creature, uint32_t itemId, int 
 constexpr uintptr_t AddrPerformUseItem = gameaddr::PerformUseItem;
 using PerformCastSpellFn = void(__thiscall*)(void* creature, uint32_t spellId, int arg2, uint32_t targetId, int multispell, int metamagic, int domain, const float* pos);
 constexpr uintptr_t AddrPerformCastSpell = gameaddr::PerformCastSpell;
+// QL20 server route: CSWSCreature::AddUseTalentOnObjectActions (doc 27 R1 route A), ECX = the owner's SERVER creature, RET 0x20, returns 0 when refused.
+// Stack (talentType 0 = spell, spellId, targetServerId, multiclass byte, itemId 0x7F000000 = none, propIdx -1 = none, byte 0, metamagic byte):
+// item-bound powers go to UseItem 0x57B4C0, the rest to AddCastSpellActions 0x565310 (round node + 0x3F, the path PerformCastSpell's server handler takes).
+using UseTalentOnObjectFn = int(__thiscall*)(uintptr_t creature, int talentType, uint32_t talentId, uint32_t targetServerId, int multiclass,
+                                              uint32_t itemId, uint32_t propIdx, int b8, int metamagic);
+constexpr uintptr_t AddrUseTalentOnObject = gameaddr::UseItemRouteA;
+constexpr int CrCommandable = 0xEC;   // server creature: 0 = not commandable (0x57D8B0 returns 0 before queueing anything, 0057d8e3)
 
 // ---- capture state (written by the hook, read by the draw callback; same game thread) ----
 uintptr_t g_hud = 0;
@@ -1014,6 +1021,14 @@ static int slotOfCreature(uintptr_t tbl, uintptr_t cr) {
     return -1;
 }
 
+// The action a busy buffer acts on next: the active one, else the head of the queue (same pick as bufOwner).
+static const qh::QueuedAction& bufHead(const qh::ActionBuffer& b) { return b.active ? b.activeAction : b.queue[0]; }
+
+// B1 + QL20: may action a be sent now? Slot 0 always; members 1-2 only through the server route (a Force power on an object target).
+static bool mayDispatch(uintptr_t tbl, const qh::QueuedAction& a) {
+    return qh::ownerMayDispatch(slotOfCreature(tbl, a.creature), g_cfg.companionServerCast && qh::serverRouteEligible(a));
+}
+
 // Clears the active action and every per-action eaten flag (queued commands stay in the buffer).
 static void endAction(qh::ActionBuffer& b) {
     b.active = false;
@@ -1048,8 +1063,51 @@ static void resolveActive(int k, qh::ActionBuffer& buf, DWORD now) {
 
 void spellWatchArm(int k, uint32_t cmd, DWORD now);   // SPELL_OUT watch (defined with the HANDOFF_OUT watch below)
 
+// QL20: run a Force power on the NON-controlled member `slot` through its own server creature. Every pointer is saferead first.
+static bool serverCast(const qh::QueuedAction& a, int slot, uintptr_t tbl) {
+    const uintptr_t cli = party::member(tbl, slot);
+    const uintptr_t srv = cli ? party::serverCreature(cli) : 0;
+    uint32_t commandable = 0, mask = 0, tgt = 0;
+    const char* bad = nullptr;
+    if (!srv) bad = "no_server_creature";
+    else if (!rd(SiteSrvCast, srv, CrCommandable, &commandable) || !commandable) bad = "not_commandable";
+    else if (!rd(SiteSrvCast + 1, gameaddr::ServerIdMask, 0, &mask)) bad = "id_mask";
+    else tgt = static_cast<uint32_t>(a.arg2) & ~mask;
+    if (!bad) {
+        spellWatchArm(slot, a.cmdId, GetTickCount());
+        g_dispatching = true;
+        const int r = reinterpret_cast<UseTalentOnObjectFn>(AddrUseTalentOnObject)(srv, 0, a.spellId, tgt, a.multispell & 0xFF,
+                                                                                     qh::kInvalidObjectId, 0xFFFFFFFFu, 0, a.metamagic & 0xFF);
+        g_dispatching = false;
+        if (!r) bad = "refused";
+    }
+    if (g_logOn && g_cfg.traceQueue) {
+        char line[200];
+        qh::fmtServerCast(line, sizeof line, a.cmdId, slot, a.spellId, tgt, bad == nullptr, bad);
+        QTRACE("%s", line);
+    }
+    if (bad) QLOGV(chMain, KPLOG_WARN, "server-route cast refused for member %d cmd=%u why=%s", slot, (unsigned)a.cmdId, bad);
+    return bad == nullptr;
+}
+
 // Issue one queued command to the engine (our own call: the hooks pass it through via g_dispatching). k = party member (-1 unknown).
+// QL20: the client wrappers act on the CONTROLLED creature, so an action owned by member 1-2 goes through serverCast or is not sent at all.
 void dispatchAction(const qh::QueuedAction& a, int k) {
+    {
+        party::Fail pf = party::F_None;
+        const uintptr_t tbl = party::table(&pf);
+        const int slot = tbl ? slotOfCreature(tbl, a.creature) : -1;
+        if (slot != 0) {
+            if (slot > 0 && g_cfg.companionServerCast && qh::serverRouteEligible(a)) {
+                serverCast(a, slot, tbl);
+            } else if (g_logOn && g_cfg.traceQueue) {
+                char line[200];
+                qh::fmtServerCast(line, sizeof line, a.cmdId, slot, a.spellId, 0, false, "not_ctrl");
+                QTRACE("%s", line);
+            }
+            return;
+        }
+    }
     g_dispatching = true;
     if (a.kind == qh::ActionKind::Spell) {
         const float* pp = qh::replayPos(a, g_cfg.spellReplayPos);
@@ -1078,6 +1136,46 @@ void dispatchAction(const qh::QueuedAction& a, int k) {
             a.pos);
     }
     g_dispatching = false;
+}
+
+// QL20 starvation kick (selfheal CS12 route B, live-proven 10-05: KICK before=[3d,3d,3f] after=[3f,3d,3d] then DONE): a follower's 0x3D
+// FollowLeader re-adds itself at the head, so a 0x3F behind it never runs (our server-route cast, or a power the engine took while this member
+// led and that starved after the leader switch: 10-23 log, cmd 17 ran 53 s late, only once the member led again). Rotate the queue (pop head, add tail) until
+// the 0x3F leads, under the R8 gates: unpaused, cr+0x20C == 0, cr+0x11AC != 0, round != 0, aa8 == 0, ab8 < 1, RoundHasPending != 0.
+// Never ClearAllActions. One rotate per 250 ms per member; one SRV_KICK line per rotate, one SRV_KICK_SKIP line per gate change.
+DWORD g_kickLast[3] = {0, 0, 0};
+int g_kickSkipWhy[3] = {0, 0, 0};
+static void kickSkip(int k, int why, const char* gate) {
+    if (g_kickSkipWhy[k] == why) return;
+    g_kickSkipWhy[k] = why;
+    if (g_logOn && g_cfg.traceQueue) QTRACE("SRV_KICK_SKIP m=%d gate=%s", k, gate);
+}
+static void kickStarved(int k, uintptr_t cr, const Snapshot& s, DWORD now) {
+    int types[qh::kMaxEntries];
+    const int ne = s.engineNe < qh::kMaxEntries ? s.engineNe : qh::kMaxEntries;
+    for (int i = 0; i < ne; ++i) types[i] = s.e[i].type;
+    const int at = qh::castStarvedAt(types, ne, s.nrn > 0 || s.haveCur);
+    if (at == 0) { g_kickSkipWhy[k] = 0; return; }
+    if (s.paused) { kickSkip(k, 1, "paused"); return; }
+    if (now - g_kickLast[k] < 250u) return;
+    uint32_t running = 0, c11ac = 0;
+    if (!rd(SiteSrvCast + 2, cr, actq::CrRunning, &running) || running != 0) { kickSkip(k, 2, "running"); return; }
+    if (!rd(SiteSrvCast + 3, cr, actq::Cr11AC, &c11ac) || c11ac == 0) { kickSkip(k, 3, "cr11ac"); return; }
+    if (!s.round) { kickSkip(k, 4, "round"); return; }
+    if (s.aa8 != 0) { kickSkip(k, 5, "aa8"); return; }
+    if (s.ab8 >= 1) { kickSkip(k, 6, "ab8"); return; }
+    if (reinterpret_cast<uint32_t(__thiscall*)(uintptr_t)>(gameaddr::RoundHasPending)(s.round) == 0) { kickSkip(k, 7, "pending"); return; }
+    g_kickLast[k] = now;
+    g_kickSkipWhy[k] = 0;
+    int done = 0;
+    for (int n = 0; n < at; ++n) {
+        const uint32_t d = reinterpret_cast<uint32_t(__thiscall*)(uintptr_t)>(gameaddr::ActListRemoveHead)(cr + actq::CrQueue);
+        if (d == 0) break;
+        reinterpret_cast<void(__thiscall*)(uintptr_t, uint32_t)>(gameaddr::ActListAddTail)(cr + actq::CrQueue, d);
+        ++done;
+    }
+    g_lastOurs[k].tag = "kick"; g_lastOurs[k].tick = now;
+    if (g_logOn && g_cfg.traceQueue) QTRACE("SRV_KICK m=%d at=%d rotated=%d ne=%d nrn=%d", k, at, done, s.engineNe, s.nrn);
 }
 
 // Last-value globals for the edge-only lines in tickItemQueues (-1 = unknown / nothing to report).
@@ -1207,9 +1305,9 @@ void handoffTick(DWORD now, const bool* edge) {
     for (int k = 0; k < 3; ++k) {
         qh::ActionBuffer& buf = g_itemQueue[k];
         if (edge[k] && bufBusy(buf)) {
-            {   // B1: the client wrappers would run the buffered commands on the controlled creature; hold the buffer untouched (no ServerClearAllActions, no hand-off)
+            {   // B1: the client wrappers would run the buffered commands on the controlled creature; hold the buffer untouched (no ServerClearAllActions, no hand-off). QL20: members 1-2 hand off Force powers via the server route
                 const int ownerSlot = slotOfCreature(tbl, bufOwner(buf));
-                if (!qh::ownerMayDispatch(ownerSlot) || ownerSlot != k) {   // != k: no identity pre-pass in combat, the clear below targets member k
+                if (!mayDispatch(tbl, bufHead(buf)) || ownerSlot != k) {   // != k: no identity pre-pass in combat, the clear below targets member k
                     handoffHoldTrace(k, buf.active ? buf.activeAction.cmdId : buf.queue[0].cmdId, ownerSlot);
                     continue;
                 }
@@ -1258,9 +1356,9 @@ void handoffTick(DWORD now, const bool* edge) {
         Snapshot s;
         if (!gatherFor(srv, s)) continue;
         if (h.headValid || buf.count > 0) {   // B1: a leader switch during a started hand-off: hold (nothing is sent or cleared) until this member leads again; nothing left = fall through to the pop/clear path
-            const uintptr_t owner = h.headValid ? h.head.creature : bufOwner(buf);
-            const int ownerSlot = slotOfCreature(tbl, owner);
-            if (!qh::ownerMayDispatch(ownerSlot) || ownerSlot != k) {
+            const qh::QueuedAction& next = h.headValid ? h.head : bufHead(buf);
+            const int ownerSlot = slotOfCreature(tbl, next.creature);
+            if (!mayDispatch(tbl, next) || ownerSlot != k) {
                 handoffHoldTrace(k, h.headValid ? h.head.cmdId : buf.queue[0].cmdId, ownerSlot);
                 continue;
             }
@@ -1655,8 +1753,9 @@ void tickItemQueues(DWORD now, bool inMenu) {
             continue;
         }
         if (skip[k]) continue;
-        // B1 (QL17): the client Perform* wrappers act on the controlled creature (slot 0); a buffer owned by anyone else is held (never dispatched or re-injected).
-        const bool ownerCtrl = !bufBusy(buf) || qh::ownerMayDispatch(slotOfCreature(tbl, bufOwner(buf)));
+        // B1 (QL17): the client Perform* wrappers act on the controlled creature (slot 0); a buffer owned by anyone else is held (never dispatched or re-injected)
+        // unless its next action can take the server route (QL20: Force power on an object target, dispatchAction -> serverCast).
+        const bool ownerCtrl = !bufBusy(buf) || mayDispatch(tbl, bufHead(buf));
 
         Snapshot s;
         const bool gOk = gatherFor(srv, s);
@@ -1706,6 +1805,8 @@ void tickItemQueues(DWORD now, bool inMenu) {
         }
 
         if (buf.active && actionInQueue) buf.seenInQueue = true;   // bookkeeping only (RESOLVE seen=)
+        // QL20: any tracked use/cast on a non-controlled member (server route, or one the engine took directly while the member still led) must not starve behind 0x3D
+        if (k > 0 && buf.active && g_cfg.companionServerCast) kickStarved(k, srv, s, now);
 
         // 2. Follower wipe protection & active completion tracking
         qh::ReInjectWhy riWhy = qh::reInjectWhy(buf, actionInQueue, hasFollowLeader, s.paused, now);
@@ -2121,10 +2222,11 @@ void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
     loadIni();
     g_logOn = g_cfg.log;
-    KP_LOG(chMain, "0.4.4-dev: kit=%d frame_alpha=%.2f cancel=%d enabled=%d waiting_dim=%d border_px=%d log=%d companions=%d strip_icon_px=%d strip_side=%s strip_max=%d waiting_icon_dim=%d strip_head_pct=%d", g_cfg.kit ? 1 : 0, g_cfg.frameAlpha, g_cfg.cancel ? 1 : 0, g_cfg.enabled ? 1 : 0, g_cfg.waitingDim ? 1 : 0, g_cfg.borderPx, g_cfg.log ? 1 : 0, g_cfg.companions ? 1 : 0, g_cfg.stripIconPx, g_cfg.stripSide == qh::kSideBelow ? "below" : g_cfg.stripSide == qh::kSideAbove ? "above" : "left", g_cfg.stripMax, g_cfg.waitingIconDim ? 1 : 0, g_cfg.stripHeadPct);
+    KP_LOG(chMain, "0.4.5-dev: kit=%d frame_alpha=%.2f cancel=%d enabled=%d waiting_dim=%d border_px=%d log=%d companions=%d strip_icon_px=%d strip_side=%s strip_max=%d waiting_icon_dim=%d strip_head_pct=%d", g_cfg.kit ? 1 : 0, g_cfg.frameAlpha, g_cfg.cancel ? 1 : 0, g_cfg.enabled ? 1 : 0, g_cfg.waitingDim ? 1 : 0, g_cfg.borderPx, g_cfg.log ? 1 : 0, g_cfg.companions ? 1 : 0, g_cfg.stripIconPx, g_cfg.stripSide == qh::kSideBelow ? "below" : g_cfg.stripSide == qh::kSideAbove ? "above" : "left", g_cfg.stripMax, g_cfg.waitingIconDim ? 1 : 0, g_cfg.stripHeadPct);
     QLOG(chMain, "pause_eaten_wait=%d dispatch_wait_flags=%d spell_replay_pos=%d", g_cfg.pauseEatenWait ? 1 : 0, g_cfg.dispatchWaitFlags ? 1 : 0, g_cfg.spellReplayPos ? 1 : 0);
     QLOG(chMain, "pause_reinject=%d handoff_on_combat=%d handoff_clear_first=%d handoff_keep_new=%d handoff_resend_held=%d show_in_combat=%d handoff_keep_unpaused=%d trace_mode=%d mode_cap=%d",
          g_cfg.pauseReinject ? 1 : 0, g_cfg.handoffOnCombat ? 1 : 0, g_cfg.handoffClearFirst ? 1 : 0, g_cfg.handoffKeepNew ? 1 : 0, g_cfg.handoffResendHeld ? 1 : 0, g_cfg.showInCombat ? 1 : 0, g_cfg.handoffKeepUnpaused ? 1 : 0, g_cfg.traceMode ? 1 : 0, g_cfg.modeCap);
+    QLOG(chMain, "companion_server_cast=%d", g_cfg.companionServerCast ? 1 : 0);
     g_ps.init(api, "queue-hud");
     g_ps.onConnect = onConnect;
     g_ps.add(K2PS_HUD_DRAW, 400, onHudDraw);

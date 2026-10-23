@@ -122,6 +122,8 @@ inline bool isWaiting(bool paused, int ab8, int aa8) { return paused || ab8 >= 1
 
 // B1 (QL17): the client Perform* wrappers act on the CONTROLLED creature (party slot 0), so a buffer whose owner is not slot 0 is held, never dispatched. -1 (no slot) is also false.
 inline bool ownerMayDispatch(int ownerSlot) { return ownerSlot == 0; }
+// QL20: serverRoute = the action can run on its owner's own server creature (serverRouteEligible + companion_server_cast), so members 1-2 may dispatch it too.
+inline bool ownerMayDispatch(int ownerSlot, bool serverRoute) { return ownerSlot == 0 || (serverRoute && (ownerSlot == 1 || ownerSlot == 2)); }
 
 // Draw only outside combat, outside menu frames, for a fresh snapshot (< 250 ms old) with something to show.
 // showInCombat (show_in_combat=1) drops the combat term only; enabled, menu, age and slot gates still apply.
@@ -211,6 +213,7 @@ struct Config {
     bool handoffKeepNew = true;     // handoff_keep_new: do NOT clear the engine queue at the hand-off (keeps the new click; 0 = clear-first behaviour)
     bool handoffKeepUnpaused = true; // handoff_keep_unpaused: keep_new / detach / reorder also apply when combat starts UNPAUSED (0 = only while paused; unpaused clears first)
     bool handoffDetachHeld = true;  // handoff_detach_held: while an engine-held command waits, take the player's new round nodes out of the list and put them back after the hand-off (new power/attack runs LAST)
+    bool companionServerCast = true; // companion_server_cast: a non-controlled member's queued Force power runs on that member via the server route (QL20; 0 = hold until it leads, QL17)
     bool handoffResendHeld = true;  // handoff_resend_held: re-send an engine-held active command the engine wipes at combat start (default on)
     bool spellReplayPos = true;     // spell_replay_pos: replay a buffered spell with a NULL position when the engine's original was NULL (0 = always pass the zero-filled copy)
     bool hideBannerSoft = true;     // hide_banner_soft: hide the top combat banner while combat is "soft" (only own-party targets, no hostile)
@@ -547,6 +550,7 @@ inline bool parseIniLine(Config& c, const char* line) {
     if (detail::keyEq(kb, ke, "handoff_keep_new")) return detail::parseBool(vb, ve, &c.handoffKeepNew);
     if (detail::keyEq(kb, ke, "handoff_keep_unpaused")) return detail::parseBool(vb, ve, &c.handoffKeepUnpaused);
     if (detail::keyEq(kb, ke, "handoff_detach_held")) return detail::parseBool(vb, ve, &c.handoffDetachHeld);
+    if (detail::keyEq(kb, ke, "companion_server_cast")) return detail::parseBool(vb, ve, &c.companionServerCast);
     if (detail::keyEq(kb, ke, "handoff_resend_held")) return detail::parseBool(vb, ve, &c.handoffResendHeld);
     if (detail::keyEq(kb, ke, "spell_replay_pos")) return detail::parseBool(vb, ve, &c.spellReplayPos);
     if (detail::keyEq(kb, ke, "hide_banner_soft")) return detail::parseBool(vb, ve, &c.hideBannerSoft);
@@ -645,6 +649,16 @@ inline QueuedAction makeSpellAction(uintptr_t creature, uint32_t spellId, int ar
 // (useOrigPos), never with a pointer to the zero-filled copy; everything else keeps the stored copy.
 inline const float* replayPos(const QueuedAction& a, bool useOrigPos) {
     return (a.kind == ActionKind::Spell && useOrigPos && !a.hasPos) ? nullptr : a.pos;
+}
+
+// QL20: a Force power on an object target can run on a NON-controlled member through the server route (AddUseTalentOnObjectActions 0x57D8B0 on
+// the owner's own server creature, the same path script ActionUseTalentOnObject takes). The hook's arg2 is the 2nd stack arg of PerformCastSpell
+// 0x775700 = the target CLIENT object id (ForceMenuAction 0x7791A0 pushes [action+4] there). Items and location targets still need the client
+// wrappers, so they stay held (B1) until the owner leads again.
+constexpr uint32_t kInvalidObjectId = 0x7F000000u;
+inline bool serverRouteEligible(const QueuedAction& a) {
+    const uint32_t t = static_cast<uint32_t>(a.arg2);
+    return a.kind == ActionKind::Spell && t != 0 && t != kInvalidObjectId;
 }
 
 constexpr int kMaxActionQueue = 3;
@@ -1126,6 +1140,29 @@ inline int fmtHandoffOne(char* out, int cap, uint32_t cmdId, int m, int seq, int
     w.s("HANDOFF_ONE cmd="); w.u(cmdId);
     w.s(" m="); w.mm(m);
     w.s(" seq="); w.i(seq); w.c('/'); w.i(total);
+    return w.done();
+}
+
+// QL20: a server-route cast on a follower starves: its 0x3F sits behind the self-re-adding 0x3D FollowLeader (doc 27 R8, same rule as actq::starved
+// but for any round node, spells included). Returns the index (1..3) of the first 0x3F when a round node is pending and only 0x3D sit before it, else 0.
+inline int castStarvedAt(const int* types, int ne, bool roundPending) {
+    if (!roundPending || !types) return 0;
+    int k = -1;
+    for (int i = 0; i < ne && i < kMaxEntries; ++i) if (types[i] == 0x3F) { k = i; break; }
+    if (k < 1 || k > 3) return 0;
+    for (int i = 0; i < k; ++i) if (types[i] != 0x3D) return 0;
+    return k;
+}
+
+// SRV_CAST cmd=<n> m=<k> spell=<hex> tgt=<hex> ok=<0|1> [why=<text>]   (QL20: one server-route dispatch on a non-controlled member)
+inline int fmtServerCast(char* out, int cap, uint32_t cmdId, int m, uint32_t spellId, uint32_t targetServerId, bool ok, const char* why) {
+    detail::LogWr w(out, cap);
+    w.s("SRV_CAST cmd="); w.u(cmdId);
+    w.s(" m="); w.mm(m);
+    w.s(" spell="); w.x(spellId);
+    w.s(" tgt="); w.x(targetServerId);
+    w.s(" ok="); w.i(ok ? 1 : 0);
+    if (why && *why) { w.s(" why="); w.s(why); }
     return w.done();
 }
 

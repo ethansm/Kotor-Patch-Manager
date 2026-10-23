@@ -2662,6 +2662,50 @@ void testOwnerHoldB1() {
     KT_CHECK(strncmp(tiny, "HANDOFF_HOLD cm", 15) == 0);
 }
 
+// QL20: members 1-2 dispatch only through the server route (Force power on an object target); slot 0 is unchanged.
+void testServerRouteQL20() {
+    KT_CHECK(ownerMayDispatch(0, false));
+    KT_CHECK(ownerMayDispatch(1, true));
+    KT_CHECK(ownerMayDispatch(2, true));
+    KT_CHECK(!ownerMayDispatch(1, false));
+    KT_CHECK(!ownerMayDispatch(-1, true));   // not in the party: never
+    KT_CHECK(!ownerMayDispatch(3, true));
+    const float* none = nullptr;
+    QueuedAction sp = makeSpellAction(0x1000, 0x28, (int)0x8000086Bu, 0xdbee94, 0, 0, 0, none, 0, 21);
+    KT_CHECK(serverRouteEligible(sp));
+    QueuedAction loc = makeSpellAction(0x1000, 0x28, (int)kInvalidObjectId, 0xdbee94, 0, 0, 0, none, 0, 22);
+    KT_CHECK(!serverRouteEligible(loc));     // location target: still held
+    QueuedAction zero = makeSpellAction(0x1000, 0x28, 0, 0, 0, 0, 0, none, 0, 23);
+    KT_CHECK(!serverRouteEligible(zero));
+    QueuedAction it = makeItemAction(0x1000, 0x865, 0, 0x80000860u, none, 0, 17);
+    KT_CHECK(!serverRouteEligible(it));      // items: still held
+    // starvation: 0x3F behind only 0x3D with a pending round node
+    const int q1[] = {0x3D, 0x3F};
+    KT_CHECK_EQ(castStarvedAt(q1, 2, true), 1);
+    KT_CHECK_EQ(castStarvedAt(q1, 2, false), 0);   // no round node: harmless leftover 0x3F
+    const int q2[] = {0x3D, 0x3D, 0x3F};
+    KT_CHECK_EQ(castStarvedAt(q2, 3, true), 2);
+    const int q3[] = {0x3F, 0x3D};
+    KT_CHECK_EQ(castStarvedAt(q3, 2, true), 0);    // already leads
+    const int q4[] = {0x01, 0x3F};
+    KT_CHECK_EQ(castStarvedAt(q4, 2, true), 0);    // a move ahead: mid-expansion, wait
+    const int q5[] = {0x3D, 0x3D, 0x3D, 0x3D, 0x3F};
+    KT_CHECK_EQ(castStarvedAt(q5, 5, true), 0);    // deeper than 3: not the R8 shape
+    KT_CHECK_EQ(castStarvedAt(nullptr, 0, true), 0);
+    char out[200];
+    fmtServerCast(out, sizeof out, 21, 1, 0x28, 0x86b, true, nullptr);
+    KT_CHECK_EQ(out, "SRV_CAST cmd=21 m=1 spell=28 tgt=86b ok=1");
+    fmtServerCast(out, sizeof out, 9, 2, 0x28, 0, false, "not_commandable");
+    KT_CHECK_EQ(out, "SRV_CAST cmd=9 m=2 spell=28 tgt=0 ok=0 why=not_commandable");
+    char tiny[16];
+    fmtServerCast(tiny, sizeof tiny, 21, 1, 0x28, 0x86b, true, nullptr);
+    KT_CHECK_EQ(strlen(tiny), (size_t)15);
+    Config c;
+    KT_CHECK(c.companionServerCast);
+    parseIni(c, "companion_server_cast=0\n");
+    KT_CHECK(!c.companionServerCast);
+}
+
 int main() {
     testConstants();
     testKeys();
@@ -2729,5 +2773,6 @@ int main() {
     testCurActionPresent();
     testConfigEqualSeesEveryField();
     testOwnerHoldB1();
+    testServerRouteQL20();
     return kt::Report("queue_hud_logic_test");
 }
