@@ -2401,7 +2401,7 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
     // Verdict cache keyed on node + gob + the node's name handle [N+4], so a freed and reused address pair is re-resolved. The full
     // resolve (weapon > type > global, plus the body delta) is cached with the tune sequence it was computed for and redone when it moves.
     // Repoint: both hands share the bone_name node; the hand comes from g_handRing (sticky via hs::resolveLeft when evicted). Drawgate: the node name (lhand) decides.
-    struct Ent { uintptr_t node, gob, handle, model; bool isTarget, left; hs::Category cat; char mname[17], body[17]; LONG seq; hs::Resolved r; hs::GateState gate; hs::Slide slide; uint32_t slFrames = 0, slMaxDt = 0, slPrev = 0; uint8_t graceN = 0; CarryResid cres = {}; uint32_t dly = 0, mTick = 0, mKey = 0; bool mSeen = false; float slowArm = 1.f; hs::SnapState snap; };   // graceN: HW25 hard-reset grace, frames held so far; cres: HW26 hand-frame residual of the running carry; slowArm: HW44 slow_holster_x the running (or pending) slide was armed with; snap: 0.21.1-dev SNAP detector state of the weapon
+    struct Ent { uintptr_t node, gob, handle, model; bool isTarget, left; hs::Category cat; char mname[17], body[17]; LONG seq; hs::Resolved r; hs::GateState gate; hs::Slide slide; uint32_t slFrames = 0, slMaxDt = 0, slPrev = 0; hs::Q pkQ = {1, 0, 0, 0}; uint32_t pkT = 0; float pkDps = 0.f; bool pkOn = false; uint8_t graceN = 0; CarryResid cres = {}; uint32_t dly = 0, mTick = 0, mKey = 0; bool mSeen = false; float slowArm = 1.f; hs::SnapState snap; };   // graceN: HW25 hard-reset grace, frames held so far; cres: HW26 hand-frame residual of the running carry; slowArm: HW44 slow_holster_x the running (or pending) slide was armed with; snap: 0.21.1-dev SNAP detector state of the weapon; pk*: HW50 peak turn speed of the shown weapon during the running slide
     static Ent s_cache[128];
     static unsigned s_next = 0;
     // HW33a: ms to hold back this Gob's draw / stow target. The left-hand weapon of a dual wielder waits dual_stagger_ms behind the right-hand one (another live cache entry of the same
@@ -2595,7 +2595,7 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
                     snp.retarget = true;
                     ent->slFrames = 0;
                     if (ent->slide.len > 0) {
-                        ent->slFrames = 1; ent->slMaxDt = 0; ent->slPrev = now;
+                        ent->slFrames = 1; ent->slMaxDt = 0; ent->slPrev = now; ent->pkDps = 0.f; ent->pkOn = false;
                         if (logOk && (ent->slowArm != 1.f ? InterlockedIncrement(&s_slideSlowLines) <= 200 : InterlockedIncrement(&s_slideStartLines) <= 60) && takeLine())
                         {
                             char dlyS[24];
@@ -2604,8 +2604,9 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
                             char slowS[20];   // HW44: slowx=<v> only when the slide was armed slowed (ms= is then the slowed length, dly= the scaled stagger)
                             slowS[0] = 0;
                             if (ent->slowArm != 1.f) snprintf(slowS, sizeof slowS, " slowx=%.2f", static_cast<double>(ent->slowArm));
-                            KP_LOG(chPlace, "SLIDE start dir=%s owner=%x gob=%x left=%d from=%.2f ms=%u%s%s", ent->slide.dir ? "draw" : "stow", static_cast<unsigned>(owner),
-                                   static_cast<unsigned>(g), ent->left ? 1 : 0, static_cast<double>(ent->slide.from), static_cast<unsigned>(ent->slide.len), dlyS, slowS);
+                            KP_LOG(chPlace, "SLIDE start dir=%s owner=%x gob=%x left=%d from=%.2f ms=%u%s%s cat=%s mname=%s", ent->slide.dir ? "draw" : "stow", static_cast<unsigned>(owner),
+                                   static_cast<unsigned>(g), ent->left ? 1 : 0, static_cast<double>(ent->slide.from), static_cast<unsigned>(ent->slide.len), dlyS, slowS,
+                                   hs::categoryName(ent->cat), ent->mname[0] ? ent->mname : "-");
                         }
                     }
                 } else if (ent->slFrames) {
@@ -2616,8 +2617,9 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
                         ent->slPrev = now;
                     } else {
                         if (logOk && (ent->slowArm != 1.f ? InterlockedIncrement(&s_slideSlowLines) <= 200 : InterlockedIncrement(&s_slideEndLines) <= 60) && takeLine())
-                            KP_LOG(chPlace, "SLIDE end dir=%s owner=%x ms=%u frames=%u maxdt=%u", ent->slide.dir ? "draw" : "stow", static_cast<unsigned>(owner),
-                                   static_cast<unsigned>(ent->slide.len), static_cast<unsigned>(ent->slFrames), static_cast<unsigned>(ent->slMaxDt));
+                            KP_LOG(chPlace, "SLIDE end dir=%s owner=%x ms=%u frames=%u maxdt=%u gob=%x pkdps=%.0f", ent->slide.dir ? "draw" : "stow", static_cast<unsigned>(owner),
+                                   static_cast<unsigned>(ent->slide.len), static_cast<unsigned>(ent->slFrames), static_cast<unsigned>(ent->slMaxDt),
+                                   static_cast<unsigned>(g), static_cast<double>(ent->pkDps));
                         ent->slFrames = 0;
                     }
                 }
@@ -2704,6 +2706,21 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
                 }
             }
             if (hs::poseSane(rid) && saferead::probeWrite(kSitePlace, reinterpret_cast<void*>(g + 0xA4), sizeof(hs::Pose))) memcpy(reinterpret_cast<void*>(g + 0xA4), &rid, sizeof(hs::Pose));
+        }
+    }
+    // HW50: peak turn speed of the shown weapon during a running slide (log only). The shown pose is final here, after the reach carry write.
+    if (ent->slFrames != 0) {
+        hs::Pose shown;
+        if (saferead::readAt(kSitePlace, g, 0xA4, &shown) && hs::qfinite(shown.q)) {
+            const uint32_t tnow = slideNowMs();
+            if (!ent->pkOn || tnow != ent->pkT) {   // same-frame calls (dt == 0) keep pkQ / pkT
+                if (ent->pkOn) {
+                    const float step = hs::reachQAngleDeg(hs::qmul(shown.q, hs::reachConj(ent->pkQ)));
+                    const float dps = step * 1000.f / static_cast<float>(tnow - ent->pkT);
+                    if (dps > ent->pkDps) ent->pkDps = dps;
+                }
+                ent->pkQ = shown.q; ent->pkT = tnow; ent->pkOn = true;
+            }
         }
     }
     // HW35: mount orientation sample for the holster_log_check MOUNT section. Only at rest on the mount (slideF == 0, out == hipPose). Once when the Gob first settles, again when (bone, stem)
