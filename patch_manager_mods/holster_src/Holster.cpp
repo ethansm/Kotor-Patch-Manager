@@ -1832,6 +1832,7 @@ static bool reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w,
     float wristDeg = 0.f, gDeg = -1.f;   // gDeg (HW24): angle between the mount orientation and the post-IK hand = what the wrist cap has to cover
     float twistDeg = 0.f;                // HW29: the forearm roll written this frame (tw= in the log); wristDeg (wr=) is the swing written on the wrist bone (sw=)
     float leftW = 0.f; bool pickOv = false; int mdSign = 0;   // HW44 diagnostics: natural w of the swing leftover (lw=), the continuity pick took the opposite sign (pk=), sign of dot(mountQ, pH.q) (md=)
+    float dqDeg = 0.f, djDeg = 0.f;   // HW45 R2 diagnostics: dq= dqTot angle (deg; scaled by w * reach_wrist_pct, so low while the weight ramps), dj= its jump from the previous solve of this slide (deg)
     if (carry && wristOk && mountQ && wrote == 3 && g_reachWristPct > 0.f) {
         hs::Pose pHn, pWp;
         const uintptr_t parW = rdU32(kSitePlace, e->wrist, 0x3C);
@@ -1839,6 +1840,7 @@ static bool reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w,
             gDeg = hs::reachQAngleDeg(hs::qmul(*mountQ, hs::reachConj(pHn.q)));
             const float oriP = plp ? plp->oriF : pathF;   // HW31: orientation progress (= pathF unless an extract share holds the mount orientation through the lift)
             hs::Q sw, dqTot;   // dqTot: the wrist delta before the split (the next frame's sign hint)
+            const bool prevOn = e->wristOn != 0; const hs::Q prevDq = e->wristDq;   // HW45 R2: the previous wrist delta, read before this frame overwrites it (dj=)
             hs::Q combNow{ 1, 0, 0, 0 }, tgtNow{ 1, 0, 0, 0 };   // HW44: the rotation the wrist ends with (sw * tw; sw alone when no roll), and the blended target (reachTargetQ)
             bool wristGo = true;
             if (!(g_reachTwist > 0.f)) {
@@ -1870,6 +1872,8 @@ static bool reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w,
                     combNow = sw;
                 }
             }
+            dqDeg = hs::reachQAngleDeg(dqTot);   // HW45 R2: both branches set dqTot (the whole turn; capped on the wrist when reach_twist_deg=0)
+            djDeg = prevOn ? hs::reachQAngleDeg(hs::qmul(dqTot, hs::reachConj(prevDq))) : 0.f;
             // HW44: the blended target of this frame is the next frame's hemisphere reference (only when the inputs were finite, as reachWristDelta requires)
             if (hs::qfinite(*mountQ) && hs::qfinite(pH.q) && hs::qfinite(pHn.q)) { e->tgtQ = tgtNow; e->tgtOn = 1; }   // pHn.q too: reachWristDelta writes tgtOut only when all three are finite
             {
@@ -1909,7 +1913,8 @@ static bool reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w,
         hs::reachLogPiece1(lb, sizeof lb, rv, seq); KP_LOG(chMain, "%s", lb);
         hs::reachLogPiece2(lb, sizeof lb, rv, seq); KP_LOG(chMain, "%s", lb);
         const int n3 = hs::reachLogPiece3(lb, sizeof lb, rv, seq);
-        hs::reachDiagTail(lb, sizeof lb, n3, leftW, mdSign, pickOv ? 1 : 0);   // HW44: lw= md= pk= at the end of piece 3 (only while the piece stays <= 200 bytes)
+        const int n4 = hs::reachDiagTail(lb, sizeof lb, n3, leftW, mdSign, pickOv ? 1 : 0);   // HW44: lw= md= pk= at the end of piece 3 (only while the piece stays <= 200 bytes)
+        hs::reachDqTail(lb, sizeof lb, n4, dqDeg, djDeg);   // HW45 R2: dq= dj= after them, same guards (piece 3 stays <= 200 bytes)
         KP_LOG(chMain, "%s", lb);
     }
     return carriedOk;

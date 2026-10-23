@@ -635,6 +635,20 @@ inline int reachDiagTail(char* buf, size_t cap, int used, float lw, int md, int 
     return used + n;
 }
 
+// HW45 R2 diagnostics: appends " dq=%.0f dj=%.0f" (deg) to a REACH piece 3; skipped, never truncated, past 200 bytes or cap; NaN or out of [0, 360] prints 0.
+// dq is the capped turn when reach_twist_deg = 0 (cap = reach_wrist_max_deg) and the whole turn when twist is on; dj = jump from the previous solve of this slide.
+// The caller passes dqTot, which is already scaled by the arm-weight blend (w * reach_wrist_pct), so dq reads low while the weight ramps; at full weight it is the whole turn (does it cross 180?).
+inline int reachDqTail(char* buf, size_t cap, int used, float dqDeg, float djDeg) {
+    if (!buf || used < 0 || static_cast<size_t>(used) >= cap) return used;
+    const float dqC = (dqDeg >= 0.f && dqDeg <= 360.f) ? dqDeg : 0.f;
+    const float djC = (djDeg >= 0.f && djDeg <= 360.f) ? djDeg : 0.f;
+    char tail[40];
+    const int n = snprintf(tail, sizeof tail, " dq=%.0f dj=%.0f", static_cast<double>(dqC), static_cast<double>(djC));
+    if (n <= 0 || used + n > 200 || static_cast<size_t>(used + n) >= cap) return used;
+    memcpy(buf + used, tail, static_cast<size_t>(n) + 1);
+    return used + n;
+}
+
 // Residual of a retarget (HW26): the rotation still to undo t ms after the retarget. Rres at t = 0, identity at t = ms, eased by
 // easeSmooth. A later card multiplies it onto the carried rotation in place of the 10% world carry blend. Non-positive or non-finite ms,
 // or a non-finite Rres, give identity. nlerp (blendQ) is deliberate: plan 42c 4.3 wrote slerp, but the step numbers were taken with nlerp.

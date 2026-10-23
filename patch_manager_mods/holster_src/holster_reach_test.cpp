@@ -1279,6 +1279,63 @@ static void testPoleBiasHingeInvariant() {
     }
 }
 
+// HW45 R2: reachDqTail appends " dq=%.0f dj=%.0f" (deg) to a REACH piece 3. Never truncates: skipped when the result would pass 200 bytes or reach cap.
+// NaN or a value outside [0, 360] prints 0. Returns the new length.
+static void testDqTail() {
+    char a[256];
+    strcpy(a, "REACH3 x");
+    int n = reachDqTail(a, sizeof a, 8, 181.4f, 3.2f);
+    KT_CHECK(n == 20 && strcmp(a, "REACH3 x dq=181 dj=3") == 0);
+    KT_CHECK(strlen(a) == static_cast<size_t>(n));
+    // boundary: 188 + 12 = 200 is kept, 189 + 12 = 201 is skipped
+    char e[256];
+    memset(e, 'e', 188);
+    e[188] = '\0';
+    n = reachDqTail(e, sizeof e, 188, 181.4f, 3.2f);
+    KT_CHECK(n == 200 && strlen(e) == 200 && strcmp(e + 188, " dq=181 dj=3") == 0);
+    char f[256] = {};
+    memset(f, 'f', 189);
+    char fCopy[256] = {};
+    memcpy(fCopy, f, 190);
+    n = reachDqTail(f, sizeof f, 189, 181.4f, 3.2f);
+    KT_CHECK(n == 189 && memcmp(f, fCopy, 190) == 0);
+    // a 195-byte piece is left unchanged
+    char b[256] = {};
+    memset(b, 'b', 195);
+    char bCopy[256] = {};
+    memcpy(bCopy, b, 196);
+    n = reachDqTail(b, sizeof b, 195, 181.4f, 3.2f);
+    KT_CHECK(n == 195 && memcmp(b, bCopy, 196) == 0);
+    // cap smaller than the piece: 88 + 12 = 100 >= cap 100 is skipped, 87 + 12 = 99 < cap 100 is kept
+    char small[100];
+    memset(small, 's', 88);
+    small[88] = '\0';
+    n = reachDqTail(small, 100, 88, 181.4f, 3.2f);
+    KT_CHECK(n == 88 && strlen(small) == 88);
+    char small2[100];
+    memset(small2, 's', 87);
+    small2[87] = '\0';
+    n = reachDqTail(small2, 100, 87, 181.4f, 3.2f);
+    KT_CHECK(n == 99 && strcmp(small2 + 87, " dq=181 dj=3") == 0);
+    // NaN prints 0; out of range (negative, above 360, infinite) prints 0; 360 is kept
+    char nanBuf[256];
+    strcpy(nanBuf, "REACH3");
+    n = reachDqTail(nanBuf, sizeof nanBuf, 6, kNaN, kNaN);
+    KT_CHECK(n == 16 && strcmp(nanBuf + 6, " dq=0 dj=0") == 0);
+    char oor[256];
+    strcpy(oor, "R");
+    n = reachDqTail(oor, sizeof oor, 1, -5.f, 361.f);
+    KT_CHECK(n == 11 && strcmp(oor, "R dq=0 dj=0") == 0);
+    char top[256];
+    strcpy(top, "R");
+    n = reachDqTail(top, sizeof top, 1, 360.f, kInf);
+    KT_CHECK(n == 13 && strcmp(top, "R dq=360 dj=0") == 0);
+    // null buf and used out of range return used unchanged
+    KT_CHECK(reachDqTail(nullptr, 100, 10, 1.f, 1.f) == 10);
+    KT_CHECK(reachDqTail(a, sizeof a, -1, 1.f, 1.f) == -1);
+    KT_CHECK(reachDqTail(a, 20, 20, 1.f, 1.f) == 20);
+}
+
 int main() {
     testArcQuatMapsDirections();
     testArcQuatParallelAndAntiParallel();
@@ -1340,5 +1397,6 @@ int main() {
     testPoleBiasBoundAndPlane();
     testPoleBiasFades();
     testPoleBiasHingeInvariant();
+    testDqTail();
     return kt::Report("holster_reach");
 }
