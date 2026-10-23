@@ -25,6 +25,7 @@
 #include <stdarg.h>
 #include <stddef.h>
 #include <utility>
+#include <initializer_list>
 
 #include "KpLog.h"
 #include "SafeRead.h"
@@ -65,6 +66,7 @@ constexpr uintptr_t AddrIconResolver = 0x0074E0B0;   // thiscall(hud ignored) 6 
 constexpr uintptr_t AddrRulesGlobal = 0x00A1B4D0;    // [rules+0x104] -> spell table {count@0, data@4}, row stride 0x1A8
 constexpr int HudCombatFlags = 0xA904;               // bit 1 = combat mode (set by 0x74E910 just before the hook)
 constexpr int HudSlotBase = 0x5F2C, HudSlotStride = 0x148;
+constexpr int HudClearAll = 0x6C3C, HudClearOne = 0x689C, HudClearOne2 = 0x6A6C;   // vanilla BTN_CLEARALL / CLEARONE / CLEARONE2 control bases (R7 FINDINGS sec 1; = the kBannerCtl flag offsets 0x6C84 / 0x68E4 / 0x6AB4 minus 0x48)
 constexpr int PauseInternal = 0x10078;               // byte [[[[AppGlobal]+8]+4]+0x10078] & 2 = player pause (0x51C720 / 0x538CD0)
 constexpr unsigned SpellRowStride = 0x1A8;
 constexpr int AppToServer = 8;                       // *(AppGlobal) + 8 = CServerExoApp (R7: ECX of ClearAllActions)
@@ -394,7 +396,7 @@ CW g_cw[3];
 struct CWant { bool show = false; qh::Rect r{ 0, 0, 0, 0 }; };
 CWant g_want[3];             // set by the draw callback each frame, applied at its end
 guikit::ClickEdge g_lmb;
-struct CPending { bool on = false; int n = 0; };
+struct CPending { bool on = false; int n = 0; int had3D = -1; DWORD at = 0; bool late = false; };   // RQ12: had3D = 0x3D (FollowLeader) entries before the Cancel, -1 unreadable
 CPending g_cpend[3];
 bool g_cancelMissLogged = false;
 
@@ -482,7 +484,7 @@ void cwApply() {
         CW& w = g_cw[k];
         if (!w.c) continue;
         const CWant& d = g_want[k];
-        if (!g_cfg.cancel || !d.show || d.r.w <= 0) { cwShow(w, false, !g_cfg.cancel ? "cancel-off" : "no-queue"); continue; }
+        if (const char* hid = qh::cancelHideWhy(g_cfg.cancel, d.show, d.r.w)) { cwShow(w, false, hid); continue; }
         if (!w.rectSet || w.r.x != d.r.x || w.r.y != d.r.y || w.r.w != d.r.w || w.r.h != d.r.h) {
             if (guikit::setRect(w.c, d.r.x, d.r.y, d.r.w, d.r.h)) { w.r = d.r; w.rectSet = true; }
             else { cwShow(w, false, "strip-slot-missing"); continue; }
@@ -625,7 +627,7 @@ void paintLeader(uintptr_t hud, const Draw* d, int nd, DWORD age, const K2PsCont
 }
 
 // QL10/QL11 detach (handoff_detach_held): round nodes held OUT of the engine's list (data pointers only; the nodes stay alive, nobody frees them).
-struct Detached { uint32_t ptr[qh::kMaxRound] = {}; qh::RNode rn[qh::kMaxRound]; int n = 0; DWORD at = 0; };   // rn: copies for the icon draw (QL11)
+struct Detached { uint32_t ptr[qh::kMaxRound] = {}; qh::RNode rn[qh::kMaxRound]; int n = 0; DWORD at = 0; uintptr_t owner = 0; DWORD endAt = 0; };   // rn: copies for the icon draw (QL11)
 Detached g_detached[3];
 constexpr DWORD kDetachMaxMs = 600000;
 
@@ -833,7 +835,7 @@ void drawStrips(uintptr_t hud, DWORD now, bool inMenu) {
     if (!any) return;
     if (g_cfg.cancel && (g_combat == 0 || g_softCombat))   // Cancel stays hidden in real combat; soft combat (ally-only targets) shows it like out of combat
         for (int k = 1; k <= 2; ++k)
-            if (d[k].have) { g_want[k].r = qh::stripCancelRect(d[k].r, d[k].n, g_cfg.stripSide, screenW, d[k].cancelSq); g_want[k].show = g_want[k].r.w > 0; }
+            if (d[k].have) { g_want[k].r = qh::stripCancelRect(d[k].r, d[k].n, g_cfg.stripSide, screenW, d[k].cancelSq); g_want[k].show = true; }   // RL18: a strip with no room for the square is "no-room" in cwApply, not "no-queue"
     gui2d::CapGuard capGuard;
     for (int k = 1; k <= 2; ++k)
         for (int j = 0; d[k].have && j < d[k].n; ++j) drawSlot(d[k].r[j].x, d[k].r[j].y, d[k].r[j].w, d[k].r[j].h, d[k].st[j], guikit::imageFor(d[k].rr[j]));
@@ -882,6 +884,8 @@ void modeEmit(bool inMenu) {
         else if (!strcmp(g_cwWhy[k], "combat")) n.cancel = "hidden:combat";
         else if (!strcmp(g_cwWhy[k], "hud-inactive")) n.cancel = "hidden:menu";
         else if (!strcmp(g_cwWhy[k], "strip-slot-missing")) n.cancel = "hidden:stale";
+        else if (!strcmp(g_cwWhy[k], "no-room")) n.cancel = "hidden:no-room";
+        else if (!strcmp(g_cwWhy[k], "stale capture")) n.cancel = "hidden:stale";
         else n.cancel = "hidden:empty";   // no-queue
         n.banner = banner;
         if (g_modePrimed[k] && !qh::modeChanged(g_modePrev[k], n)) continue;
@@ -910,9 +914,9 @@ void KPATCH_CALL onHudDraw(const K2PsContext* ctx, void*) {
 
 // ---- Cancel click (FRAME_BEGIN: the UI tick, outside the draw batch) ----
 // Queue entries of party member k (0 leader, 1-2 companions), -1 when the creature is unreadable.
-// *haveCur (optional) gets curReal() of the same snapshot (staleCurSince of buffer k, 0 when k is out of range). *gateNe (optional) gets the dispatch-gate count (-1 unreadable);
+// *haveCur (optional) gets curReal() of the same snapshot (staleCurSince of buffer k, 0 when k is out of range). *gateNe (optional) gets the dispatch-gate count (-1 unreadable); *n3D (optional) gets the FollowLeader (0x3D) entry count (-1 unreadable);
 // the return value stays the raw count (logs).
-int queueCountOf(int k, bool* haveCur = nullptr, int* gateNe = nullptr) {
+int queueCountOf(int k, bool* haveCur = nullptr, int* gateNe = nullptr, int* n3D = nullptr) {
     party::Fail why = party::F_None;
     const uintptr_t tbl = party::table(&why);
     const uintptr_t m = tbl ? party::member(tbl, k) : 0;
@@ -924,6 +928,7 @@ int queueCountOf(int k, bool* haveCur = nullptr, int* gateNe = nullptr) {
         *haveCur = ok && qh::curReal(s.haveCur, s.haveCur ? static_cast<int>(s.cur.subType) : -1, s.aa8, s.ab8, s.paused, stale, GetTickCount());
     }
     if (gateNe) *gateNe = ok ? s.gateNe : -1;
+    if (n3D) { int c = 0; if (ok) for (int i = 0; i < s.engineNe && i < qh::kMaxEntries; ++i) if (s.e[i].type == 0x3D) ++c; *n3D = ok ? c : -1; }   // RQ12: 0x3D = AIActionFollowLeader
     return ok ? s.engineNe : -1;
 }
 
@@ -949,8 +954,10 @@ void doCancel(int k) {
     else bad = resolveServerClear(srv, id, server);
     if (!bad && GetTickCount() - g_capTick >= 250u) bad = "stale HUD capture";
     if (bad) { KP_LOGV(chCancel, KPLOG_WARN, "CANCEL m=%d act=refused n=-1 why=%s", k, bad); return; }
-    const int n = queueCountOf(k);
-    QLOG(chCancel, "CANCEL m=%d act=click n=%d route=ServerClearAll", k, n);
+    int had3D = -1;
+    const int n = queueCountOf(k, nullptr, nullptr, &had3D);
+    const int drawn = k == 0 ? g_heldLeader.nd : g_heldStrip[k].d.n;   // read BEFORE the RL17 reset below
+    QLOG(chCancel, "CANCEL m=%d act=click n=%d drawn=%d had3D=%d route=ServerClearAll why=measure", k, n, drawn, had3D);
     if (g_logOn && g_cfg.traceQueue) {
         uint32_t ids[qh::kMaxActionQueue + 1];
         const int ni = qh::bufferedCmdIds(g_itemQueue[k], ids, qh::kMaxActionQueue + 1);
@@ -962,8 +969,9 @@ void doCancel(int k) {
     }
     g_lastOurs[k].tag = "cancel"; g_lastOurs[k].tick = GetTickCount();
     g_itemQueue[k].cancel();
-    reinterpret_cast<void(__thiscall*)(uintptr_t, uint32_t)>(gameaddr::ServerClearAllActions)(server, id);
-    g_cpend[k].on = true; g_cpend[k].n = n;
+    reinterpret_cast<void(__thiscall*)(uintptr_t, uint32_t)>(gameaddr::ServerClearAllActions)(server, id);   // unchanged: vanilla cleanup (RQ12 is measure-first)
+    if (k == 0) g_heldLeader.nd = 0; else g_heldStrip[k] = HeldStrip();   // RL17: the hold repaint must not keep cancelled icons (and the Cancel control) for 400 ms
+    g_cpend[k].on = true; g_cpend[k].n = n; g_cpend[k].had3D = had3D; g_cpend[k].at = GetTickCount(); g_cpend[k].late = false;
 }
 
 // CMD# trace line for the H9/H10 hooks (one per intercepted command that is not our own re-entry). No-op unless trace_queue is on.
@@ -1228,11 +1236,12 @@ struct Handoff { bool detachTried = false; bool pending = false; bool headValid 
 Handoff g_handoff[3];
 bool g_handoffHold[3];   // B1: HANDOFF_HOLD already traced for this episode (reset when no hand-off is pending)
 // QL10 (handoff_keep_new): round nodes already pending at the first send (the player's new click); roundOrderTick keeps them behind our re-sent commands.
-struct RoundOrder { uint32_t foreign[qh::kMaxRound] = {}; int n = 0; DWORD armedAt = 0; };
+struct RoundOrder { uint32_t foreign[qh::kMaxRound] = {}; int n = 0; DWORD armedAt = 0; bool watch = false; uint32_t seen[qh::kMaxRound] = {}; int nSeen = 0; DWORD lastScan = 0, clickConsumed = 0; };   // RL6: watch/seen/lastScan/clickConsumed grow the foreign set with in-combat clicks
 RoundOrder g_roundOrder[3];
 constexpr DWORD kRoundOrderMaxMs = 600000;   // safety net; normally disarmed as soon as no foreign node is pending
 // Round-list watch: 15 s after each hand-off dispatch, roundWatchTick logs the member's round / cur / entry state on change only.
 DWORD g_roundWatchUntil[3] = {};
+DWORD g_combatClickTick = 0;   // RL6: last player Force power / item click made in combat (tick)
 DWORD g_lastClickTick = 0;   // last left-button press edge (any frame, trace on or off); a head that vanishes right after one was cancelled, not wiped
 struct RoundLast { int subs[qh::kMaxRound]; int n = -1; int cur = -2; int ne = -1; } g_lastRound[3];
 bool g_prevCombat[3] = {false, false, false};
@@ -1323,7 +1332,7 @@ static void handoffHoldTrace(int k, uint32_t cmdId, int ownerSlot) {
 }
 
 void detachRound(int k, uintptr_t srv, const Snapshot& s, DWORD now, const char* why, unsigned mask);   // QL10 detach, defined after the hand-off code
-void discardDetached(int k, const char* why);
+void discardDetached(int k, const char* why, bool always = false);   // always = default-level line (combat-end paths)
 // Every frame in combat (readable HUD). The edge frame moves a member's buffer into g_handoff; then each pending member sends one command per frame.
 void handoffTick(DWORD now, const bool* edge) {
     party::Fail why = party::F_None;
@@ -1455,13 +1464,11 @@ void handoffTick(DWORD now, const bool* edge) {
             // Combat start wipes the engine queue; the first send clears this member's creature so the hand-off is not queued behind the engine's attack entries.
             // QL10: while paused nothing pops the round list; unpaused it is allowed too (handoff_keep_unpaused) and a node the engine already popped is simply not there to order.
             const bool keepNow = qh::keepPathAllowed(g_cfg.handoffKeepNew, s.paused, g_cfg.handoffKeepUnpaused);
-            if (qh::keepNewAtHandoff(g_cfg.handoffClearFirst, keepNow, h.sent)) {
-                if (s.nrn > 0) {
-                    RoundOrder& ro = g_roundOrder[k];
-                    ro = RoundOrder();
-                    for (int i = 0; i < s.nrn && i < qh::kMaxRound; ++i) ro.foreign[ro.n++] = s.rn[i].ptr;
-                    ro.armedAt = now;
-                }
+            if (qh::keepNewAtHandoff(keepNow, h.sent)) {
+                RoundOrder& ro = g_roundOrder[k];
+                ro = RoundOrder();
+                for (int i = 0; i < s.nrn && i < qh::kMaxRound; ++i) { ro.foreign[ro.n++] = s.rn[i].ptr; ro.seen[ro.nSeen++] = s.rn[i].ptr; }
+                ro.watch = true; ro.armedAt = now; ro.lastScan = now;   // RL6: watch for later clicks even when nothing was pending at the first send
                 if (g_logOn && g_cfg.traceQueue) {
                     char line[200];
                     qh::fmtHandoffKeep(line, sizeof line, k, a.cmdId, s.engineNe, s.nrn);
@@ -1505,19 +1512,35 @@ void roundOrderTick(DWORD now, const bool* edge) {
     if (!tbl) return;
     for (int k = 0; k < 3; ++k) {
         RoundOrder& ro = g_roundOrder[k];
-        if (ro.n == 0) continue;
+        if (ro.n == 0 && !ro.watch) continue;
         if (static_cast<int>(now - ro.armedAt) > static_cast<int>(kRoundOrderMaxMs)) { ro = RoundOrder(); continue; }
         const uintptr_t cli = party::member(tbl, k);
         const uintptr_t srv = cli ? party::serverCreature(cli) : 0;
         Snapshot s;
         if (!srv || !gatherFor(srv, s)) continue;
+        if (ro.watch) {   // RL6: a node that appears while the hand-off runs, after a combat click, is the player's: order it last too
+            int newIdx[qh::kMaxRound], nNew = 0;
+            for (int i = 0; i < s.nrn && i < qh::kMaxRound; ++i) {
+                bool seen = false;
+                for (int j = 0; j < ro.nSeen; ++j) seen = seen || ro.seen[j] == s.rn[i].ptr;
+                if (!seen) newIdx[nNew++] = i;
+            }
+            const bool clickPending = g_combatClickTick != 0 && g_combatClickTick != ro.clickConsumed && static_cast<int>(g_combatClickTick - ro.armedAt) >= 0 && now - g_combatClickTick < 1500u;
+            const int ownSends = (g_lastOurs[k].tag && !strcmp(g_lastOurs[k].tag, "handoff") && static_cast<int>(g_lastOurs[k].tick - ro.lastScan) >= 0) ? 1 : 0;
+            const int add = qh::lateForeignCount(nNew, clickPending, ownSends);
+            for (int a = nNew - add; a < nNew && ro.n < qh::kMaxRound; ++a) ro.foreign[ro.n++] = s.rn[newIdx[a]].ptr;
+            if (add > 0) ro.clickConsumed = g_combatClickTick;
+            ro.nSeen = 0;
+            for (int i = 0; i < s.nrn && i < qh::kMaxRound; ++i) ro.seen[ro.nSeen++] = s.rn[i].ptr;
+            ro.lastScan = now;
+        }
         uint32_t ptrs[qh::kMaxRound];
         int nForeignPresent = 0;
         for (int i = 0; i < s.nrn; ++i) {
             ptrs[i] = s.rn[i].ptr;
             for (int j = 0; j < ro.n; ++j) if (ro.foreign[j] == ptrs[i]) ++nForeignPresent;
         }
-        if (nForeignPresent == 0) { ro = RoundOrder(); continue; }   // the new click ran or was cancelled: nothing left to order
+        if (nForeignPresent == 0) { if (!(ro.watch && g_handoff[k].pending)) ro = RoundOrder(); continue; }   // the new click ran or was cancelled: nothing left to order
         int order[qh::kMaxRound];
         const int moved = qh::roundPartition(ptrs, s.nrn, ro.foreign, ro.n, order);
         if (moved == 0 || s.nrn < 2) continue;
@@ -1575,11 +1598,12 @@ int removeRoundNodes(uintptr_t srv, const Snapshot& s, unsigned removeMask) {
     return removed;
 }
 
-void traceDetach(int k, int n, const char* act, bool ok, const char* why) {
-    if (!g_logOn || !g_cfg.traceQueue) return;
+constexpr DWORD kDetachEndGraceMs = 20000;   // RQ9: after combat, how long a detached batch may wait for the buffer to drain before it is discarded
+void traceDetach(int k, int n, const char* act, bool ok, const char* why, bool always = false) {
+    if (!g_logOn || (!always && !g_cfg.traceQueue)) return;
     char line[160];
     qh::fmtRoundDetach(line, sizeof line, k, n, act, ok, why);
-    QTRACE("%s", line);
+    if (always) QLOG(chMain, "%s", line); else QTRACE("%s", line);
 }
 
 // Take every pending round node of member k out of the list (identity-checked against the snapshot; put back untouched on any mismatch).
@@ -1600,56 +1624,61 @@ void detachRound(int k, uintptr_t srv, const Snapshot& s, DWORD now, const char*
             if (mask & (1u << i)) { d.ptr[nDet] = got[i]; d.rn[nDet] = s.rn[i]; ++nDet; }
             else push(w, got[i]);                       // the head's own node stays in the list
         }
-        d.n = nDet; d.at = now;
+        d.n = nDet; d.at = now; d.owner = srv;   // RQ10: the batch goes back to its owner's CURRENT slot
     } else for (int i = 0; i < popped; ++i) if (got[i]) push(w, got[i]);   // put it back exactly as it was
     traceDetach(k, ok ? nDet : s.nrn, "detach", ok, why);
 }
 
 // Forget the detached nodes without re-adding them (the player cancelled, combat ended or restarted). The ~0x88 byte nodes are leaked on purpose: the free path is unverified.
-void discardDetached(int k, const char* why) {
+void discardDetached(int k, const char* why, bool always) {
     Detached& d = g_detached[k];
     if (d.n == 0) return;
-    traceDetach(k, d.n, "discard", true, why);
+    traceDetach(k, d.n, "discard", true, why, always);
     d = Detached();
 }
 
-// Per combat frame: put the detached nodes back once nothing of ours is pending; drop them when the player cancelled the whole queue.
-void detachTick(DWORD now) {
+// Per combat frame (and, RQ9, per non-combat frame with afterCombat): put the detached nodes back once nothing of ours is pending; drop them when the player cancelled the whole queue.
+void detachTick(DWORD now, bool afterCombat) {
     party::Fail why = party::F_None;
     const uintptr_t tbl = party::table(&why);
     if (!tbl) return;
     for (int k = 0; k < 3; ++k) {
         Detached& d = g_detached[k];
         if (d.n == 0) continue;
-        if (static_cast<int>(now - d.at) > static_cast<int>(kDetachMaxMs)) { discardDetached(k, "timeout"); continue; }
-        const uintptr_t cli = party::member(tbl, k);
-        const uintptr_t srv = cli ? party::serverCreature(cli) : 0;
+        if (afterCombat && d.endAt == 0) d.endAt = now;
+        if (static_cast<int>(now - d.at) > static_cast<int>(kDetachMaxMs)) { discardDetached(k, "timeout", afterCombat); continue; }
+        const int j = qh::detachTarget(slotOfCreature(tbl, d.owner), k);   // RQ10: slotOfCreature matches client or server pointers
+        if (j < 0) { discardDetached(k, "identity_lost", afterCombat); continue; }
+        const uintptr_t srv = d.owner;
         Snapshot s;
-        if (!srv || !gatherFor(srv, s)) continue;
+        if (!gatherFor(srv, s)) continue;
         bool midFlight = false;
         for (int i = 0; i < s.engineNe && i < qh::kMaxEntries; ++i)
             if (s.e[i].type == qh::T_USE_ITEM || s.e[i].type == qh::T_CAST_SPELL) midFlight = true;
         int oursNodes = 0;
         for (int i = 0; i < s.nrn; ++i) if (s.rn[i].subType == 9 || s.rn[i].subType == 10) ++oursNodes;
-        const bool busy = g_handoff[k].pending || bufBusy(g_itemQueue[k]);
+        const bool busy = g_handoff[k].pending || bufBusy(g_itemQueue[j]);   // R5: g_itemQueue / g_lastOurs follow the owner (slot j), g_handoff stays with the detach slot k
         // A click right before the engine went completely quiet = the player's Cancel: the detached power goes too, and so do the buffered commands.
         const bool quiet = !midFlight && s.nrn == 0 && s.engineNe == 0;
         if (quiet && qh::cancelClickRecent(g_lastClickTick, d.at, now)) {
-            discardDetached(k, "cancel_click");
-            endHandoff(k, qh::DR_CANCEL); traceDropAll(k, qh::DR_CANCEL); g_itemQueue[k].clear();
+            discardDetached(k, "cancel_click", afterCombat);
+            endHandoff(k, qh::DR_CANCEL); traceDropAll(j, qh::DR_CANCEL); g_itemQueue[j].clear();
             continue;
         }
-        const int sinceSend = g_lastOurs[k].tick ? static_cast<int>(now - g_lastOurs[k].tick) : 100000;
-        if (!qh::reattachReady(busy, midFlight, oursNodes, sinceSend, s.nrn, d.n)) continue;
+        const int sinceSend = g_lastOurs[j].tick ? static_cast<int>(now - g_lastOurs[j].tick) : 100000;
+        if (!qh::reattachReady(busy, midFlight, oursNodes, sinceSend, s.nrn, d.n)) {
+            if (afterCombat && static_cast<int>(now - d.endAt) > static_cast<int>(kDetachEndGraceMs)) discardDetached(k, "combat_end_timeout", true);
+            continue;
+        }
         uint32_t w = 0;
         bool ok = roundListHandle(srv, s.round, &w);
         if (ok) {
             auto push = reinterpret_cast<void(__thiscall*)(uintptr_t, uint32_t)>(gameaddr::ActListAddTail);
             for (int i = 0; i < d.n; ++i) push(w, d.ptr[i]);
         }
-        traceDetach(k, d.n, "reattach", ok, ok ? "done" : "guard");
+        traceDetach(k, d.n, "reattach", ok, !ok ? "guard" : afterCombat ? "combat_end" : (j == k ? "done" : "moved"), afterCombat);
         if (ok) d = Detached();
-        else if (static_cast<int>(now - d.at) > 5000) discardDetached(k, "reattach_guard");   // never wedge on an unwritable list
+        else if (static_cast<int>(now - d.at) > 5000) discardDetached(k, "reattach_guard", afterCombat);   // never wedge on an unwritable list
     }
 }
 
@@ -1754,7 +1783,7 @@ void tickItemQueues(DWORD now, bool inMenu) {
     for (int k = 0; k < 3; ++k) edgeFlags[k] = qh::combatEdgeStep(g_prevCombat[k], !g_combatUnreadable, g_combat != 0);
     if (inMenu || g_combat != 0) {
         if (combatNow) { g_lastCombatTick = now; for (int k = 0; k < 3; ++k) if (edgeFlags[k]) { g_roundOrder[k] = RoundOrder(); discardDetached(k, "new_combat"); }   // a new combat starts clean
-                         combatEdgeTrace(now, edgeFlags); handoffTick(now, edgeFlags); roundOrderTick(now, edgeFlags); detachTick(now); roundWatchTick(now); }   // unreadable HUD flags: no hand-off and no drop, the buffers wait
+                         combatEdgeTrace(now, edgeFlags); handoffTick(now, edgeFlags); roundOrderTick(now, edgeFlags); detachTick(now, false); roundWatchTick(now); }   // unreadable HUD flags: no hand-off and no drop, the buffers wait
         return;
     }
     party::Fail why = party::F_None;
@@ -1815,9 +1844,28 @@ void tickItemQueues(DWORD now, bool inMenu) {
     for (int k = 0; k < 3; ++k)
         if (swapped[k]) skip[k] = bufBusy(g_itemQueue[k]) && slotOfCreature(tbl, bufOwner(g_itemQueue[k])) != k;
 
-    // Combat ended before a hand-off drained: the held head is dropped; the still-buffered commands run through the sequential dispatch below.
-    for (int k = 0; k < 3; ++k)
-        if (g_handoff[k].pending) endHandoff(k, qh::DR_COMBAT_CLEAR);
+    // Combat ended before a hand-off drained. RQ8: an unsent re-send head goes back to the front of its buffer (the sequential dispatch below sends it);
+    // an engine-held head stays the engine's and is dropped as before. The still-buffered commands run through the sequential dispatch below.
+    for (int k = 0; k < 3; ++k) {
+        Handoff& h = g_handoff[k];
+        if (!h.pending) continue;
+        // R2: the vanilla Cancel Combat button (BTN_CLEARALL) ends combat in the same press; a head the player just cancelled must not come back.
+        if (qh::cancelClickRecent(g_lastClickTick, h.edgeAt, now)) {
+            endHandoff(k, qh::DR_CANCEL); traceDropAll(k, qh::DR_CANCEL); g_itemQueue[k].clear();
+            continue;
+        }
+        qh::QueuedAction lost;
+        const uint32_t headCmd = h.head.cmdId;
+        // RV1 EDGE_WAIT sets headHeld=true together with h.waiting ("not in the engine yet"): that head is still ours, so it is restorable.
+        const qh::RestoreHead rh = qh::restoreHead(h.headValid, h.headHeld && !h.waiting, h.head, g_itemQueue[k], &lost);
+        if (rh != qh::RH_NONE) {
+            h.headValid = false;   // restored: endHandoff must not log it as a DROP
+            QLOG(chMain, "HANDOFF_RESTORE m=%d cmd=%u pos=front dropped=%u", k, (unsigned)headCmd, rh == qh::RH_FRONT_DROPPED ? (unsigned)lost.cmdId : 0u);
+            if (rh == qh::RH_FRONT_DROPPED && g_logOn && g_cfg.traceQueue) { char line[200]; qh::fmtDrop(line, sizeof line, lost.cmdId, k, qh::DR_BUFFER_FULL, 1); QTRACE("%s", line); }
+        }
+        endHandoff(k, qh::DR_COMBAT_CLEAR);
+    }
+    detachTick(now, true);   // RQ9: detached round nodes are reattached (or discarded after kDetachEndGraceMs) once the restored head / buffered commands drained
     // RQ6: an action still tracked from before the last combat (B1 hold keeps buf.active through a fight) has unknown history; stop tracking it, never re-inject it.
     for (int k = 0; k < 3; ++k) {
         qh::ActionBuffer& b = g_itemQueue[k];
@@ -2187,6 +2235,17 @@ void edgeTick(bool inMenu) {
     if (inMenu != pMenu) { traceEdge("menu", pMenu, inMenu, "hud"); pMenu = inMenu; }
 }
 
+// RQ11: does a left press at engine px (x,y) land on a Cancel control (ours, or the vanilla combat Cancel / clear-one boxes)? Only these count as the player's cancel.
+static bool cancelClickAt(int x, int y) {
+    qh::Rect r[6]; int n = 0;
+    for (const CW& w : g_cw) if (w.c && w.vis == 1 && n < 6) r[n++] = w.r;
+    if (g_hud) for (int off : { HudClearAll, HudClearOne, HudClearOne2 }) {
+        qh::Rect q{}; const uintptr_t c = g_hud + off;
+        if (n < 6 && guikit::isVisible(c) && guikit::getExtent(c, &q.x, &q.y, &q.w, &q.h)) r[n++] = q;
+    }
+    return qh::clickIsCancel(r, n, x, y);
+}
+
 void KPATCH_CALL onFrameBegin(const K2PsContext* ctx, void*) {
     if (!g_cfg.enabled || !ctx) return;
     saferead::beginScope();
@@ -2195,7 +2254,10 @@ void KPATCH_CALL onFrameBegin(const K2PsContext* ctx, void*) {
     const bool menuKnown = ctx->struct_size >= offsetof(K2PsContext, inMenu) + sizeof(int32_t);
     const bool inMenu = menuKnown && (ctx->inMenu != 0);
     const bool ledge = guikit::clickEdge(g_lmb);   // polled every frame so a held press never fires on reopen
-    if (ledge) g_lastClickTick = GetTickCount();
+    if (ledge) {
+        int cx = 0, cy = 0;
+        if (!guikit::cursorEngine(&cx, &cy) || cancelClickAt(cx, cy)) g_lastClickTick = GetTickCount();   // RQ11: unknown cursor keeps the old behaviour; other clicks never read as Cancel
+    }
     if (ledge && g_logOn && g_cfg.traceQueue && g_cfg.traceClicks) {
         int tx = 0, ty = 0;
         const bool xy = guikit::cursorEngine(&tx, &ty);
@@ -2203,11 +2265,26 @@ void KPATCH_CALL onFrameBegin(const K2PsContext* ctx, void*) {
         qh::fmtClick(line, sizeof line, GetTickCount(), xy, tx, ty);
         QTRACE("%s", line);
     }
-    for (int k = 0; k < 3; ++k)
-        if (g_cpend[k].on) { g_cpend[k].on = false; QLOG(chCancel, "CANCEL m=%d act=done n=%d", k, queueCountOf(k)); }
+    for (int k = 0; k < 3; ++k) {   // RQ12: two samples per Cancel (next frame, ~1500 ms later): does the follower AI re-add its FollowLeader 0x3D?
+        CPending& cp = g_cpend[k];
+        if (cp.on) {
+            const DWORD t = GetTickCount();
+            if (!cp.late || t - cp.at >= 1500u) {
+                int after3D = -1;
+                const int nn = queueCountOf(k, nullptr, nullptr, &after3D);
+                QLOG(chCancel, "CANCEL_AFTER m=%d n=%d had3D=%d after3D=%d late=%d", k, nn, cp.had3D, after3D, cp.late ? 1 : 0);
+                if (cp.late) {
+                    if (k >= 1 && cp.had3D > 0 && after3D == 0) QLOGV(chCancel, KPLOG_WARN, "CANCEL_LOST3D m=%d had3D=%d after3D=%d", k, cp.had3D, after3D);
+                    cp = CPending();   // done
+                } else cp.late = true;   // keep the entry for the ~1500 ms sample
+            }
+        }
+    }
     const bool hardCombat = g_combat != 0 && !g_softCombat;
     if (!g_cfg.cancel || inMenu || hardCombat) {
         cwHideAll(inMenu ? "hud-inactive" : hardCombat ? "combat" : "cancel-off");
+    } else if (GetTickCount() - g_capTick >= 250u) {
+        cwHideAll("stale capture");   // RL19: HUD_DRAW stopped (dialogue / cutscene / load): a leftover Cancel must not swallow clicks
     } else {
         for (int k = 0; k < 3; ++k) {
             CW& w = g_cw[k];
@@ -2365,7 +2442,7 @@ void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
     loadIni();
     g_logOn = g_cfg.log;
-    KP_LOG(chMain, "0.4.7-dev: kit=%d frame_alpha=%.2f cancel=%d enabled=%d waiting_dim=%d border_px=%d log=%d companions=%d strip_icon_px=%d strip_side=%s strip_max=%d waiting_icon_dim=%d strip_head_pct=%d", g_cfg.kit ? 1 : 0, g_cfg.frameAlpha, g_cfg.cancel ? 1 : 0, g_cfg.enabled ? 1 : 0, g_cfg.waitingDim ? 1 : 0, g_cfg.borderPx, g_cfg.log ? 1 : 0, g_cfg.companions ? 1 : 0, g_cfg.stripIconPx, g_cfg.stripSide == qh::kSideBelow ? "below" : g_cfg.stripSide == qh::kSideAbove ? "above" : "left", g_cfg.stripMax, g_cfg.waitingIconDim ? 1 : 0, g_cfg.stripHeadPct);
+    KP_LOG(chMain, "0.4.8-dev: kit=%d frame_alpha=%.2f cancel=%d enabled=%d waiting_dim=%d border_px=%d log=%d companions=%d strip_icon_px=%d strip_side=%s strip_max=%d waiting_icon_dim=%d strip_head_pct=%d", g_cfg.kit ? 1 : 0, g_cfg.frameAlpha, g_cfg.cancel ? 1 : 0, g_cfg.enabled ? 1 : 0, g_cfg.waitingDim ? 1 : 0, g_cfg.borderPx, g_cfg.log ? 1 : 0, g_cfg.companions ? 1 : 0, g_cfg.stripIconPx, g_cfg.stripSide == qh::kSideBelow ? "below" : g_cfg.stripSide == qh::kSideAbove ? "above" : "left", g_cfg.stripMax, g_cfg.waitingIconDim ? 1 : 0, g_cfg.stripHeadPct);
     QLOG(chMain, "pause_eaten_wait=%d dispatch_wait_flags=%d", g_cfg.pauseEatenWait ? 1 : 0, g_cfg.dispatchWaitFlags ? 1 : 0);
     if (g_cfg.spellReplayPosSeen) QLOG(chMain, "ini: spell_replay_pos is obsolete and ignored (0.4.6-dev)");
     QLOG(chMain, "pause_reinject=%d handoff_on_combat=%d handoff_clear_first=%d handoff_keep_new=%d handoff_resend_held=%d show_in_combat=%d handoff_keep_unpaused=%d trace_mode=%d mode_cap=%d",
@@ -2411,6 +2488,7 @@ int __cdecl QueueHudPerformUseItem(int clientCreature, int ebp) {
     const uint32_t cmd = ++g_cmdSeq;
     const uintptr_t crPtr = static_cast<uintptr_t>(static_cast<uint32_t>(clientCreature));
     if (g_combat != 0) {
+        g_combatClickTick = GetTickCount();   // RL6
         traceCmd(cmd, -1, crPtr, qh::ActionKind::Item, false, 0, 0, "pass_combat", false, 0, 0, true);
         return 0;
     }
@@ -2498,6 +2576,7 @@ int __cdecl QueueHudPerformCastSpell(int clientCreature, int ebp) {
     const uint32_t cmd = ++g_cmdSeq;
     const uintptr_t crPtr = static_cast<uintptr_t>(static_cast<uint32_t>(clientCreature));
     if (g_combat != 0) {
+        g_combatClickTick = GetTickCount();   // RL6
         traceCmd(cmd, -1, crPtr, qh::ActionKind::Spell, false, 0, 0, "pass_combat", false, 0, 0, true);
         return 0;
     }

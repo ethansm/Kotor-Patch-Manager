@@ -805,10 +805,10 @@ void testPanelHoldAndSlotRules() {
     // handoff_keep_new (QL10): keepNew suppresses the clear and is logged on the first send only
     KT_CHECK(!clearBeforeHandoff(true, 0, true));
     KT_CHECK(clearBeforeHandoff(true, 0, false));
-    KT_CHECK(keepNewAtHandoff(true, true, 0));
-    KT_CHECK(!keepNewAtHandoff(true, true, 1));
-    KT_CHECK(!keepNewAtHandoff(true, false, 0));
-    KT_CHECK(!keepNewAtHandoff(false, true, 0));
+    KT_CHECK(keepNewAtHandoff(true, 0));
+    KT_CHECK(!keepNewAtHandoff(true, 1));
+    KT_CHECK(!keepNewAtHandoff(false, 0));
+    KT_CHECK(clearBeforeHandoff(true, 0, false) && !clearBeforeHandoff(true, 0, true));
     Config k;
     KT_CHECK(k.handoffKeepNew);                                                     // default on
     KT_CHECK(parseIniLine(k, "handoff_keep_new=0") && !k.handoffKeepNew);
@@ -3041,6 +3041,70 @@ void testServerRouteQL20() {
     KT_CHECK(!c.companionServerCast);
 }
 
+// RV3: RQ8 restoreHead, RQ10 detachTarget, RQ11 clickIsCancel, RL6 lateForeignCount + grown foreign set, RL18 cancelHideWhy.
+void testRV3() {
+    auto act = [](uint32_t cmd) { return makeItemAction(0x1000, 100 + cmd, 0, 1, nullptr, 1, cmd); };
+    {   // restoreHead
+        ActionBuffer b; QueuedAction lost; lost.cmdId = 0;
+        KT_CHECK(restoreHead(true, false, act(7), b, &lost) == RH_FRONT);
+        KT_CHECK_EQ(b.count, 1); KT_CHECK_EQ(b.queue[0].cmdId, 7u);
+    }
+    {
+        ActionBuffer b; b.push(act(11)); b.push(act(12));
+        QueuedAction lost;
+        KT_CHECK(restoreHead(true, false, act(7), b, &lost) == RH_FRONT);
+        KT_CHECK_EQ(b.count, 3); KT_CHECK_EQ(b.queue[0].cmdId, 7u); KT_CHECK_EQ(b.queue[1].cmdId, 11u); KT_CHECK_EQ(b.queue[2].cmdId, 12u);
+    }
+    {
+        ActionBuffer b; b.push(act(11)); b.push(act(12)); b.push(act(13));
+        QueuedAction lost;
+        KT_CHECK(restoreHead(true, false, act(7), b, &lost) == RH_FRONT_DROPPED);
+        KT_CHECK_EQ(lost.cmdId, 13u);
+        KT_CHECK_EQ(b.count, 3); KT_CHECK_EQ(b.queue[0].cmdId, 7u); KT_CHECK_EQ(b.queue[1].cmdId, 11u); KT_CHECK_EQ(b.queue[2].cmdId, 12u);
+    }
+    {
+        ActionBuffer b; b.push(act(11));
+        QueuedAction lost;
+        KT_CHECK(restoreHead(false, false, act(7), b, &lost) == RH_NONE);
+        KT_CHECK_EQ(b.count, 1); KT_CHECK_EQ(b.queue[0].cmdId, 11u);
+        KT_CHECK(restoreHead(true, true, act(7), b, &lost) == RH_NONE);
+        KT_CHECK_EQ(b.count, 1); KT_CHECK_EQ(b.queue[0].cmdId, 11u);
+    }
+    // detachTarget
+    KT_CHECK_EQ(detachTarget(1, 1), 1); KT_CHECK_EQ(detachTarget(2, 1), 2); KT_CHECK_EQ(detachTarget(0, 2), 0);
+    KT_CHECK_EQ(detachTarget(-1, 1), -1); KT_CHECK_EQ(detachTarget(3, 0), -1);
+    // clickIsCancel
+    {
+        const Rect r[3] = { {100, 100, 20, 20}, {0, 0, 0, 0}, {300, 50, 10, 10} };
+        KT_CHECK(clickIsCancel(r, 3, 100, 100));
+        KT_CHECK(clickIsCancel(r, 3, 119, 119));
+        KT_CHECK(!clickIsCancel(r, 3, 120, 119));
+        KT_CHECK(!clickIsCancel(r, 3, 99, 100));
+        KT_CHECK(!clickIsCancel(r, 3, 0, 0));
+        KT_CHECK(clickIsCancel(r, 3, 305, 55));
+        KT_CHECK(!clickIsCancel(r, 0, 100, 100));
+        KT_CHECK(!clickIsCancel(nullptr, 3, 100, 100));
+    }
+    // lateForeignCount + roundPartition with the grown set
+    KT_CHECK_EQ(lateForeignCount(2, true, 1), 1); KT_CHECK_EQ(lateForeignCount(1, true, 1), 0); KT_CHECK_EQ(lateForeignCount(3, true, 0), 3);
+    KT_CHECK_EQ(lateForeignCount(1, false, 0), 0); KT_CHECK_EQ(lateForeignCount(0, true, 0), 0);
+    {
+        const uint32_t ptrs[3] = { 10, 20, 30 };
+        int order[3];
+        const uint32_t f1[1] = { 20 };
+        KT_CHECK_EQ(roundPartition(ptrs, 3, f1, 1, order), 2);
+        KT_CHECK(order[0] == 0 && order[1] == 2 && order[2] == 1);
+        const uint32_t f2[2] = { 20, 10 };
+        KT_CHECK_EQ(roundPartition(ptrs, 3, f2, 2, order), 3);
+        KT_CHECK(order[0] == 2 && order[1] == 0 && order[2] == 1);
+    }
+    // cancelHideWhy
+    KT_CHECK(!strcmp(cancelHideWhy(false, true, 10), "cancel-off"));
+    KT_CHECK(!strcmp(cancelHideWhy(true, false, 0), "no-queue"));
+    KT_CHECK(!strcmp(cancelHideWhy(true, true, 0), "no-room"));
+    KT_CHECK(cancelHideWhy(true, true, 24) == nullptr);
+}
+
 int main() {
     testConstants();
     testKeys();
@@ -3121,5 +3185,6 @@ int main() {
     testConfigEqualSeesEveryField();
     testOwnerHoldB1();
     testServerRouteQL20();
+    testRV3();
     return kt::Report("queue_hud_logic_test");
 }

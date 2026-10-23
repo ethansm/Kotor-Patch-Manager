@@ -25,9 +25,10 @@ these keywords are ignored; a keyword line with a missing or malformed field is 
   QJ m=<k> ne=<n> types=[<hex,...,+N>] round=<n> cur=<hex|-> aa8=<n> ab8=<n> paused=<0|1> combat=<0|1> ours=<tag>@<age>ms|external
   REINJECT|DISPATCH|CANCEL cmd=<n> [m=<k>] [why=<reason>] [attempt=<n>]   (REINJECT/DISPATCH: a why other than ok is a
     decline, except REINJECT why=eaten_paused, which is the re-inject reason and shows as REINJECT#<attempt>)
-  CANCEL m=<k> act=<click|done|refused> n=<n> [route=<text>] [why=<free text to end of line>]   (no cmd=, no lifecycle)
+  CANCEL m=<k> act=<click|done|refused> n=<n> [drawn=<n>] [had3D=<n>] [route=<text>] [why=<free text to end of line>]   (no cmd=, no lifecycle)
+  CANCEL_AFTER m=<k> n=<n> had3D=<n> after3D=<n> late=<0|1>   (RQ12 measurement: 0x3D entries before the Cancel click and on the next frame (late=0) / ~1500 ms later (late=1); -1 = unreadable; no lifecycle)
   MODE m=<k|?> combat=<0|1|?> soft=<0|1|-> menu=<0|1> paused=<0|1> hostile=<0|1|?> party=<0|1|?> strip=<r> cancel=<r> banner=<r> why=<w>
-    (one per member state change; strip/cancel: shown|hidden:combat|hidden:menu|hidden:empty|hidden:stale|hidden:off;
+    (one per member state change; strip/cancel: shown|hidden:combat|hidden:menu|hidden:empty|hidden:stale|hidden:off|hidden:no-room;
     banner: vanilla|hidden|restored; why: edge|ended|menu|pause|target|hostile|ui; ? is also accepted for r and w)
   MODE cap reached   (counted in the MODES title, not flagged)
   pause_reinject=<n> ... show_in_combat=<0|1>   (the startup line, kept as context for flag M; not shown)
@@ -103,7 +104,7 @@ MODE_RESTORE_MS = 500             # flag L: how long after a MODE a BANNER act=r
 CONTEXT_KWS = ("BANNER", "CONFIG")   # kept by --member (no m=); read by flags L and M, shown in no section
 _CONFIG_RE = re.compile(r"\bshow_in_combat=([01])(?:\s|$)")   # the startup line (QueueHud.cpp) carries show_in_combat=<n>
 CANCEL_NEW = ("m", "act", "n")    # CANCEL m=<k> act=<...> n=<n>; the older cmd= form keeps REQUIRED["CANCEL"]
-MODE_STATE = r"shown|hidden:(?:combat|menu|empty|stale|off)|\?"   # strip= and cancel= values (? = null reason in fmtMode)
+MODE_STATE = r"shown|hidden:(?:combat|menu|empty|stale|off|no-room)|\?"   # strip= and cancel= values (? = null reason in fmtMode)
 CMD_VIEW_MAX = 30
 CMD_KWS = ("CMD", "WAIT", "RESOLVE", "DROP", "REINJECT", "REINJECT_NO", "DISPATCH", "CANCEL", "VANISH")
 SPELL_KWS = ("SPELL_ARGS", "SPELL_OUT")   # per-command view only; not lifecycle keywords (build_cmds ignores them)
@@ -137,6 +138,7 @@ FIELD_RE = {
     "strip": MODE_STATE, "cancel": MODE_STATE, "banner": r"vanilla|hidden|restored|\?",
     "mode_tri": r"[01]|\?", "mode_soft": r"[01]|-", "mode_why": r"edge|ended|menu|pause|target|hostile|ui|\?",
     "cancel_act": r"click|done|refused", "cancel_why": r".*",
+    "had3D": r"-?\d+", "after3D": r"-?\d+", "late": r"[01]", "drawn": r"-?\d+",   # RQ12 measure-first (CANCEL click / CANCEL_AFTER)
 }
 OVERRIDE = {("EDGE", "buf"): "buflist", ("VANISH", "kind"): "vanish_kind",
             ("ROUND", "types"): "hexlist", ("ROUND", "cur"): "roundcur",
@@ -153,6 +155,7 @@ REQUIRED = {
     "EDGE": ("what", "old", "new", "src", "buf"),
     "QJ": ("m", "ne", "types", "round", "cur", "aa8", "ab8", "paused", "combat", "ours"),
     "REINJECT": ("cmd",), "DISPATCH": ("cmd",), "CANCEL": ("cmd",),   # CANCEL: CANCEL_NEW when act= is present
+    "CANCEL_AFTER": ("m", "n", "had3D", "after3D", "late"),
     "MODE": ("m", "combat", "soft", "menu", "paused", "hostile", "party", "strip", "cancel", "banner", "why"),
     "REINJECT_NO": ("cmd", "m", "why"),
     "VANISH": ("cmd", "m", "kind", "paused", "exec", "ne", "round", "cur", "aa8", "ab8", "age"),

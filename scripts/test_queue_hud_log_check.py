@@ -178,6 +178,10 @@ def cancel_new(m, act, n, tail=""):
     return "CANCEL m=%d act=%s n=%d%s" % (m, act, n, tail)
 
 
+def cancel_after(m, n, had, after, late):
+    return "CANCEL_AFTER m=%d n=%d had3D=%d after3D=%d late=%d" % (m, n, had, after, late)
+
+
 # Goldens copied from queue_hud_logic_test.cpp (fmtMode checks (a)-(e)); (e) is the null-reason case that prints '?'.
 MODE_GOLDEN = [
     "MODE m=0 combat=0 soft=- menu=0 paused=0 hostile=? party=? strip=shown cancel=shown banner=vanilla why=ui",
@@ -1114,6 +1118,10 @@ class ModeParseTests(unittest.TestCase):
         self.assertEqual((recs[3]["f"]["combat"], recs[3]["f"]["cancel"]), ("?", "hidden:off"))
         self.assertEqual((recs[4]["f"]["strip"], recs[4]["f"]["why"]), ("?", "?"))
 
+    def test_mode_cancel_hidden_no_room_parses(self):   # RL18
+        recs, skipped = parse([mode(0, 0, cancel="hidden:no-room")])
+        self.assertEqual((skipped, [r["f"]["cancel"] for r in recs]), ([], ["hidden:no-room"]))
+
     def test_mode_cap_line_is_counted_not_skipped(self):
         recs, skipped = parse(["MODE cap reached"])
         self.assertEqual((skipped, [r["kw"] for r in recs]), ([], ["MODE_CAP"]))
@@ -1145,6 +1153,23 @@ class CancelParseTests(unittest.TestCase):
         self.assertEqual(recs[2]["f"]["why"], "no server creature")
         self.assertEqual(recs[3]["f"]["route"], "ServerClearAll")
         self.assertIsNone(recs[0]["cmd"])
+
+    def test_cancel_click_measure_fields_and_cancel_after_parse(self):
+        recs, skipped = parse([cancel_new(1, "click", 2, " drawn=2 had3D=1 route=ServerClearAll why=measure"),
+                               cancel_after(1, 0, 1, 1, 0), cancel_after(1, 0, 1, 0, 1)])
+        self.assertEqual(skipped, [])
+        self.assertEqual([r["kw"] for r in recs], ["CANCEL", "CANCEL_AFTER", "CANCEL_AFTER"])
+        self.assertEqual(recs[0]["f"]["had3D"], "1")
+        self.assertEqual(recs[0]["f"]["why"], "measure")
+        self.assertEqual(recs[2]["f"]["after3D"], "0")
+        self.assertEqual(recs[2]["f"]["late"], "1")
+        bad = ["CANCEL_AFTER m=1 n=0 had3D=1 after3D=x late=0", "CANCEL_AFTER m=1 n=0 had3D=1 after3D=1",
+               "CANCEL_AFTER m=1 n=0 had3D=1 after3D=1 late=2"]
+        recs, skipped = parse(bad)
+        self.assertEqual(recs, [])
+        self.assertEqual([s[2] for s in skipped], ["malformed after3D=x", "missing late", "malformed late=2"])
+        rc, out = run_log([cancel_after(1, 0, 1, 0, 1)])
+        self.assertTrue(out[0].startswith("QUEUE-HUD lines=1 parsed=1 skipped=0 cmds=0"))
 
     def test_bad_cancel_forms_are_skipped(self):
         bad = ["CANCEL m=0 act=maybe n=2", "CANCEL m=0 act=click", "CANCEL m=0 n=2"]

@@ -145,7 +145,7 @@ inline bool activeNeedsSlot(bool bufActive, bool engineHolds) { return bufActive
 // handoff_keep_new (QL10 probe): keepNew skips the clear so the player's new click survives; the engine then orders the queue itself.
 inline bool clearBeforeHandoff(bool cfgOn, int sentSoFar, bool keepNew = false) { return cfgOn && !keepNew && sentSoFar == 0; }
 // True on the first send of a hand-off that keeps the engine queue (logged as HANDOFF_KEEP).
-inline bool keepNewAtHandoff(bool cfgOn, bool keepNew, int sentSoFar) { return cfgOn && keepNew && sentSoFar == 0; }
+inline bool keepNewAtHandoff(bool keepNow, int sentSoFar) { return keepNow && sentSoFar == 0; }   // RL11: handoff_clear_first no longer gates the RoundOrder arming
 
 // handoff_resend_held: the active command the engine still held at the combat edge (a thrown grenade / medpack that triggered combat).
 // The hand-off waits while the engine still holds it, then settles by whether it ever ran (QL6c; the old 300 ms clock dropped real casts):
@@ -390,6 +390,20 @@ inline Rect stripCancelRect(const Rect* icons, int n, int side, int screenW = 0,
     }
     if (screenW > 0 && r.x + r.w > screenW) return Rect{ 0, 0, 0, 0 };
     return r;
+}
+
+// RQ11: is (x,y) inside any of the n Cancel rects (queue-hud's own, vanilla BTN_CLEARALL / BTN_CLEARONE / BTN_CLEARONE2)? Half-open, empty rects never match.
+inline bool clickIsCancel(const Rect* rects, int n, int x, int y) {
+    for (int i = 0; rects && i < n; ++i)
+        if (rects[i].w > 0 && rects[i].h > 0 && x >= rects[i].x && x < rects[i].x + rects[i].w && y >= rects[i].y && y < rects[i].y + rects[i].h) return true;
+    return false;
+}
+
+// RL18: why a Cancel control is hidden this frame (nullptr = shown): off by config, no queue (nothing wanted), or the strip is shown but has no room for the square.
+inline const char* cancelHideWhy(bool cancelOn, bool show, int rectW) {
+    if (!cancelOn) return "cancel-off";
+    if (!show) return "no-queue";
+    return rectW <= 0 ? "no-room" : nullptr;
 }
 
 // A Cancel control is shown exactly when its queue is (the same out-of-combat rule); `drawn` = icons actually drawn for that queue.
@@ -796,6 +810,22 @@ struct ActionBuffer {
 };
 
 using ItemBuffer = ActionBuffer;
+
+// RQ8: combat ended while a hand-off still owned an unsent head (decided "re-send" but the owner was not in slot k / midFlight stalled / list full).
+// Put it back at the FRONT of the buffer so the sequential dispatch sends it first. headHeld = the engine still owns it: not restored. A full buffer
+// (kMaxActionQueue) loses its newest command (*dropped, caller logs DR_BUFFER_FULL) instead of growing the array.
+enum RestoreHead : uint8_t { RH_NONE, RH_FRONT, RH_FRONT_DROPPED };
+inline RestoreHead restoreHead(bool headValid, bool headHeld, const QueuedAction& head, ActionBuffer& buf, QueuedAction* dropped) {
+    if (!headValid || headHeld) return RH_NONE;
+    RestoreHead r = RH_FRONT;
+    int n = buf.count;
+    if (n >= kMaxActionQueue) { if (dropped) *dropped = buf.queue[kMaxActionQueue - 1]; n = kMaxActionQueue - 1; r = RH_FRONT_DROPPED; }
+    for (int i = n; i > 0; --i) buf.queue[i] = buf.queue[i - 1];
+    buf.queue[0] = head;
+    buf.count = n + 1;
+    buf.userCancelled = false;
+    return r;
+}
 
 // Every buffered cmdId (queue order), then the active one when active. Writes at most cap ids, returns how many.
 // Call before clear()/cancel(): each id is one lost command, so log one DROP line per id.
@@ -1274,6 +1304,14 @@ inline int roundPartition(const uint32_t* ptrs, int n, const uint32_t* foreign, 
     return moved;
 }
 
+// RL6: of nNew round nodes first seen this frame, how many are the player's in-combat clicks (the last ones): needs a click since the hand-off began,
+// minus the nodes our own send of the previous frame created.
+inline int lateForeignCount(int nNew, bool clickPending, int ownSends) {
+    if (!clickPending || nNew <= 0) return 0;
+    const int n = nNew - ownSends;
+    return n > 0 ? n : 0;
+}
+
 // ROUND_ROT m=<k> n=<n> moved=<n> ok=<0|1>   (handoff_keep_new: pending round nodes re-ordered so the re-sent commands run before the new click)
 inline int fmtRoundRot(char* out, int cap, int m, int n, int moved, bool ok) {
     detail::LogWr w(out, cap);
@@ -1323,6 +1361,9 @@ constexpr int kReattachQuietMs = 300;
 inline bool reattachReady(bool handoffBusy, bool midFlight, int oursPendingNodes, int sinceSendMs, int nrn, int nDetached) {
     return nDetached > 0 && !handoffBusy && !midFlight && oursPendingNodes == 0 && sinceSendMs >= kReattachQuietMs && nrn + nDetached <= kMaxRound;
 }
+
+// RQ10: the slot a detached batch must be processed for: its owner's CURRENT slot (leader switches reorder the party), -1 = owner gone.
+inline int detachTarget(int ownerSlot, int k) { (void)k; return (ownerSlot >= 0 && ownerSlot < 3) ? ownerSlot : -1; }
 
 // ROUND_DETACH m=<k> n=<n> act=<detach|reattach|discard> ok=<0|1> why=<text>
 inline int fmtRoundDetach(char* out, int cap, int m, int n, const char* act, bool ok, const char* why) {
