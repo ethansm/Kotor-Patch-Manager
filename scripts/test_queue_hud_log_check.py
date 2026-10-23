@@ -1118,6 +1118,10 @@ class ModeParseTests(unittest.TestCase):
         self.assertEqual((recs[3]["f"]["combat"], recs[3]["f"]["cancel"]), ("?", "hidden:off"))
         self.assertEqual((recs[4]["f"]["strip"], recs[4]["f"]["why"]), ("?", "?"))
 
+    def test_mode_hidden_count_parses(self):   # RL20
+        recs, skipped = parse(["MODE m=0 combat=0 soft=- menu=0 paused=0 hostile=? party=? strip=shown cancel=shown banner=vanilla why=ui hidden=2"])
+        self.assertEqual((skipped, [r["f"]["hidden"] for r in recs]), ([], ["2"]))
+
     def test_mode_cancel_hidden_no_room_parses(self):   # RL18
         recs, skipped = parse([mode(0, 0, cancel="hidden:no-room")])
         self.assertEqual((skipped, [r["f"]["cancel"] for r in recs]), ([], ["hidden:no-room"]))

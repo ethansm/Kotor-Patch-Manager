@@ -17,7 +17,7 @@
 #pragma once
 #include <stdint.h>
 #include <string.h>
-#include "SelfHealUi.h"   // shui::buttonRect: the slim left-side icon size is the selfheal button side
+#include "SelfHealUi.h"   // shui::stripReserve / buttonRect: fallback footprint of the neighbouring selfheal button (left-strip reserve)
 
 namespace qh {
 
@@ -78,8 +78,8 @@ inline uint32_t nodeKey(const RNode& n) {
 }
 
 namespace detail {
-// Callers guarantee n < kMaxSlots (every loop below tests it before a push).
-inline void push(Slot out[kMaxSlots], int& n, int entry, int node, uint32_t key) {
+// Callers guarantee n < cap (every loop below tests it before a push).
+inline void push(Slot* out, int& n, int entry, int node, uint32_t key) {
     out[n].entry = entry; out[n].node = node; out[n].key = key;
     ++n;
 }
@@ -87,12 +87,12 @@ inline void push(Slot out[kMaxSlots], int& n, int entry, int node, uint32_t key)
 
 // Fills out[0..return) with up to 4 slots (slot 0 = the big one). Entry order = queue order; the first qualifying entry gets the
 // current round node `cur` (nullable); the first 0x3F entry expands the pending round list. Inputs are capped: ne <= 16, nrn <= 4.
-inline int buildSlots(const QEntry* e, int ne, const RNode* rn, int nrn, const RNode* cur, Slot out[kMaxSlots]) {
+inline int buildSlotsN(const QEntry* e, int ne, const RNode* rn, int nrn, const RNode* cur, Slot* out, int cap) {
     if (!out || !e) return 0;
     if (!rn) nrn = 0;
     int n = 0;
     bool curTaken = false, expanded = false, curUsed = false;
-    for (int i = 0; i < ne && i < kMaxEntries && n < kMaxSlots; ++i) {
+    for (int i = 0; i < ne && i < kMaxEntries && n < cap; ++i) {
         const int t = e[i].type;
         if (!isQualifying(t)) continue;
         const bool spellOrItem = (t == T_CAST_SPELL || t == T_USE_ITEM);
@@ -107,7 +107,7 @@ inline int buildSlots(const QEntry* e, int ne, const RNode* rn, int nrn, const R
         }
         if (t == T_COMBAT && !expanded) {
             expanded = true;
-            for (int k = 0; k < nrn && k < kMaxRound && n < kMaxSlots; ++k) {
+            for (int k = 0; k < nrn && k < kMaxRound && n < cap; ++k) {
                 if (curUsed && rn[k].ptr == cur->ptr) continue;
                 if (!nodeIconValid(T_COMBAT, rn[k].subType)) continue;
                 detail::push(out, n, i, k, nodeKey(rn[k]));
@@ -115,6 +115,15 @@ inline int buildSlots(const QEntry* e, int ne, const RNode* rn, int nrn, const R
         }
     }
     return n;
+}
+
+inline int buildSlots(const QEntry* e, int ne, const RNode* rn, int nrn, const RNode* cur, Slot out[kMaxSlots]) { return buildSlotsN(e, ne, rn, nrn, cur, out, kMaxSlots); }
+constexpr int kMaxSlotsAll = kMaxEntries + kMaxRound;   // every entry gives <= 1 slot, the first 0x3F up to kMaxRound more
+// Slots the panel cannot draw (total qualifying slots beyond kMaxSlots); Cancel still clears them (RL20).
+inline int hiddenSlots(const QEntry* e, int ne, const RNode* rn, int nrn, const RNode* cur) {
+    Slot all[kMaxSlotsAll];
+    const int n = buildSlotsN(e, ne, rn, nrn, cur, all, kMaxSlotsAll);
+    return n > kMaxSlots ? n - kMaxSlots : 0;
 }
 
 // The head action is "waiting" (vanilla panel shows it dimmed while the creature is paused / has a delayed action).
@@ -197,7 +206,7 @@ struct Config {
     bool traceQueue = true;       // trace_queue: per-command CMD#/WAIT/RESOLVE/DROP/EDGE/QJ log lines
     // 0.2.0: companion queue strips (party members 1-2).
     bool companions = true;
-    int stripIconPx = 0;          // 0 = auto (60% of the vit-rect height, min 12)
+    int stripIconPx = 0;          // 0 = auto: left = 60% of the vit height clamped 48..72, above/below = 60%, min 12
     int stripSide = 0;            // strip_side: kSideLeft (default) | kSideAbove | kSideBelow
     int stripMax = 4;             // 1..4 icons per strip
     bool kit = true;              // 0.3.0: kit frames + Cancel controls (default on)
@@ -224,7 +233,7 @@ struct Config {
 
 struct Style { float bg[3], bgA, border[3], borderA, iconA, frameA; int borderPx; };
 
-// Slot 0 while waiting (and waitingDim) is dimmed: icon, background and border alpha all scale by waitingAlpha; bg recoloured to waitingBg.
+// Slot 0 while waiting (and waitingDim) is dimmed: icon alpha scales only when waiting_icon_dim=1; background, border and frame always scale (by waitingAlpha); bg recoloured to waitingBg.
 inline Style slotStyle(const Config& c, int slotIndex, bool waiting) {
     Style s;
     s.bg[0] = c.bg[0]; s.bg[1] = c.bg[1]; s.bg[2] = c.bg[2];
@@ -269,7 +278,7 @@ inline int stripIconSize(Rect vit, const Config& c) {
 }
 
 // Head (slot index 0) icon edge of a companion strip: strip icon size * strip_head_pct / 100, never below the strip icon size and
-// never taller than the vit bar (so the row stays inside the card height). Keyed on slot index 0 only, never on the current command.
+// never taller than the vit bar, except that it never drops below the strip icon size when the vit bar is shorter (so the row stays inside the card height). Keyed on slot index 0 only, never on the current command.
 inline int stripHeadSize(Rect vit, const Config& c) {
     const int s = stripIconSize(vit, c);
     int pct = c.stripHeadPct < 100 ? 100 : (c.stripHeadPct > 200 ? 200 : c.stripHeadPct);
@@ -514,12 +523,15 @@ inline bool parseSide(const char* b, const char* e, int* side) {
 }
 }  // namespace detail
 
-// One INI line. Blank, ';' / '#' comments and [section] lines are ignored (true). key=value (spaces/tabs trimmed, key case-insensitive):
-//   enabled, waiting_dim, log (0/1/true/false/on/off/yes/no); bg_rgb / border_rgb ("r,g,b" floats, each clamped to 0..1);
-//   bg_alpha, border_alpha, waiting_alpha (float, clamped to 0..1); border_px (a single digit 1..6; anything else is a bad value).
-//   0.2.0: companions (bool), strip_icon_px (0 = auto, else 8..96), strip_side (left | above | below), strip_max (a single digit 1..4).
-//   0.3.0: kit (bool), frame_alpha (float 0..1), cancel (bool).
-//   trace_mode (bool), mode_cap (integer 1..100000).
+// One INI line. Blank, ';' / '#' comments and [section] lines are ignored (true); an inline "; note" after a value is ignored (RL15).
+// key=value (spaces/tabs trimmed, key case-insensitive). The 37 keys:
+//   bool (0/1/true/false/on/off/yes/no): enabled, kit, cancel, waiting_dim, waiting_icon_dim, log, trace_queue, trace_clicks, trace_mode, companions,
+//     pause_reinject, pause_eaten_wait, dispatch_wait_flags, handoff_on_combat, handoff_clear_first, handoff_keep_new, handoff_keep_unpaused,
+//     handoff_detach_held, handoff_resend_held, companion_server_cast, hide_banner_soft, hide_redbar_soft, show_in_combat,
+//     spell_replay_pos (obsolete after RV1: accepted, ignored).
+//   float 0..1 (clamped): frame_alpha, bg_alpha, border_alpha, waiting_alpha. rgb "r,g,b" each 0..1: bg_rgb, border_rgb, waiting_dim_rgb.
+//   int: border_px (a single digit 1..6), strip_icon_px (0 = auto, else 8..96), strip_side (left | above | below), strip_max (a single digit 1..4),
+//     strip_head_pct (100..200, clamped), mode_cap (1..100000).
 // Unknown key, missing '=' or a bad value returns false and leaves the field unchanged.
 inline bool parseIniLine(Config& c, const char* line) {
     if (!line) return false;
@@ -532,7 +544,7 @@ inline bool parseIniLine(Config& c, const char* line) {
     if (eq == e) return false;
     const char* kb = b; const char* ke = eq;
     detail::trim(kb, ke);
-    const char* vb = eq + 1; const char* ve = e;
+    const char* vb = eq + 1; const char* ve = detail::findCh(vb, e, ';');   // RL15: "key = v ; note"
     detail::trim(vb, ve);
     if (detail::keyEq(kb, ke, "enabled")) return detail::parseBool(vb, ve, &c.enabled);
     if (detail::keyEq(kb, ke, "bg_rgb")) return detail::parseRgb(vb, ve, c.bg);
@@ -575,21 +587,26 @@ inline bool parseIniLine(Config& c, const char* line) {
 }
 
 // Whole INI text (\n or \r\n lines). Bad lines are skipped (their fields keep the previous value). Lines over 255 bytes are ignored.
-inline void parseIni(Config& c, const char* text) {
-    if (!text) return;
+// Returns the number of rejected lines (unknown key, bad value, no '=', or over 255 bytes); *firstBadLine = 1-based line of the first one (0 = none). A UTF-8 BOM at the start is skipped.
+inline int parseIni(Config& c, const char* text, int* firstBadLine = nullptr) {
+    if (firstBadLine) *firstBadLine = 0;
+    if (!text) return 0;
+    const unsigned char* u = reinterpret_cast<const unsigned char*>(text);
+    if (u[0] == 0xEF && u[1] == 0xBB && u[2] == 0xBF) text += 3;   // short-circuit: u[1]/u[2] are read only after a matching u[0]/u[1]
     char buf[256];
     const char* p = text;
+    int line = 0, bad = 0;
     while (*p) {
         const char* q = p;
         while (*q && *q != '\n') ++q;
+        ++line;
         const unsigned len = static_cast<unsigned>(q - p);
-        if (len < sizeof buf) {
-            memcpy(buf, p, len);
-            buf[len] = 0;
-            parseIniLine(c, buf);
-        }
+        bool ok = false;
+        if (len < sizeof buf) { memcpy(buf, p, len); buf[len] = 0; ok = parseIniLine(c, buf); }
+        if (!ok) { ++bad; if (firstBadLine && *firstBadLine == 0) *firstBadLine = line; }
         p = *q ? q + 1 : q;
     }
+    return bad;
 }
 
 // ---- Unified Action Buffer & Follower Wipe Guard (Workstreams 4 & QH4) ----
@@ -885,7 +902,7 @@ inline bool shouldDispatchNext(const ActionBuffer& buf, int engineQueueLen, bool
     return !buf.active && !buf.empty() && engineQueueLen == 0 && !haveCur && nrn == 0;
 }
 
-// ---- QL6b flag gate: after an item/spell the engine keeps aa8/ab8 set for up to ~0.7 s and a dispatch in that window is wiped. ----
+// ---- QL6b flag gate: aa8 (busy window) clears within ~1.5 s, ab8 (round lock) is cleared only by EndCombatRound, up to ~3 s of UNPAUSED time (doc 29 D1/D2); a dispatch while either is set is wiped. The 2 s cap can therefore release while ab8 is still set (hold=flag_cap); the other gates (cur, nrn) still hold. Real ab8 lifetime out of combat is unmeasured (QH-RL21 row). ----
 constexpr uint32_t kFlagBusyCapMs = 2000;   // hold at most this long, then dispatch anyway (hold=flag_cap)
 
 // One per member. step() is called once per tick, only while every other dispatch gate passes (call reset() otherwise).
@@ -921,7 +938,7 @@ struct FlagGate {
 // reInjectWhy(...) == RI_OK  <=>  shouldReInject(...);   dispatchWhy(...) == DS_OK  <=>  shouldDispatchNext(...).
 enum ReInjectWhy : uint8_t { RI_OK, RI_INACTIVE, RI_PENDING, RI_CANCEL, RI_MAX, RI_IN_QUEUE, RI_NO_LEADER, RI_EXECUTED, RI_NOT_CTRL, RI_DEFERRED, RI_OFF, RI_PAUSED, RI_SETTLE, RI_SPACING };
 enum DispatchWhy : uint8_t { DS_OK, DS_ACTIVE, DS_EMPTY, DS_ENGINE_BUSY, DS_CUR_BUSY, DS_NRN_BUSY, DS_FLAG_BUSY, DS_NOT_CTRL };
-enum DropWhy : uint8_t { DR_COMBAT_CLEAR, DR_NULL_CREATURE, DR_CANCEL, DR_BUFFER_FULL, DR_UNREADABLE_CREATURE, DR_REINJECT_EXHAUSTED, DR_EATEN_TIMEOUT, DR_IDENTITY_LOST, DR_REFUSED, DR_EXECUTED, DR_PRESENT_TIMEOUT };
+enum DropWhy : uint8_t { DR_COMBAT_CLEAR, DR_NULL_CREATURE, DR_CANCEL, DR_BUFFER_FULL, DR_UNREADABLE_CREATURE, DR_REINJECT_EXHAUSTED, DR_EATEN_TIMEOUT, DR_IDENTITY_LOST, DR_REFUSED, DR_EXECUTED, DR_PRESENT_TIMEOUT, DR_PARTY_CHANGED, DR_MEMBER_DOWN };
 
 struct RiGate { bool on = false; bool pauseEatenWait = false; bool pauseReinject = true; };   // production passes on=true
 inline ReInjectWhy reInjectWhy(const ActionBuffer& buf, bool actionInQueue, bool hasFollowLeader, bool paused = false, uint32_t now = 0,
@@ -1010,6 +1027,8 @@ inline const char* whyName(DropWhy w) {
         case DR_REFUSED: return "refused";
         case DR_EXECUTED: return "executed";
         case DR_PRESENT_TIMEOUT: return "present_timeout";
+        case DR_PARTY_CHANGED: return "party_changed";
+        case DR_MEMBER_DOWN: return "member_down";
     }
     return "?";
 }
@@ -1023,6 +1042,7 @@ struct QueueSig {
     int cur = -1;            // current action type; -1 = none
     bool aa8 = false;        // aa8 != 0
     bool ab8 = false;        // ab8 != 0
+    uint32_t restHash = 0;   // RL14: FNV-1a of entry types 8..15 (0 when ne <= 8)
 };
 
 // Keeps the first 8 types; ne counts all entries. q == nullptr keeps no types (ne still counts).
@@ -1031,13 +1051,16 @@ inline QueueSig makeQueueSig(const QEntry* q, int ne, int round, int cur, bool a
     s.ne = ne < 0 ? 0 : ne;
     s.nTypes = (q && s.ne > 0) ? (s.ne < 8 ? s.ne : 8) : 0;
     for (int i = 0; i < s.nTypes; ++i) s.types[i] = q[i].type;
+    if (q && s.ne > 8) { uint32_t h = 2166136261u; const int cap = s.ne < kMaxEntries ? s.ne : kMaxEntries;
+        for (int i = 8; i < cap; ++i) h = (h ^ static_cast<uint32_t>(q[i].type)) * 16777619u;
+        s.restHash = h; }
     s.round = round; s.cur = cur; s.aa8 = aa8; s.ab8 = ab8;
     return s;
 }
 
-// Compares ne, the stored types (at most 8), round, cur and both flags. Types past the 8th are not compared.
+// Compares ne, the stored types (at most 8), the hash of types 8..15 (RL14), round, cur and both flags. fmtQj still prints only the first 8.
 inline bool sigEqual(const QueueSig& a, const QueueSig& b) {
-    if (a.ne != b.ne || a.nTypes != b.nTypes || a.round != b.round || a.cur != b.cur || a.aa8 != b.aa8 || a.ab8 != b.ab8) return false;
+    if (a.ne != b.ne || a.nTypes != b.nTypes || a.round != b.round || a.cur != b.cur || a.aa8 != b.aa8 || a.ab8 != b.ab8 || a.restHash != b.restHash) return false;
     for (int i = 0; i < a.nTypes && i < 8; ++i) if (a.types[i] != b.types[i]) return false;
     return true;
 }
@@ -1124,7 +1147,7 @@ inline int fmtResolve(char* out, int cap, uint32_t cmdId, int m, bool seen, int 
     return w.done();
 }
 
-// DROP cmd=<n> m=<k> why=combat_clear|null_creature|cancel|buffer_full|unreadable_creature|reinject_exhausted|eaten_timeout|identity_lost|present_timeout n=<count>
+// DROP cmd=<n> m=<k> why=combat_clear|null_creature|cancel|buffer_full|unreadable_creature|reinject_exhausted|eaten_timeout|identity_lost|refused|executed|present_timeout|party_changed|member_down n=<count>
 inline int fmtDrop(char* out, int cap, uint32_t cmdId, int m, DropWhy why, int n) {
     detail::LogWr w(out, cap);
     w.s("DROP cmd="); w.u(cmdId);
@@ -1478,25 +1501,31 @@ inline int fmtSoftCand(char* out, int cap, int m, const SoftCand& c, uint32_t cr
 }
 
 // Per-member mode snapshot for the MODE line. int8 fields: -1 = unknown. strip/cancel/banner are static reason strings.
-struct ModeState { int8_t combat = -1, soft = -1, menu = 0, paused = 0; int8_t hostile = -1, party = -1; const char* strip = ""; const char* cancel = ""; const char* banner = ""; };
+struct ModeState { int8_t combat = -1, soft = -1, menu = 0, paused = 0; int8_t hostile = -1, party = -1; const char* strip = ""; const char* cancel = ""; const char* banner = ""; int8_t hidden = 0; };   // hidden = qualifying slots beyond the 4 the panel draws (RL20)
 namespace detail {
 inline bool modeStrEq(const char* a, const char* b) { return strcmp(a ? a : "", b ? b : "") == 0; }
 }  // namespace detail
-// True when ANY field differs. Reason strings compare by content (nullptr reads as ""), never by pointer.
+// True when ANY field differs (combat < 0 = unreadable HUD flags = no information, never a change: RL13). Reason strings compare by content (nullptr reads as ""), never by pointer.
 inline bool modeChanged(const ModeState& a, const ModeState& b) {
-    return a.combat != b.combat || a.soft != b.soft || a.menu != b.menu || a.paused != b.paused || a.hostile != b.hostile || a.party != b.party
+    return (b.combat >= 0 && a.combat != b.combat) || a.soft != b.soft || a.menu != b.menu || a.paused != b.paused || a.hostile != b.hostile || a.party != b.party || a.hidden != b.hidden
         || !detail::modeStrEq(a.strip, b.strip) || !detail::modeStrEq(a.cancel, b.cancel) || !detail::modeStrEq(a.banner, b.banner);
 }
 // Why a MODE line was written: the first changed field in priority order (combat, menu, paused, soft, hostile/party). Otherwise "ui".
 inline const char* modeWhy(const ModeState& prev, const ModeState& now) {
-    if (prev.combat != now.combat) return now.combat == 1 ? "edge" : "ended";
+    if (prev.combat >= 0 && now.combat >= 0 && prev.combat != now.combat) return now.combat == 1 ? "edge" : "ended";
     if (prev.menu != now.menu) return "menu";
     if (prev.paused != now.paused) return "pause";
     if (prev.soft != now.soft) return "target";
     if (prev.hostile != now.hostile || prev.party != now.party) return "hostile";
     return "ui";
 }
-// MODE m=<k> combat=<0|1|?> soft=<0|1|-> menu=<0|1> paused=<0|1> hostile=<0|1|?> party=<0|1|?> strip=<r> cancel=<r> banner=<r> why=<w>
+// The state modeEmit stores as "previous": a MODE line written while combat is unreadable keeps the last known combat value (RL13).
+inline ModeState modeStored(const ModeState& prev, bool primed, const ModeState& now) {
+    ModeState s = now;
+    if (primed && now.combat < 0) s.combat = prev.combat;
+    return s;
+}
+// MODE m=<k> combat=<0|1|?> soft=<0|1|-> menu=<0|1> paused=<0|1> hostile=<0|1|?> party=<0|1|?> strip=<r> cancel=<r> banner=<r> why=<w> [hidden=<n>, only when > 0]
 inline int fmtMode(char* out, int cap, int m, const ModeState& s, const char* why) {
     detail::LogWr w(out, cap);
     w.s("MODE m="); w.mm(m);
@@ -1510,6 +1539,7 @@ inline int fmtMode(char* out, int cap, int m, const ModeState& s, const char* wh
     w.s(" cancel="); w.s(s.cancel);
     w.s(" banner="); w.s(s.banner);
     w.s(" why="); w.s(why);
+    if (s.hidden > 0) { w.s(" hidden="); w.i(s.hidden); }
     return w.done();
 }
 
@@ -1671,6 +1701,51 @@ inline bool curReal(bool haveCur, int curSub, int aa8, int ab8, bool paused, uin
 
 // Is the current round node a queued item/spell action? Only a real (creal) subType 9 = cast spell or 10 = use item node.
 inline bool curActionPresent(bool creal, int curSub) { return creal && (curSub == 9 || curSub == 10); }
+
+// The engine holds an action for this creature (RL20: a stale flagless cur node does not count): an executing use-item / cast-spell entry, a pending round node of
+// sub-type 9/10, or a REAL (curReal) cur node of sub-type 9/10. A bare 0x3F is not proof.
+inline bool holdsAction(const QEntry* e, int ne, const RNode* rn, int nrn, bool haveCur, int curSub, int aa8, int ab8, bool paused, uint32_t staleSince, uint32_t now) {
+    for (int i = 0; e && i < ne && i < kMaxEntries; ++i) if (e[i].type == T_USE_ITEM || e[i].type == T_CAST_SPELL) return true;
+    for (int i = 0; rn && i < nrn && i < kMaxRound; ++i) if (rn[i].subType == 9 || rn[i].subType == 10) return true;
+    return curActionPresent(curReal(haveCur, curSub, aa8, ab8, paused, staleSince, now), curSub);
+}
+
+namespace detail {
+inline bool idMatches(const QueuedAction& a, bool spell, uint32_t id) {   // item ids: low 24 bits (client id = server id | high bit, GameAddr ServerIdMask)
+    return spell ? (a.kind == ActionKind::Spell && id == a.spellId) : (a.kind == ActionKind::Item && (id & 0xFFFFFFu) == (a.clientItem & 0xFFFFFFu));
+}
+inline bool nodeIsAction(const QueuedAction& a, const RNode& n) {
+    return (n.subType == 9 && idMatches(a, true, n.spellId)) || (n.subType == 10 && idMatches(a, false, n.itemId));
+}
+}  // namespace detail
+// RL7 (V2-11): is the engine holding OUR active action? matchOnly=false (the pre-RL7 test): any use/cast entry, any pending 9/10 node, a real cur 9/10.
+// matchOnly=true (buf.sawExecuting: it already ran): only the entry/node carrying the action's own spell id / item id counts, so a foreign
+// selfheal/AI node queued behind the finished cast stops keeping the verdict AV_PRESENT (BG23).
+inline bool actionPresentIn(const QueuedAction& act, bool matchOnly, const QEntry* e, int ne, const RNode* rn, int nrn, bool creal, const RNode* cur) {
+    for (int i = 0; e && i < ne && i < kMaxEntries; ++i)
+        if ((e[i].type == T_USE_ITEM || e[i].type == T_CAST_SPELL) && (!matchOnly || detail::idMatches(act, e[i].type == T_CAST_SPELL, e[i].param0))) return true;
+    if (cur && creal && (cur->subType == 9 || cur->subType == 10) && (!matchOnly || detail::nodeIsAction(act, *cur))) return true;
+    for (int i = 0; rn && i < nrn && i < kMaxRound; ++i)
+        if ((rn[i].subType == 9 || rn[i].subType == 10) && (!matchOnly || detail::nodeIsAction(act, rn[i]))) return true;
+    return false;
+}
+
+// RL4 (V1-9): was the whole party re-created (save load / area change)? prev/now = the three members' SERVER creature pointers (0 = empty slot).
+// True only when both sides hold a pointer and the non-zero sets are disjoint; a rotation, join/leave (sets overlap) or an unreadable table (now all 0) is false.
+inline bool partyGenerationChanged(const uintptr_t prev[3], const uintptr_t now[3]) {
+    bool anyPrev = false, anyNow = false;
+    for (int i = 0; i < 3; ++i) {
+        if (now[i]) anyNow = true;
+        if (!prev[i]) continue;
+        anyPrev = true;
+        for (int j = 0; j < 3; ++j) if (now[j] == prev[i]) return false;
+    }
+    return anyPrev && anyNow;
+}
+
+// RL9: a Down companion's buffered command is held at most this long (wall clock, paused time counts), then dropped (DR_MEMBER_DOWN).
+constexpr uint32_t kDownHoldMs = 20000;
+inline bool downHoldExpired(uint32_t since, uint32_t now) { return since != 0 && now - since >= kDownHoldMs; }
 
 // Builds the EngineView from raw engine reads. aa8/ab8 are ignored while paused (sticky in a frozen round).
 inline EngineView makeEngineView(const int* entryTypes, int ne, bool actionPresent, bool haveCur, int curSub, int nrn,

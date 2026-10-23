@@ -1,6 +1,7 @@
-# 30 — Queue HUD (`queue-hud` 0.2.0-dev): green out-of-combat action queue, leader + companion strips
+# 30 — Queue HUD (`queue-hud` 0.4.9-dev): green out-of-combat action queue, leader + companion strips
 
 ## RESUME HERE
+- **0.4.9-dev (RV1-RV6, doc 47 review fixes): built, install pending (RV7).**
 - **queue-fix QL1 0.5.0-dev (2026-10-11)**: implemented in source, NOT installed, NOT play-tested. Details: QH4e and the "2026-10-11 Queue-fix QL1" section at the end of this doc.
 - **0.4.0-dev INSTALLED 2026-10-05 21:34 (doc 24 CS10-CS12, hot-swap 7d7650a8 -> ab52dfd7, backup `$G/backups/cs10_ch6_dclk_20261005_2134`)**: left strip reserve comes from hud-host StripSlot (order 1, selfheal order 0; fallback `shui::stripReserve`); kit art from `_shared_src/HudKit.h` (kit_frame/_hi, kit_cancel/_hi, kit_disc, byte-identical to the old qh_*); slim auto icon = selfheal button side (24 px on 47x96; `strip_icon_px` overrides). Play check: no overlap with the selfheal button, art identical, both mods register the same kit_* names (watch for missing/garbled textures).
 - **0.3.0-dev INSTALLED 2026-10-05 01:41 (user GO, with selfheal CS9b)**: stage `$K/cs11_stage_1005` (STAGE_INFO head=70e5144), 36 ids / 221 hooks,
@@ -10,7 +11,7 @@
   1. Out of combat, pause, queue a medpac: green strip uses the kit frame (`qh_frame`), current slot highlighted (`qh_frame_hi`).
   2. A Cancel button shows under the leader queue; clicking it empties the queue (ClearAllActions 0x51CB10, R7).
   3. Companion strips show a Cancel too. OPEN RISK: after a companion Cancel, check the companion still follows the leader (0x3D may be dropped).
-  4. Combat: green panel + Cancel hidden, vanilla red panel unchanged.
+  4. Combat: green panel + Cancel hidden, vanilla red panel unchanged. Exception (intended, QL11): with `handoff_detach_held=1` the detached round-node icons are drawn in hard combat (`drawDetachedSlots`, leader only); expect `ROUND_DETACH ... act=detach` and the icon, not a hidden panel.
   5. Log file `$G/queue-hud_log.txt` exists (0.2.0 never wrote one).
 - **0.2.0-dev LIVE 2026-10-05 00:09 (user "install when ready")**: DLL hot-swap (hooks/exports unchanged since 0.1.0), live dll `2950ce26`,
   config `629754e3` untouched. Backup `$G/backups/queuehud020_swap_20261005_0009/queue-hud.dll` (= 0.1.0 `75defebf`; rollback = copy it back,
@@ -75,7 +76,7 @@ extents, for party member 0. The vanilla red panel still handles combat. Compani
 ## 2026-10-08 Polish Additions (doc 33 workstreams QH4, QH5)
 
 1. **QH4: Force Power & Unified Non-Combat Action Queue Buffering:**
-   - **Hook & Calling Convention:** Detour `CSWCCreature::PerformCastSpell` at `0x00775703` (`83 ec 0c 89 4d f4`, consumed exit `0x0077574C`, `RET 0x1C`, `__thiscall` on client creature with 7 DWORD stack arguments = spellId, arg2, targetId, multispell, metamagic, domain, pos).
+   - **Hook & Calling Convention:** Detour `CSWCCreature::PerformCastSpell` at `0x00775703` (`83 ec 0c 89 4d f4`, consumed exit `0x0077574C`, `RET 0x1C`, `__thiscall` on client creature with 7 DWORD stack arguments = spellId, targetClientId, pos*, multispell, metamagic, domain, flag).
    - **QH4a: Round-Node Busy Gate (`haveCur` / `nrn` Idle Check):**
      - Crucial discovery: `s.engineNe` can drop to 0 while `s.haveCur` is still running the 3000 ms round node (`subType == 9` spell or `10` item). Dispatching while `haveCur` is true causes server `ActionManager(1)` -> `ClearAllActions(1)` to wipe the in-flight action!
      - `qh::shouldDispatchNext` must strictly require `engineQueueLen == 0 && !haveCur && nrn == 0` so creatures are 100% idle before the next action fires.
@@ -149,7 +150,7 @@ Status: **built (unit tests + mutation gate green), not installed, not play-test
 - **D1 Flicker.**
   - (a) `gatherFor` appends the buffer's active command as a synthetic entry (after engine entries, before buffered ones, guarded by `kMaxEntries`) when `buf.active` and the engine does not hold it.
   - (b) `drawLeader`/`drawStrips` redraw the last good frame for `kPanelHoldMs=400` when `n==0`. Covers sub-400 ms gaps only: not engine-only entries (medpacks) wiped for longer, nor `drawAll`'s earlier gate for menu/stale capture.
-- **D2 Combat order.** At hand-off, the FIRST dispatch is preceded by `ServerClearAllActions` for that member only (empties `cr+0x100` and the round list), so the item lands first. Later hand-off items append in click order. Ini switch `handoff_clear_first` (default 1; 0 = QL1 behaviour). Log line `HANDOFF_CLEAR`.
+- **D2 Combat order.** At hand-off, the FIRST dispatch is preceded by `ServerClearAllActions` for that member only (app-level 0x51CB10; the object method 0x541080 does not empty the round list, doc 29 D6) (empties `cr+0x100` and the round list), so the item lands first. Later hand-off items append in click order. Ini switch `handoff_clear_first` (default 1; 0 = QL1 behaviour). Log line `HANDOFF_CLEAR`.
   - Discrepancy: the mod now makes a SECOND engine call (`ServerClearAllActions` at the first hand-off command) besides the Cancel click. `manifest.toml:6` still says "the only engine call is the Cancel click". Recorded here; manifest left alone (REINSTALL is tied to hook diffs only, `kpm_status.py:150`).
 - **D3 Observability.**
   - Combat journal cap 1 -> 4 lines/s.
@@ -207,3 +208,61 @@ No server message on the engine path.
 - Do hidden `LBL_QUEUE` extents and art stay valid out of combat?
 - What does the `[hud+0x7334]` timer constant do under a per-frame hide branch?
 
+
+## 2026-10-23 QL10-QL20 summary (0.4.x)
+- QL9: spell replay passes the captured position and flag (fixed by RV1 pos/flag).
+- QL10: `handoff_keep_new` / `handoff_detach_held` / `RoundOrder`: the combat-click order survives the hand-off.
+- QL11: detached round-node icons are drawn in hard combat (`drawDetachedSlots`, leader only; intended).
+- QL12-QL14: MODE trace (`trace_mode`) and analyzer flags L / M / N.
+- QL16: `CSTATE` line (cross-mod).
+- QL17: B1 owner hold (`DS_NOT_CTRL`), companion strip head size (`strip_head_pct`), `waiting_icon_dim`.
+- QL18: the whole-ini reader (no 4095-byte cut).
+- QL19: Cancel button tint.
+- QL20: companion `serverCast` (`SRV_CAST`) and `kickStarved` (`SRV_KICK`).
+- Review 47 (RV1-RV6): DROP reasons `party_changed` / `member_down`, lines `PARTY_GEN` / `DOWN_HOLD`, MODE `hidden=N`.
+- Design note: a Down (HP<=0) companion keeps its buffer but its strip and Cancel are hidden by design (0.4.1); since RL9 the buffer is held (no cast, no re-inject) and dropped after 20 s (`DROP why=member_down`, wall clock, paused time counts). Revival within 20 s releases the hold.
+- Design note (RL20): `MODE ... hidden=N` appears when more than 4 slots qualify; Cancel still clears the hidden ones. `engineHoldsAction` ignores a stale flagless cur node (unpaused, aa8=ab8=0, 1500 ms).
+- Design note (RL15): `parseIni` skips a UTF-8 BOM, accepts a trailing `; note` after a value, and one startup WARN reports how many lines were not applied and the first line number.
+
+### Ini keys (generated from parseIniLine + Config, 0.4.9-dev)
+Bool values: 0/1/true/false/on/off/yes/no. Colours "r,g,b" floats 0..1 (clamped). Shipped-ini overrides in brackets.
+
+| Key | Default | Values |
+|---|---|---|
+| `enabled` | 1 | bool |
+| `kit` | 1 | bool |
+| `cancel` | 1 | bool |
+| `waiting_dim` | 1 | bool |
+| `waiting_icon_dim` | 1 [shipped 0] | bool |
+| `log` | 1 | bool |
+| `trace_queue` | 1 | bool |
+| `trace_clicks` | 1 | bool |
+| `trace_mode` | 1 | bool |
+| `companions` | 1 | bool |
+| `pause_reinject` | 1 | bool |
+| `pause_eaten_wait` | 1 | bool |
+| `dispatch_wait_flags` | 1 | bool |
+| `handoff_on_combat` | 1 | bool |
+| `handoff_clear_first` | 1 | bool |
+| `handoff_keep_new` | 1 | bool |
+| `handoff_keep_unpaused` | 1 | bool |
+| `handoff_detach_held` | 1 | bool |
+| `handoff_resend_held` | 1 | bool |
+| `companion_server_cast` | 1 | bool |
+| `hide_banner_soft` | 1 | bool |
+| `hide_redbar_soft` | 1 | bool |
+| `show_in_combat` | 1 | bool |
+| `spell_replay_pos` | - | obsolete after RV1: accepted, ignored |
+| `frame_alpha` | 0.9 | float 0..1 |
+| `bg_alpha` | 0.45 | float 0..1 |
+| `border_alpha` | 0.9 | float 0..1 |
+| `waiting_alpha` | 0.6 | float 0..1 |
+| `bg_rgb` | 0.05,0.25,0.28 | rgb |
+| `border_rgb` | 0.10,0.58,0.62 | rgb |
+| `waiting_dim_rgb` | 0.03,0.15,0.18 | rgb |
+| `border_px` | 2 | single digit 1..6 |
+| `strip_icon_px` | 0 | 0 = auto, else 8..96 |
+| `strip_side` | left | left, above, below |
+| `strip_max` | 4 | single digit 1..4 |
+| `strip_head_pct` | 100 [shipped 150] | 100..200, clamped, capped at the vit height |
+| `mode_cap` | 2000 | 1..100000 |

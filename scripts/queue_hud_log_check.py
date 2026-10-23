@@ -116,7 +116,7 @@ HEXV = r"[0-9a-fA-F]+"
 FIELD_RE = {
     "m": r"-?\d+|\?", "cmd": r"\d+", "cr": HEXV, "kind": r"item|spell|\?", "id": r"-|" + HEXV, "tgt": r"-|" + HEXV,
     "dec": r"\w+", "fb": r"[01]", "engq": r"-?\d+|unreadable", "buf": r"-?\d+", "paused": r"[01]", "combat": r"[01]",
-    "why": r"\w+", "engNe": r"-?\d+", "age": r"\d+", "seen": r"[01]", "reinj": r"-?\d+", "n": r"-?\d+",
+    "why": r"\w+", "hidden": r"\d+", "engNe": r"-?\d+", "age": r"\d+", "seen": r"[01]", "reinj": r"-?\d+", "n": r"-?\d+",
     "what": r"combat|paused|menu|party_table|gather_m\d+|creature|journal_cap", "old": r"[01]", "new": r"[01]",
     "src": r"\w+", "buflist": r"(?:-?\d+(?:,-?\d+)*)?",
     "ne": r"-?\d+", "types": r"\[(?:" + HEXV + r"(?:," + HEXV + r")*(?:,\+\d+)?|\+\d+)?\]",

@@ -1,8 +1,9 @@
-// Queue HUD 0.4.1-dev (CS10 strip slot, CS11 kit art, slim strip) (Steam Aspyr build 6A522E71...). A GREEN copy of the vanilla combat action-queue panel (up to 4 icons), drawn
+// Queue HUD 0.4.9-dev (CS10 strip slot, CS11 kit art, slim strip) (Steam Aspyr build 6A522E71...). A GREEN copy of the vanilla combat action-queue panel (up to 4 icons), drawn
 // OUT of combat so a command given while paused (a use-item / cast-spell that waits for unpause) is visible.
 // Research: patch_manager_mods/30_queue_hud_evidence/RE.md (0x74DC80 panel filler, 0x74E0B0 icon resolver); logic: QueueHudLogic.h.
 //
-//   hook H8  0x0074C168  HUD Update, just before the combat-flag test: captures the HUD pointer + combat bit (QueueHudCapture)
+//   hook H9 PerformUseItem / H10 PerformCastSpell (gameaddr names + 3, hooks.toml): out-of-combat use/cast on a party member: buffer (return 1) or track (dispatch_now)
+//   HUD capture (hud pointer + combat bit): hud-host K2HUD_FRAME (old hook H8 0x74C168 migrated, HL4)
 //   phase    K2PS_HUD_DRAW prio 400 (portrait-slots): reads party member 0's SERVER creature queue, resolves icons with the
 //            engine's own 0x74E0B0 (cached), and draws bg + border + icon over the hidden vanilla slots (hud+0x5F2C+i*0x148)
 //   0.2.0    companion strips: for party members 1-2 a row of small green queue icons left of their health bar
@@ -14,7 +15,7 @@
 //   CS11/12  the kit art (frame, Cancel X) is the shared HUD kit _shared_src/HudKit.h (kit_* textures, also used by companion-selfheal);
 //            the left-side strip icon auto size is the selfheal button side (QueueHudLogic.h stripIconSize), strip_icon_px still overrides.
 //   0.4.1    strip hidden for Down (HP<=0) companions; their queue journal poll is skipped too.
-// Every pointer deref goes through saferead (site ids 0x7100+, strips 0x7150+, cancel 0x7160+). The only engine write is the Cancel call.
+// Every pointer deref goes through saferead (site ids 0x7100+, strips 0x7150+, cancel 0x7160+). Engine calls: ClearAllActions (Cancel, hand-off clear-first), the replayed PerformUseItem/PerformCastSpell, AddUseTalentOnObjectActions (QL20 server route), the follower-starvation rotate (ActListRemoveHead/AddTail), round-node detach/reattach.
 // Without portrait-slots (or an unknown exe) the mod is inert.
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -88,7 +89,7 @@ constexpr uintptr_t AddrPerformCastSpell = gameaddr::PerformCastSpell;
 // item-bound powers go to UseItem 0x57B4C0, the rest to AddCastSpellActions 0x565310 (round node + 0x3F, the path PerformCastSpell's server handler takes).
 using UseTalentOnObjectFn = int(__thiscall*)(uintptr_t creature, int talentType, uint32_t talentId, uint32_t targetServerId, int multiclass,
                                               uint32_t itemId, uint32_t propIdx, int b8, int metamagic);
-constexpr uintptr_t AddrUseTalentOnObject = gameaddr::UseItemRouteA;
+constexpr uintptr_t AddrUseTalentOnObject = gameaddr::AddUseTalentOnObject;
 constexpr int CrCommandable = 0xEC;   // server creature: 0 = not commandable (0x57D8B0 returns 0 before queueing anything, 0057d8e3)
 
 // ---- capture state (written by the hook, read by the draw callback; same game thread) ----
@@ -106,6 +107,7 @@ bool g_modePrimed[3];
 int g_modeLines = 0;
 qh::SoftCand g_modeCand[3];       // softBannerTick verdict per member (valid while g_modeCandOk[k])
 bool g_modeCandOk[3];
+int g_modeHidden[3];             // RL20: qualifying slots beyond the 4 drawn, per member this frame (MODE hidden=N)
 const char* g_modeStrip[3];       // strip verdict this frame: "shown" | "hidden:<why>" (static literals; nullptr = nothing decided)
 const char* g_cwWhy[3];           // first Cancel hide reason this frame (cwShow / cwHideAll / cwApply), reset after each MODE pass
 bool g_bannerRestored = false;    // banner/red bar restored in this combat (until combat ends or the HUD is rebuilt)
@@ -126,6 +128,7 @@ OursStamp g_lastOurs[3] = {};                            // last action of ours 
 void onConnect(bool ok, const char* why) { QLOGV(chMain, ok ? KPLOG_INFO : KPLOG_WARN, "portraitslots: %s (%s)", ok ? "connected" : "NOT connected", why ? why : ""); }
 
 // ---- INI: queue_hud.ini in the game dir (CWD); missing file = defaults ----
+int g_iniRejected = 0, g_iniFirstBad = 0;   // RL15: lines parseIni rejected (one startup WARN)
 void loadIni() {
     FILE* f = fopen(".\\queue_hud.ini", "rb");
     if (!f) return;
@@ -139,7 +142,7 @@ void loadIni() {
     size_t n = fread(buf, 1, static_cast<size_t>(sz), f);
     fclose(f);
     buf[n] = 0;
-    qh::parseIni(g_cfg, buf);
+    g_iniRejected = qh::parseIni(g_cfg, buf, &g_iniFirstBad);
     free(buf);
 }
 
@@ -249,6 +252,7 @@ struct Snapshot {
     qh::RNode rn[qh::kMaxRound]; int nrn = 0;
     qh::RNode cur; bool haveCur = false;
     bool paused = false, waiting = false;
+    uint32_t staleSince = 0;   // RL20: staleCurSince of the owning buffer (0 = unknown / in combat), so a stale flagless cur node does not count as the engine holding an action
 };
 bool engineHoldsAction(const Snapshot& s);   // defined with the hand-off code below
 
@@ -295,6 +299,7 @@ bool gatherFor(uintptr_t cr, Snapshot& s) {
     s.nBuffered = 0;
     if (memberK >= 0 && memberK < 3) {
         const qh::ActionBuffer& ib = g_itemQueue[memberK];
+        s.staleSince = g_combat == 0 ? ib.staleCurSince : 0;   // RL20: in combat staleCurSince is frozen, so it is not used there
         // The active buffered action is a slot source too: a quickbar press wipes the engine queue, so without it the panel empties until our restore.
         // Appended after the engine entries (buildSlots gives the engine's cur node to the first qualifying entry); not counted in nBuffered.
         if (qh::activeNeedsSlot(ib.active, engineHoldsAction(s)) && s.ne < qh::kMaxEntries) {
@@ -665,9 +670,11 @@ void drawLeader(uintptr_t hud, DWORD now, DWORD age, const K2PsContext* ctx) {
     if (held.creature != s.creature) { held.nd = 0; held.tick = 0; held.creature = s.creature; }   // a Tab switch never shows the old queue
     qh::Slot slots[qh::kMaxSlots];
     const int n = qh::buildSlots(s.e, s.ne, s.rn, s.nrn, s.haveCur ? &s.cur : nullptr, slots);
+    g_modeHidden[0] = qh::hiddenSlots(s.e, s.ne, s.rn, s.nrn, s.haveCur ? &s.cur : nullptr);   // RL20
     const bool hardCombat = g_combat != 0 && !g_softCombat;   // soft combat (ally-only targets) draws the strip like out of combat
     if (!qh::shouldShow(g_cfg.enabled, hardCombat, ctx->inMenu != 0, age, n)) {
         if (n == 0 && held.nd > 0 && qh::panelHold(held.tick, now, ctx->inMenu != 0, hardCombat)) { g_modeStrip[0] = "shown"; paintLeader(hud, held.d, held.nd, age, ctx); return; }
+        // RL22 (intended, QL11): with handoff_detach_held=1 the detached round-node icons are drawn in hard combat (leader only), not a hidden panel.
         if (hardCombat && ctx->inMenu == 0 && age < 250u) drawDetachedSlots(hud, s, n, now);
         noteHidden(hardCombat ? "combat" : "empty queue");
         return;
@@ -784,6 +791,7 @@ void drawStrips(uintptr_t hud, DWORD now, bool inMenu) {
         if (!gatherFor(srv[k], s)) continue;
         qh::Slot slots[qh::kMaxSlots];
         const int n = qh::buildSlots(s.e, s.ne, s.rn, s.nrn, s.haveCur ? &s.cur : nullptr, slots);
+        g_modeHidden[k] = qh::hiddenSlots(s.e, s.ne, s.rn, s.nrn, s.haveCur ? &s.cur : nullptr);   // RL20
         HeldStrip& hs = g_heldStrip[k];
         if (hs.creature != srv[k]) { hs.d = StripDraw(); hs.tick = 0; hs.creature = srv[k]; }   // a Tab switch never shows the old strip
         if (n == 0 && hs.d.have && qh::panelHold(hs.tick, now, inMenu, g_combat != 0 && !g_softCombat && !g_cfg.showInCombat)) {
@@ -888,6 +896,7 @@ void modeEmit(bool inMenu) {
         else if (!strcmp(g_cwWhy[k], "stale capture")) n.cancel = "hidden:stale";
         else n.cancel = "hidden:empty";   // no-queue
         n.banner = banner;
+        n.hidden = static_cast<int8_t>(g_modeHidden[k] > 99 ? 99 : g_modeHidden[k]);   // RL20
         if (g_modePrimed[k] && !qh::modeChanged(g_modePrev[k], n)) continue;
         if (g_modeLines < g_cfg.modeCap) {
             char line[200];
@@ -895,7 +904,7 @@ void modeEmit(bool inMenu) {
             QTRACE("%s", line);
             ++g_modeLines;
         } else if (g_modeLines == g_cfg.modeCap) { QTRACE("MODE cap reached"); ++g_modeLines; }
-        g_modePrev[k] = n; g_modePrimed[k] = true;
+        g_modePrev[k] = qh::modeStored(g_modePrev[k], g_modePrimed[k], n); g_modePrimed[k] = true;   // RL13
     }
     for (const char*& r : g_cwWhy) r = nullptr;
 }
@@ -906,6 +915,7 @@ void KPATCH_CALL onHudDraw(const K2PsContext* ctx, void*) {
     for (CWant& d : g_want) d = CWant();
     g_modeStrip[0] = "hidden:empty";
     g_modeStrip[1] = g_modeStrip[2] = g_cfg.companions ? "hidden:empty" : "hidden:off";
+    g_modeHidden[0] = g_modeHidden[1] = g_modeHidden[2] = 0;   // RL20
     drawAll(ctx);
     cwApply();
     modeEmit(ctx->inMenu != 0);
@@ -1034,7 +1044,11 @@ static const qh::QueuedAction& bufHead(const qh::ActionBuffer& b) { return b.act
 
 // B1 + QL20: may action a be sent now? Slot 0 always; members 1-2 only through the server route (a Force power on an object target).
 static bool mayDispatch(uintptr_t tbl, const qh::QueuedAction& a) {
-    return qh::ownerMayDispatch(slotOfCreature(tbl, a.creature), g_cfg.companionServerCast && qh::serverRouteEligible(a));
+    const int slot = slotOfCreature(tbl, a.creature);
+    if (!qh::ownerMayDispatch(slot, g_cfg.companionServerCast && qh::serverRouteEligible(a))) return false;
+    if (slot <= 0) return true;   // the leader's client route is unchanged
+    const uintptr_t cli = party::member(tbl, slot);
+    return !memberDown(slot, cli ? party::serverCreature(cli) : 0, GetTickCount());   // RL9: a Down companion neither casts nor re-injects (RI_NOT_CTRL / DS_NOT_CTRL); revival releases the hold
 }
 
 // Clears the active action and every per-action eaten flag (queued commands stay in the buffer).
@@ -1227,6 +1241,8 @@ qh::FlagGate g_flagGate[3];
 // Identity guard: unpaused ms a buffer has been held by a creature that sits in no member slot, and the last tick it was counted.
 uint32_t g_identLostMs[3] = {0, 0, 0};
 DWORD g_identLastTick[3] = {0, 0, 0};
+uintptr_t g_prevSrv[3] = {0, 0, 0};   // RL4: the three members' server creature pointers at the last normal tick (party generation baseline)
+DWORD g_downSince[3] = {0, 0, 0};     // RL9: tick a Down companion's non-empty buffer started being held (0 = not holding)
 
 // ---- Combat hand-off: at combat start the queued commands (active + buffered) go to the engine in click order, one per frame ----
 // headHeld: the head was still held by the engine at the edge; it waits there until the engine releases it (qh::heldHeadAction).
@@ -1249,13 +1265,8 @@ bool g_prevCombat[3] = {false, false, false};
 // The engine already holds this creature's action: an executing use-item / cast-spell entry, or a round node of subtype 9 or 10
 // (same test as the tick's actionInQueue). A bare 0x3F entry is NOT proof: combat start queues ordinary attacks as 0x3F too.
 bool engineHoldsAction(const Snapshot& s) {
-    for (int i = 0; i < s.engineNe && i < qh::kMaxEntries; ++i) {
-        const int t = s.e[i].type;
-        if (t == qh::T_USE_ITEM || t == qh::T_CAST_SPELL) return true;
-    }
-    for (int i = 0; i < s.nrn && i < qh::kMaxRound; ++i)
-        if (s.rn[i].subType == 9 || s.rn[i].subType == 10) return true;
-    return s.haveCur && (s.cur.subType == 9 || s.cur.subType == 10);
+    return qh::holdsAction(s.e, s.engineNe < qh::kMaxEntries ? s.engineNe : qh::kMaxEntries, s.rn, s.nrn, s.haveCur, s.haveCur ? (int)s.cur.subType : -1,
+                           s.aa8, s.ab8, s.paused, s.staleSince, GetTickCount());
 }
 
 // The engine is (or was just) running the command: aa8/ab8 set or a cur node of subtype 9 / 10, read unpaused (the flags stick in a frozen round).
@@ -1461,7 +1472,8 @@ void handoffTick(DWORD now, const bool* edge) {
                 QTRACE("%s", line);
             }
         } else {
-            // Combat start wipes the engine queue; the first send clears this member's creature so the hand-off is not queued behind the engine's attack entries.
+            // Combat start wipes the engine queue. Default (handoff_keep_new=1, handoff_keep_unpaused=1): no clear, the player's pending round nodes are remembered (RoundOrder).
+            // The clear-first send (ServerClearAllActions) only runs with keep_new=0, or with keep_unpaused=0 when combat starts unpaused.
             // QL10: while paused nothing pops the round list; unpaused it is allowed too (handoff_keep_unpaused) and a node the engine already popped is simply not there to order.
             const bool keepNow = qh::keepPathAllowed(g_cfg.handoffKeepNew, s.paused, g_cfg.handoffKeepUnpaused);
             if (qh::keepNewAtHandoff(keepNow, h.sent)) {
@@ -1798,6 +1810,25 @@ void tickItemQueues(DWORD now, bool inMenu) {
     }
     if (!tbl) return;
 
+    {   // RL4: party re-created (load / area): every buffered pointer is dead; drop now instead of the 20 s identity-lost wait
+        uintptr_t nowSrv[3] = {0, 0, 0};
+        for (int k = 0; k < 3; ++k) { const uintptr_t c = party::member(tbl, k); nowSrv[k] = c ? party::serverCreature(c) : 0; }
+        if (qh::partyGenerationChanged(g_prevSrv, nowSrv)) {
+            int dropped = 0;
+            for (int k = 0; k < 3; ++k) {
+                if (g_handoff[k].pending) endHandoff(k, qh::DR_PARTY_CHANGED);
+                if (bufBusy(g_itemQueue[k])) { ++dropped; traceDropAll(k, qh::DR_PARTY_CHANGED); g_itemQueue[k].clear(); }
+                discardDetached(k, "party_changed", true);   // RV3 signature (default arg on the forward declaration); true = default-level line, not just a trace
+                g_flagGate[k].reset(); g_kickLast[k] = 0; g_downSince[k] = 0; g_identLostMs[k] = 0; g_identLastTick[k] = 0; g_prevRiWhy[k] = g_prevDsWhy[k] = -1;
+                g_roundOrder[k] = RoundOrder(); g_cpend[k] = CPending(); g_handoffHold[k] = false; g_heldStrip[k] = HeldStrip();   // R7: stale pointers / icons from the old party
+            }
+            g_heldLeader = Held();   // R7: dead creature pointer in Held.creature, stale leader icons for 400 ms
+            if (g_logOn && g_cfg.traceQueue) QTRACE("PARTY_GEN old=%08x,%08x,%08x new=%08x,%08x,%08x dropped=%d", (unsigned)g_prevSrv[0], (unsigned)g_prevSrv[1], (unsigned)g_prevSrv[2], (unsigned)nowSrv[0], (unsigned)nowSrv[1], (unsigned)nowSrv[2], dropped);
+            if (dropped) QLOG(chMain, "party changed (load / area): dropped %d buffered member queue(s)", dropped);
+        }
+        if (nowSrv[0] || nowSrv[1] || nowSrv[2]) for (int k = 0; k < 3; ++k) g_prevSrv[k] = nowSrv[k];   // a transient all-zero read keeps the baseline
+    }
+
     // Identity pre-pass: buffer k must hold the creature that party member k is now. Party rotation moves creatures between slots.
     bool skip[3] = {false, false, false};
     bool swapped[3] = {false, false, false};
@@ -1812,6 +1843,7 @@ void tickItemQueues(DWORD now, bool inMenu) {
             std::swap(g_flagGate[k], g_flagGate[slot]);   // RL2: per-buffer hold / throttle state travels with the buffer
             std::swap(g_kickLast[k], g_kickLast[slot]); std::swap(g_kickSkipWhy[k], g_kickSkipWhy[slot]);
             std::swap(g_lastWaitTick[k], g_lastWaitTick[slot]);
+            std::swap(g_downSince[k], g_downSince[slot]);   // RL9: the Down hold timer travels with its buffer
             std::swap(g_orphanClk[k], g_orphanClk[slot]); std::swap(g_kickClk[k], g_kickClk[slot]);
             if (g_logOn && g_cfg.traceQueue) {
                 char line[64];
@@ -1884,6 +1916,10 @@ void tickItemQueues(DWORD now, bool inMenu) {
             continue;
         }
         if (skip[k]) continue;
+        if (k > 0 && bufBusy(buf) && memberDown(k, srv, now)) {   // RL9: bounded hold (an invisible stale queue must not fire minutes later)
+            if (g_downSince[k] == 0) { g_downSince[k] = now; if (g_logOn && g_cfg.traceQueue) QTRACE("DOWN_HOLD m=%d cmd=%u", k, (unsigned)bufHead(buf).cmdId); }
+            else if (qh::downHoldExpired(g_downSince[k], now)) { traceDropAll(k, qh::DR_MEMBER_DOWN); buf.clear(); g_downSince[k] = 0; continue; }
+        } else g_downSince[k] = 0;
         // B1 (QL17): the client Perform* wrappers act on the controlled creature (slot 0); a buffer owned by anyone else is held (never dispatched or re-injected)
         // unless its next action can take the server route (QL20: Force power on an object target, dispatchAction -> serverCast).
         const bool ownerCtrl = !bufBusy(buf) || mayDispatch(tbl, bufHead(buf));
@@ -1907,16 +1943,11 @@ void tickItemQueues(DWORD now, bool inMenu) {
 
         // 1. Engine-busy test, deliberately NOT matched to buf.activeAction: dispatching while ANY spell/item holds the creature would ClearAllActions it (doc 30 QH4).
         //    Known limit (BG23): an unrelated engine-initiated cast can look like our eaten action (AV_PRESENT) until it ends.
-        bool actionInQueue = false;
+        //    RL7: once the action has run (sawExecuting) only an entry/node carrying its own spell / item id keeps AV_PRESENT.
         bool hasFollowLeader = false;
-        for (int i = 0; i < s.engineNe; ++i) {
-            if (s.e[i].type == qh::T_USE_ITEM || s.e[i].type == qh::T_CAST_SPELL) actionInQueue = true;
-            if (s.e[i].type == 0x3D) hasFollowLeader = true; // AIActionFollowLeader
-        }
-        if (qh::curActionPresent(creal, s.haveCur ? (int)s.cur.subType : -1)) actionInQueue = true; // real 9 = cast spell, 10 = use item
-        for (int i = 0; i < s.nrn; ++i) {
-            if (s.rn[i].subType == 9 || s.rn[i].subType == 10) actionInQueue = true;
-        }
+        for (int i = 0; i < s.engineNe && i < qh::kMaxEntries; ++i) if (s.e[i].type == 0x3D) hasFollowLeader = true; // AIActionFollowLeader
+        const int engNe = s.engineNe < qh::kMaxEntries ? s.engineNe : qh::kMaxEntries;
+        const bool actionInQueue = qh::actionPresentIn(buf.activeAction, buf.active && buf.sawExecuting, s.e, engNe, s.rn, s.nrn, creal, s.haveCur ? &s.cur : nullptr);
         int types[qh::kMaxEntries];
         for (int i = 0; i < s.engineNe && i < qh::kMaxEntries; ++i) types[i] = s.e[i].type;
         uint32_t p0[qh::kMaxEntries] = {};
@@ -1955,7 +1986,7 @@ void tickItemQueues(DWORD now, bool inMenu) {
         }
 
         if (buf.active && actionInQueue) buf.seenInQueue = true;   // bookkeeping only (RESOLVE seen=)
-        // RQ4: orphan round node. ClearAllActions never empties the round list, so after a wipe a 9/10 node can sit with no 0x3F/0x0F/0x2E entry to consume it:
+        // RQ4: orphan round node. ClearAllActions (object method 0x541080 only; queue-hud's own Cancel, the app-level 0x51CB10, does empty it) never empties the round list, so after a wipe a 9/10 node can sit with no 0x3F/0x0F/0x2E entry to consume it:
         // it keeps the action PRESENT and blocks dispatch (DS_NRN_BUSY). kOrphanMs unpaused with no real cur: remove the list (no ServerClearAllActions), let the verdict re-send.
         {
             bool consumer = false;
@@ -2139,7 +2170,7 @@ void tickItemQueues(DWORD now, bool inMenu) {
                     QLOG(chMain, "dispatching buffered %s for member %d (id=%08x, target=%08x, remaining=%d) cmd=%u",
                          nextA.kind == qh::ActionKind::Spell ? "spell" : "item",
                          k, nextA.clientItem, nextA.targetId, buf.count, (unsigned)nextA.cmdId);
-                    if (flagCapped) QLOG(chMain, "dispatch hold=flag_cap member=%d cmd=%u aa8=%d ab8=%d", k, (unsigned)nextA.cmdId, s.aa8, s.ab8);
+                    if (flagCapped) QLOG(chMain, "dispatch hold=flag_cap member=%d cmd=%u aa8=%d ab8=%d held=%u", k, (unsigned)nextA.cmdId, s.aa8, s.ab8, (unsigned)(now - g_flagGate[k].holdSince));
                     buf.active = true;
                     buf.activeAction = nextA;
                     buf.markDispatched(now, qh::flagBits(s.aa8, s.ab8));
@@ -2199,8 +2230,8 @@ void journalTick(DWORD now) {
         }
         if (!ok) continue;   // unreadable is not a change: keep the last signature across the gap
 
-        qh::QEntry q[8] = {};
-        for (int i = 0; i < a.ne && i < 8; ++i) { q[i].type = a.e[i].type; q[i].param0 = a.e[i].param0; }
+        qh::QEntry q[qh::kMaxEntries] = {};   // RL14: the signature hashes entry types 8..15 too
+        for (int i = 0; i < a.ne && i < qh::kMaxEntries; ++i) { q[i].type = a.e[i].type; q[i].param0 = a.e[i].param0; }
         const qh::QueueSig sig = qh::makeQueueSig(q, a.ne, a.nrn, a.haveCur ? static_cast<int>(a.cur.subType) : -1, a.aa8 != 0, a.ab8 != 0);
         if (!jm.haveSig) { jm.sig = sig; jm.haveSig = true; continue; }   // first sight is the baseline, not a change
         if (qh::sigEqual(jm.sig, sig)) continue;
@@ -2306,7 +2337,7 @@ void KPATCH_CALL onFrameBegin(const K2PsContext* ctx, void*) {
         }
     }
 
-    if (inMenu && !g_modeDrew) { g_modeStrip[0] = g_modeStrip[1] = g_modeStrip[2] = "hidden:menu"; modeEmit(true); }   // HUD_DRAW does not run in a menu frame; one MODE pass per frame either way
+    if (inMenu && !g_modeDrew) { g_modeStrip[0] = g_modeStrip[1] = g_modeStrip[2] = "hidden:menu"; g_modeHidden[0] = g_modeHidden[1] = g_modeHidden[2] = 0; modeEmit(true); }   // HUD_DRAW does not run in a menu frame; one MODE pass per frame either way
     g_modeDrew = false;
     const DWORD now = GetTickCount();
     edgeTick(inMenu);
@@ -2442,7 +2473,8 @@ void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
     loadIni();
     g_logOn = g_cfg.log;
-    KP_LOG(chMain, "0.4.8-dev: kit=%d frame_alpha=%.2f cancel=%d enabled=%d waiting_dim=%d border_px=%d log=%d companions=%d strip_icon_px=%d strip_side=%s strip_max=%d waiting_icon_dim=%d strip_head_pct=%d", g_cfg.kit ? 1 : 0, g_cfg.frameAlpha, g_cfg.cancel ? 1 : 0, g_cfg.enabled ? 1 : 0, g_cfg.waitingDim ? 1 : 0, g_cfg.borderPx, g_cfg.log ? 1 : 0, g_cfg.companions ? 1 : 0, g_cfg.stripIconPx, g_cfg.stripSide == qh::kSideBelow ? "below" : g_cfg.stripSide == qh::kSideAbove ? "above" : "left", g_cfg.stripMax, g_cfg.waitingIconDim ? 1 : 0, g_cfg.stripHeadPct);
+    KP_LOG(chMain, "0.4.9-dev: kit=%d frame_alpha=%.2f cancel=%d enabled=%d waiting_dim=%d border_px=%d log=%d companions=%d strip_icon_px=%d strip_side=%s strip_max=%d waiting_icon_dim=%d strip_head_pct=%d", g_cfg.kit ? 1 : 0, g_cfg.frameAlpha, g_cfg.cancel ? 1 : 0, g_cfg.enabled ? 1 : 0, g_cfg.waitingDim ? 1 : 0, g_cfg.borderPx, g_cfg.log ? 1 : 0, g_cfg.companions ? 1 : 0, g_cfg.stripIconPx, g_cfg.stripSide == qh::kSideBelow ? "below" : g_cfg.stripSide == qh::kSideAbove ? "above" : "left", g_cfg.stripMax, g_cfg.waitingIconDim ? 1 : 0, g_cfg.stripHeadPct);
+    if (g_iniRejected > 0) QLOGV(chMain, KPLOG_WARN, "queue_hud.ini: %d line(s) not applied (unknown key, bad value or over 255 bytes), first at line %d; those keys keep their defaults", g_iniRejected, g_iniFirstBad);
     QLOG(chMain, "pause_eaten_wait=%d dispatch_wait_flags=%d", g_cfg.pauseEatenWait ? 1 : 0, g_cfg.dispatchWaitFlags ? 1 : 0);
     if (g_cfg.spellReplayPosSeen) QLOG(chMain, "ini: spell_replay_pos is obsolete and ignored (0.4.6-dev)");
     QLOG(chMain, "pause_reinject=%d handoff_on_combat=%d handoff_clear_first=%d handoff_keep_new=%d handoff_resend_held=%d show_in_combat=%d handoff_keep_unpaused=%d trace_mode=%d mode_cap=%d",
@@ -2480,6 +2512,11 @@ void __cdecl QueueHudCapture(int hud) {
         g_hud = static_cast<uintptr_t>(static_cast<uint32_t>(hud));
         QLOG(chCap, "hud=%08x flags=%08x combat=%d", (unsigned)hud, (unsigned)flags, g_combat);
     }
+}
+
+// RL10: the engine queue could not be read at click time (server creature unresolved: load / area change). The decision stays decideAction's (empty buffer = dispatch_now); leave a default-level record.
+static void noteUnreadableClick(int k, uint32_t cmd, qh::ActionDecision dec) {
+    QLOGV(chMain, KPLOG_WARN, "click with unreadable engine queue m=%d cmd=%u dec=%s", k, (unsigned)cmd, dec == qh::DECIDE_DISPATCH_NOW ? "dispatch_now" : dec == qh::DECIDE_BUFFER ? "buffer" : "drop_full");
 }
 
 // H9: PerformUseItem detour hook. Consumes and buffers out-of-combat item actions of party members only when queue busy.
@@ -2537,6 +2574,7 @@ int __cdecl QueueHudPerformUseItem(int clientCreature, int ebp) {
     const int engqLog = engineQ < 0 ? -1 : engineQ;
     const int bufBefore = g_itemQueue[memberK].count;
     const qh::ActionDecision dec = qh::decideAction(g_itemQueue[memberK], g_combat != 0, gateQ > 0 ? gateQ : 0, haveCur);
+    if (gateQ < 0) noteUnreadableClick(memberK, cmd, dec);
 
     if (dec == qh::DECIDE_DISPATCH_NOW) {
         g_itemQueue[memberK].userCancelled = false;
@@ -2561,7 +2599,8 @@ int __cdecl QueueHudPerformUseItem(int clientCreature, int ebp) {
 
     if (dec == qh::DECIDE_DROP_FULL) {
         traceCmd(cmd, memberK, crPtr, qh::ActionKind::Item, true, itemId, targetId, "drop_full", fb, engqLog, bufBefore, false);
-        QLOGV(chMain, KPLOG_WARN, "item buffer full for member %d, dropped item %08x cmd=%u", memberK, itemId, (unsigned)cmd);
+        const bool snd = guikit::playHoverSound();   // RL16: audible drop_full cue
+        QLOGV(chMain, KPLOG_WARN, "item buffer full for member %d, dropped item %08x cmd=%u sound=%d", memberK, itemId, (unsigned)cmd, snd ? 1 : 0);
         return 1;
     }
 
@@ -2639,6 +2678,7 @@ int __cdecl QueueHudPerformCastSpell(int clientCreature, int ebp) {
     const int engqLog = engineQ < 0 ? -1 : engineQ;
     const int bufBefore = g_itemQueue[memberK].count;
     const qh::ActionDecision dec = qh::decideAction(g_itemQueue[memberK], g_combat != 0, gateQ > 0 ? gateQ : 0, haveCur);
+    if (gateQ < 0) noteUnreadableClick(memberK, cmd, dec);
 
     if (dec == qh::DECIDE_DISPATCH_NOW) {
         g_itemQueue[memberK].userCancelled = false;
@@ -2663,7 +2703,8 @@ int __cdecl QueueHudPerformCastSpell(int clientCreature, int ebp) {
 
     if (dec == qh::DECIDE_DROP_FULL) {
         traceCmd(cmd, memberK, crPtr, qh::ActionKind::Spell, true, spellId, tgt, "drop_full", fb, engqLog, bufBefore, false);
-        QLOGV(chMain, KPLOG_WARN, "action buffer full for member %d, dropped spell %08x cmd=%u", memberK, spellId, (unsigned)cmd);
+        const bool snd = guikit::playHoverSound();   // RL16: audible drop_full cue
+        QLOGV(chMain, KPLOG_WARN, "action buffer full for member %d, dropped spell %08x cmd=%u sound=%d", memberK, spellId, (unsigned)cmd, snd ? 1 : 0);
         return 1;
     }
 

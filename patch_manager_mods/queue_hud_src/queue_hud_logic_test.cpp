@@ -4,6 +4,7 @@
 #include "SelfHealUi.h"   // real neighbour geometry: shui::buttonRect / ringRect
 #include "../hud_host_src/HhStrip.h"   // the real hud-host strip math (CS10 equivalence test)
 #include <initializer_list>
+#include <string>
 #include <stdio.h>
 #include <string.h>
 
@@ -1764,6 +1765,9 @@ void testWhyNames() {
     KT_CHECK_EQ(whyName(DR_REINJECT_EXHAUSTED), "reinject_exhausted");
     KT_CHECK_EQ(whyName(DR_EATEN_TIMEOUT), "eaten_timeout");
     KT_CHECK_EQ(whyName(DR_IDENTITY_LOST), "identity_lost");
+    KT_CHECK_EQ(whyName(DR_PARTY_CHANGED), "party_changed");   // RL4
+    KT_CHECK_EQ(whyName(DR_MEMBER_DOWN), "member_down");       // RL9
+    { char o[200]; fmtDrop(o, sizeof o, 14, 1, DR_MEMBER_DOWN, 1); KT_CHECK_EQ(o, "DROP cmd=14 m=1 why=member_down n=1"); }
 }
 
 void testQueueSig() {
@@ -1786,8 +1790,8 @@ void testQueueSig() {
     KT_CHECK(!sigEqual(big, makeQueueSig(q, 9, 1, -1, false, false)));  // ne differs
     QEntry t[10];
     for (int i = 0; i < 10; ++i) t[i] = q[i];
-    t[9].type = 0x99;                                                    // past the cap: not compared
-    KT_CHECK(sigEqual(big, makeQueueSig(t, 10, 1, -1, false, false)));
+    t[9].type = 0x99;                                                    // past the first 8 types: no longer printed, but hashed (RL14)
+    KT_CHECK(!sigEqual(big, makeQueueSig(t, 10, 1, -1, false, false)));
     t[7].type = 0x99;                                                    // inside the cap: compared
     KT_CHECK(!sigEqual(big, makeQueueSig(t, 10, 1, -1, false, false)));
     // null queue keeps ne but no types; default signature
@@ -2048,8 +2052,8 @@ void testTraceModeIni() {
 void testLogFormatBounds() {
     char out[kLogLineMax];
     // worst-case QJ: 8 full-width types, ne 16, every flag set, 16-char tag, max age
-    QEntry w[8];
-    for (int i = 0; i < 8; ++i) w[i].type = -1;
+    QEntry w[16];   // RL14: makeQueueSig reads min(ne, 16) entries
+    for (int i = 0; i < 16; ++i) w[i].type = -1;
     const QueueSig ws = makeQueueSig(w, 16, 99, 0x7fffffff, true, true);
     const int n = fmtQj(out, sizeof out, 2, ws, true, true, "abcdefghijklmnop", 4294967295u);
     KT_CHECK_EQ(out, "QJ m=2 ne=16 types=[ffffffff,ffffffff,ffffffff,ffffffff,ffffffff,ffffffff,ffffffff,ffffffff,+8] round=99 cur=7fffffff aa8=1 ab8=1 paused=1 combat=1 ours=abcdefghijklmnop@4294967295ms");
@@ -3105,6 +3109,181 @@ void testRV3() {
     KT_CHECK(cancelHideWhy(true, true, 24) == nullptr);
 }
 
+// ---- RV6 ----
+void testRL15Ini() {
+    { Config c; KT_CHECK(parseIniLine(c, "log=0 ; quiet")); KT_CHECK(!c.log); }
+    { Config c; KT_CHECK(parseIniLine(c, "bg_alpha = 0.5 ;")); KT_CHECK(near(c.bgAlpha, 0.5f)); }
+    { Config c; KT_CHECK(parseIniLine(c, "border_px=3 ; x")); KT_CHECK_EQ(c.borderPx, 3); }
+    { Config c; KT_CHECK(!parseIniLine(c, "log=;")); KT_CHECK(c.log); }
+    { Config c; KT_CHECK(parseIniLine(c, "; only")); }
+    { Config a; KT_CHECK_EQ(parseIni(a, "\xEF\xBB\xBF" "enabled=0\r\nlog=0 ; x\r\n"), 0); KT_CHECK(!a.enabled && !a.log); }
+    { Config a; KT_CHECK_EQ(parseIni(a, "\xEF\xBB\xBF; comment\nlog=0"), 0); KT_CHECK(!a.log); }   // BOM + comment line
+    {
+        Config d; int fb = -1;
+        KT_CHECK_EQ(parseIni(d, "garbage line\nunknown=5\nborder_alpha=0.1\nborder_px=99\nborder_px=6\nwaiting_dim=0", &fb), 3);
+        KT_CHECK_EQ(fb, 1); KT_CHECK(near(d.borderAlpha, 0.1f)); KT_CHECK_EQ(d.borderPx, 6);
+    }
+    {
+        Config c; int fb = -1;
+        const std::string over = std::string(300, 'a') + "\nlog=0";
+        KT_CHECK_EQ(parseIni(c, over.c_str(), &fb), 1); KT_CHECK_EQ(fb, 1); KT_CHECK(!c.log);
+    }
+    { Config c; KT_CHECK_EQ(parseIni(c, "\xEF\xBB"), 1); }                  // a truncated BOM is just a bad line
+    { Config c; int fb = -1; KT_CHECK_EQ(parseIni(c, nullptr, &fb), 0); KT_CHECK_EQ(fb, 0); }
+    { Config c; KT_CHECK_EQ(parseIni(c, "enabled=1"), 0); }                  // no trailing newline
+}
+
+void testShippedIni() {
+    FILE* f = fopen("queue_hud.ini", "rb");
+    KT_CHECK(f != nullptr);
+    if (!f) return;
+    std::string txt;
+    char chunk[512];
+    size_t n;
+    while ((n = fread(chunk, 1, sizeof chunk, f)) > 0) txt.append(chunk, n);
+    fclose(f);
+    Config c; int fb = 0;
+    KT_CHECK_EQ(parseIni(c, txt.c_str(), &fb), 0);
+    Config ref; ref.waitingIconDim = false; ref.stripHeadPct = 150;   // the two documented overrides; every other uncommented key repeats its default
+    KT_CHECK(configEqual(c, ref));
+}
+
+void testRL14SigRest() {
+    QEntry q[16];
+    for (int i = 0; i < 16; ++i) { q[i].type = 0x0C + i; q[i].param0 = 0; }
+    const QueueSig big = makeQueueSig(q, 10, 1, -1, false, false);
+    KT_CHECK(big.restHash != 0); KT_CHECK_EQ(big.nTypes, 8);
+    KT_CHECK(sigEqual(big, makeQueueSig(q, 10, 1, -1, false, false)));
+    QEntry t[16];
+    for (int i = 0; i < 16; ++i) t[i] = q[i];
+    t[9].type = 0x99;
+    KT_CHECK(!sigEqual(big, makeQueueSig(t, 10, 1, -1, false, false)));
+    KT_CHECK_EQ(makeQueueSig(q, 8, 1, -1, false, false).restHash, 0u);
+    const QueueSig w = makeQueueSig(q, 16, 1, -1, false, false);
+    t[9] = q[9]; t[15].type = 0x77;
+    KT_CHECK(!sigEqual(w, makeQueueSig(t, 16, 1, -1, false, false)));
+    // fmtQj prints only the first 8 types (+N), unchanged
+    QEntry q10[10];
+    for (int i = 0; i < 10; ++i) { q10[i].type = 0x0C + i; q10[i].param0 = 0; }
+    char out[200];
+    fmtQj(out, sizeof out, 2, makeQueueSig(q10, 10, 1, -1, false, false), false, false, "x", 5);
+    KT_CHECK_EQ(out, "QJ m=2 ne=10 types=[c,d,e,f,10,11,12,13,+2] round=1 cur=- aa8=0 ab8=0 paused=0 combat=0 ours=x@5ms");
+}
+
+void testRL13Mode() {
+    ModeState base; base.combat = 1; base.soft = 0; base.strip = "shown"; base.cancel = "shown"; base.banner = "vanilla";
+    ModeState unk = base; unk.combat = -1;
+    KT_CHECK(!modeChanged(base, unk));
+    ModeState u0; u0.combat = -1; ModeState k1; k1.combat = 1;
+    KT_CHECK(modeChanged(u0, k1));
+    ModeState z0; z0.combat = 0; ModeState o1; o1.combat = 1;
+    KT_CHECK_EQ(modeWhy(z0, o1), "edge");
+    KT_CHECK_EQ(modeWhy(o1, z0), "ended");
+    ModeState c1m; c1m.combat = 1; ModeState unkMenu; unkMenu.combat = -1; unkMenu.menu = 1;
+    KT_CHECK_EQ(modeWhy(c1m, unkMenu), "menu");
+    ModeState m1; m1.combat = -1; ModeState n1; n1.combat = 1; n1.menu = 0;
+    KT_CHECK_EQ(modeWhy(m1, n1), "ui");
+    ModeState nowU; nowU.combat = -1; nowU.paused = 1;
+    KT_CHECK_EQ((int)modeStored(o1, true, nowU).combat, 1);
+    KT_CHECK_EQ((int)modeStored(o1, false, nowU).combat, -1);
+    // combat 1, -1, 1 through changed / stored: zero MODE lines after the primed first
+    ModeState prev = modeStored(ModeState(), false, o1);
+    int lines = 0;
+    for (int8_t cv : { (int8_t)-1, (int8_t)1 }) {
+        ModeState now = o1; now.combat = cv;
+        if (modeChanged(prev, now)) ++lines;
+        prev = modeStored(prev, true, now);
+    }
+    KT_CHECK_EQ(lines, 0);
+}
+
+void testRL20Hidden() {
+    QEntry six[6]; for (int i = 0; i < 6; ++i) six[i] = E(0x0F, 100 + i);
+    Slot out[kMaxSlots];
+    KT_CHECK_EQ(buildSlots(six, 6, nullptr, 0, nullptr, out), 4);
+    KT_CHECK_EQ(hiddenSlots(six, 6, nullptr, 0, nullptr), 2);
+    QEntry e[4] = { E(0x3F), E(0x0F, 1), E(0x0F, 2), E(0x0F, 3) };
+    RNode rn[2] = { N(9, 1, 300), N(10, 2, 0, 77) };
+    KT_CHECK_EQ(hiddenSlots(e, 4, rn, 2, nullptr), 1);   // 2 round nodes (from the 0x3F) + 3 entries = 5 slots, 4 drawn
+    KT_CHECK_EQ(hiddenSlots(nullptr, 0, nullptr, 0, nullptr), 0);
+    KT_CHECK_EQ(hiddenSlots(six, 4, nullptr, 0, nullptr), 0);
+    ModeState m; m.combat = 0; m.soft = -1; m.strip = "shown"; m.cancel = "shown"; m.banner = "vanilla"; m.hidden = 2;
+    char o[200];
+    fmtMode(o, sizeof o, 0, m, "ui");
+    KT_CHECK_EQ(o, "MODE m=0 combat=0 soft=- menu=0 paused=0 hostile=? party=? strip=shown cancel=shown banner=vanilla why=ui hidden=2");
+    ModeState m0 = m; m0.hidden = 0;
+    fmtMode(o, sizeof o, 0, m0, "ui");
+    KT_CHECK_EQ(o, "MODE m=0 combat=0 soft=- menu=0 paused=0 hostile=? party=? strip=shown cancel=shown banner=vanilla why=ui");
+    KT_CHECK(modeChanged(m0, m));
+}
+
+void testRL20Holds() {
+    const QEntry use[1] = { E(0x2E, 5) };
+    KT_CHECK(holdsAction(use, 1, nullptr, 0, false, -1, 0, 0, false, 0, 0));
+    const RNode n9[1] = { N(9, 1, 300) };
+    KT_CHECK(holdsAction(nullptr, 0, n9, 1, false, -1, 0, 0, false, 0, 0));
+    const QEntry bare[1] = { E(0x3F) };
+    KT_CHECK(!holdsAction(bare, 1, nullptr, 0, false, -1, 0, 0, false, 0, 0));
+    KT_CHECK(!holdsAction(nullptr, 0, nullptr, 0, true, 9, 0, 0, false, 1000, 2600));   // stale flagless cur
+    KT_CHECK(holdsAction(nullptr, 0, nullptr, 0, true, 9, 0, 0, false, 1000, 2400));
+    KT_CHECK(holdsAction(nullptr, 0, nullptr, 0, true, 9, 0, 0, true, 1000, 2600));     // paused: flags/stale ignored
+    KT_CHECK(holdsAction(nullptr, 0, nullptr, 0, true, 9, 1, 0, false, 1000, 2600));    // aa8 set
+}
+
+void testRL7Match() {
+    const float pos[3] = { 0, 0, 0 };
+    const QueuedAction sp = makeSpellAction(0x1000, 300, 0x7F000010, 0, 0, 0, pos, 0, 0);
+    const QEntry other[1] = { E(0x0F, 999) }, same[1] = { E(0x0F, 300) };
+    KT_CHECK(actionPresentIn(sp, false, other, 1, nullptr, 0, false, nullptr));
+    KT_CHECK(!actionPresentIn(sp, true, other, 1, nullptr, 0, false, nullptr));
+    KT_CHECK(actionPresentIn(sp, true, same, 1, nullptr, 0, false, nullptr));
+    const RNode r301[1] = { N(9, 1, 301) }, r300[1] = { N(9, 1, 300) }, ri300[1] = { N(10, 1, 0, 300) };
+    KT_CHECK(!actionPresentIn(sp, true, nullptr, 0, r301, 1, false, nullptr));
+    KT_CHECK(actionPresentIn(sp, true, nullptr, 0, r300, 1, false, nullptr));
+    KT_CHECK(!actionPresentIn(sp, true, nullptr, 0, ri300, 1, false, nullptr));
+    const RNode cur = N(9, 1, 300);
+    KT_CHECK(actionPresentIn(sp, true, nullptr, 0, nullptr, 0, true, &cur));
+    KT_CHECK(!actionPresentIn(sp, true, nullptr, 0, nullptr, 0, false, &cur));
+    const QueuedAction it = makeItemAction(0x1000, 0x80000123u, 0, 0, pos, 0);
+    const QEntry i123[1] = { E(0x2E, 0x123) }, i124[1] = { E(0x2E, 0x124) };
+    KT_CHECK(actionPresentIn(it, true, i123, 1, nullptr, 0, false, nullptr));
+    KT_CHECK(!actionPresentIn(it, true, i124, 1, nullptr, 0, false, nullptr));
+    const RNode ri[1] = { N(10, 1, 0, 0x7F000123u) };
+    KT_CHECK(actionPresentIn(it, true, nullptr, 0, ri, 1, false, nullptr));   // low 24 bits
+    // verdict: after the action ran, a foreign node no longer keeps AV_PRESENT
+    ActionBuffer b; b.active = true; b.activeAction = sp; b.sawExecuting = true; b.activeStartTick = 1000;
+    bool present = actionPresentIn(b.activeAction, b.active && b.sawExecuting, nullptr, 0, r301, 1, false, nullptr);
+    KT_CHECK(!present);
+    b.noteView(present, 2000);
+    EngineView ev;
+    KT_CHECK_EQ((int)activeVerdict(b, ev, 2200), (int)AV_EXECUTED);
+    ActionBuffer b2; b2.active = true; b2.activeAction = sp; b2.sawExecuting = false; b2.activeStartTick = 1000;
+    present = actionPresentIn(b2.activeAction, b2.active && b2.sawExecuting, nullptr, 0, r301, 1, false, nullptr);
+    KT_CHECK(present);
+    b2.noteView(present, 2000);
+    ev.actionPresent = present;
+    KT_CHECK_EQ((int)activeVerdict(b2, ev, 2200), (int)AV_PRESENT);
+}
+
+void testRL4Generation() {
+    const uintptr_t A = 0x1000, B = 0x2000, C = 0x3000, D = 0x4000, Ee = 0x5000, F = 0x6000;
+    { const uintptr_t p[3] = { A, B, C }, n[3] = { D, Ee, F }; KT_CHECK(partyGenerationChanged(p, n)); }
+    { const uintptr_t p[3] = { A, B, C }, n[3] = { B, A, C }; KT_CHECK(!partyGenerationChanged(p, n)); }
+    { const uintptr_t p[3] = { A, B, C }, n[3] = { A, Ee, F }; KT_CHECK(!partyGenerationChanged(p, n)); }
+    { const uintptr_t p[3] = { A, 0, 0 }, n[3] = { B, 0, 0 }; KT_CHECK(partyGenerationChanged(p, n)); }
+    { const uintptr_t p[3] = { A, B, C }, n[3] = { 0, 0, 0 }; KT_CHECK(!partyGenerationChanged(p, n)); }
+    { const uintptr_t p[3] = { 0, 0, 0 }, n[3] = { A, B, C }; KT_CHECK(!partyGenerationChanged(p, n)); }
+    { const uintptr_t p[3] = { A, B, 0 }, n[3] = { C, 0, 0 }; KT_CHECK(partyGenerationChanged(p, n)); }
+}
+
+void testRL9DownHold() {
+    KT_CHECK(!downHoldExpired(0, 99999));
+    KT_CHECK(!downHoldExpired(1000, 20999));
+    KT_CHECK(downHoldExpired(1000, 21000));
+    KT_CHECK(downHoldExpired(0xFFFFFF00u, 0x4E00u));    // wrap-safe: 0x4F00 = 20224 ms elapsed
+    KT_CHECK(!downHoldExpired(0xFFFFFF00u, 0x100u));
+}
+
 int main() {
     testConstants();
     testKeys();
@@ -3185,6 +3364,15 @@ int main() {
     testConfigEqualSeesEveryField();
     testOwnerHoldB1();
     testServerRouteQL20();
+    testRL15Ini();
+    testShippedIni();
+    testRL14SigRest();
+    testRL13Mode();
+    testRL20Hidden();
+    testRL20Holds();
+    testRL7Match();
+    testRL4Generation();
+    testRL9DownHold();
     testRV3();
     return kt::Report("queue_hud_logic_test");
 }

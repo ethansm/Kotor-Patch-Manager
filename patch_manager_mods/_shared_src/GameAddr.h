@@ -87,7 +87,8 @@ constexpr uintptr_t FadePanelVtable = 0x009A044C;        // fade panel
 constexpr uintptr_t PausePanelVtable = 0x009A7BAC;       // pause panel
 constexpr uintptr_t AutoPausePanelVtable = 0x009A8FCC;   // auto-pause panel
 constexpr uintptr_t ServerIdMask = 0x0099449C;           // global: server id = client id & ~[mask]
-constexpr uintptr_t UseItemRouteA = 0x0057D8B0;          // thiscall(server creature; 0,0,selfServerId,0,itemServerId,0,0,0) RET 0x20: called only by companion-selfheal 0.2.0-probe with [probe] call=1
+constexpr uintptr_t AddUseTalentOnObject = 0x0057D8B0;   // CSWSCreature::AddUseTalentOnObjectActions thiscall(server creature; talentType, talentId, targetServerId, byte, itemServerId (0x7F000000 none), propIdx (-1 none), byte, byte) RET 0x20, 0 = refused (commandable gate 0057d8e3); companion-selfheal route A (item: 0,0,self,0,item,0,0,0) and queue-hud QL20 serverCast (spell)
+constexpr uintptr_t UseItemRouteA = AddUseTalentOnObject; // legacy alias (companion-selfheal, perf_lab smoke_selfheal, selfheal contract test)
 constexpr uintptr_t CanUseItem = 0x005D2F80;             // thiscall(server creature; itemPtr,0,1) RET 0xC -> nonzero = usable; verified B12b
 constexpr uintptr_t ActListRemoveHead = 0x007F2A90;      // thiscall(ECX = cr+0x100 action list) RET 0 -> data ptr of the head, node freed (R8 rotate pop; string-anchored thunk)
 constexpr uintptr_t ActListAddTail = 0x0054AA30;         // thiscall(ECX = cr+0x100 action list; push data) RET 4: append at the tail (R8 rotate push; body-anchored thunk)

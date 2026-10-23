@@ -1,6 +1,6 @@
 # 29 Paused-command delay and missing "queued" indicator
 
-Status 2026-10-04: static RE done (batches PQ1 + PQ2, Sonnet; lead spot-checks below). Probe `cmdq-probe` DESIGNED, not built.
+Status 2026-10-23: the indicator and queue fixes shipped as queue-hud (doc 30); static RE (PQ1/PQ2) still valid; cmdq-probe BUILT (HK1), not installed.
 Evidence: `29_paused_command_evidence/PQ1.md` (pause gate, command path, HUD panel), `PQ2.md` (post-unpause gates, cast/item timing).
 Exe: Steam swkotor2.exe 6a522e71.
 
@@ -31,7 +31,7 @@ noticeably late after unpause, and nothing on screen shows that the command was 
 | D3 | Round time freezes with pause. `UpdateCombatRoundTimer 0x571030` returns while bit 2 is set. Queuing a 2nd/3rd command while paused does not use up the round, so the wait runs entirely after unpause. Matches "paused, then gave orders". | CONFIRMED code | D1 + D2 shifted fully past unpause |
 | D4 | 8 s combat tail. While `+0x520 == 1` (8000 ms after the last fight, `+0x524`), the handler skips ActionManager and the Add*Actions skip their clears. The new `0x3F` lands behind whatever is queued. The engine still counts this as "in combat" although it looks out of combat. | CONFIRMED code, reach unknown | the length of the old queue |
 | D5 | Follower starvation. A non-controlled follower's FollowLeader `0x3D` (returns 1 or 3 only) stays at the head, so a tail `0x3F` never runs until something clears the queue. Only applies if the actor is not the player's object, which the vanilla UI path never does (the actor is the controlled character). | CONFIRMED code, reach LOW | unbounded |
-| D6 | Orphan round nodes. ClearAllActions never empties the round list `+0xB00`. A wiped command leaves its round node, and the next `0x3F` runs that node first, then waits D1. | CONFIRMED mechanism, reach unknown | +1 round |
+| D6 | Orphan round nodes. `CSWSObject::ClearAllActions` 0x541080 never empties the round list `+0xB00` (the app-level `CServerExoApp::ClearAllActions` 0x51CB10 does: it calls RemoveAllActions 0x590430 at 0x51CB47, 30_queue_hud_evidence/RE.md:86; queue-hud's Cancel uses 0x51CB10, so an orphan node is expected after a keyboard Esc / quickbar press or a script clear, NOT after queue-hud's Cancel). A wiped command leaves its round node, and the next `0x3F` runs that node first, then waits D1. | CONFIRMED mechanism, reach unknown | +1 round |
 | - | Cast/item handler timing (spell fires at conj 170 ms, item at 1 ms; facing is instant) | REFUTED as cause | < 0.2 s |
 
 Medpacs and Force powers both use 170/1330/0 conj/cast/catch in spells.2da (rows 64-66, Force rows 8, 10, 17, ...).
@@ -90,7 +90,7 @@ the `.asm` before coding.
 - `cleared` -> D4/D6, the `clr` caller names the culprit.
 - A `cmd` whose actor is not the leader and that never expands -> D5.
 
-## Follow-up (not started)
+## Follow-up (DONE: queue-hud, doc 30)
 - Indicator fix: in HUD Update, when pause bit 2 is set and slot 0's queue holds a `0x3F`, show the panel. The hook would be H8 `0x74C168`
   (12 B, `8B 8D 94 FE FF FF 8B 91 04 A9 00 00`), setting bit 1 of `[this+0xA904]` before the stolen reload. The action_hotbar mod already
   hooks `0x74B3F0` (same function, different window).

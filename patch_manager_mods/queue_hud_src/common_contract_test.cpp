@@ -262,6 +262,7 @@ int main() {
     QCHECK("guitip::setNative(ctl, text) -> bool and nativeSupported() -> bool", static_cast<bool(*)(uintptr_t, const char*)>(&guitip::setNative) != nullptr && static_cast<bool(*)()>(&guitip::nativeSupported) != nullptr);
     QCHECK("guitip::setNative(0, text) refuses a null control", !guitip::setNative(0, "Cancel queued actions"));
     QEQ("gameaddr::ServerClearAllActions is CServerExoApp::ClearAllActions 0x0051CB10 (doc 30 R7, verified B9)", (unsigned long long)gameaddr::ServerClearAllActions, 0x0051CB10ULL);
+    QEQ("gameaddr::AddUseTalentOnObject is AddUseTalentOnObjectActions 0x0057D8B0 (doc 27 R1 route A, QL20)", (unsigned long long)gameaddr::AddUseTalentOnObject, 0x0057D8B0ULL);
     QEQ("gameaddr::HudVtable is the CSWGuiInGame vtable 0x0099DCC4 (BUILD panel check)", (unsigned long long)gameaddr::HudVtable, 0x0099DCC4ULL);
     QCHECK("gameaddr::ProjectionFlag is 0x00A1B9F0 (the label-bind projection guard)", gameaddr::ProjectionFlag == 0x00A1B9F0u);
     // the Cancel route reads: *(AppGlobal)+8 = server app, server creature +4 = object id (both saferead cells, planted here)
