@@ -261,12 +261,12 @@ Executor specs per phase: `.claude/reviews/rv_qac_20261023/plan_<Id>.md` (exact 
 
 | Id | Batch | Deps | Owner gate | Status | Commit | Next |
 |---|---|---|---|---|---|---|
-| RV1 | queue-hud high: RQ1 spell replay pos/flag, RQ5 RI_OK gates + serverCast bool/deferred retry (+RL12), RQ2 edge head guard, RQ3 detach excludes head | - | - | TODO | | spec plan_RV1.md; unit tests queue_hud_logic_test |
-| RV2 | queue-hud verdict: RQ4 orphan round node + present ceiling, RQ6 combat-end resolve (hook half dead), RQ7 executing evidence tied to our action, RL1 counter resets, RL2 swap bookkeeping, RL3 unpaused FlagGate, RL5 re-inject total cap, RL8 kick give-up | RV1 | - | TODO | | spec plan_RV2.md |
-| RV3 | queue-hud hand-off/Cancel: RQ8 restore unsent head, RQ9 detach at combat end, RQ10 detached owner, RQ11 spatial cancel click, RQ12 companion Cancel measure-first (CANCEL had3D / CANCEL_AFTER after3D), RL6, RL11, RL17-RL19 | RV2 | - | TODO | | spec plan_RV3.md |
-| RV4 | cross-mod: RQ13 actq::castQueued + selfheal dedupe, selfheal wiped-pending end | RV1 | - | TODO | | spec plan_RV4.md; compat_check ActQueue.h |
-| RV5 | action-hotbar: RH1 persave absent -> empty, RH2 4:3 scale, RH3 assign rollback, RH4 @lowhp pending heals, RH5 gate DEBUG line + play row, RL23-RL31 | - | - | TODO | | spec plan_RV5.md |
-| RV6 | low/logging/docs: RL4, RL7, RL9, RL10, RL13-RL16, RL20-RL22, docs V1-14/V2-14/V3-13 | RV3 | - | TODO | | spec plan_RV6.md |
+| RV1 | queue-hud high: RQ1 spell replay pos/flag, RQ5 RI_OK gates + serverCast bool/deferred retry (+RL12), RQ2 edge head guard, RQ3 detach excludes head | - | - | DONE | 9fc34ef6 | queue-hud 0.4.6-dev; queue_hud 3/3 + 160 checker tests PASS, build PASS; doc 30:78 left for RV6; play QH21-QH24 |
+| RV2 | queue-hud verdict: RQ4 orphan round node + present ceiling, RQ6 combat-end resolve (hook half dead), RQ7 executing evidence tied to our action, RL1 counter resets, RL2 swap bookkeeping, RL3 unpaused FlagGate, RL5 re-inject total cap, RL8 kick give-up | RV1 | - | DONE | 2ee85867 | queue-hud 0.4.7-dev; queue_hud 3/3 PASS, build PASS; play QV-OR1/CE1/EX1/KG1 |
+| RV3 | queue-hud hand-off/Cancel: RQ8 restore unsent head, RQ9 detach at combat end, RQ10 detached owner, RQ11 spatial cancel click, RQ12 companion Cancel measure-first (CANCEL had3D / CANCEL_AFTER after3D), RL6, RL11, RL17-RL19 | RV2 | - | DONE | 8422f729 | queue-hud 0.4.8-dev; queue_hud 3/3 PASS, build PASS; RQ12 measure-only; play RV3-1,1b,2-6 |
+| RV4 | cross-mod: RQ13 actq::castQueued + selfheal dedupe, selfheal wiped-pending end | RV1 | - | DONE | 24f127ba | selfheal 0.9.4-dev; 6/6 suites PASS; KPM Common sync of ActQueue.h/SelfHealUi.h needed at RV7; play SH-RQ13a/b |
+| RV5 | action-hotbar: RH1 persave absent -> empty, RH2 4:3 scale, RH3 assign rollback, RH4 @lowhp pending heals, RH5 gate DEBUG line + play row, RL23-RL31 | - | - | DONE | e9edc3d7 | hotbar 0.1.6-dev; hotbar_logic/log/config_roundtrip PASS, build_check PASS; play AHR1-AHR6 |
+| RV6 | low/logging/docs: RL4, RL7, RL9, RL10, RL13-RL16, RL20-RL22, docs V1-14/V2-14/V3-13 | RV3 | - | DONE | be162666 | queue-hud 0.4.9-dev; queue_hud 3/3 + selfheal 6/6 PASS; build PASS vs synced scratch KPM (live KPM Common needs header sync at RV7) |
 | RV7 | install (hot-swap queue-hud, action-hotbar, companion-selfheal) + PLAY_TEST_QUEUE rows | RV1-RV6 | user GO | TODO | | gate PASS then kpm_hotswap --apply |
 
 ## Plan-stage decisions (after spec + spec review, 10-23)
