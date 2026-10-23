@@ -288,6 +288,7 @@ inline bool reachHingeFits(float dz, float arm) { return std::isfinite(dz) && st
 // Interim thresholds, check in play: kThighDz sits between pelvis_g (-0.54) and rthigh_g (-0.77), midpoint -0.655; kOverDz is the old over-the-shoulder band top.
 constexpr float kThighDz = -0.66f;   // in arm lengths
 constexpr float kOverDz = -0.45f;    // in arm lengths
+constexpr float kFrontFy = 0.05f;    // in arm lengths: mounts ahead of the shoulder plane are front/chest, not back
 enum class ReachTopo { HingeBack, OverBack, Hip, Thigh };
 inline ReachTopo reachTopology(float dzArm, bool hingeFits) {
     if (!std::isfinite(dzArm)) return ReachTopo::Hip;
@@ -295,6 +296,71 @@ inline ReachTopo reachTopology(float dzArm, bool hingeFits) {
     if (hingeFits) return ReachTopo::HingeBack;
     if (dzArm >= kOverDz) return ReachTopo::OverBack;
     return ReachTopo::Hip;
+}
+
+// 3D topology classifier for dynamic editor placements: a mount ahead of the chest plane (fyArm > kFrontFy) above kThighDz resolves to Hip
+// rather than HingeBack or OverBack, so a chest/bandolier holster never parks the elbow to reach behind the neck. Non-finite fxArm/fyArm
+// fall back to reachTopology(dzArm, hingeFits) bit for bit.
+inline ReachTopo reachTopology3D(float fxArm, float fyArm, float dzArm, bool hingeFits) {
+    (void)fxArm;
+    if (!std::isfinite(dzArm)) return ReachTopo::Hip;
+    if (dzArm < kThighDz) return ReachTopo::Thigh;
+    if (std::isfinite(fyArm) && fyArm > kFrontFy) return ReachTopo::Hip;
+    return reachTopology(dzArm, hingeFits);
+}
+
+// Continuous 3D over-the-shoulder weight u in [0, 1]. Eliminates the 0.76 -> 1.0 step cliff at dzArm = kOverDz (-0.45) by evaluating the
+// smooth [-0.60, -0.38] ramp across both Hip and OverBack (stock torsoUpr_g at -0.36 is still 1.0), while HingeBack stays 1.0 and front/chest
+// mounts (fyArm > kFrontFy) dampen u so the elbow stays down.
+inline float reachOverWeight3D(float fxArm, float fyArm, float dzArm, ReachTopo topo) {
+    (void)fxArm;
+    if (topo == ReachTopo::HingeBack) return 1.f;
+    if (!std::isfinite(dzArm)) return 0.f;
+    float u = easeSmooth((dzArm + 0.60f) / 0.22f);
+    if (std::isfinite(fyArm) && fyArm > kFrontFy) u *= (1.f - easeSmooth((fyArm - kFrontFy) / 0.15f));
+    return u;
+}
+
+// Adapts the carry path bow {up, forward, outward} and over-weight for dynamic editor placements:
+//   - Stock same-side back/hip mounts (latArm >= -0.04, fyArm >= -0.12, dzArm >= -0.56): bulgeOut = st.bulge, overOut = u bit for bit.
+//   - Low-hip / thigh mounts (dzArm < -0.56, where u = 0 previously zeroed all bow): adds outward (+0.12) and forward (+0.08) clearance.
+//   - Cross-draw mounts (latArm = fxArm * side < -0.04): adds forward (+0.22) and upward (+0.05) clearance across the waist.
+//   - Lumbar mounts (fyArm < -0.12 below OverBack): adds outward (+0.18) flank wrap.
+inline void reachAdaptBulge(const ReachStyle& st, float u, float fxArm, float fyArm, float dzArm, bool left, float bulgeOut[3], float& overOut) {
+    const float uClamped = std::isfinite(u) ? slideClamp01(u) : 0.f;
+    const float side = left ? -1.f : 1.f;
+    const float latArm = std::isfinite(fxArm) ? fxArm * side : 0.f;
+    const float lowW = std::isfinite(dzArm) && dzArm < -0.56f ? easeSmooth((-0.56f - dzArm) / 0.20f) : 0.f;
+    const float crossW = latArm < -0.04f ? easeSmooth((-0.04f - latArm) / 0.26f) : 0.f;
+    const float lumbarW = (std::isfinite(fyArm) && fyArm < -0.12f) ? easeSmooth((-0.12f - fyArm) / 0.18f) * (1.f - uClamped) : 0.f;
+    if (!(lowW > 0.f || crossW > 0.f || lumbarW > 0.f)) {
+        for (int i = 0; i < 3; ++i) bulgeOut[i] = st.bulge[i];
+        overOut = u;
+        return;
+    }
+    const float bow[3] = {
+        uClamped * st.bulge[0] + 0.05f * crossW,
+        uClamped * st.bulge[1] + 0.08f * lowW + 0.22f * crossW,
+        uClamped * st.bulge[2] + 0.12f * lowW + 0.18f * lumbarW
+    };
+    for (int i = 0; i < 3; ++i) bulgeOut[i] = bow[i];
+    overOut = 1.f;
+}
+
+// 3D elbow pole for dynamic editor placements: identical to reachPole for stock mounts (latArm >= -0.04 and fyArm >= -0.12); shifts the
+// hip pole forward across the ribs on cross-draws (latArm < -0.04) and flares it outward on lumbar mounts (fyArm < -0.12).
+inline bool reachPole3D(const ReachStyle& st, float u, float fxArm, float fyArm, float dzArm, bool left, const Q& bodyQ, const float* anim, float animMix, float* out) {
+    (void)dzArm;
+    const float side = left ? -1.f : 1.f;
+    const float latArm = std::isfinite(fxArm) ? fxArm * side : 0.f;
+    const float uClamped = std::isfinite(u) ? slideClamp01(u) : 0.f;
+    const float crossW = latArm < -0.04f ? easeSmooth((-0.04f - latArm) / 0.26f) : 0.f;
+    const float lumbarW = (std::isfinite(fyArm) && fyArm < -0.12f) ? easeSmooth((-0.12f - fyArm) / 0.18f) * (1.f - uClamped) : 0.f;
+    if (!(crossW > 0.f || lumbarW > 0.f)) return reachPole(st, u, left, bodyQ, anim, animMix, out);
+    ReachStyle adapted = st;
+    adapted.hip[0] += 0.35f * lumbarW;
+    adapted.hip[1] = (1.f - crossW) * st.hip[1] + crossW * 0.35f;
+    return reachPole(adapted, u, left, bodyQ, anim, animMix, out);
 }
 
 // HW46: the slide's topology latch. topoSet 0 = not latched this slide: the live topo is stored as topoSet = 1 + enum (nonzero = latched, so the topoSet test in
@@ -697,6 +763,43 @@ inline float reachViaOffset(float t, float ms, float outM) {
     if (!(ms > 0.f) || !std::isfinite(ms) || !(outM > 0.f) || !std::isfinite(outM)) return 0.f;
     const float s = slideClamp01(t / ms);               // NaN -> 0
     return outM * 16.f * s * s * (1.f - s) * (1.f - s);
+}
+
+// Topology gate for the over-the-shoulder via pose: only back/high mounts (HingeBack, OverBack) take the skyward/vertical via rotation
+// and lateral shoulder bump; moving a rifle, heavy or sword to Hip or Thigh in the editor bypasses the shoulder via.
+inline bool reachViaTopoOk(ReachTopo topo) {
+    return topo == ReachTopo::HingeBack || topo == ReachTopo::OverBack;
+}
+
+// Bidirectional via quaternion builder: turns the weapon's long axis `axis` (0..2) from its mounted world direction `wv = mountQ * ax`
+// to the vertical/tilted via direction. When `bidirectional` is true and `wv` points downward in the body frame (dot(wv, bodyUp) < -0.25,
+// > 105 deg from up, e.g. barrel-down rifle/heavy or tip-down back scabbard), the vertical component of the via target is negated
+// ({0, sin t, -cos t}) so the weapon straightens to vertical and tilts forward toward the hand without a 180 deg end-over-end flip.
+// For mounts with dot(wv, bodyUp) >= -0.25 (0..104 deg from up), output is bit-for-bit identical to the unidirectional reachViaUp path.
+inline bool reachViaQuat(unsigned axis, const Q& mountQ, float tiltDeg, const Q* bodyQ, Q& out, bool bidirectional = true) {
+    if (axis > 2 || !qfinite(mountQ)) return false;
+    float ax[3] = { 0.f, 0.f, 0.f }, wv[3];
+    ax[axis] = 1.f;
+    const Q mq = qnormalize(mountQ);
+    qrotate(mq, ax, wv);
+    const bool haveBody = bodyQ && qfinite(*bodyQ);
+    const Q bq = haveBody ? qnormalize(*bodyQ) : Q{ 1.f, 0.f, 0.f, 0.f };
+    const float kUp[3] = { 0.f, 0.f, 1.f };
+    float bodyUp[3] = { 0.f, 0.f, 1.f };
+    if (haveBody) qrotate(bq, kUp, bodyUp);
+    const bool flipZ = bidirectional && (r3dot(wv, bodyUp) < -0.25f);
+    float up[3];
+    if (!flipZ) {
+        reachViaUp(tiltDeg, bodyQ, up);
+    } else {
+        const float t = reachViaTiltClamp(tiltDeg);
+        const float a = t * 3.14159265358979f / 180.f;
+        const float v[3] = { 0.f, (t > 0.f) ? std::sin(a) : 0.f, (t > 0.f) ? -std::cos(a) : -1.f };
+        if (haveBody) qrotate(bq, v, up);
+        else { up[0] = v[0]; up[1] = v[1]; up[2] = v[2]; }
+    }
+    out = qnormalize(qmul(arcQuat(wv, up), mq));
+    return qfinite(out);
 }
 
 }  // namespace hs

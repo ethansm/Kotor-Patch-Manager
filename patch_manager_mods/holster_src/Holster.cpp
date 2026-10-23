@@ -1605,25 +1605,21 @@ static const char* reachTopoName(hs::ReachTopo t) {
     }
 }
 static bool reachIsBackBone(const char* b) { return b && (!_stricmp(b, "torsoUpr_g") || !_stricmp(b, "torso_g")); }
-// HW31: the extract share of this slide: _back when this slide's latched topology is a back one (before the slide's first solve: the mount bone name), else _hip.
-static float reachExtractPct(uintptr_t beh, bool left, bool backBone) {
+static bool reachIsBackTopo(uintptr_t beh, bool left, bool backBone) {
     const uintptr_t parent = beh ? rdU32(kSitePlace, beh, 0x14) : 0;
     if (parent)
         for (const ReachEnt& x : g_reach)
-            if (x.parent == parent && x.left == left && x.topoSet) return x.topoBack ? g_extractBack : g_extractHip;
-    return backBone ? g_extractBack : g_extractHip;
+            if (x.parent == parent && x.left == left && x.topoSet) return x.topoBack != 0;
+    return backBone;
 }
-// HW31: the via quat of this weapon (its long axis, in the mount frame, turned to world up), or false (shape missing, category off, bad quat).
-static bool reachViaFor(const hs::ShapeEntry* sh, int cat, const hs::Q& mountQ, hs::Q& out, const hs::Q* bodyQ = nullptr) {
-    if (!sh || sh->axis > 2 || cat < 0 || cat >= hs::CatCount || !g_reachVia[cat] || !hs::qfinite(mountQ)) return false;
-    float ax[3] = {0.f, 0.f, 0.f}, wv[3];
-    ax[sh->axis] = 1.f;
-    const hs::Q mq = hs::qnormalize(mountQ);
-    hs::qrotate(mq, ax, wv);
-    float up[3];   // world z is up (the body frame is x right, y forward, z up); HW50: tilted toward body forward by reach_via_tilt_deg_<cat>, bodyQ null = unrotated (preview)
-    hs::reachViaUp(g_reachViaTilt[cat], bodyQ, up);
-    out = hs::qnormalize(hs::qmul(hs::arcQuat(wv, up), mq));
-    return hs::qfinite(out);
+// HW31: the extract share of this slide: _back when this slide's latched topology is a back one (before the slide's first solve: the mount bone name), else _hip.
+static float reachExtractPct(uintptr_t beh, bool left, bool backBone) {
+    return reachIsBackTopo(beh, left, backBone) ? g_extractBack : g_extractHip;
+}
+// HW31: the via quat of this weapon (its long axis, in the mount frame, turned to world up), or false (shape missing, category off, hip/thigh topo, bad quat).
+static bool reachViaFor(const hs::ShapeEntry* sh, int cat, const hs::Q& mountQ, hs::Q& out, const hs::Q* bodyQ = nullptr, bool backTopo = true) {
+    if (!sh || sh->axis > 2 || cat < 0 || cat >= hs::CatCount || !g_reachVia[cat] || !backTopo) return false;
+    return hs::reachViaQuat(sh->axis, mountQ, g_reachViaTilt[cat], bodyQ, out, true);
 }
 // 0.21.1-dev (log only): a slide armed with slow_holster_x != 1 logs REACH on every solve of its second half (pathF >= 0.5) and on every 8th before it, up to 120 lines per hand and slide,
 // instead of 1 in gob_every (the slow end of a draw was invisible). g_reachSlowX = the factor of the slide the caller is solving for (set before each reachArm call; 1 = off);
@@ -1774,18 +1770,19 @@ static bool reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w,
         // HW27: the mount's height sense, not the bone name, picks the reach: HingeBack / OverBack (shoulder height or above) reach up and over the shoulder, whatever the weapon
         // (u = 1: a rifle slung low still has its grip behind the shoulder as long as it is above kOverDz); Hip and Thigh keep the hip pole weighted by reachOverWeight
         // (0 below the band). backMount (torsoUpr_g / torso_g) no longer forces it: torso_g sits at pelvis height and resolves to Hip. Logged as topo=.
-        const hs::ReachTopo liveTopo = arm > 1e-4f ? hs::reachTopology(dzA, hs::reachHingeFits(mlt[2], arm)) : hs::ReachTopo::Hip;
+        const hs::ReachTopo liveTopo = arm > 1e-4f ? hs::reachTopology3D(fxA, fyA, dzA, hs::reachHingeFits(mlt[2], arm)) : hs::ReachTopo::Hip;
         topo = hs::reachTopoLatch(liveTopo, e->topoSet, e->topoBack);   // HW46: latched at the slide's first frame; the whole enum drives u, hinge, pole and log
-        u = (topo == hs::ReachTopo::HingeBack || topo == hs::ReachTopo::OverBack) ? 1.f : hs::reachOverWeight(mlt[2], arm);   // formula unchanged
+        u = hs::reachOverWeight3D(fxA, fyA, dzA, topo);
         const int ci = (cat >= 0 && cat < hs::CatCount) ? cat : 0;
         const hs::ReachStyle& st = g_reachStyle[ci];
         if (carry) {   // the hand walks mount -> animation hand along an arc bowed up / forward / outward for a high mount (reach: backwards along it, carry: forwards); restMix pulls it to the resting hand
             const float upL[3] = {0.f, 0.f, 1.f}, fwL[3] = {0.f, 1.f, 0.f}, ouL[3] = {left ? -1.f : 1.f, 0.f, 0.f};
-            float upW[3], fwW[3], ouW[3], pt[3];
+            float upW[3], fwW[3], ouW[3], pt[3], effBulge[3], effOver = u;
             hs::qrotate(hs::qnormalize(body.q), upL, upW);
             hs::qrotate(hs::qnormalize(body.q), fwL, fwW);
             hs::qrotate(hs::qnormalize(body.q), ouL, ouW);
-            hs::reachCarryTarget(mountPos, pH.pos, upW, fwW, ouW, st.bulge, u, arm, pathF, pt);
+            hs::reachAdaptBulge(st, u, fxA, fyA, dzA, left, effBulge, effOver);
+            hs::reachCarryTarget(mountPos, pH.pos, upW, fwW, ouW, effBulge, effOver, arm, pathF, pt);
             for (int i = 0; i < 3; ++i) T[i] = (1.f - restMix) * pt[i] + restMix * pH.pos[i];
             // back mount: the hinged path replaces the bowed line and sets the pole itself (stage by stage, ending in the animation's own elbow plane at the rest hand)
             if (topo == hs::ReachTopo::HingeBack && g_reachHinge && hs::reachHinge(pS.pos, hs::r3len(es0), hs::r3len(he0), upW, fwW, ouW, mountPos, pH.pos, es0, pathF, pt, poleV, g_hingeOutT[ci], g_hingeOutPole[ci])) {
@@ -1803,7 +1800,7 @@ static bool reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w,
                 viaUse = hs::viaEaseS(e->viaFrom, viaS, nowMs - e->viaEaseMs, hs::kViaEaseMs);
                 if (nowMs - e->viaEaseMs >= hs::kViaEaseMs) e->viaEase = 0;
             }
-            if (viaOutFor(cat) > 0.f && viaUse > 0.f) {
+            if (hs::reachViaTopoOk(topo) && viaOutFor(cat) > 0.f && viaUse > 0.f) {
                 viaOffM = hs::reachViaOffset(viaUse, 1.f, viaOutFor(cat));
                 for (int i = 0; i < 3; ++i) T[i] += ouW[i] * viaOffM;
             }
@@ -1811,7 +1808,7 @@ static bool reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w,
         }
         const float ts[3] = {T[0] - pS.pos[0], T[1] - pS.pos[1], T[2] - pS.pos[2]};
         hs::qrotate(inv, ts, lt);
-        if (!hinge && hs::reachPole(st, u, left, body.q, es0, (restMix > hs::reachAnimMix(pathF) ? restMix : hs::reachAnimMix(pathF)), poleV)) {   // the mount style holds the whole swing, draw and stow alike
+        if (!hinge && hs::reachPole3D(st, u, fxA, fyA, dzA, left, body.q, es0, (restMix > hs::reachAnimMix(pathF) ? restMix : hs::reachAnimMix(pathF)), poleV)) {   // the mount style holds the whole swing, draw and stow alike
             pole = poleV;
             // HW29b: Hip / Thigh only (the hinge reach builds and guards its own pole; OverBack has no outward guard): turn the pole toward the side the forearm lies when the hand holds the weapon at
             // its mount, fading out by f 0.30. grip = the hand bone's elbow-side axis (hand -> elbow, the forearm axis of the twist split, in the hand frame) rotated by the mount orientation.
@@ -2379,7 +2376,7 @@ static bool previewPlace(uintptr_t g, uintptr_t beh) {
     }
     hs::Pose carried;
     hs::Q viaQ;
-    const bool viaOn = reachViaFor(hs::shapeOf(model), static_cast<int>(cat), out.q, viaQ, nullptr);   // HW31: reach_via_<cat> (default off); HW50: the preview has no body frame, so its tilt is unrotated
+    const bool viaOn = reachViaFor(hs::shapeOf(model), static_cast<int>(cat), out.q, viaQ, nullptr, reachIsBackTopo(beh, left, reachIsBackBone(bone)));   // HW31: reach_via_<cat> (default off), gated by back topology; HW50: the preview has no body frame, so its tilt is unrotated
     float viaS = 0.f;   // HW31b: the via progress for the arm's lateral bump (only when the via is on)
     if (viaOn && viaOutFor(static_cast<int>(cat)) > 0.f) { EdLock lk0; const CarryResid& vcr = prevLockFor(g).cres; viaS = hs::slideViaProgress(plan.active, presid, plan.carryW, plan.oriF, exPct > 0.f, pslide.dir != 0, pslide.from, pslide.carryFrom, pnow, pslide.t0, pslide.len, pgrab, vcr.on != 0, vcr.startMs, vcr.msEff, plan.pathF, stowRotEffFor(static_cast<int>(cat))); }
     g_reachSlowX = pslow;   // 0.21.1-dev: REACH logging density for a slowed slide
@@ -2734,7 +2731,7 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
             const uintptr_t vpar = rdU32(kSitePlace, reinterpret_cast<uintptr_t>(beh), 0x14);
             if (vpar && saferead::readAt(kSitePlace, vpar, 0xA4, &viaBody) && hs::poseSane(viaBody) && hs::qfinite(viaBody.q)) viaBodyQ = &viaBody.q;
         }
-        const bool viaOn = reachViaFor(shp, static_cast<int>(cat), hipPose.q, viaQ, viaBodyQ);   // HW31: reach_via_<cat> (default off)
+        const bool viaOn = reachViaFor(shp, static_cast<int>(cat), hipPose.q, viaQ, viaBodyQ, reachIsBackTopo(reinterpret_cast<uintptr_t>(beh), ent->left, reachIsBackBone(mountBone)));   // HW31: reach_via_<cat> (default off), gated by back topology
         const float viaS = (viaOn && viaOutFor(static_cast<int>(cat)) > 0.f) ? hs::slideViaProgress(pl.active, residMs, pl.carryW, pl.oriF, exPct > 0.f, ent->slide.dir != 0, ent->slide.from, ent->slide.carryFrom, rnow, ent->slide.t0, ent->slide.len, rgrab, ent->cres.on != 0, ent->cres.startMs, ent->cres.msEff, pl.pathF, stowRotEffFor(static_cast<int>(cat))) : 0.f;   // HW31b: the arm's lateral bump follows the via
         snp.w = wa; snp.vo = viaS; snp.pathF = pl.pathF;
         g_reachSlowX = ent->slowArm;   // 0.21.1-dev: REACH logging density for a slowed slide

@@ -1403,6 +1403,127 @@ static void testEaseSoft() {
     }
 }
 
+// Track 1: 3D dynamic mount topology and continuous over-weight across kOverDz (-0.45) and front/chest offsets (fyArm > kFrontFy).
+static void testReachTopology3DAndOverWeight3D() {
+    // Stock back/hip/thigh mounts (fy <= 0) match reachTopology bit for bit
+    const float dzs[6] = { -0.77f, -0.66f, -0.54f, -0.45f, -0.36f, -0.01f };
+    for (int i = 0; i < 6; ++i) {
+        for (int hf = 0; hf < 2; ++hf) {
+            const bool h = hf != 0;
+            KT_CHECK(reachTopology3D(0.15f, -0.10f, dzs[i], h) == reachTopology(dzs[i], h));
+            KT_CHECK(reachTopology3D(kNaN, kNaN, dzs[i], h) == reachTopology(dzs[i], h));
+        }
+    }
+    // Front/chest mount (fyArm > kFrontFy = 0.05) above kThighDz resolves to Hip, never HingeBack or OverBack
+    KT_CHECK(reachTopology3D(0.10f, 0.15f, -0.05f, true) == ReachTopo::Hip);
+    KT_CHECK(reachTopology3D(0.10f, 0.15f, -0.35f, false) == ReachTopo::Hip);
+    KT_CHECK(reachTopology3D(0.10f, 0.15f, -0.77f, true) == ReachTopo::Thigh);   // Thigh still wins below kThighDz
+
+    // Stock torsoUpr_g (-0.36) is still exact 1.0, stock pelvis_g (-0.54) matches reachOverWeight
+    KT_CHECK(reachOverWeight3D(0.15f, -0.10f, -0.36f, ReachTopo::OverBack) == 1.f);
+    KT_CHECK(reachOverWeight3D(0.15f, -0.10f, -0.05f, ReachTopo::HingeBack) == 1.f);
+    KT_CHECK(closeF(reachOverWeight3D(0.15f, 0.f, -0.54f, ReachTopo::Hip), reachOverWeight(-0.54f * 0.64f, 0.64f), 1e-6f));
+
+    // C1 continuity across the dzArm = -0.45 (Hip <-> OverBack) boundary: no 0.76 -> 1.0 cliff
+    const float uBelow = reachOverWeight3D(0.15f, -0.10f, -0.4501f, ReachTopo::Hip);
+    const float uAbove = reachOverWeight3D(0.15f, -0.10f, -0.4499f, ReachTopo::OverBack);
+    KT_CHECK(std::fabs(uAbove - uBelow) < 2e-3f);
+
+    // Front/chest mount dampens u so high chest holsters don't raise the elbow above the head
+    KT_CHECK(reachOverWeight3D(0.10f, 0.25f, -0.36f, ReachTopo::Hip) == 0.f);
+    const float uMidChest = reachOverWeight3D(0.10f, 0.125f, -0.36f, ReachTopo::Hip);
+    KT_CHECK(uMidChest > 0.f && uMidChest < 1.f);
+}
+
+// Track 1: 3D bulge and pole adaptation for thigh, cross-draw, and lumbar editor placements (stock mounts bit-identical).
+static void testReachAdaptBulgeAndPole3D() {
+    const ReachStyle st = reachDefaultStyle(4);   // pistol
+    const Q id = { 1.f, 0.f, 0.f, 0.f };
+    float bOut[3], overOut = -1.f;
+
+    // 1. Stock pelvis_g (fx=0.28, fy=0, dz=-0.54) and torsoUpr_g (fx=0.15, fy=-0.10, dz=-0.36): bit-identical to st.bulge and reachPole
+    reachAdaptBulge(st, 0.18f, 0.28f, 0.f, -0.54f, false, bOut, overOut);
+    KT_CHECK(sameBits(bOut, st.bulge) && sameBits(overOut, 0.18f));
+    reachAdaptBulge(st, 1.f, 0.15f, -0.10f, -0.36f, false, bOut, overOut);
+    KT_CHECK(sameBits(bOut, st.bulge) && sameBits(overOut, 1.f));
+
+    float pRef[3], p3D[3];
+    KT_CHECK(reachPole(st, 0.18f, false, id, nullptr, 0.f, pRef));
+    KT_CHECK(reachPole3D(st, 0.18f, 0.28f, 0.f, -0.54f, false, id, nullptr, 0.f, p3D));
+    KT_CHECK(sameBits(pRef, p3D));
+
+    // 2. Thigh mount (rthigh_g, dz=-0.77, u=0): previously had 0 bow (straight line); now gets outward (+0.12) and forward (+0.08) clearance
+    reachAdaptBulge(st, 0.f, 0.16f, 0.f, -0.77f, false, bOut, overOut);
+    KT_CHECK(overOut == 1.f && closeF(bOut[1], 0.08f, 1e-5f) && closeF(bOut[2], 0.12f, 1e-5f));
+
+    // 3. Cross-draw mount (right hand reaching to left hip fx=-0.30, dz=-0.54): forward bow > 0.20, pole Y shifts forward (> 0)
+    reachAdaptBulge(st, 0.f, -0.30f, 0.f, -0.54f, false, bOut, overOut);
+    KT_CHECK(overOut == 1.f && bOut[1] >= 0.22f - 1e-5f && bOut[0] >= 0.05f - 1e-5f);
+    KT_CHECK(reachPole3D(st, 0.f, -0.30f, 0.f, -0.54f, false, id, nullptr, 0.f, p3D));
+    KT_CHECK(p3D[1] > 0.f && p3D[1] > pRef[1] + 0.4f);   // elbow stays in front of ribs instead of -0.70 behind
+
+    // Left-hand mirror of cross-draw (left hand reaching to right hip fx=+0.30): mirrors X of pole and matches bulge
+    float bOutL[3], overOutL = -1.f, p3DL[3];
+    reachAdaptBulge(st, 0.f, 0.30f, 0.f, -0.54f, true, bOutL, overOutL);
+    KT_CHECK(closeV(bOutL, bOut, 1e-6f) && overOutL == overOut);
+    KT_CHECK(reachPole3D(st, 0.f, 0.30f, 0.f, -0.54f, true, id, nullptr, 0.f, p3DL));
+    KT_CHECK(closeF(p3DL[0], -p3D[0], 1e-6f) && closeF(p3DL[1], p3D[1], 1e-6f) && closeF(p3DL[2], p3D[2], 1e-6f));
+
+    // 4. Lumbar mount (fy=-0.30, dz=-0.52, u=0): outward bow >= 0.18 and outward elbow flare increases
+    reachAdaptBulge(st, 0.f, 0.05f, -0.30f, -0.52f, false, bOut, overOut);
+    KT_CHECK(overOut == 1.f && closeF(bOut[2], 0.18f, 1e-5f));
+    KT_CHECK(reachPole3D(st, 0.f, 0.05f, -0.30f, -0.52f, false, id, nullptr, 0.f, p3D));
+    KT_CHECK(p3D[0] > pRef[0] + 0.10f);
+}
+
+// Track 2: Topology-gated via and bidirectional sheath axis (eliminates the 177 deg barrel-down back-mount spin).
+static void testReachViaTopoAndBiQuat() {
+    KT_CHECK(reachViaTopoOk(ReachTopo::HingeBack) && reachViaTopoOk(ReachTopo::OverBack));
+    KT_CHECK(!reachViaTopoOk(ReachTopo::Hip) && !reachViaTopoOk(ReachTopo::Thigh));
+
+    // Upper-hemisphere and horizontal mounts (0..90 deg from +Z): bidirectional is bit-identical to unidirectional
+    const float axY[3] = { 0.f, 1.f, 0.f }, fwd[3] = { 0.f, 1.f, 0.f };
+    const float upAngles[3] = { 0.f, 45.f, 90.f };
+    for (float aDeg : upAngles) {
+        const float a = aDeg * 3.14159265358979f / 180.f;
+        const float want[3] = { 0.f, -std::sin(a), std::cos(a) };
+        const Q mq = qnormalize(arcQuat(axY, want));
+        Q qBi, qUni;
+        KT_CHECK(reachViaQuat(1u, mq, 0.f, nullptr, qBi, true));
+        KT_CHECK(reachViaQuat(1u, mq, 0.f, nullptr, qUni, false));
+        KT_CHECK(exactQ(qBi, qUni));
+    }
+
+    // Live barrel-down back mounts (heavy -90,-3,-90; rifle -60,4,93; melee -150,7,94):
+    // Bidirectional via cuts total mount->via->hand turn by > 150 deg compared to unidirectional.
+    const Pose base = { { 0.f, 0.f, 1.4f }, { 1.f, 0.f, 0.f, 0.f } };
+    struct LiveBack { unsigned axis; float rot[3]; float maxBiTotal; float minUniTotal; } cases[3] = {
+        { 1u, { -90.f, -3.f, -90.f }, 100.f, 250.f },   // heavy: 93 deg vs 267 deg
+        { 1u, { -60.f,  4.f,  93.f }, 135.f, 300.f },   // rifle: 124 deg vs 322 deg
+        { 2u, { -150.f, 7.f,  94.f }, 135.f, 310.f },   // melee: 125 deg vs 329 deg
+    };
+    for (const auto& c : cases) {
+        Placement pl = {};
+        for (int k = 0; k < 3; ++k) pl.rotDeg[k] = c.rot[k];
+        const Pose mp = applyPlacement(base, pl);
+        float ax[3] = { 0.f, 0.f, 0.f }, wv[3];
+        ax[c.axis] = 1.f;
+        qrotate(mp.q, ax, wv);
+        const Q handQ = qnormalize(qmul(arcQuat(wv, fwd), mp.q));
+        Q qBi, qUni;
+        KT_CHECK(reachViaQuat(c.axis, mp.q, 0.f, nullptr, qBi, true));
+        KT_CHECK(reachViaQuat(c.axis, mp.q, 0.f, nullptr, qUni, false));
+        const float totBi = reachQAngleDeg(qmul(qBi, reachConj(mp.q))) + reachQAngleDeg(qmul(handQ, reachConj(qBi)));
+        const float totUni = reachQAngleDeg(qmul(qUni, reachConj(mp.q))) + reachQAngleDeg(qmul(handQ, reachConj(qUni)));
+        KT_CHECK(totBi < c.maxBiTotal && totUni > c.minUniTotal);
+    }
+
+    // Invalid inputs return false
+    Q dummy = { 1.f, 0.f, 0.f, 0.f };
+    KT_CHECK(!reachViaQuat(3u, dummy, 0.f, nullptr, dummy));
+    KT_CHECK(!reachViaQuat(1u, Q{ kNaN, 0.f, 0.f, 0.f }, 0.f, nullptr, dummy));
+}
+
 int main() {
     testArcQuatMapsDirections();
     testArcQuatParallelAndAntiParallel();
@@ -1466,5 +1587,8 @@ int main() {
     testPoleBiasHingeInvariant();
     testDqTail();
     testEaseSoft();
+    testReachTopology3DAndOverWeight3D();
+    testReachAdaptBulgeAndPole3D();
+    testReachViaTopoAndBiQuat();
     return kt::Report("holster_reach");
 }
