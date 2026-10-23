@@ -365,6 +365,51 @@ static void testSplitWristReleasesWhenExact() {
     KT_CHECK(!anyOv);
 }
 
+// HW45 R1': the production wrist chain (reachWristDelta with the previous-delta hint, then reachSplitWrist with the previous twist and combined rotation), turn 0..360 in 0.5 deg steps,
+// identity from and cur. Measured (T1 probe): (a) max delta 0 deg; (b) the input vector flips once per axis, at 180.0 (turn 360 is identity, its ~1e-7 vector is noise, not counted);
+// (c) prod E max 149.61/144.69/131.30 deg at 260 on axes 0/1/2, equal to the sweep's (diff 0.00000 deg).
+static void testWristChainMatchesSweep() {
+    static const float axes[3][3] = { { 0.8f, 0.f, 0.6f }, { 0.6f, 0.48f, 0.64f }, { 0.f, 0.6f, 0.8f } };
+    static const float z[3] = { 0.f, 0.f, 1.f };
+    const Q id{ 1, 0, 0, 0 };
+    bool okA = true, okB = true, okC = true;
+    for (int a = 0; a < 3; ++a) {
+        Q prevDq = id, prevTw = id, prevComb = id;
+        bool have = false;
+        int flips = 0;
+        float flipTurn = -1.f, prodMaxE = 0.f;
+        for (int i = 0; i <= 720; ++i) {
+            const float turn = 0.5f * static_cast<float>(i);
+            const Q target = qaxis(axes[a], turn);
+            const Q dq = reachWristDelta(id, target, 1.f, id, 180.f, 1.f, have ? &prevDq : nullptr);
+            Q tw, sw;
+            bool ov = false;
+            reachSplitWrist(dq, z, 80.f, 60.f, have ? &prevTw : nullptr, tw, sw, have ? &prevComb : nullptr, &ov);
+            const Q comb = qmul(sw, tw);
+            if (!(reachQAngleDeg(qmul(dq, reachConj(target))) < 0.5f)) okA = false;
+            if (have && turn < 360.f && dq.x * prevDq.x + dq.y * prevDq.y + dq.z * prevDq.z < 0.f) { ++flips; flipTurn = turn; }
+            if (turn >= 120.f && turn <= 260.f) { const float E = reachQAngleDeg(qmul(comb, reachConj(dq))); if (E > prodMaxE) prodMaxE = E; }
+            prevDq = dq;
+            prevTw = tw;
+            prevComb = comb;
+            have = true;
+        }
+        const WristRun ref = runWristSweep(axes[a], true, 120.f, 260.f, 0.5f);
+        float refMaxE = 0.f;
+        for (size_t k = 0; k < ref.comb.size(); ++k) {
+            Q rd = qaxis(axes[a], 120.f + 0.5f * static_cast<float>(k));
+            if (rd.w < 0.f) rd = { -rd.w, -rd.x, -rd.y, -rd.z };
+            const float E = reachQAngleDeg(qmul(ref.comb[k], reachConj(rd)));
+            if (E > refMaxE) refMaxE = E;
+        }
+        if (flips != 1 || !(flipTurn >= 179.f && flipTurn <= 181.f)) okB = false;
+        if (!(std::fabs(prodMaxE - refMaxE) < 0.01f)) okC = false;
+    }
+    KT_CHECK(okA);
+    KT_CHECK(okB);
+    KT_CHECK(okC);
+}
+
 int main() {
     testSwingTwistRecompose();
     testTwistKeepsAxisPoint();
@@ -380,5 +425,6 @@ int main() {
     testTargetHemisphere();
     testTargetFirstFrameIsBlend();
     testDiagTail();
+    testWristChainMatchesSweep();
     return kt::Report("holster_twist");
 }
