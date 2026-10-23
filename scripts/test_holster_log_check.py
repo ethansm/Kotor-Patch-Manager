@@ -1614,5 +1614,155 @@ class Hw45SnapTests(unittest.TestCase):
         self.assertEqual(out, OLD_STYLE_REPORT)
 
 
+# ---- HW50 (holster 0.21.4-dev, log only): SLIDE cat=/mname=, SLIDE end pkdps=, REACH piece 3 dq=/dj=, and --row SM-L19 ----
+# Lines as Holster.cpp writes them. REACH is three pieces (HolsterReachLog.h) that _join_reach joins back; piece 3 ends lw= md= pk= (HW44) and then
+# dq= dj= (HW45 R2), and that tail is dropped when piece 3 would pass 200 bytes (no dq=). SLIDE start ends `... cat=<name> mname=<model>`,
+# SLIDE end ends `gob=<hex> pkdps=<int>`.
+def hw50_reach(seq=1, cat=5, f=0.40, dq=None, dj=None, diag=True, owner="1a"):
+    """One REACH step as its three lines. dq=None = piece 3 without the dq/dj tail (cut, or an older build); diag=False = no lw/md/pk either."""
+    p3 = "REACH+ #%d owner=%s wr=88 hg=1 f=%.2f dzA=0.22 fy=-0.10 fx=0.05 g=70 cap=90 hold=0 topo=hip bk=1 tw=40 sw=30 ex=0.00 of=0.00 vo=0.000 pb=0.0" % (seq, owner, f)
+    if diag:
+        p3 += " lw=0.00 md=1 pk=0"
+    if dq is not None:
+        p3 += " dq=%d dj=%d" % (dq, dj)
+    return [
+        "REACH owner=%s w=0.50 reach=1.00 S=(0.000,0.000,0.000) E=(0.000,0.000,0.000) H=(0.000,0.000,0.000) #%d" % (owner, seq),
+        "REACH+ #%d owner=%s T=(0.000,0.000,0.000) Enew=(0.000,0.000,0.000) side=R cat=%d u=1.00 lt=(0.000,0.000,0.000) err=0.010 persist=0 wrote=7" % (seq, owner, cat),
+        p3,
+    ]
+
+
+def hw50_start(gob=0x2A, dir_="draw", cat="rifle", mname="w_blstrrfl_001", left=0, owner=0x1F, dly=None, slowx=None):
+    """SLIDE start as 0.21.4-dev logs it: optional dly= (HW33a) and slowx= (HW44), then cat= and mname= (HW50)."""
+    line = "SLIDE start dir=%s owner=%x gob=%x left=%d from=0.00 ms=480" % (dir_, owner, gob, left)
+    if dly is not None:
+        line += " dly=%d" % dly
+    if slowx is not None:
+        line += " slowx=%.2f" % slowx
+    return line + " cat=%s mname=%s" % (cat, mname)
+
+
+def hw50_end(gob=0x2A, pk=1210, dir_="draw", owner=0x1F):
+    """SLIDE end with gob= and pkdps= (HW50). gob=None = an end line without gob=."""
+    gobs = "" if gob is None else " gob=%x" % gob
+    return "SLIDE end dir=%s owner=%x ms=480 frames=29 maxdt=33%s pkdps=%d" % (dir_, owner, gobs, pk)
+
+
+OLD_SLIDE_START = "SLIDE start dir=draw owner=1f gob=2a left=0 from=0.00 ms=480"   # 0.21.3-dev and older: no cat=, no mname=
+OLD_SLIDE_END = "SLIDE end dir=draw owner=1f ms=480 frames=29 maxdt=33"           # no gob=, no pkdps=
+HW50_DQ_OK = hw50_reach(seq=9, cat=5, f=0.40, dq=120, dj=10)   # a REACH step with dq= (the HW45 clause then has data)
+
+
+class Hw50SmL19Tests(unittest.TestCase):
+    """HW50 (holster 0.21.4-dev, log only): the new fields in the parse, the base report unchanged by them, and --row SM-L19 (identify, turn speed, HW45 dq)."""
+
+    def row(self, bodies, rc, word):
+        got_rc, out = run_log(bodies, ["--row", "SM-L19"])
+        self.assertEqual(got_rc, rc, out)
+        self.assertEqual(out[-1], "SM-L19 verdict: %s" % word, out)
+        self.assertTrue(all(line.startswith("SM-L19 ") for line in out), out)
+        return out
+
+    def test_parse_collects_the_new_fields_and_skips_nothing(self):
+        bodies = [hw50_start(), hw50_end(), hw50_end(gob=None, pk=5)] + hw50_reach(seq=1, cat=5, f=0.40, dq=176, dj=90)
+        recs, skipped, main = H.parse_lines([(i + 1, s) for i, s in enumerate(bodies)])
+        self.assertEqual(skipped, [])
+        self.assertEqual(main["slide_id"], [(1, "2a", "draw", "rifle", "w_blstrrfl_001")])
+        self.assertEqual(main["slide_pk"], [(2, "2a", "draw", 1210), (3, None, "draw", 5)])
+        self.assertEqual(main["dqdj"], [(5, 176, 90, 0.4)])
+        self.assertEqual(main["slide_seq"][0]["slowx"], 1.0)   # the old SLIDE start parse is untouched by cat= / mname=
+
+    def test_full_data_passes_all_three_clauses(self):
+        bodies = [hw50_start(gob=0x2A, cat="rifle", mname="w_blstrrfl_001"),
+                  hw50_start(gob=0x2B, dir_="stow", cat="pistol", mname="w_pistol_01", left=1, dly=60),
+                  hw50_end(gob=0x2A, pk=1210), hw50_end(gob=0x2B, pk=800, dir_="stow")]
+        bodies += hw50_reach(seq=1, cat=5, f=0.40, dq=120, dj=10) + hw50_reach(seq=2, cat=2, f=0.50, dq=90, dj=20)
+        out = self.row(bodies, 0, "PASS")
+        self.assertEqual(out, [
+            "SM-L19 identify: PASS 2 gob(s): gob=0x2a cat=rifle mname=w_blstrrfl_001; gob=0x2b cat=pistol mname=w_pistol_01",
+            "SM-L19 turn speed: PASS max pkdps pistol/stow=800; max pkdps rifle/draw=1210 (informational, 2 end(s))",
+            "SM-L19 HW45 dq: PASS melee(2) max dq=90 dq>=170: 0 dj>60: 0; rifle(5) max dq=120 dq>=170: 0 dj>60: 0 | dq<150 everywhere -> cannot trigger",
+            "SM-L19 verdict: PASS"])
+
+    def test_old_format_log_is_no_data_with_exit_3(self):
+        bodies = [OLD_SLIDE_START, OLD_SLIDE_END] + hw50_reach(seq=1, cat=5, f=0.40, diag=False)
+        out = self.row(bodies, 3, "NO-DATA")
+        self.assertEqual(out[:3], [
+            "SM-L19 identify: NO-DATA no SLIDE start with cat= (older build, or no slide in window)",
+            "SM-L19 turn speed: NO-DATA no SLIDE end with pkdps= (older build, or no slide in window)",
+            "SM-L19 HW45 dq: NO-DATA no REACH line with dq= (older build, or piece 3 cut before the tail)"], out)
+
+    def test_any_no_data_clause_gives_exit_3(self):
+        out = self.row([hw50_start(), hw50_end()], 3, "NO-DATA")   # identify and turn speed PASS, no REACH dq=
+        self.assertIn("SM-L19 HW45 dq: NO-DATA no REACH line with dq= (older build, or piece 3 cut before the tail)", out)
+
+    def test_crossing_seen_at_dq_170_and_dj_over_60(self):
+        bodies = [hw50_start(), hw50_end()] + hw50_reach(seq=1, cat=5, f=0.40, dq=176, dj=90)
+        out = self.row(bodies, 0, "PASS")
+        self.assertIn("SM-L19 HW45 dq: PASS rifle(5) max dq=176 dq>=170: 1 dj>60: 1 | crossing seen", out)
+
+    def test_verdict_word_thresholds(self):
+        cases = [(149, 60, "rifle(5) max dq=149 dq>=170: 0 dj>60: 0 | dq<150 everywhere -> cannot trigger"),
+                 (150, 61, "rifle(5) max dq=150 dq>=170: 0 dj>60: 1 | near (150..170)"),
+                 (170, 60, "rifle(5) max dq=170 dq>=170: 1 dj>60: 0 | crossing seen")]
+        for dq, dj, want in cases:
+            out = self.row([hw50_start(), hw50_end()] + hw50_reach(seq=1, cat=5, f=0.40, dq=dq, dj=dj), 0, "PASS")
+            self.assertIn("SM-L19 HW45 dq: PASS " + want, out)
+
+    def test_step_with_piece_3_cut_is_not_counted_and_noted(self):
+        bodies = [hw50_start(), hw50_end()] + hw50_reach(seq=1, cat=5, f=0.40, dq=120, dj=10) + hw50_reach(seq=2, cat=5, f=0.60, dq=None)
+        out = self.row(bodies, 0, "PASS")
+        self.assertIn("SM-L19 HW45 dq: PASS rifle(5) max dq=120 dq>=170: 0 dj>60: 0 | dq<150 everywhere -> cannot trigger "
+                      "(NOTE 1 REACH step(s) without dq=, not counted)", out)
+
+    def test_step_cut_after_piece_2_is_dropped(self):
+        two = hw50_reach(seq=3, cat=5, f=0.20, dq=176, dj=90)[:2]   # piece 3 never arrived: the step is not a REACH line at all
+        out = self.row([hw50_start(), hw50_end()] + two, 3, "NO-DATA")
+        self.assertIn("SM-L19 HW45 dq: NO-DATA no REACH line with dq= (older build, or piece 3 cut before the tail)", out)
+
+    def test_identify_lists_at_most_four_gobs(self):
+        starts = [hw50_start(gob=g, cat=c, mname="m%d" % i) for i, (g, c) in enumerate([(0x2A, "rifle"), (0x2B, "pistol"), (0x2C, "heavy"), (0x2D, "melee"), (0x2E, "qstaff")])]
+        out = self.row(starts + [hw50_end(gob=0x2E, pk=300)] + HW50_DQ_OK, 0, "PASS")
+        self.assertIn("SM-L19 identify: PASS 5 gob(s): gob=0x2a cat=rifle mname=m0; gob=0x2b cat=pistol mname=m1; gob=0x2c cat=heavy mname=m2; "
+                      "gob=0x2d cat=melee mname=m3; +1 more", out)
+
+    def test_end_without_a_start_for_its_gob_is_question_mark(self):
+        out = self.row([hw50_start(gob=0x2A), hw50_end(gob=0x77, pk=600, dir_="stow")] + HW50_DQ_OK, 0, "PASS")
+        self.assertIn("SM-L19 turn speed: PASS max pkdps ?/stow=600 (informational, 1 end(s))", out)
+        out = self.row([hw50_start(), hw50_end(gob=None, pk=400)] + HW50_DQ_OK, 0, "PASS")
+        self.assertIn("SM-L19 turn speed: PASS max pkdps ?/draw=400 (informational, 1 end(s))", out)
+
+    def test_end_joins_the_latest_start_of_its_gob_before_it(self):
+        bodies = [hw50_start(gob=0x2A, cat="pistol", mname="w_pistol_01"), hw50_end(gob=0x2A, pk=500),
+                  hw50_start(gob=0x2A, cat="rifle", mname="w_blstrrfl_001"), hw50_end(gob=0x2A, pk=1210), hw50_end(gob=0x2A, pk=900)] + HW50_DQ_OK
+        out = self.row(bodies, 0, "PASS")
+        self.assertIn("SM-L19 turn speed: PASS max pkdps pistol/draw=500; max pkdps rifle/draw=1210 (informational, 3 end(s))", out)
+        self.assertIn("SM-L19 identify: PASS 1 gob(s): gob=0x2a cat=rifle mname=w_blstrrfl_001", out)
+
+    def test_cat_and_mname_tail_keeps_slowx_and_dly_for_sm_l14_and_sm_l17(self):
+        start = hw50_start(gob=0x2A, cat="rifle", mname="w_blstrrfl_001", left=1, dly=120, slowx=2.00)
+        rc, out = run_log(["T=290 f=- holster/main " + start, "T=4450 f=- holster/main " + hw50_end(gob=0x2A, pk=900)], ["--row", "SM-L14"])
+        self.assertEqual(rc, 0, out)
+        self.assertIn("SM-L14 dly 50..70 ms on left: PASS left dly=120..120 ms over 1 left start(s) (NOTE slow run: band scaled by slowx=2.00)", out)
+        self.assertIn("SM-L14 every start ends or is cut: PASS 1 start(s): 1 ended or cut, 0 superseded by a reversal", out)
+        rc, out = run_log([SNAP_CFG_ON, "T=290 f=- holster/main " + hw50_start(gob=0x2A, cat="rifle", mname="w_blstrrfl_001", slowx=8.00), SLOW_END], ["--row", "SM-L17"])
+        self.assertEqual(rc, 0, out)
+        self.assertIn("SM-L17 no SNAP in slowed slides: PASS no SNAP line at slowx>1 (1 slowed SLIDE start(s), 1 ended)", out)
+
+    def test_base_report_is_the_same_with_and_without_the_new_fields(self):
+        new = [hw50_start(gob=0x2A, cat="rifle", mname="w_blstrrfl_001"), hw50_end(gob=0x2A, pk=1210)] + hw50_reach(seq=1, cat=5, f=0.40, dq=176, dj=90)
+        old = [OLD_SLIDE_START, OLD_SLIDE_END] + hw50_reach(seq=1, cat=5, f=0.40, diag=False)
+        rc_new, out_new = run_log(new)
+        rc_old, out_old = run_log(old)
+        self.assertEqual((rc_new, rc_old), (0, 0))
+        self.assertEqual(out_new, out_old)
+        self.assertFalse(any("SM-L19" in line for line in out_new), out_new)
+
+    def test_row_list_names_sm_l19_and_no_sm_l18(self):
+        rc, out, err = run_err(["--row", "SM-L18"])
+        self.assertEqual(rc, 2)
+        self.assertIn("expected one of SM-L11, SM-L12, SM-L13, SM-L14, SM-L15, SM-L16, SM-L17, SM-L19", err)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Holster probe log checker (holster route). Python 3, stdlib only; read-only (--new writes only its bookmark).
 
-Usage: holster_log_check.py [LOG | --log LOG] [--new [--no-advance] [--state PATH]] [--mounts [--json]] [--row SM-L11..SM-L17]
+Usage: holster_log_check.py [LOG | --log LOG] [--new [--no-advance] [--state PATH]] [--mounts [--json]] [--row SM-L11..SM-L17|SM-L19]
   Default log: ~/.local/share/Steam/steamapps/common/Knights of the Old Republic II/holster_log.txt
   Report (at most 51 lines: the 47-line base report plus at most 3 HW38 lines, SLIDE dly / REACH HW38 / REACH min/median/max, each only when its
   field appears in the window, plus the HW41 `STOWHOLD` summary line when any STOWHOLD line exists): header, status (loaded / cap reached / BONETEST), COMB edges per creature (plus unreadable=N for `old=? edge=?` lines), ATTACH tags and
@@ -17,7 +17,11 @@ Usage: holster_log_check.py [LOG | --log LOG] [--new [--no-advance] [--state PAT
   `REACH HW38` (vo= max and vo>0 outside mid-carry, pb= max and pb>0 at f>0.30), `REACH min/median/max` (wr, f, dzA, fy, fx).
   HW41 (holster 0.20.3-dev, log only): `STOWHOLD p= pathF= carryW= wd= dm= lf= hold=` lines (first ~8 stows, log_verbose/reach_test) are a window
   fact, not a record: one summary line `STOWHOLD n= hold=<n>/<n> | wd max while pathF>lf | wd max overall`; a line that does not parse is skipped.
-  --row SM-L11..SM-L17: pass-signal clauses of one play-test row (PLAY_TEST_QUEUE.md), `SM-Lnn <clause>: PASS|FAIL|NO-DATA <reason>`, then
+  HW50 (holster 0.21.4-dev, log only): `SLIDE start ... cat=<name> mname=<model>` (after dly=/slowx=), `SLIDE end ... gob=<hex> pkdps=<int>`, and REACH piece 3
+  `dq=<deg> dj=<deg>` (after lw= md= pk=). --row SM-L19: identify (gob -> cat, mname), turn speed (peak pkdps per cat/dir, informational, an end joins the latest
+  start of its gob before it, else cat `?`), HW45 dq (max dq and the frame counts dq>=170 / dj>60 per REACH cat; verdict `dq<150 everywhere -> cannot trigger`,
+  `near (150..170)` or `crossing seen`). Every clause is a measurement: PASS when its fields are there, NO-DATA when not (an older build), never FAIL.
+  --row SM-L11..SM-L17 or SM-L19: pass-signal clauses of one play-test row (PLAY_TEST_QUEUE.md), `SM-Lnn <clause>: PASS|FAIL|NO-DATA <reason>`, then
   `SM-Lnn verdict`. SM-L16 (STOWHOLD, hold=1 lines only): hold on; the weapon stays on the hand (wd <= 0.005 m) while pathF > lf + 0.01; lands on
   the mount (|wd - dm| <= 0.02 m) at pathF <= 0.02. Exit 0 PASS, 1 FAIL, 3 NO-DATA; unknown row = exit 2.
   HW44 (holster 0.21.0-dev, slow_holster_x): `SLIDE start ... ms=<slowed> [dly=<scaled>] slowx=<v>` (the tag only when v != 1) adds `slow=<n> x=<min>..<max>` to the SLIDE line;
@@ -106,6 +110,16 @@ STOW_WD_MAX = 0.005       # SM-L16 (b): m, wd on a judged line must be <= this
 STOW_MOUNT_F = 0.02       # SM-L16 (c): pathF <= this is at the mount
 STOW_LAND_TOL = 0.02      # SM-L16 (c): m, |wd - dm| on a line at the mount must be <= this
 STOW_EPS = 1e-9
+# HW50 (holster 0.21.4-dev, log only): separate optional matches, so the SLIDE / REACH regexes above keep their old meaning. SLIDE start: cat= mname= come last
+# (after dly= and slowx=); SLIDE end: gob= (may be absent) then pkdps=; REACH: dq= dj= are read off the joined line (piece 3 tail), cat= off piece 2, f= as above.
+SLIDE_ID_RE = _rx(r"\bSLIDE start dir=(?P<dir>\w+) owner=<H> gob=(?P<gob><H>) left=<I> from=<N> ms=<I>(?: dly=<I>)?(?: slowx=<N>)? cat=(?P<cat>\w+) mname=(?P<mname>\S+)")
+SLIDE_PK_RE = _rx(r"\bSLIDE end dir=(?P<dir>\w+) owner=<H> ms=<I> frames=<I> maxdt=<I>(?: gob=(?P<gob><H>))? pkdps=(?P<pk><I>)")
+REACH_DQ_RE = _rx(r"\bREACH owner=\w+ w=.*? dq=(?P<dq><I>) dj=(?P<dj><I>)")
+REACH_CAT_RE = re.compile(r"\bREACH owner=\w+ w=.*? cat=(\d+)")
+HW50_CAT_NAMES = {0: "unknown", 1: "lightsaber", 2: "melee", 3: "qstaff", 4: "pistol", 5: "rifle", 6: "heavy"}   # hs::Category (HolsterLogic.h)
+HW50_DQ_NOTRIG = 150     # SM-L19 HW45 dq: every max dq below this = the wrist cannot trigger
+HW50_DQ_CROSS = 170      # SM-L19: a frame at or above this = the crossing was seen
+HW50_DJ_JUMP = 60        # SM-L19: a frame whose dj (jump from the previous solve, deg) is above this
 
 
 def _mount_quat(name):
@@ -267,7 +281,10 @@ def parse_lines(window):
                # HW40: REACH steps cut by the window (partial=N on the REACH line when N > 0)
             "preview": [], "camnode": [], "wmname": set(),
             "slide_seq": [], "vo": [], "pb": [],   # HW38: SLIDE start/end/cut events in log order; (f or None, vo) and (f or None, pb) per REACH line
-            "stowhold": []}   # HW41: one dict per parsed STOWHOLD line, in log order
+            "stowhold": [],   # HW41: one dict per parsed STOWHOLD line, in log order
+            # HW50: dqdj = (cat int or None, dq, dj, f or None) per REACH step with dq=; slide_id = (line, gob, dir, cat, mname) per SLIDE start with cat=;
+            # slide_pk = (line, gob or None, dir, pkdps) per SLIDE end with pkdps=. Lists are in log order, so the line numbers order a Gob's start before its end.
+            "dqdj": [], "slide_id": [], "slide_pk": []}
     for n, raw in window:
         text = raw.strip()
         mt = _T_RE.match(text)   # HW44: the window end for the SM-L14 stuck test (largest stamp seen)
@@ -377,6 +394,18 @@ def parse_lines(window):
             mp = REACH_PB_RE.search(text)
             if mp:
                 main["pb"].append((fval, float(mp.group(1))))
+        m = SLIDE_ID_RE.search(text)   # HW50: optional fields; an older line simply has no match (never skipped, never in recs)
+        if m:
+            main["slide_id"].append((n, _hex(m.group("gob")), m.group("dir"), m.group("cat"), m.group("mname")))
+        m = SLIDE_PK_RE.search(text)
+        if m:
+            main["slide_pk"].append((n, _hex(m.group("gob")) if m.group("gob") else None, m.group("dir"), int(m.group("pk"))))
+        if REACH_LINE_RE.search(text):
+            md = REACH_DQ_RE.search(text)
+            if md:
+                mc = REACH_CAT_RE.search(text)
+                mf = REACH_F_RE.search(text)
+                main["dqdj"].append((int(mc.group(1)) if mc else None, int(md.group("dq")), int(md.group("dj")), float(mf.group(1)) if mf else None))
         if STOWHOLD_HEAD_RE.search(text):   # HW41: a window fact, not a record (so never in recs); a line whose fields do not parse is skipped
             fs = STOWHOLD_RE.search(text)
             if fs is None:
@@ -722,7 +751,7 @@ def _stowhold_lines(f):
 
 
 # ---- --row SM-Lnn: pass-signal clauses of the play-test rows (PLAY_TEST_QUEUE.md). Each clause is (label, PASS|FAIL|NO-DATA, reason).
-ROWS = ("SM-L11", "SM-L12", "SM-L13", "SM-L14", "SM-L15", "SM-L16", "SM-L17")
+ROWS = ("SM-L11", "SM-L12", "SM-L13", "SM-L14", "SM-L15", "SM-L16", "SM-L17", "SM-L19")   # no SM-L18 clause: that row is judged by SM-L17 (SNAP)
 ROW_EXIT = {"PASS": 0, "FAIL": 1, "NO-DATA": 3}
 
 
@@ -1002,6 +1031,63 @@ def _sm_l17(main):
     return [(label, "PASS", "no SNAP line at slowx>1 (%d slowed SLIDE start(s), %d ended)%s%s" % (len(slow_slides), closed, note, capnote))]
 
 
+def _reach_cat(c):
+    """HW50: the REACH cat= int as `rifle(5)`; None (no cat= on the line) as `?`."""
+    return "?" if c is None else "%s(%d)" % (HW50_CAT_NAMES.get(c, "cat%d" % c), c)
+
+
+def _sm_l19(main):
+    """HW50 (holster 0.21.4-dev, log only). identify: the cat and mname of each slide's Gob (the latest start of that Gob). turn speed: peak pkdps per cat/dir,
+    informational; an end takes the cat of the latest start of its Gob before the end's line, else `?`. HW45 dq: per REACH cat the max dq and the frame counts
+    dq>=170 and dj>60, then one verdict over all of them: `dq<150 everywhere -> cannot trigger` / `crossing seen` / `near (150..170)`.
+    Every clause is a measurement: PASS when its fields are present (never FAIL), NO-DATA when the field is absent (an older build or an empty window)."""
+    starts, ends, dq = main.get("slide_id", []), main.get("slide_pk", []), main.get("dqdj", [])
+    if not starts:
+        c1 = ("identify", "NO-DATA", "no SLIDE start with cat= (older build, or no slide in window)")
+    else:
+        latest = {}   # gob -> (cat, mname) of its most recent start; insertion order = first start of each Gob
+        for _, gob, _, cat, mname in starts:
+            latest[gob] = (cat, mname)
+        parts = ["gob=0x%s cat=%s mname=%s" % (g, c, mn) for g, (c, mn) in latest.items()]
+        more = len(parts) - 4
+        c1 = ("identify", "PASS", "%d gob(s): %s" % (len(parts), "; ".join(parts[:4])) + ("; +%d more" % more if more > 0 else ""))
+    if not ends:
+        c2 = ("turn speed", "NO-DATA", "no SLIDE end with pkdps= (older build, or no slide in window)")
+    else:
+        peak = {}
+        for line, gob, d, pk in ends:
+            cat = "?"
+            prior = [s for s in starts if gob is not None and s[1] == gob and s[0] < line]
+            if prior:
+                cat = prior[-1][3]
+            key = "%s/%s" % (cat, d)
+            peak[key] = max(peak.get(key, pk), pk)
+        parts = ["max pkdps %s=%d" % (k, peak[k]) for k in sorted(peak)]
+        c2 = ("turn speed", "PASS", "; ".join(parts) + " (informational, %d end(s))" % len(ends))
+    if not dq:
+        c3 = ("HW45 dq", "NO-DATA", "no REACH line with dq= (older build, or piece 3 cut before the tail)")
+    else:
+        per = {}   # cat -> [max dq, frames dq>=HW50_DQ_CROSS, frames dj>HW50_DJ_JUMP]
+        for cat, dqv, djv, _ in dq:
+            row = per.setdefault(cat, [dqv, 0, 0])
+            row[0] = max(row[0], dqv)
+            row[1] += 1 if dqv >= HW50_DQ_CROSS else 0
+            row[2] += 1 if djv > HW50_DJ_JUMP else 0
+        parts = ["%s max dq=%d dq>=%d: %d dj>%d: %d" % (_reach_cat(k), v[0], HW50_DQ_CROSS, v[1], HW50_DJ_JUMP, v[2])
+                 for k, v in sorted(per.items(), key=lambda kv: -1 if kv[0] is None else kv[0])]
+        worst = max(v[0] for v in per.values())
+        if worst < HW50_DQ_NOTRIG:
+            verdict = "dq<%d everywhere -> cannot trigger" % HW50_DQ_NOTRIG
+        elif worst >= HW50_DQ_CROSS:
+            verdict = "crossing seen"
+        else:
+            verdict = "near (%d..%d)" % (HW50_DQ_NOTRIG, HW50_DQ_CROSS)
+        without = max(0, len(main.get("reach", [])) - len(dq))
+        note = " (NOTE %d REACH step(s) without dq=, not counted)" % without if without else ""
+        c3 = ("HW45 dq", "PASS", "; ".join(parts) + " | " + verdict + note)
+    return [c1, c2, c3]
+
+
 def _row_report(row, recs, main):
     """(exit code, output lines) for one --row: one line per clause, then the verdict (FAIL > NO-DATA > PASS)."""
     if row == "SM-L11":
@@ -1016,6 +1102,8 @@ def _row_report(row, recs, main):
         clauses = _sm_l15(main)
     elif row == "SM-L17":
         clauses = _sm_l17(main)
+    elif row == "SM-L19":
+        clauses = _sm_l19(main)
     else:
         clauses = _sm_l16(main)
     lines = ["%s %s: %s %s" % (row, label, status, reason) for label, status, reason in clauses]
@@ -1236,7 +1324,7 @@ def main(argv=None):
     ap.add_argument("--state", default=LT.DEFAULT_STATE, help="bookmark file for --new")
     ap.add_argument("--mounts", action="store_true", help="print only the MOUNT (cat, bone) summary section")
     ap.add_argument("--json", action="store_true", help="with --mounts: the MOUNT groups as a JSON list, nothing else on stdout")
-    ap.add_argument("--row", metavar="SM-Lnn", help="pass-signal verdict of one play-test row (SM-L11..SM-L17); exit 0 PASS, 1 FAIL, 3 NO-DATA")
+    ap.add_argument("--row", metavar="SM-Lnn", help="pass-signal verdict of one play-test row (SM-L11..SM-L17, SM-L19); exit 0 PASS, 1 FAIL, 3 NO-DATA")
     a = ap.parse_args(argv)
     if a.json and not a.mounts:
         print("--json needs --mounts", file=sys.stderr)
