@@ -247,7 +247,7 @@ inline std::vector<int> moveDuplicates(Profile& p, int row, int slot, const Acti
 }
 
 struct General {
-    int invoke = 1;               // 1 = keys/clicks use the slot's action, 0 = log only (dry run)
+    int invoke = 1;               // 1 = keys/clicks use the slot's action, 0 = log only (dry run); bound digits then pass through to the game
     int verbose = 0;              // 1 = detailed trace log (hover, widgets, every key), 0 = state changes and errors only
     int autoFill = 0;             // 1 = unbound Bottom slots show/invoke the character's known powers, in game order (default off: start empty)
     int keyboardDevice = -1;      // -1 = read the engine's constant (gameaddr::KeyboardDeviceGlobal)
@@ -323,7 +323,8 @@ struct Config {
         char buf[4096]; size_t n;
         out->clear();
         while ((n = fread(buf, 1, sizeof buf, f)) > 0) out->append(buf, n);
-        fclose(f);
+        bool bad = ferror(f) != 0; fclose(f);
+        if (bad) { out->clear(); return false; }
         return true;
     }
 

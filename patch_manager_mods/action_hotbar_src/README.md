@@ -70,6 +70,7 @@ For `@lowhp`:
 - Only healing items offer Lowest HP. Which items count as healing, and which can be targeted at all, is read from the
   columns of `override/spells.2da`, not from a fixed list. An item that cannot be targeted shows "cannot target this item".
 - A repair kit with no damaged droid in the party does nothing.
+- A member who just received a heal from the hotbar is skipped for the next press (up to 5 seconds, or until their HP rises), so two quick presses heal two different members. Heals held in a paused queue for longer than 5 seconds are not tracked.
 - `TargetProbe=2` (the default) is needed for `@lowhp` and `@self` to act. See the INI table.
 
 `@lowhp` and `@self` are meant for items. The parser also accepts them on `spell:` and `feat:` values, but that is not a supported use.
@@ -82,7 +83,8 @@ The hotbar belongs to the save.
 - When the game writes a save (manual save, quicksave, autosave, module-entry autosave), the patch copies the working
   copy into that save's folder as `action_hotbar.ini`.
 - When a save is loaded, the profiles in the working copy are replaced by the profiles in that save's copy. `[General]`
-  is never changed by a load. The old file is first backed up as `action_hotbar.ini.load.bak`.
+  is never changed by a load. The old file is first backed up as `action_hotbar.ini.load.bak` (the last three are kept as
+  `.load.bak`, `.load.bak.1`, `.load.bak.2`). Bar edits only persist if you save the game afterwards.
 - A save with no copy (for example one made before you installed the mod) loads with an empty bar.
 - Starting a new game also gives an empty bar.
 - A save whose copy cannot be read keeps the current bar, and the log gets a warning.
@@ -110,7 +112,7 @@ but comments are not.
 | Key | Default | Range | Meaning |
 |---|---|---|---|
 | `SchemaVersion` | 1 | - | Written by the mod. Ignored on load. |
-| `Invoke` | 1 | integer | 1: keys and clicks use the action. 0: log only (dry run). |
+| `Invoke` | 1 | integer | 1: keys and clicks use the action. 0: log only (dry run); bound digits then pass through to the game. |
 | `Verbose` | 0 | integer | 1: detailed log. Only used when the shared logger core is missing (see Logs). |
 | `AutoFill` | 0 | integer | 1: unbound slots show and use the character's known powers, in game order. 0: unbound slots stay empty. |
 | `KeyboardDevice` | automatic | integer | DirectInput keyboard index. Leave it out unless keys do nothing. |

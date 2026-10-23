@@ -416,7 +416,10 @@ int main() {
         KT_CHECK(r[0] == q.e[0] && r[1] == q.e[1] && r[2] == q.e[2] && r[3] == q.e[3]); if (r[0] != q.e[0] || r[1] != q.e[1] || r[2] != q.e[2] || r[3] != q.e[3]) std::printf("  ^ %s got [%d,%d,%d,%d]\n", b, r[0], r[1], r[2], r[3]); }
     Scale i = makeScale(800, 600, 800, 600); KT_CHECK(i.sx == 1.0 && i.sy == 1.0 && i.c == 1.0);   // 4:3: identity
     int r4[4]; unitRect(4, 478, 20, 35, i, r4); KT_CHECK(r4[0] == 4 && r4[1] == 478 && r4[2] == 20 && r4[3] == 35);
-    Scale i2 = makeScale(1600, 1200, 800, 600); KT_CHECK(i2.sx == 1.0 && i2.c == 1.0);                // 4:3 at 2x: still the identity (c == 1)
+    Scale i2 = makeScale(1600, 1200, 800, 600); KT_CHECK(i2.sx == 2.0 && i2.sy == 2.0 && i2.c == 1.0);   // RH2: 4:3 at 2x scales, c == 1
+    { int r5[4]; unitRect(4, 478, 20, 35, i2, r5); KT_CHECK(r5[0] == 8 && r5[1] == 956 && r5[2] == 40 && r5[3] == 70); }
+    Scale i3 = makeScale(1024, 768, 800, 600); KT_CHECK(i3.sx == 1.28 && i3.sy == 1.28 && i3.c == 1.0);
+    { int r6[4]; unitRect(4, 478, 20, 35, i3, r6); KT_CHECK(r6[0] == 5 && r6[1] == 611 && r6[2] == 25 && r6[3] == 44); }
     KT_CHECK_EQ(aspectCorrection(0, 1200, 800, 600) == 1.0, 1); KT_CHECK_EQ(aspectCorrection(1600, 0, 800, 600) == 1.0, 1);
     KT_CHECK_EQ(aspectCorrection(1600, 1200, 0, 600) == 1.0, 1); KT_CHECK_EQ(aspectCorrection(1600, 1200, 800, 0) == 1.0, 1);
     Scale iv = makeScale(-5, 1200, 800, 600); KT_CHECK(iv.sx == 1.0 && iv.c == 1.0);
@@ -751,7 +754,8 @@ int main() {
     SnapPick c = pickSnapshot("d", Ex::both); KT_CHECK(c.src == SS_New);
     SnapPick d = pickSnapshot("d", Ex::none); KT_CHECK(d.src == SS_Absent); KT_CHECK_EQ(d.path.c_str(), "d/action_hotbar.ini");
     KT_CHECK_EQ(snapStatus(SS_New, true), "found"); KT_CHECK_EQ(snapStatus(SS_Legacy, true), "found (legacy name)");
-    KT_CHECK_EQ(snapStatus(SS_Absent, false), "absent (live hotbar kept)");
+    KT_CHECK_EQ(snapStatus(SS_Absent, false), "absent (bar emptied)");   // RH1
+    KT_CHECK(snapAction(SS_Absent, false) == Snap_Empty && snapAction(SS_Absent, true) == Snap_Empty && snapAction(SS_New, false) == Snap_Keep && snapAction(SS_Legacy, false) == Snap_Keep && snapAction(SS_New, true) == Snap_Replace);
     KT_CHECK_EQ(snapStatus(SS_New, false), "UNREADABLE (live hotbar kept)"); KT_CHECK_EQ(snapStatus(SS_Legacy, false), "UNREADABLE (live hotbar kept)");
   }
   { // targetProbe
@@ -957,6 +961,45 @@ int main() {
     KT_CHECK_EQ(modeBtnWhy(modeButtonState(mk(K_Spell, 8), false, false)), "items only");
     KT_CHECK_EQ(modeBtnWhy(modeButtonState(it, false, false)), "cannot target this item");
     KT_CHECK_EQ(modeBtnWhy(modeButtonState(it, true, false)), "");
+  }
+  { // RH3: a failed Save restores the profile (moveDuplicates blanked the duplicate, SetSlot wrote the new slot)
+    Config c; ActionRef p8 = mk(K_Spell, 8, "P"), q9 = mk(K_Spell, 9, "Q");
+    c.SetSlot("hero", 0, 2, p8, "o"); c.SetSlot("hero", 0, 4, q9, "o");
+    Profile bk = c.profile("hero");
+    moveDuplicates(c.profile("hero"), 0, 5, p8); c.SetSlot("hero", 0, 5, p8, "n");
+    KT_CHECK(c.profile("hero").slots[0][2].blank && !Same(c.profile("hero").slots[0][2], p8)); KT_CHECK(Same(c.profile("hero").slots[0][5], p8));
+    c.profile("hero") = bk;
+    KT_CHECK(Same(c.profile("hero").slots[0][2], p8)); KT_CHECK(!c.profile("hero").slots[0][2].blank);
+    KT_CHECK(c.profile("hero").slots[0][5].empty()); KT_CHECK(Same(c.profile("hero").slots[0][4], q9));
+  }
+  { // RH4: members with a live pending heal are ineligible
+    auto Cd = [](int cur, int max) { Candidate c; c.cur = cur; c.max = max; c.ok = true; c.down = false; c.eligible = true; return c; };
+    Candidate m[3] = { Cd(20, 100), Cd(30, 100), Cd(80, 100) };
+    KT_CHECK_EQ(chooseTarget(m, 3, 0, 50, false), 0);
+    m[0].eligible = false; KT_CHECK_EQ(chooseTarget(m, 3, 0, 50, false), 1);
+    m[1].eligible = false; KT_CHECK_EQ(chooseTarget(m, 3, 0, 50, false), -1);
+    KT_CHECK_EQ(chooseTarget(m, 3, 0, 50, true), -1);   // fallbackSelf, self ineligible
+    m[0].eligible = true; m[0].cur = 90; m[1].eligible = true; m[1].cur = 90;   // nobody below thr, self eligible
+    KT_CHECK_EQ(chooseTarget(m, 3, 0, 50, true), 0);
+    KT_CHECK(pendingHealLive(10999, 6000, 50, 50)); KT_CHECK(!pendingHealLive(11000, 6000, 50, 50));
+    KT_CHECK(!pendingHealLive(10000, 6000, 51, 50)); KT_CHECK(pendingHealLive(0x100, 0xFFFFFF00u, 50, 50));
+  }
+  { // RL23 / RL29: invoke-off dry run passes bound digits; a passing key-down drops a stale swallowed flag
+    auto K = [](unsigned dik, bool down) { KeyEvent k; k.dik = dik; k.down = down; return k; };
+    KeyEvent k = K(0x02, true); k.hudActive = true; k.slotBound = true; k.invokeOn = false;
+    KeyAction a = decideKey(k); KT_CHECK_EQ(a.decision, "pass(invoke off)"); KT_CHECK(!a.swallow && !a.enqueue && !a.markDown);
+    k.invokeOn = true; a = decideKey(k); KT_CHECK_EQ(a.decision, "SWALLOW");
+    k.invokeOn = false; k.slotBound = false; a = decideKey(k); KT_CHECK_EQ(a.decision, "pass(unbound)");
+    k = K(0x03, true); k.downSwallowed = true; k.hudActive = true; k.slotBound = false; a = decideKey(k); KT_CHECK(a.clearDown && !a.swallow);
+    k.ctrl = true; a = decideKey(k); KT_CHECK(a.clearDown); k.ctrl = false;
+    k.slotBound = true; a = decideKey(k); KT_CHECK(!a.clearDown && a.markDown && a.swallow);
+    k.shift = true; a = decideKey(k); KT_CHECK(a.clearDown && !a.swallow);
+  }
+  { // RL24 / RL26
+    KT_CHECK(!directRouteAllowed(UR_SelfDirect, 0)); KT_CHECK(directRouteAllowed(UR_SelfDirect, 1));
+    KT_CHECK(directRouteAllowed(UR_LowHpDirect, 0)); KT_CHECK(directRouteAllowed(UR_LowHpDirect, 1));
+    KT_CHECK(directRouteAllowed(UR_Invoke, 0)); KT_CHECK(directRouteAllowed(UR_LogOnly, 0));
+    KT_CHECK_EQ(loadBakName("a.bak", 0).c_str(), "a.bak"); KT_CHECK_EQ(loadBakName("a.bak", 1).c_str(), "a.bak.1"); KT_CHECK_EQ(loadBakName("a.bak", 2).c_str(), "a.bak.2");
   }
   return kt::Report("hotbar_logic_test");
 }

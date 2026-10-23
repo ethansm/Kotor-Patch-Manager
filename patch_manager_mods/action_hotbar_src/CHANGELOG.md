@@ -2,6 +2,21 @@
 
 Action Hotbar (id `action-hotbar`), formerly Force Power Hotbar.
 
+## Unreleased (0.1.6-dev)
+
+- A save with no hotbar copy now really loads an empty bar (it used to keep the previous bar). A copy still waiting for its save folder is written before a load looks for it, and gives up after 10 s instead of about a second. (RH1)
+- The bar scales correctly in 4:3 windows that are not 800x600 (1024x768, 1600x1200). (RH2)
+- A failed config save no longer leaves the edited slot (or the duplicate it cleared) in memory. (RH3)
+- Item slots on Lowest HP skip a member who already has a heal on the way, so two quick presses heal two members. (RH4)
+- With `Invoke=0` the digits 1-3 keep switching party members; a digit pressed while the HUD is not active no longer leaves a stale "swallowed" flag. (RL23, RL29)
+- An item on `@self` that the HUD shows as unusable goes through the vanilla path, and an item the game refuses shows "Not usable right now". (RL24)
+- A config file that exists but cannot be read is retried every poll and editing is refused until it can be read; read errors are no longer taken for an empty file. (RL25)
+- The last three load backups are kept (`.load.bak`, `.1`, `.2`). (RL26)
+- Picker tooltips are hidden when the list scrolls, the tab changes or the mode button is clicked; the picker list rebuilds every 20 frames instead of every frame. (RL27, RL28)
+- Modifier keys are resynced from the real keyboard state on each digit press. (RL29)
+- Log wording: the stale-HUD warning says the digit passed to the game; the mouse-wheel subscribe retry is throttled to once per 60 frames; the stance read WARN can fire again after a recovery. (RL30, RL31)
+- Debug log: `GATE rawtop=` names the topmost panel to diagnose digits swallowed in dialogue. (RH5, no behavior change)
+
 ## 1.3.0-dev (2026-10-05)
 
 - Internal cleanup (no behavior change): spell description strref is parsed with a checked integer read, request-ring push is one tested helper, dead constant and magic numbers removed.

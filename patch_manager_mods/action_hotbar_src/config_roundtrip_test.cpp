@@ -378,7 +378,8 @@ int main(){
       std::string body(n,'a'); body[n-1]='Z'; FILE* f=fopen(path.c_str(),"wb"); KT_CHECK(f!=nullptr); if(!f) continue; fwrite(body.data(),1,n,f); fclose(f);
       std::string got="stale"; KT_CHECK(Config::readFile(path,&got)); KT_CHECK(got==body); }
     { FILE* f=fopen(path.c_str(),"wb"); if(f) fclose(f); std::string got="stale"; KT_CHECK(Config::readFile(path,&got)); KT_CHECK(got.empty()); }   // empty file: cleared, true
-    remove(path.c_str()); std::string g2; KT_CHECK(!Config::readFile(path,&g2)); }
+    remove(path.c_str()); std::string g2; KT_CHECK(!Config::readFile(path,&g2));
+    { std::string g3="x"; KT_CHECK(!Config::readFile(".",&g3)); } }   // RL25: a read error (directory) fails
   { // warning line numbers: LF, CRLF, CR, mixed; BOM-only text; first line is line 1
     for(const char* nl:{"\n","\r\n","\r"}){ std::string n=nl;
       Config c=W("[Profile.X]"+n+"bad1"+n+"bad2"+n); KT_CHECK_EQ(c.warnings.size(),2);

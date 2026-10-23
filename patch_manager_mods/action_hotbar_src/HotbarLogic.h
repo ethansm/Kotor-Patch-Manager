@@ -37,6 +37,10 @@ inline int chooseTarget(const Candidate* m, int n, int selfIdx, int thresholdPct
     return -1;
 }
 
+// RH4: a heal the hotbar sent that queue-hud may still hold. Live while younger than 5 s (wrap-safe) and the member's HP has not risen since the press (a rise = it resolved).
+constexpr uint32_t PendingHealMs = 5000;
+inline bool pendingHealLive(uint32_t now, uint32_t since, int hpNow, int hpAtPress) { return now - since < PendingHealMs && hpNow <= hpAtPress; }
+
 // False => draw the slot dimmed and ignore clicks/keys: lowest-HP with no fallback and nobody to heal.
 inline bool slotEnabled(const Candidate* m, int n, int selfIdx, const TargetSpec& t, const General& g) {
     return !(t.mode == TM_LowHp && !effectiveFallbackSelf(t, g) && chooseTarget(m, n, selfIdx, effectiveThreshold(t, g), false) == -1);
@@ -160,6 +164,13 @@ inline UseRoute useRoute(const ActionRef& a, int probe, bool invoke) {
     return invoke ? UR_Invoke : UR_LogOnly;
 }
 
+// RL24: item @self takes the direct route only when the HUD entry's bit0 (usable) is set; else the vanilla invoke reports why not.
+// @lowhp is NOT gated: bit0 describes the controlled character, and useOnMember already asks the engine (canUseItem) about the TARGET member.
+inline bool directRouteAllowed(UseRoute r, int entryFlags) { return r != UR_SelfDirect || (entryFlags & EntryUsable) != 0; }
+
+// RL26: backup file name for generation gen (0 = newest).
+inline std::string loadBakName(const char* base, int gen) { return gen <= 0 ? std::string(base) : std::string(base) + "." + std::to_string(gen); }
+
 // HB07: the AutoFill candidate list. powers = group 0 entries (HUD key, ref) in HUD order; known Force powers (isKnownPowerKey) not already
 // explicit are taken first. Then one pick per item group (HUD groups 1..3 = groups[0..2]): the entry whose key == selKey, else the first;
 // skipped (dupMask bit g set) when already explicit or already collected, or when its ref is empty (no dup bit for that).
@@ -281,10 +292,10 @@ inline bool arrowRepeatDue(uint32_t now, uint32_t heldSince, uint32_t lastRep) {
 struct Scale { double sx = 1.0, sy = 1.0, c = 1.0; };
 // x squeeze for a w x h client over a rw x rh layout space: the HUD draws at a uniform (h/rh) px per unit, InitControl stretched x by w/rw. 1.0 when any size is unknown.
 inline double aspectCorrection(int w, int h, int rw, int rh) { return (w > 0 && h > 0 && rw > 0 && rh > 0) ? ((double)h / rh) / ((double)w / rw) : 1.0; }
-// Scale for the client; the identity when no correction is needed (c == 1.0).
+// Scale for the client: sx/sy = px per layout unit; c is the x squeeze (1.0 for 4:3); the identity only when a size is unknown.
 inline Scale makeScale(int w, int h, int rw, int rh) {
-    Scale k; double c = aspectCorrection(w, h, rw, rh);
-    if (c != 1.0) { k.sx = (double)w / rw; k.sy = (double)h / rh; k.c = c; }
+    Scale k;
+    if (w > 0 && h > 0 && rw > 0 && rh > 0) { k.sx = (double)w / rw; k.sy = (double)h / rh; k.c = aspectCorrection(w, h, rw, rh); }
     return k;
 }
 // Layout rect (units) -> px rect r[4] = x, y, w, h: x and width go through the squeeze, y and height do not.
@@ -296,7 +307,7 @@ inline void unitRect(int x, int y, int w, int h, const Scale& k, int* r) {
 // Keyboard capture: DIK 0x02..0x0B are the digit keys 1..0.
 inline bool isHotbarDigit(unsigned dik) { return dik >= 0x02 && dik <= 0x0B; }
 // One DirectInput key event with the state the decision needs (hudActive = gate open and the tick is fresh).
-struct KeyEvent { unsigned dik = 0; bool down = false, ctrl = false, alt = false, shift = false, hudActive = false, editOpen = false, downSwallowed = false, slotBound = false, ringFull = false; };
+struct KeyEvent { unsigned dik = 0; bool down = false, ctrl = false, alt = false, shift = false, hudActive = false, editOpen = false, downSwallowed = false, slotBound = false, ringFull = false, invokeOn = true; };
 // What to do with it: swallow = zero the record; markDown/clearDown = set/clear the "down was swallowed" flag; enqueue = push `slot`; escHit = tell the editor.
 struct KeyAction { const char* decision = "pass"; bool swallow = false, markDown = false, clearDown = false, enqueue = false, escHit = false; int slot = -1; };
 inline KeyAction decideKey(const KeyEvent& k) {
@@ -310,17 +321,19 @@ inline KeyAction decideKey(const KeyEvent& k) {
         if (!k.down) {
             if (k.downSwallowed) { a.clearDown = true; a.swallow = true; a.decision = "swallow-up"; }
         } else if (!k.shift) {
+            a.clearDown = true;   // RL29: a key-down that passes drops a stale "down was swallowed" flag (the swallow branch below clears this again)
             int slot = (int)k.dik - kFirstDik;
             if (k.ctrl || k.alt) a.decision = "pass(ctrl/alt)";   // only plain digits are ours; Ctrl/Alt+digit stay the game's
             else if (!k.hudActive) a.decision = "pass(hud inactive)";
             else if (k.editOpen) a.decision = "pass(edit mode: never invoke)";
             else if (!k.slotBound) a.decision = "pass(unbound)";
-            else {   // a bound key is ALWAYS swallowed: passing it on would switch party members (keys 1-3)
-                a.markDown = true; a.swallow = true;
+            else if (!k.invokeOn) a.decision = "pass(invoke off)";   // dry run: the key keeps its game meaning (party switch on 1-3)
+            else {   // a bound key is swallowed while the HUD tick is fresh (hudActive): passing it on would switch party members (keys 1-3)
+                a.clearDown = false; a.markDown = true; a.swallow = true;
                 if (k.ringFull) a.decision = "SWALLOW(ring full, request dropped)";
                 else { a.enqueue = true; a.slot = slot; a.decision = "SWALLOW"; }
             }
-        } else a.decision = "pass(shift)";
+        } else { a.clearDown = true; a.decision = "pass(shift)"; }
     }
     return a;
 }
@@ -602,10 +615,13 @@ inline SnapPick pickSnapshot(const std::string& dir, bool (*exists)(const std::s
     SnapPick p; p.path = dir + "/" + IniName; p.src = SS_Absent; return p;
 }
 inline const char* snapStatus(SnapSrc src, bool loaded) {
-    if (src == SS_Absent) return "absent (live hotbar kept)";
+    if (src == SS_Absent) return "absent (bar emptied)";
     if (!loaded) return "UNREADABLE (live hotbar kept)";
     return src == SS_Legacy ? "found (legacy name)" : "found";
 }
+// What a load does with the pick: absent -> empty profiles (documented contract, README:86); unreadable -> keep the live bar; else replace.
+enum SnapAction { Snap_Keep, Snap_Empty, Snap_Replace };
+inline SnapAction snapAction(SnapSrc src, bool readable) { return src == SS_Absent ? Snap_Empty : (readable ? Snap_Replace : Snap_Keep); }
 
 // [General] TargetProbe (kept in extra): 0 off, 1 log only, 2 live. Missing -> 2; unparsable -> 2 and *bad = true.
 inline int targetProbe(const General& g, bool* bad = nullptr) {
