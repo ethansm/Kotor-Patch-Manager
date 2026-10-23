@@ -679,6 +679,18 @@ constexpr float kReachViaOutM = 0.12f;
 // HW44d: reach_via_out_m_<cat> (0..0.30 m, per category). Parse: clamp to 0..0.30 (NaN -> 0). Use: the category value when set (>= 0; -1 = unset), else the global reach_via_out_m.
 inline float reachViaOutClamp(float v) { return !(v >= 0.f) ? 0.f : (v > 0.30f ? 0.30f : v); }
 inline float reachViaOutFor(float catOut, float globalOut) { return catOut >= 0.f ? catOut : globalOut; }
+// HW50: reach_via_tilt_deg_<cat> (0..90, default 0): the via's target up tilts toward body forward. NaN or < 0 -> 0, > 90 -> 90.
+constexpr float kReachViaTiltMax = 90.f;
+inline float reachViaTiltClamp(float v) { return !(v >= 0.f) ? 0.f : (v > kReachViaTiltMax ? kReachViaTiltMax : v); }
+// HW50: tilt <= 0 -> {0, 0, 1}, bodyQ untouched. Else {0, sin t, cos t} (body frame x right, y forward, z up), rotated by a finite *bodyQ, else unrotated.
+inline void reachViaUp(float tiltDeg, const Q* bodyQ, float out[3]) {
+    const float t = reachViaTiltClamp(tiltDeg);
+    if (!(t > 0.f)) { out[0] = 0.f; out[1] = 0.f; out[2] = 1.f; return; }
+    const float a = t * 3.14159265358979f / 180.f;
+    const float v[3] = { 0.f, std::sin(a), std::cos(a) };
+    if (bodyQ && qfinite(*bodyQ)) qrotate(qnormalize(*bodyQ), v, out);
+    else { out[0] = v[0]; out[1] = v[1]; out[2] = v[2]; }
+}
 // HW31b: lateral bump of the via pose, outM * 16 s^2 (1 - s)^2 with s = clamp01(t / ms) (linear, not eased). 0 at both ends, outM at
 // s = 0.5. Bad ms, non-finite values or outM <= 0 give 0.
 inline float reachViaOffset(float t, float ms, float outM) {

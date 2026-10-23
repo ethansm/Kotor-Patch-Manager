@@ -150,11 +150,77 @@ static void testViaOffset() {
     KT_CHECK(okBad);
 }
 
+// (f) HW50 reach_via_tilt_deg_<cat>: reachViaUp. Tilt 0, NaN or negative = {0,0,1} bit for bit, with or without a body frame; 120 clamps to 90.
+static bool bitsEq3(const float* a, const float* b) { return std::memcmp(a, b, 3 * sizeof(float)) == 0; }
+// Whole turn (deg) mount -> via -> hand, with the full rotation angle of each leg (roll included), for a mount whose long axis (x, index 0)
+// points aDeg from up, tilted toward -y (back, the live tilt per the HW50 README b2). The via is built as reachViaFor does (up = reachViaUp,
+// tilted toward +y); the hand has the long axis forward {0, 1, 0}. direct = mount -> hand.
+struct ViaPath { float legA, legB, direct; float total() const { return legA + legB; } };
+static ViaPath viaPathDeg(float aDeg, float tiltDeg) {
+    const float ax[3] = { 1.f, 0.f, 0.f }, fwd[3] = { 0.f, 1.f, 0.f };
+    const float a = aDeg * 3.14159265358979f / 180.f;
+    const float want[3] = { 0.f, -std::sin(a), std::cos(a) };
+    const Q mq = qnormalize(arcQuat(ax, want));
+    float wv[3], up[3];
+    qrotate(mq, ax, wv);
+    reachViaUp(tiltDeg, nullptr, up);
+    const Q via = qnormalize(qmul(arcQuat(wv, up), mq));
+    const Q hand = qnormalize(qmul(arcQuat(wv, fwd), mq));
+    return { reachQAngleDeg(qmul(via, reachConj(mq))), reachQAngleDeg(qmul(hand, reachConj(via))), reachQAngleDeg(qmul(hand, reachConj(mq))) };
+}
+static void testViaTilt() {
+    const float kUp[3] = { 0.f, 0.f, 1.f };
+    const Q bodyQ = qnormalize(Q{ 0.6f, 0.3f, -0.5f, 0.55f });   // a body frame that is not identity
+    const Q nanQ = { NAN, 0.f, 0.f, 0.f };
+    const float zeroTilts[4] = { 0.f, NAN, -20.f, -0.f };
+    bool okZero = true, okClamp = true, okNonFinite = true, okRot = true;
+    float v[3], ref[3], rot[3];
+    for (float t : zeroTilts) {
+        reachViaUp(t, nullptr, v);
+        if (!bitsEq3(v, kUp)) okZero = false;
+        reachViaUp(t, &bodyQ, v);
+        if (!bitsEq3(v, kUp)) okZero = false;
+    }
+    reachViaUp(120.f, nullptr, v);
+    reachViaUp(90.f, nullptr, ref);
+    if (!bitsEq3(v, ref) || std::fabs(v[1] - 1.f) > 1e-6f || std::fabs(v[2]) > 1e-6f) okClamp = false;
+    if (reachViaTiltClamp(120.f) != 90.f || reachViaTiltClamp(NAN) != 0.f || reachViaTiltClamp(-5.f) != 0.f || reachViaTiltClamp(45.f) != 45.f) okClamp = false;
+    reachViaUp(45.f, nullptr, ref);
+    reachViaUp(45.f, &nanQ, v);   // non-finite body frame: unrotated, bit for bit
+    if (!bitsEq3(v, ref)) okNonFinite = false;
+    qrotate(qnormalize(bodyQ), ref, rot);
+    reachViaUp(45.f, &bodyQ, v);  // finite body frame: the unrotated tilt turned by the body quat
+    if (!(std::fabs(v[0] - rot[0]) <= 1e-6f && std::fabs(v[1] - rot[1]) <= 1e-6f && std::fabs(v[2] - rot[2]) <= 1e-6f)) okRot = false;
+    KT_CHECK(okZero);
+    KT_CHECK(okClamp);
+    KT_CHECK(okNonFinite);
+    KT_CHECK(okRot);
+
+    // Whole via path (mount -> via -> hand), tilt 0 / 45 / 90. Measured: 177 deg mount (the realistic rifle back mount, near straight down)
+    // 267 / 183 / 93; 90 deg mount 270 / 315 / 180 (tilt 45 is LONGER than 0 because the roll legs add, so only 90 < 0 is pinned); 0 deg mount 90 x3.
+    const float tilts[3] = { 0.f, 45.f, 90.f };
+    float p0[3], p90[3], p177[3];
+    for (int k = 0; k < 3; ++k) { p0[k] = viaPathDeg(0.f, tilts[k]).total(); p90[k] = viaPathDeg(90.f, tilts[k]).total(); p177[k] = viaPathDeg(177.f, tilts[k]).total(); }
+    KT_CHECK(viaPathDeg(0.f, 0.f).legA < 1e-3f);   // a mount already pointing up needs no via turn at tilt 0
+    KT_CHECK(p177[0] > p177[1] + 1.f && p177[1] > p177[2] + 1.f);   // (i) strictly decreasing 0 -> 45 -> 90
+    KT_CHECK(std::fabs(p177[0] - 267.f) < 1.f && std::fabs(p177[1] - 183.f) < 1.f && std::fabs(p177[2] - 93.f) < 1.f);
+    KT_CHECK(std::fabs(p0[1] - p0[0]) < 0.5f && std::fabs(p0[2] - p0[0]) < 0.5f);   // (ii) constant
+    KT_CHECK(std::fabs(p0[0] - 90.f) < 1.f);
+    KT_CHECK(p90[2] < p90[0] - 1.f);   // (iii) 90 < 0
+    KT_CHECK(std::fabs(p90[0] - 270.f) < 1.f && std::fabs(p90[1] - 315.f) < 1.f && std::fabs(p90[2] - 180.f) < 1.f);
+    // At tilt 0 the whole path is never shorter than the direct mount -> hand angle (triangle inequality on SO(3)).
+    const float mounts[3] = { 0.f, 90.f, 177.f };
+    bool okDirect = true;
+    for (float m : mounts) { const ViaPath vp = viaPathDeg(m, 0.f); if (vp.total() + 1e-2f < vp.direct) okDirect = false; }
+    KT_CHECK(okDirect);
+}
+
 int main() {
     testNullViaIsResidual();
     testEndpoints();
     testContinuity();
     testDegenerateVia();
     testViaOffset();
+    testViaTilt();
     return kt::Report("holster_resvia");
 }

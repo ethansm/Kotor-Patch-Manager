@@ -115,6 +115,10 @@ static float g_viaOut = hs::kReachViaOutM, g_poleFromGrip = 0.f, g_poleBiasDeg =
 // reach_via_out_m_<cat> (0.21.2-dev, HW44d): per-category outward via offset, -1 = unset (the global g_viaOut); always read through viaOutFor().
 static struct ViaOutCatInit { float v[hs::CatCount]; ViaOutCatInit() { for (int i = 0; i < hs::CatCount; ++i) v[i] = -1.f; } } g_viaOutCat;
 static inline float viaOutFor(int cat) { return hs::reachViaOutFor((cat >= 0 && cat < hs::CatCount) ? g_viaOutCat.v[cat] : -1.f, g_viaOut); }
+// reach_via_tilt_deg_<cat> (0.21.4-dev, HW50): 0..90, default 0 = the via aims the weapon axis straight up; >0 tilts that up toward body forward
+// by that many degrees (smaller via turn). Boot-only, needs reach_test=1 and reach_via_<cat>=1.
+static float g_reachViaTilt[hs::CatCount];
+static inline float viaTiltFor(int cat) { return (cat >= 0 && cat < hs::CatCount) ? g_reachViaTilt[cat] : 0.f; }
 // reach_stow_land_f (0.21.0-dev, HW41): 0 = the stow lands the weapon on the mount through the 0.20 time window (g_reachResidMs); default 0.15 = the weapon stays in the hand until the hand path is within
 // that fraction of the mount (hs::slideStowLandWindow, HolsterSlide.h); always through hs::slideClampStowLandF (0 or 0.02..0.5).
 static float g_stowLandF = hs::slideClampStowLandF(0.15f);
@@ -523,6 +527,17 @@ static void readConfig() {
                     g_stowRotRaw = v;
                     if (v <= 0.f || v > 1.f) cfgWarn(key, val, v <= 0.f ? "0 = same window as reach_stow_land_f" : "above 1, clamped");
                 } else cfgWarn(key, val, "not a number, keeping the default 0.6");
+            }
+            else if (!_strnicmp(key, "reach_via_tilt_deg_", 19)) {   // 0.21.4-dev (HW50): reach_via_tilt_deg_<category>=0..90; before the reach_via_<cat> prefix test
+                int ci = -1;
+                for (int i = hs::CatUnknown + 1; i < hs::CatCount; ++i)
+                    if (!_stricmp(key + 19, hs::categoryName(static_cast<hs::Category>(i)))) ci = i;
+                char* end = nullptr;
+                const float v = strtof(val, &end);
+                if (ci >= 0 && end != val && *end == 0 && v == v) {
+                    g_reachViaTilt[ci] = hs::reachViaTiltClamp(v);
+                    if (g_reachViaTilt[ci] != v) cfgWarn(key, val, "outside 0..90, clamped");
+                } else cfgWarn(key, val, "need reach_via_tilt_deg_<lightsaber|melee|qstaff|pistol|rifle|heavy>=0..90, keeping the default 0");
             }
             else if (!_strnicmp(key, "reach_via_out_m_", 16)) {   // 0.21.2-dev (HW44d): reach_via_out_m_<category>=0..0.30; before the reach_via_<cat> prefix test
                 int ci = -1;
@@ -1573,13 +1588,14 @@ static float reachExtractPct(uintptr_t beh, bool left, bool backBone) {
     return backBone ? g_extractBack : g_extractHip;
 }
 // HW31: the via quat of this weapon (its long axis, in the mount frame, turned to world up), or false (shape missing, category off, bad quat).
-static bool reachViaFor(const hs::ShapeEntry* sh, int cat, const hs::Q& mountQ, hs::Q& out) {
+static bool reachViaFor(const hs::ShapeEntry* sh, int cat, const hs::Q& mountQ, hs::Q& out, const hs::Q* bodyQ = nullptr) {
     if (!sh || sh->axis > 2 || cat < 0 || cat >= hs::CatCount || !g_reachVia[cat] || !hs::qfinite(mountQ)) return false;
     float ax[3] = {0.f, 0.f, 0.f}, wv[3];
     ax[sh->axis] = 1.f;
     const hs::Q mq = hs::qnormalize(mountQ);
     hs::qrotate(mq, ax, wv);
-    const float up[3] = {0.f, 0.f, 1.f};   // world z is up (the body frame is x right, y forward, z up)
+    float up[3];   // world z is up (the body frame is x right, y forward, z up); HW50: tilted toward body forward by reach_via_tilt_deg_<cat>, bodyQ null = unrotated (preview)
+    hs::reachViaUp(g_reachViaTilt[cat], bodyQ, up);
     out = hs::qnormalize(hs::qmul(hs::arcQuat(wv, up), mq));
     return hs::qfinite(out);
 }
@@ -2337,7 +2353,7 @@ static bool previewPlace(uintptr_t g, uintptr_t beh) {
     }
     hs::Pose carried;
     hs::Q viaQ;
-    const bool viaOn = reachViaFor(hs::shapeOf(model), static_cast<int>(cat), out.q, viaQ);   // HW31: reach_via_<cat> (default off)
+    const bool viaOn = reachViaFor(hs::shapeOf(model), static_cast<int>(cat), out.q, viaQ, nullptr);   // HW31: reach_via_<cat> (default off); HW50: the preview has no body frame, so its tilt is unrotated
     float viaS = 0.f;   // HW31b: the via progress for the arm's lateral bump (only when the via is on)
     if (viaOn && viaOutFor(static_cast<int>(cat)) > 0.f) { EdLock lk0; const CarryResid& vcr = prevLockFor(g).cres; viaS = hs::slideViaProgress(plan.active, presid, plan.carryW, plan.oriF, exPct > 0.f, pslide.dir != 0, pslide.from, pslide.carryFrom, pnow, pslide.t0, pslide.len, pgrab, vcr.on != 0, vcr.startMs, vcr.msEff, plan.pathF, stowRotEff()); }
     g_reachSlowX = pslow;   // 0.21.1-dev: REACH logging density for a slowed slide
@@ -2686,7 +2702,13 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
         const float wa = hs::reachWeightRamp(ent->slide, rnow, g_reachCarry ? 0.04f : 0.2f);
         hs::Pose carried;
         hs::Q viaQ;
-        const bool viaOn = reachViaFor(shp, static_cast<int>(cat), hipPose.q, viaQ);   // HW31: reach_via_<cat> (default off)
+        const hs::Q* viaBodyQ = nullptr;   // HW50: the body (parent Gob) frame, read only when reach_via_tilt_deg_<cat> > 0 (the default path reads nothing extra)
+        hs::Pose viaBody;
+        if (viaTiltFor(static_cast<int>(cat)) > 0.f) {
+            const uintptr_t vpar = rdU32(kSitePlace, reinterpret_cast<uintptr_t>(beh), 0x14);
+            if (vpar && saferead::readAt(kSitePlace, vpar, 0xA4, &viaBody) && hs::poseSane(viaBody) && hs::qfinite(viaBody.q)) viaBodyQ = &viaBody.q;
+        }
+        const bool viaOn = reachViaFor(shp, static_cast<int>(cat), hipPose.q, viaQ, viaBodyQ);   // HW31: reach_via_<cat> (default off)
         const float viaS = (viaOn && viaOutFor(static_cast<int>(cat)) > 0.f) ? hs::slideViaProgress(pl.active, residMs, pl.carryW, pl.oriF, exPct > 0.f, ent->slide.dir != 0, ent->slide.from, ent->slide.carryFrom, rnow, ent->slide.t0, ent->slide.len, rgrab, ent->cres.on != 0, ent->cres.startMs, ent->cres.msEff, pl.pathF, stowRotEff()) : 0.f;   // HW31b: the arm's lateral bump follows the via
         snp.w = wa; snp.vo = viaS; snp.pathF = pl.pathF;
         g_reachSlowX = ent->slowArm;   // 0.21.1-dev: REACH logging density for a slowed slide
@@ -3227,6 +3249,16 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
                 snprintf(easeCat + en, sizeof easeCat - en, "%s%s", en ? "," : "", hs::categoryName(static_cast<hs::Category>(i)));
             }
             if (easeCat[0]) KP_LOG(chMain, "CONFIG ease_soft=%s (reach_ease_soft_<cat>=1: smoothstep carry, reach_test and reach_carry needed)", easeCat);
+        }
+        {   // HW50: reach_via_tilt_deg_<cat> values, only when any is set (own block, after the viaout_cat one)
+            char viaTilt[120];
+            viaTilt[0] = 0;
+            for (int i = hs::CatUnknown + 1; i < hs::CatCount; ++i) {
+                if (!(g_reachViaTilt[i] > 0.f)) continue;
+                const size_t vn = strlen(viaTilt);
+                snprintf(viaTilt + vn, sizeof viaTilt - vn, "%s%s:%.1f", vn ? "," : "", hs::categoryName(static_cast<hs::Category>(i)), static_cast<double>(g_reachViaTilt[i]));
+            }
+            if (viaTilt[0]) KP_LOG(chMain, "CONFIG via_tilt=%s (reach_via_tilt_deg_<cat>, deg toward body forward)", viaTilt);
         }
         KP_LOG(chMain, "PLACEMODE %s (active=%d: needs probe=1 and bone_test=1)", hs::placeModeName(g_placeMode), g_boneTest ? 1 : 0);
         {
