@@ -369,6 +369,20 @@ int main() {
         KT_CHECK(useAllowed(true) == UseRefusal::AlreadyQueued);
         KT_CHECK(std::string(useRefusalText(useAllowed(true))) == "already queued");
         KT_CHECK(std::string(useRefusalText(UseRefusal::None)).empty());
+        // RQ13: useAllowed(castPending) + pendingWiped
+        KT_CHECK(useAllowed(false, true) == UseRefusal::CastQueued && std::string(useRefusalText(UseRefusal::CastQueued)) == "cast queued");
+        KT_CHECK(useAllowed(true, true) == UseRefusal::AlreadyQueued && useAllowed(true) == UseRefusal::AlreadyQueued && useAllowed(false) == UseRefusal::None);
+        {
+            Pending pw; pw.on = true; pw.since = 1000; pw.seenQueued = true;
+            KT_CHECK(pendingWiped(pw, 10400, false, true, 10000));          // 400 ms of empty queue
+            KT_CHECK(!pendingWiped(pw, 10399, false, true, 10000));         // 399 ms
+            KT_CHECK(!pendingWiped(pw, 20000, true, true, 10000));          // queued again
+            KT_CHECK(!pendingWiped(pw, 20000, false, false, 10000));        // queue not empty (0x3D left: normal completion)
+            KT_CHECK(!pendingWiped(pw, 20000, false, true, 0));             // stretch not armed
+            KT_CHECK(pendingWiped(pw, 0x00000100u, false, true, 0xFFFFFF00u));   // tick wrap: 0x200 ms
+            Pending q = pw; q.seenQueued = false; KT_CHECK(!pendingWiped(q, 20000, false, true, 10000));   // never seen queued
+            Pending off = pw; off.on = false; KT_CHECK(!pendingWiped(off, 20000, false, true, 10000));
+        }
     }
     {
         // WI-75 (BG28): leader settings follow the leader's tag; slot0 is only the untagged fallback.

@@ -176,6 +176,21 @@ def test_v060_kick_pass():
     assert out.splitlines()[-1].endswith("USE=1 DONE=1 TIMEOUT=0 VERDICT=PASS")
 
 
+def test_v094_refuse_cast_queued():
+    r = S.check(v30(['REFUSE cast queued member=1 (auto)']))
+    assert r["verdict"] == "PASS"
+    assert r["v"]["refuse_queued"] == 1 and r["v"]["refuse"]["cast queued member=1 (auto)"] == 1
+    assert "REFUSE-queued=1" in S.fmt(r)
+
+
+def test_v094_done_reason_wiped():
+    r = S.check(v30(['USE member=2 item=0c000100 "Medical Supplies" heal=27 hp=12/40 src=click', "DONE member=2 hp+0 stack+0 queued=0 reason=wiped"]))
+    assert r["v"]["done"][0]["reason"] == "wiped" and r["v"]["timeout_unq"] == 0
+    assert r["verdict"] == "PASS" and not r["v"]["done"][0]["timeout"]
+    r2 = S.check(v30(["DONE member=1 hp+27 stack-1 queued=0"]))
+    assert r2["v"]["done"][0]["reason"] is None
+
+
 def test_v060_starved_and_timeout_are_warn_not_fail():
     L = v30(['USE member=2 item=0c000100 "Medical Supplies" heal=27 hp=12/40 src=auto', "KICK starved member=2",
              "DONE member=2 hp+0 stack+0 queued=0", "TIMEOUT unqueued member=2"])

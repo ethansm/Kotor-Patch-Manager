@@ -418,6 +418,7 @@ constexpr uint32_t kPendingTimeoutMs = 6000;
 
 struct Pending {
     bool on = false;
+    bool seenQueued = false;   // RQ13: the use was observed queued (round node present) since arming; the caller sets it, `Pending()` at arming clears it
     uint32_t since = 0;
     int preHp = 0, preStack = 0;
 };
@@ -442,6 +443,16 @@ inline bool pendingDone2(const Pending& p, uint32_t now, int hp, int stack, bool
     return (uint32_t)(t - *unqueuedSince) >= kPendingTimeoutMs;
 }
 
+// RQ13 wiped-pending: an outside Cancel (queue-hud strip) cleared the creature's whole action queue while our use was pending. True when the use
+// WAS seen queued, is not queued now, the whole queue is empty (queueEmpty: ne==0, no round node, no current node, round readable) and that has
+// lasted kWipedGraceMs. unqueuedSince is the g_unqueuedSince stretch start that pendingDone2 arms (0 = not running). Call after pendingDone2 returned false.
+constexpr uint32_t kWipedGraceMs = 400;
+inline bool pendingWiped(const Pending& p, uint32_t now, bool queued, bool queueEmpty, uint32_t unqueuedSince) {
+    if (!p.on || !p.seenQueued || queued || !queueEmpty || unqueuedSince == 0) return false;
+    const uint32_t t = now ? now : 1u;   // same 0-sentinel rule as pendingDone2
+    return (uint32_t)(t - unqueuedSince) >= kWipedGraceMs;
+}
+
 // ---- slot owner (BG36 / CO-2d-04): pending/auto/cooldown state is kept per party slot, so it must follow the creature ----
 // What to do with a slot's owner record when the creature now in the slot is `current` (0 = unreadable): Keep the state,
 // Adopt `current` as the owner (nothing was recorded yet, nothing to reset), or Reset every per-slot field (another creature moved in).
@@ -452,10 +463,11 @@ inline OwnerStep ownerStep(uintptr_t recorded, uintptr_t current) {
     return recorded == current ? OwnerStep::Keep : OwnerStep::Reset;
 }
 
-enum class UseRefusal { None, AlreadyQueued };
-inline const char* useRefusalText(UseRefusal r) { return r == UseRefusal::AlreadyQueued ? "already queued" : ""; }
-// A second heal use is refused while one is still queued (it would stack behind the stalled first).
-inline UseRefusal useAllowed(bool queued) { return queued ? UseRefusal::AlreadyQueued : UseRefusal::None; }
+enum class UseRefusal { None, AlreadyQueued, CastQueued };
+inline const char* useRefusalText(UseRefusal r) { return r == UseRefusal::AlreadyQueued ? "already queued" : r == UseRefusal::CastQueued ? "cast queued" : ""; }
+// A second heal use is refused while one is still queued (it would stack behind the stalled first). castPending = another cast/use
+// (queue-hud's Force power, a hotbar item) is stalled behind FollowLeader on that creature (RQ13, actq::castQueued): refused too. The item case reports first.
+inline UseRefusal useAllowed(bool queued, bool castPending = false) { return queued ? UseRefusal::AlreadyQueued : castPending ? UseRefusal::CastQueued : UseRefusal::None; }
 
 // ---- look: colour / alpha / spinner ring per state (CS4) ----
 constexpr int kRingFrames = 8;

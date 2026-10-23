@@ -64,7 +64,7 @@ DONE_RE = re.compile(r"^DONE member=(\S+) hp(\S+) stack(\S+) timeout=(\S+)\s*$")
 AUTO_RE = re.compile(r"^AUTO member=(\S+) hp=(\S+?)/(\S+) pick=\"(.*)\" keep=(\S+)\s*$")
 CFGSAVE_RE = re.compile(r"^CFG save tag=(\S*) auto=(\S+) hp=(\S+) keep=(\S+) ok=(\S+)\s*$")
 CFGRELOAD_RE = re.compile(r"^CFG reload n=(\S+)\s*$")
-DONE2_RE = re.compile(r"^DONE member=(\S+) hp(\S+) stack(\S+) queued=(\S+)\s*$")
+DONE2_RE = re.compile(r"^DONE member=(\S+) hp(\S+) stack(\S+) queued=(\S+)(?: reason=(\S+))?\s*$")
 KICK_RE = re.compile(r"^KICK member=(\S+) before=\[(.*?)\] after=\[(.*?)\] k=(\S+) route=rotate\s*$")
 KICKSKIP_RE = re.compile(r"^KICK skipped member=(\S+) \((\w+)=(\S+?)\)\s*$")
 KICKSTARVED_RE = re.compile(r"^KICK starved member=(\S+)\s*$")
@@ -157,7 +157,7 @@ def v030_line(v, n, t):
         v["done"].append({"line": n, "member": g[0], "hp": to_int(g[1]), "stack": to_int(g[2]), "timeout": to_int(g[3])})
     elif DONE2_RE.match(t):
         g = DONE2_RE.match(t).groups()
-        v["done"].append({"line": n, "member": g[0], "hp": to_int(g[1]), "stack": to_int(g[2]), "timeout": 0, "queued": to_int(g[3]), "new": True})
+        v["done"].append({"line": n, "member": g[0], "hp": to_int(g[1]), "stack": to_int(g[2]), "timeout": 0, "queued": to_int(g[3]), "reason": g[4], "new": True})
     elif KICK_RE.match(t):
         g = KICK_RE.match(t).groups()
         v["kick"].append({"line": n, "member": g[0], "before": g[1], "after": g[2], "k": to_int(g[3])})
@@ -198,7 +198,7 @@ def v030_line(v, n, t):
             v["fail"].append((n, "DIAG pop item=%s color/alpha not ok (rgbOk=%s alphaOk=%s)" % (m.group(1), m.group(2), m.group(3))))
     elif REFUSE_RE.match(t):
         why = REFUSE_RE.match(t).group(1) or "(none)"
-        if why.startswith("already queued"):
+        if why.startswith(("already queued", "cast queued")):
             v["refuse_queued"] += 1
         v["refuse"][why] = v["refuse"].get(why, 0) + 1
     else:

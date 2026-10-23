@@ -402,7 +402,7 @@ bool useNow(const K2PsContext* ctx, DWORD now, int mi, int minCount, const char*
     {   // CS12 dedupe: a second use while one is still queued would stack behind the stalled first
         actq::Snapshot qs;
         if (!actq::read(m.server, &qs, SiteQueue, SiteRound) && g_queueTrace) KP_LOG(chCall, "QDIAG dedupe queue read failed member=%d", mi);
-        shui::UseRefusal ur = shui::useAllowed(actq::useQueued(qs));
+        shui::UseRefusal ur = shui::useAllowed(actq::useQueued(qs), actq::castQueued(qs));
         if (ur != shui::UseRefusal::None) { if (g_queueTrace) qdiagSnap("dedupe", mi, qs, actq::playerPaused(SitePause)); REFUSEI("REFUSE %s member=%d (%s)", shui::useRefusalText(ur), mi, src); }
     }
     if (!m.client || !rd<uint32_t>(m.client, Client_ObjectId, &clientId)) REFUSEF("REFUSE ids: client object id unreadable member=%d", mi);
@@ -781,12 +781,19 @@ void pendingTick(DWORD now) {
         if (haveItems) { for (const itemread::Entry& e : items) if ((uint32_t)e.key == g_pendKey[i]) { stack = itemread::stackCount(e.key, e.name); if (stack <= 0) stack = 1; break; } }
         else stack = g_pend[i].preStack;   // group unreadable: no stack evidence, wait for HP or the timeout
         actq::Snapshot qs;
-        if (i < cnt) actq::read(v[i].server, &qs, SiteQueue, SiteRound);
+        const bool qok = i < cnt && actq::read(v[i].server, &qs, SiteQueue, SiteRound);
         bool queued = actq::useQueued(qs);
-        if (!shui::pendingDone2(g_pend[i], now, hp, stack, queued, &g_unqueuedSince[i])) continue;
+        if (queued) g_pend[i].seenQueued = true;
+        bool done = shui::pendingDone2(g_pend[i], now, hp, stack, queued, &g_unqueuedSince[i]);
+        bool wiped = false;
+        if (!done && shui::pendingWiped(g_pend[i], now, queued, qok && qs.round && qs.ne == 0 && qs.nrn == 0 && !qs.haveCur, g_unqueuedSince[i])) {
+            done = wiped = true;
+            g_auto[i].lastUseMs = now;   // restart the auto cooldown (6 s): a Cancel is not a reason to fire the potion again at once
+        }
+        if (!done) continue;
         bool progress = hp > g_pend[i].preHp || (stack >= 0 && stack < g_pend[i].preStack) || (stack < 0 && g_pend[i].preStack > 0);
-        KP_LOG(chCall, "DONE member=%d hp%+d stack%+d queued=%d", i, hp - g_pend[i].preHp, (stack < 0 ? 0 : stack) - g_pend[i].preStack, (int)queued);
-        if (!progress) KP_LOGV(chCall, KPLOG_WARN, "TIMEOUT unqueued member=%d", i);
+        KP_LOG(chCall, "DONE member=%d hp%+d stack%+d queued=%d%s", i, hp - g_pend[i].preHp, (stack < 0 ? 0 : stack) - g_pend[i].preStack, (int)queued, wiped ? " reason=wiped" : "");
+        if (!progress && !wiped) KP_LOGV(chCall, KPLOG_WARN, "TIMEOUT unqueued member=%d", i);
         g_pend[i].on = false; g_auto[i].pending = false; g_unqueuedSince[i] = 0; g_kickReason[i] = 0; g_starvedSince[i] = 0; g_kickGaveUp[i] = false; g_starveLogged[i] = false; g_rotNoopLogged[i] = false;
     }
     // Member 0 (leader)
@@ -1561,7 +1568,7 @@ void __cdecl KPatchInit(const KPatchApi* api) {
     loadIni();
     loadCfg();
     filewatch::accept(g_cfgPoll, IniPath);
-    KP_LOG(chMain, "0.9.3-dev ui=popsize+togglepill+leaderclick+vanillaarrows+pillnarrow+popocclude+optionspage: probe call=%d CallKey=0x%02X kick=%d cfg rows=%d", g_probeCall, g_callKey, (int)g_kick, (int)g_cfg.rows.size());
+    KP_LOG(chMain, "0.9.4-dev ui=popsize+togglepill+leaderclick+vanillaarrows+pillnarrow+popocclude+optionspage: probe call=%d CallKey=0x%02X kick=%d cfg rows=%d", g_probeCall, g_callKey, (int)g_kick, (int)g_cfg.rows.size());
     pageInit(api);
     pagePoll();   // register now: mod-config binds its entry list once, when the Options panel is first built, and a frame callback can run only after that
     g_ps.init(api, "companion-selfheal");

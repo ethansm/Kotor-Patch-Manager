@@ -58,6 +58,17 @@ int main() {
     { Snapshot s; s.cur.itemId = 9; s.haveCur = false; KT_CHECK(!useQueued(s)); }
     { Snapshot s; s.cur.itemId = 0; s.haveCur = true; KT_CHECK(!useQueued(s)); }
 
+    // castQueued (RQ13): stalled behind FollowLeader (first 0x3F at index 1..3, only 0x3D before it) + a pending ROUND node of sub-type 9/10
+    { Snapshot s = snapOf({0x3D, 0x3F}); s.rn[0].subType = 9; s.nrn = 1; KT_CHECK(castQueued(s)); KT_CHECK(!useQueued(s)); }      // Force power: node 9, itemId 0
+    { Snapshot s = snapOf({0x3D, 0x3F}); s.rn[0].subType = 10; s.nrn = 1; KT_CHECK(castQueued(s)); }                              // item node
+    { Snapshot s = snapOf({0x3D, 0x3F}); s.rn[0].subType = 3; s.nrn = 1; KT_CHECK(!castQueued(s)); }                              // other sub-type
+    { Snapshot s = snapOf({0x3D, 0x3F}); s.nrn = 0; KT_CHECK(!castQueued(s)); }                                                   // bare leftover 0x3F, empty round list
+    { Snapshot s = snapOf({0x3D}); s.rn[0].subType = 9; s.nrn = 1; KT_CHECK(!castQueued(s)); }                                   // node but no 0x3F
+    { Snapshot s = snapOf({0x3F}); s.rn[0].subType = 9; s.nrn = 1; KT_CHECK(!castQueued(s)); }                                   // 0x3F at the head = executing
+    { Snapshot s = snapOf({0x3D, 0x40, 0x3F}); s.rn[0].subType = 9; s.nrn = 1; KT_CHECK(!castQueued(s)); }                       // non-0x3D ahead of the 0x3F
+    { Snapshot s = snapOf({0x3D, 0x3F}); s.cur.subType = 9; s.haveCur = true; KT_CHECK(!castQueued(s)); }                        // stale cur node never counts
+    KT_CHECK(!castQueued(Snapshot()));
+
     // ---- read() on a fake creature
     void* m = mmap(nullptr, 0x10000, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS
 #ifdef MAP_32BIT

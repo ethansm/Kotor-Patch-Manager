@@ -55,6 +55,16 @@ inline bool useQueued(const Snapshot& s) {
     for (int i = 0; i < s.nrn && i < kMaxRound; ++i) if (s.rn[i].itemId != 0) return true;
     return s.haveCur && s.cur.itemId != 0;
 }
+// RQ13: a cast/use is stalled behind FollowLeader: first 0x3F at index 1..3 with only 0x3D before it (same shape as starved()) AND a pending
+// ROUND-LIST node (rn[], never cur: cur goes stale, see QueueHudLogic.h curReal/kStaleCurMs) has sub-type 9 (cast) or 10 (item). Covers queue-hud's
+// server-route Force power (0x3F + node 9, itemId 0). An executing cast (0x3F at the head) and a bare leftover 0x3F do NOT count.
+inline bool castQueued(const Snapshot& s) {
+    const int k = firstIndex(s, T_USE_ITEM);
+    if (k < 1 || k > 3) return false;
+    for (int i = 0; i < k; ++i) if (s.e[i].type != T_FOLLOW_LEADER) return false;
+    for (int i = 0; i < s.nrn && i < kMaxRound; ++i) if (s.rn[i].subType == 9 || s.rn[i].subType == 10) return true;
+    return false;
+}
 // Starved (R8 rotate rule): a use is queued, the first 0x3F sits at index 1..3 and every node before it is 0x3D
 // (a MoveToPoint / 0x40 ahead of it means the follow driver is mid-expansion: not starved, wait).
 inline bool starved(const Snapshot& s) {

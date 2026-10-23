@@ -298,6 +298,11 @@ int main() {
         HCHECK("shui::pendingDone2: the timeout runs over a continuous not-queued stretch (first call arms *unqueuedSince)", !pendingDone2(p2, 20000, 10, 3, false, &us) && us == 20000 && !pendingDone2(p2, 20000 + kPendingTimeoutMs - 1, 10, 3, false, &us) && pendingDone2(p2, 20000 + kPendingTimeoutMs, 10, 3, false, &us));
         HCHECK("shui::pendingDone2: a requeue resets the stretch", (pendingDone2(p2, 30000, 10, 3, false, &us), !pendingDone2(p2, 30001, 10, 3, true, &us) && us == 0));
         HCHECK("shui::useAllowed(true) refuses with text \"already queued\"; useAllowed(false) allows", useAllowed(true) == UseRefusal::AlreadyQueued && useAllowed(false) == UseRefusal::None && strcmp(useRefusalText(UseRefusal::AlreadyQueued), "already queued") == 0);
+        actq::Snapshot qc; qc.e[0].type = 0x3D; qc.e[1].type = 0x3F; qc.ne = 2;
+        HCHECK("actq::castQueued: 0x3D,0x3F + round node sub-type 9 true, bare leftover 0x3F false, 0x3F at head false; shui::useAllowed(false,true) == CastQueued with text \"cast queued\"", !actq::castQueued(qc) && (qc.rn[0].subType = 9, qc.nrn = 1, actq::castQueued(qc)) && (qc.e[0].type = 0x3F, qc.e[1].type = 0x3D, !actq::castQueued(qc)) && useAllowed(false, true) == UseRefusal::CastQueued && strcmp(useRefusalText(UseRefusal::CastQueued), "cast queued") == 0);
+        Pending pw; pw.on = true; pw.seenQueued = true;
+        HCHECK("shui::pendingWiped: 400 ms of empty queue after a seen-queued use ends it, 399 ms does not", pendingWiped(pw, 10400, false, true, 10000) && !pendingWiped(pw, 10399, false, true, 10000));
+        HEQ("kWipedGraceMs is 400", (long long)kWipedGraceMs, 400LL);
     }
 
     // filewatch: atomicWrite + changed/accept (the INI save + hot reload)

@@ -68,7 +68,7 @@ Per-companion rows (written by the popover; edit by hand only if you must) use `
 ## Logs
 
 `companion-selfheal_log.txt` in the game folder. Tags: `USE`, `DONE`, `REFUSE`, `KICK`, `TIMEOUT` (plus `BUILD`,
-`CLICK`, `AUTO`, `CFG`). Check it with:
+`CLICK`, `AUTO`, `CFG`). `DONE ... reason=wiped` means an outside Cancel emptied the follower's whole queue while the use was pending (ended after 400 ms, no `TIMEOUT`). `REFUSE cast queued` means a cast/use is queued behind follow on that creature (not "any cast"; an executing cast does not count). Check it with:
 
 ```
 python3 scripts/selfheal_log_check.py
