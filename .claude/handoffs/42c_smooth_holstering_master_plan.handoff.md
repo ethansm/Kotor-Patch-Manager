@@ -1,22 +1,25 @@
 # Session Handoff & Plan State: patch_manager_mods/42c_smooth_holstering_master_plan.md
 
 ## 0. Next-Phase Direction
-persist session context then make a detailed plan to resolve HW45 and start working on the heavy weapon HW#  heavy weapon can start with parallel haiku5.5 swarms of subagents with differing prompts to get varried output and coverage.  Then have Sonnet5.5 verify, aggregate and persist the investigation learnings.
+holster 0.21.4-dev is BUILT and gated (GATE PASS at 697a957d), NOT installed. Next: (1) on the user's GO: `python3 scripts/kpm_hotswap.py --mod holster --prepare` -> commit KPM -> fresh `scripts/pre_install_gate.sh --mod holster_src --skip-default` GATE PASS -> `--apply` -> `kpm_status` LIVE; (2) user plays SM-L19 (variant ladder BASE/V1/V2/V3/V4, restart per variant); (3) read `holster_log_check.py <log> --row SM-L19`, then decide HW45 per the rules in section 5 and pick the HW50 variant (ini default for the mining laser). HW28b (auto-picked) is GATED, not the next step.
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/42c_smooth_holstering_master_plan.md`
 - **Waves:** .claude/waves/w1-42c-HW45b/
 - **Waves:** .claude/waves/w2-42c-HW45b/
-- **Branch:** `KOTOR-II` (8278fad4 doc 42c: HW46-HW49 DONE (holster 0.21.3-dev, not installed, play SM-L18), HW45 stays OPEN after the probe; table rows HW45-HW51 rejoined to the master table (blank line split it); handoff)
-- **Generated:** 2026-10-22 19:10:03 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Waves:** .claude/waves/w3-42c-HW45/
+- **Waves:** .claude/waves/w3-42c-HW50/
+- **Waves:** .claude/waves/w4-42c-HW50/
+- **Branch:** `KOTOR-II` (ef421722 holster_log_check: --row SM-L19 (HW50 cat/mname per gob, max pkdps per cat+dir; HW45 dq summary per category with verdict))
+- **Generated:** 2026-10-22 20:11:48 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-8278fad4 doc 42c: HW46-HW49 DONE (holster 0.21.3-dev, not installed, play SM-L18), HW45 stays OPEN after the probe; table rows HW45-HW51 rejoined to the master table (blank line split it); handoff
- .../42c_smooth_holstering_master_plan.handoff.md   | 27 ++++++++--------------
- .../42c_smooth_holstering_master_plan.md           | 11 ++++-----
- 2 files changed, 15 insertions(+), 23 deletions(-)
+ef421722 holster_log_check: --row SM-L19 (HW50 cat/mname per gob, max pkdps per cat+dir; HW45 dq summary per category with verdict)
+ scripts/holster_log_check.py      |  98 +++++++++++++++++++++++--
+ scripts/test_holster_log_check.py | 150 ++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 243 insertions(+), 5 deletions(-)
 ```
-- **Dirty Files (183):**
+- **Dirty Files (184):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
   - ` M .claude/handoffs/DECOMP_PLAN.handoff.md`
@@ -27,25 +30,25 @@ persist session context then make a detailed plan to resolve HW45 and start work
   - ` M .claude/reviews/gemini_20261014/tools/fix3_items.tsv`
   - ` M .claude/settings.json`
   - ` M CLAUDE.md`
-  - ... +173 more (run `git status --short`)
+  - ... +174 more (run `git status --short`)
 
-## 2. Immediate Objective (HW45)
-**Wrist continuity pick (HW44c) can hold a conj/conj candidate 131-150 deg off the target past ~233 deg raw turn: choose the candidate nearest `dq` among those within a small step of `prev` (or clamp once, then split); test asserts `sw*tw` vs `dq`**
+## 2. Immediate Objective (HW28b)
+**Draw cap raise (`draw_slide_cap`, default 570)**
 
-Status: OPEN
-Task: Wrist continuity pick (HW44c) can hold a conj/conj candidate 131-150 deg off the target past ~233 deg raw turn: choose the candidate nearest `dq` among those within a small step of `prev` (or clamp once, then split); test asserts `sw*tw` vs `dq`
+Status: GATED
+Task: Draw cap raise (`draw_slide_cap`, default 570)
 
 ## 2b. Upcoming Batches in Pipeline
-- **HW28b** : Draw cap raise (`draw_slide_cap`, default 570)
 - **HW33** : Two hands, item 3 only: support-hand reach ONLY if play SM-L8 shows the left hand off the weapon (items 1, 2, 4 moved to HW33a)
 - **HW32b** : Re-run the sweep with the measured back-mount quat, re-tune hinge out + extract defaults
+- **HW34** : Saber blade gate (ignite after the swing clears, douse before the stow carry)
 
 ## 3. Strict Context Budget & Read Policy
 - **Fresh Session Bootstrap**: Run `python3 scripts/plan_manager.py resume patch_manager_mods/42c_smooth_holstering_master_plan.md`.
 
 ## 4. Subagent Delegation Direction
 - **Claude Code**: parallel `model: haiku` Agent subagents; brief = `Contract` + `Write Scope` + `python3 scripts/agent_contract.py print worker|recon`.
-- **Other backends** (only when the user asks): `python3 scripts/plan_manager.py delegate HW45` or `oc-subagent <scout|code|ghidra|verify|gate|doc>`.
+- **Other backends** (only when the user asks): `python3 scripts/plan_manager.py delegate HW28b` or `oc-subagent <scout|code|ghidra|verify|gate|doc>`.
 
 ## 5. Dead Ends & Verification (manual)
 HW45-HW49 batch (2026-10-22, plan-handoff evidence wave w1-42c-HW45b):
@@ -67,3 +70,12 @@ Batch executed 2026-10-22 (wave dir `.claude/waves/w2-42c-HW45b/`: variant diffs
 - HW45 verified: NOT sweep-only. reachWristDelta(180) + blendQ hand the split the sweep's exact inputs once a turn crosses 180 deg (scratch chain.cpp matches 149.61/266). The P3 "180 clamp truncates" claim is wrong in float32 (relies on cos(float(pi/2)) < 0, unpinned). With 80/60 caps, gates step<5 and E<=E0+1 look jointly unsatisfiable (7 mechanisms). Do NOT probe more pick mechanisms. Next: R2 log `dq=`/`dj=` + R1' chain test, then decide from play data.
 - HW50 verified: `w_HvyBlstr` ("Heavy Blaster") is CatPistol (HolsterLogic.h:66); only repeaters are CatHeavy. For repeaters the via is the top suspect (path 90 -> ~355 deg at the documented barrel-down mount, peak x4). Heavy shares every ease curve; draw ends at full hand speed. SM-L15 checker does NOT measure head clip. All heavy motion keys are boot-only (restart per ini variant). No play log has a heavy SLIDE/REACH.
 - Follow-ups from reviews: D6 leaves `twistOn` set; `targetDelayed` retarget skips the M1 via ease; frame-1 extract share falls back to the bone flag (B).
+
+Batch executed 2026-10-22 20:00-20:12 (wave dir `.claude/waves/w4-42c-HW50/`: cards/, *_v*.diff, *_final.diff, *_cons.md, *_review.md, gate.md):
+- Commits: L1 9ef7f917 (REACH dq=/dj=), L2 bebf5bab (SLIDE cat=/mname=, end gob=/pkdps=), E2 a6cda6f7 (ini docs), T1 c359aa86 (chain test), K1 3e156357 (reach_ease_soft_<cat>), K2 697a957d (reach_via_tilt_deg_<cat>), play row e4096829 (SM-L19), manifest 2b9da6f2 (0.21.4-dev), C1 ef421722 (--row SM-L19). GATE PASS head=697a957d (code identical at ef421722: later commits are docs/scripts only).
+- HW45 decision rules after SM-L19 (no code before): dq<150 everywhere -> close DONE "synthetic only, pinned by T1"; dq>=170 seen but no visible wrong-way wrist -> R3(a) WONTFIX with data; crossing + visible -> R3(b) raise reach_wrist_max_deg toward 120/180 (ini), then R3(c) a2 + roll continuity (~20 lines, relaxed swing-cap gate), and R3(d) blendQ sign choice in reachWristDelta (~8 lines) if dj>60 coincides with the weight ramp.
+- Fact: dq= logs dqTot, already scaled by w * reach_wrist_pct (reads low during the arm-weight ramp, whole turn at full weight); with reach_twist_deg=0 it is capped at reach_wrist_max_deg.
+- Fact (K2 measured, whole turn incl. roll, hand axis forward): back mount near straight down 267/183/93 deg at tilt 0/45/90; 90 deg mount 270/315/180 (not monotone); up mount 90 constant. Tilt goes toward body forward = parent Gob +0xA4 quat * (0, sin t, cos t), unverified live (SM-L19 asks); if the body read fails the tilt falls back to world +y (K2 review).
+- Fact: the checker's SLIDE regex needs dly=/slowx= right after ms= and ms= right after owner= on end, so new SLIDE fields are always appended at the end.
+- Review notes (minor, not fixed): K1 test (b) partly self-compares, reversal tests skip extractPct>0, previewSeedSlide may copy a slide across categories; L2 pkdps is slightly high-biased by whole-ms dt; T1 assert (a) is sign-blind (b pins the flip).
+- Not done: CLAUDE.md lists `--row SM-L11..SM-L15`; it now goes to SM-L19 (CLAUDE.md has another session's uncommitted edits, so it was left alone).
