@@ -160,7 +160,28 @@ static void testRotWindow() {
     KT_CHECK(closeF(qdot(o41, Q{ 1, 0, 0, 0 }), 1.f));
 }
 
+// HW51: per-category overrides fall back to the global value when unset.
+static void testPerCategory() {
+    const float L = 0.15f;
+    KT_CHECK(closeF(slideStowRotFor(false, 0.35f, 0.6f, L), 0.6f));   // unset = global
+    KT_CHECK(closeF(slideStowRotFor(true, 0.35f, 0.6f, L), 0.35f));   // set = the category value
+    KT_CHECK(closeF(slideStowRotFor(true, 0.05f, 0.6f, L), L));       // clamped up to the landing window
+    KT_CHECK(closeF(slideStowRotFor(true, 9.f, 0.6f, L), 1.f));
+    KT_CHECK(slideStowRotFor(true, 0.35f, 0.6f, 0.f) == 0.f);         // stow hold off = off for every category
+    // A smaller rot fraction starts the turn later in the path: at pathF 0.5 a 0.6 window has turned, a 0.35 window has not started.
+    float t, ms;
+    slideStowFracWindow(0.5f, slideStowRotFor(false, 0.f, 0.6f, L), t, ms);
+    KT_CHECK(t < ms);
+    slideStowFracWindow(0.5f, slideStowRotFor(true, 0.35f, 0.6f, L), t, ms);
+    KT_CHECK(t >= ms);
+    KT_CHECK(slideDrawResidFor(false, 140, 240) == 240u);
+    KT_CHECK(slideDrawResidFor(true, 140, 240) == 140u);
+    KT_CHECK(slideDrawResidFor(true, 0, 240) == 20u);
+    KT_CHECK(slideDrawResidFor(true, 9999, 240) == 600u);
+}
+
 int main() {
+    testPerCategory();
     testClamp();
     testRotClamp();
     testRotWindow();

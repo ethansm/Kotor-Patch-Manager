@@ -304,6 +304,11 @@ inline float slideClampStowRotF(float rot, float land) {
     return rot < land ? land : (rot > 1.f ? 1.f : rot);
 }
 
+// HW51: per-category stow turn window. set = reach_stow_rot_f_<cat> was given; unset follows the global raw value. Always through slideClampStowRotF.
+inline float slideStowRotFor(bool set, float catRaw, float globalRaw, float land) { return slideClampStowRotF(set ? catRaw : globalRaw, land); }
+// HW51: per-category draw unwind window (ms). set = reach_draw_resid_ms_<cat> was given: clamped to [20, 600] (0 would switch the unwind off, see slideResidBranch); unset = the global reach_resid_ms.
+inline uint32_t slideDrawResidFor(bool set, long catMs, uint32_t globalMs) { return set ? static_cast<uint32_t>(catMs < 20 ? 20 : (catMs > 600 ? 600 : catMs)) : globalMs; }
+
 // HW42: the same window as slideStowLandWindow but for a fraction up to 1.0 (slideStowLandWindow clamps to 0.5, the landing range). f <= 0 / NaN -> ms = 0, t = 0;
 // otherwise f is clamped to [0.02, 1]. In range 0.02..0.5 the result equals slideStowLandWindow. Used for the rotation window (slideClampStowRotF) and the via clock.
 inline void slideStowFracWindow(float pathF, float f, float& t, float& ms) {
