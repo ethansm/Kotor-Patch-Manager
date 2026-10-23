@@ -1336,6 +1336,73 @@ static void testDqTail() {
     KT_CHECK(reachDqTail(a, 20, 20, 1.f, 1.f) == 20);
 }
 
+// HW50 (reach_ease_soft_<cat>): soft = false is reachCarryF byte for byte, and the reachPlan default equals the explicit false. soft = true is smoothstep
+// on the carry: f(0) = 0, f(1) = 1, zero slope at both ends, monotone; the reach and the release and carryW do not change.
+static bool sameBits(float a, float b) { return std::memcmp(&a, &b, sizeof a) == 0; }
+static void testEaseSoft() {
+    for (int i = 0; i <= 512; ++i) KT_CHECK(sameBits(reachCarryEase(i / 512.f, false), reachCarryF(i / 512.f)));
+    KT_CHECK(sameBits(reachCarryEase(-0.5f, false), reachCarryF(-0.5f)));
+    KT_CHECK(sameBits(reachCarryEase(1.5f, false), reachCarryF(1.5f)));
+    KT_CHECK(sameBits(reachCarryEase(kNaN, false), reachCarryF(kNaN)));
+    Slide d, st, pd, ps;   // draw and stow from rest, and a draw / stow reversed half way (partial)
+    d.reset(false, 1000);  d.target(true, 1000, 400, 400);
+    st.reset(true, 1000);  st.target(false, 1000, 400, 400);
+    pd.reset(false, 1000); pd.target(true, 1000, 400, 400); reachRetarget(pd, false, 1200, 400, 400, 0.3f);
+    ps.reset(true, 1000);  ps.target(false, 1000, 400, 400); reachRetarget(ps, true, 1200, 400, 400, 0.3f);
+    const Slide* const sls[4] = { &d, &st, &pd, &ps };
+    const float es[2] = { 0.f, 0.4f };
+    for (const Slide* s : sls)
+        for (uint32_t t = 1000; t < 1400; ++t)
+            for (const float e : es) {
+                const ReachPlan a = reachPlan(*s, t, 0.3f, e), b = reachPlan(*s, t, 0.3f, e, false);
+                KT_CHECK(a.active == b.active && sameBits(a.pathF, b.pathF) && sameBits(a.restMix, b.restMix) && sameBits(a.carryW, b.carryW));
+                KT_CHECK(sameBits(a.extractK, b.extractK) && sameBits(a.oriF, b.oriF));
+            }
+    KT_CHECK(reachCarryEase(0.f, true) == 0.f && reachCarryEase(1.f, true) == 1.f);
+    const float h = 1e-3f;
+    KT_CHECK(std::fabs(reachCarryEase(h, true) - reachCarryEase(0.f, true)) / h < 0.01f);          // zero slope at q = 0
+    KT_CHECK(std::fabs(reachCarryEase(1.f, true) - reachCarryEase(1.f - h, true)) / h < 0.01f);    // zero slope at q = 1
+    float prev = -1.f;
+    for (int i = 0; i <= 512; ++i) { const float f = reachCarryEase(i / 512.f, true); KT_CHECK(f >= prev); prev = f; }
+    // the knob is wired: soft = true changes the carry of a draw and a stow; the reach (draw p < g), the release (stow p >= 1 - g) and carryW stay put
+    bool carryDiffD = false, carryDiffS = false;
+    for (uint32_t t = 1000; t < 1400; ++t) {
+        const ReachPlan dh = reachPlan(d, t, 0.3f, 0.f, true), dn = reachPlan(d, t, 0.3f);
+        const ReachPlan sh = reachPlan(st, t, 0.3f, 0.f, true), sn = reachPlan(st, t, 0.3f);
+        KT_CHECK(sameBits(dh.carryW, dn.carryW) && sameBits(sh.carryW, sn.carryW));
+        if (t < 1120) KT_CHECK(sameBits(dh.pathF, dn.pathF));
+        if (t >= 1282) KT_CHECK(sameBits(sh.pathF, sn.pathF));   // past the carry / release boundary (p = 0.7) with float margin
+        if (!sameBits(dh.pathF, dn.pathF)) carryDiffD = true;
+        if (!sameBits(sh.pathF, sn.pathF)) carryDiffS = true;
+    }
+    KT_CHECK(carryDiffD && carryDiffS);
+    // a reversal mid-carry keeps pathF and carryW continuous at the retarget tick when the retarget and the reader pass the same flag (draw reversed to a stow,
+    // stow reversed to a draw), and moves at a normal speed on the next tick
+    const uint32_t revT[2][3] = { { 1200u, 1250u, 1330u }, { 1040u, 1200u, 1240u } };   // draw: inside the carry (starts 1120); stow: inside the carry (until 1280)
+    for (int dirHand = 0; dirHand < 2; ++dirHand)
+        for (int i = 0; i < 3; ++i) {
+            const uint32_t t = revT[dirHand][i];
+            Slide sl;
+            sl.reset(dirHand != 0, 1000);
+            sl.target(dirHand == 0, 1000, 400, 400);
+            const ReachPlan before = reachPlan(sl, t, 0.3f, 0.f, true);
+            reachRetarget(sl, dirHand != 0, t, 400, 400, 0.3f, 0.04f, 0.f, true);
+            const ReachPlan at = reachPlan(sl, t, 0.3f, 0.f, true), next = reachPlan(sl, t + 1u, 0.3f, 0.f, true);
+            KT_CHECK(before.active && at.active);
+            KT_CHECK(std::fabs(at.pathF - before.pathF) < 1e-6f && std::fabs(at.carryW - before.carryW) < 1e-6f);
+            KT_CHECK(std::fabs(next.pathF - at.pathF) < 0.01f);
+        }
+    {   // the trap the flag guards against: a mid-carry draw reversed with soft off and read with soft on jumps at the retarget tick
+        Slide sl;
+        sl.reset(false, 1000);
+        sl.target(true, 1000, 400, 400);
+        const ReachPlan before = reachPlan(sl, 1200, 0.3f, 0.f, true);
+        reachRetarget(sl, false, 1200, 400, 400, 0.3f);
+        const ReachPlan at = reachPlan(sl, 1200, 0.3f, 0.f, true);
+        KT_CHECK(std::fabs(at.pathF - before.pathF) > 0.02f);
+    }
+}
+
 int main() {
     testArcQuatMapsDirections();
     testArcQuatParallelAndAntiParallel();
@@ -1398,5 +1465,6 @@ int main() {
     testPoleBiasFades();
     testPoleBiasHingeInvariant();
     testDqTail();
+    testEaseSoft();
     return kt::Report("holster_reach");
 }

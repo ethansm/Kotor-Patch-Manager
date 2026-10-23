@@ -130,6 +130,10 @@ static float g_exitLenOv[hs::CatCount];
 // dual_stagger_ms (0.19.0-dev, HW33a): the left-hand weapon of a dual wielder starts its draw / stow this many ms after the right-hand one (0 = together, as 0.18).
 // party_jitter_ms: a further deterministic 0..N ms (hash of the owner id) for every owner except the controlled creature, so a party does not move in lockstep.
 static uint32_t g_dualStagger = 60, g_partyJitter = 0;
+// reach_ease_soft_<cat> (0.21.4-dev, HW50): 0/1, default 0 = the carry path is reachCarryF; 1 = smoothstep (hs::reachCarryEase), the hand settles at the end of a draw.
+// Boot-only, needs reach_test=1 and reach_carry=1. Read through reachEaseSoftFor(); an out-of-range category is off.
+static uint8_t g_reachEaseSoft[hs::CatCount];
+static inline bool reachEaseSoftFor(int cat) { return cat >= 0 && cat < hs::CatCount && g_reachEaseSoft[cat] != 0; }
 // reach_resid_ms (0.15.0-dev, HW26): a carried draw starts with the weapon at its mount orientation and position in the HAND frame; that offset unwinds over this many ms
 // (and a holster lands on the mount the same way) instead of the 15% world blend of the carry weight. 0 = the old world blend. Default hs::kReachResidMs.
 static uint32_t g_reachResidMs = hs::kReachResidMs;
@@ -592,6 +596,14 @@ static void readConfig() {
                 }
                 if (ok && hs::r3len(v) > 1e-3f) { dst[0] = v[0]; dst[1] = v[1]; dst[2] = v[2]; }
                 else cfgWarn(key, val, "need <hip|over>_<lightsaber|melee|qstaff|pistol|rifle|heavy>=x,y,z (non-zero), keeping the default");
+            }
+            else if (!_strnicmp(key, "reach_ease_soft_", 16)) {   // 0.21.4-dev (HW50): reach_ease_soft_<category>=0|1, smoothstep carry; before reach_resid_ms (no other reach_ prefix matches)
+                int ci = -1;
+                for (int i = hs::CatUnknown + 1; i < hs::CatCount; ++i)
+                    if (!_stricmp(key + 16, hs::categoryName(static_cast<hs::Category>(i)))) ci = i;
+                bool b = false;
+                if (ci >= 0 && hs::tuneParseBool(val, b)) g_reachEaseSoft[ci] = b ? 1 : 0;
+                else cfgWarn(key, val, "need reach_ease_soft_<lightsaber|melee|qstaff|pistol|rifle|heavy>=0|1, keeping the default 0");
             }
             else if (!_stricmp(key, "reach_resid_ms")) {
                 char* end = nullptr;
@@ -2294,7 +2306,7 @@ static bool previewPlace(uintptr_t g, uintptr_t beh) {
                 if (g_reachTest && g_reachCarry && (int32_t)(now - pe.slide.pendAt) >= 0) {
                     const uint32_t at = (int32_t)(now - pe.slide.pendAt) > 100 ? now : pe.slide.pendAt;   // pump()'s own late-fire guard
                     if (!pe.slide.active(at)) { PrevLock& pk0 = prevLockFor(g); pk0.lk.lockOn = 0; pk0.cres = CarryResid(); }
-                    hs::reachRetarget(pe.slide, pe.slide.pendWant != 0, at, pe.slide.pendDraw, pe.slide.pendStow, pe.grab, 0.04f, exPct);
+                    hs::reachRetarget(pe.slide, pe.slide.pendWant != 0, at, pe.slide.pendDraw, pe.slide.pendStow, pe.grab, 0.04f, exPct, reachEaseSoftFor(cat));
                 }
             }
             pe.slide.pump(now);
@@ -2303,7 +2315,7 @@ static bool previewPlace(uintptr_t g, uintptr_t beh) {
                 slideF = pe.slide.frac(now);
                 reachW = hs::reachWeightRamp(pe.slide, now, g_reachCarry ? 0.04f : 0.2f);
                 if (!g_editGob || g_editGob == reinterpret_cast<void*>(g)) g_prevExtract = exPct;   // HW31: only the edited preview weapon (or any, when none is being edited) feeds the toggle's retarget
-                plan = g_reachCarry ? hs::reachPlan(pe.slide, now, pe.grab, exPct) : hs::ReachPlan{pe.slide.active(now), slideF, 0.f, 1.f, 0.f, slideF};
+                plan = g_reachCarry ? hs::reachPlan(pe.slide, now, pe.grab, exPct, reachEaseSoftFor(cat)) : hs::ReachPlan{pe.slide.active(now), slideF, 0.f, 1.f, 0.f, slideF};
                 pslide = pe.slide;
                 pslow = pe.slowArm;
                 pgrab = pe.grab;
@@ -2548,7 +2560,7 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
                 const float grabE = static_cast<float>(hs::slideResolve(g_slideTune, cat).grabPct) / 100.f;
                 if (!ent->slide.active(at)) { ent->slide.lockOn = 0; ent->cres = CarryResid(); }
                 hs::reachRetarget(ent->slide, ent->slide.pendWant != 0, at, ent->slide.pendDraw, ent->slide.pendStow, grabE, 0.04f,
-                                  reachExtractPct(reinterpret_cast<uintptr_t>(beh), ent->left, reachIsBackBone(hs::boneNameOf(ent->r.boneIdx ? ent->r.boneIdx : hs::defaultBone(s_tune)))));
+                                  reachExtractPct(reinterpret_cast<uintptr_t>(beh), ent->left, reachIsBackBone(hs::boneNameOf(ent->r.boneIdx ? ent->r.boneIdx : hs::defaultBone(s_tune)))), reachEaseSoftFor(cat));
             }
         }
         ent->slide.pump(now);   // once per Gob per frame; fires a due delayed target (non-reach path)
@@ -2587,7 +2599,7 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
                 if (ent->slide.dir != (hip ? 0 : 1) && !(ent->slide.pending() && ent->slide.pendWant == (hip ? 0 : 1))) { ent->slowArm = s_tune.slowHolsterX; if (ent->slowArm != 1.f) slowReachRearm(ent->left); }   // 0.21.1-dev: REACH every-solve budget for this slowed slide
                 if (d > 0) { if (!ent->slide.pending() || ent->slide.pendWant != (hip ? 0 : 1)) ent->dly = d; ent->slide.targetDelayed(!hip, now, d, sres.drawMs, sres.stowMs); }
                 else if (g_reachTest && g_reachCarry) hs::reachRetarget(ent->slide, !hip, now, sres.drawMs, sres.stowMs, grab, 0.04f,
-                                                                  reachExtractPct(reinterpret_cast<uintptr_t>(beh), ent->left, reachIsBackBone(hs::boneNameOf(ent->r.boneIdx ? ent->r.boneIdx : hs::defaultBone(s_tune)))));   // HW25: the reversal keeps path, carry and arm weight continuous
+                                                                  reachExtractPct(reinterpret_cast<uintptr_t>(beh), ent->left, reachIsBackBone(hs::boneNameOf(ent->r.boneIdx ? ent->r.boneIdx : hs::defaultBone(s_tune)))), reachEaseSoftFor(cat));   // HW25: the reversal keeps path, carry and arm weight continuous
                 else ent->slide.target(!hip, now, sres.drawMs, sres.stowMs);
                 static volatile LONG s_slideStartLines = 0, s_slideEndLines = 0, s_slideSlowLines = 0;   // 0.21.1-dev: start and end have their own 60-line budgets; a slowed slide (slowx != 1) has a 200-line one
                 const bool logOk = g_onPlace && KP_ENABLED(chPlace, KPLOG_INFO);
@@ -2669,7 +2681,7 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
         const float rgrab = grabFor(cat);
         const uint32_t residMs = hs::slowMs(g_reachResidMs, ent->slowArm);   // HW44: the residual window at the slow factor this slide was armed with
         const float exPct = g_reachCarry ? reachExtractPct(reinterpret_cast<uintptr_t>(beh), ent->left, reachIsBackBone(mountBone)) : 0.f;   // HW31
-        const hs::ReachPlan pl = g_reachCarry ? hs::reachPlan(ent->slide, rnow, rgrab, exPct) : hs::ReachPlan{ent->slide.active(rnow), slideF, 0.f, 1.f, 0.f, slideF};
+        const hs::ReachPlan pl = g_reachCarry ? hs::reachPlan(ent->slide, rnow, rgrab, exPct, reachEaseSoftFor(cat)) : hs::ReachPlan{ent->slide.active(rnow), slideF, 0.f, 1.f, 0.f, slideF};
         const hs::ShapeEntry* const shp = hs::shapeOf(ent->mname);
         const float wa = hs::reachWeightRamp(ent->slide, rnow, g_reachCarry ? 0.04f : 0.2f);
         hs::Pose carried;
@@ -3131,7 +3143,7 @@ static int32_t KPATCH_CALL apiSetPreviewDraw(int32_t drawn) {
             if (!e.slide.active(now)) { PrevLock& pk = prevLockFor(reinterpret_cast<uintptr_t>(e.gob)); pk.lk.lockOn = 0; pk.cres = CarryResid(); }   // HW26: a slide from rest picks its hemisphere afresh
             const uint32_t d = hs::previewStaggerMs(e.left, hs::previewHasRightPartner(g_preview, i), g_dualStagger, slowX);
             if (d > 0) e.slide.targetDelayed(want, now, d, sres.drawMs, sres.stowMs);
-            else if (g_reachTest && g_reachCarry) hs::reachRetarget(e.slide, want, now, sres.drawMs, sres.stowMs, e.grab, 0.04f, g_prevExtract >= 0.f ? g_prevExtract : g_extractHip);   // HW25: same continuity as the world
+            else if (g_reachTest && g_reachCarry) hs::reachRetarget(e.slide, want, now, sres.drawMs, sres.stowMs, e.grab, 0.04f, g_prevExtract >= 0.f ? g_prevExtract : g_extractHip, reachEaseSoftFor(e.cat));   // HW25: same continuity as the world; HW50: e.cat (not ec), the category previewPlace's reader passes, so a reversal does not jump
             else e.slide.target(want, now, sres.drawMs, sres.stowMs);
         }
     }
@@ -3205,6 +3217,16 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
                 snprintf(viaCat + vn, sizeof viaCat - vn, "%s%s:%.2f", vn ? "," : "", hs::categoryName(static_cast<hs::Category>(i)), static_cast<double>(g_viaOutCat.v[i]));
             }
             if (viaCat[0]) KP_LOG(chMain, "CONFIG viaout_cat=%s (reach_via_out_m_<cat> overrides of viaout=%.2f)", viaCat, static_cast<double>(g_viaOut));
+        }
+        {   // HW50: reach_ease_soft_<cat>=1 categories, only when any is set
+            char easeCat[120];
+            easeCat[0] = 0;
+            for (int i = hs::CatUnknown + 1; i < hs::CatCount; ++i) {
+                if (!g_reachEaseSoft[i]) continue;
+                const size_t en = strlen(easeCat);
+                snprintf(easeCat + en, sizeof easeCat - en, "%s%s", en ? "," : "", hs::categoryName(static_cast<hs::Category>(i)));
+            }
+            if (easeCat[0]) KP_LOG(chMain, "CONFIG ease_soft=%s (reach_ease_soft_<cat>=1: smoothstep carry, reach_test and reach_carry needed)", easeCat);
         }
         KP_LOG(chMain, "PLACEMODE %s (active=%d: needs probe=1 and bone_test=1)", hs::placeModeName(g_placeMode), g_boneTest ? 1 : 0);
         {

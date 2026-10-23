@@ -389,6 +389,8 @@ inline float reachCarryF(float q) {
     if (q <= L) { const float x = q / L; return v * L * (x * x * x - x * x * x * x / 2.f); }
     return v * (L / 2.f + q - L);
 }
+// reach_ease_soft_<cat> (0.21.4-dev, HW50): soft = smoothstep (easeSmooth) instead of reachCarryF, so the hand settles at the end of a draw; false = reachCarryF byte for byte.
+inline float reachCarryEase(float q, bool soft) { return soft ? easeSmooth(q) : reachCarryF(q); }
 
 // HW31 extract bump: 16 x^2 (1 - x)^2 on x in [0, 1] (0 at both ends, 1 at the middle); x is clamped.
 inline float extractBump(float x) { x = slideClamp01(x); return 16.f * x * x * (1.f - x) * (1.f - x); }
@@ -396,16 +398,16 @@ inline float extractBump(float x) { x = slideClamp01(x); return 16.f * x * x * (
 // HW31 orientation progress (D2), applied only inside the carry window (reachPlan uses oriF = pathF in reach and release).
 // e = clamped extract share. e == 0 returns pathF (today's behaviour). In the carry: 0 while pathF <= X (the extract window's
 // path end), then smooth 0 -> 1 to the hand end.
-inline float reachOriF(float pathF, float e) {
+inline float reachOriF(float pathF, float e, bool soft = false) {
     if (!(e > 0.f)) return pathF;
-    const float X = reachCarryF(e);            // pathF at the end of the extract window
+    const float X = reachCarryEase(e, soft);   // pathF at the end of the extract window
     if (pathF <= X) return 0.f;                // mount orientation held through the extract
     return easeSmooth((pathF - X) / (1.f - X));
 }
 
 // The plan starts from the slide's stored retarget state (pathFrom, carryFrom), so a reversal continues where the arm was. The retarget tick
 // (d == 0) is active.
-inline ReachPlan reachPlan(const Slide& s, uint32_t now, float g, float extractPct = 0.f) {
+inline ReachPlan reachPlan(const Slide& s, uint32_t now, float g, float extractPct = 0.f, bool soft = false) {
     ReachPlan r = { false, 0.f, 0.f, 0.f, 0.f, 0.f };
     const int32_t d = (int32_t)(now - s.t0);
     if (d < 0 || d >= (int32_t)s.len) return r;   // was s.active(now): the retarget tick (d == 0) is inside now
@@ -426,18 +428,18 @@ inline ReachPlan reachPlan(const Slide& s, uint32_t now, float g, float extractP
                 carry = false;
             } else {
                 const float q = (p - g) / (1.f - g);
-                r.pathF = reachCarryF(q); r.carryW = easeSmooth(q / kCarryEaseLen);
+                r.pathF = reachCarryEase(q, soft); r.carryW = easeSmooth(q / kCarryEaseLen);
                 if (e > 0.f && q <= e) bump = extractBump(q / e);
             }
         } else {                                   // partial: continues from the retarget, no fresh extract
-            r.pathF = s.pathFrom + (1.f - s.pathFrom) * reachCarryF(p);
+            r.pathF = s.pathFrom + (1.f - s.pathFrom) * reachCarryEase(p, soft);
             r.carryW = s.carryFrom + (1.f - s.carryFrom) * easeSmooth(p / kCarryEaseLen);
         }
     } else {                                       // stow
         const float c = 1.f - g;                   // stow: carry share of the slide
         if (p < c) {
             const float q = p / c;
-            r.pathF = s.pathFrom * reachCarryF(1.f - q);
+            r.pathF = s.pathFrom * reachCarryEase(1.f - q, soft);
             r.carryW = s.carryFrom * easeSmooth((1.f - q) / kCarryEaseLen);
             if (e > 0.f && q >= 1.f - e) bump = extractBump((q - (1.f - e)) / e);
         } else {                                   // release: unchanged
@@ -445,7 +447,7 @@ inline ReachPlan reachPlan(const Slide& s, uint32_t now, float g, float extractP
             carry = false;
         }
     }
-    r.oriF = carry ? reachOriF(r.pathF, e) : r.pathF;   // hold only in the carry window; reach and release follow pathF
+    r.oriF = carry ? reachOriF(r.pathF, e, soft) : r.pathF;   // hold only in the carry window; reach and release follow pathF
     if (s.oriOn) r.oriF = s.oriFrom + (r.oriF - s.oriFrom) * easeSmooth(p / 0.1f);   // B1: the join keeps oriF continuous (blend over 10%)
     r.extractK = s.extractFrom > 0.f ? s.extractFrom * (1.f - easeSmooth(p)) : bump;   // D4
     return r;
@@ -454,9 +456,9 @@ inline ReachPlan reachPlan(const Slide& s, uint32_t now, float g, float extractP
 // Retarget with continuity. g must be the grab share the reader passes to reachPlan. ramp must equal the reader's reach ramp (the Holster.cpp
 // readers use g_reachCarry ? 0.04f : 0.2f); the default is the carry-mode value. Duration (Option B, this wrapper only): a reversal of a running
 // slide takes ms * path distance / 2 (stow (P0 + 1) / 2, draw (1 - P0) / 2), so arm speed stays normal.
-inline void reachRetarget(Slide& s, bool hand, uint32_t now, uint32_t drawMs, uint32_t stowMs, float g, float ramp = 0.04f, float extractPct = 0.f) {
+inline void reachRetarget(Slide& s, bool hand, uint32_t now, uint32_t drawMs, uint32_t stowMs, float g, float ramp = 0.04f, float extractPct = 0.f, bool soft = false) {
     if (s.dir == (hand ? 1 : 0)) return;                    // same direction: target() is a no-op, store nothing
-    const ReachPlan old = reachPlan(s, now, g, extractPct); // read BEFORE target(), which resets t0; extractPct = the reader's extract share
+    const ReachPlan old = reachPlan(s, now, g, extractPct, soft); // read BEFORE target(), which resets t0; extractPct = the reader's extract share; soft = the reader's reach_ease_soft_<cat>
     const float P0 = old.active ? old.pathF : 1.f;
     const float C0 = old.active ? old.carryW : (float)s.dir;
     const float w = reachWeightRamp(s, now, ramp);          // also before target()
