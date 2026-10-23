@@ -1,7 +1,7 @@
 # Session Handoff & Plan State: patch_manager_mods/42c_smooth_holstering_master_plan.md
 
 ## 0. Next-Phase Direction
-holster 0.21.4-dev is BUILT and gated (GATE PASS at 697a957d), NOT installed. Next: (1) on the user's GO: `python3 scripts/kpm_hotswap.py --mod holster --prepare` -> commit KPM -> fresh `scripts/pre_install_gate.sh --mod holster_src --skip-default` GATE PASS -> `--apply` -> `kpm_status` LIVE; (2) user plays SM-L19 (variant ladder BASE/V1/V2/V3/V4, restart per variant); (3) read `holster_log_check.py <log> --row SM-L19`, then decide HW45 per the rules in section 5 and pick the HW50 variant (ini default for the mining laser). HW28b (auto-picked) is GATED, not the next step.
+holster 0.21.4-dev is LIVE since 10-22 20:50 (repo fca8d191, KPM fc57a06, GATE PASS head=fca8d191, rollback `python3 scripts/kpm_hotswap.py --rollback holster_swap_20261022_205007`; holster-editor stays 0.7.2-dev). Next: (2) user plays SM-L19 (variant ladder BASE/V1/V2/V3/V4, restart per variant); (3) read `holster_log_check.py <log> --row SM-L19`, then decide HW45 per the rules in section 5 and pick the HW50 variant (ini default for the mining laser). HW28b (auto-picked) is GATED, not the next step.
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/42c_smooth_holstering_master_plan.md`
