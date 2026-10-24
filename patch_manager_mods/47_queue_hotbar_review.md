@@ -267,7 +267,7 @@ Executor specs per phase: `.claude/reviews/rv_qac_20261023/plan_<Id>.md` (exact 
 | RV4 | cross-mod: RQ13 actq::castQueued + selfheal dedupe, selfheal wiped-pending end | RV1 | - | DONE | 24f127ba | selfheal 0.9.4-dev; 6/6 suites PASS; KPM Common sync of ActQueue.h/SelfHealUi.h needed at RV7; play SH-RQ13a/b |
 | RV5 | action-hotbar: RH1 persave absent -> empty, RH2 4:3 scale, RH3 assign rollback, RH4 @lowhp pending heals, RH5 gate DEBUG line + play row, RL23-RL31 | - | - | DONE | e9edc3d7 | hotbar 0.1.6-dev; hotbar_logic/log/config_roundtrip PASS, build_check PASS; play AHR1-AHR6 |
 | RV6 | low/logging/docs: RL4, RL7, RL9, RL10, RL13-RL16, RL20-RL22, docs V1-14/V2-14/V3-13 | RV3 | - | DONE | be162666 | queue-hud 0.4.9-dev; queue_hud 3/3 + selfheal 6/6 PASS; build PASS vs synced scratch KPM (live KPM Common needs header sync at RV7) |
-| RV7 | install (hot-swap queue-hud, action-hotbar, companion-selfheal) + PLAY_TEST_QUEUE rows | RV1-RV6 | user GO | TODO | | gate PASS then kpm_hotswap --apply |
+| RV7 | install (hot-swap queue-hud, action-hotbar, companion-selfheal) + PLAY_TEST_QUEUE rows | RV1-RV6 | user GO | DONE | 0c2f3461 | KPM Common synced (15572ce); mirrored & rebuilt (17af680, ae44d51, 9d362f0); full gate PASS; hot-swapped LIVE: queue-hud 0.4.9-dev (0056b54d), companion-selfheal 0.9.4-dev (c8c67a34), action-hotbar 0.1.6-dev (d36c6ced); backup batch_swap_20261023_212719 |
 
 ## Plan-stage decisions (after spec + spec review, 10-23)
 Specs `plan_RV1..RV6.md` were reviewed by 3 Sonnet skeptics (`review_RV12.md`, `review_RV36.md`, `review_RV45.md`: 6 BLOCKING,

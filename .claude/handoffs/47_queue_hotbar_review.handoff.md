@@ -1,20 +1,19 @@
 # Session Handoff & Plan State: patch_manager_mods/47_queue_hotbar_review.md
 
 ## 0. Next-Phase Direction
-RV7: install. Prereq: user OK to run check_shared_headers.py --sync (3 drifted: ActQueue.h, GameAddr.h, SelfHealUi.h; additive) + commit KPM Common separately; then pre_install_gate.sh --mod queue_hud_src --mod companion_selfheal_src --mod action_hotbar_src, kpm_hotswap.py --mod queue-hud companion-selfheal action-hotbar --prepare, fresh gate, --apply (game closed). RV1-RV6 commits 9fc34ef6 2ee85867 8422f729 be162666 24f127ba e9edc3d7, rows 55c240cf.
+All phases complete
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/47_queue_hotbar_review.md`
 - **Waves:** .claude/waves/WI-47-a1/
 - **Waves:** .claude/waves/WI-47-a2/
-- **Branch:** `KOTOR-II` (55c240cf doc 47: RV1-RV6 DONE in plan table; PLAY rows QV-*, RV3-*, QH-RL*, SH-RQ13a/b, AHR1-6 (QH21-24 retargeted to 0.4.9-dev))
-- **Generated:** 2026-10-23 17:13:48 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (0c2f3461 handoff 47: RV1-RV6 done, RV7 install next (KPM Common header sync needs OK))
+- **Generated:** 2026-10-23 21:27:39 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-55c240cf doc 47: RV1-RV6 DONE in plan table; PLAY rows QV-*, RV3-*, QH-RL*, SH-RQ13a/b, AHR1-6 (QH21-24 retargeted to 0.4.9-dev)
- patch_manager_mods/47_queue_hotbar_review.md | 12 +++++------
- patch_manager_mods/PLAY_TEST_QUEUE.md        | 32 ++++++++++++++++++++++++----
- 2 files changed, 34 insertions(+), 10 deletions(-)
+0c2f3461 handoff 47: RV1-RV6 done, RV7 install next (KPM Common header sync needs OK)
+ .claude/handoffs/47_queue_hotbar_review.handoff.md | 55 +++++-----------------
+ 1 file changed, 11 insertions(+), 44 deletions(-)
 ```
 - **Dirty Files (184):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
@@ -29,18 +28,8 @@ RV7: install. Prereq: user OK to run check_shared_headers.py --sync (3 drifted: 
   - ` M CLAUDE.md`
   - ... +174 more (run `git status --short`)
 
-## 2. Immediate Objective (RV7)
-**install (hot-swap queue-hud, action-hotbar, companion-selfheal) + PLAY_TEST_QUEUE rows**
-
-Status: TODO
-Task: install (hot-swap queue-hud, action-hotbar, companion-selfheal) + PLAY_TEST_QUEUE rows
-
 ## 3. Strict Context Budget & Read Policy
 - **Fresh Session Bootstrap**: Run `python3 scripts/plan_manager.py resume patch_manager_mods/47_queue_hotbar_review.md`.
-
-## 4. Subagent Delegation Direction
-- **Claude Code**: parallel `model: haiku` Agent subagents; brief = `Contract` + `Write Scope` + `python3 scripts/agent_contract.py print worker|recon`.
-- **Other backends** (only when the user asks): `python3 scripts/plan_manager.py delegate RV7` or `oc-subagent <scout|code|ghidra|verify|gate|doc>`.
 
 ## 5. Dead Ends & Verification (manual)
 _(none recorded; append Dead Ends & Anti-Patterns and Verification Commands here)_
