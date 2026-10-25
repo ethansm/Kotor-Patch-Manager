@@ -6,8 +6,11 @@
   scripts/pre_install_gate.sh --selftest                                # two broken builds must both FAIL
 
 Steps (stop at the first failure; exit 1 on FAIL, 0 on PASS):
-  1 default   run_tests.py (default tier); --skip-default skips it with a warning (selftest only). A failure set of
-              exactly {suite:check-exports} is tolerated with a WARN (it checks the stale live kpatch; see step 3)
+  1 default   run_tests.py, scoped: the tests/static checks compat_check.py plans for the gated mods' tracked source
+              files + GLOBAL_SUITES (intersected with `run_tests.py --list`), via --ids-file. compat_check failing or
+              planning nothing falls back to the full default tier with a WARN; --full-default forces the full tier;
+              --skip-default skips it with a warning (selftest only). A failure set of exactly
+              {suite:check-exports} is tolerated with a WARN (it checks the stale live kpatch; see step 3)
   2 build     build_check.py --mod <m> --keep --build-root <scratch>/build (a fresh windows_x86.dll from source)
   3 scratch   for every smokes.toml row whose kpatch (or extra_dlls kpatch) carries the mod's manifest id: copy the
               live kpatch to <scratch>/Patches/<same rel path> and replace binaries/windows_x86.dll with the fresh DLL
@@ -20,15 +23,22 @@ Steps (stop at the first failure; exit 1 on FAIL, 0 on PASS):
   5 report    GATE PASS mods=<ids> smokes=<rows> head=<sha12> + the md5 of every rebuilt DLL (the md5 that
               stage_and_verify_install.py verify compares)
 
-Read-only towards $KPM_DIR and the game dir: everything is written under $TMPDIR/kotor-tests/gate/ (asserted).
+On PASS one JSON record per mod is written (atomically) to $TMPDIR/kotor-tests/gate-records/<mod id>.json with
+{mod_id, md5, dll, head, time, scratch}; kpm_hotswap.py reads it.
+
+Read-only towards $KPM_DIR and the game dir: everything is written under $TMPDIR/kotor-tests/gate-<pid>-<epoch>/ (a
+fresh dir per run, so concurrent gates never clobber each other; asserted; old ones are pruned by age elsewhere).
 """
 import argparse
+import datetime
 import hashlib
+import json
 import os
 import re
 import shutil
 import subprocess
 import sys
+import time
 import tomllib
 import zipfile
 from pathlib import Path
@@ -45,6 +55,12 @@ GAME_DIR = Path(os.environ.get("KOTOR2_ROOT")
                 or "~/.local/share/Steam/steamapps/common/Knights of the Old Republic II").expanduser()
 CHECK_EXPORTS = REPO / "scripts" / "check_exports.py"
 DEFERRED = {"suite:check-exports"}   # judged on the fresh DLL in step 3 instead
+COMPAT_CHECK = REPO / "scripts" / "compat_check.py"
+# repo-wide static checks that no per-file plan reliably selects; always part of the scoped step 1
+GLOBAL_SUITES = [f"suite:{n}" for n in (
+    "check-hook-bytes", "check-hook-spans", "check-hook-sources", "check-exports", "kpm-validate-patches",
+    "check-gui-ids", "check-effect-decode", "check-shared-headers", "check-raw-addresses", "check-subclassers",
+    "provider_manifests")]
 DLL_MEMBER = "binaries/windows_x86.dll"
 RESULT_RE = re.compile(r"^(PASS|FAIL|ERROR|SKIP)\s+wine:([^\s\[]+)(\[\S*\])?\s+(.*)$")
 
@@ -53,6 +69,10 @@ try:
     import master_ledger as ml
 except ImportError:
     ml = None
+try:
+    import _load_limit
+except ImportError:
+    _load_limit = None
 
 
 class GateFail(Exception):
@@ -72,6 +92,25 @@ def safe_scratch(path: Path) -> Path:
         if p.is_relative_to(forbidden.resolve()):
             raise SystemExit(f"refusing scratch dir {p}: inside {forbidden}")
     return p
+
+
+def default_scratch() -> Path:
+    """A fresh per-run scratch dir (concurrent gates must never share one: step_scratch rmtree's <scratch>/Patches)."""
+    return TMP_BASE / f"gate-{os.getpid()}-{int(time.time())}"
+
+
+def write_gate_record(mod_id: str, dll: Path, scratch: Path, records_dir: Path | None = None) -> Path:
+    """Atomically write the PASS record kpm_hotswap.py reads: {mod_id, md5, dll, head, time, scratch}."""
+    d = records_dir or TMP_BASE / "gate-records"
+    d.mkdir(parents=True, exist_ok=True)
+    rec = {"mod_id": mod_id, "md5": md5(dll), "dll": str(dll), "head": git_head(),
+           "time": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+           "scratch": str(scratch)}
+    dest = d / f"{mod_id}.json"
+    tmp = d / f".{mod_id}.json.{os.getpid()}.tmp"
+    tmp.write_text(json.dumps(rec, indent=2) + "\n")
+    os.replace(tmp, dest)
+    return dest
 
 
 def mod_dir(mod: str, repo: Path = REPO) -> Path:
@@ -142,8 +181,66 @@ def run(cmd, env=None, quiet=False) -> tuple:
 
 # ---------------------------------------------------------------- steps
 
-def step_default(runner=run):
-    rc, out = runner([PY, str(RUN_TESTS)])
+def mod_source_files(mods, repo: Path = REPO) -> list:
+    """Repo-relative tracked files under the gated mods' source dirs (git ls-files)."""
+    files = []
+    for m in mods:
+        d = mod_dir(m, repo)
+        try:
+            rel = d.relative_to(Path(repo).resolve())
+        except ValueError:
+            continue
+        p = subprocess.run(["git", "-C", str(repo), "ls-files", "-z", "--", str(rel)],
+                           stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        files += [f for f in p.stdout.decode("utf-8", "replace").split("\0") if f and f not in files]
+    return files
+
+
+def scoped_ids(mods, scratch: Path, runner=run, repo: Path = REPO):
+    """Item ids for the scoped step 1, or None when the scope cannot be computed (caller falls back to the full tier)."""
+    files = mod_source_files(mods, repo)
+    if not files:
+        print("WARN  step 1: no tracked source files found for the gated mods")
+        return None
+    scratch.mkdir(parents=True, exist_ok=True)
+    cj = scratch / "compat.json"
+    cj.unlink(missing_ok=True)
+    rc, out = runner([PY, str(COMPAT_CHECK), *files, "--list", "--json", str(cj)], quiet=True)
+    try:
+        plan = json.loads(cj.read_text())["plan"]
+    except (OSError, ValueError, KeyError, TypeError):
+        print(f"WARN  step 1: compat_check.py gave no usable plan (rc={rc})")
+        return None
+    if rc != 0:
+        print(f"WARN  step 1: compat_check.py rc={rc}")
+        return None
+    wanted = [e["id"] for e in plan if e.get("kind") != "build" and e.get("id")]
+    rc, out = runner([PY, str(RUN_TESTS), "--list"], quiet=True)
+    if rc != 0:
+        print(f"WARN  step 1: run_tests.py --list rc={rc}")
+        return None
+    known = {l.split()[0] for l in out.splitlines() if l.strip()}
+    ids = []
+    for i in wanted + GLOBAL_SUITES:
+        if i in known and i not in ids:
+            ids.append(i)
+    return ids or None
+
+
+def step_default(runner=run, mods=None, scratch: Path | None = None, full: bool = False):
+    cmd = [PY, str(RUN_TESTS)]
+    scratch = scratch or default_scratch()
+    ids = None if full or not mods else scoped_ids(mods, scratch, runner)
+    if ids:
+        idf = scratch / "step1_ids.txt"
+        idf.write_text("\n".join(ids) + "\n")
+        cmd += ["--ids-file", str(idf)]
+        print(f"== step 1/4: run_tests.py (scoped: {len(ids)} items; --full-default for all)", flush=True)
+    else:
+        if not full and mods:
+            print("WARN  step 1: falling back to the full default tier")
+        print("== step 1/4: run_tests.py (full default tier)", flush=True)
+    rc, out = runner(cmd)
     bad = [l.split()[1] for l in out.splitlines() if re.match(r"^(FAIL|ERROR)\s+\S", l)]
     if bad and set(bad) <= DEFERRED:
         print("WARN  step 1: suite:check-exports failed against the stale KPM kpatch; deferred to step 3 (fresh DLL)")
@@ -273,8 +370,8 @@ def git_head() -> str:
 
 # ---------------------------------------------------------------- gate
 
-def gate(mods, skip_default=False, scratch=None, runner=run) -> int:
-    scratch = safe_scratch(scratch or TMP_BASE / "gate")
+def gate(mods, skip_default=False, scratch=None, runner=run, full_default=False, records_dir=None) -> int:
+    scratch = safe_scratch(scratch or default_scratch())
     try:
         ids = {}
         for m in mods:
@@ -285,8 +382,7 @@ def gate(mods, skip_default=False, scratch=None, runner=run) -> int:
         if skip_default:
             print("WARN  step 1 default tier skipped (--skip-default)")
         else:
-            print("== step 1/4: run_tests.py (default tier)", flush=True)
-            step_default(runner)
+            step_default(runner, mods, scratch, full_default)
         print("== step 2/4: build from source", flush=True)
         dlls = step_build(mods, scratch / "build", runner=runner)
         print("== step 3/4: scratch KPM tree + exports check on the fresh DLLs", flush=True)
@@ -316,6 +412,11 @@ def gate(mods, skip_default=False, scratch=None, runner=run) -> int:
     print(f"GATE PASS mods={','.join(ids.values())} smokes={','.join(all_rows) or '-'} head={git_head()}")
     for m in mods:
         print(f"  md5 {md5(dlls[m])}  {ids[m]}  {dlls[m]}")
+    for m in mods:
+        try:
+            write_gate_record(ids[m], dlls[m], scratch, records_dir)
+        except OSError as e:
+            print(f"WARN  could not write the gate record for {ids[m]}: {e}")
     if ml:
         ml.log_event("BUILD_GATE", {
             "verdict": "PASS",
@@ -328,7 +429,7 @@ def gate(mods, skip_default=False, scratch=None, runner=run) -> int:
 
 def selftest() -> int:
     """(a) a syntax error must FAIL at step 2; (b) a DLL without the smoke's exports must FAIL at step 4."""
-    base = safe_scratch(TMP_BASE / "gate-selftest")
+    base = safe_scratch(TMP_BASE / f"gate-selftest-{os.getpid()}-{int(time.time())}")
     shutil.rmtree(base, ignore_errors=True)
     ok = True
 
@@ -372,13 +473,17 @@ def main(argv=None) -> int:
     ap.add_argument("--mod", action="append", default=[], metavar="DIR",
                     help="mod source dir relative to patch_manager_mods (e.g. perf_lab_src/perflab); repeatable")
     ap.add_argument("--skip-default", action="store_true", help="skip step 1 (run_tests.py default tier)")
+    ap.add_argument("--full-default", action="store_true",
+                    help="step 1 runs the whole default tier instead of the scoped ids")
     ap.add_argument("--selftest", action="store_true", help="two broken builds must FAIL (steps 2 and 4)")
     a = ap.parse_args(argv)
+    if _load_limit:
+        _load_limit.lower_priority()
     if a.selftest:
         return selftest()
     if not a.mod:
         ap.error("--mod is required (or --selftest)")
-    return gate(a.mod, a.skip_default)
+    return gate(a.mod, a.skip_default, full_default=a.full_default)
 
 
 if __name__ == "__main__":

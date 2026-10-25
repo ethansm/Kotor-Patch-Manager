@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 """Host-only tests for pre_install_gate.py (no compiler, no Wine; fake KPM tree under a temp dir)."""
 import io
+import json
+import os
 import sys
 import tempfile
 import unittest
 import zipfile
 from contextlib import redirect_stdout
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import pre_install_gate as g  # noqa: E402
@@ -223,7 +226,8 @@ class Ordering(unittest.TestCase):
         runner, calls = self.fake(fail_on)
         buf = io.StringIO()
         with redirect_stdout(buf):
-            rc = g.gate(["perf_lab_src/perflab"], scratch=g.TMP_BASE / "gate-unittest", runner=runner)
+            rc = g.gate(["perf_lab_src/perflab"], scratch=g.TMP_BASE / "gate-unittest", runner=runner,
+                        full_default=True)
         return rc, calls, buf.getvalue()
 
     def test_default_fail_stops(self):
@@ -260,6 +264,138 @@ class Ordering(unittest.TestCase):
         rc, calls, out = self.gate(None)
         self.assertEqual((rc, calls), (1, ["default", "build"]))
         self.assertIn("GATE FAIL 2 build: perf_lab_src/perflab: expected one built windows_x86.dll", out)
+
+
+def scoped_runner(compat_plan=None, listing="", compat_rc=0, list_rc=0, run_rc=0, calls=None):
+    """Fake runner for scoped step 1: compat_check writes compat_plan to its --json path, --list prints `listing`."""
+    calls = [] if calls is None else calls
+
+    def runner(cmd, env=None, quiet=False):
+        calls.append(cmd)
+        if str(g.COMPAT_CHECK) in cmd:
+            if compat_plan is not None:
+                Path(cmd[cmd.index("--json") + 1]).write_text(json.dumps({"plan": compat_plan}))
+            return compat_rc, ""
+        if "--list" in cmd:
+            return list_rc, listing
+        return run_rc, ""
+    return runner, calls
+
+
+PLAN = [{"kind": "build", "id": "build_check:x_src"}, {"kind": "test", "id": "cpp:x_test"},
+        {"kind": "static", "id": "suite:check-raw-addresses"}, {"kind": "test", "id": "cpp:gone_test"}]
+LISTING = "\n".join(["cpp:x_test  [cpp]", "cpp:other_test  [cpp]", "suite:check-raw-addresses  [suite]",
+                     "suite:check-hook-bytes  [suite]  SKIP (x)", "suite:check-exports  [suite]", "py:a.py  [py]"])
+
+
+class ScopedStep1(unittest.TestCase):
+    def setUp(self):
+        self.td = tempfile.TemporaryDirectory()
+        self.scratch = Path(self.td.name) / "s"
+        p = mock.patch.object(g, "mod_source_files", return_value=["patch_manager_mods/x_src/A.h"])
+        p.start()
+        self.addCleanup(p.stop)
+        self.addCleanup(self.td.cleanup)
+
+    def run_step(self, runner, full=False):
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            g.step_default(runner, ["x_src"], self.scratch, full)
+        return buf.getvalue()
+
+    def test_ids_file_from_compat_and_list(self):
+        runner, calls = scoped_runner(PLAN, LISTING)
+        out = self.run_step(runner)
+        ids = (self.scratch / "step1_ids.txt").read_text().split()
+        # non-build plan ids + GLOBAL_SUITES, only those run_tests --list knows, no dups, no build entry
+        self.assertEqual(ids, ["cpp:x_test", "suite:check-raw-addresses", "suite:check-hook-bytes", "suite:check-exports"])
+        self.assertIn("== step 1/4: run_tests.py (scoped: 4 items; --full-default for all)", out)
+        compat = calls[0]
+        self.assertEqual(compat[compat.index("--json") + 1], str(self.scratch / "compat.json"))
+        self.assertIn("patch_manager_mods/x_src/A.h", compat)
+        self.assertIn("--list", compat)
+        final = calls[-1]
+        self.assertEqual(final[-2:], ["--ids-file", str(self.scratch / "step1_ids.txt")])
+
+    def test_global_suites_exist_in_suites_toml(self):
+        text = (g.REPO / "tests" / "suites.toml").read_text()
+        if not text:
+            self.skipTest("no suites.toml")
+        for sid in g.GLOBAL_SUITES:
+            self.assertIn(f'"{sid.split(":", 1)[1]}"', text, sid)
+
+    def test_compat_failure_falls_back_to_full(self):
+        for kw in ({"compat_plan": None}, {"compat_plan": PLAN, "compat_rc": 2}):
+            runner, calls = scoped_runner(listing=LISTING, **kw)
+            out = self.run_step(runner)
+            self.assertIn("WARN  step 1: compat_check.py", out)
+            self.assertIn("falling back to the full default tier", out)
+            self.assertNotIn("--ids-file", calls[-1])
+            self.assertEqual(calls[-1][1:], [str(g.RUN_TESTS)])
+
+    def test_empty_intersection_falls_back(self):
+        runner, calls = scoped_runner(PLAN, "py:a.py  [py]\n")
+        out = self.run_step(runner)
+        self.assertIn("falling back to the full default tier", out)
+        self.assertNotIn("--ids-file", calls[-1])
+
+    def test_full_default_skips_compat(self):
+        runner, calls = scoped_runner(PLAN, LISTING)
+        out = self.run_step(runner, full=True)
+        self.assertEqual(len(calls), 1)
+        self.assertNotIn("--ids-file", calls[0])
+        self.assertIn("full default tier", out)
+
+    def test_scoped_run_keeps_deferred_tolerance(self):
+        runner = scoped_runner(PLAN, LISTING)[0]
+
+        def wrapped(cmd, env=None, quiet=False):
+            rc, out = runner(cmd, env, quiet)
+            return (1, "FAIL   suite:check-exports  0.1s\n") if "--ids-file" in cmd else (rc, out)
+        self.assertIn("deferred to step 3", self.run_step(wrapped))
+
+
+class ScratchAndRecords(unittest.TestCase):
+    def test_default_scratch_unique_per_run_and_under_tmp_base(self):
+        a = g.default_scratch()
+        self.assertTrue(a.is_relative_to(g.TMP_BASE))
+        self.assertTrue(a.name.startswith(f"gate-{os.getpid()}-"))
+        self.assertNotEqual(a, g.TMP_BASE / "gate")
+        with mock.patch.object(g.os, "getpid", return_value=424242):
+            self.assertNotEqual(a, g.default_scratch())
+        self.assertEqual(g.safe_scratch(a), a.resolve())
+
+    def gate_with_mocks(self, records, fail=False):
+        dll = Path(records) / "fresh.dll"
+        dll.write_bytes(b"FRESH-DLL")
+        scratch = g.TMP_BASE / "gate-unittest-records"
+        step_build = mock.Mock(side_effect=g.GateFail(2, "build", "boom")) if fail \
+            else mock.Mock(return_value={"perf_lab_src/perflab": dll})
+        with mock.patch.object(g, "step_build", step_build), \
+                mock.patch.object(g, "step_scratch", return_value={"perf-lab": []}), \
+                mock.patch.object(g, "step_exports"), mock.patch.object(g, "step_wine", return_value=[]), \
+                redirect_stdout(io.StringIO()):
+            rc = g.gate(["perf_lab_src/perflab"], skip_default=True, scratch=scratch, records_dir=Path(records) / "rec")
+        return rc, dll, scratch
+
+    def test_record_written_on_pass(self):
+        with tempfile.TemporaryDirectory() as td:
+            rc, dll, scratch = self.gate_with_mocks(td)
+            self.assertEqual(rc, 0)
+            rec = json.loads((Path(td) / "rec" / "perf-lab.json").read_text())
+            self.assertEqual(set(rec), {"mod_id", "md5", "dll", "head", "time", "scratch"})
+            self.assertEqual(rec["mod_id"], "perf-lab")
+            self.assertEqual(rec["md5"], g.md5(dll))
+            self.assertEqual((rec["dll"], rec["scratch"]), (str(dll), str(scratch.resolve())))
+            self.assertEqual(rec["head"], g.git_head())
+            self.assertRegex(rec["time"], r"^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$")
+            self.assertEqual([p.name for p in (Path(td) / "rec").iterdir()], ["perf-lab.json"])   # no tmp left over
+
+    def test_no_record_on_fail(self):
+        with tempfile.TemporaryDirectory() as td:
+            rc, _, _ = self.gate_with_mocks(td, fail=True)
+            self.assertEqual(rc, 1)
+            self.assertFalse((Path(td) / "rec").exists())
 
 
 if __name__ == "__main__":
