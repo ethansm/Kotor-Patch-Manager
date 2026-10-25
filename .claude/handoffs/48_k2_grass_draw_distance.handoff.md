@@ -7,20 +7,19 @@ Execute **P3**: Live In-Game Probing & Calibration
 - **Master Plan:** `patch_manager_mods/48_k2_grass_draw_distance.md`
 - **Waves:** .claude/waves/WI-48-a1/
 - **Waves:** .claude/waves/WI-48-b1/
-- **Branch:** `KOTOR-II` (53b9703b k2-grass-draw-distance 0.1.2-dev (doc 48 P2c): link the Fade Start and Draw Distance sliders)
-- **Generated:** 2026-10-25 10:21:34 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (9eaa75f5 k2-grass-draw-distance 0.1.3-dev: default 120..150 m, PERF drops windows across >1 s grass gaps)
+- **Generated:** 2026-10-25 11:39:22 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-53b9703b k2-grass-draw-distance 0.1.2-dev (doc 48 P2c): link the Fade Start and Draw Distance sliders
- patch_manager_mods/48_k2_grass_draw_distance.md    |  5 +--
- patch_manager_mods/PLAY_TEST_QUEUE.md              |  6 ++--
- .../K2GrassDrawDistance.cpp                        | 36 +++++++++++++++++++++-
- .../K2GrassDrawDistanceLogic.h                     | 18 ++++++++++-
- .../grass_draw_distance_test.cpp                   | 27 ++++++++++++++++
- .../k2_grass_draw_distance_src/manifest.toml       |  2 +-
- 6 files changed, 86 insertions(+), 8 deletions(-)
+9eaa75f5 k2-grass-draw-distance 0.1.3-dev: default 120..150 m, PERF drops windows across >1 s grass gaps
+ patch_manager_mods/48_k2_grass_draw_distance.md    |  5 ++--
+ .../K2GrassDrawDistance.cpp                        |  4 +--
+ .../K2GrassDrawDistanceLogic.h                     | 23 ++++++++++------
+ .../grass_draw_distance_test.cpp                   | 32 ++++++++++++++++------
+ .../k2_grass_draw_distance_src/manifest.toml       |  4 +--
+ 5 files changed, 44 insertions(+), 24 deletions(-)
 ```
-- **Dirty Files (185):**
+- **Dirty Files (188):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
   - ` M .claude/handoffs/DECOMP_PLAN.handoff.md`
@@ -31,7 +30,7 @@ Execute **P3**: Live In-Game Probing & Calibration
   - ` M .claude/reviews/gemini_20261014/tools/fix3_items.tsv`
   - ` M .claude/settings.json`
   - ` M CLAUDE.md`
-  - ... +175 more (run `git status --short`)
+  - ... +178 more (run `git status --short`)
 
 ## 2. Immediate Objective (**P3**)
 **Live In-Game Probing & Calibration**
