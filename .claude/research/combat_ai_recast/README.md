@@ -71,6 +71,20 @@ CLR of that actor), Bao-Dur = `a9b1138`. Tools: `cmdq_idle_casts.py`, `cmdq_rn_b
   does not remove the pending combat-round cast node (0x3F) / the round's stored spell field, so the new node queues
   behind it; or something (our A1 requeue, queue-hud, action-hotbar) re-inserts it. Probe: log the action queue
   (ActQueue.h `RNode` spellId) of the actor at queue time and at build time.
+  **ANSWERED 2026-10-25 (WI-135)** by facts 6-7 plus doc 29 PQ2 (`29_paused_command_evidence/PQ2.md` 4.3/4.4, X3):
+  queue call `AddCastSpellActions` real=0 -> `AddSWSpellAction 0x591670` (site `0056538d`, its only caller) ->
+  `CSWSCombatRound::AddAction 0x590270` (insert sorted by time, equal time after existing, cap 4). The round takes the
+  head with `GetAction 0x590220` (only caller `AIActionCombat 0x6D9500` at `006d970d`) and builds it with
+  `AddCastSpellActions` real=1 at `006d9b60`. Script `ClearAllActions` = `CSWSObject::ClearAllActions 0x541080`, which
+  only resets the 5 attack-data slots (`0x5908F0`) and never calls `RemoveAllActions 0x590430` (callers: app-level
+  `CServerExoApp::ClearAllActions 0x51CB10`, `ClearAllQueuedCombatActions 0x51CBA0`, `AddAttackActions`, `SetCombatState(0)`,
+  `OnApplySetStateInternal`, type 0x47, `0x65E670`). So every extra script run in one round leaves one more cast node.
+  Guard sites (none is cmdq-probe's 0x565310 entry): F4 = `AddSWSpellAction 0x591670` entry (party owner: drop its
+  pending sub-9 nodes before the insert; removal API only `RemoveLastAction 0x5904C0` = tail, so an unlink helper is
+  needed); F1 = `AIActionCombat` after `GetAction` (return `006d9712`) or the build call `006d9b60` (skip a stale or
+  family-active head node). Static facts: `engine_ai_atlas/tools/cg.py callers` (2026-10-25). Open: who runs Kreia's
+  64 unattributed end-round script runs; companion-ai `PR RS` lines are per-subject throttled (`g_psubj`,
+  `CompanionAI.cpp:1402`), so site attribution needs per-site counters, not lines.
 - O2: attack flood ("queue filled with single attack actions"): same probe; count 0x3D/0x3F nodes per actor per round,
   and who appended them (script `ActionAttack` without a clear, companion-ai A1 self-requeue, engine auto-attack).
 - O3 (research): group debuffs (Storm, Plague, Insanity, Mass Stasis, Scream, Crush Opposition): pick the AoE centre by

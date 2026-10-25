@@ -117,3 +117,4 @@
 {"ev": "unpark", "reason": "files: used ', ' separators (needs ';'); fixed. Work done by main agent", "session": "7c88a13b-2214-41d6-8a07-161f9d8f7a73", "ts": "2026-10-25T14:51:55Z", "wi": "WI-134"}
 {"ev": "done", "reason": "manual: main agent did the work; checker CONFIRMED (WARN: README is the declared docs target); gate PASS; WI files: separator fi", "session": "7c88a13b-2214-41d6-8a07-161f9d8f7a73", "ts": "2026-10-25T14:54:59Z", "wi": "WI-134"}
 {"ev": "done", "session": "7c88a13b-2214-41d6-8a07-161f9d8f7a73", "ts": "2026-10-25T15:55:54Z", "wi": "WI-138"}
+{"ev": "done", "reason": "manual: O1 answered by main agent from CQ-QS1 QS data (facts 6-7) + doc 29 PQ2 static facts + cg.py callers; guard sites F4 0x59", "session": "7c88a13b-2214-41d6-8a07-161f9d8f7a73", "ts": "2026-10-25T21:31:40Z", "wi": "WI-135"}

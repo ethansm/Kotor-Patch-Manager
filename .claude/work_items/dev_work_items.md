@@ -180,7 +180,7 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [ ] | 164 | WI-132 | P3 | hold | S | - | Gemini r2 latent hardening: companion-ai (strict gate probe logging, A1Gate party flag) | 0 | 1 | R2-CA-02: Claim holds: strict gate sets newId=Invalid before probe blo |
 | [ ] | 165 | WI-133 | P3 | ready | S | - | Gemini r2 doc fixes: buff-hud doc 02/EffectIcons.h/version labels, doc 34 + README, queue- | 0 | 7 | R2-BH-12: Boundary line is gated on disc, which is item-only; force-po |
 | [x] | 166 | WI-134 | P1 | ready | M | - | Combat AI recast F0: cmdq-probe queue snapshots (QS) + stale-build flag | 0 | 5 | Kreia Barrier recasts: engine builds stale cast; log-only probe settles O1/O2. |
-| [ ] | 167 | WI-135 | P1 | ready | L | WI-134 | Combat AI recast O1: RE why the round build casts a stale spell | 0 | 1 | Root cause of recasts; names the guard site for WI-136. |
+| [x] | 167 | WI-135 | P1 | ready | L | WI-134 | Combat AI recast O1: RE why the round build casts a stale spell | 0 | 1 | Root cause of recasts; names the guard site for WI-136. |
 | [ ] | 168 | WI-136 | P1 | ready | L | WI-135 | Combat AI recast F1a: build-time guard drops party self-buff casts whose family is active | 0 | 4 | Baseline fix for every buff and AI path. |
 | [ ] | 169 | WI-137 | P1 | ready | XL | WI-136 | Combat AI recast F1b: guard single-target debuffs already on the target | 0 | 3 | Same guard for single-target debuffs. |
 | [x] | 170 | WI-138 | P2 | ready | L | - | Combat AI recast F2: party AI scripts family-aware buff/combo/debuff picks | 0 | 2 | Script gaps: exact-id check, -1 wasted round, unchecked combos/debuffs. |
