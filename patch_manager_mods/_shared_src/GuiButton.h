@@ -46,6 +46,7 @@ inline void releaseUnlinkedButton(uintptr_t btn) {
     using guikit::detail::rd32;
     uint32_t vt = 0, fn = 0;
     if (!steamBuild() || !btn || !guikit::g_gkCallLabelDtor || !rd32(btn, 0, &vt) || vt != ButtonVtable || !rd32(vt, 0, &fn) || !fn) return;
+    (void)guikit::detachPooledFills(btn);   // the border dtors delete their fill images: never a pooled one
     guikit::g_gkCallLabelDtor(fn, btn, 1u);
 }
 

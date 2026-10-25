@@ -216,6 +216,36 @@ int main() {
             KT_CHECK_EQ((unsigned long long)at<uint32_t>(bt, 0x70 + 0x34), 0xF2ull); KT_CHECK_EQ((unsigned long long)at<uint32_t>(bt, 0xE8 + 0x34), 0xA2ull);
             KT_CHECK(!setButtonFillStyle(bt, 4)); KT_CHECK(!setButtonFillStyle(bt, -1));
             KT_CHECK_EQ((unsigned long long)at<uint32_t>(bt, 0x70 + 0x34), 0xF2ull);
+            // detachPooledFills (crash 10-21): before a free, every border fill holding a POOLED image (0x5000, from the imageFor block) is cleared;
+            // the control's own images stay for the border dtor. Label border via the label vtable, else both button borders.
+            {
+                void* const pooled = imageFor("fph_slot");
+                KT_CHECK(pooled == reinterpret_cast<void*>(0x5000)); KT_CHECK(isPooledImage(pooled));
+                KT_CHECK(!isPooledImage(imN) && !isPooledImage(nullptr));
+                KT_CHECK(setButtonFill(bt, pooled, imH));
+                KT_CHECK_EQ(detachPooledFills(bt), 1);
+                KT_CHECK_EQ((unsigned long long)at<uint32_t>(bt, 0x70 + 0x74), 0ull); KT_CHECK_EQ((unsigned long long)at<uint32_t>(bt, 0xE8 + 0x74), 0x7000ull);
+                KT_CHECK(setButtonFill(bt, pooled, pooled));
+                KT_CHECK_EQ(detachPooledFills(bt), 2);
+                KT_CHECK(at<uint32_t>(bt, 0x70 + 0x74) == 0 && at<uint32_t>(bt, 0xE8 + 0x74) == 0);
+                KT_CHECK_EQ(detachPooledFills(bt), 0);                                                       // nothing left: no-op
+                uintptr_t lb = arenaAlloc(0x200);
+                at<uint32_t>(lb, 0) = 0x9878BC; at<uint32_t>(lb, Label_Border) = 0x9875BC;
+                KT_CHECK(setFill(lb, imN)); KT_CHECK_EQ(detachPooledFills(lb), 0);                            // own image: kept
+                KT_CHECK_EQ((unsigned long long)at<uint32_t>(lb, Label_Border + Border_Fill), 0x6000ull);
+                KT_CHECK(setFill(lb, pooled)); KT_CHECK_EQ(detachPooledFills(lb), 1);
+                KT_CHECK_EQ((unsigned long long)at<uint32_t>(lb, Label_Border + Border_Fill), 0ull);
+                at<uint32_t>(lb, Label_Border + Border_Fill) = 0x5000u; at<uint32_t>(lb, 0) = 0xABCD0000u;    // unknown control: never written
+                KT_CHECK_EQ(detachPooledFills(lb), 0); KT_CHECK_EQ((unsigned long long)at<uint32_t>(lb, Label_Border + Border_Fill), 0x5000ull);
+                KT_CHECK_EQ(detachPooledFills(0), 0); KT_CHECK_EQ(detachPooledFills(0x10), 0);
+                // releaseUnlinkedLabel detaches before the dtor call
+                at<uint32_t>(lb, 0) = 0x9878BC;
+                const uint32_t s0 = at<uint32_t>(0x9878BCu, 0); auto* const sd = g_gkCallLabelDtor;
+                at<uint32_t>(0x9878BCu, 0) = 0x7510B0u; g_gkCallLabelDtor = recordDtor; dtorCalls = 0;
+                releaseUnlinkedLabel(lb, 0x9878BC);
+                KT_CHECK_EQ(dtorCalls, 1); KT_CHECK_EQ((unsigned long long)at<uint32_t>(lb, Label_Border + Border_Fill), 0ull);
+                at<uint32_t>(0x9878BCu, 0) = s0; g_gkCallLabelDtor = sd;
+            }
             // null and unreadable controls: no crash, false
             KT_CHECK(!buttonFillOk(0) && !setButtonFill(0, imN, imH) && !setButtonFillStyle(0, 2));
             KT_CHECK(!buttonFillOk(0x10) && !setButtonFill(0x10, imN, imH) && !setButtonFillStyle(0x10, 2));

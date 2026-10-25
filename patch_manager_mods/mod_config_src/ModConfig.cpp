@@ -1621,7 +1621,9 @@ void dropRefs(uintptr_t P, uint32_t M, uintptr_t L) {
 void freeCtl(uintptr_t L, const char* what) {
     uint32_t vt = 0, fn = 0;
     const bool got = rd<uint32_t>(L, 0, &vt) && (vt == kLabelVtable || vt == kButtonVtable) && rd<uint32_t>(vt, 0, &fn) && fn;
-    KP_LOG(chMain, "FREE %s ctl=%x vt=%x call=%d", what, static_cast<unsigned>(L), static_cast<unsigned>(vt), got ? 1 : 0);
+    // slider art, reset icons and the gear art are pooled images: the border dtor would delete them for every Options open after this one
+    const int pooled = got ? guikit::detachPooledFills(L) : 0;
+    KP_LOG(chMain, "FREE %s ctl=%x vt=%x call=%d pooled=%d", what, static_cast<unsigned>(L), static_cast<unsigned>(vt), got ? 1 : 0, pooled);
     if (got && guikit::g_gkCallLabelDtor) guikit::g_gkCallLabelDtor(fn, L, 1u);
 }
 
@@ -2520,7 +2522,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
     embtex::g_log = embedLog;   // gear + slider art textures (EmbedTex) log through the main channel
     guikit::initGuiInput(api, "mod-config");   // optional: the wheel provider (k2.guiinput); a missing provider only means no wheel
-    KP_LOG(chMain, "mod-config 0.4.5-dev loaded (Mod Configuration button under Gameplay; k2.modconfig@1 + k2.menuui@1; config mod_config.ini is read at the first Options panel: enabled debug button_clone reflow desc free_labels)");
+    KP_LOG(chMain, "mod-config 0.4.6-dev loaded (Mod Configuration button under Gameplay; k2.modconfig@1 + k2.menuui@1; config mod_config.ini is read at the first Options panel: enabled debug button_clone reflow desc free_labels)");
     int rcC = -1, rcM = -1;
     if (api && api->struct_size >= offsetof(KPatchApi, require) + sizeof(api->require) && api->provide) {
         rcC = api->provide(K2MODCONFIG_IFACE, K2MODCONFIG_VERSION, &g_mcApi);

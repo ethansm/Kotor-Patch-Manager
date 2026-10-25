@@ -163,10 +163,12 @@ inline void (*g_gkCallLabelDtor)(uint32_t fn, uintptr_t ctl, unsigned flags) = [
 // Releases a label that createLabelFromTemplate allocated and then failed on (InitControl ran with addToList = 0, so no panel list, focus or
 // hover pointer holds it). Re-reads the object's vtable and calls its OWN slot 0 with flags = 1 only when the vtable == labelVt and slot 0 is
 // non-zero; an unknown vtable is never called (a leak beats a wild call). Never for a control in a panel list (bindByTag, addToList = 1).
+inline int detachPooledFills(uintptr_t ctl);   // below, after the image pool
 inline void releaseUnlinkedLabel(uintptr_t c, uint32_t labelVt) {
     using namespace detail;
     uint32_t vt = 0, fn = 0;
     if (!c || !labelVt || !g_gkCallLabelDtor || !rd32(c, 0, &vt) || vt != labelVt || !rd32(vt, 0, &fn) || !fn) return;
+    (void)detachPooledFills(c);   // the border dtor deletes its fill image: never a pooled one
     g_gkCallLabelDtor(fn, c, 1u);
 }
 // Creates a blank label from the layout template `templateTag` (e.g. "LBL_QUEUE1"; recipe = Mod 3 createLabel 982-1043).
@@ -314,9 +316,10 @@ inline bool setTextColor(uintptr_t ctl, float r, float g, float b) {   // Mod 14
 // A failed (null) load is pooled, so imageFor never asks the engine again for that resref: right for per-frame callers of a texture that
 // is either shipped or absent. A caller that polls for a texture that may appear LATER (hudkit::image, SH-3a-05) uses imageForRetry.
 namespace detail {
+struct ImagePool { struct E { char name[17]; void* im; }; E e[ImagePoolSize]; int n = 0; };
+inline ImagePool& imagePool() { static ImagePool p; return p; }   // one per DLL (an inline function's static)
 inline void* imageLookup(const char* resref, bool* loaded, int* poolCount, bool poolNull) {
-    struct E { char name[17]; void* im; };
-    static E pool[ImagePoolSize]; static int n = 0;
+    ImagePool::E* const pool = imagePool().e; int& n = imagePool().n;
     if (loaded) *loaded = false;
     if (poolCount) *poolCount = n;
     if (!resref || !*resref || !g_gk.loadImage) return nullptr;
@@ -340,6 +343,13 @@ inline void* imageFor(const char* resref, bool* loaded = nullptr, int* poolCount
 inline void* imageForRetry(const char* resref, bool* loaded = nullptr, int* poolCount = nullptr) {
     return detail::imageLookup(resref, loaded, poolCount, false);
 }
+// True for a non-null handle this DLL's imageFor / imageForRetry pool holds (shared by every control it was set on, owned by none).
+inline bool isPooledImage(const void* im) {
+    if (!im) return false;
+    const detail::ImagePool& p = detail::imagePool();
+    for (int i = 0; i < p.n; ++i) if (p.e[i].im == im) return true;
+    return false;
+}
 // border+0x74 = image (nullptr clears it); tint (optional rgb) -> border+0x28. Refused unless the border vtable is 0x9875BC.
 // Gate tint with getBorderTint first, as Mod 14 does.
 inline bool setFill(uintptr_t ctl, void* image, const float* tint = nullptr) {
@@ -351,8 +361,8 @@ inline bool setFill(uintptr_t ctl, void* image, const float* tint = nullptr) {
     if (tint) for (int k = 0; k < 3; ++k) if (!wr<float>(b, oTint + 4 * k, tint[k])) return false;
     return true;
 }
-// The label's current fill image (border+0x74). The border dtor deletes whatever sits there, so a caller that setFill()s a pooled image must put the
-// value read here back before it frees the label (see pvc::Canvas::destroy), or the process-wide pooled image is deleted with the label.
+// The label's current fill image (border+0x74). The border dtor deletes whatever sits there, so a caller that setFill()s a pooled image puts the
+// value read here back before it frees the label (pvc::Canvas::destroy; detachPooledFills is the catch-all for every other free path).
 inline bool getFill(uintptr_t ctl, void** image) {
     using namespace detail;
     const int oFill = off(&K2AddrTable::Border_Fill);
@@ -453,6 +463,26 @@ inline bool setButtonFillStyle(uintptr_t btn, int style) {
         if (!saferead::probeWrite(SiteBase, reinterpret_cast<void*>(b[i] + oStyle), 4)) return false;
     for (int i = 0; i < 2; ++i) if (!wr<uint32_t>(b[i], oStyle, (v[i] & ~3u) | static_cast<uint32_t>(style))) return false;
     return true;
+}
+
+// Call right before freeing a control: the border dtor (0x414C60) deletes the image in each border's fill (+0x74) unconditionally, so a pooled
+// image left there is deleted for every control sharing it and the pool keeps a dangling handle (crash 10-21 23:26: the next control's border dtor
+// called the deleted image). Clears every fill holding a pooled image: the label border, or a button's normal + hover borders. The label's own
+// image was already given up when the pooled one was set, so nothing new leaks. Returns the number of fills cleared.
+inline int detachPooledFills(uintptr_t ctl) {
+    using namespace detail;
+    const int oFill = off(&K2AddrTable::Border_Fill), oLabel = off(&K2AddrTable::Label_Border);
+    if (!ctl || !oFill) return 0;
+    uintptr_t b[2] = { 0, 0 };
+    uint32_t vt = 0;
+    if (oLabel && rd32(ctl, 0, &vt) && vt == vtab(&K2AddrTable::LabelVtable) && borderOk(ctl)) b[0] = ctl + oLabel;
+    else { b[0] = buttonBorder(ctl, false); b[1] = buttonBorder(ctl, true); }
+    int cleared = 0;
+    for (uintptr_t x : b) {
+        uint32_t im = 0;
+        if (x && rd<uint32_t>(x, oFill, &im) && isPooledImage(reinterpret_cast<void*>(static_cast<uintptr_t>(im))) && wr<uint32_t>(x, oFill, 0u)) ++cleared;
+    }
+    return cleared;
 }
 
 // ---- layout units -> engine pixels (Mod 14 ux/uy 368-375, scale from LBL_EFX_BACK 1130) ----
