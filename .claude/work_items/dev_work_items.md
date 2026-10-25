@@ -204,3 +204,4 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [ ] | 188 | WI-156 | P3 | hold | S | - | analyze_play_logs: companion-ai expected hook/kind counts stale (31->33 hooks, 25->26 kind | 0 | 2 | RealHookTomls + probe-format tests red on HEAD; play-log analyzer suit |
 | [ ] | 189 | WI-157 | P3 | hold | S | - | Combat AI recast: Force Enlightenment (180) in the buff family tables (G1 castFamily + GN_ | 0 | 0 | Enlightenment applies Speed+Armor+Valor under spell id 180, which neit |
 | [ ] | 190 | WI-158 | P3 | hold | S | - | companion-ai: one party test for G1 and F4 (G1 uses .party truthy, F4 uses == 1) | 0 | 0 | Two fixes gate on the same party flag differently; a non-1 flag value  |
+| [ ] | 191 | WI-159 | P3 | hold | S | - | companion-ai logging leftovers: T2 suppressed flag with engine_print=0, pbudget spends bef | 0 | 0 | Audit .claude/research/combat_ai_logging/companion_ai.md gaps 7 and 9  |
