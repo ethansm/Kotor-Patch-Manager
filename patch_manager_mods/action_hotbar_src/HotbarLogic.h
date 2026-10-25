@@ -499,7 +499,7 @@ inline std::vector<TargetMode> targetChoices(const ActionRef& a, bool isHealing,
     return v;
 }
 // Choice cell art: the target badges for Lowest HP / Self, the item's own icon for "use normally".
-inline std::string choiceIcon(TargetMode m, const std::string& itemIcon) { return m == TM_LowHp ? "fph_tgt_lowhp" : m == TM_Self ? "fph_tgt_self" : itemIcon; }
+inline std::string choiceIcon(TargetMode m, const std::string& itemIcon) { return m == TM_LowHp ? "fph_choice_lowhp" : m == TM_Self ? "fph_choice_self" : itemIcon; }
 inline std::string choiceTip(TargetMode m, const std::string& itemName) {
     const char* how = m == TM_LowHp ? "Use on the party member with the lowest HP" : m == TM_Self ? "Always use on yourself" : "Use normally (the game's target)";
     return std::string(how) + "\n" + itemName;
@@ -508,9 +508,10 @@ inline std::string choiceTip(TargetMode m, const std::string& itemName) {
 inline ActionRef withTarget(ActionRef a, TargetMode m) { a.target = TargetSpec(); a.target.mode = m; return a; }
 
 inline bool dropsCustomSuffix(const TargetSpec& from) { return from.thresholdPct >= 0 || from.fallback >= 0; }
-// Target badge label of slot 0..9: 13x13 flush top-right inside the 35x35 frame (frame x = 29+40i, y = 478); the digit label ends at slotX+22.
+// Target badge label of slot 0..9: 23x12 flush top-right inside the 35x35 frame (frame x = 29+40i, y = 478); it overlaps the digit label box
+// (slotX+4..22) but not the digit glyph (top-left, about 7 px wide), and ends above the bottom-right stack count.
 struct Rect4 { int x, y, w, h; };
-constexpr Rect4 badgeRect(int slot) { return { 29 + 40 * slot + 22, 479, 13, 13 }; }
+constexpr Rect4 badgeRect(int slot) { return { 29 + 40 * slot + 12, 479, 23, 12 }; }   // TP2: 23x12 so the "Self" pill fits; the cross disc sits at its right end
 inline const char* badgeFor(const TargetSpec& t) { return t.mode == TM_LowHp ? "fph_tgt_lowhp" : t.mode == TM_Self ? "fph_tgt_self" : nullptr; }
 enum ModeBtn { MB_Hidden, MB_Enabled, MB_DisabledItemsOnly, MB_DisabledCannotTarget };
 inline ModeBtn modeButtonState(const ActionRef& a, bool isHealing, bool selfAllowed) {

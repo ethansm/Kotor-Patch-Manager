@@ -52,7 +52,8 @@ while the cursor is over the picker. Item cells show the stack count. An item yo
 dimmed, with a count of 0, and cannot be used.
 
 The crosshair button next to Clear changes the target mode of an item already in the slot (see Target modes). Each
-slot with a mode shows a small badge in its top-right corner. Hover over a slot for a tooltip.
+slot with a mode shows a badge in its top-right corner: a red cross for Lowest HP, a "Self" pill for Self, nothing for
+the default. Hover over a slot for a tooltip.
 
 ## Target modes
 

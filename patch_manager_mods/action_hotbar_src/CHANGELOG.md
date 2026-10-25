@@ -5,6 +5,7 @@ Action Hotbar (id `action-hotbar`), formerly Force Power Hotbar.
 ## Unreleased (0.1.9-dev)
 
 - Picking a healing item, or one you can use on yourself, now asks "use on?" in the picker: Use normally / Lowest HP / Self. One click assigns the item with that target; Esc goes back to the list. Before, the item was assigned with the default target and had to be changed with the Mode button afterwards. (TP1)
+- Target badges: Self is now a "Self" pill (was a small teal person icon), Lowest HP keeps the red cross, the default has none. The badge area is 23x12 at the slot's top-right (was 13x13) so the pill fits beside the key digit; the "use on?" cells use square versions of the same art. (TP2)
 - Keys 1-0 are reserved for the hotbar while the HUD is up, also on an empty slot and in the editor, so they no longer fire the vanilla quick-action bar or switch party members. `[General] ReserveDigits=0` restores the old pass-through. Shift/Ctrl/Alt + digit still go to the game. (KD1)
 
 ## 0.1.8-dev

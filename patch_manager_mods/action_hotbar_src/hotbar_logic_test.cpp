@@ -699,10 +699,10 @@ int main() {
   { // per-slot target badge rect: flush top-right inside the frame, clear of the digit and the qty row
     KT_CHECK(rectsOverlap({0,0,10,10},{5,5,10,10})); KT_CHECK(!rectsOverlap({0,0,10,10},{10,0,5,5})); KT_CHECK(!rectsOverlap({0,0,10,10},{0,10,5,5}));
     for (int i = 0; i < 10; ++i) {
-        Rect4 b = badgeRect(i), digit = {33 + 40 * i, 479, 18, 18}, qty = {33 + 40 * i, 495, 27, 17}, frame = {29 + 40 * i, 478, 35, 35};
-        KT_CHECK(!rectsOverlap(b, digit)); KT_CHECK(!rectsOverlap(b, qty));
+        Rect4 b = badgeRect(i), glyph = {33 + 40 * i, 479, 8, 12}, qty = {33 + 40 * i, 495, 27, 17}, frame = {29 + 40 * i, 478, 35, 35};   // TP2: clear of the digit glyph, not its 18-px box
+        KT_CHECK(!rectsOverlap(b, glyph)); KT_CHECK(!rectsOverlap(b, qty));
         KT_CHECK(b.x >= frame.x && b.y >= frame.y && b.x + b.w <= frame.x + frame.w && b.y + b.h <= frame.y + frame.h);
-        KT_CHECK_EQ(b.x, 29 + 40 * i + 22); KT_CHECK_EQ(b.y, 479); KT_CHECK_EQ(b.w, 13); KT_CHECK_EQ(b.h, 13);
+        KT_CHECK_EQ(b.x, 29 + 40 * i + 12); KT_CHECK_EQ(b.y, 479); KT_CHECK_EQ(b.w, 23); KT_CHECK_EQ(b.h, 12);
     }
   }
   { // B2: item edge-case decision table (spells.2da columns, item property 0)
@@ -780,7 +780,7 @@ int main() {
             for (int k = 0; k < 3; ++k) { if (cur.target.mode == m) seen = true; cur.target = nextTargetMode(cur, h, sf); }
             KT_CHECK(seen);
         }
-        KT_CHECK_EQ(choiceIcon(TM_LowHp, "i_medpac").c_str(), "fph_tgt_lowhp"); KT_CHECK_EQ(choiceIcon(TM_Self, "i_medpac").c_str(), "fph_tgt_self"); KT_CHECK_EQ(choiceIcon(TM_Default, "i_medpac").c_str(), "i_medpac");
+        KT_CHECK_EQ(choiceIcon(TM_LowHp, "i_medpac").c_str(), "fph_choice_lowhp"); KT_CHECK_EQ(choiceIcon(TM_Self, "i_medpac").c_str(), "fph_choice_self"); KT_CHECK_EQ(choiceIcon(TM_Default, "i_medpac").c_str(), "i_medpac");
         KT_CHECK(choiceTip(TM_Self, "Medpac").find("Medpac") != std::string::npos);
         ActionRef cu = it; cu.target.mode = TM_LowHp; cu.target.thresholdPct = 40; cu.target.fallback = 0;
         ActionRef w = withTarget(cu, TM_Self); KT_CHECK(w.target.mode == TM_Self && w.target.thresholdPct == -1 && w.target.fallback == -1 && w.name == "Medpac");

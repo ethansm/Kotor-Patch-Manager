@@ -4,8 +4,9 @@
 Writes patch_manager_mods/action_hotbar_src/HotbarTextures.inc: one uncompressed 32-bit TGA byte array per texture
 (fph_slot / fph_slot_hi: 128x128 rounded-square slot frame, teal / beige like the native lbl_mibox00 / 00a;
 fph_edit / fph_edit_hi: 72x128 thin frame with a wrench, normal / active; fph_mode / fph_mode_hi: same frame with a
-crosshair, the target-mode button; fph_tgt_lowhp: 32x32 red-cross corner badge for 'lowest-HP party member' slots;
-fph_tgt_self: 32x32 teal person-silhouette corner badge for 'apply to self' slots; fph_arrow_prev / fph_arrow_next: 56x70
+crosshair, the target-mode button; fph_tgt_lowhp: 92x48 corner badge (red-cross disc at the right end) for 'lowest-HP party
+member' slots; fph_tgt_self: 92x48 'Self' pill corner badge for 'apply to self' slots (both drawn into the 23x12 badge label);
+fph_choice_lowhp / fph_choice_self: 64x64 square versions for the editor's "use on?" choice cells; fph_arrow_prev / fph_arrow_next: 56x70
 slot frame with a mint chevron, the prev / next arrow buttons). The DLL registers them with the engine at
 start-up, so nothing is installed into override/. Re-run after changing the art, then rebuild the patch.
 
@@ -46,8 +47,10 @@ EDIT_COLS = ((EDIT_TEX[0], (10, 96, 80)), (EDIT_TEX[1], (208, 204, 170)))
 MODE_TEX = ("fph_mode", "fph_mode_hi")
 BADGE_TEX = "fph_tgt_lowhp"
 SELF_BADGE_TEX = "fph_tgt_self"
+CHOICE_TEX = ("fph_choice_lowhp", "fph_choice_self")
+BADGE_W, BADGE_H = 92, 48   # 4x the 23x12 badge label (hb::badgeRect)
 ARROW_TEX = ("fph_arrow_prev", "fph_arrow_next")
-ALL_NAMES = TEX + EDIT_TEX + (BADGE_TEX, SELF_BADGE_TEX) + MODE_TEX + ARROW_TEX
+ALL_NAMES = TEX + EDIT_TEX + (BADGE_TEX, SELF_BADGE_TEX) + MODE_TEX + ARROW_TEX + CHOICE_TEX
 
 
 def _editor_frame(col, S=4, W=72, H=128):
@@ -168,50 +171,76 @@ def make_mode_textures(out: Path) -> list[Path]:
     return made
 
 
-def make_badge_texture(out: Path) -> list[Path]:
-    """32x32 'lowest-HP party member' corner badge: dark round backing, light outline, red medical cross."""
+def _cross_disc(N, S=4):
+    """N x N 'lowest-HP' disc (supersampled by S): light outline, dark backing, red medical cross. Art scales with N (designed at 32)."""
     from PIL import Image, ImageDraw
-    S, N = 4, 32
+    k = N / 32
     im = Image.new("RGBA", (N * S, N * S), (0, 0, 0, 0))
     d = ImageDraw.Draw(im)
-    d.ellipse([1 * S, 1 * S, 31 * S - 1, 31 * S - 1], fill=(235, 240, 238, 255))   # light outline
-    d.ellipse([2.5 * S, 2.5 * S, 29.5 * S - 1, 29.5 * S - 1], fill=(8, 10, 12, 200))   # dark backing
-    arm, half = 4.2, 9.0
+    d.ellipse([1 * k * S, 1 * k * S, 31 * k * S - 1, 31 * k * S - 1], fill=(235, 240, 238, 255))   # light outline
+    d.ellipse([2.5 * k * S, 2.5 * k * S, 29.5 * k * S - 1, 29.5 * k * S - 1], fill=(8, 10, 12, 200))   # dark backing
+    arm, half = 4.2 * k, 9.0 * k
     c = N / 2
-    for col, g in (((70, 0, 0, 255), 1.0), ((235, 30, 30, 255), 0.0)):   # dark red edge, then bright red cross
+    for col, g in (((70, 0, 0, 255), 1.0 * k), ((235, 30, 30, 255), 0.0)):   # dark red edge, then bright red cross
         a, h = arm / 2 + g, half + g
         d.rectangle([(c - h) * S, (c - a) * S, (c + h) * S - 1, (c + a) * S - 1], fill=col)
         d.rectangle([(c - a) * S, (c - h) * S, (c + a) * S - 1, (c + h) * S - 1], fill=col)
-    im = im.resize((N, N), Image.LANCZOS)
+    return im.resize((N, N), Image.LANCZOS)
+
+
+def _font(px):
+    from PIL import ImageFont
+    for f in ("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"):
+        try:
+            return ImageFont.truetype(f, px)
+        except OSError:
+            pass
+    return ImageFont.load_default(px)
+
+
+def _self_pill(W, H, S=4):
+    """W x H 'Self' pill (supersampled by S): light outline, dark teal body, mint bold 'Self' centred. Art scales with H."""
+    from PIL import Image, ImageDraw
+    im = Image.new("RGBA", (W * S, H * S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
+    o = max(1.0, H / 16)   # outline width in output px
+    d.rounded_rectangle([0, 0, W * S - 1, H * S - 1], radius=H * S // 2, fill=(235, 240, 238, 255))   # light outline
+    d.rounded_rectangle([o * S, o * S, (W - o) * S - 1, (H - o) * S - 1], radius=int((H / 2 - o) * S), fill=(14, 62, 54, 235))   # dark teal body
+    f = _font(int(H * 0.62 * S))
+    l, t, r, b = d.textbbox((0, 0), "Self", font=f)
+    d.text(((W * S - (r - l)) / 2 - l, (H * S - (b - t)) / 2 - t), "Self", font=f, fill=(120, 240, 205, 255))   # mint text
+    return im.resize((W, H), Image.LANCZOS)
+
+
+def make_badge_texture(out: Path) -> list[Path]:
+    """92x48 'lowest-HP party member' corner badge: the red-cross disc flush right, the rest transparent (badge label is 23x12)."""
+    from PIL import Image
+    im = Image.new("RGBA", (BADGE_W, BADGE_H), (0, 0, 0, 0))
+    im.paste(_cross_disc(BADGE_H), (BADGE_W - BADGE_H, 0))
     p = out / f"{BADGE_TEX}.tga"
     im.save(p, format="TGA")
     return [p]
 
 
 def make_self_badge_texture(out: Path) -> list[Path]:
-    """32x32 'apply to self' corner badge: same disc as the low-HP badge, teal/mint person silhouette (head + shoulders)."""
-    from PIL import Image, ImageChops, ImageDraw, ImageFilter
-    S, N = 4, 32
-    im = Image.new("RGBA", (N * S, N * S), (0, 0, 0, 0))
-    d = ImageDraw.Draw(im)
-    d.ellipse([1 * S, 1 * S, 31 * S - 1, 31 * S - 1], fill=(235, 240, 238, 255))   # light outline
-    d.ellipse([2.5 * S, 2.5 * S, 29.5 * S - 1, 29.5 * S - 1], fill=(8, 10, 12, 200))   # dark backing
-    # shoulders are clipped to the backing disc so nothing spills over the outline
-    fg = Image.new("L", (N * S, N * S), 0)
-    fd = ImageDraw.Draw(fg)
-    fd.ellipse([9.5 * S, 7 * S, 22.5 * S - 1, 20 * S - 1], fill=255)                # head
-    fd.ellipse([6 * S, 21 * S, 26 * S - 1, 41 * S - 1], fill=255)                   # shoulders (top arc of a big ellipse)
-    clip = Image.new("L", (N * S, N * S), 0)
-    ImageDraw.Draw(clip).ellipse([4.5 * S, 4.5 * S, 27.5 * S - 1, 27.5 * S - 1], fill=255)
-    fg = ImageChops.multiply(fg, clip)
-    im.paste(Image.new("RGBA", im.size, (20, 90, 76, 255)), (0, 0), fg)      # dark teal edge
-    inner = fg.copy()
-    inner = inner.filter(ImageFilter.MinFilter(S + 1))
-    im.paste(Image.new("RGBA", im.size, (80, 230, 190, 255)), (0, 0), inner)                 # bright mint body
-    im = im.resize((N, N), Image.LANCZOS)
+    """92x48 'apply to self' corner badge: a 'Self' pill filling the badge label."""
+    im = _self_pill(BADGE_W, BADGE_H)
     p = out / f"{SELF_BADGE_TEX}.tga"
     im.save(p, format="TGA")
     return [p]
+
+
+def make_choice_textures(out: Path) -> list[Path]:
+    """64x64 choice-cell art for the editor's "use on?" row: the cross disc, and the 'Self' pill centred (transparent around it)."""
+    from PIL import Image
+    made = []
+    p = out / f"{CHOICE_TEX[0]}.tga"
+    _cross_disc(64).save(p, format="TGA"); made.append(p)
+    im = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
+    im.paste(_self_pill(62, 32), (1, 16))
+    p = out / f"{CHOICE_TEX[1]}.tga"
+    im.save(p, format="TGA"); made.append(p)
+    return made
 
 
 def make_arrow_textures(out: Path) -> list[Path]:
@@ -253,7 +282,7 @@ def make_arrow_textures(out: Path) -> list[Path]:
 
 def make_all(out: Path) -> list[Path]:
     """Every texture, in EmbeddedTextures[] order (new art appended after the original four)."""
-    return make_textures(out) + make_edit_textures(out) + make_badge_texture(out) + make_self_badge_texture(out) + make_mode_textures(out) + make_arrow_textures(out)
+    return make_textures(out) + make_edit_textures(out) + make_badge_texture(out) + make_self_badge_texture(out) + make_mode_textures(out) + make_arrow_textures(out) + make_choice_textures(out)
 
 
 def render_inc(blobs) -> str:
