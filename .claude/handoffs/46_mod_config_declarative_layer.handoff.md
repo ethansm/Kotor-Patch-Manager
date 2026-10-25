@@ -1,7 +1,7 @@
 # Session Handoff & Plan State: patch_manager_mods/46_mod_config_declarative_layer.md
 
 ## 0. Next-Phase Direction
-Review follow-ups RF1-RF3 (dropRefs tooltip owner, preview icon retry + blank-texture detection recon, MCF6/MCF7 decision); after MC-PF1 play
+RF1/RF2 BUILT 61131905 (mod-config 0.4.7-dev, combat-hotbar 0.11.5-dev), KPM ee8a3e8/685487c, both SWAP, GATE PASS head ea2e954e. Next: user GO (game closed) -> kpm_hotswap.py --mod mod-config --mod combat-hotbar --apply, then mark-done 46:RF1/RF2 INSTALLED and set MC-TT1 LIVE. RF3 PARTIAL: optional follow-up guikit::imageResolved via ResMan probe 0x711ED0 (see .claude/research/pv_missing_tex/README.md). MCF7 waits on peer EnemyStrip.cpp.
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/46_mod_config_declarative_layer.md`
@@ -9,15 +9,16 @@ Review follow-ups RF1-RF3 (dropRefs tooltip owner, preview icon retry + blank-te
 - **Waves:** .claude/waves/WI-46-a2/
 - **Waves:** .claude/waves/WI-46-a3/
 - **Waves:** .claude/waves/w1-46-prev/
-- **Branch:** `KOTOR-II` (5ef8525a doc 50: Wave 2 batching decision + PF1c findings summary)
-- **Generated:** 2026-10-25 19:16:43 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (4a5e60c3 doc 46: MCF6 DROPPED (superseded by MCF5); RF3 recon DONE (ResMan pre-check 0x711ED0, no signal on image) + REA ledger)
+- **Generated:** 2026-10-25 19:43:39 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-5ef8525a doc 50: Wave 2 batching decision + PF1c findings summary
- patch_manager_mods/50_k2_render_performance.md | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+4a5e60c3 doc 46: MCF6 DROPPED (superseded by MCF5); RF3 recon DONE (ResMan pre-check 0x711ED0, no signal on image) + REA ledger
+ .../46_mod_config_declarative_layer.md             |  4 ++--
+ .../20261025_pv-missing-tex-resref.tsv             | 26 ++++++++++++++++++++++
+ 2 files changed, 28 insertions(+), 2 deletions(-)
 ```
-- **Dirty Files (191):**
+- **Dirty Files (185):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
   - ` M .claude/handoffs/DECOMP_PLAN.handoff.md`
@@ -28,23 +29,25 @@ Review follow-ups RF1-RF3 (dropRefs tooltip owner, preview icon retry + blank-te
   - ` M .claude/reviews/gemini_20261014/tools/fix3_items.tsv`
   - ` M .claude/settings.json`
   - ` M CLAUDE.md`
-  - ... +181 more (run `git status --short`)
+  - ... +175 more (run `git status --short`)
 
-## 2. Immediate Objective (MCF6)
-**[Mod-config] Native slider embed probe (gated by MCF0)**
+## 2. Immediate Objective (RF1)
+**[Mod-config] `dropRefs` also clears the GUI manager tooltip owner `M+0x40` (and owner flags48 bit 0x40) before a label is freed; mod-config 0.4.7-dev; play row MC-TT1**
 
-Status: PLANNED
-Task: [Mod-config] Native slider embed probe (gated by MCF0)
+Status: BUILT
+Task: [Mod-config] `dropRefs` also clears the GUI manager tooltip owner `M+0x40` (and owner flags48 bit 0x40) before a label is freed; mod-config 0.4.7-dev; play row MC-TT1
 
 ## 2b. Upcoming Batches in Pipeline
+- **MCF6** [Meta / Planning Setup] : [Mod-config] Native slider embed probe (gated by MCF0)
 - **MCF7** [Meta / Planning Setup] : [Enemy strip] Migrate its page to the declarative layer
+- **RF2** [Research & Probes] : [Combat hotbar] Preview icons that never resolved get a fresh 20 tries per Options open (`pvOnBuilt`); combat-hotbar 0.11.5-dev
 
 ## 3. Strict Context Budget & Read Policy
 - **Fresh Session Bootstrap**: Run `python3 scripts/plan_manager.py resume patch_manager_mods/46_mod_config_declarative_layer.md`.
 
 ## 4. Subagent Delegation Direction
 - **Claude Code**: parallel `model: haiku` Agent subagents; brief = `Contract` + `Write Scope` + `python3 scripts/agent_contract.py print worker|recon`.
-- **Other backends** (only when the user asks): `python3 scripts/plan_manager.py delegate MCF6` or `oc-subagent <scout|code|ghidra|verify|gate|doc>`.
+- **Other backends** (only when the user asks): `python3 scripts/plan_manager.py delegate RF1` or `oc-subagent <scout|code|ghidra|verify|gate|doc>`.
 
 ## 5. Dead Ends & Verification (manual)
 _(none recorded; append Dead Ends & Anti-Patterns and Verification Commands here)_
