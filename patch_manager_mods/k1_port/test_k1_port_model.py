@@ -439,6 +439,29 @@ def test_synth_zero_uv_flag_adds_uv1_and_grows_mdx():
         assert any("--synth-zero-uv writes zero UVs" in w for w in m["warnings"]), m["warnings"]
 
 
+def test_zero_skin_unknown0_clears_k1_junk():
+    # The patched pykotor copies the K1 skin unknown0 array (uninitialised K1 memory); the converter zeroes it, count kept.
+    import struct as _st
+    import test_k1_port_validate as V
+    K = load_cli_module()
+    mdl, _mdx, L = V.build(skin=True)
+    S = L["S"]
+    ptr = _st.unpack_from("<I", mdl, S + 52)[0] + 12
+    buf = bytearray(mdl)
+    for i in range(4):
+        _st.pack_into("<I", buf, ptr + 4 * i, 0x12335918 + i)
+    new, touched = K.zero_skin_unknown0(bytes(buf))
+    assert touched == 1, touched
+    assert new[ptr:ptr + 16] == bytes(16), new[ptr:ptr + 16]
+    assert _st.unpack_from("<I", new, S + 56)[0] == 4, "count must stay"
+    assert len(new) == len(buf) and new[:ptr] == bytes(buf[:ptr]) and new[ptr + 16:] == bytes(buf[ptr + 16:])
+    again, touched2 = K.zero_skin_unknown0(new)
+    assert again == new and touched2 == 1, "idempotent"
+    plain, _x, _l = V.build(skin=False)
+    same, none = K.zero_skin_unknown0(plain)
+    assert same == plain and none == 0, "no skin node: untouched"
+
+
 def test_skin_unknown0_warning_is_gone():
     # The patched pykotor keeps the skin unknown0 array, so the tool no longer warns about dropping it.
     K = load_cli_module()
@@ -1413,6 +1436,7 @@ PURE_TESTS = [
     ("new_resref_rules", test_new_resref_rules),
     ("root_rename_only_when_root_is_the_model", test_root_rename_only_when_root_is_the_model),
     ("skin_unknown0_warning_is_gone", test_skin_unknown0_warning_is_gone),
+    ("zero_skin_unknown0_clears_k1_junk", test_zero_skin_unknown0_clears_k1_junk),
     ("pad_skin_bones_zeroes_only_unused_slots", test_pad_skin_bones_zeroes_only_unused_slots),
     ("pad_skin_bones_leaves_full_and_empty_skins_alone", test_pad_skin_bones_leaves_full_and_empty_skins_alone),
     ("fix_face_planes_recomputes_float_distance", test_fix_face_planes_recomputes_float_distance),

@@ -18,7 +18,9 @@ chitin, modules; about 30 s when nothing matches). A hit refuses the run unless 
 a K2 Override file with the K1 resref would replace the vanilla K2 model for every NPC using it. A missing
 K2 install only warns (manifest k2_collision_checked false). --out-dir may not be inside either install.
 UV1 is not synthesized by default: a textured mesh with no UV1 in the source stays UV-less.
---synth-zero-uv turns on pykotor's zero-UV fill (MDLOps-style). Skin unknown0 arrays are kept by the patched pykotor.
+--synth-zero-uv turns on pykotor's zero-UV fill (MDLOps-style). The patched pykotor copies the K1 skin unknown0 array,
+which holds leftover K1 memory (heap pointers, float bits); the converter zeroes it right after the writer (count kept),
+as MDLOps does, because the K2 engine skins from it (10-20 play: body exploded with the copied values).
 The compare also checks skin bone data (bonemap, qbones, tbones, bone_node_number, per-vertex bone indices
 and weights), the MDX tangent block (per-mesh stride) and the internal model name. match is true only if every
 compare flag is true. One tangent case is not a defect: a K1 mesh whose flagged tangent block is all zero rows is
@@ -709,6 +711,30 @@ def supernode_pass(out_mdl: Path, mode: str, resolve=None) -> dict:
     return info
 
 
+SKIN_TYPE_MASK = 0x60                   # mesh (0x20) | skin (0x40)
+SKIN_HDR_OFF = 80 + 340                 # node header + K2 trimesh header; skin unknown0 ptr at +52, count at +56
+
+
+def zero_skin_unknown0(mdl: bytes) -> tuple[bytes, int]:
+    """Zeroes every skin node's unknown0 u32 array (the count stays). Returns (new bytes, arrays touched).
+    The patched pykotor copies the K1 values, which are uninitialised K1 memory; MDLOps writes zeros and plays correctly."""
+    tree = ksn.parse_tree(mdl)
+    out, touched = bytearray(mdl), 0
+    for n in tree.nodes:
+        if n.type & SKIN_TYPE_MASK != SKIN_TYPE_MASK:
+            continue
+        s = n.off + SKIN_HDR_OFF
+        ptr = struct.unpack_from("<I", mdl, s + 52)[0] + 12
+        cnt = struct.unpack_from("<I", mdl, s + 56)[0]
+        if cnt == 0:
+            continue
+        if ptr + 4 * cnt > len(mdl):
+            raise Rejected(f"skin node {n.name_lower!r}: unknown0 array runs outside the file")
+        out[ptr:ptr + 4 * cnt] = bytes(4 * cnt)
+        touched += 1
+    return bytes(out), touched
+
+
 def check_supernode_args(args: argparse.Namespace) -> tuple[str, list[Path]]:
     """(mode, supermodel dirs), refusing a --supermodel-dir that is not a directory or has no --supernode chain."""
     mode = getattr(args, "supernode", "legacy") or "legacy"
@@ -874,6 +900,8 @@ def convert(args: argparse.Namespace) -> dict:
         # then sees the final bytes. A SupernodeError lands in the cleanup below: outputs and ledger rows removed.
         sn_info = supernode_pass(out_mdl, sn_mode, ChainResolver(pk, sn_dirs, k2_held.get("inst"))
                                  if sn_mode == "chain" else None)
+        zeroed, unk0_arrays = zero_skin_unknown0(out_mdl.read_bytes())
+        out_mdl.write_bytes(zeroed)
         k2_mdl_bytes, k2_mdx_bytes = out_mdl.read_bytes(), out_mdx.read_bytes()
         back = pk.read_mdl(k2_mdl_bytes, source_ext=k2_mdx_bytes, size_ext=len(k2_mdx_bytes))
         out = summarize(back, binary_mdx_strides(pk, k2_mdl_bytes, k2_mdx_bytes))
@@ -925,6 +953,7 @@ def convert(args: argparse.Namespace) -> dict:
         "dangly_demoted": dangly_demoted,
         "keep_dangly": keep_dangly,
         "supernode": sn_info,
+        "skin_unknown0_zeroed": unk0_arrays,
         "k2_collision_checked": k2_checked,
         "k2_collision": k2_collision,
         "synth_zero_uv": synth,
