@@ -145,18 +145,22 @@ int filterMode() {
     return g ? rd<unsigned char>(g, FilterModeOff, 0xFF) : -1;   // 0xFF/-1 = unknown, never equals a cycle mode
 }
 
+// Client language for GetString, fetched once per populate by SortFilterFlush (WI-146). -1 when the app chain is unreadable.
+int clientLanguage() {
+    const int app = rd<int>(rd<int>(GuiGlobal, 0), 4);
+    if (!app || rd<int>(app, 4) == 0) return -1;    // GetClientLanguage reads *(*(app+4)+0x148)
+    return reinterpret_cast<GetClientLanguageFn>(gameaddr::GetClientLanguage)(app);
+}
+
 // Localised item name for the sort tie-break: CExoLocString at item+0x2C0 read through GetString (REA 20261015). Leaves out[0] = 0
-// (the "unknown" name, so before() falls back to orig) for a null/unreadable handle, a false return or a null text pointer.
+// (the "unknown" name, so before() falls back to orig) for a null/unreadable handle, lang < 0, a false return or a null text pointer.
 // Copies at most cap-1 chars. The engine out string is always freed with the CExoString dtor.
-void readItemName(int item, char* out, int cap) {
+void readItemName(int item, int lang, char* out, int cap) {
     out[0] = 0;
     const int handle = item + ItemNameOff;
-    if (!item || rd<int>(handle, 0) == 0) return;   // GetString dereferences [handle+0] first, with no null check
-    const int app = rd<int>(rd<int>(GuiGlobal, 0), 4);
-    if (!app || rd<int>(app, 4) == 0) return;       // GetClientLanguage reads *(*(app+4)+0x148)
-    const int language = reinterpret_cast<GetClientLanguageFn>(gameaddr::GetClientLanguage)(app);
+    if (!item || lang < 0 || rd<int>(handle, 0) == 0) return;   // GetString dereferences [handle+0] first, with no null check
     int exo[2] = {0, 0};                            // CExoString {char* p; uint32 len}
-    const bool ok = reinterpret_cast<GetLocStringFn>(gameaddr::GetLocString)(reinterpret_cast<void*>(handle), language, exo, 0);
+    const bool ok = reinterpret_cast<GetLocStringFn>(gameaddr::GetLocString)(reinterpret_cast<void*>(handle), lang, exo, 0);
     if (ok && exo[0]) {
         char tmp[256];
         if (saferead::readExo(4, reinterpret_cast<uintptr_t>(exo), tmp, sizeof tmp, 255, false)) {
@@ -200,7 +204,7 @@ int g_lastIdx = -1;
 bool g_selSet = false;
 int g_selId = 0;
 int g_seen = 0, g_dropped = 0, g_direct = 0;
-LONGLONG g_bufTicks = 0, g_nameTicks = 0;   // QueryPerformanceCounter ticks: whole buffer phase / readItemName only (WI-145)
+LONGLONG g_bufTicks = 0, g_nameTicks = 0;   // QueryPerformanceCounter ticks: whole buffer phase (WI-145) / tied-row name reads at flush (WI-146)
 
 // Adds construction-to-destruction ticks to g_bufTicks; one object covers every early return of SortFilterBufferRow.
 struct BufTimer {
@@ -369,13 +373,7 @@ extern "C" void __cdecl SortFilterBufferRow(int ebp) {
     e.isNew = ((rd<unsigned>(item, ItemFlagsOff) >> 7) & 1) != 0;
     e.usable = usable; e.baseItem = rd<int>(item, ItemBaseOff);
     e.tint = needUsable && isf::tintRow(equippable, equipOk);
-    if (g_cfg.sort) {   // name key only matters when sorting; e.name stays "" otherwise
-        LARGE_INTEGER n0, n1;
-        QueryPerformanceCounter(&n0);
-        readItemName(item, e.name, sizeof e.name);
-        QueryPerformanceCounter(&n1);
-        g_nameTicks += n1.QuadPart - n0.QuadPart;
-    }
+    // Names are not read here: SortFilterFlush reads them for tied rows only (WI-146), so e.name stays "" until then.
 
     // Reselect bookkeeping that the skipped vanilla code did; the row index is only known at flush time.
     bool matched = (rd<int>(panel, PanelSelectedIdOff) == id);
@@ -407,14 +405,22 @@ extern "C" void __cdecl SortFilterFlush(int ebp) {
     if (g_cfg.sort) {
         static LONGLONG freq = 0;   // QPC frequency, read once
         if (!freq) { LARGE_INTEGER f; QueryPerformanceFrequency(&f); freq = f.QuadPart; }
+        // Names only for rows tied on (new, usable, base item), read here instead of per row in populate (WI-146). The item
+        // pointers are the ones emitBuffered turns into rows right after this, so they are still valid. Language fetched once.
+        LARGE_INTEGER n0, n1;
+        QueryPerformanceCounter(&n0);
+        const int lang = clientLanguage();
+        const int nNames = isf::fillTiedNames(g_buf, g_n, [&](isf::Entry& e) { readItemName(e.item, lang, e.name, sizeof e.name); });
+        QueryPerformanceCounter(&n1);
+        g_nameTicks += n1.QuadPart - n0.QuadPart;
         LARGE_INTEGER t0, t1;
         QueryPerformanceCounter(&t0);
         isf::sortEntries(g_buf, g_n);
         QueryPerformanceCounter(&t1);
         if (g_cfg.log && freq > 0)
-            logf("sort timing: sortEntries rows=%d took %u us; buffer %u us (names %u us)", g_n,
+            logf("sort timing: sortEntries rows=%d took %u us; buffer %u us (names %u us) names=%d", g_n,
                  (unsigned)((t1.QuadPart - t0.QuadPart) * 1000000 / freq),
-                 (unsigned)(g_bufTicks * 1000000 / freq), (unsigned)(g_nameTicks * 1000000 / freq));
+                 (unsigned)(g_bufTicks * 1000000 / freq), (unsigned)(g_nameTicks * 1000000 / freq), nNames);
     }
     if (g_cfg.log) {
         int nTint = 0, nUsable = 0;

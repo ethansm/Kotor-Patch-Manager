@@ -142,6 +142,37 @@ int main() {
     CHECK(!hasOpenSlot(4, t4));
     int t2[6] = {-1, 0, 0, 0, 0, 0};
     CHECK(hasOpenSlot(2, t2) && upgradeSlotCount(9) == 0);
+    // lazy tie names (WI-146): keys A, B, B, C -> readName runs only for the two B rows; order equals the all-named order
+    {
+        auto mk = []() {
+            return std::vector<Entry>{{100, 100, 0, false, true, 1, false}, {101, 101, 1, false, true, 5, false},
+                                      {102, 102, 2, false, true, 5, false}, {103, 103, 3, false, true, 9, false}};
+        };
+        std::vector<Entry> full = mk();
+        setName(full[0], "m"); setName(full[1], "zulu"); setName(full[2], "alpha"); setName(full[3], "q");
+        sortEntries(full.data(), (int)full.size());
+        std::vector<Entry> lz = mk();
+        std::vector<int> calledFor;
+        int calls = fillTiedNames(lz.data(), (int)lz.size(), [&](Entry& e) {
+            calledFor.push_back(e.item);
+            setName(e, e.item == 101 ? "zulu" : "alpha");
+        });
+        CHECK(calls == 2 && calledFor.size() == 2);
+        CHECK(std::count(calledFor.begin(), calledFor.end(), 101) == 1 && std::count(calledFor.begin(), calledFor.end(), 102) == 1);
+        CHECK(lz[0].name[0] == 0 && lz[3].name[0] == 0);   // unique keys keep an empty name
+        sortEntries(lz.data(), (int)lz.size());
+        int wantL[] = {100, 102, 101, 103};
+        for (size_t i = 0; i < lz.size(); ++i) { CHECK(lz[i].item == wantL[i]); CHECK(lz[i].item == full[i].item); }
+        // no shared key: no call at all
+        std::vector<Entry> uq = {{110, 110, 0, false, true, 1, false}, {111, 111, 1, false, true, 2, false}};
+        CHECK(fillTiedNames(uq.data(), (int)uq.size(), [](Entry&) {}) == 0);
+        // above kMaxTieRows every name is read (fallback), n = 0 is a no-op
+        std::vector<Entry> big;
+        for (int i = 0; i < kMaxTieRows + 1; ++i) big.push_back({i, i, i, false, true, i, false});
+        int nb = 0;
+        CHECK(fillTiedNames(big.data(), (int)big.size(), [&](Entry&) { ++nb; }) == kMaxTieRows + 1 && nb == kMaxTieRows + 1);
+        CHECK(fillTiedNames(big.data(), 0, [](Entry&) {}) == 0);
+    }
     printf(g_fail ? "sort_logic_test: %d FAILED\n" : "sort_logic_test: ALL PASS\n", g_fail);
     return g_fail ? 1 : 0;
 }

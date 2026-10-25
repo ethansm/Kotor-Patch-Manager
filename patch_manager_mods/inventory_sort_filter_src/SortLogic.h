@@ -44,6 +44,42 @@ inline bool before(const Entry& a, const Entry& b) {
 
 inline void sortEntries(Entry* e, int n) { std::stable_sort(e, e + n, before); }
 
+// Lazy tie names (WI-146). before() reads the name only inside a tie on (isNew, usable, baseItem), so only rows that share that key
+// need one. Calls readName(row) for every row whose key is shared with another row (name cleared first) and clears name on the
+// rest. Returns the call count. Index array is a fixed stack buffer; above kMaxTieRows every name is read (same order, just slower).
+constexpr int kMaxTieRows = 1024;
+inline bool tieKeyLess(const Entry& a, const Entry& b) {
+    if (a.isNew != b.isNew) return b.isNew;
+    if (a.usable != b.usable) return b.usable;
+    return a.baseItem < b.baseItem;
+}
+inline bool tieKeySame(const Entry& a, const Entry& b) {
+    return a.isNew == b.isNew && a.usable == b.usable && a.baseItem == b.baseItem;
+}
+template <typename F> inline int fillTiedNames(Entry* e, int n, F readName) {
+    if (n <= 0) return 0;
+    if (n > kMaxTieRows) {
+        for (int i = 0; i < n; ++i) { e[i].name[0] = 0; readName(e[i]); }
+        return n;
+    }
+    int idx[kMaxTieRows];
+    for (int i = 0; i < n; ++i) idx[i] = i;
+    std::sort(idx, idx + n, [e](int x, int y) { return tieKeyLess(e[x], e[y]); });
+    int calls = 0;
+    for (int i = 0; i < n;) {
+        int j = i + 1;
+        while (j < n && tieKeySame(e[idx[i]], e[idx[j]])) ++j;
+        const bool tied = j - i >= 2;
+        for (int k = i; k < j; ++k) {
+            Entry& r = e[idx[k]];
+            if (tied) { r.name[0] = 0; readName(r); ++calls; }
+            else r.name[0] = 0;
+        }
+        i = j;
+    }
+    return calls;
+}
+
 // ---- filter cycle (re-clicking the active All tab) ---------------------------------------------------
 // New is the engine's own mode 1. Usable and Upgradeable are our filters on top of engine mode 0 (All), applied
 // to backpack rows in the populate hook; `Extra` says which one is active. (0.1.0 used engine mode 5 for Usable,
