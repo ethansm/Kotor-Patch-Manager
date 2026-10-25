@@ -1552,6 +1552,42 @@ inline bool softCombat(bool combat, const SoftCand* c, int n) {
     return party && !hostile;
 }
 
+// QH26: the soft verdict with memory, fed softCombat() (rawSoft) and "any member targets a hostile" each readable frame.
+//   - one hostile target seen in this combat makes it hard until the combat ends (mid-fight the leader healing an ally while nobody
+//     targets an enemy read soft for 15-100 ms: red bar hidden, teal panel and Cancel shown; logs 10-23 and 10-24);
+//   - a combat with no hostile yet must read soft for kSoftConfirmMs in a row before the verdict turns soft; hard is immediate.
+constexpr uint32_t kSoftConfirmMs = 300;
+struct SoftLatch { bool sawHostile = false; bool pending = false; uint32_t since = 0; };
+inline bool softStep(SoftLatch& l, bool combat, bool anyHostile, bool rawSoft, uint32_t now) {
+    if (!combat) { l = SoftLatch(); return false; }
+    if (anyHostile) l.sawHostile = true;
+    if (l.sawHostile || !rawSoft) { l.pending = false; return false; }
+    if (!l.pending) { l.pending = true; l.since = now; }
+    return now - l.since >= kSoftConfirmMs;
+}
+// Hard combat for the draw and Cancel gates. Unreadable HUD flags are hard even when the last readable frame was soft (the soft verdict is kept
+// for the banner bookkeeping only).
+inline bool hardCombat(bool combat, bool unreadable, bool soft) { return combat && (unreadable || !soft); }
+
+// QH25: combat tail. For a few hundred ms after the combat flag drops, the engine still runs its last round (a 0x3F / 0x0C entry holding the
+// cur node) while the vanilla red panel is already gone; drawn here it showed as a teal panel right after combat (0.7-1.3 s in the 10-23/10-24
+// logs). Inside the tail, engine round entries (index < engineNe, type 0x3F or 0x0C) give no leader slot; buffered entries (ours, appended
+// after engineNe) and engine 0x0F / 0x2E entries still do. The caller ends the tail early on the first frame with nothing to drop.
+constexpr uint32_t kCombatTailMs = 2500;
+inline bool inCombatTail(uint32_t endTick, uint32_t now) { return endTick != 0 && now - endTick < kCombatTailMs; }
+inline bool tailDropsEntry(const QEntry& e, int entryIndex, int engineNe) { return entryIndex < engineNe && (e.type == T_COMBAT || e.type == T_ROUND_ACTION); }
+// Compacts s[0..n) in place, keeping order; returns the kept count.
+inline int dropTailSlots(Slot* s, int n, const QEntry* e, int engineNe) {
+    if (!s || !e) return n;
+    int k = 0;
+    for (int i = 0; i < n; ++i) {
+        const int ei = s[i].entry;
+        if (ei >= 0 && ei < kMaxEntries && tailDropsEntry(e[ei], ei, engineNe)) continue;
+        s[k++] = s[i];
+    }
+    return k;
+}
+
 // Banner/red-bar action for one frame. The engine sets the visible bits only on the combat-mode toggle, so a hide stays until we undo it.
 //   soft && combat            -> HIDE (idempotent; re-applied every frame in case the engine sets the bit again)
 //   hidden && combat && !soft -> RESTORE (real combat began while still in combat)

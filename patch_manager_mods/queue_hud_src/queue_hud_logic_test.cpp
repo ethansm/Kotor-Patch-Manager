@@ -3046,6 +3046,94 @@ void testServerRouteQL20() {
 }
 
 // RV3: RQ8 restoreHead, RQ10 detachTarget, RQ11 clickIsCancel, RL6 lateForeignCount + grown foreign set, RL18 cancelHideWhy.
+// QH25 combat tail + QH26 soft latch / confirm delay / unreadable = hard.
+void testCombatColourEdges() {
+    // softStep: soft only after kSoftConfirmMs of raw soft, never once a hostile was seen this combat; combat end resets.
+    {
+        SoftLatch l;
+        KT_CHECK(!softStep(l, true, false, true, 1000));                       // first soft frame: pending, still hard
+        KT_CHECK(!softStep(l, true, false, true, 1000 + kSoftConfirmMs - 1));
+        KT_CHECK(softStep(l, true, false, true, 1000 + kSoftConfirmMs));       // held long enough: soft
+        KT_CHECK(!softStep(l, true, true, false, 1400));                       // hostile appears: hard at once
+        KT_CHECK(!softStep(l, true, false, true, 2000));                       // latched: party-only targets again stay hard
+        KT_CHECK(!softStep(l, true, false, true, 9000));
+        KT_CHECK(!softStep(l, false, false, false, 9100));                     // combat ends: latch cleared
+        KT_CHECK(!l.sawHostile && !l.pending);
+        KT_CHECK(!softStep(l, true, false, true, 9200));
+        KT_CHECK(softStep(l, true, false, true, 9200 + kSoftConfirmMs));       // next combat may be soft again
+    }
+    {   // the 10-24 log blip: hostile at the edge, leader targets an ally for 21 ms mid-fight -> never soft
+        SoftLatch l;
+        KT_CHECK(!softStep(l, true, true, false, 117926));
+        for (uint32_t t = 177643; t < 177664; ++t) KT_CHECK(!softStep(l, true, false, true, t));
+    }
+    {   // raw soft that breaks before the delay restarts the delay
+        SoftLatch l;
+        KT_CHECK(!softStep(l, true, false, true, 100));
+        KT_CHECK(!softStep(l, true, false, false, 200));                       // all-none frame (raw hard): pending reset
+        KT_CHECK(!softStep(l, true, false, true, 100 + kSoftConfirmMs));
+        KT_CHECK(softStep(l, true, false, true, 100 + 2 * kSoftConfirmMs));
+    }
+    {   // tick wrap inside the delay
+        SoftLatch l;
+        KT_CHECK(!softStep(l, true, false, true, 0xFFFFFF00u));
+        KT_CHECK(softStep(l, true, false, true, 0xFFFFFF00u + kSoftConfirmMs));
+    }
+    KT_CHECK(hardCombat(true, false, false));
+    KT_CHECK(!hardCombat(true, false, true));
+    KT_CHECK(hardCombat(true, true, true));                                    // unreadable flags beat a stale soft verdict
+    KT_CHECK(!hardCombat(false, false, false));
+    KT_CHECK(!hardCombat(false, false, true));
+
+    // inCombatTail
+    KT_CHECK(!inCombatTail(0, 5));
+    KT_CHECK(inCombatTail(1000, 1000));
+    KT_CHECK(inCombatTail(1000, 1000 + kCombatTailMs - 1));
+    KT_CHECK(!inCombatTail(1000, 1000 + kCombatTailMs));
+    KT_CHECK(inCombatTail(0xFFFFFF00u, 0x10u));                                // wrap
+
+    // dropTailSlots: engine 0x3F / 0x0C slots go, engine 0x0F / 0x2E and buffered (index >= engineNe) stay, order kept
+    {
+        QEntry e[kMaxEntries] = {};
+        e[0] = { T_COMBAT, 0 };            // the 10-24 tail: [0x3F/-2] cur=1
+        RNode cur = N(1, 1);
+        Slot s[kMaxSlots];
+        int n = buildSlots(e, 1, nullptr, 0, &cur, s);
+        KT_CHECK(n == 1);
+        KT_CHECK(dropTailSlots(s, n, e, 1) == 0);
+    }
+    {
+        QEntry e[kMaxEntries] = {};
+        e[0] = { T_ROUND_ACTION, 0 };      // the 10-23 tail: [0x0C/-2] cur=1, then an engine item and two buffered (ours)
+        e[1] = { T_USE_ITEM, 0x7f000010u };
+        e[2] = { T_CAST_SPELL, 5 };
+        e[3] = { T_USE_ITEM, 0x7f000011u };
+        RNode cur = N(1, 1);
+        Slot s[kMaxSlots];
+        int n = buildSlots(e, 4, nullptr, 0, &cur, s);
+        KT_CHECK(n == 4 && s[0].entry == 0 && s[0].node == NODE_CUR);
+        n = dropTailSlots(s, n, e, 2);
+        KT_CHECK(n == 3);
+        KT_CHECK(s[0].entry == 1 && s[1].entry == 2 && s[2].entry == 3);
+    }
+    {
+        QEntry e[kMaxEntries] = {};
+        e[0] = { T_CAST_SPELL, 7 };        // nothing to drop: the caller ends the tail (kept == n)
+        Slot s[kMaxSlots];
+        const int n = buildSlots(e, 1, nullptr, 0, nullptr, s);
+        KT_CHECK(dropTailSlots(s, n, e, 1) == n);
+        KT_CHECK(dropTailSlots(nullptr, 3, e, 1) == 3);
+        KT_CHECK(dropTailSlots(s, n, nullptr, 1) == n);
+    }
+    {   // a buffered entry never drops even when typed like a round entry (defensive: index >= engineNe)
+        QEntry e0{ T_COMBAT, 0 };
+        KT_CHECK(tailDropsEntry(e0, 0, 1));
+        KT_CHECK(!tailDropsEntry(e0, 1, 1));
+        QEntry e1{ T_USE_ITEM, 1 };
+        KT_CHECK(!tailDropsEntry(e1, 0, 1));
+    }
+}
+
 void testRV3() {
     auto act = [](uint32_t cmd) { return makeItemAction(0x1000, 100 + cmd, 0, 1, nullptr, 1, cmd); };
     {   // restoreHead
@@ -3374,5 +3462,6 @@ int main() {
     testRL4Generation();
     testRL9DownHold();
     testRV3();
+    testCombatColourEdges();
     return kt::Report("queue_hud_logic_test");
 }

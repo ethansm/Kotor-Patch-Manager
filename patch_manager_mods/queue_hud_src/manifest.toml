@@ -1,7 +1,7 @@
 [patch]
 id = "queue-hud"
 name = "Queue HUD"
-version = "0.4.9-dev"
+version = "0.4.10-dev"
 author = "local"
 description = "Shows the vanilla combat action-queue panel (up to 4 icons, green) OUT of combat, so a use-item or cast-spell command given while paused is visible while it waits for unpause (dimmed while the head action is waiting). 0.2.0 adds small green queue-icon strips (up to 4) above/below the party-member 1-2 portrait cards. Two hooks (PerformUseItem 0x775603, PerformCastSpell 0x775703) buffer out-of-combat use/cast commands; HUD capture comes from hud-host K2HUD_FRAME, drawing from portrait-slots HUD_DRAW / FRAME_BEGIN. Engine calls: ClearAllActions (Cancel, hand-off), the replayed Perform* calls, AddUseTalentOnObjectActions (companion Force powers) and the queue rotate behind a follower's 0x3D. 0.3.0 draws the slots as kit frames (embedded qh_frame art, icon inset 15%; flat green rects only as a fallback) and adds a Cancel control (HUD labels built in hud-host's BUILD phase, k2.hud@1) right of the leader queue and left of each companion strip: a click calls the engine's CServerExoApp::ClearAllActions for that member (out of combat only). Optional queue_hud.ini in the game folder (see doc 30 key table). Needs portrait-slots and hud-host."
 

@@ -1,4 +1,4 @@
-// Queue HUD 0.4.9-dev (CS10 strip slot, CS11 kit art, slim strip) (Steam Aspyr build 6A522E71...). A GREEN copy of the vanilla combat action-queue panel (up to 4 icons), drawn
+// Queue HUD 0.4.10-dev (CS10 strip slot, CS11 kit art, slim strip) (Steam Aspyr build 6A522E71...). A GREEN copy of the vanilla combat action-queue panel (up to 4 icons), drawn
 // OUT of combat so a command given while paused (a use-item / cast-spell that waits for unpause) is visible.
 // Research: patch_manager_mods/30_queue_hud_evidence/RE.md (0x74DC80 panel filler, 0x74E0B0 icon resolver); logic: QueueHudLogic.h.
 //
@@ -97,6 +97,10 @@ uintptr_t g_hud = 0;
 int g_combat = 0;
 bool g_combatUnreadable = false;   // last capture could not read the HUD flags (g_combat is then forced to 1)
 bool g_softCombat = false;         // softBannerTick verdict this frame: in combat but only own-party targets (false when not in combat)
+qh::SoftLatch g_softLatch;         // QH26: hostile-seen latch + soft confirm delay behind g_softCombat
+DWORD g_combatEndTick = 0;         // QH25: tick of the last readable combat 1->0 edge (0 = no tail running)
+// Draw / Cancel gate: in combat and not soft; unreadable HUD flags are hard (QH26).
+inline bool hardCombatNow() { return qh::hardCombat(g_combat != 0, g_combatUnreadable, g_softCombat); }
 bool g_bannerHidden = false;       // we cleared the visible bit of >= 1 banner/red-bar control and have not restored it yet
 unsigned g_bannerMask = 0;         // which kBannerCtl[] entries WE cleared (restore sets only these)
 uintptr_t g_bannerHud = 0;         // hud the mask belongs to
@@ -602,7 +606,7 @@ Held g_heldLeader;
 // Paints the leader's background, icons and Cancel from a Draw list. The live draw and the panel hold both come through here.
 void paintLeader(uintptr_t hud, const Draw* d, int nd, DWORD age, const K2PsContext* ctx) {
     // Cancel: right of the live QUEUE0 extent, sized by the live QUEUE1 height (read every frame; the HUD scale can change).
-    if (qh::cancelVisible(g_cfg.enabled, g_cfg.cancel, g_combat != 0 && !g_softCombat, ctx->inMenu != 0, age, nd)) {
+    if (qh::cancelVisible(g_cfg.enabled, g_cfg.cancel, hardCombatNow(), ctx->inMenu != 0, age, nd)) {
         qh::Rect q0{}, q1{};
         if (guikit::getExtent(hud + HudSlotBase, &q0.x, &q0.y, &q0.w, &q0.h) && guikit::getExtent(hud + HudSlotBase + HudSlotStride, &q1.x, &q1.y, &q1.w, &q1.h)) {
             g_want[0].r = qh::cancelRect(q0, q1);
@@ -669,14 +673,20 @@ void drawLeader(uintptr_t hud, DWORD now, DWORD age, const K2PsContext* ctx) {
     Held& held = g_heldLeader;
     if (held.creature != s.creature) { held.nd = 0; held.tick = 0; held.creature = s.creature; }   // a Tab switch never shows the old queue
     qh::Slot slots[qh::kMaxSlots];
-    const int n = qh::buildSlots(s.e, s.ne, s.rn, s.nrn, s.haveCur ? &s.cur : nullptr, slots);
+    int n = qh::buildSlots(s.e, s.ne, s.rn, s.nrn, s.haveCur ? &s.cur : nullptr, slots);
     g_modeHidden[0] = qh::hiddenSlots(s.e, s.ne, s.rn, s.nrn, s.haveCur ? &s.cur : nullptr);   // RL20
-    const bool hardCombat = g_combat != 0 && !g_softCombat;   // soft combat (ally-only targets) draws the strip like out of combat
+    const bool hardCombat = hardCombatNow();   // soft combat (ally-only targets) draws the strip like out of combat
+    bool tailHid = false;
+    if (!g_combat && qh::inCombatTail(g_combatEndTick, now)) {   // QH25: the engine's last combat round is not ours to draw teal
+        const int kept = qh::dropTailSlots(slots, n, s.e, s.engineNe);
+        if (kept == n) { QLOG(chDraw, "combat tail ended (%u ms after combat)", (unsigned)(now - g_combatEndTick)); g_combatEndTick = 0; }
+        else { tailHid = kept == 0; n = kept; }
+    }
     if (!qh::shouldShow(g_cfg.enabled, hardCombat, ctx->inMenu != 0, age, n)) {
-        if (n == 0 && held.nd > 0 && qh::panelHold(held.tick, now, ctx->inMenu != 0, hardCombat)) { g_modeStrip[0] = "shown"; paintLeader(hud, held.d, held.nd, age, ctx); return; }
+        if (n == 0 && !tailHid && held.nd > 0 && qh::panelHold(held.tick, now, ctx->inMenu != 0, hardCombat)) { g_modeStrip[0] = "shown"; paintLeader(hud, held.d, held.nd, age, ctx); return; }
         // RL22 (intended, QL11): with handoff_detach_held=1 the detached round-node icons are drawn in hard combat (leader only), not a hidden panel.
         if (hardCombat && ctx->inMenu == 0 && age < 250u) drawDetachedSlots(hud, s, n, now);
-        noteHidden(hardCombat ? "combat" : "empty queue");
+        noteHidden(hardCombat ? "combat" : tailHid ? "combat tail" : "empty queue");
         return;
     }
 
@@ -794,7 +804,7 @@ void drawStrips(uintptr_t hud, DWORD now, bool inMenu) {
         g_modeHidden[k] = qh::hiddenSlots(s.e, s.ne, s.rn, s.nrn, s.haveCur ? &s.cur : nullptr);   // RL20
         HeldStrip& hs = g_heldStrip[k];
         if (hs.creature != srv[k]) { hs.d = StripDraw(); hs.tick = 0; hs.creature = srv[k]; }   // a Tab switch never shows the old strip
-        if (n == 0 && hs.d.have && qh::panelHold(hs.tick, now, inMenu, g_combat != 0 && !g_softCombat && !g_cfg.showInCombat)) {
+        if (n == 0 && hs.d.have && qh::panelHold(hs.tick, now, inMenu, hardCombatNow() && !g_cfg.showInCombat)) {
             d[k] = hs.d;   // hold repaint: Cancel below and the draw loop use the held rects; hs.tick is not refreshed
             memcpy(types[k], hs.types, sizeof types[k]);
             sigs[k] = hs.sig;
@@ -841,7 +851,7 @@ void drawStrips(uintptr_t hud, DWORD now, bool inMenu) {
         else stripNote(k, false, 0, "", qh::Rect{ 0, 0, 0, 0 }, 0);
     }
     if (!any) return;
-    if (g_cfg.cancel && (g_combat == 0 || g_softCombat))   // Cancel stays hidden in real combat; soft combat (ally-only targets) shows it like out of combat
+    if (g_cfg.cancel && !hardCombatNow())   // Cancel stays hidden in real combat; soft combat (ally-only targets) shows it like out of combat
         for (int k = 1; k <= 2; ++k)
             if (d[k].have) { g_want[k].r = qh::stripCancelRect(d[k].r, d[k].n, g_cfg.stripSide, screenW, d[k].cancelSq); g_want[k].show = true; }   // RL18: a strip with no room for the square is "no-room" in cwApply, not "no-queue"
     gui2d::CapGuard capGuard;
@@ -857,8 +867,8 @@ void drawAll(const K2PsContext* ctx) {
     const uintptr_t hud = g_hud;
     uint32_t probe = 0;
     if (!hud || !rd(SiteHud, hud, HudSlotBase, &probe)) { g_modeStrip[0] = "hidden:stale"; if (hud) noteHidden("hud unreadable"); if (g_cfg.companions) stripsHidden(); return; }
-    if (!qh::shouldShow(g_cfg.enabled, g_combat != 0 && !g_softCombat, ctx->inMenu != 0, age, 1, g_cfg.showInCombat)) {
-        noteHidden((g_combat != 0 && !g_softCombat) ? "combat" : ctx->inMenu ? "menu" : "stale capture");
+    if (!qh::shouldShow(g_cfg.enabled, hardCombatNow(), ctx->inMenu != 0, age, 1, g_cfg.showInCombat)) {
+        noteHidden(hardCombatNow() ? "combat" : ctx->inMenu ? "menu" : "stale capture");
         if (g_cfg.companions) stripsHidden(g_modeStrip[0]);   // same verdict as the leader
         return;
     }
@@ -2311,7 +2321,7 @@ void KPATCH_CALL onFrameBegin(const K2PsContext* ctx, void*) {
             }
         }
     }
-    const bool hardCombat = g_combat != 0 && !g_softCombat;
+    const bool hardCombat = hardCombatNow();
     if (!g_cfg.cancel || inMenu || hardCombat) {
         cwHideAll(inMenu ? "hud-inactive" : hardCombat ? "combat" : "cancel-off");
     } else if (GetTickCount() - g_capTick >= 250u) {
@@ -2388,6 +2398,7 @@ void softBannerTick(uintptr_t hud) {
     }
     for (bool& ok : g_modeCandOk) ok = false;     // MODE: per-member verdict is recomputed below while in combat
     if (g_combat == 0) {
+        qh::softStep(g_softLatch, false, false, false, 0);   // QH26: the latch resets with the combat
         if (g_bannerHidden) {                     // combat ended: the engine hid the controls itself, do not restore
             bannerTrace("forget", false, 0);
             g_bannerHidden = false; g_bannerMask = 0; g_bannerResetLogged = false;
@@ -2396,7 +2407,7 @@ void softBannerTick(uintptr_t hud) {
         g_bannerLastAct = -1;
         return;
     }
-    bool soft = false;
+    bool soft = false, anyHostile = false;
     {
         party::Fail why = party::F_None;
         const uintptr_t tbl = party::table(&why);
@@ -2412,11 +2423,19 @@ void softBannerTick(uintptr_t hud) {
                 readTargets(srv, mt);
                 cands[k] = softCandOf(mt, partyIds);
                 g_modeCand[k] = cands[k]; g_modeCandOk[k] = true;   // recorded before the flags-off early return below
+                anyHostile = anyHostile || cands[k].anyHostile;
             }
             soft = qh::softCombat(true, cands, 3);
         }
     }
-    g_softCombat = soft;
+    {   // QH26: hostile latch + confirm delay; one line when the raw verdict says soft but the latch keeps it hard (edge only)
+        const bool latched = g_softLatch.sawHostile;
+        static bool blockLogged = false;
+        g_softCombat = qh::softStep(g_softLatch, true, anyHostile, soft, GetTickCount());
+        if (soft && latched && !blockLogged) { blockLogged = true; QLOG(chCancel, "soft verdict kept hard: a hostile was targeted earlier in this combat (QH26)"); }
+        if (!latched) blockLogged = false;
+    }
+    soft = g_softCombat;
     if (!g_cfg.hideBannerSoft && !g_cfg.hideRedbarSoft) return;   // flags off: verdict still feeds hardCombat and Cancel; no banner writes
     const qh::BannerAct act = qh::bannerAct(g_bannerHidden, true, soft);
     if (act == qh::BA_NONE) { g_bannerLastAct = act; return; }
@@ -2473,7 +2492,7 @@ void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
     loadIni();
     g_logOn = g_cfg.log;
-    KP_LOG(chMain, "0.4.9-dev: kit=%d frame_alpha=%.2f cancel=%d enabled=%d waiting_dim=%d border_px=%d log=%d companions=%d strip_icon_px=%d strip_side=%s strip_max=%d waiting_icon_dim=%d strip_head_pct=%d", g_cfg.kit ? 1 : 0, g_cfg.frameAlpha, g_cfg.cancel ? 1 : 0, g_cfg.enabled ? 1 : 0, g_cfg.waitingDim ? 1 : 0, g_cfg.borderPx, g_cfg.log ? 1 : 0, g_cfg.companions ? 1 : 0, g_cfg.stripIconPx, g_cfg.stripSide == qh::kSideBelow ? "below" : g_cfg.stripSide == qh::kSideAbove ? "above" : "left", g_cfg.stripMax, g_cfg.waitingIconDim ? 1 : 0, g_cfg.stripHeadPct);
+    KP_LOG(chMain, "0.4.10-dev: kit=%d frame_alpha=%.2f cancel=%d enabled=%d waiting_dim=%d border_px=%d log=%d companions=%d strip_icon_px=%d strip_side=%s strip_max=%d waiting_icon_dim=%d strip_head_pct=%d", g_cfg.kit ? 1 : 0, g_cfg.frameAlpha, g_cfg.cancel ? 1 : 0, g_cfg.enabled ? 1 : 0, g_cfg.waitingDim ? 1 : 0, g_cfg.borderPx, g_cfg.log ? 1 : 0, g_cfg.companions ? 1 : 0, g_cfg.stripIconPx, g_cfg.stripSide == qh::kSideBelow ? "below" : g_cfg.stripSide == qh::kSideAbove ? "above" : "left", g_cfg.stripMax, g_cfg.waitingIconDim ? 1 : 0, g_cfg.stripHeadPct);
     if (g_iniRejected > 0) QLOGV(chMain, KPLOG_WARN, "queue_hud.ini: %d line(s) not applied (unknown key, bad value or over 255 bytes), first at line %d; those keys keep their defaults", g_iniRejected, g_iniFirstBad);
     QLOG(chMain, "pause_eaten_wait=%d dispatch_wait_flags=%d", g_cfg.pauseEatenWait ? 1 : 0, g_cfg.dispatchWaitFlags ? 1 : 0);
     if (g_cfg.spellReplayPosSeen) QLOG(chMain, "ini: spell_replay_pos is obsolete and ignored (0.4.6-dev)");
@@ -2505,9 +2524,15 @@ void __cdecl QueueHudCapture(int hud) {
     g_hudc.poll();
     uint32_t flags = 0;
     const bool flagsOk = rd(SiteCap, static_cast<uintptr_t>(static_cast<uint32_t>(hud)), HudCombatFlags, &flags);
+    static int lastReadCombat = 0;   // QH25: last READABLE combat bit (an unreadable frame forces g_combat=1, which is no evidence)
     g_combat = flagsOk ? static_cast<int>((flags >> 1) & 1u) : 1;   // unreadable = treat as combat (hidden)
     g_combatUnreadable = !flagsOk;
     g_capTick = GetTickCount();
+    if (flagsOk) {
+        if (g_combat) g_combatEndTick = 0;                                           // a new combat cancels a running tail
+        else if (lastReadCombat) g_combatEndTick = g_capTick ? g_capTick : 1u;       // readable 1->0 edge: the tail starts
+        lastReadCombat = g_combat;
+    }
     if (g_hud != static_cast<uintptr_t>(static_cast<uint32_t>(hud))) {
         g_hud = static_cast<uintptr_t>(static_cast<uint32_t>(hud));
         QLOG(chCap, "hud=%08x flags=%08x combat=%d", (unsigned)hud, (unsigned)flags, g_combat);
