@@ -30,6 +30,7 @@ SRC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "ranged
 SRC_INPUTS = ("party_ai_patches.py", "kite_routine.nss", "party_ai_fixes.nss")   # recorded in manifest.json["inputs"]
 MASTER = "k_ai_master.ncs"
 MOD8_MD5 = "94db830439f1d33572ba911174e20a04"   # live k_ai_master.ncs (Mod 8 0.2.0 build)
+PREV_PARTY_MD5S = {"b003ea4135c7e15841111107eb69fc4b"}   # earlier party AI builds of ours (2ddec63, 2026-09-30)
 
 
 def md5(p):
@@ -114,8 +115,10 @@ def main():
             continue
         m = md5(dst)
         before[e["name"]] = m
-        if e["name"] == MASTER and m in (MOD8_MD5, new_master):
-            plan.append((e, dst, "replace Mod 8 build" if m == MOD8_MD5 else "already ours"))
+        if e["name"] == MASTER and m in {MOD8_MD5, new_master} | PREV_PARTY_MD5S:
+            what = ("replace Mod 8 build" if m == MOD8_MD5 else
+                    "replace previous party AI build" if m in PREV_PARTY_MD5S else "already ours")
+            plan.append((e, dst, what))
         elif m == e["md5"]:
             plan.append((e, dst, "already ours"))
         else:
@@ -193,8 +196,15 @@ def print_tail(files, bak, tag, before, dry):
     if was is None:
         print(f'  # {MASTER} was absent: nothing to restore')
     else:
-        src_dir = bak if was == MOD8_MD5 else mod8_backup()
-        if was == MOD8_MD5 or src_dir:
+        if was in PREV_PARTY_MD5S:
+            print(f'  cp "{os.path.join(bak, MASTER)}" "{os.path.join(ovd, MASTER)}" && md5sum "{os.path.join(ovd, MASTER)}"   '
+                  f"# expect {was} (previous party AI build)")
+            src_dir = None
+        else:
+            src_dir = bak if was == MOD8_MD5 else mod8_backup()
+        if was in PREV_PARTY_MD5S:
+            pass
+        elif was == MOD8_MD5 or src_dir:
             print(f'  cp "{os.path.join(src_dir, MASTER)}" "{os.path.join(ovd, MASTER)}" && md5sum "{os.path.join(ovd, MASTER)}"   '
                   f"# expect {MOD8_MD5}")
         else:
