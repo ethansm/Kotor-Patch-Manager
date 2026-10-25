@@ -39,7 +39,7 @@ Extends the grass draw distance and octree build/collect radius in KOTOR II (`sw
 | **P0** | Baseline & Scaffolding | - | - | DONE | 17db2e05 | `build_check.py --mod k2_grass_draw_distance_src` |
 | **P1** | Core Detour Implementation | P0 | - | DONE | 17db2e05 | `build_check.py` + host unit tests |
 | **P2** | Common Contract Test Verification | P1 | - | DONE | 17db2e05 | `run_tests.py -k k2_grass_draw_distance` |
-| **P2b** | Review fixes 0.1.1-dev: vanilla alpha default + 45..90 m, 150 m cap, start-pulls-down sanitize, PERF telemetry, hook 2 -> wind operand rewrite, docs | P2 | - | DONE | (this commit) | `run_tests.py -k grass_draw_distance` |
+| **P2b** | Review fixes 0.1.1-dev: vanilla alpha default + 45..90 m, 150 m cap, start-pulls-down sanitize, PERF telemetry, hook 2 -> wind operand rewrite, docs | P2 | - | DONE | ab47500d | 0.1.1-dev review fixes; KPM ab63e85; GATE PASS (mod steps; default tier fails only on peer texmem 6ee4936c) |
 | **P3** | Live In-Game Probing & Calibration | P2b | user GO | TODO | | `kpm_reinstall.py --mod k2-grass-draw-distance` (new hooks: full reinstall), play rows GR1-GR3 |
 | **P4** | Log Tightening & Packaging | P3 | - | TODO | | Clean startup log verification |
 
