@@ -1,0 +1,23 @@
+# Byte patches this mod's DLL writes into the game itself (not KPM hooks), for the static checks
+# (scripts/check_hook_bytes.py, scripts/check_hook_spans.py). Schema: see robustness_fixes_src/code_patches.toml.
+
+[[code_patches]]
+name = "ref_dist_fld"
+address = 0x00468CDB
+# Scene::DoGobShadowsForThisLight view-reference gate `FLD float ptr [0x0098BA98]` (1100.0, .rdata); the imm32
+# becomes &g_shadowRefSq (DLL .data)
+original_bytes = [0xD9, 0x05, 0x98, 0xBA, 0x98, 0x00]
+kind = "code"
+verifies_original = true
+enabled_by = "always (KPatchInit); restored on FreeLibrary"
+source = "K2ShadowDistance.cpp patchRefOperand / unpatchRefOperand (codepatch::writeChecked)"
+
+[[code_patches]]
+name = "shadow_dist"
+address = 0x009F5D50
+# float 35.0: object shadow distance gate (DoGobShadows 0x00468984, DoGobShadowsForThisLight 0x00468D76)
+original_bytes = [0x00, 0x00, 0x0C, 0x42]
+kind = "data"
+verifies_original = false
+enabled_by = "always; vanilla value written back when enabled=0"
+source = "K2ShadowDistance.cpp writeEngineGlobals (every shadow-light call)"

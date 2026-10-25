@@ -1,0 +1,19 @@
+[metadata]
+target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"]
+
+# Hook 1: Scene::DoGobShadowsForThisLight (0x00468B50, entry, once per shadow-casting light per frame) at the prologue:
+# PUSH EBP; MOV EBP,ESP; SUB ESP,0x8C (9 bytes, no relative operand). The handler takes no parameters and preserves
+# nothing the prologue needs. It polls k2_shadow_distance.ini (1 s throttle), registers the Mod Configuration page,
+# re-asserts the engine globals and counts calls for the PERF line:
+#   [0x009F5D50] = shadow_dist (m)   (read at 0x00468984 by DoGobShadows and 0x00468D76 here: object distance gate)
+#   &g_shadowRefSq = dist^2*1100/1225 (the view-reference gate FLD at 0x00468CDB is rewritten at KPatchInit, see
+#                                      code_patches.toml; vanilla [0x0098BA98] = 1100.0 lives in .rdata)
+# Read only, never written: [0x00A0F040] light cap, [0x009F5D54] distance-cut flag, [0x009F5D30] shadows on,
+# [0x009F5DA8] soft shadows.
+[[hooks]]
+address = 0x00468B50
+type = "detour"
+function = "K2ShadowOnLight"
+original_bytes = [0x55, 0x8B, 0xEC, 0x81, 0xEC, 0x8C, 0x00, 0x00, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []

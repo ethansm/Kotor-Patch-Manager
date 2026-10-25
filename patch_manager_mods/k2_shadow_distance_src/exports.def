@@ -1,0 +1,4 @@
+LIBRARY K2ShadowDistance
+EXPORTS
+    KPatchInit
+    K2ShadowOnLight

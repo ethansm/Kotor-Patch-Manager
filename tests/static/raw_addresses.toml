@@ -84,8 +84,20 @@ addresses = ["0x008A69AD", "0x008A7350", "0x008A8172", "0x008CD2C0"]
 [files."patch_manager_mods/inventory_sort_filter_src/InventorySortFilter.cpp"]
 addresses = ["0x005BD6A0", "0x006076D0", "0x0073F750", "0x0077B670", "0x008A75F0", "0x008A7E22", "0x008A7E76", "0x008A8478", "0x008A8B30", "0x008A8CF0", "0x008B1D00", "0x0099A8B8", "0x0099A8BC"]
 
+[files."patch_manager_mods/k2_fog_distance_src/K2FogDistance.cpp"]
+addresses = ["0x00464C80", "0x0046A980", "0x0046A989", "0x0046AADD"]   # not in DB except 0x00464C80 (Scene::SetFogRange); dump asm evidence doc 49
+
+[files."patch_manager_mods/k2_fog_distance_src/K2FogDistanceLogic.h"]
+addresses = ["0x00464C80", "0x00466700", "0x0046A980", "0x0046AADD", "0x004B3D80"]   # not in DB except 0x00464C80 (Scene::SetFogRange); dump asm evidence doc 49
+
 [files."patch_manager_mods/k2_grass_draw_distance_src/K2GrassDrawDistance.cpp"]
-addresses = ["0x00499ABC", "0x0050DCC8", "0x009F5D38", "0x00A0F070", "0x00A0F074", "0x00A73304"]   # not in DB, dump asm evidence: 0x0050DCC8 wind FLD (operand rewrite), 0x00A73304 prev-frame grass bin count (PERF log only)
+addresses = ["0x004664E0", "0x0046661B", "0x00466636", "0x00466698", "0x00499ABC", "0x00499ADC", "0x0050DB4C", "0x0050DCC8", "0x00986268", "0x009862A0", "0x009862CC", "0x009F5D38", "0x00A0F070", "0x00A0F074", "0x00A73304"]   # not in DB, dump asm evidence: 0x0050DCC8 wind FLD (operand rewrite), 0x00A73304 prev-frame grass bin count (PERF log only); 0.1.4 (doc 50 PF1a): 0x0046661B/0x00466698 DoBinBucket bin-loop begin/exit detours, 0x00499ADC collect FLD rewrite, 0x00986268/0x009862A0/0x009862CC glEnable/glDisable/glGetIntegerv import slots
+
+[files."patch_manager_mods/k2_grass_draw_distance_src/K2GrassDrawDistanceLogic.h"]
+addresses = ["0x00499ADC"]   # collect FLD operand (doc 50 PF1a), dump asm 00499610.asm
+
+[files."patch_manager_mods/k2_shadow_distance_src/K2ShadowDistance.cpp"]
+addresses = ["0x00468984", "0x00468B50", "0x00468CDB", "0x00468D76", "0x0098BA98", "0x009F5D30", "0x009F5D50", "0x009F5D54", "0x009F5DA8", "0x00A0F040"]   # not in DB, dump asm evidence doc 50 PF1b (00468b50.asm); 0x00A0F040/0x009F5D54/0x009F5D30/0x009F5DA8 read-only log
 
 [files."patch_manager_mods/npc_diversity_src/DiversityAnimEngine.h"]
 addresses = ["0x0051C0A0", "0x0054A840", "0x0073F4D0", "0x007ED9A0"]   # 0x007ED9A0 CSWCCreature::PlayAnimationById (query_ghidra confirmed, nb2-anim-driver 10-18)

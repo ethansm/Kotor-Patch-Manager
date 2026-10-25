@@ -12,7 +12,7 @@
 namespace k2grass {
 
 constexpr const char* kModId = "k2-grass-draw-distance";
-constexpr const char* kVersion = "0.1.3-dev";
+constexpr const char* kVersion = "0.1.4-dev";
 constexpr const char* kIniFile = "k2_grass_draw_distance.ini";
 constexpr const char* kIniSection = "Grass";
 
@@ -35,6 +35,12 @@ constexpr float kDefaultWindDist = 20.0f;
 constexpr float kDefaultAlphaCutoff = 0.40f;
 constexpr bool kDefaultVerbose = false;
 constexpr bool kDefaultPerfLog = true;
+// 0.1.4: trim the octree collect radius to the distance where grass stops being visible (hidden bins are never drawn),
+// and optionally smooth the blade edges with alpha-to-coverage when the GL context has a multisample buffer.
+constexpr bool kDefaultTrimHidden = true;
+constexpr bool kDefaultSmoothEdges = false;
+// Margin (m) added to the alpha-test clip distance when trimming, so bins straddling the clip radius still render.
+constexpr float kTrimMarginMeters = 2.0f;
 
 // Clamp bounds. 150m is 25x the vanilla 30m grass area; raise only after P3 measures the frame cost.
 constexpr float kMinFadeStartDist = 5.0f;
@@ -60,6 +66,8 @@ struct Config {
     float alphaCutoff = kDefaultAlphaCutoff;
     bool verbose = kDefaultVerbose;
     bool perfLog = kDefaultPerfLog;
+    bool trimHidden = kDefaultTrimHidden;
+    bool smoothEdges = kDefaultSmoothEdges;
 
     void sanitize() {
         // fade_end_dist is the cost knob (build radius), so a fade start at or past it pulls the start
@@ -78,7 +86,9 @@ struct Config {
                std::fabs(windDist - o.windDist) < 1e-4f &&
                std::fabs(alphaCutoff - o.alphaCutoff) < 1e-4f &&
                verbose == o.verbose &&
-               perfLog == o.perfLog;
+               perfLog == o.perfLog &&
+               trimHidden == o.trimHidden &&
+               smoothEdges == o.smoothEdges;
     }
     bool operator!=(const Config& o) const { return !(*this == o); }
 };
@@ -128,6 +138,15 @@ inline float effectiveClipDistMeters(const EffectiveValues& ev) {
     return std::sqrt(clipSq > 0.0f ? clipSq : 0.0f);
 }
 
+// Squared octree collect radius the patched FLD at 0x00499ADC reads (the fade curve still reads fadeEndSq).
+// Trim: bins past (clip distance + margin) are fully hidden by the alpha test, so they need not be collected.
+inline float collectDistSq(const EffectiveValues& ev, bool trim) {
+    if (!trim) return ev.fadeEndSq;
+    const float r = effectiveClipDistMeters(ev) + kTrimMarginMeters;
+    const float sq = r * r;
+    return sq < ev.fadeEndSq ? sq : ev.fadeEndSq;
+}
+
 // Menu link between the Fade Start and Draw Distance sliders (kPageSchema rows fade_start / fade_end): the highest
 // Fade Start the menu offers for a Draw Distance, on the row's own 15 m grid and >= kMinFadeSpan below the end.
 // Same direction as Config::sanitize (the start moves, never the end), so the sliders show what the engine uses.
@@ -157,9 +176,25 @@ struct PerfWindow {
     uint64_t binsSum = 0;
     uint32_t binsMax = 0;
     unsigned lastMs = 0;
+    // Grass-pass CPU time (Scene::DoBinBucket bin loop, microseconds). The pass can run more than once per frame, so
+    // addGrassUs() accumulates into grassUsCur and the next add() (the next frame's collect hook) closes that frame.
+    uint64_t grassUsSum = 0;
+    uint32_t grassUsMax = 0;
+    uint32_t grassCount = 0;
+    uint32_t grassUsCur = 0;
 
+    void addGrassUs(uint32_t us) {
+        const uint64_t t = static_cast<uint64_t>(grassUsCur) + us;
+        grassUsCur = t > 0xFFFFFFFFull ? 0xFFFFFFFFu : static_cast<uint32_t>(t);
+    }
     void add(uint32_t binsInRange, unsigned nowMs) {
         if (frames > 0 && (nowMs - lastMs) > kPerfGapMs) reset(nowMs);
+        if (grassUsCur > 0) {
+            grassUsSum += grassUsCur;
+            if (grassUsCur > grassUsMax) grassUsMax = grassUsCur;
+            ++grassCount;
+            grassUsCur = 0;
+        }
         lastMs = nowMs;
         ++frames;
         binsSum += binsInRange;
@@ -172,6 +207,8 @@ struct PerfWindow {
         return dt ? frames * 1000.0f / static_cast<float>(dt) : 0.0f;
     }
     float binsAvg() const { return frames ? static_cast<float>(binsSum) / frames : 0.0f; }
+    float grassMsAvg() const { return grassCount ? static_cast<float>(grassUsSum) / grassCount / 1000.0f : 0.0f; }
+    float grassMsMax() const { return static_cast<float>(grassUsMax) / 1000.0f; }
     void reset(unsigned nowMs) { *this = PerfWindow{}; startMs = nowMs; }
 };
 
@@ -218,6 +255,18 @@ inline inikit::LoadStats parseIniText(char* text, Config& cfg) {
             bool b = true;
             if (!parseBoolVal(val, &b)) return inikit::IniVerdictBad;
             cfg.perfLog = b;
+            return inikit::IniVerdictOk;
+        }
+        if (strcmp(key, "trim_hidden") == 0) {
+            bool b = true;
+            if (!parseBoolVal(val, &b)) return inikit::IniVerdictBad;
+            cfg.trimHidden = b;
+            return inikit::IniVerdictOk;
+        }
+        if (strcmp(key, "smooth_edges") == 0) {
+            bool b = false;
+            if (!parseBoolVal(val, &b)) return inikit::IniVerdictBad;
+            cfg.smoothEdges = b;
             return inikit::IniVerdictOk;
         }
         if (strcmp(key, "fade_start_dist") == 0 || strcmp(key, "fadestartdist") == 0) {
@@ -268,6 +317,10 @@ inline int formatDefaultIni(char* buf, size_t cap, const Config& c = Config{}) {
         "wind_dist = %.0f\n"
         "; Alpha test threshold (0.05..0.60 or 5..60%%; vanilla: 0.40; lower = softer blade edges)\n"
         "alpha_cutoff = %d\n"
+        "; Skip collecting grass bins the alpha test hides anyway (1 = on, 0 = collect out to fade_end_dist)\n"
+        "trim_hidden = %d\n"
+        "; Alpha-to-coverage on grass blade edges; needs a multisampled GL context (1 = on, 0 = off)\n"
+        "smooth_edges = %d\n"
         "verbose = %d\n"
         "; Log grass bin counts and frame rate every 5 s (P3 calibration)\n"
         "perf_log = %d\n",
@@ -277,6 +330,8 @@ inline int formatDefaultIni(char* buf, size_t cap, const Config& c = Config{}) {
         c.fadeEndDist,
         c.windDist,
         alphaPct,
+        c.trimHidden ? 1 : 0,
+        c.smoothEdges ? 1 : 0,
         c.verbose ? 1 : 0,
         c.perfLog ? 1 : 0);
 }
@@ -286,7 +341,7 @@ constexpr const char* kPageSchema = R"TOML(
 [page]
 name = "K2 Grass Draw Distance"
 title = "K2 Grass Draw Distance"
-desc = "Extend grass draw distance, fade start, wind radius, and alpha cutoff."
+desc = "Extend grass draw distance, fade start, wind radius, alpha cutoff, and edge smoothing."
 
 [[row]]
 id = "enabled"
@@ -358,6 +413,26 @@ scale = 100
 ini = "k2_grass_draw_distance.ini"
 section = "Grass"
 key = "alpha_cutoff"
+
+[[row]]
+id = "trim_hidden"
+kind = "toggle"
+label = "Trim Hidden Grass"
+desc = "Skip grass the alpha test already hides (saves CPU; On keeps the picture the same)."
+default = 1
+ini = "k2_grass_draw_distance.ini"
+section = "Grass"
+key = "trim_hidden"
+
+[[row]]
+id = "smooth_edges"
+kind = "toggle"
+label = "Smooth Grass Edges"
+desc = "Alpha-to-coverage blade edges; needs anti-aliasing (MSAA) in the video options."
+default = 0
+ini = "k2_grass_draw_distance.ini"
+section = "Grass"
+key = "smooth_edges"
 )TOML";
 
 } // namespace k2grass

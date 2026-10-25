@@ -15,3 +15,25 @@ type = "detour"
 function = "K2GrassOnSceneCollect"
 original_bytes = [0xC7, 0x45, 0xF0, 0x00, 0x00, 0x00, 0x00]
 exclude_from_restore = []
+
+
+# Hook 2: Scene::DoBinBucket (0x004664E0) at 0x0046661B (MOV dword ptr [EBP-0x4], 0; 7 bytes), the bin loop counter init
+# right after glAlphaFunc. Starts the grass-pass CPU timer and (smooth_edges, multisampled context only) glEnable(
+# GL_SAMPLE_ALPHA_TO_COVERAGE). Not a branch target; the loop is entered only by falling through here.
+[[hooks]]
+address = 0x0046661B
+type = "detour"
+function = "K2GrassBinLoopBegin"
+original_bytes = [0xC7, 0x45, 0xFC, 0x00, 0x00, 0x00, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+# Hook 3: Scene::DoBinBucket at 0x00466698 (FLD dword ptr [0x00A20040]; 6 bytes), the bin loop's only exit (JGE at
+# 0x00466636; reached by nothing else). Stops the timer and undoes the alpha-to-coverage enable.
+[[hooks]]
+address = 0x00466698
+type = "detour"
+function = "K2GrassBinLoopEnd"
+original_bytes = [0xD9, 0x05, 0x40, 0x00, 0xA2, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []

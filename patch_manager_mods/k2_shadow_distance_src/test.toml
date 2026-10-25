@@ -1,0 +1,5 @@
+[common_contract_test]
+cxxflags = ["-I../_shared_src", "-I$HOME/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common", "-I../../research/companion_levelup/tools/parity/stub", "-I../../tests/include", "-DGUIKIT_HOST", "-Werror"]
+
+[k2_shadow_distance_test]
+cxxflags = ["-I../_shared_src", "-I$HOME/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common", "-I../../research/companion_levelup/tools/parity/stub", "-I../../tests/include", "-DGUIKIT_HOST", "-Werror"]

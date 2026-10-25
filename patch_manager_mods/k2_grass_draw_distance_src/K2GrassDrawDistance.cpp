@@ -1,6 +1,9 @@
-// K2GrassDrawDistance.cpp -- K2 Grass Draw Distance (0.1.3-dev)
+// K2GrassDrawDistance.cpp -- K2 Grass Draw Distance (0.1.4-dev)
 // Extends grass octree build/collect radius, fade-start/fade-end distances, alpha-test threshold,
 // and decouples CPU wind animation radius (one operand rewrite at KPatchInit, code_patches.toml).
+// 0.1.4: a second operand rewrite trims the octree collect radius to the visible clip distance (trim_hidden), two
+// detours inside Scene::DoBinBucket time the grass bin loop (PERF grass_ms_*) and optionally enable alpha-to-coverage
+// around it (smooth_edges, only when the GL context has a multisample buffer).
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <stdint.h>
@@ -35,6 +38,17 @@ constexpr uintptr_t AddrGrassAlphaCutoff = 0x009F5D38;
 // RenderGrassPolys wind gate `FLD float ptr [0x00A0F070]`; only the imm32 changes, to &g_windDistSq.
 constexpr uintptr_t AddrWindFld = 0x0050DCC8;
 const uint8_t kWindFldOrig[6] = {0xD9, 0x05, 0x70, 0xF0, 0xA0, 0x00};
+// Scene::CollectAndTraverse octree sphere query radius `FLD float ptr [0x00A0F074]`; the imm32 becomes &g_collectSq
+// (0x0050DB4C keeps reading the real fade end, so the fade curve is unchanged).
+constexpr uintptr_t AddrCollectFld = 0x00499ADC;
+const uint8_t kCollectFldOrig[6] = {0xD9, 0x05, 0x74, 0xF0, 0xA0, 0x00};
+// Game import slots holding the __stdcall GL entry points the engine itself calls through.
+constexpr uintptr_t AddrSlotGlEnable = 0x00986268;
+constexpr uintptr_t AddrSlotGlDisable = 0x009862A0;
+constexpr uintptr_t AddrSlotGlGetIntegerv = 0x009862CC;
+constexpr unsigned GlSampleAlphaToCoverage = 0x809E;
+constexpr unsigned GlSampleBuffers = 0x80A8;
+constexpr unsigned GlSamples = 0x80A9;
 // int: count of the previous frame's in-range grass bin list (list = {ptr, count}, count at +4). The per-frame
 // list swap in Scene::CollectAndTraverse copies the current list there before hook 1 runs (doc 48 section 1.5).
 constexpr uintptr_t AddrGrassPrevBinCount = 0x00A73304;
@@ -57,9 +71,20 @@ uint32_t g_collectCalls = 0;
 uint32_t g_reloadCount = 0;
 // Wind cutoff (squared m) the patched FLD reads. 0 = no wind (bin d^2 is never < 0).
 float g_windDistSq = 225.0f;
+// Octree collect radius (squared m) the patched FLD at AddrCollectFld reads; the vanilla value until the first apply.
+float g_collectSq = 900.0f;
 uint8_t g_windFldNew[6] = {};
 int g_windPatch = 0;   // codepatch::writeChecked result; 1 = patched
+uint8_t g_collectFldNew[6] = {};
+int g_collectPatch = 0;
 k2grass::PerfWindow g_perf{};
+// Grass bin loop timing / alpha-to-coverage state (render thread only).
+LARGE_INTEGER g_qpcFreq{};
+LARGE_INTEGER g_loopT0{};
+bool g_loopTiming = false;
+bool g_a2cChecked = false;
+bool g_a2cCapable = false;
+bool g_a2cOn = false;     // a2c is enabled between this frame's Begin and End
 
 // Optional Mod Configuration menu integration (k2.modconfig@1 / k2.menuui@1):
 k2mc::ConfigClient g_mcCfg;
@@ -86,28 +111,66 @@ void writeEngineGlobals(const k2grass::EffectiveValues& ev) {
     }
 }
 
+// Rewrite the imm32 of a `FLD float ptr [abs]` (D9 05 imm32) to point at `target`. On a byte mismatch nothing is
+// written (logged); the engine keeps reading its own global.
+int patchFldOperand(const char* name, uintptr_t at, const uint8_t* orig, uint8_t* repl, const float* target) {
+    memcpy(repl, orig, 2);
+    const uint32_t a = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(target));
+    memcpy(repl + 2, &a, 4);
+    uint8_t seen[6] = {};
+    const int rc = codepatch::writeChecked(at, orig, repl, 6, seen);
+    KP_LOG(chMain, "patch %s @0x%08X rc=%d seen=%02X %02X %02X %02X %02X %02X new_operand=0x%08X", name,
+           static_cast<unsigned>(at), rc, seen[0], seen[1], seen[2], seen[3], seen[4], seen[5], a);
+    return rc;
+}
+
 // Point the wind gate's FLD at g_windDistSq so wind_dist and fade_start_dist are independent. On a byte
 // mismatch nothing is written and wind stays coupled to fade start (vanilla behaviour, logged).
 void patchWindOperand() {
     if (g_windPatch == 1) return;
-    memcpy(g_windFldNew, kWindFldOrig, 2);
-    const uint32_t a = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(&g_windDistSq));
-    memcpy(g_windFldNew + 2, &a, 4);
-    uint8_t seen[6] = {};
-    g_windPatch = codepatch::writeChecked(AddrWindFld, kWindFldOrig, g_windFldNew, 6, seen);
-    if (g_windPatch == 1) {
-        KP_LOG(chMain, "wind operand patched at 0x%08X -> &g_windDistSq=0x%08X", static_cast<unsigned>(AddrWindFld), a);
-    } else {
-        KP_WARN("wind operand NOT patched (rc=%d seen=%02X %02X %02X %02X %02X %02X): wind radius follows fade start",
-                g_windPatch, seen[0], seen[1], seen[2], seen[3], seen[4], seen[5]);
-    }
+    g_windPatch = patchFldOperand("wind_fld", AddrWindFld, kWindFldOrig, g_windFldNew, &g_windDistSq);
+    if (g_windPatch != 1) KP_WARN("wind operand NOT patched: wind radius follows fade start");
 }
 
-// FreeLibrary only: put the vanilla operand back before g_windDistSq goes away.
-void unpatchWindOperand() {
-    if (g_windPatch != 1) return;
+// Point the octree query's FLD at g_collectSq (trim_hidden). On a mismatch the collect radius stays the fade end.
+void patchCollectOperand() {
+    if (g_collectPatch == 1) return;
+    g_collectPatch = patchFldOperand("collect_fld", AddrCollectFld, kCollectFldOrig, g_collectFldNew, &g_collectSq);
+    if (g_collectPatch != 1) KP_WARN("collect operand NOT patched: octree collect radius stays at the fade end");
+}
+
+// FreeLibrary only: put the vanilla operands back before the globals go away.
+void unpatchOperands() {
     uint8_t seen[6] = {};
-    if (codepatch::writeChecked(AddrWindFld, g_windFldNew, kWindFldOrig, 6, seen) == 1) g_windPatch = 0;
+    if (g_windPatch == 1 && codepatch::writeChecked(AddrWindFld, g_windFldNew, kWindFldOrig, 6, seen) == 1) g_windPatch = 0;
+    if (g_collectPatch == 1 && codepatch::writeChecked(AddrCollectFld, g_collectFldNew, kCollectFldOrig, 6, seen) == 1) g_collectPatch = 0;
+}
+
+using GlCapFn = void(__stdcall*)(unsigned);
+using GlGetIntFn = void(__stdcall*)(unsigned, int*);
+
+// Call one of the game's GL import slots (glEnable / glDisable); skipped when the slot is unreadable or empty.
+void glCap(uintptr_t slot, unsigned cap) {
+    uint32_t fn = 0;
+    if (!saferead::readAt<uint32_t>(5, slot, 0, &fn) || fn == 0) return;
+    (*reinterpret_cast<GlCapFn*>(slot))(cap);
+}
+
+// First Begin only (GL context is current): alpha-to-coverage needs a multisample buffer. Logged once.
+void checkA2cCapability() {
+    g_a2cChecked = true;
+    uint32_t fn = 0;
+    if (!saferead::readAt<uint32_t>(6, AddrSlotGlGetIntegerv, 0, &fn) || fn == 0) {
+        KP_WARN("a2c capability unknown: glGetIntegerv slot unreadable");
+        return;
+    }
+    int sampleBuffers = 0;
+    int samples = 0;
+    GlGetIntFn get = *reinterpret_cast<GlGetIntFn*>(AddrSlotGlGetIntegerv);
+    get(GlSampleBuffers, &sampleBuffers);
+    get(GlSamples, &samples);
+    g_a2cCapable = sampleBuffers >= 1;
+    KP_LOG(chMain, "a2c capability sample_buffers=%d samples=%d", sampleBuffers, samples);
 }
 
 void perfSample(unsigned now) {
@@ -120,10 +183,15 @@ void perfSample(unsigned now) {
     if (!saferead::readAt<int32_t>(4, AddrGrassPrevBinCount, 0, &bins) || bins < 0) bins = 0;
     g_perf.add(static_cast<uint32_t>(bins), now);
     if (!g_perf.due(now)) return;
+    const bool trimmed = g_collectPatch == 1 && g_cfg.trimHidden;
     KP_LOG(chPerf,
-           "PERF fps=%.1f frames=%u bins_avg=%.0f bins_max=%u end=%.0fm start=%.0fm wind=%.0fm alpha=%.2f",
+           "PERF fps=%.1f frames=%u bins_avg=%.0f bins_max=%u end=%.0fm start=%.0fm wind=%.0fm alpha=%.2f "
+           "grass_ms_avg=%.2f grass_ms_max=%.2f collect=%.0fm trim=%d a2c=%d",
            g_perf.fps(now), g_perf.frames, g_perf.binsAvg(), g_perf.binsMax,
-           std::sqrt(g_eff.fadeEndSq), std::sqrt(g_eff.fadeStartSq), std::sqrt(g_eff.windDistSq), g_eff.alphaCutoff);
+           std::sqrt(g_eff.fadeEndSq), std::sqrt(g_eff.fadeStartSq), std::sqrt(g_eff.windDistSq), g_eff.alphaCutoff,
+           g_perf.grassMsAvg(), g_perf.grassMsMax(),
+           std::sqrt(g_collectPatch == 1 ? g_collectSq : g_eff.fadeEndSq), trimmed ? 1 : 0,
+           (g_a2cCapable && g_cfg.smoothEdges) ? 1 : 0);
     g_perf.reset(now);
 }
 
@@ -133,7 +201,7 @@ void ensureDefaultIniFile() {
         fclose(f);
         return;
     }
-    char buf[1024];
+    char buf[2048];
     const int n = k2grass::formatDefaultIni(buf, sizeof(buf), g_cfg);
     if (n > 0 && static_cast<size_t>(n) < sizeof(buf)) {
         filewatch::atomicWrite(k2grass::kIniFile, buf, static_cast<size_t>(n));
@@ -158,12 +226,13 @@ void loadAndApplyIni(bool initial) {
     g_cfg = nextCfg;
     g_eff = k2grass::computeEffective(g_cfg);
     writeEngineGlobals(g_eff);
+    g_collectSq = k2grass::collectDistSq(g_eff, g_cfg.trimHidden);
     ++g_reloadCount;
 
     if (!g_bannerLogged) {
         g_bannerLogged = true;
         KP_LOG(chMain,
-               "%s %s loaded: enabled=%d fade=%.0fm..%.0fm (sq=%.0f..%.0f) wind=%.0fm (sq=%.0f) alpha=%.2f clip=%.1fm perf_log=%d ini=%s(ok=%d,bad=%d)",
+               "%s %s loaded: enabled=%d fade=%.0fm..%.0fm (sq=%.0f..%.0f) wind=%.0fm (sq=%.0f) alpha=%.2f clip=%.1fm trim=%d collect=%.1fm (sq=%.0f) smooth_edges=%d perf_log=%d ini=%s(ok=%d,bad=%d)",
                k2grass::kModId, k2grass::kVersion,
                g_cfg.enabled ? 1 : 0,
                g_cfg.fadeStartDist, g_cfg.fadeEndDist,
@@ -171,16 +240,19 @@ void loadAndApplyIni(bool initial) {
                g_cfg.windDist, g_eff.windDistSq,
                g_eff.alphaCutoff,
                k2grass::effectiveClipDistMeters(g_eff),
+               g_cfg.trimHidden ? 1 : 0, std::sqrt(g_collectSq), g_collectSq,
+               g_cfg.smoothEdges ? 1 : 0,
                g_cfg.perfLog ? 1 : 0,
                readOk ? "read" : "defaults", st.ok, st.bad);
     } else if (changed || g_cfg.verbose) {
         KP_LOG(chCfg,
-               "INI reload #%u: enabled=%d fade=%.0fm..%.0fm wind=%.0fm alpha=%.2f clip=%.1fm",
+               "INI reload #%u: enabled=%d fade=%.0fm..%.0fm wind=%.0fm alpha=%.2f clip=%.1fm trim=%d collect=%.1fm smooth_edges=%d",
                g_reloadCount,
                g_cfg.enabled ? 1 : 0,
                g_cfg.fadeStartDist, g_cfg.fadeEndDist,
                g_cfg.windDist, g_eff.alphaCutoff,
-               k2grass::effectiveClipDistMeters(g_eff));
+               k2grass::effectiveClipDistMeters(g_eff),
+               g_cfg.trimHidden ? 1 : 0, std::sqrt(g_collectSq), g_cfg.smoothEdges ? 1 : 0);
     }
 }
 
@@ -252,6 +324,7 @@ void __cdecl KPatchInit(const KPatchApi* api) {
     filewatch::changed(g_iniPoll, k2grass::kIniFile, now, true);
     loadAndApplyIni(true);
     patchWindOperand();
+    patchCollectOperand();
     g_initialized = true;
     pollModConfig();
 }
@@ -263,6 +336,7 @@ void __cdecl K2GrassOnSceneCollect() {
         filewatch::changed(g_iniPoll, k2grass::kIniFile, now, true);
         loadAndApplyIni(true);
         patchWindOperand();
+        patchCollectOperand();
         g_initialized = true;
     } else if (filewatch::changed(g_iniPoll, k2grass::kIniFile, now)) {
         loadAndApplyIni(false);
@@ -277,13 +351,45 @@ void __cdecl K2GrassOnSceneCollect() {
     ++g_collectCalls;
 }
 
+// Hook 2: Scene::DoBinBucket (0x004664E0) at 0x0046661B, just before the per-bin loop that renders grass bins.
+void __cdecl K2GrassBinLoopBegin() {
+    if (!g_a2cChecked) checkA2cCapability();
+    if (g_cfg.perfLog) {
+        if (!g_qpcFreq.QuadPart) QueryPerformanceFrequency(&g_qpcFreq);
+        g_loopTiming = g_qpcFreq.QuadPart > 0 && QueryPerformanceCounter(&g_loopT0) != 0;
+    } else {
+        g_loopTiming = false;
+    }
+    if (g_a2cCapable && g_cfg.smoothEdges) {
+        glCap(AddrSlotGlEnable, GlSampleAlphaToCoverage);
+        g_a2cOn = true;
+    }
+}
+
+// Hook 3: Scene::DoBinBucket at 0x00466698, the bin loop's only exit (JGE at 0x00466636).
+void __cdecl K2GrassBinLoopEnd() {
+    if (g_a2cOn) {
+        glCap(AddrSlotGlDisable, GlSampleAlphaToCoverage);
+        g_a2cOn = false;
+    }
+    if (g_loopTiming) {
+        g_loopTiming = false;
+        LARGE_INTEGER t1{};
+        if (QueryPerformanceCounter(&t1) && t1.QuadPart >= g_loopT0.QuadPart) {
+            const uint64_t us = static_cast<uint64_t>(t1.QuadPart - g_loopT0.QuadPart) * 1000000ull /
+                                static_cast<uint64_t>(g_qpcFreq.QuadPart);
+            g_perf.addGrassUs(us > 0xFFFFFFFFull ? 0xFFFFFFFFu : static_cast<uint32_t>(us));
+        }
+    }
+}
+
 } // extern "C"
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
     if (fdwReason == DLL_PROCESS_ATTACH) {
         DisableThreadLibraryCalls(hinstDLL);
     } else if (fdwReason == DLL_PROCESS_DETACH && lpvReserved == nullptr) {
-        unpatchWindOperand();
+        unpatchOperands();
     }
     return TRUE;
 }

@@ -1,6 +1,7 @@
 # Byte patches this mod's DLL writes into the game itself (not KPM hooks), for the static checks
 # (scripts/check_hook_bytes.py, scripts/check_hook_spans.py). Schema: see robustness_fixes_src/code_patches.toml.
 # 0.1.1: the wind operand rewrite replaces the 0.1.0 per-bin detour at 0x0050DB55.
+# 0.1.4: collect_fld redirects the octree query radius to g_collectSq (trim_hidden); the engine global 0x00A0F074 keeps the fade end.
 
 [[code_patches]]
 name = "wind_fld"
@@ -10,7 +11,17 @@ original_bytes = [0xD9, 0x05, 0x70, 0xF0, 0xA0, 0x00]
 kind = "code"
 verifies_original = true
 enabled_by = "always (KPatchInit); restored on FreeLibrary"
-source = "K2GrassDrawDistance.cpp patchWindOperand / unpatchWindOperand (codepatch::writeChecked)"
+source = "K2GrassDrawDistance.cpp patchWindOperand / unpatchOperands (codepatch::writeChecked)"
+
+[[code_patches]]
+name = "collect_fld"
+address = 0x00499ADC
+# Scene::CollectAndTraverse octree sphere query radius `FLD float ptr [0x00A0F074]`; the imm32 becomes &g_collectSq (DLL .data)
+original_bytes = [0xD9, 0x05, 0x74, 0xF0, 0xA0, 0x00]
+kind = "code"
+verifies_original = true
+enabled_by = "always (KPatchInit); restored on FreeLibrary; value = trim_hidden ? min(fade_end, clip + 2 m)^2 : fade_end^2"
+source = "K2GrassDrawDistance.cpp patchCollectOperand / unpatchOperands (codepatch::writeChecked)"
 
 [[code_patches]]
 name = "fade_start_sq"

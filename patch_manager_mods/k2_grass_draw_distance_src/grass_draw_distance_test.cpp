@@ -46,6 +46,40 @@ static void test_defaults_and_effective_math() {
     KT_CHECK(softClip > 84.8f && softClip < 84.9f);
 }
 
+static void test_collect_dist_trim() {
+    k2grass::Config def{};
+    KT_CHECK(def.trimHidden);
+    KT_CHECK(!def.smoothEdges);
+    const k2grass::EffectiveValues ev = k2grass::computeEffective(def);
+
+    // Defaults: clip ~138.78 m + 2 m margin = ~140.78 m, so sq ~19818.8 < 22500 (fade end).
+    const float trimmed = k2grass::collectDistSq(ev, true);
+    KT_CHECK(trimmed < ev.fadeEndSq);
+    KT_CHECK(std::fabs(std::sqrt(trimmed) - 140.78f) < 0.01f);
+    KT_CHECK(trimmed > 19800.0f && trimmed < 19840.0f);
+    // Trim off collects out to the fade end.
+    KT_CHECK(std::fabs(k2grass::collectDistSq(ev, false) - 22500.0f) < 1e-3f);
+
+    // Vanilla values (enabled=0): clip 25.10 m + 2 m = 27.10 m, sq ~734.4 < 900.
+    k2grass::Config off = def;
+    off.enabled = false;
+    const k2grass::EffectiveValues vEv = k2grass::computeEffective(off);
+    const float vTrim = k2grass::collectDistSq(vEv, true);
+    KT_CHECK(std::fabs(std::sqrt(vTrim) - 27.1f) < 0.01f);
+    KT_CHECK(vTrim > 730.0f && vTrim < 740.0f);
+    KT_CHECK(std::fabs(k2grass::collectDistSq(vEv, false) - 900.0f) < 1e-3f);
+
+    // Never above the fade end: a cutoff near zero clips at ~the fade end, and the margin must not push past it.
+    k2grass::Config thin = def;
+    thin.alphaCutoff = k2grass::kMinAlphaCutoff;
+    const k2grass::EffectiveValues tEv = k2grass::computeEffective(thin);
+    KT_CHECK(k2grass::collectDistSq(tEv, true) <= tEv.fadeEndSq);
+    KT_CHECK(k2grass::collectDistSq(tEv, true) > k2grass::collectDistSq(ev, true));
+    // Never below the fade start (the clip distance is at least the start).
+    KT_CHECK(k2grass::collectDistSq(ev, true) >= ev.fadeStartSq);
+    KT_CHECK(k2grass::collectDistSq(vEv, true) >= vEv.fadeStartSq);
+}
+
 static void test_bin_alpha_curve() {
     k2grass::Config def{};
     def.fadeStartDist = 60.0f;
@@ -156,14 +190,50 @@ static void test_perf_window() {
     KT_CHECK_EQ(w.startMs, 7000u);
 }
 
+static void test_perf_window_grass_time() {
+    k2grass::PerfWindow w{};
+    w.reset(1000);
+    KT_CHECK(std::fabs(w.grassMsAvg()) < 1e-6f);   // no samples: zeros, no divide by zero
+    KT_CHECK(std::fabs(w.grassMsMax()) < 1e-6f);
+    w.add(100, 1000);
+    // Frame 1: the bin loop ran twice (1000 + 500 us); it closes on the next frame's add().
+    w.addGrassUs(1000);
+    w.addGrassUs(500);
+    KT_CHECK_EQ(w.grassCount, 0u);
+    w.add(100, 1016);
+    KT_CHECK_EQ(w.grassCount, 1u);
+    KT_CHECK_EQ(w.grassUsMax, 1500u);
+    // Frame 2: 500 us.
+    w.addGrassUs(500);
+    w.add(100, 1033);
+    KT_CHECK_EQ(w.grassCount, 2u);
+    KT_CHECK(std::fabs(w.grassMsAvg() - 1.0f) < 1e-4f);   // (1500 + 500) / 2 us = 1.00 ms
+    KT_CHECK(std::fabs(w.grassMsMax() - 1.5f) < 1e-4f);
+    // A frame with no grass pass adds no sample.
+    w.add(100, 1050);
+    KT_CHECK_EQ(w.grassCount, 2u);
+    // Saturating accumulator.
+    w.addGrassUs(0xFFFFFFF0u);
+    w.addGrassUs(100u);
+    KT_CHECK_EQ(w.grassUsCur, 0xFFFFFFFFu);
+    // reset() clears the grass window too.
+    w.reset(2000);
+    KT_CHECK_EQ(w.grassCount, 0u);
+    KT_CHECK_EQ(w.grassUsSum, 0u);
+    KT_CHECK_EQ(w.grassUsMax, 0u);
+    KT_CHECK_EQ(w.grassUsCur, 0u);
+}
+
 static void test_ini_roundtrip_and_direct_float_alpha() {
-    char buf[1024] = {};
+    char buf[2048] = {};
     k2grass::Config orig{};
     orig.fadeStartDist = 75.0f;
     orig.fadeEndDist = 135.0f;
     orig.windDist = 30.0f;
     orig.alphaCutoff = 0.25f;
     orig.perfLog = false;
+    orig.trimHidden = false;
+    orig.smoothEdges = true;
     const int n = k2grass::formatDefaultIni(buf, sizeof(buf), orig);
     KT_CHECK(n > 0 && static_cast<size_t>(n) < sizeof(buf));
 
@@ -171,6 +241,27 @@ static void test_ini_roundtrip_and_direct_float_alpha() {
     inikit::LoadStats st = k2grass::parseIniText(buf, parsed);
     KT_CHECK_EQ(st.bad, 0);
     KT_CHECK(parsed == orig);
+    KT_CHECK(!parsed.trimHidden && parsed.smoothEdges);
+
+    // Defaults round-trip too (trim_hidden = 1, smooth_edges = 0), and each new key counts as a known key.
+    char dbuf[2048] = {};
+    const int dn = k2grass::formatDefaultIni(dbuf, sizeof(dbuf));
+    KT_CHECK(dn > 0 && static_cast<size_t>(dn) < sizeof(dbuf));
+    k2grass::Config dparsed{};
+    inikit::LoadStats dst = k2grass::parseIniText(dbuf, dparsed);
+    KT_CHECK_EQ(dst.bad, 0);
+    KT_CHECK_EQ(dst.unknown, 0);
+    KT_CHECK(dparsed == k2grass::Config{});
+    KT_CHECK(dparsed.trimHidden && !dparsed.smoothEdges);
+    char keys[] = "trim_hidden = off\nsmooth_edges = yes\n";
+    k2grass::Config kc{};
+    inikit::LoadStats kst = k2grass::parseIniText(keys, kc);
+    KT_CHECK_EQ(kst.ok, 2);
+    KT_CHECK(!kc.trimHidden && kc.smoothEdges);
+    char bad[] = "trim_hidden = maybe\n";
+    k2grass::Config bc{};
+    KT_CHECK_EQ(k2grass::parseIniText(bad, bc).bad, 1);
+    KT_CHECK(bc.trimHidden);
 
     // Also verify direct float alpha_cutoff = 0.18
     char floatIni[] = "fade_start_dist = 50\nfade_end_dist = 100\nalpha_cutoff = 0.18\nwind_dist = 0\n";
@@ -186,7 +277,7 @@ static void test_modconfig_schema_bindings() {
     mcdecl::PageDecl pd{};
     char err[96] = {};
     KT_CHECK(mcdecl::parseSchema(k2grass::kPageSchema, strlen(k2grass::kPageSchema), pd, err, sizeof(err)));
-    KT_CHECK_EQ(pd.nRows, 5);
+    KT_CHECK_EQ(pd.nRows, 7);
     for (int i = 0; i < pd.nRows; ++i) {
         const mcdecl::RowDecl& r = pd.rows[i];
         KT_CHECK(strcmp(r.ini, k2grass::kIniFile) == 0);
@@ -198,10 +289,12 @@ static void test_modconfig_schema_bindings() {
 
 int main() {
     test_defaults_and_effective_math();
+    test_collect_dist_trim();
     test_bin_alpha_curve();
     test_sanitize_clamps_and_span_guard();
     test_menu_fade_link();
     test_perf_window();
+    test_perf_window_grass_time();
     test_ini_roundtrip_and_direct_float_alpha();
     test_modconfig_schema_bindings();
     return kt::Report("grass_draw_distance_test");
