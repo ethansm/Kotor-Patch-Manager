@@ -1,7 +1,7 @@
 # Session Handoff & Plan State: patch_manager_mods/46_mod_config_declarative_layer.md
 
 ## 0. Next-Phase Direction
-Execute MCF1: [Mod-config] Pure logic in MenuUiLogic.h: row kinds (toggle/stepper), ScrollWindow (offset clamp, wheel step, ensure-visible, thumb px), `mui::tickResetDue(gap, flags48, lmbDown)` + tests
+Review follow-ups RF1-RF3 (dropRefs tooltip owner, preview icon retry + blank-texture detection recon, MCF6/MCF7 decision); after MC-PF1 play
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/46_mod_config_declarative_layer.md`
@@ -9,15 +9,15 @@ Execute MCF1: [Mod-config] Pure logic in MenuUiLogic.h: row kinds (toggle/steppe
 - **Waves:** .claude/waves/WI-46-a2/
 - **Waves:** .claude/waves/WI-46-a3/
 - **Waves:** .claude/waves/w1-46-prev/
-- **Branch:** `KOTOR-II` (bcff4263 play queue: CH-PV1 retest after mod-config 0.3.4-dev (gear toggles the modal) + combat-hotbar 0.11.1-dev (thin hugging frame))
-- **Generated:** 2026-10-20 22:24:30 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (5ef8525a doc 50: Wave 2 batching decision + PF1c findings summary)
+- **Generated:** 2026-10-25 19:16:43 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-bcff4263 play queue: CH-PV1 retest after mod-config 0.3.4-dev (gear toggles the modal) + combat-hotbar 0.11.1-dev (thin hugging frame)
- patch_manager_mods/PLAY_TEST_QUEUE.md | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+5ef8525a doc 50: Wave 2 batching decision + PF1c findings summary
+ patch_manager_mods/50_k2_render_performance.md | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 ```
-- **Dirty Files (185):**
+- **Dirty Files (191):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
   - ` M .claude/handoffs/DECOMP_PLAN.handoff.md`
@@ -28,17 +28,15 @@ bcff4263 play queue: CH-PV1 retest after mod-config 0.3.4-dev (gear toggles the 
   - ` M .claude/reviews/gemini_20261014/tools/fix3_items.tsv`
   - ` M .claude/settings.json`
   - ` M CLAUDE.md`
-  - ... +175 more (run `git status --short`)
+  - ... +181 more (run `git status --short`)
 
-## 2. Immediate Objective (MCF1)
-**[Mod-config] Pure logic in MenuUiLogic.h: row kinds (toggle/stepper), ScrollWindow (offset clamp, wheel step, ensure-visible, thumb px), `mui::tickResetDue(gap, flags48, lmbDown)` + tests**
+## 2. Immediate Objective (MCF6)
+**[Mod-config] Native slider embed probe (gated by MCF0)**
 
-Status: BUILT
-Task: [Mod-config] Pure logic in MenuUiLogic.h: row kinds (toggle/stepper), ScrollWindow (offset clamp, wheel step, ensure-visible, thumb px), `mui::tickResetDue(gap, flags48, lmbDown)` + tests
+Status: PLANNED
+Task: [Mod-config] Native slider embed probe (gated by MCF0)
 
 ## 2b. Upcoming Batches in Pipeline
-- **MCF5** [Meta / Planning Setup] : [Mod-config] Look-alike slider row (SliderArt extracted; part 1 pure maths 09fbf5d7, part 2 provider wiring)
-- **MCF6** [Meta / Planning Setup] : [Mod-config] Native slider embed probe (gated by MCF0)
 - **MCF7** [Meta / Planning Setup] : [Enemy strip] Migrate its page to the declarative layer
 
 ## 3. Strict Context Budget & Read Policy
@@ -46,7 +44,7 @@ Task: [Mod-config] Pure logic in MenuUiLogic.h: row kinds (toggle/stepper), Scro
 
 ## 4. Subagent Delegation Direction
 - **Claude Code**: parallel `model: haiku` Agent subagents; brief = `Contract` + `Write Scope` + `python3 scripts/agent_contract.py print worker|recon`.
-- **Other backends** (only when the user asks): `python3 scripts/plan_manager.py delegate MCF1` or `oc-subagent <scout|code|ghidra|verify|gate|doc>`.
+- **Other backends** (only when the user asks): `python3 scripts/plan_manager.py delegate MCF6` or `oc-subagent <scout|code|ghidra|verify|gate|doc>`.
 
 ## 5. Dead Ends & Verification (manual)
 _(none recorded; append Dead Ends & Anti-Patterns and Verification Commands here)_
@@ -137,3 +135,11 @@ MCF5 slider merged to KOTOR-II (ff, now repo ~7ca9fdfe), shared headers synced (
 - Play-verified: Esc steps back one page on every press, boop sound correct.
 - Still unplayed: sliders inside border / wedge meets thumb, Snap slider range + rejected value, SH-PG1, MCR1-3, hold-repeat, modal-closes-first on Esc. `selftest=1` is still set in the game-dir mod_config.ini.
 - KPM-side commit for mod-config not yet made (kpm_hotswap prints the command).
+
+## Update 10-25 18:20 - pooled-fill free guard LIVE (mod-config 0.4.6-dev, e432a5d1; combat-hotbar 0.11.4-dev unchanged)
+- Root cause class (static, V1 + own read of decomp/41/00414c60.asm): the border dtor deletes +0x6C/+0x70/+0x74 children unconditionally (`CMP [ECX+0x74],0; JZ; vt[1](1)`). Any control freed while holding a `guikit::imageFor/imageForRetry` POOLED image deletes it for every holder and leaves the per-DLL pool dangling.
+- Fix: `guikit::isPooledImage` + `detachPooledFills(ctl)` (label border or both button borders), called in `releaseUnlinkedLabel`, `releaseUnlinkedButton` (GuiButton.h) and mod-config `freeCtl` (logs `pooled=N`). PreviewCanvas::destroy still restores each label's own fill first (lets the own image be freed). Host test in guikit_test.cpp. KPM Common cc840f0, ModConfig 0dd33c4. Rollback `kpm_hotswap.py --rollback mod-config_swap_20261025_181514`.
+- Exposure covered by rebuilds only: enemy-effects-strip (EnemyStrip.cpp:1123/1150 use releaseUnlinkedLabel) gets the guard at its owner's next build (peer has uncommitted EnemyStrip.cpp; do not build it from here). Holster-editor FREEVIEW (HolsterEditor.cpp:3087) frees a scene view, not a border label: not affected.
+- Logs 10-25 17:18 launch: CLEAN; Options opened once, no page entered, so 0.11.4's preview-then-close path is still unplayed. Play row MC-PF1 (grass sliders + combat page, close, reopen, close).
+- Review leftovers (not fixed): `iconFallbacks` cannot see a missing resref (engine returns a blank white texture, not null: needs a resource-exists check, no helper in _shared_src); `pvImage` tries (max 20) persist across Options opens (CombatHotbar.cpp:936-950); dropRefs never clears tooltip owner M+0x40 (V1 fix text: `if (rd(M,0x40)==L){ wr(L,0x48, rd(L,0x48)&~0x40u); wr(M,0x40,0); }`, consumer RemoveToolTip 0x413F00); per-tick model rebuild + setClickable writes are cheap, leave.
+- Verification used: `run_tests.py mod_config previewcanvas guikit common_contract combat_` (44/0), `compat_check.py _shared_src/GuiKit.h _shared_src/GuiButton.h` (43/0, after `check_shared_headers.py --sync`: build_check compiles against KPM Common, so sync BEFORE build_check), `GATE PASS mods=mod-config head=b4515f02405d`.
