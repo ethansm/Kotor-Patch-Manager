@@ -30,4 +30,5 @@ EXPORTS
     CompanionAiProbeSetState
     CompanionAiProbeGetCurrentAction
     CompanionAiCastGuard
+    CompanionAiCastQueueNewest
     KPatchInit

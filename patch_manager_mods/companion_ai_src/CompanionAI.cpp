@@ -23,6 +23,7 @@
 //   FM4 0x57451F CompanionAiFm4Snap(eax) / 0x575183 CompanionAiFm4Restore(ebp)   SaveCreature FollowInfo (mode 1)
 //   A4  0x6D9E2A CompanionAiA4(ebp) -> int      AIActionCombat NULL spell row (skip-only): 1 => 0x6D9EA4
 //   G1  0x6D9ADB CompanionAiCastGuard(ebp) -> int  AIActionCombat case 9 (spell round node): cast_family_guard. 1 => 0x6D9B65 (skip the round build)
+//   F4  0x5917C1 CompanionAiCastQueueNewest(ebp)  AddSWSpellAction before AddAction: drop older pending spell nodes (cast_queue_newest)
 //   C1  0x5868B9/0x5868F1/0x586929 CompanionAiC1(ebp)   ClearHostileActionsVersus restart index (skip-only)
 //   A3  0x6D78B7 CompanionAiA3(ebp)             dead/undetected-target exit: clear the orientation lock (opt, a3=0)
 //   (FM3 hot sentinel probe 0x51DBE7: designed and validated, NOT shipped -- wrapper cost in the hottest loop; the cold FM3 sites below ship)
@@ -458,6 +459,10 @@ void summary(DWORD now) {
 // =====================================================================================================================
 constexpr int FnPartyTable = 0x0051C8D0;   // thiscall(serverApp) RET -> *(serverApp+4)+0x1F0B4: [+0] count, +8+4i npc idx, +0x1C+4*idx ids
 constexpr int FnPlayerId = 0x0051C8F0;     // thiscall(serverApp) RET -> id of the controlled leader (player+0x28), 0x7F000000 if none
+// F4 (F4_unlink.md; WI-143): the engine's own unlink + free of one pending round action.
+constexpr int FnListRemove = 0x0073A130;   // thiscall(list internal; node) -> payload: CExoLinkedListInternal::Remove, frees the list node, count--
+constexpr int FnActionDtor = 0x00623320;   // thiscall(action): action destructor, run before the free
+constexpr int FnOpDelete = 0x009196FD;     // cdecl(void*): engine operator delete, the free RemoveLastAction 0x590514-0x590527 uses
 constexpr int CrPos = 0x94, CrMoving = 0x11BC, CrCombatExit = 0x524, CrSetState = 0xFF5, CrListenerSpeaker = 0x1A0, CrListenerPattern = 0x1BC;
 
 enum PId { PiFm2c, PiFm2f, PiFm2r, PiFm3, PiRs, PiP2, PiPf, PiRar, PiShx, PiSs1, PiGca, PiParty, PiA1x, PiA1xF, PiCount };
@@ -910,6 +915,69 @@ extern "C" int __cdecl CompanionAiCastGuard(int ebp) {
         eline(now, "t=%lu G1 drop cr=%08x spell=%d fam=%d", now, actorId, spell, cai::castFamily(spell));
     }
     return 1;
+}
+
+// F4. AddSWSpellAction 0x591670 at 0x5917C1, before the AddAction that appends this party member's new spell round node. ClearAllActions
+// never empties the round's pending action list, so each script run appends one more spell node and the build takes the oldest one.
+// Here the round owner's older pending spell nodes (type 9, not the in-progress action) are unlinked and freed with the engine's own
+// calls; the new node is then built. Party members only (player-issued casts are never touched). Every read is checked: a doubtful
+// read returns before anything is removed.
+namespace {
+int g_f4Logs = 0;   // session budget of F4 drop lines
+struct F4Seen { int act; DWORD t; };
+F4Seen g_f4Seen[64] = {};   // ring: spell action -> tick of its AddSWSpellAction (party members only); a reused pointer reads as same-run = kept
+int g_f4Next = 0;
+DWORD f4AddedAt(int act) { for (auto& e : g_f4Seen) if (e.act == act) return e.t; return 0; }
+}
+extern "C" void __cdecl CompanionAiCastQueueNewest(int ebp) {
+    saferead::beginScope();
+    DWORD now = GetTickCount(); tick(now);
+    if (!g_cfg.castQueueNewest) return;
+    int round = fr<int>(ebp, -0x28);
+    if (!round) return;
+    int cr = rd<int>(round, 0xB04, 0);
+    if (!cr || rd<int>(cr, CrRound, 0) != round) return;   // the round's owner must point back at this round
+    int actorId = rd<int>(cr, ObId, 0);
+    if (!actorId || actorId == Invalid) return;
+    int app = rd<int>(G_App, 0), server = app ? rd<int>(app, 8) : 0;
+    if (!server || !rd<int>(server, 4)) return;   // 0x51C620 dereferences [server+4] (as CompanionAiCastGuard)
+    if (reinterpret_cast<Fn0>(FnPlayerId)(server) == actorId) return;   // the controlled leader: player-issued casts are never dropped
+    if (objInfo(actorId, now).party != 1) return;   // party members only
+    int fresh = fr<int>(ebp, -0x10);   // the new node (PUSH [EBP-0x10] -> AddAction): not linked yet, stamp it for the same-run test
+    if (fresh) { g_f4Seen[g_f4Next].act = fresh; g_f4Seen[g_f4Next].t = now ? now : 1; g_f4Next = (g_f4Next + 1) & 63; }
+    int W = rd<int>(round, 0xB00, 0);
+    int internal = W ? rd<int>(W, 0, 0) : 0;
+    if (!internal) return;
+    int cur = rd<int>(round, 0xB18, 0);   // the in-progress action (0 = none): never dropped
+    // [internal] = head node {+0 prev, +4 next, +8 action}; the action's type is the byte at action+0x10. At most 8 nodes walked.
+    int nodes[8], acts[8], types[8], n = 0;
+    int node = rd<int>(internal, 0, 0);
+    while (node && n < 8) {
+        int act = 0, nxt = 0;
+        unsigned char typ = 0;
+        if (!saferead::readAt<int>(1, static_cast<uintptr_t>(node), 8, &act) || !saferead::readAt<int>(1, static_cast<uintptr_t>(node), 4, &nxt)) return;
+        if (!act || !saferead::readAt<unsigned char>(1, static_cast<uintptr_t>(act), 0x10, &typ)) return;
+        nodes[n] = node; acts[n] = act; types[n] = typ; ++n;
+        node = nxt;
+    }
+    for (int i = 0; i < n; ++i)   // a combo queues several casts in one script run: keep this run's own earlier nodes
+        if (types[i] == 9 && cai::f4SameRun(f4AddedAt(acts[i]), now, 16)) types[i] = 0;
+    int picked[8];
+    int pn = cai::staleSpellPick(types, acts, n, cur, picked, 8);
+    int left = n;   // walked nodes still linked
+    for (int j = 0; j < pn; ++j) {
+        int k = picked[j];
+        int a = reinterpret_cast<Fn1>(FnListRemove)(internal, nodes[k]);   // unlinks the node, frees it, returns the action
+        if (!a) continue;
+        --left;
+        int spell = rd<int>(a, 0x24, -1);   // read before the free
+        if (g_f4Logs < 200) {
+            ++g_f4Logs;
+            eline(now, "t=%lu F4 drop cr=%08x spell=%d left=%d", now, actorId, spell, left);
+        }
+        reinterpret_cast<Fn0>(FnActionDtor)(a);
+        reinterpret_cast<void(__cdecl*)(void*)>(FnOpDelete)(reinterpret_cast<void*>(a));
+    }
 }
 
 // T3. ExecuteCommandAurPostString 0x6F6200 (retail stub) at 0x6F62F2, after the four pops succeeded.

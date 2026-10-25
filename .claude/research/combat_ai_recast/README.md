@@ -130,7 +130,10 @@ CLR of that actor), Bao-Dur = `a9b1138`. Tools: `cmdq_idle_casts.py`, `cmdq_rn_b
   (append/consume functions) from static RE (WI-135 step 2).
   RE DONE (`F4_unlink.md`): the round list is a CExoLinkedList (round+0xB00 -> wrapper -> internal; count internal+8),
   FIFO; +0xB18 = in-progress action (never free it); owner creature round+0xB04. Unlink one node via 0x73A130, free via
-  0x623320 + 0x9196FD. Hook 0x5917C1 (AddSWSpellAction, before AddAction). Steps pinned in WI-143 (ready).
+  0x623320 + 0x9196FD. Hook 0x5917C1 (AddSWSpellAction, before AddAction).
+  BUILT (WI-143): `CompanionAiCastQueueNewest`, INI `cast_queue_newest=1`, non-leader party members only; drops older
+  pending spell nodes (never the in-progress one, never a node from the same script run: < 16 ms, combo casts); log
+  `F4 drop`. Host tests + build_check PASS. Ships with the F1a reinstall; play row CA-FG5.
 - F5 (script, party): run DetermineCombatRound at most once per engine round end for a party member (local int stamp
   of the round, skip a second run within the same round), which removes the backlog source of fact 7.
   BUILT (WI-142): entry F5 in `party_ai_patches.py` at the top of GN_DetermineCombatRound: a non-leader party member

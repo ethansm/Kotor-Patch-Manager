@@ -123,11 +123,11 @@ static void testShippedIni() {
                            "log_all", "engine_print", "log_aur", "dedupe_ms", "max_lines_per_sec", "max_file_mb", "flush_ms",
                            "a1_burst_threshold", "a1_rate_threshold", "engine_verbose", "summary_sec", "p1_detail_lines", "a1", "a1_stances",
                            "a1_party_only", "a1_retarget", "a1_retarget_stances", "a1_retarget_strict", "a1_rethink_ms", "p1", "p1_interval_ms", "fm1",
-                           "fm1_rethink_ms", "fm4", "a4", "c1", "c1_party_only", "a3", "cast_family_guard", "log",
+                           "fm1_rethink_ms", "fm4", "a4", "c1", "c1_party_only", "a3", "cast_family_guard", "cast_queue_newest", "log",
                            "probe_fm2c", "probe_fm2f", "probe_fm2r", "probe_fm3", "probe_rs", "probe_p2", "probe_pf", "probe_rar", "probe_shx",
                            "probe_ss1", "probe_gca", "probe_party", "probe_a1x", "probe_lines"};
     int knownN = int(sizeof known / sizeof known[0]);
-    CHECK(g_t.n == knownN); CHECK(knownN == 52);
+    CHECK(g_t.n == knownN); CHECK(knownN == 53);
     for (int i = 0; i < g_t.n; ++i) {
         bool ok = false;
         for (int k = 0; k < knownN; ++k) if (!strcmp(g_t.key[i], known[k])) ok = true;
@@ -516,6 +516,40 @@ static void testCastGuard() {
     CHECK(!bad.castFamilyGuard && strstr(g_t.bad, "cast_family_guard") != nullptr);   // unparseable flag = off, like every flag
 }
 
+// F4 cast queue newest (WI-143): stale spell pick, drop decision inputs, INI key
+static void testCastQueue() {
+    int out[8];
+    // same-run test: queued on this tick or 15 ms ago = same run (kept); 16 ms+ or never seen = an older run (stale)
+    CHECK(f4SameRun(1000, 1000, 16) && f4SameRun(1000, 1015, 16));
+    CHECK(!f4SameRun(1000, 1016, 16) && !f4SameRun(0, 5, 16) && !f4SameRun(1000, 1040, 16));
+    // empty list: nothing
+    const int none_t[1] = {9}, none_a[1] = {5};
+    CHECK(staleSpellPick(none_t, none_a, 0, 0, out, 8) == 0);
+    // one stale spell: picked
+    CHECK(staleSpellPick(none_t, none_a, 1, 0, out, 8) == 1 && out[0] == 0);
+    // spell equal to the in-progress action: kept
+    CHECK(staleSpellPick(none_t, none_a, 1, 5, out, 8) == 0);
+    // mixed types (1, 9, 9): the two spell nodes, in list order; the non-spell node is never picked
+    const int mix_t[3] = {1, 9, 9}, mix_a[3] = {7, 8, 9};
+    CHECK(staleSpellPick(mix_t, mix_a, 3, 0, out, 8) == 2 && out[0] == 1 && out[1] == 2);
+    // the in-progress one is kept, the other spell is still picked
+    CHECK(staleSpellPick(mix_t, mix_a, 3, 8, out, 8) == 1 && out[0] == 2);
+    // outCap 1 caps the count at 1 (the first stale spell)
+    const int tri_t[3] = {9, 9, 9}, tri_a[3] = {1, 2, 3};
+    CHECK(staleSpellPick(tri_t, tri_a, 3, 0, out, 1) == 1 && out[0] == 0);
+    // no spell nodes at all, and null / empty arguments: nothing
+    const int non_t[2] = {1, 2}, non_a[2] = {4, 5};
+    CHECK(staleSpellPick(non_t, non_a, 2, 0, out, 8) == 0);
+    CHECK(staleSpellPick(nullptr, none_a, 1, 0, out, 8) == 0 && staleSpellPick(none_t, none_a, 1, 0, out, 0) == 0);
+    // INI key: default on (shipped), 0 turns it off, sameConfig sees it
+    Config d; CHECK(d.castQueueNewest);
+    g_t.parse("[CompanionAI]\ncast_queue_newest=0\n", "CompanionAI"); Config off; parseConfig(g_t, off);
+    CHECK(!off.castQueueNewest && g_t.bad[0] == 0 && off.castFamilyGuard);
+    Config e = d; e.castQueueNewest = false; CHECK(!sameConfig(d, e)); CHECK(sameConfig(d, Config()));
+    g_t.parse("[CompanionAI]\ncast_queue_newest=maybe\n", "CompanionAI"); Config bad; parseConfig(g_t, bad);
+    CHECK(!bad.castQueueNewest && strstr(g_t.bad, "cast_queue_newest") != nullptr);   // unparseable flag = off, like every flag
+}
+
 // exports.def == the hooks.toml function names (run from the source directory)
 static void testExports() {
     static char t[65536], d[4096];
@@ -531,9 +565,10 @@ static void testExports() {
         char line[80]; snprintf(line, sizeof line, "    %s\n", name);
         if (!strstr(d, line)) { printf("exports.def lacks %s\n", name); ++missing; }
     }
-    CHECK(funcs == 32 && missing == 0);                          // 32 hooks: 19 + the 13 Phase-4 probes (C1 x3 share one function; G1 = CompanionAiCastGuard)
+    CHECK(funcs == 33 && missing == 0);                          // 33 hooks: 19 + the 13 Phase-4 probes (C1 x3 share one function; G1 = CompanionAiCastGuard; F4 = CompanionAiCastQueueNewest)
     int exports = 0; for (const char* p = strstr(d, "EXPORTS\n"); p && (p = strstr(p + 1, "\n    ")); ) ++exports;
-    CHECK(exports == 31);                                        // 31 exports: 30 distinct hook functions + KPatchInit (KpLog)
+    CHECK(exports == 32);                                        // 32 exports: 31 distinct hook functions + KPatchInit (KpLog)
+    CHECK(strstr(t, "0x005917C1") != nullptr);                   // F4 hook address (AddSWSpellAction before AddAction)
     CHECK(!strstr(t, "0x0051DBE7"));                             // the hot FM3 probe window stays unshipped (the cold FM3S/E/R ship)
     CHECK(strstr(t, "0x0051DBE1") && strstr(t, "0x0051DD33") && strstr(t, "0x0051E0C9"));
 }
@@ -563,7 +598,7 @@ static void testRetHist() {
 
 int main() {
     testGlob(); testNumbers(); testIni(); testShippedIni(); testGate(); testThrottles(); testDecisions(); testHandlerDecisions();
-    testProbeHelpers(); testSpinExpiry(); testCastGuard(); testExports(); testPartyArea(); testRetHist();
+    testProbeHelpers(); testSpinExpiry(); testCastGuard(); testCastQueue(); testExports(); testPartyArea(); testRetHist();
     printf("%d checks, %d failed\n%s\n", g_checks, g_fail, g_fail ? "TESTS FAILED" : "ALL PASS");
     return g_fail ? 1 : 0;
 }

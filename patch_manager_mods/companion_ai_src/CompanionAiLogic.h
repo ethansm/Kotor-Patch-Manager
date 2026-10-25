@@ -223,6 +223,7 @@ struct Config {
     bool c1 = true, c1PartyOnly = true;
     bool a3 = false;
     bool castFamilyGuard = true;   // G1 (cast_family_guard, WI-136): a party member does not rebuild a buff whose family is active on it
+    bool castQueueNewest = true;   // F4 (cast_queue_newest, WI-143): a party member's new spell round node drops its older pending spell nodes
     bool log = true;            // fix event lines (A1/FM1/FM4/A4/A3) and the summaries
     int fm4Requested = 1;       // raw INI value (for the config line)
     // ---- Phase-4 probes (PROBE_DESIGN.md): log only, behaviour stays vanilla; the probe build ships them on
@@ -281,6 +282,7 @@ inline void parseConfig(const IniTable& t, Config& c) {
     c.c1PartyOnly = t.getBool("c1_party_only", c.c1PartyOnly);
     c.a3 = t.getBool("a3", c.a3);
     c.castFamilyGuard = t.getBool("cast_family_guard", c.castFamilyGuard);
+    c.castQueueNewest = t.getBool("cast_queue_newest", c.castQueueNewest);
     c.log = t.getBool("log", c.log);
     c.probeFm2c = t.getBool("probe_fm2c", c.probeFm2c);
     c.probeFm2f = t.getBool("probe_fm2f", c.probeFm2f);
@@ -308,7 +310,7 @@ inline bool sameConfig(const Config& a, const Config& b) {
            a.a1PartyOnly == b.a1PartyOnly && a.a1Retarget == b.a1Retarget && a.a1RetargetStances == b.a1RetargetStances &&
            a.a1RethinkMs == b.a1RethinkMs && a.a1RetargetStrict == b.a1RetargetStrict && a.p1 == b.p1 && a.p1IntervalMs == b.p1IntervalMs && a.fm1 == b.fm1 &&
            a.fm1RethinkMs == b.fm1RethinkMs && a.fm4 == b.fm4 && a.fm4Requested == b.fm4Requested && a.a4 == b.a4 && a.c1 == b.c1 &&
-           a.c1PartyOnly == b.c1PartyOnly && a.a3 == b.a3 && a.castFamilyGuard == b.castFamilyGuard && a.log == b.log &&
+           a.c1PartyOnly == b.c1PartyOnly && a.a3 == b.a3 && a.castFamilyGuard == b.castFamilyGuard && a.castQueueNewest == b.castQueueNewest && a.log == b.log &&
            a.probeFm2c == b.probeFm2c && a.probeFm2f == b.probeFm2f &&
            a.probeFm2r == b.probeFm2r && a.probeFm3 == b.probeFm3 && a.probeRs == b.probeRs && a.probeP2 == b.probeP2 &&
            a.probePf == b.probePf && a.probeRar == b.probeRar && a.probeShx == b.probeShx && a.probeSs1 == b.probeSs1 &&
@@ -550,6 +552,20 @@ inline bool castGuardDrops(bool enabled, bool actorIsLeader, int spell, const in
     for (int i = 0; i < n; ++i) if (castFamily(activeSpellIds[i]) == fam) return true;
     return false;
 }
+
+// F4 (0x5917C1, cast_queue_newest, WI-143). Walks the round's pending action list (head first, n <= 8 nodes): writes the indices i
+// of the spell nodes (types[i] == 9, action type of a spell round node) whose action is not the in-progress one (cur; 0 = none),
+// in list order, at most outCap. Returns the count written.
+inline int staleSpellPick(const int* types, const int* acts, int n, int cur, int* out, int outCap) {
+    if (!types || !acts || !out || n <= 0 || outCap <= 0) return 0;
+    int c = 0;
+    for (int i = 0; i < n && c < outCap; ++i) if (types[i] == 9 && acts[i] != cur) out[c++] = i;
+    return c;
+}
+
+// F4 same-run test: a spell node queued less than minAgeMs ago (addedAt != 0, tick of its own AddSWSpellAction) belongs to the
+// same script run as the new one (a combo queues several casts in one run, all on one tick) and is kept. 0 = never seen = stale.
+inline bool f4SameRun(unsigned addedAt, unsigned now, unsigned minAgeMs) { return addedAt != 0 && now - addedAt < minAgeMs; }
 
 // P1 (0x56BDB4). With p1=0 a stamp can only exist if p1 was on earlier this session: zero it and force the run so the
 // creature is back in the vanilla never-stamped state.

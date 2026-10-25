@@ -220,6 +220,21 @@ exclude_from_restore = ["eax"]
 source = "ebp"
 type = "int"
 
+# F4 cast queue newest (WI-143, cast_queue_newest=1): AddSWSpellAction 0x591670 at 0x5917C1, before the AddAction that appends this
+# party member's new spell round node. Stolen PUSH -1 / MOV EAX,[EBP-0x10] (boundary 0x5917C6); 0x5917C1 is also the JNZ target from
+# 0x5917A7, so both paths pass the hook. Plain detour: the handler only unlinks older pending spell nodes, no exit change.
+[[hooks]]
+address = 0x005917C1
+type = "detour"
+function = "CompanionAiCastQueueNewest"
+original_bytes = [0x6A, 0xFF, 0x8B, 0x45, 0xF0]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ebp"
+type = "int"
+
 # C1 ClearHostileActionsVersus 0x5867E0: MOV [EBP-0x10],0 after each group delete (types 0xC / 0xF / 0x2E),
 # skip-only: the handler writes -1 (c1=1, party) or 0 (vanilla). Resumes at the following JMP 0x586930.
 [[hooks]]
