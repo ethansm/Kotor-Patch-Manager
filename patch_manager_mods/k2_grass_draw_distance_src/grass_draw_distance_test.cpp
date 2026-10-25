@@ -1,0 +1,120 @@
+// grass_draw_distance_test.cpp -- Unit tests for K2GrassDrawDistanceLogic.h (doc 48).
+#define INIW_FILE_API 1
+#define MCDECL_FILE_API 1
+
+#include "K2GrassDrawDistanceLogic.h"
+#include "check.h"
+#include <cmath>
+#include <string.h>
+
+static void test_defaults_and_effective_math() {
+    k2grass::Config def{};
+    KT_CHECK(def.enabled);
+    KT_CHECK(std::fabs(def.fadeStartDist - 60.0f) < 1e-5f);
+    KT_CHECK(std::fabs(def.fadeEndDist - 90.0f) < 1e-5f);
+    KT_CHECK(std::fabs(def.windDist - 20.0f) < 1e-5f);
+    KT_CHECK(std::fabs(def.alphaCutoff - 0.20f) < 1e-5f);
+
+    k2grass::EffectiveValues ev = k2grass::computeEffective(def);
+    KT_CHECK(std::fabs(ev.fadeStartSq - 3600.0f) < 1e-3f);
+    KT_CHECK(std::fabs(ev.fadeEndSq - 8100.0f) < 1e-3f);
+    KT_CHECK(std::fabs(ev.windDistSq - 400.0f) < 1e-3f);
+    KT_CHECK(std::fabs(ev.alphaCutoff - 0.20f) < 1e-5f);
+
+    // Disabled config restores exact vanilla constants (15m=225, 30m=900, 15m=225, 0.40f).
+    k2grass::Config off = def;
+    off.enabled = false;
+    k2grass::EffectiveValues vEv = k2grass::computeEffective(off);
+    KT_CHECK(std::fabs(vEv.fadeStartSq - 225.0f) < 1e-3f);
+    KT_CHECK(std::fabs(vEv.fadeEndSq - 900.0f) < 1e-3f);
+    KT_CHECK(std::fabs(vEv.windDistSq - 225.0f) < 1e-3f);
+    KT_CHECK(std::fabs(vEv.alphaCutoff - 0.40f) < 1e-5f);
+
+    // Verify vanilla premature alpha-test clip distance (~25.10m) vs extended (~84.85m).
+    const float vanillaClip = k2grass::effectiveClipDistMeters(vEv);
+    const float extClip = k2grass::effectiveClipDistMeters(ev);
+    KT_CHECK(vanillaClip > 25.0f && vanillaClip < 25.2f);
+    KT_CHECK(extClip > 84.8f && extClip < 84.9f);
+}
+
+static void test_bin_alpha_curve() {
+    k2grass::Config def{};
+    k2grass::EffectiveValues ev = k2grass::computeEffective(def); // 3600 .. 8100
+
+    KT_CHECK(std::fabs(k2grass::computeBinAlpha(0.0f, ev) - 1.0f) < 1e-5f);
+    KT_CHECK(std::fabs(k2grass::computeBinAlpha(3599.0f, ev) - 1.0f) < 1e-5f);
+    KT_CHECK(std::fabs(k2grass::computeBinAlpha(3600.0f, ev) - 1.0f) < 1e-5f);
+    // Midpoint in squared distance: (3600 + 8100)/2 = 5850 -> alpha = 0.5
+    KT_CHECK(std::fabs(k2grass::computeBinAlpha(5850.0f, ev) - 0.5f) < 1e-5f);
+    KT_CHECK(std::fabs(k2grass::computeBinAlpha(8100.0f, ev) - 0.0f) < 1e-5f);
+    KT_CHECK(std::fabs(k2grass::computeBinAlpha(12000.0f, ev) - 0.0f) < 1e-5f);
+}
+
+static void test_sanitize_clamps_and_span_guard() {
+    // Inverted fade_start >= fade_end is repaired to maintain >= 5m span (never div-by-zero).
+    k2grass::Config c{};
+    c.fadeStartDist = 100.0f;
+    c.fadeEndDist = 80.0f;
+    c.windDist = -10.0f;
+    c.alphaCutoff = 5.0f;
+    c.sanitize();
+    KT_CHECK(std::fabs(c.fadeStartDist - 100.0f) < 1e-5f);
+    KT_CHECK(std::fabs(c.fadeEndDist - 105.0f) < 1e-5f);
+    KT_CHECK(std::fabs(c.windDist - 0.0f) < 1e-5f);
+    KT_CHECK(std::fabs(c.alphaCutoff - k2grass::kMaxAlphaCutoff) < 1e-5f);
+
+    // Extreme upper clamp
+    c.fadeStartDist = 9999.0f;
+    c.fadeEndDist = 9999.0f;
+    c.sanitize();
+    KT_CHECK(c.fadeStartDist <= k2grass::kMaxFadeStartDist);
+    KT_CHECK(c.fadeEndDist >= c.fadeStartDist + k2grass::kMinFadeSpan);
+}
+
+static void test_ini_roundtrip_and_direct_float_alpha() {
+    char buf[1024] = {};
+    k2grass::Config orig{};
+    orig.fadeStartDist = 75.0f;
+    orig.fadeEndDist = 135.0f;
+    orig.windDist = 30.0f;
+    orig.alphaCutoff = 0.25f;
+    const int n = k2grass::formatDefaultIni(buf, sizeof(buf), orig);
+    KT_CHECK(n > 0 && static_cast<size_t>(n) < sizeof(buf));
+
+    k2grass::Config parsed{};
+    inikit::LoadStats st = k2grass::parseIniText(buf, parsed);
+    KT_CHECK_EQ(st.bad, 0);
+    KT_CHECK(parsed == orig);
+
+    // Also verify direct float alpha_cutoff = 0.18
+    char floatIni[] = "fade_start_dist = 50\nfade_end_dist = 100\nalpha_cutoff = 0.18\nwind_dist = 0\n";
+    k2grass::Config parsed2{};
+    inikit::LoadStats st2 = k2grass::parseIniText(floatIni, parsed2);
+    KT_CHECK_EQ(st2.ok, 4);
+    KT_CHECK_EQ(st2.bad, 0);
+    KT_CHECK(std::fabs(parsed2.alphaCutoff - 0.18f) < 1e-5f);
+    KT_CHECK(std::fabs(parsed2.windDist - 0.0f) < 1e-5f);
+}
+
+static void test_modconfig_schema_bindings() {
+    mcdecl::PageDecl pd{};
+    char err[96] = {};
+    KT_CHECK(mcdecl::parseSchema(k2grass::kPageSchema, strlen(k2grass::kPageSchema), pd, err, sizeof(err)));
+    KT_CHECK_EQ(pd.nRows, 5);
+    for (int i = 0; i < pd.nRows; ++i) {
+        const mcdecl::RowDecl& r = pd.rows[i];
+        KT_CHECK(strcmp(r.ini, k2grass::kIniFile) == 0);
+        KT_CHECK(strcmp(r.section, k2grass::kIniSection) == 0);
+        KT_CHECK(strlen(r.label) > 0 && strlen(r.label) <= 40);
+        KT_CHECK(strlen(r.desc) > 0 && strlen(r.desc) < 95);
+    }
+}
+
+int main() {
+    test_defaults_and_effective_math();
+    test_bin_alpha_curve();
+    test_sanitize_clamps_and_span_guard();
+    test_ini_roundtrip_and_direct_float_alpha();
+    test_modconfig_schema_bindings();
+    return kt::Report("grass_draw_distance_test");
+}

@@ -1,0 +1,12 @@
+[patch]
+id = "k2-grass-draw-distance"
+name = "K2 Grass Draw Distance"
+version = "0.1.0-dev"
+author = "ethansm"
+description = "Extends KOTOR II grass render and octree build distance (vanilla 15m-30m fade, hard-clipped at 25.1m by 0.40 alpha test) to configurable distances (default 60m-90m with 0.20 alpha cutoff and decoupled 20m CPU wind radius). Configured via k2_grass_draw_distance.ini or in-game Options -> Mod Configuration when mod-config is installed."
+
+requires = []
+conflicts = []
+
+[patch.supported_versions]
+kotor2_steam_aspyr = "6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"
