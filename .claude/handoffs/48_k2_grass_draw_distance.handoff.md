@@ -7,23 +7,18 @@ Execute **P3**: Live In-Game Probing & Calibration
 - **Master Plan:** `patch_manager_mods/48_k2_grass_draw_distance.md`
 - **Waves:** .claude/waves/WI-48-a1/
 - **Waves:** .claude/waves/WI-48-b1/
-- **Branch:** `KOTOR-II` (ab47500d k2-grass-draw-distance 0.1.1-dev (doc 48 P2b): review fixes)
-- **Generated:** 2026-10-25 10:18:40 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (53b9703b k2-grass-draw-distance 0.1.2-dev (doc 48 P2c): link the Fade Start and Draw Distance sliders)
+- **Generated:** 2026-10-25 10:21:34 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-ab47500d k2-grass-draw-distance 0.1.1-dev (doc 48 P2b): review fixes
- patch_manager_mods/48_k2_grass_draw_distance.md    | 33 +++++---
- patch_manager_mods/PLAY_TEST_QUEUE.md              |  3 +
- .../K2GrassDrawDistance.cpp                        | 85 +++++++++++++++++----
- .../K2GrassDrawDistanceLogic.h                     | 87 +++++++++++++++-------
- .../k2_grass_draw_distance_src/code_patches.toml   | 43 +++++++++++
- .../common_contract_test.cpp                       | 14 +++-
- .../k2_grass_draw_distance_src/exports.def         |  1 -
- .../grass_draw_distance_test.cpp                   | 65 +++++++++++++---
- .../kotor2-steam-aspyr.hooks.toml                  | 17 +----
- .../k2_grass_draw_distance_src/manifest.toml       |  4 +-
- tests/static/raw_addresses.toml                    |  2 +-
- 11 files changed, 274 insertions(+), 80 deletions(-)
+53b9703b k2-grass-draw-distance 0.1.2-dev (doc 48 P2c): link the Fade Start and Draw Distance sliders
+ patch_manager_mods/48_k2_grass_draw_distance.md    |  5 +--
+ patch_manager_mods/PLAY_TEST_QUEUE.md              |  6 ++--
+ .../K2GrassDrawDistance.cpp                        | 36 +++++++++++++++++++++-
+ .../K2GrassDrawDistanceLogic.h                     | 18 ++++++++++-
+ .../grass_draw_distance_test.cpp                   | 27 ++++++++++++++++
+ .../k2_grass_draw_distance_src/manifest.toml       |  2 +-
+ 6 files changed, 86 insertions(+), 8 deletions(-)
 ```
 - **Dirty Files (185):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
