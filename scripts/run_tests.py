@@ -224,8 +224,9 @@ def execute(item: Item) -> Result:
             return done("FAIL" if st == "FAIL" else "ERROR", f"build failed ({why})", out)
         log = out
     if item.kind == "suite":  # parity suites compile internally: hold a machine-wide slot for the whole run
+        held = getattr(_load_limit, "SLOT_HELD_ENV", {"KOTOR_SLOT_HELD": "1"})   # children (build_check) reuse our slot
         with _load_limit.heavy_slot():
-            st, why, out = run_cmd(item.cmd, item.cwd, item.env, item.timeout)
+            st, why, out = run_cmd(item.cmd, item.cwd, {**item.env, **held}, item.timeout)
     else:
         st, why, out = run_cmd(item.cmd, item.cwd, item.env, item.timeout)
     out = (log + out) if (log and st != "OK") else out
@@ -340,9 +341,12 @@ def cpp_item(src: Path, sanitize=True, extra_flags=(), tag="", include_dirs=None
 # ---------------------------------------------------------------- build cache (cpp items)
 #
 # The exe is content-addressed: <dir>__<stem><tag>-<key12>. key = sha256(abs source path, compiler argv without -o,
-# build cwd, g++ version). Next to it, <exe>.deps.json records the sha256 of every file the compiler read (-MMD), so
-# a build is skipped only when the key matches AND every dependency still has the same content. Content hashes, not
-# mtimes: mutate_header.py rewrites headers in scratch trees and must always see a rebuild.
+# build cwd, g++ version/path, include env vars). Next to it, <exe>.deps.json records: the sha256 of the exe itself, the
+# sha256 of every user file the preprocessor read for EVERY source in the argv (one `g++ -MM` per source: a multi-source
+# -MMD only lists the last one), and a fingerprint of the include search space (names of header-like files under every
+# -I dir and the test dir, so a new header that shadows an old one is noticed). A build is skipped only when all of
+# it still matches. Content hashes, not mtimes: mutate_header.py rewrites headers in scratch trees and must always see
+# a rebuild.
 
 @dataclass
 class CacheInfo:
@@ -360,13 +364,21 @@ def compiler_version() -> str:
         return ""
 
 
+@functools.lru_cache(maxsize=None)
+def compiler_path() -> str:
+    p = shutil.which("g++")
+    return os.path.realpath(p) if p else ""
+
+
 def cache_key(src: Path, argv, cwd: Path) -> str:
-    """sha256 of (abs source path, full compiler argv minus -o, build cwd, compiler version)."""
+    """sha256 of (abs source path, full compiler argv minus -o, build cwd, g++ version and resolved path,
+    CPATH / CPLUS_INCLUDE_PATH / C_INCLUDE_PATH)."""
     argv = [str(a) for a in argv]
     if "-o" in argv:
         i = argv.index("-o")
         del argv[i:i + 2]
-    blob = json.dumps([str(Path(src).resolve()), argv, str(cwd), compiler_version()])
+    env = [os.environ.get(v, "") for v in ("CPATH", "CPLUS_INCLUDE_PATH", "C_INCLUDE_PATH")]
+    blob = json.dumps([str(Path(src).resolve()), argv, str(cwd), compiler_version(), compiler_path(), env])
     return hashlib.sha256(blob.encode("utf-8")).hexdigest()
 
 
@@ -428,36 +440,142 @@ def _sidecar(exe: Path) -> Path:
     return exe.with_name(exe.name + ".deps.json")
 
 
-def cache_valid(exe: Path, key: str) -> bool:
-    """True when the exe and its sidecar exist, the key matches and every recorded dependency still hashes the same."""
+_SRC_SUFFIXES = {".cpp", ".cc", ".cxx", ".c"}
+_HEADER_SUFFIXES = {".h", ".hpp", ".hh", ".inc", ".ipp"}
+_ARG_OPTS = {"-o", "-I", "-isystem", "-iquote", "-idirafter", "-include", "-imacros", "-L", "-l", "-D", "-U", "-x",
+             "-MF", "-MT", "-MQ", "-isysroot"}   # options whose value is the next argv entry
+
+
+def split_argv(argv):
+    """(sources, flags) of a compiler argv: flags = everything except argv[0], the source files and `-o <exe>`."""
+    args = [str(a) for a in argv]
+    sources, flags, i = [], [], 1
+    while i < len(args):
+        a = args[i]
+        if a == "-o":
+            i += 2
+        elif a in _ARG_OPTS:
+            flags += args[i:i + 2]
+            i += 2
+        else:
+            (sources if (not a.startswith("-") and Path(a).suffix in _SRC_SUFFIXES) else flags).append(a)
+            i += 1
+    return sources, flags
+
+
+def include_dirs(flags, cwd) -> list[str]:
+    """Absolute dirs searched for headers: every -I / -isystem / -iquote / -idirafter dir, then the build cwd (the test's
+    own dir, where `#include "x.h"` is also looked up)."""
+    out, i = [], 0
+    while i < len(flags):
+        a = flags[i]
+        for opt in ("-I", "-isystem", "-iquote", "-idirafter"):
+            if a == opt and i + 1 < len(flags):
+                out.append(flags[i + 1])
+                i += 1
+                break
+            if a.startswith(opt) and len(a) > len(opt):
+                out.append(a[len(opt):])
+                break
+        i += 1
+    out.append(str(cwd))
+    seen, res = set(), []
+    for d in out:
+        d = os.path.normpath(os.path.join(cwd, d))
+        if d not in seen:
+            seen.add(d)
+            res.append(d)
+    return res
+
+
+def include_fingerprint(dirs, dep_paths) -> str:
+    """sha256 of the NAMES (relative paths) of header-like files under every include dir (recursive, PRUNE_DIRS
+    skipped) and directly beside every dependency. A header that newly shadows an older one changes it. Names only."""
+    roots = {(d, True) for d in dirs} | {(os.path.dirname(p), False) for p in dep_paths}
+    h = hashlib.sha256()
+    for root, recursive in sorted(roots):
+        names, stack = [], [root]
+        while stack:
+            dp = stack.pop()
+            try:
+                with os.scandir(dp) as it:
+                    for e in it:
+                        try:
+                            if e.is_dir(follow_symlinks=False):
+                                if recursive and e.name not in PRUNE_DIRS:
+                                    stack.append(e.path)
+                            elif os.path.splitext(e.name)[1] in _HEADER_SUFFIXES:
+                                names.append(os.path.relpath(e.path, root))
+                        except OSError:
+                            pass
+            except OSError:
+                pass
+        h.update(f"{root}|{int(recursive)}|".encode())
+        for n in sorted(names):
+            h.update(n.encode() + b"\0")
+    return h.hexdigest()
+
+
+def _note(msg: str):
+    print(f"NOTE  build cache: {msg}", file=sys.stderr, flush=True)
+
+
+def cache_valid(exe: Path, key: str, argv, cwd) -> bool:
+    """True when the exe and its sidecar exist, the key matches, the exe is the one the sidecar vouches for, every
+    recorded dependency still hashes the same and the include search space has no new header names."""
     try:
         if not Path(exe).is_file():
             return False
         data = json.loads(_sidecar(exe).read_text(encoding="utf-8"))
         deps = data.get("deps")
-        if data.get("key") != key or not isinstance(deps, dict) or not deps:
+        if data.get("key") != key or not isinstance(deps, dict) or not deps or not data.get("exe_sha256"):
             return False
-        return all(_sha256_file(Path(p)) == h for p, h in deps.items())
+        if not all(_sha256_file(Path(p)) == h for p, h in deps.items()):
+            return False
+        _, flags = split_argv(argv)
+        if data.get("inc_fp") != include_fingerprint(include_dirs(flags, cwd), list(deps)):
+            return False
+        return _sha256_file(Path(exe)) == data["exe_sha256"]
     except (OSError, ValueError, AttributeError):
         return False
 
 
-def _write_sidecar(exe: Path, key: str, dfile: Path, cwd: Path, t_start_ns: int, tag: str) -> bool:
-    """Record the content hashes of the compiler's dependencies. False (no sidecar) if anything looks unsafe."""
+def collect_deps(item: Item, cwd: Path, exe_tmp: Path, t_start_ns: int):
+    """{path: sha256} of every user file the preprocessor reads for EVERY source in the argv (one `-MM` run per source;
+    a single multi-source -MMD only lists the last translation unit). None (+ NOTE) when it cannot be trusted."""
+    sources, flags = split_argv(item.build_cmd)
+    if not sources:
+        return None
     deps = {}
-    for d in parse_depfile(dfile.read_text(encoding="utf-8", errors="replace")):
-        p = Path(os.path.normpath(os.path.join(cwd, d)))
-        h = _sha256_file(p)
-        if h is None or p.stat().st_mtime_ns > t_start_ns:   # changed while compiling: do not vouch for this exe
-            return False
-        deps[str(p)] = h
-    if not deps:
-        return False
-    side = _sidecar(exe)
-    tmp = side.with_name(side.name + f".tmp.{tag}")
-    tmp.write_text(json.dumps({"key": key, "deps": deps}, indent=1), encoding="utf-8")
-    os.replace(tmp, side)
-    return True
+    for k, s in enumerate(sources):
+        df = exe_tmp.with_name(f"{exe_tmp.name}.{k}.d")
+        try:
+            st, _, _ = run_cmd([item.build_cmd[0]] + flags + ["-MM", "-MF", str(df), s], cwd, item.env, 120)
+            if st != "OK":
+                _note(f"{Path(exe_tmp).name.split('.tmp.')[0]} not cached: dependency scan of {s} failed")
+                return None
+            paths = parse_depfile(df.read_text(encoding="utf-8", errors="replace"))
+        finally:
+            try:
+                df.unlink()
+            except OSError:
+                pass
+        for d in paths:
+            p = Path(os.path.normpath(os.path.join(cwd, d)))
+            h = _sha256_file(p)
+            if h is None:
+                return None
+            if p.stat().st_mtime_ns > t_start_ns:    # changed while compiling: do not vouch for this exe
+                _note(f"{Path(exe_tmp).name.split('.tmp.')[0]} not cached: {p} has a modification time after the "
+                      f"build started (clock skew or touched while building); it will be rebuilt every run")
+                return None
+            deps[str(p)] = h
+    main = Path(item.src if item.src else sources[0])
+    main = Path(os.path.normpath(os.path.join(cwd, main)))
+    if os.path.realpath(main) not in {os.path.realpath(p) for p in deps}:
+        _note(f"{Path(exe_tmp).name.split('.tmp.')[0]} not cached: its own source {main.name} is not in the dependency list")
+        return None
+    return deps
 
 
 def _compile_cached(item: Item):
@@ -465,31 +583,38 @@ def _compile_cached(item: Item):
     exe, cwd = Path(c.exe), item.build_cwd or item.cwd
     tag = f"{os.getpid()}.{threading.get_ident()}"
     tmp = exe.with_name(exe.name + f".tmp.{tag}")
-    dfile = tmp.with_name(tmp.name + ".d")
     cmd = list(item.build_cmd)
     cmd[cmd.index("-o") + 1] = str(tmp)
-    cmd[1:1] = ["-MMD", "-MF", str(dfile)]
     t_start_ns = time.time_ns()
     try:
         st, why, out = run_cmd(cmd, cwd, item.env, item.build_timeout)
         if st != "OK":
             return st, why, out
+        sidecar = None
+        try:
+            deps = collect_deps(item, cwd, tmp, t_start_ns)
+            if deps:
+                _, flags = split_argv(item.build_cmd)
+                sidecar = {"key": c.key, "deps": deps, "exe_sha256": _sha256_file(tmp),
+                           "inc_fp": include_fingerprint(include_dirs(flags, cwd), list(deps))}
+        except (OSError, ValueError):
+            sidecar = None                   # no usable dependency list: the build counts, it just is not cached
         try:
             _sidecar(exe).unlink()          # never leave an old sidecar next to a new exe
         except FileNotFoundError:
             pass
         os.replace(tmp, exe)                 # atomic: a peer running the old exe is unaffected
-        try:
-            _write_sidecar(exe, c.key, dfile, cwd, t_start_ns, tag)
-        except (OSError, ValueError):
-            pass                             # no usable .d: the build still counts, it just is not cached
+        if sidecar and sidecar["exe_sha256"]:
+            side = _sidecar(exe)
+            stmp = side.with_name(side.name + f".tmp.{tag}")
+            stmp.write_text(json.dumps(sidecar, indent=1), encoding="utf-8")
+            os.replace(stmp, side)
         return st, why, out
     finally:
-        for p in (tmp, dfile):
-            try:
-                p.unlink()
-            except OSError:
-                pass
+        try:
+            tmp.unlink()
+        except OSError:
+            pass
 
 
 def build_item(item: Item):
@@ -501,9 +626,9 @@ def build_item(item: Item):
             return run_cmd(item.build_cmd, item.build_cwd or item.cwd, item.env, item.build_timeout)
 
     def hit():
-        if USE_CACHE and cache_valid(c.exe, c.key):
+        if USE_CACHE and cache_valid(c.exe, c.key, item.build_cmd, item.build_cwd or item.cwd):
             try:
-                os.utime(c.exe)              # a pruner deletes by mtime
+                os.utime(c.exe)              # a pruner deletes the cache by mtime
             except OSError:
                 pass
             return True
@@ -514,6 +639,7 @@ def build_item(item: Item):
         if hit():                            # a peer run built it while we waited for a slot
             return "OK", "", ""
         return _compile_cached(item)
+
 
 
 def py_item(path: Path, tag="", covers=None, consumer="") -> Item:
@@ -836,42 +962,65 @@ def wine_root() -> Path:
     return WINE_RUN_DIR or (TMP / "wine")
 
 
-def _ensure_built_dll(mod_dir: Path) -> Path:
-    """Ensure mod is built via build_check.py --keep and return path to its built DLL.
-    TMP/build is shared with other runs, so check+build holds a machine-wide lock per build key."""
+def build_root() -> Path:
+    """build_check staging root for this checkout: a worktree must never reuse another worktree's DLL (same key dir)."""
+    return TMP / f"build-{hashlib.sha1(str(REPO).encode()).hexdigest()[:8]}"
+
+
+def _build_lock_name(key_dir: Path) -> str:
+    """build_check.py's own per-key-dir lock name (it holds this lock while it stages and builds)."""
+    return "build-" + hashlib.sha1(str(key_dir.resolve()).encode()).hexdigest()[:12]
+
+
+def _built_dlls(key_dir: Path) -> list:
+    return list(key_dir.glob("*/build/*.dll"))
+
+
+def _dll_is_fresh(mod_dir: Path, dll_candidates) -> bool:
+    if not dll_candidates:
+        return False
+    dll_mtime = max(p.stat().st_mtime for p in dll_candidates)
+    src_dirs = [mod_dir, REPO / "patch_manager_mods" / "_shared_src", KPM_DIR, REPO / "scripts" / "build_check.py"]
+    for sdir in src_dirs:
+        scan = [sdir] if sdir.is_file() else sdir.rglob("*") if sdir.is_dir() else []
+        for p in scan:
+            if p.is_file() and p.stat().st_mtime > dll_mtime:
+                return False
+    return True
+
+
+def _ensure_built_dll(mod_dir: Path, dest: Path | None = None) -> Path:
+    """Ensure the mod is built via build_check.py --keep and return the path to its built DLL; with `dest`, the DLL is
+    copied there while the key's machine-wide lock is held and `dest` is returned.
+
+    The staging dir is private to this checkout (build_root()). The freshness check and the copy hold the same lock
+    build_check.py takes around its own stage+build; the build_check run itself must NOT run under that lock (it
+    would wait on us forever), so after a build we loop back and re-check under the lock."""
     try:
         m_rel = mod_dir.relative_to(REPO / "patch_manager_mods")
     except ValueError:
         m_rel = mod_dir
     key = "__".join(m_rel.parts)
-    with _get_build_lock(key), _load_limit.exclusive(f"build-{key}", f"build {key}"):
-        build_root = TMP / "build"
-        dll_candidates = list((build_root / key).glob("*/build/*.dll"))
-
-        rebuild_needed = not dll_candidates
-        if dll_candidates:
-            dll_mtime = max(p.stat().st_mtime for p in dll_candidates)
-            src_dirs = [mod_dir, REPO / "patch_manager_mods" / "_shared_src", KPM_DIR, REPO / "scripts" / "build_check.py"]
-            for sdir in src_dirs:
-                scan = [sdir] if sdir.is_file() else sdir.rglob("*") if sdir.is_dir() else []
-                for p in scan:
-                    if p.is_file():
-                        if p.stat().st_mtime > dll_mtime:
-                            rebuild_needed = True
-                            break
-                if rebuild_needed:
-                    break
-
-        if rebuild_needed:
-            cmd = [sys.executable, str(REPO / "scripts/build_check.py"), "--mod", str(m_rel), "--keep"]
+    key_dir = build_root() / key
+    lock = _build_lock_name(key_dir)
+    with _get_build_lock(key):
+        for _ in range(3):
+            with _load_limit.exclusive(lock, f"build {key}"):
+                cands = _built_dlls(key_dir)
+                if _dll_is_fresh(mod_dir, cands):
+                    dll = max(cands, key=lambda p: p.stat().st_mtime)
+                    if dest is None:
+                        return dll
+                    shutil.copy2(dll, dest)
+                    return dest
+            cmd = [sys.executable, str(REPO / "scripts/build_check.py"), "--mod", str(m_rel), "--keep",
+                   "--build-root", str(build_root())]
             proc = subprocess.run(cmd, cwd=REPO, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
             if proc.returncode != 0:
                 raise RuntimeError(f"build_check failed for {m_rel}:\n{proc.stdout}")
-            dll_candidates = list((build_root / key).glob("*/build/*.dll"))
-            if not dll_candidates:
-                raise RuntimeError(f"build_check --keep for {m_rel} produced no DLL in {build_root / key}")
-
-        return max(dll_candidates, key=lambda p: p.stat().st_mtime)
+            if not _built_dlls(key_dir):
+                raise RuntimeError(f"build_check --keep for {m_rel} produced no DLL in {key_dir}")
+    raise RuntimeError(f"built DLL for {m_rel} kept going stale or vanishing (another run rebuilding {key_dir}?)")
 
 
 def _extract_dll(kpatch: Path, dest: Path, dll_from: str = "kpatch", mod: str | None = None):
@@ -879,8 +1028,7 @@ def _extract_dll(kpatch: Path, dest: Path, dll_from: str = "kpatch", mod: str | 
         mod_dir = resolve_mod_for_smoke(kpatch, mod)
         if not mod_dir:
             raise RuntimeError(f"could not resolve mod directory for kpatch {kpatch.name}")
-        dll_path = _ensure_built_dll(mod_dir)
-        shutil.copy2(dll_path, dest)
+        _ensure_built_dll(mod_dir, dest)   # copies under the build lock
         return
 
     with zipfile.ZipFile(kpatch) as z:

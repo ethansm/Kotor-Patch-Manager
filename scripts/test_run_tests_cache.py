@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Tests for the run_tests.py build cache, compile slots and per-run wine dirs. Host only: g++ and temp dirs."""
 
+import hashlib
 import json
 import os
 import shutil
@@ -51,7 +52,7 @@ class CacheBehaviour(unittest.TestCase):
         real = rt.run_cmd
 
         def counting(cmd, *a, **k):
-            if str(cmd[0]) == "g++":
+            if str(cmd[0]) == "g++" and "-MM" not in cmd:   # dependency scans are not builds
                 self.compiles += 1
             return real(cmd, *a, **k)
         p = mock.patch.object(rt, "run_cmd", counting)
@@ -162,6 +163,88 @@ class CacheBehaviour(unittest.TestCase):
         exe = Path(it.cmd[0])
         self.assertTrue(list(self.exe_dir.glob(f"{exe.name}-val_test.gcda")), list(self.exe_dir.iterdir()))
 
+    def test_multi_source_compile_validates_every_translation_unit(self):
+        """-MMD of a multi-source compile lists only the last TU: edits to the main TU's headers must still rebuild."""
+        (self.src_dir / "m.h").write_text("#define M 0\n")
+        (self.src_dir / "m.cpp").write_text('#include "m.h"\nint other();\nint main() { return other() + M; }\n')
+        (self.src_dir / "o.h").write_text("#define O 0\n")
+        (self.src_dir / "o.cpp").write_text('#include "o.h"\nint other() { return O; }\n')
+        flags = ["-I", str(self.src_dir)]
+        srcs = [str(self.src_dir / "m.cpp"), str(self.src_dir / "o.cpp")]
+        exe = self.exe_dir / "exe-multi"
+        self.exe_dir.mkdir(exist_ok=True)
+        key = rt.cache_key(self.src_dir / "m.cpp", ["g++"] + flags + srcs, self.src_dir)
+        it = rt.Item(id="x", kind="cpp", cwd=self.src_dir, build_cwd=self.src_dir, src=self.src_dir / "m.cpp",
+                     build_cmd=["g++"] + flags + srcs + ["-o", str(exe)], cmd=[str(exe)], cache=rt.CacheInfo(exe, key))
+        self.assertEqual(rt.execute(it).status, "PASS")
+        deps = json.loads(exe.with_name(exe.name + ".deps.json").read_text())["deps"]
+        for n in ("m.cpp", "m.h", "o.cpp", "o.h"):
+            self.assertIn(str(self.src_dir / n), deps)
+        (self.src_dir / "m.h").write_text("#define M 7\n")
+        r = rt.execute(it)
+        self.assertEqual((r.status, self.compiles), ("FAIL", 2))
+        (self.src_dir / "o.h").write_text("#define O 3\n")
+        self.assertEqual(rt.execute(it).status, "FAIL")
+        self.assertEqual(self.compiles, 3)
+
+    def test_new_shadowing_header_rebuilds(self):
+        i1, i2 = self.root / "i1", self.root / "i2"
+        i1.mkdir()
+        i2.mkdir()
+        (i2 / "s.h").write_text("#define S 0\n")
+        (self.src_dir / "sh_test.cpp").write_text('#include <s.h>\nint main() { return S; }\n')
+        exe = self.exe_dir / "exe-shadow"
+        self.exe_dir.mkdir(exist_ok=True)
+        fl = ["-I", str(i1), "-I", str(i2)]
+        sp = str(self.src_dir / "sh_test.cpp")
+        key = rt.cache_key(sp, ["g++"] + fl + [sp], self.src_dir)
+        it = rt.Item(id="y", kind="cpp", cwd=self.src_dir, build_cwd=self.src_dir,
+                     build_cmd=["g++"] + fl + [sp, "-o", str(exe)], cmd=[str(exe)], cache=rt.CacheInfo(exe, key))
+        self.assertEqual(rt.execute(it).status, "PASS")
+        self.assertEqual(rt.execute(it).status, "PASS")
+        self.assertEqual(self.compiles, 1)
+        (i1 / "s.h").write_text("#define S 5\n")     # now wins the search order
+        self.assertEqual(rt.execute(it).status, "FAIL")
+        self.assertEqual(self.compiles, 2)
+
+    def test_shadowing_header_beside_the_test_rebuilds(self):
+        inc = self.root / "inc"
+        inc.mkdir()
+        (inc / "q.h").write_text("#define Q 0\n")
+        self.src.write_text('#include "q.h"\nint main() { return Q; }\n')
+        self.assertEqual(rt.execute(self.item(include_dirs=[inc])).status, "PASS")
+        (self.src_dir / "q.h").write_text("#define Q 4\n")   # a quoted include finds the test's own dir first
+        self.assertEqual(rt.execute(self.item(include_dirs=[inc])).status, "FAIL")
+
+    def test_editing_the_test_source_rebuilds(self):
+        rt.execute(self.item())
+        self.src.write_text('#include "val.h"\nint main() { return 9; }\n')
+        r = rt.execute(self.item())
+        self.assertEqual((r.status, self.compiles), ("FAIL", 2))
+
+    def test_exe_hash_mismatch_rebuilds(self):
+        it = self.item()
+        rt.execute(it)
+        exe = Path(it.cmd[0])
+        exe.write_bytes(exe.read_bytes() + b"\0")        # not the exe the sidecar vouches for
+        r = rt.execute(self.item())
+        self.assertEqual((r.status, self.compiles), ("PASS", 2))
+        self.assertIn("exe_sha256", json.loads(exe.with_name(exe.name + ".deps.json").read_text()))
+
+    def test_env_include_path_changes_key(self):
+        a = self.item().cache.key
+        with mock.patch.dict(os.environ, {"CPATH": str(self.root)}):
+            b = self.item().cache.key
+        self.assertNotEqual(a, b)
+
+    def test_refused_sidecar_prints_note(self):
+        os.utime(self.src_dir / "val.h", (4102444800, 4102444800))   # year 2100: newer than any build start
+        with mock.patch.object(rt, "_note") as note:
+            self.assertEqual(rt.execute(self.item()).status, "PASS")
+        self.assertTrue(note.called)
+        exe = Path(self.item().cmd[0])
+        self.assertFalse(exe.with_name(exe.name + ".deps.json").exists())
+
     def test_scratch_tree_mutant_rebuilds(self):
         """mutate_header style: same relative layout under another root, header rewritten between runs."""
         scratch = self.root / "scratch"
@@ -194,6 +277,51 @@ class SlotsAndWine(unittest.TestCase):
             self.assertEqual(calls, ["in", "out"])
             rt.execute(rt.Item(id="py:x", kind="py", cmd=["true"]))
             self.assertEqual(calls, ["in", "out"])
+
+    def test_suite_env_carries_slot_held(self):
+        seen = {}
+
+        def fake(cmd, cwd, env=None, timeout=300):
+            seen.update(env or {})
+            return "OK", "", ""
+        with mock.patch.object(rt, "run_cmd", fake):
+            rt.execute(rt.Item(id="suite:x", kind="suite", cmd=["true"], env={"A": "1"}))
+        self.assertEqual(seen.get("KOTOR_SLOT_HELD"), "1")
+        self.assertEqual(seen.get("A"), "1")
+
+    def test_build_root_is_per_checkout_and_lock_name_matches_build_check(self):
+        self.assertEqual(rt.build_root().name, "build-" + hashlib.sha1(str(rt.REPO).encode()).hexdigest()[:8])
+        kd = rt.build_root() / "mod_src"
+        self.assertEqual(rt._build_lock_name(kd), "build-" + hashlib.sha1(str(kd.resolve()).encode()).hexdigest()[:12])
+
+    def test_ensure_built_dll_copies_under_lock_and_never_builds_under_it(self):
+        events = []
+
+        class Lock:
+            def __init__(s, name, label=""):
+                s.name = name
+
+            def __enter__(s):
+                events.append(("lock", s.name))
+
+            def __exit__(s, *a):
+                events.append(("unlock", s.name))
+        with tempfile.TemporaryDirectory() as td:
+            td = Path(td)
+            mod = rt.REPO / "patch_manager_mods" / "zz_nonexistent_src"   # not on disk: nothing to be newer than the dll
+            tmp = td / "tmp"
+            bdir = tmp / ("build-" + hashlib.sha1(str(rt.REPO).encode()).hexdigest()[:8])
+            dll = bdir / "zz_nonexistent_src" / "M" / "build" / "m.dll"
+            dll.parent.mkdir(parents=True)
+            dll.write_bytes(b"dll")
+            dest = td / "out.dll"
+            with mock.patch.object(rt._load_limit, "exclusive", Lock), mock.patch.object(rt, "TMP", tmp), \
+                    mock.patch.object(rt, "KPM_DIR", td / "nokpm"), \
+                    mock.patch.object(rt.shutil, "copy2", lambda a, b: events.append(("copy", str(b)))), \
+                    mock.patch.object(rt.subprocess, "run", side_effect=AssertionError("must not rebuild")):
+                os.utime(dll, (4102444800, 4102444800))
+                rt._ensure_built_dll(mod, dest)
+        self.assertEqual([e[0] for e in events], ["lock", "copy", "unlock"])
 
     def test_cpp_compile_holds_a_slot(self):
         calls = []
