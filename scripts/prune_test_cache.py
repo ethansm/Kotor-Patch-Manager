@@ -10,9 +10,12 @@ Usage:
   python3 scripts/prune_test_cache.py --apply          # delete, print DELETED ... freed X.Y GB
   python3 scripts/prune_test_cache.py --days 3 --run-days 1
   python3 scripts/prune_test_cache.py --quiet          # summary line only
-  python3 scripts/prune_test_cache.py --root DIR       # override TMP (tests)
+  python3 scripts/prune_test_cache.py --root DIR       # override TMP (tests); basename must be kotor-tests
+  python3 scripts/prune_test_cache.py --root DIR --force-root   # allow another basename (tests only)
 
-Library: prune(root, days=3, run_days=1, apply=False, quiet=False) -> (count, bytes)
+Exit status: 0 ok, 1 when any target was REFUSED or FAILED, 2 on a bad --root / argument.
+
+Library: prune(root, days=3, run_days=1, apply=False, quiet=False, force_root=False) -> (count, bytes)
 """
 
 from __future__ import annotations
@@ -32,6 +35,9 @@ from _load_limit import TMP  # noqa: E402
 RUN_DIR_RE = re.compile(r"^(?:gate|run)-(\d+)-(\d+)$")
 LEGACY_DIRS = ("gate", "gate-selftest")
 SIDECAR_SUFFIX = ".deps.json"
+ROOT_NAME = "kotor-tests"
+MIN_DAYS = 0.1
+ORPHAN_GRACE = 3600  # an orphan sidecar must be at least this old (seconds) before it is deleted
 
 
 def _human(n: int) -> str:
@@ -79,6 +85,14 @@ def _tree_stats(path: Path) -> tuple[int, float]:
     return total, newest
 
 
+def _newest(path: Path) -> float:
+    """Newest mtime of a path; a symlink counts only as itself (never followed)."""
+    st = os.lstat(path)
+    if stat.S_ISDIR(st.st_mode):
+        return _tree_stats(path)[1]
+    return st.st_mtime
+
+
 def _entry_size(path: Path) -> int:
     st = os.lstat(path)
     if stat.S_ISDIR(st.st_mode):
@@ -96,7 +110,21 @@ def _inside(root: Path, target: Path) -> bool:
     return real != root
 
 
-def _scan(root: Path, days: float, run_days: float, now: float) -> list[Path]:
+def _host_candidate(name: str) -> bool:
+    """host/ holds test exes (`<dir>__<stem>...`), `.deps.json` sidecars and `.tmp.` files only."""
+    return "__" in name or name.endswith(SIDECAR_SUFFIX) or ".tmp." in name
+
+
+def _scandir(path: Path, warn) -> list:
+    try:
+        with os.scandir(path) as it:
+            return list(it)
+    except OSError as exc:
+        warn(f"WARN cannot scan {path}: {exc}")
+        return []
+
+
+def _scan(root: Path, days: float, run_days: float, now: float, warn=lambda m: None) -> list[Path]:
     targets: list[Path] = []
     age_cut = now - days * 86400
     run_cut = now - run_days * 86400
@@ -104,14 +132,17 @@ def _scan(root: Path, days: float, run_days: float, now: float) -> list[Path]:
     host = root / "host"
     if host.is_dir() and not host.is_symlink():
         entries = {}
-        for e in os.scandir(host):
+        for e in _scandir(host, warn):
             try:
-                entries[e.name] = os.lstat(e.path).st_mtime
+                st = os.lstat(e.path)
             except OSError:
-                pass
+                continue
+            if stat.S_ISDIR(st.st_mode) or not _host_candidate(e.name):
+                continue
+            entries[e.name] = st.st_mtime
         doomed = {n for n, m in entries.items() if m < age_cut}
-        for n in entries:
-            if n.endswith(SIDECAR_SUFFIX) and n not in doomed:
+        for n, m in entries.items():
+            if n.endswith(SIDECAR_SUFFIX) and n not in doomed and m < now - ORPHAN_GRACE:
                 exe = n[: -len(SIDECAR_SUFFIX)]
                 if exe not in entries or exe in doomed:
                     doomed.add(n)
@@ -121,28 +152,30 @@ def _scan(root: Path, days: float, run_days: float, now: float) -> list[Path]:
         if not parent.is_dir() or parent.is_symlink():
             continue
         want_prefix = "gate-" if parent == root else "run-"
-        for e in sorted(os.scandir(parent), key=lambda x: x.name):
+        for e in sorted(_scandir(parent, warn), key=lambda x: x.name):
             if not e.name.startswith(want_prefix):
                 continue
             m = RUN_DIR_RE.match(e.name)
             if not m:
                 continue
             pid, epoch = int(m.group(1)), int(m.group(2))
-            if epoch < run_cut and not _pid_alive(pid):
+            if epoch >= run_cut or _pid_alive(pid):
+                continue
+            try:
+                newest = _newest(Path(e.path))
+            except OSError as exc:
+                warn(f"WARN cannot stat {e.path}: {exc}")
+                continue
+            if newest < run_cut:
                 targets.append(Path(e.path))
 
     for name in LEGACY_DIRS:
         d = root / name
         try:
-            st = os.lstat(d)
+            if _newest(d) < run_cut:
+                targets.append(d)
         except OSError:
             continue
-        if stat.S_ISLNK(st.st_mode):
-            if st.st_mtime < run_cut:
-                targets.append(d)
-        elif stat.S_ISDIR(st.st_mode):
-            if _tree_stats(d)[1] < run_cut:
-                targets.append(d)
     return targets
 
 
@@ -154,51 +187,88 @@ def _delete(path: Path) -> None:
         os.unlink(path)
 
 
-def prune(root, days=3, run_days=1, apply=False, quiet=False) -> tuple[int, int]:
-    root = Path(root)
-    if not root.exists():
+def _validate_root(root, force_root: bool) -> Path:
+    if root is None or str(root) == "" or not os.path.isabs(str(root)):
+        raise ValueError(f"root must be a non-empty absolute path, got {str(root)!r}")
+    real = Path(root).resolve()
+    if not force_root and real.name != ROOT_NAME:
+        raise ValueError(f"root {real} is not named {ROOT_NAME!r} (use --force-root to override)")
+    if real == Path(real.anchor):
+        raise ValueError("refusing to prune the filesystem root")
+    return real
+
+
+def _prune(root, days, run_days, apply, quiet, force_root) -> tuple[int, int, int]:
+    """Returns (count, bytes, errors); errors counts REFUSED and FAILED targets."""
+    if days < MIN_DAYS or run_days < MIN_DAYS:
+        raise ValueError(f"days and run_days must be >= {MIN_DAYS}")
+    real = _validate_root(root, force_root)
+
+    def warn(msg: str) -> None:
         if not quiet:
-            print(f"root {root} does not exist")
-        return 0, 0
-    root = root.resolve()
-    count = 0
-    freed = 0
-    for target in _scan(root, days, run_days, time.time()):
-        if not _inside(root, target):
-            print(f"REFUSED {target} (outside root)", file=sys.stderr)
-            continue
-        try:
-            size = _entry_size(target)
-        except OSError:
-            continue
-        verb = "DELETED" if apply else "WOULD DELETE"
-        if apply:
-            try:
-                _delete(target)
-            except OSError as exc:
-                print(f"FAILED {target}: {exc}", file=sys.stderr)
+            print(msg, file=sys.stderr)
+
+    count = freed = errors = 0
+    if real.exists():
+        for target in _scan(real, days, run_days, time.time(), warn):
+            if not _inside(real, target):
+                print(f"REFUSED {target} (outside root)", file=sys.stderr)
+                errors += 1
                 continue
-        count += 1
-        freed += size
-        if not quiet:
-            print(f"{verb} {target} {_human(size)}")
+            try:
+                size = _entry_size(target)
+            except OSError as exc:
+                warn(f"WARN cannot stat {target}: {exc}")
+                continue
+            if apply:
+                try:
+                    _delete(target)
+                except FileNotFoundError:
+                    warn(f"WARN {target} vanished before delete")
+                    continue
+                except OSError as exc:
+                    print(f"FAILED {target}: {exc}", file=sys.stderr)
+                    errors += 1
+                    continue
+            count += 1
+            freed += size
+            if not quiet:
+                print(f"{'DELETED' if apply else 'WOULD DELETE'} {target} {_human(size)}")
     if apply:
         print(f"DELETED {count} files/dirs, freed {_gb(freed)}")
     else:
         print(f"{count} files/dirs, {_gb(freed)}")
+    return count, freed, errors
+
+
+def prune(root, days=3, run_days=1, apply=False, quiet=False, force_root=False) -> tuple[int, int]:
+    """Prune the scratch tree under root (basename must be kotor-tests unless force_root)."""
+    count, freed, _errors = _prune(root, days, run_days, apply, quiet, force_root)
     return count, freed
+
+
+def _min_days(text: str) -> float:
+    v = float(text)
+    if v < MIN_DAYS:
+        raise argparse.ArgumentTypeError(f"must be >= {MIN_DAYS}")
+    return v
 
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="Prune the KOTOR-II test scratch tree.")
     ap.add_argument("--apply", action="store_true", help="delete (default is a dry run)")
-    ap.add_argument("--days", type=float, default=3, help="host/ file max age in days (default 3)")
-    ap.add_argument("--run-days", type=float, default=1, help="run/legacy dir max age in days (default 1)")
+    ap.add_argument("--days", type=_min_days, default=3, help="host/ file max age in days (default 3, min 0.1)")
+    ap.add_argument("--run-days", type=_min_days, default=1, help="run/legacy dir max age in days (default 1, min 0.1)")
     ap.add_argument("--root", default=str(TMP), help="override the scratch root (tests)")
+    ap.add_argument("--force-root", action="store_true", help=f"allow a root not named {ROOT_NAME}")
     ap.add_argument("--quiet", action="store_true", help="print only the summary line")
     a = ap.parse_args(argv)
-    prune(a.root, days=a.days, run_days=a.run_days, apply=a.apply, quiet=a.quiet)
-    return 0
+    try:
+        _c, _b, errors = _prune(a.root, a.days, a.run_days, a.apply, a.quiet, a.force_root)
+    except ValueError as exc:
+        print(f"ERROR {exc}", file=sys.stderr)
+        return 2
+    return 1 if errors else 0
 
 
 if __name__ == "__main__":
