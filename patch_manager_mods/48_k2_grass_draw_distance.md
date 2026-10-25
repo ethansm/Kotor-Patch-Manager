@@ -44,6 +44,7 @@ Extends the grass draw distance and octree build/collect radius in KOTOR II (`sw
 | **P3a** | 0.1.3-dev from GR1/GR2 play: defaults 120..150 m (user: 150 m smooth, visible gain; 895 bins at 57-59 fps vs 42 bins at 51-55 fps for 30 m), PERF drops a window after a >1 s grass gap (menu/load samples read 0.1-23 fps) | P2c | - | DONE | 9eaa75f5 | 0.1.3-dev LIVE 10-25 11:39 hot-swap, rollback k2-grass-draw-distance_swap_20261025_113913 |
 | **P3** | Live In-Game Probing & Calibration | P2c | user GO | TODO | | `kpm_reinstall.py --mod k2-grass-draw-distance` (new hooks: full reinstall), play rows GR1-GR3 |
 | **P4** | Log Tightening & Packaging | P3 | - | TODO | | Clean startup log verification |
+| **P4a** | 0.1.4-dev (doc 50 PF1a): `trim_hidden` collect radius = min(fade end, clip + 2 m) via operand rewrite 0x00499ADC -> `g_collectSq`; grass-pass CPU timing (detours 0x0046661B / 0x00466698, QPC, PERF `grass_ms_avg/max`); `smooth_edges` alpha-to-coverage (default 0, gated on GL_SAMPLE_BUFFERS); 7 menu rows | P3a | user GO (doc 50 PF1d) | BUILT | 3467b4ec | `run_tests.py k2_grass_draw_distance grass_draw_distance`; gate PASS; play row GR5 |
 
 ---
 
