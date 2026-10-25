@@ -68,5 +68,11 @@ Tools (read the archived or live log; run with the repo venv for pykotor):
   (nSpell, oTarget)` used by the buff picker, the combo buff steps (R2 L2a-c, extended to Barrier, Valor, Energy
   Resist, Inspire, Crush Opposition) and the single-target debuff picker; when the family is active return an invalid
   talent *without* `ClearAllActions`/cast, so the member falls through to another action instead of idling.
+  BUILT 2026-10-25 (WI-138, 27373545): `GN_PartyPowerFamily` (10 buff + 5 single-target debuff families, spells.2da
+  ids) + `GN_PartyFamilyActive` in `party_ai_fixes.nss`; F2a = buff picker (family check, no `TalentSpell(-1)` cast),
+  F2b = `GN_CheckNonDroidForcePower` (every combo/targeted cast passes it: vanilla k_inc_generic 860/1070/1224), so
+  k_inc_gensupport needs no edit. Full build PASS (64 anchors, 17 outputs, 0 swapped args), test
+  `test_party_ai_patches.py`. Not installed (override, needs GO); play row CA-FG3. Note: F2 only reduces the
+  script-side picks; the stale engine build (fact 2) still needs F1/F4.
 - F3 group debuffs: after O3.
 - F4 after O1: fix the stale-node root cause itself (clear the old cast node on script clear) if F0 confirms it.
