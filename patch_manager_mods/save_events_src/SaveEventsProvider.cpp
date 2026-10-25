@@ -1,6 +1,6 @@
 // save-events (Steam Aspyr build 6A522E71...): neutral owner of the five save / autosave / load / new-game detours that Action Hotbar
 // 1.2.1 used for its per-save INI, and provider of "k2.saveevents" v1 (SaveEvents.h). It writes nothing to the engine, does no file
-// I/O except the kpatch log, and never blocks; consumers register a kind mask + callback through the registry.
+// I/O except the kpatch log and one read-only listing of the save root when a save's folder name is unreadable (PS2), and never blocks; consumers register a kind mask + callback through the registry.
 // Design, API and migration: patch_manager_mods/22_hotbar_shared_services.md sections 4.1 / 4.1a. Registry, folder parsing and the
 // slow-consumer guard live in SeDispatch.h (host-tested, se_registry_test.cpp).
 //
@@ -99,6 +99,23 @@ bool readCStr(unsigned site, const char* p, char* out, int cap) {
     return false;
 }
 
+// PS2: the save root's folder written in the last se::RecentSaveWindowMs, "" if none or ambiguous. Read-only directory listing.
+std::string recentSaveFolder(const std::string& root) {
+    se::FolderStamp found[64]; int n = 0;
+    WIN32_FIND_DATAA fd;
+    HANDLE h = FindFirstFileA(se::joinSaveDir(root, "*").c_str(), &fd);
+    if (h == INVALID_HANDLE_VALUE) return "";
+    do {
+        if (!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) || n >= 64) continue;
+        ULARGE_INTEGER t; t.LowPart = fd.ftLastWriteTime.dwLowDateTime; t.HighPart = fd.ftLastWriteTime.dwHighDateTime;
+        found[n].name = fd.cFileName; found[n].mtimeMs = t.QuadPart / 10000; ++n;
+    } while (FindNextFileA(h, &fd));
+    FindClose(h);
+    FILETIME ft; GetSystemTimeAsFileTime(&ft);
+    ULARGE_INTEGER now; now.LowPart = ft.dwLowDateTime; now.HighPart = ft.dwHighDateTime;
+    return se::pickRecentFolder(found, n, now.QuadPart / 10000);
+}
+
 // raw engine folder ("SAVES:NNNNNN - Name" / "NNNNNN - Name") -> dispatch one event; logs the outcome.
 void emitFolder(int32_t kind, const char* raw) {
     unsigned char flag = 0;
@@ -107,6 +124,17 @@ void emitFolder(int32_t kind, const char* raw) {
     if (flag) saferead::readExo(S_Folder, CloudSavesDir, rootBuf, sizeof rootBuf, 150);
     int32_t cloud = 0;
     const std::string abs = se::absFolder(flag != 0, rootBuf, raw ? raw : "", &cloud);
+    if (abs.empty() && kind == K2SE_SAVED) {   // PS2: a missed SAVED left consumers' copies stale (action-hotbar lost a bar, 10-24)
+        const bool useCloud = flag && rootBuf[0];
+        const std::string root = useCloud ? std::string(rootBuf) : std::string("saves/");
+        const std::string recent = recentSaveFolder(root);
+        if (!recent.empty()) {
+            const std::string rec = se::joinSaveDir(root, recent);
+            const int n = g_hub.emit(kind, rec.c_str(), useCloud ? 1 : 0);
+            KP_LOGV(chCore, KPLOG_WARN, "%s: folder name unreadable ('%.80s'), recovered newest save folder '%.150s' consumers=%d", kindName(kind), raw ? raw : "?", rec.c_str(), n);
+            return;
+        }
+    }
     if (abs.empty()) {
         KP_LOGV(chCore, KPLOG_WARN, "%s: save folder not recognised ('%.80s'), not dispatched", kindName(kind), raw ? raw : "?");
         return;

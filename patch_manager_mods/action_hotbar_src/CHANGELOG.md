@@ -2,7 +2,13 @@
 
 Action Hotbar (id `action-hotbar`), formerly Force Power Hotbar.
 
-## Unreleased (0.1.6-dev)
+## Unreleased (0.1.7-dev)
+
+- Loading a save that has no hotbar copy keeps your current bar (WARN in the log) instead of emptying it. 0.1.6 emptied it, and a save whose copy was lost (the save event was missed) wiped the player's bar. Only a new game empties the bar. (PS1)
+- 3 s after writing a save's copy the hotbar checks it is still in the folder and writes it once more if the game removed it. (PS3)
+- Needs nothing new; save-events 0.1.1-dev additionally recovers saves whose folder name it could not read (PS2).
+
+## 0.1.6-dev
 
 - A save with no hotbar copy now really loads an empty bar (it used to keep the previous bar). A copy still waiting for its save folder is written before a load looks for it, and gives up after 10 s instead of about a second. (RH1)
 - The bar scales correctly in 4:3 windows that are not 800x600 (1024x768, 1600x1200). (RH2)

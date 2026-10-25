@@ -754,8 +754,12 @@ int main() {
     SnapPick c = pickSnapshot("d", Ex::both); KT_CHECK(c.src == SS_New);
     SnapPick d = pickSnapshot("d", Ex::none); KT_CHECK(d.src == SS_Absent); KT_CHECK_EQ(d.path.c_str(), "d/action_hotbar.ini");
     KT_CHECK_EQ(snapStatus(SS_New, true), "found"); KT_CHECK_EQ(snapStatus(SS_Legacy, true), "found (legacy name)");
-    KT_CHECK_EQ(snapStatus(SS_Absent, false), "absent (bar emptied)");   // RH1
-    KT_CHECK(snapAction(SS_Absent, false) == Snap_Empty && snapAction(SS_Absent, true) == Snap_Empty && snapAction(SS_New, false) == Snap_Keep && snapAction(SS_Legacy, false) == Snap_Keep && snapAction(SS_New, true) == Snap_Replace);
+    KT_CHECK_EQ(snapStatus(SS_Absent, false), "absent (live hotbar kept)");   // PS1 (was RH1 "bar emptied")
+    KT_CHECK(snapAction(SS_Absent, false) == Snap_Keep && snapAction(SS_Absent, true) == Snap_Keep && snapAction(SS_New, false) == Snap_Keep && snapAction(SS_Legacy, false) == Snap_Keep && snapAction(SS_New, true) == Snap_Replace && snapAction(SS_Legacy, true) == Snap_Replace);
+    // PS3: verify window, then ok / rewrite / folder gone; wrap-safe
+    KT_CHECK(snapVerify(1000, 0, false, true) == SV_Wait && snapVerify(2999, 0, false, false) == SV_Wait);
+    KT_CHECK(snapVerify(3000, 0, true, true) == SV_Ok && snapVerify(3000, 0, false, true) == SV_Rewrite && snapVerify(3000, 0, false, false) == SV_Gone);
+    KT_CHECK(snapVerify(2000u, 0xFFFFFFFFu - 999u, false, true) == SV_Rewrite && snapVerify(1000u, 0xFFFFFFFFu - 999u, false, true) == SV_Wait);
     KT_CHECK_EQ(snapStatus(SS_New, false), "UNREADABLE (live hotbar kept)"); KT_CHECK_EQ(snapStatus(SS_Legacy, false), "UNREADABLE (live hotbar kept)");
   }
   { // targetProbe

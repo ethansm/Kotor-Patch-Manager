@@ -615,13 +615,25 @@ inline SnapPick pickSnapshot(const std::string& dir, bool (*exists)(const std::s
     SnapPick p; p.path = dir + "/" + IniName; p.src = SS_Absent; return p;
 }
 inline const char* snapStatus(SnapSrc src, bool loaded) {
-    if (src == SS_Absent) return "absent (bar emptied)";
+    if (src == SS_Absent) return "absent (live hotbar kept)";
     if (!loaded) return "UNREADABLE (live hotbar kept)";
     return src == SS_Legacy ? "found (legacy name)" : "found";
 }
-// What a load does with the pick: absent -> empty profiles (documented contract, README:86); unreadable -> keep the live bar; else replace.
-enum SnapAction { Snap_Keep, Snap_Empty, Snap_Replace };
-inline SnapAction snapAction(SnapSrc src, bool readable) { return src == SS_Absent ? Snap_Empty : (readable ? Snap_Replace : Snap_Keep); }
+// What a load does with the pick: a readable copy replaces the live profiles; absent or unreadable keeps the live bar.
+// PS1: absent is NOT "empty the bar": a save whose copy was lost (save event missed, live 10-24) looks the same as a pre-mod save,
+// and emptying wiped the player's bar. Only a new game empties it.
+enum SnapAction { Snap_Keep, Snap_Replace };
+inline SnapAction snapAction(SnapSrc src, bool readable) { return src != SS_Absent && readable ? Snap_Replace : Snap_Keep; }
+
+// PS3: re-check the save folder's copy this long after writing it; rewrite once if the engine removed it.
+constexpr uint32_t SnapVerifyMs = 3000;
+enum SnapVerify { SV_Wait, SV_Ok, SV_Rewrite, SV_Gone };
+// since = tick of the write (wrap-safe); copyThere / dirThere = what the disk shows now.
+inline SnapVerify snapVerify(uint32_t now, uint32_t since, bool copyThere, bool dirThere) {
+    if (now - since < SnapVerifyMs) return SV_Wait;
+    if (copyThere) return SV_Ok;
+    return dirThere ? SV_Rewrite : SV_Gone;
+}
 
 // [General] TargetProbe (kept in extra): 0 off, 1 log only, 2 live. Missing -> 2; unparsable -> 2 and *bad = true.
 inline int targetProbe(const General& g, bool* bad = nullptr) {

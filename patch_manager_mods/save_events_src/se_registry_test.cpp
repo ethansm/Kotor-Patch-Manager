@@ -273,5 +273,22 @@ int main() {
         KT_CHECK(seenInCb.empty());                                                                  // NEW_GAME callback saw "none"
     }
 
+    // PS2: recovering the folder of a save whose request name was unreadable (live 10-24 00:42: SAVED folder '' not dispatched)
+    {
+        using se::FolderStamp; using se::pickRecentFolder;
+        const uint64_t now = 1000000;
+        FolderStamp a[] = { {"000000 - QUICKSAVE", now - 600000}, {"000004 - Game3", now - 2000}, {"000001 - AUTOSAVE", now - 30000} };
+        KT_CHECK_EQ(pickRecentFolder(a, 3, now).c_str(), "000004 - Game3");                     // newest inside the window
+        KT_CHECK_EQ(pickRecentFolder(a, 3, now + 9000).c_str(), "");                           // 11 s later: nothing is recent
+        KT_CHECK_EQ(pickRecentFolder(a, 3, now - 1000).c_str(), "000004 - Game3");             // 1 s skew into the future allowed
+        FolderStamp b[] = { {"000004 - Game3", now - 10000} };
+        KT_CHECK_EQ(pickRecentFolder(b, 1, now).c_str(), "000004 - Game3");                    // window edge is inclusive
+        FolderStamp tie[] = { {"000004 - Game3", now - 100}, {"000005 - Game4", now - 100} };
+        KT_CHECK_EQ(pickRecentFolder(tie, 2, now).c_str(), "");                                // ambiguous: do not guess
+        FolderStamp junk[] = { {".", now}, {"Screen.tga", now}, {"SAVES:000004 - Game3", now}, {"00004 - Game3", now} };
+        KT_CHECK_EQ(pickRecentFolder(junk, 4, now).c_str(), "");                               // only bare NNNNNN - Name folders
+        KT_CHECK_EQ(pickRecentFolder(nullptr, 0, now).c_str(), "");
+    }
+
     return kt::Report("se_registry_test");
 }

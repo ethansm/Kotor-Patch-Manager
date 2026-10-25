@@ -46,6 +46,23 @@ inline std::string absFolder(bool cloudFlag, const std::string& cloudRoot, const
     return joinSaveDir(useCloud ? cloudRoot : std::string("saves/"), f);
 }
 
+// PS2: one entry of the save root listing (folder name, last-write time in ms on any monotonic-enough wall clock).
+struct FolderStamp { std::string name; uint64_t mtimeMs; };
+constexpr uint64_t RecentSaveWindowMs = 10000;
+// The save folder the engine just wrote, when the request's folder name was unreadable: the newest "NNNNNN - Name" folder written
+// within windowMs of nowMs (a little clock skew into the future is allowed). "" when none qualifies or two share the newest time.
+inline std::string pickRecentFolder(const FolderStamp* c, int n, uint64_t nowMs, uint64_t windowMs = RecentSaveWindowMs) {
+    const FolderStamp* best = nullptr; bool tie = false;
+    for (int i = 0; i < n; ++i) {
+        const FolderStamp& f = c[i];
+        if (normalizeSaveFolder(f.name).empty() || f.name != normalizeSaveFolder(f.name)) continue;
+        if (f.mtimeMs + windowMs < nowMs || f.mtimeMs > nowMs + 2000) continue;
+        if (!best || f.mtimeMs > best->mtimeMs) { best = &f; tie = false; }
+        else if (f.mtimeMs == best->mtimeMs) tie = true;
+    }
+    return best && !tie ? best->name : "";
+}
+
 // snprintf-style copy of s: always NUL-terminates when cap > 0; returns s.size() (>= cap = truncated); 0 for the empty string.
 inline int32_t copyText(const std::string& s, char* buf, uint32_t cap) {
     if (buf && cap) {

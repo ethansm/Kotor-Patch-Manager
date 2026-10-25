@@ -1,7 +1,7 @@
 [patch]
 id = "save-events"
 name = "Save Events (shared save / load / new-game hooks)"
-version = "0.1.0-dev"
+version = "0.1.1-dev"
 kind = "provider"
 provides = ["k2.saveevents@1"]
 author = "local"

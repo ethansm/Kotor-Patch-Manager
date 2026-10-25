@@ -85,8 +85,8 @@ The hotbar belongs to the save.
 - When a save is loaded, the profiles in the working copy are replaced by the profiles in that save's copy. `[General]`
   is never changed by a load. The old file is first backed up as `action_hotbar.ini.load.bak` (the last three are kept as
   `.load.bak`, `.load.bak.1`, `.load.bak.2`). Bar edits only persist if you save the game afterwards.
-- A save with no copy (for example one made before you installed the mod) loads with an empty bar.
-- Starting a new game also gives an empty bar.
+- A save with no copy (for example one made before you installed the mod) keeps the bar you have; the log WARNs `absent (live hotbar kept)`.
+- Starting a new game gives an empty bar.
 - A save whose copy cannot be read keeps the current bar, and the log gets a warning.
 - A save made by 1.1.0 or earlier holds `force_power_hotbar.ini`. It is read when no `action_hotbar.ini` is in the folder.
   Saves written from now on use the new name.
@@ -190,7 +190,7 @@ The `spells.2da` lookup is logged once per session, on the `tip` channel. Order:
   see them. If the wrench is also missing, check the log for `H3 ... template ... not in the HUD layout, control not created`.
   The patch copies two native labels (`LBL_QUEUE1` and `LBL_MOULDING3`) from `mipc28x6_p.gui`. A mod that replaces that
   file without those tags stops the controls from being created. Use a version of that GUI that keeps them.
-- **Slots empty after loading a save.** That save has no hotbar copy. Assign slots and save again.
+- **Slots empty after loading a save.** Loading never empties the bar (only a new game does). Your previous bars are in `action_hotbar.ini.load.bak`, `.load.bak.1` and `.load.bak.2`; copy one over `action_hotbar.ini` while the game runs.
 - **Hotbar changed after a load.** This is the per-save rule. Your old bar is in `action_hotbar.ini.load.bak`.
 - **Keys do nothing.** Check `Invoke=1`. Try the editor to confirm the slot is bound. If the log shows no key events, set
   `KeyboardDevice`.
