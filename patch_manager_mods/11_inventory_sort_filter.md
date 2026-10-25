@@ -102,7 +102,7 @@ No 2DA/TLK/script changes. Captions are C strings set by the DLL. INI (`inventor
 4. **"Usable" is not one predicate:** tint and sort use `IsItemUsable` (what the popup uses); the cycle's Usable state is engine mode 5, which also requires `CanUseItem` and a different ECX (`0x58AE90(creature)`), so an item can be untinted yet hidden by `Filter: Usable`. Decide in Stage 3 whether to call it "Usable" or add `CanUseItem` to the tint. The Upgrade filter drops backpack rows only; equipped rows still show.
 5. H6b's window is large (79 bytes). If the framework rejects that `original_bytes` length, split it at instruction boundaries into two `skip_original_bytes=true` windows (add them to `check_windows.py` and re-validate; the internal `JNZ` at `0x8A7E3A` targets `0x8A7E52`, so split there) with the same handler state.
 6. **Name tie-break (shipped in WI-21, C132, `c24be8e`; not yet seen in game):** within one base item, rows sort by localised name, ASCII case-insensitive (`foldCmp`, `SortLogic.h`). An empty name (failed `GetString` lookup) sorts before any non-empty name. Equal names fall to vanilla order.
-7. **`GetString 0x7356B0` side effects (REA 20261015, verdict UNSURE):** the call inserts into the CExoLocString cache, sets the container `+8` dirty flag (consumer unknown), and writes gender into the talk manager at `+0x3C`. Check these before relying on the name key in a live session. Since WI-146, only rows tied on new/usable/base item read a name (`names=` in the sort timing line). WI-149 checks the gender argument.
+7. **`GetString 0x7356B0` side effects (REA 20261015, verdict UNSURE):** the call inserts into the CExoLocString cache, sets the container `+8` dirty flag (consumer unknown), and writes gender into the talk manager at `+0x3C`. Check these before relying on the name key in a live session. Since WI-146, only rows tied on new/usable/base item read a name (`names=` in the sort timing line). **WI-149 (REA 2026-10-25, ledger `20261025_getstring-gender-callers.tsv`):** the gender write cannot leak. FUN_0071df90 stores TalkTable `+0x3C` right before every Fetch, and Fetch (0x71d970) clears it to 0. All item/UI callers (36 callers, 47 sites) pass constant 0, including the inventory-name path 0x8bf54f; only the dialogue/speaker code passes a real gender. Keep 0, so the sort name matches the displayed name.
 
 
 ## Build status (2026-09-30)
@@ -160,11 +160,14 @@ The 10-01 22:13 session did not open the inventory: the Mod 6 checklist is still
 
 - Name tie-break built (`c24be8e`): host tests, `compat_check` 63/0 and `build_check` pass. Not yet tried in game; queued in [`PLAY_TEST_QUEUE.md`](PLAY_TEST_QUEUE.md) as WI-21. No game install.
 
-### Perf follow-ups (review 2026-10-25, WI-145..WI-147; built, not installed)
+### Perf follow-ups (review 2026-10-25, WI-145..WI-150; WI-145..147 LIVE in 0.2.2, WI-148/WI-150 built, not installed)
 
 - **WI-145 (`9b8e467c`):** the sort timing line now also reports the buffer-phase total and the name-read total: `sort timing: sortEntries rows=N took X us; buffer B us (names M us) names=K`.
 - **WI-146 (`09f4ff02`):** names are read at flush, only for rows tied on (new, usable, base item) (`isf::fillTiedNames`), and the client language is fetched once per populate. Same order as reading every name (host test).
 - **WI-147 (`1391e39f`):** the INI is re-read only when its last-write time changes. A missing file is read once (defaults).
+- **WI-148 (`94bcc9b8`):** a populate that never reached SortFilterFlush no longer leaves rows behind. The buffer restarts when the loop index does not advance, the engine row counter goes backwards, or the populate frame (ebp) changes. A new panel instance also clears it. The discard line names the case: `stale buffer of N rows discarded (reason=idx|counter|ebp ...)`.
+- **WI-149 (`41b32404`, verify-only):** the name read keeps gender 0 (see risk 7).
+- **WI-150 (`95bebe72`):** logging keeps the current session plus one previous (`inventory_sort_filter_log.txt.1`). At attach, the log moves to `.1` if it is older than 60 s or larger than 256 KB, so a launcher+game pair stays in one file. 0.2.1 (`7788c58d`) dropped the old truncate without a stated reason.
 - Live checks ISF-T1..T3 are in [`PLAY_TEST_QUEUE.md`](PLAY_TEST_QUEUE.md). The live log (2026-10-25) showed one 86-row flush with the sort taking 14 us, before these changes.
 
 ## Planned shared state and shared code (doc 19 / 19b, added 2026-10-02)
