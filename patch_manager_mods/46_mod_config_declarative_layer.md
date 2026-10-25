@@ -107,7 +107,7 @@ Decisions: (1) change handler returns the FINAL value (approved). (2) Companion 
 | MCF3 | [Mod-config] Declarative layer: `_shared_src/TomlMini.h` + `ModConfigDecl.h` + tests | INSTALLED | `python3 scripts/run_tests.py mod_config` | 60 min |
 | MCF4 | [Self-Heal] Options page (roster A, Auto/Heal %/Keep/Follow global/Reset/Apply to everyone) + `shui::erase`/`eraseAll`, popover kept | INSTALLED | `python3 scripts/run_tests.py selfheal` | 90 min |
 | MCF5 | [Mod-config] Look-alike slider row (SliderArt extracted; part 1 pure maths 09fbf5d7, part 2 provider wiring) | INSTALLED | `python3 scripts/run_tests.py mod_config` | 45 min |
-| MCF6 | [Mod-config] Native slider embed probe (gated by MCF0) | PLANNED | probe log | 60 min |
+| MCF6 | [Mod-config] Native slider embed probe (gated by MCF0) | DROPPED | probe log | 60 min |
 | MCF7 | [Enemy strip] Migrate its page to the declarative layer | PLANNED | `python3 scripts/run_tests.py enemy` | 60 min |
 | MCF8 | [Shared] `GearButton.h`: gear geometry (side 28 units, inset 0.18) + embedded art registration, pinned to level_up_override's numbers; level-up adoption (MCF8b) optional, needs the owner's OK | INSTALLED | `python3 scripts/run_tests.py gearbutton_test` | 45 min |
 | MCF9 | [Mod-config] k2.menuui slots 19-22: `SetItemShown`, `NewModal`, `SetModalOpen`, `AddGear` (a modal = extra page slot owned by an entry page; `mui::ModalTable`, `kMaxSlots` 32; Back closes it first, page changes clear it); `MenuClient::hasModal()`; mod-config 0.3.0-dev | INSTALLED 10-19 01:28 (e05391f1; rollback batch_swap_20261019_012850; play row CH-PV1 pending) | `python3 scripts/run_tests.py mod_config moddecl providerclient menu_ui_logic common_contract` | 120 min |
@@ -116,7 +116,7 @@ Decisions: (1) change handler returns the FINAL value (approved). (2) Companion 
 | CH7 | [Combat hotbar] Options-page preview + gear + "Test state" modal (demo counts, unusable, screen preset, reset); combat-hotbar 0.11.0-dev; play row CH-PV1 | INSTALLED | `python3 scripts/run_tests.py combat_ && python3 scripts/build_check.py --mod combat_hotbar_src` | 90 min |
 | RF1 | [Mod-config] `dropRefs` also clears the GUI manager tooltip owner `M+0x40` (and owner flags48 bit 0x40) before a label is freed; mod-config 0.4.7-dev; play row MC-TT1 | BUILT | `python3 scripts/run_tests.py mod_config common_contract && python3 scripts/build_check.py --mod mod_config_src` | 20 min |
 | RF2 | [Combat hotbar] Preview icons that never resolved get a fresh 20 tries per Options open (`pvOnBuilt`); combat-hotbar 0.11.5-dev | BUILT | `python3 scripts/run_tests.py combat_ && python3 scripts/build_check.py --mod combat_hotbar_src` | 15 min |
-| RF3 | [Research] Can `GuiLoadImage` tell a missing resref from a real one (blank white texture today)? Notes `.claude/research/pv_missing_tex/README.md` | PLANNED | recon note | 30 min |
+| RF3 | [Research] Can `GuiLoadImage` tell a missing resref from a real one (blank white texture today)? Notes `.claude/research/pv_missing_tex/README.md` | DONE | recon note | 30 min |
 
 ## 11 Holster-session feedback (10-18, folded in)
 Source: `research/mod_config_components/S1_component_map.txt`, `S2_reconcile_doc46.txt` (their commit 8ca6daab). They drop their own row runtime in favour of AddRow + ModConfigDecl.h and will not edit `mod_config_src` or `ModConfigApi.h`.
