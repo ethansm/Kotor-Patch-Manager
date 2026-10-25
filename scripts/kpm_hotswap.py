@@ -241,6 +241,13 @@ def address_db_dir(kpm, scratch):
     return scratch
 
 
+def _nice_child():
+    try:
+        os.nice(10)
+    except OSError:
+        pass
+
+
 def run_create_patch(kd, kpm):
     """create-patch.py is the only builder. Returns (rc, tail of output)."""
     with tempfile.TemporaryDirectory(prefix="kpm_dbs_") as t:
@@ -248,8 +255,9 @@ def run_create_patch(kd, kpm):
         # create-patch.py: its common-library cache is not safe against a cold cache run concurrently, and it starts a
         # default-sized thread pool, so one run at a time machine-wide.
         with ll.exclusive("create-patch", "KPM create-patch.py"):
+            # niced child only: --apply / --rollback in this process keep full priority (live game dir writes)
             p = subprocess.run([sys.executable, str(kpm / "Patches/create-patch.py")], cwd=kd, env=env,
-                               capture_output=True, text=True)
+                               capture_output=True, text=True, preexec_fn=_nice_child)
     return p.returncode, "\n".join((p.stdout + p.stderr).splitlines()[-15:])
 
 
@@ -413,15 +421,25 @@ def gate_cross_check(pid, kd, src, records=None):
             return [f"NOTE  {pid}: no kpatch to compare with the gate record"]
         new = kpatch_dll(kps[0])
         want, head = str(rec.get("md5", "")).lower(), rec.get("head", "unknown")
-        lines, same, gone = [], False, False
-        if want in (full_md5(new), normalized_md5(new)):
+        if rec.get("mod_id", pid) != pid:
+            return [f"NOTE  {pid}: gate record {rec_path.name} is for {rec.get('mod_id')!r}; not compared"]
+        lines, same, gone, changed = [], False, False, False
+        gate_dll = Path(rec["dll"]) if rec.get("dll") else None
+        if want == full_md5(new):
             same = True
-        elif rec.get("dll") and Path(rec["dll"]).is_file():
-            same = dlls_equivalent(Path(rec["dll"]).read_bytes(), new)
+        elif gate_dll and gate_dll.is_file():
+            gate_bytes = gate_dll.read_bytes()
+            if full_md5(gate_bytes) != want:   # the recorded file was rebuilt since the gate: it proves nothing
+                changed = True
+            else:
+                same = dlls_equivalent(gate_bytes, new)
         else:
             gone = True
         if same:
             lines.append(f"GATE  {pid}: fresh DLL matches the gated build (gate head {head})")
+        elif changed:
+            lines.append(f"NOTE  {pid}: gate DLL {gate_dll} changed since the gate (md5 is no longer {want[:12]}); "
+                         "not compared, re-run pre_install_gate to check")
         elif gone:
             lines.append(f"NOTE  {pid}: gate DLL {rec.get('dll') or '(none recorded)'} is gone; only the raw md5 could be "
                          f"compared and it differs (gate {want[:12]} at {head}; ImageBase is randomised per link)")
@@ -660,7 +678,6 @@ def commit_kpm(pids, rows, kpm):
 # ---------------------------------------------------------------- main
 
 def main(argv=None):
-    ll.lower_priority()
     ap = argparse.ArgumentParser(description="Batched KPM DLL hot-swap with backup and rollback (kpm_status.py is the gate).")
     ap.add_argument("--mod", nargs="+", action="extend", default=[], metavar="MOD", help="patch id, src dir name or KPM folder name")
     ap.add_argument("--prepare", action="store_true", help="mirror production files to KPM and rebuild MIRROR/REBUILD mods")

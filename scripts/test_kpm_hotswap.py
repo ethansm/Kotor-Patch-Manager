@@ -775,6 +775,19 @@ class GateCrossCheckTest(Base):
         self.assertEqual(self.check(), [f"WARN  demo: rebuilt DLL differs from the gated build (gate {md5(b'OTHER')} "
                                         "at deadbee); re-run pre_install_gate"])
 
+    def test_gate_dll_rebuilt_since_gate_is_not_trusted(self):
+        self.e.kpatch(b"DLL2")
+        g = pathlib.Path(self.tmp.name) / "gate.dll"
+        g.write_bytes(b"DLL2-but-overwritten")
+        self.record(md5=md5(b"GATED"), dll=str(g))
+        out = self.check()
+        self.assertTrue(out[0].startswith("NOTE  demo: gate DLL") and "changed since the gate" in out[0], out)
+
+    def test_record_for_other_id_not_compared(self):
+        self.e.kpatch(b"DLL2")
+        self.record(mod_id="someone-else")
+        self.assertIn("is for 'someone-else'", self.check()[0])
+
     def test_match_through_the_gate_dll_when_only_base_and_stamps_differ(self):
         delta = 0x20000000 - 0x10000000
         gate = pe_variant(base=0x10000000, stamp=1, tail=b"\xE8" + struct.pack("<I", 0xFFFF1000))
@@ -842,10 +855,20 @@ class LoadLimitTest(unittest.TestCase):
         self.assertEqual(rc, 0)
         self.assertEqual(events, [("enter", "create-patch"), ("run", "create-patch.py"), ("exit", "create-patch")])
 
-    def test_main_lowers_priority_once_at_start(self):
+    def test_main_keeps_priority_for_apply_and_rollback(self):
         with mock.patch.object(kh.ll, "lower_priority") as lp, contextlib.redirect_stdout(io.StringIO()):
             kh.main(["--list-backups", "--game-dir", tempfile.gettempdir() + "/no_such_game_dir_kh"])
-        lp.assert_called_once_with()
+        lp.assert_not_called()
+
+    def test_create_patch_child_is_niced(self):
+        seen = {}
+
+        def fake_run(cmd, **kw):
+            seen.update(kw)
+            return subprocess.CompletedProcess(cmd, 0, "", "")
+        with tempfile.TemporaryDirectory() as t, mock.patch.object(kh.subprocess, "run", fake_run):
+            kh.run_create_patch(pathlib.Path(t), pathlib.Path(t) / "kpm")
+        self.assertIs(seen.get("preexec_fn"), kh._nice_child)
 
 
 if __name__ == "__main__":
