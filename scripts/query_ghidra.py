@@ -352,7 +352,7 @@ def main():
                 if item.get("prototype"):
                     print(f"       proto: {item.get('prototype')}")
             elif source == "struct_field" or args.command == "struct":
-                print(f"  {item.get('offset_hex')} (+{item.get('offset'):4d}) | size: {str(item.get('size')):2s} | {item.get('type', ''):18s} | {item.get('class')}::{item.get('name')}")
+                print(f"  {item.get('offset_hex')} (+{item.get('offset'):4d}) | size: {str(item.get('size')):2s} | {item.get('type') or '':18s} | {item.get('class')}::{item.get('name')}")
             elif source == "steam_validated":
                 print(f"[steam_val] Steam: {item.get('steam_addr')} -> GOG: {item.get('gog_addr')} | {item.get('name')} | verdict: {item.get('verdict')} (batch {item.get('batch')})")
             elif source == "rea_finding":
