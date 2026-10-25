@@ -38,7 +38,7 @@ Texture Quality 2, Frame Buffer, Grass, Shadows, Soft Shadows all on). Remaining
 | Id | Batch | Deps | Owner gate | Status | Commit | Next |
 |---|---|---|---|---|---|---|
 | **F0** | Static recon: fog fields, far clip, emitters, shadows (3 Haiku recon agents + main) | - | - | DONE | | R1-R3 in `.claude/research/render_distance/` |
-| **F1** | k2-fog-distance 0.1.0-dev: DoFog hook, tracker, 3-row Mod Configuration page, tests | F0 | - | DONE | | `run_tests.py fog_distance` 2/2 PASS; GATE PASS |
+| **F1** | k2-fog-distance 0.1.0-dev: DoFog hook, tracker, 3-row Mod Configuration page, tests | F0 | - | DONE | ad507f8c | fog 0.1.0-dev built, GATE PASS, KPM 9aa00fd |
 | **F2** | Install + play FG1 | F1 | user GO | TODO | | `python3 scripts/kpm_reinstall.py --mod k2-fog-distance` (game closed) |
 | **S1** | Shadow distance: write 0x009F5D50 + rewrite the 0x00468CDB FLD operand; probe the live 0x00A0F040 value; add rows to a K2 Shadow Distance page | F2 | - | TODO | | RE check of the 0x00468B50 reference point (Scene+0x118 = camera?) |
 
