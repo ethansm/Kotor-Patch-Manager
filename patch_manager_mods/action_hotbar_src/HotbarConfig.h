@@ -253,6 +253,7 @@ struct General {
     int keyboardDevice = -1;      // -1 = read the engine's constant (gameaddr::KeyboardDeviceGlobal)
     int healThreshold = 50;       // 1..100: "@lowhp" slots only target a member below this HP%
     int healFallbackSelf = 1;     // when nobody is below the threshold: 1 = use on self, 0 = do nothing
+    int reserveDigits = 1;        // 1 = digits 1-0 never reach the game while the HUD is up, even on an empty slot (the vanilla quick bar keeps its clicks); 0 = unbound digits pass
     int syncActionBar = 1;        // 1 = resync the vanilla action bar (stance/form icons) after an AI stance or form change, 0 = off
     std::map<std::string, std::string> extra;  // unknown [General] keys, preserved
     std::vector<std::string> comments;         // free ';' / '#' lines inside [General], kept verbatim across Save (C061)
@@ -278,6 +279,7 @@ struct Config {
                         "; Item value suffix @self = always use the item on the controlled character, whatever is targeted\n"
                         "; [General] HealThreshold=1..100 (default 50)  HealFallback=self|none (default self)\n"
                         "; [General] SyncActionBar=0|1 (default 1) resync the vanilla action bar (stance/form icons) after an AI stance or form change\n"
+                        "; [General] ReserveDigits=0|1 (default 1) keys 1-0 are the hotbar's even on an empty slot (0 = an empty slot's key does its game action)\n"
                         "; [General] TargetProbe=0|1|2 (default 2) item target modes: 0 off, 1 log the decision only, 2 live\n"
                         "; [General] SchemaVersion=<n> is written by the mod and ignored on load\n"
                         "; KeyboardDevice=<n> overrides the engine's DirectInput keyboard index (omit = automatic)\n"
@@ -369,12 +371,13 @@ struct Config {
             if (inGeneral) {
                 std::string k = lower(key);
                 if (k == "schemaversion") { /* written on save, not validated on load */ }
-                else if (k == "invoke" || k == "verbose" || k == "autofill" || k == "keyboarddevice") {
+                else if (k == "invoke" || k == "verbose" || k == "autofill" || k == "keyboarddevice" || k == "reservedigits") {
                     int n = 0;
                     if (!parseInt32(val, &n)) { snprintf(msg, sizeof msg, "line %d: %.40s '%.60s' must be an integer (kept default)", lineNo, key.c_str(), val.c_str()); warnings.push_back(msg); }
                     else if (k == "invoke") general.invoke = n;
                     else if (k == "verbose") general.verbose = n;
                     else if (k == "autofill") general.autoFill = n;
+                    else if (k == "reservedigits") general.reserveDigits = n != 0 ? 1 : 0;
                     else general.keyboardDevice = n;
                 }
                 else if (k == "healthreshold") {
@@ -424,6 +427,7 @@ struct Config {
         snprintf(b, sizeof b, "HealThreshold=%d\n", general.healThreshold); o += b;
         o += general.healFallbackSelf ? "HealFallback=self\n" : "HealFallback=none\n";
         snprintf(b, sizeof b, "SyncActionBar=%d\n", general.syncActionBar); o += b;
+        snprintf(b, sizeof b, "ReserveDigits=%d\n", general.reserveDigits); o += b;
         if (general.keyboardDevice >= 0) { snprintf(b, sizeof b, "KeyboardDevice=%d\n", general.keyboardDevice); o += b; }
         for (auto& kv : general.extra) o += kv.first + "=" + kv.second + "\n";
         auto emit = [&](const Profile& p) {

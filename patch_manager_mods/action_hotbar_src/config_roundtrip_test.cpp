@@ -243,6 +243,12 @@ int main(){
       Config c=W(std::string("[General]\n")+bad+"\n");
       if(!KT_CHECK_EQ(c.warnings.size(),1)) printf("  (case %s)\n",bad);
       KT_CHECK_EQ(c.general.invoke,1); KT_CHECK_EQ(c.general.verbose,0); KT_CHECK_EQ(c.general.autoFill,0); KT_CHECK_EQ(c.general.keyboardDevice,-1); }
+    { Config d=W("[General]\n"); KT_CHECK_EQ(d.general.reserveDigits,1);                                          // KD1: default on
+      Config z=W("[General]\nReserveDigits=0\n"); KT_CHECK(z.warnings.empty()); KT_CHECK_EQ(z.general.reserveDigits,0);
+      Config t=W("[General]\nReserveDigits=5\n"); KT_CHECK_EQ(t.general.reserveDigits,1);
+      Config b=W("[General]\nReserveDigits=x\n"); KT_CHECK(!b.warnings.empty()); KT_CHECK_EQ(b.general.reserveDigits,1);
+      std::string o=z.Serialize(); KT_CHECK(o.find("ReserveDigits=0\n")!=std::string::npos);
+      KT_CHECK_EQ(W(o).general.reserveDigits,0); }
     Config c=W("[General]\nInvoke=0\nVerbose=1\nAutoFill=1\n"); KT_CHECK(c.warnings.empty()); KT_CHECK_EQ(c.general.invoke,0); KT_CHECK_EQ(c.general.verbose,1); KT_CHECK_EQ(c.general.autoFill,1);
     c=W("[General]\nInvoke=2\n"); KT_CHECK(c.warnings.empty()); KT_CHECK_EQ(c.general.invoke,2);   // any in-range int is kept (callers test != 0)
     c=W("[General]\nInvoke=abc\nInvoke=0\n"); KT_CHECK_EQ(c.warnings.size(),1); KT_CHECK_EQ(c.general.invoke,0);   // a later good line still applies

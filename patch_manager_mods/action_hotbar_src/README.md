@@ -35,13 +35,15 @@ The DLL creates its own controls, art and INI. No `.gui` or texture files are in
 | Left click on a slot | Same as the key. |
 | Esc | In the editor, back out one level (see Editor). |
 
-The bound number keys are always taken by the hotbar while the bar is shown. Empty slots are hidden outside the editor.
+Keys 1-0 belong to the hotbar while the bar is shown, also on an empty slot, so they never trigger the vanilla quick-action bar or switch party members (`ReserveDigits=0` lets an empty slot's key do its game action again). The vanilla bar can still be clicked. Shift/Ctrl/Alt + digit always go to the game. Empty slots are hidden outside the editor.
 
 ## Editor
 
 1. Click the wrench button at the left end of the bar. The slots show their frames.
 2. Click a slot. A picker opens with three tabs: Power, Item, Mode.
-3. Click a cell to put that action in the slot. The INI is saved at once.
+3. Click a cell to put that action in the slot. The INI is saved at once. For an item that can target someone (a
+   healing item, or one you can use on yourself), the cells change to a "use on?" row first: **Use normally**,
+   **Lowest HP** (healing items) and **Self**. Click one to assign the item with that target mode; Esc goes back to the list.
 4. Press **Clear** in the picker to empty the slot. Assigning an action that is already in another slot moves it.
 5. Esc closes the picker. Esc again leaves edit mode. Clicking the wrench also leaves edit mode.
 
@@ -49,7 +51,7 @@ In the picker, the `<` and `>` buttons scroll one entry at a time (hold to repea
 while the cursor is over the picker. Item cells show the stack count. An item you have run out of keeps its icon,
 dimmed, with a count of 0, and cannot be used.
 
-The crosshair button next to Clear sets the target mode of the selected item slot (see Target modes). Each
+The crosshair button next to Clear changes the target mode of an item already in the slot (see Target modes). Each
 slot with a mode shows a small badge in its top-right corner. Hover over a slot for a tooltip.
 
 ## Target modes
@@ -115,6 +117,7 @@ but comments are not.
 | `Invoke` | 1 | integer | 1: keys and clicks use the action. 0: log only (dry run); bound digits then pass through to the game. |
 | `Verbose` | 0 | integer | 1: detailed log. Only used when the shared logger core is missing (see Logs). |
 | `AutoFill` | 0 | integer | 1: unbound slots show and use the character's known powers, in game order. 0: unbound slots stay empty. |
+| `ReserveDigits` | 1 | 0 or 1 | 1: keys 1-0 are the hotbar's while the HUD is shown, even on an empty slot or in the editor. 0: an empty slot's key does its game action (vanilla quick bar, party switch). |
 | `KeyboardDevice` | automatic | integer | DirectInput keyboard index. Leave it out unless keys do nothing. |
 | `HealThreshold` | 50 | 1..100 | `@lowhp` only picks a member below this HP percent. |
 | `HealFallback` | `self` | `self`, `none` | What `@lowhp` does when nobody is below the threshold. |

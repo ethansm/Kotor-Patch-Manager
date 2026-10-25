@@ -2,7 +2,12 @@
 
 Action Hotbar (id `action-hotbar`), formerly Force Power Hotbar.
 
-## Unreleased (0.1.8-dev)
+## Unreleased (0.1.9-dev)
+
+- Picking a healing item, or one you can use on yourself, now asks "use on?" in the picker: Use normally / Lowest HP / Self. One click assigns the item with that target; Esc goes back to the list. Before, the item was assigned with the default target and had to be changed with the Mode button afterwards. (TP1)
+- Keys 1-0 are reserved for the hotbar while the HUD is up, also on an empty slot and in the editor, so they no longer fire the vanilla quick-action bar or switch party members. `[General] ReserveDigits=0` restores the old pass-through. Shift/Ctrl/Alt + digit still go to the game. (KD1)
+
+## 0.1.8-dev
 
 - Loading a save or starting a new game no longer does file work inside the game's load callback; the next HUD frame applies it (save-events warned 7.5-7.9 ms per load, limit 5 ms). A save made before that frame applies the load first. (PS5)
 - The debug log no longer prints a slot line when only the reason changes on a widget that stays hidden (`hidden -> hidden (hud not active)`). (PS4)

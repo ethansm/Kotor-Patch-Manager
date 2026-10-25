@@ -307,7 +307,7 @@ inline void unitRect(int x, int y, int w, int h, const Scale& k, int* r) {
 // Keyboard capture: DIK 0x02..0x0B are the digit keys 1..0.
 inline bool isHotbarDigit(unsigned dik) { return dik >= 0x02 && dik <= 0x0B; }
 // One DirectInput key event with the state the decision needs (hudActive = gate open and the tick is fresh).
-struct KeyEvent { unsigned dik = 0; bool down = false, ctrl = false, alt = false, shift = false, hudActive = false, editOpen = false, downSwallowed = false, slotBound = false, ringFull = false, invokeOn = true; };
+struct KeyEvent { unsigned dik = 0; bool down = false, ctrl = false, alt = false, shift = false, hudActive = false, editOpen = false, downSwallowed = false, slotBound = false, ringFull = false, invokeOn = true, reserveDigits = false; };
 // What to do with it: swallow = zero the record; markDown/clearDown = set/clear the "down was swallowed" flag; enqueue = push `slot`; escHit = tell the editor.
 struct KeyAction { const char* decision = "pass"; bool swallow = false, markDown = false, clearDown = false, enqueue = false, escHit = false; int slot = -1; };
 inline KeyAction decideKey(const KeyEvent& k) {
@@ -325,8 +325,11 @@ inline KeyAction decideKey(const KeyEvent& k) {
             int slot = (int)k.dik - kFirstDik;
             if (k.ctrl || k.alt) a.decision = "pass(ctrl/alt)";   // only plain digits are ours; Ctrl/Alt+digit stay the game's
             else if (!k.hudActive) a.decision = "pass(hud inactive)";
-            else if (k.editOpen) a.decision = "pass(edit mode: never invoke)";
-            else if (!k.slotBound) a.decision = "pass(unbound)";
+            else if (k.editOpen || !k.slotBound) {
+                // KD1: ReserveDigits keeps 1-0 off the vanilla quick bar / party switch even with nothing to invoke (edit mode, empty slot)
+                if (k.reserveDigits) { a.clearDown = false; a.markDown = true; a.swallow = true; a.decision = k.editOpen ? "SWALLOW(reserved, edit mode)" : "SWALLOW(reserved, unbound)"; }
+                else a.decision = k.editOpen ? "pass(edit mode: never invoke)" : "pass(unbound)";
+            }
             else if (!k.invokeOn) a.decision = "pass(invoke off)";   // dry run: the key keeps its game meaning (party switch on 1-3)
             else {   // a bound key is swallowed while the HUD tick is fresh (hudActive): passing it on would switch party members (keys 1-3)
                 a.clearDown = false; a.markDown = true; a.swallow = true;
@@ -485,6 +488,25 @@ inline TargetSpec nextTargetMode(const ActionRef& a, bool isHealing, bool selfAl
     else n.mode = TM_Default;
     return n;
 }
+// TP1: "use on?" choices offered when an item is picked in the editor (same modes the Mode button cycles through).
+// Empty = no prompt (not an item, or the item can only be used the game's way): the pick assigns directly.
+inline std::vector<TargetMode> targetChoices(const ActionRef& a, bool isHealing, bool selfAllowed) {
+    std::vector<TargetMode> v;
+    if (a.kind != K_Item || (!isHealing && !selfAllowed)) return v;
+    v.push_back(TM_Default);
+    if (isHealing) v.push_back(TM_LowHp);
+    if (selfAllowed) v.push_back(TM_Self);
+    return v;
+}
+// Choice cell art: the target badges for Lowest HP / Self, the item's own icon for "use normally".
+inline std::string choiceIcon(TargetMode m, const std::string& itemIcon) { return m == TM_LowHp ? "fph_tgt_lowhp" : m == TM_Self ? "fph_tgt_self" : itemIcon; }
+inline std::string choiceTip(TargetMode m, const std::string& itemName) {
+    const char* how = m == TM_LowHp ? "Use on the party member with the lowest HP" : m == TM_Self ? "Always use on yourself" : "Use normally (the game's target)";
+    return std::string(how) + "\n" + itemName;
+}
+// The ref a choice assigns: the picked item with a fresh target spec (no custom threshold / fallback).
+inline ActionRef withTarget(ActionRef a, TargetMode m) { a.target = TargetSpec(); a.target.mode = m; return a; }
+
 inline bool dropsCustomSuffix(const TargetSpec& from) { return from.thresholdPct >= 0 || from.fallback >= 0; }
 // Target badge label of slot 0..9: 13x13 flush top-right inside the 35x35 frame (frame x = 29+40i, y = 478); the digit label ends at slotX+22.
 struct Rect4 { int x, y, w, h; };

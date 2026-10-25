@@ -443,6 +443,18 @@ int main() {
     k.editOpen = true; a = decideKey(k); KT_CHECK_EQ(a.decision, "pass(edit mode: never invoke)"); KT_CHECK(!a.swallow); k.editOpen = false;
     k.slotBound = false; a = decideKey(k); KT_CHECK_EQ(a.decision, "pass(unbound)"); KT_CHECK(!a.swallow && !a.enqueue); k.slotBound = true;
     k.hudActive = false; k.editOpen = true; k.slotBound = false; a = decideKey(k); KT_CHECK_EQ(a.decision, "pass(hud inactive)");     // order: inactive before edit before unbound
+    {   // KD1: ReserveDigits swallows edit-mode and unbound digits (down + matching up) but never enqueues; inactive HUD / shift / ctrl still pass
+        KeyEvent r = k; r.hudActive = true; r.editOpen = false; r.slotBound = false; r.reserveDigits = true; r.down = true;
+        KeyAction x = decideKey(r); KT_CHECK_EQ(x.decision, "SWALLOW(reserved, unbound)"); KT_CHECK(x.swallow && x.markDown && !x.clearDown && !x.enqueue);
+        r.down = false; r.downSwallowed = true; x = decideKey(r); KT_CHECK_EQ(x.decision, "swallow-up"); KT_CHECK(x.swallow && x.clearDown); r.down = true; r.downSwallowed = false;
+        r.editOpen = true; x = decideKey(r); KT_CHECK_EQ(x.decision, "SWALLOW(reserved, edit mode)"); KT_CHECK(x.swallow && !x.enqueue);
+        r.slotBound = true; x = decideKey(r); KT_CHECK_EQ(x.decision, "SWALLOW(reserved, edit mode)"); KT_CHECK(!x.enqueue); r.editOpen = false;   // edit mode never invokes
+        x = decideKey(r); KT_CHECK_EQ(x.decision, "SWALLOW"); KT_CHECK(x.enqueue);                                                            // bound: unchanged
+        r.slotBound = false; r.hudActive = false; x = decideKey(r); KT_CHECK_EQ(x.decision, "pass(hud inactive)"); KT_CHECK(!x.swallow); r.hudActive = true;
+        r.shift = true; x = decideKey(r); KT_CHECK_EQ(x.decision, "pass(shift)"); r.shift = false;
+        r.ctrl = true; x = decideKey(r); KT_CHECK_EQ(x.decision, "pass(ctrl/alt)"); r.ctrl = false;
+        r.invokeOn = false; x = decideKey(r); KT_CHECK_EQ(x.decision, "SWALLOW(reserved, unbound)");   // unbound + dry run: still reserved
+    }
     // every digit -> its own slot
     for (unsigned dik = 0x02; dik <= 0x0B; ++dik) { KeyEvent q = K(dik, true); q.hudActive = true; q.slotBound = true; KeyAction r = decideKey(q); KT_CHECK(r.enqueue && r.slot == (int)dik - 2); }
     // digit up: swallow only if the down was swallowed
@@ -756,6 +768,24 @@ int main() {
     KT_CHECK_EQ(snapStatus(SS_New, true), "found"); KT_CHECK_EQ(snapStatus(SS_Legacy, true), "found (legacy name)");
     KT_CHECK_EQ(snapStatus(SS_Absent, false), "absent (live hotbar kept)");   // PS1 (was RH1 "bar emptied")
     KT_CHECK(snapAction(SS_Absent, false) == Snap_Keep && snapAction(SS_Absent, true) == Snap_Keep && snapAction(SS_New, false) == Snap_Keep && snapAction(SS_Legacy, false) == Snap_Keep && snapAction(SS_New, true) == Snap_Replace && snapAction(SS_Legacy, true) == Snap_Replace);
+    {   // TP1: target choices on pick
+        ActionRef it; it.kind = K_Item; it.name = "Medpac"; ActionRef sp; sp.kind = K_Spell; sp.id = 8;
+        auto c = targetChoices(it, true, true); KT_CHECK(c.size() == 3 && c[0] == TM_Default && c[1] == TM_LowHp && c[2] == TM_Self);
+        c = targetChoices(it, true, false); KT_CHECK(c.size() == 2 && c[1] == TM_LowHp);
+        c = targetChoices(it, false, true); KT_CHECK(c.size() == 2 && c[1] == TM_Self);
+        KT_CHECK(targetChoices(it, false, false).empty() && targetChoices(sp, true, true).empty());
+        // every choice is a mode the Mode button can reach for the same inputs
+        for (int h = 0; h < 2; ++h) for (int sf = 0; sf < 2; ++sf) for (TargetMode m : targetChoices(it, h, sf)) {
+            ActionRef cur = it; bool seen = false;
+            for (int k = 0; k < 3; ++k) { if (cur.target.mode == m) seen = true; cur.target = nextTargetMode(cur, h, sf); }
+            KT_CHECK(seen);
+        }
+        KT_CHECK_EQ(choiceIcon(TM_LowHp, "i_medpac").c_str(), "fph_tgt_lowhp"); KT_CHECK_EQ(choiceIcon(TM_Self, "i_medpac").c_str(), "fph_tgt_self"); KT_CHECK_EQ(choiceIcon(TM_Default, "i_medpac").c_str(), "i_medpac");
+        KT_CHECK(choiceTip(TM_Self, "Medpac").find("Medpac") != std::string::npos);
+        ActionRef cu = it; cu.target.mode = TM_LowHp; cu.target.thresholdPct = 40; cu.target.fallback = 0;
+        ActionRef w = withTarget(cu, TM_Self); KT_CHECK(w.target.mode == TM_Self && w.target.thresholdPct == -1 && w.target.fallback == -1 && w.name == "Medpac");
+        KT_CHECK_EQ(Format(withTarget(it, TM_LowHp)).c_str(), "item:Medpac@lowhp"); KT_CHECK_EQ(Format(withTarget(it, TM_Default)).c_str(), "item:Medpac");
+    }
     // PS3: verify window, then ok / rewrite / folder gone; wrap-safe
     KT_CHECK(snapVerify(1000, 0, false, true) == SV_Wait && snapVerify(2999, 0, false, false) == SV_Wait);
     KT_CHECK(snapVerify(3000, 0, true, true) == SV_Ok && snapVerify(3000, 0, false, true) == SV_Rewrite && snapVerify(3000, 0, false, false) == SV_Gone);
