@@ -95,6 +95,32 @@ static void test_sanitize_clamps_and_span_guard() {
     KT_CHECK(std::fabs(c.fadeStartDist - k2grass::kMinFadeStartDist) < 1e-5f);
 }
 
+static void test_menu_fade_link() {
+    // Highest start on the 15 m grid, >= 5 m below the end.
+    KT_CHECK_EQ(k2grass::menuFadeStartMax(90), 75);
+    KT_CHECK_EQ(k2grass::menuFadeStartMax(150), 135);
+    KT_CHECK_EQ(k2grass::menuFadeStartMax(30), 15);
+    KT_CHECK_EQ(k2grass::menuFadeStartMax(45), 30);
+    KT_CHECK_EQ(k2grass::menuFadeStartMax(10), 15);   // below the menu range: floor, never under the row min
+    // Draw Distance dropped under Fade Start: the start follows down.
+    KT_CHECK_EQ(k2grass::menuLinkFadeStart(135, 90), 75);
+    KT_CHECK_EQ(k2grass::menuLinkFadeStart(45, 30), 15);
+    // Already consistent: unchanged.
+    KT_CHECK_EQ(k2grass::menuLinkFadeStart(45, 90), 45);
+    KT_CHECK_EQ(k2grass::menuLinkFadeStart(75, 90), 75);
+    // Every menu pair agrees with sanitize (the engine sees exactly what the sliders show).
+    for (int32_t end = 30; end <= 150; end += 15) {
+        for (int32_t start = 15; start <= 135; start += 15) {
+            k2grass::Config c{};
+            c.fadeEndDist = static_cast<float>(end);
+            c.fadeStartDist = static_cast<float>(k2grass::menuLinkFadeStart(start, end));
+            const k2grass::Config before = c;
+            c.sanitize();
+            KT_CHECK(c == before);
+        }
+    }
+}
+
 static void test_perf_window() {
     k2grass::PerfWindow w{};
     w.reset(1000);
@@ -160,6 +186,7 @@ int main() {
     test_defaults_and_effective_math();
     test_bin_alpha_curve();
     test_sanitize_clamps_and_span_guard();
+    test_menu_fade_link();
     test_perf_window();
     test_ini_roundtrip_and_direct_float_alpha();
     test_modconfig_schema_bindings();

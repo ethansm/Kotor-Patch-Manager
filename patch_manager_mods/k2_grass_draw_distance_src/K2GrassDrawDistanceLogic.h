@@ -12,7 +12,7 @@
 namespace k2grass {
 
 constexpr const char* kModId = "k2-grass-draw-distance";
-constexpr const char* kVersion = "0.1.1-dev";
+constexpr const char* kVersion = "0.1.2-dev";
 constexpr const char* kIniFile = "k2_grass_draw_distance.ini";
 constexpr const char* kIniSection = "Grass";
 
@@ -126,6 +126,22 @@ inline float effectiveClipDistMeters(const EffectiveValues& ev) {
     if (spanSq <= 0.0f) return std::sqrt(ev.fadeStartSq);
     const float clipSq = ev.fadeStartSq + (1.0f - ev.alphaCutoff) * spanSq;
     return std::sqrt(clipSq > 0.0f ? clipSq : 0.0f);
+}
+
+// Menu link between the Fade Start and Draw Distance sliders (kPageSchema rows fade_start / fade_end): the highest
+// Fade Start the menu offers for a Draw Distance, on the row's own 15 m grid and >= kMinFadeSpan below the end.
+// Same direction as Config::sanitize (the start moves, never the end), so the sliders show what the engine uses.
+constexpr int32_t kMenuFadeStartMin = 15;
+constexpr int32_t kMenuFadeStartStep = 15;
+
+inline int32_t menuFadeStartMax(int32_t fadeEnd) {
+    const int32_t room = fadeEnd - static_cast<int32_t>(kMinFadeSpan);
+    if (room < kMenuFadeStartMin) return kMenuFadeStartMin;
+    return kMenuFadeStartMin + (room - kMenuFadeStartMin) / kMenuFadeStartStep * kMenuFadeStartStep;
+}
+inline int32_t menuLinkFadeStart(int32_t fadeStart, int32_t fadeEnd) {
+    const int32_t hi = menuFadeStartMax(fadeEnd);
+    return fadeStart > hi ? hi : fadeStart;
 }
 
 // P3 calibration window: one sample per grass frame (Scene::CollectAndTraverse hook).

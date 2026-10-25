@@ -1,4 +1,4 @@
-// K2GrassDrawDistance.cpp -- K2 Grass Draw Distance (0.1.1-dev)
+// K2GrassDrawDistance.cpp -- K2 Grass Draw Distance (0.1.2-dev)
 // Extends grass octree build/collect radius, fade-start/fade-end distances, alpha-test threshold,
 // and decouples CPU wind animation radius (one operand rewrite at KPatchInit, code_patches.toml).
 #define WIN32_LEAN_AND_MEAN
@@ -184,6 +184,38 @@ void loadAndApplyIni(bool initial) {
     }
 }
 
+// Silent ini write for a row the code moved (Page::setValue writes no ini), so the next page build reads it back.
+void writeRowIni(const char* id, int32_t v) {
+    const int i = g_page.index(id);
+    if (i < 0 || !g_page.io.write) return;
+    const mcdecl::RowDecl& r = g_page.decl.rows[i];
+    if (!r.ini[0]) return;
+    char b[16];
+    snprintf(b, sizeof b, "%d", static_cast<int>(v));
+    g_page.io.write(r.ini, r.section[0] ? r.section : nullptr, r.key, b);
+}
+
+// Keep Fade Start on or below menuFadeStartMax(Draw Distance) and show it: the start row moves, never the end row.
+void linkFadeStart(const char* why, int32_t fadeEnd) {
+    const int32_t s = g_page.get("fade_start");
+    const int32_t ns = k2grass::menuLinkFadeStart(s, fadeEnd);
+    if (ns == s) return;
+    g_page.setValue("fade_start", ns);
+    writeRowIni("fade_start", ns);
+    KP_LOG(chCfg, "menu link (%s): fade start %dm -> %dm for draw distance %dm", why, static_cast<int>(s), static_cast<int>(ns),
+           static_cast<int>(fadeEnd));
+}
+
+int32_t onRowChange(void*, int, const char* id, int32_t requested, int) {
+    if (strcmp(id, "fade_start") == 0) return k2grass::menuLinkFadeStart(requested, g_page.get("fade_end"));
+    if (strcmp(id, "fade_end") == 0) linkFadeStart("draw distance", requested);
+    return requested;
+}
+
+void onPageBuilt(void*, uint32_t, void*) {
+    linkFadeStart("page build", g_page.get("fade_end"));   // a hand-edited ini can hold start >= end
+}
+
 void pollModConfig() {
     auto clients = k2pc::makeSet(g_mcCfg, g_mcMenu);
     if (clients.anyMissing()) {
@@ -194,6 +226,8 @@ void pollModConfig() {
         if (g_page.load(k2grass::kPageSchema, strlen(k2grass::kPageSchema), err, sizeof(err))) {
             g_page.menu = &g_mcMenu;
             g_page.io = mcdecl::fileIo();
+            g_page.hooks.onChange = onRowChange;
+            g_page.hooks.onBuilt = onPageBuilt;
             g_mcEntry = g_page.entry(k2grass::kModId);
             g_pageReady = true;
         } else {
