@@ -56,6 +56,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _static_common as sc  # noqa: E402
 import check_exports as ce  # noqa: E402
+import _load_limit as ll  # noqa: E402
 
 # create-patch.py:365-383 (MinGW toolchain flags) and :378-379 (compiler candidates; the bare g++/clang++ fallbacks
 # are not used here: they would not produce a Windows PE on this host)
@@ -167,8 +168,9 @@ def ensure_common_library(kpm_dir: Path, compiler: str, cache_root: Path):
 
         def one(src: Path):
             obj = objdir / f"{src.parent.name}-{src.stem}.o"
-            r = subprocess.run([compiler, *flags, "-I", str(common_dir), "-I", str(lib_dir), "-c", str(src),
-                                "-o", str(obj)], capture_output=True, text=True, env=env)
+            with ll.heavy_slot():   # machine-wide compile slots: several sessions must not each start cpu_count compilers
+                r = subprocess.run([compiler, *flags, "-I", str(common_dir), "-I", str(lib_dir), "-c", str(src),
+                                    "-o", str(obj)], capture_output=True, text=True, env=env)
             return obj, r
 
         objs = []
@@ -286,7 +288,8 @@ def compile_mod(stage_dir: Path, name: str, compiler: str, kpm_dir: Path, librar
     link_sources = [*sources, exports_def]
     cmd = [compiler, *FLAGS, "-I", str(common_dir), "-I", str(lib_dir), *(str(s) for s in link_sources),
            "-o", str(out), str(library), "-L", str(import_dir), "-lsqlite3", "-lkernel32", *requested]
-    r = subprocess.run(cmd, capture_output=True, text=True, env=env)
+    with ll.heavy_slot():
+        r = subprocess.run(cmd, capture_output=True, text=True, env=env)
     dt = time.monotonic() - t0
     if r.returncode != 0:
         return BuildResult(stderr=r.stderr or r.stdout, seconds=dt)
@@ -309,8 +312,18 @@ def generate_exports_def(patch_dir: Path, cpp_files, name: str) -> Path:
 
 def check_mod(rep, m: ModSrc, compiler: str, kpm_dir: Path, library: Path, shared_src: Path,
               build_root: Path, keep: bool, err_stream=sys.stdout) -> bool:
-    """Stage, build and export-check one mod. Returns True if no FAIL."""
+    """Stage, build and export-check one mod. Returns True if no FAIL.
+
+    Staging rmtree's build_root/<key>, so two runs sharing a build root would race: the whole stage + build + cleanup
+    holds a machine-wide lock named after the resolved key dir."""
     key_dir = build_root / m.key
+    lock = "build-" + hashlib.sha1(str(key_dir.resolve()).encode()).hexdigest()[:12]
+    with ll.exclusive(lock, f"build {m.key}"):
+        return _check_mod_locked(rep, m, compiler, kpm_dir, library, shared_src, key_dir, keep, err_stream)
+
+
+def _check_mod_locked(rep, m: ModSrc, compiler: str, kpm_dir: Path, library: Path, shared_src: Path,
+                      key_dir: Path, keep: bool, err_stream) -> bool:
     t0 = time.monotonic()
     try:
         stage = stage_mod(m.dir, m.name, key_dir, shared_src)
@@ -476,6 +489,7 @@ def run(repo=sc.REPO, kpm_dir=sc.KPM_DIR, only=None, keep=False, reporter=None, 
 
 
 def main(argv=None):
+    ll.lower_priority()
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--mod", action="append", default=[], metavar="DIR",
                     help="mod source dir relative to patch_manager_mods/ (e.g. perf_lab_src/perflab) or absolute "

@@ -82,6 +82,7 @@ class Base(unittest.TestCase):
                   mock.patch.object(kh, "is_game_running", lambda: self.running),
                   mock.patch.object(kh, "pe_imports", lambda b: PE[b][0]),
                   mock.patch.object(kh, "pe_exports", lambda b: PE[b][1]),
+                  mock.patch.object(kh, "GATE_RECORDS", pathlib.Path(self.tmp.name) / "gate-records"),
                   mock.patch.object(kh, "git_head", lambda d: "abc1234"),
                   mock.patch.object(kh, "git_pending", lambda d, p: ([], []))):
             p.start()
@@ -681,6 +682,170 @@ class PeReaderTest(unittest.TestCase):
         self.assertIn("new DLL dependency", kh.check_new_dll("x", build_pe(["kernel32.dll", "user32.dll", "ws2_32.dll"], ["GetFoo", "Bar"]), dll))
         self.assertIn("exports differ", kh.check_new_dll("x", build_pe(["kernel32.dll"], ["GetFoo"]), dll))
         self.assertIn("cannot parse", kh.check_new_dll("x", b"not a pe", dll))
+
+
+def pe_variant(base=0x10000000, stamp=0, checksum=0, tail=b"", tail_at=0x500, exp_stamp=0):
+    """build_pe() with chosen header fields and bytes written into the (otherwise zero) section tail."""
+    b = bytearray(build_pe(["kernel32.dll"], ["A", "B"]))
+    e = struct.unpack_from("<I", b, 0x3C)[0]
+    struct.pack_into("<I", b, e + 8, stamp)
+    struct.pack_into("<I", b, e + 24 + 64, checksum)
+    struct.pack_into("<I", b, e + 24 + 28, base)
+    struct.pack_into("<I", b, 0x200 + 0x300 + 4, exp_stamp)   # export directory TimeDateStamp
+    b[0x200 + tail_at:0x200 + tail_at + len(tail)] = tail
+    return bytes(b)
+
+
+class NormalizedHashTest(unittest.TestCase):
+    def test_headers_only_differences_hash_equal(self):
+        a = pe_variant(stamp=1000, checksum=0xAAAA, base=0x10000000, exp_stamp=5)
+        b = pe_variant(stamp=2000, checksum=0xBBBB, base=0x6B580000, exp_stamp=9)
+        self.assertNotEqual(md5(a), md5(b))
+        self.assertEqual(kh.normalized_md5(a), kh.normalized_md5(b))
+
+    def test_differences_elsewhere_hash_differently(self):
+        a = pe_variant(tail=b"\x01\x02\x03\x04")
+        b = pe_variant(tail=b"\x01\x02\x03\x05")
+        self.assertNotEqual(kh.normalized_md5(a), kh.normalized_md5(b))
+        c = pe_variant(tail=b"\x01\x02\x03\x04")
+        self.assertEqual(kh.normalized_md5(a), kh.normalized_md5(c))
+
+    def test_relocated_pointer_is_rebased(self):
+        """A HIGHLOW relocation target holding base+X hashes the same under any base."""
+        def with_reloc(base):
+            b = bytearray(pe_variant(base=base, tail=struct.pack("<I", base + 0x1234)))
+            e = struct.unpack_from("<I", b, 0x3C)[0]
+            reloc = 0x200 + 0x580   # reloc block inside the section: page rva 0x1000, 1 entry (type 3, offset 0x500)
+            struct.pack_into("<II", b, reloc, 0x1000, 12)
+            struct.pack_into("<HH", b, reloc + 8, (3 << 12) | 0x500, 0)
+            struct.pack_into("<II", b, e + 24 + 96 + 5 * 8, 0x1000 + 0x580, 12)
+            return bytes(b)
+        a, b = with_reloc(0x10000000), with_reloc(0x6B580000)
+        self.assertNotEqual(a, b)
+        self.assertEqual(kh.normalized_md5(a), kh.normalized_md5(b))
+
+    def test_non_pe_is_hashed_raw(self):
+        self.assertEqual(kh.normalized_md5(b"DLL1"), md5(b"DLL1"))
+        self.assertNotEqual(kh.normalized_md5(b"DLL1"), kh.normalized_md5(b"DLL2"))
+
+    def test_rel32_to_fixed_address_accepted_only_for_the_base_delta(self):
+        """call rel32 to a fixed (game exe) address: rel differs by the ImageBase difference between two links."""
+        a = pe_variant(base=0x10000000, tail=b"\xE8" + struct.pack("<I", 0xFFFF1000))
+        delta = 0x20000000 - 0x10000000
+        b = pe_variant(base=0x20000000, tail=b"\xE8" + struct.pack("<I", (0xFFFF1000 - delta) & 0xFFFFFFFF))
+        self.assertFalse(kh.normalized_md5(a) == kh.normalized_md5(b))
+        self.assertTrue(kh.dlls_equivalent(a, b))
+        bad = pe_variant(base=0x20000000, tail=b"\xE8" + struct.pack("<I", (0xFFFF1000 - delta + 1) & 0xFFFFFFFF))
+        self.assertFalse(kh.dlls_equivalent(a, bad))
+        other = pe_variant(base=0x20000000, tail=b"\xE8" + struct.pack("<I", (0xFFFF1000 - delta) & 0xFFFFFFFF) + b"\x07")
+        self.assertFalse(kh.dlls_equivalent(a, other))
+
+
+class GateCrossCheckTest(Base):
+    def record(self, **kw):
+        rec = {"mod_id": "demo", "md5": md5(b"DLL2"), "dll": "", "head": "deadbee", "time": time.time() + 1000,
+               "scratch": ""}
+        rec.update(kw)
+        d = kh.GATE_RECORDS
+        d.mkdir(parents=True, exist_ok=True)
+        (d / "demo.json").write_text(json.dumps(rec))
+
+    def check(self):
+        return kh.gate_cross_check("demo", self.e.kd, self.e.src)
+
+    def test_missing_record(self):
+        self.e.kpatch(b"DLL2")
+        self.assertEqual(self.check(), ["NOTE  demo: no gate record"])
+
+    def test_match(self):
+        self.e.kpatch(b"DLL2")
+        self.record()
+        self.assertEqual(self.check(), ["GATE  demo: fresh DLL matches the gated build (gate head deadbee)"])
+
+    def test_mismatch(self):
+        self.e.kpatch(b"DLL2")
+        self.record(md5=md5(b"OTHER"), dll=str(pathlib.Path(self.tmp.name) / "gone.dll"))
+        out = self.check()
+        self.assertEqual(len(out), 1)
+        self.assertTrue(out[0].startswith("NOTE  demo: gate DLL"), out)   # gate DLL deleted: inconclusive
+
+        g = pathlib.Path(self.tmp.name) / "gate.dll"
+        g.write_bytes(b"OTHER")
+        self.record(md5=md5(b"OTHER"), dll=str(g))
+        self.assertEqual(self.check(), [f"WARN  demo: rebuilt DLL differs from the gated build (gate {md5(b'OTHER')} "
+                                        "at deadbee); re-run pre_install_gate"])
+
+    def test_match_through_the_gate_dll_when_only_base_and_stamps_differ(self):
+        delta = 0x20000000 - 0x10000000
+        gate = pe_variant(base=0x10000000, stamp=1, tail=b"\xE8" + struct.pack("<I", 0xFFFF1000))
+        new = pe_variant(base=0x20000000, stamp=2, tail=b"\xE8" + struct.pack("<I", (0xFFFF1000 - delta) & 0xFFFFFFFF))
+        g = pathlib.Path(self.tmp.name) / "gate.dll"
+        g.write_bytes(gate)
+        self.e.kpatch(new)
+        self.record(md5=md5(gate), dll=str(g))
+        self.assertEqual(self.check(), ["GATE  demo: fresh DLL matches the gated build (gate head deadbee)"])
+
+    def test_stale_record(self):
+        self.e.kpatch(b"DLL2")
+        self.record(time=time.time() - 3600)
+        (self.e.src / "Demo.cpp").write_text("int y;\n")   # newer than the record
+        out = self.check()
+        self.assertEqual(out[0], "GATE  demo: fresh DLL matches the gated build (gate head deadbee)")
+        self.assertEqual(out[1], "WARN  demo: gate record is older than the source (Demo.cpp); stale gate, "
+                                 "re-run pre_install_gate")
+
+    def test_iso_time_and_broken_record_never_raise(self):
+        self.e.kpatch(b"DLL2")
+        self.record(time="2020-01-01T00:00:00")
+        (self.e.src / "Demo.cpp").write_text("int y;\n")
+        self.assertIn("stale gate", self.check()[1])
+        (kh.GATE_RECORDS / "demo.json").write_text("{not json")
+        out = self.check()
+        self.assertEqual(len(out), 1)
+        self.assertTrue(out[0].startswith("NOTE  demo: gate cross-check skipped"), out)
+
+    def test_prepare_prints_the_cross_check_and_stays_exit_0(self):
+        (self.e.src / "Demo.cpp").write_text("int y;\n")
+
+        def fake_build(kd, kpm):
+            self.e.kpatch(b"DLL2")
+            return 0, ""
+        self.record(md5=md5(b"OTHER"), time=time.time() + 1000)
+        with mock.patch.object(kh, "run_create_patch", fake_build):
+            rc, out = self.run_cli("--mod", "demo", "--prepare")
+        self.assertEqual(rc, 0, out)
+        self.assertIn("NOTE  demo: gate DLL (none recorded) is gone", out)
+        (kh.GATE_RECORDS / "demo.json").unlink()
+        (self.e.src / "Demo.cpp").write_text("int z;\n")
+        with mock.patch.object(kh, "run_create_patch", fake_build):
+            rc, out = self.run_cli("--mod", "demo", "--prepare")
+        self.assertEqual(rc, 0, out)
+        self.assertIn("NOTE  demo: no gate record", out)
+
+
+class LoadLimitTest(unittest.TestCase):
+    def test_create_patch_runs_under_the_exclusive_lock(self):
+        events = []
+
+        @contextlib.contextmanager
+        def fake_exclusive(name, label=""):
+            events.append(("enter", name))
+            yield
+            events.append(("exit", name))
+
+        def fake_run(cmd, **kw):
+            events.append(("run", pathlib.Path(cmd[1]).name))
+            return subprocess.CompletedProcess(cmd, 0, "ok\n", "")
+        with tempfile.TemporaryDirectory() as t, mock.patch.object(kh.ll, "exclusive", fake_exclusive), \
+                mock.patch.object(kh.subprocess, "run", fake_run):
+            rc, tail = kh.run_create_patch(pathlib.Path(t), pathlib.Path(t) / "kpm")
+        self.assertEqual(rc, 0)
+        self.assertEqual(events, [("enter", "create-patch"), ("run", "create-patch.py"), ("exit", "create-patch")])
+
+    def test_main_lowers_priority_once_at_start(self):
+        with mock.patch.object(kh.ll, "lower_priority") as lp, contextlib.redirect_stdout(io.StringIO()):
+            kh.main(["--list-backups", "--game-dir", tempfile.gettempdir() + "/no_such_game_dir_kh"])
+        lp.assert_called_once_with()
 
 
 if __name__ == "__main__":

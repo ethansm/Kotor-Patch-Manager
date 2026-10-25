@@ -18,6 +18,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import _static_common as sc  # noqa: E402
 import build_check as bc  # noqa: E402
+import _load_limit  # noqa: E402,F401  (bc.ll)
 
 HAVE_CC = bc.find_compiler() is not None
 needs_cc = unittest.skipUnless(HAVE_CC, "i686-w64-mingw32-g++ not installed")
@@ -274,6 +275,134 @@ class SkipAndUnitTests(unittest.TestCase):
             self.assertEqual(x.name, "x_src")
             one = bc.discover(repo, t / "no_kpm", only=["perf_src/nested"])
             self.assertEqual([m.key for m in one], ["perf_src__nested"])
+
+
+class LoadLimitTests(unittest.TestCase):
+    """_load_limit wiring; hermetic (no compiler): subprocess.run and the lock helpers are mocked."""
+
+    def setUp(self):
+        import contextlib
+        import threading
+        self.lock = threading.Lock()
+        self.held = 0             # heavy slots held right now
+        self.excl = []            # exclusive lock names currently held
+        self.runs = []            # (kind, held slots, exclusive names) at every subprocess call
+        self.names = []
+        outer = self
+
+        @contextlib.contextmanager
+        def slot():
+            with outer.lock:
+                outer.held += 1
+            try:
+                yield
+            finally:
+                with outer.lock:
+                    outer.held -= 1
+
+        @contextlib.contextmanager
+        def excl(name, label=""):
+            outer.names.append((name, label))
+            outer.excl.append(name)
+            try:
+                yield
+            finally:
+                outer.excl.remove(name)
+
+        def fake_run(cmd, **kw):
+            with outer.lock:
+                outer.runs.append((Path(cmd[0]).name, outer.held, tuple(outer.excl)))
+            for i, a in enumerate(cmd):   # a "compiler" that writes its -o file
+                if a == "-o":
+                    Path(cmd[i + 1]).write_bytes(b"x")
+            return subprocess.CompletedProcess(cmd, 0, "", "")
+        for p in (mock.patch.object(bc.ll, "heavy_slot", slot), mock.patch.object(bc.ll, "exclusive", excl),
+                  mock.patch.object(bc.subprocess, "run", fake_run),
+                  mock.patch.object(bc, "find_tool", lambda c, n: f"/fake/{n}"),
+                  mock.patch.object(bc, "compiler_identity", lambda c: "fake-1")):
+            p.start()
+            self.addCleanup(p.stop)
+
+    def test_common_objects_compile_inside_heavy_slots(self):
+        with tempfile.TemporaryDirectory() as t:
+            t = Path(t)
+            kpm = make_kpm(t)
+            lib, err = bc.ensure_common_library(kpm, "/fake/g++", t / "cache")
+        self.assertIsNotNone(lib, err)
+        compiles = [r for r in self.runs if r[0] == "g++"]
+        self.assertEqual(len(compiles), 2)
+        self.assertTrue(all(held >= 1 for _, held, _ in compiles), compiles)
+        self.assertEqual(self.held, 0)
+
+    def test_dll_link_runs_inside_a_heavy_slot(self):
+        with tempfile.TemporaryDirectory() as t:
+            t = Path(t)
+            kpm = make_kpm(t)
+            stage = t / "stage" / "X"
+            stage.mkdir(parents=True)
+            (stage / "X.cpp").write_text("int x;\n")
+            (stage / "exports.def").write_text("EXPORTS\n")
+            res = bc.compile_mod(stage, "X", "/fake/g++", kpm, t / "libcommon.a")
+        self.assertIsNotNone(res.dll, res.stderr)
+        link = [r for r in self.runs if r[0] == "g++"]
+        self.assertEqual(len(link), 1)
+        self.assertGreaterEqual(link[0][1], 1)
+        dlltool = [r for r in self.runs if r[0] == "dlltool"]
+        self.assertEqual(len(dlltool), 1)
+
+    def test_check_mod_holds_the_key_dir_lock_for_staging_build_and_cleanup(self):
+        import hashlib
+        with tempfile.TemporaryDirectory() as t:
+            t = Path(t)
+            repo = make_repo(t)
+            kpm = make_kpm(t)
+            m = bc.discover(repo, kpm)[0]
+            build_root = t / "build"
+            seen = {}
+            real_stage, real_rmtree = bc.stage_mod, bc.shutil.rmtree
+
+            def stage(*a, **k):
+                seen["stage"] = tuple(self.excl)
+                return real_stage(*a, **k)
+
+            def compile_(*a, **k):
+                seen["compile"] = tuple(self.excl)
+                return bc.BuildResult(stderr="boom")
+
+            def rmtree(path, *a, **k):
+                seen["cleanup"] = tuple(self.excl)
+                return real_rmtree(path, *a, **k)
+            rep = sc.Reporter(out=None)
+            with mock.patch.object(bc, "stage_mod", stage), mock.patch.object(bc, "compile_mod", compile_), \
+                    mock.patch.object(bc.shutil, "rmtree", rmtree):
+                ok = bc.check_mod(rep, m, "/fake/g++", kpm, t / "lib.a", repo / "patch_manager_mods" / "_shared_src",
+                                  build_root, keep=False, err_stream=None)
+            self.assertFalse(ok)
+            key_dir = build_root / m.key
+            want = "build-" + hashlib.sha1(str(key_dir.resolve()).encode()).hexdigest()[:12]
+            self.assertEqual(self.names, [(want, f"build {m.key}")])
+            for step in ("stage", "compile", "cleanup"):
+                self.assertEqual(seen[step], (want,), step)
+            self.assertEqual(self.excl, [])
+
+    def test_same_build_root_same_lock_different_root_different_lock(self):
+        import hashlib
+        with tempfile.TemporaryDirectory() as t:
+            t = Path(t)
+            repo, kpm = make_repo(t), make_kpm(t)
+            m = bc.discover(repo, kpm)[0]
+            for root in ("b1", "b1", "b2"):
+                with mock.patch.object(bc, "compile_mod", lambda *a, **k: bc.BuildResult(stderr="x")):
+                    bc.check_mod(sc.Reporter(out=None), m, "/fake/g++", kpm, t / "lib.a",
+                                 repo / "patch_manager_mods" / "_shared_src", t / root, keep=False, err_stream=None)
+        locks = [n for n, _ in self.names]
+        self.assertEqual(locks[0], locks[1])
+        self.assertNotEqual(locks[0], locks[2])
+
+    def test_main_lowers_priority_once_at_start(self):
+        with mock.patch.object(bc.ll, "lower_priority") as lp, mock.patch.object(bc, "run", return_value=[]):
+            bc.main(["--quiet", "--repo", tempfile.gettempdir()])
+        lp.assert_called_once_with()
 
 
 if __name__ == "__main__":

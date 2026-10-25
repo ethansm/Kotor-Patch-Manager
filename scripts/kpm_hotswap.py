@@ -33,6 +33,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import kpm_status as ks  # noqa: E402
 import _static_common as sc  # noqa: E402
+import _load_limit as ll  # noqa: E402
 try:
     import master_ledger as ml
 except ImportError:
@@ -47,6 +48,7 @@ CONFIG_FILES = ("patch_config.toml", "kpm_install_state.json")
 MANIFEST_NAME = "swap_manifest.json"
 HARD_REFUSE = ("NOT-LIVE", "DIRTY", "REINSTALL", "LIVE-OTHER")
 REINSTALL_DOC = "patch_manager_mods/BUILD_AND_INSTALL.md (kotor2-kpm-install skill)"
+GATE_RECORDS = ll.TMP / "gate-records"   # pre_install_gate.py writes <mod_id>.json here on GATE PASS
 
 
 # ---------------------------------------------------------------- small helpers
@@ -243,8 +245,11 @@ def run_create_patch(kd, kpm):
     """create-patch.py is the only builder. Returns (rc, tail of output)."""
     with tempfile.TemporaryDirectory(prefix="kpm_dbs_") as t:
         env = dict(os.environ, KPATCH_ADDRESS_DATABASES=str(address_db_dir(kpm, Path(t) / "dbs")))
-        p = subprocess.run([sys.executable, str(kpm / "Patches/create-patch.py")], cwd=kd, env=env,
-                           capture_output=True, text=True)
+        # create-patch.py: its common-library cache is not safe against a cold cache run concurrently, and it starts a
+        # default-sized thread pool, so one run at a time machine-wide.
+        with ll.exclusive("create-patch", "KPM create-patch.py"):
+            p = subprocess.run([sys.executable, str(kpm / "Patches/create-patch.py")], cwd=kd, env=env,
+                               capture_output=True, text=True)
     return p.returncode, "\n".join((p.stdout + p.stderr).splitlines()[-15:])
 
 
@@ -267,6 +272,168 @@ def prepare(pid, row, src, kpm, tag):
     if rc != 0:
         return False, f"{pid}: create-patch.py failed (rc={rc}); old kpatch kept as .{tag}_pre.bak\n{tail}", copied
     return True, "", copied
+
+
+# ---------------------------------------------------------------- gate cross-check (report only, never fatal)
+
+def _pe_layout(b):
+    """(e_lfanew, optional-header offset, section-table offset, section count) of a PE32 image; ValueError if not one."""
+    if len(b) < 0x40 or b[:2] != b"MZ":
+        raise ValueError("not an MZ image")
+    e, = struct.unpack_from("<I", b, 0x3C)
+    if e + 24 + 96 > len(b) or b[e:e + 4] != b"PE\0\0":
+        raise ValueError("no PE header")
+    nsec, = struct.unpack_from("<H", b, e + 6)
+    opt_size, = struct.unpack_from("<H", b, e + 20)
+    o = e + 24
+    if struct.unpack_from("<H", b, o)[0] != 0x10B:
+        raise ValueError("not PE32")
+    return e, o, o + opt_size, nsec
+
+
+def _rva_to_off(b, so, nsec, rva):
+    for i in range(nsec):
+        _n, vs, va, rs, rp = struct.unpack_from("<8sIIII", b, so + i * 40)
+        if va <= rva < va + max(vs, rs):
+            return rp + rva - va
+    return None
+
+
+def normalize_pe(data):
+    """(normalised bytes, ImageBase) of a PE32 DLL, so two builds of the same sources compare equal.
+
+    Zeroed: COFF TimeDateStamp (e_lfanew+8), optional-header CheckSum (e_lfanew+24+64), and, because MinGW's ld picks a
+    random ImageBase per link (dynamicbase), the ImageBase itself, the export directory TimeDateStamp, and the rebase
+    of every HIGHLOW entry of the .reloc table (so absolute pointers read as base-relative). Not a PE: unchanged, base 0.
+    """
+    b = bytearray(data)
+    try:
+        e, o, so, nsec = _pe_layout(b)
+        base, = struct.unpack_from("<I", b, o + 28)
+        b[e + 8:e + 12] = bytes(4)
+        b[o + 64:o + 68] = bytes(4)
+        b[o + 28:o + 32] = bytes(4)
+        ndirs, = struct.unpack_from("<I", b, o + 92)
+        if ndirs > 0:
+            rva, = struct.unpack_from("<I", b, o + 96)
+            off = _rva_to_off(b, so, nsec, rva) if rva else None
+            if off is not None:
+                b[off + 4:off + 8] = bytes(4)
+        if ndirs > 5:
+            rva, size = struct.unpack_from("<II", b, o + 96 + 5 * 8)
+            off = _rva_to_off(b, so, nsec, rva) if rva else None
+            end = off + size if off is not None else 0
+            while off is not None and off + 8 <= end:
+                page, blk = struct.unpack_from("<II", b, off)
+                if blk < 8:
+                    break
+                for k in range(off + 8, min(off + blk, end), 2):
+                    w, = struct.unpack_from("<H", b, k)
+                    if w >> 12 == 3:   # IMAGE_REL_BASED_HIGHLOW
+                        t = _rva_to_off(b, so, nsec, page + (w & 0xFFF))
+                        if t is not None and t + 4 <= len(b):
+                            struct.pack_into("<I", b, t, (struct.unpack_from("<I", b, t)[0] - base) & 0xFFFFFFFF)
+                off += blk
+        return bytes(b), base
+    except (ValueError, struct.error):
+        return bytes(data), 0
+
+
+def normalized_md5(data):
+    """md5 of normalize_pe(data). Equal for builds that differ only in the PE header stamps / rebased pointers."""
+    return full_md5(normalize_pe(data)[0])
+
+
+def dlls_equivalent(a, b):
+    """True if two builds of the same sources are the same code. After normalize_pe, a rel32 call/jmp to a fixed address
+    outside the DLL (the game exe) still differs by exactly the difference of the two ImageBases; those 4-byte windows
+    are accepted, any other difference is not."""
+    (na, ba), (nb, bb) = normalize_pe(a), normalize_pe(b)
+    if na == nb:
+        return True
+    if len(na) != len(nb) or ba == bb:
+        return False
+    delta = (bb - ba) & 0xFFFFFFFF
+    i, n = 0, len(na)
+    while i < n:
+        if na[i] == nb[i]:
+            i += 1
+            continue
+        for s in range(max(i - 3, 0), i + 1):   # the window must cover i
+            if s + 4 <= n and (struct.unpack_from("<I", na, s)[0] - struct.unpack_from("<I", nb, s)[0]) & 0xFFFFFFFF == delta:
+                i = s + 4
+                break
+        else:
+            return False
+    return True
+
+
+def _record_time(v):
+    """Epoch seconds from a gate record "time" (epoch number or ISO-8601 string); None if unreadable."""
+    if isinstance(v, (int, float)):
+        return float(v)
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        pass
+    try:
+        return datetime.datetime.fromisoformat(str(v)).timestamp()
+    except ValueError:
+        return None
+
+
+def newest_source(src):
+    """(mtime, relative path) of the newest production file in a mod source dir (same walk as mirror()), or (0, '')."""
+    best = (0.0, "")
+    for root, dirs, files in os.walk(src):
+        dirs[:] = sorted(d for d in dirs if not d.startswith(".") and d not in MIRROR_SKIP_DIRS
+                         and not (Path(root) / d / "manifest.toml").exists())
+        for name in files:
+            if ks.is_production(name):
+                f = Path(root) / name
+                try:
+                    t = f.stat().st_mtime
+                except OSError:
+                    continue
+                if t > best[0]:
+                    best = (t, f.relative_to(src).as_posix())
+    return best
+
+
+def gate_cross_check(pid, kd, src, records=None):
+    """Compare the DLL in the freshly rebuilt kpatch with the one pre_install_gate.py built and passed. Returns the
+    report lines (GATE / WARN / NOTE); never raises, never changes the exit code."""
+    try:
+        rec_path = Path(records if records is not None else GATE_RECORDS) / f"{pid}.json"
+        if not rec_path.is_file():
+            return [f"NOTE  {pid}: no gate record"]
+        rec = json.loads(rec_path.read_text())
+        kps = sorted(Path(kd).glob("*.kpatch")) if kd else []
+        if not kps:
+            return [f"NOTE  {pid}: no kpatch to compare with the gate record"]
+        new = kpatch_dll(kps[0])
+        want, head = str(rec.get("md5", "")).lower(), rec.get("head", "unknown")
+        lines, same, gone = [], False, False
+        if want in (full_md5(new), normalized_md5(new)):
+            same = True
+        elif rec.get("dll") and Path(rec["dll"]).is_file():
+            same = dlls_equivalent(Path(rec["dll"]).read_bytes(), new)
+        else:
+            gone = True
+        if same:
+            lines.append(f"GATE  {pid}: fresh DLL matches the gated build (gate head {head})")
+        elif gone:
+            lines.append(f"NOTE  {pid}: gate DLL {rec.get('dll') or '(none recorded)'} is gone; only the raw md5 could be "
+                         f"compared and it differs (gate {want[:12]} at {head}; ImageBase is randomised per link)")
+        else:
+            lines.append(f"WARN  {pid}: rebuilt DLL differs from the gated build (gate {want} at {head}); re-run pre_install_gate")
+        rt = _record_time(rec.get("time"))
+        newest, name = newest_source(src)
+        if rt is not None and newest > rt:
+            lines.append(f"WARN  {pid}: gate record is older than the source ({name}); stale gate, re-run pre_install_gate")
+        return lines
+    except Exception as e:   # report-only: a broken record must never fail a prepare
+        return [f"NOTE  {pid}: gate cross-check skipped ({type(e).__name__}: {e})"]
 
 
 # ---------------------------------------------------------------- swap
@@ -493,6 +660,7 @@ def commit_kpm(pids, rows, kpm):
 # ---------------------------------------------------------------- main
 
 def main(argv=None):
+    ll.lower_priority()
     ap = argparse.ArgumentParser(description="Batched KPM DLL hot-swap with backup and rollback (kpm_status.py is the gate).")
     ap.add_argument("--mod", nargs="+", action="extend", default=[], metavar="MOD", help="patch id, src dir name or KPM folder name")
     ap.add_argument("--prepare", action="store_true", help="mirror production files to KPM and rebuild MIRROR/REBUILD mods")
@@ -575,6 +743,9 @@ def main(argv=None):
             return 1
         print("after prepare: " + " ".join(f"{pid}={r['verdict']}" for pid, r in rows.items()))
         print(f"PREPARE SUCCESS: {len(needs_prep)} mod(s) mirrored and rebuilt.")
+        for pid in needs_prep:   # report only: is the rebuilt DLL the one pre_install_gate passed?
+            for line in gate_cross_check(pid, rows[pid].get("kpm"), manifests[pid].parent):
+                print(line)
         if swappable:
             print(f"  Ready for --apply (hot-swap): {', '.join(swappable)}")
         if reinstall:
