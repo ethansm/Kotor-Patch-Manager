@@ -203,6 +203,7 @@ inline PreviewLayout previewLayout(const RowRect& pane, int enabled, int maxIcon
     if (pillPad < 0) pillPad = 0;
     const int nameW = pane.w < nameWBase ? pane.w : nameWBase;
     const int nameH = pane.h < nameHBase ? pane.h : nameHBase;
+    if (pillPad > gapPx + nameH) pillPad = gapPx + nameH;   // the pill's lower padding must stay inside the block (the block ends at the name bar's bottom)
     const int s = iconPx > 0 ? iconPx : nameHBase;
     const int pad = backing ? pillPad : 0;
     int n = enabled ? maxIcons : 0;
@@ -321,6 +322,7 @@ inline CfgRaw sanitize(CfgRaw c) {
     c.verbose = clampInt(c.verbose, 0, 1);
     c.maxIcons = clampInt(c.maxIcons, 1, kMaxIcons);
     c.iconSize = clampInt(c.iconSize, 0, 256);
+    if (c.iconSize > 0 && c.iconSize < 4) c.iconSize = 0;   // layoutRow hides the row below 4 px: treat 1..3 as auto so the HUD and the preview agree
     c.gap = clampInt(c.gap, 0, 200);
     c.spacing = clampInt(c.spacing, 0, 100);
     c.tierObvious = clampInt(c.tierObvious, 0, 127);

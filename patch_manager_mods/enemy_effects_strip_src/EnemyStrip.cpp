@@ -276,8 +276,8 @@ void logMenu(uintptr_t menu) {
     KP_LOGV(chTarget, KPLOG_INFO, "%s", hp.b);
 }
 
-// Client creature -> server creature, or 0. The client pointer must be non-zero, not the invalid id, and its vtable readable
-// before the engine accessor is called (MemberServerCreature thiscall, through Party.h).
+// Client creature -> server creature, or 0. The client pointer must be non-zero, not the invalid id, and its first dword (the vtable pointer)
+// readable and non-zero before the engine accessor is called (MemberServerCreature thiscall, through Party.h).
 uintptr_t resolveServer(uintptr_t client) {
     if (!client || client == InvalidObj) return 0;
     uint32_t vt = 0;
@@ -622,7 +622,7 @@ bool g_built = false;       // pool complete for g_panel
 int32_t g_panel = 0;        // HUD panel the pool belongs to (identity guard against a stale HUD)
 bool g_buildFailLogged = false;
 
-// resref -> image, 16 entries (round-robin replacement). A null image is cached too and warns once per entry creation.
+// resref -> image, 16 entries (round-robin replacement). A null image is cached too and warns once per resref per session (takeWarn).
 struct ImgEnt { char name[20]; void* img; };
 ImgEnt g_imgs[ImgCacheN];
 int g_nImgs = 0, g_imgNext = 0;
@@ -997,8 +997,10 @@ struct SettingsPage {
     int dirtyShown = -1;                // Save button text on screen: -1 unknown, 0 "Save", 1 "Save *"
     int drag = -1;                      // slider row being dragged, -1 none
     bool lprev = false;                 // left button state last tick (press edge)
+    char lastText[esl::S_Count][64];    // row text last sent to mod-config (SetText only on change); emptied on page enter
+    void clearText() { for (auto& t : lastText) t[0] = '\0'; }
     void reset() {
-        panel = nullptr; page = 0;
+        panel = nullptr; page = 0; clearText();
         for (int i = 0; i < esl::S_Count; ++i) { text[i] = prev[i] = next[i] = fill[i] = thumb[i] = -1; track[i] = { 0, 0, 0, 0 }; }
         save = rst = defs = -1; dirtyShown = -1; drag = -1; lprev = false;
     }
@@ -1016,12 +1018,16 @@ const char* const kPreviewBarText = "Sith Assassin";
 struct Preview {
     Wid w[PvN];
     int32_t item[PvN];
+    void* origFill[PvN];        // each label's own fill (border+0x74) as created; restored before a free (the dtor deletes what sits there)
+    bool origSet[PvN];
     int n = 0;                  // controls listed on the page (the first n of w[])
     bool on = false;            // every control listed and the description split is active: the preview draws
     bool paneWarned = false;
     void reset() {
         for (Wid& x : w) x = Wid();
         for (int32_t& i : item) i = -1;
+        for (void*& f : origFill) f = nullptr;
+        for (bool& b : origSet) b = false;
         n = 0; on = false; paneWarned = false;
     }
 } g_pv;
@@ -1101,6 +1107,7 @@ void buildPreview(void* panel, uint32_t page) {
     for (; made < PvN; ++made) {
         const char* what = made == PvBar ? "bar" : (made == PvPill ? "pill" : ((made == PvHealth || made == PvHealth2) ? "health" : ((made - 2) % 2 == 0 ? "icon" : "overlay")));
         if (!makeWid(pn, tmp[made], what, made, "LBL_TITLE", false)) break;
+        g_pv.origSet[made] = guikit::getFill(tmp[made].c, &g_pv.origFill[made]);   // before refreshPreview ever pools an image into it
         if (made != PvBar) guikit::setText(tmp[made].c, "");   // the clone carries the Options title text ("OPTIONS"): blank it so it never shows over an icon
     }
     int listed = 0;
@@ -1124,9 +1131,11 @@ void buildPreview(void* panel, uint32_t page) {
 }
 
 // Options dtor, after mod-config unlinked its controls: the preview labels it listed MUI_NOFREE are LEAKED on purpose (kFreePreviewLabels).
-// 2026-10-22 crash: releaseUnlinkedLabel -> label dtor 0x7510b0 -> CSWGuiBorder dtor 0x414c60 called vtable[1] of an owned sub-object (label+0xCC/+0xD0)
-// that had already been freed and reused (object vtable 0x98C1F4, a CRT class), EIP 0x9BB0F0 in .rdata. Who freed it first is unproven, so the
-// labels (about 14 x 0x130 bytes per Options open, already unlinked from the panel) are no longer freed. Flip the constant to re-test.
+// 2026-10-22 crash: releaseUnlinkedLabel -> label dtor -> border dtor called a method of an image object that was already deleted (a freed block
+// reused by a CRT object). Most likely cause (same crash as combat-hotbar 10-21, see PreviewCanvas.h destroy): refreshPreview pools SHARED images
+// into border+0x74 and the dtor deletes whatever sits there, so the first label freed deletes the image for all. The restore below
+// (origFill) addresses that, but it is unproven in game, so the labels (14 x ~0x130 bytes per Options open, already unlinked) stay leaked.
+// Flip the constant to true and play-test (open the page, close Options, repeat 3x) to stop the leak.
 constexpr bool kFreePreviewLabels = false;
 void destroyPreview() {
     int freed = 0, kept = 0, leaked = 0;
@@ -1135,6 +1144,9 @@ void destroyPreview() {
             if (!g_pv.w[i].c) continue;
             if (g_mcMenu.p->Control(g_pg.page, g_pv.item[i])) { ++kept; continue; }
             if (!kFreePreviewLabels) { ++leaked; continue; }
+            // refreshPreview pooled shared images into border+0x74 and the label dtor deletes that image: give the label its own fill back first
+            // (null when it could not be read: a small leak, never a delete of a shared image). Same rule as pvc::Canvas::destroy.
+            guikit::setFill(g_pv.w[i].c, g_pv.origSet[i] ? g_pv.origFill[i] : nullptr);
             guikit::releaseUnlinkedLabel(g_pv.w[i].c, guikit::LabelVtable);
             ++freed;
         }
@@ -1173,7 +1185,9 @@ void refreshRow(int s) {
     if (!g_mcMenu.ok() || !g_pg.page || g_pg.text[s] < 0) return;
     char b[64];
     rowText(s, b, static_cast<int>(sizeof b));
+    if (!strcmp(b, g_pg.lastText[s])) return;   // change-only: refreshAll runs every tick
     g_mcMenu.p->SetText(g_pg.page, g_pg.text[s], b);
+    snprintf(g_pg.lastText[s], sizeof g_pg.lastText[s], "%s", b);
 }
 
 // ---- slider rows (alpha): three labels in draw order: the groove (the framed pill art, so it looks like the page's buttons), the fill bar and the
@@ -1334,6 +1348,7 @@ void KPATCH_CALL cbEnter(uint32_t page, void*) {
     g_pg.drag = -1;
     g_pg.lprev = false;
     g_pg.dirtyShown = -1;
+    g_pg.clearText();   // mod-config may have reset the row texts while the page was away
     K2MuiRect col = { 0, 0, 0, 0 };
     if (ui->PaneRect(g_pg.panel, MUI_PANE_COLUMN, &col) && col.w > 0 && col.h > 0) {
         const int slotH = col.h * 32 / 284, pitch = col.h * 36 / 284;
@@ -1494,7 +1509,7 @@ __declspec(dllexport) void __cdecl KPatchInit(const KPatchApi* api) {
     g_pg.reset();
     g_mcCfg.init(api);
     g_mcMenu.init(api);
-    KP_LOGV(chMain, KPLOG_INFO, "enemy-effects-strip 0.4.9-dev loaded (Enabled=%d Verbose=%d MaxIcons=%d)", g_cfg.enabled ? 1 : 0, g_cfg.verbose ? 1 : 0, g_cfg.maxIcons);
+    KP_LOGV(chMain, KPLOG_INFO, "enemy-effects-strip 0.4.10-dev loaded (Enabled=%d Verbose=%d MaxIcons=%d)", g_cfg.enabled ? 1 : 0, g_cfg.verbose ? 1 : 0, g_cfg.maxIcons);
     g_hud.add(K2HUD_BUILD, 300, onHudBuild);
     g_hud.add(K2HUD_TARGET_MENU_POST, 100, onTargetMenuPost);
     g_hud.connect();

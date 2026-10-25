@@ -285,7 +285,9 @@ static void testConfig() {
     { CfgRaw r; r.iconSize = -1; KT_CHECK_EQ(sanitize(r).iconSize, 0);
       r.iconSize = 0; KT_CHECK_EQ(sanitize(r).iconSize, 0);
       r.iconSize = 256; KT_CHECK_EQ(sanitize(r).iconSize, 256);
-      r.iconSize = 257; KT_CHECK_EQ(sanitize(r).iconSize, 256); }
+      r.iconSize = 257; KT_CHECK_EQ(sanitize(r).iconSize, 256);
+      // 1..3 px would hide the HUD row (layoutRow needs >= 4) while the preview still drew it: they mean auto. 4 stays.
+      r.iconSize = 1; KT_CHECK_EQ(sanitize(r).iconSize, 0); r.iconSize = 3; KT_CHECK_EQ(sanitize(r).iconSize, 0); r.iconSize = 4; KT_CHECK_EQ(sanitize(r).iconSize, 4); }
     // Gap 0..200.
     { CfgRaw r; r.gap = -1; KT_CHECK_EQ(sanitize(r).gap, 0);
       r.gap = 200; KT_CHECK_EQ(sanitize(r).gap, 200);
@@ -528,7 +530,11 @@ static void testPreview() {
       KT_CHECK(rr(p.name, 100, 112, 200, 24));
       KT_CHECK(rr(p.row.icon[0], 92, 68, 40, 40));
       KT_CHECK(rr(p.row.pill, 88, 64, 224, 48)); }
-    // 10. Sweep: whatever the pane and settings, every rect drawn stays inside the pane (icons, pill when drawn, name bar).
+    // 9b. Huge pill padding (INI BackingPad 32, gap 0): the pill used to hang 8 px below a 80 px pane (bottom 88).
+    { const RowRect sh = { 0, 0, 300, 80 };
+      PreviewLayout p = previewLayout(sh, 1, 1, 24, 0, 4, 32, true);
+      KT_CHECK(p.ok && p.n == 1 && p.pill && insideRect(p.row.pill, sh) && insideRect(p.name, sh)); }
+        // 10. Sweep: whatever the pane and settings, every rect drawn stays inside the pane (icons, pill when drawn, name bar).
     { int bad = 0, shown = 0;
       const int ws[] = { 1, 7, 50, 99, 100, 151, 200, 201, 333, 640 }, hs[] = { 1, 9, 24, 30, 51, 52, 56, 100, 223, 500 };
       const int is[] = { 0, 4, 16, 17, 31, 64 }, gs[] = { 0, 4, 13 }, ss[] = { 0, 3, 4 }, ms[] = { 0, 1, 3, 5, 8 };
