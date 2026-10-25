@@ -455,6 +455,21 @@ class RealGitScope(unittest.TestCase):
         self.assertIn("INFO  step 1 also scopes 1 dirty shared file(s): patch_manager_mods/_shared_src/Shared.h",
                       buf.getvalue())
 
+    def test_dirty_files_outside_include_closure_not_scoped(self):
+        (self.repo / "patch_manager_mods/a_src/sub/x.cpp").write_text('#include "../../b_src/B.cpp"\n')
+        (self.repo / "patch_manager_mods/b_src/B.cpp").write_text("// changed, included by a_src\n")
+        (self.repo / "patch_manager_mods/b_src/Other.h").write_text("// untracked, not included\n")
+        (self.repo / "patch_manager_mods/_shared_src/Shared.h").write_text("// changed, never included\n")
+        runner, calls = scoped_runner(PLAN, LISTING)
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            g.scoped_ids(["a_src/sub"], Path(self.td.name) / "scr", runner, self.repo)
+        compat = calls[0]
+        self.assertIn("patch_manager_mods/b_src/B.cpp", compat)             # in the include closure
+        self.assertIn("patch_manager_mods/_shared_src/Shared.h", compat)    # shared: its includers' tests count
+        self.assertNotIn("patch_manager_mods/b_src/Other.h", compat)
+        self.assertIn("1 dirty file(s) outside the gated mods' include closure not scoped", buf.getvalue())
+
     def test_include_closure_follows_nested_shared_includes(self):
         (self.repo / "patch_manager_mods/a_src/sub/x.cpp").write_text('#include "Shared.h"\n#include <vector>\n')
         (self.repo / "patch_manager_mods/_shared_src/Shared.h").write_text('#include "Deep.h"\n')

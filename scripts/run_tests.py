@@ -204,6 +204,12 @@ def run_cmd(cmd, cwd, env=None, timeout=300):
     return "FAIL", f"exit {rc}", text
 
 
+def suite_lock_name(item: Item) -> str:
+    """Per checkout and suite (bins live in each checkout's tree); only [A-Za-z0-9_.-] reach the lock file name."""
+    name = re.sub(r"[^A-Za-z0-9_.-]", "_", item.id.split(":", 1)[-1])
+    return f"suite-{hashlib.sha1(str(REPO).encode()).hexdigest()[:8]}-{name}"
+
+
 def execute(item: Item) -> Result:
     """The one build-then-run code path shared by every kind of item (and --selftest)."""
     t0 = time.monotonic()
@@ -227,7 +233,10 @@ def execute(item: Item) -> Result:
         # Known limit (accepted): every suite holds one slot for its whole run, even non-compiling ones, and build_check's
         # children (jobs=4) compile inside that single slot, so the machine-wide cap is leaky there.
         held = getattr(_load_limit, "SLOT_HELD_ENV", {"KOTOR_SLOT_HELD": "1"})   # children (build_check) reuse our slot
-        with _load_limit.heavy_slot():
+        # One run of a given suite machine-wide: the level-up parity suites build *_bin files next to their sources in
+        # the repo, so two runs at once hit "Text file busy" (10-25, two concurrent gates). Lock first, then the slot,
+        # so a waiting suite holds no slot.
+        with _load_limit.exclusive(suite_lock_name(item), item.id), _load_limit.heavy_slot():
             st, why, out = run_cmd(item.cmd, item.cwd, {**item.env, **held}, item.timeout)
     else:
         st, why, out = run_cmd(item.cmd, item.cwd, item.env, item.timeout)

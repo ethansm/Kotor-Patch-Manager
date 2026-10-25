@@ -236,7 +236,7 @@ SHARED_PREFIXES = ("patch_manager_mods/_shared_src/", "tests/include/")
 HEADER_EXTS = {".h", ".hpp", ".inc", ".cpp"}
 
 
-def include_closure(files, repo: Path = REPO):
+def include_closure(files, repo: Path = REPO, shared_only: bool = True):
     """Quoted/angle #includes of `files`, resolved recursively with compat_graph's rules, that land in
     patch_manager_mods/_shared_src or tests/include (repo-relative, sorted). compat_check only walks REVERSE includes
     from the files it is given, so the tests of the shared headers a mod compiles are selected by passing the headers
@@ -269,7 +269,7 @@ def include_closure(files, repo: Path = REPO):
                 rel = res.relative_to(root).as_posix()
             except ValueError:
                 continue
-            if rel.startswith(SHARED_PREFIXES):
+            if not shared_only or rel.startswith(SHARED_PREFIXES):
                 found.add(rel)
             stack.append(res)
     return sorted(found)
@@ -343,6 +343,19 @@ def scoped_ids(mods, scratch: Path, runner=run, repo: Path = REPO):
     if dirty is None:
         print("WARN  step 1: git status failed")
         return None
+    # Other sessions' dirty files elsewhere (tools, other mods) cannot change the gated build or its tests unless the
+    # gated sources include them: keep dirty shared headers (their includers' tests) and dirty files in the include
+    # closure; the rest is INFO (it used to pull e.g. 165 s of unrelated k1_port py tests into every gate).
+    # Known limit: only #include edges count here, not py imports or provider fan-out (no DLL mod pair needs them today).
+    reach = include_closure(files, repo, shared_only=False)
+    if reach is None:
+        return None
+    reach = set(reach)
+    skipped = [f for f in dirty if not f.startswith(SHARED_PREFIXES) and f not in reach]
+    dirty = [f for f in dirty if f not in skipped]
+    if skipped:
+        print(f"INFO  step 1: {len(skipped)} dirty file(s) outside the gated mods' include closure not scoped: "
+              f"{', '.join(skipped[:3])}" + (", ..." if len(skipped) > 3 else ""))
     if dirty:
         print(f"INFO  step 1 also scopes {len(dirty)} dirty shared file(s): {', '.join(dirty[:5])}"
               + (", ..." if len(dirty) > 5 else ""))

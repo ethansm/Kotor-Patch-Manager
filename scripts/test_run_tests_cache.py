@@ -362,6 +362,27 @@ class SlotsAndWine(unittest.TestCase):
             rt.execute(rt.Item(id="py:x", kind="py", cmd=["true"]))
             self.assertEqual(calls, ["in", "out"])
 
+    def test_suite_runs_under_its_own_lock_before_the_slot(self):
+        calls = []
+
+        class Ctx:
+            def __init__(s, tag):
+                s.tag = tag
+
+            def __enter__(s):
+                calls.append(s.tag)
+
+            def __exit__(s, *a):
+                calls.append("/" + s.tag)
+        with mock.patch.object(rt._load_limit, "heavy_slot", lambda: Ctx("slot")), \
+                mock.patch.object(rt._load_limit, "exclusive", lambda name, label="": Ctx(name)), \
+                mock.patch.object(rt, "run_cmd", lambda *a, **k: ("OK", "", "")):
+            rt.execute(rt.Item(id="suite:levelup-scenarios", kind="suite", cmd=["true"]))
+        lock = rt.suite_lock_name(rt.Item(id="suite:levelup-scenarios", kind="suite"))
+        self.assertEqual(calls, [lock, "slot", "/slot", "/" + lock])
+        self.assertTrue(lock.endswith("-levelup-scenarios"))
+        self.assertEqual(rt.suite_lock_name(rt.Item(id="suite:a/b c", kind="suite")).rsplit("-", 1)[1], "a_b_c")
+
     def test_suite_env_carries_slot_held(self):
         seen = {}
 
