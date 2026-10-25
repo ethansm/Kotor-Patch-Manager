@@ -1,4 +1,4 @@
-// K2GrassDrawDistance.cpp -- K2 Grass Draw Distance (0.1.2-dev)
+// K2GrassDrawDistance.cpp -- K2 Grass Draw Distance (0.1.3-dev)
 // Extends grass octree build/collect radius, fade-start/fade-end distances, alpha-test threshold,
 // and decouples CPU wind animation radius (one operand rewrite at KPatchInit, code_patches.toml).
 #define WIN32_LEAN_AND_MEAN
@@ -118,7 +118,7 @@ void perfSample(unsigned now) {
     }
     int32_t bins = 0;
     if (!saferead::readAt<int32_t>(4, AddrGrassPrevBinCount, 0, &bins) || bins < 0) bins = 0;
-    g_perf.add(static_cast<uint32_t>(bins));
+    g_perf.add(static_cast<uint32_t>(bins), now);
     if (!g_perf.due(now)) return;
     KP_LOG(chPerf,
            "PERF fps=%.1f frames=%u bins_avg=%.0f bins_max=%u end=%.0fm start=%.0fm wind=%.0fm alpha=%.2f",

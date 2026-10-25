@@ -10,15 +10,15 @@
 static void test_defaults_and_effective_math() {
     k2grass::Config def{};
     KT_CHECK(def.enabled);
-    KT_CHECK(std::fabs(def.fadeStartDist - 45.0f) < 1e-5f);
-    KT_CHECK(std::fabs(def.fadeEndDist - 90.0f) < 1e-5f);
+    KT_CHECK(std::fabs(def.fadeStartDist - 120.0f) < 1e-5f);
+    KT_CHECK(std::fabs(def.fadeEndDist - 150.0f) < 1e-5f);
     KT_CHECK(std::fabs(def.windDist - 20.0f) < 1e-5f);
     KT_CHECK(std::fabs(def.alphaCutoff - 0.40f) < 1e-5f);
     KT_CHECK(def.perfLog);
 
     k2grass::EffectiveValues ev = k2grass::computeEffective(def);
-    KT_CHECK(std::fabs(ev.fadeStartSq - 2025.0f) < 1e-3f);
-    KT_CHECK(std::fabs(ev.fadeEndSq - 8100.0f) < 1e-3f);
+    KT_CHECK(std::fabs(ev.fadeStartSq - 14400.0f) < 1e-3f);
+    KT_CHECK(std::fabs(ev.fadeEndSq - 22500.0f) < 1e-3f);
     KT_CHECK(std::fabs(ev.windDistSq - 400.0f) < 1e-3f);
     KT_CHECK(std::fabs(ev.alphaCutoff - 0.40f) < 1e-5f);
 
@@ -31,15 +31,16 @@ static void test_defaults_and_effective_math() {
     KT_CHECK(std::fabs(vEv.windDistSq - 225.0f) < 1e-3f);
     KT_CHECK(std::fabs(vEv.alphaCutoff - 0.40f) < 1e-5f);
 
-    // Vanilla alpha-test clip (~25.10m) vs default 3x scale with the same cutoff (3 x 25.10 = ~75.30m).
+    // Vanilla alpha-test clip (~25.10m) vs default 120..150m with the same cutoff: sqrt(14400 + 0.6 x 8100) = ~138.78m.
     const float vanillaClip = k2grass::effectiveClipDistMeters(vEv);
     const float extClip = k2grass::effectiveClipDistMeters(ev);
     KT_CHECK(vanillaClip > 25.0f && vanillaClip < 25.2f);
-    KT_CHECK(extClip > 75.2f && extClip < 75.4f);
+    KT_CHECK(extClip > 138.7f && extClip < 138.9f);
 
     // A 0.20 cutoff on a 60..90 window clips at sqrt(7200) = ~84.85m.
     k2grass::Config soft = def;
     soft.fadeStartDist = 60.0f;
+    soft.fadeEndDist = 90.0f;
     soft.alphaCutoff = 0.20f;
     const float softClip = k2grass::effectiveClipDistMeters(k2grass::computeEffective(soft));
     KT_CHECK(softClip > 84.8f && softClip < 84.9f);
@@ -48,6 +49,7 @@ static void test_defaults_and_effective_math() {
 static void test_bin_alpha_curve() {
     k2grass::Config def{};
     def.fadeStartDist = 60.0f;
+    def.fadeEndDist = 90.0f;
     k2grass::EffectiveValues ev = k2grass::computeEffective(def); // 3600 .. 8100
 
     KT_CHECK(std::fabs(k2grass::computeBinAlpha(0.0f, ev) - 1.0f) < 1e-5f);
@@ -125,8 +127,8 @@ static void test_perf_window() {
     k2grass::PerfWindow w{};
     w.reset(1000);
     KT_CHECK(!w.due(1000));
-    w.add(400);
-    w.add(600);
+    w.add(400, 1000);
+    w.add(600, 1900);
     KT_CHECK(!w.due(5999));
     KT_CHECK(w.due(6000));
     KT_CHECK_EQ(w.frames, 2u);
@@ -135,8 +137,20 @@ static void test_perf_window() {
     KT_CHECK(std::fabs(w.fps(6000) - 0.4f) < 1e-4f);
     // GetTickCount wrap: start near UINT_MAX, now past zero.
     w.reset(0xFFFFF000u);
-    w.add(1);
+    w.add(1, 0xFFFFF000u);
     KT_CHECK(w.due(0x00000400u + 0x1000u));
+    // A grass gap over kPerfGapMs (menu, area load) drops the partial window instead of diluting fps.
+    w.reset(10000);
+    w.add(500, 10000);
+    w.add(500, 11000);           // exactly the gap limit: kept
+    KT_CHECK_EQ(w.frames, 2u);
+    w.add(700, 12001);           // 1001 ms gap: window restarts at this frame
+    KT_CHECK_EQ(w.frames, 1u);
+    KT_CHECK_EQ(w.startMs, 12001u);
+    KT_CHECK_EQ(w.binsMax, 700u);
+    for (unsigned t = 12017; t < 17001; t += 17) w.add(700, t);
+    KT_CHECK(w.due(17001));
+    KT_CHECK(w.fps(17001) > 58.0f && w.fps(17001) < 60.0f);
     w.reset(7000);
     KT_CHECK_EQ(w.frames, 0u);
     KT_CHECK_EQ(w.startMs, 7000u);

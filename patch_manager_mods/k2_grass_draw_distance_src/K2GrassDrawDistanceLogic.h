@@ -12,7 +12,7 @@
 namespace k2grass {
 
 constexpr const char* kModId = "k2-grass-draw-distance";
-constexpr const char* kVersion = "0.1.2-dev";
+constexpr const char* kVersion = "0.1.3-dev";
 constexpr const char* kIniFile = "k2_grass_draw_distance.ini";
 constexpr const char* kIniSection = "Grass";
 
@@ -25,12 +25,12 @@ constexpr float kVanillaFadeEndDist = 30.0f;
 constexpr float kVanillaWindDist = 15.0f;
 constexpr float kVanillaAlphaCutoff = 0.40f;
 
-// Extended defaults (3x draw distance = 90m, fade 45m..90m, 20m wind, vanilla 0.40 alpha cutoff).
-// Both distances are 3x vanilla, so with the vanilla cutoff opaque texels clip at 3 x 25.1 = ~75.3m and
-// near grass keeps the vanilla blade edges (a lower cutoff draws soft edge texels at every distance).
+// Extended defaults (5x draw distance = 150m, fade 120m..150m, 20m wind, vanilla 0.40 alpha cutoff).
+// 150m played smooth in P3 (GR2: 895 bins at 57-59 fps, no cost over 30m); with the vanilla cutoff opaque
+// texels clip at ~138.8m and near grass keeps the vanilla blade edges (a lower cutoff softens every blade).
 constexpr bool kDefaultEnabled = true;
-constexpr float kDefaultFadeStartDist = 45.0f;
-constexpr float kDefaultFadeEndDist = 90.0f;
+constexpr float kDefaultFadeStartDist = 120.0f;
+constexpr float kDefaultFadeEndDist = 150.0f;
 constexpr float kDefaultWindDist = 20.0f;
 constexpr float kDefaultAlphaCutoff = 0.40f;
 constexpr bool kDefaultVerbose = false;
@@ -148,14 +148,19 @@ inline int32_t menuLinkFadeStart(int32_t fadeStart, int32_t fadeEnd) {
 //   binsInRange = previous frame's in-range bin list count (engine global read by the DLL; the per-frame
 //                 list swap runs before the octree query refills the current list, doc 48 section 1.5)
 constexpr unsigned kPerfWindowMs = 5000;
+// A longer gap between grass frames (menu, pause, area load) drops the partial window so fps counts grass time only.
+constexpr unsigned kPerfGapMs = 1000;
 
 struct PerfWindow {
     unsigned startMs = 0;
     uint32_t frames = 0;
     uint64_t binsSum = 0;
     uint32_t binsMax = 0;
+    unsigned lastMs = 0;
 
-    void add(uint32_t binsInRange) {
+    void add(uint32_t binsInRange, unsigned nowMs) {
+        if (frames > 0 && (nowMs - lastMs) > kPerfGapMs) reset(nowMs);
+        lastMs = nowMs;
         ++frames;
         binsSum += binsInRange;
         if (binsInRange > binsMax) binsMax = binsInRange;
@@ -299,7 +304,7 @@ kind = "stepper"
 style = "slider"
 label = "Fade Start"
 desc = "Meters where grass starts fading (vanilla 15m; kept 5m below Draw Distance)."
-default = 45
+default = 120
 min = 15
 max = 135
 step = 15
@@ -314,7 +319,7 @@ kind = "stepper"
 style = "slider"
 label = "Draw Distance"
 desc = "Maximum grass build and fade-out distance in meters (vanilla: 30m)."
-default = 90
+default = 150
 min = 30
 max = 150
 step = 15
