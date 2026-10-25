@@ -193,3 +193,4 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [ ] | 177 | WI-145 | P3 | ready | S | - | ISF perf: time the whole buffer phase (name + equip calls) in the flush line | 0 | 1 | sort timing covers std::stable_sort only (14 us/86 rows); per-row GetS |
 | [ ] | 178 | WI-146 | P3 | ready | S | - | ISF perf: read item names only for rows tied on new/usable/base, client language once per  | 0 | 1 | GetString (REA UNSURE, side effects) runs for every row; only tied row |
 | [ ] | 179 | WI-147 | P3 | ready | S | - | ISF perf: re-read inventory_sort_filter.ini only when its mtime changes | 0 | 1 | 6 GetPrivateProfile calls each open the file, up to once a second from |
+| [ ] | 180 | WI-148 | P3 | ready | S | - | ISF: stale-buffer guard keyed on populate identity, not just loop index | 0 | 1 | aborted populate + first new idx > last idx re-emits stale item pointe |
