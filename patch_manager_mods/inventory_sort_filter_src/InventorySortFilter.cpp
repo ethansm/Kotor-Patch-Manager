@@ -72,7 +72,7 @@ using GetClientLanguageFn = int(__fastcall*)(int);                            //
 using CanEquipFn = unsigned char(__thiscall*)(int, int, unsigned*, int, int, int);
 
 // ---- log ----
-// The fallback file is appended; sessions split on the "inventory-sort-filter <ver> loaded" line (no truncate since 0.2.1). logf forwards to the KpLog fallback sink (own line cap).
+// The fallback file is appended; sessions split on the "inventory-sort-filter <ver> loaded" line. At attach the previous session moves to <name>.1 (rotateFallbackLog). logf forwards to the KpLog fallback sink (own line cap).
 KP_CHANNEL(chMain, "main");
 
 // Only stores the path and the level (no I/O): safe from a static initialiser. Same file name as before (tooling reads it).
@@ -484,9 +484,30 @@ extern "C" void __cdecl SortFilterRowSelect(int ebp) {
     if (g_cfg.log && g_cfg.logItems) logf("row select: re-tint row=%08x item id=%08x", row, rd<int>(row, 0x1D0));
 }
 
+// Keeps the previous session as <log>.1 (one previous, replaced each time), like the other KpLog mods. Runs at attach before the first logf.
+// Rotates only when the log is older than 60 s or larger than 256 KB: a launcher+game pair attaches a few seconds apart and must stay in one file.
+namespace {
+void rotateFallbackLog(const char* cwd) {
+    char logPath[MAX_PATH + 40], prevPath[MAX_PATH + 48];
+    snprintf(logPath, sizeof logPath, "%s\\inventory_sort_filter_log.txt", cwd);   // the file the KpLog sink opens (cwd = game folder)
+    snprintf(prevPath, sizeof prevPath, "%s.1", logPath);
+    WIN32_FILE_ATTRIBUTE_DATA fa;
+    if (!GetFileAttributesExA(logPath, GetFileExInfoStandard, &fa)) return;   // no log yet
+    const unsigned long long size = (static_cast<unsigned long long>(fa.nFileSizeHigh) << 32) | fa.nFileSizeLow;
+    const unsigned long long written = (static_cast<unsigned long long>(fa.ftLastWriteTime.dwHighDateTime) << 32) | fa.ftLastWriteTime.dwLowDateTime;
+    FILETIME nowFt; GetSystemTimeAsFileTime(&nowFt);
+    const unsigned long long now = (static_cast<unsigned long long>(nowFt.dwHighDateTime) << 32) | nowFt.dwLowDateTime;
+    const unsigned long long ticksPerSec = 10000000ULL;   // FILETIME ticks are 100 ns
+    const bool stale = now > written && now - written > 60 * ticksPerSec;
+    const bool big = size > 256ULL * 1024;
+    if (stale || big) MoveFileExA(logPath, prevPath, MOVEFILE_REPLACE_EXISTING);
+}
+} // namespace
+
 BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
     if (reason == DLL_PROCESS_ATTACH) {
         char cwd[MAX_PATH] = "?"; GetCurrentDirectoryA(MAX_PATH, cwd);
+        rotateFallbackLog(cwd);
         logf("inventory-sort-filter 0.2.2 loaded; cwd=%s pid=%lu", cwd, (unsigned long)GetCurrentProcessId());
         // Bare names go to the Windows directory (Wine: C:\\windows), so anchor the INI to the game folder.
         if (GetCurrentDirectoryA(MAX_PATH, cwd) > 0) snprintf(IniName, sizeof IniName, "%s\\inventory_sort_filter.ini", cwd);
