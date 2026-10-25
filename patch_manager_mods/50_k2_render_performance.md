@@ -76,3 +76,15 @@ so the gains add up and each change's cost or gain is visible in the logs.
 | **PF3** | Defaults from A/B logs; log tightening (`perf_log` default off, verbose gating) | PF2* | - | TODO | | |
 
 Wave 1 (PF1a, PF1b, PF1c) runs in parallel: disjoint write scopes, no shared header edits (`_shared_src` read-only).
+
+## 4. Wave 2 batching (decided 2026-10-25 after PF1d)
+- **Batch W2-1 = grass 0.1.5-dev: PF2d + PF2b + PF2c + PF2a probe**, one worker (all touch the same grass files, so no parallel workers), one gate, one full reinstall (new hooks), one play session.
+  - PF2d GPU timing (measurement, on by default).
+  - PF2b wind throttle and PF2c far LOD each behind a new ini/menu toggle, **default off**, so one play session A/Bs them from the menu.
+  - PF2a probe: log `[0x00A32DF8]` (render-path mask) and the path taken once per area; no hoist yet.
+- **Batch W2-2 = PF2a hoist + PF3**, after the W2-1 play logs.
+- Play GR5/FG1/SH1 first if possible: they are the timing baseline (grass_ms, a2c capability, shadow per_s).
+
+### 4.1 PF1c findings that steer Wave 2 (`.claude/research/render_perf/R4_grass_state.md`, `R5_grass_wind_lod.md`, both PARTIAL)
+- R4: bins are the inner loop at 0x0046664B, `this = [0x00A7335C][j]`. Hoist candidates: bucket-level glMaterial/env-param and sub-bin texenv/enable calls. `[0x00A1BCB4]` is a dispatcher set in FUN_004317D0 (0x00432AD0 / 0x00432BB1) to FUN_004B7F40 or FUN_0042ABC0. **Open:** which of the 3 RenderGrassPolys paths (A, B1, B2) runs live depends on `[0x00A32DF8]`; not in the static dumps -> PF2a probe.
+- R5: wind runs per near bin inside RenderGrassPolys and writes CPU arrays (no GL upload). The bin count (bin+0x0C, read at 0x0050E65D) feeds both the draw and the normals offset, so PF2c must thin only the `glDrawArrays` count (0x00436A8B, 0x00436B7C), not the field. **Open:** whether the shader-path base (bin+0x40) overlaps the wind-write target [bin+0x38]; whether the group path (sites A/B) is live.
