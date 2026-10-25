@@ -114,3 +114,4 @@
 {"ev": "done", "reason": "manual: WI-126 fix wave r2fx2-A", "session": "d7185bb5-3a21-4847-a92c-f7ab088ac51f", "ts": "2026-10-16T19:16:04Z", "wi": "WI-126"}
 {"ev": "done", "reason": "manual: WI-125 fix wave r2fx2-A", "session": "d7185bb5-3a21-4847-a92c-f7ab088ac51f", "ts": "2026-10-16T19:24:15Z", "wi": "WI-125"}
 {"ev": "park", "reason": "worker reply FAIL: OUT_OF_SCOPE patch_manager_mods/cmdq_probe_src/CmdqProbe.cpp outside patch_manager_mods/cmdq_probe_src/CmdqProbe.cpp, patch_manager_mods/cmdq_probe_src/cmdq_probe.ini, patch_manager", "session": "7c88a13b-2214-41d6-8a07-161f9d8f7a73", "ts": "2026-10-25T14:51:39Z", "wi": "WI-134"}
+{"ev": "unpark", "reason": "files: used ', ' separators (needs ';'); fixed. Work done by main agent", "session": "7c88a13b-2214-41d6-8a07-161f9d8f7a73", "ts": "2026-10-25T14:51:55Z", "wi": "WI-134"}
