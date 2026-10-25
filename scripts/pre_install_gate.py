@@ -282,7 +282,11 @@ def scoped_ids(mods, scratch: Path, runner=run, repo: Path = REPO):
     if rc != 0:
         print(f"WARN  step 1: compat_check.py rc={rc}")
         return None
-    bad = [f"gap: {g}" for g in data.get("gaps") or []] + [f"unclassified: {u}" for u in data.get("unclassified") or []]
+    # files we picked ourselves from the gated mod dirs (README, fixtures, a nested mod's parent dir) may be
+    # unclassified by compat_check by construction; anything else unclassified (dirty files elsewhere) is a real gap
+    own = set(files)
+    bad = [f"gap: {g}" for g in data.get("gaps") or []] + \
+          [f"unclassified: {u}" for u in data.get("unclassified") or [] if u not in own]
     if bad:
         print(f"WARN  step 1: compat_check.py reports {len(bad)} gap/unclassified item(s): {'; '.join(bad[:5])}")
         return None

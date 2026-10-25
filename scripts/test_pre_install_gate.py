@@ -520,6 +520,19 @@ class ScopedGate(unittest.TestCase):
             self.assertIn("full default tier", out)
             self.assertNotIn("--ids-file", calls[-1])
 
+    def test_unclassified_own_mod_files_do_not_fall_back(self):   # e.g. perf_lab_src/README.md for a nested mod
+        runner, calls = scoped_runner(PLAN, LISTING)
+
+        def own(cmd, env=None, quiet=False):
+            rc, out = runner(cmd, env, quiet)
+            if str(g.COMPAT_CHECK) in cmd:
+                Path(cmd[cmd.index("--json") + 1]).write_text(
+                    json.dumps({"plan": PLAN, "unclassified": ["patch_manager_mods/x_src/A.h"]}))
+            return rc, out
+        rc, out = self.gate(own)
+        self.assertEqual(rc, 0)
+        self.assertIn("--ids-file", calls[-1])
+
     def test_record_removed_on_fail(self):
         self.rec.mkdir()
         (self.rec / "perf-lab.json").write_text("{}")
