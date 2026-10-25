@@ -2,4 +2,3 @@ LIBRARY K2GrassDrawDistance
 EXPORTS
     KPatchInit
     K2GrassOnSceneCollect
-    K2GrassOnBinFadeInit

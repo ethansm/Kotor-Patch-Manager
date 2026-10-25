@@ -1,0 +1,43 @@
+# Byte patches this mod's DLL writes into the game itself (not KPM hooks), for the static checks
+# (scripts/check_hook_bytes.py, scripts/check_hook_spans.py). Schema: see robustness_fixes_src/code_patches.toml.
+# 0.1.1: the wind operand rewrite replaces the 0.1.0 per-bin detour at 0x0050DB55.
+
+[[code_patches]]
+name = "wind_fld"
+address = 0x0050DCC8
+# RenderGrassPolys wind gate `FLD float ptr [0x00A0F070]`; the imm32 becomes &g_windDistSq (DLL .data)
+original_bytes = [0xD9, 0x05, 0x70, 0xF0, 0xA0, 0x00]
+kind = "code"
+verifies_original = true
+enabled_by = "always (KPatchInit); restored on FreeLibrary"
+source = "K2GrassDrawDistance.cpp patchWindOperand / unpatchWindOperand (codepatch::writeChecked)"
+
+[[code_patches]]
+name = "fade_start_sq"
+address = 0x00A0F070
+# float 225.0 (15 m squared): RenderGrassPolys fade start
+original_bytes = [0x00, 0x00, 0x61, 0x43]
+kind = "data"
+verifies_original = false
+enabled_by = "always; vanilla value written back when enabled=0"
+source = "K2GrassDrawDistance.cpp writeEngineGlobals (every grass frame)"
+
+[[code_patches]]
+name = "fade_end_sq"
+address = 0x00A0F074
+# float 900.0 (30 m squared): octree build radius and fade end
+original_bytes = [0x00, 0x00, 0x61, 0x44]
+kind = "data"
+verifies_original = false
+enabled_by = "always; vanilla value written back when enabled=0"
+source = "K2GrassDrawDistance.cpp writeEngineGlobals (every grass frame)"
+
+[[code_patches]]
+name = "alpha_cutoff"
+address = 0x009F5D38
+# float 0.40: Scene::DoBinBucket glAlphaFunc(GL_GREATER) threshold for grass
+original_bytes = [0xCD, 0xCC, 0xCC, 0x3E]
+kind = "data"
+verifies_original = false
+enabled_by = "always; vanilla value written back when enabled=0"
+source = "K2GrassDrawDistance.cpp writeEngineGlobals (every grass frame)"

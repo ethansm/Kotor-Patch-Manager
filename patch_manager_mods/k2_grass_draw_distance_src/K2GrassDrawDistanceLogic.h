@@ -12,7 +12,7 @@
 namespace k2grass {
 
 constexpr const char* kModId = "k2-grass-draw-distance";
-constexpr const char* kVersion = "0.1.0-dev";
+constexpr const char* kVersion = "0.1.1-dev";
 constexpr const char* kIniFile = "k2_grass_draw_distance.ini";
 constexpr const char* kIniSection = "Grass";
 
@@ -25,19 +25,22 @@ constexpr float kVanillaFadeEndDist = 30.0f;
 constexpr float kVanillaWindDist = 15.0f;
 constexpr float kVanillaAlphaCutoff = 0.40f;
 
-// Extended defaults (3x draw distance = 90m, smooth fade from 60m..90m, 20m wind, 0.20 alpha cutoff):
+// Extended defaults (3x draw distance = 90m, fade 45m..90m, 20m wind, vanilla 0.40 alpha cutoff).
+// Both distances are 3x vanilla, so with the vanilla cutoff opaque texels clip at 3 x 25.1 = ~75.3m and
+// near grass keeps the vanilla blade edges (a lower cutoff draws soft edge texels at every distance).
 constexpr bool kDefaultEnabled = true;
-constexpr float kDefaultFadeStartDist = 60.0f;
+constexpr float kDefaultFadeStartDist = 45.0f;
 constexpr float kDefaultFadeEndDist = 90.0f;
 constexpr float kDefaultWindDist = 20.0f;
-constexpr float kDefaultAlphaCutoff = 0.20f;
+constexpr float kDefaultAlphaCutoff = 0.40f;
 constexpr bool kDefaultVerbose = false;
+constexpr bool kDefaultPerfLog = true;
 
-// Clamp bounds:
+// Clamp bounds. 150m is 25x the vanilla 30m grass area; raise only after P3 measures the frame cost.
 constexpr float kMinFadeStartDist = 5.0f;
-constexpr float kMaxFadeStartDist = 500.0f;
+constexpr float kMaxFadeStartDist = 145.0f;
 constexpr float kMinFadeEndDist = 10.0f;
-constexpr float kMaxFadeEndDist = 1000.0f;
+constexpr float kMaxFadeEndDist = 150.0f;
 constexpr float kMinFadeSpan = 5.0f;
 constexpr float kMinWindDist = 0.0f;
 constexpr float kMaxWindDist = 200.0f;
@@ -56,16 +59,14 @@ struct Config {
     float windDist = kDefaultWindDist;
     float alphaCutoff = kDefaultAlphaCutoff;
     bool verbose = kDefaultVerbose;
+    bool perfLog = kDefaultPerfLog;
 
     void sanitize() {
-        fadeStartDist = clampf(fadeStartDist, kMinFadeStartDist, kMaxFadeStartDist);
+        // fade_end_dist is the cost knob (build radius), so a fade start at or past it pulls the start
+        // down rather than pushing the draw distance up behind the menu's back.
         fadeEndDist = clampf(fadeEndDist, kMinFadeEndDist, kMaxFadeEndDist);
-        if (fadeEndDist < fadeStartDist + kMinFadeSpan) {
-            fadeEndDist = clampf(fadeStartDist + kMinFadeSpan, kMinFadeEndDist, kMaxFadeEndDist);
-            if (fadeStartDist > fadeEndDist - kMinFadeSpan) {
-                fadeStartDist = fadeEndDist - kMinFadeSpan;
-            }
-        }
+        fadeStartDist = clampf(fadeStartDist, kMinFadeStartDist, kMaxFadeStartDist);
+        if (fadeStartDist > fadeEndDist - kMinFadeSpan) fadeStartDist = fadeEndDist - kMinFadeSpan;
         windDist = clampf(windDist, kMinWindDist, kMaxWindDist);
         alphaCutoff = clampf(alphaCutoff, kMinAlphaCutoff, kMaxAlphaCutoff);
     }
@@ -76,7 +77,8 @@ struct Config {
                std::fabs(fadeEndDist - o.fadeEndDist) < 1e-4f &&
                std::fabs(windDist - o.windDist) < 1e-4f &&
                std::fabs(alphaCutoff - o.alphaCutoff) < 1e-4f &&
-               verbose == o.verbose;
+               verbose == o.verbose &&
+               perfLog == o.perfLog;
     }
     bool operator!=(const Config& o) const { return !(*this == o); }
 };
@@ -126,6 +128,32 @@ inline float effectiveClipDistMeters(const EffectiveValues& ev) {
     return std::sqrt(clipSq > 0.0f ? clipSq : 0.0f);
 }
 
+// P3 calibration window: one sample per grass frame (Scene::CollectAndTraverse hook).
+//   binsInRange = previous frame's in-range bin list count (engine global read by the DLL; the per-frame
+//                 list swap runs before the octree query refills the current list, doc 48 section 1.5)
+constexpr unsigned kPerfWindowMs = 5000;
+
+struct PerfWindow {
+    unsigned startMs = 0;
+    uint32_t frames = 0;
+    uint64_t binsSum = 0;
+    uint32_t binsMax = 0;
+
+    void add(uint32_t binsInRange) {
+        ++frames;
+        binsSum += binsInRange;
+        if (binsInRange > binsMax) binsMax = binsInRange;
+    }
+    // True once kPerfWindowMs has passed since startMs with at least one frame (GetTickCount wrap safe).
+    bool due(unsigned nowMs) const { return frames > 0 && (nowMs - startMs) >= kPerfWindowMs; }
+    float fps(unsigned nowMs) const {
+        const unsigned dt = nowMs - startMs;
+        return dt ? frames * 1000.0f / static_cast<float>(dt) : 0.0f;
+    }
+    float binsAvg() const { return frames ? static_cast<float>(binsSum) / frames : 0.0f; }
+    void reset(unsigned nowMs) { *this = PerfWindow{}; startMs = nowMs; }
+};
+
 inline bool strEqI(const char* a, const char* b) {
     if (!a || !b) return false;
     while (*a && *b) {
@@ -163,6 +191,12 @@ inline inikit::LoadStats parseIniText(char* text, Config& cfg) {
             bool b = false;
             if (!parseBoolVal(val, &b)) return inikit::IniVerdictBad;
             cfg.verbose = b;
+            return inikit::IniVerdictOk;
+        }
+        if (strcmp(key, "perf_log") == 0) {
+            bool b = true;
+            if (!parseBoolVal(val, &b)) return inikit::IniVerdictBad;
+            cfg.perfLog = b;
             return inikit::IniVerdictOk;
         }
         if (strcmp(key, "fade_start_dist") == 0 || strcmp(key, "fadestartdist") == 0) {
@@ -205,22 +239,25 @@ inline int formatDefaultIni(char* buf, size_t cap, const Config& c = Config{}) {
         "; Hot-reloaded automatically while the game is running.\n"
         "[%s]\n"
         "enabled = %d\n"
-        "; Distance (meters) where grass begins fading (vanilla: 15)\n"
+        "; Distance (meters) where grass begins fading (vanilla: 15; kept 5 below fade_end_dist)\n"
         "fade_start_dist = %.0f\n"
-        "; Maximum grass draw & octree build distance in meters (vanilla: 30)\n"
+        "; Maximum grass draw & octree build distance in meters (vanilla: 30, max: 150)\n"
         "fade_end_dist = %.0f\n"
         "; Distance (meters) for CPU grass wind animation (vanilla: 15, 0 = off)\n"
         "wind_dist = %.0f\n"
-        "; Alpha test threshold (0.05..0.60 or 5..60%%; vanilla: 0.40)\n"
+        "; Alpha test threshold (0.05..0.60 or 5..60%%; vanilla: 0.40; lower = softer blade edges)\n"
         "alpha_cutoff = %d\n"
-        "verbose = %d\n",
+        "verbose = %d\n"
+        "; Log grass bin counts and frame rate every 5 s (P3 calibration)\n"
+        "perf_log = %d\n",
         kModId, kIniSection,
         c.enabled ? 1 : 0,
         c.fadeStartDist,
         c.fadeEndDist,
         c.windDist,
         alphaPct,
-        c.verbose ? 1 : 0);
+        c.verbose ? 1 : 0,
+        c.perfLog ? 1 : 0);
 }
 
 // Declarative Mod Configuration page schema (TomlMini string limit: each string < 96 chars).
@@ -245,10 +282,10 @@ id = "fade_start"
 kind = "stepper"
 style = "slider"
 label = "Fade Start"
-desc = "Distance in meters where grass starts fading (vanilla: 15m)."
-default = 60
+desc = "Meters where grass starts fading (vanilla 15m; kept 5m below Draw Distance)."
+default = 45
 min = 15
-max = 240
+max = 135
 step = 15
 fmt = "Fade Start: %dm"
 ini = "k2_grass_draw_distance.ini"
@@ -263,7 +300,7 @@ label = "Draw Distance"
 desc = "Maximum grass build and fade-out distance in meters (vanilla: 30m)."
 default = 90
 min = 30
-max = 300
+max = 150
 step = 15
 fmt = "Draw Distance: %dm"
 ini = "k2_grass_draw_distance.ini"
@@ -292,7 +329,7 @@ kind = "stepper"
 style = "slider"
 label = "Alpha Cutoff"
 desc = "OpenGL alpha-test threshold (lower fades smoother; vanilla: 0.40)."
-default = 20
+default = 40
 min = 5
 max = 60
 step = 5

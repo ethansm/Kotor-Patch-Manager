@@ -10,16 +10,17 @@
 static void test_defaults_and_effective_math() {
     k2grass::Config def{};
     KT_CHECK(def.enabled);
-    KT_CHECK(std::fabs(def.fadeStartDist - 60.0f) < 1e-5f);
+    KT_CHECK(std::fabs(def.fadeStartDist - 45.0f) < 1e-5f);
     KT_CHECK(std::fabs(def.fadeEndDist - 90.0f) < 1e-5f);
     KT_CHECK(std::fabs(def.windDist - 20.0f) < 1e-5f);
-    KT_CHECK(std::fabs(def.alphaCutoff - 0.20f) < 1e-5f);
+    KT_CHECK(std::fabs(def.alphaCutoff - 0.40f) < 1e-5f);
+    KT_CHECK(def.perfLog);
 
     k2grass::EffectiveValues ev = k2grass::computeEffective(def);
-    KT_CHECK(std::fabs(ev.fadeStartSq - 3600.0f) < 1e-3f);
+    KT_CHECK(std::fabs(ev.fadeStartSq - 2025.0f) < 1e-3f);
     KT_CHECK(std::fabs(ev.fadeEndSq - 8100.0f) < 1e-3f);
     KT_CHECK(std::fabs(ev.windDistSq - 400.0f) < 1e-3f);
-    KT_CHECK(std::fabs(ev.alphaCutoff - 0.20f) < 1e-5f);
+    KT_CHECK(std::fabs(ev.alphaCutoff - 0.40f) < 1e-5f);
 
     // Disabled config restores exact vanilla constants (15m=225, 30m=900, 15m=225, 0.40f).
     k2grass::Config off = def;
@@ -30,15 +31,23 @@ static void test_defaults_and_effective_math() {
     KT_CHECK(std::fabs(vEv.windDistSq - 225.0f) < 1e-3f);
     KT_CHECK(std::fabs(vEv.alphaCutoff - 0.40f) < 1e-5f);
 
-    // Verify vanilla premature alpha-test clip distance (~25.10m) vs extended (~84.85m).
+    // Vanilla alpha-test clip (~25.10m) vs default 3x scale with the same cutoff (3 x 25.10 = ~75.30m).
     const float vanillaClip = k2grass::effectiveClipDistMeters(vEv);
     const float extClip = k2grass::effectiveClipDistMeters(ev);
     KT_CHECK(vanillaClip > 25.0f && vanillaClip < 25.2f);
-    KT_CHECK(extClip > 84.8f && extClip < 84.9f);
+    KT_CHECK(extClip > 75.2f && extClip < 75.4f);
+
+    // A 0.20 cutoff on a 60..90 window clips at sqrt(7200) = ~84.85m.
+    k2grass::Config soft = def;
+    soft.fadeStartDist = 60.0f;
+    soft.alphaCutoff = 0.20f;
+    const float softClip = k2grass::effectiveClipDistMeters(k2grass::computeEffective(soft));
+    KT_CHECK(softClip > 84.8f && softClip < 84.9f);
 }
 
 static void test_bin_alpha_curve() {
     k2grass::Config def{};
+    def.fadeStartDist = 60.0f;
     k2grass::EffectiveValues ev = k2grass::computeEffective(def); // 3600 .. 8100
 
     KT_CHECK(std::fabs(k2grass::computeBinAlpha(0.0f, ev) - 1.0f) < 1e-5f);
@@ -51,15 +60,15 @@ static void test_bin_alpha_curve() {
 }
 
 static void test_sanitize_clamps_and_span_guard() {
-    // Inverted fade_start >= fade_end is repaired to maintain >= 5m span (never div-by-zero).
+    // Inverted fade_start >= fade_end pulls the start down (draw distance is the cost knob, never raised).
     k2grass::Config c{};
     c.fadeStartDist = 100.0f;
     c.fadeEndDist = 80.0f;
     c.windDist = -10.0f;
     c.alphaCutoff = 5.0f;
     c.sanitize();
-    KT_CHECK(std::fabs(c.fadeStartDist - 100.0f) < 1e-5f);
-    KT_CHECK(std::fabs(c.fadeEndDist - 105.0f) < 1e-5f);
+    KT_CHECK(std::fabs(c.fadeStartDist - 75.0f) < 1e-5f);
+    KT_CHECK(std::fabs(c.fadeEndDist - 80.0f) < 1e-5f);
     KT_CHECK(std::fabs(c.windDist - 0.0f) < 1e-5f);
     KT_CHECK(std::fabs(c.alphaCutoff - k2grass::kMaxAlphaCutoff) < 1e-5f);
 
@@ -68,7 +77,43 @@ static void test_sanitize_clamps_and_span_guard() {
     c.fadeEndDist = 9999.0f;
     c.sanitize();
     KT_CHECK(c.fadeStartDist <= k2grass::kMaxFadeStartDist);
+    KT_CHECK(std::fabs(c.fadeEndDist - 150.0f) < 1e-5f);
     KT_CHECK(c.fadeEndDist >= c.fadeStartDist + k2grass::kMinFadeSpan);
+
+    // Menu case: Fade Start slider at its max (135) with Draw Distance 90 keeps 90.
+    c.fadeStartDist = 135.0f;
+    c.fadeEndDist = 90.0f;
+    c.sanitize();
+    KT_CHECK(std::fabs(c.fadeEndDist - 90.0f) < 1e-5f);
+    KT_CHECK(std::fabs(c.fadeStartDist - 85.0f) < 1e-5f);
+
+    // Lowest draw distance still leaves a valid span above the start floor.
+    c.fadeStartDist = 0.0f;
+    c.fadeEndDist = 0.0f;
+    c.sanitize();
+    KT_CHECK(std::fabs(c.fadeEndDist - k2grass::kMinFadeEndDist) < 1e-5f);
+    KT_CHECK(std::fabs(c.fadeStartDist - k2grass::kMinFadeStartDist) < 1e-5f);
+}
+
+static void test_perf_window() {
+    k2grass::PerfWindow w{};
+    w.reset(1000);
+    KT_CHECK(!w.due(1000));
+    w.add(400);
+    w.add(600);
+    KT_CHECK(!w.due(5999));
+    KT_CHECK(w.due(6000));
+    KT_CHECK_EQ(w.frames, 2u);
+    KT_CHECK_EQ(w.binsMax, 600u);
+    KT_CHECK(std::fabs(w.binsAvg() - 500.0f) < 1e-3f);
+    KT_CHECK(std::fabs(w.fps(6000) - 0.4f) < 1e-4f);
+    // GetTickCount wrap: start near UINT_MAX, now past zero.
+    w.reset(0xFFFFF000u);
+    w.add(1);
+    KT_CHECK(w.due(0x00000400u + 0x1000u));
+    w.reset(7000);
+    KT_CHECK_EQ(w.frames, 0u);
+    KT_CHECK_EQ(w.startMs, 7000u);
 }
 
 static void test_ini_roundtrip_and_direct_float_alpha() {
@@ -78,6 +123,7 @@ static void test_ini_roundtrip_and_direct_float_alpha() {
     orig.fadeEndDist = 135.0f;
     orig.windDist = 30.0f;
     orig.alphaCutoff = 0.25f;
+    orig.perfLog = false;
     const int n = k2grass::formatDefaultIni(buf, sizeof(buf), orig);
     KT_CHECK(n > 0 && static_cast<size_t>(n) < sizeof(buf));
 
@@ -114,6 +160,7 @@ int main() {
     test_defaults_and_effective_math();
     test_bin_alpha_curve();
     test_sanitize_clamps_and_span_guard();
+    test_perf_window();
     test_ini_roundtrip_and_direct_float_alpha();
     test_modconfig_schema_bindings();
     return kt::Report("grass_draw_distance_test");

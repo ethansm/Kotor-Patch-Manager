@@ -85,7 +85,7 @@ addresses = ["0x008A69AD", "0x008A7350", "0x008A8172", "0x008CD2C0"]
 addresses = ["0x005BD6A0", "0x006076D0", "0x0073F750", "0x0077B670", "0x008A75F0", "0x008A7E22", "0x008A7E76", "0x008A8478", "0x008A8B30", "0x008A8CF0", "0x008B1D00", "0x0099A8B8", "0x0099A8BC"]
 
 [files."patch_manager_mods/k2_grass_draw_distance_src/K2GrassDrawDistance.cpp"]
-addresses = ["0x00499ABC", "0x0050DB55", "0x009F5D38", "0x00A0F070", "0x00A0F074"]
+addresses = ["0x00499ABC", "0x0050DCC8", "0x009F5D38", "0x00A0F070", "0x00A0F074", "0x00A73304"]   # not in DB, dump asm evidence: 0x0050DCC8 wind FLD (operand rewrite), 0x00A73304 prev-frame grass bin count (PERF log only)
 
 [files."patch_manager_mods/npc_diversity_src/DiversityAnimEngine.h"]
 addresses = ["0x0051C0A0", "0x0054A840", "0x0073F4D0", "0x007ED9A0"]   # 0x007ED9A0 CSWCCreature::PlayAnimationById (query_ghidra confirmed, nb2-anim-driver 10-18)

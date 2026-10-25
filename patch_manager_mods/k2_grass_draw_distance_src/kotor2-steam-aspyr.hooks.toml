@@ -5,7 +5,8 @@ target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBB
 # immediately before the room octree grass sphere query loop (0x00499ADC: FLD dword ptr [0x00A0F074]).
 # Polls k2_grass_draw_distance.ini (1s throttle), registers the Mod Configuration page if mod-config is loaded,
 # and updates the engine globals:
-#   [0x00A0F070] = wind_dist^2       (read at 0x0050DCC8 for CPU wind cutoff)
+#   [0x00A0F070] = fade_start_dist^2 (read at 0x0050DB43 for fade start; the wind gate at 0x0050DCC8 reads the
+#                                     DLL's own float after the KPatchInit operand rewrite, see code_patches.toml)
 #   [0x00A0F074] = fade_end_dist^2   (read at 0x00499ADC for octree build/collect and 0x0050DB4C for fade end)
 #   [0x009F5D38] = alpha_cutoff      (read at 0x004665F6 for glAlphaFunc threshold)
 [[hooks]]
@@ -14,17 +15,3 @@ type = "detour"
 function = "K2GrassOnSceneCollect"
 original_bytes = [0xC7, 0x45, 0xF0, 0x00, 0x00, 0x00, 0x00]
 exclude_from_restore = []
-
-# Hook 2: CAurTriangleBin::RenderGrassPolys (0x0050DAC0) at 0x0050DB55 (CMP dword ptr [0x00A7D690], 0; 7 bytes),
-# right after [EBP-0x28] (local fade_start_sq) was loaded from [0x00A0F070] at 0x0050DB49.
-# Overwrites [EBP-0x28] with fade_start_dist^2 so fade_start_dist and wind_dist ([0x00A0F070]) are decoupled.
-[[hooks]]
-address = 0x0050DB55
-type = "detour"
-function = "K2GrassOnBinFadeInit"
-original_bytes = [0x83, 0x3D, 0x90, 0xD6, 0xA7, 0x00, 0x00]
-exclude_from_restore = []
-
-[[hooks.parameters]]
-source = "ebp"
-type = "int"

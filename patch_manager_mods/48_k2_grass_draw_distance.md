@@ -1,7 +1,7 @@
 # Doc 48: K2 Grass Draw Distance
 
 **Mod Directory:** `patch_manager_mods/k2_grass_draw_distance_src/`  
-**Mod ID:** `k2-grass-draw-distance` (`0.1.0-dev`)  
+**Mod ID:** `k2-grass-draw-distance` (`0.1.1-dev`)  
 **Status:** Built & Verified (Ready for KPM Prepare / Install)  
 **Owning Mod Scope:** `patch_manager_mods/k2_grass_draw_distance_src/` (Strict boundary: do not touch other mods)
 
@@ -16,15 +16,17 @@ Extends the grass draw distance and octree build/collect radius in KOTOR II (`sw
    - Used at `0x00499ADC` in `Scene::CollectAndTraverse` (`0x00499610`) to query room octrees (`0x00519A50` -> `0x004986B0`) and build/destroy grass bin quad vertex buffers (`0x004987E0` -> `0x0050D960` / `0x0050DA00`).
    - Also used at `0x0050DB4C` in `CAurTriangleBin::RenderGrassPolys` (`0x0050DAC0`) as the outer distance squared (`local_44`) where grass alpha fades to `0.0`.
    - Extended default: `90.0m` (`8100.0f`).
-2. **Fade-Start Distance (`[EBP-0x28]` at `0x0050DB55`) & CPU Wind Radius (`0x00A0F070`, `_DAT_00a0f070`)**:
+2. **Fade-Start Distance (`0x00A0F070`, `_DAT_00a0f070`) & CPU Wind Radius (operand at `0x0050DCC8`)**:
    - Vanilla shares `0x00A0F070` (`225.0f` = $15.0^2\text{ m}^2$) between fade-start (`0x0050DB43`) and CPU wind vertex deformation (`0x0050DCC8` -> `CAurTriangleBin::UpdateGrassForWind` `0x00510F70`).
    - This mod decouples them:
-     - `0x00A0F070` holds `wind_dist^2` (default `20.0m` = `400.0f`), read at `0x0050DCC8` so distant grass bins do not incur CPU wind vertex math.
-     - Detour `K2GrassOnBinFadeInit` at `0x0050DB55` (`83 3D 90 D6 A7 00 00`, 7 bytes) writes `fade_start_dist^2` (default `60.0m` = `3600.0f`) into `[EBP-0x28]` right after `0x0050DB49` initializes it.
+     - `0x00A0F070` keeps its vanilla role, fade start: the DLL writes `fade_start_dist^2` (default `45.0m` = `2025.0f`), read at `0x0050DB43`.
+     - Wind (0.1.1): `KPatchInit` rewrites the imm32 of the wind gate `FLD [0x00A0F070]` at `0x0050DCC8` (`D9 05 70 F0 A0 00`, byte-verified with `codepatch::writeChecked`, listed in `code_patches.toml`) to the DLL's own float `g_windDistSq` = `wind_dist^2` (default `20.0m` = `400.0f`, `0` = no wind). The vanilla operand is restored on FreeLibrary. On a byte mismatch nothing is written and wind follows fade start (WARN logged). 0.1.0 used a per-bin detour at `0x0050DB55` writing `[EBP-0x28]` instead (up to ~3,700 calls a frame at 90 m); removed.
 3. **OpenGL Alpha-Test Threshold (`0x009F5D38`, `_DAT_009f5d38`)**:
    - Vanilla value: `0.40f` (read at `0x004665F6` in `Scene::DoBinBucket` `0x004664E0` for `glAlphaFunc(GL_GREATER, ref)`), which prematurely hard-clips fading grass at $\approx 25.1\text{ m}$.
-   - Extended default: `0.20f` (extends visible smooth fade to $\approx 84.9\text{ m}$ for a $60\text{ m}..90\text{ m}$ fade window).
-4. **Configuration & Live Reload (`k2_grass_draw_distance.ini` + `ModConfigDecl.h`)**:
+   - Default stays vanilla `0.40f` (0.1.1): lowering it also draws soft edge texels on near grass. With the 3x window 45..90 m, opaque texels clip at $\approx 75.3\text{ m}$ (3 x 25.1). `0.20` on 60..90 m would reach $\approx 84.9\text{ m}$ at the cost of fuzzier blades.
+4. **Clamps (0.1.1):** `fade_end_dist` 10..150 m (150 m = 25x vanilla grass area; raise only after P3 numbers), `fade_start_dist` 5..145 m and always >= 5 m below the end. A start at or past the end pulls the start down; it never raises the draw distance (the menu would show a stale value).
+5. **PERF telemetry (0.1.1, `perf_log = 1`, channel `perf`):** every 5 s a `PERF fps= frames= bins_avg= bins_max= end= start= wind= alpha=` line. `bins` = previous frame's in-range bin list count `[0x00A73304]` (list `{0x00A73300 ptr, +4 count}`, copied from the current list `0x00A7330C` by `0x00495760` at `0x00499775` before hook 1); `fps` = grass frames per second. `0x00A73694` was rejected: it is a shared polygon counter written by about 10 renderers.
+6. **Configuration & Live Reload (`k2_grass_draw_distance.ini` + `ModConfigDecl.h`)**:
    - Hot-reloads `k2_grass_draw_distance.ini` via `FileWatch.h` (1s throttle) inside `K2GrassOnSceneCollect` (`0x00499ABC`).
    - Lazily registers an in-game `"K2 Grass Draw Distance"` options page with `mod-config` (`k2.modconfig@1` / `k2.menuui@1`) when present.
 
@@ -34,10 +36,11 @@ Extends the grass draw distance and octree build/collect radius in KOTOR II (`sw
 
 | Id | Batch | Deps | Owner gate | Status | Commit | Next |
 |---|---|---|---|---|---|---|
-| **P0** | Baseline & Scaffolding | - | - | DONE | 64efbd9a | `build_check.py --mod k2_grass_draw_distance_src` |
-| **P1** | Core Detour Implementation | P0 | - | DONE | 64efbd9a | `build_check.py` + host unit tests |
-| **P2** | Common Contract Test Verification | P1 | - | DONE | 64efbd9a | `run_tests.py -k k2_grass_draw_distance` |
-| **P3** | Live In-Game Probing & Calibration | P2 | user GO | TODO | | Live KPM install & validation |
+| **P0** | Baseline & Scaffolding | - | - | DONE | 17db2e05 | `build_check.py --mod k2_grass_draw_distance_src` |
+| **P1** | Core Detour Implementation | P0 | - | DONE | 17db2e05 | `build_check.py` + host unit tests |
+| **P2** | Common Contract Test Verification | P1 | - | DONE | 17db2e05 | `run_tests.py -k k2_grass_draw_distance` |
+| **P2b** | Review fixes 0.1.1-dev: vanilla alpha default + 45..90 m, 150 m cap, start-pulls-down sanitize, PERF telemetry, hook 2 -> wind operand rewrite, docs | P2 | - | DONE | (this commit) | `run_tests.py -k grass_draw_distance` |
+| **P3** | Live In-Game Probing & Calibration | P2b | user GO | TODO | | `kpm_reinstall.py --mod k2-grass-draw-distance` (new hooks: full reinstall), play rows GR1-GR3 |
 | **P4** | Log Tightening & Packaging | P3 | - | TODO | | Clean startup log verification |
 
 ---
@@ -53,5 +56,13 @@ python3 scripts/run_tests.py -k k2_grass_draw_distance
 python3 scripts/run_tests.py -k grass_draw_distance_test
 
 # Pre-install gate
-./scripts/pre_install_gate.sh --skip-default --mod k2_grass_draw_distance_src
+./scripts/pre_install_gate.sh --mod k2_grass_draw_distance_src
 ```
+
+---
+
+## 5. Open design note (not scheduled)
+
+A native slider in the vanilla Graphics panel (`CSWGuiOptionsGraphics` 0x007D4620, free space y~330-382 under
+CB_FORCESPEED, clone SLI_GAMMA) is possible as a later phase; it needs a ctor hook site, the slider change event id and a
+dtor hook (none mapped yet). 0.1.x uses the Mod Configuration page.
