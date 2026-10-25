@@ -9,6 +9,10 @@ through flock files under $TMPDIR/kotor-tests/locks/, so the limits hold across 
   exclusive(name)     one holder machine-wide (wine prefix, create-patch.py, one build key dir).
   lower_priority()    nice 10 + idle I/O class for this process and its children ($KOTOR_NICE=0 turns it off).
 
+A process that holds a slot and spawns a child that may itself ask for one (run_tests running suite:build-check) passes
+SLOT_HELD_ENV into the child's environment: heavy_slot() is then a no-op there, so nested requests cannot deadlock the
+pool (the child runs inside its parent's slot).
+
 Env: KOTOR_HEAVY_SLOTS, KOTOR_MEM_RESERVE_MB (default 2048), KOTOR_MEM_WAIT_S (default 300), KOTOR_NICE.
 """
 import contextlib
@@ -21,6 +25,7 @@ from pathlib import Path
 
 TMP = Path(os.environ.get("TMPDIR") or f"/tmp/claude-{os.getuid()}") / "kotor-tests"
 LOCKS = TMP / "locks"
+SLOT_HELD_ENV = {"KOTOR_SLOT_HELD": "1"}
 
 
 def slot_count() -> int:
@@ -65,6 +70,9 @@ def _open_lock(name: str):
 def heavy_slot():
     """Hold one of slot_count() machine-wide slots for the body. Each call opens its own file, so threads of one
     process compete for slots like separate processes do (flock is per open file description)."""
+    if os.environ.get("KOTOR_SLOT_HELD") == "1":
+        yield
+        return
     n = slot_count()
     delay = 0.05
     while True:

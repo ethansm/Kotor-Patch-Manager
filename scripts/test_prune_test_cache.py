@@ -107,15 +107,15 @@ class PruneTest(unittest.TestCase):
         self.assertTrue(orphan.exists())
         self.assertEqual(n, 0)
 
-    def test_aged_sidecar_of_old_exe_deleted_fresh_sidecar_kept(self):
+    def test_sidecar_follows_its_exe(self):
         h = self.root / "host"
         exe = mk(h / "x__t-ffffffffffff", days=5)
-        sc = mk(h / "x__t-ffffffffffff.deps.json", days=0.5)
-        fresh_exe = mk(h / "y__t-111111111111", days=5)
-        fresh_sc = mk(h / "y__t-111111111111.deps.json")
+        sc = mk(h / "x__t-ffffffffffff.deps.json")       # fresh sidecar, old exe: both go
+        hit_exe = mk(h / "y__t-111111111111")            # cache hit refreshed only the exe
+        hit_sc = mk(h / "y__t-111111111111.deps.json", days=5)
         self.run_prune(apply=True)
-        self.assertFalse(exe.exists() or sc.exists() or fresh_exe.exists())
-        self.assertTrue(fresh_sc.exists())
+        self.assertFalse(exe.exists() or sc.exists())
+        self.assertTrue(hit_exe.exists() and hit_sc.exists())
 
     def test_fresh_tmp_file_kept(self):
         h = self.root / "host"

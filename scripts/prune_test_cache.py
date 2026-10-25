@@ -140,11 +140,12 @@ def _scan(root: Path, days: float, run_days: float, now: float, warn=lambda m: N
             if stat.S_ISDIR(st.st_mode) or not _host_candidate(e.name):
                 continue
             entries[e.name] = st.st_mtime
-        doomed = {n for n, m in entries.items() if m < age_cut}
+        # A sidecar follows its exe (a cache hit refreshes only the exe's mtime); only an orphan ages on its own.
+        doomed = {n for n, m in entries.items() if m < age_cut and not n.endswith(SIDECAR_SUFFIX)}
         for n, m in entries.items():
-            if n.endswith(SIDECAR_SUFFIX) and n not in doomed and m < now - ORPHAN_GRACE:
+            if n.endswith(SIDECAR_SUFFIX):
                 exe = n[: -len(SIDECAR_SUFFIX)]
-                if exe not in entries or exe in doomed:
+                if exe in doomed or (exe not in entries and m < now - ORPHAN_GRACE):
                     doomed.add(n)
         targets += [host / n for n in sorted(doomed)]
 

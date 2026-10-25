@@ -48,6 +48,13 @@ class LoadLimitTests(unittest.TestCase):
             with ll.heavy_slot():   # would spin forever if the slot leaked
                 pass
 
+    def test_nested_slot_in_child_is_noop(self):
+        with mock.patch.dict(os.environ, {"KOTOR_HEAVY_SLOTS": "1", "KOTOR_MEM_RESERVE_MB": "0"}):
+            with ll.heavy_slot():
+                with mock.patch.dict(os.environ, ll.SLOT_HELD_ENV):
+                    with ll.heavy_slot():   # would spin forever without the held-slot env
+                        pass
+
     def test_exclusive_serialises(self):
         order = []
 
