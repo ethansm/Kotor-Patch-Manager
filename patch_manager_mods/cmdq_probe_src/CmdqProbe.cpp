@@ -1,14 +1,17 @@
-// CmdqProbe.cpp -- cmdq-probe 0.1.0 (Steam build): LOG-ONLY probe for the command-queue investigation (patch_manager_mods/29_paused_command_queue.md).
+// CmdqProbe.cpp -- cmdq-probe 0.2.0 (Steam build): LOG-ONLY probe for the command-queue investigation (patch_manager_mods/29_paused_command_queue.md).
 // Handlers are plain extern "C" void __cdecl functions. The detour wrappers in kotor2-steam-aspyr.hooks.toml call them with the
 // stolen game arguments BEFORE the stolen bytes run. Hard rules: no writes to game memory or registers, no engine calls, reads only
 // through saferead, and every handler returns at once while its channel is off (cmdq_probe.ini: probe=1 AND ch_<name>=1).
-// Lines: PAUSE (edge-only), CMD, FIRE, ROUND, CLR, REEQ, MED. All channels share one line budget (max_lines).
+// Lines: PAUSE (edge-only), CMD, FIRE, ROUND, CLR, REEQ, MED, QS. All channels share one line budget (max_lines).
+// QS (0.2.0, combat AI recast WI-134): a party member's action queue, combat-round nodes and active-effect spell ids at each cast
+// queue (cmd0), cast build (cmd1), spell fire and round end (.claude/research/combat_ai_recast/README.md, O1/O2).
 #include <windows.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
 #include "ActQueue.h"
+#include "Effects.h"
 #include "SafeRead.h"
 #include "KpLog.h"
 
@@ -21,13 +24,14 @@ KP_CHANNEL(chFire, "fire");
 KP_CHANNEL(chRound, "round");
 KP_CHANNEL(chClr, "clr");
 KP_CHANNEL(chMed, "med");
+KP_CHANNEL(chQs, "qs");
 
 // Fallback sink for an old core or a failed KpLog_Init (same pattern as the texture-memory mod). Stores the path and level only.
 const bool g_fallbackSet = (KpLog_SetFallbackFile("cmdq_probe_log.txt"), KpLog_SetFallbackLevel(KPLOG_INFO), true);
 
 // Config. Written once in KPatchInit (before the handlers do anything); defaults are silent.
 static bool g_probe = false;
-static bool g_onPause = false, g_onCmd = false, g_onFire = false, g_onRound = false, g_onClr = false, g_onMed = false;   // probe=1 AND ch_<name>=1
+static bool g_onPause = false, g_onCmd = false, g_onFire = false, g_onRound = false, g_onClr = false, g_onMed = false, g_onQs = false;   // probe=1 AND ch_<name>=1
 static LONG g_maxLines = 2000;
 static bool g_partyOnly = true;        // party_only=1: CLR needs creature+0x11AC != 0 (meaning UNVERIFIED, doc 29); 0 drops that test
 static volatile LONG g_lines = 0;      // lines written by all channels (cap = g_maxLines)
@@ -39,6 +43,9 @@ static const unsigned kSiteRoundOwner = 0xCD0020u;
 static const unsigned kSiteClrVictim = 0xCD0030u, kSiteClrParty = 0xCD0031u;
 static const unsigned kSiteClrQueue = 0xCD0040u, kSiteClrRound = 0xCD0060u;
 static const unsigned kSiteMedEntry = 0xCD0080u, kSiteMedCanUse = 0xCD0090u;
+static const unsigned kSiteQsActor = 0xCD00A0u, kSiteQsParty = 0xCD00A1u, kSiteQsEffect = 0xCD00A2u;
+static const unsigned kSiteQsQueue = 0xCD00B0u, kSiteQsRound = 0xCD00C0u;
+static const int kQsMaxFx = 16;        // distinct effect spell ids listed per QS line
 static const int kClrSlots = 4;        // queue slots (doc 29): the CLR filter and the q= list both use slots 0..3
 
 static inline unsigned U(const void* p) { return static_cast<unsigned>(reinterpret_cast<uintptr_t>(p)); }
@@ -66,7 +73,7 @@ static bool flagValue(const char* v) {
 
 // Reads cmdq_probe.ini from the game dir (cwd). A missing file or a bad value leaves the silent default. Called once, from KPatchInit.
 static void readConfig() {
-    bool probe = false, pause = false, cmd = false, fire = false, rnd = false, clr = false, med = false;
+    bool probe = false, pause = false, cmd = false, fire = false, rnd = false, clr = false, med = false, qs = false;
     FILE* f = fopen("cmdq_probe.ini", "r");
     if (f) {
         char line[256];
@@ -85,6 +92,7 @@ static void readConfig() {
             else if (!_stricmp(key, "ch_round")) rnd = flagValue(val);
             else if (!_stricmp(key, "ch_clr")) clr = flagValue(val);
             else if (!_stricmp(key, "ch_med")) med = flagValue(val);
+            else if (!_stricmp(key, "ch_qs")) qs = flagValue(val);
             else if (!_stricmp(key, "party_only")) g_partyOnly = flagValue(val);
             else if (!_stricmp(key, "max_lines")) {
                 char* end = nullptr;
@@ -101,12 +109,51 @@ static void readConfig() {
     g_onRound = probe && rnd;
     g_onClr = probe && clr;
     g_onMed = probe && med;
+    g_onQs = probe && qs;
 }
 
 static void addName(char* buf, size_t cap, bool on, const char* name) {
     if (!on) return;
     size_t n = strlen(buf);
     snprintf(buf + n, cap - n, "%s%s", n ? "," : "", name);
+}
+
+// Appends ",a:b" (pair) or ",a" to buf, without the comma when empty (bounded; a full buffer just stops growing).
+static void appendHex(char* buf, size_t cap, unsigned a, unsigned b, bool pair) {
+    size_t n = strlen(buf);
+    if (n + 1 >= cap) return;
+    if (pair) snprintf(buf + n, cap - n, "%s%x:%x", n ? "," : "", a, b);
+    else snprintf(buf + n, cap - n, "%s%x", n ? "," : "", a);
+}
+
+// One QS line for a party member (party_only gate as CLR): queue entries type:param0, pending round nodes sub:spell, the
+// current round node, and the distinct spell ids of the active effects (-1 rows skipped). Reads only; called after g_onQs.
+static void qsLine(const char* at, uintptr_t cr) {
+    if (!KP_ENABLED(chQs, KPLOG_INFO)) return;
+    if (!cr || !saferead::probeRead(kSiteQsActor, reinterpret_cast<void*>(cr), 4)) return;
+    uint32_t party = 0;
+    if (!saferead::readAt(kSiteQsParty, cr, actq::Cr11AC, &party)) return;
+    if (g_partyOnly && party == 0) return;
+    actq::Snapshot s;
+    if (!actq::read(cr, &s, kSiteQsQueue, kSiteQsRound)) return;
+    if (!takeLine()) return;
+    char q[200] = "", rn[64] = "", cur[24] = "-", fx[160] = "";
+    for (int i = 0; i < s.ne && i < actq::kMaxEntries; ++i) appendHex(q, sizeof(q), static_cast<unsigned>(s.e[i].type), s.e[i].param0, true);
+    for (int i = 0; i < s.nrn && i < actq::kMaxRound; ++i) appendHex(rn, sizeof(rn), s.rn[i].subType, s.rn[i].spellId, true);
+    if (s.haveCur) snprintf(cur, sizeof(cur), "%x:%x", static_cast<unsigned>(s.cur.subType), static_cast<unsigned>(s.cur.spellId));
+    int arr = 0, count = 0, seen[kQsMaxFx], nSeen = 0;
+    if (k2fx::effectListNonEmpty(cr, &arr, &count)) {
+        for (int i = 0; i < count && nSeen < kQsMaxFx; ++i) {
+            int eff = 0, spell = -1;
+            if (!saferead::readAt(kSiteQsEffect, static_cast<uintptr_t>(arr), i * 4, &eff) || !eff) continue;
+            if (!saferead::readAt(kSiteQsEffect, static_cast<uintptr_t>(eff), k2fx::Effect_SpellId, &spell) || spell < 0) continue;
+            int k = 0;
+            while (k < nSeen && seen[k] != spell) ++k;
+            if (k == nSeen) seen[nSeen++] = spell;
+        }
+    }
+    for (int k = 0; k < nSeen; ++k) appendHex(fx, sizeof(fx), static_cast<unsigned>(seen[k]), 0, false);
+    KP_LOG(chQs, "QS at=%s actor=%x n=%d q=%s rn=%s cur=%s fx=%s", at, static_cast<unsigned>(cr), s.ne, q, rn, cur, fx);
 }
 
 // ---- handlers: called from the detour wrappers, before the stolen bytes run. Read-only. ----
@@ -121,10 +168,11 @@ extern "C" void __cdecl CmdqProbePause(int mask, int val) {
 }
 
 extern "C" void __cdecl CmdqProbeCast(void* actor, uint32_t spell, int tgt, int real) {
-    if (!g_onCmd) return;
+    if (!g_onCmd && !g_onQs) return;
     saferead::beginScope();
-    if (!KP_ENABLED(chCmd, KPLOG_INFO) || !takeLine()) return;
-    KP_LOG(chCmd, "CMD kind=spell actor=%x id=%x tgt=%x real=%d", U(actor), static_cast<unsigned>(spell), static_cast<unsigned>(tgt), real);
+    if (g_onCmd && KP_ENABLED(chCmd, KPLOG_INFO) && takeLine())
+        KP_LOG(chCmd, "CMD kind=spell actor=%x id=%x tgt=%x real=%d", U(actor), static_cast<unsigned>(spell), static_cast<unsigned>(tgt), real);
+    if (g_onQs) qsLine(real ? "cmd1" : "cmd0", reinterpret_cast<uintptr_t>(actor));
 }
 
 extern "C" void __cdecl CmdqProbeItemCast(void* actor, uint32_t item, int tgt, int real) {
@@ -135,10 +183,10 @@ extern "C" void __cdecl CmdqProbeItemCast(void* actor, uint32_t item, int tgt, i
 }
 
 extern "C" void __cdecl CmdqProbeFireCast(uint32_t actor) {
-    if (!g_onFire) return;
+    if (!g_onFire && !g_onQs) return;
     saferead::beginScope();
-    if (!KP_ENABLED(chFire, KPLOG_INFO) || !takeLine()) return;
-    KP_LOG(chFire, "FIRE kind=spell actor=%x", static_cast<unsigned>(actor));
+    if (g_onFire && KP_ENABLED(chFire, KPLOG_INFO) && takeLine()) KP_LOG(chFire, "FIRE kind=spell actor=%x", static_cast<unsigned>(actor));
+    if (g_onQs) qsLine("fire", actor);
 }
 
 extern "C" void __cdecl CmdqProbeFireItem(uint32_t actor) {
@@ -158,12 +206,12 @@ extern "C" void __cdecl CmdqProbeRoundStart(void* roundObj) {
 }
 
 extern "C" void __cdecl CmdqProbeRoundEnd(void* roundObj) {
-    if (!g_onRound) return;
+    if (!g_onRound && !g_onQs) return;
     saferead::beginScope();
-    if (!KP_ENABLED(chRound, KPLOG_INFO) || !takeLine()) return;
     uint32_t owner = 0;
     (void)saferead::readAt(kSiteRoundOwner, reinterpret_cast<uintptr_t>(roundObj), 0xB04, &owner);
-    KP_LOG(chRound, "ROUND ev=end round=%x owner=%x", U(roundObj), static_cast<unsigned>(owner));
+    if (g_onRound && KP_ENABLED(chRound, KPLOG_INFO) && takeLine()) KP_LOG(chRound, "ROUND ev=end round=%x owner=%x", U(roundObj), static_cast<unsigned>(owner));
+    if (g_onQs) qsLine("rend", owner);
 }
 
 extern "C" void __cdecl CmdqProbeClear(void* victim, uint32_t caller) {
@@ -231,7 +279,8 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     addName(names, sizeof(names), g_onRound, "round");
     addName(names, sizeof(names), g_onClr, "clr");
     addName(names, sizeof(names), g_onMed, "med");
-    KP_LOG(chMain, "cmdq-probe 0.1.0 loaded: probe=%d channels=%s max_lines=%ld", g_probe ? 1 : 0, names[0] ? names : "none", static_cast<long>(g_maxLines));
+    addName(names, sizeof(names), g_onQs, "qs");
+    KP_LOG(chMain, "cmdq-probe 0.2.0 loaded: probe=%d channels=%s max_lines=%ld", g_probe ? 1 : 0, names[0] ? names : "none", static_cast<long>(g_maxLines));
 }
 
 // No I/O here (loader lock). The config is read in KPatchInit.

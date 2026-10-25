@@ -3,8 +3,8 @@
 
 Usage: cmdq_probe_log_check.py [LOG | --log LOG] [--json] [--all]
   Default log: ~/.local/share/Steam/steamapps/common/Knights of the Old Republic II/cmdq-probe_log.txt
-  Default view (at most 55 lines by construction): header, CHANNELS (parsed lines per keyword), FLAGS (per-flag counts),
-  up to 3 MALFORMED and 3 UNKNOWN samples, then up to 12 hits per flag.
+  Default view (at most 58 lines by construction): header, CHANNELS (parsed lines per keyword), FLAGS (per-flag counts),
+  up to 3 MALFORMED and 3 UNKNOWN samples, then up to 7 hits per flag.
   --json: one JSON object with the same counts; hits and samples capped like the text view.
   --all: no hit or sample cap.
   Exit 0 = analyzed (flags are reported, not failures), 2 = log missing.
@@ -18,6 +18,7 @@ or a bare payload (untimed). Blank lines are ignored. The first word of the payl
   CLR victim=<hex> caller=<hex> q=<hex,..>
   REEQ actor=<hex>
   MED site=<entry|canuse> this=<hex> arg=<hex> base=<hex> flag=<0|1>
+  QS at=<cmd0|cmd1|fire|rend> actor=<hex> n=<n> q=<hex:hex,..> rn=<hex:hex,..> cur=<hex:hex|-> fx=<hex,..>   (0.2.0)
 Hex values take an optional 0x prefix; <n> is decimal. Every listed key of a keyword is required. A keyword line with a
 missing, duplicate or invalid field is MALFORMED; a first word that is no keyword is UNKNOWN. Both are counted, never fatal.
 
@@ -25,6 +26,9 @@ Flags (timing uses the <ms> stamp, so untimed lines never trigger M1, M2 or C1):
   M1 medpack-refused: MED site=canuse flag=0 after a MED site=entry within 2000 ms (entry base equal, or 0 for a handle arg).
   M2 item-never-fired: MED site=entry with no later FIRE kind=item within 3000 ms.
   C1 combat-start-wipe: a CLR within 100 ms before a ROUND ev=start (the CLR caller is shown).
+  S1 stale-build: CMD kind=spell real=1 whose id differs from the latest real=0 CMD of the same actor within 500 ms
+     before it (the engine built another cast than the one just queued; .claude/research/combat_ai_recast/README.md).
+  Q1 deep-queue: a QS line with n >= 6 queue entries (attack flood, WI-139).
 Timed flags assume the log's stamps rise monotonically, which holds for one game process.
 """
 from __future__ import annotations
@@ -38,14 +42,17 @@ from collections import Counter
 from pathlib import Path
 
 DEFAULT_LOG = Path.home() / ".local/share/Steam/steamapps/common/Knights of the Old Republic II/cmdq-probe_log.txt"
-HIT_CAP = 12              # hits shown per flag (--all lifts it)
+HIT_CAP = 7               # hits shown per flag (--all lifts it); 3 + 2 x 5 + 5 x (7 + 2) = 58 lines worst case
 BAD_CAP = 3               # MALFORMED / UNKNOWN samples shown (--all lifts it)
 M1_WINDOW_MS = 2000
 M2_WINDOW_MS = 3000
 C1_WINDOW_MS = 100
-CHANNELS = ("PAUSE", "CMD", "FIRE", "ROUND", "CLR", "REEQ", "MED")
-FLAG_ORDER = ("M1", "M2", "C1")
-FLAG_TITLE = {"M1": "M1 medpack-refused", "M2": "M2 item-never-fired", "C1": "C1 combat-start-wipe"}
+S1_WINDOW_MS = 500
+Q1_DEPTH = 6
+CHANNELS = ("PAUSE", "CMD", "FIRE", "ROUND", "CLR", "REEQ", "MED", "QS")
+FLAG_ORDER = ("M1", "M2", "C1", "S1", "Q1")
+FLAG_TITLE = {"M1": "M1 medpack-refused", "M2": "M2 item-never-fired", "C1": "C1 combat-start-wipe",
+              "S1": "S1 stale-build", "Q1": "Q1 deep-queue"}
 _HEX = r"(?:0[xX])?[0-9a-fA-F]+"
 # Value grammar per field kind, matched with fullmatch.
 VALUE_RE = {k: re.compile(v) for k, v in {
@@ -56,6 +63,9 @@ VALUE_RE = {k: re.compile(v) for k, v in {
     "kind": r"spell|item",
     "ev": r"start|end",
     "site": r"entry|canuse",
+    "at": r"cmd0|cmd1|fire|rend",
+    "pairlist": r"(?:" + _HEX + ":" + _HEX + r"(?:," + _HEX + ":" + _HEX + r")*)?",
+    "pairopt": r"-|" + _HEX + ":" + _HEX,
 }.items()}
 # Field table: keyword -> {key: kind}. Every listed key is REQUIRED on that keyword; unlisted keys are ignored.
 FIELDS = {
@@ -66,6 +76,7 @@ FIELDS = {
     "CLR": {"victim": "hex", "caller": "hex", "q": "hexlist"},
     "REEQ": {"actor": "hex"},
     "MED": {"site": "site", "this": "hex", "arg": "hex", "base": "hex", "flag": "bit"},
+    "QS": {"at": "at", "actor": "hex", "n": "num", "q": "pairlist", "rn": "pairlist", "cur": "pairopt", "fx": "hexlist"},
 }
 REQUIRED = {kw: tuple(spec) for kw, spec in FIELDS.items()}
 PREFIX_RE = re.compile(
@@ -83,6 +94,10 @@ def _convert(kind, val):
         return int(val, 16)
     if kind == "hexlist":
         return [int(x, 16) for x in val.split(",")] if val else []
+    if kind == "pairlist":
+        return [tuple(int(h, 16) for h in x.split(":")) for x in val.split(",")] if val else []
+    if kind == "pairopt":
+        return None if val == "-" else tuple(int(h, 16) for h in val.split(":"))
     if kind == "num":
         return int(val, 10)
     if kind == "bit":
@@ -225,10 +240,43 @@ def c1_hits(recs):
     return hits
 
 
+def s1_hits(recs):
+    """Stale build: a spell CMD real=1 whose id is not the id the same actor queued (real=0) within S1_WINDOW_MS before."""
+    last_q = {}  # actor -> latest real=0 spell CMD record
+    hits = []
+    for r in recs:
+        if r["kw"] != "CMD" or r["f"]["kind"] != "spell":
+            continue
+        f = r["f"]
+        if f["real"] == 0:
+            last_q[f["actor"]] = r
+            continue
+        q = last_q.get(f["actor"])
+        if q is None or r["t"] is None or q["t"] is None or not 0 <= r["t"] - q["t"] <= S1_WINDOW_MS:
+            continue
+        if q["f"]["id"] != f["id"]:
+            hits.append(_hit("S1", r, q["line"], "L%d t=%s actor=%s built id=%s; queued id=%s at L%d (dt=%s ms)"
+                             % (r["line"], _ms_text(r["t"]), _hex(f["actor"]), _hex(f["id"]), _hex(q["f"]["id"]),
+                                q["line"], _ms_text(r["t"] - q["t"]))))
+    return hits
+
+
+def q1_hits(recs):
+    """Deep queue: a QS snapshot with at least Q1_DEPTH queue entries (types listed)."""
+    hits = []
+    for r in recs:
+        if r["kw"] == "QS" and r["f"]["n"] >= Q1_DEPTH:
+            f = r["f"]
+            hits.append(_hit("Q1", r, None, "L%d t=%s at=%s actor=%s n=%d types=%s"
+                             % (r["line"], _ms_text(r["t"]), f["at"], _hex(f["actor"]), f["n"],
+                                ",".join("%x" % t for t, _ in f["q"]))))
+    return hits
+
+
 def summarize(lines):
     """Raw text lines -> summary dict (counts and hits in log order). Pure; main only renders it."""
     recs, unknown, malformed = parse_lines(list(enumerate(lines, 1)))
-    hits = {"M1": m1_hits(recs), "M2": m2_hits(recs), "C1": c1_hits(recs)}
+    hits = {"M1": m1_hits(recs), "M2": m2_hits(recs), "C1": c1_hits(recs), "S1": s1_hits(recs), "Q1": q1_hits(recs)}
     counts = Counter(r["kw"] for r in recs)
     return {
         "lines": len(lines), "parsed": len(recs), "unknown_list": unknown, "malformed_list": malformed,

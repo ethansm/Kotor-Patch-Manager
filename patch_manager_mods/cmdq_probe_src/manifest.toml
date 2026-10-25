@@ -1,9 +1,9 @@
 [patch]
 id = "cmdq-probe"
 name = "Command Queue Probe"
-version = "0.1.0"
+version = "0.2.0"
 author = "local"
-description = "Log-only probe of the command queue, pause, combat round, ClearAllActions and medpack/CanUseItem paths (cmdq_probe.ini probe=1 plus ch_* switches; log cmdq-probe_log.txt; needs a [cmdq-probe] section with level=info in the game-dir kplog.ini or every line is dropped)"
+description = "Log-only probe of the command queue, pause, combat round, ClearAllActions and medpack/CanUseItem paths, plus QS queue/round/effect snapshots of party casts (cmdq_probe.ini probe=1 plus ch_* switches; log cmdq-probe_log.txt; needs a [cmdq-probe] section with level=info in the game-dir kplog.ini or every line is dropped)"
 
 requires = []
 conflicts = []

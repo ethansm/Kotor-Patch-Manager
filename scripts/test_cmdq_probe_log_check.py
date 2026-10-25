@@ -22,6 +22,7 @@ GOLDEN = {
     "CLR": "104 cmdq-probe/med CLR victim=0x3f caller=0xabc q=1,0x2,ff",
     "REEQ": "105 cmdq-probe/med REEQ actor=0x1f",
     "MED": "12345 cmdq-probe/med MED site=entry this=0x1234 arg=0x40000001 base=0x35 flag=0",
+    "QS": "106 cmdq-probe/qs QS at=cmd1 actor=a9b88f0 n=2 q=3f:0,3d:7f000000 rn=9:87 cur=- fx=87,16",
 }
 GOLDEN_FIELDS = {
     "PAUSE": {"mask": 3, "val": -1},
@@ -31,6 +32,8 @@ GOLDEN_FIELDS = {
     "CLR": {"victim": 0x3F, "caller": 0xABC, "q": [1, 2, 0xFF]},
     "REEQ": {"actor": 0x1F},
     "MED": {"site": "entry", "this": 0x1234, "arg": 0x40000001, "base": 0x35, "flag": 0},
+    "QS": {"at": "cmd1", "actor": 0xA9B88F0, "n": 2, "q": [(0x3F, 0), (0x3D, 0x7F000000)], "rn": [(9, 0x87)], "cur": None,
+           "fx": [0x87, 0x16]},
 }
 
 
@@ -119,7 +122,7 @@ class ParseTests(unittest.TestCase):
         self.assertEqual(C.parse_lines([]), ([], [], []))
         s = C.summarize([])
         self.assertEqual((s["lines"], s["parsed"]), (0, 0))
-        self.assertEqual(s["flags"], {"M1": 0, "M2": 0, "C1": 0})
+        self.assertEqual(s["flags"], {"M1": 0, "M2": 0, "C1": 0, "S1": 0, "Q1": 0})
 
 
 class M1Tests(unittest.TestCase):
@@ -196,6 +199,59 @@ class C1Tests(unittest.TestCase):
         self.assertEqual(C.summarize([start(1080), clr(1000)])["flags"]["C1"], 0)
 
 
+def cmd(t, spell, real, actor="a9b88f0"):
+    return "%s cmdq-probe/cmd CMD kind=spell actor=%s id=%s tgt=0 real=%d" % (t, actor, spell, real)
+
+
+def qs(t, n, at="rend"):
+    q = ",".join("3d:0" for _ in range(n))
+    return "%d cmdq-probe/qs QS at=%s actor=0x1 n=%d q=%s rn= cur=9:87 fx=" % (t, at, n, q)
+
+
+class QsParseTests(unittest.TestCase):
+    def test_empty_lists_and_current_node(self):
+        recs, unknown, malformed = parse_one(qs(5, 0))
+        self.assertEqual((unknown, malformed), ([], []))
+        f = recs[0]["f"]
+        self.assertEqual((f["q"], f["rn"], f["cur"], f["fx"]), ([], [], (9, 0x87), []))
+
+    def test_bad_pair_is_malformed(self):
+        _, _, malformed = parse_one("1 cmdq-probe/qs QS at=cmd0 actor=1 n=1 q=3f rn= cur=- fx=")
+        self.assertEqual(len(malformed), 1)
+
+
+class S1Tests(unittest.TestCase):
+    def test_build_of_other_spell_than_just_queued_is_flagged(self):
+        # T=317991: Kreia queued Valor (0x16), the build cast Barrier (0x87).
+        s = C.summarize([cmd("317991.303", "16", 0), cmd("317991.370", "87", 1)])
+        self.assertEqual(s["flags"]["S1"], 1)
+        hit = s["hits"]["S1"][0]
+        self.assertEqual((hit["line"], hit["ref"]), (2, 1))
+        self.assertIn("built id=0x87; queued id=0x16", hit["detail"])
+
+    def test_skip_talent_minus_one_then_build_is_flagged(self):
+        s = C.summarize([cmd("665585.296", "ffffffff", 0), cmd("665617.659", "87", 1)])
+        self.assertEqual(s["flags"]["S1"], 1)
+
+    def test_matching_build_is_not_flagged(self):
+        self.assertEqual(C.summarize([cmd(1000, "87", 0), cmd(1000, "87", 1)])["flags"]["S1"], 0)
+
+    def test_window_and_actor(self):
+        self.assertEqual(C.summarize([cmd(1000, "16", 0), cmd(1500, "87", 1)])["flags"]["S1"], 1)
+        self.assertEqual(C.summarize([cmd(1000, "16", 0), cmd(1501, "87", 1)])["flags"]["S1"], 0)
+        self.assertEqual(C.summarize([cmd(1000, "16", 0), cmd(1001, "87", 1, actor="b")])["flags"]["S1"], 0)
+
+    def test_build_without_queue_is_not_flagged(self):
+        self.assertEqual(C.summarize([cmd(1000, "87", 1)])["flags"]["S1"], 0)
+
+
+class Q1Tests(unittest.TestCase):
+    def test_depth_threshold(self):
+        s = C.summarize([qs(1, 5), qs(2, 6)])
+        self.assertEqual(s["flags"]["Q1"], 1)
+        self.assertIn("n=6 types=3d,3d,3d,3d,3d,3d", s["hits"]["Q1"][0]["detail"])
+
+
 class CapTests(unittest.TestCase):
     def _big_log(self):
         lines, t = [], 0
@@ -215,7 +271,7 @@ class CapTests(unittest.TestCase):
         rows = out.splitlines()
         self.assertLessEqual(len(rows), 60)
         self.assertIn("M2 item-never-fired 100", rows)
-        self.assertIn("  ... +88 more", rows)
+        self.assertIn("  ... +93 more", rows)
         self.assertIn("MALFORMED 50", rows)
         self.assertIn("UNKNOWN 50", rows)
 
@@ -226,7 +282,7 @@ class CapTests(unittest.TestCase):
         self.assertGreater(len(rows), 60)
         # 100 hits each for M1, M2, C1, plus 50 MALFORMED and 50 UNKNOWN samples, all listed.
         self.assertEqual(sum(1 for r in rows if r.startswith("  L")), 300 + 50 + 50)
-        self.assertNotIn("  ... +88 more", rows)
+        self.assertNotIn("  ... +93 more", rows)
 
 
 class CliTests(unittest.TestCase):
@@ -258,7 +314,7 @@ class CliTests(unittest.TestCase):
         rc, out = run_log([med(1000, "entry"), med(2000, "canuse", flag=0)], extra=["--json"])
         self.assertEqual(rc, 0)
         doc = json.loads(out)
-        self.assertEqual(doc["flags"], {"M1": 1, "M2": 1, "C1": 0})
+        self.assertEqual(doc["flags"], {"M1": 1, "M2": 1, "C1": 0, "S1": 0, "Q1": 0})
         self.assertEqual(doc["hits"]["M1"][0]["ref"], 1)
         self.assertEqual(doc["channels"]["MED"], 2)
         self.assertEqual(doc["malformed"], 0)

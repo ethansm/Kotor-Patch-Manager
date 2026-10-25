@@ -55,6 +55,10 @@ Tools (read the archived or live log; run with the repo venv for pykotor):
 
 - F0 probe (DLL, log only): extend cmdq-probe with queue snapshots at `real=0` and `real=1` (spell ids in order) and
   the actor's effect spell ids for the cast family. Settles O1/O2. Cheap, reuses ActQueue.h + Effects.h readers.
+  BUILT 2026-10-25 (WI-134): cmdq-probe 0.2.0 `ch_qs` (QS lines at cmd0/cmd1/fire/rend); checker flags S1 stale-build
+  (archived log: 7 hits, all Kreia) and Q1 deep-queue. Not installed; play row CQ-QS1. Extra fact from S1: 6 of 7 builds
+  run 9-67 us after the queue call (same engine call chain), so the queue call itself triggers the stale build (the
+  7th, after a -1 skip, came 32 ms later).
 - F1 engine guard (DLL, companion-ai, INI-gated): at the build call (`AddCastSpellActions` real=1) for a party member,
   if the spell is a friendly self buff whose family is already on the caster, or a single-target debuff whose family
   is already on the target, drop the cast (return without building) and log it. This is the baseline that covers
