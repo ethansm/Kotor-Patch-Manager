@@ -186,7 +186,7 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [x] | 170 | WI-138 | P2 | ready | L | - | Combat AI recast F2: party AI scripts family-aware buff/combo/debuff picks | 0 | 2 | Script gaps: exact-id check, -1 wasted round, unchecked combos/debuffs. |
 | [ ] | 171 | WI-139 | P2 | ready | L | WI-134 | Combat AI O2: party queue fills with single attack actions | 0 | 1 | User report; cause + queue-depth cap rule. |
 | [ ] | 172 | WI-140 | P3 | hold | L | WI-136 | Combat AI O3: group debuff targeting research (unaffected enemies in radius) | 0 | 1 | Needs a study, then owner decision. |
-| [ ] | 173 | WI-141 | P3 | hold | S | - | Party AI buff picker: tier-5 typo checks GetCreatureHasTalent(tBuff_06) | 0 | 0 | vanilla k_inc_generic.nss ~2624 tests tBuff_06 for the tBuff_05 branch |
+| [ ] | 173 | WI-141 | P3 | ready | S | - | Party AI buff picker: tier-5 typo checks GetCreatureHasTalent(tBuff_06) | 0 | 0 | vanilla k_inc_generic.nss ~2624 tests tBuff_06 for the tBuff_05 branch |
 | [ ] | 174 | WI-142 | P3 | ready | S | - | Combat AI recast F5: party DetermineCombatRound at most once per engine round end (script) | 0 | 0 | CQ-QS1 fact 7: Kreia ran DCR 2-3x per round end (28/73), each run appe |
 | [ ] | 175 | WI-143 | P3 | hold | S | - | Combat AI recast F4: drop a party member's pending spell round nodes at AddSWSpellAction 0 | 0 | 0 | ClearAllActions 0x541080 never empties round list +0xB00 (PQ2 4.4); ne |
 | [ ] | 176 | WI-144 | P3 | hold | S | - | companion-ai probe: per-site RS counters (S6A/S6B/S6C/S1/none) in the summary line | 0 | 0 | PR RS lines are per-subject throttled (g_psubj, CompanionAI.cpp:1402), |
