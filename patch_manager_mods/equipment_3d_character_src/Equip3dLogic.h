@@ -31,7 +31,7 @@ struct Cfg {
     char flStance[512] = "";   // optional flourish list used while a weapon stance is on (empty = same list)
     char flList[512] = "shrug,nodyes,salute,bow,greeting,touchheart,point,rolleyes,scanning,victory,pausesh";
     char equipAnim[64] = "itemequip";
-    int pollMs = 100, rebuildMinMs = 250, keepObj10 = 0, helmet = 1, buttons = 1; float spinToggleDegS = 20;
+    int pollMs = 100, rebuildMinMs = 250, keepObj10 = 0, helmet = 1, buttons = 1, weapons = 1; float spinToggleDegS = 20;
     float spinDegS = 0;
 };
 
@@ -114,6 +114,7 @@ inline IniResult parseIniLine(Cfg& c, const char* k, const char* v) {
     else if (!strcmp(k, "equip_anim")) { if (v[0] && strlen(v) < sizeof(c.equipAnim)) strcpy(c.equipAnim, v); else good = false; }
     else if (!strcmp(k, "poll_ms")) { good = parseFloats(v, a, 1); if (good) c.pollMs = toIntSat(a[0]); }
     else if (!strcmp(k, "buttons")) { good = parseFloats(v, a, 1); if (good) c.buttons = toIntSat(a[0]); }
+    else if (!strcmp(k, "weapons")) { good = parseFloats(v, a, 1) && (a[0] == 0.f || a[0] == 1.f); if (good) c.weapons = toIntSat(a[0]); }   // EQ10: 1 = preview opens with weapons shown (drawn), 0 = hidden
     else if (!strcmp(k, "spin_toggle_deg_s")) { good = parseFloats(v, a, 1); if (good) c.spinToggleDegS = a[0]; }
     else if (!strcmp(k, "keep_obj10")) { good = parseFloats(v, a, 1); if (good) c.keepObj10 = toIntSat(a[0]); if (good && c.keepObj10) return IniOkKeepObj10; }
     else if (!strcmp(k, "helmet")) { good = parseFloats(v, a, 1); if (good) c.helmet = toIntSat(a[0]); }
@@ -166,6 +167,10 @@ inline int styleFor(int rWield, int lWield, bool rHas, bool lHas) {
 // holstered=false is styleFor unchanged (hands mode).
 inline int stanceStyle(bool holstered, int rWield, int lWield, bool rHas, bool lHas) {
     return holstered ? 0 : styleFor(rWield, lWield, rHas, lHas);
+}
+// EQ10 equipment toolbar: no stance while the weapons are hidden; else stanceStyle (holstered -> 0, drawn -> styleFor).
+inline int stanceFor(bool weaponsOn, bool holstered, int rWield, int lWield, bool rHas, bool lHas) {
+    return weaponsOn ? stanceStyle(holstered, rWield, lWield, rHas, lHas) : 0;
 }
 // baseitems row + variation -> weapon model ResRef "<itemclass>_<var:03d>" and the row's weaponwield. false (and nothing
 // written) when the row is out of range or not a wieldable weapon (weaponwield 0).
@@ -235,6 +240,18 @@ inline bool layoutSpin(Box row, bool spinUi, Box* spin, Box* reset) {
     *spin = Box{x, y, w1, H}; *reset = Box{x + w1 + gp, y, W - w1 - gp, H};
     return true;
 }
+
+// EQ10 toolbar column: the 5 GUI cells top..bottom become Animate, Spin, Emotes, Hide/Show, Holster/Draw. The Holster row
+// exists only while the weapons are shown and the holster mod can draw (else parked off-screen, holsShown false).
+struct ToolbarRects { Box anim, spin, emote, weap, hols; bool holsShown; };
+inline ToolbarRects layoutToolbar(const Box cell[5], bool weaponsOn, bool holsterAvail) {
+    ToolbarRects t{cell[0], cell[1], cell[2], cell[3], cell[4], weaponsOn && holsterAvail};
+    if (!t.holsShown) t.hols = Box{-9999, -9999, 0, 0};
+    return t;
+}
+// Button captions name the action the click performs.
+inline const char* weapLabel(bool weaponsOn) { return weaponsOn ? "Hide" : "Show"; }
+inline const char* holsLabel(bool drawn) { return drawn ? "Holster" : "Draw"; }
 
 constexpr int MenuRows = 8;   // items per pop-up column
 constexpr const char* kPageToggle = "@page";

@@ -400,6 +400,19 @@ static void testIniFile() {
     c = loadText(fits, &st); KT_CHECK_EQ(st.ok, 1); KT_CHECK_EQ(strlen(c.flList), 511);
 }
 
+// EQ10 weapons= key: only 0 or 1 is accepted; anything else is IniBad and keeps the value it had (default 1 = drawn).
+static void testWeaponsIni() {
+    Cfg c;
+    KT_CHECK_EQ(c.weapons, 1);
+    KT_CHECK_EQ(parseIniLine(c, "weapons", "0"), IniOk); KT_CHECK_EQ(c.weapons, 0);
+    KT_CHECK_EQ(parseIniLine(c, "weapons", "1"), IniOk); KT_CHECK_EQ(c.weapons, 1);
+    KT_CHECK_EQ(parseIniLine(c, "weapons", "x"), IniBad); KT_CHECK_EQ(c.weapons, 1);
+    KT_CHECK_EQ(parseIniLine(c, "weapons", "0"), IniOk);
+    KT_CHECK_EQ(parseIniLine(c, "weapons", "2"), IniBad); KT_CHECK_EQ(c.weapons, 0);
+    KT_CHECK_EQ(parseIniLine(c, "weapons", "0x1"), IniBad); KT_CHECK_EQ(c.weapons, 0);
+    KT_CHECK_EQ(applyLine(c, "weapons = 1"), IniOk); KT_CHECK_EQ(c.weapons, 1);
+}
+
 // ---- weapons -----------------------------------------------------------------------------------------------------
 static void testWeaponTable() {
     // table integrity (catches a bad regeneration)
@@ -525,6 +538,23 @@ static void testStanceStyle() {
     KT_CHECK_EQ(kStyleAnim[stanceStyle(true, 2, 0, true, false)], "");
     // hands mode still gives the stance for the same weapon
     KT_CHECK_EQ(kStyleAnim[stanceStyle(false, 2, 0, true, false)], "g2r1");
+}
+
+// EQ10 toolbar stance: weapons hidden -> no stance whatever the holster state; shown -> stanceStyle.
+static void testStanceFor() {
+    for (int rw = 0; rw <= 7; ++rw) for (int lw = 0; lw <= 7; ++lw) for (int m = 0; m < 4; ++m) {
+        bool rHas = (m & 1) != 0, lHas = (m & 2) != 0;
+        char what[96];
+        snprintf(what, sizeof what, "hidden drawn r=%d l=%d rHas=%d lHas=%d", rw, lw, (int)rHas, (int)lHas);
+        kt::CheckEq(what, stanceFor(false, false, rw, lw, rHas, lHas), 0);
+        snprintf(what, sizeof what, "hidden holstered r=%d l=%d rHas=%d lHas=%d", rw, lw, (int)rHas, (int)lHas);
+        kt::CheckEq(what, stanceFor(false, true, rw, lw, rHas, lHas), 0);
+        snprintf(what, sizeof what, "shown holstered r=%d l=%d rHas=%d lHas=%d", rw, lw, (int)rHas, (int)lHas);
+        kt::CheckEq(what, stanceFor(true, true, rw, lw, rHas, lHas), 0);
+        snprintf(what, sizeof what, "shown drawn r=%d l=%d rHas=%d lHas=%d", rw, lw, (int)rHas, (int)lHas);
+        kt::CheckEq(what, stanceFor(true, false, rw, lw, rHas, lHas), styleFor(rw, lw, rHas, lHas));
+    }
+    KT_CHECK_EQ(kStyleAnim[stanceFor(true, false, 2, 0, true, false)], "g2r1");
 }
 
 // ---- idle / droids -----------------------------------------------------------------------------------------------
@@ -746,6 +776,26 @@ static void testLayoutSpin() {
     }
 }
 
+// EQ10 toolbar column: Animate/Spin/Emotes keep their cells; Hide/Show and Holster/Draw take cells 4 and 5. The Holster row
+// is parked off-screen unless the weapons are shown and the holster mod can draw. Labels name the click's action.
+static void testLayoutToolbar() {
+    const Box cell[5] = {{684, 174, 62, 22}, {684, 200, 62, 22}, {684, 226, 62, 22}, {684, 252, 62, 22}, {684, 278, 62, 22}};
+    ToolbarRects t = layoutToolbar(cell, true, true);
+    KT_CHECK(t.anim.x == 684 && t.anim.y == 174 && t.anim.w == 62 && t.anim.h == 22);
+    KT_CHECK(t.spin.y == 200 && t.emote.y == 226 && t.weap.y == 252 && t.hols.y == 278);
+    KT_CHECK(t.holsShown && t.hols.x == 684 && t.hols.w == 62 && t.hols.h == 22);
+    const bool hiddenCombos[3][2] = {{true, false}, {false, true}, {false, false}};   // (weapons on, no holster), (off, holster), (off, none)
+    for (const auto& cb : hiddenCombos) {
+        ToolbarRects u = layoutToolbar(cell, cb[0], cb[1]);
+        KT_CHECK(!u.holsShown);
+        KT_CHECK(u.hols.x == -9999 && u.hols.y == -9999 && u.hols.w == 0 && u.hols.h == 0);
+        KT_CHECK(u.anim.y == 174 && u.spin.y == 200 && u.emote.y == 226 && u.weap.y == 252);
+        KT_CHECK(u.anim.x == 684 && u.weap.x == 684 && u.weap.w == 62 && u.weap.h == 22);
+    }
+    KT_CHECK_EQ(weapLabel(true), "Hide"); KT_CHECK_EQ(weapLabel(false), "Show");
+    KT_CHECK_EQ(holsLabel(true), "Holster"); KT_CHECK_EQ(holsLabel(false), "Draw");
+}
+
 static void testMenuPitch() {
     KT_CHECK(approx(menuPitch(true, 100, 200, 40), 50.f));        // half the gap between buttons 0 and 2
     KT_CHECK(approx(menuPitch(true, 100, 101, 40), 0.5f));
@@ -846,9 +896,11 @@ int main() {
     testParseIniLineValues();
     testClamps();
     testIniFile();
+    testWeaponsIni();
     testWeaponTable();
     testStyleFor();
     testStanceStyle();
+    testStanceFor();
     testIdle();
     testScreenValid();
     testClientToEngine();
@@ -857,6 +909,7 @@ int main() {
     testYawZoomFov();
     testPanDrag();
     testLayoutSpin();
+    testLayoutToolbar();
     testMenuPitch();
     testLayoutMenu();
     return kt::Report("equip3d_logic");
