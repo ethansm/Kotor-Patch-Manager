@@ -3,7 +3,8 @@
 scripts/prune_test_cache.py - prune the KOTOR-II test scratch tree (TMP = $TMPDIR or /tmp/claude-<uid> + /kotor-tests).
 
 Deletes stale test binaries under host/, dead per-run dirs (gate-<pid>-<epoch>, wine/run-<pid>-<epoch>)
-and old legacy gate dirs. Never touches gate-records/, wineprefix/, common-cache/, locks/, build/.
+old legacy gate dirs, and per-checkout run_tests build roots build-<8 hex> whose newest file is older than --days.
+Never touches gate-records/, wineprefix/, common-cache/, locks/, build/.
 
 Usage:
   python3 scripts/prune_test_cache.py                  # dry run: WOULD DELETE <path> <size> + summary
@@ -34,6 +35,7 @@ from _load_limit import TMP  # noqa: E402
 
 RUN_DIR_RE = re.compile(r"^(?:gate|run)-(\d+)-(\d+)$")
 LEGACY_DIRS = ("gate", "gate-selftest")
+BUILD_ROOT_RE = re.compile(r"^build-[0-9a-f]{8}$")   # run_tests.py per-checkout build_check --keep roots
 SIDECAR_SUFFIX = ".deps.json"
 ROOT_NAME = "kotor-tests"
 MIN_DAYS = 0.1
@@ -175,6 +177,15 @@ def _scan(root: Path, days: float, run_days: float, now: float, warn=lambda m: N
         try:
             if _newest(d) < run_cut:
                 targets.append(d)
+        except OSError:
+            continue
+
+    for e in sorted(_scandir(root, warn), key=lambda x: x.name):
+        if not BUILD_ROOT_RE.match(e.name) or e.is_symlink() or not e.is_dir(follow_symlinks=False):
+            continue
+        try:
+            if _newest(Path(e.path)) < age_cut:
+                targets.append(Path(e.path))
         except OSError:
             continue
     return targets

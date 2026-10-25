@@ -117,6 +117,16 @@ class PruneTest(unittest.TestCase):
         self.assertFalse(exe.exists() or sc.exists())
         self.assertTrue(hit_exe.exists() and hit_sc.exists())
 
+    def test_old_checkout_build_root_deleted_fresh_kept_build_untouched(self):
+        old = mk(self.root / "build-0123abcd" / "k" / "x.dll", days=5).parent.parent
+        fresh = mk(self.root / "build-89abcdef" / "k" / "x.dll").parent.parent
+        shared = mk(self.root / "build" / "k" / "x.dll", days=30).parent.parent
+        os.utime(old, (time.time() - 5 * 86400,) * 2)
+        os.utime(old / "k", (time.time() - 5 * 86400,) * 2)
+        self.run_prune(apply=True)
+        self.assertFalse(old.exists())
+        self.assertTrue(fresh.exists() and shared.exists())
+
     def test_fresh_tmp_file_kept(self):
         h = self.root / "host"
         fresh = mk(h / "a_src__t-aaaaaaaaaaaa.tmp.999")
