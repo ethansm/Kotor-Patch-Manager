@@ -89,3 +89,10 @@ WI-72	0	0	1	0	0	0	S	S	hold	H	(U column missing in reply; read as 0) analyze_play
 WI-12	1	2	2	0	0	0	XL	M	ready	M	Fix sites: gen_hotbar_textures.py make_all/ALL_NAMES and ActionHotbar.cpp LBL_HOTBARPREV/NEXT. C190 line is stale (GuiKit.h:282). Arrow shape is left to the executor.
 WI-38	0	0	1	1	0	0	M	L	ready	M	Fix site SelfHealUi.h:25-26 discDiameter clamp to 58; pins in selfheal_ui_test.cpp; shared-header sync and compat waivers; C213/C215/C220 confirm-only.
 WI-02b	0	2	1	1	0	0	L	M	ready	M	Fix sites confirmed at kpm_commit.py:68, kpm_reinstall.py:271, kpm_ship.py:85; scored as from-scratch 3-file build; verify only --help/dry-run; WI says NEW, rows DONE
+WI-134	0	1	1	0	0	1	M	-	ready	M	sites named (CmdqProbe.cpp handlers, ActQueue.h/Effects.h readers); parser + tests extend; DLL build
+WI-135	2	0	0	1	0	0	L	-	ready	M	root cause unknown, static dumps + QS data; hook-address facts
+WI-136	1	1	1	1	0	1	L	-	ready	M	site from WI-135; new hook; logic header + host tests
+WI-137	2	1	1	0	0	1	XL	-	ready	L	cast target field unknown (RE); family table + tests
+WI-138	1	2	1	0	0	1	L	-	ready	M	script anchors known (k_inc_generic 2655-2680, gensupport 754-1120); many patch tuples
+WI-139	2	0	0	0	1	0	L	-	ready	L	log forensics on QS data; cap N needs owner input
+WI-140	2	0	0	0	1	0	L	-	hold	L	design study; owner decision
