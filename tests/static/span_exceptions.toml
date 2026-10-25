@@ -25,10 +25,11 @@
 [[exception]]
 address = 0x004261CF
 patches = ["k2-texture-memory-release", "perf-lab"]
-reason = """Both write the 7 bytes at BuildAndStoreTexture's tail (orig 0F B6 C8 85 C9 75 10) as E9 rel32 90 90, and both memcmp the original first: \
-TextureMemoryRelease.cpp apply() :69-71 refuses with REFUSED(bytes ...), PerfLab.cpp writeCode() :446-456 returns -1 (tx=REFUSED(bytes)). \
-Mutually exclusive whichever loads first; PerfLab's tx is also off by default (tx=0, needs perflab_debug.txt)."""
-tests = ["wine:texmem[foreign]", "wine:perflab3[txforeign]"]
+reason = """k2-texture-memory-release (0.2.0+) is a KPM replace hook over the 7 bytes at BuildAndStoreTexture's tail (orig 0F B6 C8 85 C9 75 10); \
+perf-lab's tx experiment writes the same bytes as E9 rel32 90 90 and memcmp's the original first (PerfLab.cpp writeCode() :446-456 returns -1, tx=REFUSED(bytes)). \
+KPM verifies a hook's original_bytes before writing, so the second writer refuses whichever loads first. PerfLab's tx is also off by default (tx=0, needs perflab_debug.txt)."""
+hooks_verify_original = true
+tests = ["wine:perflab3[txforeign]"]
 
 # --- adjacencies (disassembled with scripts/disasm_va.py steam <addr> --before 16 --len 48) ---
 

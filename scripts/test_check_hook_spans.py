@@ -100,6 +100,12 @@ class SpanTests(unittest.TestCase):
         f = chs.run(mods, exceptions=[exc()])
         self.assertEqual(sevs(f, "exception"), ["FAIL"])
 
+    def test_exception_covers_a_hook_when_opted_in(self):
+        mods = [mod("a", cps=[cp("a", 0x4261CF)]), mod("b", [hook(0x4261CF, 7)])]
+        f = chs.run(mods, exceptions=[{**exc(), "hooks_verify_original": True}])
+        self.assertEqual(sevs(f), [])
+        self.assertTrue(any(x.sev == "INFO" and x.check == "exception" for x in f))
+
     def test_exception_does_not_cover_a_third_patch(self):
         mods = [mod("a", cps=[cp("a", 0x4261CF)]), mod("b", cps=[cp("b", 0x4261CF)]), mod("c", cps=[cp("c", 0x4261D0)])]
         f = chs.run(mods, exceptions=[exc()])

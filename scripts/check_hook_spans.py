@@ -73,7 +73,8 @@ def load_exceptions(src):
             if key not in e:
                 raise ValueError(f"{p}: exception[{i}] lacks '{key}'")
         out.append({"address": e["address"], "patches": list(e["patches"]), "reason": e.get("reason", ""),
-                    "tests": list(e.get("tests", []))})
+                    "tests": list(e.get("tests", [])),
+                    "hooks_verify_original": bool(e.get("hooks_verify_original", False))})
     return out
 
 
@@ -106,7 +107,9 @@ def _match_exception(exc, a, b):
         return None
     for s in (a, b):
         if s.cp is None:
-            return f"{s} is a hook, not a code patch (exceptions only cover mutually refusing code patches)"
+            if exc.get("hooks_verify_original"):
+                continue   # KPM memcmp's a hook's original_bytes before writing it, so it refuses like a verifying code patch
+            return f"{s} is a hook, not a code patch (exceptions only cover mutually refusing code patches; set hooks_verify_original = true when the hook side is a KPM hook)"
         if not s.cp.verifies_original:
             return f"{s} has verifies_original = false, so nothing stops the second writer from clobbering the first"
     return ""
