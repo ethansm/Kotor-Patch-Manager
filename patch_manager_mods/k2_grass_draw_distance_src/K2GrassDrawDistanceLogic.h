@@ -12,7 +12,7 @@
 namespace k2grass {
 
 constexpr const char* kModId = "k2-grass-draw-distance";
-constexpr const char* kVersion = "0.1.4-dev";
+constexpr const char* kVersion = "0.1.5-dev";
 constexpr const char* kIniFile = "k2_grass_draw_distance.ini";
 constexpr const char* kIniSection = "Grass";
 
@@ -41,6 +41,25 @@ constexpr bool kDefaultTrimHidden = true;
 constexpr bool kDefaultSmoothEdges = false;
 // Margin (m) added to the alpha-test clip distance when trimming, so bins straddling the clip radius still render.
 constexpr float kTrimMarginMeters = 2.0f;
+// 0.1.5 experiments (all off by default except the log-only GPU timer; with them off the picture and CPU work equal 0.1.4):
+//   gpu_timing   GL_TIME_ELAPSED query around the grass bucket loop (PERF gpu_ms_*), ini only
+//   wind_*       PF2b: only every wind_every-th frame animates wind out to wind_dist; in between wind is capped to wind_near
+//   far_lod      PF2c: far bins draw only a prefix of their quads (linear from 100% at lod_start to lod_min_keep at the fade end)
+constexpr bool kDefaultGpuTiming = true;
+constexpr bool kDefaultWindThrottle = false;
+constexpr float kDefaultWindNear = 10.0f;
+constexpr int kDefaultWindEvery = 2;
+constexpr bool kDefaultFarLod = false;
+constexpr float kDefaultLodStart = 60.0f;
+constexpr float kDefaultLodMinKeep = 0.5f;
+constexpr float kMinWindNear = 0.0f;
+constexpr float kMaxWindNear = 200.0f;
+constexpr int kMinWindEvery = 1;
+constexpr int kMaxWindEvery = 8;
+constexpr float kMinLodStart = 10.0f;
+constexpr float kMaxLodStart = 150.0f;
+constexpr float kMinLodMinKeep = 0.1f;
+constexpr float kMaxLodMinKeep = 1.0f;
 
 // Clamp bounds. 150m is 25x the vanilla 30m grass area; raise only after P3 measures the frame cost.
 constexpr float kMinFadeStartDist = 5.0f;
@@ -68,6 +87,13 @@ struct Config {
     bool perfLog = kDefaultPerfLog;
     bool trimHidden = kDefaultTrimHidden;
     bool smoothEdges = kDefaultSmoothEdges;
+    bool gpuTiming = kDefaultGpuTiming;
+    bool windThrottle = kDefaultWindThrottle;
+    float windNear = kDefaultWindNear;
+    int windEvery = kDefaultWindEvery;
+    bool farLod = kDefaultFarLod;
+    float lodStart = kDefaultLodStart;
+    float lodMinKeep = kDefaultLodMinKeep;
 
     void sanitize() {
         // fade_end_dist is the cost knob (build radius), so a fade start at or past it pulls the start
@@ -77,6 +103,10 @@ struct Config {
         if (fadeStartDist > fadeEndDist - kMinFadeSpan) fadeStartDist = fadeEndDist - kMinFadeSpan;
         windDist = clampf(windDist, kMinWindDist, kMaxWindDist);
         alphaCutoff = clampf(alphaCutoff, kMinAlphaCutoff, kMaxAlphaCutoff);
+        windNear = clampf(windNear, kMinWindNear, kMaxWindNear);
+        windEvery = windEvery < kMinWindEvery ? kMinWindEvery : (windEvery > kMaxWindEvery ? kMaxWindEvery : windEvery);
+        lodStart = clampf(lodStart, kMinLodStart, kMaxLodStart);
+        lodMinKeep = clampf(lodMinKeep, kMinLodMinKeep, kMaxLodMinKeep);
     }
 
     bool operator==(const Config& o) const {
@@ -88,7 +118,14 @@ struct Config {
                verbose == o.verbose &&
                perfLog == o.perfLog &&
                trimHidden == o.trimHidden &&
-               smoothEdges == o.smoothEdges;
+               smoothEdges == o.smoothEdges &&
+               gpuTiming == o.gpuTiming &&
+               windThrottle == o.windThrottle &&
+               std::fabs(windNear - o.windNear) < 1e-4f &&
+               windEvery == o.windEvery &&
+               farLod == o.farLod &&
+               std::fabs(lodStart - o.lodStart) < 1e-4f &&
+               std::fabs(lodMinKeep - o.lodMinKeep) < 1e-4f;
     }
     bool operator!=(const Config& o) const { return !(*this == o); }
 };
@@ -147,6 +184,72 @@ inline float collectDistSq(const EffectiveValues& ev, bool trim) {
     return sq < ev.fadeEndSq ? sq : ev.fadeEndSq;
 }
 
+// PF2b wind throttle. The engine's wind gate has no dt (a bin that passes it advances its sway by a fixed step), so a
+// bin skipped on k-1 of k frames sways at 1/k speed; that is the A/B question. Every wind_every-th frame keeps the full
+// radius, the frames in between cap it at wind_near, so far bins animate only on the full frames.
+inline float windDistSqForFrame(const EffectiveValues& ev, const Config& cfg, uint32_t frame) {
+    if (!cfg.windThrottle) return ev.windDistSq;
+    int every = cfg.windEvery < kMinWindEvery ? kMinWindEvery : (cfg.windEvery > kMaxWindEvery ? kMaxWindEvery : cfg.windEvery);
+    if (frame % static_cast<uint32_t>(every) == 0) return ev.windDistSq;
+    const float n = clampf(cfg.windNear, kMinWindNear, kMaxWindNear);
+    const float nsq = n * n;
+    return nsq < ev.windDistSq ? nsq : ev.windDistSq;
+}
+
+// PF2c far LOD: fraction of a bin's quads to draw. 1 at or below lod_start, then linear in distance down to
+// lod_min_keep at the fade end (and beyond). A fade end at or below lod_start leaves everything at 1.
+inline float lodKeep(float binDistSq, const Config& cfg, const EffectiveValues& ev) {
+    if (!cfg.farLod) return 1.0f;
+    const float start = clampf(cfg.lodStart, kMinLodStart, kMaxLodStart);
+    const float minKeep = clampf(cfg.lodMinKeep, kMinLodMinKeep, kMaxLodMinKeep);
+    const float end = std::sqrt(ev.fadeEndSq > 0.0f ? ev.fadeEndSq : 0.0f);
+    if (end <= start) return 1.0f;
+    const float d = std::sqrt(binDistSq > 0.0f ? binDistSq : 0.0f);
+    if (d <= start) return 1.0f;
+    if (d >= end) return minKeep;
+    return 1.0f - (1.0f - minKeep) * (d - start) / (end - start);
+}
+
+// Vertex count to hand glDrawArrays(GL_QUADS) for a bin kept at `keep`: the first ceil(quads * keep) quads, at least 1.
+// Counts that are not a whole number of quads (or under one quad) pass through untouched.
+inline int32_t thinCount(int32_t count, float keep) {
+    if (!(keep < 1.0f) || count < 4 || (count % 4) != 0) return count;
+    const int32_t quads = count / 4;
+    int32_t k = static_cast<int32_t>(std::ceil(static_cast<double>(quads) * static_cast<double>(keep) - 1e-6));
+    if (k < 1) k = 1;
+    if (k > quads) k = quads;
+    return k * 4;
+}
+
+// PF2a path probe: which branch of the engine's grass draw setup the current globals select. Decoded from globals only
+// (the game's own helpers cache on first call). F = flags word [0x00A32DF8], N = [0x009F60F0], c60FC / c6118 = ints with
+// a -1 "unset" sentinel, flag9F62DC / flag9F60EC = ints whose low bit is the flag.
+struct GrassPath {
+    int G, H, P, Q, M;
+    bool operator==(const GrassPath& o) const { return G == o.G && H == o.H && P == o.P && Q == o.Q && M == o.M; }
+    bool operator!=(const GrassPath& o) const { return !(*this == o); }
+};
+
+inline GrassPath decodeGrassPath(uint32_t F, int32_t c60FC, int32_t c6118, int32_t N, int32_t flag9F62DC, int32_t flag9F60EC) {
+    const int bit1 = static_cast<int>((F >> 1) & 1u);
+    const int bit20 = static_cast<int>((F >> 20) & 1u);
+    const int bit21 = static_cast<int>((F >> 21) & 1u);
+    const int bit29 = static_cast<int>((F >> 29) & 1u);
+    const int G = bit20 & (flag9F60EC & 1);
+    const int c47 = ((c6118 != -1) ? (c6118 & 1) : bit21) & (flag9F62DC & 1);
+    const int H = (((F & 0x20001Bu) == 0x20001Bu) || (c47 && G)) ? 1 : 0;
+    int P = 0;
+    if (N >= 1) P = (!G || N != 1) ? H : 0;
+    const int Q = (c60FC != -1) ? (c60FC == 1 ? 1 : 0) : ((!G || bit29) ? 1 : 0);
+    return {G, H, P, Q, bit1};
+}
+
+// Per-bin path class for the PERF counters: 0 = A, 1 = B1, 2 = B2. B iff the bin flag 0x08 is set and [0x00A0F07C] != 0.
+inline int classifyBinPath(uint8_t binFlags, int32_t f07c, int P) {
+    if (!((binFlags & 0x08) && f07c != 0)) return 0;
+    return P ? 2 : 1;
+}
+
 // Menu link between the Fade Start and Draw Distance sliders (kPageSchema rows fade_start / fade_end): the highest
 // Fade Start the menu offers for a Draw Distance, on the row's own 15 m grid and >= kMinFadeSpan below the end.
 // Same direction as Config::sanitize (the start moves, never the end), so the sliders show what the engine uses.
@@ -176,13 +279,37 @@ struct PerfWindow {
     uint64_t binsSum = 0;
     uint32_t binsMax = 0;
     unsigned lastMs = 0;
-    // Grass-pass CPU time (Scene::DoBinBucket bin loop, microseconds). The pass can run more than once per frame, so
+    // Grass-pass CPU time (Scene::DoBinBucket bucket loop, microseconds). The pass can run more than once per frame, so
     // addGrassUs() accumulates into grassUsCur and the next add() (the next frame's collect hook) closes that frame.
     uint64_t grassUsSum = 0;
     uint32_t grassUsMax = 0;
     uint32_t grassCount = 0;
     uint32_t grassUsCur = 0;
+    // GPU time of the same pass (GL_TIME_ELAPSED, nanoseconds); results arrive a few frames late and close per result.
+    uint64_t gpuNsSum = 0;
+    uint64_t gpuNsMax = 0;
+    uint32_t gpuCount = 0;
+    // Far LOD / path probe counters (grass hooks, per window).
+    uint64_t quadsTotal = 0;
+    uint64_t quadsDrawn = 0;
+    uint32_t pathA = 0;
+    uint32_t pathB1 = 0;
+    uint32_t pathB2 = 0;
 
+    void addGpuNs(uint64_t ns) {
+        gpuNsSum += ns;
+        if (ns > gpuNsMax) gpuNsMax = ns;
+        ++gpuCount;
+    }
+    void addQuads(uint32_t total, uint32_t drawn) {
+        quadsTotal += total;
+        quadsDrawn += drawn;
+    }
+    void addPath(int cls) {
+        if (cls == 2) ++pathB2;
+        else if (cls == 1) ++pathB1;
+        else ++pathA;
+    }
     void addGrassUs(uint32_t us) {
         const uint64_t t = static_cast<uint64_t>(grassUsCur) + us;
         grassUsCur = t > 0xFFFFFFFFull ? 0xFFFFFFFFu : static_cast<uint32_t>(t);
@@ -209,6 +336,10 @@ struct PerfWindow {
     float binsAvg() const { return frames ? static_cast<float>(binsSum) / frames : 0.0f; }
     float grassMsAvg() const { return grassCount ? static_cast<float>(grassUsSum) / grassCount / 1000.0f : 0.0f; }
     float grassMsMax() const { return static_cast<float>(grassUsMax) / 1000.0f; }
+    float gpuMsAvg() const { return gpuCount ? static_cast<float>(static_cast<double>(gpuNsSum) / gpuCount / 1.0e6) : 0.0f; }
+    float gpuMsMax() const { return static_cast<float>(static_cast<double>(gpuNsMax) / 1.0e6); }
+    // Share of grass quads actually drawn (100 when none were counted).
+    float quadsPct() const { return quadsTotal ? static_cast<float>(100.0 * static_cast<double>(quadsDrawn) / static_cast<double>(quadsTotal)) : 100.0f; }
     void reset(unsigned nowMs) { *this = PerfWindow{}; startMs = nowMs; }
 };
 
@@ -269,6 +400,48 @@ inline inikit::LoadStats parseIniText(char* text, Config& cfg) {
             cfg.smoothEdges = b;
             return inikit::IniVerdictOk;
         }
+        if (strcmp(key, "gpu_timing") == 0) {
+            bool b = true;
+            if (!parseBoolVal(val, &b)) return inikit::IniVerdictBad;
+            cfg.gpuTiming = b;
+            return inikit::IniVerdictOk;
+        }
+        if (strcmp(key, "wind_throttle") == 0) {
+            bool b = false;
+            if (!parseBoolVal(val, &b)) return inikit::IniVerdictBad;
+            cfg.windThrottle = b;
+            return inikit::IniVerdictOk;
+        }
+        if (strcmp(key, "far_lod") == 0) {
+            bool b = false;
+            if (!parseBoolVal(val, &b)) return inikit::IniVerdictBad;
+            cfg.farLod = b;
+            return inikit::IniVerdictOk;
+        }
+        if (strcmp(key, "wind_near") == 0) {
+            float f = 0.0f;
+            if (!inikit::parseFloats(val, &f, 1)) return inikit::IniVerdictBad;
+            cfg.windNear = f;
+            return inikit::IniVerdictOk;
+        }
+        if (strcmp(key, "wind_every") == 0) {
+            float f = 0.0f;
+            if (!inikit::parseFloats(val, &f, 1) || !std::isfinite(f)) return inikit::IniVerdictBad;
+            cfg.windEvery = f < -1000.0f ? -1000 : (f > 1000.0f ? 1000 : static_cast<int>(std::lround(f)));
+            return inikit::IniVerdictOk;
+        }
+        if (strcmp(key, "lod_start") == 0) {
+            float f = 0.0f;
+            if (!inikit::parseFloats(val, &f, 1)) return inikit::IniVerdictBad;
+            cfg.lodStart = f;
+            return inikit::IniVerdictOk;
+        }
+        if (strcmp(key, "lod_min_keep") == 0) {
+            float f = 0.0f;
+            if (!inikit::parseFloats(val, &f, 1)) return inikit::IniVerdictBad;
+            cfg.lodMinKeep = f;
+            return inikit::IniVerdictOk;
+        }
         if (strcmp(key, "fade_start_dist") == 0 || strcmp(key, "fadestartdist") == 0) {
             float f = 0.0f;
             if (!inikit::parseFloats(val, &f, 1)) return inikit::IniVerdictBad;
@@ -323,7 +496,17 @@ inline int formatDefaultIni(char* buf, size_t cap, const Config& c = Config{}) {
         "smooth_edges = %d\n"
         "verbose = %d\n"
         "; Log grass bin counts and frame rate every 5 s (P3 calibration)\n"
-        "perf_log = %d\n",
+        "perf_log = %d\n"
+        "; GL timer query around the grass pass, logged as gpu_ms_* in PERF (1 = on, 0 = off; needs perf_log)\n"
+        "gpu_timing = %d\n"
+        "; Wind throttle: full wind_dist only every wind_every-th frame, wind_near meters in between (1 = on, 0 = off)\n"
+        "wind_throttle = %d\n"
+        "wind_near = %.0f\n"
+        "wind_every = %d\n"
+        "; Far grass thinning: draw only a prefix of each far bin's quads; 100%% at lod_start meters, lod_min_keep at the draw distance\n"
+        "far_lod = %d\n"
+        "lod_start = %.0f\n"
+        "lod_min_keep = %.2f\n",
         kModId, kIniSection,
         c.enabled ? 1 : 0,
         c.fadeStartDist,
@@ -333,7 +516,14 @@ inline int formatDefaultIni(char* buf, size_t cap, const Config& c = Config{}) {
         c.trimHidden ? 1 : 0,
         c.smoothEdges ? 1 : 0,
         c.verbose ? 1 : 0,
-        c.perfLog ? 1 : 0);
+        c.perfLog ? 1 : 0,
+        c.gpuTiming ? 1 : 0,
+        c.windThrottle ? 1 : 0,
+        c.windNear,
+        c.windEvery,
+        c.farLod ? 1 : 0,
+        c.lodStart,
+        static_cast<double>(c.lodMinKeep));
 }
 
 // Declarative Mod Configuration page schema (TomlMini string limit: each string < 96 chars).
@@ -341,7 +531,7 @@ constexpr const char* kPageSchema = R"TOML(
 [page]
 name = "K2 Grass Draw Distance"
 title = "K2 Grass Draw Distance"
-desc = "Extend grass draw distance, fade start, wind radius, alpha cutoff, and edge smoothing."
+desc = "Grass draw distance, fade, wind radius, alpha cutoff, edge smoothing, and speed tests."
 
 [[row]]
 id = "enabled"
@@ -433,6 +623,26 @@ default = 0
 ini = "k2_grass_draw_distance.ini"
 section = "Grass"
 key = "smooth_edges"
+
+[[row]]
+id = "wind_throttle"
+kind = "toggle"
+label = "Wind Throttle"
+desc = "Test: animate far grass wind on some frames only (saves CPU; far sway runs slower)."
+default = 0
+ini = "k2_grass_draw_distance.ini"
+section = "Grass"
+key = "wind_throttle"
+
+[[row]]
+id = "far_lod"
+kind = "toggle"
+label = "Far Grass Thinning"
+desc = "Test: draw fewer blades on far grass (saves GPU; far grass may look sparse)."
+default = 0
+ini = "k2_grass_draw_distance.ini"
+section = "Grass"
+key = "far_lod"
 )TOML";
 
 } // namespace k2grass

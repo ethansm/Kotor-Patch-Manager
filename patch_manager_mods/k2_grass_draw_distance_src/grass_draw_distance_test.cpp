@@ -196,7 +196,7 @@ static void test_perf_window_grass_time() {
     KT_CHECK(std::fabs(w.grassMsAvg()) < 1e-6f);   // no samples: zeros, no divide by zero
     KT_CHECK(std::fabs(w.grassMsMax()) < 1e-6f);
     w.add(100, 1000);
-    // Frame 1: the bin loop ran twice (1000 + 500 us); it closes on the next frame's add().
+    // Frame 1: the bucket loop ran twice (1000 + 500 us); it closes on the next frame's add().
     w.addGrassUs(1000);
     w.addGrassUs(500);
     KT_CHECK_EQ(w.grassCount, 0u);
@@ -224,8 +224,151 @@ static void test_perf_window_grass_time() {
     KT_CHECK_EQ(w.grassUsCur, 0u);
 }
 
+static void test_wind_throttle() {
+    k2grass::Config c{};   // wind 20 m -> 400
+    const k2grass::EffectiveValues ev = k2grass::computeEffective(c);
+    // Off: the full radius on every frame.
+    for (uint32_t f = 0; f < 6; ++f) KT_CHECK(std::fabs(k2grass::windDistSqForFrame(ev, c, f) - 400.0f) < 1e-3f);
+    // On, every 2nd frame full, in between near^2 (10 m -> 100).
+    c.windThrottle = true;
+    KT_CHECK(std::fabs(k2grass::windDistSqForFrame(ev, c, 0) - 400.0f) < 1e-3f);
+    KT_CHECK(std::fabs(k2grass::windDistSqForFrame(ev, c, 1) - 100.0f) < 1e-3f);
+    KT_CHECK(std::fabs(k2grass::windDistSqForFrame(ev, c, 2) - 400.0f) < 1e-3f);
+    KT_CHECK(std::fabs(k2grass::windDistSqForFrame(ev, c, 3) - 100.0f) < 1e-3f);
+    // every = 4: full on 0, 4, 8 only.
+    c.windEvery = 4;
+    int full = 0;
+    for (uint32_t f = 0; f < 12; ++f) {
+        if (std::fabs(k2grass::windDistSqForFrame(ev, c, f) - 400.0f) < 1e-3f) ++full;
+    }
+    KT_CHECK_EQ(full, 3);
+    // The cap never raises the radius: near 50 m on a 20 m wind stays at 400; wind 0 stays 0.
+    c.windNear = 50.0f;
+    KT_CHECK(std::fabs(k2grass::windDistSqForFrame(ev, c, 1) - 400.0f) < 1e-3f);
+    k2grass::Config nw = c;
+    nw.windDist = 0.0f;
+    KT_CHECK(std::fabs(k2grass::windDistSqForFrame(k2grass::computeEffective(nw), nw, 1)) < 1e-6f);
+    // An out-of-range every (0) behaves as 1: full radius every frame.
+    k2grass::Config z = c;
+    z.windEvery = 0;
+    KT_CHECK(std::fabs(k2grass::windDistSqForFrame(ev, z, 3) - 400.0f) < 1e-3f);
+}
+
+static void test_lod_keep_and_thin_count() {
+    k2grass::Config c{};   // fade end 150 m
+    c.farLod = true;
+    c.lodStart = 60.0f;
+    c.lodMinKeep = 0.5f;
+    const k2grass::EffectiveValues ev = k2grass::computeEffective(c);
+    KT_CHECK(std::fabs(k2grass::lodKeep(0.0f, c, ev) - 1.0f) < 1e-6f);
+    KT_CHECK(std::fabs(k2grass::lodKeep(59.0f * 59.0f, c, ev) - 1.0f) < 1e-6f);
+    KT_CHECK(std::fabs(k2grass::lodKeep(60.0f * 60.0f, c, ev) - 1.0f) < 1e-6f);
+    KT_CHECK(std::fabs(k2grass::lodKeep(150.0f * 150.0f, c, ev) - 0.5f) < 1e-5f);
+    KT_CHECK(std::fabs(k2grass::lodKeep(200.0f * 200.0f, c, ev) - 0.5f) < 1e-5f);
+    KT_CHECK(std::fabs(k2grass::lodKeep(105.0f * 105.0f, c, ev) - 0.75f) < 1e-5f);   // midpoint of 60..150
+    // Off: always 1. Fade end at or below lod_start: always 1.
+    k2grass::Config off = c;
+    off.farLod = false;
+    KT_CHECK(std::fabs(k2grass::lodKeep(140.0f * 140.0f, off, ev) - 1.0f) < 1e-6f);
+    k2grass::Config narrow = c;
+    narrow.fadeEndDist = 50.0f;
+    narrow.fadeStartDist = 20.0f;
+    KT_CHECK(std::fabs(k2grass::lodKeep(49.0f * 49.0f, narrow, k2grass::computeEffective(narrow)) - 1.0f) < 1e-6f);
+
+    // thinCount: keep 1 unchanged; 0.5 of 100 quads (400 vertices) -> 200; at least one quad; odd shapes pass through.
+    KT_CHECK_EQ(k2grass::thinCount(400, 1.0f), 400);
+    KT_CHECK_EQ(k2grass::thinCount(400, 0.5f), 200);
+    KT_CHECK_EQ(k2grass::thinCount(400, 0.1f), 40);
+    KT_CHECK_EQ(k2grass::thinCount(40, 0.3f), 12);    // ceil(10 * 0.3) = 3 quads
+    KT_CHECK_EQ(k2grass::thinCount(4, 0.1f), 4);      // one quad stays
+    KT_CHECK_EQ(k2grass::thinCount(8, 0.0f), 4);      // never zero
+    KT_CHECK_EQ(k2grass::thinCount(3, 0.5f), 3);      // under one quad
+    KT_CHECK_EQ(k2grass::thinCount(0, 0.5f), 0);
+    KT_CHECK_EQ(k2grass::thinCount(402, 0.5f), 402);  // not a whole number of quads
+    KT_CHECK_EQ(k2grass::thinCount(-8, 0.5f), -8);
+    KT_CHECK_EQ(k2grass::thinCount(400, 1.5f), 400);
+    // Every result is a whole number of quads, within [4, count].
+    for (int q = 1; q <= 64; ++q) {
+        for (float k = 0.1f; k < 1.0f; k += 0.07f) {
+            const int32_t t = k2grass::thinCount(q * 4, k);
+            KT_CHECK(t >= 4 && t <= q * 4 && (t % 4) == 0);
+        }
+    }
+}
+
+static void test_decode_grass_path() {
+    // F bit 20 + flag9F60EC low bit -> G; N = 2 -> P follows H.
+    const uint32_t F20 = 1u << 20;
+    k2grass::GrassPath a = k2grass::decodeGrassPath(F20, -1, -1, 2, 0, 1);
+    KT_CHECK_EQ(a.G, 1);
+    KT_CHECK_EQ(a.H, 0);
+    KT_CHECK_EQ(a.P, a.H);
+    KT_CHECK_EQ(a.Q, 0);   // c60FC unset: !G || bit29 -> 0 with G=1 and bit29 clear
+    KT_CHECK_EQ(a.M, 0);
+    // Same with the C47 term true (c6118 = 1, flag9F62DC = 1): H = 1, P = H.
+    k2grass::GrassPath b = k2grass::decodeGrassPath(F20, -1, 1, 2, 1, 1);
+    KT_CHECK_EQ(b.G, 1);
+    KT_CHECK_EQ(b.H, 1);
+    KT_CHECK_EQ(b.P, 1);
+    // N == 1 with G: P forced 0; N < 1: P = 0 regardless of H.
+    KT_CHECK_EQ(k2grass::decodeGrassPath(F20, -1, 1, 1, 1, 1).P, 0);
+    KT_CHECK_EQ(k2grass::decodeGrassPath(0x20001Bu, -1, -1, 0, 0, 0).P, 0);
+    // F = 0x20001B -> H = 1 (no G); N = 1 and !G -> P = H.
+    k2grass::GrassPath c = k2grass::decodeGrassPath(0x20001Bu, -1, -1, 1, 0, 0);
+    KT_CHECK_EQ(c.G, 0);
+    KT_CHECK_EQ(c.H, 1);
+    KT_CHECK_EQ(c.P, 1);
+    KT_CHECK_EQ(c.M, 1);   // bit 1 of 0x1B
+    KT_CHECK_EQ(c.Q, 1);   // !G
+    KT_CHECK_EQ(k2grass::decodeGrassPath(0x20001Au, -1, -1, 1, 0, 0).H, 0);   // one required bit missing
+    // c60FC overrides Q; bit 29 sets it under G.
+    KT_CHECK_EQ(k2grass::decodeGrassPath(0, 1, -1, 0, 0, 0).Q, 1);
+    KT_CHECK_EQ(k2grass::decodeGrassPath(0, 0, -1, 0, 0, 0).Q, 0);
+    KT_CHECK_EQ(k2grass::decodeGrassPath(F20 | (1u << 29), -1, -1, 0, 0, 1).Q, 1);
+    // c6118 = 0 (set) beats bit 21: C47 = 0, so H stays 0 even with G and bit 21.
+    KT_CHECK_EQ(k2grass::decodeGrassPath(F20 | (1u << 21), -1, 0, 2, 1, 1).H, 0);
+    KT_CHECK_EQ(k2grass::decodeGrassPath(F20 | (1u << 21), -1, -1, 2, 1, 1).H, 1);
+    // Per-bin class: A unless flag 0x08 and f07c != 0; B2 iff P.
+    KT_CHECK_EQ(k2grass::classifyBinPath(0x08, 0, 1), 0);
+    KT_CHECK_EQ(k2grass::classifyBinPath(0x00, 5, 1), 0);
+    KT_CHECK_EQ(k2grass::classifyBinPath(0x08, 5, 0), 1);
+    KT_CHECK_EQ(k2grass::classifyBinPath(0x0F, 5, 1), 2);
+}
+
+static void test_perf_window_gpu_and_counters() {
+    k2grass::PerfWindow w{};
+    w.reset(1000);
+    KT_CHECK(std::fabs(w.gpuMsAvg()) < 1e-6f);   // no samples: zeros
+    KT_CHECK(std::fabs(w.gpuMsMax()) < 1e-6f);
+    KT_CHECK(std::fabs(w.quadsPct() - 100.0f) < 1e-4f);
+    w.addGpuNs(2000000ull);   // 2.0 ms
+    w.addGpuNs(500000ull);    // 0.5 ms
+    w.addGpuNs(1500000ull);   // 1.5 ms
+    KT_CHECK_EQ(w.gpuCount, 3u);
+    KT_CHECK(std::fabs(w.gpuMsAvg() - 4.0f / 3.0f) < 1e-4f);
+    KT_CHECK(std::fabs(w.gpuMsMax() - 2.0f) < 1e-4f);
+    w.addQuads(100, 50);
+    w.addQuads(100, 100);
+    KT_CHECK(std::fabs(w.quadsPct() - 75.0f) < 1e-4f);
+    w.addPath(0);
+    w.addPath(1);
+    w.addPath(2);
+    w.addPath(2);
+    KT_CHECK_EQ(w.pathA, 1u);
+    KT_CHECK_EQ(w.pathB1, 1u);
+    KT_CHECK_EQ(w.pathB2, 2u);
+    // Frame closing does not disturb them; reset clears them.
+    w.add(10, 1000);
+    KT_CHECK_EQ(w.gpuCount, 3u);
+    w.reset(2000);
+    KT_CHECK_EQ(w.gpuCount, 0u);
+    KT_CHECK_EQ(w.gpuNsMax, 0ull);
+    KT_CHECK_EQ(w.quadsTotal, 0ull);
+    KT_CHECK_EQ(w.pathB2, 0u);
+}
+
 static void test_ini_roundtrip_and_direct_float_alpha() {
-    char buf[2048] = {};
+    char buf[4096] = {};
     k2grass::Config orig{};
     orig.fadeStartDist = 75.0f;
     orig.fadeEndDist = 135.0f;
@@ -234,6 +377,13 @@ static void test_ini_roundtrip_and_direct_float_alpha() {
     orig.perfLog = false;
     orig.trimHidden = false;
     orig.smoothEdges = true;
+    orig.gpuTiming = false;
+    orig.windThrottle = true;
+    orig.windNear = 25.0f;
+    orig.windEvery = 4;
+    orig.farLod = true;
+    orig.lodStart = 80.0f;
+    orig.lodMinKeep = 0.25f;
     const int n = k2grass::formatDefaultIni(buf, sizeof(buf), orig);
     KT_CHECK(n > 0 && static_cast<size_t>(n) < sizeof(buf));
 
@@ -242,9 +392,12 @@ static void test_ini_roundtrip_and_direct_float_alpha() {
     KT_CHECK_EQ(st.bad, 0);
     KT_CHECK(parsed == orig);
     KT_CHECK(!parsed.trimHidden && parsed.smoothEdges);
+    KT_CHECK(!parsed.gpuTiming && parsed.windThrottle && parsed.farLod);
+    KT_CHECK(std::fabs(parsed.windNear - 25.0f) < 1e-4f && parsed.windEvery == 4);
+    KT_CHECK(std::fabs(parsed.lodStart - 80.0f) < 1e-4f && std::fabs(parsed.lodMinKeep - 0.25f) < 1e-4f);
 
     // Defaults round-trip too (trim_hidden = 1, smooth_edges = 0), and each new key counts as a known key.
-    char dbuf[2048] = {};
+    char dbuf[4096] = {};
     const int dn = k2grass::formatDefaultIni(dbuf, sizeof(dbuf));
     KT_CHECK(dn > 0 && static_cast<size_t>(dn) < sizeof(dbuf));
     k2grass::Config dparsed{};
@@ -253,11 +406,33 @@ static void test_ini_roundtrip_and_direct_float_alpha() {
     KT_CHECK_EQ(dst.unknown, 0);
     KT_CHECK(dparsed == k2grass::Config{});
     KT_CHECK(dparsed.trimHidden && !dparsed.smoothEdges);
+    // 0.1.5 defaults: GPU timer on, both experiments off.
+    KT_CHECK(dparsed.gpuTiming && !dparsed.windThrottle && !dparsed.farLod);
+    KT_CHECK(std::fabs(dparsed.windNear - 10.0f) < 1e-4f && dparsed.windEvery == 2);
+    KT_CHECK(std::fabs(dparsed.lodStart - 60.0f) < 1e-4f && std::fabs(dparsed.lodMinKeep - 0.5f) < 1e-4f);
     char keys[] = "trim_hidden = off\nsmooth_edges = yes\n";
     k2grass::Config kc{};
     inikit::LoadStats kst = k2grass::parseIniText(keys, kc);
     KT_CHECK_EQ(kst.ok, 2);
     KT_CHECK(!kc.trimHidden && kc.smoothEdges);
+    // The 7 new keys: clamps apply (wind_near 0..200, wind_every 1..8, lod_start 10..150, lod_min_keep 0.1..1.0).
+    char nk[] = "gpu_timing = 0\nwind_throttle = on\nwind_near = 999\nwind_every = 99\nfar_lod = 1\nlod_start = 1\nlod_min_keep = 0\n";
+    k2grass::Config nc{};
+    inikit::LoadStats nst = k2grass::parseIniText(nk, nc);
+    KT_CHECK_EQ(nst.ok, 7);
+    KT_CHECK_EQ(nst.bad, 0);
+    KT_CHECK(!nc.gpuTiming && nc.windThrottle && nc.farLod);
+    KT_CHECK(std::fabs(nc.windNear - 200.0f) < 1e-4f && nc.windEvery == 8);
+    KT_CHECK(std::fabs(nc.lodStart - 10.0f) < 1e-4f && std::fabs(nc.lodMinKeep - 0.1f) < 1e-4f);
+    char nk2[] = "wind_every = 0\nlod_min_keep = 5\n";
+    k2grass::Config nc2{};
+    k2grass::parseIniText(nk2, nc2);
+    KT_CHECK_EQ(nc2.windEvery, 1);
+    KT_CHECK(std::fabs(nc2.lodMinKeep - 1.0f) < 1e-4f);
+    char nbad[] = "far_lod = maybe\n";
+    k2grass::Config nbc{};
+    KT_CHECK_EQ(k2grass::parseIniText(nbad, nbc).bad, 1);
+    KT_CHECK(!nbc.farLod);
     char bad[] = "trim_hidden = maybe\n";
     k2grass::Config bc{};
     KT_CHECK_EQ(k2grass::parseIniText(bad, bc).bad, 1);
@@ -277,7 +452,7 @@ static void test_modconfig_schema_bindings() {
     mcdecl::PageDecl pd{};
     char err[96] = {};
     KT_CHECK(mcdecl::parseSchema(k2grass::kPageSchema, strlen(k2grass::kPageSchema), pd, err, sizeof(err)));
-    KT_CHECK_EQ(pd.nRows, 7);
+    KT_CHECK_EQ(pd.nRows, 9);
     for (int i = 0; i < pd.nRows; ++i) {
         const mcdecl::RowDecl& r = pd.rows[i];
         KT_CHECK(strcmp(r.ini, k2grass::kIniFile) == 0);
@@ -295,6 +470,10 @@ int main() {
     test_menu_fade_link();
     test_perf_window();
     test_perf_window_grass_time();
+    test_wind_throttle();
+    test_lod_keep_and_thin_count();
+    test_decode_grass_path();
+    test_perf_window_gpu_and_counters();
     test_ini_roundtrip_and_direct_float_alpha();
     test_modconfig_schema_bindings();
     return kt::Report("grass_draw_distance_test");

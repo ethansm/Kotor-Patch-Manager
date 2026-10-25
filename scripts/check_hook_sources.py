@@ -27,6 +27,8 @@ CHECK = "source"
 # (hooks file path suffix, hook address, 1-based parameter index) -> the exact source string allowed there.
 ALLOWED_ADDRESS_SOURCES = {
     ("activation_fix_src/kotor2-steam-aspyr.hooks.toml", 0x0040D69E, 1): "esp+0",   # dropSyntheticDeactivate(ptr to hwnd,msg,wParam,lParam)
+    ("k2_grass_draw_distance_src/kotor2-steam-aspyr.hooks.toml", 0x00436A95, 1): "esp+0",  # K2GrassDrawArraysA(ptr to mode,first,count)
+    ("k2_grass_draw_distance_src/kotor2-steam-aspyr.hooks.toml", 0x00436B86, 1): "esp+0",  # K2GrassDrawArraysB(ptr to mode,first,count)
 }
 
 

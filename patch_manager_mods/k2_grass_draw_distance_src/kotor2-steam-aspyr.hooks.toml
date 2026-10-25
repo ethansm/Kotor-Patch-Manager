@@ -9,6 +9,7 @@ target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBB
 #                                     DLL's own float after the KPatchInit operand rewrite, see code_patches.toml)
 #   [0x00A0F074] = fade_end_dist^2   (read at 0x00499ADC for octree build/collect and 0x0050DB4C for fade end)
 #   [0x009F5D38] = alpha_cutoff      (read at 0x004665F6 for glAlphaFunc threshold)
+# 0.1.5: also sets the wind operand target once per frame (wind_throttle) and polls finished GPU timer queries.
 [[hooks]]
 address = 0x00499ABC
 type = "detour"
@@ -17,9 +18,11 @@ original_bytes = [0xC7, 0x45, 0xF0, 0x00, 0x00, 0x00, 0x00]
 exclude_from_restore = []
 
 
-# Hook 2: Scene::DoBinBucket (0x004664E0) at 0x0046661B (MOV dword ptr [EBP-0x4], 0; 7 bytes), the bin loop counter init
-# right after glAlphaFunc. Starts the grass-pass CPU timer and (smooth_edges, multisampled context only) glEnable(
-# GL_SAMPLE_ALPHA_TO_COVERAGE). Not a branch target; the loop is entered only by falling through here.
+# Hook 2: Scene::DoBinBucket (0x004664E0) at 0x0046661B (MOV dword ptr [EBP-0x4], 0; 7 bytes), the bucket loop counter
+# init (outer loop; bins are the inner loop at 0x0046664B) right after glAlphaFunc. Starts the grass-pass CPU timer
+# (the timing covers the whole pass), the optional GL_TIME_ELAPSED query (0.1.5) and (smooth_edges, multisampled context
+# only) glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE). Also runs the 0.1.5 path probe. Not a branch target; the loop is entered
+# only by falling through here.
 [[hooks]]
 address = 0x0046661B
 type = "detour"
@@ -28,8 +31,8 @@ original_bytes = [0xC7, 0x45, 0xFC, 0x00, 0x00, 0x00, 0x00]
 skip_original_bytes = false
 exclude_from_restore = []
 
-# Hook 3: Scene::DoBinBucket at 0x00466698 (FLD dword ptr [0x00A20040]; 6 bytes), the bin loop's only exit (JGE at
-# 0x00466636; reached by nothing else). Stops the timer and undoes the alpha-to-coverage enable.
+# Hook 3: Scene::DoBinBucket at 0x00466698 (FLD dword ptr [0x00A20040]; 6 bytes), the bucket loop's only exit (JGE at
+# 0x00466636; reached by nothing else). Stops the timer, ends the GPU query and undoes the alpha-to-coverage enable.
 [[hooks]]
 address = 0x00466698
 type = "detour"
@@ -37,3 +40,46 @@ function = "K2GrassBinLoopEnd"
 original_bytes = [0xD9, 0x05, 0x40, 0x00, 0xA2, 0x00]
 skip_original_bytes = false
 exclude_from_restore = []
+
+# Hook 4 (0.1.5): CAurTriangleBin::RenderGrassPolys entry at 0x0050DAC0 (PUSH EBP; MOV EBP,ESP; PUSH -1; 5 bytes), the bin
+# object in ECX (float dist^2 at +0x04, byte flags at +0x02). Computes the far-LOD keep fraction for this bin (far_lod)
+# and counts bins per draw path for the PERF line. Reads the bin only; writes only the DLL's own globals.
+[[hooks]]
+address = 0x0050DAC0
+type = "detour"
+function = "K2GrassOnBin"
+original_bytes = [0x55, 0x8B, 0xEC, 0x6A, 0xFF]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+# Hook 5 / 6 (0.1.5): the two CALL dword ptr [0x00986304] (glDrawArrays) in FUN_004369A0, the grass-only draw helper
+# (callers 0x0050E16B, 0x0050E487, 0x0050E695). The hook receives a pointer to the three pushed args (mode, first, count);
+# with far_lod on and mode == GL_QUADS it lowers only `count` (first quads of the bin). The helper's own offset argument
+# (count * 0x30, also the normals/UV offset) is never touched.
+[[hooks]]
+address = 0x00436A95
+type = "detour"
+function = "K2GrassDrawArraysA"
+original_bytes = [0xFF, 0x15, 0x04, 0x63, 0x98, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "esp+0"
+type = "pointer"
+
+[[hooks]]
+address = 0x00436B86
+type = "detour"
+function = "K2GrassDrawArraysB"
+original_bytes = [0xFF, 0x15, 0x04, 0x63, 0x98, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "esp+0"
+type = "pointer"

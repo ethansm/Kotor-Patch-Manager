@@ -4,3 +4,6 @@ EXPORTS
     K2GrassOnSceneCollect
     K2GrassBinLoopBegin
     K2GrassBinLoopEnd
+    K2GrassOnBin
+    K2GrassDrawArraysA
+    K2GrassDrawArraysB

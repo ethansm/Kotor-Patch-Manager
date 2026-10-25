@@ -1,9 +1,16 @@
-// K2GrassDrawDistance.cpp -- K2 Grass Draw Distance (0.1.4-dev)
+// K2GrassDrawDistance.cpp -- K2 Grass Draw Distance (0.1.5-dev)
 // Extends grass octree build/collect radius, fade-start/fade-end distances, alpha-test threshold,
 // and decouples CPU wind animation radius (one operand rewrite at KPatchInit, code_patches.toml).
 // 0.1.4: a second operand rewrite trims the octree collect radius to the visible clip distance (trim_hidden), two
-// detours inside Scene::DoBinBucket time the grass bin loop (PERF grass_ms_*) and optionally enable alpha-to-coverage
+// detours inside Scene::DoBinBucket time the grass bucket loop (PERF grass_ms_*) and optionally enable alpha-to-coverage
 // around it (smooth_edges, only when the GL context has a multisample buffer).
+// 0.1.5: speed experiments, all measured in the PERF line and off by default except the log-only timers:
+//   PF2d gpu_timing    GL_TIME_ELAPSED query around the bucket loop (gpu_ms_*), never blocks on a result
+//   PF2b wind_throttle full wind radius only every wind_every-th frame (g_windDistSq set once per frame, no new hook)
+//   PF2c far_lod       RenderGrassPolys entry hook picks a per-bin keep fraction; the two glDrawArrays(GL_QUADS) calls in
+//                      the grass draw helper get a smaller count (nothing else is touched: the helper's offset argument
+//                      is also the normals/UV offset)
+//   PF2a path probe    decodes which grass draw setup branch the engine globals select (log + per-window bin counts)
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <stdint.h>
@@ -27,7 +34,7 @@ KP_LOG_PATCH("k2-grass-draw-distance");
 
 namespace {
 
-// Engine .data globals (Steam Aspyr build 6A522E71...):
+// Engine .data globals (Steam Aspyr build 6A522E71...). The 0.1.5 path probe globals are listed after AddrGrassPrevBinCount.
 //   0x00A0F070: float _DAT_00a0f070 (vanilla 225.0f = 15m^2; RenderGrassPolys fade start, and the wind check
 //               until patchWindOperand points that FLD at g_windDistSq)
 //   0x00A0F074: float _DAT_00a0f074 (vanilla 900.0f = 30m^2; octree sphere query & RenderGrassPolys fade_end_sq)
@@ -52,6 +59,26 @@ constexpr unsigned GlSamples = 0x80A9;
 // int: count of the previous frame's in-range grass bin list (list = {ptr, count}, count at +4). The per-frame
 // list swap in Scene::CollectAndTraverse copies the current list there before hook 1 runs (doc 48 section 1.5).
 constexpr uintptr_t AddrGrassPrevBinCount = 0x00A73304;
+// PF2a path probe inputs (read with saferead only; the game functions that derive the path cache on first call, so the
+// probe never calls them): F = u32 flags word, N = int, the two flag ints (low bit), the two -1-sentinel ints, plus the
+// int that splits bins into path A / B and a byte logged for context.
+constexpr uintptr_t AddrPathFlags = 0x00A32DF8;
+constexpr uintptr_t AddrPathN = 0x009F60F0;
+constexpr uintptr_t AddrPathFlag60EC = 0x009F60EC;
+constexpr uintptr_t AddrPathFlag62DC = 0x009F62DC;
+constexpr uintptr_t AddrPathC60FC = 0x009F60FC;
+constexpr uintptr_t AddrPathC6118 = 0x009F6118;
+constexpr uintptr_t AddrPathF07C = 0x00A0F07C;
+constexpr uintptr_t AddrPathBac4 = 0x00A7BAC4;
+// RenderGrassPolys entry (bin in ECX; float dist^2 at bin+0x04, byte flags at bin+0x02).
+constexpr uintptr_t kBinOffDistSq = 0x04;
+constexpr uintptr_t kBinOffFlags = 0x02;
+constexpr unsigned GlQuads = 7;              // GL_QUADS, the mode the grass draw helper passes to glDrawArrays
+constexpr unsigned GlExtensions = 0x1F03;    // GL_EXTENSIONS
+constexpr unsigned GlTimeElapsed = 0x88BF;   // GL_TIME_ELAPSED
+constexpr unsigned GlQueryResult = 0x8866;
+constexpr unsigned GlQueryResultAvailable = 0x8867;
+constexpr int kGpuRing = 8;
 
 KP_CHANNEL(chMain, "main");
 KP_CHANNEL(chCfg, "cfg");
@@ -78,13 +105,48 @@ int g_windPatch = 0;   // codepatch::writeChecked result; 1 = patched
 uint8_t g_collectFldNew[6] = {};
 int g_collectPatch = 0;
 k2grass::PerfWindow g_perf{};
-// Grass bin loop timing / alpha-to-coverage state (render thread only).
+// Grass bucket loop timing / alpha-to-coverage state (render thread only).
 LARGE_INTEGER g_qpcFreq{};
 LARGE_INTEGER g_loopT0{};
 bool g_loopTiming = false;
 bool g_a2cChecked = false;
 bool g_a2cCapable = false;
 bool g_a2cOn = false;     // a2c is enabled between this frame's Begin and End
+// True between Begin and End of the bucket loop (far-LOD draw hooks act only then).
+bool g_inGrass = false;
+// Keep fraction of the bin RenderGrassPolys is currently drawing (set by K2GrassOnBin, 1 = draw everything).
+float g_binKeep = 1.0f;
+uint32_t g_windFrame = 0;   // grass frames seen by the collect hook (wind throttle phase)
+
+// PF2d GPU timer: GL_TIME_ELAPSED queries in a ring; a result is read only once the driver says it is available.
+using GlGetStringFn = const unsigned char*(__stdcall*)(unsigned);
+using WglGetProcFn = void*(__stdcall*)(const char*);
+using GlGenQueriesFn = void(__stdcall*)(int, unsigned*);
+using GlBeginQueryFn = void(__stdcall*)(unsigned, unsigned);
+using GlEndQueryFn = void(__stdcall*)(unsigned);
+using GlGetQueryObjectivFn = void(__stdcall*)(unsigned, unsigned, int*);
+using GlGetQueryObjectui64vFn = void(__stdcall*)(unsigned, unsigned, uint64_t*);
+struct GpuTimer {
+    bool checked = false;
+    bool ok = false;
+    bool idsReady = false;
+    bool active = false;     // a query was begun and not yet ended
+    int head = 0;            // oldest pending slot
+    int pending = 0;         // ended queries whose result has not been read
+    unsigned ids[kGpuRing] = {};
+    GlGenQueriesFn genQueries = nullptr;
+    GlBeginQueryFn beginQuery = nullptr;
+    GlEndQueryFn endQuery = nullptr;
+    GlGetQueryObjectivFn getObjectiv = nullptr;
+    GlGetQueryObjectui64vFn getObjectui64v = nullptr;
+};
+GpuTimer g_gpu{};
+
+// PF2a path probe state: last decoded path and raw inputs (logged on change), and the per-bin split input.
+bool g_pathSeen = false;
+uint32_t g_pathLastF = 0;
+k2grass::GrassPath g_pathLast{};
+bool g_pathReadable = false;   // all probe globals were readable at the last Begin (K2GrassOnBin may then read AddrPathF07C)
 
 // Optional Mod Configuration menu integration (k2.modconfig@1 / k2.menuui@1):
 k2mc::ConfigClient g_mcCfg;
@@ -173,6 +235,118 @@ void checkA2cCapability() {
     KP_LOG(chMain, "a2c capability sample_buffers=%d samples=%d", sampleBuffers, samples);
 }
 
+// wglGetProcAddress returns small sentinels (1, 2, 3, -1) on some drivers instead of null.
+void* validGlProc(void* p) {
+    const uintptr_t v = reinterpret_cast<uintptr_t>(p);
+    return (v <= 3 || v == ~static_cast<uintptr_t>(0)) ? nullptr : p;
+}
+
+// Try `base`, `baseARB` and (when asked) `baseEXT` through wglGetProcAddress.
+void* gpuProc(WglGetProcFn wgl, const char* base, bool tryExt) {
+    static const char* const kSuffix[3] = {"", "ARB", "EXT"};
+    for (int i = 0; i < (tryExt ? 3 : 2); ++i) {
+        char name[64];
+        snprintf(name, sizeof name, "%s%s", base, kSuffix[i]);
+        if (void* p = validGlProc(wgl(name))) return p;
+    }
+    return nullptr;
+}
+
+// First Begin only (GL context is current): look for GL_ARB_timer_query / GL_EXT_timer_query and load its entry points.
+// Without them gpu stays 0 in PERF. Logged once.
+void gpuInit() {
+    g_gpu.checked = true;
+    const char* extName = "none";
+    HMODULE gl = GetModuleHandleA("opengl32.dll");
+    if (gl) {
+        auto getString = reinterpret_cast<GlGetStringFn>(reinterpret_cast<void*>(GetProcAddress(gl, "glGetString")));
+        auto wgl = reinterpret_cast<WglGetProcFn>(reinterpret_cast<void*>(GetProcAddress(gl, "wglGetProcAddress")));
+        const char* exts = getString ? reinterpret_cast<const char*>(getString(GlExtensions)) : nullptr;
+        if (exts && wgl) {
+            const bool arb = strstr(exts, "GL_ARB_timer_query") != nullptr;
+            const bool ext = strstr(exts, "GL_EXT_timer_query") != nullptr;
+            if (arb || ext) {
+                extName = arb ? "ARB" : "EXT";
+                g_gpu.genQueries = reinterpret_cast<GlGenQueriesFn>(gpuProc(wgl, "glGenQueries", false));
+                g_gpu.beginQuery = reinterpret_cast<GlBeginQueryFn>(gpuProc(wgl, "glBeginQuery", false));
+                g_gpu.endQuery = reinterpret_cast<GlEndQueryFn>(gpuProc(wgl, "glEndQuery", false));
+                g_gpu.getObjectiv = reinterpret_cast<GlGetQueryObjectivFn>(gpuProc(wgl, "glGetQueryObjectiv", false));
+                g_gpu.getObjectui64v = reinterpret_cast<GlGetQueryObjectui64vFn>(gpuProc(wgl, "glGetQueryObjectui64v", ext));
+                g_gpu.ok = g_gpu.genQueries && g_gpu.beginQuery && g_gpu.endQuery && g_gpu.getObjectiv && g_gpu.getObjectui64v;
+            }
+        }
+    }
+    KP_LOG(chMain, "gpu timer ext=%s ok=%d", extName, g_gpu.ok ? 1 : 0);
+}
+
+// Read every finished query, oldest first. Never blocks: an unavailable result ends the loop (it is read on a later call).
+void gpuPoll() {
+    while (g_gpu.ok && g_gpu.pending > 0) {
+        const unsigned q = g_gpu.ids[g_gpu.head];
+        int avail = 0;
+        g_gpu.getObjectiv(q, GlQueryResultAvailable, &avail);
+        if (!avail) break;
+        uint64_t ns = 0;
+        g_gpu.getObjectui64v(q, GlQueryResult, &ns);
+        g_perf.addGpuNs(ns);
+        g_gpu.head = (g_gpu.head + 1) % kGpuRing;
+        --g_gpu.pending;
+    }
+}
+
+void gpuBegin() {
+    if (!g_cfg.perfLog || !g_cfg.gpuTiming) return;
+    if (!g_gpu.checked) gpuInit();
+    if (!g_gpu.ok) return;
+    gpuPoll();
+    if (g_gpu.active || g_gpu.pending >= kGpuRing) return;   // no free slot (or a stray nested Begin): skip this pass
+    if (!g_gpu.idsReady) {
+        g_gpu.genQueries(kGpuRing, g_gpu.ids);
+        g_gpu.idsReady = true;
+        for (int i = 0; i < kGpuRing; ++i) {
+            if (g_gpu.ids[i] == 0) g_gpu.ok = false;
+        }
+        if (!g_gpu.ok) {
+            KP_WARN("gpu timer: glGenQueries returned a null id; GPU timing off");
+            return;
+        }
+    }
+    g_gpu.beginQuery(GlTimeElapsed, g_gpu.ids[(g_gpu.head + g_gpu.pending) % kGpuRing]);
+    g_gpu.active = true;
+}
+
+// Only ends a query this module began.
+void gpuEnd() {
+    if (!g_gpu.active) return;
+    g_gpu.endQuery(GlTimeElapsed);
+    g_gpu.active = false;
+    ++g_gpu.pending;
+}
+
+// PF2a: decode the grass draw path from the engine globals (no game calls) and log it when it changes.
+void probeGrassPath() {
+    uint32_t F = 0;
+    int32_t N = 0, f60EC = 0, f62DC = 0, c60FC = -1, c6118 = -1, f07c = 0;
+    uint8_t bac4 = 0;
+    const bool ok = saferead::readAt<uint32_t>(7, AddrPathFlags, 0, &F) &&
+                    saferead::readAt<int32_t>(8, AddrPathN, 0, &N) &&
+                    saferead::readAt<int32_t>(9, AddrPathFlag60EC, 0, &f60EC) &&
+                    saferead::readAt<int32_t>(10, AddrPathFlag62DC, 0, &f62DC) &&
+                    saferead::readAt<int32_t>(11, AddrPathC60FC, 0, &c60FC) &&
+                    saferead::readAt<int32_t>(12, AddrPathC6118, 0, &c6118) &&
+                    saferead::readAt<int32_t>(13, AddrPathF07C, 0, &f07c) &&
+                    saferead::readAt<uint8_t>(14, AddrPathBac4, 0, &bac4);
+    g_pathReadable = ok;
+    if (!ok) return;
+    const k2grass::GrassPath p = k2grass::decodeGrassPath(F, c60FC, c6118, N, f62DC, f60EC);
+    if (g_pathSeen && F == g_pathLastF && p == g_pathLast) return;
+    g_pathSeen = true;
+    g_pathLastF = F;
+    g_pathLast = p;
+    KP_LOG(chMain, "path probe F=0x%08X G=%d H=%d P=%d Q=%d M=%d f07c=%d bac4=%d", F, p.G, p.H, p.P, p.Q, p.M, f07c,
+           static_cast<int>(bac4));
+}
+
 void perfSample(unsigned now) {
     if (!g_cfg.perfLog) return;
     if (g_perf.startMs == 0) {
@@ -186,12 +360,15 @@ void perfSample(unsigned now) {
     const bool trimmed = g_collectPatch == 1 && g_cfg.trimHidden;
     KP_LOG(chPerf,
            "PERF fps=%.1f frames=%u bins_avg=%.0f bins_max=%u end=%.0fm start=%.0fm wind=%.0fm alpha=%.2f "
-           "grass_ms_avg=%.2f grass_ms_max=%.2f collect=%.0fm trim=%d a2c=%d",
+           "grass_ms_avg=%.2f grass_ms_max=%.2f collect=%.0fm trim=%d a2c=%d "
+           "gpu_ms_avg=%.2f gpu_ms_max=%.2f gpu=%d lod=%d quads_pct=%.0f pathA=%u pathB1=%u pathB2=%u",
            g_perf.fps(now), g_perf.frames, g_perf.binsAvg(), g_perf.binsMax,
            std::sqrt(g_eff.fadeEndSq), std::sqrt(g_eff.fadeStartSq), std::sqrt(g_eff.windDistSq), g_eff.alphaCutoff,
            g_perf.grassMsAvg(), g_perf.grassMsMax(),
            std::sqrt(g_collectPatch == 1 ? g_collectSq : g_eff.fadeEndSq), trimmed ? 1 : 0,
-           (g_a2cCapable && g_cfg.smoothEdges) ? 1 : 0);
+           (g_a2cCapable && g_cfg.smoothEdges) ? 1 : 0,
+           g_perf.gpuMsAvg(), g_perf.gpuMsMax(), (g_gpu.ok && g_cfg.gpuTiming) ? 1 : 0,
+           g_cfg.farLod ? 1 : 0, g_perf.quadsPct(), g_perf.pathA, g_perf.pathB1, g_perf.pathB2);
     g_perf.reset(now);
 }
 
@@ -201,7 +378,7 @@ void ensureDefaultIniFile() {
         fclose(f);
         return;
     }
-    char buf[2048];
+    char buf[4096];
     const int n = k2grass::formatDefaultIni(buf, sizeof(buf), g_cfg);
     if (n > 0 && static_cast<size_t>(n) < sizeof(buf)) {
         filewatch::atomicWrite(k2grass::kIniFile, buf, static_cast<size_t>(n));
@@ -232,7 +409,7 @@ void loadAndApplyIni(bool initial) {
     if (!g_bannerLogged) {
         g_bannerLogged = true;
         KP_LOG(chMain,
-               "%s %s loaded: enabled=%d fade=%.0fm..%.0fm (sq=%.0f..%.0f) wind=%.0fm (sq=%.0f) alpha=%.2f clip=%.1fm trim=%d collect=%.1fm (sq=%.0f) smooth_edges=%d perf_log=%d ini=%s(ok=%d,bad=%d)",
+               "%s %s loaded: enabled=%d fade=%.0fm..%.0fm (sq=%.0f..%.0f) wind=%.0fm (sq=%.0f) alpha=%.2f clip=%.1fm trim=%d collect=%.1fm (sq=%.0f) smooth_edges=%d perf_log=%d gpu_timing=%d wind_throttle=%d wind_near=%.0fm wind_every=%d far_lod=%d lod_start=%.0fm lod_min_keep=%.2f ini=%s(ok=%d,bad=%d)",
                k2grass::kModId, k2grass::kVersion,
                g_cfg.enabled ? 1 : 0,
                g_cfg.fadeStartDist, g_cfg.fadeEndDist,
@@ -243,16 +420,21 @@ void loadAndApplyIni(bool initial) {
                g_cfg.trimHidden ? 1 : 0, std::sqrt(g_collectSq), g_collectSq,
                g_cfg.smoothEdges ? 1 : 0,
                g_cfg.perfLog ? 1 : 0,
+               g_cfg.gpuTiming ? 1 : 0, g_cfg.windThrottle ? 1 : 0, g_cfg.windNear, g_cfg.windEvery,
+               g_cfg.farLod ? 1 : 0, g_cfg.lodStart, static_cast<double>(g_cfg.lodMinKeep),
                readOk ? "read" : "defaults", st.ok, st.bad);
     } else if (changed || g_cfg.verbose) {
         KP_LOG(chCfg,
-               "INI reload #%u: enabled=%d fade=%.0fm..%.0fm wind=%.0fm alpha=%.2f clip=%.1fm trim=%d collect=%.1fm smooth_edges=%d",
+               "INI reload #%u: enabled=%d fade=%.0fm..%.0fm wind=%.0fm alpha=%.2f clip=%.1fm trim=%d collect=%.1fm smooth_edges=%d "
+               "gpu_timing=%d wind_throttle=%d wind_near=%.0fm wind_every=%d far_lod=%d lod_start=%.0fm lod_min_keep=%.2f",
                g_reloadCount,
                g_cfg.enabled ? 1 : 0,
                g_cfg.fadeStartDist, g_cfg.fadeEndDist,
                g_cfg.windDist, g_eff.alphaCutoff,
                k2grass::effectiveClipDistMeters(g_eff),
-               g_cfg.trimHidden ? 1 : 0, std::sqrt(g_collectSq), g_cfg.smoothEdges ? 1 : 0);
+               g_cfg.trimHidden ? 1 : 0, std::sqrt(g_collectSq), g_cfg.smoothEdges ? 1 : 0,
+               g_cfg.gpuTiming ? 1 : 0, g_cfg.windThrottle ? 1 : 0, g_cfg.windNear, g_cfg.windEvery,
+               g_cfg.farLod ? 1 : 0, g_cfg.lodStart, static_cast<double>(g_cfg.lodMinKeep));
     }
 }
 
@@ -312,6 +494,27 @@ void pollModConfig() {
     }
 }
 
+// The three values the game pushed for glDrawArrays(mode, first, count); the hook gets a pointer to them (esp+0).
+struct DrawArraysArgs {
+    uint32_t mode;
+    int32_t first;
+    int32_t count;
+};
+
+// Far LOD: draw only the first K quads of the bin. Prefix thinning: if quads are spatially ordered inside a bin this
+// leaves bald patches (a play-test question); there is no alpha compensation in this version. Only the pushed count
+// changes: the helper's offset argument (count * 0x30) is also the normals/UV offset, so it must stay as the game set it.
+void thinDrawArrays(DrawArraysArgs* args) {
+    if (!g_inGrass || args == nullptr || args->mode != GlQuads || args->count < 0) return;
+    const int32_t before = args->count;
+    int32_t after = before;
+    if (g_cfg.farLod) {
+        after = k2grass::thinCount(before, g_binKeep);
+        args->count = after;
+    }
+    if (g_cfg.perfLog) g_perf.addQuads(static_cast<uint32_t>(before / 4), static_cast<uint32_t>(after / 4));
+}
+
 } // namespace
 
 extern "C" {
@@ -347,13 +550,22 @@ void __cdecl K2GrassOnSceneCollect() {
     if (!g_mcReg.registered) {
         pollModConfig();
     }
+    // PF2b: the wind gate reads g_windDistSq; one value per frame (the throttle phase advances once per grass frame).
+    // Wind has no dt, so a throttled bin sways at 1/k speed; whether that reads as slow-motion grass is the A/B question.
+    g_windDistSq = k2grass::windDistSqForFrame(g_eff, g_cfg, g_windFrame++);
+    gpuPoll();
     perfSample(now);
     ++g_collectCalls;
 }
 
-// Hook 2: Scene::DoBinBucket (0x004664E0) at 0x0046661B, just before the per-bin loop that renders grass bins.
+// Hook 2: Scene::DoBinBucket (0x004664E0) at 0x0046661B, the bucket loop's counter init (outer loop; the bins are the
+// inner loop at 0x0046664B). Times the whole grass pass.
 void __cdecl K2GrassBinLoopBegin() {
     if (!g_a2cChecked) checkA2cCapability();
+    probeGrassPath();
+    g_inGrass = true;
+    g_binKeep = 1.0f;
+    gpuBegin();   // before the CPU timer so the query call is not counted as grass CPU time
     if (g_cfg.perfLog) {
         if (!g_qpcFreq.QuadPart) QueryPerformanceFrequency(&g_qpcFreq);
         g_loopTiming = g_qpcFreq.QuadPart > 0 && QueryPerformanceCounter(&g_loopT0) != 0;
@@ -366,8 +578,9 @@ void __cdecl K2GrassBinLoopBegin() {
     }
 }
 
-// Hook 3: Scene::DoBinBucket at 0x00466698, the bin loop's only exit (JGE at 0x00466636).
+// Hook 3: Scene::DoBinBucket at 0x00466698, the bucket loop's only exit (JGE at 0x00466636).
 void __cdecl K2GrassBinLoopEnd() {
+    g_inGrass = false;
     if (g_a2cOn) {
         glCap(AddrSlotGlDisable, GlSampleAlphaToCoverage);
         g_a2cOn = false;
@@ -381,7 +594,30 @@ void __cdecl K2GrassBinLoopEnd() {
             g_perf.addGrassUs(us > 0xFFFFFFFFull ? 0xFFFFFFFFu : static_cast<uint32_t>(us));
         }
     }
+    gpuEnd();   // after the CPU timer stop, same reason as in Begin
 }
+
+// Hook 4 (PF2c / PF2a): CAurTriangleBin::RenderGrassPolys entry at 0x0050DAC0, bin in ECX (the game's live object).
+// Picks the keep fraction for this bin's draw calls and counts the bin by draw path for the PERF line.
+void __cdecl K2GrassOnBin(const uint8_t* bin) {
+    g_binKeep = 1.0f;
+    if (bin == nullptr || reinterpret_cast<uintptr_t>(bin) < 0x10000) return;
+    if (g_cfg.farLod) {
+        float distSq = 0.0f;
+        memcpy(&distSq, bin + kBinOffDistSq, sizeof distSq);
+        g_binKeep = k2grass::lodKeep(distSq, g_cfg, g_eff);
+    }
+    if (g_cfg.perfLog) {
+        // [AddrPathF07C] is static engine data already probed readable at this pass's Begin.
+        const int32_t f07c = g_pathReadable ? *reinterpret_cast<const volatile int32_t*>(AddrPathF07C) : 0;
+        g_perf.addPath(k2grass::classifyBinPath(bin[kBinOffFlags], f07c, g_pathLast.P));
+    }
+}
+
+// Hook 5 / 6: the two CALL dword ptr [glDrawArrays] in the grass draw helper FUN_004369A0 (grass-only; callers
+// 0x0050E16B, 0x0050E487, 0x0050E695), at 0x00436A95 and 0x00436B86.
+void __cdecl K2GrassDrawArraysA(DrawArraysArgs* args) { thinDrawArrays(args); }
+void __cdecl K2GrassDrawArraysB(DrawArraysArgs* args) { thinDrawArrays(args); }
 
 } // extern "C"
 
