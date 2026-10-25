@@ -41,17 +41,17 @@ file = "equip_p.gui"    # vanilla ids 0..48
 
 [[gui.static]]
 mod = "equipment-3d-character"
-ids = [49, 78]
+ids = [49, 79]
 tags = [
   "3D_MODEL", "LBL_BEVEL", "LBL_BEVEL2",
   "LBL_E3D_ANIM", "LBL_E3D_SPIN", "LBL_E3D_WEAP", "LBL_E3D_RESET", "LBL_E3D_EMOTE",
   "LBL_E3D_M00", "LBL_E3D_M01", "LBL_E3D_M02", "LBL_E3D_M03", "LBL_E3D_M04", "LBL_E3D_M05", "LBL_E3D_M06",
   "LBL_E3D_M07", "LBL_E3D_M08", "LBL_E3D_M09", "LBL_E3D_M10", "LBL_E3D_M11", "LBL_E3D_M12", "LBL_E3D_M13",
   "LBL_E3D_M14", "LBL_E3D_M15", "LBL_E3D_M16", "LBL_E3D_M17", "LBL_E3D_M18", "LBL_E3D_M19",
-  "LBL_E3D_TIPBG", "LBL_E3D_TIP",
+  "LBL_E3D_TIPBG", "LBL_E3D_TIP", "LBL_E3D_HOLS",
 ]
-# view; the two bevels; the toolbar column (5 buttons, x 684, y 174..300). The pop-up items and tooltip (ids 57..78) are
-# placed at runtime, so they have no fixed rect.
+# view; the two bevels; the toolbar column (5 buttons, x 684, y 174..300). The pop-up items, tooltip and the Holster row
+# (ids 57..79, HOLS = 79) are placed at runtime, so they have no fixed rect.
 rects = [[536, 134, 216, 336], [532, 130, 224, 38], [532, 436, 224, 38], [684, 174, 62, 126]]
 source = "EquipCharPreview.cpp:44-45,49-50"
 source_regex = [

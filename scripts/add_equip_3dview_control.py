@@ -58,6 +58,7 @@ BEVEL_TAGS = ("LBL_BEVEL", "LBL_BEVEL2")
 BTN_TAGS = ("LBL_E3D_ANIM", "LBL_E3D_SPIN", "LBL_E3D_WEAP", "LBL_E3D_RESET", "LBL_E3D_EMOTE")
 MENU_TAGS = tuple(f"LBL_E3D_M{i:02d}" for i in range(20))   # Emotes pop-up items (cloned from the button template; the DLL lays them out)
 TIP_TAGS = ("LBL_E3D_TIPBG", "LBL_E3D_TIP")   # hover tooltip frame + text; the DLL sizes/positions/shows them
+HOLS_TAGS = ("LBL_E3D_HOLS",)   # EQ10 Holster/Draw row (id after the tooltip so ids 49..78 stay put); the DLL places it
 BTN_TEXT = ("Animate", "Spin", "Weapons", "Reset", "Emotes")
 BTN_TEX = ("e3d_btn", "e3d_btn_hi", "e3d_btn_off")   # on/normal, hover, off
 BTN_TEMPLATE = ("mipc28x6_p.gui", "LBL_QUEUE1")
@@ -128,7 +129,7 @@ def main() -> int:
     ref = {c.get_string("TAG"): c for c in ref_cs}
 
     # rebuild from vanilla: drop previous additions, set every moved control to vanilla+dx
-    for i in reversed([i for i, c in enumerate(cs) if c.get_string("TAG") in (TAG,) + BEVEL_TAGS + BTN_TAGS + MENU_TAGS + TIP_TAGS]):
+    for i in reversed([i for i, c in enumerate(cs) if c.get_string("TAG") in (TAG,) + BEVEL_TAGS + BTN_TAGS + MENU_TAGS + TIP_TAGS + HOLS_TAGS]):
         del cs[i]
     changes = []
     for tags, dx in ((LIST, ldx), (BLOCK, bdx)):
@@ -222,6 +223,19 @@ def main() -> int:
                 tb = tc.get_struct("BORDER"); tb.set_resref("FILL", type(tb.get_resref("FILL"))("")); tc.set_struct("BORDER", tb)
             cs.append(tc)
             print(f"  add {ttag} ID={new_id + 3 + len(BTN_TAGS) + len(MENU_TAGS) + j}")
+    if covers:   # EQ10 Holster/Draw button: id after the tooltip; GFF rect = the Emotes cell (the DLL lays the column out)
+        for k, htag in enumerate(HOLS_TAGS):
+            hid = new_id + 3 + len(BTN_TAGS) + len(MENU_TAGS) + len(TIP_TAGS) + k
+            hc = copy.deepcopy(tsrc[0])
+            hc.set_int32("ID", hid)
+            hc.set_string("TAG", htag)
+            hrect = (rect[0] + rect[2] - bw - 6, rect[1] + 40 + 4 * (bh + gap), bw, bh)
+            he = hc.get_struct("EXTENT"); set_rect(he, hrect); hc.set_struct("EXTENT", he)
+            tx = hc.get_struct("TEXT"); tx.set_string("TEXT", "Holster"); tx.set_int32("ALIGNMENT", 18)
+            tx.set_resref("FONT", type(tx.get_resref("FONT"))(BTN_FONT)); hc.set_struct("TEXT", tx)
+            hb = hc.get_struct("BORDER"); hb.set_resref("FILL", type(hb.get_resref("FILL"))(BTN_TEX[0])); hc.set_struct("BORDER", hb)
+            cs.append(hc)
+            print(f"  add {htag} ID={hid} {list(hrect)} 'Holster'")
     g.root.set_list("CONTROLS", cs)
     print(f"layout {a.layout}: {len(changes)} control rect change(s)")
     print("\n".join(changes))
