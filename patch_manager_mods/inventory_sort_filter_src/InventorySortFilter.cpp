@@ -200,6 +200,14 @@ int g_lastIdx = -1;
 bool g_selSet = false;
 int g_selId = 0;
 int g_seen = 0, g_dropped = 0, g_direct = 0;
+LONGLONG g_bufTicks = 0, g_nameTicks = 0;   // QueryPerformanceCounter ticks: whole buffer phase / readItemName only (WI-145)
+
+// Adds construction-to-destruction ticks to g_bufTicks; one object covers every early return of SortFilterBufferRow.
+struct BufTimer {
+    LARGE_INTEGER t0;
+    BufTimer() { QueryPerformanceCounter(&t0); }
+    ~BufTimer() { LARGE_INTEGER t1; QueryPerformanceCounter(&t1); g_bufTicks += t1.QuadPart - t0.QuadPart; }
+};
 
 bool itemHasOpenSlot(int item) {
     unsigned type = reinterpret_cast<GetUpgradeTypeFn>(FnGetUpgradeType)(item, 0) & 0xFF;
@@ -290,6 +298,7 @@ void startPopulate(int panel, int ebp) {
     }
     normaliseState(panel);
     g_inPop = true; g_n = 0; g_lastIdx = -1; g_selSet = false; g_seen = g_dropped = g_direct = 0; g_nTinted = 0;
+    g_bufTicks = g_nameTicks = 0;
     if (g_cfg.log) logf("populate: panel=%08x mode=%d extra=%d creature=%08x ebp=%08x rows-so-far=%d", panel, filterMode(), g_extra,
                         rd<int>(ebp, F_Creature), ebp, rd<int>(ebp, F_Counter));
 }
@@ -321,6 +330,7 @@ extern "C" int __cdecl SortFilterTabClick(int panel, int ctrl) {
 // H6b. EBP = PopulateItemListBox frame. Buffers the item (or creates it at once when the buffer is full).
 extern "C" void __cdecl SortFilterBufferRow(int ebp) {
     saferead::beginScope();
+    BufTimer bufTimer;
     loadIni(false);
     int panel = rd<int>(ebp, F_Panel), item = rd<int>(ebp, F_Item), cobj = rd<int>(ebp, F_Cobj);
     int creature = rd<int>(ebp, F_Creature);
@@ -359,7 +369,13 @@ extern "C" void __cdecl SortFilterBufferRow(int ebp) {
     e.isNew = ((rd<unsigned>(item, ItemFlagsOff) >> 7) & 1) != 0;
     e.usable = usable; e.baseItem = rd<int>(item, ItemBaseOff);
     e.tint = needUsable && isf::tintRow(equippable, equipOk);
-    if (g_cfg.sort) readItemName(item, e.name, sizeof e.name);   // name key only matters when sorting; e.name stays "" otherwise
+    if (g_cfg.sort) {   // name key only matters when sorting; e.name stays "" otherwise
+        LARGE_INTEGER n0, n1;
+        QueryPerformanceCounter(&n0);
+        readItemName(item, e.name, sizeof e.name);
+        QueryPerformanceCounter(&n1);
+        g_nameTicks += n1.QuadPart - n0.QuadPart;
+    }
 
     // Reselect bookkeeping that the skipped vanilla code did; the row index is only known at flush time.
     bool matched = (rd<int>(panel, PanelSelectedIdOff) == id);
@@ -389,12 +405,16 @@ extern "C" void __cdecl SortFilterFlush(int ebp) {
     }
     normaliseState(panel);
     if (g_cfg.sort) {
-        LARGE_INTEGER freq, t0, t1;
-        QueryPerformanceFrequency(&freq); QueryPerformanceCounter(&t0);
+        static LONGLONG freq = 0;   // QPC frequency, read once
+        if (!freq) { LARGE_INTEGER f; QueryPerformanceFrequency(&f); freq = f.QuadPart; }
+        LARGE_INTEGER t0, t1;
+        QueryPerformanceCounter(&t0);
         isf::sortEntries(g_buf, g_n);
         QueryPerformanceCounter(&t1);
-        if (g_cfg.log && freq.QuadPart > 0)
-            logf("sort timing: sortEntries rows=%d took %u us", g_n, (unsigned)((t1.QuadPart - t0.QuadPart) * 1000000 / freq.QuadPart));
+        if (g_cfg.log && freq > 0)
+            logf("sort timing: sortEntries rows=%d took %u us; buffer %u us (names %u us)", g_n,
+                 (unsigned)((t1.QuadPart - t0.QuadPart) * 1000000 / freq),
+                 (unsigned)(g_bufTicks * 1000000 / freq), (unsigned)(g_nameTicks * 1000000 / freq));
     }
     if (g_cfg.log) {
         int nTint = 0, nUsable = 0;
