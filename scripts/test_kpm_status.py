@@ -102,6 +102,22 @@ class StatusTest(unittest.TestCase):
         r = self.e.run()
         self.assertEqual(r["verdict"], "SWAP", r)
 
+    def kpatch_hook_only(self, hooks=HOOKS):
+        with zipfile.ZipFile(self.e.kd / "Demo.kpatch", "w") as z:
+            z.writestr("manifest.toml", MANIFEST)
+            z.writestr("demo.hooks.toml", hooks)
+        t = time.time() + 5
+        os.utime(self.e.kd / "Demo.kpatch", (t, t))
+
+    def test_hook_only_kpatch_reinstall_then_live(self):
+        """A DLL-less kpatch (hooks only) is REINSTALL while the installed hooks differ, LIVE once they match."""
+        self.kpatch_hook_only()
+        self.e.live["demo"]["hooks"] = []
+        self.assertEqual(self.e.run()["verdict"], "REINSTALL")
+        khooks = ks.tomllib.loads(HOOKS).get("hooks", [])
+        self.e.live["demo"]["hooks"] = khooks
+        self.assertEqual(self.e.run()["verdict"], "LIVE")
+
     def test_live_other_when_live_dll_newer(self):
         self.e.kpatch(b"DLL2")
         t = time.time() + 50

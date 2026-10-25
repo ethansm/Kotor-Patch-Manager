@@ -167,7 +167,7 @@ def status(mod_manifest, kpm_map, live, game):
     kp = kps[0]
     with zipfile.ZipFile(kp) as z:
         names = z.namelist()
-        kdll = z.read("binaries/windows_x86.dll")
+        kdll = z.read("binaries/windows_x86.dll") if "binaries/windows_x86.dll" in names else b""   # hook-only (DLL-less) patch
         kman = z.read("manifest.toml")
         hname = steam_hooks_name(names)
         khooks_raw = z.read(hname) if hname else b""
@@ -180,6 +180,11 @@ def status(mod_manifest, kpm_map, live, game):
         newer.append(hname + "(content)")
     if newer:
         return {**row, "verdict": "REBUILD", "detail": "kpatch older than " + ",".join(sorted(newer)[:5])}
+    if not kdll:   # hook-only patch: nothing to hot-swap, live when the installed hooks equal the kpatch hooks
+        khooks = tomllib.loads(khooks_raw.decode()).get("hooks", []) if hname else []
+        if norm_hooks(khooks) == norm_hooks(live[pid].get("hooks", [])):
+            return {**row, "verdict": "LIVE", "detail": "hook-only"}
+        return {**row, "verdict": "REINSTALL", "detail": "hook-only patch: installed hooks differ from the kpatch"}
     dll = game / live[pid].get("dll", f"patches/{pid}.dll")
     if not dll.exists():
         return {**row, "verdict": "SWAP", "detail": "live DLL missing"}
