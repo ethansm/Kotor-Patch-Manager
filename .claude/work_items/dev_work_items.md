@@ -195,3 +195,4 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [ ] | 179 | WI-147 | P3 | ready | S | - | ISF perf: re-read inventory_sort_filter.ini only when its mtime changes | 0 | 1 | 6 GetPrivateProfile calls each open the file, up to once a second from |
 | [ ] | 180 | WI-148 | P3 | ready | S | - | ISF: stale-buffer guard keyed on populate identity, not just loop index | 0 | 1 | aborted populate + first new idx > last idx re-emits stale item pointe |
 | [ ] | 181 | WI-149 | P3 | ready | S | - | ISF: GetString gender arg (REA callers) - pass the shown character's gender | 0 | 1 | readItemName passes gender 0; REA says GetString writes it into talk m |
+| [ ] | 182 | WI-150 | P3 | ready | S | - | ISF: bound the appended fallback log (rotate to .1 per session) | 0 | 1 | 0.2.1 dropped the truncate; log holds 69 launches, no .1, grows withou |
