@@ -114,12 +114,23 @@ struct Config {
 };
 Config g_cfg;
 DWORD g_lastIni = 0;
+FILETIME g_iniWrite = {};   // INI last-write time at the last read; zero = missing or never read
 char IniName[MAX_PATH + 40] = "inventory_sort_filter.ini";   // made absolute in DllMain: a bare name is searched in the Windows dir
 
 void loadIni(bool force) {
     DWORD now = GetTickCount();
     if (!force && g_lastIni && now - g_lastIni < 1000) return;
     g_lastIni = now ? now : 1;
+    // Each GetPrivateProfile* call opens and parses the file (slow under Wine), so skip the re-read when the
+    // last-write time is unchanged. A missing file is read once (defaults), then skipped until it reappears.
+    WIN32_FILE_ATTRIBUTE_DATA fa = {};
+    bool present = GetFileAttributesExA(IniName, GetFileExInfoStandard, &fa) != 0;
+    FILETIME zero = {};
+    if (!force) {
+        if (present && CompareFileTime(&fa.ftLastWriteTime, &g_iniWrite) == 0) return;
+        if (!present && CompareFileTime(&g_iniWrite, &zero) == 0) return;
+    }
+    g_iniWrite = present ? fa.ftLastWriteTime : zero;   // stored before the reads so a mid-read edit is picked up next time
     Config c;
     c.sort = GetPrivateProfileIntA("Inventory", "sort", 0, IniName) != 0;
     c.tint = GetPrivateProfileIntA("Inventory", "tint", 0, IniName) != 0;
