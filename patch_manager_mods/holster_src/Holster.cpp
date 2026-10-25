@@ -61,6 +61,7 @@ const bool g_fallbackSet = (KpLog_SetFallbackFile("holster_log.txt"), KpLog_SetF
 
 // Config. Written once in KPatchInit (before the handlers do anything); defaults are silent.
 static bool g_probe = false;
+static volatile uint32_t g_partsRecheckUntil = 0;   // hs::partsRecheckDue window, armed by HolsterAttach (every call, logging or not); 0 = never armed
 static bool g_onComb = false, g_onAttach = false, g_onSwap = false, g_onAnim = false, g_onGob = false, g_onPlace = false;   // probe=1 AND ch_<name>=1 (g_onPlace gates PLACE logging only)
 // bone_test=1 (needs probe=1); bone_test_left defaults to 1 (the lhand attach node is repointed like the rhand, so a left weapon is holstered
 // and mirrored); bone_test_left=0 is the escape hatch that leaves the lhand unpatched. g_boneLeftCfg is the ini value alone (CONFIG log).
@@ -798,6 +799,7 @@ extern "C" void __cdecl HolsterCombat(void* creature, int newState) {
 // 0x007637E0 in-world weapon attach. [esp+4] = obj (u32), [esp+8] = tag (char*), [esp+0xC] = creature (int*).
 // Logs the creature's body object and the hand handles the call is about to replace.
 extern "C" void __cdecl HolsterAttach(uint32_t obj, const char* tag, int* creature) {
+    { const uint32_t u = GetTickCount() + hs::kPartsWindowMs; g_partsRecheckUntil = u ? u : 1u; }   // before the log gate: the body may be rebuilt, recheck cached parts (mountPose, reachArm)
     if (!g_onAttach) return;
     saferead::beginScope();
     if (!KP_ENABLED(chAttach, KPLOG_INFO)) return;
@@ -1495,8 +1497,9 @@ static void refuse(PlaceRefuse r, uintptr_t g, uintptr_t n, uint32_t vt) {
 // Mount-bone pose for place_bone_<type> (C3/C4 recon): parent Gob = [beh+0x14]; FindPart = parent vtbl+0x10C, thiscall(name) -> node, RET 4;
 // node world pose = node vtbl+0xC, thiscall(vec3*, quat*): the same call the engine made for N just before the hook. Before calling, each slot
 // must equal the weapon Gob's own +0x10C slot and N's own +0xC slot (same engine function, no address constants). The node is cached per
-// (parent, category, bone) and re-checked every frame (owner [node+0x40] equals N's owner, pose slot unchanged).
-struct MountEnt { uintptr_t parent, owner, node; int cat; char bone[32]; };
+// (parent, category, bone) and re-checked every frame (owner [node+0x40] equals N's owner, pose slot unchanged); the lookup itself is redone per hs::partsRecheckDue
+// (an appearance rebuild can hand the freed node to another part of the same owner, which passes that check).
+struct MountEnt { uintptr_t parent, owner, node; int cat; char bone[32]; uint32_t checkedAt; };
 static MountEnt g_mount[64];
 static unsigned g_mountNext = 0;
 static void mountLog(const char* what, uintptr_t parent, const char* bone, uintptr_t node, uintptr_t a, uintptr_t b) {
@@ -1519,6 +1522,14 @@ static bool mountPose(uintptr_t gob, uintptr_t n, uintptr_t beh, hs::Category ca
         const uintptr_t mvt = rdU32(kSitePlace, mn, 0);
         if (rdU32(kSitePlace, mn, 0x40) != owner || !mvt || rdU32(kSitePlace, mvt, 0x0C) != poseFn) { hit->parent = 0; mn = 0; hit = nullptr; }
     }
+    const uint32_t tk = GetTickCount();
+    if (mn && hs::partsRecheckDue(tk, g_partsRecheckUntil, hit->checkedAt)) {
+        const uintptr_t pvt = rdU32(kSitePlace, parent, 0);
+        const uintptr_t find = pvt ? rdU32(kSitePlace, pvt, 0x10C) : 0;
+        const uintptr_t fresh = find ? reinterpret_cast<uintptr_t>(reinterpret_cast<void*(__thiscall*)(void*, const char*)>(find)(reinterpret_cast<void*>(parent), bone)) : 0;
+        if (fresh != mn) { mountLog("moved", parent, bone, mn, fresh, owner); hit->parent = 0; mn = 0; hit = nullptr; }
+        else hit->checkedAt = tk;
+    }
     if (!mn) {
         const uintptr_t pvt = rdU32(kSitePlace, parent, 0), gvt = rdU32(kSitePlace, gob, 0);
         const uintptr_t find = pvt ? rdU32(kSitePlace, pvt, 0x10C) : 0, findRef = gvt ? rdU32(kSitePlace, gvt, 0x10C) : 0;
@@ -1530,7 +1541,7 @@ static bool mountPose(uintptr_t gob, uintptr_t n, uintptr_t beh, hs::Category ca
         if (!mn || mfn != poseFn || mowner != owner) { mountLog("refused-node", parent, bone, mn, mfn, mowner); return false; }
         MountEnt& e = g_mount[g_mountNext];
         g_mountNext = (g_mountNext + 1) % 64u;
-        e.parent = parent; e.owner = owner; e.node = mn; e.cat = cat;
+        e.parent = parent; e.owner = owner; e.node = mn; e.cat = cat; e.checkedAt = tk;
         snprintf(e.bone, sizeof e.bone, "%s", bone);
         mountLog("found", parent, bone, mn, owner, poseFn);
     }
@@ -1550,6 +1561,7 @@ static bool mountPose(uintptr_t gob, uintptr_t n, uintptr_t beh, hs::Category ca
 // starts from the animation, never from its own output. Parts are found with the same FindPart call as mountPose (slot guard against the weapon Gob's).
 struct ReachEnt {
     uintptr_t parent, owner, bic, fore, hand, wrist, poseFn;   // wrist = the hand bone the grip hook hangs on ([hand+0x3C]); 0 = none found
+    uint32_t checkedAt;      // last FindPart recheck of bic / fore / hand (hs::partsRecheckDue)
     hs::Base bb, fb, wb;
     bool dirty, refused, left;
     uint32_t refusedAt;
@@ -1668,6 +1680,10 @@ static bool reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w,
     ReachEnt* e = nullptr;
     for (ReachEnt& x : g_reach)
         if (x.parent == parent && x.left == left) { e = &x; break; }
+    static const char* const kBic[2][2] = {{"rbicep_g", nullptr}, {"lbicep_g", nullptr}};
+    static const char* const kFore[2][3] = {{"Rforearm_g", "rforearm_g", nullptr}, {"Lforearm_g", "lforearm_g", nullptr}};
+    static const char* const kHand[2][2] = {{"rhand", nullptr}, {"lhand", nullptr}};
+    const int sd = left ? 1 : 0;
     if (!e) {
         if (!(w > 0.f)) return false;
         const uintptr_t pvt = rdU32(kSitePlace, parent, 0), gvt = rdU32(kSitePlace, gob, 0);
@@ -1679,10 +1695,6 @@ static bool reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w,
         e->left = left;
         e->refusedAt = GetTickCount();
         e->refused = true;   // until every part resolved
-        static const char* const kBic[2][2] = {{"rbicep_g", nullptr}, {"lbicep_g", nullptr}};
-        static const char* const kFore[2][3] = {{"Rforearm_g", "rforearm_g", nullptr}, {"Lforearm_g", "lforearm_g", nullptr}};
-        static const char* const kHand[2][2] = {{"rhand", nullptr}, {"lhand", nullptr}};
-        const int sd = left ? 1 : 0;
         if (!find || find != findRef) { reachRefuse("findslot", parent); return false; }
         // The first part fixes the pose slot and owner every other part must share.
         const uintptr_t bic = reinterpret_cast<uintptr_t>(reinterpret_cast<void*(__thiscall*)(void*, const char*)>(find)(reinterpret_cast<void*>(parent), kBic[sd][0]));
@@ -1691,7 +1703,7 @@ static bool reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w,
         if (!bic || !fn || !owner) { reachRefuse("nobone", parent); return false; }
         const uintptr_t fore = reachFind(parent, find, kFore[sd], owner, fn), hand = reachFind(parent, find, kHand[sd], owner, fn);
         if (!fore || !hand) { reachRefuse("nobone", parent); return false; }
-        e->owner = owner; e->bic = bic; e->fore = fore; e->hand = hand; e->poseFn = fn;
+        e->owner = owner; e->bic = bic; e->fore = fore; e->hand = hand; e->poseFn = fn; e->checkedAt = GetTickCount();
         {   // the wrist: the grip hook's parent, when it shares the pose slot and owner (otherwise no wrist rotation)
             const uintptr_t wr = rdU32(kSitePlace, hand, 0x3C), wvt = wr ? rdU32(kSitePlace, wr, 0) : 0;
             e->wrist = (wvt && rdU32(kSitePlace, wvt, 0x0C) == fn && rdU32(kSitePlace, wr, 0x40) == owner) ? wr : 0;
@@ -1705,7 +1717,19 @@ static bool reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w,
         if (static_cast<int32_t>(GetTickCount() - e->refusedAt) > 5000) e->parent = 0;   // retry later
         return false;
     }
-    if (reachStale(*e)) { e->parent = 0; e->solved = e->holdN = e->wristOn = e->twistOn = e->combOn = e->tgtOn = 0; e->topoSet = 0; e->viaOn = e->viaEase = 0; return false; }
+    bool moved = false;
+    if (!reachStale(*e)) {
+        const uint32_t tk = GetTickCount();
+        if (hs::partsRecheckDue(tk, g_partsRecheckUntil, e->checkedAt)) {   // the robe-swap case: a freed part reused as another part of this owner passes reachStale
+            const uintptr_t pvt = rdU32(kSitePlace, parent, 0);
+            const uintptr_t find = pvt ? rdU32(kSitePlace, pvt, 0x10C) : 0;
+            moved = !find || reachFind(parent, find, kBic[sd], e->owner, e->poseFn) != e->bic || reachFind(parent, find, kFore[sd], e->owner, e->poseFn) != e->fore ||
+                    reachFind(parent, find, kHand[sd], e->owner, e->poseFn) != e->hand;
+            if (moved) { if (KP_ENABLED(chMain, KPLOG_INFO) && takeLine()) KP_LOG(chMain, "REACH moved side=%c parent=%x owner=%x", left ? 'L' : 'R', static_cast<unsigned>(parent), static_cast<unsigned>(e->owner)); }
+            else e->checkedAt = tk;
+        }
+    }
+    if (moved || reachStale(*e)) { e->parent = 0; e->solved = e->holdN = e->wristOn = e->twistOn = e->combOn = e->tgtOn = 0; e->topoSet = 0; e->viaOn = e->viaEase = 0; return false; }
 
     // HW25: a transient refusal (quat read, pose, solve) while the slide still runs re-applies the last solved local quats instead of dropping the arm to the animation for
     // a frame. Nothing world-space is stored: the carried hand is recomputed from the attach node. Never at slide end (w <= 0) or on a permanent refusal.

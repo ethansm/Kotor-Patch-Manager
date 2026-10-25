@@ -177,7 +177,20 @@ static void testHolsterable() {
     KT_CHECK(!holsterable(CatCount, "w_Lngswrd"));       // out of range
 }
 
+static void testPartsRecheck() {
+    using hs::partsRecheckDue;
+    KT_CHECK(!partsRecheckDue(5000, 0, 4000));          // never armed, checked 1 s ago
+    KT_CHECK(partsRecheckDue(6000, 0, 4000));           // 2 s since the last check
+    KT_CHECK(partsRecheckDue(5000, 5500, 4999));        // inside the rebuild window
+    KT_CHECK(partsRecheckDue(5500, 5500, 5499));        // window end is inclusive
+    KT_CHECK(!partsRecheckDue(5501, 5500, 5000));       // window over, checked 0.5 s ago
+    KT_CHECK(!partsRecheckDue(100, 0, 0xFFFFFF00u));    // tick wrap: 356 ms after the check -> not due by age...
+    KT_CHECK(!partsRecheckDue(0x80000100u, 0, 0x80000000u));   // ...a never-armed window does not read as armed past 2^31
+    KT_CHECK(partsRecheckDue(1000, 0, 2000));           // checkedAt in the future (stale entry): due
+}
+
 int main() {
+    testPartsRecheck();
     testClassifyTable();
     testClassifyCaseAndBoundary();
     testClassifyFallback();

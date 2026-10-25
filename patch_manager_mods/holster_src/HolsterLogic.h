@@ -191,4 +191,15 @@ inline float hiltLengthMeters(const char* stem) {
 }
 inline float gripOffsetFromOrigin(const char* stem) { return stemIs(stem, "w_Dblsbr") ? 0.21f : 0.f; }
 
+// Body-part cache recheck (10-25 robe bug): an appearance rebuild (equip a robe) frees the body parts, and the freed memory of a cached part can come back as
+// another part of the same creature (same owner, same vtable), so the owner / pose-slot stale check passes on the wrong bone (torsoUpr_g -> a hip robe bone:
+// the back mount hung flipped at the hip). A cached lookup is redone while `now` is inside the window the attach hook arms (windowUntil, 0 = never armed),
+// and at least every kPartsRecheckMs anyway (a rebuild that skips the hook). A tick before checkedAt (wrap, stale) is due as well.
+inline constexpr uint32_t kPartsRecheckMs = 2000, kPartsWindowMs = 1000;
+inline bool partsRecheckDue(uint32_t now, uint32_t windowUntil, uint32_t checkedAt) {
+    if (windowUntil != 0 && static_cast<int32_t>(windowUntil - now) >= 0) return true;
+    const int32_t age = static_cast<int32_t>(now - checkedAt);
+    return age < 0 || age >= static_cast<int32_t>(kPartsRecheckMs);
+}
+
 } // namespace hs
