@@ -191,13 +191,13 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [ ] | 175 | WI-143 | P3 | ready | S | - | Combat AI recast F4: drop a party member's pending spell round nodes at AddSWSpellAction 0 | 0 | 0 | ClearAllActions 0x541080 never empties round list +0xB00 (PQ2 4.4); ne |
 | [ ] | 176 | WI-144 | P3 | ready | S | - | companion-ai probe: per-site RS counters (S6A/S6B/S6C/S1/none) in the summary line | 0 | 0 | PR RS lines are per-subject throttled (g_psubj, CompanionAI.cpp:1402), |
 | [ ] | 177 | WI-145 | P3 | ready | S | - | ISF perf: time the whole buffer phase (name + equip calls) in the flush line | 0 | 1 | sort timing covers std::stable_sort only (14 us/86 rows); per-row GetS |
-| [ ] | 178 | WI-146 | P3 | ready | S | - | ISF perf: read item names only for rows tied on new/usable/base, client language once per  | 0 | 1 | GetString (REA UNSURE, side effects) runs for every row; only tied row |
-| [ ] | 179 | WI-147 | P3 | ready | S | - | ISF perf: re-read inventory_sort_filter.ini only when its mtime changes | 0 | 1 | 6 GetPrivateProfile calls each open the file, up to once a second from |
-| [ ] | 180 | WI-148 | P3 | ready | S | - | ISF: stale-buffer guard keyed on populate identity, not just loop index | 0 | 1 | aborted populate + first new idx > last idx re-emits stale item pointe |
-| [ ] | 181 | WI-149 | P3 | ready | S | - | ISF: GetString gender arg (REA callers) - pass the shown character's gender | 0 | 1 | readItemName passes gender 0; REA says GetString writes it into talk m |
-| [ ] | 182 | WI-150 | P3 | ready | S | - | ISF: bound the appended fallback log (rotate to .1 per session) | 0 | 1 | 0.2.1 dropped the truncate; log holds 69 launches, no .1, grows withou |
-| [ ] | 183 | WI-151 | P3 | ready | S | - | ISF UX: show the visible-row count in the filter caption (empty-filter state) | 0 | 3 | a filter with 0 matches shows a blank list with no feedback |
-| [ ] | 184 | WI-152 | P3 | hold | S | - | ISF UX: caption hint for the hidden re-click-All cycle gesture | 0 | 3 | New/Usable/Upgradeable are reachable only by re-clicking the active Al |
-| [ ] | 185 | WI-153 | P3 | hold | S | - | ISF UX: controller access to Usable/Upgradeable filters | 0 | 2 | bumpers go through engine SetNextFilter, so controller players never r |
-| [ ] | 186 | WI-154 | P3 | hold | S | - | ISF UX: player-facing category group order + sort_order INI key | 0 | 3 | groups follow baseitems.2da row id, which is arbitrary to players |
-| [ ] | 187 | WI-155 | P3 | hold | S | - | ISF UX: mod-config row for sort order (doc 45) | 0 | 1 | sort order is a real taste setting; INI-only today |
+| [ ] | 178 | WI-146 | P3 | ready | S | WI-145 | ISF perf: read item names only for rows tied on new/usable/base, client language once per  | 0 | 3 | GetString (REA UNSURE, side effects) runs for every row; only tied row |
+| [ ] | 179 | WI-147 | P3 | ready | S | WI-146 | ISF perf: re-read inventory_sort_filter.ini only when its mtime changes | 0 | 1 | 6 GetPrivateProfile calls each open the file, up to once a second from |
+| [ ] | 180 | WI-148 | P3 | ready | S | WI-147 | ISF: stale-buffer guard keyed on populate identity, not just loop index | 0 | 1 | aborted populate + first new idx > last idx re-emits stale item pointe |
+| [ ] | 181 | WI-149 | P3 | ready | S | WI-148 | ISF: GetString gender arg (REA callers) - pass the shown character's gender | 0 | 1 | readItemName passes gender 0; REA says GetString writes it into talk m |
+| [ ] | 182 | WI-150 | P3 | ready | S | WI-149 | ISF: bound the appended fallback log (rotate to .1 per session) | 0 | 1 | 0.2.1 dropped the truncate; log holds 69 launches, no .1, grows withou |
+| [ ] | 183 | WI-151 | P3 | ready | S | WI-150 | ISF UX: show the visible-row count in the filter caption (empty-filter state) | 0 | 3 | a filter with 0 matches shows a blank list with no feedback |
+| [ ] | 184 | WI-152 | P3 | hold | S | WI-151 | ISF UX: caption hint for the hidden re-click-All cycle gesture | 0 | 3 | New/Usable/Upgradeable are reachable only by re-clicking the active Al |
+| [ ] | 185 | WI-153 | P3 | hold | M | WI-151 | ISF UX: controller access to Usable/Upgradeable filters | 0 | 2 | bumpers go through engine SetNextFilter, so controller players never r |
+| [ ] | 186 | WI-154 | P3 | hold | M | WI-151 | ISF UX: player-facing category group order + sort_order INI key | 0 | 3 | groups follow baseitems.2da row id, which is arbitrary to players |
+| [ ] | 187 | WI-155 | P3 | hold | M | WI-154 | ISF UX: mod-config row for sort order (doc 45) | 0 | 1 | sort order is a real taste setting; INI-only today |
