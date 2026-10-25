@@ -1073,6 +1073,7 @@ void pvBuildModal(const K2MenuUiApi* ui, uint32_t page) {
 // DeclHooks::onBuilt (the Options ctor window, after the rows): the preview labels, then the description split, then the modal and the gear.
 void pvOnBuilt(void*, uint32_t page, void* panel) {
     g_pvOn = false; g_modalPage = 0; g_gearItem = -1; g_pagePanel = panel; g_pvFrame = 0; g_pvLogged = false; g_pvCaption[0] = 0;
+    for (int i = 0; i < g_nPvImgs; ++i) if (!g_pvImgs[i].img) g_pvImgs[i].tries = 0;   // unresolved icons get a fresh 20 tries per Options open
     if (!g_mcMenu.hasModal() || !g_mcMenu.hasDescSplit()) { KP_LOGV(chMain, KPLOG_INFO, "PREVIEW skipped: provider has no modal / gear / description split (older mod-config); the four rows work as before"); return; }
     const K2MenuUiApi* ui = g_mcMenu.p;
     if (!g_cv.build(ui, panel, page, chprev::kPoolSize)) { KP_LOGV(chMain, KPLOG_WARN, "PREVIEW skipped: label pool not complete (%d of %d listed)", g_cv.n, chprev::kPoolSize); return; }

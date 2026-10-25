@@ -91,6 +91,8 @@ constexpr int kMaxOwn = 1 + kListMax + 2 + mui::kMaxSlots * mui::kMaxItems + (mu
 // Options panel offsets (static dump reads, doc r4/r7/r9): layout slot, manager, focus, description string object, text holder pointer, label.
 constexpr int kPanelLayoutSlot = 0x30, kPanelMgr = 0x1C, kPanelFocus = 0x20, kDescStr = 0x1120, kDescHolderPtr = 0x1170, kDescLabel = 0x1030;
 constexpr int kMgrHover = 0x08, kMgrCaptureFlag = 0x0C, kMgrCapture = 0x10, kMgrLastHit = 0x14;
+constexpr int kMgrTooltip = 0x40;   // tooltip owner: Draw 0x4113A0 sets it, RemoveToolTip 0x413F00 clears owner flags48 bit 0x40 then the slot
+constexpr int kCtlTooltipBit = 0x40;
 constexpr int kVtSetActive = 0x08, kVtHover = 0x0C;
 constexpr int kHolderObj = 0x14, kObjSetText = 0x18;
 
@@ -1615,6 +1617,14 @@ void dropRefs(uintptr_t P, uint32_t M, uintptr_t L) {
         KP_LOG(chMain, "FREE refs: capture cleared for %x", static_cast<unsigned>(L));
     }
     if (rd<uint32_t>(M, kMgrLastHit, &v) && v == static_cast<uint32_t>(L)) guikit::detail::wr<uint32_t>(M, kMgrLastHit, 0);
+    // A stale owner makes the next RemoveToolTip write into the freed label; do its two writes now, while L is alive.
+    if (rd<uint32_t>(M, kMgrTooltip, &v) && v == static_cast<uint32_t>(L)) {
+        const int oFlags = ctlFlagsOff();
+        uint32_t f = 0;
+        if (rd<uint32_t>(L, oFlags, &f)) guikit::detail::wr<uint32_t>(L, oFlags, f & ~static_cast<uint32_t>(kCtlTooltipBit));
+        guikit::detail::wr<uint32_t>(M, kMgrTooltip, 0);
+        KP_LOG(chMain, "FREE refs: tooltip owner cleared for %x", static_cast<unsigned>(L));
+    }
 }
 
 // vt[0](1) for a control whose vtable is the label or button vtable (R9 Q1: scalar deleting dtor 885AB0 for buttons).
@@ -2522,7 +2532,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
     embtex::g_log = embedLog;   // gear + slider art textures (EmbedTex) log through the main channel
     guikit::initGuiInput(api, "mod-config");   // optional: the wheel provider (k2.guiinput); a missing provider only means no wheel
-    KP_LOG(chMain, "mod-config 0.4.6-dev loaded (Mod Configuration button under Gameplay; k2.modconfig@1 + k2.menuui@1; config mod_config.ini is read at the first Options panel: enabled debug button_clone reflow desc free_labels)");
+    KP_LOG(chMain, "mod-config 0.4.7-dev loaded (Mod Configuration button under Gameplay; k2.modconfig@1 + k2.menuui@1; config mod_config.ini is read at the first Options panel: enabled debug button_clone reflow desc free_labels)");
     int rcC = -1, rcM = -1;
     if (api && api->struct_size >= offsetof(KPatchApi, require) + sizeof(api->require) && api->provide) {
         rcC = api->provide(K2MODCONFIG_IFACE, K2MODCONFIG_VERSION, &g_mcApi);
