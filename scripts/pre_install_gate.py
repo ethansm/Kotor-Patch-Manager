@@ -19,9 +19,9 @@ Steps (stop at the first failure; exit 1 on FAIL, 0 on PASS):
               (a mod with no smoke row gets its live kpatch looked up by manifest id); then check_exports.py runs on
               those scratch kpatches, so a new detour export is judged on the fresh DLL, not the stale KPM one;
               Patches/Common (kpatch_api.h etc.) is copied in too, since the smokes compile with -I$KPM_DIR/Patches/Common
-  4 wine      KPM_DIR=<scratch> run_tests.py --wine -k wine: ; each matched row must PASS (SKIP only for missing
-              DISPLAY). Rows of other mods SKIP (their kpatch is absent from the scratch tree). A mod with no smoke
-              row prints NOTE and still passes.
+  4 wine      KPM_DIR=<scratch> run_tests.py --wine wine:<row>... (only the matched rows; rows of other mods are
+              never run, even when all their kpatches happen to sit in the scratch tree as co-loaded DLLs); each
+              matched row must PASS (SKIP only for missing DISPLAY). A mod with no smoke row prints NOTE and still passes.
   5 report    GATE PASS mods=<ids> smokes=<rows> head=<sha12> + the md5 of every rebuilt DLL (the md5 that
               stage_and_verify_install.py verify compares)
 
@@ -567,7 +567,7 @@ def step_wine(rows, scratch: Path, runner=run) -> list:
     if not rows:
         return []
     env = {**os.environ, "KPM_DIR": str(scratch)}
-    rc, out = runner([PY, str(RUN_TESTS), "--wine", "-k", "wine:"], env=env)
+    rc, out = runner([PY, str(RUN_TESTS), "--wine", *(f"wine:{r}" for r in rows)], env=env)
     return judge_wine(rows, parse_wine(out))
 
 

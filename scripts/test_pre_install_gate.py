@@ -174,6 +174,20 @@ class Wine(unittest.TestCase):
         with self.assertRaises(g.GateFail):   # no line at all
             g.judge_wine(["absent"], res)
 
+    def test_step_wine_runs_only_matched_rows(self):
+        seen = []
+
+        def runner(cmd, env=None, quiet=False):
+            seen.append((cmd, env["KPM_DIR"]))
+            return 0, self.OUT
+        self.assertEqual(g.step_wine(["perflab", "probe14"], Path("/s"), runner), ["probe14"])
+        cmd, kpm = seen[0]
+        self.assertEqual(kpm, "/s")
+        self.assertEqual(cmd[2:], ["--wine", "wine:perflab", "wine:probe14"])   # co-loaded rows of other mods never run
+        self.assertNotIn("-k", cmd)
+        self.assertEqual(g.step_wine([], Path("/s"), runner), [])
+        self.assertEqual(len(seen), 1)
+
 
 class Exports(unittest.TestCase):
     def test_argv_and_pass(self):
