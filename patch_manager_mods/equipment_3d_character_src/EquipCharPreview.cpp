@@ -1,4 +1,4 @@
-// Equipment 3D Character 0.2.0-probe (Steam Aspyr build 6A522E71...). Shows a live 3D render of the character whose gear
+// Equipment 3D Character 0.3.0-probe (Steam Aspyr build 6A522E71...). Shows a live 3D render of the character whose gear
 // is being edited on the equipment screen (CSWGuiInGameEquip), with an occasional flourish animation.
 // Research trail: patch_manager_mods/10_equipment_3d_character.md and equipment_3d_character_src/research/R* (worktree
 // local-setup/KOTOR-II). Technique: Mod 1 (inventory_3d_viewport_src) for the view; the preview creature is built the way
@@ -29,6 +29,7 @@
 #include "GuiKit.h"     // Common: screen sync, float cursor, wheel subclass (kp::WindowHook inside), bindByTag, setRect/getExtent/setText/imageFor/setFill
 #include "PanelSlots.h"  // Common: panel -> slot table
 #include "Equip3dLogic.h"   // host-tested pure logic (equip3d_logic_test.cpp); includes EquipWeaponTable.inc (scripts/gen_equip3d_weapon_table.py)
+#include "HolsterApi.h"   // k2.holster@1 (optional; connected lazily, not in requires_interfaces)
 
 KP_LOG_PATCH("equipment-3d-character");
 
@@ -48,6 +49,7 @@ constexpr int CtlIdOff = 0x54;
 constexpr int SceneObjOffset = 0x74;        // view+0x74 = Scene*
 constexpr int ExpectedControlId = 49;       // equip_p.gui has 49 controls (ids 0..48); 3D_MODEL=49, LBL_BEVEL=50, LBL_BEVEL2=51
 constexpr int TipBgId = ExpectedControlId + 3 + NumButtons + MaxMenu, TipId = TipBgId + 1;
+constexpr int HolsBtn = NumButtons, NumToolbar = NumButtons + 1, HolsId = TipId + 1;   // EQ10 LBL_E3D_HOLS (id 79) = btn[HolsBtn]
 constexpr int ExpectedCamVtable = 0x0098c45c;
 constexpr int ExpectedGobVtable = 0x0098b5cc;
 
@@ -204,10 +206,11 @@ struct Slot {
     char activeName[32] = "";
     // weapons
     void* wpn[2] = {}; int wpnIds[2] = {0, 0}; bool wpnApplied = false, stanceOn = false; char stanceName[12] = "", wpnNames[2][28] = {};
+    bool wpnReg[2] = {}, regFail = false, regTried = false; int wpnWield[2] = {0, 0}; bool wpnHas[2] = {}; int drawnApplied = -1, toolLaid = -1; eq3d::Box cell[5] = {}; bool cellOk = false;   // EQ10 holster registration + original toolbar cells
     // own-model helmet (never the real item's Gob: DB lesson 149, 0085a9e0)
     void* helm = nullptr; int helmId = 0; bool helmApplied = false; char helmName[20] = "";
     // toolbar
-    unsigned char* btn[NumButtons] = {}; char btnText[NumButtons][20] = {}; int btnHover[NumButtons] = {-1, -1, -1, -1, -1}; bool btnWasL = false;
+    unsigned char* btn[NumToolbar] = {}; char btnText[NumToolbar][20] = {}; int btnHover[NumToolbar] = {-1, -1, -1, -1, -1, -1}; bool btnWasL = false;
     // Emotes pop-up (items are engine labels; itemState = fill state + 1, 0 = not yet set)
     unsigned char* item[MaxMenu] = {}; char itemText[MaxMenu][20] = {}; int itemState[MaxMenu] = {};
     float rowRect[4] = {0, 0, 0, 0}; int spinLaid = -1;
@@ -286,6 +289,7 @@ unsigned char* bindCover(int panel, const char* tagName, int expectId) {
 // ---- toolbar (Anim / Spin / Reset): labels bound by tag; state text + hover fill set at runtime, clicks polled (labels are click-through) ----
 bool g_animOn = true, g_spinOn = false, g_weaponsOn = false, g_spinUi = false;   // g_spinUi: the spin row shows play/pause + Reset instead of the single Spin button
    // session toggles (initialised from the INI at load / first bind)
+bool g_drawn = true, g_weaponsInit = false; k2holster::Client g_hol;   // EQ10: weapons in hand (drawn) vs holstered (k2.holster preview); client connected lazily
 void* btnImage(const char* resref) {   // pool + lowercase = guikit::imageFor; the load is logged once per resref as before
     bool loaded = false;
     void* im = guikit::imageFor(resref, &loaded);
@@ -321,7 +325,7 @@ bool ctlRect(unsigned char* c, float* r) {   // engine-space rect from a label's
 }
 bool btnRect(Slot* s, int i, float* r) { return ctlRect(s->btn[i], r); }
 bool overAnyButton(Slot* s, float cx, float cy) {
-    for (int i = 0; i < NumButtons; ++i) { float r[4]; if (btnRect(s, i, r) && eq3d::rectContains(cx, cy, r[0], r[1], r[2], r[3])) return true; }
+    for (int i = 0; i < NumToolbar; ++i) { float r[4]; if (btnRect(s, i, r) && eq3d::rectContains(cx, cy, r[0], r[1], r[2], r[3])) return true; }
     if (s->menuOpen && s->menuPhase == 0) for (int i = 0; i < s->menuCount; ++i) { float r[4]; if (ctlRect(s->item[i], r) && eq3d::rectContains(cx, cy, r[0], r[1], r[2], r[3])) return true; }
     return false;
 }
@@ -335,18 +339,22 @@ void setCtlVisible(unsigned char* c, bool vis) {
 void setCtlRect(unsigned char* c, int x, int y, int w, int h) { guikit::setRect(reinterpret_cast<uintptr_t>(c), x, y, w, h); }
 bool playFlourish(Slot* s, const char* name, const char* why, float forceLen = 0.0f);
 void menuBuild(Slot* s);
-const char* const kTips[NumButtons + 1] = {
+const char* const kTips[9] = {
     "Animate\nPlays a gesture every few\nseconds. Click to turn on/off.",
     "Play / Pause\nSlowly turns; click to pause.\nDrag sideways to rotate,\nup/down to move; wheel zooms.",
-    "Weapons\nShow equipped weapons in a\ncombat-ready stance. Click to toggle.",
+    "Hide weapons\nRemoves the weapons from the\npreview.",
     "Reset\nCentres the view again and goes\nback to the Spin button.",
     "Emotes\nPick a gesture (or, with\nWeapons on, an attack) to play.",
-    "Spin\nSlowly turns the character.\nClick for play/pause and reset."};
+    "Spin\nSlowly turns the character.\nClick for play/pause and reset.",
+    "Show weapons\nShows the equipped weapons\nin the hand.",
+    "Holster\nPuts the weapons on the hip or\nback (holster mod).",
+    "Draw\nTakes the weapons back into\nthe hand."};
 constexpr int TipCharW = 21, TipLineH = 32, TipPad = 22, TipDelayMs = 350;   // px estimates (same font/metrics as Mod 3's tooltip)
 void hideTip(Slot* s) { if (s->tipFor < 0) return; setCtlVisible(s->tipBg, false); setCtlVisible(s->tip, false); s->tipFor = -1; }
 void showTip(Slot* s, int i, const float* br) {
     if (!s->tip || !s->tipBg) return;
-    const char* text = kTips[(i == 1 && !g_spinUi) ? 5 : i];
+    int ti = (i == 1 && !g_spinUi) ? 5 : i == 2 ? (g_weaponsOn ? 2 : 6) : i == HolsBtn ? (g_drawn ? 7 : 8) : i;   // kTips index
+    const char* text = kTips[ti];
     setLabelText(s->tip, s->tipText, sizeof s->tipText, text, "tip");
     int lines = 1, maxLen = 0, cur = 0;
     for (const char* q = text; *q; ++q) { if (*q == '\n') { ++lines; cur = 0; } else if (++cur > maxLen) maxLen = cur; }
@@ -355,8 +363,8 @@ void showTip(Slot* s, int i, const float* br) {
     if (y + h > (int)g_cfg.screenH - 8) y = (int)g_cfg.screenH - 8 - h;
     setCtlRect(s->tipBg, x, y, w, h); setCtlRect(s->tip, x + TipPad / 2, y + TipPad / 2, w - TipPad, h - TipPad);
     setCtlVisible(s->tipBg, true); setCtlVisible(s->tip, true);
-    if (s->tipFor != i) logf("tip: show %d rect=[%d,%d,%d,%d] lines=%d maxLen=%d", i, x, y, w, h, lines, maxLen);
-    s->tipFor = i;
+    if (s->tipFor != ti) logf("tip: show %d rect=[%d,%d,%d,%d] lines=%d maxLen=%d", ti, x, y, w, h, lines, maxLen);
+    s->tipFor = ti;
 }
 constexpr DWORD MenuPreMs = 180, MenuPostMs = 300;   // buffers around an emote: menu hidden -> (pre) -> play -> finished -> (post) -> menu shown
 void spinLayout(Slot* s) {   // single Spin button, or (after the first click) play/pause 30 % + Reset on the same row
@@ -368,6 +376,22 @@ void spinLayout(Slot* s) {   // single Spin button, or (after the first click) p
     s->btnHover[1] = s->btnHover[3] = -1; s->spinLaid = g_spinUi ? 1 : 0;
     logf("spin row: %s", g_spinUi ? "play/pause + Reset" : "Spin");
 }
+// EQ10 toolbar column: the 5 GUI cells top..bottom become Animate / Spin / Emotes / Hide|Show / Holster|Draw. The Spin row (cell 1) stays spinLayout's.
+bool holsOk(Slot* s) { return g_hol.canDraw() && s->btn[HolsBtn] && !s->regFail; }
+bool holsReg(Slot* s) { return holsOk(s) && (s->wpnReg[0] || s->wpnReg[1]); }   // a weapon of this slot is actually registered with the holster mod
+bool holsShown(Slot* s) { return g_weaponsOn && holsReg(s); }   // Holster/Draw row shown
+int toolKey(Slot* s) { return (g_weaponsOn ? 1 : 0) | (holsReg(s) ? 2 : 0); }
+void toolLayout(Slot* s) {
+    if (!s->cellOk) return;
+    eq3d::ToolbarRects t = eq3d::layoutToolbar(s->cell, g_weaponsOn, holsReg(s));
+    setCtlRect(s->btn[0], t.anim.x, t.anim.y, t.anim.w, t.anim.h);
+    setCtlRect(s->btn[4], t.emote.x, t.emote.y, t.emote.w, t.emote.h);
+    setCtlRect(s->btn[2], t.weap.x, t.weap.y, t.weap.w, t.weap.h);
+    if (s->btn[HolsBtn]) { setCtlRect(s->btn[HolsBtn], t.hols.x, t.hols.y, t.hols.w, t.hols.h); setCtlVisible(s->btn[HolsBtn], t.holsShown); }
+    s->btnHover[0] = s->btnHover[2] = s->btnHover[4] = s->btnHover[HolsBtn] = -1;
+    s->toolLaid = toolKey(s);
+    logf("EQ10: layout weaponsOn=%d holsShown=%d", g_weaponsOn ? 1 : 0, t.holsShown ? 1 : 0);
+}
 void menuClose(Slot* s, const char* why) {
     if (!s->menuOpen) return;
     s->menuOpen = false; s->menuLaid = -1; s->menuPhase = 0;
@@ -378,7 +402,8 @@ void menuHideItems(Slot* s) { for (int i = 0; i < MaxMenu; ++i) setCtlVisible(s-
 void menuLayout(Slot* s) {   // anchored at the view's LEFT edge, below the top arc; column 0 ends with the page toggle at the bottom row
     float e[4], r0[4] = {}, r1[4] = {};
     if (!btnRect(s, 4, e)) return;
-    bool haveBoth = btnRect(s, 0, r0) && btnRect(s, 2, r1);
+    bool haveBoth = s->cellOk || (btnRect(s, 0, r0) && btnRect(s, 2, r1));   // EQ10: pitch from the original cells (Weapons/Emotes move within the column)
+    if (s->cellOk) { r0[1] = (float)s->cell[0].y; r1[1] = (float)s->cell[2].y; }
     float w = e[2], h = e[3], pitch = eq3d::menuPitch(haveBoth, r0[1], r1[1], h);
     int vx = 0, vy = 0, vh = 0; readAt<int>(reinterpret_cast<int>(s->block), 4, &vx); readAt<int>(reinterpret_cast<int>(s->block), 8, &vy); readAt<int>(reinterpret_cast<int>(s->block), 16, &vh);
     eq3d::MenuPos pos[MaxMenu];
@@ -395,10 +420,11 @@ void menuLayout(Slot* s) {   // anchored at the view's LEFT edge, below the top 
     logf("menu: layout %d items left=%.0f top=%.0f w=%.0f pitch=%.0f", s->menuCount, left, top, w, pitch);
 }
 void tickButtons(Slot* s) {
-    bool any = false; for (int i = 0; i < NumButtons; ++i) any = any || s->btn[i];
+    bool any = false; for (int i = 0; i < NumToolbar; ++i) any = any || s->btn[i];
     if (!any || !g_cfg.buttons) return;
     if (s->spinLaid != (g_spinUi ? 1 : 0)) spinLayout(s);
-    btnSetText(s, 0, "Animate"); btnSetText(s, 1, !g_spinUi ? "Spin" : (g_spinOn ? "II" : ">")); btnSetText(s, 2, "Weapons"); btnSetText(s, 3, "Reset"); btnSetText(s, 4, "Emotes");   // state = fill colour (teal on, grey off, beige hover)
+    if (s->toolLaid != toolKey(s)) toolLayout(s);
+    btnSetText(s, 0, "Animate"); btnSetText(s, 1, !g_spinUi ? "Spin" : (g_spinOn ? "II" : ">")); btnSetText(s, 2, eq3d::weapLabel(g_weaponsOn)); btnSetText(s, 3, "Reset"); btnSetText(s, 4, "Emotes"); btnSetText(s, HolsBtn, eq3d::holsLabel(g_drawn));   // state = fill colour (teal on, grey off, beige hover)
     float cx = 0, cy = 0; bool haveCur = cursorEngine(&cx, &cy);
     bool l = (GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0, fg = gameWindow() && GetForegroundWindow() == g_hwnd;
     bool edge = l && !s->btnWasL;
@@ -415,10 +441,11 @@ void tickButtons(Slot* s) {
     }
     bool menuAvail = s->menuCount > 0;
     int overIdx = -1; float overRect[4] = {0, 0, 0, 0}; bool overEmote = false;
-    for (int i = 0; i < NumButtons; ++i) {
+    for (int i = 0; i < NumToolbar; ++i) {
         if (i == 3 && !g_spinUi) continue;   // Reset exists only after Spin was clicked
+        if (i == HolsBtn && !holsShown(s)) continue;   // EQ10 Holster/Draw row: only while the weapons are shown, the holster mod can draw and a weapon is registered
         float r[4]; int over = haveCur && fg && btnRect(s, i, r) && eq3d::rectContains(cx, cy, r[0], r[1], r[2], r[3]);
-        bool on = i == 0 ? g_animOn : (i == 1 ? g_spinUi : (i == 2 ? g_weaponsOn : (i == 3 ? true : menuAvail)));   // play/pause and Reset never go grey
+        bool on = i == 0 ? g_animOn : (i == 1 ? g_spinUi : (i == 2 ? g_weaponsOn : ((i == 3 || i == HolsBtn) ? true : menuAvail)));   // play/pause, Reset and Holster never go grey
         bool inert = i == 4 && !on;   // greyed: no hover, no click
         if (over) { overIdx = i; memcpy(overRect, r, sizeof r); }
         if (i == 4 && over) overEmote = true;
@@ -431,8 +458,9 @@ void tickButtons(Slot* s) {
             if (i == 0) { g_animOn = !g_animOn; if (!g_animOn && s->flourishActive) endFlourish(s); logf("btn: animation flourishes %s", g_animOn ? "ON" : "OFF"); }
             else if (i == 1) { if (!g_spinUi) { g_spinUi = true; g_spinOn = true; logf("btn: spin started (row split)"); } else { g_spinOn = !g_spinOn; logf("btn: auto-spin %s at yaw=%.1f", g_spinOn ? "ON" : "paused", s->yaw); } }
             else if (i == 3) { logf("btn: view reset (yaw=%.1f zoom=%.2f panZ=%.3f spin=%d)", s->yaw, s->zoom, s->panZ, g_spinOn); s->yaw = 0; s->zoom = 1; s->panZ = 0; g_spinOn = false; g_spinUi = false; applyView(s); }
-            else if (i == 2) { g_weaponsOn = !g_weaponsOn; logf("btn: weapons %s", g_weaponsOn ? "ON" : "OFF"); }
-            else { if (s->menuOpen) menuClose(s, "Emotes again"); else { s->menuOpen = true; s->menuPage = 0; s->menuPhase = 0; s->menuReal = s->real; menuBuild(s); menuLayout(s); logf("menu: opened (%d items)", s->menuCount); } }
+            else if (i == 2) { g_weaponsOn = !g_weaponsOn; if (g_weaponsOn) g_drawn = true; logf("btn: weapons %s", g_weaponsOn ? "ON" : "OFF"); }
+            else if (i == HolsBtn && holsShown(s)) { g_drawn = !g_drawn; int rc = g_hol.h->SetPreviewDraw(g_drawn ? 1 : 0); logf("EQ10: previewdraw %d (click)", rc); }   // no Gob churn: EquipTick re-applies the stance
+            else if (i == 4) { if (s->menuOpen) menuClose(s, "Emotes again"); else { s->menuOpen = true; s->menuPage = 0; s->menuPhase = 0; s->menuReal = s->real; menuBuild(s); menuLayout(s); logf("menu: opened (%d items)", s->menuCount); } }
         }
     }
     bool overItem = false;
@@ -466,6 +494,7 @@ void detachWeapons(Slot* s, const char* why) {
     for (int i = 0; i < 2; ++i) {
         void* g = s->wpn[i]; if (!g) continue;
         s->wpn[i] = nullptr;
+        if (s->wpnReg[i]) { if (g_hol.ok()) g_hol.h->UnregisterPreview(g); s->wpnReg[i] = false; }   // EQ10: unregister before ANY free path below (incl. the vtable early continue)
         void** vt = vtOf(g); int vt0 = 0; readAt<int>(reinterpret_cast<int>(g), 0, &vt0);
         if (!vt || vt0 != ExpectedGobVtable || !saferead::probeRead(SiteEquip, vt + 0x50 / 4, 4)) { logf("weapon[%d]: detach %p (%s): vtable %08x unexpected, NOT freeing (leak instead of crash)", i, g, why, vt0); continue; }
         reinterpret_cast<AttachFn>(vt[GobAttachSlot / 4])(g, nullptr, nullptr, 0);
@@ -634,8 +663,24 @@ void chooseIdle(Slot* s) {
 }
 // Engine wield-style rule (R7f 0076d590 / R7h 00863650). Only the weapons we actually attached count.
 using eq3d::kStyleAnim; using eq3d::styleFor;
+// EQ10: register the attached weapon Gobs with k2.holster (left = left hand), once per build. Called from attachWeapons and, when the holster mod connects later, from EquipTick.
+void registerWeapons(Slot* s) {
+    if (g_hol.canDraw() && s->btn[HolsBtn]) {
+        s->regTried = true;
+        for (int i = 0; i < 2; ++i) {
+            if (!s->wpn[i] || s->wpnReg[i]) continue;
+            int rc = g_hol.h->RegisterPreview(s->wpn[i], nullptr, i == 1); s->wpnReg[i] = rc == 1; if (rc != 1) s->regFail = true;
+        }
+        if (s->regFail) {   // registry full / holster editor on: drop the registrations made so far, hide the Holster row
+            for (int i = 0; i < 2; ++i) if (s->wpnReg[i]) { if (g_hol.ok()) g_hol.h->UnregisterPreview(s->wpn[i]); s->wpnReg[i] = false; }
+            logw("EQ10: RegisterPreview failed (registry full or holster editor=0), Holster row hidden");
+        } else if (s->wpnReg[0] || s->wpnReg[1]) { int rc = g_hol.h->SetPreviewDraw(g_drawn ? 1 : 0); logf("EQ10: previewdraw %d (build)", rc); }
+    }
+    logf("EQ10: register r=%d l=%d avail=%d", s->wpnReg[0] ? 1 : 0, s->wpnReg[1] ? 1 : 0, g_hol.canDraw() ? 1 : 0);
+}
 void attachWeapons(Slot* s, int real, const char* why) {
-    s->stanceName[0] = 0;
+    s->regTried = false;
+    s->stanceName[0] = 0; s->wpnWield[0] = s->wpnWield[1] = 0; s->wpnHas[0] = s->wpnHas[1] = false; s->wpnReg[0] = s->wpnReg[1] = false; s->regFail = false;
     void* body = partGob(s, 0xff);
     if (!body) { logf("weapons: no body part, cannot attach (%s)", why); return; }
     int wield[2] = {0, 0}, baseOf[2] = {-1, -1}; bool has[2] = {false, false};
@@ -658,24 +703,24 @@ void attachWeapons(Slot* s, int real, const char* why) {
         reinterpret_cast<AttachFn>(vt[GobAttachSlot / 4])(g, body, hook, 0);
         saferead::beginScope();
         s->wpn[i] = g; strncpy(s->wpnNames[i], name, sizeof(s->wpnNames[i]) - 1);
-        has[i] = true; wield[i] = ww; baseOf[i] = base;
+        has[i] = true; wield[i] = ww; baseOf[i] = base; s->wpnWield[i] = ww; s->wpnHas[i] = true;
         logf("weapons: attached %p to body %p node %s", g, body, hook);
     }
-    int style = styleFor(wield[0], wield[1], has[0], has[1]);
-    if (style > 0) snprintf(s->stanceName, sizeof s->stanceName, "%s", kStyleAnim[style]);
-    logf("weapons: style=%d anim=%s R(w=%d,base=%d) L(w=%d,base=%d)", style, s->stanceName[0] ? s->stanceName : "-", wield[0], baseOf[0], wield[1], baseOf[1]);
-    logf("weapons: (%s) stance='%s' L/R ids %08x/%08x", why, s->stanceName, s->wpnIds[1], s->wpnIds[0]);
+    registerWeapons(s);   // EQ10: holster preview registration (unregistered in detachWeapons before any free)
+    int style = styleFor(wield[0], wield[1], has[0], has[1]);   // log only: applyStance() derives the stance (0 while holstered)
+    logf("weapons: style=%d anim=%s R(w=%d,base=%d) L(w=%d,base=%d)", style, style > 0 ? kStyleAnim[style] : "-", wield[0], baseOf[0], wield[1], baseOf[1]);
+    logf("weapons: (%s) stance='%s' L/R ids %08x/%08x", why, style > 0 ? kStyleAnim[style] : "", s->wpnIds[1], s->wpnIds[0]);
 }
-void refreshWeapons(Slot* s, int real, const char* why) {
+// EQ10: stance from weapons + holster state. Holstered = Draw is off and the holster mod holds the weapons (no Gob churn).
+void applyStance(Slot* s, bool wasStance) {
     void* body = partGob(s, 0xff); void* head = partGob(s, 0xfe);
-    bool wasStance = s->stanceOn;
-    detachWeapons(s, why);
+    bool holstered = !g_drawn && holsOk(s) && (s->wpnReg[0] || s->wpnReg[1]);
+    int style = eq3d::stanceFor(g_weaponsOn, holstered, s->wpnWield[0], s->wpnWield[1], s->wpnHas[0], s->wpnHas[1]);
     s->stanceName[0] = 0;
-    if (g_weaponsOn) attachWeapons(s, real, why);
-    s->wpnApplied = g_weaponsOn;
-    readAt<int>(real, CrRightItemOff, &s->wpnIds[0]); readAt<int>(real, CrLeftItemOff, &s->wpnIds[1]);
-    s->stanceOn = g_weaponsOn && s->stanceName[0];
+    if (style > 0) snprintf(s->stanceName, sizeof s->stanceName, "%s", kStyleAnim[style]);
+    s->stanceOn = style > 0;
     strcpy(s->idleName, s->stanceOn ? s->stanceName : s->baseIdle);
+    s->drawnApplied = g_drawn ? 1 : 0;
     const char* anim = (s->stanceOn || wasStance) ? s->idleName : nullptr;
     if (anim && anim[0]) {
         s->flourishActive = false;
@@ -683,6 +728,15 @@ void refreshWeapons(Slot* s, int real, const char* why) {
         if (head) playPart(head, anim, 1.0f, 0);
         logf("weapons: idle -> '%s' (stance=%d) body=%p head=%p", anim, s->stanceOn, body, head);
     }
+}
+void refreshWeapons(Slot* s, int real, const char* why) {
+    bool wasStance = s->stanceOn;
+    detachWeapons(s, why);
+    s->stanceName[0] = 0;
+    if (g_weaponsOn) attachWeapons(s, real, why);
+    s->wpnApplied = g_weaponsOn;
+    readAt<int>(real, CrRightItemOff, &s->wpnIds[0]); readAt<int>(real, CrLeftItemOff, &s->wpnIds[1]);
+    applyStance(s, wasStance);
 }
 void applyView(Slot* s) {
     // zoom = FOV scale on the scene camera; the facing yaw is re-applied after every rebuild
@@ -839,6 +893,7 @@ void ensureInit() {
 extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
     guikit::initGuiInput(api, "equipment-3d-character");
+    g_hol.init(api);   // EQ10: k2.holster client; connect/poll retry is lazy
     ensureInit();
 }
 
@@ -850,6 +905,7 @@ extern "C" void __cdecl BindEquipView(int panel) {
     logf("H1 BindEquipView panel=%08x controls=%d gate=%d enabled=%d stage=%d", panel, ctlCount, gate, g_cfg.enabled, g_cfg.stage);
     if (!panel) { logf("H1: null panel, abort"); return; }
     if (!g_cfg.enabled || g_cfg.stage < 1) { logf("H1: disabled by INI (enabled=%d stage=%d)", g_cfg.enabled, g_cfg.stage); return; }
+    if (!g_weaponsInit) { g_weaponsInit = true; g_weaponsOn = g_cfg.weapons != 0; g_drawn = true; }   // EQ10: first bind only (weapons= INI default, drawn)
 
     unsigned char* block = sceneview::createView(static_cast<uintptr_t>(static_cast<unsigned>(panel)), "3D_MODEL");
     if (!block) { loge("H1: operator new failed"); return; }
@@ -894,14 +950,17 @@ extern "C" void __cdecl BindEquipView(int panel) {
     } else logf("H1: camera vtable mismatch, camera left as is");
     if (g_cfg.bevels) { bindCover(panel, "LBL_BEVEL", ExpectedControlId + 1); bindCover(panel, "LBL_BEVEL2", ExpectedControlId + 2); }
     if (g_cfg.buttons) {
+        g_hol.connect();   // EQ10: k2.holster client (optional; holster row stays hidden without it)
         static const char* const tags[NumButtons] = {"LBL_E3D_ANIM", "LBL_E3D_SPIN", "LBL_E3D_WEAP", "LBL_E3D_RESET", "LBL_E3D_EMOTE"};
         for (int i = 0; i < NumButtons; ++i) { s->btn[i] = bindCover(panel, tags[i], ExpectedControlId + 3 + i); if (!s->btn[i]) logf("H1: toolbar button %s not bound (GUI not patched?)", tags[i]); }
+        s->btn[HolsBtn] = bindCover(panel, "LBL_E3D_HOLS", HolsId); if (!s->btn[HolsBtn]) logf("H1: LBL_E3D_HOLS not bound (GUI not re-patched)");
         for (int i = 0; i < MaxMenu; ++i) {
             char tg[16]; snprintf(tg, sizeof tg, "LBL_E3D_M%02d", i);
             s->item[i] = bindCover(panel, tg, ExpectedControlId + 3 + NumButtons + i); if (!s->item[i]) logf("H1: menu label %s not bound (GUI not patched?)", tg);
             setCtlVisible(s->item[i], false);
         }
-        { float r3[4]; if (ctlRect(s->btn[3], r3) && s->btn[4]) setCtlRect(s->btn[4], (int)r3[0], (int)r3[1], (int)r3[2], (int)r3[3]); }   // Emotes takes the Reset row
+        { bool okCells = true; for (int i = 0; i < NumButtons; ++i) { float r[4] = {}; okCells = (s->btn[i] && ctlRect(s->btn[i], r)) && okCells; s->cell[i] = eq3d::Box{(int)r[0], (int)r[1], (int)r[2], (int)r[3]}; } s->cellOk = okCells; }   // original GUI cells, captured before any layout
+        toolLayout(s);
         if (ctlRect(s->btn[1], s->rowRect)) logf("H1: spin row rect [%.0f,%.0f,%.0f,%.0f]", s->rowRect[0], s->rowRect[1], s->rowRect[2], s->rowRect[3]);
         setCtlVisible(s->btn[3], false);   // Reset appears only once Spin was clicked (spinLayout)
         s->tipBg = bindCover(panel, "LBL_E3D_TIPBG", TipBgId); s->tip = bindCover(panel, "LBL_E3D_TIP", TipId);
@@ -922,6 +981,7 @@ extern "C" void __cdecl EquipTick(int panel) {
     syncScreen();
     syncWheelCfg();
     guikit::g_wheel.touch(GetTickCount());
+    g_hol.poll();   // EQ10: k2.holster connect retry (cheap once connected)
     if (dt > 0.5f) logf("H3: tick gap %.2fs (panel reopened or stalled)", dt);
     Slot* s = findSlot(panel);
     if (calls < 5) { ++calls; logf("H3 tick #%d panel=%08x slot=%s", calls, panel, s ? (s->usable ? "usable" : "unusable") : "none"); }
@@ -964,6 +1024,11 @@ extern "C" void __cdecl EquipTick(int panel) {
             refreshWeapons(s, real, "toggle/items");
         }
     }
+    if (g_weaponsOn && s->wpnApplied && g_hol.canDraw() && s->btn[HolsBtn] && !s->regFail && (s->wpn[0] || s->wpn[1]) && !s->wpnReg[0] && !s->wpnReg[1] && !s->regTried) {   // EQ10: holster connected after the attach -> register the existing Gobs once
+        registerWeapons(s);
+        if (!g_drawn && holsReg(s)) applyStance(s, s->stanceOn);
+    }
+    if (s->wpnApplied && g_weaponsOn && s->drawnApplied != (int)g_drawn) applyStance(s, s->stanceOn);   // EQ10 Holster/Draw click: stance only, the weapon Gobs stay
     if (s->helmApplied != (g_cfg.helmet != 0)) {   // helmet= toggled by INI hot reload (an item change rebuilds via the appearance compare)
         detachHelmet(s, "ini toggle");
         int hid = NoItemId; readAt<int>(reinterpret_cast<int>(s->app), 0x10, &hid);
@@ -1000,6 +1065,6 @@ extern "C" void __cdecl EquipDestroy(int panel) {
 
 BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
     if (reason == DLL_PROCESS_DETACH) guikit::wheelUninstall();   // restore if still on top, else stay chained but inert
-    if (reason == DLL_PROCESS_ATTACH) { snprintf(g_loadLine, sizeof g_loadLine, "equip3d 0.2.0-probe loaded (KpLog + IniKit + PanelSlots + GuiKit) tick=%lu", (unsigned long)GetTickCount()); }
+    if (reason == DLL_PROCESS_ATTACH) { snprintf(g_loadLine, sizeof g_loadLine, "equip3d 0.3.0-probe loaded (KpLog + IniKit + PanelSlots + GuiKit) tick=%lu", (unsigned long)GetTickCount()); }
     return TRUE;
 }
