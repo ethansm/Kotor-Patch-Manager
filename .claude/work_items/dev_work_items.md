@@ -186,3 +186,4 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [x] | 170 | WI-138 | P2 | ready | L | - | Combat AI recast F2: party AI scripts family-aware buff/combo/debuff picks | 0 | 2 | Script gaps: exact-id check, -1 wasted round, unchecked combos/debuffs. |
 | [ ] | 171 | WI-139 | P2 | ready | L | WI-134 | Combat AI O2: party queue fills with single attack actions | 0 | 1 | User report; cause + queue-depth cap rule. |
 | [ ] | 172 | WI-140 | P3 | hold | L | WI-136 | Combat AI O3: group debuff targeting research (unaffected enemies in radius) | 0 | 1 | Needs a study, then owner decision. |
+| [ ] | 173 | WI-141 | P3 | hold | S | - | Party AI buff picker: tier-5 typo checks GetCreatureHasTalent(tBuff_06) | 0 | 0 | vanilla k_inc_generic.nss ~2624 tests tBuff_06 for the tBuff_05 branch |
