@@ -40,6 +40,9 @@ Builds and logs live under $TMPDIR/kotor-tests/ (default /tmp/claude-<uid>/kotor
 """
 import argparse
 import concurrent.futures as cf
+import contextlib
+import functools
+import hashlib
 import json
 import os
 import re
@@ -56,6 +59,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _load_limit  # machine-wide compile slots / exclusive locks / low priority (shared with the other gates)
 try:
     import _common  # PROTON_WINE, GAME_DIR (same env overrides as the compatch scripts)
     _PROTON_WINE = Path(_common.PROTON_WINE)
@@ -78,6 +82,8 @@ CPP_ROOTS = (CPP_ROOT, REPO / "tests")   # tests/: cross-mod model tests (e.g. t
 PRUNE_DIRS = {".venv", "__pycache__", ".git", "node_modules", "retired", "testdata", "fixtures"}
 TAIL_LINES = 40
 _print_lock = threading.Lock()
+USE_CACHE = True        # --no-cache sets False: always recompile (the cache entry is still refreshed)
+WINE_RUN_DIR = None     # per-run smoke build root (TMP/wine/run-<pid>-<epoch>); set by main() for --wine runs
 
 
 # ---------------------------------------------------------------- data model
@@ -98,6 +104,7 @@ class Item:
     src: Path | None = None        # cpp/py items: the test source
     covers: list[str] = field(default_factory=list)  # patterns/interfaces covered by this item
     consumer: str = ""             # mod directory if this is a consumer contract test
+    cache: object = None           # CacheInfo for cpp items whose build may be skipped (content-addressed exe)
 
 
 @dataclass
@@ -212,11 +219,15 @@ def execute(item: Item) -> Result:
             return done("ERROR", msg)
     log = ""
     if item.build_cmd:
-        st, why, out = run_cmd(item.build_cmd, item.build_cwd or item.cwd, item.env, item.build_timeout)
+        st, why, out = build_item(item)
         if st != "OK":
             return done("FAIL" if st == "FAIL" else "ERROR", f"build failed ({why})", out)
         log = out
-    st, why, out = run_cmd(item.cmd, item.cwd, item.env, item.timeout)
+    if item.kind == "suite":  # parity suites compile internally: hold a machine-wide slot for the whole run
+        with _load_limit.heavy_slot():
+            st, why, out = run_cmd(item.cmd, item.cwd, item.env, item.timeout)
+    else:
+        st, why, out = run_cmd(item.cmd, item.cwd, item.env, item.timeout)
     out = (log + out) if (log and st != "OK") else out
     if st == "OK":
         return done("PASS", "", out)
@@ -283,14 +294,19 @@ def cpp_item(src: Path, sanitize=True, extra_flags=(), tag="", include_dirs=None
         sub = raw.get(stem) if isinstance(raw.get(stem), dict) else {}
         cfg = {k: v for k, v in raw.items() if not isinstance(v, dict)}
         cfg.update(sub)
-    exe = (exe_dir or TMP / "host") / f"{d.name}__{stem}{tag}"  # parent in the name: same-stem tests must not share an exe
-    flags = ["-std=c++17", "-O1", "-Wall", "-Wextra", "-I", str(d), "-I", str(REPO / "tests" / "include")]
+    flags =["-std=c++17", "-O1", "-Wall", "-Wextra", "-I", str(d), "-I", str(REPO / "tests" / "include")]
     for inc in include_dirs or []:
         flags += ["-I", str(inc)]
     if sanitize:
         flags += ["-fsanitize=address,undefined", "-fno-omit-frame-pointer"]
     flags += list(extra_flags)
     post = [expand(f) for f in cfg.get("cxxflags", [])]  # after the source so -l libs link; -D/-I work anywhere
+    # Content-addressed exe name: same-stem tests (parent dir in the name) never share one, and any change to the
+    # source path, flags or compiler selects a different file, so a running old exe is never overwritten.
+    key = cache_key(src, ["g++"] + flags + [str(src)] + post, d)
+    exe = (exe_dir or TMP / "host") / f"{d.name}__{stem}{tag}-{key[:12]}"
+    # --coverage embeds the object path (-> .gcda name) in the binary: it must be compiled straight to its final name.
+    cacheable = "--coverage" not in flags and "--coverage" not in post
 
     if covers is None:
         cov = cfg.get("covers", [])
@@ -317,8 +333,187 @@ def cpp_item(src: Path, sanitize=True, extra_flags=(), tag="", include_dirs=None
         env={"KT_VERBOSE": "", "UBSAN_OPTIONS": "print_stacktrace=1",
              "ASAN_OPTIONS": "abort_on_error=0"},
         pre=lambda: _prepare_build(exe), src=src,
-        covers=covers, consumer=consumer,
+        covers=covers, consumer=consumer, cache=CacheInfo(exe, key) if cacheable else None,
     )
+
+
+# ---------------------------------------------------------------- build cache (cpp items)
+#
+# The exe is content-addressed: <dir>__<stem><tag>-<key12>. key = sha256(abs source path, compiler argv without -o,
+# build cwd, g++ version). Next to it, <exe>.deps.json records the sha256 of every file the compiler read (-MMD), so
+# a build is skipped only when the key matches AND every dependency still has the same content. Content hashes, not
+# mtimes: mutate_header.py rewrites headers in scratch trees and must always see a rebuild.
+
+@dataclass
+class CacheInfo:
+    exe: Path
+    key: str
+
+
+@functools.lru_cache(maxsize=None)
+def compiler_version() -> str:
+    try:
+        p = subprocess.run(["g++", "-dumpfullversion"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                           text=True, timeout=30)
+        return p.stdout.strip() if p.returncode == 0 else ""
+    except (OSError, subprocess.SubprocessError):
+        return ""
+
+
+def cache_key(src: Path, argv, cwd: Path) -> str:
+    """sha256 of (abs source path, full compiler argv minus -o, build cwd, compiler version)."""
+    argv = [str(a) for a in argv]
+    if "-o" in argv:
+        i = argv.index("-o")
+        del argv[i:i + 2]
+    blob = json.dumps([str(Path(src).resolve()), argv, str(cwd), compiler_version()])
+    return hashlib.sha256(blob.encode("utf-8")).hexdigest()
+
+
+def parse_depfile(text: str) -> list[str]:
+    """Dependencies of a make-style `target: dep dep \\<newline> dep` rule: backslash-newline continuations, `\\ `
+    escaped spaces, `$$` and `\\#` handled. The target (token ending in ':') is dropped; order kept, no duplicates."""
+    toks, cur, i, n = [], [], 0, len(text)
+    while i < n:
+        ch = text[i]
+        nxt = text[i + 1:i + 2]
+        if ch == "\\" and nxt in ("\n", "\r"):      # line continuation == whitespace
+            i += 3 if (nxt == "\r" and text[i + 2:i + 3] == "\n") else 2
+            if cur:
+                toks.append("".join(cur))
+                cur = []
+            continue
+        if ch == "\\" and nxt in (" ", "#", "\\"):
+            cur.append(nxt)
+            i += 2
+            continue
+        if ch == "$" and nxt == "$":
+            cur.append("$")
+            i += 2
+            continue
+        if ch.isspace():
+            if cur:
+                toks.append("".join(cur))
+                cur = []
+        else:
+            cur.append(ch)
+        i += 1
+    if cur:
+        toks.append("".join(cur))
+    for k, t in enumerate(toks):
+        if t.endswith(":"):
+            toks = toks[k + 1:]
+            break
+    seen, out = set(), []
+    for t in toks:
+        if t and t not in seen:
+            seen.add(t)
+            out.append(t)
+    return out
+
+
+def _sha256_file(p: Path):
+    h = hashlib.sha256()
+    try:
+        with open(p, "rb") as f:
+            for chunk in iter(lambda: f.read(1 << 20), b""):
+                h.update(chunk)
+    except OSError:
+        return None
+    return h.hexdigest()
+
+
+def _sidecar(exe: Path) -> Path:
+    exe = Path(exe)
+    return exe.with_name(exe.name + ".deps.json")
+
+
+def cache_valid(exe: Path, key: str) -> bool:
+    """True when the exe and its sidecar exist, the key matches and every recorded dependency still hashes the same."""
+    try:
+        if not Path(exe).is_file():
+            return False
+        data = json.loads(_sidecar(exe).read_text(encoding="utf-8"))
+        deps = data.get("deps")
+        if data.get("key") != key or not isinstance(deps, dict) or not deps:
+            return False
+        return all(_sha256_file(Path(p)) == h for p, h in deps.items())
+    except (OSError, ValueError, AttributeError):
+        return False
+
+
+def _write_sidecar(exe: Path, key: str, dfile: Path, cwd: Path, t_start_ns: int, tag: str) -> bool:
+    """Record the content hashes of the compiler's dependencies. False (no sidecar) if anything looks unsafe."""
+    deps = {}
+    for d in parse_depfile(dfile.read_text(encoding="utf-8", errors="replace")):
+        p = Path(os.path.normpath(os.path.join(cwd, d)))
+        h = _sha256_file(p)
+        if h is None or p.stat().st_mtime_ns > t_start_ns:   # changed while compiling: do not vouch for this exe
+            return False
+        deps[str(p)] = h
+    if not deps:
+        return False
+    side = _sidecar(exe)
+    tmp = side.with_name(side.name + f".tmp.{tag}")
+    tmp.write_text(json.dumps({"key": key, "deps": deps}, indent=1), encoding="utf-8")
+    os.replace(tmp, side)
+    return True
+
+
+def _compile_cached(item: Item):
+    c = item.cache
+    exe, cwd = Path(c.exe), item.build_cwd or item.cwd
+    tag = f"{os.getpid()}.{threading.get_ident()}"
+    tmp = exe.with_name(exe.name + f".tmp.{tag}")
+    dfile = tmp.with_name(tmp.name + ".d")
+    cmd = list(item.build_cmd)
+    cmd[cmd.index("-o") + 1] = str(tmp)
+    cmd[1:1] = ["-MMD", "-MF", str(dfile)]
+    t_start_ns = time.time_ns()
+    try:
+        st, why, out = run_cmd(cmd, cwd, item.env, item.build_timeout)
+        if st != "OK":
+            return st, why, out
+        try:
+            _sidecar(exe).unlink()          # never leave an old sidecar next to a new exe
+        except FileNotFoundError:
+            pass
+        os.replace(tmp, exe)                 # atomic: a peer running the old exe is unaffected
+        try:
+            _write_sidecar(exe, c.key, dfile, cwd, t_start_ns, tag)
+        except (OSError, ValueError):
+            pass                             # no usable .d: the build still counts, it just is not cached
+        return st, why, out
+    finally:
+        for p in (tmp, dfile):
+            try:
+                p.unlink()
+            except OSError:
+                pass
+
+
+def build_item(item: Item):
+    """The build step of an item -> (status, reason, output). cpp items with a CacheInfo skip the compiler when
+    nothing changed; every real compile holds a machine-wide heavy slot."""
+    c = item.cache
+    if c is None:
+        with _load_limit.heavy_slot():
+            return run_cmd(item.build_cmd, item.build_cwd or item.cwd, item.env, item.build_timeout)
+
+    def hit():
+        if USE_CACHE and cache_valid(c.exe, c.key):
+            try:
+                os.utime(c.exe)              # a pruner deletes by mtime
+            except OSError:
+                pass
+            return True
+        return False
+    if hit():
+        return "OK", "", ""
+    with _load_limit.heavy_slot():
+        if hit():                            # a peer run built it while we waited for a slot
+            return "OK", "", ""
+        return _compile_cached(item)
 
 
 def py_item(path: Path, tag="", covers=None, consumer="") -> Item:
@@ -636,14 +831,20 @@ def resolve_mod_for_smoke(kpatch: Path | str, mod: str | None = None) -> Path | 
     return None
 
 
+def wine_root() -> Path:
+    """Where smoke build dirs live: the per-run dir during a --wine run, else the shared TMP/wine."""
+    return WINE_RUN_DIR or (TMP / "wine")
+
+
 def _ensure_built_dll(mod_dir: Path) -> Path:
-    """Ensure mod is built via build_check.py --keep and return path to its built DLL."""
+    """Ensure mod is built via build_check.py --keep and return path to its built DLL.
+    TMP/build is shared with other runs, so check+build holds a machine-wide lock per build key."""
     try:
         m_rel = mod_dir.relative_to(REPO / "patch_manager_mods")
     except ValueError:
         m_rel = mod_dir
     key = "__".join(m_rel.parts)
-    with _get_build_lock(key):
+    with _get_build_lock(key), _load_limit.exclusive(f"build-{key}", f"build {key}"):
         build_root = TMP / "build"
         dll_candidates = list((build_root / key).glob("*/build/*.dll"))
 
@@ -690,7 +891,7 @@ def smoke_build(s) -> Result:
     """Compile the smoke, extract the patch DLL(s), copy runtime DLLs. Returns Result (PASS = built)."""
     t0 = time.monotonic()
     name = s["name"]
-    bdir = TMP / "wine" / name
+    bdir = wine_root() / name
     rid = f"wine:{name}"
 
     def res(status, reason="", out=""):
@@ -702,7 +903,8 @@ def smoke_build(s) -> Result:
         cmd = (["i686-w64-mingw32-g++", "-std=c++17", "-O1", "-I", str(HARNESS), "-I", str(REPO / "tests" / "include")]
                + canonical_include_flags()
                + [str(HARNESS / s["src"]), "-o", str(bdir / f"{name}.exe")] + [expand(f) for f in s.get("cxxflags", [])])
-        st, why, out = run_cmd(cmd, HARNESS, None, 600)
+        with _load_limit.heavy_slot():
+            st, why, out = run_cmd(cmd, HARNESS, None, 600)
         if st != "OK":
             return res("FAIL" if st == "FAIL" else "ERROR", f"build failed ({why})", out)
         dll_from = s.get("dll_from", "kpatch")
@@ -743,11 +945,55 @@ def wine_run_item(s, mode) -> Result:
     rid = f"wine:{name}" + (f"[{mode}]" if mode else "")
     t0 = time.monotonic()
     cmd = [str(wine_binary()), f"{name}.exe"] + ([mode] if mode else [])
-    st, why, out = run_cmd(cmd, TMP / "wine" / name, wine_env(), int(s.get("timeout_s", 120)))
+    st, why, out = run_cmd(cmd, wine_root() / name, wine_env(), int(s.get("timeout_s", 120)))
     if st == "ERROR" and why.startswith("timeout"):
         wine_kill_server()
     status = "PASS" if st == "OK" else st
     return Result(rid, "wine", status, time.monotonic() - t0, "" if st == "OK" else why, out)
+
+
+def wine_stage(wine_items, runnable_smokes, builds, wine_err, emit):
+    """Run the wine smokes already built. Everything that touches the shared prefix or the wineserver (prefix init,
+    every run, the final `wineserver -k`) holds the machine-wide "wineprefix" lock, so a peer run's wine is never killed."""
+    if wine_err:
+        emit(Result("wine", "wine", "ERROR", 0.0, wine_err))
+    needs_wine = any(not skip for _, _, _, skip in wine_items) and any(b.status == "PASS" for b in builds.values())
+    lock = _load_limit.exclusive("wineprefix", "Wine prefix") if needs_wine else contextlib.nullcontext()
+    with lock:
+        prefix_err = ""
+        if runnable_smokes and any(b.status == "PASS" for b in builds.values()):
+            t0 = time.monotonic()
+            prefix_err = init_prefix()
+            if prefix_err:
+                emit(Result("wine:prefix", "wine", "ERROR", time.monotonic() - t0, "wine prefix setup failed", prefix_err))
+        reported_build = set()
+        for wid, s, mode, skip in wine_items:
+            if skip:
+                emit(Result(wid, "wine", "SKIP", 0.0, skip))
+                continue
+            b = builds[s["name"]]
+            if b.status != "PASS":
+                if s["name"] not in reported_build:  # one build failure line per smoke
+                    reported_build.add(s["name"])
+                    emit(b)
+                continue
+            if prefix_err:
+                emit(Result(wid, "wine", "ERROR", 0.0, "wine prefix unavailable"))
+                continue
+            emit(wine_run_item(s, mode))
+        if needs_wine:
+            wine_kill_server()
+
+
+def finish_wine_run_dir(results):
+    """Remove this run's smoke build dir; keep it (and say where) when any wine item FAILed or ERRORed."""
+    d = WINE_RUN_DIR
+    if d is None or not d.exists():
+        return
+    if any(r.kind == "wine" and r.status in ("FAIL", "ERROR") for r in results):
+        print(f"NOTE  wine build dir kept for inspection: {d}", flush=True)
+    else:
+        shutil.rmtree(d, ignore_errors=True)
 
 
 # ---------------------------------------------------------------- reporting
@@ -812,7 +1058,11 @@ def main() -> int:
                     help="build host C++ tests with --coverage -O0, run, gcov; print per-header COV lines (every dir with a test.toml)")
     ap.add_argument("--mutate", metavar="HEADER", help="run the mutation gate on one header (scripts/mutate_header.py)")
     ap.add_argument("filters", nargs="*", default=[], help="optional positional filter strings or item IDs (e.g. suite:check-hook-bytes, diversity)")
+    ap.add_argument("--no-cache", action="store_true", help="recompile every C++ test even if nothing changed (the cache entry is refreshed)")
     a = ap.parse_args()
+    global USE_CACHE, WINE_RUN_DIR
+    _load_limit.lower_priority()
+    USE_CACHE = not a.no_cache
 
     if a.selftest:
         return selftest(a.jobs, a.v)
@@ -962,6 +1212,8 @@ def main() -> int:
         if not skip:
             runnable_smokes[s["name"]] = s
     builds = {}
+    if include_wine and runnable_smokes:   # smoke build dirs are per run: a peer run never sees (or deletes) ours
+        WINE_RUN_DIR = TMP / "wine" / f"run-{os.getpid()}-{int(time.time())}"
     # Items that rewrite live tree files (test_compat_check swaps K2Addr.h for a scratch diff) run alone, after the
     # pool: in parallel they made check-shared-headers / check-raw-addresses / k2addr tests see the edit (10-18 gate FAILs).
     serial_last = [i for i in items if i.id in TREE_MUTATING_IDS]
@@ -978,31 +1230,8 @@ def main() -> int:
         emit(execute(i))
 
     if include_wine:
-        if wine_err:
-            emit(Result("wine", "wine", "ERROR", 0.0, wine_err))
-        prefix_err = ""
-        if runnable_smokes and any(b.status == "PASS" for b in builds.values()):
-            t0 = time.monotonic()
-            prefix_err = init_prefix()
-            if prefix_err:
-                emit(Result("wine:prefix", "wine", "ERROR", time.monotonic() - t0, "wine prefix setup failed", prefix_err))
-        reported_build = set()
-        for wid, s, mode, skip in wine_items:
-            if skip:
-                emit(Result(wid, "wine", "SKIP", 0.0, skip))
-                continue
-            b = builds[s["name"]]
-            if b.status != "PASS":
-                if s["name"] not in reported_build:  # one build failure line per smoke
-                    reported_build.add(s["name"])
-                    emit(b)
-                continue
-            if prefix_err:
-                emit(Result(wid, "wine", "ERROR", 0.0, "wine prefix unavailable"))
-                continue
-            emit(wine_run_item(s, mode))
-        if runnable_smokes:
-            wine_kill_server()
+        wine_stage(wine_items, runnable_smokes, builds, wine_err, emit)
+        finish_wine_run_dir(results)
 
     wall = time.monotonic() - t_start
     counts = {k: sum(1 for r in results if r.status == k) for k in ("PASS", "FAIL", "SKIP", "ERROR")}
