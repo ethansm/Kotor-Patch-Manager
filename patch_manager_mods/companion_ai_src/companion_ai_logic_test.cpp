@@ -123,11 +123,11 @@ static void testShippedIni() {
                            "log_all", "engine_print", "log_aur", "dedupe_ms", "max_lines_per_sec", "max_file_mb", "flush_ms",
                            "a1_burst_threshold", "a1_rate_threshold", "engine_verbose", "summary_sec", "p1_detail_lines", "a1", "a1_stances",
                            "a1_party_only", "a1_retarget", "a1_retarget_stances", "a1_retarget_strict", "a1_rethink_ms", "p1", "p1_interval_ms", "fm1",
-                           "fm1_rethink_ms", "fm4", "a4", "c1", "c1_party_only", "a3", "log",
+                           "fm1_rethink_ms", "fm4", "a4", "c1", "c1_party_only", "a3", "cast_family_guard", "log",
                            "probe_fm2c", "probe_fm2f", "probe_fm2r", "probe_fm3", "probe_rs", "probe_p2", "probe_pf", "probe_rar", "probe_shx",
                            "probe_ss1", "probe_gca", "probe_party", "probe_a1x", "probe_lines"};
     int knownN = int(sizeof known / sizeof known[0]);
-    CHECK(g_t.n == knownN); CHECK(knownN == 51);
+    CHECK(g_t.n == knownN); CHECK(knownN == 52);
     for (int i = 0; i < g_t.n; ++i) {
         bool ok = false;
         for (int k = 0; k < knownN; ++k) if (!strcmp(g_t.key[i], known[k])) ok = true;
@@ -472,6 +472,50 @@ static void testPartyArea() {
     CHECK(partyAreaFires(leadingZeros, &base) == 0 && base == 0);   // unreadable from the start: no baseline
 }
 
+// G1 cast family guard (WI-136): family table, drop decision, INI key
+static void testCastGuard() {
+    // buff families 1-10: every id of party_ai_fixes.nss GN_PartyPowerFamily's buff rows
+    CHECK(castFamily(8) == 1 && castFamily(34) == 1 && castFamily(37) == 1);                 // Speed
+    CHECK(castFamily(17) == 2 && castFamily(18) == 2 && castFamily(24) == 2);                 // Armor
+    CHECK(castFamily(22) == 3 && castFamily(33) == 3 && castFamily(36) == 3);                 // Valor
+    CHECK(castFamily(40) == 4 && castFamily(42) == 4 && castFamily(133) == 4);                // Energy Resist
+    CHECK(castFamily(135) == 5 && castFamily(136) == 5 && castFamily(137) == 5);              // Barrier
+    CHECK(castFamily(138) == 6 && castFamily(139) == 6 && castFamily(140) == 6);              // Battle Meditation
+    CHECK(castFamily(164) == 7 && castFamily(165) == 7 && castFamily(166) == 7);              // Fury
+    for (int s = 167; s <= 172; ++s) CHECK(castFamily(s) == 8);                              // Inspire Followers
+    CHECK(castFamily(150) == 9 && castFamily(151) == 9 && castFamily(152) == 9);              // Force Body
+    CHECK(castFamily(20) == 10 && castFamily(41) == 10);                                      // Force Immunity / Resist Force
+    int tracked = 0; for (int s = 0; s < 256; ++s) tracked += castFamily(s) != 0;
+    CHECK(tracked == 32);                                                                     // no other id in 0..255 is tracked
+    // untracked: debuff families (WI-137), area powers, Kill, unknown and invalid ids
+    CHECK(castFamily(45) == 0 && castFamily(7) == 0 && castFamily(38) == 0);                  // single-target debuffs
+    CHECK(castFamily(30) == 0 && castFamily(31) == 0 && castFamily(32) == 0);                 // Horror / Insanity / Kill
+    CHECK(castFamily(0) == 0 && castFamily(-1) == 0 && castFamily(0x7F000000) == 0);
+    // drop decision: same family active (any tier, the same spell too) drops; other family, nothing active, untracked keep
+    const int speedHi[] = {37}, speedSame[] = {8}, armor[] = {17}, mixed[] = {22, 137, 40}, none[] = {0};
+    CHECK(castGuardDrops(true, false, 8, speedHi, 1));        // lower tier cast, higher tier active: drop
+    CHECK(castGuardDrops(true, false, 37, speedSame, 1));     // higher tier cast, lower tier active: drop
+    CHECK(castGuardDrops(true, false, 8, speedSame, 1));      // same spell active: drop
+    CHECK(castGuardDrops(true, false, 135, mixed, 3));        // Barrier cast: family found among other families
+    CHECK(!castGuardDrops(true, false, 135, mixed, 1));       // only the first entry (Valor) scanned: no Barrier
+    CHECK(!castGuardDrops(true, false, 8, armor, 1));         // different family active: keep
+    CHECK(!castGuardDrops(true, false, 8, none, 1));          // no tracked effect: keep
+    CHECK(!castGuardDrops(true, false, 8, speedHi, 0));       // empty effect list: keep
+    CHECK(!castGuardDrops(true, false, 8, nullptr, 3));       // unreadable list: keep
+    CHECK(!castGuardDrops(true, true, 8, speedHi, 1));        // party leader (player-issued): never dropped
+    CHECK(!castGuardDrops(true, true, 37, speedSame, 1));
+    CHECK(!castGuardDrops(true, false, 45, speedHi, 1));      // untracked spell (debuff): keep
+    CHECK(!castGuardDrops(true, false, -1, speedHi, 1));      // unknown spell row: keep
+    CHECK(!castGuardDrops(false, false, 8, speedHi, 1));      // cast_family_guard=0: vanilla
+    // INI key: default on (shipped), 0 turns it off, sameConfig sees it
+    Config d; CHECK(d.castFamilyGuard);
+    g_t.parse("[CompanionAI]\ncast_family_guard=0\n", "CompanionAI"); Config off; parseConfig(g_t, off);
+    CHECK(!off.castFamilyGuard && g_t.bad[0] == 0);
+    Config e = d; e.castFamilyGuard = false; CHECK(!sameConfig(d, e)); CHECK(sameConfig(d, Config()));
+    g_t.parse("[CompanionAI]\ncast_family_guard=maybe\n", "CompanionAI"); Config bad; parseConfig(g_t, bad);
+    CHECK(!bad.castFamilyGuard && strstr(g_t.bad, "cast_family_guard") != nullptr);   // unparseable flag = off, like every flag
+}
+
 // exports.def == the hooks.toml function names (run from the source directory)
 static void testExports() {
     static char t[65536], d[4096];
@@ -487,16 +531,16 @@ static void testExports() {
         char line[80]; snprintf(line, sizeof line, "    %s\n", name);
         if (!strstr(d, line)) { printf("exports.def lacks %s\n", name); ++missing; }
     }
-    CHECK(funcs == 31 && missing == 0);                          // 31 hooks: 18 + the 13 Phase-4 probes (C1 x3 share one function)
+    CHECK(funcs == 32 && missing == 0);                          // 32 hooks: 19 + the 13 Phase-4 probes (C1 x3 share one function; G1 = CompanionAiCastGuard)
     int exports = 0; for (const char* p = strstr(d, "EXPORTS\n"); p && (p = strstr(p + 1, "\n    ")); ) ++exports;
-    CHECK(exports == 30);                                        // 30 exports: 29 distinct hook functions + KPatchInit (KpLog)
+    CHECK(exports == 31);                                        // 31 exports: 30 distinct hook functions + KPatchInit (KpLog)
     CHECK(!strstr(t, "0x0051DBE7"));                             // the hot FM3 probe window stays unshipped (the cold FM3S/E/R ship)
     CHECK(strstr(t, "0x0051DBE1") && strstr(t, "0x0051DD33") && strstr(t, "0x0051E0C9"));
 }
 
 int main() {
     testGlob(); testNumbers(); testIni(); testShippedIni(); testGate(); testThrottles(); testDecisions(); testHandlerDecisions();
-    testProbeHelpers(); testSpinExpiry(); testExports(); testPartyArea();
+    testProbeHelpers(); testSpinExpiry(); testCastGuard(); testExports(); testPartyArea();
     printf("%d checks, %d failed\n%s\n", g_checks, g_fail, g_fail ? "TESTS FAILED" : "ALL PASS");
     return g_fail ? 1 : 0;
 }

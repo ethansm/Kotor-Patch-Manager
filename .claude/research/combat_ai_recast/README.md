@@ -89,6 +89,10 @@ CLR of that actor), Bao-Dur = `a9b1138`. Tools: `cmdq_idle_casts.py`, `cmdq_rn_b
   and who appended them (script `ActionAttack` without a clear, companion-ai A1 self-requeue, engine auto-attack).
 - O3 (research): group debuffs (Storm, Plague, Insanity, Mass Stasis, Scream, Crush Opposition): pick the AoE centre by
   "unaffected enemies in radius" instead of "enemies in radius"? Needs a cost/benefit study before a rule.
+  STUDIED (`O3_study.md`, WI-140): only Jedi Support (style 13) reaches GN_FindAOETarget (plain count in 4 m, no
+  affected check); vanilla roll-chain typos at gensupport:3235 (Insanity tests nHorror) and :3310 (Sonic Howl tests
+  nKillDroid). Recommendation B (keep the centre, require >= 2 unaffected for Horror/Insanity/Stasis Field, fix both
+  typos). Owner decision pending.
 
 ## Proposed fixes (ordered)
 
@@ -103,6 +107,9 @@ CLR of that actor), Bao-Dur = `a9b1138`. Tools: `cmdq_idle_casts.py`, `cmdq_rn_b
   is already on the target, drop the cast (return without building) and log it. This is the baseline that covers
   every power and every script path (vanilla AI, combos, stale nodes), and does not touch player-issued casts
   (skip when the leader / player queued it; cmdq tags `real`, need a player-origin flag).
+  F1a BUILT (WI-136): companion-ai G1 detour 0x6D9ADB -> 0x6D9B65 `CompanionAiCastGuard`, INI `cast_family_guard=1`:
+  a non-leader party member's spell round node whose buff family (1-10) is active on it is skipped; log `G1 drop`.
+  Host tests + build_check PASS. New hook = KPM reinstall (needs GO). F1b debuffs = WI-137.
 - F2 script (party AI patch set, `ranged_ai_src/script/party_ai_patches.py`): one family table + `GN_PartyFamilyActive
   (nSpell, oTarget)` used by the buff picker, the combo buff steps (R2 L2a-c, extended to Barrier, Valor, Energy
   Resist, Inspire, Crush Opposition) and the single-target debuff picker; when the family is active return an invalid
@@ -118,6 +125,9 @@ CLR of that actor), Bao-Dur = `a9b1138`. Tools: `cmdq_idle_casts.py`, `cmdq_rn_b
   CONFIRMED by facts 6-7: at a party member's queue call (real=0), drop that actor's pending spell nodes (sub 9) from
   the round list before the new one is appended, so the newest script decision wins. Needs the round node list layout
   (append/consume functions) from static RE (WI-135 step 2).
+  RE DONE (`F4_unlink.md`): the round list is a CExoLinkedList (round+0xB00 -> wrapper -> internal; count internal+8),
+  FIFO; +0xB18 = in-progress action (never free it); owner creature round+0xB04. Unlink one node via 0x73A130, free via
+  0x623320 + 0x9196FD. Hook 0x5917C1 (AddSWSpellAction, before AddAction). Steps pinned in WI-143 (ready).
 - F5 (script, party): run DetermineCombatRound at most once per engine round end for a party member (local int stamp
   of the round, skip a second run within the same round), which removes the backlog source of fact 7.
   BUILT (WI-142): entry F5 in `party_ai_patches.py` at the top of GN_DetermineCombatRound: a non-leader party member

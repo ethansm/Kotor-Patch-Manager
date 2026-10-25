@@ -29,4 +29,5 @@ EXPORTS
     CompanionAiProbeShout
     CompanionAiProbeSetState
     CompanionAiProbeGetCurrentAction
+    CompanionAiCastGuard
     KPatchInit

@@ -222,6 +222,7 @@ struct Config {
     bool a4 = true;
     bool c1 = true, c1PartyOnly = true;
     bool a3 = false;
+    bool castFamilyGuard = true;   // G1 (cast_family_guard, WI-136): a party member does not rebuild a buff whose family is active on it
     bool log = true;            // fix event lines (A1/FM1/FM4/A4/A3) and the summaries
     int fm4Requested = 1;       // raw INI value (for the config line)
     // ---- Phase-4 probes (PROBE_DESIGN.md): log only, behaviour stays vanilla; the probe build ships them on
@@ -279,6 +280,7 @@ inline void parseConfig(const IniTable& t, Config& c) {
     c.c1 = t.getBool("c1", c.c1);
     c.c1PartyOnly = t.getBool("c1_party_only", c.c1PartyOnly);
     c.a3 = t.getBool("a3", c.a3);
+    c.castFamilyGuard = t.getBool("cast_family_guard", c.castFamilyGuard);
     c.log = t.getBool("log", c.log);
     c.probeFm2c = t.getBool("probe_fm2c", c.probeFm2c);
     c.probeFm2f = t.getBool("probe_fm2f", c.probeFm2f);
@@ -306,7 +308,8 @@ inline bool sameConfig(const Config& a, const Config& b) {
            a.a1PartyOnly == b.a1PartyOnly && a.a1Retarget == b.a1Retarget && a.a1RetargetStances == b.a1RetargetStances &&
            a.a1RethinkMs == b.a1RethinkMs && a.a1RetargetStrict == b.a1RetargetStrict && a.p1 == b.p1 && a.p1IntervalMs == b.p1IntervalMs && a.fm1 == b.fm1 &&
            a.fm1RethinkMs == b.fm1RethinkMs && a.fm4 == b.fm4 && a.fm4Requested == b.fm4Requested && a.a4 == b.a4 && a.c1 == b.c1 &&
-           a.c1PartyOnly == b.c1PartyOnly && a.a3 == b.a3 && a.log == b.log && a.probeFm2c == b.probeFm2c && a.probeFm2f == b.probeFm2f &&
+           a.c1PartyOnly == b.c1PartyOnly && a.a3 == b.a3 && a.castFamilyGuard == b.castFamilyGuard && a.log == b.log &&
+           a.probeFm2c == b.probeFm2c && a.probeFm2f == b.probeFm2f &&
            a.probeFm2r == b.probeFm2r && a.probeFm3 == b.probeFm3 && a.probeRs == b.probeRs && a.probeP2 == b.probeP2 &&
            a.probePf == b.probePf && a.probeRar == b.probeRar && a.probeShx == b.probeShx && a.probeSs1 == b.probeSs1 &&
            a.probeGca == b.probeGca && a.probeParty == b.probeParty && a.probeA1x == b.probeA1x && a.probeLines == b.probeLines;
@@ -520,6 +523,33 @@ inline int a4VanillaResult(int v) { return v == 0 ? 1 : 0; }   // a4=0: identica
 // C1 (0x5868B9/0x5868F1/0x586929): the restart index written to [ebp-0x10].
 inline bool c1Who(const Config& c, int objType, int party) { return !c.c1PartyOnly || (objType == 5 && party != 0); }
 inline int c1Value(bool enabled, bool who, bool capOk) { return (enabled && who && capOk) ? -1 : 0; }
+
+// G1 (0x6D9ADB, cast_family_guard, WI-136 F1a). Buff family of a spell: the buff rows of GN_PartyPowerFamily in
+// ranged_ai_src/script/party_ai_fixes.nss (families 1-10). 0 = untracked; the debuff families are WI-137 and read 0 here.
+inline int castFamily(int spell) {
+    switch (spell) {
+    case 8: case 34: case 37: return 1;                              // Speed
+    case 17: case 18: case 24: return 2;                             // Armor
+    case 22: case 33: case 36: return 3;                             // Valor
+    case 40: case 42: case 133: return 4;                            // Energy Resist
+    case 135: case 136: case 137: return 5;                          // Barrier
+    case 138: case 139: case 140: return 6;                          // Battle Meditation (PC)
+    case 164: case 165: case 166: return 7;                          // Fury
+    case 167: case 168: case 169: case 170: case 171: case 172: return 8;   // Inspire Followers
+    case 150: case 151: case 152: return 9;                          // Force Body
+    case 20: case 41: return 10;                                     // Force Immunity / Resist Force
+    default: return 0;
+    }
+}
+// true = drop the build: the guard is on, the actor is not the party leader (player-issued casts are never dropped), the spell
+// is in a tracked buff family and an active effect spell id (activeSpellIds[0..n)) is in that same family (any tier).
+inline bool castGuardDrops(bool enabled, bool actorIsLeader, int spell, const int* activeSpellIds, int n) {
+    if (!enabled || actorIsLeader) return false;
+    const int fam = castFamily(spell);
+    if (!fam || !activeSpellIds) return false;
+    for (int i = 0; i < n; ++i) if (castFamily(activeSpellIds[i]) == fam) return true;
+    return false;
+}
 
 // P1 (0x56BDB4). With p1=0 a stamp can only exist if p1 was on earlier this session: zero it and force the run so the
 // creature is back in the vanilla never-stamped state.

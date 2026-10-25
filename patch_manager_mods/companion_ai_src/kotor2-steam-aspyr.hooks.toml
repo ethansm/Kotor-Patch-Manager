@@ -205,6 +205,21 @@ exclude_from_restore = ["eax"]
 source = "ebp"
 type = "int"
 
+# G1 cast family guard (WI-136, cast_family_guard=1): AIActionCombat 0x6D9500 case 9 (spell round node) entry, before anything is
+# pushed. Stolen PUSH 1 / MOV EDX,[EBP-0x1C] are relocatable (jump-table target) and run on the no-skip path. Return 1 => 0x6D9B65
+# (skip the round build; the node is freed there, stack-neutral). Return 0 => vanilla.
+[[hooks]]
+address = 0x006D9ADB
+type = "detour"
+function = "CompanionAiCastGuard"
+original_bytes = [0x6A, 0x01, 0x8B, 0x55, 0xE4]
+consumed_exit_address = 0x006D9B65
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ebp"
+type = "int"
+
 # C1 ClearHostileActionsVersus 0x5867E0: MOV [EBP-0x10],0 after each group delete (types 0xC / 0xF / 0x2E),
 # skip-only: the handler writes -1 (c1=1, party) or 0 (vanilla). Resumes at the following JMP 0x586930.
 [[hooks]]

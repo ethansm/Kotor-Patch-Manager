@@ -22,6 +22,7 @@
 //   FM1 0x586F43 CompanionAiBumpClear(ebp)      BumpFriends ClearAllActions(1) (skip-only: the handler makes the call)
 //   FM4 0x57451F CompanionAiFm4Snap(eax) / 0x575183 CompanionAiFm4Restore(ebp)   SaveCreature FollowInfo (mode 1)
 //   A4  0x6D9E2A CompanionAiA4(ebp) -> int      AIActionCombat NULL spell row (skip-only): 1 => 0x6D9EA4
+//   G1  0x6D9ADB CompanionAiCastGuard(ebp) -> int  AIActionCombat case 9 (spell round node): cast_family_guard. 1 => 0x6D9B65 (skip the round build)
 //   C1  0x5868B9/0x5868F1/0x586929 CompanionAiC1(ebp)   ClearHostileActionsVersus restart index (skip-only)
 //   A3  0x6D78B7 CompanionAiA3(ebp)             dead/undetected-target exit: clear the orientation lock (opt, a3=0)
 //   (FM3 hot sentinel probe 0x51DBE7: designed and validated, NOT shipped -- wrapper cost in the hottest loop; the cold FM3 sites below ship)
@@ -53,6 +54,7 @@
 #include <time.h>
 
 #include "SafeRead.h"
+#include "Effects.h"    // k2fx: creature effect list + spell row (G1)
 #include "CompanionAiLogic.h"
 #include "GameAddr.h"
 #include "KpLog.h"
@@ -864,6 +866,41 @@ extern "C" int __cdecl AiTracePrintString(int ebp) {
     ++g_st.prints;
     tline(now, cai::lineKey(c.self, c.script, text), "t=%lu P %08x %s %s ev=%d d=%d | %s", now, c.self, o.tag, c.script, c.ev, c.depth, text);
     return (traced && !g_cfg.enginePrint) ? 1 : 0;
+}
+
+// G1. AIActionCombat case 9 (spell round node) at 0x6D9ADB, before anything is pushed (the stolen PUSH 1 / MOV EDX,[EBP-0x1C] run on the
+// no-skip path). Return 1 => 0x6D9B65: the round build for this node is skipped and the node is freed there as vanilla does. Every
+// doubtful read returns 0 (vanilla): a drop needs a readable actor, server, effect list and spell row.
+namespace { int g_g1Logs = 0; }   // session budget of G1 drop lines
+extern "C" int __cdecl CompanionAiCastGuard(int ebp) {
+    saferead::beginScope();
+    DWORD now = GetTickCount(); tick(now);
+    if (!g_cfg.castFamilyGuard) return 0;
+    int node = fr<int>(ebp, -0x1C);
+    int spell = rd<int>(node, 0x24, -1);
+    if (!cai::castFamily(spell)) return 0;   // untracked spell (most nodes): no further reads
+    int actor = fr<int>(ebp, -0x1AC), actorId = 0;
+    if (!actor || !saferead::readAt<int>(1, static_cast<uintptr_t>(actor), ObId, &actorId) || !actorId || actorId == Invalid) return 0;
+    int app = rd<int>(G_App, 0), server = app ? rd<int>(app, 8) : 0;
+    if (!server || !rd<int>(server, 4)) return 0;   // 0x51C620 dereferences [server+4] (as partyEmit)
+    bool actorIsLeader = reinterpret_cast<Fn0>(FnPlayerId)(server) == actorId;
+    if (actorIsLeader) return 0;
+    if (!objInfo(actorId, now).party) return 0;   // party members only: enemies and neutral NPCs are never dropped
+    int arr = 0, cnt = 0;
+    if (!k2fx::effectListNonEmpty(static_cast<uintptr_t>(actor), &arr, &cnt)) return 0;   // no effects: nothing to be active
+    int ids[64], n = 0;
+    for (int i = 0; i < cnt && n < 64; ++i) {
+        int eff = rd<int>(arr, i * 4, 0);
+        if (!eff) continue;
+        int sp = rd<int>(eff, k2fx::Effect_SpellId, -1);
+        if (sp > 0) ids[n++] = sp;
+    }
+    if (!cai::castGuardDrops(true, actorIsLeader, spell, ids, n)) return 0;
+    if (g_g1Logs < 200) {
+        ++g_g1Logs;
+        eline(now, "t=%lu G1 drop cr=%08x spell=%d fam=%d", now, actorId, spell, cai::castFamily(spell));
+    }
+    return 1;
 }
 
 // T3. ExecuteCommandAurPostString 0x6F6200 (retail stub) at 0x6F62F2, after the four pops succeeded.
