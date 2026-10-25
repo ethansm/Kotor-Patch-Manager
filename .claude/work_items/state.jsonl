@@ -121,3 +121,4 @@
 {"ev": "done", "reason": "manual: already fixed: party_ai_patches.py L4 (3dc974ea), installed", "session": "7c88a13b-2214-41d6-8a07-161f9d8f7a73", "ts": "2026-10-25T21:40:35Z", "wi": "WI-141"}
 {"ev": "done", "session": "7c88a13b-2214-41d6-8a07-161f9d8f7a73", "ts": "2026-10-25T21:41:01Z", "wi": "WI-142"}
 {"ev": "park", "reason": "gate config: verify line had two commands joined by ';' (fixed in Steps); worker attempt 2 PASS, code in tree", "session": "7c88a13b-2214-41d6-8a07-161f9d8f7a73", "ts": "2026-10-25T21:48:37Z", "wi": "WI-136"}
+{"ev": "unpark", "reason": "verify split into two lines; rerun to gate the existing attempt-2 code", "session": "7c88a13b-2214-41d6-8a07-161f9d8f7a73", "ts": "2026-10-25T21:48:38Z", "wi": "WI-136"}
