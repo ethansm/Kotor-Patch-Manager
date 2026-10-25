@@ -1,0 +1,77 @@
+addr	kind	name	confidence	evidence	topic	date
+0x007356b0	function	FUN_007356b0 __thiscall bool(int key, CExoString* out, byte gender), RET 0xC, ECX=this (no prototype applied by REA)	confirmed	procedure_assembly 0x7356b0: 0x7356d8: MOV dword ptr [EBP + -0x40],ECX | 0x7357e4: RET 0xc; supersedes: 20261015_getstring-cexolocstring.tsv:20 (that row refutes only the DB name; the function is unnamed)	GS-3	2026-10-25
+0x007356b0	function	gender arg = [EBP+0x10] byte; forced to 0 when key arg is 0; cache key = 2*key + gender (gender not clamped)	confirmed	procedure_assembly 0x7356b0: 0x7356f4: MOV byte ptr [EBP + 0x10],CL | 0x7356fe: LEA ECX,[EDX + EAX*0x2]	GS-3	2026-10-25
+0x007356b0	xref	callers 36: 00534600,0058a610,005f5770,005f9220,00605090; size 311 B RET 12	confirmed	procedure_callers 0x7356b0: 36 addrs; procedure_info total_bytes 311; supersedes: 20261015_getstring-cexolocstring.tsv:3	GS-3	2026-10-25
+0x00a1b4b0	global	DAT_00a1b4b0 talk-table manager pointer; null skips lookup; passed as ECX to FUN_0071df90	confirmed	procedure_assembly 0x7356b0: 0x735740: CMP dword ptr [0x00a1b4b0], 0x0 | 0x735759: MOV ECX, dword ptr [0x00a1b4b0]	GS-3	2026-10-25
+0x0073575f	callsite	FUN_007356b0 -> FUN_0071df90 (gender write, then Fetch)	confirmed	procedure_assembly 0x7356b0: 0x73575f: CALL 0x0071df90	GS-3	2026-10-25
+0x0071df90	field	TalkTable+0x3C gender byte: stores param_4, then clamps values >1 to 0	confirmed	static asm 71/0071df90.asm: 0x0071dfab: MOV byte ptr [ECX + 0x3c],DL ; decomp 0071df90.c:12-13 clamp	GS-3	2026-10-25
+0x0071d970	field	TalkTable+0x3C gender byte read in Fetch (index table and fail test); cleared to 0 at 0x71ddf6	confirmed	static asm 71/0071d970.asm: 0x0071d9ec: MOVZX EAX,byte ptr [EDX + 0x3c] | 0x0071dde1: MOVZX EAX,byte ptr [EDX + 0x3c] | 0x0071ddf6: MOV byte ptr [ECX + 0x3c],0x0	GS-3	2026-10-25
+0x0071d970	callsite	Fetch callers: 0x71dfce in FUN_0071df90 (after gender write) and self 0x71de0c; no other direct caller	probable	static callgraph.tsv:69746 0071dfce CALL 0x0071d970 (caller 0071df90) ; callgraph.tsv:69729 0071de0c (self)	GS-3	2026-10-25
+0x0071de0c	callsite	FUN_0071d970 self-recursion (gender reset to 0 at 0x71ddf6 first)	probable	static callgraph.tsv:69729: 0071de0c CALL 0x0071d970	GS-3	2026-10-25
+0x0071dfce	callsite	FUN_0071df90 -> FUN_0071d970 (Fetch) after the gender write at 0x71dfab	probable	static callgraph.tsv:69746: 0071dfce CALL 0x0071d970	GS-3	2026-10-25
+0x00534b87	callsite	FUN_00534600 -> 0x7356b0, gender PUSH 0 (constant 0)	confirmed	static asm 53/00534600.asm: 0x00534b6e: PUSH 0x0 ; 0x00534b87: CALL 0x007356b0	GS-3	2026-10-25
+0x0058a749	callsite	FUN_0058a610 -> 0x7356b0, gender PUSH 0 (constant 0)	confirmed	static asm 58/0058a610.asm: 0x0058a736: PUSH 0x0 ; 0x0058a749: CALL 0x007356b0	GS-3	2026-10-25
+0x0058a89d	callsite	FUN_0058a610 -> 0x7356b0, gender PUSH 0 (constant 0)	confirmed	static asm 58/0058a610.asm: 0x0058a88a: PUSH 0x0 ; 0x0058a89d: CALL 0x007356b0	GS-3	2026-10-25
+0x005f5941	callsite	FUN_005f5770 -> 0x7356b0, gender PUSH 0 (constant 0); key also PUSH 0	confirmed	static asm 5f/005f5770.asm: 0x005f5936: PUSH 0x0 ; 0x005f593c: PUSH 0x0 ; 0x005f5941: CALL 0x007356b0	GS-3	2026-10-25
+0x005f97f5	callsite	FUN_005f9220 -> 0x7356b0, gender PUSH 0 (constant 0); ECX from virtual call	confirmed	static asm 5f/005f9220.asm: 0x005f97d9: PUSH 0x0 ; 0x005f97f1: CALL EAX ; 0x005f97f5: CALL 0x007356b0	GS-3	2026-10-25
+0x005f9816	callsite	FUN_005f9220 -> 0x7356b0, gender PUSH 0 (constant 0); ECX from virtual call	confirmed	static asm 5f/005f9220.asm: 0x005f97fa: PUSH 0x0 ; 0x005f9812: CALL EAX ; 0x005f9816: CALL 0x007356b0	GS-3	2026-10-25
+0x006055f2	callsite	FUN_00605090 -> 0x7356b0, gender PUSH 0 (constant 0), inside JZ 0x6055db block	confirmed	static asm 60/00605090.asm: 0x006055dd: PUSH 0x0 ; 0x006055f2: CALL 0x007356b0	GS-3	2026-10-25
+0x00605695	callsite	FUN_00605090 -> 0x7356b0, gender PUSH 0 (constant 0)	confirmed	static asm 60/00605090.asm: 0x00605682: PUSH 0x0 ; 0x00605695: CALL 0x007356b0	GS-3	2026-10-25
+0x006059a9	callsite	FUN_00605090 -> 0x7356b0, gender PUSH 0 (constant 0)	confirmed	static asm 60/00605090.asm: 0x00605996: PUSH 0x0 ; 0x006059a9: CALL 0x007356b0	GS-3	2026-10-25
+0x0060797b	callsite	FUN_00607790 -> 0x7356b0, gender PUSH 0 (constant 0)	confirmed	static asm 60/00607790.asm: 0x00607969: PUSH 0x0 ; 0x0060797b: CALL 0x007356b0	GS-3	2026-10-25
+0x006336d3	callsite	FUN_00633620 -> 0x7356b0, gender = byte [EBP+0x18] of FUN_00633620 (forwarded, non-constant)	confirmed	static asm 63/00633620.asm: 0x006336c3: MOVZX EDX,byte ptr [EBP + 0x18] ; 0x006336d3: CALL 0x007356b0	GS-3	2026-10-25
+0x006336e8	callsite	FUN_00633620 -> 0x7356b0, gender = byte [EBP+0x18] of FUN_00633620 (forwarded, non-constant)	confirmed	static asm 63/00633620.asm: 0x006336d8: MOVZX EDX,byte ptr [EBP + 0x18] ; 0x006336e8: CALL 0x007356b0	GS-3	2026-10-25
+0x0069c11e	callsite	FUN_0069c020 -> 0x7356b0, gender PUSH 0 (constant 0)	confirmed	static asm 69/0069c020.asm: 0x0069c113: PUSH 0x0 ; 0x0069c11e: CALL 0x007356b0	GS-3	2026-10-25
+0x006afff6	callsite	FUN_006afed0 -> 0x7356b0, gender PUSH 0 (constant 0)	confirmed	static asm 6a/006afed0.asm: 0x006affe6: PUSH 0x0 ; 0x006afff6: CALL 0x007356b0	GS-3	2026-10-25
+0x006b00aa	callsite	FUN_006afed0 -> 0x7356b0, gender PUSH 0 (constant 0)	confirmed	static asm 6a/006afed0.asm: 0x006b009a: PUSH 0x0 ; 0x006b00aa: CALL 0x007356b0	GS-3	2026-10-25
+0x006b4d37	callsite	FUN_006b3d10 -> 0x7356b0, gender PUSH 0 (constant 0)	confirmed	static asm 6b/006b3d10.asm: 0x006b4d26: PUSH 0x0 ; 0x006b4d37: CALL 0x007356b0	GS-3	2026-10-25
+0x006b4dba	callsite	FUN_006b3d10 -> 0x7356b0, gender PUSH 0 (constant 0)	confirmed	static asm 6b/006b3d10.asm: 0x006b4da9: PUSH 0x0 ; 0x006b4dba: CALL 0x007356b0	GS-3	2026-10-25
+0x006c8e84	callsite	FUN_006c8de0 -> 0x7356b0, gender = byte [this+0x7C] (this = ECX saved at 0x6c8e0b; object type unknown)	confirmed	static asm 6c/006c8de0.asm: 0x006c8e0b: MOV dword ptr [EBP + 0xfffffef4],ECX ; 0x006c8e59: MOVZX EDX,byte ptr [ECX + 0x7c]	GS-3	2026-10-25
+0x006caec4	callsite	FUN_006cae20 -> 0x7356b0, gender = [EBP+0x10] of FUN_006cae20 (forwarded, non-constant)	confirmed	static asm 6c/006cae20.asm: 0x006cae9f: MOVZX ECX,byte ptr [EBP + 0x10] ; 0x006caec4: CALL 0x007356b0	GS-3	2026-10-25
+0x006cfd85	callsite	FUN_006cfd10 -> 0x7356b0, gender = [EBP+0x10] of FUN_006cfd10 (forwarded, non-constant)	confirmed	static asm 6c/006cfd10.asm: 0x006cfd70: MOVZX ECX,byte ptr [EBP + 0x10] ; 0x006cfd85: CALL 0x007356b0	GS-3	2026-10-25
+0x0075e4fd	callsite	FUN_0075dd10 -> 0x7356b0, gender PUSH 0 (constant 0)	confirmed	static asm 75/0075dd10.asm: 0x0075e4e2: PUSH 0x0 ; 0x0075e4fd: CALL 0x007356b0	GS-3	2026-10-25
+0x0077bd7a	callsite	FUN_0077bcf0 -> 0x7356b0, gender PUSH 0 (constant 0)	confirmed	static asm 77/0077bcf0.asm: 0x0077bd62: PUSH 0x0 ; 0x0077bd7a: CALL 0x007356b0	GS-3	2026-10-25
+0x0077c227	callsite	FUN_0077c1b0 -> 0x7356b0, gender PUSH 0 (constant 0)	confirmed	static asm 77/0077c1b0.asm: 0x0077c20f: PUSH 0x0 ; 0x0077c227: CALL 0x007356b0	GS-3	2026-10-25
+0x0077c3b7	callsite	FUN_0077c340 -> 0x7356b0, gender PUSH 0 (constant 0)	confirmed	static asm 77/0077c340.asm: 0x0077c39f: PUSH 0x0 ; 0x0077c3b7: CALL 0x007356b0	GS-3	2026-10-25
+0x007fc45a	callsite	FUN_007fc390 -> 0x7356b0, gender PUSH 0 (constant 0)	confirmed	static asm 7f/007fc390.asm: 0x007fc44a: PUSH 0x0 ; 0x007fc45a: CALL 0x007356b0	GS-3	2026-10-25
+0x007fca70	callsite	FUN_007fc880 -> 0x7356b0, gender PUSH 0 (constant 0)	confirmed	static asm 7f/007fc880.asm: 0x007fca63: PUSH 0x0 ; 0x007fca70: CALL 0x007356b0	GS-3	2026-10-25
+0x00842a13	callsite	FUN_008427a0 -> 0x7356b0, gender PUSH 0 (constant 0)	confirmed	static asm 84/008427a0.asm: 0x00842a00: PUSH 0x0 ; 0x00842a13: CALL 0x007356b0	GS-3	2026-10-25
+0x00843749	callsite	FUN_00843500 -> 0x7356b0, gender PUSH 0 (constant 0)	confirmed	static asm 84/00843500.asm: 0x00843736: PUSH 0x0 ; 0x00843749: CALL 0x007356b0	GS-3	2026-10-25
+0x0084a9fe	callsite	FUN_0084a990 -> 0x7356b0, gender PUSH 0 (constant 0)	confirmed	static asm 84/0084a990.asm: 0x0084a9e9: PUSH 0x0 ; 0x0084a9fe: CALL 0x007356b0	GS-3	2026-10-25
+0x0084aa18	callsite	FUN_0084a990 -> 0x7356b0, gender PUSH 0 (constant 0)	confirmed	static asm 84/0084a990.asm: 0x0084aa03: PUSH 0x0 ; 0x0084aa18: CALL 0x007356b0	GS-3	2026-10-25
+0x0087c7d9	callsite	FUN_0087c590 -> 0x7356b0, gender PUSH 0 (constant 0)	confirmed	static asm 87/0087c590.asm: 0x0087c7c6: PUSH 0x0 ; 0x0087c7d9: CALL 0x007356b0	GS-3	2026-10-25
+0x0089531e	callsite	FUN_00895260 -> 0x7356b0, gender PUSH 0 (constant 0)	confirmed	static asm 89/00895260.asm: 0x00895306: PUSH 0x0 ; 0x0089531e: CALL 0x007356b0	GS-3	2026-10-25
+0x00896c71	callsite	FUN_00896a80 -> 0x7356b0, gender PUSH 0 (constant 0)	confirmed	static asm 89/00896a80.asm: 0x00896c59: PUSH 0x0 ; 0x00896c71: CALL 0x007356b0	GS-3	2026-10-25
+0x00896de9	callsite	FUN_00896d10 -> 0x7356b0, gender PUSH 0 (constant 0)	confirmed	static asm 89/00896d10.asm: 0x00896dd1: PUSH 0x0 ; 0x00896de9: CALL 0x007356b0	GS-3	2026-10-25
+0x00896f45	callsite	FUN_00896d10 -> 0x7356b0, gender PUSH 0 (constant 0)	confirmed	static asm 89/00896d10.asm: 0x00896f2d: PUSH 0x0 ; 0x00896f45: CALL 0x007356b0	GS-3	2026-10-25
+0x00897089	callsite	FUN_00896fb0 -> 0x7356b0, gender PUSH 0 (constant 0)	confirmed	static asm 89/00896fb0.asm: 0x00897071: PUSH 0x0 ; 0x00897089: CALL 0x007356b0	GS-3	2026-10-25
+0x008971e5	callsite	FUN_00896fb0 -> 0x7356b0, gender PUSH 0 (constant 0)	confirmed	static asm 89/00896fb0.asm: 0x008971cd: PUSH 0x0 ; 0x008971e5: CALL 0x007356b0	GS-3	2026-10-25
+0x008b135a	callsite	FUN_008b1250 -> 0x7356b0, gender PUSH 0 (constant 0)	confirmed	static asm 8b/008b1250.asm: 0x008b1342: PUSH 0x0 ; 0x008b135a: CALL 0x007356b0	GS-3	2026-10-25
+0x008b3d16	callsite	FUN_008b3c00 -> 0x7356b0, gender PUSH 0 (constant 0)	confirmed	static asm 8b/008b3c00.asm: 0x008b3cfb: PUSH 0x0 ; 0x008b3d16: CALL 0x007356b0	GS-3	2026-10-25
+0x008bf54f	callsite	FUN_008bf280 -> 0x7356b0, gender PUSH 0 (constant 0); matches ledger 20261015 row 0x008bf54f	confirmed	static asm 8b/008bf280.asm: 0x008bf53a: PUSH 0x0 ; 0x008bf54f: CALL 0x007356b0	GS-3	2026-10-25
+0x008cbec3	callsite	FUN_008cbde0 -> 0x7356b0, gender PUSH 0 (constant 0)	confirmed	static asm 8c/008cbde0.asm: 0x008cbeab: PUSH 0x0 ; 0x008cbec3: CALL 0x007356b0	GS-3	2026-10-25
+0x008ce514	callsite	FUN_008ce3f0 -> 0x7356b0, gender PUSH 0 (constant 0)	confirmed	static asm 8c/008ce3f0.asm: 0x008ce4ff: PUSH 0x0 ; 0x008ce514: CALL 0x007356b0	GS-3	2026-10-25
+0x008ce76d	callsite	FUN_008ce3f0 -> 0x7356b0, gender PUSH 0 (constant 0)	confirmed	static asm 8c/008ce3f0.asm: 0x008ce758: PUSH 0x0 ; 0x008ce76d: CALL 0x007356b0	GS-3	2026-10-25
+0x008d0877	callsite	FUN_008d0780 -> 0x7356b0, gender PUSH 0 (constant 0)	confirmed	static asm 8d/008d0780.asm: 0x008d085f: PUSH 0x0 ; 0x008d0877: CALL 0x007356b0	GS-3	2026-10-25
+0x008ddbb5	callsite	FUN_008ddaf0 -> 0x7356b0, gender PUSH 0 (constant 0)	confirmed	static asm 8d/008ddaf0.asm: 0x008ddba3: PUSH 0x0 ; 0x008ddbb5: CALL 0x007356b0	GS-3	2026-10-25
+0x008de425	callsite	FUN_008de2e0 -> 0x7356b0, gender PUSH 0 (constant 0)	confirmed	static asm 8d/008de2e0.asm: 0x008de410: PUSH 0x0 ; 0x008de425: CALL 0x007356b0	GS-3	2026-10-25
+0x007354c1	callsite	FUN_00735440 -> 0x7356b0, gender = [EBP+0x10] of FUN_00735440 (forwarded, non-constant)	confirmed	static asm 73/00735440.asm: 0x007354b1: MOVZX ECX,byte ptr [EBP + 0x10] ; 0x007354c1: CALL 0x007356b0	GS-3	2026-10-25
+0x006cdf3f	callsite	FUN_006cd5b0 -> FUN_006cae20, gender = byte [obj+0x08], obj=[EBP-0x24] (identity unknown)	confirmed	static asm 6c/006cd5b0.asm: 0x006cdf27: MOVZX ECX,byte ptr [EAX + 0x8] ; 0x006cdf3f: CALL 0x006cae20	GS-3	2026-10-25
+0x006cdfbf	callsite	FUN_006cd5b0 -> FUN_006cae20, gender = byte [obj+0x08] (same object pattern)	confirmed	static asm 6c/006cd5b0.asm: 0x006cdfa7: MOVZX EDX,byte ptr [ECX + 0x8] ; 0x006cdfbf: CALL 0x006cae20	GS-3	2026-10-25
+0x006ce013	callsite	FUN_006cd5b0 -> FUN_006cae20, gender = byte [obj+0x08] (same object pattern)	confirmed	static asm 6c/006cd5b0.asm: 0x006cdffb: MOVZX EDX,byte ptr [ECX + 0x8] ; 0x006ce013: CALL 0x006cae20	GS-3	2026-10-25
+0x006cb44c	callsite	FUN_006cae20 -> FUN_006cfd10, gender = [EBP+0x10] of FUN_006cae20 (forwarded)	confirmed	static asm 6c/006cae20.asm: 0x006cb429: MOVZX EDX,byte ptr [EBP + 0x10] ; 0x006cb44c: CALL 0x006cfd10	GS-3	2026-10-25
+0x006ca682	callsite	FUN_006c9c00 -> FUN_006cfd10, gender = byte [EBP+0x1c] of FUN_006c9c00 (caller of 6c9c00 not traced)	confirmed	static asm 6c/006c9c00.asm: 0x006ca66c: MOVZX EAX,byte ptr [EBP + 0x1c] ; 0x006ca682: CALL 0x006cfd10	GS-3	2026-10-25
+0x006cea91	callsite	FUN_006ce710 -> FUN_006cfd10, gender = byte [obj+0x7C], obj=[EBP+0xffffff64]	confirmed	static asm 6c/006ce710.asm: 0x006cea6b: MOVZX EDX,byte ptr [ECX + 0x7c] ; 0x006cea91: CALL 0x006cfd10	GS-3	2026-10-25
+0x00633bee	callsite	FUN_00633ab0 -> FUN_00633620, gender PUSH 0 (constant 0)	confirmed	static asm 63/00633ab0.asm: 0x00633bd9: PUSH 0x0 ; 0x00633bee: CALL 0x00633620	GS-3	2026-10-25
+0x006a4c84	callsite	FUN_006a4c30 -> FUN_00633620, gender PUSH 0 (constant 0)	confirmed	static asm 6a/006a4c30.asm: 0x006a4c6e: PUSH 0x0 ; 0x006a4c84: CALL 0x00633620	GS-3	2026-10-25
+0x0071932a	callsite	FUN_007190e0 -> FUN_00735440, gender = 0 or 0xFF by parity of EAX (EAX source unresolved); clamped to 0 in 0x71df90	probable	static asm 71/007190e0.asm: 0x00719314: DEC EAX ; 0x00719318: INC EAX ; 0x00719319: PUSH EAX ; 0x0071932a: CALL 0x00735440	GS-3	2026-10-25
+0x0076b1e0	callsite	FUN_0076aed0 -> FUN_00735440, gender PUSH 0 (constant 0)	confirmed	static asm 76/0076aed0.asm: 0x0076b1d2: PUSH 0x0 ; 0x0076b1e0: CALL 0x00735440	GS-3	2026-10-25
+0x0076b218	callsite	FUN_0076aed0 -> FUN_00735440, gender PUSH 0 (constant 0)	confirmed	static asm 76/0076aed0.asm: 0x0076b20a: PUSH 0x0 ; 0x0076b218: CALL 0x00735440	GS-3	2026-10-25
+0x0076b25e	callsite	FUN_0076aed0 -> FUN_00735440, gender PUSH 0 (constant 0)	confirmed	static asm 76/0076aed0.asm: 0x0076b247: PUSH 0x0 ; 0x0076b25e: CALL 0x00735440	GS-3	2026-10-25
+0x0082ba8a	callsite	FUN_0082b990 -> FUN_00735440, gender PUSH 0 (constant 0)	confirmed	static asm 82/0082b990.asm: 0x0082ba72: PUSH 0x0 ; 0x0082ba8a: CALL 0x00735440	GS-3	2026-10-25
+0x0082baf1	callsite	FUN_0082b990 -> FUN_00735440, gender PUSH 0 (constant 0)	confirmed	static asm 82/0082b990.asm: 0x0082bad9: PUSH 0x0 ; 0x0082baf1: CALL 0x00735440	GS-3	2026-10-25
+0x0082c4fa	callsite	FUN_0082c280 -> FUN_00735440, gender PUSH 0 (constant 0)	confirmed	static asm 82/0082c280.asm: 0x0082c4e2: PUSH 0x0 ; 0x0082c4fa: CALL 0x00735440	GS-3	2026-10-25
+0x0082c585	callsite	FUN_0082c280 -> FUN_00735440, gender PUSH 0 (constant 0)	confirmed	static asm 82/0082c280.asm: 0x0082c56d: PUSH 0x0 ; 0x0082c585: CALL 0x00735440	GS-3	2026-10-25
+0x00658810	callsite	FUN_00656af0 -> FUN_00735440, gender PUSH 0 (constant 0)	confirmed	static asm 65/00656af0.asm: 0x006587ff: PUSH 0x0 ; 0x00658810: CALL 0x00735440	GS-3	2026-10-25
+0x00658870	callsite	FUN_00656af0 -> FUN_00735440, gender PUSH 0 (constant 0)	confirmed	static asm 65/00656af0.asm: 0x0065885f: PUSH 0x0 ; 0x00658870: CALL 0x00735440	GS-3	2026-10-25
+0x0072915f	callsite	FUN_00728630 -> FUN_00735440, gender PUSH 0 (constant 0)	confirmed	static asm 72/00728630.asm: 0x0072914c: PUSH 0x0 ; 0x0072915f: CALL 0x00735440	GS-3	2026-10-25
