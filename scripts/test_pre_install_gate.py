@@ -283,9 +283,10 @@ def scoped_runner(compat_plan=None, listing="", compat_rc=0, list_rc=0, run_rc=0
 
 
 PLAN = [{"kind": "build", "id": "build_check:x_src"}, {"kind": "test", "id": "cpp:x_test"},
-        {"kind": "static", "id": "suite:check-raw-addresses"}, {"kind": "test", "id": "cpp:gone_test"}]
-LISTING = "\n".join(["cpp:x_test  [cpp]", "cpp:other_test  [cpp]", "suite:check-raw-addresses  [suite]",
-                     "suite:check-hook-bytes  [suite]  SKIP (x)", "suite:check-exports  [suite]", "py:a.py  [py]"])
+        {"kind": "static", "id": "suite:check-raw-addresses"}]
+LISTING = "\n".join(["cpp:x_test  [cpp]", "cpp:other_test  [cpp]", "py:a.py  [py]"]
+                    + [f"{sid}  [suite]" + ("  SKIP (x)" if sid.endswith("hook-bytes") else "") for sid in g.GLOBAL_SUITES])
+N_SCOPED = 1 + len(g.GLOBAL_SUITES)   # cpp:x_test + the globals (check-raw-addresses is one of them)
 
 
 class ScopedStep1(unittest.TestCase):
@@ -309,8 +310,9 @@ class ScopedStep1(unittest.TestCase):
         out = self.run_step(runner)
         ids = (self.scratch / "step1_ids.txt").read_text().split()
         # non-build plan ids + GLOBAL_SUITES, only those run_tests --list knows, no dups, no build entry
-        self.assertEqual(ids, ["cpp:x_test", "suite:check-raw-addresses", "suite:check-hook-bytes", "suite:check-exports"])
-        self.assertIn("== step 1/4: run_tests.py (scoped: 4 items; --full-default for all)", out)
+        self.assertEqual(ids, ["cpp:x_test", "suite:check-raw-addresses"]
+                         + [x for x in g.GLOBAL_SUITES if x != "suite:check-raw-addresses"])
+        self.assertIn(f"== step 1/4: run_tests.py (scoped: {N_SCOPED} items; --full-default for all)", out)
         compat = calls[0]
         self.assertEqual(compat[compat.index("--json") + 1], str(self.scratch / "compat.json"))
         self.assertIn("patch_manager_mods/x_src/A.h", compat)
@@ -384,7 +386,8 @@ class ScratchAndRecords(unittest.TestCase):
             rc, dll, scratch = self.gate_with_mocks(td)
             self.assertEqual(rc, 0)
             rec = json.loads((Path(td) / "rec" / "perf-lab.json").read_text())
-            self.assertEqual(set(rec), {"mod_id", "md5", "dll", "head", "time", "scratch", "dirty"})
+            self.assertEqual(set(rec), {"mod_id", "md5", "dll", "head", "time", "scratch", "dirty", "step1"})
+            self.assertEqual(rec["step1"], "skipped")
             self.assertIs(rec["dirty"], False if not g.mod_dirty("perf_lab_src/perflab") else True)
             self.assertEqual(rec["mod_id"], "perf-lab")
             self.assertEqual(rec["md5"], g.md5(dll))
@@ -452,10 +455,54 @@ class RealGitScope(unittest.TestCase):
         self.assertIn("INFO  step 1 also scopes 1 dirty shared file(s): patch_manager_mods/_shared_src/Shared.h",
                       buf.getvalue())
 
+    def test_include_closure_follows_nested_shared_includes(self):
+        (self.repo / "patch_manager_mods/a_src/sub/x.cpp").write_text('#include "Shared.h"\n#include <vector>\n')
+        (self.repo / "patch_manager_mods/_shared_src/Shared.h").write_text('#include "Deep.h"\n')
+        (self.repo / "patch_manager_mods/_shared_src/Deep.h").write_text("// deep\n")
+        (self.repo / "patch_manager_mods/_shared_src/Unrelated.h").write_text("// no\n")
+        got = g.include_closure(["patch_manager_mods/a_src/sub/x.cpp"], self.repo)
+        self.assertEqual(got, ["patch_manager_mods/_shared_src/Deep.h", "patch_manager_mods/_shared_src/Shared.h"])
+
+    def test_vcs_failure_means_fallback(self):
+        with tempfile.TemporaryDirectory() as nogit:
+            self.assertIsNone(g._git(Path(nogit), "status"))
+        with mock.patch.object(g, "_git", return_value=None):
+            self.assertIsNone(g.mod_source_files(["a_src"], self.repo))
+            self.assertIsNone(g.dirty_scope_files(set(), self.repo))
+            buf = io.StringIO()
+            with redirect_stdout(buf):
+                self.assertIsNone(g.scoped_ids(["a_src"], Path(self.td.name) / "scr", scoped_runner(PLAN, LISTING)[0],
+                                               self.repo))
+            self.assertIn("git ls-files failed", buf.getvalue())
+        real = g._git
+        with mock.patch.object(g, "_git", side_effect=lambda r, *a: None if a[0] == "status" else real(r, *a)):
+            buf = io.StringIO()
+            with redirect_stdout(buf):
+                self.assertIsNone(g.scoped_ids(["a_src"], Path(self.td.name) / "scr", scoped_runner(PLAN, LISTING)[0],
+                                               self.repo))
+            self.assertIn("git status failed", buf.getvalue())
+
+    def test_closure_headers_go_to_compat_check(self):
+        (self.repo / "patch_manager_mods/a_src/sub/x.cpp").write_text('#include "Shared.h"\n')
+        runner, calls = scoped_runner(PLAN, LISTING)
+        with redirect_stdout(io.StringIO()):
+            g.scoped_ids(["a_src/sub"], Path(self.td.name) / "scr", runner, self.repo)
+        self.assertIn("patch_manager_mods/_shared_src/Shared.h", calls[0])
+
     def test_mod_dirty(self):
         self.assertFalse(g.mod_dirty("a_src", self.repo))
         (self.repo / "patch_manager_mods/a_src/test_a.py").write_text("// y\n")
         self.assertTrue(g.mod_dirty("a_src", self.repo))
+
+
+class RealTree(unittest.TestCase):
+    def test_queue_hud_selects_actqueue_test(self):   # QueueHud.cpp includes the committed _shared_src/ActQueue.h
+        if not (g.REPO / "patch_manager_mods" / "queue_hud_src").is_dir():
+            self.skipTest("no queue_hud_src")
+        with tempfile.TemporaryDirectory() as td, redirect_stdout(io.StringIO()):
+            ids = g.scoped_ids(["queue_hud_src"], Path(td), g.run)
+        self.assertIsNotNone(ids, "scope fell back to the full tier")
+        self.assertIn("cpp:actqueue_test", ids)
 
 
 class ScopedGate(unittest.TestCase):
@@ -491,7 +538,8 @@ class ScopedGate(unittest.TestCase):
         runner, calls = scoped_runner(PLAN, LISTING)
         rc, out = self.gate(runner)
         self.assertEqual(rc, 0)
-        self.assertIn("scoped: 4 items", out)
+        self.assertIn(f"scoped: {N_SCOPED} items", out)
+        self.assertEqual(json.loads((self.rec / "perf-lab.json").read_text())["step1"], "scoped")
         self.assertIn("--ids-file", calls[-1])
         self.assertTrue((self.rec / "perf-lab.json").is_file())
         self.assertIsInstance(json.loads((self.rec / "perf-lab.json").read_text())["dirty"], bool)
@@ -504,21 +552,61 @@ class ScopedGate(unittest.TestCase):
         self.m["step_build"].assert_not_called()
 
     def test_gaps_fall_back_to_full_tier(self):
-        for key in ("gaps", "unclassified"):
+        for key, val in (("gaps", "perf_lab_src/perflab includes Common headers but owns no contract test"),
+                         ("unclassified", "some/file.h")):
             runner, calls = scoped_runner(PLAN + [], LISTING)
 
-            def with_gap(cmd, env=None, quiet=False, _r=runner, _k=key):
+            def with_gap(cmd, env=None, quiet=False, _r=runner, _k=key, _v=val):
                 rc, out = _r(cmd, env, quiet)
                 if str(g.COMPAT_CHECK) in cmd:
                     jp = Path(cmd[cmd.index("--json") + 1])
-                    jp.write_text(json.dumps({"plan": PLAN, _k: ["some/file.h"]}))
+                    jp.write_text(json.dumps({"plan": PLAN, _k: [_v]}))
                 return rc, out
             rc, out = self.gate(with_gap)
             self.assertEqual(rc, 0)
             self.assertIn("gap/unclassified", out)
-            self.assertIn("some/file.h", out)
+            self.assertIn(val, out)
             self.assertIn("full default tier", out)
             self.assertNotIn("--ids-file", calls[-1])
+            self.assertEqual(json.loads((self.rec / "perf-lab.json").read_text())["step1"], "full")
+
+    def test_gap_of_other_mod_is_info_only(self):
+        runner, calls = scoped_runner(PLAN, LISTING)
+
+        def with_gap(cmd, env=None, quiet=False):
+            rc, out = runner(cmd, env, quiet)
+            if str(g.COMPAT_CHECK) in cmd:
+                Path(cmd[cmd.index("--json") + 1]).write_text(
+                    json.dumps({"plan": PLAN, "gaps": ["other_src includes Common headers but owns no x"]}))
+            return rc, out
+        rc, out = self.gate(with_gap)
+        self.assertEqual(rc, 0)
+        self.assertIn("INFO  step 1: gap of another mod in the plan (not gated here): other_src", out)
+        self.assertIn("--ids-file", calls[-1])
+
+    def test_skip_default_record(self):
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            rc = g.gate(["perf_lab_src/perflab"], skip_default=True, scratch=self.scratch, records_dir=self.rec)
+        self.assertEqual(rc, 0)
+        self.assertEqual(json.loads((self.rec / "perf-lab.json").read_text())["step1"], "skipped")
+
+    def test_unexpected_exception_drops_records_and_reraises(self):
+        self.rec.mkdir()
+        (self.rec / "perf-lab.json").write_text("{}")
+        self.m["step_build"].side_effect = FileNotFoundError("boom")
+        with self.assertRaises(FileNotFoundError), redirect_stdout(io.StringIO()):
+            g.gate(["perf_lab_src/perflab"], skip_default=True, scratch=self.scratch, records_dir=self.rec)
+        self.assertFalse((self.rec / "perf-lab.json").exists())
+
+    def test_bad_arg_on_later_mod_drops_earlier_mods_record(self):
+        self.rec.mkdir()
+        (self.rec / "perf-lab.json").write_text("{}")
+        with redirect_stdout(io.StringIO()):
+            rc = g.gate(["perf_lab_src/perflab", "no_such_src"], skip_default=True, scratch=self.scratch,
+                        records_dir=self.rec)
+        self.assertEqual(rc, 1)
+        self.assertFalse((self.rec / "perf-lab.json").exists())
 
     def test_unclassified_own_mod_files_do_not_fall_back(self):   # e.g. perf_lab_src/README.md for a nested mod
         runner, calls = scoped_runner(PLAN, LISTING)
@@ -544,12 +632,28 @@ class ScopedGate(unittest.TestCase):
         self.assertTrue((self.rec / "other.json").exists())
 
     def test_dropped_ids_warn_and_other_builds_info(self):
-        plan = PLAN + [{"kind": "build", "id": "build_check:perf_lab_src/perflab"}, {"kind": "build", "id": "build_check:y_src"},
-                       {"kind": "test", "id": "cpp:ghost_test"}]
-        rc, out = self.gate(scoped_runner(plan[:0] + [e for e in plan if e["id"] != "build_check:x_src"], LISTING)[0])
-        self.assertIn("WARN  step 1: cpp:ghost_test is not in run_tests.py --list", out)
-        self.assertIn("WARN  step 1: suite:check-gui-ids is not in run_tests.py --list", out)
+        plan = [{"kind": "build", "id": "build_check:perf_lab_src/perflab"}, {"kind": "build", "id": "build_check:y_src"},
+                {"kind": "test", "id": "cpp:x_test"}]
+        rc, out = self.gate(scoped_runner(plan, LISTING)[0])
         self.assertIn("INFO  step 1: 1 other mod(s) planned for build, not built by this gate: y_src", out)
+        self.assertIn(f"scoped: {N_SCOPED} items", out)
+
+    def test_dropped_plan_id_falls_back_but_research_id_is_info(self):
+        ghost = [{"kind": "test", "id": "cpp:ghost_test", "why": ["patch_manager_mods/x_src/A.h"]}]
+        rc, out = self.gate(scoped_runner(PLAN + ghost, LISTING)[0])
+        self.assertIn("WARN  step 1: planned item(s) not in run_tests.py --list: cpp:ghost_test", out)
+        self.assertIn("falling back to the full default tier", out)
+        research = [{"kind": "test", "id": "cpp:apply_test",
+                     "why": ["patch_manager_mods/x_src/research/parity/apply_test.cpp"]}]
+        rc, out = self.gate(scoped_runner(PLAN + research, LISTING)[0])
+        self.assertIn("INFO  step 1: research item cpp:apply_test is not in the default tier", out)
+        self.assertIn(f"scoped: {N_SCOPED} items", out)
+
+    def test_missing_global_suite_falls_back(self):
+        listing = "\n".join(l for l in LISTING.splitlines() if not l.startswith("suite:check-subclassers"))
+        rc, out = self.gate(scoped_runner(PLAN, listing)[0])
+        self.assertIn("global suite(s) not in run_tests.py --list: suite:check-subclassers", out)
+        self.assertIn("falling back to the full default tier", out)
 
 
 if __name__ == "__main__":
