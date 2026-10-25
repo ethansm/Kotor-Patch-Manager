@@ -200,3 +200,4 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [ ] | 184 | WI-152 | P3 | hold | S | - | ISF UX: caption hint for the hidden re-click-All cycle gesture | 0 | 3 | New/Usable/Upgradeable are reachable only by re-clicking the active Al |
 | [ ] | 185 | WI-153 | P3 | hold | S | - | ISF UX: controller access to Usable/Upgradeable filters | 0 | 2 | bumpers go through engine SetNextFilter, so controller players never r |
 | [ ] | 186 | WI-154 | P3 | hold | S | - | ISF UX: player-facing category group order + sort_order INI key | 0 | 3 | groups follow baseitems.2da row id, which is arbitrary to players |
+| [ ] | 187 | WI-155 | P3 | hold | S | - | ISF UX: mod-config row for sort order (doc 45) | 0 | 1 | sort order is a real taste setting; INI-only today |
