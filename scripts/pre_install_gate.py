@@ -297,7 +297,8 @@ def scoped_ids(mods, scratch: Path, runner=run, repo: Path = REPO):
         except (ValueError, IndexError):
             pass
     other_builds = [e["id"].split(":", 1)[-1] for e in plan
-                    if e.get("kind") == "build" and e.get("id") and e["id"].split(":", 1)[-1] not in tops]
+                    if e.get("kind") == "build" and e.get("id")
+                    and e["id"].split(":", 1)[-1].split("/")[0] not in tops]
     if other_builds:
         print(f"INFO  step 1: {len(other_builds)} other mod(s) planned for build, not built by this gate: "
               f"{', '.join(other_builds[:5])}")

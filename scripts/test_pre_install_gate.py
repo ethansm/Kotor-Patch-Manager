@@ -544,7 +544,7 @@ class ScopedGate(unittest.TestCase):
         self.assertTrue((self.rec / "other.json").exists())
 
     def test_dropped_ids_warn_and_other_builds_info(self):
-        plan = PLAN + [{"kind": "build", "id": "build_check:perf_lab_src"}, {"kind": "build", "id": "build_check:y_src"},
+        plan = PLAN + [{"kind": "build", "id": "build_check:perf_lab_src/perflab"}, {"kind": "build", "id": "build_check:y_src"},
                        {"kind": "test", "id": "cpp:ghost_test"}]
         rc, out = self.gate(scoped_runner(plan[:0] + [e for e in plan if e["id"] != "build_check:x_src"], LISTING)[0])
         self.assertIn("WARN  step 1: cpp:ghost_test is not in run_tests.py --list", out)
