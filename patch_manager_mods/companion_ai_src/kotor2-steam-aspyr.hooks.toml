@@ -1,7 +1,7 @@
 [metadata]
 target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"]
 
-# companion-ai 0.2.1-probe. Windows validated by patch_manager_mods/mods678_research/check_windows.py (against the live
+# companion-ai 0.3.0-probe. Windows validated by patch_manager_mods/mods678_research/check_windows.py (against the live
 # hooks, ranged-ai, the inventory windows and each other; both executables byte-identical).
 # Designs: patch_manager_mods/mods678_research/ai_review_2026-10-01/designs/design_ai_trace.md, design_ai_engine_fixes.md.
 # Framework (KotorPatcher wrapper_x86.cpp): the stolen bytes run after the handler; for a consumed-exit hook EAX is
