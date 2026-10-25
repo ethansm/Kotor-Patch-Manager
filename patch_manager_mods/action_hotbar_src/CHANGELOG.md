@@ -2,7 +2,12 @@
 
 Action Hotbar (id `action-hotbar`), formerly Force Power Hotbar.
 
-## Unreleased (0.1.7-dev)
+## Unreleased (0.1.8-dev)
+
+- Loading a save or starting a new game no longer does file work inside the game's load callback; the next HUD frame applies it (save-events warned 7.5-7.9 ms per load, limit 5 ms). A save made before that frame applies the load first. (PS5)
+- The debug log no longer prints a slot line when only the reason changes on a widget that stays hidden (`hidden -> hidden (hud not active)`). (PS4)
+
+## 0.1.7-dev
 
 - Loading a save that has no hotbar copy keeps your current bar (WARN in the log) instead of emptying it. 0.1.6 emptied it, and a save whose copy was lost (the save event was missed) wiped the player's bar. Only a new game empties the bar. (PS1)
 - 3 s after writing a save's copy the hotbar checks it is still in the folder and writes it once more if the game removed it. (PS3)
