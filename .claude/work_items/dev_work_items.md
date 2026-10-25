@@ -187,3 +187,4 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [ ] | 171 | WI-139 | P2 | ready | L | WI-134 | Combat AI O2: party queue fills with single attack actions | 0 | 1 | User report; cause + queue-depth cap rule. |
 | [ ] | 172 | WI-140 | P3 | hold | L | WI-136 | Combat AI O3: group debuff targeting research (unaffected enemies in radius) | 0 | 1 | Needs a study, then owner decision. |
 | [ ] | 173 | WI-141 | P3 | hold | S | - | Party AI buff picker: tier-5 typo checks GetCreatureHasTalent(tBuff_06) | 0 | 0 | vanilla k_inc_generic.nss ~2624 tests tBuff_06 for the tBuff_05 branch |
+| [ ] | 174 | WI-142 | P3 | hold | S | - | Combat AI recast F5: party DetermineCombatRound at most once per engine round end (script) | 0 | 0 | CQ-QS1 fact 7: Kreia ran DCR 2-3x per round end (28/73), each run appe |
