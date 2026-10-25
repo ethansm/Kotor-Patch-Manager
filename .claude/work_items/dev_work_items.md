@@ -193,7 +193,7 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [x] | 177 | WI-145 | P3 | ready | S | - | ISF perf: time the whole buffer phase (name + equip calls) in the flush line | 0 | 1 | sort timing covers std::stable_sort only (14 us/86 rows); per-row GetS |
 | [x] | 178 | WI-146 | P3 | ready | S | WI-145 | ISF perf: read item names only for rows tied on new/usable/base, client language once per  | 0 | 3 | GetString (REA UNSURE, side effects) runs for every row; only tied row |
 | [x] | 179 | WI-147 | P3 | ready | S | WI-146 | ISF perf: re-read inventory_sort_filter.ini only when its mtime changes | 0 | 1 | 6 GetPrivateProfile calls each open the file, up to once a second from |
-| [ ] | 180 | WI-148 | P3 | ready | S | WI-147 | ISF: stale-buffer guard keyed on populate identity, not just loop index | 0 | 1 | aborted populate + first new idx > last idx re-emits stale item pointe |
+| [x] | 180 | WI-148 | P3 | ready | S | WI-147 | ISF: stale-buffer guard keyed on populate identity, not just loop index | 0 | 1 | aborted populate + first new idx > last idx re-emits stale item pointe |
 | [ ] | 181 | WI-149 | P3 | ready | S | WI-148 | ISF: GetString gender arg (REA callers) - pass the shown character's gender | 0 | 1 | readItemName passes gender 0; REA says GetString writes it into talk m |
 | [ ] | 182 | WI-150 | P3 | ready | S | WI-149 | ISF: bound the appended fallback log (rotate to .1 per session) | 0 | 1 | 0.2.1 dropped the truncate; log holds 69 launches, no .1, grows withou |
 | [ ] | 183 | WI-151 | P3 | ready | S | WI-150 | ISF UX: show the visible-row count in the filter caption (empty-filter state) | 0 | 3 | a filter with 0 matches shows a blank list with no feedback |

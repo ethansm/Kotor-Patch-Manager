@@ -212,6 +212,11 @@ isf::Entry g_buf[BufCap];
 int g_n = 0;
 bool g_inPop = false;
 int g_lastIdx = -1;
+// Populate identity (WI-148): the frame that owns the buffer, the engine row counter at populate start, and the counter
+// seen by the last buffered row. A populate that never reached SortFilterFlush can leave rows behind; these catch it.
+int g_popEbp = 0;
+int g_popCounter0 = 0;
+int g_lastCounter = 0;
 bool g_selSet = false;
 int g_selId = 0;
 int g_seen = 0, g_dropped = 0, g_direct = 0;
@@ -314,8 +319,9 @@ void startPopulate(int panel, int ebp) {
     normaliseState(panel);
     g_inPop = true; g_n = 0; g_lastIdx = -1; g_selSet = false; g_seen = g_dropped = g_direct = 0; g_nTinted = 0;
     g_bufTicks = g_nameTicks = 0;
+    g_popEbp = ebp; g_popCounter0 = rd<int>(ebp, F_Counter);
     if (g_cfg.log) logf("populate: panel=%08x mode=%d extra=%d creature=%08x ebp=%08x rows-so-far=%d", panel, filterMode(), g_extra,
-                        rd<int>(ebp, F_Creature), ebp, rd<int>(ebp, F_Counter));
+                        rd<int>(ebp, F_Creature), ebp, g_popCounter0);
 }
 
 } // namespace
@@ -327,7 +333,10 @@ extern "C" int __cdecl SortFilterTabClick(int panel, int ctrl) {
     int clicked = rd<int>(ctrl, TabClickedOff, -1);
     int mode = filterMode();
     if (g_cfg.log) logf("tab click: panel=%08x ctrl=%08x clicked=%d mode=%d extra=%d", panel, ctrl, clicked, mode, g_extra);
-    if (panel != g_panel) { g_panel = panel; g_extra = isf::X_None; strcpy(g_caption, "Filter"); }
+    if (panel != g_panel) {   // new panel instance: drop any rows still buffered for the old one (WI-148)
+        g_panel = panel; g_extra = isf::X_None; strcpy(g_caption, "Filter");
+        g_n = 0; g_inPop = false;
+    }
     if (g_cfg.cycle) {
         isf::State next;
         if (isf::onTabClick(clicked, mode, g_extra, g_cfg.mask, &next)) {
@@ -350,12 +359,19 @@ extern "C" void __cdecl SortFilterBufferRow(int ebp) {
     int panel = rd<int>(ebp, F_Panel), item = rd<int>(ebp, F_Item), cobj = rd<int>(ebp, F_Cobj);
     int creature = rd<int>(ebp, F_Creature);
     int idx = rd<int>(ebp, F_Loop, -1);
+    int counter = rd<int>(ebp, F_Counter);
     if (!panel || !item) { logf("buffer: bad frame panel=%08x item=%08x (row skipped)", panel, item); return; }
-    if (!g_inPop || idx <= g_lastIdx) {
-        if (g_inPop && g_n) logf("buffer: stale buffer of %d rows discarded (loop index %d <= %d)", g_n, idx, g_lastIdx);
+    // A new populate starts when the loop index does not advance, the row counter went backwards (new list), or the frame moved.
+    if (!g_inPop || idx <= g_lastIdx || counter < g_lastCounter || ebp != g_popEbp) {
+        if (g_inPop && g_n) {
+            const char* reason = idx <= g_lastIdx ? "idx" : counter < g_lastCounter ? "counter" : "ebp";
+            logf("buffer: stale buffer of %d rows discarded (reason=%s loop index %d last %d counter %d last %d ebp %08x was %08x)",
+                 g_n, reason, idx, g_lastIdx, counter, g_lastCounter, ebp, g_popEbp);
+        }
         startPopulate(panel, ebp);
     }
     g_lastIdx = idx;
+    g_lastCounter = counter;
     ++g_seen;
     int id = rd<int>(item, ItemIdOff);
 
