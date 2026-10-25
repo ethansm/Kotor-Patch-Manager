@@ -24,10 +24,12 @@ Steps (stop at the first failure; exit 1 on FAIL, 0 on PASS):
               stage_and_verify_install.py verify compares)
 
 On PASS one JSON record per mod is written (atomically) to $TMPDIR/kotor-tests/gate-records/<mod id>.json with
-{mod_id, md5, dll, head, time, scratch}; kpm_hotswap.py reads it.
+{mod_id, md5, dll, head, time, scratch, dirty}; kpm_hotswap.py reads it. A GATE FAIL deletes the
+mods' old records.
 
 Read-only towards $KPM_DIR and the game dir: everything is written under $TMPDIR/kotor-tests/gate-<pid>-<epoch>/ (a
-fresh dir per run, so concurrent gates never clobber each other; asserted; old ones are pruned by age elsewhere).
+fresh dir per run, so concurrent gates never clobber each other; asserted;
+scripts/prune_test_cache.py prunes old gate-<pid>-<epoch> dirs).
 """
 import argparse
 import datetime
@@ -99,18 +101,31 @@ def default_scratch() -> Path:
     return TMP_BASE / f"gate-{os.getpid()}-{int(time.time())}"
 
 
-def write_gate_record(mod_id: str, dll: Path, scratch: Path, records_dir: Path | None = None) -> Path:
-    """Atomically write the PASS record kpm_hotswap.py reads: {mod_id, md5, dll, head, time, scratch}."""
+def write_gate_record(mod_id: str, dll: Path, scratch: Path, records_dir: Path | None = None,
+                      dirty: bool = False) -> Path:
+    """Atomically write the PASS record kpm_hotswap.py reads: {mod_id, md5, dll, head, time, scratch, dirty}."""
     d = records_dir or TMP_BASE / "gate-records"
     d.mkdir(parents=True, exist_ok=True)
     rec = {"mod_id": mod_id, "md5": md5(dll), "dll": str(dll), "head": git_head(),
            "time": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-           "scratch": str(scratch)}
+           "scratch": str(scratch), "dirty": bool(dirty)}
     dest = d / f"{mod_id}.json"
     tmp = d / f".{mod_id}.json.{os.getpid()}.tmp"
-    tmp.write_text(json.dumps(rec, indent=2) + "\n")
-    os.replace(tmp, dest)
+    try:
+        tmp.write_text(json.dumps(rec, indent=2) + "\n")
+        os.replace(tmp, dest)
+    except OSError:
+        tmp.unlink(missing_ok=True)
+        raise
     return dest
+
+
+def drop_gate_records(mod_ids, records_dir: Path | None = None):
+    """A failed gate must not leave an older PASS record behind."""
+    d = records_dir or TMP_BASE / "gate-records"
+    for mid in mod_ids:
+        if mid:
+            (d / f"{mid}.json").unlink(missing_ok=True)
 
 
 def mod_dir(mod: str, repo: Path = REPO) -> Path:
@@ -181,39 +196,107 @@ def run(cmd, env=None, quiet=False) -> tuple:
 
 # ---------------------------------------------------------------- steps
 
+def _git(repo: Path, *args) -> str:
+    p = subprocess.run(["git", "-C", str(repo), *args], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+    return p.stdout.decode("utf-8", "replace")
+
+
 def mod_source_files(mods, repo: Path = REPO) -> list:
-    """Repo-relative tracked files under the gated mods' source dirs (git ls-files)."""
-    files = []
+    """Repo-relative tracked + untracked (not ignored) files under each gated mod's dir AND under its top-level
+    patch_manager_mods/<x>_src dir (a nested --mod such as perf_lab_src/perflab has sibling py tests one level up)."""
+    files, root = [], Path(repo).resolve()
     for m in mods:
         d = mod_dir(m, repo)
         try:
-            rel = d.relative_to(Path(repo).resolve())
+            rel = d.relative_to(root)
         except ValueError:
             continue
-        p = subprocess.run(["git", "-C", str(repo), "ls-files", "-z", "--", str(rel)],
-                           stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
-        files += [f for f in p.stdout.decode("utf-8", "replace").split("\0") if f and f not in files]
+        dirs = [rel]
+        pm = root / "patch_manager_mods"
+        parts = d.relative_to(pm).parts if d.is_relative_to(pm) else ()
+        if len(parts) > 1:
+            dirs.append(Path("patch_manager_mods") / parts[0])
+        for dd in dirs:
+            out = _git(repo, "ls-files", "-co", "--exclude-standard", "-z", "--", str(dd))
+            files += [f for f in out.split("\0") if f and f not in files]
     return files
+
+
+DIRTY_SUFFIXES = {".h", ".hpp", ".inc", ".cpp", ".py", ".toml"}
+
+
+def dirty_scope_files(exclude, repo: Path = REPO) -> list:
+    """Dirty/untracked paths (git status --porcelain -uall) under patch_manager_mods/**, tests/include/** that can
+    change a build or test and are not already in `exclude`. They go to compat_check too: a shared header edit
+    must select the tests of its includers."""
+    out = _git(repo, "status", "--porcelain", "-uall", "-z").split("\0")
+    paths, i = [], 0
+    while i < len(out):
+        e = out[i]
+        i += 1
+        if len(e) < 4:
+            continue
+        xy, path = e[:2], e[3:]
+        paths.append(path)
+        if "R" in xy or "C" in xy:   # the next entry is the original path
+            if i < len(out) and out[i]:
+                paths.append(out[i])
+            i += 1
+    res = []
+    for f in paths:
+        if f in exclude or f in res or Path(f).suffix not in DIRTY_SUFFIXES:
+            continue
+        if f.startswith("patch_manager_mods/") or f.startswith("tests/include/"):
+            res.append(f)
+    return res
+
+
+def mod_dirty(mod: str, repo: Path = REPO) -> bool:
+    try:
+        rel = mod_dir(mod, repo).relative_to(Path(repo).resolve())
+    except ValueError:
+        return False
+    return bool(_git(repo, "status", "--porcelain", "--", str(rel)).strip())
 
 
 def scoped_ids(mods, scratch: Path, runner=run, repo: Path = REPO):
     """Item ids for the scoped step 1, or None when the scope cannot be computed (caller falls back to the full tier)."""
     files = mod_source_files(mods, repo)
     if not files:
-        print("WARN  step 1: no tracked source files found for the gated mods")
+        print("WARN  step 1: no source files found for the gated mods")
         return None
+    dirty = dirty_scope_files(set(files), repo)
+    if dirty:
+        print(f"INFO  step 1 also scopes {len(dirty)} dirty shared file(s): {', '.join(dirty[:5])}"
+              + (", ..." if len(dirty) > 5 else ""))
     scratch.mkdir(parents=True, exist_ok=True)
     cj = scratch / "compat.json"
     cj.unlink(missing_ok=True)
-    rc, out = runner([PY, str(COMPAT_CHECK), *files, "--list", "--json", str(cj)], quiet=True)
+    rc, out = runner([PY, str(COMPAT_CHECK), *files, *dirty, "--list", "--json", str(cj)], quiet=True)
     try:
-        plan = json.loads(cj.read_text())["plan"]
+        data = json.loads(cj.read_text())
+        plan = data["plan"]
     except (OSError, ValueError, KeyError, TypeError):
         print(f"WARN  step 1: compat_check.py gave no usable plan (rc={rc})")
         return None
     if rc != 0:
         print(f"WARN  step 1: compat_check.py rc={rc}")
         return None
+    bad = [f"gap: {g}" for g in data.get("gaps") or []] + [f"unclassified: {u}" for u in data.get("unclassified") or []]
+    if bad:
+        print(f"WARN  step 1: compat_check.py reports {len(bad)} gap/unclassified item(s): {'; '.join(bad[:5])}")
+        return None
+    tops = set()
+    for m in mods:
+        try:
+            tops.add(mod_dir(m, repo).relative_to((Path(repo) / "patch_manager_mods").resolve()).parts[0])
+        except (ValueError, IndexError):
+            pass
+    other_builds = [e["id"].split(":", 1)[-1] for e in plan
+                    if e.get("kind") == "build" and e.get("id") and e["id"].split(":", 1)[-1] not in tops]
+    if other_builds:
+        print(f"INFO  step 1: {len(other_builds)} other mod(s) planned for build, not built by this gate: "
+              f"{', '.join(other_builds[:5])}")
     wanted = [e["id"] for e in plan if e.get("kind") != "build" and e.get("id")]
     rc, out = runner([PY, str(RUN_TESTS), "--list"], quiet=True)
     if rc != 0:
@@ -222,7 +305,9 @@ def scoped_ids(mods, scratch: Path, runner=run, repo: Path = REPO):
     known = {l.split()[0] for l in out.splitlines() if l.strip()}
     ids = []
     for i in wanted + GLOBAL_SUITES:
-        if i in known and i not in ids:
+        if i not in known:
+            print(f"WARN  step 1: {i} is not in run_tests.py --list; dropped from the scoped set")
+        elif i not in ids:
             ids.append(i)
     return ids or None
 
@@ -400,6 +485,7 @@ def gate(mods, skip_default=False, scratch=None, runner=run, full_default=False,
         skipped = step_wine(all_rows, scratch, runner)
     except GateFail as e:
         print(str(e), flush=True)
+        drop_gate_records(ids.values(), records_dir)
         if ml:
             ml.log_event("BUILD_GATE", {
                 "verdict": "FAIL",
@@ -414,7 +500,7 @@ def gate(mods, skip_default=False, scratch=None, runner=run, full_default=False,
         print(f"  md5 {md5(dlls[m])}  {ids[m]}  {dlls[m]}")
     for m in mods:
         try:
-            write_gate_record(ids[m], dlls[m], scratch, records_dir)
+            write_gate_record(ids[m], dlls[m], scratch, records_dir, mod_dirty(m))
         except OSError as e:
             print(f"WARN  could not write the gate record for {ids[m]}: {e}")
     if ml:

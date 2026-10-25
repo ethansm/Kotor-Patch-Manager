@@ -292,9 +292,10 @@ class ScopedStep1(unittest.TestCase):
     def setUp(self):
         self.td = tempfile.TemporaryDirectory()
         self.scratch = Path(self.td.name) / "s"
-        p = mock.patch.object(g, "mod_source_files", return_value=["patch_manager_mods/x_src/A.h"])
-        p.start()
-        self.addCleanup(p.stop)
+        for name, rv in (("mod_source_files", ["patch_manager_mods/x_src/A.h"]), ("dirty_scope_files", [])):
+            p = mock.patch.object(g, name, return_value=rv)
+            p.start()
+            self.addCleanup(p.stop)
         self.addCleanup(self.td.cleanup)
 
     def run_step(self, runner, full=False):
@@ -383,7 +384,8 @@ class ScratchAndRecords(unittest.TestCase):
             rc, dll, scratch = self.gate_with_mocks(td)
             self.assertEqual(rc, 0)
             rec = json.loads((Path(td) / "rec" / "perf-lab.json").read_text())
-            self.assertEqual(set(rec), {"mod_id", "md5", "dll", "head", "time", "scratch"})
+            self.assertEqual(set(rec), {"mod_id", "md5", "dll", "head", "time", "scratch", "dirty"})
+            self.assertIs(rec["dirty"], False if not g.mod_dirty("perf_lab_src/perflab") else True)
             self.assertEqual(rec["mod_id"], "perf-lab")
             self.assertEqual(rec["md5"], g.md5(dll))
             self.assertEqual((rec["dll"], rec["scratch"]), (str(dll), str(scratch.resolve())))
@@ -396,6 +398,145 @@ class ScratchAndRecords(unittest.TestCase):
             rc, _, _ = self.gate_with_mocks(td, fail=True)
             self.assertEqual(rc, 1)
             self.assertFalse((Path(td) / "rec").exists())
+
+
+def git(repo, *args):
+    import subprocess
+    subprocess.run(["git", "-C", str(repo), *args], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
+class RealGitScope(unittest.TestCase):
+    """mod_source_files / dirty_scope_files / scoped_ids against a throwaway git repo."""
+
+    def setUp(self):
+        self.td = tempfile.TemporaryDirectory()
+        self.addCleanup(self.td.cleanup)
+        self.repo = Path(self.td.name).resolve()
+        git(self.repo, "init", "-q")
+        for rel in ("patch_manager_mods/a_src/test_a.py", "patch_manager_mods/a_src/sub/x.cpp",
+                    "patch_manager_mods/_shared_src/Shared.h", "patch_manager_mods/b_src/B.cpp",
+                    "tests/include/T.h", "README.md"):
+            f = self.repo / rel
+            f.parent.mkdir(parents=True, exist_ok=True)
+            f.write_text("// x\n")
+        git(self.repo, "add", "-A")
+        git(self.repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", "base")
+
+    def test_nested_mod_includes_parent_and_untracked(self):
+        (self.repo / "patch_manager_mods/a_src/sub/new.h").write_text("// new\n")
+        files = g.mod_source_files(["a_src/sub"], self.repo)
+        self.assertEqual(set(files), {"patch_manager_mods/a_src/test_a.py", "patch_manager_mods/a_src/sub/x.cpp",
+                                      "patch_manager_mods/a_src/sub/new.h"})
+        self.assertEqual(g.mod_source_files(["b_src"], self.repo), ["patch_manager_mods/b_src/B.cpp"])
+
+    def test_dirty_scope_files(self):
+        (self.repo / "patch_manager_mods/_shared_src/Shared.h").write_text("// changed\n")   # staged + modified
+        (self.repo / "patch_manager_mods/_shared_src/New.inc").write_text("// new\n")      # untracked
+        (self.repo / "patch_manager_mods/b_src/notes.txt").write_text("n\n")               # wrong suffix
+        (self.repo / "tests/include/T.h").write_text("// changed\n")
+        (self.repo / "README.md").write_text("changed\n")                                  # outside scope
+        (self.repo / "patch_manager_mods/a_src/sub/x.cpp").write_text("// changed\n")      # already in the mod list
+        got = g.dirty_scope_files({"patch_manager_mods/a_src/sub/x.cpp"}, self.repo)
+        self.assertEqual(sorted(got), ["patch_manager_mods/_shared_src/New.inc", "patch_manager_mods/_shared_src/Shared.h",
+                                       "tests/include/T.h"])
+
+    def test_scoped_ids_passes_parent_and_dirty_files_to_compat(self):
+        (self.repo / "patch_manager_mods/_shared_src/Shared.h").write_text("// changed\n")
+        runner, calls = scoped_runner(PLAN, LISTING)
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            g.scoped_ids(["a_src/sub"], Path(self.td.name) / "scr", runner, self.repo)
+        compat = calls[0]
+        self.assertIn("patch_manager_mods/a_src/test_a.py", compat)
+        self.assertIn("patch_manager_mods/_shared_src/Shared.h", compat)
+        self.assertIn("INFO  step 1 also scopes 1 dirty shared file(s): patch_manager_mods/_shared_src/Shared.h",
+                      buf.getvalue())
+
+    def test_mod_dirty(self):
+        self.assertFalse(g.mod_dirty("a_src", self.repo))
+        (self.repo / "patch_manager_mods/a_src/test_a.py").write_text("// y\n")
+        self.assertTrue(g.mod_dirty("a_src", self.repo))
+
+
+class ScopedGate(unittest.TestCase):
+    """gate() on the default (scoped) path, later steps mocked."""
+
+    def setUp(self):
+        self.td = tempfile.TemporaryDirectory()
+        self.addCleanup(self.td.cleanup)
+        self.root = Path(self.td.name)
+        self.rec = self.root / "rec"
+        self.dll = self.root / "fresh.dll"
+        self.dll.write_bytes(b"FRESH")
+        self.scratch = g.TMP_BASE / "gate-unittest-scoped"
+        self.patches = {
+            "mod_source_files": mock.patch.object(g, "mod_source_files", return_value=["patch_manager_mods/x_src/A.h"]),
+            "dirty_scope_files": mock.patch.object(g, "dirty_scope_files", return_value=[]),
+            "step_build": mock.patch.object(g, "step_build", return_value={"perf_lab_src/perflab": self.dll}),
+            "step_scratch": mock.patch.object(g, "step_scratch", return_value={"perf-lab": []}),
+            "step_exports": mock.patch.object(g, "step_exports"),
+            "step_wine": mock.patch.object(g, "step_wine", return_value=[]),
+        }
+        self.m = {k: p.start() for k, p in self.patches.items()}
+        for p in self.patches.values():
+            self.addCleanup(p.stop)
+
+    def gate(self, runner):
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            rc = g.gate(["perf_lab_src/perflab"], scratch=self.scratch, runner=runner, records_dir=self.rec)
+        return rc, buf.getvalue()
+
+    def test_happy_path(self):
+        runner, calls = scoped_runner(PLAN, LISTING)
+        rc, out = self.gate(runner)
+        self.assertEqual(rc, 0)
+        self.assertIn("scoped: 4 items", out)
+        self.assertIn("--ids-file", calls[-1])
+        self.assertTrue((self.rec / "perf-lab.json").is_file())
+        self.assertIsInstance(json.loads((self.rec / "perf-lab.json").read_text())["dirty"], bool)
+
+    def test_run_tests_rc2_is_gate_fail_1(self):
+        runner, calls = scoped_runner(PLAN, LISTING, run_rc=2)
+        rc, out = self.gate(runner)
+        self.assertEqual(rc, 1)
+        self.assertIn("GATE FAIL 1 default: run_tests.py rc=2", out)
+        self.m["step_build"].assert_not_called()
+
+    def test_gaps_fall_back_to_full_tier(self):
+        for key in ("gaps", "unclassified"):
+            runner, calls = scoped_runner(PLAN + [], LISTING)
+
+            def with_gap(cmd, env=None, quiet=False, _r=runner, _k=key):
+                rc, out = _r(cmd, env, quiet)
+                if str(g.COMPAT_CHECK) in cmd:
+                    jp = Path(cmd[cmd.index("--json") + 1])
+                    jp.write_text(json.dumps({"plan": PLAN, _k: ["some/file.h"]}))
+                return rc, out
+            rc, out = self.gate(with_gap)
+            self.assertEqual(rc, 0)
+            self.assertIn("gap/unclassified", out)
+            self.assertIn("some/file.h", out)
+            self.assertIn("full default tier", out)
+            self.assertNotIn("--ids-file", calls[-1])
+
+    def test_record_removed_on_fail(self):
+        self.rec.mkdir()
+        (self.rec / "perf-lab.json").write_text("{}")
+        (self.rec / "other.json").write_text("{}")
+        self.m["step_build"].side_effect = g.GateFail(2, "build", "boom")
+        rc, out = self.gate(scoped_runner(PLAN, LISTING)[0])
+        self.assertEqual(rc, 1)
+        self.assertFalse((self.rec / "perf-lab.json").exists())
+        self.assertTrue((self.rec / "other.json").exists())
+
+    def test_dropped_ids_warn_and_other_builds_info(self):
+        plan = PLAN + [{"kind": "build", "id": "build_check:perf_lab_src"}, {"kind": "build", "id": "build_check:y_src"},
+                       {"kind": "test", "id": "cpp:ghost_test"}]
+        rc, out = self.gate(scoped_runner(plan[:0] + [e for e in plan if e["id"] != "build_check:x_src"], LISTING)[0])
+        self.assertIn("WARN  step 1: cpp:ghost_test is not in run_tests.py --list", out)
+        self.assertIn("WARN  step 1: suite:check-gui-ids is not in run_tests.py --list", out)
+        self.assertIn("INFO  step 1: 1 other mod(s) planned for build, not built by this gate: y_src", out)
 
 
 if __name__ == "__main__":
