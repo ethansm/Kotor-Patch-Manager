@@ -40,6 +40,31 @@ Tools (read the archived or live log; run with the repo venv for pykotor):
 5. Live `override/k_ai_master.ncs` md5 `b003ea41` = our party AI build (2026-10-01); none of its patches touch buff
    or debuff selection.
 
+## CQ-QS1 play data (2026-10-25 17:18 session, F2 NOT installed)
+
+Logs: `logs_archive/20261025_172733_cqqs1_kreia/`. Kreia = `a9b3480` (98/98 of her `Clear NNNN` trace lines match a
+CLR of that actor), Bao-Dur = `a9b1138`. Tools: `cmdq_idle_casts.py`, `cmdq_rn_backlog.py` (this folder).
+
+6. **The combat round's node list (QS `rn=`) is a FIFO cast backlog.** Each queue call (real=0) appends a spell node
+   (sub 9) at the tail; the build (real=1) takes the head. Example L168-184: at `rend` Kreia has `q=` (empty action
+   queue) but `rn=9:ffffffff,9:87`; she queues Speed Burst (`rn=9:87,9:8`); the next builds run `-1`, then Barrier.
+   Kreia had 1-3 pending spell nodes at 29 of 50 queue calls (cmd0 depth {0:21, 1:16, 2:8, 3:5}); the other caster
+   (`a9aa4d0`) 0 at all 9. A script `ClearAllActions` (CLR 0x66f392) on an actor with pending spell nodes left them in
+   place 28 of 36 times: **ClearAllActions does not clear the round's cast nodes.** This answers O1's "why stale".
+7. **Why only Kreia builds a backlog: her combat round script runs 2-3 times per round end.** 102 of her 108
+   DetermineCombatRound runs are event 2003 (OnEndRound, slot 6); 28 of her 73 engine round ends were followed by 2
+   runs, 3 by 3 runs, 20-40 ms apart; every run does `ClearAllActions` + a new cast (one more node). Engine site of the
+   runs (companion-ai `PR RS site=`): S6A EndCombatRound 20, S6B AIUpdate fallback 18, **64 from no probed site**
+   (most of the <100 ms pairs). Open: which caller (ExecuteScript router / wrapper) produces those 64.
+8. **The "pause" the user saw = invalid casts.** 17 of Kreia's 46 builds were id `-1` (vanilla `TalentSpell(-1)`, fact
+   3); one burst of 12 `-1` builds over 6.4 s at T=150.7 s. Her round ends after a `-1` come 1-3 ms apart (an invalid
+   cast ends its round at once), which re-runs the script: the -1 loop. F2a (no -1 cast) removes this.
+9. Recasts within duration this session: Speed Burst 2 (4.6 s, 6.0 s), Valor 1, Barrier 0 (was 4): fewer, but by
+   chance of the random buff tree (nothing behavioural was installed). S1 stale builds 11.
+10. O2 attack flood not reproduced: action queue length max 5 (enemies), 2 for party; Q1 0. Round attack nodes (sub 1)
+   reach 3-4 for Bao-Dur and enemies; the queue HUD may be showing those round nodes. Needs a screenshot or the HUD
+   row the user saw.
+
 ## Open questions
 
 - O1 (RE, the main one): why does the round expansion build an older cast? Candidates: the script's `ClearAllActions`
@@ -76,3 +101,11 @@ Tools (read the archived or live log; run with the repo venv for pykotor):
   script-side picks; the stale engine build (fact 2) still needs F1/F4.
 - F3 group debuffs: after O3.
 - F4 after O1: fix the stale-node root cause itself (clear the old cast node on script clear) if F0 confirms it.
+  CONFIRMED by facts 6-7: at a party member's queue call (real=0), drop that actor's pending spell nodes (sub 9) from
+  the round list before the new one is appended, so the newest script decision wins. Needs the round node list layout
+  (append/consume functions) from static RE (WI-135 step 2).
+- F5 (script, party): run DetermineCombatRound at most once per engine round end for a party member (local int stamp
+  of the round, skip a second run within the same round), which removes the backlog source of fact 7.
+- Scope: F2 (and F1/F4/F5) are party-wide (`IsObjectPartyMember`), not Kreia-only. F2 covers Default, Aggressive,
+  Defense, Ranged, Stationary (via `GN_RunDefaultAIRoutine`), Support/Jedi Support and Boss targeted; not covered:
+  grenades, area powers (`GN_RunBossAOEPowerRoutine`, O3).
