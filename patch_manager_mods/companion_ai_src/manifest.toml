@@ -1,7 +1,7 @@
 [patch]
 id = "companion-ai"
 name = "Companion AI (trace + engine fixes)"
-version = "0.2.1-probe"
+version = "0.3.0-probe"
 author = "local"
 description = "Party AI trace log (script debug prints, attack spin, fallback and perception points) and INI-gated engine AI fixes: Ranged/Stationary attack self-requeue, follow-queue bump, save FollowInfo reset, NULL spell row guard, hostile-action clear index, optional perception throttle and orientation lock. 0.2.0-probe adds log-only Phase-4 probes (13 hooks, INI probe_*)."
 
