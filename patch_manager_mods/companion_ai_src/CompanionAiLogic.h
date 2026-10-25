@@ -317,6 +317,117 @@ inline bool sameConfig(const Config& a, const Config& b) {
            a.probeGca == b.probeGca && a.probeParty == b.probeParty && a.probeA1x == b.probeA1x && a.probeLines == b.probeLines;
 }
 
+// ---------------------------------------------------------------- Mod Configuration page (ModConfigDecl.h, doc 46)
+// Options -> Mod Configuration -> Companion AI. Every row is a toggle bound to one [CompanionAI] key of companion_ai.ini; the page writes
+// the key, and the 1 s INI reload (loadIni) applies it live. Defaults = the Config defaults above (pinned by common_contract_test).
+constexpr const char* kModId = "companion-ai";
+constexpr const char* kPageSchema = R"TOML(
+[page]
+name = "Companion AI"
+title = "Companion AI"
+desc = "Engine AI fixes for your party. Changes apply within a second; Off = vanilla."
+
+[[row]]
+id = "cast_family_guard"
+kind = "toggle"
+label = "Skip Active Buffs"
+desc = "Companions skip a buff whose family is already on them. Your own casts are never skipped."
+default = 1
+ini = "companion_ai.ini"
+section = "CompanionAI"
+key = "cast_family_guard"
+
+[[row]]
+id = "cast_queue_newest"
+kind = "toggle"
+label = "Cast Newest Choice"
+desc = "A companion's new cast replaces its older queued casts, so it casts its latest choice."
+default = 1
+ini = "companion_ai.ini"
+section = "CompanionAI"
+key = "cast_queue_newest"
+
+[[row]]
+id = "a1"
+kind = "toggle"
+label = "Unstick Ranged Attacks"
+desc = "A Ranged/Stationary companion stops re-queueing an attack on an out-of-reach target."
+default = 1
+ini = "companion_ai.ini"
+section = "CompanionAI"
+key = "a1"
+
+[[row]]
+id = "a1_retarget"
+kind = "toggle"
+label = "Ranged Retarget"
+desc = "With Unstick Ranged Attacks: switch to the nearest visible enemy in weapon range."
+default = 1
+ini = "companion_ai.ini"
+section = "CompanionAI"
+key = "a1_retarget"
+
+[[row]]
+id = "fm1"
+kind = "toggle"
+label = "Keep Follow on Bump"
+desc = "Bumping a following companion no longer clears its queue; it steps aside and follows."
+default = 1
+ini = "companion_ai.ini"
+section = "CompanionAI"
+key = "fm1"
+
+[[row]]
+id = "fm4"
+kind = "toggle"
+label = "Keep Follow State on Save"
+desc = "Saving no longer resets the party's follow positions. Takes effect at the next save."
+default = 1
+ini = "companion_ai.ini"
+section = "CompanionAI"
+key = "fm4"
+
+[[row]]
+id = "c1"
+kind = "toggle"
+label = "Hostile Action Clear Fix"
+desc = "Clearing a companion's hostile actions no longer skips the action in the first slot."
+default = 1
+ini = "companion_ai.ini"
+section = "CompanionAI"
+key = "c1"
+
+[[row]]
+id = "a3"
+kind = "toggle"
+label = "Release Dead-Target Facing"
+desc = "Companions stop facing a dead or lost target (not the character you control)."
+default = 0
+ini = "companion_ai.ini"
+section = "CompanionAI"
+key = "a3"
+
+[[row]]
+id = "trace"
+kind = "toggle"
+label = "AI Trace Log"
+desc = "Write the party AI trace to the log. Off saves disk; the fixes keep working."
+default = 1
+ini = "companion_ai.ini"
+section = "CompanionAI"
+key = "trace"
+
+[[row]]
+id = "log"
+kind = "toggle"
+label = "Fix Event Log"
+desc = "Log fix events and the periodic summaries. Off saves disk; the fixes keep working."
+default = 1
+ini = "companion_ai.ini"
+section = "CompanionAI"
+key = "log"
+)TOML";
+
 // ---------------------------------------------------------------- log gate
 // Decides, per line, whether it is written, plus which marker lines go out first. Pure: the caller formats and
 // writes, then reports the bytes with wrote(). Order: file cap, dedupe (key != 0 only), per-second cap (forced

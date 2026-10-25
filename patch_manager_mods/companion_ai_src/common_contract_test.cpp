@@ -31,6 +31,8 @@ static SIZE_T fakeVQ(LPCVOID a, MEMORY_BASIC_INFORMATION* m, SIZE_T n) {
 }
 #define VirtualQuery fakeVQ
 #include "SafeRead.h"
+#include "ModConfigDecl.h"
+#include "CompanionAiLogic.h"
 #include "check.h"
 
 static uint8_t* g_arena = nullptr;
@@ -196,7 +198,38 @@ static void exoloose_contract() {
     setup();
 }
 
+// CompanionAiLogic.h kPageSchema (Options -> Mod Configuration): parses, every row is an ini-bound [CompanionAI] toggle whose default is the
+// shipped Config default, and the bound keys are ones parseConfig reads (a key written by the page must change g_cfg after loadIni).
+static void moddecl_contract() {
+    mcdecl::PageDecl pd{};
+    char err[96] = {};
+    HCHECK("kPageSchema parses with ModConfigDecl (CompanionAI.cpp pollModConfig)", mcdecl::parseSchema(cai::kPageSchema, strlen(cai::kPageSchema), pd, err, sizeof err));
+    HEQ("kPageSchema has 10 rows", pd.nRows, 10);
+    HCHECK("page name is Companion AI", !strcmp(pd.name, "Companion AI"));
+    const cai::Config d;
+    struct { const char* key; bool def; } want[] = {
+        {"cast_family_guard", d.castFamilyGuard}, {"cast_queue_newest", d.castQueueNewest}, {"a1", d.a1}, {"a1_retarget", d.a1Retarget},
+        {"fm1", d.fm1}, {"fm4", d.fm4 != 0}, {"c1", d.c1}, {"a3", d.a3}, {"trace", d.trace}, {"log", d.log}};
+    for (const auto& w : want) {
+        const mcdecl::RowDecl* r = nullptr;
+        for (int i = 0; i < pd.nRows; ++i) if (!strcmp(pd.rows[i].key, w.key)) r = &pd.rows[i];
+        HCHECK("every page key has a row", r != nullptr);
+        if (!r) continue;
+        HCHECK("each row is a toggle bound to companion_ai.ini [CompanionAI]",
+               r->kind == mcdecl::K_TOGGLE && !strcmp(r->ini, "companion_ai.ini") && !strcmp(r->section, "CompanionAI"));
+        HEQ("row default = shipped Config default", r->def, w.def ? 1 : 0);
+        char text[64];
+        snprintf(text, sizeof text, "[CompanionAI]\n%s=%d\n", w.key, w.def ? 0 : 1);
+        cai::Config c;
+        static cai::IniTable t;
+        t.parse(text, "CompanionAI");
+        cai::parseConfig(t, c);
+        HCHECK("a page write of the non-default value changes the parsed Config (loadIni applies it)", !cai::sameConfig(c, d));
+    }
+}
+
 int main() {
+    moddecl_contract();
     void* m = mmap(nullptr, ArenaSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS
 #ifdef MAP_32BIT
                    | MAP_32BIT

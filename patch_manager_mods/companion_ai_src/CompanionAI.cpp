@@ -54,19 +54,25 @@
 #include <stdarg.h>
 #include <time.h>
 
+#define INIW_FILE_API 1
+#define MCDECL_FILE_API 1
+
 #include "SafeRead.h"
 #include "Effects.h"    // k2fx: creature effect list + spell row (G1)
 #include "CompanionAiLogic.h"
 #include "GameAddr.h"
 #include "KpLog.h"
 #include "ActQueue.h"   // actq::playerPaused (WI-125: A1X orphan clock)
+#include "ModConfigApi.h"
+#include "ModConfigDecl.h"     // Options -> Mod Configuration page (cai::kPageSchema)
+#include "ProviderClient.h"
 
 KP_LOG_PATCH("companion-ai");
 
 namespace {
 
 using cai::Invalid;
-constexpr const char* Version = "0.2.1-probe";
+constexpr const char* Version = "0.3.1-probe";
 
 // ---- game globals and functions (conventions from the raw .asm)
 constexpr int G_VM = 0x00A1B4A8;            // CVirtualMachine*
@@ -753,10 +759,41 @@ void probeSummary(DWORD now) {
         }
 }
 
+// ---- optional Mod Configuration menu (k2.modconfig@1 / k2.menuui@1): toggle rows bound to companion_ai.ini; loadIni applies a change
+k2mc::ConfigClient g_mcCfg;
+k2mc::MenuClient g_mcMenu;
+k2pc::RegisterOnce g_mcReg;
+mcdecl::Page g_page;
+K2ModConfigEntry g_mcEntry{};
+bool g_pageReady = false;
+
+void mcLog(int level, const char* msg) { KP_LOGV(chMain, level, "%s", msg); }
+
+// KPatchInit, then the 1 Hz tick until registered (the providers may load after this DLL).
+void pollModConfig() {
+    auto clients = k2pc::makeSet(g_mcCfg, g_mcMenu);
+    if (clients.anyMissing()) clients.poll();
+    if (!g_pageReady) {
+        char err[96] = {};
+        if (g_page.load(cai::kPageSchema, strlen(cai::kPageSchema), err, sizeof err)) {
+            g_page.menu = &g_mcMenu;
+            g_page.io = mcdecl::fileIo();
+            g_mcEntry = g_page.entry(cai::kModId);
+        } else {
+            KP_WARN("ModConfig schema parse failed: %s", err);
+        }
+        g_pageReady = true;
+    }
+    if (g_mcEntry.id && g_mcMenu.ok()) k2pc::registerOnce(g_mcReg, g_mcCfg, g_mcEntry, mcLog);
+}
+
 // Called first by every handler: INI reload (1 Hz), periodic summaries, buffered-log flush.
 inline void tick(DWORD now) {
     if (!g_ready) { startSession(); if (!g_ready) return; }   // old core: no KPatchInit, the first handler starts the session
-    if (now - g_lastIniCheck >= 1000) loadIni(now, false);
+    if (now - g_lastIniCheck >= 1000) {
+        loadIni(now, false);
+        if (!g_mcReg.registered) pollModConfig();
+    }
     if (now - g_lastSummary >= static_cast<DWORD>(g_cfg.summarySec) * 1000u) {
         g_lastSummary = now;
         summary(now);
@@ -1670,7 +1707,13 @@ extern "C" void __cdecl CompanionAiProbeGetCurrentAction(int ebp) {
     pline(PiGca, now, "t=%lu PR GCA cr=%08x res=%d lastRun=%x moving=%d", now, id, res, rarLastType(id), obj ? rd<int>(obj, CrMoving, -1) : -1);
 }
 
-extern "C" void __cdecl KPatchInit(const KPatchApi* api) { KpLog_Init(api); startSession(); }
+extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
+    KpLog_Init(api);
+    auto clients = k2pc::makeSet(g_mcCfg, g_mcMenu);
+    clients.init(api);
+    startSession();
+    pollModConfig();
+}
 
 BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
     if (reason == DLL_PROCESS_ATTACH) {
