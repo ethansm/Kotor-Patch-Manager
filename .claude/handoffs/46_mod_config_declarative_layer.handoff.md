@@ -1,7 +1,7 @@
 # Session Handoff & Plan State: patch_manager_mods/46_mod_config_declarative_layer.md
 
 ## 0. Next-Phase Direction
-RF1/RF2 BUILT 61131905 (mod-config 0.4.7-dev, combat-hotbar 0.11.5-dev), KPM ee8a3e8/685487c, both SWAP, GATE PASS head ea2e954e. Next: user GO (game closed) -> kpm_hotswap.py --mod mod-config --mod combat-hotbar --apply, then mark-done 46:RF1/RF2 INSTALLED and set MC-TT1 LIVE. RF3 PARTIAL: optional follow-up guikit::imageResolved via ResMan probe 0x711ED0 (see .claude/research/pv_missing_tex/README.md). MCF7 waits on peer EnemyStrip.cpp.
+RF1/RF2 INSTALLED LIVE 10-25 19:44 (rollback batch_swap_20261025_194425); play rows MC-PF1 + MC-TT1 + CH-PV1 pending (user). Optional next: RF3 follow-up guikit::imageResolved via ResMan probe 0x711ED0. MCF7 waits on peer EnemyStrip.cpp.
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/46_mod_config_declarative_layer.md`
@@ -9,16 +9,15 @@ RF1/RF2 BUILT 61131905 (mod-config 0.4.7-dev, combat-hotbar 0.11.5-dev), KPM ee8
 - **Waves:** .claude/waves/WI-46-a2/
 - **Waves:** .claude/waves/WI-46-a3/
 - **Waves:** .claude/waves/w1-46-prev/
-- **Branch:** `KOTOR-II` (4a5e60c3 doc 46: MCF6 DROPPED (superseded by MCF5); RF3 recon DONE (ResMan pre-check 0x711ED0, no signal on image) + REA ledger)
-- **Generated:** 2026-10-25 19:43:39 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (2f420905 PLAY_TEST_QUEUE MC-TT1 LIVE (mod-config 0.4.7-dev + combat-hotbar 0.11.5-dev))
+- **Generated:** 2026-10-25 19:44:36 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-4a5e60c3 doc 46: MCF6 DROPPED (superseded by MCF5); RF3 recon DONE (ResMan pre-check 0x711ED0, no signal on image) + REA ledger
- .../46_mod_config_declarative_layer.md             |  4 ++--
- .../20261025_pv-missing-tex-resref.tsv             | 26 ++++++++++++++++++++++
- 2 files changed, 28 insertions(+), 2 deletions(-)
+2f420905 PLAY_TEST_QUEUE MC-TT1 LIVE (mod-config 0.4.7-dev + combat-hotbar 0.11.5-dev)
+ patch_manager_mods/PLAY_TEST_QUEUE.md | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 ```
-- **Dirty Files (185):**
+- **Dirty Files (186):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
   - ` M .claude/handoffs/DECOMP_PLAN.handoff.md`
@@ -29,25 +28,23 @@ RF1/RF2 BUILT 61131905 (mod-config 0.4.7-dev, combat-hotbar 0.11.5-dev), KPM ee8
   - ` M .claude/reviews/gemini_20261014/tools/fix3_items.tsv`
   - ` M .claude/settings.json`
   - ` M CLAUDE.md`
-  - ... +175 more (run `git status --short`)
+  - ... +176 more (run `git status --short`)
 
-## 2. Immediate Objective (RF1)
-**[Mod-config] `dropRefs` also clears the GUI manager tooltip owner `M+0x40` (and owner flags48 bit 0x40) before a label is freed; mod-config 0.4.7-dev; play row MC-TT1**
+## 2. Immediate Objective (MCF7)
+**[Enemy strip] Migrate its page to the declarative layer**
 
-Status: BUILT
-Task: [Mod-config] `dropRefs` also clears the GUI manager tooltip owner `M+0x40` (and owner flags48 bit 0x40) before a label is freed; mod-config 0.4.7-dev; play row MC-TT1
+Status: PLANNED
+Task: [Enemy strip] Migrate its page to the declarative layer
 
 ## 2b. Upcoming Batches in Pipeline
 - **MCF6** [Meta / Planning Setup] : [Mod-config] Native slider embed probe (gated by MCF0)
-- **MCF7** [Meta / Planning Setup] : [Enemy strip] Migrate its page to the declarative layer
-- **RF2** [Research & Probes] : [Combat hotbar] Preview icons that never resolved get a fresh 20 tries per Options open (`pvOnBuilt`); combat-hotbar 0.11.5-dev
 
 ## 3. Strict Context Budget & Read Policy
 - **Fresh Session Bootstrap**: Run `python3 scripts/plan_manager.py resume patch_manager_mods/46_mod_config_declarative_layer.md`.
 
 ## 4. Subagent Delegation Direction
 - **Claude Code**: parallel `model: haiku` Agent subagents; brief = `Contract` + `Write Scope` + `python3 scripts/agent_contract.py print worker|recon`.
-- **Other backends** (only when the user asks): `python3 scripts/plan_manager.py delegate RF1` or `oc-subagent <scout|code|ghidra|verify|gate|doc>`.
+- **Other backends** (only when the user asks): `python3 scripts/plan_manager.py delegate MCF7` or `oc-subagent <scout|code|ghidra|verify|gate|doc>`.
 
 ## 5. Dead Ends & Verification (manual)
 _(none recorded; append Dead Ends & Anti-Patterns and Verification Commands here)_
