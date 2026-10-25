@@ -1,5 +1,50 @@
 [metadata]
 target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"]
 
-# No hooks: DLL-only patch. DllMain verifies 0x004261CF 0F B6 C8 85 C9 75 10 and writes E9 <cave> 90 90
-# (cave frees TPC images without a TextureController; see TextureMemoryRelease.cpp). Same site as perf-lab tx=1.
+# KOTOR 2 Steam Aspyr / swkotor2.exe
+# Free the CPU copy of TPC textures after the OpenGL upload.
+#
+# Function: CAurTextureBasic::BuildAndStoreTexture (0x004260E0), the tail after the GL upload.
+#
+# Original (0x004261CD..0x004261E4):
+#   call [vtable+0x30]          ; IsTPCLoaded, AL = 1 for a TPC texture
+#   004261CF  movzx ecx, al
+#   004261D2  test ecx, ecx
+#   004261D4  jnz 0x004261E6    ; TPC texture: skip the free
+#   004261D6  ...  call [vtable+0xB4]   ; FreeImage
+#   004261E6  mov esp, ebp ; pop ebp ; ret
+#
+# TGA textures are freed here. TPC textures use the resource buffer in place (tex+0x44) and keep it
+# for the life of the texture, so every uploaded TPC stays in memory (about 195 MB measured).
+#
+# Patched: free a TPC texture too, except one that has a TextureController (tex+0x34 != 0). The
+# controller functions read the image every frame, so those keep it, exactly as before.
+#   movzx ecx, al
+#   test  ecx, ecx
+#   jz    free                  ; not TPC: free, as before
+#   mov   edx, [ebp-4]          ; this
+#   cmp   dword ptr [edx+0x34], 0
+#   jz    free                  ; TPC without a controller: free
+#   push  0x004261E6            ; TPC with a controller: skip the free, as before
+#   ret
+# free: (the hook jumps back to 0x004261D6, which reloads EDX/ECX and calls FreeImage)
+#
+# EAX, ECX, EDX and the flags are not read at 0x004261D6 or 0x004261E6. Any later use of a freed
+# texture goes through the engine's own reload (Reset, then ConstructImage, which re-demands the
+# resource), and a requeue with tex+0x44 == 0 skips the GL upload.
+# Validated SHA-256: 6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF
+
+[[hooks]]
+address = 0x004261CF
+type = "replace"
+original_bytes = [0x0F, 0xB6, 0xC8, 0x85, 0xC9, 0x75, 0x10]
+replacement_bytes = [
+    0x0F, 0xB6, 0xC8,
+    0x85, 0xC9,
+    0x74, 0x0F,
+    0x8B, 0x55, 0xFC,
+    0x83, 0x7A, 0x34, 0x00,
+    0x74, 0x06,
+    0x68, 0xE6, 0x61, 0x42, 0x00,
+    0xC3,
+]

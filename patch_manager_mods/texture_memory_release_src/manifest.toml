@@ -1,9 +1,9 @@
 [patch]
 id = "k2-texture-memory-release"
-name = "Texture Memory Release"
-version = "0.1.1"
-author = "local"
-description = "Frees the CPU-side copy of TPC textures after they are uploaded to OpenGL, as the engine already does for TGA textures (BuildAndStoreTexture 0x004260E0 keeps every TPC image, ~195 MB measured). Textures driven by a texture controller (animated/procedural, [tex+0x34] != 0) keep their image because the controller reads it every frame. Re-use after the free goes through the engine's own reload (resource manager re-Demand). DLL-only; the site is byte-verified before writing. Do not combine with perf-lab's tx=1 experiment (same site). Disable with texmem.txt containing enabled=0. Log: texmem_log.txt."
+name = "K2 Texture Memory Release"
+version = "0.2.0"
+author = "ethansm"
+description = "Frees the CPU-side copy of TPC textures after they are uploaded to OpenGL, as the engine already does for TGA textures, which saves roughly 195 MB of memory in a 32-bit process"
 
 requires = []
 conflicts = []
