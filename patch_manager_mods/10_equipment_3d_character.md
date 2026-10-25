@@ -16,7 +16,7 @@ Statuses come from this doc's own status blocks, the git log of `equipment_3d_ch
 | EQ7 | Common extraction: saferead C3a, SceneView C3b, vertical pan C3c | BUILT | e180af1 ba361f8 e77e64c | Installed 2026-10-05 (b6eeee09, d954782a); combined play test pending |
 | EQ8 | MG4/MG6/MG7: KpLog, IniKit, PanelSlots, GuiKit, WindowHook, gameaddr; T5e contract test | BUILT | d2fd8cc 1af7130 aa63ec8 | equip3d 0.2.0-probe installed 2026-10-05 20:55; play check pending |
 | EQ9 | Track P gui-input adoption; creature destroy on character change, anim fallback, screen sync | BUILT | 7aeb296 22b56b4 | 7aeb296 and 22b56b4 equip files (EquipCharPreview.cpp, manifest) in live build: KPM copy (10-08 23:16) matches HEAD; kpatch built 10-09 10:07; kpm_status LIVE. Play test not recorded |
-| EQ10 | Phase 2: holstered / combat-stance toggle | PARTIAL | 748f6158 | 0.3.0-probe built (748f6158, docs 139ff7b9, row dfa6dfde); GUI id 79 diff held in .claude/waves/w2-10-EQ10/G1_final.diff until install; play EQ10-P1 |
+| EQ10 | Phase 2: holstered / combat-stance toggle | INSTALLED | 310a825a | 0.3.0-probe LIVE 10-25 19:11 (GUI id 79 re-patched 19:10; rollback equipment-3d-character_swap_20261025_191140); play EQ10-P1 |
 | EQ11 | Per-weapon extras: saber blade/effects, forms g2r2..g2r7 | TODO | | Untested (STATUS BLOCK Open/next) |
 | EQ12 | Phase 3 / Track M: mirror the CHARACTER page | DONE | pending | WI-04 verified |
 | EQ13 | Doc 19/19b shared state and code: registry A-ids, Common B-ids, kplog.ini | PARTIAL | d2fd8cc | Doc 19 Phases 0-1 done 10-02 (Phase 1 not live); MG4 landed part; rest unverified |

@@ -10,15 +10,15 @@ Execute EQ2: Weapons in hands, engine wield-style rule, flourishes with weapons
 - **Waves:** .claude/waves/WI-10-b1/
 - **Waves:** .claude/waves/WI-10-b2/
 - **Waves:** .claude/waves/WI-10-c1/
-- **Branch:** `KOTOR-II` (dfa6dfde PLAY_TEST_QUEUE: EQ10-P1 equip3d Hide/Show + Holster/Draw (0.3.0-probe, not installed))
-- **Generated:** 2026-10-25 18:32:45 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (811b28b3 PLAY_TEST_QUEUE EQ10-P1: equip3d 0.3.0-probe INSTALLED 19:11)
+- **Generated:** 2026-10-25 19:11:49 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-dfa6dfde PLAY_TEST_QUEUE: EQ10-P1 equip3d Hide/Show + Holster/Draw (0.3.0-probe, not installed)
- patch_manager_mods/PLAY_TEST_QUEUE.md | 1 +
- 1 file changed, 1 insertion(+)
+811b28b3 PLAY_TEST_QUEUE EQ10-P1: equip3d 0.3.0-probe INSTALLED 19:11
+ patch_manager_mods/PLAY_TEST_QUEUE.md | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 ```
-- **Dirty Files (184):**
+- **Dirty Files (183):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
   - ` M .claude/handoffs/DECOMP_PLAN.handoff.md`
@@ -29,7 +29,7 @@ dfa6dfde PLAY_TEST_QUEUE: EQ10-P1 equip3d Hide/Show + Holster/Draw (0.3.0-probe,
   - ` M .claude/reviews/gemini_20261014/tools/fix3_items.tsv`
   - ` M .claude/settings.json`
   - ` M CLAUDE.md`
-  - ... +174 more (run `git status --short`)
+  - ... +173 more (run `git status --short`)
 
 ## 2. Immediate Objective (EQ2)
 **Weapons in hands, engine wield-style rule, flourishes with weapons**
