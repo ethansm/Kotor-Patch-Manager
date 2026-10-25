@@ -75,6 +75,8 @@ struct SweepOpts {
     std::vector<MountRec> mounts;                  // --mounts-json: back-mount rel per (cat, bone); missing -> the GUESS
     int dirSel = kDirBoth;                         // --dir
     float poleGrip = 0.f;                          // --pole-grip: HW29b pole bias toward the grip, hip and thigh only (0..1)
+    float viaOut = kReachViaOutM;                  // --via-out: lateral shoulder offset of the via pose, m (0..0.30)
+    float slowX = 1.f;                             // --slow: slow_holster_x factor scaling draw, stow and residual ms (1..8)
 };
 
 SweepOpts defaultOpts() {
@@ -472,10 +474,10 @@ Pose carryBlendSweep(Slide& lock, const Pose& mount, const Pose& hand, float car
 // The hand-frame residual of the carry (Holster.cpp carryShownBase, ResidDraw / ResidStow). Returns false when the pose is not sane (the caller
 // falls back to carryBlendSweep). A stow outside its landing window gives the hand pose itself (the weapon is in the hand).
 bool carryResidSweep(const Slide& s, ResidCap& cap, SlideResidBranch br, const Pose& mount, const Pose& carried, uint32_t now, float grab,
-                     const Q* via, Pose& out) {
+                     uint32_t residMs, const Q* via, Pose& out) {
     const Q cq = qnormalize(carried.q), inv = reachConj(cq);
     const int32_t d = static_cast<int32_t>(now - s.t0);
-    const float resMs = static_cast<float>(kReachResidMs);
+    const float resMs = static_cast<float>(residMs);
     float t = 0.f, ms = resMs;
     float off[3] = { 0.f, 0.f, 0.f };
     Q rres{ 1.f, 0.f, 0.f, 0.f };
@@ -494,7 +496,7 @@ bool carryResidSweep(const Slide& s, ResidCap& cap, SlideResidBranch br, const P
         for (int i = 0; i < 3; ++i) off[i] = cap.pos[i];
     } else {                 // stow: the offset from the hand to the mount, weighted by the time left in the carry
         cap.on = 0;
-        slideResidStowWindow(now, s.t0, s.len, grab, kReachResidMs, t, ms);
+        slideResidStowWindow(now, s.t0, s.len, grab, residMs, t, ms);
         if (!(ms > 1.f) || t >= ms) {
             out = carried;
             return true;
@@ -550,16 +552,17 @@ bool simulate(const ShapeEntry& e, int mount, int hand, bool viaOn, int dir, con
         }
     }
 
+    const uint32_t drawMs = slowMs(kDrawMs, o.slowX), stowMs = slowMs(kStowMs, o.slowX), residMs = slowMs(kReachResidMs, o.slowX);
     Slide s, lock;
     if (dir == kDirDraw) {
         s.reset(false, 0);
-        s.target(true, 0, kDrawMs, kStowMs, 0.f);
+        s.target(true, 0, drawMs, stowMs, 0.f);
     } else {
         s.reset(true, 0);                    // fully in hand, carryFrom 1: a full stow
-        s.target(false, 0, kDrawMs, kStowMs, 0.f);
+        s.target(false, 0, drawMs, stowMs, 0.f);
     }
     lock.reset(false, 0);
-    const uint32_t lastMs = dir == kDirDraw ? kLastMs : kStowLastMs;
+    const uint32_t lastMs = (dir == kDirDraw ? drawMs : stowMs) - 1u;
     for (int k = 0; k < 2; ++k)
         for (int p = 0; p < 3; ++p) row.acc[k][p] = Clear{ std::numeric_limits<float>::infinity(), -1 };
 
@@ -568,6 +571,13 @@ bool simulate(const ShapeEntry& e, int mount, int hand, bool viaOn, int dir, con
     const Q* viaP = viaOn ? &qVia : nullptr;
     ResidCap cap{};
     row.resid = false;
+    const float arm = kL1 + kL2;
+    const float fxA = (mp.pos[0] - kShoulder[hand][0]) / arm;
+    const float fyA = (mp.pos[1] - kShoulder[hand][1]) / arm;
+    const float dz = mp.pos[2] - kShoulder[hand][2], dzA = dz / arm;
+    const ReachTopo topo = reachTopology3D(fxA, fyA, dzA, reachHingeFits(dz, arm));
+    const float uW = reachOverWeight3D(fxA, fyA, dzA, topo);
+    const ReachStyle st = reachDefaultStyle(static_cast<int>(cat));
 
     for (int i = 0; i < kSteps; ++i) {
         const uint32_t now = static_cast<uint32_t>(i) * lastMs / static_cast<uint32_t>(kSteps - 1);
@@ -575,13 +585,21 @@ bool simulate(const ShapeEntry& e, int mount, int hand, bool viaOn, int dir, con
         if (!pl.active) continue;
         // HW31b via clock: reads the previous frame's carry capture, as carryShownBase's caller does.
         float viaS = 0.f;
-        if (viaOn) viaS = slideViaProgress(pl.active, kReachResidMs, pl.carryW, pl.oriF, exOn, s.dir != 0, s.from, s.carryFrom, now, s.t0, s.len,
+        if (viaOn) viaS = slideViaProgress(pl.active, residMs, pl.carryW, pl.oriF, exOn, s.dir != 0, s.from, s.carryFrom, now, s.t0, s.len,
                                            kGrab, cap.on != 0, cap.startMs, cap.msEff);
         float T[3] = { 0.f, 0.f, 0.f }, pole[3] = { 0.f, 0.f, 0.f };
-        if (!reachHinge(kShoulder[hand], kL1, kL2, kUpDir, kFwdDir, kOut3[hand], mp.pos, kRest[hand], kRestPole, pl.pathF, T, pole)) return false;
+        // R5 parity with Holster.cpp: back mounts take reachHinge; hip and thigh mounts take the bowed carry target + 3D pole.
+        if (mount == kBack) {
+            if (!reachHinge(kShoulder[hand], kL1, kL2, kUpDir, kFwdDir, kOut3[hand], mp.pos, kRest[hand], kRestPole, pl.pathF, T, pole)) return false;
+        } else {
+            float effBulge[3], effOver = uW;
+            reachAdaptBulge(st, uW, fxA, fyA, dzA, hand != 0, effBulge, effOver);
+            reachCarryTarget(mp.pos, kRest[hand], kUpDir, kFwdDir, kOut3[hand], effBulge, effOver, arm, pl.pathF, T);
+            if (!reachPole3D(st, uW, fxA, fyA, dzA, hand != 0, Q{ 1.f, 0.f, 0.f, 0.f }, kRestPole, reachAnimMix(pl.pathF), pole)) return false;
+        }
         // HW31b: while the via is on, the aimed point moves outward (the arm's own side) by the via bump (reachViaOffset, 0 at both ends).
         if (viaS > 0.f) {
-            const float bump = reachViaOffset(viaS, 1.f, kReachViaOutM);
+            const float bump = reachViaOffset(viaS, 1.f, o.viaOut);
             for (int j = 0; j < 3; ++j) T[j] += kOut3[hand][j] * bump;
         }
         // HW31 extract: lift the aimed point out of the mount along the weapon's long axis, before the solve (Holster.cpp:1692). Skipped for
@@ -616,10 +634,10 @@ bool simulate(const ShapeEntry& e, int mount, int hand, bool viaOn, int dir, con
         hp.q = qHand;
 
         // Carry (Holster.cpp carryShownBase): the residual branch when one applies, else the world blend.
-        const SlideResidBranch br = slideResidBranch(s.dir != 0, s.from, s.carryFrom, pl.carryW, pl.active, kReachResidMs, qfinite(hp.q));
+        const SlideResidBranch br = slideResidBranch(s.dir != 0, s.from, s.carryFrom, pl.carryW, pl.active, residMs, qfinite(hp.q));
         Pose w{};
         bool took = false;
-        if (br != ResidNone) took = carryResidSweep(s, cap, br, mp, hp, now, kGrab, viaP, w);
+        if (br != ResidNone) took = carryResidSweep(s, cap, br, mp, hp, now, kGrab, residMs, viaP, w);
         if (took) {
             row.resid = true;
         } else {
@@ -847,14 +865,36 @@ int main(int argc, char** argv) {
             o.poleGrip = static_cast<float>(g);
             overridden = true;
         }
+        else if (!std::strcmp(arg, "--via-out") && more) {
+            const char* v = argv[++a];
+            char* end = nullptr;
+            const double m = std::strtod(v, &end);
+            if (end == v || *end != 0 || !(m >= 0.0 && m <= 0.30)) {
+                std::fprintf(stderr, "--via-out wants a number in 0..0.30 (got \"%s\")\n", v);
+                return 2;
+            }
+            o.viaOut = static_cast<float>(m);
+            overridden = true;
+        }
+        else if (!std::strcmp(arg, "--slow") && more) {
+            const char* v = argv[++a];
+            char* end = nullptr;
+            const double sx = std::strtod(v, &end);
+            if (end == v || *end != 0 || !(sx >= 1.0 && sx <= 8.0)) {
+                std::fprintf(stderr, "--slow wants a number in 1..8 (got \"%s\")\n", v);
+                return 2;
+            }
+            o.slowX = static_cast<float>(sx);
+            overridden = true;
+        }
         else {
             std::fprintf(stderr, "usage: holster_sweep_test [--table] [--tsv <path>] [--dir draw|stow|both] [--back-deg <d> | --back-quat w,x,y,z | "
-                                 "--mounts-json <file>] [--extract-back <f>] [--extract-hip <f>] [--pole-grip <a>]\n");
+                                 "--mounts-json <file>] [--extract-back <f>] [--extract-hip <f>] [--pole-grip <a>] [--via-out <m>] [--slow <x>]\n");
             return 2;
         }
     }
     if (overridden && !tsv && !table) {
-        std::fprintf(stderr, "--back-deg / --back-quat / --mounts-json / --dir / --pole-grip / --extract-* need --tsv or --table (the asserts assume the defaults)\n");
+        std::fprintf(stderr, "--back-deg / --back-quat / --mounts-json / --dir / --pole-grip / --via-out / --slow / --extract-* need --tsv or --table (the asserts assume the defaults)\n");
         return 2;
     }
 
@@ -935,6 +975,62 @@ int main(int argc, char** argv) {
     for (const Row& r : stowRows) allStow = allStow && r.dir == kDirStow;
     KT_CHECK(allStow);
     KT_CHECK(stowRows.size() * 2 == rows.size());
+
+    // R6: --via-out and --slow options produce finite, non-NaN rows and --via-out 0.25 changes the via-on trajectory relative to 0.05.
+    SweepOpts voLo = defaultOpts(), voHi = defaultOpts();
+    voLo.dirSel = kDirDraw; voLo.viaOut = 0.05f;
+    voHi.dirSel = kDirDraw; voHi.viaOut = 0.25f; voHi.slowX = 2.f;
+    std::vector<Row> rLo, rHi;
+    int fLo = 0, sLo = 0, fHi = 0, sHi = 0;
+    runSweep(voLo, rLo, fLo, sLo);
+    runSweep(voHi, rHi, fHi, sHi);
+    KT_CHECK(sLo == 0 && sHi == 0 && rLo.size() == rHi.size());
+    const Row* qLo = findRow(rLo, "w_qtrstaff_", kBack, 0, true, kDirDraw);
+    const Row* qHi = findRow(rHi, "w_qtrstaff_", kBack, 0, true, kDirDraw);
+    KT_CHECK(qLo != nullptr && qHi != nullptr && drawDiffers(qLo, qHi));
+
+    // R5 + 3D dynamic editor offset grid sweep: across front-chest, cross-draw, thigh and lumbar placements, the 3D reach solver
+    // produces 100% finite, reachable two-bone solutions across all path steps f in [0, 1] for both hands.
+    {
+        const float arm = kL1 + kL2;
+        const float fxGrid[4] = { -0.30f, -0.10f, 0.15f, 0.30f };
+        const float fyGrid[4] = { -0.25f, -0.10f, 0.0f, 0.18f };
+        const float dzGrid[4] = { -0.78f, -0.54f, -0.36f, -0.05f };
+        int solvedGrid = 0;
+        bool gridOk = true;
+        for (int hand = 0; hand < 2; ++hand) {
+            float restE[3];
+            restElbow(hand, restE);
+            for (float fxA : fxGrid)
+                for (float fyA : fyGrid)
+                    for (float dzA : dzGrid) {
+                        const float mpPos[3] = {
+                            kShoulder[hand][0] + fxA * arm,
+                            kShoulder[hand][1] + fyA * arm,
+                            kShoulder[hand][2] + dzA * arm
+                        };
+                        const float dz = dzA * arm;
+                        const ReachTopo topo = reachTopology3D(fxA, fyA, dzA, reachHingeFits(dz, arm));
+                        const float uW = reachOverWeight3D(fxA, fyA, dzA, topo);
+                        const ReachStyle st = reachDefaultStyle(CatPistol);
+                        for (int step = 0; step <= 10; ++step) {
+                            const float f = static_cast<float>(step) / 10.f;
+                            float T[3], pole[3], En[3], reach = 1.f;
+                            if (topo == ReachTopo::HingeBack) {
+                                gridOk = gridOk && reachHinge(kShoulder[hand], kL1, kL2, kUpDir, kFwdDir, kOut3[hand], mpPos, kRest[hand], kRestPole, f, T, pole);
+                            } else {
+                                float effBulge[3], effOver = uW;
+                                reachAdaptBulge(st, uW, fxA, fyA, dzA, hand != 0, effBulge, effOver);
+                                reachCarryTarget(mpPos, kRest[hand], kUpDir, kFwdDir, kOut3[hand], effBulge, effOver, arm, f, T);
+                                gridOk = gridOk && reachPole3D(st, uW, fxA, fyA, dzA, hand != 0, Q{ 1.f, 0.f, 0.f, 0.f }, kRestPole, reachAnimMix(f), pole);
+                            }
+                            gridOk = gridOk && solveTwoBone(kShoulder[hand], restE, kRest[hand], T, En, &reach, pole) && std::isfinite(reach);
+                            ++solvedGrid;
+                        }
+                    }
+        }
+        KT_CHECK(gridOk && solvedGrid == 2 * 4 * 4 * 4 * 11);
+    }
 
     KT_CHECK(skipped == 0);
     return kt::Report("holster_sweep");

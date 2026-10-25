@@ -210,6 +210,35 @@ static void testTwoHandedStem() {
     KT_CHECK(!isTwoHandedStem(""));
 }
 
+// HW33a D3: staggerDualEligible only delays a left-hand slide when starting from rest (!selfSlide.active(now)) and when the
+// right-hand sibling entry was initialized and touched within kStaggerLiveMs (250 ms).
+static void testStaggerDualEligible() {
+    Slide left, right;
+    // Uninitialized right-hand entry: never eligible
+    left.reset(false, 1000);
+    KT_CHECK(!staggerDualEligible(left, right, 1000));
+
+    // Both at rest and right touched within 250 ms: eligible
+    right.reset(false, 1000);
+    KT_CHECK(staggerDualEligible(left, right, 1000));
+    KT_CHECK(staggerDualEligible(left, right, 1250));   // exact boundary (250 ms)
+
+    // Stale / unequipped right-hand entry (> 250 ms old): not eligible (solo left weapon does not wait 60 ms)
+    KT_CHECK(!staggerDualEligible(left, right, 1251));
+    KT_CHECK(!staggerDualEligible(left, right, 5000));
+
+    // Mid-slide reversal on the left hand (left.active(now) == true): not eligible (reverses immediately via reachRetarget)
+    left.target(true, 1000, 400, 400);
+    right.touch(1150);
+    KT_CHECK(left.active(1150));
+    KT_CHECK(!staggerDualEligible(left, right, 1150));
+
+    // Once the left slide finishes (now == 1400, at rest again) and right is live: eligible again
+    right.touch(1400);
+    KT_CHECK(!left.active(1400));
+    KT_CHECK(staggerDualEligible(left, right, 1400));
+}
+
 int main() {
     testZeroDelayIsTarget();
     testDelayHoldsState();
@@ -220,5 +249,6 @@ int main() {
     testNoRearm();
     testTouchShiftsPending();
     testTwoHandedStem();
+    testStaggerDualEligible();
     return kt::Report("holster_stagger");
 }

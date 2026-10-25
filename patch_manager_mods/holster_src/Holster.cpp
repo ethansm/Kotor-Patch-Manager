@@ -1884,10 +1884,12 @@ static bool reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w,
     float twistDeg = 0.f;                // HW29: the forearm roll written this frame (tw= in the log); wristDeg (wr=) is the swing written on the wrist bone (sw=)
     float leftW = 0.f; bool pickOv = false; int mdSign = 0;   // HW44 diagnostics: natural w of the swing leftover (lw=), the continuity pick took the opposite sign (pk=), sign of dot(mountQ, pH.q) (md=)
     float dqDeg = 0.f, djDeg = 0.f;   // HW45 R2 diagnostics: dq= dqTot angle (deg; scaled by w * reach_wrist_pct, so low while the weight ramps), dj= its jump from the previous solve of this slide (deg)
+    bool wristRan = false;
     if (carry && wristOk && mountQ && wrote == 3 && g_reachWristPct > 0.f) {
         hs::Pose pHn, pWp;
         const uintptr_t parW = rdU32(kSitePlace, e->wrist, 0x3C);
         if (parW && reachNodePose(e->hand, e->poseFn, pHn) && reachNodePose(parW, e->poseFn, pWp)) {
+            wristRan = true;
             gDeg = hs::reachQAngleDeg(hs::qmul(*mountQ, hs::reachConj(pHn.q)));
             const float oriP = plp ? plp->oriF : pathF;   // HW31: orientation progress (= pathF unless an extract share holds the mount orientation through the lift)
             hs::Q sw, dqTot;   // dqTot: the wrist delta before the split (the next frame's sign hint)
@@ -1901,6 +1903,7 @@ static bool reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w,
                 sw = dqTot = hs::reachWristDelta(*mountQ, pH.q, oriP, pHn.q, g_reachWristMax, w * g_reachWristPct, e->wristOn ? &e->wristDq : nullptr,
                                                  e->tgtOn ? &e->tgtQ : nullptr, &tgtNow);
                 combNow = sw;
+                e->twistOn = 0;
             } else {
                 // HW29: the whole turn is computed uncapped (180 = the shorter arc; the sign hint keeps the axis across 180 deg), then split about the forearm axis (elbow -> hand,
                 // after the aim; the elbow does not move with the forearm's own rotation): the twist (<= reach_twist_deg) rolls the forearm, the swing (<= reach_wrist_max_deg) is the
@@ -1921,6 +1924,7 @@ static bool reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w,
                 } else {
                     sw = hs::reachClampRot(dq, g_reachWristMax);   // no roll landed: the whole turn on the wrist, as with reach_twist_deg=0
                     combNow = sw;
+                    e->twistOn = 0;
                 }
             }
             dqDeg = hs::reachQAngleDeg(dqTot);   // HW45 R2: both branches set dqTot (the whole turn; capped on the wrist when reach_twist_deg=0)
@@ -1936,10 +1940,10 @@ static bool reachArm(uintptr_t gob, uintptr_t beh, const hs::Pose& tgt, float w,
                 const hs::Q outW = hs::reachDeltaToLocal(pWp.q, sw, baseW);
                 if (reachWriteQ(e->wrist, outW)) { hs::reachNoteWrite(e->wb, outW); wrote |= 4; wristDeg = hs::reachQAngleDeg(sw); e->wristDq = dqTot; e->wristOn = 1; e->combQ = combNow; e->combOn = 1; wristWrote = true; }
             }
-            if (!wristWrote) e->combOn = 0;   // HW44c: the forearm may carry a new roll while the wrist kept the older rotation: no continuity reference, the next frame is candidate 0 (as a first frame)
+            if (!wristWrote) { e->combOn = 0; e->wristOn = 0; }   // HW44c: the forearm may carry a new roll while the wrist kept the older rotation: no continuity reference, the next frame is candidate 0 (as a first frame)
         }
     }
-    else { e->combOn = 0; e->tgtOn = 0; e->wristOn = 0; }   // HW49 D6: the wrist block was skipped this frame: the last frame's continuity references must not survive the gap
+    if (!wristRan) hs::reachClearWristCont(e->wristOn, e->twistOn, e->combOn, e->tgtOn);   // HW49 D6: the wrist block was skipped this frame: the last frame's continuity references (including twistOn) must not survive the gap
     // carry: the hand the weapon hangs on, after both writes (the attach node shares the pose slot with the arm parts, same guard as everywhere else)
     bool carriedOk = false;
     if (carry && carried && attachNode && (wrote & 3) == 3) {
@@ -2456,12 +2460,14 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
     static Ent s_cache[128];
     static unsigned s_next = 0;
     // HW33a: ms to hold back this Gob's draw / stow target. The left-hand weapon of a dual wielder waits dual_stagger_ms behind the right-hand one (another live cache entry of the same
-    // owner on the right hand); a party member that is not the controlled creature adds a deterministic 0..party_jitter_ms from a hash of its server id. 0 = the 0.18 path.
-    auto staggerFor = [&](const Ent* self, uintptr_t owner) -> uint32_t {
+    // owner on the right hand, touched within kStaggerLiveMs, when starting from rest); a party member that is not the controlled creature adds a deterministic 0..party_jitter_ms from a hash
+    // of its server id when starting from rest. 0 = the 0.18 path.
+    auto staggerFor = [&](const Ent* self, uintptr_t owner, uint32_t now) -> uint32_t {
+        if (self->slide.active(now)) return 0;   // HW33a D3: a mid-slide reversal reverses immediately (reachRetarget continuity + M1 via ease)
         uint32_t d = 0;
         if (g_dualStagger > 0 && self->left && owner != 0) {
             for (const Ent& e : s_cache)
-                if (&e != self && e.node != 0 && e.isTarget && !e.left && e.gate.owner == owner) { d = g_dualStagger; break; }
+                if (&e != self && e.node != 0 && e.isTarget && !e.left && e.gate.owner == owner && hs::staggerDualEligible(self->slide, e.slide, now)) { d = g_dualStagger; break; }
         }
         if (g_partyJitter > 0 && owner != 0 && g_party.n > 0 && owner != g_party.cli[0]) {
             for (int i = 1; i < g_party.n && i < 3; ++i)
@@ -2630,7 +2636,7 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
                 const uint8_t dirBefore = ent->slide.dir;
                 // HW33a stagger: d = 0 is the 0.18 path unchanged. d > 0 arms the target (targetDelayed is idempotent per want); the reachRetarget continuity then runs
                 // when it fires (block above), not when it is armed.
-                const uint32_t d = hs::slowMs(staggerFor(ent, owner), s_tune.slowHolsterX);   // HW44: the stagger keeps its share of the slowed slide (0 stays 0)
+                const uint32_t d = hs::slowMs(staggerFor(ent, owner, now), s_tune.slowHolsterX);   // HW44: the stagger keeps its share of the slowed slide (0 stays 0)
                 if (!ent->slide.active(now)) { ent->slide.lockOn = 0; ent->cres = CarryResid(); }   // HW26: a slide that starts from rest picks its hemisphere afresh; only a reversal of a running slide keeps the lock
                 ent->slide.touch(now);
                 // HW44: the factor this slide is armed with (SLIDE start slowx=, the residual / fade window): taken when this frame arms a new target (the direction moves to want, or a

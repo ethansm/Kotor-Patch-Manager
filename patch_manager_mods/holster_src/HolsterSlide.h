@@ -371,4 +371,15 @@ inline float viaEaseS(float from, float to, uint32_t tMs, uint32_t windowMs) {
 // True when any component of a place offset is above 0.5 m (an advisory only: the value is never changed).
 inline bool placeOffAdvisory(const float* v) { return std::fabs(v[0]) > 0.5f || std::fabs(v[1]) > 0.5f || std::fabs(v[2]) > 0.5f; }
 
+// HW33a D3: true when a left-hand slide at `now` should take dual_stagger_ms behind a cached right-hand entry:
+// the left slide must be starting from rest (!selfSlide.active(now)) so mid-slide reversals reverse immediately, and
+// the right-hand sibling must have been touched within kStaggerLiveMs (250 ms) so an unequipped/stale right-hand cache
+// entry does not freeze a single left-hand weapon.
+inline constexpr int32_t kStaggerLiveMs = 250;
+inline bool staggerDualEligible(const Slide& selfSlide, const Slide& rightSlide, uint32_t now) {
+    if (selfSlide.active(now) || !rightSlide.init) return false;
+    const int32_t age = static_cast<int32_t>(now - rightSlide.last);
+    return age >= 0 && age <= kStaggerLiveMs;
+}
+
 }  // namespace hs

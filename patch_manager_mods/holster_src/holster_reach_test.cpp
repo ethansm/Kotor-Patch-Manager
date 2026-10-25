@@ -1522,6 +1522,11 @@ static void testReachViaTopoAndBiQuat() {
     Q dummy = { 1.f, 0.f, 0.f, 0.f };
     KT_CHECK(!reachViaQuat(3u, dummy, 0.f, nullptr, dummy));
     KT_CHECK(!reachViaQuat(1u, Q{ kNaN, 0.f, 0.f, 0.f }, 0.f, nullptr, dummy));
+
+    // HW49 D6: reachClearWristCont clears all 4 continuity flags (including twistOn) when the wrist block is skipped
+    uint8_t wristOn = 1, twistOn = 1, combOn = 1, tgtOn = 1;
+    reachClearWristCont(wristOn, twistOn, combOn, tgtOn);
+    KT_CHECK(wristOn == 0 && twistOn == 0 && combOn == 0 && tgtOn == 0);
 }
 
 int main() {

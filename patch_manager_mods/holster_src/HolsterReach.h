@@ -802,4 +802,13 @@ inline bool reachViaQuat(unsigned axis, const Q& mountQ, float tiltDeg, const Q*
     return qfinite(out);
 }
 
+// HW49 D6: clears all four wrist/forearm-roll continuity flags when the wrist block is skipped or fails to land,
+// so stale twistQ / wristDq / combQ / tgtQ hints never survive across a skipped frame.
+inline void reachClearWristCont(uint8_t& wristOn, uint8_t& twistOn, uint8_t& combOn, uint8_t& tgtOn) {
+    wristOn = 0;
+    twistOn = 0;
+    combOn = 0;
+    tgtOn = 0;
+}
+
 }  // namespace hs
