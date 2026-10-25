@@ -224,6 +224,8 @@ def execute(item: Item) -> Result:
             return done("FAIL" if st == "FAIL" else "ERROR", f"build failed ({why})", out)
         log = out
     if item.kind == "suite":  # parity suites compile internally: hold a machine-wide slot for the whole run
+        # Known limit (accepted): every suite holds one slot for its whole run, even non-compiling ones, and build_check's
+        # children (jobs=4) compile inside that single slot, so the machine-wide cap is leaky there.
         held = getattr(_load_limit, "SLOT_HELD_ENV", {"KOTOR_SLOT_HELD": "1"})   # children (build_check) reuse our slot
         with _load_limit.heavy_slot():
             st, why, out = run_cmd(item.cmd, item.cwd, {**item.env, **held}, item.timeout)
@@ -441,7 +443,6 @@ def _sidecar(exe: Path) -> Path:
 
 
 _SRC_SUFFIXES = {".cpp", ".cc", ".cxx", ".c"}
-_HEADER_SUFFIXES = {".h", ".hpp", ".hh", ".inc", ".ipp"}
 _ARG_OPTS = {"-o", "-I", "-isystem", "-iquote", "-idirafter", "-include", "-imacros", "-L", "-l", "-D", "-U", "-x",
              "-MF", "-MT", "-MQ", "-isysroot"}   # options whose value is the next argv entry
 
@@ -478,6 +479,8 @@ def include_dirs(flags, cwd) -> list[str]:
                 out.append(a[len(opt):])
                 break
         i += 1
+    for var in ("CPATH", "CPLUS_INCLUDE_PATH", "C_INCLUDE_PATH"):   # searched after -I; only the names matter here
+        out += [p for p in os.environ.get(var, "").split(os.pathsep) if p]
     out.append(str(cwd))
     seen, res = set(), []
     for d in out:
@@ -489,22 +492,31 @@ def include_dirs(flags, cwd) -> list[str]:
 
 
 def include_fingerprint(dirs, dep_paths) -> str:
-    """sha256 of the NAMES (relative paths) of header-like files under every include dir (recursive, PRUNE_DIRS
-    skipped) and directly beside every dependency. A header that newly shadows an older one changes it. Names only."""
+    """sha256 of the NAMES (relative paths) of ALL non-directory entries under every include dir (recursive, symlinked
+    subdirs followed once each, no suffix filter: the repo #includes .cpp files; no PRUNE_DIRS: `<fixtures/x.h>` is a
+    valid include; only .git is skipped) and directly beside every dependency. A file that newly shadows an older header
+    changes it. Names only.
+    Known limits (accepted): dirs beside a dep are listed non-recursively, so a new `<dep dir>/sub/x.h` for a
+    `#include "sub/x.h"` from an includer outside every -I dir is missed; headers under -isystem dirs are not content-hashed
+    (-MM omits system headers), only their names are fingerprinted."""
     roots = {(d, True) for d in dirs} | {(os.path.dirname(p), False) for p in dep_paths}
     h = hashlib.sha256()
     for root, recursive in sorted(roots):
-        names, stack = [], [root]
+        names, stack, visited = [], [root], set()
         while stack:
             dp = stack.pop()
+            real = os.path.realpath(dp)
+            if real in visited:
+                continue
+            visited.add(real)
             try:
                 with os.scandir(dp) as it:
                     for e in it:
                         try:
-                            if e.is_dir(follow_symlinks=False):
-                                if recursive and e.name not in PRUNE_DIRS:
+                            if e.is_dir():                       # follows symlinks; the realpath set stops loops
+                                if recursive and e.name != ".git":
                                     stack.append(e.path)
-                            elif os.path.splitext(e.name)[1] in _HEADER_SUFFIXES:
+                            else:
                                 names.append(os.path.relpath(e.path, root))
                         except OSError:
                             pass
@@ -995,7 +1007,7 @@ def _ensure_built_dll(mod_dir: Path, dest: Path | None = None) -> Path:
 
     The staging dir is private to this checkout (build_root()). The freshness check and the copy hold the same lock
     build_check.py takes around its own stage+build; the build_check run itself must NOT run under that lock (it
-    would wait on us forever), so after a build we loop back and re-check under the lock."""
+    would wait on us forever), so after a build we take the lock again and copy the DLL it produced."""
     try:
         m_rel = mod_dir.relative_to(REPO / "patch_manager_mods")
     except ValueError:
@@ -1003,24 +1015,29 @@ def _ensure_built_dll(mod_dir: Path, dest: Path | None = None) -> Path:
     key = "__".join(m_rel.parts)
     key_dir = build_root() / key
     lock = _build_lock_name(key_dir)
+
+    def take(cands):
+        dll = max(cands, key=lambda p: p.stat().st_mtime)
+        if dest is None:
+            return dll
+        shutil.copy2(dll, dest)
+        return dest
     with _get_build_lock(key):
+        with _load_limit.exclusive(lock, f"build {key}"):
+            cands = _built_dlls(key_dir)
+            if _dll_is_fresh(mod_dir, cands):
+                return take(cands)
         for _ in range(3):
-            with _load_limit.exclusive(lock, f"build {key}"):
-                cands = _built_dlls(key_dir)
-                if _dll_is_fresh(mod_dir, cands):
-                    dll = max(cands, key=lambda p: p.stat().st_mtime)
-                    if dest is None:
-                        return dll
-                    shutil.copy2(dll, dest)
-                    return dest
             cmd = [sys.executable, str(REPO / "scripts/build_check.py"), "--mod", str(m_rel), "--keep",
                    "--build-root", str(build_root())]
             proc = subprocess.run(cmd, cwd=REPO, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
             if proc.returncode != 0:
                 raise RuntimeError(f"build_check failed for {m_rel}:\n{proc.stdout}")
-            if not _built_dlls(key_dir):
-                raise RuntimeError(f"build_check --keep for {m_rel} produced no DLL in {key_dir}")
-    raise RuntimeError(f"built DLL for {m_rel} kept going stale or vanishing (another run rebuilding {key_dir}?)")
+            with _load_limit.exclusive(lock, f"build {key}"):
+                cands = _built_dlls(key_dir)
+                if cands:                      # the DLL we just built: no second freshness proof (later edits are the next run's)
+                    return take(cands)
+    raise RuntimeError(f"build_check --keep for {m_rel} produced no DLL in {key_dir}")
 
 
 def _extract_dll(kpatch: Path, dest: Path, dll_from: str = "kpatch", mod: str | None = None):

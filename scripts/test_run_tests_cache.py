@@ -207,6 +207,90 @@ class CacheBehaviour(unittest.TestCase):
         self.assertEqual(rt.execute(it).status, "FAIL")
         self.assertEqual(self.compiles, 2)
 
+    def _shadow_case(self, source, flags, make_shadow, name="sh"):
+        """Build+run once (PASS), run again (still PASS from cache), add a shadowing file, run again (must FAIL)."""
+        src = self.src_dir / f"{name}_test.cpp"
+        src.write_text(source)
+        exe = self.exe_dir / f"exe-{name}"
+        self.exe_dir.mkdir(exist_ok=True)
+        argv = ["g++"] + flags + [str(src)]
+        key = rt.cache_key(src, argv, self.src_dir)
+        it = rt.Item(id=name, kind="cpp", cwd=self.src_dir, build_cwd=self.src_dir,
+                     build_cmd=argv + ["-o", str(exe)], cmd=[str(exe)], cache=rt.CacheInfo(exe, key))
+        self.assertEqual(rt.execute(it).status, "PASS")
+        self.assertEqual(rt.execute(it).status, "PASS")
+        self.assertEqual(self.compiles, 1)
+        make_shadow()
+        self.assertEqual(rt.execute(it).status, "FAIL")
+        self.assertEqual(self.compiles, 2)
+
+    def test_shadow_with_cpp_suffix_rebuilds(self):       # F1a: the repo #includes .cpp files
+        i1, i2 = self.root / "i1", self.root / "i2"
+        i1.mkdir()
+        i2.mkdir()
+        (i2 / "s.cpp").write_text("#define S 0\n")
+        self._shadow_case("#include <s.cpp>\nint main() { return S; }\n", ["-I", str(i1), "-I", str(i2)],
+                          lambda: (i1 / "s.cpp").write_text("#define S 5\n"))
+
+    def test_shadow_inside_pruned_dir_name_rebuilds(self):  # F1b: <fixtures/s.h> is a valid include
+        i1, i2 = self.root / "i1", self.root / "i2"
+        (i1 / "fixtures").mkdir(parents=True)
+        (i2 / "fixtures").mkdir(parents=True)
+        (i2 / "fixtures" / "s.h").write_text("#define S 0\n")
+        self._shadow_case("#include <fixtures/s.h>\nint main() { return S; }\n", ["-I", str(i1), "-I", str(i2)],
+                          lambda: (i1 / "fixtures" / "s.h").write_text("#define S 5\n"))
+
+    def test_shadow_via_symlinked_subdir_rebuilds(self):    # F1c
+        i1, i2, outside = self.root / "i1", self.root / "i2", self.root / "outside"
+        i1.mkdir()
+        outside.mkdir()
+        (i2 / "link").mkdir(parents=True)
+        (i2 / "link" / "s.h").write_text("#define S 0\n")
+        (i1 / "link").symlink_to(outside)
+        self._shadow_case("#include <link/s.h>\nint main() { return S; }\n", ["-I", str(i1), "-I", str(i2)],
+                          lambda: (outside / "s.h").write_text("#define S 5\n"))
+
+    def test_symlink_loop_does_not_hang(self):
+        i1 = self.root / "i1"
+        (i1 / "sub").mkdir(parents=True)
+        (i1 / "sub" / "back").symlink_to(i1)
+        self.assertEqual(len(rt.include_fingerprint([str(i1)], [])), 64)
+
+    def test_shadow_in_earlier_cpath_dir_rebuilds(self):    # F2
+        c1, c2 = self.root / "c1", self.root / "c2"
+        c1.mkdir()
+        c2.mkdir()
+        (c2 / "s.h").write_text("#define S 0\n")
+        with mock.patch.dict(os.environ, {"CPATH": f"{c1}{os.pathsep}{c2}"}):
+            self._shadow_case("#include <s.h>\nint main() { return S; }\n", [],
+                              lambda: (c1 / "s.h").write_text("#define S 5\n"))
+
+    def test_deleted_dependency_rebuilds(self):
+        rt.execute(self.item())
+        (self.src_dir / "val.h").unlink()
+        r = rt.execute(self.item())
+        self.assertEqual((r.status, self.compiles), ("FAIL", 2))
+        self.assertTrue(r.reason.startswith("build failed"))
+
+    def test_compiler_path_change_changes_key(self):
+        a = self.item().cache.key
+        try:
+            rt.compiler_path.cache_clear()
+            with mock.patch.object(rt.shutil, "which", return_value="/opt/other-gcc/bin/g++"):
+                b = self.item().cache.key
+        finally:
+            rt.compiler_path.cache_clear()
+        self.assertNotEqual(a, b)
+        self.assertEqual(a, self.item().cache.key)
+
+    def test_own_source_absent_from_deps_writes_no_sidecar(self):
+        dep = str(self.src_dir / "val.h")
+        with mock.patch.object(rt, "parse_depfile", return_value=[dep]), mock.patch.object(rt, "_note") as note:
+            self.assertEqual(rt.execute(self.item()).status, "PASS")
+        self.assertTrue(note.called)
+        exe = Path(self.item().cmd[0])
+        self.assertFalse(exe.with_name(exe.name + ".deps.json").exists())
+
     def test_shadowing_header_beside_the_test_rebuilds(self):
         inc = self.root / "inc"
         inc.mkdir()
@@ -322,6 +406,34 @@ class SlotsAndWine(unittest.TestCase):
                 os.utime(dll, (4102444800, 4102444800))
                 rt._ensure_built_dll(mod, dest)
         self.assertEqual([e[0] for e in events], ["lock", "copy", "unlock"])
+
+    def test_ensure_built_dll_uses_the_dll_it_just_built_even_if_sources_look_newer(self):
+        with tempfile.TemporaryDirectory() as td:
+            td = Path(td)
+            tmp = td / "tmp"
+            key_dir = tmp / ("build-" + hashlib.sha1(str(rt.REPO).encode()).hexdigest()[:8]) / "zz_nonexistent_src"
+            dll = key_dir / "M" / "build" / "m.dll"
+            calls = []
+
+            def fake_build(cmd, **kw):
+                calls.append(cmd)
+                dll.parent.mkdir(parents=True, exist_ok=True)
+                dll.write_bytes(b"dll")
+                return mock.Mock(returncode=0, stdout="")
+            dest = td / "out.dll"
+            with mock.patch.object(rt, "TMP", tmp), mock.patch.object(rt, "_dll_is_fresh", return_value=False), \
+                    mock.patch.object(rt.subprocess, "run", fake_build):
+                rt._ensure_built_dll(rt.REPO / "patch_manager_mods" / "zz_nonexistent_src", dest)
+            self.assertEqual(len(calls), 1)
+            self.assertEqual(dest.read_bytes(), b"dll")
+            self.assertIn("--build-root", calls[0])
+
+    def test_ensure_built_dll_fails_when_build_produces_no_dll(self):
+        with tempfile.TemporaryDirectory() as td:
+            with mock.patch.object(rt, "TMP", Path(td)), \
+                    mock.patch.object(rt.subprocess, "run", return_value=mock.Mock(returncode=0, stdout="")):
+                with self.assertRaises(RuntimeError):
+                    rt._ensure_built_dll(rt.REPO / "patch_manager_mods" / "zz_nonexistent_src", Path(td) / "o.dll")
 
     def test_cpp_compile_holds_a_slot(self):
         calls = []
