@@ -538,9 +538,32 @@ static void testExports() {
     CHECK(strstr(t, "0x0051DBE1") && strstr(t, "0x0051DD33") && strstr(t, "0x0051E0C9"));
 }
 
+// WI-144 RetHist (RSX site-0 histogram): slot reuse, overflow to other, top-k order (count desc, then ret asc).
+static void testRetHist() {
+    RetHist e; unsigned r[16], n[16];
+    CHECK(e.top(r, n, 5) == 0);                                  // empty: nothing written
+    for (int i = 0; i < 3; ++i) e.add(0x58F514u);
+    CHECK(e.n[0] == 3 && e.ret[0] == 0x58F514u && e.other == 0);   // same ret 3x -> one slot, n=3
+    CHECK(e.top(r, n, 0) == 0);                                  // k=0 writes nothing
+    RetHist o;
+    for (unsigned i = 0; i < 17; ++i) o.add(0x400000u + i);      // 16 distinct fill the table, the 17th -> other
+    CHECK(o.other == 1);
+    o.add(0x400000u);                                            // a stored ret still counts in its slot, not in other
+    CHECK(o.n[0] == 2 && o.other == 1);
+    CHECK(o.top(r, n, 16) == 16);
+    RetHist t;
+    t.add(0x300u); t.add(0x300u); t.add(0x100u); t.add(0x100u);
+    for (int i = 0; i < 5; ++i) t.add(0x200u);
+    t.add(0x50u);
+    CHECK(t.top(r, n, 2) == 2);                                  // 0x200 (5) first, then the 2-way tie at 2 -> lower ret 0x100
+    CHECK(r[0] == 0x200u && n[0] == 5 && r[1] == 0x100u && n[1] == 2);
+    CHECK(t.top(r, n, 10) == 4);                                 // only 4 used slots
+    CHECK(r[2] == 0x300u && n[2] == 2 && r[3] == 0x50u && n[3] == 1);
+}
+
 int main() {
     testGlob(); testNumbers(); testIni(); testShippedIni(); testGate(); testThrottles(); testDecisions(); testHandlerDecisions();
-    testProbeHelpers(); testSpinExpiry(); testCastGuard(); testExports(); testPartyArea();
+    testProbeHelpers(); testSpinExpiry(); testCastGuard(); testExports(); testPartyArea(); testRetHist();
     printf("%d checks, %d failed\n%s\n", g_checks, g_fail, g_fail ? "TESTS FAILED" : "ALL PASS");
     return g_fail ? 1 : 0;
 }

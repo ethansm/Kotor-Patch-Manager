@@ -621,6 +621,33 @@ inline const char* rsName(int site) {
     static const char* const n[] = {"-", "S6A", "S6B", "S6C", "S7", "S12", "S1"};
     return (site >= 0 && site <= 6) ? n[site] : "-";
 }
+// RS site-0 histogram: RunScript return address -> count, for calls from sites the probe does not name (WI-144 RSX).
+// 16 slots; a slot is free while n == 0. add(): bump the matching slot, else take the first free slot, else ++other.
+struct RetHist {
+    unsigned ret[16] = {}; unsigned n[16] = {}; unsigned other = 0;
+    void add(unsigned r) {
+        for (int i = 0; i < 16; ++i) if (n[i] && ret[i] == r) { ++n[i]; return; }
+        for (int i = 0; i < 16; ++i) if (!n[i]) { ret[i] = r; n[i] = 1; return; }
+        ++other;
+    }
+    // Writes up to k entries (k <= 16) ordered by count descending, then ret ascending. Returns how many were written.
+    int top(unsigned* outRet, unsigned* outN, int k) const {
+        bool taken[16] = {};
+        int w = 0;
+        while (w < k && w < 16) {
+            int best = -1;
+            for (int i = 0; i < 16; ++i) {
+                if (!n[i] || taken[i]) continue;
+                if (best < 0 || n[i] > n[best] || (n[i] == n[best] && ret[i] < ret[best])) best = i;
+            }
+            if (best < 0) break;
+            taken[best] = true;
+            outRet[w] = ret[best]; outN[w] = n[best];
+            ++w;
+        }
+        return w;
+    }
+};
 
 // SetPartyMemberFlag 0x58A330 callers: the 15 CALL sites + 5 (return address at [ebp+4]). -1 = unknown.
 constexpr int PfSites = 15;

@@ -85,6 +85,9 @@ CLR of that actor), Bao-Dur = `a9b1138`. Tools: `cmdq_idle_casts.py`, `cmdq_rn_b
   family-active head node). Static facts: `engine_ai_atlas/tools/cg.py callers` (2026-10-25). Open: who runs Kreia's
   64 unattributed end-round script runs; companion-ai `PR RS` lines are per-subject throttled (`g_psubj`,
   `CompanionAI.cpp:1402`), so site attribution needs per-site counters, not lines.
+  Correction (WI-144 triage): the per-site counters already exist (`PRS RS ... s6a s6b s6c`); the 64 runs came from
+  unprobed RunScript call sites. WI-144 adds `PRS RSX unprobed=N other=N top= <ret>:<n>...` (return addresses of
+  unprobed-site runs by tracked creatures); resolve each with `query_ghidra.py address`. Not installed; row CA-RS1.
 - O2: attack flood ("queue filled with single attack actions"): same probe; count 0x3D/0x3F nodes per actor per round,
   and who appended them (script `ActionAttack` without a clear, companion-ai A1 self-requeue, engine auto-attack).
 - O3 (research): group debuffs (Storm, Plague, Insanity, Mass Stasis, Scream, Crush Opposition): pick the AoE centre by

@@ -513,6 +513,8 @@ struct RsTrack {
     DWORD sec = 0; unsigned cur12 = 0, max12 = 0;
 };
 RsTrack g_rs[32];
+cai::RetHist g_rsUnk;   // WI-144: return-address histogram of RunScript calls from unprobed sites (site 0) by tracked creatures (PRS RSX)
+unsigned g_rsUnkTotal = 0, g_rsUnkLast = 0;
 unsigned g_rsS7Lines = 0, g_rsS7E9Lines = 0, g_e9 = 0, g_e9Last = ~0u;   // g_e9: pat-15 deliveries from non-party creatures to party listeners (budget-free, PRS E9)
 RsTrack* rsTrack(int id, DWORD now) {
     RsTrack* v = &g_rs[0];
@@ -706,6 +708,13 @@ void probeSummary(DWORD now) {
             eline(now, "t=%lu PRS RS cr=%08x s6a=%u s6b=%u s6c=%u s7=%u s12=%u s1=%u max12ps=%u", now, t.id, t.n[1], t.n[2], t.n[3], t.n[4], t.n[5], t.n[6], t.max12);
             memcpy(t.nLast, t.n, sizeof t.n);
         }
+    if (g_cfg.probeRs && g_rsUnkTotal != g_rsUnkLast) {   // WI-144 RSX: unprobed RunScript sites, top return addresses (changed only)
+        unsigned r[5], n[5]; int k = g_rsUnk.top(r, n, 5);
+        char h[160]; int len = 0; h[0] = 0;
+        for (int i = 0; i < k && len < static_cast<int>(sizeof h); ++i) len += snprintf(h + len, sizeof h - len, " %06x:%u", r[i], n[i]);
+        eline(now, "t=%lu PRS RSX unprobed=%u other=%u top=%s", now, g_rsUnkTotal, g_rsUnk.other, k ? h : " -");
+        g_rsUnkLast = g_rsUnkTotal;
+    }
     if (g_cfg.probeRs && g_e9 != g_e9Last) {   // first summary prints deliveries=0 too: absence of a line then means no data, not zero
         eline(now, "t=%lu PRS E9 deliveries=%u", now, g_e9);
         g_e9Last = g_e9;
@@ -1402,7 +1411,12 @@ extern "C" void __cdecl CompanionAiProbeFm3Remove(int ebp) {
 extern "C" void __cdecl CompanionAiProbeRunScript(int ret, int script, int self) {
     if (cai::rsProbeIdle(g_cfg.probeRs, g_cfg.probeA1x)) return;   // probe_rs=0 must not disable the A1X follow-up
     int site = cai::rsSite(static_cast<unsigned>(ret));
-    if (!site) return;
+    if (!site) {   // WI-144: unprobed site. Only tracked creatures are counted; no objInfo, no tick, no log line (this path runs for every script)
+        if (g_cfg.probeRs) {
+            for (auto& e : g_rs) if (e.seen && e.id == self) { g_rsUnk.add(static_cast<unsigned>(ret)); ++g_rsUnkTotal; break; }
+        }
+        return;
+    }
     saferead::beginScope();
     DWORD now = GetTickCount();
     if (site <= 3) a1xFollowup(self, cai::rsName(site), now);   // slot-6 sites: the A1 end was followed up (before the filter: review N3, and before tick() so orphanTick cannot ORPHAN it first)
