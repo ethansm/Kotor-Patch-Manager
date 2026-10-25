@@ -64,7 +64,7 @@ so the gains add up and each change's cost or gain is visible in the logs.
 
 | Id | Batch | Deps | Owner gate | Status | Commit | Next |
 |---|---|---|---|---|---|---|
-| **PF0** | Recon + plan (this doc); fog mod built (doc 49 F1) | - | - | DONE | | Wave 1 plan via `/plan-handoff 50:PF1` |
+| **PF0** | Recon + plan (this doc); fog mod built (doc 49 F1) | - | - | DONE | c5a6e142 | doc 50 master plan; recon R1-R3; fog built (doc 49 F1) |
 | **PF1a** | grass 0.1.4-dev: collect radius = clip + 2 m (operand rewrite 0x00499ADC -> `g_collectSq`, toggle `trim_hidden`), bin-loop CPU timing (detours 0x0046661B / 0x00466698, QPC), alpha-to-coverage toggle `smooth_edges` (glEnable/glDisable `GL_SAMPLE_ALPHA_TO_COVERAGE` 0x809E in the same detours, gated on GL_SAMPLE_BUFFERS), PERF + 2 menu rows | PF0 | - | TODO | | worker A (files `k2_grass_draw_distance_src/**`) |
 | **PF1b** | new `k2-shadow-distance` 0.1.0-dev: Shadow Distance slider (vanilla 35 m; writes 0x009F5D50 and rewrites 0x00468CDB operand to `g_shadowRefSq` = dist² x 1100/1225), entry hook 0x00468B50 (ini poll, casters counter), logs live `[0x00A0F040]`/`[0x009F5D54]`, menu page | PF0 | - | TODO | | worker B (files `k2_shadow_distance_src/**`) |
 | **PF1c** | Recon for Wave 2 (read-only): RenderGrassPolys per-bin state and draw path, `[0x00A1BCB4]` backend, wind update 0x00510F70 data flow, quad/index layout for LOD | PF0 | - | TODO | | 2 Haiku recon, out `.claude/research/render_perf/` |
