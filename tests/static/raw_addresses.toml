@@ -51,7 +51,7 @@ addresses = ["0x00745A84", "0x00745A97", "0x00745AEC"]
 addresses = ["0x00743540", "0x00751710"]
 
 [files."patch_manager_mods/companion_ai_src/CompanionAI.cpp"]
-addresses = ["0x0051C0A0", "0x0051C8D0", "0x0051C8F0", "0x00541080", "0x0057C990", "0x0057D370", "0x00A1B4A8", "0x00A7E10C"]
+addresses = ["0x0051C0A0", "0x0051C8D0", "0x0051C8F0", "0x00541080", "0x0057C990", "0x0057D370", "0x00623320", "0x0073A130", "0x009196FD", "0x00A1B4A8", "0x00A7E10C"]
 
 [files."patch_manager_mods/dialogue_letterbox_fix_src/K2DialogueLetterboxFix.cpp"]
 addresses = ["0x009A7CBC", "0x009A7D30", "0x00A309B4", "0x00A309B8", "0x00A309BC"]
