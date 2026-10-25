@@ -112,6 +112,7 @@ static void testShippedIni() {
     CHECK(c.trace && c.scripts && c.enginePoints && c.partyOnly);
     CHECK(c.a1 && c.a1Retarget && c.fm1 && c.fm4 == 1 && c.c1 && c.a4);
     CHECK(!c.p1 && c.p1IntervalMs == 250 && !c.a3);
+    CHECK(c.debugLog);                           // shipped on: debug_log=1
     CHECK(c.a1Stances == maskOf3(11, 12, 16) && c.a1RetargetStances == maskOf3(11, 12, 16) && c.a1PartyOnly && c.a1RethinkMs == 3000);
     CHECK(c.c1PartyOnly && c.fm1RethinkMs == 0 && c.log && !c.logAll && c.enginePrint && c.logAur && !c.printsAllScripts);
     CHECK(c.shipScope == ScopeAi && c.tags.empty() && c.traceScripts.n == 5);
@@ -123,11 +124,11 @@ static void testShippedIni() {
                            "log_all", "engine_print", "log_aur", "dedupe_ms", "max_lines_per_sec", "max_file_mb", "flush_ms",
                            "a1_burst_threshold", "a1_rate_threshold", "engine_verbose", "summary_sec", "p1_detail_lines", "a1", "a1_stances",
                            "a1_party_only", "a1_retarget", "a1_retarget_stances", "a1_retarget_strict", "a1_rethink_ms", "p1", "p1_interval_ms", "fm1",
-                           "fm1_rethink_ms", "fm4", "a4", "c1", "c1_party_only", "a3", "cast_family_guard", "cast_queue_newest", "log",
+                           "fm1_rethink_ms", "fm4", "a4", "c1", "c1_party_only", "a3", "cast_family_guard", "cast_queue_newest", "log", "debug_log",
                            "probe_fm2c", "probe_fm2f", "probe_fm2r", "probe_fm3", "probe_rs", "probe_p2", "probe_pf", "probe_rar", "probe_shx",
                            "probe_ss1", "probe_gca", "probe_party", "probe_a1x", "probe_lines"};
     int knownN = int(sizeof known / sizeof known[0]);
-    CHECK(g_t.n == knownN); CHECK(knownN == 53);
+    CHECK(g_t.n == knownN); CHECK(knownN == 54);
     for (int i = 0; i < g_t.n; ++i) {
         bool ok = false;
         for (int k = 0; k < knownN; ++k) if (!strcmp(g_t.key[i], known[k])) ok = true;
@@ -596,9 +597,36 @@ static void testRetHist() {
     CHECK(r[2] == 0x300u && n[2] == 2 && r[3] == 0x50u && n[3] == 1);
 }
 
+// debug_log (0.3.2-probe): config key, D-line reason names / dedupe key, A1 skip label
+static void testDebugLog() {
+    Config d; CHECK(d.debugLog);                                  // default on
+    IniTable t; t.parse("[CompanionAI]\ndebug_log=0\n", "CompanionAI");
+    Config c; parseConfig(t, c);
+    CHECK(!c.debugLog && !sameConfig(c, d));                      // a reload that flips only debug_log is a config change
+    IniTable t1; t1.parse("[CompanionAI]\ndebug_log=1\n", "CompanionAI");
+    Config c1; parseConfig(t1, c1);
+    CHECK(c1.debugLog && sameConfig(c1, d));
+    CHECK(!strcmp(dbgKeepName(DkLeader), "leader") && !strcmp(dbgKeepName(DkNotParty), "not-party"));
+    CHECK(!strcmp(dbgKeepName(DkUntracked), "untracked-spell") && !strcmp(dbgKeepName(DkFamilyNotActive), "family-not-active"));
+    CHECK(!strcmp(dbgKeepName(DkGuardOff), "guard-off") && !strcmp(dbgKeepName(DkBadRead), "bad-read"));
+    CHECK(!strcmp(dbgKeepName(DkNoStale), "no-stale-nodes") && !strcmp(dbgKeepName(DkCount), "?") && !strcmp(dbgKeepName(-1), "?"));
+    CHECK(dbgKey(0, 0, 0) != 0);                                  // 0 would mean "no dedupe"
+    CHECK(dbgKey(0x7F000010, 8, DkLeader) == dbgKey(0x7F000010, 8, DkLeader));
+    CHECK(dbgKey(0x7F000010, 8, DkLeader) != dbgKey(0x7F000010, 8, DkNotParty));
+    CHECK(dbgKey(0x7F000010, 8, DkLeader) != dbgKey(0x7F000011, 8, DkLeader));
+    CHECK(dbgKey(0x7F000010, 8, DkLeader) != dbgKey(0x7F000010, 9, DkLeader));
+    // A1 skip label: party_only is named only when the stance IS listed and the party_only gate blocked
+    Config a;                                                     // a1=1, stances 11/12/16, a1_party_only=1
+    CHECK(!strcmp(a1SkipLabel(a, 11, 0), "party_only"));
+    CHECK(!strcmp(a1SkipLabel(a, 3, 0), "spin (not listed)"));    // stance not listed: the stance is the cause
+    CHECK(!strcmp(a1SkipLabel(a, 11, 1), "spin (not listed)"));   // party member, listed stance: not reachable via a1Applies, label stays generic
+    a.a1PartyOnly = false; CHECK(!strcmp(a1SkipLabel(a, 3, 0), "spin (not listed)"));
+    a.a1 = false; CHECK(!strcmp(a1SkipLabel(a, 11, 0), "spin (a1=0)"));
+}
+
 int main() {
     testGlob(); testNumbers(); testIni(); testShippedIni(); testGate(); testThrottles(); testDecisions(); testHandlerDecisions();
-    testProbeHelpers(); testSpinExpiry(); testCastGuard(); testCastQueue(); testExports(); testPartyArea(); testRetHist();
+    testProbeHelpers(); testSpinExpiry(); testCastGuard(); testCastQueue(); testExports(); testPartyArea(); testRetHist(); testDebugLog();
     printf("%d checks, %d failed\n%s\n", g_checks, g_fail, g_fail ? "TESTS FAILED" : "ALL PASS");
     return g_fail ? 1 : 0;
 }

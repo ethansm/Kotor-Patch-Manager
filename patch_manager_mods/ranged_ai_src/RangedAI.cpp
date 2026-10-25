@@ -19,6 +19,8 @@
 //   S-H4 0x0074dbdd RangedAiHudStance(ebp)             HUD refresh 0x74da40 default branch (skip-only): marker id for stance 16
 //
 // Log (0.4.0): shared KpLog.h (channel main), see the "log" section; behaviour unchanged from 0.3.0.
+// 0.4.1: bounded logging (own WARN budget, throttled H2 / S2 failures, S1/S2 budget marker) and ranged_ai.ini debug_log=1 (default on):
+// D lines for decisions that did not act.
 // Behaviour applies only to the stances in hold_stances / retarget_stances (shipped: 16), so the vanilla stances stay
 // vanilla. Everything is re-read from ranged_ai.ini once a second, no restart needed.
 #define WIN32_LEAN_AND_MEAN
@@ -77,11 +79,17 @@ KP_CHANNEL(chMain, "main");
 // Only stores the path and the level (no I/O): safe from a static initialiser. Old core: same file name as 0.3.0, at INFO.
 const bool g_fallbackSet = (KpLog_SetFallbackFile("ranged_ai_log.txt"), KpLog_SetFallbackLevel(KPLOG_INFO), true);
 
-int g_logLines = 0;
-constexpr int MaxLogLines = 6000;
+// 0.4.1: INFO and WARN lines have separate budgets (INFO exhaustion never hides a WARN); each writes one marker when it is first exhausted.
+rai::LineBudget g_infoBudget, g_warnBudget;
 void logv(int level, const char* fmt, va_list ap) {
-    if (g_logLines > MaxLogLines) return;
-    if (++g_logLines > MaxLogLines) { KP_LOGV(chMain, KPLOG_INFO, "%s", "-- log cap reached, further lines dropped --"); return; }
+    bool warn = level == KPLOG_WARN;
+    rai::Take tk = warn ? g_warnBudget.take(rai::MaxWarnLines) : g_infoBudget.take(rai::MaxInfoLines);
+    if (tk == rai::Take::Drop) return;
+    if (tk == rai::Take::Marker) {
+        if (warn) KP_LOGV(chMain, KPLOG_WARN, "%s", "-- warn cap (200) reached, further warnings dropped --");
+        else KP_LOGV(chMain, KPLOG_INFO, "%s", "-- log cap reached, further lines dropped --");
+        return;
+    }
     char buf[600]; vsnprintf(buf, sizeof buf, fmt, ap);
     KP_LOGV(chMain, level, "%s", buf);
 }
@@ -120,7 +128,7 @@ template <typename T> bool wr(int addr, T v) {
 
 // ---- config ----
 struct Config {
-    bool hold = true, retarget = true, log = true, logAll = false;
+    bool hold = true, retarget = true, log = true, logAll = false, debugLog = true;   // debugLog: D lines (decisions that did not act)
     unsigned holdMask = 1u << KiteStance, retargetMask = 1u << KiteStance;
     bool rangedRules = true;         // E-H3: stance 16 uses the vanilla Ranged "no approach" rule
     bool kiteApproach = true;        // E-H3 0.3.0: ...but only with a ranged weapon and the target in range
@@ -153,6 +161,7 @@ void loadIni(bool force) {
     if (c.msgStrref <= 0) c.msgStrref = 123710;
     c.log = GetPrivateProfileIntA("RangedAI", "log", 1, IniName) != 0;
     c.logAll = GetPrivateProfileIntA("RangedAI", "log_all", 0, IniName) != 0;
+    c.debugLog = GetPrivateProfileIntA("RangedAI", "debug_log", 1, IniName) != 0;
     char s[128] = {};
     GetPrivateProfileStringA("RangedAI", "hold_stances", "16", s, sizeof s, IniName);
     inikit::trim(s);
@@ -166,9 +175,10 @@ void loadIni(bool force) {
     c.icon[16] = 0;
     if (!c.icon[0]) strcpy(c.icon, "ib_ranged");
     if (force || c.hold != g_cfg.hold || c.retarget != g_cfg.retarget || c.holdMask != g_cfg.holdMask || c.retargetMask != g_cfg.retargetMask ||
-        c.msgStrref != g_cfg.msgStrref || strcmp(c.icon, g_cfg.icon) || c.rangedRules != g_cfg.rangedRules || c.kiteApproach != g_cfg.kiteApproach)
-        cfgLog("config: hold=%d retarget=%d hold_stances=%x retarget_stances=%x ranged_rules=%d kite_approach=%d kite_strref_msg=%d kite_icon=%s log=%d log_all=%d",
-             c.hold, c.retarget, c.holdMask, c.retargetMask, c.rangedRules, c.kiteApproach, c.msgStrref, c.icon, c.log, c.logAll);
+        c.msgStrref != g_cfg.msgStrref || strcmp(c.icon, g_cfg.icon) || c.rangedRules != g_cfg.rangedRules || c.kiteApproach != g_cfg.kiteApproach ||
+        c.log != g_cfg.log || c.logAll != g_cfg.logAll || c.debugLog != g_cfg.debugLog)
+        cfgLog("config: hold=%d retarget=%d hold_stances=%x retarget_stances=%x ranged_rules=%d kite_approach=%d kite_strref_msg=%d kite_icon=%s log=%d log_all=%d debug_log=%d",
+             c.hold, c.retarget, c.holdMask, c.retargetMask, c.rangedRules, c.kiteApproach, c.msgStrref, c.icon, c.log, c.logAll, c.debugLog);
     g_cfg = c;
 }
 
@@ -182,13 +192,32 @@ Track* trackFor(int id) {
     for (auto& t : g_tr) if (!t.id) { t.id = id; return &t; }
     return &g_tr[id & 7];
 }
+// H2 (retarget site) per-creature throttle state and counters
+struct Track2 { int id = 0; unsigned sig = ~0u; int logged = 0; DWORD lastLog = 0; unsigned calls = 0, retargets = 0; };
+Track2 g_tr2[8];
+// debug D lines: change-only per creature, >= 250 ms apart
+struct DbgSlot { int id = 0; bool seen = false; unsigned sig = 0; DWORD last = 0; };
+DbgSlot g_dH1[8], g_dH3[8];
+bool dbgOn() { return g_cfg.log && g_cfg.debugLog; }
+bool dbgAllow(DbgSlot* d, unsigned sig, DWORD now) {
+    if (!rai::shouldLogChange(d->seen, sig, d->sig, now, d->last, 250)) return false;
+    d->seen = true; d->sig = sig; d->last = now;
+    return true;
+}
 DWORD g_lastSummary = 0;
 void summary() {
     DWORD now = GetTickCount();
     if (now - g_lastSummary < 10000) return;
     g_lastSummary = now;
     for (auto& t : g_tr)
-        if (t.id && t.calls) { logf("summary: creature %08x hold-site calls=%u holds=%u logged=%d", t.id, t.calls, t.holds, t.logged); t.calls = t.holds = 0; }
+        if (t.id && t.calls) {
+            unsigned c2 = 0, r2 = 0;
+            for (auto& u : g_tr2) if (u.id == t.id) { c2 = u.calls; r2 = u.retargets; u.calls = u.retargets = 0; }
+            logf("summary: creature %08x hold-site calls=%u holds=%u logged=%d retarget-site calls=%u retargets=%u", t.id, t.calls, t.holds, t.logged, c2, r2);
+            t.calls = t.holds = 0;
+        }
+    for (auto& u : g_tr2)   // creatures seen only at the retarget site
+        if (u.id && u.calls) { logf("summary: creature %08x hold-site calls=0 holds=0 logged=0 retarget-site calls=%u retargets=%u", u.id, u.calls, u.retargets); u.calls = u.retargets = 0; }
 }
 
 struct V3 { float x, y, z; };
@@ -248,6 +277,14 @@ extern "C" int __cdecl RangedAiHold(int attacker, int ebp) {
         }
         summary();
     }
+    if (!hold && dbgOn()) {   // debug: why a party creature was not held
+        rai::NoHold why = rai::noHoldReason(g_cfg.hold, isPC != 0, stance >= 0 && stance < 32 && ((g_cfg.holdMask >> stance) & 1), ranged != 0, los == 0, inRange,
+                                           myArea && myArea == tgtArea, ttype == ObjTypeCreature);
+        DWORD now = GetTickCount();
+        DbgSlot* d = rai::slotFor(g_dH1, id);
+        if (dbgAllow(d, unsigned(why) | (unsigned(stance) & 0xFFu) << 8 | unsigned(ranged) << 16 | unsigned(now / 5000) << 20, now))
+            logf("D H1 t=%lu cr=%08x stance=%d ranged=%d -> no hold (%s)", now, id, stance, ranged, rai::noHoldText(why));
+    }
     return hold ? 1 : 0;
 }
 
@@ -261,24 +298,43 @@ extern "C" int __cdecl RangedAiRetarget(int attacker, int ebp) {
     int stance = stanceOf(attacker);
     int ranged = haveRanged(attacker) ? 1 : 0;
     bool gate = g_cfg.retarget && party != 0 && !isPC && stance >= 0 && stance < 32 && ((g_cfg.retargetMask >> stance) & 1) && ranged;
+    int id = rd<int>(attacker, CrId);
+    Track2* t = rai::slotFor(g_tr2, id);
+    ++t->calls;
+    if (gate) ++t->retargets;
     if (g_cfg.log) {
-        V3 me = pos(attacker, CrPos), lb = pos(attacker, CrLastBlocked);
-        logf("H2 t=%lu cr=%08x party=%d pc=%d stance=%d ranged=%d los=%d me=(%.2f,%.2f,%.2f) lastBlocked=(%.2f,%.2f,%.2f) -> retarget=%d",
-             GetTickCount(), rd<int>(attacker, CrId), party, isPC, stance, ranged, rd<int>(ebp, F_Los), me.x, me.y, me.z, lb.x, lb.y, lb.z, gate);
+        int los = rd<int>(ebp, F_Los);
+        DWORD now = GetTickCount();
+        unsigned sig = rai::retargetSig(gate, stance, ranged, los);
+        // per creature: the first 16 lines, then a changed decision or the time gate (2 s; 250 ms with debug_log)
+        if (rai::shouldLogDecision(t->logged, 16, sig, t->sig, now, t->lastLog, rai::retargetGateMs(g_cfg.debugLog))) {
+            V3 me = pos(attacker, CrPos), lb = pos(attacker, CrLastBlocked);
+            logf("H2 t=%lu cr=%08x party=%d pc=%d stance=%d ranged=%d los=%d me=(%.2f,%.2f,%.2f) lastBlocked=(%.2f,%.2f,%.2f) -> retarget=%d",
+                 now, id, party, isPC, stance, ranged, los, me.x, me.y, me.z, lb.x, lb.y, lb.z, gate);
+            t->sig = sig; t->lastLog = now; ++t->logged;
+        }
+        summary();
     }
     return gate ? 1 : 0;
 }
 
 // AddStanceActions runs on every action-bar rebuild (several times a second): log S1/S2 only when what they do changes.
 int g_s1Logged = 0, g_s2LastRow = -1, g_s2Logged = 0;
-constexpr int MenuLogBudget = 20;
+bool g_menuMarker = false;   // the "budget reached" marker is written once, by whichever of S1 / S2 exhausts first
+rai::KindThrottle g_s2BadFrame, g_s2NotWritable;
+void menuMarker(int budget) { logf("-- S1/S2 menu log budget (%d) reached --", budget); }
 
 // S-H1. ECX = the shown creature's stance, about to be clamped to {9,11,12,13}. Return 1 => keep it (stance 16).
 extern "C" int __cdecl RangedAiStanceClamp(int state) {
     saferead::beginScope();
     if (state != KiteStance) return 0;
     loadIni(false);
-    if (g_cfg.log && g_s1Logged < MenuLogBudget) { ++g_s1Logged; logf("S1 t=%lu stance menu build: stance %d kept (vanilla clamp skipped)", GetTickCount(), state); }
+    if (g_cfg.log) {
+        int budget = rai::menuLogBudget(g_cfg.debugLog);
+        rai::Take tk = rai::menuTake(g_s1Logged, budget, g_menuMarker);
+        if (tk == rai::Take::Ok) logf("S1 t=%lu stance menu build: stance %d kept (vanilla clamp skipped)", GetTickCount(), state);
+        else if (tk == rai::Take::Marker) menuMarker(budget);
+    }
     return 1;
 }
 
@@ -289,15 +345,32 @@ extern "C" int __cdecl RangedAiStanceRow(int ebp) {
     if (rd<int>(ebp, FA_State, -1) != KiteStance) return 0;
     loadIni(false);
     int list = rd<int>(ebp, FA_List), base = list ? rd<int>(list, 0) : 0, idx = rd<int>(ebp, FA_RowIdx, -1);
-    if (!base || idx < 0 || idx > 64) { logw("S2 bad frame: list=%08x base=%08x idx=%d (row left empty)", list, base, idx); return 1; }
+    unsigned sup = 0;
+    if (!base || idx < 0 || idx > 64) {   // one WARN per failure kind per 5 s; repeats are counted
+        if (g_s2BadFrame.allow(GetTickCount(), 5000, &sup)) {
+            char sfx[32]; rai::suppressedSuffix(sfx, sizeof sfx, sup);
+            logw("S2 bad frame: list=%08x base=%08x idx=%d (row left empty)%s", list, base, idx, sfx);
+        }
+        return 1;
+    }
     int row = base + idx * RowStride;
-    if (!wr<int>(row + RowActionId, KiteActionId)) { logw("S2 row %08x not writable", row); return 1; }
+    if (!wr<int>(row + RowActionId, KiteActionId)) {
+        if (g_s2NotWritable.allow(GetTickCount(), 5000, &sup)) {
+            char sfx[32]; rai::suppressedSuffix(sfx, sizeof sfx, sup);
+            logw("S2 row %08x not writable%s", row, sfx);
+        }
+        return 1;
+    }
     char ref[16] = {0};
     for (int i = 0; i < 16 && g_cfg.icon[i]; ++i) ref[i] = g_cfg.icon[i];   // CResRef: 16 bytes, lower case, zero padded (as 0x710eb0)
     for (int i = 0; i < 16; i += 4) { int w; memcpy(&w, ref + i, 4); wr<int>(row + RowIcon + i, w); }
-    if (g_cfg.log && (idx != g_s2LastRow || g_s2Logged < 3) && g_s2Logged < MenuLogBudget) {
-        ++g_s2Logged; g_s2LastRow = idx;
-        logf("S2 t=%lu stance row %d (%08x): id=0x%x icon=%s", GetTickCount(), idx, row, KiteActionId, g_cfg.icon);
+    if (g_cfg.log && (idx != g_s2LastRow || g_s2Logged < 3)) {
+        int budget = rai::menuLogBudget(g_cfg.debugLog);
+        rai::Take tk = rai::menuTake(g_s2Logged, budget, g_menuMarker);
+        if (tk == rai::Take::Ok) {
+            g_s2LastRow = idx;
+            logf("S2 t=%lu stance row %d (%08x): id=0x%x icon=%s", GetTickCount(), idx, row, KiteActionId, g_cfg.icon);
+        } else if (tk == rai::Take::Marker) menuMarker(budget);
     }
     return 1;
 }
@@ -348,6 +421,12 @@ int32_t KPATCH_CALL RaiMapsToRanged(int32_t raw, intptr_t ebp) {
     if (!saferead::readAt<int>(3, static_cast<uintptr_t>(ebp), F_RangedFlag, &ranged) ||
         !saferead::readAt<float>(3, static_cast<uintptr_t>(ebp), F_Max, &maxR) ||
         !saferead::readAt<float>(3, static_cast<uintptr_t>(ebp), F_Dist2, &dist2)) {
+        if (dbgOn()) {   // debug: the frame read failed, so stance 16 keeps the approach rule
+            int attacker = rd<int>(ebp, F_Attacker);
+            int id = attacker ? rd<int>(attacker, CrId) : 0;
+            DWORD now = GetTickCount();
+            if (dbgAllow(rai::slotFor(g_dH3, id), unsigned(now / 1000), now)) logf("D H3 t=%lu cr=%08x read failed -> no map", now, id);
+        }
         return 0;
     }
     return (ranged != 0 && rai::inWeaponRange(maxR, dist2)) ? 1 : 0;
@@ -376,8 +455,8 @@ extern "C" void __cdecl RangedAiStanceRules(int stance, int ebp) {
     // [ebp-0x174] is a slot of the live hooked frame; the replaced instruction is skipped, so always store it.
     *reinterpret_cast<int*>(ebp + F_StanceRules) = eff;
     if (stance == KiteStance && g_cfg.log) {   // first 20 lines, then only when the decision changes for a creature
-        int attacker = *reinterpret_cast<const int*>(ebp + F_Attacker);   // `this` of the hooked function
-        int id = attacker ? *reinterpret_cast<const int*>(attacker + CrId) : 0;
+        int attacker = rd<int>(ebp, F_Attacker);   // `this` of the hooked function
+        int id = attacker ? rd<int>(attacker, CrId) : 0;
         H3Log* h = nullptr;
         for (auto& e : g_h3) if (e.id == id) h = &e;
         if (!h) { h = &g_h3[id & 7]; h->id = id; h->last = -1; h->t = 0; }
@@ -411,7 +490,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
 BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
     if (reason == DLL_PROCESS_ATTACH) {
         char cwd[MAX_PATH] = "?"; GetCurrentDirectoryA(MAX_PATH, cwd);
-        snprintf(g_loadLine, sizeof g_loadLine, "ranged-ai 0.4.0 loaded; cwd=%s pid=%lu tick=%lu", cwd, (unsigned long)GetCurrentProcessId(), GetTickCount());
+        snprintf(g_loadLine, sizeof g_loadLine, "ranged-ai 0.4.1 loaded; cwd=%s pid=%lu tick=%lu", cwd, (unsigned long)GetCurrentProcessId(), GetTickCount());
         if (GetCurrentDirectoryA(MAX_PATH, cwd) > 0) snprintf(IniName, sizeof IniName, "%s\\ranged_ai.ini", cwd);
         snprintf(g_iniLine, sizeof g_iniLine, "ini path: %s", IniName);
         loadIni(true);

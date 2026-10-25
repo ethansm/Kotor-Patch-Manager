@@ -149,5 +149,81 @@ class VanillaAnchorTest(unittest.TestCase):
                 self.assertEqual(texts[fname].count(P.crlf(old)), 1, "%s in %s" % (pid, fname))
 
 
+# Trace coverage (combat AI logging): every PATCHES entry that changes a decision leaves a trace line when it acts.
+# Existing action prints use "Party <ID>:"; the DEBUG-class prints added for the silent entries use the exact prefix
+# below (companion-ai filters "Party D " lines when its debug_log=0, so the prefix is a contract).
+PARTY_D_PREFIX = "GENERIC DEBUG *************** Party D "
+PRINT_LITERAL = re.compile(r'"((?:[^"\\]|\\.)*)"')
+
+# Entries with no print of their own, one reason each.
+SILENT_BY_DESIGN = {
+    "MOD8-proto": "prototypes and a constant, no runtime decision",
+    "H2c": "ratio operand fix inside an else-if condition; the returned member prints vanilla 'Return oP1'",
+    "H2d": "ratio operand fix inside an else-if condition; the returned member prints vanilla 'Return oP2'",
+    "M2": "runs inside the per-object AoE scan loop (GN_FindAOETarget); a print would fire once per scanned object",
+    "M4d": "counter decrement only (nRoll--), no pick; the pick itself prints in M4c",
+    "L4": "else-if condition inside a buff-tree chain with no statement slot; PC-only trees, party members never reach it",
+}
+# Entries whose new text only calls a helper in party_ai_fixes.nss; the helper prints.
+HELPER_PRINTS = {"E1": "Party E1:", "E3": "Party E3:"}
+
+
+class TraceCoverageTest(unittest.TestCase):
+    def _prints(self, new):
+        return [m for m in PRINT_LITERAL.findall(new) if "GENERIC DEBUG" in m and "Party " in m]
+
+    def test_g_every_patch_prints_or_is_silent_by_design(self):
+        ids = [e[0] for e in P.PATCHES]
+        self.assertEqual(len(ids), len(set(ids)))
+        for pid, scope, fname, old, new in P.PATCHES:
+            with self.subTest(patch=pid):
+                prints = self._prints(new)
+                if pid in SILENT_BY_DESIGN:
+                    self.assertEqual(prints, [], pid + " is listed silent but prints")
+                elif pid in HELPER_PRINTS:
+                    self.assertEqual(prints, [], pid + " prints in the patch itself; drop it from HELPER_PRINTS")
+                else:
+                    self.assertTrue(prints, pid + " leaves no 'Party ' trace line")
+
+    def test_g_silent_and_helper_sets_name_real_entries(self):
+        ids = {e[0] for e in P.PATCHES}
+        self.assertLessEqual(set(SILENT_BY_DESIGN), ids)
+        self.assertLessEqual(set(HELPER_PRINTS), ids)
+        self.assertFalse(set(SILENT_BY_DESIGN) & set(HELPER_PRINTS))
+        for pid, text in HELPER_PRINTS.items():
+            with open(FIXES, encoding="utf-8") as fh:
+                self.assertIn(text, fh.read(), pid)
+
+    def test_g_party_d_prints_use_exact_prefix_and_a_patch_id(self):
+        ids = {e[0] for e in P.PATCHES}
+        seen = set()
+        for pid, scope, fname, old, new in P.PATCHES:
+            for lit in PRINT_LITERAL.findall(new):
+                if "Party D" not in lit:
+                    continue
+                with self.subTest(patch=pid, text=lit[:60]):
+                    self.assertTrue(lit.startswith(PARTY_D_PREFIX), lit)
+                    tag = lit[len(PARTY_D_PREFIX):].split(":", 1)[0]
+                    self.assertIn(tag, ids, lit)
+                    self.assertTrue(lit[len(PARTY_D_PREFIX) + len(tag):].startswith(": "), lit)
+                    seen.add(tag)
+        # every previously silent entry (audit gaps 1-8) now has a Party D print, except the by-design ones
+        gaps = {"MEDPAC-a", "M5", "M5b", "ANTIDOTE", "H1a", "H2a", "H2b", "H2e", "M3", "M9", "M4b", "M4c", "M7a",
+                "M7b", "E6", "E13", "E10", "E11", "M1", "M10b", "MOD8-dispatch"}
+        self.assertEqual(gaps - seen, set())
+
+    def test_g_medpac_a_print_sits_in_the_party_closing_branch(self):
+        new = [e for e in P.PATCHES if e[0] == "MEDPAC-a"][0][4]
+        i = new.index("Party D MEDPAC-a: medpac/repair kit branch closed for party member")
+        head = new[:new.rfind("GN_MyPrintString", 0, i)]
+        self.assertTrue(head.rstrip().endswith("{"), "print must be the first statement of a branch")
+        self.assertIn("else if(IsObjectPartyMember(OBJECT_SELF) &&", head)
+
+    def test_g_baseline_mod8_dispatch_stays_untraced(self):
+        # MOD8_ONLY must rebuild the live k_ai_master.ncs byte for byte, so it carries no trace line.
+        for e in P.MOD8_ONLY:
+            self.assertNotIn("Party D", e[4], e[0])
+
+
 if __name__ == "__main__":
     unittest.main()

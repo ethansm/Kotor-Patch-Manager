@@ -72,7 +72,7 @@ KP_LOG_PATCH("companion-ai");
 namespace {
 
 using cai::Invalid;
-constexpr const char* Version = "0.3.1-probe";
+constexpr const char* Version = "0.3.2-probe";
 
 // ---- game globals and functions (conventions from the raw .asm)
 constexpr int G_VM = 0x00A1B4A8;            // CVirtualMachine*
@@ -221,6 +221,13 @@ void eline(DWORD now, const char* fmt, ...) { va_list ap; va_start(ap, fmt); vem
 // same, at WARN: visible without a kplog.ini (the A4 NULL spell row that a4=0 lets crash the game)
 void ewarn(DWORD now, const char* fmt, ...) { va_list ap; va_start(ap, fmt); vemit(chMain, now, 0, true, KPLOG_WARN, fmt, ap); va_end(ap); }
 
+// One-time marker when a silent per-session line cap is used up (G1 / F4 / PARTY / FM3L / SS1 / RS / SHX): the counts continue in the S / PRS lines.
+void capNote(DWORD now, bool& noted, const char* what, int cap, const char* tail) {
+    if (noted) return;
+    noted = true;
+    eline(now, "-- %s line budget (%d) reached; %s --", what, cap, tail);
+}
+
 void logConfig(DWORD now, const char* why) {
     const cai::Config& c = g_cfg;
     char scripts[600], tags[600];
@@ -233,9 +240,10 @@ void logConfig(DWORD now, const char* why) {
           c.printsAllScripts, c.partyOnly, tags, c.logAll, c.enginePrint, c.logAur, c.dedupeMs, c.maxLinesPerSec, c.maxFileMb, c.flushMs,
           c.a1BurstThreshold, c.a1RateThreshold, c.engineVerbose, c.summarySec, c.p1DetailLines);
     eline(now, "# config fixes a1=%d a1_stances=%x a1_party_only=%d a1_retarget=%d a1_retarget_stances=%x a1_retarget_strict=%d a1_rethink_ms=%d p1=%d "
-               "p1_interval_ms=%d fm1=%d fm1_rethink_ms=%d fm4=%d%s a4=%d c1=%d c1_party_only=%d a3=%d log=%d",
+               "p1_interval_ms=%d fm1=%d fm1_rethink_ms=%d fm4=%d%s a4=%d c1=%d c1_party_only=%d a3=%d cast_family_guard=%d cast_queue_newest=%d log=%d debug_log=%d",
           c.a1, c.a1Stances, c.a1PartyOnly, c.a1Retarget, c.a1RetargetStances, c.a1RetargetStrict, c.a1RethinkMs, c.p1, c.p1IntervalMs, c.fm1, c.fm1RethinkMs,
-          c.fm4, c.fm4Requested > 1 ? " (requested mode not built: vanilla)" : "", c.a4, c.c1, c.c1PartyOnly, c.a3, c.log);
+          c.fm4, c.fm4Requested > 1 ? " (requested mode not built: vanilla)" : "", c.a4, c.c1, c.c1PartyOnly, c.a3, c.castFamilyGuard, c.castQueueNewest, c.log,
+          c.debugLog);
     eline(now, "# config probes fm2c=%d fm2f=%d fm2r=%d fm3=%d rs=%d p2=%d pf=%d rar=%d shx=%d ss1=%d gca=%d party=%d a1x=%d lines=%d", c.probeFm2c,
           c.probeFm2f, c.probeFm2r, c.probeFm3, c.probeRs, c.probeP2, c.probePf, c.probeRar, c.probeShx, c.probeSs1, c.probeGca, c.probeParty,
           c.probeA1x, c.probeLines);
@@ -367,6 +375,7 @@ struct Stats {
     unsigned a1Would = 0, a1End = 0, a1Retarget = 0, a1NonCand = 0, a1Unread = 0, a1Ctrl = 0;   // a1*: silent returns = vanilla
     unsigned p1Checks = 0, p1Allowed = 0, p1Throttled = 0, p1Runs = 0, p1Resets = 0;
     unsigned fm1Keep = 0, fm1Clear = 0, fm1PartySkip = 0, fm4Snap = 0, fm4Restore = 0, a4 = 0, c1Restart = 0, c1Vanilla = 0, c1Capped = 0, a3 = 0;
+    unsigned g1Checks = 0, g1Drops = 0, g1Bad = 0, f4Checks = 0, f4Drops = 0, f4Nodes = 0, f4Bad = 0;   // G1 / F4: always counted (debug_log only adds D lines)
 };
 Stats g_st, g_stLast;
 DWORD g_lastSummary = 0;
@@ -444,10 +453,12 @@ void summary(DWORD now) {
         g_gate.totalDeduped != g_sumDeduped) {
         eline(now, "t=%lu S lines=%llu dropped=%llu deduped=%llu capDropped=%llu | flips=%u prints=%u aur=%u e1=%u e1spins=%u e1b=%u e2=%u e3=%u | "
                    "a1{would=%u end=%u retarget=%u silent{nonCand=%u unread=%u ctrl=%u}} p1{checks=%u allowed=%u throttled=%u runs=%u resets=%u} "
-                   "fm1{keep=%u clear=%u partySkip=%u} fm4{snap=%u restore=%u} a4=%u c1{restart=%u vanilla=%u capped=%u} a3=%u",
+                   "fm1{keep=%u clear=%u partySkip=%u} fm4{snap=%u restore=%u} a4=%u c1{restart=%u vanilla=%u capped=%u} a3=%u "
+                   "g1=%u/%u f4=%u/%u f4nodes=%u g1bad=%u f4bad=%u",
               now, g_gate.totalLines, g_gate.totalDropped, g_gate.totalDeduped, g_gate.totalCapDropped, s.flips, s.prints, s.aur, s.e1,
               s.e1spins, s.e1b, s.e2, s.e3, s.a1Would, s.a1End, s.a1Retarget, s.a1NonCand, s.a1Unread, s.a1Ctrl, s.p1Checks, s.p1Allowed,
-              s.p1Throttled, s.p1Runs, s.p1Resets, s.fm1Keep, s.fm1Clear, s.fm1PartySkip, s.fm4Snap, s.fm4Restore, s.a4, s.c1Restart, s.c1Vanilla, s.c1Capped, s.a3);
+              s.p1Throttled, s.p1Runs, s.p1Resets, s.fm1Keep, s.fm1Clear, s.fm1PartySkip, s.fm4Snap, s.fm4Restore, s.a4, s.c1Restart, s.c1Vanilla, s.c1Capped, s.a3,
+              s.g1Drops, s.g1Checks, s.f4Drops, s.f4Checks, s.f4Nodes, s.g1Bad, s.f4Bad);
         g_stLast = s;
     }
     for (auto& t : g_tr)
@@ -623,7 +634,7 @@ int g_lastCtrl = 0, g_lastCtrlArea = 0;
 bool g_partyLoaded = false;
 
 void partyEmit(DWORD now, const char* why, int ctrl) {
-    if (g_partyLines >= 100) return;
+    if (g_partyLines >= 100) { static bool noted = false; capNote(now, noted, "PARTY", 100, "later party snapshots are not logged"); return; }
     int app = rd<int>(G_App, 0), server = app ? rd<int>(app, 8) : 0;
     if (!server || !rd<int>(server, 4)) return;   // 0x51C620 (inside both getters) dereferences [server+4] (review N5)
     int tbl = reinterpret_cast<Fn0>(FnPartyTable)(server);
@@ -769,6 +780,13 @@ bool g_pageReady = false;
 
 void mcLog(int level, const char* msg) { KP_LOGV(chMain, level, "%s", msg); }
 
+// Mod Configuration hook: the "Advanced Debug Logging" row also drives Ranged AI's debug_log key, when ranged_ai.ini exists. Accepts every change.
+int32_t onModCfgChange(void*, int, const char* id, int32_t requested, int) {
+    if (id && strcmp(id, "debug_log") == 0 && GetFileAttributesA("ranged_ai.ini") != INVALID_FILE_ATTRIBUTES)
+        iniw::updateFile("ranged_ai.ini", "RangedAI", "debug_log", requested ? "1" : "0");
+    return requested;
+}
+
 // KPatchInit, then the 1 Hz tick until registered (the providers may load after this DLL).
 void pollModConfig() {
     auto clients = k2pc::makeSet(g_mcCfg, g_mcMenu);
@@ -778,6 +796,7 @@ void pollModConfig() {
         if (g_page.load(cai::kPageSchema, strlen(cai::kPageSchema), err, sizeof err)) {
             g_page.menu = &g_mcMenu;
             g_page.io = mcdecl::fileIo();
+            g_page.hooks.onChange = onModCfgChange;
             g_mcEntry = g_page.entry(cai::kModId);
         } else {
             KP_WARN("ModConfig schema parse failed: %s", err);
@@ -914,6 +933,7 @@ extern "C" int __cdecl AiTracePrintString(int ebp) {
     if (!objPasses(o)) return 0;
     char text[480];
     copyStr(fr<int>(ebp, -0x18), fr<int>(ebp, -0x14), text, sizeof text);
+    if (!g_cfg.debugLog && strstr(text, "Party D ")) return (traced && !g_cfg.enginePrint) ? 1 : 0;   // debug_log=0: the party script "Party D" prints are not logged
     ++g_st.prints;
     tline(now, cai::lineKey(c.self, c.script, text), "t=%lu P %08x %s %s ev=%d d=%d | %s", now, c.self, o.tag, c.script, c.ev, c.depth, text);
     return (traced && !g_cfg.enginePrint) ? 1 : 0;
@@ -922,23 +942,38 @@ extern "C" int __cdecl AiTracePrintString(int ebp) {
 // G1. AIActionCombat case 9 (spell round node) at 0x6D9ADB, before anything is pushed (the stolen PUSH 1 / MOV EDX,[EBP-0x1C] run on the
 // no-skip path). Return 1 => 0x6D9B65: the round build for this node is skipped and the node is freed there as vanilla does. Every
 // doubtful read returns 0 (vanilla): a drop needs a readable actor, server, effect list and spell row.
-namespace { int g_g1Logs = 0; }   // session budget of G1 drop lines
+namespace {
+int g_g1Logs = 0;   // session budget of G1 drop lines
+bool g_g1Noted = false;
+// debug_log: one D line for a party member's decision that was not a drop. The actor id is read only when the line could be written;
+// the line goes out only for what objPasses lets through (party members; log_all/tags widen it), as a tline (dedupe + per-second cap).
+void dbgG1(DWORD now, int actor, int actorId, int spell, int reason) {
+    if (!g_cfg.debugLog) return;
+    if (!actorId && (!actor || !saferead::readAt<int>(1, static_cast<uintptr_t>(actor), ObId, &actorId))) return;
+    if (!actorId || actorId == Invalid) return;
+    ObjInfo o = objInfo(actorId, now);
+    if (!objPasses(o)) return;
+    tline(now, cai::dbgKey(actorId, spell, reason), "t=%lu D G1 cr=%08x spell=%d fam=%d -> keep (%s)", now, actorId, spell, cai::castFamily(spell),
+          cai::dbgKeepName(reason));
+}
+}
 extern "C" int __cdecl CompanionAiCastGuard(int ebp) {
     saferead::beginScope();
     DWORD now = GetTickCount(); tick(now);
-    if (!g_cfg.castFamilyGuard) return 0;
     int node = fr<int>(ebp, -0x1C);
     int spell = rd<int>(node, 0x24, -1);
-    if (!cai::castFamily(spell)) return 0;   // untracked spell (most nodes): no further reads
     int actor = fr<int>(ebp, -0x1AC), actorId = 0;
-    if (!actor || !saferead::readAt<int>(1, static_cast<uintptr_t>(actor), ObId, &actorId) || !actorId || actorId == Invalid) return 0;
+    if (!g_cfg.castFamilyGuard) { if (g_cfg.debugLog && cai::castFamily(spell)) dbgG1(now, actor, 0, spell, cai::DkGuardOff); return 0; }
+    if (!cai::castFamily(spell)) { dbgG1(now, actor, 0, spell, cai::DkUntracked); return 0; }   // untracked spell (most nodes): no further reads
+    ++g_st.g1Checks;
+    if (!actor || !saferead::readAt<int>(1, static_cast<uintptr_t>(actor), ObId, &actorId) || !actorId || actorId == Invalid) { ++g_st.g1Bad; return 0; }
     int app = rd<int>(G_App, 0), server = app ? rd<int>(app, 8) : 0;
-    if (!server || !rd<int>(server, 4)) return 0;   // 0x51C620 dereferences [server+4] (as partyEmit)
+    if (!server || !rd<int>(server, 4)) { ++g_st.g1Bad; dbgG1(now, actor, actorId, spell, cai::DkBadRead); return 0; }   // 0x51C620 dereferences [server+4] (as partyEmit)
     bool actorIsLeader = reinterpret_cast<Fn0>(FnPlayerId)(server) == actorId;
-    if (actorIsLeader) return 0;
-    if (!objInfo(actorId, now).party) return 0;   // party members only: enemies and neutral NPCs are never dropped
+    if (actorIsLeader) { dbgG1(now, actor, actorId, spell, cai::DkLeader); return 0; }
+    if (!objInfo(actorId, now).party) { dbgG1(now, actor, actorId, spell, cai::DkNotParty); return 0; }   // party members only: enemies and neutral NPCs are never dropped
     int arr = 0, cnt = 0;
-    if (!k2fx::effectListNonEmpty(static_cast<uintptr_t>(actor), &arr, &cnt)) return 0;   // no effects: nothing to be active
+    if (!k2fx::effectListNonEmpty(static_cast<uintptr_t>(actor), &arr, &cnt)) { dbgG1(now, actor, actorId, spell, cai::DkFamilyNotActive); return 0; }   // no effects: nothing to be active
     int ids[64], n = 0;
     for (int i = 0; i < cnt && n < 64; ++i) {
         int eff = rd<int>(arr, i * 4, 0);
@@ -946,11 +981,12 @@ extern "C" int __cdecl CompanionAiCastGuard(int ebp) {
         int sp = rd<int>(eff, k2fx::Effect_SpellId, -1);
         if (sp > 0) ids[n++] = sp;
     }
-    if (!cai::castGuardDrops(true, actorIsLeader, spell, ids, n)) return 0;
+    if (!cai::castGuardDrops(true, actorIsLeader, spell, ids, n)) { dbgG1(now, actor, actorId, spell, cai::DkFamilyNotActive); return 0; }
+    ++g_st.g1Drops;
     if (g_g1Logs < 200) {
         ++g_g1Logs;
         eline(now, "t=%lu G1 drop cr=%08x spell=%d fam=%d", now, actorId, spell, cai::castFamily(spell));
-    }
+    } else capNote(now, g_g1Noted, "G1 drop", 200, "counts continue in S");
     return 1;
 }
 
@@ -961,30 +997,40 @@ extern "C" int __cdecl CompanionAiCastGuard(int ebp) {
 // read returns before anything is removed.
 namespace {
 int g_f4Logs = 0;   // session budget of F4 drop lines
+bool g_f4Noted = false;
 struct F4Seen { int act; DWORD t; };
 F4Seen g_f4Seen[64] = {};   // ring: spell action -> tick of its AddSWSpellAction (party members only); a reused pointer reads as same-run = kept
 int g_f4Next = 0;
 DWORD f4AddedAt(int act) { for (auto& e : g_f4Seen) if (e.act == act) return e.t; return 0; }
+// debug_log: one D line for a party member's F4 decision that dropped nothing (same gating as dbgG1)
+void dbgF4(DWORD now, int actorId, int nodes, int cur, int sameRun, int reason) {
+    if (!g_cfg.debugLog || !actorId || actorId == Invalid) return;
+    ObjInfo o = objInfo(actorId, now);
+    if (!objPasses(o)) return;
+    tline(now, cai::dbgKey(actorId, nodes, reason), "t=%lu D F4 cr=%08x nodes=%d cur=%08x same_run=%d stale=0 -> keep (%s)", now, actorId, nodes, cur,
+          sameRun, cai::dbgKeepName(reason));
+}
 }
 extern "C" void __cdecl CompanionAiCastQueueNewest(int ebp) {
     saferead::beginScope();
     DWORD now = GetTickCount(); tick(now);
     if (!g_cfg.castQueueNewest) return;
     int round = fr<int>(ebp, -0x28);
-    if (!round) return;
+    if (!round) { ++g_st.f4Bad; return; }
     int cr = rd<int>(round, 0xB04, 0);
-    if (!cr || rd<int>(cr, CrRound, 0) != round) return;   // the round's owner must point back at this round
+    if (!cr || rd<int>(cr, CrRound, 0) != round) { ++g_st.f4Bad; return; }   // the round's owner must point back at this round
     int actorId = rd<int>(cr, ObId, 0);
-    if (!actorId || actorId == Invalid) return;
+    if (!actorId || actorId == Invalid) { ++g_st.f4Bad; return; }
     int app = rd<int>(G_App, 0), server = app ? rd<int>(app, 8) : 0;
-    if (!server || !rd<int>(server, 4)) return;   // 0x51C620 dereferences [server+4] (as CompanionAiCastGuard)
-    if (reinterpret_cast<Fn0>(FnPlayerId)(server) == actorId) return;   // the controlled leader: player-issued casts are never dropped
-    if (objInfo(actorId, now).party != 1) return;   // party members only
+    if (!server || !rd<int>(server, 4)) { ++g_st.f4Bad; dbgF4(now, actorId, 0, 0, 0, cai::DkBadRead); return; }   // 0x51C620 dereferences [server+4] (as CompanionAiCastGuard)
+    if (reinterpret_cast<Fn0>(FnPlayerId)(server) == actorId) { dbgF4(now, actorId, 0, 0, 0, cai::DkLeader); return; }   // the controlled leader: player-issued casts are never dropped
+    if (objInfo(actorId, now).party != 1) { dbgF4(now, actorId, 0, 0, 0, cai::DkNotParty); return; }   // party members only
+    ++g_st.f4Checks;
     int fresh = fr<int>(ebp, -0x10);   // the new node (PUSH [EBP-0x10] -> AddAction): not linked yet, stamp it for the same-run test
     if (fresh) { g_f4Seen[g_f4Next].act = fresh; g_f4Seen[g_f4Next].t = now ? now : 1; g_f4Next = (g_f4Next + 1) & 63; }
     int W = rd<int>(round, 0xB00, 0);
     int internal = W ? rd<int>(W, 0, 0) : 0;
-    if (!internal) return;
+    if (!internal) { ++g_st.f4Bad; dbgF4(now, actorId, 0, 0, 0, cai::DkBadRead); return; }
     int cur = rd<int>(round, 0xB18, 0);   // the in-progress action (0 = none): never dropped
     // [internal] = head node {+0 prev, +4 next, +8 action}; the action's type is the byte at action+0x10. At most 8 nodes walked.
     int nodes[8], acts[8], types[8], n = 0;
@@ -992,29 +1038,36 @@ extern "C" void __cdecl CompanionAiCastQueueNewest(int ebp) {
     while (node && n < 8) {
         int act = 0, nxt = 0;
         unsigned char typ = 0;
-        if (!saferead::readAt<int>(1, static_cast<uintptr_t>(node), 8, &act) || !saferead::readAt<int>(1, static_cast<uintptr_t>(node), 4, &nxt)) return;
-        if (!act || !saferead::readAt<unsigned char>(1, static_cast<uintptr_t>(act), 0x10, &typ)) return;
+        if (!saferead::readAt<int>(1, static_cast<uintptr_t>(node), 8, &act) || !saferead::readAt<int>(1, static_cast<uintptr_t>(node), 4, &nxt) ||
+            !act || !saferead::readAt<unsigned char>(1, static_cast<uintptr_t>(act), 0x10, &typ)) {
+            ++g_st.f4Bad; dbgF4(now, actorId, n, cur, 0, cai::DkBadRead); return;
+        }
         nodes[n] = node; acts[n] = act; types[n] = typ; ++n;
         node = nxt;
     }
+    int sameRun = 0;
     for (int i = 0; i < n; ++i)   // a combo queues several casts in one script run: keep this run's own earlier nodes
-        if (types[i] == 9 && cai::f4SameRun(f4AddedAt(acts[i]), now, 16)) types[i] = 0;
+        if (types[i] == 9 && cai::f4SameRun(f4AddedAt(acts[i]), now, 16)) { types[i] = 0; ++sameRun; }
     int picked[8];
     int pn = cai::staleSpellPick(types, acts, n, cur, picked, 8);
+    if (!pn) { dbgF4(now, actorId, n, cur, sameRun, cai::DkNoStale); return; }
     int left = n;   // walked nodes still linked
+    bool dropped = false;
     for (int j = 0; j < pn; ++j) {
         int k = picked[j];
         int a = reinterpret_cast<Fn1>(FnListRemove)(internal, nodes[k]);   // unlinks the node, frees it, returns the action
         if (!a) continue;
         --left;
+        dropped = true; ++g_st.f4Nodes;
         int spell = rd<int>(a, 0x24, -1);   // read before the free
         if (g_f4Logs < 200) {
             ++g_f4Logs;
             eline(now, "t=%lu F4 drop cr=%08x spell=%d left=%d", now, actorId, spell, left);
-        }
+        } else capNote(now, g_f4Noted, "F4 drop", 200, "counts continue in S");
         reinterpret_cast<Fn0>(FnActionDtor)(a);
         reinterpret_cast<void(__cdecl*)(void*)>(FnOpDelete)(reinterpret_cast<void*>(a));
     }
+    if (dropped) ++g_st.f4Drops;
 }
 
 // T3. ExecuteCommandAurPostString 0x6F6200 (retail stub) at 0x6F62F2, after the four pops succeeded.
@@ -1039,6 +1092,7 @@ extern "C" void __cdecl AiTraceAurPostString(int ebp) {
 
 // E1. AIActionPhysicalAttacks 0x6D7390 at 0x6D740F, EAX = attacker (the stolen MOV [EAX+0x570],0xBB8 follows).
 extern "C" void __cdecl AiTraceAttackEntry(int cr) {
+    saferead::beginScope();   // before tick(): tick -> a1xClock reads through SafeRead, whose cache must not outlive the previous hook
     DWORD now = GetTickCount(); tick(now);
     if (!g_cfg.trace || !g_cfg.enginePoints || !cr) return;
     int party = *reinterpret_cast<const int*>(cr + CrParty);   // the engine writes [cr+0x570] next: cr is valid
@@ -1053,14 +1107,17 @@ extern "C" void __cdecl AiTraceAttackEntry(int cr) {
 
 // E1b. Approach-branch exit 0x6D8BE2 (return 2): snapshot only (E1 prints it).
 extern "C" void __cdecl AiTraceAttackApproachExit(int ebp) {
+    saferead::beginScope();
     DWORD now = GetTickCount(); tick(now);
     if (!g_cfg.trace || !g_cfg.enginePoints) return;
     int cr = fr<int>(ebp, F_Attacker);
     if (!cr) return;
-    int party = *reinterpret_cast<const int*>(cr + CrParty);
+    int party = rd<int>(cr, CrParty);
     if (!party && !g_cfg.logAll && g_cfg.tags.empty()) return;
+    int crId = rd<int>(cr, ObId, 0);
+    if (!crId || crId == Invalid) return;
     ++g_st.e1b;
-    CrTrack* t = track(*reinterpret_cast<const int*>(cr + ObId), now);
+    CrTrack* t = track(crId, now);
     t->cr = cr; t->party = party; ++t->exits;
     t->xStance = fr<int>(ebp, F_Stance); t->xBackoff = fr<int>(ebp, F_Backoff); t->xCtrl = fr<int>(ebp, F_Ctrl);
     t->xRanged = fr<int>(ebp, F_Ranged); t->xDist2 = fr<float>(ebp, F_Dist2); t->xMax = fr<float>(ebp, F_Max);
@@ -1092,6 +1149,7 @@ extern "C" void __cdecl AiTraceFallbackFires(int ebp) {
 
 // E3. SpawnInHeartbeatPerception 0x56B8A0 block 2 at 0x56BDBD: UpdatePerception(1) is about to run for [ebp-0xD4].
 extern "C" void __cdecl AiTracePerceptionMode1(int ebp) {
+    saferead::beginScope();
     DWORD now = GetTickCount(); tick(now);
     if (!g_cfg.trace || !g_cfg.enginePoints) return;
     int c = fr<int>(ebp, -0xD4);   // the engine passes it as `this` right after the window
@@ -1193,7 +1251,7 @@ extern "C" int __cdecl CompanionAiA1Gate(int ebp) {
                 snprintf(a1x, sizeof a1x, " c524=%d f570=%d combat=%d", rd<int>(attacker, CrCombatExit), rd<int>(attacker, CrFallback), rd<int>(attacker, CrCombat));
             eline(now, "t=%lu A1 cr=%08x party=%d raw=%d eff=%d reason=%s dist=%.1f max=%.1f los=%d ranged=%d area=%s tgt=%08x -> %s new=%08x (wouldSpin=%u)%s",
                   now, id, party, raw, eff, reason, dist, mx, los, ranged, (!tgtArea || myArea == tgtArea) ? "same" : "other", tgt,
-                  !apply ? (g_cfg.a1 ? "spin (not listed)" : "spin (a1=0)") : newId != Invalid ? "retarget" : "end", newId, t->wouldSpin, a1x);
+                  !apply ? cai::a1SkipLabel(g_cfg, raw, party) : newId != Invalid ? "retarget" : "end", newId, t->wouldSpin, a1x);
         }
     }
     return apply ? 1 : 0;
@@ -1202,6 +1260,7 @@ extern "C" int __cdecl CompanionAiA1Gate(int ebp) {
 // P1i. SpawnInHeartbeatPerception block 2 at 0x56BDB4 (non-party, non-IsPC, mode 1). The stolen CMP [ebp-0x28],0xFA0
 // and the JC after it decide; this handler writes [ebp-0x28] (no later reader) = 0xFA0 to run or 0 to skip.
 extern "C" void __cdecl CompanionAiP1Interval(int ebp) {
+    saferead::beginScope();
     DWORD now = GetTickCount(); tick(now);
     ++g_st.p1Checks;
     int c = fr<int>(ebp, -0xD4);
@@ -1292,7 +1351,13 @@ extern "C" void __cdecl CompanionAiFm4Snap(int cr) {
     if (!g_fm4.begin(g_cfg.fm4, g_cfg.log)) return;
     if (!rd<int>(cr, CrParty)) return;
     int fi = rd<int>(cr, CrFollowInfo);
-    if (!fi || !saferead::probeRead(7, reinterpret_cast<const void*>(fi), FollowInfoSize)) return;
+    if (!fi || !saferead::probeRead(7, reinterpret_cast<const void*>(fi), FollowInfoSize)) {
+        if (g_cfg.debugLog) {   // the restore is silent too (no commit): this is the only trace of the failed snapshot
+            int cid = rd<int>(cr, ObId, 0);
+            tline(now, cai::dbgKey(cid, 0xF4, cai::DkBadRead), "t=%lu D FM4 snap cr=%08x fi=%08x -> skip (FollowInfo null/unreadable, no commit, restore silent)", now, cid, fi);
+        }
+        return;
+    }
     memcpy(g_snap, reinterpret_cast<const void*>(fi), FollowInfoSize);
     g_fm4.commit(cr); ++g_st.fm4Snap;
 }
@@ -1383,9 +1448,16 @@ extern "C" void __cdecl CompanionAiA3(int ebp) {
     if (!g_cfg.a3 || fr<int>(ebp, F_DeadExitValid) != 0) return;
     int attacker = fr<int>(ebp, F_Attacker);
     int party = rd<int>(attacker, CrParty), id = rd<int>(attacker, ObId, Invalid);
-    if (!party || id == Invalid) return;
+    if (!party || id == Invalid) {
+        if (g_cfg.debugLog && crPasses(attacker, party)) tline(now, cai::dbgKey(id, 0xA3, 1), "t=%lu D A3 cr=%08x tgt=%08x -> skip (%s)", now, id, fr<int>(ebp, F_ActionTarget), party ? "no-id" : "not-party");
+        return;
+    }
     int ctrl;
-    if (!controlledId(&ctrl) || ctrl == id) return;
+    bool ctrlOk = controlledId(&ctrl);
+    if (!ctrlOk || ctrl == id) {
+        if (g_cfg.debugLog) tline(now, cai::dbgKey(id, 0xA3, ctrlOk ? 2 : 3), "t=%lu D A3 cr=%08x tgt=%08x -> skip (%s)", now, id, fr<int>(ebp, F_ActionTarget), ctrlOk ? "controlled" : "controlled-unknown");
+        return;
+    }
     reinterpret_cast<Fn2>(FnSetLock)(attacker, Invalid, 0);
     ++g_st.a3;
     if (g_cfg.log && g_a3Log.allow(now, static_cast<unsigned>(id), 20, 5000))
@@ -1478,7 +1550,7 @@ extern "C" void __cdecl CompanionAiProbeFm3LevelEnd(int ebp) {
     int nowLevel = g3.sentinel ? rd<int>(g3.sentinel, 0x78, -1) : -1;
     if (!g3.sentinel || !cai::fm3Lost(level, nowLevel, g3.removed)) return;
     ++g_fm3c.lost;
-    if (g_fm3LLines >= 200) return;
+    if (g_fm3LLines >= 200) { static bool noted = false; capNote(now, noted, "FM3L", 200, "counts continue in PRS FM3"); return; }
     ++g_fm3LLines;
     unsigned long long elapsed = ((static_cast<unsigned long long>(fr<unsigned>(ebp, -0x2C)) << 32) | fr<unsigned>(ebp, -0x30)) -
                                  ((static_cast<unsigned long long>(fr<unsigned>(ebp, -0xC)) << 32) | fr<unsigned>(ebp, -0x10));
@@ -1548,8 +1620,13 @@ extern "C" void __cdecl CompanionAiProbeRunScript(int ret, int script, int self)
     }
     // lines: first 20 per (cr, site); S7: first 10 per creature (50 per session), plus every E9-case line (300 per session, own budget)
     if (site == 4) {
-        if (e9) { if (g_rsS7E9Lines >= 300) return; ++g_rsS7E9Lines; }
-        else { if (t->logged[4] >= 10 || g_rsS7Lines >= 50) return; ++t->logged[4]; ++g_rsS7Lines; }
+        static bool notedE9 = false, notedS7 = false;
+        if (e9) { if (g_rsS7E9Lines >= 300) { capNote(now, notedE9, "RS E9", 300, "counts continue in PRS E9"); return; } ++g_rsS7E9Lines; }
+        else {
+            if (t->logged[4] >= 10) return;
+            if (g_rsS7Lines >= 50) { capNote(now, notedS7, "RS S7", 50, "counts continue in PRS RS"); return; }
+            ++t->logged[4]; ++g_rsS7Lines;
+        }
     } else {
         if (t->logged[site] >= 20) return;
         ++t->logged[site];
@@ -1564,16 +1641,17 @@ extern "C" void __cdecl CompanionAiProbeP2(int ebp) {
     if (!g_cfg.probeP2) return;
     int cr = fr<int>(ebp, -0xD4);
     if (!cr) return;
-    int party = *reinterpret_cast<const int*>(cr + CrParty);
+    saferead::beginScope();   // the raw reads below are SafeRead reads now (audit safety 2): scope first
+    int party = rd<int>(cr, CrParty);
     if (!party && !g_cfg.logAll && g_cfg.tags.empty()) return;
-    int isPC = *reinterpret_cast<const int*>(cr + CrIsPC);
-    if (isPC == 1) g_pcSeen = *reinterpret_cast<const int*>(cr + ObId);
+    int isPC = rd<int>(cr, CrIsPC, -1);
+    if (isPC == 1) g_pcSeen = rd<int>(cr, ObId, 0);
     unsigned elapsed = fr<unsigned>(ebp, -0x18);
     if (!cai::p2Runs(isPC, fr<int>(ebp, 8), elapsed)) return;
-    saferead::beginScope();
     DWORD now = GetTickCount(); tick(now);
     if (!crPasses(cr, party)) return;
-    int id = *reinterpret_cast<const int*>(cr + ObId);
+    int id = rd<int>(cr, ObId, 0);
+    if (!id || id == Invalid) return;
     P2Track* t = p2Track(id, now);
     if (t->runs && now - t->last <= 30000) {   // longer gaps = the creature was away (area change): not a cadence sample
         unsigned gap = now - t->last;
@@ -1585,7 +1663,7 @@ extern "C" void __cdecl CompanionAiProbeP2(int ebp) {
     if (isCtrl) ++t->ctrlRuns;
     if (t->logged >= 10) return;
     ++t->logged;
-    pline(PiP2, now, "t=%lu PR P2 cr=%08x ctrl=%d elapsed=%u combat=%d", now, id, isCtrl ? 1 : 0, elapsed, *reinterpret_cast<const int*>(cr + CrCombat));
+    pline(PiP2, now, "t=%lu PR P2 cr=%08x ctrl=%d elapsed=%u combat=%d", now, id, isCtrl ? 1 : 0, elapsed, rd<int>(cr, CrCombat));
 }
 
 // PF. SetPartyMemberFlag 0x58A330 at 0x58A35E, before the store of +0x11AC: creature [EBP-0x48], new [EBP+8], apply [EBP+0xC], caller [EBP+4].
@@ -1615,14 +1693,17 @@ extern "C" void __cdecl CompanionAiProbePartyFlag(int ebp) {
 extern "C" void __cdecl CompanionAiProbeRunActions(int ebp) {
     if (!g_cfg.probeRar) return;
     int obj = fr<int>(ebp, -0x1A8);
-    if (!obj || *reinterpret_cast<const unsigned char*>(obj + ObType) != ObjTypeCreature) return;
-    int party = *reinterpret_cast<const int*>(obj + CrParty);
+    if (!obj) return;
+    saferead::beginScope();   // before tick() and before the object reads (audit safety 1 + 2)
+    if (rd<unsigned char>(obj, ObType, 0xFF) != ObjTypeCreature) return;
+    int party = rd<int>(obj, CrParty);
     if (!party && !g_cfg.logAll && g_cfg.tags.empty()) return;
     DWORD now = GetTickCount(); tick(now);
-    if (!(g_cfg.logAll || (g_cfg.partyOnly && party))) { saferead::beginScope(); if (!crPasses(obj, party)) return; }
-    int id = *reinterpret_cast<const int*>(obj + ObId), type = fr<int>(ebp, -0x18), res = fr<int>(ebp, -0x1C);
+    if (!(g_cfg.logAll || (g_cfg.partyOnly && party))) { if (!crPasses(obj, party)) return; }
+    int id = rd<int>(obj, ObId, 0), type = fr<int>(ebp, -0x18), res = fr<int>(ebp, -0x1C);
+    if (!id || id == Invalid) return;
     RarTrack* t = rarTrack(id, now);
-    t->ispc = *reinterpret_cast<const int*>(obj + CrIsPC);
+    t->ispc = rd<int>(obj, CrIsPC);
     if (t->ispc == 1) g_pcSeen = id;
     ++t->n; ++t->cnt[cai::rarIndex(type, res)]; t->lastType = type;
     if (res == 1 && type == t->runType) ++t->run; else { t->runType = type; t->run = res == 1 ? 1u : 0u; }
@@ -1631,7 +1712,7 @@ extern "C" void __cdecl CompanionAiProbeRunActions(int ebp) {
         pline(PiRar, now, "t=%lu PR RAR REQ cr=%08x type=%x n=%u", now, id, type, t->run);
     }
     if ((type == 1 || type == 0x11) && t->moveLogged < 20) {
-        unsigned state = *(reinterpret_cast<const unsigned char*>(obj) + CrSetState);
+        unsigned state = rd<unsigned char>(obj, CrSetState);
         if (state) { ++t->moveLogged; pline(PiRar, now, "t=%lu PR RAR MOVESTATE cr=%08x type=%x res=%d state=%d", now, id, type, res, int(state)); }
     }
 }
@@ -1662,7 +1743,7 @@ extern "C" void __cdecl CompanionAiProbeShout(int ebp) {
     bool isAbort = kind == cai::ShoutAbortStart || kind == cai::ShoutAbortMid;
     static unsigned s_abortLines = 0; static cai::LineThrottle s_abortLog;
     if (isAbort) { if (s_abortLines >= 100 && !s_abortLog.allow(now, static_cast<unsigned>(kind), 0, 1000)) return; ++s_abortLines; }   // first 100 ABORT, then 1/s per kind
-    else { if (g_shxLines >= 30) return; ++g_shxLines; }                                                                              // first 30 others
+    else { static bool noted = false; if (g_shxLines >= 30) { capNote(now, noted, "SHX", 30, "counts continue in PRS SHX"); return; } ++g_shxLines; }                                                                              // first 30 others
     int sp = fr<int>(ebp, 8);
     char text[33], tag[33];
     copyStr(rd<int>(sp, 0), rd<int>(sp, 4, -1), text, sizeof text);
@@ -1679,7 +1760,8 @@ extern "C" void __cdecl CompanionAiProbeSetState(int ebp) {
     saferead::beginScope();
     DWORD now = GetTickCount(); tick(now);
     int cr = fr<int>(ebp, -0x20), party = rd<int>(cr, CrParty);
-    if (!crPasses(cr, party) || g_ss1Lines >= 50) return;   // party, first 50
+    if (!crPasses(cr, party)) return;   // party, first 50
+    if (g_ss1Lines >= 50) { static bool noted = false; capNote(now, noted, "SS1", 50, "later commits are not logged (no counter)"); return; }
     ++g_ss1Lines;
     char tag[33]; readTag(cr, tag, sizeof tag);
     pline(PiSs1, now, "t=%lu PR SS1 cr=%08x %s state %d->%d combat=%d", now, rd<int>(cr, ObId), tag, int(rd<unsigned char>(cr, CrSetState)),

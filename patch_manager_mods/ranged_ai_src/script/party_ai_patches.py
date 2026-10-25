@@ -59,6 +59,23 @@ DISPATCH_NEW = (
     "                }\n" + KITE_BRANCH +
     "                else if (nNPC_AI == NPC_AISTYLE_PARTY_STATIONARY)\n")
 
+# Traced variant for PATCHES only (Party D MOD8-dispatch print on the leash return). MOD8_ONLY keeps the plain
+# KITE_BRANCH: the baseline proof must rebuild the live k_ai_master.ncs byte for byte.
+KITE_BRANCH_TRACED = KITE_BRANCH.replace(
+    "                    if (GN_CheckRangeFromLeader(10.0f) == TRUE)\n"
+    "                    {\n"
+    "                        return;\n",
+    "                    if (GN_CheckRangeFromLeader(10.0f) == TRUE)\n"
+    "                    {\n"
+    "                        GN_MyPrintString(\"GENERIC DEBUG *************** Party D MOD8-dispatch: kite beyond 10 m leash, holding\");\n"
+    "                        return;\n")
+assert KITE_BRANCH_TRACED != KITE_BRANCH
+DISPATCH_NEW_TRACED = (
+    "                    GN_RunRangedSupportAIRoutine(oIntruder);\n"
+    "                    return;\n"
+    "                }\n" + KITE_BRANCH_TRACED +
+    "                else if (nNPC_AI == NPC_AISTYLE_PARTY_STATIONARY)\n")
+
 # The Mod 8 insertions alone (baseline proof: with the v1 kite routine they must rebuild the live k_ai_master.ncs).
 MOD8_ONLY = [
     ("MOD8-proto", "party", "k_inc_generic.nss", PROTO_ANCHOR, PROTO_ANCHOR + MOD8_PROTOS),
@@ -72,7 +89,7 @@ M = "k_ai_master.nss"
 PATCHES = [
     # ---------------- k_inc_generic ----------------
     ("MOD8-proto", "party", G, PROTO_ANCHOR, PROTO_ANCHOR + MOD8_PROTOS + PARTY_PROTOS),
-    ("MOD8-dispatch", "party", G, DISPATCH_OLD, DISPATCH_NEW),
+    ("MOD8-dispatch", "party", G, DISPATCH_OLD, DISPATCH_NEW_TRACED),
     ("F5", "party", G,
      "    GN_SetLastRoundData();\n"
      "    int nPartyAI = GetPartyAIStyle(); //Determines how the party should react to intruders\n",
@@ -127,16 +144,28 @@ PATCHES = [
      "        }\n"
      "        else\n"
      "        {\n"
+     "            if(IsObjectPartyMember(OBJECT_SELF))\n"
+     "            {\n"
+     "                GN_MyPrintString(\"GENERIC DEBUG *************** Party D M10b: target beyond 30 m, no seen enemy in reach, combat cancelled\");\n"
+     "            }\n"
      "            oTarget = OBJECT_INVALID;\n"
      "            CancelCombat(OBJECT_SELF);\n"
      "        }\n"),
     ("M9", "party", G,
      "                if ( GetIsObjectValid(oClose) && GetDistanceToObject(oClose) > 5.0f )\n",
      "                //Party AI fix M9: measure from the leader, as the comment above says (was from OBJECT_SELF).\n"
+     "                if ( GetIsObjectValid(oClose) && GetDistanceBetween(oClose, oLeader) > 5.0f )\n"
+     "                {\n"
+     "                    GN_MyPrintString(\"GENERIC DEBUG *************** Party D M9: defensive, enemy beyond 5 m of leader ignored \" + GetTag(oClose));\n"
+     "                }\n"
      "                if ( GetIsObjectValid(oClose) && GetDistanceBetween(oClose, oLeader) > 5.0f )\n"),
     ("H1a", "party", G,
      "    if (GN_CheckSeriesRevitalize() != -1)\n",
      "    //Party AI fix H1: GN_CheckSeriesRevitalize returns TRUE/FALSE, never -1, so this gate was always open.\n"
+     "    if (IsObjectPartyMember(OBJECT_SELF) && GN_CheckIfKnockedOut() && GN_CheckSeriesRevitalize() != TRUE)\n"
+     "    {\n"
+     "        GN_MyPrintString(\"GENERIC DEBUG *************** Party D H1a: member knocked out, no Revitalize power, gate closed\");\n"
+     "    }\n"
      "    //Party members only; NPCs keep the vanilla gate (user decision).\n"
      "    if ((IsObjectPartyMember(OBJECT_SELF) && GN_CheckSeriesRevitalize() == TRUE) ||\n"
      "        (!IsObjectPartyMember(OBJECT_SELF) && GN_CheckSeriesRevitalize() != -1))\n"),
@@ -159,13 +188,28 @@ PATCHES = [
      "        if(GetIsObjectValid(oP1)&& GetRacialType(oP0) != RACIAL_TYPE_DROID)\n",
      "        //Party AI fix H2/S2: race test on the member itself (was oP0 for all three), and only members the heal\n"
      "        //powers reach (Heal and Master Heal act on non-droid party members within 15 m of the caster).\n"
+     "        if(GetIsObjectValid(oP1) && GetCurrentHitPoints(oP1) > 0 && GetCurrentHitPoints(oP1) * 2 < GetMaxHitPoints(oP1) &&\n"
+     "           (GetRacialType(oP1) == RACIAL_TYPE_DROID || GetDistanceBetween(OBJECT_SELF, oP1) >= 15.0))\n"
+     "        {\n"
+     "            GN_MyPrintString(\"GENERIC DEBUG *************** Party D H2a: hurt member 1 not a heal target (droid or beyond 15 m) \" + GetTag(oP1));\n"
+     "        }\n"
      "        if(GetIsObjectValid(oP1)&& GetRacialType(oP1) != RACIAL_TYPE_DROID && GetDistanceBetween(OBJECT_SELF, oP1) < 15.0)\n"),
     ("H2b", "party", G,
      "        if(GetIsObjectValid(oP2) && GetRacialType(oP0) != RACIAL_TYPE_DROID)\n",
+     "        if(GetIsObjectValid(oP2) && GetCurrentHitPoints(oP2) > 0 && GetCurrentHitPoints(oP2) * 2 < GetMaxHitPoints(oP2) &&\n"
+     "           (GetRacialType(oP2) == RACIAL_TYPE_DROID || GetDistanceBetween(OBJECT_SELF, oP2) >= 15.0))\n"
+     "        {\n"
+     "            GN_MyPrintString(\"GENERIC DEBUG *************** Party D H2b: hurt member 2 not a heal target (droid or beyond 15 m) \" + GetTag(oP2));\n"
+     "        }\n"
      "        if(GetIsObjectValid(oP2) && GetRacialType(oP2) != RACIAL_TYPE_DROID && GetDistanceBetween(OBJECT_SELF, oP2) < 15.0)\n"),
     ("H2e", "party", G,
      "        if(GetIsObjectValid(oP0) && GetRacialType(oP0) != RACIAL_TYPE_DROID)\n",
      "        //Party AI fix S2: the leader too counts only within the 15 m reach of the heal powers.\n"
+     "        if(GetIsObjectValid(oP0) && GetRacialType(oP0) != RACIAL_TYPE_DROID && GetDistanceBetween(OBJECT_SELF, oP0) >= 15.0 &&\n"
+     "           GetCurrentHitPoints(oP0) > 0 && GetCurrentHitPoints(oP0) * 2 < GetMaxHitPoints(oP0))\n"
+     "        {\n"
+     "            GN_MyPrintString(\"GENERIC DEBUG *************** Party D H2e: hurt leader beyond 15 m, not a heal target \" + GetTag(oP0));\n"
+     "        }\n"
      "        if(GetIsObjectValid(oP0) && GetRacialType(oP0) != RACIAL_TYPE_DROID && GetDistanceBetween(OBJECT_SELF, oP0) < 15.0)\n"),
     ("H2c", "party", G,
      "        else if(GetIsObjectValid(oP1) && !GetIsDead(oP1) && (fDown00 < 0.5 && fDown00 > 0.0))\n",
@@ -204,6 +248,7 @@ PATCHES = [
      "                {\n"
      "                    if(GetEffectType(ePoison) == EFFECT_TYPE_POISON)\n"
      "                    {\n"
+     "                        GN_MyPrintString(\"GENERIC DEBUG *************** Party D M5: poisoned member in cure reach \" + GetTag(oPM5));\n"
      "                        return oPM5;\n"
      "                    }\n"
      "                    ePoison = GetNextEffect(oPM5);\n"
@@ -219,12 +264,20 @@ PATCHES = [
      "            if(IsObjectPartyMember(OBJECT_SELF))\n"
      "            {\n"
      "                tSpe11_02 = TalentSpell(-1);\n"
+     "            }\n"
+     "            if(IsObjectPartyMember(OBJECT_SELF) && GetCreatureHasTalent(TalentSpell(FORCE_POWER_CURE)))\n"
+     "            {\n"
+     "                GN_MyPrintString(\"GENERIC DEBUG *************** Party D M5b: Cure not offered for poison\");\n"
      "            }\n"),
     ("M3", "party", G,
      "            while(!GetIsDebilitated(oTarget) && GetIsObjectValid(oTarget))\n",
      "            //Party AI fix M3 (party only): skip debilitated enemies (the test was inverted, so the nearest\n"
      "            //stunned/held/asleep enemy was preferred). NPCs keep the vanilla order (user decision).\n"
      "            int nPartyM3 = IsObjectPartyMember(OBJECT_SELF);\n"
+     "            if(nPartyM3 && GetIsObjectValid(oTarget) && GetIsDebilitated(oTarget))\n"
+     "            {\n"
+     "                GN_MyPrintString(\"GENERIC DEBUG *************** Party D M3: skipped debilitated enemy \" + GetTag(oTarget));\n"
+     "            }\n"
      "            while(GetIsObjectValid(oTarget) &&\n"
      "                  ((nPartyM3 && GetIsDebilitated(oTarget)) || (!nPartyM3 && !GetIsDebilitated(oTarget))))\n"),
     ("M1", "party", G,
@@ -232,6 +285,10 @@ PATCHES = [
      "            {\n"
      "                //Our second config is NOT ranged, switch to it\n",
      "            //Party AI fix M1: switch only to a melee config 2 (an empty or non-weapon config 2 is type 0).\n"
+     "            if ( nType2 == 0 )\n"
+     "            {\n"
+     "                GN_MyPrintString(\"GENERIC DEBUG *************** Party D M1: hit in melee, config 2 empty or no weapon, no switch\");\n"
+     "            }\n"
      "            if ( nType2 == 1 )\n"
      "            {\n"
      "                //Our second config is NOT ranged, switch to it\n"
@@ -271,6 +328,13 @@ PATCHES = [
      "            //(tSpe11_05) branch. Drain Life and Death Field are NPC-only below, so the whole branch is skipped for the\n"
      "            //party: bValid stays FALSE and the routine returns FALSE (no talent-less idle). Future rule: medpacs may\n"
      "            //be allowed from the party's stock, and only when no heal power is available.\n"
+     "            else if(IsObjectPartyMember(OBJECT_SELF) &&\n"
+     "                    (GetCreatureHasTalent(tSpe11_05) ||\n"
+     "                     GetCreatureHasTalent(tSpe11_06) ||\n"
+     "                     GetCreatureHasTalent(tSpe11_07)))\n"
+     "            {\n"
+     "                GN_MyPrintString(\"GENERIC DEBUG *************** Party D MEDPAC-a: medpac/repair kit branch closed for party member\");\n"
+     "            }\n"
      "            else if(!IsObjectPartyMember(OBJECT_SELF) &&\n"
      "                    (GetCreatureHasTalent(tSpe11_05) ||\n"
      "                     GetCreatureHasTalent(tSpe11_06) ||\n"
@@ -306,6 +370,10 @@ PATCHES = [
      "            //the shared inventory). Closed for the party: bValid stays FALSE and the routine returns FALSE (no\n"
      "            //talent-less idle). Future rule: items may be allowed from the party's stock, and only when no Force\n"
      "            //power is available.\n"
+     "            else if(IsObjectPartyMember(OBJECT_SELF) && GetCreatureHasTalent(tSpe11_03) && oTarget == OBJECT_SELF)\n"
+     "            {\n"
+     "                GN_MyPrintString(\"GENERIC DEBUG *************** Party D ANTIDOTE: Remove Poison Item branch closed for party member\");\n"
+     "            }\n"
      "            else if(!IsObjectPartyMember(OBJECT_SELF) && GetCreatureHasTalent(tSpe11_03) && oTarget == OBJECT_SELF)\n"
      "            {\n"
      "                bValid = TRUE;\n"
@@ -375,9 +443,14 @@ PATCHES = [
      "        nDroid = 1;\n",
      "    if(GetHasSpell(FORCE_POWER_DROID_DISABLE) && nDroid == TRUE)\n"
      "    {\n"
-     "        nDisable = 1;\n"),
+     "        nDisable = 1;\n"
+     "        GN_MyPrintString(\"GENERIC DEBUG *************** Party D M4b: Droid Disable is a candidate against a droid\");\n"),
     ("M4c", "party", S,
      "    if(nDroid== 1 && nRoll == 1)\n",
+     "    if(nDisable == 1 && nRoll == 1)\n"
+     "    {\n"
+     "        GN_MyPrintString(\"GENERIC DEBUG *************** Party D M4c: Droid Disable picked\");\n"
+     "    }\n"
      "    if(nDisable == 1 && nRoll == 1)\n"),
     ("M4d", "party", S,
      "    if(nDroid == 1 && nRoll > 1)\n",
@@ -391,10 +464,12 @@ PATCHES = [
      "    //105 Adv_Mining_Laser (ranged); 106 Lightsaber_No_Sound, 107 DM_ElectroStaff (melee).\n"
      "    else if(IsObjectPartyMember(OBJECT_SELF) && (nBaseType == 104 || nBaseType == 105))\n"
      "    {\n"
+     "        GN_MyPrintString(\"GENERIC DEBUG *************** Party D M7a: base item \" + GN_ITS(nBaseType) + \" counted as ranged\");\n"
      "        return 2;\n"
      "    }\n"
      "    else if(IsObjectPartyMember(OBJECT_SELF) && (nBaseType == 106 || nBaseType == 107))\n"
      "    {\n"
+     "        GN_MyPrintString(\"GENERIC DEBUG *************** Party D M7a: base item \" + GN_ITS(nBaseType) + \" counted as melee\");\n"
      "        return 1;\n"
      "    }\n"
      "    else\n"
@@ -408,10 +483,12 @@ PATCHES = [
      "    {\n"
      "        if(nBaseType == 104 || nBaseType == 105)\n"
      "        {\n"
+     "            GN_MyPrintString(\"GENERIC DEBUG *************** Party D M7b: base item \" + GN_ITS(nBaseType) + \" counted as ranged\");\n"
      "            return 2;\n"
      "        }\n"
      "        if(nBaseType == 106 || nBaseType == 107)\n"
      "        {\n"
+     "            GN_MyPrintString(\"GENERIC DEBUG *************** Party D M7b: base item \" + GN_ITS(nBaseType) + \" counted as melee\");\n"
      "            return 1;\n"
      "        }\n"
      "    }\n"
@@ -422,6 +499,11 @@ PATCHES = [
      "            //Party AI fix E6: an attacker with no known weapon in the right hand (creature weapons on\n"
      "            //droids, turrets and beasts; mod base items) counts as melee only when it is close.\n"
      "            //Party members only (S3): other creatures with k_hen_* scripts keep the vanilla test.\n"
+     "            if ( nWeaponType == 0 && IsObjectPartyMember(OBJECT_SELF) &&\n"
+     "                 !(GetIsObjectValid(oAttacker) && GetDistanceBetween(OBJECT_SELF, oAttacker) <= 5.0) )\n"
+     "            {\n"
+     "                GN_MyPrintString(\"GENERIC DEBUG *************** Party D E6: weapon-less attacker beyond 5 m, not counted as melee \" + GetTag(oAttacker));\n"
+     "            }\n"
      "            if ( nWeaponType == 1 || (nWeaponType == 0 && (!IsObjectPartyMember(OBJECT_SELF) ||\n"
      "                                      (GetIsObjectValid(oAttacker) && GetDistanceBetween(OBJECT_SELF, oAttacker) <= 5.0))) )\n"),
     ("E13", "hench (leader)", M,
@@ -440,6 +522,10 @@ PATCHES = [
      "                {\n"
      "                    //Shout that I was attacked\n"
      "                    SpeakString(\"GEN_I_WAS_ATTACKED\", TALKVOLUME_SILENT_TALK);\n"
+     "                }\n"
+     "                else\n"
+     "                {\n"
+     "                    GN_MyPrintString(\"GENERIC DEBUG *************** Party D E13: leader already shouted, member shout skipped\");\n"
      "                }\n"
      "            }\n"
      "            if(GN_GetSpawnInCondition(SW_FLAG_EVENT_ON_ATTACKED))\n"
@@ -465,6 +551,10 @@ PATCHES = [
      "                                                    GN_MyPrintString(\"GENERIC DEBUG *************** Party E11: unseen damager, stand off\");\n"
      "                                                    ActionMoveToObject(oTarget, TRUE, (GN_GetWeaponType(OBJECT_SELF) == 1) ? 4.0 : 15.0);\n"
      "                                                    ActionDoCommand(GN_DetermineCombatRound());\n"
+     "                                                }\n"
+     "                                                else\n"
+     "                                                {\n"
+     "                                                    GN_MyPrintString(\"GENERIC DEBUG *************** Party D E11: unseen damager, stance \" + GN_ITS(nStyle2006) + \" holds, no approach\");\n"
      "                                                }\n"
      "                                            }\n"),
     ("E10", "party (hench)", M,
@@ -493,6 +583,10 @@ PATCHES = [
      "                    }\n"
      "                    //Party AI fix E10: party members open doors but never bash them (k_inc_generic post-DCR:\n"
      "                    //\"Party members won't help with bashing anymore\").\n"
+     "                    else if(IsObjectPartyMember(OBJECT_SELF) && GetIsDoorActionPossible(oDoor, DOOR_ACTION_BASH))\n"
+     "                    {\n"
+     "                        GN_MyPrintString(\"GENERIC DEBUG *************** Party D E10: blocked by door, bash skipped \" + GetTag(oDoor));\n"
+     "                    }\n"
      "                    else if(!IsObjectPartyMember(OBJECT_SELF) && GetIsDoorActionPossible(oDoor, DOOR_ACTION_BASH))\n"),
 ]
 

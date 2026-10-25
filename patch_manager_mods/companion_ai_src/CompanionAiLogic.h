@@ -225,6 +225,7 @@ struct Config {
     bool castFamilyGuard = true;   // G1 (cast_family_guard, WI-136): a party member does not rebuild a buff whose family is active on it
     bool castQueueNewest = true;   // F4 (cast_queue_newest, WI-143): a party member's new spell round node drops its older pending spell nodes
     bool log = true;            // fix event lines (A1/FM1/FM4/A4/A3) and the summaries
+    bool debugLog = true;       // debug_log: D lines (every G1/F4 decision with its reason, skip reasons) and the party script "Party D" prints
     int fm4Requested = 1;       // raw INI value (for the config line)
     // ---- Phase-4 probes (PROBE_DESIGN.md): log only, behaviour stays vanilla; the probe build ships them on
     bool probeFm2c = true, probeFm2f = true, probeFm2r = true, probeFm3 = true, probeRs = true, probeP2 = true, probePf = true,
@@ -284,6 +285,7 @@ inline void parseConfig(const IniTable& t, Config& c) {
     c.castFamilyGuard = t.getBool("cast_family_guard", c.castFamilyGuard);
     c.castQueueNewest = t.getBool("cast_queue_newest", c.castQueueNewest);
     c.log = t.getBool("log", c.log);
+    c.debugLog = t.getBool("debug_log", c.debugLog);
     c.probeFm2c = t.getBool("probe_fm2c", c.probeFm2c);
     c.probeFm2f = t.getBool("probe_fm2f", c.probeFm2f);
     c.probeFm2r = t.getBool("probe_fm2r", c.probeFm2r);
@@ -310,7 +312,7 @@ inline bool sameConfig(const Config& a, const Config& b) {
            a.a1PartyOnly == b.a1PartyOnly && a.a1Retarget == b.a1Retarget && a.a1RetargetStances == b.a1RetargetStances &&
            a.a1RethinkMs == b.a1RethinkMs && a.a1RetargetStrict == b.a1RetargetStrict && a.p1 == b.p1 && a.p1IntervalMs == b.p1IntervalMs && a.fm1 == b.fm1 &&
            a.fm1RethinkMs == b.fm1RethinkMs && a.fm4 == b.fm4 && a.fm4Requested == b.fm4Requested && a.a4 == b.a4 && a.c1 == b.c1 &&
-           a.c1PartyOnly == b.c1PartyOnly && a.a3 == b.a3 && a.castFamilyGuard == b.castFamilyGuard && a.castQueueNewest == b.castQueueNewest && a.log == b.log &&
+           a.c1PartyOnly == b.c1PartyOnly && a.a3 == b.a3 && a.castFamilyGuard == b.castFamilyGuard && a.castQueueNewest == b.castQueueNewest && a.log == b.log && a.debugLog == b.debugLog &&
            a.probeFm2c == b.probeFm2c && a.probeFm2f == b.probeFm2f &&
            a.probeFm2r == b.probeFm2r && a.probeFm3 == b.probeFm3 && a.probeRs == b.probeRs && a.probeP2 == b.probeP2 &&
            a.probePf == b.probePf && a.probeRar == b.probeRar && a.probeShx == b.probeShx && a.probeSs1 == b.probeSs1 &&
@@ -426,6 +428,16 @@ default = 1
 ini = "companion_ai.ini"
 section = "CompanionAI"
 key = "log"
+
+[[row]]
+id = "debug_log"
+kind = "toggle"
+label = "Advanced Debug Logging"
+desc = "Detailed AI decision lines in the logs (Companion AI and Ranged AI). Off = events only."
+default = 1
+ini = "companion_ai.ini"
+section = "CompanionAI"
+key = "debug_log"
 )TOML";
 
 // ---------------------------------------------------------------- log gate
@@ -677,6 +689,33 @@ inline int staleSpellPick(const int* types, const int* acts, int n, int cur, int
 // F4 same-run test: a spell node queued less than minAgeMs ago (addedAt != 0, tick of its own AddSWSpellAction) belongs to the
 // same script run as the new one (a combo queues several casts in one run, all on one tick) and is kept. 0 = never seen = stale.
 inline bool f4SameRun(unsigned addedAt, unsigned now, unsigned minAgeMs) { return addedAt != 0 && now - addedAt < minAgeMs; }
+
+// debug_log "D" lines (G1 / F4): why a party member's decision was NOT a drop. The index is the reason in the dedupe key.
+enum DbgKeep { DkLeader = 0, DkNotParty, DkUntracked, DkFamilyNotActive, DkGuardOff, DkBadRead, DkNoStale, DkNoRound, DkCount };
+inline const char* dbgKeepName(int r) {
+    switch (r) {
+    case DkLeader: return "leader";
+    case DkNotParty: return "not-party";
+    case DkUntracked: return "untracked-spell";
+    case DkFamilyNotActive: return "family-not-active";
+    case DkGuardOff: return "guard-off";
+    case DkBadRead: return "bad-read";
+    case DkNoStale: return "no-stale-nodes";
+    case DkNoRound: return "no-round";
+    default: return "?";
+    }
+}
+// dedupe key of a D line (0 = no dedupe, so never 0): repeats of the same (creature, spell, reason) collapse
+inline uint32_t dbgKey(int cr, int spell, int reason) {
+    uint32_t k = static_cast<uint32_t>(cr) ^ (static_cast<uint32_t>(spell) * 31u) ^ static_cast<uint32_t>(reason);
+    return k ? k : 1u;
+}
+// A1 skip label (the A1 line reason when the fix did not apply): which condition blocked it
+inline const char* a1SkipLabel(const Config& c, int rawStance, int party) {
+    if (!c.a1) return "spin (a1=0)";
+    if (inMask(c.a1Stances, rawStance) && c.a1PartyOnly && party == 0) return "party_only";
+    return "spin (not listed)";
+}
 
 // P1 (0x56BDB4). With p1=0 a stamp can only exist if p1 was on earlier this session: zero it and force the run so the
 // creature is back in the vanilla never-stamped state.
