@@ -199,3 +199,4 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [ ] | 183 | WI-151 | P3 | ready | S | - | ISF UX: show the visible-row count in the filter caption (empty-filter state) | 0 | 3 | a filter with 0 matches shows a blank list with no feedback |
 | [ ] | 184 | WI-152 | P3 | hold | S | - | ISF UX: caption hint for the hidden re-click-All cycle gesture | 0 | 3 | New/Usable/Upgradeable are reachable only by re-clicking the active Al |
 | [ ] | 185 | WI-153 | P3 | hold | S | - | ISF UX: controller access to Usable/Upgradeable filters | 0 | 2 | bumpers go through engine SetNextFilter, so controller players never r |
+| [ ] | 186 | WI-154 | P3 | hold | S | - | ISF UX: player-facing category group order + sort_order INI key | 0 | 3 | groups follow baseitems.2da row id, which is arbitrary to players |
