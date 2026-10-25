@@ -16,7 +16,7 @@ Statuses come from this doc's own status blocks, the git log of `equipment_3d_ch
 | EQ7 | Common extraction: saferead C3a, SceneView C3b, vertical pan C3c | BUILT | e180af1 ba361f8 e77e64c | Installed 2026-10-05 (b6eeee09, d954782a); combined play test pending |
 | EQ8 | MG4/MG6/MG7: KpLog, IniKit, PanelSlots, GuiKit, WindowHook, gameaddr; T5e contract test | BUILT | d2fd8cc 1af7130 aa63ec8 | equip3d 0.2.0-probe installed 2026-10-05 20:55; play check pending |
 | EQ9 | Track P gui-input adoption; creature destroy on character change, anim fallback, screen sync | BUILT | 7aeb296 22b56b4 | 7aeb296 and 22b56b4 equip files (EquipCharPreview.cpp, manifest) in live build: KPM copy (10-08 23:16) matches HEAD; kpatch built 10-09 10:07; kpm_status LIVE. Play test not recorded |
-| EQ10 | Phase 2: holstered / combat-stance toggle | TODO | | Research gate first (SESSION 4 remaining plan) |
+| EQ10 | Phase 2: holstered / combat-stance toggle | TODO | | 0.3.0-probe: weapons shown + drawn by default; Hide/Show + Holster/Draw rows (k2.holster optional, LBL_E3D_HOLS id 79); play EQ10-P1. Design: "EQ10 toolbar" section |
 | EQ11 | Per-weapon extras: saber blade/effects, forms g2r2..g2r7 | TODO | | Untested (STATUS BLOCK Open/next) |
 | EQ12 | Phase 3 / Track M: mirror the CHARACTER page | DONE | pending | WI-04 verified |
 | EQ13 | Doc 19/19b shared state and code: registry A-ids, Common B-ids, kplog.ini | PARTIAL | d2fd8cc | Doc 19 Phases 0-1 done 10-02 (Phase 1 not live); MG4 landed part; rest unverified |
@@ -124,6 +124,8 @@ Constraints kept: 14-unit edge gaps, 10-unit panel gaps, BAR5 vanilla. Generator
 ## INI keys (`$GAME/equip3d.ini`, unknown/garbage lines are logged and rejected)
 `enabled`, `stage` (1 view only, 2 static creature, 3 polled refresh, 4 idle+flourish scheduler, 5 drag/wheel/reset), `rig` (charrec_light), `fov_deg` (22.726), `bevels`, `drag_deg_per_px`, `wheel_zoom`, `wheel_step`, `zoom_min`, `zoom_max` (zoom = FOV scale), `hit_flip_y`, `screen_w/h`, `flourish`, `flourish_first_s`, `flourish_min_s`, `flourish_max_s`, `flourish_quiet_s`, `flourish_on_equip`, `equip_anim` (itemequip), `flourish_list` (comma list), `keep_obj10` (DEPRECATED 2026-10-02: ignored, logs a WARNING when 1; it reparented the REAL helmet Gob), `helmet` (1 default: helmet/visor on the preview from our own model), `buttons` (1: toolbar), `spin_toggle_deg_s` (20), `poll_ms` (100), `rebuild_min_ms` (250), `spin_deg_s` (0).
 
+`weapons` (0|1, default 1): preview opens with weapons shown and drawn; 0 = hidden.
+
 ## Source map
 Source of record `$TOOL_DIR/Patches/EquipCharPreview/` (`EquipCharPreview.cpp`, `manifest.toml`, `kotor2-steam-aspyr.hooks.toml`, `exports.def`), mirrored in `equipment_3d_character_src/`. Scripts: `scripts/add_equip_3dview_control.py` (layouts R/A/G; A live), `scripts/equip3d_layout_mockup.py`, `scripts/list_creature_anims.py` (K2 party rows), `scripts/check_equip3d_kpatch.py`. Research raw files `equipment_3d_character_src/research/R1*-R5*`.
 
@@ -183,3 +185,16 @@ Game closed. `$GAME/equip3d.ini` `keep_obj10=1` -> `0` (backup `equip3d.ini.bak_
 - **B3 ini helper:** `trim` (:159), `parseFloats` (:164), `maybeReloadIni` (:242).
 - **B4 3D scene view:** `BindEquipView` (:942-1005) and constexprs (:28-62) shared with inv3d.
 - **B8 panel slot table** (:295-301).
+
+## EQ10 toolbar: Hide/Show + Holster/Draw (2026-10-25)
+
+- Layout, top to bottom: Animate, Spin, Emotes, Hide|Show, Holster|Draw. With weapons hidden, the Holster row is gone and the 4th row reads "Show". Show always brings the weapons back drawn.
+- Default: `weapons=1` in `$GAME/equip3d.ini` (shown + drawn). `weapons=0` opens hidden. Only 0 or 1 is accepted.
+- Holster/Draw uses the holster mod's preview API (`k2.holster@1`, optional, not in `requires_interfaces`). Calls: `RegisterPreview(gob, nullptr, left)` after each attach, `SetPreviewDraw(drawn)` on build and on click, `UnregisterPreview(gob)` before every free.
+- The 8 preview registry slots are shared with the holster editor. A failed registration hides the row.
+- Holstered = no wield stance (alignment idle). Drawn = `styleFor` stance. The click never re-creates the weapon models.
+- Without the holster mod (or a holster older than `SetPreviewDraw`, or a GUI not re-patched for id 79), the row never appears and weapons stay in the hands as before.
+- GUI: `scripts/add_equip_3dview_control.py` adds `LBL_E3D_HOLS` as id 79 (after the tooltip; ids 49..78 unchanged). Registry `tests/static/gui_ids.toml` ids [49, 79].
+- Open question the probe answers: does holster's H7 hook (0x504EF5, attach-behaviour refresh) fire for equip3d's own vt[0x50] attach? Log lines to check: `EQ10: register`, `EQ10: previewdraw`, `EQ10: layout`.
+- If Holster shows no movement in play row EQ10-P1, the follow-up is attaching through `k2.preview3d` or a holster API addition (separate plan).
+- Keyboard: holster's own `toggle_key` (default F8) already draws and stows in the world. Nothing new.
