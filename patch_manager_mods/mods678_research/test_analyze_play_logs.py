@@ -206,6 +206,15 @@ class DetectedProblems(Base):
         self.assertEqual(len(r["T"]["caps"]), 1)
         self.assertTrue(any("file cap" in m for s, _, m in r["an"].items if s == "WARN"))
 
+    def test_inventory_kplog_fallback_shape(self):
+        # 0.2.0+ lines carry the KpLog fallback prefix "<ms> inventory-sort-filter/main "; same answers as the raw shape
+        raw, kp = self.run_case("healthy")["I"], self.run_case("inventory_kplog")["I"]
+        for k in ("cfg", "flushes", "empty_flushes", "cycles"):
+            self.assertEqual([x["state"] if isinstance(x, dict) and "state" in x else 1 for x in kp[k]],
+                             [x["state"] if isinstance(x, dict) and "state" in x else 1 for x in raw[k]], k)
+        self.assertEqual((kp["clicks"], len(kp["loaded"]), kp["errs"]), (raw["clicks"], len(raw["loaded"]), raw["errs"]))
+        self.assertEqual(len(kp["flushes"]), 5)
+
     def test_inventory_errors(self):
         r = self.run_case("inventory_errors")
         self.assertEqual(set(r["I"]["errs"]), {"bad frame", "counter"})

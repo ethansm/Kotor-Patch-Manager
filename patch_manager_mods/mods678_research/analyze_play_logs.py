@@ -1111,10 +1111,10 @@ def analyze_inv(path: Path | None, an: Anoms) -> dict:
     cur_pop = None
     n_lines = 0
     loaded = []
-    for ln, line in read_lines(path):
+    for ln, kind, line in read_ranged_lines(path):   # 0.2.0+ writes the KpLog fallback shape ("<ms> inventory-sort-filter/main ..."), older raw
         n_lines += 1
         s = line.strip()
-        if not s:
+        if kind != "line" or not s:
             continue
         if INV_CFG_RE.match(s):
             cfg.append((ln, s)); continue
