@@ -52,7 +52,7 @@ class CacheBehaviour(unittest.TestCase):
         real = rt.run_cmd
 
         def counting(cmd, *a, **k):
-            if str(cmd[0]) == "g++" and "-MM" not in cmd:   # dependency scans are not builds
+            if str(cmd[0]) == "g++" and "-M" not in cmd:   # dependency scans are not builds
                 self.compiles += 1
             return real(cmd, *a, **k)
         p = mock.patch.object(rt, "run_cmd", counting)
@@ -97,6 +97,35 @@ class CacheBehaviour(unittest.TestCase):
         (self.src_dir / "val.h").write_text("#pragma once\ninline int val() { return 1; }\n")
         r = rt.execute(self.item())
         self.assertEqual((r.status, self.compiles), ("PASS", 3))
+
+    def test_isystem_header_content_change_rebuilds(self):
+        sysdir = self.root / "sys"
+        sysdir.mkdir()
+        (sysdir / "sysval.h").write_text("#pragma once\ninline int sysval() { return 1; }\n")
+        self.src.write_text('#include <sysval.h>\nint main() { return sysval() == 1 ? 0 : 1; }\n')
+        flags = ["-isystem", str(sysdir)]
+        r = rt.execute(self.item(extra_flags=flags))
+        self.assertEqual((r.status, self.compiles), ("PASS", 1), r.output)
+        side = Path(self.item(extra_flags=flags).cmd[0] + ".deps.json")
+        self.assertIn(str(sysdir / "sysval.h"), json.loads(side.read_text())["deps"])
+        rt.execute(self.item(extra_flags=flags))
+        self.assertEqual(self.compiles, 1)
+        (sysdir / "sysval.h").write_text("#pragma once\ninline int sysval() { return 2; }\n")
+        r = rt.execute(self.item(extra_flags=flags))
+        self.assertEqual((r.status, self.compiles), ("FAIL", 2))   # -M hashes -isystem headers (-MM omitted them)
+
+    def test_sidecar_from_older_mm_scan_rebuilds(self):
+        it = self.item()
+        rt.execute(it)
+        side = Path(it.cmd[0] + ".deps.json")
+        data = json.loads(side.read_text())
+        self.assertEqual(data["scan"], rt.DEPS_SCAN)
+        del data["scan"]                       # what a -MM era sidecar looks like
+        side.write_text(json.dumps(data))
+        rt.execute(self.item())
+        self.assertEqual(self.compiles, 2)
+        rt.execute(self.item())
+        self.assertEqual(self.compiles, 2)
 
     def test_same_content_new_mtime_still_hits(self):
         rt.execute(self.item())

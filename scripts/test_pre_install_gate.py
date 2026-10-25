@@ -482,7 +482,32 @@ class RealGitScope(unittest.TestCase):
         self.assertIn("patch_manager_mods/b_src/B.cpp", compat)             # in the include closure
         self.assertIn("patch_manager_mods/_shared_src/Shared.h", compat)    # shared: its includers' tests count
         self.assertNotIn("patch_manager_mods/b_src/Other.h", compat)
-        self.assertIn("1 dirty file(s) outside the gated mods' include closure not scoped", buf.getvalue())
+        self.assertIn("1 dirty file(s) the gated mods neither include nor import, not scoped", buf.getvalue())
+
+    def test_dirty_py_imported_by_gated_mod_is_scoped(self):
+        (self.repo / "patch_manager_mods/a_src/test_a.py").write_text("import helper_c\nfrom b_tool import x\n")
+        (self.repo / "patch_manager_mods/c_tools").mkdir()
+        (self.repo / "patch_manager_mods/c_tools/helper_c.py").write_text("import deep_c\n")    # direct import
+        (self.repo / "patch_manager_mods/c_tools/deep_c.py").write_text("# transitive\n")
+        (self.repo / "patch_manager_mods/b_src/b_tool.py").write_text("x = 1\n")              # from-import
+        (self.repo / "patch_manager_mods/b_src/unused.py").write_text("# nobody imports this\n")
+        runner, calls = scoped_runner(PLAN, LISTING)
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            g.scoped_ids(["a_src/sub"], Path(self.td.name) / "scr", runner, self.repo)
+        compat = calls[0]
+        for f in ("c_tools/helper_c.py", "c_tools/deep_c.py", "b_src/b_tool.py"):
+            self.assertIn(f"patch_manager_mods/{f}", compat)
+        self.assertNotIn("patch_manager_mods/b_src/unused.py", compat)
+
+    def test_py_import_prefers_the_module_beside_the_importer(self):
+        for rel, body in (("patch_manager_mods/a_src/test_a.py", "import util\n"),
+                          ("patch_manager_mods/a_src/util.py", "# local\n"),
+                          ("patch_manager_mods/0_first/util.py", "# same stem, first by path\n")):
+            (self.repo / rel).parent.mkdir(parents=True, exist_ok=True)
+            (self.repo / rel).write_text(body)
+        got = g.include_closure(["patch_manager_mods/a_src/test_a.py"], self.repo, shared_only=False, py=True)
+        self.assertEqual(got, ["patch_manager_mods/a_src/util.py"])
 
     def test_include_closure_follows_nested_shared_includes(self):
         (self.repo / "patch_manager_mods/a_src/sub/x.cpp").write_text('#include "Shared.h"\n#include <vector>\n')

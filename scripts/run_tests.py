@@ -353,8 +353,8 @@ def cpp_item(src: Path, sanitize=True, extra_flags=(), tag="", include_dirs=None
 #
 # The exe is content-addressed: <dir>__<stem><tag>-<key12>. key = sha256(abs source path, compiler argv without -o,
 # build cwd, g++ version/path, include env vars). Next to it, <exe>.deps.json records: the sha256 of the exe itself, the
-# sha256 of every user file the preprocessor read for EVERY source in the argv (one `g++ -MM` per source: a multi-source
-# -MMD only lists the last one), and a fingerprint of the include search space (names of header-like files under every
+# sha256 of every file the preprocessor read for EVERY source in the argv (one `g++ -M` per source: a multi-source
+# -MMD only lists the last one; -M, not -MM, so -isystem and system headers are hashed too), and a fingerprint of the include search space (names of header-like files under every
 # -I dir and the test dir, so a new header that shadows an old one is noticed). A build is skipped only when all of
 # it still matches. Content hashes, not mtimes: mutate_header.py rewrites headers in scratch trees and must always see
 # a rebuild.
@@ -506,8 +506,7 @@ def include_fingerprint(dirs, dep_paths) -> str:
     valid include; only .git is skipped) and directly beside every dependency. A file that newly shadows an older header
     changes it. Names only.
     Known limits (accepted): dirs beside a dep are listed non-recursively, so a new `<dep dir>/sub/x.h` for a
-    `#include "sub/x.h"` from an includer outside every -I dir is missed; headers under -isystem dirs are not content-hashed
-    (-MM omits system headers), only their names are fingerprinted."""
+    `#include "sub/x.h"` from an includer outside every -I dir is missed."""
     roots = {(d, True) for d in dirs} | {(os.path.dirname(p), False) for p in dep_paths}
     h = hashlib.sha256()
     for root, recursive in sorted(roots):
@@ -537,6 +536,9 @@ def include_fingerprint(dirs, dep_paths) -> str:
     return h.hexdigest()
 
 
+DEPS_SCAN = "M"   # sidecars from the older -MM scan (no -isystem/system headers) no longer vouch for an exe
+
+
 def _note(msg: str):
     print(f"NOTE  build cache: {msg}", file=sys.stderr, flush=True)
 
@@ -549,7 +551,8 @@ def cache_valid(exe: Path, key: str, argv, cwd) -> bool:
             return False
         data = json.loads(_sidecar(exe).read_text(encoding="utf-8"))
         deps = data.get("deps")
-        if data.get("key") != key or not isinstance(deps, dict) or not deps or not data.get("exe_sha256"):
+        if (data.get("key") != key or data.get("scan") != DEPS_SCAN or not isinstance(deps, dict) or not deps
+                or not data.get("exe_sha256")):
             return False
         if not all(_sha256_file(Path(p)) == h for p, h in deps.items()):
             return False
@@ -562,8 +565,9 @@ def cache_valid(exe: Path, key: str, argv, cwd) -> bool:
 
 
 def collect_deps(item: Item, cwd: Path, exe_tmp: Path, t_start_ns: int):
-    """{path: sha256} of every user file the preprocessor reads for EVERY source in the argv (one `-MM` run per source;
-    a single multi-source -MMD only lists the last translation unit). None (+ NOTE) when it cannot be trusted."""
+    """{path: sha256} of every file the preprocessor reads for EVERY source in the argv (one `-M` run per source;
+    a single multi-source -MMD only lists the last translation unit; -M includes -isystem/system headers, ~200 per
+    test, ~7 ms to hash). None (+ NOTE) when it cannot be trusted."""
     sources, flags = split_argv(item.build_cmd)
     if not sources:
         return None
@@ -571,7 +575,7 @@ def collect_deps(item: Item, cwd: Path, exe_tmp: Path, t_start_ns: int):
     for k, s in enumerate(sources):
         df = exe_tmp.with_name(f"{exe_tmp.name}.{k}.d")
         try:
-            st, _, _ = run_cmd([item.build_cmd[0]] + flags + ["-MM", "-MF", str(df), s], cwd, item.env, 120)
+            st, _, _ = run_cmd([item.build_cmd[0]] + flags + ["-M", "-MF", str(df), s], cwd, item.env, 120)
             if st != "OK":
                 _note(f"{Path(exe_tmp).name.split('.tmp.')[0]} not cached: dependency scan of {s} failed")
                 return None
@@ -616,7 +620,7 @@ def _compile_cached(item: Item):
             deps = collect_deps(item, cwd, tmp, t_start_ns)
             if deps:
                 _, flags = split_argv(item.build_cmd)
-                sidecar = {"key": c.key, "deps": deps, "exe_sha256": _sha256_file(tmp),
+                sidecar = {"key": c.key, "scan": DEPS_SCAN, "deps": deps, "exe_sha256": _sha256_file(tmp),
                            "inc_fp": include_fingerprint(include_dirs(flags, cwd), list(deps))}
         except (OSError, ValueError):
             sidecar = None                   # no usable dependency list: the build counts, it just is not cached

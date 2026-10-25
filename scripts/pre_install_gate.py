@@ -236,19 +236,36 @@ SHARED_PREFIXES = ("patch_manager_mods/_shared_src/", "tests/include/")
 HEADER_EXTS = {".h", ".hpp", ".inc", ".cpp"}
 
 
-def include_closure(files, repo: Path = REPO, shared_only: bool = True):
+def _py_imports(src: Path, text: str, graph, root: Path):
+    """Files a .py imports: `<stem>.py` beside it first (how sys.path[0] resolves for a script), else compat_graph's
+    repo-wide first-by-path stem map."""
+    from compat_graph import PY_IMPORT_RE
+    for m in PY_IMPORT_RE.finditer(text):
+        name = m.group(1) or m.group(2)
+        local = src.parent / f"{name}.py"
+        if local.is_file() and local != src:
+            yield local
+        elif name in graph.py_stem_map:
+            yield root / graph.py_stem_map[name]
+
+
+def include_closure(files, repo: Path = REPO, shared_only: bool = True, py: bool = False):
     """Quoted/angle #includes of `files`, resolved recursively with compat_graph's rules, that land in
     patch_manager_mods/_shared_src or tests/include (repo-relative, sorted). compat_check only walks REVERSE includes
     from the files it is given, so the tests of the shared headers a mod compiles are selected by passing the headers
-    themselves as touched files. None when the graph helper is unavailable."""
+    themselves as touched files. py=True also follows Python imports of the .py files reached (forward E2), so a
+    dirty module the gated mod's scripts/tests import counts as reached. None when the graph helper is unavailable."""
     try:
         from compat_graph import CompatGraph, INCLUDE_RE
         graph = CompatGraph(repo_root=Path(repo))
+        if py:
+            graph._scan_py_files()
     except Exception as e:   # noqa: BLE001
         print(f"WARN  step 1: cannot resolve includes ({e})")
         return None
     root = Path(repo).resolve()
-    seen, found, stack = set(), set(), [root / f for f in files if Path(f).suffix in HEADER_EXTS]
+    exts = HEADER_EXTS | ({".py"} if py else set())
+    seen, found, stack = set(), set(), [root / f for f in files if Path(f).suffix in exts]
     while stack:
         src = stack.pop()
         if src in seen or not src.is_file():
@@ -257,6 +274,16 @@ def include_closure(files, repo: Path = REPO, shared_only: bool = True):
         try:
             text = src.read_text(encoding="utf-8", errors="ignore")
         except OSError:
+            continue
+        if src.suffix == ".py":
+            for res in _py_imports(src, text, graph, root):
+                try:
+                    rel = res.resolve().relative_to(root).as_posix()
+                except ValueError:
+                    continue
+                if not shared_only or rel.startswith(SHARED_PREFIXES):
+                    found.add(rel)
+                stack.append(res.resolve())
             continue
         for m in INCLUDE_RE.finditer(text):
             try:
@@ -344,17 +371,18 @@ def scoped_ids(mods, scratch: Path, runner=run, repo: Path = REPO):
         print("WARN  step 1: git status failed")
         return None
     # Other sessions' dirty files elsewhere (tools, other mods) cannot change the gated build or its tests unless the
-    # gated sources include them: keep dirty shared headers (their includers' tests) and dirty files in the include
-    # closure; the rest is INFO (it used to pull e.g. 165 s of unrelated k1_port py tests into every gate).
-    # Known limit: only #include edges count here, not py imports or provider fan-out (no DLL mod pair needs them today).
-    reach = include_closure(files, repo, shared_only=False)
+    # gated sources include or import them: keep dirty shared headers (their includers' tests) and dirty files the
+    # gated sources reach by #include or Python import; the rest is INFO (it used to pull e.g. 165 s of unrelated
+    # k1_port py tests into every gate). Provider fan-out is deliberately not followed: a consumer DLL does not compile
+    # its provider's sources (shared provider headers are reached by #include), so a dirty provider is its own gate.
+    reach = include_closure(files, repo, shared_only=False, py=True)
     if reach is None:
         return None
     reach = set(reach)
     skipped = [f for f in dirty if not f.startswith(SHARED_PREFIXES) and f not in reach]
     dirty = [f for f in dirty if f not in skipped]
     if skipped:
-        print(f"INFO  step 1: {len(skipped)} dirty file(s) outside the gated mods' include closure not scoped: "
+        print(f"INFO  step 1: {len(skipped)} dirty file(s) the gated mods neither include nor import, not scoped: "
               f"{', '.join(skipped[:3])}" + (", ..." if len(skipped) > 3 else ""))
     if dirty:
         print(f"INFO  step 1 also scopes {len(dirty)} dirty shared file(s): {', '.join(dirty[:5])}"
