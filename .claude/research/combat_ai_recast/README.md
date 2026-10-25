@@ -120,6 +120,9 @@ CLR of that actor), Bao-Dur = `a9b1138`. Tools: `cmdq_idle_casts.py`, `cmdq_rn_b
   (append/consume functions) from static RE (WI-135 step 2).
 - F5 (script, party): run DetermineCombatRound at most once per engine round end for a party member (local int stamp
   of the round, skip a second run within the same round), which removes the backlog source of fact 7.
+  BUILT (WI-142): entry F5 in `party_ai_patches.py` at the top of GN_DetermineCombatRound: a non-leader party member
+  skips a run within 0.15 s of the previous one (local number 22, cleared by DelayCommand; 3 skips in a row = stuck flag,
+  run anyway), trace `Party F5: duplicate combat round run skipped`. Full build PASS. Not installed; play row CA-FG4.
 - Scope: F2 (and F1/F4/F5) are party-wide (`IsObjectPartyMember`), not Kreia-only. F2 covers Default, Aggressive,
   Defense, Ranged, Stationary (via `GN_RunDefaultAIRoutine`), Support/Jedi Support and Boss targeted; not covered:
   grenades, area powers (`GN_RunBossAOEPowerRoutine`, O3).

@@ -33,7 +33,8 @@ PARTY_PROTOS = (
     "int GN_PartyStanceCombatExit(int nNPC_AI, object oIntruder);\n"
     "void GN_PartyApproachUnseen(object oIntruder);\n"
     "int GN_PartyPowerFamily(int nSpell);\n"
-    "int GN_PartyFamilyActive(int nSpell, object oTarget);\n")
+    "int GN_PartyFamilyActive(int nSpell, object oTarget);\n"
+    "int SW_NUMBER_PARTY_DCR_STAMP = 22; //Party AI fix F5: local number, 0 = free, n = n-1 duplicate runs skipped\n")
 
 KITE_BRANCH = (
     "                else if (nNPC_AI == NPC_AISTYLE_PARTY_KITE)\n"
@@ -72,6 +73,25 @@ PATCHES = [
     # ---------------- k_inc_generic ----------------
     ("MOD8-proto", "party", G, PROTO_ANCHOR, PROTO_ANCHOR + MOD8_PROTOS + PARTY_PROTOS),
     ("MOD8-dispatch", "party", G, DISPATCH_OLD, DISPATCH_NEW),
+    ("F5", "party", G,
+     "    GN_SetLastRoundData();\n"
+     "    int nPartyAI = GetPartyAIStyle(); //Determines how the party should react to intruders\n",
+     "    //Party AI fix F5 (party only): the engine fires the round-end script 2-3 times 20-40 ms apart (CQ-QS1 fact 7);\n"
+     "    //each run queues one more cast node, so only the first run in a 0.15 s window decides. 3 skips in a row = stuck flag, run.\n"
+     "    if(IsObjectPartyMember(OBJECT_SELF) && GetPartyMemberByIndex(0) != OBJECT_SELF)\n"
+     "    {\n"
+     "        int nPartyStamp = GetLocalNumber(OBJECT_SELF, SW_NUMBER_PARTY_DCR_STAMP);\n"
+     "        if(nPartyStamp > 0 && nPartyStamp < 4)\n"
+     "        {\n"
+     "            SetLocalNumber(OBJECT_SELF, SW_NUMBER_PARTY_DCR_STAMP, nPartyStamp + 1);\n"
+     "            GN_MyPrintString(\"GENERIC DEBUG *************** Party F5: duplicate combat round run skipped\");\n"
+     "            return;\n"
+     "        }\n"
+     "        SetLocalNumber(OBJECT_SELF, SW_NUMBER_PARTY_DCR_STAMP, 1);\n"
+     "        DelayCommand(0.15, SetLocalNumber(OBJECT_SELF, SW_NUMBER_PARTY_DCR_STAMP, 0));\n"
+     "    }\n"
+     "    GN_SetLastRoundData();\n"
+     "    int nPartyAI = GetPartyAIStyle(); //Determines how the party should react to intruders\n"),
     ("E1", "party", G,
      "                if(nNPC_AI == NPC_AISTYLE_MELEE_ATTACK)\n",
      "                //Party AI fix E1 (party only): stances 10-13 and 16 never reach GN_DoPostDCRChecks below; it runs\n"

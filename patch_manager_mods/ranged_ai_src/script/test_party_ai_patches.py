@@ -111,6 +111,26 @@ class HelperBodyTest(unittest.TestCase):
         self.assertIn("GetNextEffect(oCheck)", body)
 
 
+class F5DcrStampTest(unittest.TestCase):
+    def _f5(self):
+        entries = [e for e in P.PATCHES if e[0] == "F5"]
+        self.assertEqual(len(entries), 1, "F5")
+        return entries[0]
+
+    def test_f5a_entry_is_party_scope_on_generic_file(self):
+        entry = self._f5()
+        self.assertEqual(entry[1], "party")
+        self.assertEqual(entry[2], P.G)
+
+    def test_f5b_party_protos_define_dcr_stamp(self):
+        self.assertIn("int SW_NUMBER_PARTY_DCR_STAMP = 22;", P.PARTY_PROTOS)
+
+    def test_f5c_new_text_has_window_and_skip_limit(self):
+        new = self._f5()[4]
+        self.assertIn("DelayCommand(0.15", new)
+        self.assertIn("nPartyStamp < 4", new)
+
+
 class VanillaAnchorTest(unittest.TestCase):
     def test_e_anchors_occur_once_in_vanilla(self):
         if not os.path.isdir(VANILLA_DIR):
