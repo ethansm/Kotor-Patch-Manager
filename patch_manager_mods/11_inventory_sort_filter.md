@@ -160,7 +160,7 @@ The 10-01 22:13 session did not open the inventory: the Mod 6 checklist is still
 
 - Name tie-break built (`c24be8e`): host tests, `compat_check` 63/0 and `build_check` pass. Not yet tried in game; queued in [`PLAY_TEST_QUEUE.md`](PLAY_TEST_QUEUE.md) as WI-21. No game install.
 
-### Perf follow-ups (review 2026-10-25, WI-145..WI-150; WI-145..147 LIVE in 0.2.2, WI-148/WI-150 built, not installed)
+### Perf follow-ups (review 2026-10-25, WI-145..WI-150; WI-145..147 LIVE in 0.2.2; WI-148..150 LIVE in 0.2.3 2026-10-25 19:53)
 
 - **WI-145 (`9b8e467c`):** the sort timing line now also reports the buffer-phase total and the name-read total: `sort timing: sortEntries rows=N took X us; buffer B us (names M us) names=K`.
 - **WI-146 (`09f4ff02`):** names are read at flush, only for rows tied on (new, usable, base item) (`isf::fillTiedNames`), and the client language is fetched once per populate. Same order as reading every name (host test).
