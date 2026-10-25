@@ -116,3 +116,4 @@
 {"ev": "park", "reason": "worker reply FAIL: OUT_OF_SCOPE patch_manager_mods/cmdq_probe_src/CmdqProbe.cpp outside patch_manager_mods/cmdq_probe_src/CmdqProbe.cpp, patch_manager_mods/cmdq_probe_src/cmdq_probe.ini, patch_manager", "session": "7c88a13b-2214-41d6-8a07-161f9d8f7a73", "ts": "2026-10-25T14:51:39Z", "wi": "WI-134"}
 {"ev": "unpark", "reason": "files: used ', ' separators (needs ';'); fixed. Work done by main agent", "session": "7c88a13b-2214-41d6-8a07-161f9d8f7a73", "ts": "2026-10-25T14:51:55Z", "wi": "WI-134"}
 {"ev": "done", "reason": "manual: main agent did the work; checker CONFIRMED (WARN: README is the declared docs target); gate PASS; WI files: separator fi", "session": "7c88a13b-2214-41d6-8a07-161f9d8f7a73", "ts": "2026-10-25T14:54:59Z", "wi": "WI-134"}
+{"ev": "done", "session": "7c88a13b-2214-41d6-8a07-161f9d8f7a73", "ts": "2026-10-25T15:55:54Z", "wi": "WI-138"}

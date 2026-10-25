@@ -31,7 +31,9 @@ MOD8_PROTOS = (
 PARTY_PROTOS = (
     "//Party AI script fixes (design_ai_script_fixes.md). Bodies at the end of this file.\n"
     "int GN_PartyStanceCombatExit(int nNPC_AI, object oIntruder);\n"
-    "void GN_PartyApproachUnseen(object oIntruder);\n")
+    "void GN_PartyApproachUnseen(object oIntruder);\n"
+    "int GN_PartyPowerFamily(int nSpell);\n"
+    "int GN_PartyFamilyActive(int nSpell, object oTarget);\n")
 
 KITE_BRANCH = (
     "                else if (nNPC_AI == NPC_AISTYLE_PARTY_KITE)\n"
@@ -290,6 +292,37 @@ PATCHES = [
      "                tUse = tSpe11_03;\n"
      "            }\n"
      "            //nTalent = 0xff4f;\n"),
+    # F2 (party only): family-aware buff and debuff picks. F2a skips a buff whose family (any tier or sibling) is
+    # already on the caster, and the invalid TalentSpell(-1) that the exact-id check leaves behind. F2b drops a force
+    # power whose family is already on the target, so the caller falls through to its next action.
+    ("F2a", "party", G,
+     "            if ( GetIsTalentValid( tTemp ) )\n"
+     "            {\n"
+     "                int nCost = GetSpellBaseForcePointCost(GetIdFromTalent(tTemp));\n",
+     "            //Party AI fix F2 (party only): the exact-id check above misses other tiers and leaves TalentSpell(-1),\n"
+     "            //which still counts as valid, so vanilla casts an invalid talent. A buff whose family is already on the\n"
+     "            //caster (any tier or sibling) or an invalid talent is skipped here and the routine falls through.\n"
+     "            int bPartySkip = FALSE;\n"
+     "            if(IsObjectPartyMember(OBJECT_SELF) && GetIsTalentValid( tTemp ) &&\n"
+     "               (GetIdFromTalent(tTemp) < 0 || GN_PartyFamilyActive(GetIdFromTalent(tTemp), OBJECT_SELF)))\n"
+     "            {\n"
+     "                GN_MyPrintString(\"GENERIC DEBUG *************** Party F2: buff family active, no buff cast\");\n"
+     "                bPartySkip = TRUE;\n"
+     "            }\n"
+     "            if ( GetIsTalentValid( tTemp ) && bPartySkip == FALSE )\n"
+     "            {\n"
+     "                int nCost = GetSpellBaseForcePointCost(GetIdFromTalent(tTemp));\n"),
+    ("F2b", "party", G,
+     "talent GN_CheckNonDroidForcePower(object oTarget, talent tUse)\n{\n    int bSwitch = FALSE;\n",
+     "talent GN_CheckNonDroidForcePower(object oTarget, talent tUse)\n{\n    int bSwitch = FALSE;\n"
+     "    //Party AI fix F2 (party only): a force power whose family is already active on the target (buffs: the caster;\n"
+     "    //debuffs: the target) is dropped here, so the caller falls through to its next action instead of a wasted round.\n"
+     "    if(IsObjectPartyMember(OBJECT_SELF) && GetTypeFromTalent(tUse) == TALENT_TYPE_FORCE && GN_PartyFamilyActive(GetIdFromTalent(tUse), oTarget))\n"
+     "    {\n"
+     "        GN_MyPrintString(\"GENERIC DEBUG *************** Party F2: family active, dropped spell \" + GN_ITS(GetIdFromTalent(tUse)));\n"
+     "        talent tNone;\n"
+     "        return tNone;\n"
+     "    }\n"),
     # ---------------- k_inc_gensupport ----------------
     ("M2", "party", S,
      "        nEnemy = GN_CheckEnemyGroupingOnTarget(oCheck,4.0);\n"

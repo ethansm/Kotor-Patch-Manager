@@ -87,3 +87,116 @@ void GN_PartyApproachUnseen(object oIntruder)
     ActionMoveToObject(oIntruder, TRUE, fRange);
     ActionDoCommand(GN_DetermineCombatRound(oIntruder));
 }
+
+// F2 (party only): power family of a spell, 0 = untracked. Buff families 1-10 are self buffs (checked on the
+// caster); families 20-24 are single-target debuffs (checked on the target). Ids are spells.2da rows (labels
+// checked 2026-10-25). Kill (32) is instant damage, Horror (30) and Insanity (31) are area powers: untracked.
+int GN_PartyPowerFamily(int nSpell)
+{
+    // 1 Speed
+    if (nSpell == 8 || nSpell == 34 || nSpell == 37)
+    {
+        return 1;
+    }
+    // 2 Armor
+    if (nSpell == 17 || nSpell == 18 || nSpell == 24)
+    {
+        return 2;
+    }
+    // 3 Valor
+    if (nSpell == 22 || nSpell == 33 || nSpell == 36)
+    {
+        return 3;
+    }
+    // 4 Energy Resist
+    if (nSpell == 40 || nSpell == 42 || nSpell == 133)
+    {
+        return 4;
+    }
+    // 5 Barrier
+    if (nSpell == 135 || nSpell == 136 || nSpell == 137)
+    {
+        return 5;
+    }
+    // 6 Battle Meditation (PC)
+    if (nSpell == 138 || nSpell == 139 || nSpell == 140)
+    {
+        return 6;
+    }
+    // 7 Fury
+    if (nSpell == 164 || nSpell == 165 || nSpell == 166)
+    {
+        return 7;
+    }
+    // 8 Inspire Followers
+    if (nSpell == 167 || nSpell == 168 || nSpell == 169 || nSpell == 170 || nSpell == 171 || nSpell == 172)
+    {
+        return 8;
+    }
+    // 9 Force Body
+    if (nSpell == 150 || nSpell == 151 || nSpell == 152)
+    {
+        return 9;
+    }
+    // 10 Force Immunity / Resist Force
+    if (nSpell == 20 || nSpell == 41)
+    {
+        return 10;
+    }
+    // 20 Slow / Affliction / Plague
+    if (nSpell == 45 || nSpell == 7 || nSpell == 38)
+    {
+        return 20;
+    }
+    // 21 Wound / Choke (Kill 32 is instant damage, untracked)
+    if (nSpell == 50 || nSpell == 9)
+    {
+        return 21;
+    }
+    // 22 Fear (Horror 30 and Insanity 31 are area powers, untracked)
+    if (nSpell == 16)
+    {
+        return 22;
+    }
+    // 23 Stun / Stasis
+    if (nSpell == 46 || nSpell == 29)
+    {
+        return 23;
+    }
+    // 24 Drain Force
+    if (nSpell == 153 || nSpell == 154 || nSpell == 155)
+    {
+        return 24;
+    }
+    return 0;
+}
+
+// F2 (party only): TRUE when a power of the same family as nSpell is already on oTarget. Buff families check
+// OBJECT_SELF (the caster), debuff families check the target. Untracked spells and invalid targets give FALSE.
+int GN_PartyFamilyActive(int nSpell, object oTarget)
+{
+    int nFamily = GN_PartyPowerFamily(nSpell);
+    if (nFamily == 0)
+    {
+        return FALSE;
+    }
+    object oCheck = OBJECT_SELF;
+    if (nFamily >= 20)
+    {
+        oCheck = oTarget;
+    }
+    if (!GetIsObjectValid(oCheck))
+    {
+        return FALSE;
+    }
+    effect eCur = GetFirstEffect(oCheck);
+    while (GetIsEffectValid(eCur))
+    {
+        if (GN_PartyPowerFamily(GetEffectSpellId(eCur)) == nFamily)
+        {
+            return TRUE;
+        }
+        eCur = GetNextEffect(oCheck);
+    }
+    return FALSE;
+}
