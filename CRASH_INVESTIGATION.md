@@ -929,3 +929,19 @@ than intermittently, that would be the trigger to escalate.
 - 0x414c60 calls vtable[1] on owned sub-objects at border+0x6c/+0x70 (label+0xCC/+0xD0). The object it hit had vtable 0x98C1F4 (a CRT class whose slot 1 is the .rdata pointer 0x9bb0f0): freed and reused memory, not a label part. Who freed it first is unproven.
 - Fix applied (enemy-effects-strip 0.4.9-dev): destroyPreview no longer frees the 14 MUI_NOFREE preview labels (`kFreePreviewLabels = false`; ~5 KB leak per Options open, labels already unlinked). Log line now `preview DESTROY: freed=0 kept=0 leaked=14`.
 - Open: combat-hotbar's gear/test-modal labels use the same createLabelFromTemplate + releaseUnlinkedLabel path (the earlier crash this day); same fix may apply.
+
+## 2026-10-26 00:51 — crash on module transition (mod-config DTOR frees holster-editor label)
+
+- **Symptom:** game crashed while transitioning modules. Logs copied to `.claude/crash_logs/20261026_0051/`.
+- **Log evidence:** `wine: Unhandled page fault on write access to 0098C1F4 at address 009BB0F0`; backtrace
+  `0x9bb0f0 <- 0x751103 (CSWGuiLabel dtor 0x7510B0, right after the border dtor 0x414C60 on label+0x60) <- mod-config +0x2fe32`.
+  mod-config log ends `DTOR panel=8683618 ... FREE truncated list 326 -> 16` then 106 `FREE ctl`, the last `ctl=87fbe18` = EBX
+  = `label_6_33` (holster-editor page 6). ECX=0ce94248 = the fill image the border dtor called vt[1] on: already freed.
+- **Root cause:** the border dtor deletes every fill image (+0x6C/+0x70/+0x74). holster-editor puts its OWN pooled images (slider art,
+  hint box, reset/flip icons; `guikit::imageForRetry`, one pool per DLL) on mod-config-owned labels. mod-config's `freeCtl` calls
+  `detachPooledFills`, which only recognises mod-config's pool (pooled=0 in the log), so the first label sharing the image deleted it and a
+  later one called the freed object. Same class as the 10-21 23:26 crash, cross-DLL variant. Needs the editor page to have been opened
+  since the Options panel was built, then a panel destroy (module transition).
+- **Ruled out:** KPM init (512 detours, SUCCESS), preview-3d (destroyed cleanly before), a vanilla fault.
+- **Fix:** holster-editor 0.7.3-dev snapshots its page controls in `applyArt` and calls `guikit::detachPooledFills` on each in `cbDestroy`
+  (which mod-config runs before freeing). New log line `DTOR art detached=N of M ctls`.

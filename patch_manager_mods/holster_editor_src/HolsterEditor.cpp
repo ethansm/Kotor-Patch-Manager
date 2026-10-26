@@ -246,6 +246,10 @@ struct Editor {
     char statusShown[100] = {0};
     bool artDone = false;              // slider / reset art applied (or given up)
     int artTicks = 0;
+    // Every page control at art time (items + wedges + speed wedge): cbDestroy detaches this DLL's pooled images from them before mod-config frees
+    // them, because mod-config's detachPooledFills only knows mod-config's own pool (crash 10-26 00:51: label border dtor called a freed slider image).
+    uintptr_t artCtl[hse::kPageItemsV3 + hse::kV3Rows + 1] = {};
+    int artCtlCount = 0;
     bool paneWarned = false;
 
     int stanceIdx = 0;
@@ -2715,6 +2719,14 @@ void applyArt(Editor& e) {
         }
     }
     e.artDone = true;
+    e.artCtlCount = 0;
+    auto noteCtl = [&e](int32_t item) {
+        const uintptr_t c = ctlOf(e, item);
+        if (c && e.artCtlCount < static_cast<int>(sizeof e.artCtl / sizeof e.artCtl[0])) e.artCtl[e.artCtlCount++] = c;
+    };
+    for (int i = 0; i < hse::kPageItemsV3; ++i) noteCtl(e.item[i]);
+    for (int r = 0; r < hse::kV3Rows; ++r) noteCtl(e.wedge[r]);
+    noteCtl(e.speedWedge);
     KP_LOG(chView, "ART applied frame=%d/%d wedge=%d/%d mark=%d/%d reset_icon=%d/%d flip=%d/1 hint_box=%d/2 desc_style=%d/6 after %d ticks", frame, hse::kV3Rows, wedge, hse::kV3Rows, mark,
            hse::kV3Rows, icon, icons, flip, hintBox, descStyle, e.artTicks);
     KP_LOG(chView, "NAMEBOX art=%d", nameBox);
@@ -3073,6 +3085,10 @@ void KPATCH_CALL cbDestroy(void* panel, void*) {
     if (g_p3.ok()) {
         g_p3.p->SetBeforeFree(nullptr, &g_ed);
     }
+    // mod-config frees these labels after this callback; their border dtor deletes whatever fill they hold, so take our pooled images back first.
+    int detached = 0;
+    for (int i = 0; i < e.artCtlCount; ++i) detached += guikit::detachPooledFills(e.artCtl[i]);
+    KP_LOG(chMain, "DTOR art detached=%d of %d ctls", detached, e.artCtlCount);
     if (g_freeView && view) {
         const bool unlinked = g_menu.ok() && e.page && e.viewItem >= 0 && g_menu.p->Control(e.page, e.viewItem) == nullptr;
         if (unlinked) {
