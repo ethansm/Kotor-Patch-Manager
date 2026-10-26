@@ -72,7 +72,7 @@ KP_LOG_PATCH("companion-ai");
 namespace {
 
 using cai::Invalid;
-constexpr const char* Version = "0.3.2-probe";
+constexpr const char* Version = "0.3.3-probe";
 
 // ---- game globals and functions (conventions from the raw .asm)
 constexpr int G_VM = 0x00A1B4A8;            // CVirtualMachine*
