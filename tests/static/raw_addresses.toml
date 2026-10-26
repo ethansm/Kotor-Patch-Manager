@@ -105,6 +105,9 @@ addresses = ["0x00478A20", "0x00478A57", "0x00986128", "0x0098BFE0", "0x00A309AC
 [files."patch_manager_mods/k2_engine_perf_src/TexScanCache.h"]
 addresses = ["0x00427970", "0x00466033", "0x0046630E", "0x0046673F", "0x00A1BB84", "0x00A1BBBC", "0x00A1BC30", "0x00A1BC48", "0x00A1BC4C", "0x00A1BC70"]   # dump 00427970/00427f30/00465f90/004662e0/00466700.asm; check_hook_bytes PASS on the 3 E8 sites
 
+[files."patch_manager_mods/k2_frame_pacing_src/K2FramePacing.cpp"]
+addresses = ["0x00407920", "0x0040840E", "0x0040846E", "0x00408AF0", "0x00408C02", "0x00A1B484"]   # Opus-reviewed 10-26: 0x00407920 = WinMain (DB, trusted); main HWND [0x00A1B484] passed to GetDC at 0x0040840E; others comments; dump 00407920/00408af0.asm
+
 [files."patch_manager_mods/k2_shadow_distance_src/K2ShadowDistance.cpp"]
 addresses = ["0x00468984", "0x00468B50", "0x00468CDB", "0x00468D76", "0x0098BA98", "0x009F5D30", "0x009F5D50", "0x009F5D54", "0x009F5DA8", "0x00A0F040"]   # not in DB, dump asm evidence doc 50 PF1b (00468b50.asm); 0x00A0F040/0x009F5D54/0x009F5D30/0x009F5DA8 read-only log
 

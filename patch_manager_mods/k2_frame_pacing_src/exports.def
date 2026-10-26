@@ -1,0 +1,4 @@
+LIBRARY K2FramePacing
+EXPORTS
+    KPatchInit
+    K2FramePacingOnLoopEnd
