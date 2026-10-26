@@ -1,22 +1,22 @@
 # Session Handoff & Plan State: patch_manager_mods/50_k2_render_performance.md
 
 ## 0. Next-Phase Direction
-Execute **PF2a**: Redundant per-bin state hoist (set texenv/material/client state once per bucket)
+50 grass 0.1.6-dev variety: R6 #1 seed hash, #2 uniform barycentric, #3 density noise, #4 replaced by wider size range (user choice)
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/50_k2_render_performance.md`
 - **Waves:** .claude/waves/w1-50-PF2/
-- **Branch:** `KOTOR-II` (5fad7560 doc 50 W2-1: PF2b/PF2c/PF2d BUILT (grass 0.1.5-dev 5c23ddf7), PF2a probe notes; doc 48 P4b; play row GR6)
-- **Generated:** 2026-10-25 19:49:58 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Waves:** .claude/waves/w1-50-PV/
+- **Branch:** `KOTOR-II` (e3a698ca doc 50 PV1-PV4 grass variety rows; R6 recon addendum (w1-50-PV))
+- **Generated:** 2026-10-25 20:23:07 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-5fad7560 doc 50 W2-1: PF2b/PF2c/PF2d BUILT (grass 0.1.5-dev 5c23ddf7), PF2a probe notes; doc 48 P4b; play row GR6
- patch_manager_mods/48_k2_grass_draw_distance.md | 1 +
- patch_manager_mods/50_k2_render_performance.md  | 8 ++++----
- patch_manager_mods/PLAY_TEST_QUEUE.md           | 1 +
- 3 files changed, 6 insertions(+), 4 deletions(-)
+e3a698ca doc 50 PV1-PV4 grass variety rows; R6 recon addendum (w1-50-PV)
+ .claude/research/render_perf/R6_grass_variety.md | 6 ++++++
+ patch_manager_mods/50_k2_render_performance.md   | 4 ++++
+ 2 files changed, 10 insertions(+)
 ```
-- **Dirty Files (189):**
+- **Dirty Files (183):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
   - ` M .claude/handoffs/DECOMP_PLAN.handoff.md`
@@ -27,7 +27,7 @@ Execute **PF2a**: Redundant per-bin state hoist (set texenv/material/client stat
   - ` M .claude/reviews/gemini_20261014/tools/fix3_items.tsv`
   - ` M .claude/settings.json`
   - ` M CLAUDE.md`
-  - ... +179 more (run `git status --short`)
+  - ... +173 more (run `git status --short`)
 
 ## 2. Immediate Objective (**PF2a**)
 **Redundant per-bin state hoist (set texenv/material/client state once per bucket)**
@@ -36,9 +36,9 @@ Status: TODO
 Task: Redundant per-bin state hoist (set texenv/material/client state once per bucket)
 
 ## 2b. Upcoming Batches in Pipeline
-- ****PF2b**** : Wind throttle: update wind for bins past N m every k-th frame
-- ****PF2c**** : Far-grass LOD: draw a fraction of a far bin's quads (index count), density compensation by alpha
-- ****PF2d**** : GPU timing of the grass pass (`GL_ARB_timer_query` if present) into PERF
+- ****PF3**** : Defaults from A/B logs; log tightening (`perf_log` default off, verbose gating)
+- ****PV1**** : grass 0.1.6-dev variety: per-face RNG seed from a float-bit hash of the face verts (replaces `srand(round(x0+y1+z2))` at 0x50EF90; kills repeated clumps); toggle `vary_seed`
+- ****PV2**** : grass 0.1.6-dev variety: uniform barycentric blade positions (rewrite the 3 weights at 0x50F177 before the normalise call; no centre bunching); toggle `even_spread`
 
 ## 3. Strict Context Budget & Read Policy
 - **Fresh Session Bootstrap**: Run `python3 scripts/plan_manager.py resume patch_manager_mods/50_k2_render_performance.md`.
