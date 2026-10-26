@@ -30,7 +30,9 @@ SRC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "ranged
 SRC_INPUTS = ("party_ai_patches.py", "kite_routine.nss", "party_ai_fixes.nss")   # recorded in manifest.json["inputs"]
 MASTER = "k_ai_master.ncs"
 MOD8_MD5 = "94db830439f1d33572ba911174e20a04"   # live k_ai_master.ncs (Mod 8 0.2.0 build)
-PREV_PARTY_MD5S = {"b003ea4135c7e15841111107eb69fc4b"}   # earlier party AI builds of ours (2ddec63, 2026-09-30)
+PREV_PARTY_MD5S = {"b003ea4135c7e15841111107eb69fc4b",   # earlier party AI builds of ours (2ddec63, 2026-09-30)
+                   "668968300fedfb4273d4b1500d8a149d",  # F2 build (WI-138/139), installed 2026-10-25 17:36
+                   "e5ff7aa45d0d0f0dfa676ca7492828e3"}  # F5 + Party D prints (WI-142, 990e5044), installed 2026-10-25 20:12
 
 
 def md5(p):
