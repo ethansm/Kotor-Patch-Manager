@@ -1,4 +1,4 @@
-// K2EnginePerf.cpp -- K2 Engine Perf (0.1.0-dev)
+// K2EnginePerf.cpp -- K2 Engine Perf (0.1.1-dev)
 // Two small per-frame CPU savings, each behind an ini switch, measured in a PERF line every 5 s:
 //   1. tex_scan_cache: the 3 render-bucket drains of a scene each rebuild the full texture-id list (TexMgr::RebuildIdList
 //      0x00427970); the result cannot change between them, so the 2nd and 3rd reuse it (TexScanCache.h).
@@ -231,7 +231,7 @@ void* __cdecl K2EP_TexScan() {
         texscan::onVerify(g_scanStats, same);
         if (!same) {
             // The key missed a change: stop reusing for this session (safety first) and say so once.
-            KP_WARN("tex_scan verify MISMATCH tick=%u sheets=%d cached count=%u max=%u real count=%u max=%u: cache OFF for this session",
+            KP_ERR("tex_scan verify MISMATCH tick=%u sheets=%d cached count=%u max=%u real count=%u max=%u: cache OFF for this session",
                     tick, sheets, g_scanState.count, g_scanState.maxId, cnt, mx);
             g_scanTripped = true;
             texscan::invalidate(g_scanState);

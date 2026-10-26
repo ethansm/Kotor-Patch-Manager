@@ -12,7 +12,7 @@
 namespace k2ep {
 
 constexpr const char* kModId = "k2-engine-perf";
-constexpr const char* kVersion = "0.1.0-dev";
+constexpr const char* kVersion = "0.1.1-dev";
 constexpr const char* kIniFile = "k2_engine_perf.ini";
 constexpr const char* kIniSection = "EnginePerf";
 
