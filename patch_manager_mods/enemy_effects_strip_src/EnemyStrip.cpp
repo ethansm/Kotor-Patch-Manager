@@ -1455,6 +1455,12 @@ void KPATCH_CALL cbTick(uint32_t page, void*) {
 
 void KPATCH_CALL cbDestroy(void* panel, void*) {
     if (!panel || panel != g_pg.panel) return;
+    // mod-config frees the slider labels after this callback and their border dtor deletes the fill image; the slider art and the pill are
+    // pooled in THIS DLL (mod-config's detachPooledFills cannot see them), so take them back now (holster-editor crash 10-26 00:51, same class).
+    int detached = 0;
+    for (int s = 0; s < esl::S_Count; ++s)
+        detached += guikit::detachPooledFills(g_slGroove[s].c) + guikit::detachPooledFills(g_slFill[s].c) + guikit::detachPooledFills(g_slThumb[s].c);
+    KP_LOGV(chCfg, KPLOG_INFO, "DESTROY slider art detached=%d", detached);
     clearSliderWids();   // the slider labels are provider-owned: never touch them after the panel is gone
     destroyPreview();   // mod-config frees its own controls; this mod owns the MUI_NOFREE preview labels (mod-config unlinked them already)
     g_pg.reset();
