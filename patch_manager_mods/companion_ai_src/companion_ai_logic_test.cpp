@@ -486,10 +486,16 @@ static void testCastGuard() {
     for (int s = 167; s <= 172; ++s) CHECK(castFamily(s) == 8);                              // Inspire Followers
     CHECK(castFamily(150) == 9 && castFamily(151) == 9 && castFamily(152) == 9);              // Force Body
     CHECK(castFamily(20) == 10 && castFamily(41) == 10);                                      // Force Immunity / Resist Force
+    // debuff families 20-24 (WI-137): single-target hostile powers, read from the target's effects
+    CHECK(castFamily(45) == 20 && castFamily(7) == 20 && castFamily(38) == 20);              // Slow / Affliction / Plague
+    CHECK(castFamily(50) == 21 && castFamily(9) == 21);                                       // Wound / Choke
+    CHECK(castFamily(16) == 22);                                                              // Fear
+    CHECK(castFamily(46) == 23 && castFamily(29) == 23);                                      // Stun / Stasis
+    CHECK(castFamily(153) == 24 && castFamily(154) == 24 && castFamily(155) == 24);          // Drain Force
     int tracked = 0; for (int s = 0; s < 256; ++s) tracked += castFamily(s) != 0;
-    CHECK(tracked == 32);                                                                     // no other id in 0..255 is tracked
-    // untracked: debuff families (WI-137), area powers, Kill, unknown and invalid ids
-    CHECK(castFamily(45) == 0 && castFamily(7) == 0 && castFamily(38) == 0);                  // single-target debuffs
+    CHECK(tracked == 43);                                                                     // 32 buff rows + 11 debuff rows; no other id in 0..255 is tracked
+    CHECK(castFamilyOnTarget(20) && castFamilyOnTarget(24) && !castFamilyOnTarget(10) && !castFamilyOnTarget(0));   // debuffs read the target
+    // untracked: area powers, Kill, Horror, Insanity, unknown and invalid ids
     CHECK(castFamily(30) == 0 && castFamily(31) == 0 && castFamily(32) == 0);                 // Horror / Insanity / Kill
     CHECK(castFamily(0) == 0 && castFamily(-1) == 0 && castFamily(0x7F000000) == 0);
     // drop decision: same family active (any tier, the same spell too) drops; other family, nothing active, untracked keep
@@ -505,9 +511,15 @@ static void testCastGuard() {
     CHECK(!castGuardDrops(true, false, 8, nullptr, 3));       // unreadable list: keep
     CHECK(!castGuardDrops(true, true, 8, speedHi, 1));        // party leader (player-issued): never dropped
     CHECK(!castGuardDrops(true, true, 37, speedSame, 1));
-    CHECK(!castGuardDrops(true, false, 45, speedHi, 1));      // untracked spell (debuff): keep
+    CHECK(!castGuardDrops(true, false, 45, speedHi, 1));      // debuff family not active on the target (a buff is): keep
     CHECK(!castGuardDrops(true, false, -1, speedHi, 1));      // unknown spell row: keep
     CHECK(!castGuardDrops(false, false, 8, speedHi, 1));      // cast_family_guard=0: vanilla
+    // debuff families (WI-137): the caller passes the TARGET's effect ids
+    const int slowOn[] = {7}, wound[] = {50}, stasis[] = {29};
+    CHECK(castGuardDrops(true, false, 45, slowOn, 1));        // Slow cast, Slow active on the target: drop
+    CHECK(!castGuardDrops(true, false, 45, wound, 1));        // Slow cast, Wound active (family 21, not 20): keep
+    CHECK(castGuardDrops(true, false, 46, stasis, 1));        // Stun cast, Stasis active (same family 23): drop
+    CHECK(!castGuardDrops(true, true, 45, slowOn, 1));        // party leader casts Slow: never dropped
     // INI key: default on (shipped), 0 turns it off, sameConfig sees it
     Config d; CHECK(d.castFamilyGuard);
     g_t.parse("[CompanionAI]\ncast_family_guard=0\n", "CompanionAI"); Config off; parseConfig(g_t, off);

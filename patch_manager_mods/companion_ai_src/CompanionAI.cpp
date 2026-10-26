@@ -22,7 +22,7 @@
 //   FM1 0x586F43 CompanionAiBumpClear(ebp)      BumpFriends ClearAllActions(1) (skip-only: the handler makes the call)
 //   FM4 0x57451F CompanionAiFm4Snap(eax) / 0x575183 CompanionAiFm4Restore(ebp)   SaveCreature FollowInfo (mode 1)
 //   A4  0x6D9E2A CompanionAiA4(ebp) -> int      AIActionCombat NULL spell row (skip-only): 1 => 0x6D9EA4
-//   G1  0x6D9ADB CompanionAiCastGuard(ebp) -> int  AIActionCombat case 9 (spell round node): cast_family_guard. 1 => 0x6D9B65 (skip the round build)
+//   G1  0x6D9ADB CompanionAiCastGuard(ebp) -> int  AIActionCombat case 9 (spell round node): cast_family_guard. 1 => 0x6D9B65 (skip the round build); debuff families 20-24 read the target's effects (node +0x84, WI-137)
 //   F4  0x5917C1 CompanionAiCastQueueNewest(ebp)  AddSWSpellAction before AddAction: drop older pending spell nodes (cast_queue_newest)
 //   C1  0x5868B9/0x5868F1/0x586929 CompanionAiC1(ebp)   ClearHostileActionsVersus restart index (skip-only)
 //   A3  0x6D78B7 CompanionAiA3(ebp)             dead/undetected-target exit: clear the orientation lock (opt, a3=0)
@@ -942,6 +942,7 @@ extern "C" int __cdecl AiTracePrintString(int ebp) {
 // G1. AIActionCombat case 9 (spell round node) at 0x6D9ADB, before anything is pushed (the stolen PUSH 1 / MOV EDX,[EBP-0x1C] run on the
 // no-skip path). Return 1 => 0x6D9B65: the round build for this node is skipped and the node is freed there as vanilla does. Every
 // doubtful read returns 0 (vanilla): a drop needs a readable actor, server, effect list and spell row.
+// WI-137: debuff families 20-24 read the target's effect list (node +0x84, tgt= in the log line); buff families read the caster's.
 namespace {
 int g_g1Logs = 0;   // session budget of G1 drop lines
 bool g_g1Noted = false;
@@ -972,8 +973,15 @@ extern "C" int __cdecl CompanionAiCastGuard(int ebp) {
     bool actorIsLeader = reinterpret_cast<Fn0>(FnPlayerId)(server) == actorId;
     if (actorIsLeader) { dbgG1(now, actor, actorId, spell, cai::DkLeader); return 0; }
     if (!objInfo(actorId, now).party) { dbgG1(now, actor, actorId, spell, cai::DkNotParty); return 0; }   // party members only: enemies and neutral NPCs are never dropped
+    // WI-137: the effect owner. Buff families (1-10) read the caster's effects; debuff families (20-24) read the target's (node +0x84).
+    int targetId = 0, owner = actor;
+    if (cai::castFamilyOnTarget(cai::castFamily(spell))) {
+        targetId = rd<int>(node, 0x84, 0);
+        owner = gameObject(targetId);
+        if (!owner) { ++g_st.g1Bad; dbgG1(now, actor, actorId, spell, cai::DkBadRead); return 0; }   // no readable target: vanilla
+    }
     int arr = 0, cnt = 0;
-    if (!k2fx::effectListNonEmpty(static_cast<uintptr_t>(actor), &arr, &cnt)) { dbgG1(now, actor, actorId, spell, cai::DkFamilyNotActive); return 0; }   // no effects: nothing to be active
+    if (!k2fx::effectListNonEmpty(static_cast<uintptr_t>(owner), &arr, &cnt)) { dbgG1(now, actor, actorId, spell, cai::DkFamilyNotActive); return 0; }   // no effects: nothing to be active
     int ids[64], n = 0;
     for (int i = 0; i < cnt && n < 64; ++i) {
         int eff = rd<int>(arr, i * 4, 0);
@@ -985,7 +993,7 @@ extern "C" int __cdecl CompanionAiCastGuard(int ebp) {
     ++g_st.g1Drops;
     if (g_g1Logs < 200) {
         ++g_g1Logs;
-        eline(now, "t=%lu G1 drop cr=%08x spell=%d fam=%d", now, actorId, spell, cai::castFamily(spell));
+        eline(now, "t=%lu G1 drop cr=%08x spell=%d fam=%d tgt=%08x", now, actorId, spell, cai::castFamily(spell), targetId);
     } else capNote(now, g_g1Noted, "G1 drop", 200, "counts continue in S");
     return 1;
 }
