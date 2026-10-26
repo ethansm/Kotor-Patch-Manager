@@ -1,20 +1,21 @@
 # Session Handoff & Plan State: patch_manager_mods/50_k2_render_performance.md
 
 ## 0. Next-Phase Direction
-50 grass 0.1.6-dev variety: R6 #1 seed hash, #2 uniform barycentric, #3 density noise, #4 replaced by wider size range (user choice)
+Execute **PF2a**: Redundant per-bin state hoist (set texenv/material/client state once per bucket)
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/50_k2_render_performance.md`
 - **Waves:** .claude/waves/w1-50-PF2/
 - **Waves:** .claude/waves/w1-50-PV/
-- **Branch:** `KOTOR-II` (e3a698ca doc 50 PV1-PV4 grass variety rows; R6 recon addendum (w1-50-PV))
-- **Generated:** 2026-10-25 20:23:07 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (5fef0fdd doc 50 PV1-PV4 BUILT (5f34be01); doc 48 P4c; play row GR7)
+- **Generated:** 2026-10-25 20:29:45 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-e3a698ca doc 50 PV1-PV4 grass variety rows; R6 recon addendum (w1-50-PV)
- .claude/research/render_perf/R6_grass_variety.md | 6 ++++++
- patch_manager_mods/50_k2_render_performance.md   | 4 ++++
- 2 files changed, 10 insertions(+)
+5fef0fdd doc 50 PV1-PV4 BUILT (5f34be01); doc 48 P4c; play row GR7
+ patch_manager_mods/48_k2_grass_draw_distance.md | 1 +
+ patch_manager_mods/50_k2_render_performance.md  | 8 ++++----
+ patch_manager_mods/PLAY_TEST_QUEUE.md           | 1 +
+ 3 files changed, 6 insertions(+), 4 deletions(-)
 ```
 - **Dirty Files (183):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
