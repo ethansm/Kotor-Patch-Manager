@@ -70,9 +70,9 @@ so the gains add up and each change's cost or gain is visible in the logs.
 | **PF1c** | Recon for Wave 2 (read-only): RenderGrassPolys per-bin state and draw path, `[0x00A1BCB4]` backend, wind update 0x00510F70 data flow, quad/index layout for LOD | PF0 | - | DONE | 95171d08 | R4 hoist candidates (path mask 0xA32DF8 runtime-only), R5 thin glDrawArrays count; both PARTIAL |
 | **PF1d** | Install wave: fog F2 + grass 0.1.4 + shadow 0.1.0 in one `kpm_reinstall.py` (new hooks/ids) | PF1a, PF1b | user GO | INSTALLED | | 18:16 10-25 full reinstall (55 patches); rollback batch_reinstall_20261025_181615; play FG1/GR5/SH1 |
 | **PF2a** | Redundant per-bin state hoist (set texenv/material/client state once per bucket) | PF1c, PF1d | - | TODO | | probe in 0.1.5 (path probe + pathA/B1/B2 PERF); build after GR6 logs |
-| **PF2b** | Wind throttle: update wind for bins past N m every k-th frame | PF1c, PF1d | - | BUILT | 5c23ddf7 | grass 0.1.5-dev (KPM d52fedb), default off, play row GR6 |
-| **PF2c** | Far-grass LOD: draw a fraction of a far bin's quads (index count), density compensation by alpha | PF1c, PF1d | - | BUILT | 5c23ddf7 | grass 0.1.5-dev (KPM d52fedb), default off, play row GR6 |
-| **PF2d** | GPU timing of the grass pass (`GL_ARB_timer_query` if present) into PERF | PF1d | - | BUILT | 5c23ddf7 | grass 0.1.5-dev (KPM d52fedb), default off, play row GR6 |
+| **PF2b** | Wind throttle: update wind for bins past N m every k-th frame | PF1c, PF1d | - | INSTALLED | 5c23ddf7 | grass 0.1.5-dev LIVE 10-25 20:12, play GR6 |
+| **PF2c** | Far-grass LOD: draw a fraction of a far bin's quads (index count), density compensation by alpha | PF1c, PF1d | - | INSTALLED | 5c23ddf7 | grass 0.1.5-dev LIVE 10-25 20:12, play GR6 |
+| **PF2d** | GPU timing of the grass pass (`GL_ARB_timer_query` if present) into PERF | PF1d | - | INSTALLED | 5c23ddf7 | grass 0.1.5-dev LIVE 10-25 20:12, play GR6 |
 | **PF3** | Defaults from A/B logs; log tightening (`perf_log` default off, verbose gating) | PF2* | - | TODO | | |
 
 Wave 1 (PF1a, PF1b, PF1c) runs in parallel: disjoint write scopes, no shared header edits (`_shared_src` read-only).
