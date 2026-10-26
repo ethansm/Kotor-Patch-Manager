@@ -7,17 +7,18 @@ Execute **PF2a**: Redundant per-bin state hoist (set texenv/material/client stat
 - **Master Plan:** `patch_manager_mods/50_k2_render_performance.md`
 - **Waves:** .claude/waves/w1-50-PF2/
 - **Waves:** .claude/waves/w1-50-PV/
-- **Branch:** `KOTOR-II` (4e6c17d6 grass 0.1.7-dev: split long log lines under the core's 232-byte cut (PERF/PERF2, CFG, VARIETY))
-- **Generated:** 2026-10-26 00:20:23 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (a715f5fc grass 0.1.8-dev: variety counters survive the PERF gap reset (load-time PV3 calls were wiped); PERF2 seeds=)
+- **Generated:** 2026-10-26 01:28:06 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-4e6c17d6 grass 0.1.7-dev: split long log lines under the core's 232-byte cut (PERF/PERF2, CFG, VARIETY)
- .../K2GrassDrawDistance.cpp                        | 46 ++++++++++++----------
- .../K2GrassDrawDistanceLogic.h                     |  4 +-
- .../k2_grass_draw_distance_src/manifest.toml       |  2 +-
- 3 files changed, 29 insertions(+), 23 deletions(-)
+a715f5fc grass 0.1.8-dev: variety counters survive the PERF gap reset (load-time PV3 calls were wiped); PERF2 seeds=
+ .../K2GrassDrawDistance.cpp                           |  8 +++++---
+ .../K2GrassDrawDistanceLogic.h                        | 19 ++++++++++++++++---
+ .../grass_draw_distance_test.cpp                      |  9 +++++++++
+ .../k2_grass_draw_distance_src/manifest.toml          |  2 +-
+ 4 files changed, 31 insertions(+), 7 deletions(-)
 ```
-- **Dirty Files (184):**
+- **Dirty Files (185):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
   - ` M .claude/handoffs/DECOMP_PLAN.handoff.md`
@@ -28,7 +29,7 @@ Execute **PF2a**: Redundant per-bin state hoist (set texenv/material/client stat
   - ` M .claude/reviews/gemini_20261014/tools/fix3_items.tsv`
   - ` M .claude/settings.json`
   - ` M CLAUDE.md`
-  - ... +174 more (run `git status --short`)
+  - ... +175 more (run `git status --short`)
 
 ## 2. Immediate Objective (**PF2a**)
 **Redundant per-bin state hoist (set texenv/material/client state once per bucket)**
