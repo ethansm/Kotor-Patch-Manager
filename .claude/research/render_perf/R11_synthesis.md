@@ -32,6 +32,11 @@ by Opus in the Steam 6A522E71 asm), engine_research_findings/R7.md (per-frame co
 - Off-screen emitters already skip simulation (frustum list); light selection 0x00508CA0 caller unknown.
 - Skinning: CPU palette build per drawn mesh only (0x004C9640); already gated by visibility.
 
+## Status
+- Lever 1: perf-lab turned OFF 2026-10-25 (`perflab_debug.txt` -> `perflab_debug.txt.disabled`; note in
+  `patch_manager_mods/perf_lab_src/README.md`). Other `*_debug.txt` flags kept: `hangprobe_debug.txt` (LHP-PT1),
+  `npc-diversity_debug.txt` (WI-119), `equip3d_debug.txt` (EQ10-P1) are play-row signals; drop each after its row passes.
+
 ## Order
 1-2 first (no code, measure with grass PERF + GPU timing), then a frame-pacing mod (3-4), then a
 measurement probe for 5-7 (per-frame CPU timing of Scene::Animate, 0x427970, GlobalMemoryStatus) before
