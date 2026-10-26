@@ -74,10 +74,10 @@ so the gains add up and each change's cost or gain is visible in the logs.
 | **PF2c** | Far-grass LOD: draw a fraction of a far bin's quads (index count), density compensation by alpha | PF1c, PF1d | - | INSTALLED | 5c23ddf7 | grass 0.1.5-dev LIVE 10-25 20:12, play GR6 |
 | **PF2d** | GPU timing of the grass pass (`GL_ARB_timer_query` if present) into PERF | PF1d | - | INSTALLED | 5c23ddf7 | grass 0.1.5-dev LIVE 10-25 20:12, play GR6 |
 | **PF3** | Defaults from A/B logs; log tightening (`perf_log` default off, verbose gating) | PF2* | - | TODO | | |
-| **PV1** | grass 0.1.6-dev variety: per-face RNG seed from a float-bit hash of the face verts (replaces `srand(round(x0+y1+z2))` at 0x50EF90; kills repeated clumps); toggle `vary_seed` | PF2b-d | - | TODO | | R6 #1 (`.claude/research/render_perf/R6_grass_variety.md`) |
-| **PV2** | grass 0.1.6-dev variety: uniform barycentric blade positions (rewrite the 3 weights at 0x50F177 before the normalise call; no centre bunching); toggle `even_spread` | PF2b-d | - | TODO | | R6 #2 |
-| **PV3** | grass 0.1.6-dev variety: density noise + stochastic count rounding at 0x50D35C in CAurTriangleBin::AddTriangle 0x0050C8A0 (deterministic world-position value noise); toggle `density_noise` + amount | PF2b-d | - | TODO | | R6 #3 |
-| **PV4** | grass 0.1.6-dev variety: wider blade size range (operand rewrite of the scale-jitter FMUL 0x0050FEE7 `[0x009921C8]` (0.4) to the DLL's own double; s = 1 + (r-0.5)*span); slider `size_var`. Replaces R6 #4 UV flip: REDUNDANT (flip at yaw t == yaw t+pi; yaw uniform 0..2pi, culling off at 0x466568, u04) | PF2b-d | - | TODO | | R6 #5; recon `.claude/waves/w1-50-PV/` |
+| **PV1** | grass 0.1.6-dev variety: per-face RNG seed from a float-bit hash of the face verts (replaces `srand(round(x0+y1+z2))` at 0x50EF90; kills repeated clumps); toggle `vary_seed` | PF2b-d | - | BUILT | 5f34be01 | R6 #1 (`.claude/research/render_perf/R6_grass_variety.md`) |
+| **PV2** | grass 0.1.6-dev variety: uniform barycentric blade positions (rewrite the 3 weights at 0x50F177 before the normalise call; no centre bunching); toggle `even_spread` | PF2b-d | - | BUILT | 5f34be01 | R6 #2 |
+| **PV3** | grass 0.1.6-dev variety: density noise + stochastic count rounding at 0x50D35C in CAurTriangleBin::AddTriangle 0x0050C8A0 (deterministic world-position value noise); toggle `density_noise` + amount | PF2b-d | - | BUILT | 5f34be01 | R6 #3 |
+| **PV4** | grass 0.1.6-dev variety: wider blade size range (operand rewrite of the scale-jitter FMUL 0x0050FEE7 `[0x009921C8]` (0.4) to the DLL's own double; s = 1 + (r-0.5)*span); slider `size_var`. Replaces R6 #4 UV flip: REDUNDANT (flip at yaw t == yaw t+pi; yaw uniform 0..2pi, culling off at 0x466568, u04) | PF2b-d | - | BUILT | 5f34be01 | R6 #5; recon `.claude/waves/w1-50-PV/` |
 
 Wave 1 (PF1a, PF1b, PF1c) runs in parallel: disjoint write scopes, no shared header edits (`_shared_src` read-only).
 

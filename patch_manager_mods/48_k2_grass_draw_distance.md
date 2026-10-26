@@ -46,6 +46,7 @@ Extends the grass draw distance and octree build/collect radius in KOTOR II (`sw
 | **P4** | Log Tightening & Packaging | P3 | - | TODO | | Clean startup log verification |
 | **P4a** | 0.1.4-dev (doc 50 PF1a): `trim_hidden` collect radius = min(fade end, clip + 2 m) via operand rewrite 0x00499ADC -> `g_collectSq`; grass-pass CPU timing (detours 0x0046661B / 0x00466698, QPC, PERF `grass_ms_avg/max`); `smooth_edges` alpha-to-coverage (default 0, gated on GL_SAMPLE_BUFFERS); 7 menu rows | P3a | user GO (doc 50 PF1d) | BUILT | 3467b4ec | `run_tests.py k2_grass_draw_distance grass_draw_distance`; gate PASS; play row GR5 |
 | **P4b** | 0.1.5-dev (doc 50 W2-1): `gpu_timing` GL_TIME_ELAPSED ring (PERF `gpu_ms_avg/max`); `wind_throttle` (near m, every k frames; via `g_windDistSq`); `far_lod` prefix thinning of the pushed glDrawArrays count (hooks 0x0050DAC0 bin entry, 0x00436A95 / 0x00436B86); PF2a path probe (`path probe` line, PERF `pathA/B1/B2`); 9 menu rows | P4a | user GO (reinstall) | BUILT | 5c23ddf7 | `run_tests.py k2_grass_draw_distance grass_draw_distance`; gate PASS; play row GR6 |
+| **P4c** | 0.1.6-dev (doc 50 PV1-PV4): `vary_seed` face seed hash (hook 0x0050EF89), `even_spread` uniform barycentric (hook 0x0050F177), `density_noise`/`density_amount`/`density_cell` value-noise face count (hook 0x0050D35C), `size_var` size FMUL operand 0x0050FEE7 -> `g_sizeSpan`; all off / vanilla by default; 13 menu rows | P4b | user GO (reinstall) | BUILT | 5f34be01 | `run_tests.py k2_grass_draw_distance grass_draw_distance`; gate PASS; play row GR7 |
 
 ---
 
