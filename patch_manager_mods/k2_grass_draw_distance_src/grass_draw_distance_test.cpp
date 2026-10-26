@@ -637,6 +637,15 @@ static void test_perf_window_variety_counters() {
     w.reset(200);
     KT_CHECK_EQ(w.blades, 0u);
     KT_CHECK_EQ(w.densFaces, 0u);
+    // Load-time hook calls (no frames) survive the gap reset in add().
+    w.add(10, 300);
+    w.addSeed();
+    w.addDensity(7.0f, 9.0f);
+    w.add(10, 300 + k2grass::kPerfGapMs + 500);
+    KT_CHECK_EQ(w.frames, 1u);
+    KT_CHECK_EQ(w.seeds, 1u);
+    KT_CHECK_EQ(w.densFaces, 1u);
+    KT_CHECK(std::fabs(w.densIn - 7.0) < 1e-9 && std::fabs(w.densOut - 9.0) < 1e-9);
 }
 
 static void test_modconfig_schema_bindings() {

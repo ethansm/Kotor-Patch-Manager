@@ -1,4 +1,4 @@
-// K2GrassDrawDistanceLogic.h (0.1.7-dev) -- Pure config, math, and ModConfig schema for k2-grass-draw-distance.
+// K2GrassDrawDistanceLogic.h (0.1.8-dev) -- Pure config, math, and ModConfig schema for k2-grass-draw-distance.
 // Header-only and host-testable (no engine addresses or Win32 calls).
 #pragma once
 
@@ -12,7 +12,7 @@
 namespace k2grass {
 
 constexpr const char* kModId = "k2-grass-draw-distance";
-constexpr const char* kVersion = "0.1.7-dev";
+constexpr const char* kVersion = "0.1.8-dev";
 constexpr const char* kIniFile = "k2_grass_draw_distance.ini";
 constexpr const char* kIniSection = "Grass";
 
@@ -436,11 +436,13 @@ struct PerfWindow {
     uint32_t pathB2 = 0;
     // 0.1.6 variety counters (per window).
     uint32_t blades = 0;       // PV2 hook calls (blades generated)
+    uint32_t seeds = 0;        // PV1 hook calls (faces reseeded)
     uint32_t densFaces = 0;    // PV3 hook calls (faces)
     double densIn = 0.0;       // sum of the game's face counts before the change
     double densOut = 0.0;      // sum after
 
     void addBlade() { ++blades; }
+    void addSeed() { ++seeds; }
     void addDensity(float in, float out) {
         ++densFaces;
         densIn += in;
@@ -465,7 +467,18 @@ struct PerfWindow {
         grassUsCur = t > 0xFFFFFFFFull ? 0xFFFFFFFFu : static_cast<uint32_t>(t);
     }
     void add(uint32_t binsInRange, unsigned nowMs) {
-        if (frames > 0 && (nowMs - lastMs) > kPerfGapMs) reset(nowMs);
+        if (frames > 0 && (nowMs - lastMs) > kPerfGapMs) {
+            // Grass faces are counted and bins built during the area load (no frames), so the variety counters
+            // survive the gap reset; otherwise every load-time hook call is wiped before it is logged.
+            const uint32_t b = blades, sd = seeds, df = densFaces;
+            const double di = densIn, dout = densOut;
+            reset(nowMs);
+            blades = b;
+            seeds = sd;
+            densFaces = df;
+            densIn = di;
+            densOut = dout;
+        }
         if (grassUsCur > 0) {
             grassUsSum += grassUsCur;
             if (grassUsCur > grassUsMax) grassUsMax = grassUsCur;

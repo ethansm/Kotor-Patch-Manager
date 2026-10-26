@@ -1,4 +1,4 @@
-// K2GrassDrawDistance.cpp -- K2 Grass Draw Distance (0.1.7-dev)
+// K2GrassDrawDistance.cpp -- K2 Grass Draw Distance (0.1.8-dev)
 // Extends grass octree build/collect radius, fade-start/fade-end distances, alpha-test threshold,
 // and decouples CPU wind animation radius (one operand rewrite at KPatchInit, code_patches.toml).
 // 0.1.4: a second operand rewrite trims the octree collect radius to the visible clip distance (trim_hidden), two
@@ -16,6 +16,7 @@
 //   PV2 even_spread    hook before the blade weight sum rewrites the three barycentric weight slots [EBP-0xC..-0x4]
 //   PV3 density_noise  hook before the face count FRNDINT rewrites the float slot [EBP-0x224]
 //   PV4 size_var       the size FMUL's double operand is redirected to the DLL's g_sizeSpan (code_patches.toml)
+// 0.1.8: PERF2 seeds=; variety counters survive the PERF gap reset (load-time hook calls were wiped).
 // 0.1.7: long log lines split under the core's 232-byte cut (PERF/PERF2, loaded or INI reload + CFG + VARIETY).
 // The hooks only rewrite the game's own stack slots; the DLL never calls rand/srand or any game function.
 // Generation tweaks apply to bins built after the change (an area reload, or grass newly collected).
@@ -407,10 +408,10 @@ void perfSample(unsigned now) {
            (g_a2cCapable && g_cfg.smoothEdges) ? 1 : 0);
     KP_LOG(chPerf,
            "PERF2 gpu_ms_avg=%.2f gpu_ms_max=%.2f gpu=%d lod=%d quads_pct=%.0f pathA=%u pathB1=%u pathB2=%u "
-           "blades=%u dens_faces=%u dens_in=%.0f dens_out=%.0f",
+           "seeds=%u blades=%u dens_faces=%u dens_in=%.0f dens_out=%.0f",
            g_perf.gpuMsAvg(), g_perf.gpuMsMax(), (g_gpu.ok && g_cfg.gpuTiming) ? 1 : 0,
            g_cfg.farLod ? 1 : 0, g_perf.quadsPct(), g_perf.pathA, g_perf.pathB1, g_perf.pathB2,
-           g_perf.blades, g_perf.densFaces, g_perf.densIn, g_perf.densOut);
+           g_perf.seeds, g_perf.blades, g_perf.densFaces, g_perf.densIn, g_perf.densOut);
     g_perf.reset(now);
 }
 
@@ -681,6 +682,7 @@ void __cdecl K2GrassOnFaceSeed(uint8_t* ebp) {
     readBits3(AddrFaceV1, bits + 3);
     readBits3(AddrFaceV2, bits + 6);
     *reinterpret_cast<int32_t*>(ebp + kSlotSeed) = k2grass::faceSeed(bits);
+    if (g_cfg.perfLog) g_perf.addSeed();
 }
 
 // Hook 8 (PV2): per blade at 0x0050F177 (FLD [EBP-0xC]; FADD [EBP-0x8]), before the weight sum and normalise call. The two
