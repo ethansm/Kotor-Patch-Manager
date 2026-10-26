@@ -7,16 +7,17 @@ Execute **PF2a**: Redundant per-bin state hoist (set texenv/material/client stat
 - **Master Plan:** `patch_manager_mods/50_k2_render_performance.md`
 - **Waves:** .claude/waves/w1-50-PF2/
 - **Waves:** .claude/waves/w1-50-PV/
-- **Branch:** `KOTOR-II` (fa7a378f companion-ai 0.3.3-probe: WI-137 F1b debuff guard)
-- **Generated:** 2026-10-25 23:00:26 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (4e6c17d6 grass 0.1.7-dev: split long log lines under the core's 232-byte cut (PERF/PERF2, CFG, VARIETY))
+- **Generated:** 2026-10-26 00:20:23 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-fa7a378f companion-ai 0.3.3-probe: WI-137 F1b debuff guard
- patch_manager_mods/companion_ai_src/CompanionAI.cpp | 2 +-
- patch_manager_mods/companion_ai_src/manifest.toml   | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+4e6c17d6 grass 0.1.7-dev: split long log lines under the core's 232-byte cut (PERF/PERF2, CFG, VARIETY)
+ .../K2GrassDrawDistance.cpp                        | 46 ++++++++++++----------
+ .../K2GrassDrawDistanceLogic.h                     |  4 +-
+ .../k2_grass_draw_distance_src/manifest.toml       |  2 +-
+ 3 files changed, 29 insertions(+), 23 deletions(-)
 ```
-- **Dirty Files (185):**
+- **Dirty Files (184):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
   - ` M .claude/handoffs/DECOMP_PLAN.handoff.md`
@@ -27,7 +28,7 @@ fa7a378f companion-ai 0.3.3-probe: WI-137 F1b debuff guard
   - ` M .claude/reviews/gemini_20261014/tools/fix3_items.tsv`
   - ` M .claude/settings.json`
   - ` M CLAUDE.md`
-  - ... +175 more (run `git status --short`)
+  - ... +174 more (run `git status --short`)
 
 ## 2. Immediate Objective (**PF2a**)
 **Redundant per-bin state hoist (set texenv/material/client state once per bucket)**
