@@ -38,6 +38,9 @@ by Opus in the Steam 6A522E71 asm), engine_research_findings/R7.md (per-frame co
   `inv3d_debug.txt`, `chareffects_debug.txt` (rename back to re-enable). Other `*_debug.txt` flags kept: `hangprobe_debug.txt` (LHP-PT1),
   `npc-diversity_debug.txt` (WI-119), `equip3d_debug.txt` (EQ10-P1) are play-row signals; drop each after its row passes.
 
+- Levers 6-7: BUILT as new mod `k2-engine-perf` 0.1.0-dev (repo 9eb531de, KPM 76259f5, GATE PASS; doc 50 EP1,
+  play row EP1); awaiting install GO.
+
 ## Order
 1-2 first (no code, measure with grass PERF + GPU timing), then a frame-pacing mod (3-4), then a
 measurement probe for 5-7 (per-frame CPU timing of Scene::Animate, 0x427970, GlobalMemoryStatus) before
