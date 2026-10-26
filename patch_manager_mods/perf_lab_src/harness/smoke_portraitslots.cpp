@@ -12,7 +12,7 @@
 // FakeKPatchApi.h = KPM registry.cpp) and a fake "kpatch.log" sink. What is faked: engine memory = a zeroed pad; the engine HudScale function
 // (a counting stub at its Steam address, the only engine call the HUD frame reaches over zeroed memory). No test exports exist or are used:
 // everything is observed through the registry, the provider's own interface table, the fake log, the clients' own debug log
-// (buffhud_log.txt, enabled by an empty buffhud_debug.txt) and an IAT tap on GetFileAttributesA (dispatch order).
+// (buffLog(): the fake log, or buffhud_log.txt on a pre-KpLog build, enabled by an empty buffhud_debug.txt) and an IAT tap on GetFileAttributesA (dispatch order).
 //
 //   wire   provider -> buff -> shield. Provider provided + table complete, 3 + 5 registrations with the exact (phase, prio, owner) sets,
 //          snapshot -> CreatureForSlot / SlotAt round trip, clients see the provider's creature, leader calls advance Frame() and reach the
@@ -89,8 +89,17 @@ static void touch(const char* name) { FILE* f = fopen(name, "wb"); if (f) fclose
 static int logCount(const char* sub) {
     int n = 0; for (const std::string& l : fakekp::state().logLines) if (l.find(sub) != std::string::npos) ++n; return n;
 }
-static int warnCount() {   // fake Submit records "<channel>:<level>:<text>", level 1 = KPLOG_WARN
-    int n = 0; for (const std::string& l : fakekp::state().logLines) if (l.find(":1:") == 1) ++n; return n;
+static int warnCount(const char* sub = nullptr) {   // fake Submit records "<channel>:<level>:<text>", level 1 = KPLOG_WARN
+    int n = 0;
+    for (const std::string& l : fakekp::state().logLines) if (l.find(":1:") == 1 && (!sub || l.find(sub) != std::string::npos)) ++n;
+    return n;
+}
+// The buff client's lines: buff 0.2.3+ (KpLog.h) submits to the fake kpatch.log when one is provided (every mode here), the old
+// buffhud_log.txt fallback only without one. Every channel handle is 1 in the fake, so the lines are told apart by their text.
+static std::string buffLog() {
+    std::string s = readFile("buffhud_log.txt");
+    for (const std::string& l : fakekp::state().logLines) { s += l; s += '\n'; }
+    return s;
 }
 struct Reg { int phase, prio, token; std::string owner; };
 static std::vector<Reg> regsFromLog() {   // provider logs "register phase=%d prio=%d owner=%s -> %d" per apiRegister call
@@ -205,7 +214,7 @@ static int modeWire() {
     D.retarget(SLOT_A, 0, WIDGET, 1);
     char want[160];
     snprintf(want, sizeof want, "arrow slot=%08x idx=0: NO creature in side table", (unsigned)SLOT_A);
-    check(has(readFile("buffhud_log.txt"), want), "buff client: no creature for a slot the provider has not snapshotted");
+    check(has(buffLog(), want), "buff client: no creature for a slot the provider has not snapshotted");
 
     // UpdatePortraits hook (both addresses use the one export): slot -> creature table
     D.snapshot(SLOT_A, CREATURE_A);
@@ -220,11 +229,11 @@ static int modeWire() {
     // the clients read the provider's table through the interface
     D.retarget(SLOT_A, 0, WIDGET, 1);
     snprintf(want, sizeof want, "arrow row=1 slot=%08x idx=0 tracked=0 -> keep", (unsigned)SLOT_A);
-    check(has(readFile("buffhud_log.txt"), want), "buff client: RetargetBuffIcon sees the provider's creature (tracked=0 -> keep)");
+    check(has(buffLog(), want), "buff client: RetargetBuffIcon sees the provider's creature (tracked=0 -> keep)");
     D.restore();
     D.column(SLOT_A, WIDGET, 1, 1, 100, 100);
     snprintf(want, sizeof want, "slot=%08x large=1 card=100x100", (unsigned)SLOT_A);
-    std::string bl = readFile("buffhud_log.txt");
+    std::string bl = buffLog();
     check(has(bl, "COLUMN#") && has(bl, want), "buff client: DrawBuffColumn ran its column layout for the provider's creature");
     D.tip(BUTTON);   // zeroed charButton: nothing to append, must return cleanly
 
@@ -235,9 +244,9 @@ static int modeWire() {
     for (int i = 0; i < 8; ++i) D.slotDraw(SLOT_B, 0, 0);   // non-leader slots: PRE_ENGINE_READ + SLOT only
     check(ps->Frame() == (uint32_t)N, "frame counter advanced once per leader call");
     check(g_hudScaleCalls - hs0 >= N, "shield-bar HUD_DRAW / SLOT callbacks ran through the provider dispatch (HudScale stub hit)");
-    bl = readFile("buffhud_log.txt");
+    bl = buffLog();
     check(has(bl, "portrait-slots ok: registered"), "buff client logged its first-frame connect note (FRAME_BEGIN callback ran)");
-    check(!has(bl, "MISSING") && !has(bl, "k2addr:"), "buff client: no MISSING note, no address-table complaint on the Steam table");
+    check(!has(bl, "portrait-slots MISSING") && !has(bl, "k2addr:"), "buff client: no MISSING note, no address-table complaint on the Steam table");
     check(warnCount() == 0, "no WARN lines from the provider on the Steam table");
 
     uintptr_t bad = 0;
@@ -280,9 +289,9 @@ static int modeLate() {
     leaderCalls(40, SLOT_A);
     check(ps->Frame() == 40, "provider frame counter advanced by the leader calls");
     check(g_hudScaleCalls - hs0 >= 40, "late-registered shield callbacks run through the provider dispatch (HudScale stub hit)");
-    std::string bl = readFile("buffhud_log.txt");
+    std::string bl = buffLog();
     check(has(bl, "portrait-slots ok: registered"), "late buff client logged 'portrait-slots ok: registered' on its first frame");
-    check(!has(bl, "MISSING"), "late buff client never logged MISSING");
+    check(!has(bl, "portrait-slots MISSING"), "late buff client never logged MISSING");
     uintptr_t bad = 0;
     checkf(padClean(&bad), "engine pad untouched, first bad byte %08x", (int)bad);
     return g_fail ? 1 : 0;
@@ -347,9 +356,9 @@ static int modeInert() {
     check(ps->SlotAt(0, &s, &c) == 0 && ps->SlotAt(1, &s, &c) == 0, "provider snapshot dropped on an unknown exe: SlotAt finds nothing");
     check(ps->Frame() == 0, "provider frame counter never advanced (no dispatch on an unknown exe)");
     checkf(warnCount() == 1, "exactly one provider WARN over %d hook rounds, got %d", N, warnCount());
-    check(logCount("k2addr:") == 1, "the one WARN is the k2addr table complaint");
+    check(warnCount("k2addr:") == 1, "the one WARN is the k2addr table complaint");
     checkf(g_hudScaleCalls == 0, "no engine HudScale call from any hook or client callback, got %d", (int)g_hudScaleCalls);
-    std::string bl = readFile("buffhud_log.txt");
+    std::string bl = buffLog();
     check(has(bl, "k2addr: icon columns disabled"), "buff client logged 'icon columns disabled' (its own table gate, DrawBuffColumn reached with a creature)");
     check(!has(bl, "COLUMN#"), "buff client drew no column layout");
     uintptr_t bad = 0;
