@@ -1,4 +1,4 @@
-// K2GrassDrawDistanceLogic.h -- Pure config, math, and ModConfig schema for k2-grass-draw-distance.
+// K2GrassDrawDistanceLogic.h (0.1.6-dev) -- Pure config, math, and ModConfig schema for k2-grass-draw-distance.
 // Header-only and host-testable (no engine addresses or Win32 calls).
 #pragma once
 
@@ -12,7 +12,7 @@
 namespace k2grass {
 
 constexpr const char* kModId = "k2-grass-draw-distance";
-constexpr const char* kVersion = "0.1.5-dev";
+constexpr const char* kVersion = "0.1.6-dev";
 constexpr const char* kIniFile = "k2_grass_draw_distance.ini";
 constexpr const char* kIniSection = "Grass";
 
@@ -60,6 +60,24 @@ constexpr float kMinLodStart = 10.0f;
 constexpr float kMaxLodStart = 150.0f;
 constexpr float kMinLodMinKeep = 0.1f;
 constexpr float kMaxLodMinKeep = 1.0f;
+// 0.1.6 variety (doc 50 PV1-PV4), all off / vanilla by default. Generation tweaks apply to bins built after the change.
+//   vary_seed      PV1: per-face srand seed hashed from the face vertices (vanilla seeds from a rounded coordinate sum)
+//   even_spread    PV2: uniform barycentric weights per blade (vanilla clusters toward the face centre)
+//   density_noise  PV3: smooth value-noise density patches (density_amount 0..0.9, density_cell metres 2..30)
+//   size_var       PV4: blade size span (vanilla 0.4 = the double the size FMUL reads; 0.4..1.2)
+constexpr bool kDefaultVarySeed = false;
+constexpr bool kDefaultEvenSpread = false;
+constexpr bool kDefaultDensityNoise = false;
+constexpr float kDefaultDensityAmount = 0.5f;
+constexpr float kDefaultDensityCell = 6.0f;
+constexpr float kVanillaSizeVar = 0.4f;
+constexpr float kDefaultSizeVar = kVanillaSizeVar;
+constexpr float kMinDensityAmount = 0.0f;
+constexpr float kMaxDensityAmount = 0.9f;
+constexpr float kMinDensityCell = 2.0f;
+constexpr float kMaxDensityCell = 30.0f;
+constexpr float kMinSizeVar = 0.4f;
+constexpr float kMaxSizeVar = 1.2f;
 
 // Clamp bounds. 150m is 25x the vanilla 30m grass area; raise only after P3 measures the frame cost.
 constexpr float kMinFadeStartDist = 5.0f;
@@ -94,6 +112,12 @@ struct Config {
     bool farLod = kDefaultFarLod;
     float lodStart = kDefaultLodStart;
     float lodMinKeep = kDefaultLodMinKeep;
+    bool varySeed = kDefaultVarySeed;
+    bool evenSpread = kDefaultEvenSpread;
+    bool densityNoise = kDefaultDensityNoise;
+    float densityAmount = kDefaultDensityAmount;
+    float densityCell = kDefaultDensityCell;
+    float sizeVar = kDefaultSizeVar;
 
     void sanitize() {
         // fade_end_dist is the cost knob (build radius), so a fade start at or past it pulls the start
@@ -107,6 +131,9 @@ struct Config {
         windEvery = windEvery < kMinWindEvery ? kMinWindEvery : (windEvery > kMaxWindEvery ? kMaxWindEvery : windEvery);
         lodStart = clampf(lodStart, kMinLodStart, kMaxLodStart);
         lodMinKeep = clampf(lodMinKeep, kMinLodMinKeep, kMaxLodMinKeep);
+        densityAmount = clampf(densityAmount, kMinDensityAmount, kMaxDensityAmount);
+        densityCell = clampf(densityCell, kMinDensityCell, kMaxDensityCell);
+        sizeVar = clampf(sizeVar, kMinSizeVar, kMaxSizeVar);
     }
 
     bool operator==(const Config& o) const {
@@ -125,7 +152,13 @@ struct Config {
                windEvery == o.windEvery &&
                farLod == o.farLod &&
                std::fabs(lodStart - o.lodStart) < 1e-4f &&
-               std::fabs(lodMinKeep - o.lodMinKeep) < 1e-4f;
+               std::fabs(lodMinKeep - o.lodMinKeep) < 1e-4f &&
+               varySeed == o.varySeed &&
+               evenSpread == o.evenSpread &&
+               densityNoise == o.densityNoise &&
+               std::fabs(densityAmount - o.densityAmount) < 1e-4f &&
+               std::fabs(densityCell - o.densityCell) < 1e-4f &&
+               std::fabs(sizeVar - o.sizeVar) < 1e-4f;
     }
     bool operator!=(const Config& o) const { return !(*this == o); }
 };
@@ -250,6 +283,112 @@ inline int classifyBinPath(uint8_t binFlags, int32_t f07c, int P) {
     return P ? 2 : 1;
 }
 
+// ---- 0.1.6 variety (doc 50 PV1-PV4): pure math the three CAurTriangleBin hooks apply to the game's stack slots ----
+
+// PV1: seed for the per-face srand. FNV-1a over the 36 bytes of the nine face floats (v0.xyz, v1.xyz, v2.xyz as raw
+// little-endian u32 bits), then the murmur3 fmix32 finalizer; result is non-negative so it is a valid int seed.
+inline uint32_t fmix32(uint32_t h) {
+    h ^= h >> 16;
+    h *= 0x85EBCA6Bu;
+    h ^= h >> 13;
+    h *= 0xC2B2AE35u;
+    h ^= h >> 16;
+    return h;
+}
+inline int32_t faceSeed(const uint32_t bits[9]) {
+    uint32_t h = 2166136261u;
+    for (int i = 0; i < 9; ++i) {
+        for (int b = 0; b < 4; ++b) {
+            h ^= (bits[i] >> (8 * b)) & 0xFFu;
+            h *= 16777619u;
+        }
+    }
+    return static_cast<int32_t>(fmix32(h) & 0x7FFFFFFFu);
+}
+
+// PV2: uniform barycentric weights from the game's two raw blade randoms a, b in [0,1). Reflect when a+b > 1 (the
+// classic square-to-triangle fold) so the point is uniform over the face. The weights also drive vertex colour and
+// lightmap UVs, so they are clamped to [0,1] and sum to 1.
+inline void uniformBary(float a, float b, float* w0, float* w1, float* w2) {
+    if (!std::isfinite(a) || !std::isfinite(b)) {
+        a = 1.0f / 3.0f;
+        b = 1.0f / 3.0f;
+    }
+    a = a < 0.0f ? 0.0f : (a > 1.0f ? 1.0f : a);
+    b = b < 0.0f ? 0.0f : (b > 1.0f ? 1.0f : b);
+    if (a + b > 1.0f) {
+        a = 1.0f - a;
+        b = 1.0f - b;
+    }
+    float c = 1.0f - (a + b);
+    if (c < 0.0f) c = 0.0f;
+    *w0 = a;
+    *w1 = b;
+    *w2 = c;
+}
+
+// PV3: value noise over an integer lattice. Hash -> [0,1], smoothstep weights, bilinear blend; result in [0,1] and
+// continuous in (x, y).
+inline uint32_t latticeHash(int32_t ix, int32_t iy) {
+    uint32_t h = static_cast<uint32_t>(ix) * 0x9E3779B1u ^ (static_cast<uint32_t>(iy) * 0x85EBCA77u + 0x27D4EB2Fu);
+    return fmix32(h);
+}
+inline float latticeValue(int32_t ix, int32_t iy) {
+    return static_cast<float>(latticeHash(ix, iy) >> 8) / 16777215.0f;   // exactly [0,1]
+}
+inline float valueNoise2(float x, float y) {
+    if (!std::isfinite(x) || !std::isfinite(y)) return 0.5f;
+    const double lim = 1.0e9;
+    const double fx = std::floor(static_cast<double>(x) < -lim ? -lim : (static_cast<double>(x) > lim ? lim : static_cast<double>(x)));
+    const double fy = std::floor(static_cast<double>(y) < -lim ? -lim : (static_cast<double>(y) > lim ? lim : static_cast<double>(y)));
+    const int32_t ix = static_cast<int32_t>(fx);
+    const int32_t iy = static_cast<int32_t>(fy);
+    float tx = static_cast<float>(static_cast<double>(x) - fx);
+    float ty = static_cast<float>(static_cast<double>(y) - fy);
+    tx = tx < 0.0f ? 0.0f : (tx > 1.0f ? 1.0f : tx);
+    ty = ty < 0.0f ? 0.0f : (ty > 1.0f ? 1.0f : ty);
+    const float sx = tx * tx * (3.0f - 2.0f * tx);
+    const float sy = ty * ty * (3.0f - 2.0f * ty);
+    const float v00 = latticeValue(ix, iy);
+    const float v10 = latticeValue(ix + 1, iy);
+    const float v01 = latticeValue(ix, iy + 1);
+    const float v11 = latticeValue(ix + 1, iy + 1);
+    const float a = v00 + (v10 - v00) * sx;
+    const float b = v01 + (v11 - v01) * sx;
+    const float r = a + (b - a) * sy;
+    return r < 0.0f ? 0.0f : (r > 1.0f ? 1.0f : r);
+}
+
+// Uniform [0,1) from a face centroid's float bits (the stochastic-rounding dither).
+inline float centroidDither(float cx, float cy) {
+    uint32_t bx = 0, by = 0;
+    memcpy(&bx, &cx, sizeof bx);
+    memcpy(&by, &cy, sizeof by);
+    return static_cast<float>(fmix32(bx * 0x9E3779B1u ^ fmix32(by + 0x7F4A7C15u)) >> 8) / 16777216.0f;
+}
+
+// PV3: the face's blade count x (a float; the game's FRNDINT rounds it afterwards) scaled by smooth patch noise and
+// dithered so the rounded expectation equals x * f. Clamped to [0, 4x + 4].
+inline float densityCount(float x, float cx, float cy, const Config& cfg) {
+    if (!std::isfinite(x) || x < 0.0f) return x;   // never feed the game something it did not already hold
+    const float amount = clampf(cfg.densityAmount, kMinDensityAmount, kMaxDensityAmount);
+    const float cell = clampf(cfg.densityCell, kMinDensityCell, kMaxDensityCell);
+    const float n = valueNoise2(cx / cell, cy / cell);
+    const float f = 1.0f + amount * (2.0f * n - 1.0f);
+    float y = x * f + (centroidDither(cx, cy) - 0.5f);
+    const float hi = 4.0f * x + 4.0f;
+    if (y > hi) y = hi;
+    if (y < 0.0f) y = 0.0f;
+    return y;
+}
+
+// PV4: the double the patched size FMUL reads. Snapped to 0.001 so the vanilla 0.4f setting yields the exact double 0.4
+// the game stores at 0x009921C8.
+inline double sizeSpanValue(float sizeVar) {
+    const float v = clampf(sizeVar, kMinSizeVar, kMaxSizeVar);
+    return std::floor(static_cast<double>(v) * 1000.0 + 0.5) / 1000.0;
+}
+
 // Menu link between the Fade Start and Draw Distance sliders (kPageSchema rows fade_start / fade_end): the highest
 // Fade Start the menu offers for a Draw Distance, on the row's own 15 m grid and >= kMinFadeSpan below the end.
 // Same direction as Config::sanitize (the start moves, never the end), so the sliders show what the engine uses.
@@ -295,7 +434,18 @@ struct PerfWindow {
     uint32_t pathA = 0;
     uint32_t pathB1 = 0;
     uint32_t pathB2 = 0;
+    // 0.1.6 variety counters (per window).
+    uint32_t blades = 0;       // PV2 hook calls (blades generated)
+    uint32_t densFaces = 0;    // PV3 hook calls (faces)
+    double densIn = 0.0;       // sum of the game's face counts before the change
+    double densOut = 0.0;      // sum after
 
+    void addBlade() { ++blades; }
+    void addDensity(float in, float out) {
+        ++densFaces;
+        densIn += in;
+        densOut += out;
+    }
     void addGpuNs(uint64_t ns) {
         gpuNsSum += ns;
         if (ns > gpuNsMax) gpuNsMax = ns;
@@ -418,6 +568,44 @@ inline inikit::LoadStats parseIniText(char* text, Config& cfg) {
             cfg.farLod = b;
             return inikit::IniVerdictOk;
         }
+        if (strcmp(key, "vary_seed") == 0) {
+            bool b = false;
+            if (!parseBoolVal(val, &b)) return inikit::IniVerdictBad;
+            cfg.varySeed = b;
+            return inikit::IniVerdictOk;
+        }
+        if (strcmp(key, "even_spread") == 0) {
+            bool b = false;
+            if (!parseBoolVal(val, &b)) return inikit::IniVerdictBad;
+            cfg.evenSpread = b;
+            return inikit::IniVerdictOk;
+        }
+        if (strcmp(key, "density_noise") == 0) {
+            bool b = false;
+            if (!parseBoolVal(val, &b)) return inikit::IniVerdictBad;
+            cfg.densityNoise = b;
+            return inikit::IniVerdictOk;
+        }
+        if (strcmp(key, "density_amount") == 0) {
+            float f = 0.0f;
+            if (!inikit::parseFloats(val, &f, 1)) return inikit::IniVerdictBad;
+            cfg.densityAmount = f;
+            return inikit::IniVerdictOk;
+        }
+        if (strcmp(key, "density_cell") == 0) {
+            float f = 0.0f;
+            if (!inikit::parseFloats(val, &f, 1)) return inikit::IniVerdictBad;
+            cfg.densityCell = f;
+            return inikit::IniVerdictOk;
+        }
+        if (strcmp(key, "size_var") == 0) {
+            float f = 0.0f;
+            if (!inikit::parseFloats(val, &f, 1)) return inikit::IniVerdictBad;
+            // Direct float (0.4..1.2) or the Mod Configuration slider's scaled integer (40..120 -> 0.40..1.20).
+            if (f > 2.0f && f <= 200.0f) f *= 0.01f;
+            cfg.sizeVar = f;
+            return inikit::IniVerdictOk;
+        }
         if (strcmp(key, "wind_near") == 0) {
             float f = 0.0f;
             if (!inikit::parseFloats(val, &f, 1)) return inikit::IniVerdictBad;
@@ -506,7 +694,19 @@ inline int formatDefaultIni(char* buf, size_t cap, const Config& c = Config{}) {
         "; Far grass thinning: draw only a prefix of each far bin's quads; 100%% at lod_start meters, lod_min_keep at the draw distance\n"
         "far_lod = %d\n"
         "lod_start = %.0f\n"
-        "lod_min_keep = %.2f\n",
+        "lod_min_keep = %.2f\n"
+        "; Variety (generation tweaks apply to bins built after the change, e.g. after an area reload)\n"
+        "; Per-face random pattern hashed from the face vertices instead of a rounded coordinate sum (1 = on, 0 = vanilla)\n"
+        "vary_seed = %d\n"
+        "; Blades spread evenly over each face instead of clustering toward its centre (1 = on, 0 = vanilla)\n"
+        "even_spread = %d\n"
+        "; Smooth density patches: grass count scaled by value noise (1 = on, 0 = off)\n"
+        "density_noise = %d\n"
+        "; Patch strength 0..0.9 (0.5 = counts vary between 0.5x and 1.5x) and patch size in meters 2..30\n"
+        "density_amount = %.2f\n"
+        "density_cell = %.0f\n"
+        "; Blade size variation 0.4..1.2 (vanilla 0.4; also 40..120 from the menu slider)\n"
+        "size_var = %d\n",
         kModId, kIniSection,
         c.enabled ? 1 : 0,
         c.fadeStartDist,
@@ -523,7 +723,13 @@ inline int formatDefaultIni(char* buf, size_t cap, const Config& c = Config{}) {
         c.windEvery,
         c.farLod ? 1 : 0,
         c.lodStart,
-        static_cast<double>(c.lodMinKeep));
+        static_cast<double>(c.lodMinKeep),
+        c.varySeed ? 1 : 0,
+        c.evenSpread ? 1 : 0,
+        c.densityNoise ? 1 : 0,
+        static_cast<double>(c.densityAmount),
+        static_cast<double>(c.densityCell),
+        static_cast<int>(std::lround(c.sizeVar * 100.0f)));
 }
 
 // Declarative Mod Configuration page schema (TomlMini string limit: each string < 96 chars).
@@ -531,7 +737,7 @@ constexpr const char* kPageSchema = R"TOML(
 [page]
 name = "K2 Grass Draw Distance"
 title = "K2 Grass Draw Distance"
-desc = "Grass draw distance, fade, wind radius, alpha cutoff, edge smoothing, and speed tests."
+desc = "Grass draw distance, fade, wind radius, alpha cutoff, edge smoothing, variety, and speed tests."
 
 [[row]]
 id = "enabled"
@@ -643,6 +849,51 @@ default = 0
 ini = "k2_grass_draw_distance.ini"
 section = "Grass"
 key = "far_lod"
+
+[[row]]
+id = "vary_seed"
+kind = "toggle"
+label = "Varied Grass Pattern"
+desc = "Each patch of grass gets its own random layout (applies to grass built after the change)."
+default = 0
+ini = "k2_grass_draw_distance.ini"
+section = "Grass"
+key = "vary_seed"
+
+[[row]]
+id = "even_spread"
+kind = "toggle"
+label = "Even Grass Spread"
+desc = "Spread blades evenly over the ground instead of clustering (applies to new grass)."
+default = 0
+ini = "k2_grass_draw_distance.ini"
+section = "Grass"
+key = "even_spread"
+
+[[row]]
+id = "density_noise"
+kind = "toggle"
+label = "Grass Density Patches"
+desc = "Thicker and sparser patches of grass at the same average amount (applies to new grass)."
+default = 0
+ini = "k2_grass_draw_distance.ini"
+section = "Grass"
+key = "density_noise"
+
+[[row]]
+id = "size_var"
+kind = "stepper"
+style = "slider"
+label = "Grass Size Variation"
+desc = "How much blade size varies (vanilla 0.40; higher = more tall and short blades)."
+default = 40
+min = 40
+max = 120
+step = 20
+scale = 100
+ini = "k2_grass_draw_distance.ini"
+section = "Grass"
+key = "size_var"
 )TOML";
 
 } // namespace k2grass

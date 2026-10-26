@@ -7,3 +7,6 @@ EXPORTS
     K2GrassOnBin
     K2GrassDrawArraysA
     K2GrassDrawArraysB
+    K2GrassOnFaceSeed
+    K2GrassOnBlade
+    K2GrassOnFaceCount

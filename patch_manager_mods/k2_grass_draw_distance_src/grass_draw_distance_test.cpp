@@ -384,6 +384,12 @@ static void test_ini_roundtrip_and_direct_float_alpha() {
     orig.farLod = true;
     orig.lodStart = 80.0f;
     orig.lodMinKeep = 0.25f;
+    orig.varySeed = true;
+    orig.evenSpread = true;
+    orig.densityNoise = true;
+    orig.densityAmount = 0.7f;
+    orig.densityCell = 12.0f;
+    orig.sizeVar = 0.8f;
     const int n = k2grass::formatDefaultIni(buf, sizeof(buf), orig);
     KT_CHECK(n > 0 && static_cast<size_t>(n) < sizeof(buf));
 
@@ -391,6 +397,9 @@ static void test_ini_roundtrip_and_direct_float_alpha() {
     inikit::LoadStats st = k2grass::parseIniText(buf, parsed);
     KT_CHECK_EQ(st.bad, 0);
     KT_CHECK(parsed == orig);
+    KT_CHECK(parsed.varySeed && parsed.evenSpread && parsed.densityNoise);
+    KT_CHECK(std::fabs(parsed.densityAmount - 0.7f) < 1e-4f && std::fabs(parsed.densityCell - 12.0f) < 1e-4f);
+    KT_CHECK(std::fabs(parsed.sizeVar - 0.8f) < 1e-4f);
     KT_CHECK(!parsed.trimHidden && parsed.smoothEdges);
     KT_CHECK(!parsed.gpuTiming && parsed.windThrottle && parsed.farLod);
     KT_CHECK(std::fabs(parsed.windNear - 25.0f) < 1e-4f && parsed.windEvery == 4);
@@ -406,6 +415,10 @@ static void test_ini_roundtrip_and_direct_float_alpha() {
     KT_CHECK_EQ(dst.unknown, 0);
     KT_CHECK(dparsed == k2grass::Config{});
     KT_CHECK(dparsed.trimHidden && !dparsed.smoothEdges);
+    // 0.1.6 defaults: every variety toggle off, vanilla size span.
+    KT_CHECK(!dparsed.varySeed && !dparsed.evenSpread && !dparsed.densityNoise);
+    KT_CHECK(std::fabs(dparsed.densityAmount - 0.5f) < 1e-4f && std::fabs(dparsed.densityCell - 6.0f) < 1e-4f);
+    KT_CHECK(std::fabs(dparsed.sizeVar - 0.4f) < 1e-4f);
     // 0.1.5 defaults: GPU timer on, both experiments off.
     KT_CHECK(dparsed.gpuTiming && !dparsed.windThrottle && !dparsed.farLod);
     KT_CHECK(std::fabs(dparsed.windNear - 10.0f) < 1e-4f && dparsed.windEvery == 2);
@@ -448,11 +461,189 @@ static void test_ini_roundtrip_and_direct_float_alpha() {
     KT_CHECK(std::fabs(parsed2.windDist - 0.0f) < 1e-5f);
 }
 
+static void test_variety_ini_keys_and_clamps() {
+    char k[] = "vary_seed = 1\neven_spread = on\ndensity_noise = yes\ndensity_amount = 5\ndensity_cell = 1\nsize_var = 9\n";
+    k2grass::Config c{};
+    inikit::LoadStats st = k2grass::parseIniText(k, c);
+    KT_CHECK_EQ(st.ok, 6);
+    KT_CHECK_EQ(st.bad, 0);
+    KT_CHECK(c.varySeed && c.evenSpread && c.densityNoise);
+    KT_CHECK(std::fabs(c.densityAmount - 0.9f) < 1e-5f);   // clamp 0..0.9
+    KT_CHECK(std::fabs(c.densityCell - 2.0f) < 1e-5f);     // clamp 2..30
+    KT_CHECK(std::fabs(c.sizeVar - 0.4f) < 1e-5f);         // 9 is not a scaled value (>2 -> 0.09) -> clamps up to 0.4
+    // size_var: direct float and menu-scaled integer both land on the same value; range clamps 0.4..1.2.
+    const char* srcs[] = {"size_var = 1.0\n", "size_var = 100\n", "size_var = 120\n", "size_var = 0.1\n", "size_var = 7.5\n", "size_var = 40\n"};
+    const float want[] = {1.0f, 1.0f, 1.2f, 0.4f, 0.4f, 0.4f};   // 7.5 is read as scaled (0.075) -> clamps up
+    for (int i = 0; i < 6; ++i) {
+        char buf[32];
+        strcpy(buf, srcs[i]);
+        k2grass::Config t{};
+        k2grass::parseIniText(buf, t);
+        KT_CHECK(std::fabs(t.sizeVar - want[i]) < 1e-4f);
+    }
+    k2grass::Config big{};
+    big.densityAmount = 3.0f;
+    big.densityCell = 99.0f;
+    big.sizeVar = 5.0f;
+    big.sanitize();
+    KT_CHECK(big.densityAmount == 0.9f && big.densityCell == 30.0f && big.sizeVar == 1.2f);
+    big.sizeVar = 0.0f;
+    big.sanitize();
+    KT_CHECK(big.sizeVar == 0.4f);
+    // Vanilla setting yields exactly the game's double 0.4; 1.0 is exact.
+    KT_CHECK(k2grass::sizeSpanValue(0.4f) == 0.4);
+    KT_CHECK(k2grass::sizeSpanValue(1.0f) == 1.0);
+    KT_CHECK(k2grass::sizeSpanValue(9.0f) == 1.2);
+}
+
+static void test_face_seed() {
+    const float fa[9] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f};
+    uint32_t a[9], b[9], c[9];
+    memcpy(a, fa, sizeof a);
+    memcpy(b, fa, sizeof b);
+    KT_CHECK(k2grass::faceSeed(a) == k2grass::faceSeed(b));
+    KT_CHECK(k2grass::faceSeed(a) >= 0);
+    // Two faces with the same vanilla rounded sum round(v0.x + v1.y + v2.z) get different seeds.
+    const float f1[9] = {10.0f, 0.0f, 0.0f, 0.0f, 20.0f, 0.0f, 0.0f, 0.0f, 30.0f};
+    const float f2[9] = {20.0f, 5.0f, 0.0f, 3.0f, 10.0f, 1.0f, 2.0f, 2.0f, 30.0f};
+    KT_CHECK(std::lround(f1[0] + f1[4] + f1[8]) == std::lround(f2[0] + f2[4] + f2[8]));
+    memcpy(b, f1, sizeof b);
+    memcpy(c, f2, sizeof c);
+    KT_CHECK(k2grass::faceSeed(b) != k2grass::faceSeed(c));
+    // Many distinct faces with one shared rounded sum still spread over many seeds.
+    int distinct = 0;
+    int32_t seen[64];
+    for (int i = 0; i < 64; ++i) {
+        const float fv[9] = {static_cast<float>(i), 0.0f, 0.0f, 0.0f, static_cast<float>(63 - i), 0.0f, 0.0f, 0.0f, 0.0f};
+        memcpy(a, fv, sizeof a);
+        const int32_t sd = k2grass::faceSeed(a);
+        bool dup = false;
+        for (int j = 0; j < distinct; ++j) dup = dup || seen[j] == sd;
+        if (!dup) seen[distinct++] = sd;
+    }
+    KT_CHECK_EQ(distinct, 64);
+}
+
+static void test_uniform_bary() {
+    double maxErr = 0.0;
+    bool inRange = true;
+    for (int i = 0; i < 100; ++i) {
+        for (int j = 0; j < 100; ++j) {
+            const float a = static_cast<float>(i) / 100.0f;
+            const float b = static_cast<float>(j) / 100.0f;
+            float w0, w1, w2;
+            k2grass::uniformBary(a, b, &w0, &w1, &w2);
+            const double err = std::fabs(static_cast<double>(w0) + w1 + w2 - 1.0);
+            if (err > maxErr) maxErr = err;
+            inRange = inRange && w0 >= 0.0f && w0 <= 1.0f && w1 >= 0.0f && w1 <= 1.0f && w2 >= 0.0f && w2 <= 1.0f;
+        }
+    }
+    KT_CHECK(maxErr < 1e-6);
+    KT_CHECK(inRange);
+    // Reflection: a + b > 1 folds to (1-a, 1-b); a + b <= 1 passes through.
+    float w0, w1, w2;
+    k2grass::uniformBary(0.9f, 0.8f, &w0, &w1, &w2);
+    KT_CHECK(std::fabs(w0 - 0.1f) < 1e-6f && std::fabs(w1 - 0.2f) < 1e-6f && std::fabs(w2 - 0.7f) < 1e-6f);
+    k2grass::uniformBary(0.2f, 0.3f, &w0, &w1, &w2);
+    KT_CHECK(w0 == 0.2f && w1 == 0.3f && std::fabs(w2 - 0.5f) < 1e-6f);
+    // Non-finite input still yields valid weights.
+    k2grass::uniformBary(NAN, 0.5f, &w0, &w1, &w2);
+    KT_CHECK(std::fabs(static_cast<double>(w0) + w1 + w2 - 1.0) < 1e-6 && w0 >= 0.0f && w2 >= 0.0f);
+}
+
+static void test_value_noise_and_density() {
+    // Range and continuity (small steps never jump, including across lattice cell edges).
+    bool inRange = true;
+    float maxStep = 0.0f;
+    float prev = k2grass::valueNoise2(-20.0f, 3.3f);
+    for (int i = 1; i <= 8000; ++i) {
+        const float x = -20.0f + static_cast<float>(i) * 0.005f;
+        const float v = k2grass::valueNoise2(x, 3.3f);
+        inRange = inRange && v >= 0.0f && v <= 1.0f;
+        const float d = std::fabs(v - prev);
+        if (d > maxStep) maxStep = d;
+        prev = v;
+    }
+    KT_CHECK(inRange);
+    KT_CHECK(maxStep < 0.02f);   // slope <= 1.5 per unit * 0.005 step
+    // Exactly at and just beside a lattice edge the value agrees.
+    KT_CHECK(std::fabs(k2grass::valueNoise2(4.0f, 2.0f) - k2grass::valueNoise2(3.9999f, 2.0f)) < 1e-3f);
+    KT_CHECK(std::fabs(k2grass::valueNoise2(4.0f, 2.0f) - k2grass::valueNoise2(4.0f, 1.9999f)) < 1e-3f);
+    // Not constant: the lattice has both low and high corners.
+    float lo = 1.0f, hi = 0.0f;
+    for (int i = 0; i < 400; ++i) {
+        const float v = k2grass::valueNoise2(static_cast<float>(i) * 0.7f, static_cast<float>(i) * 0.3f);
+        if (v < lo) lo = v;
+        if (v > hi) hi = v;
+    }
+    KT_CHECK(lo < 0.25f && hi > 0.75f);
+    KT_CHECK(k2grass::valueNoise2(NAN, 1.0f) == 0.5f);
+
+    // densityCount: amount 0 only dithers within +-0.5 of x.
+    k2grass::Config c{};
+    c.densityNoise = true;
+    c.densityAmount = 0.0f;
+    bool within = true;
+    for (int i = 0; i < 500; ++i) {
+        const float x = 7.0f + static_cast<float>(i % 5);
+        const float y = k2grass::densityCount(x, static_cast<float>(i) * 1.37f, static_cast<float>(i) * -0.61f, c);
+        within = within && y >= x - 0.5f && y <= x + 0.5f;
+    }
+    KT_CHECK(within);
+    // amount 0.5: mean over a grid of centroids stays within 3% of x; never negative; bounded above.
+    c.densityAmount = 0.5f;
+    c.densityCell = 6.0f;
+    const float x = 20.0f;
+    double sum = 0.0;
+    int count = 0;
+    bool nonNeg = true;
+    float mn = 1e9f, mx = -1e9f;
+    for (int i = 0; i < 200; ++i) {
+        for (int j = 0; j < 200; ++j) {
+            const float cx = -170.0f + static_cast<float>(i) * 1.7f;
+            const float cy = -170.0f + static_cast<float>(j) * 1.7f;
+            const float y = k2grass::densityCount(x, cx, cy, c);
+            nonNeg = nonNeg && y >= 0.0f && y <= 4.0f * x + 4.0f;
+            if (y < mn) mn = y;
+            if (y > mx) mx = y;
+            sum += y;
+            ++count;
+        }
+    }
+    KT_CHECK(nonNeg);
+    KT_CHECK(std::fabs(sum / count - x) < 0.03 * x);
+    KT_CHECK(mn < 0.75f * x && mx > 1.25f * x);   // patches actually vary
+    // Small and zero counts never go negative.
+    bool smallOk = true;
+    for (int i = 0; i < 300; ++i) {
+        smallOk = smallOk && k2grass::densityCount(0.0f, static_cast<float>(i), 0.5f * static_cast<float>(i), c) >= 0.0f;
+        smallOk = smallOk && k2grass::densityCount(0.3f, static_cast<float>(i), 1.5f * static_cast<float>(i), c) >= 0.0f;
+    }
+    KT_CHECK(smallOk);
+    // Garbage count passes through untouched.
+    KT_CHECK(k2grass::densityCount(-1.0f, 0.0f, 0.0f, c) == -1.0f);
+}
+
+static void test_perf_window_variety_counters() {
+    k2grass::PerfWindow w;
+    w.reset(100);
+    w.addBlade();
+    w.addBlade();
+    w.addDensity(10.0f, 12.0f);
+    w.addDensity(5.0f, 4.0f);
+    KT_CHECK_EQ(w.blades, 2u);
+    KT_CHECK_EQ(w.densFaces, 2u);
+    KT_CHECK(std::fabs(w.densIn - 15.0) < 1e-9 && std::fabs(w.densOut - 16.0) < 1e-9);
+    w.reset(200);
+    KT_CHECK_EQ(w.blades, 0u);
+    KT_CHECK_EQ(w.densFaces, 0u);
+}
+
 static void test_modconfig_schema_bindings() {
     mcdecl::PageDecl pd{};
     char err[96] = {};
     KT_CHECK(mcdecl::parseSchema(k2grass::kPageSchema, strlen(k2grass::kPageSchema), pd, err, sizeof(err)));
-    KT_CHECK_EQ(pd.nRows, 9);
+    KT_CHECK_EQ(pd.nRows, 13);
     for (int i = 0; i < pd.nRows; ++i) {
         const mcdecl::RowDecl& r = pd.rows[i];
         KT_CHECK(strcmp(r.ini, k2grass::kIniFile) == 0);
@@ -475,6 +666,11 @@ int main() {
     test_decode_grass_path();
     test_perf_window_gpu_and_counters();
     test_ini_roundtrip_and_direct_float_alpha();
+    test_variety_ini_keys_and_clamps();
+    test_face_seed();
+    test_uniform_bary();
+    test_value_noise_and_density();
+    test_perf_window_variety_counters();
     test_modconfig_schema_bindings();
     return kt::Report("grass_draw_distance_test");
 }

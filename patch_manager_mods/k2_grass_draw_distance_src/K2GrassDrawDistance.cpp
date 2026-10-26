@@ -1,4 +1,4 @@
-// K2GrassDrawDistance.cpp -- K2 Grass Draw Distance (0.1.5-dev)
+// K2GrassDrawDistance.cpp -- K2 Grass Draw Distance (0.1.6-dev)
 // Extends grass octree build/collect radius, fade-start/fade-end distances, alpha-test threshold,
 // and decouples CPU wind animation radius (one operand rewrite at KPatchInit, code_patches.toml).
 // 0.1.4: a second operand rewrite trims the octree collect radius to the visible clip distance (trim_hidden), two
@@ -11,6 +11,13 @@
 //                      the grass draw helper get a smaller count (nothing else is touched: the helper's offset argument
 //                      is also the normals/UV offset)
 //   PF2a path probe    decodes which grass draw setup branch the engine globals select (log + per-window bin counts)
+// 0.1.6 variety (doc 50 PV1-PV4), all off by default; with the toggles off and size_var 0.4 the picture equals 0.1.5:
+//   PV1 vary_seed      hook in the blade generator FUN_0050EBC0 rewrites the per-face srand seed slot [EBP-0x9C]
+//   PV2 even_spread    hook before the blade weight sum rewrites the three barycentric weight slots [EBP-0xC..-0x4]
+//   PV3 density_noise  hook before the face count FRNDINT rewrites the float slot [EBP-0x224]
+//   PV4 size_var       the size FMUL's double operand is redirected to the DLL's g_sizeSpan (code_patches.toml)
+// The hooks only rewrite the game's own stack slots; the DLL never calls rand/srand or any game function.
+// Generation tweaks apply to bins built after the change (an area reload, or grass newly collected).
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <stdint.h>
@@ -49,6 +56,24 @@ const uint8_t kWindFldOrig[6] = {0xD9, 0x05, 0x70, 0xF0, 0xA0, 0x00};
 // (0x0050DB4C keeps reading the real fade end, so the fade curve is unchanged).
 constexpr uintptr_t AddrCollectFld = 0x00499ADC;
 const uint8_t kCollectFldOrig[6] = {0xD9, 0x05, 0x74, 0xF0, 0xA0, 0x00};
+// Size FMUL `FMUL double ptr [0x009921C8]` (vanilla 0.4); only the imm32 changes, to &g_sizeSpan.
+constexpr uintptr_t AddrSizeFmul = 0x0050FEE7;
+const uint8_t kSizeFmulOrig[6] = {0xDC, 0x0D, 0xC8, 0x21, 0x99, 0x00};
+// FUN_0050EBC0 face vertices (floats x,y,z each) the PV1 seed hash reads: V0 = 0x00A7D6EC/F0/F4, V1 = 0x00A7D6E0/E4/E8,
+// V2 = 0x00A7D6D4/D8/DC.
+constexpr uintptr_t AddrFaceV0 = 0x00A7D6EC;
+constexpr uintptr_t AddrFaceV1 = 0x00A7D6E0;
+constexpr uintptr_t AddrFaceV2 = 0x00A7D6D4;
+// The PV3 centroid inputs (floats x,y,z each): V0 = 0x00A7D6BC/C0/C4, V1 = 0x00A7D6B0/B4/B8, V2 = 0x00A7D6A4/A8/AC.
+constexpr uintptr_t AddrCentV0 = 0x00A7D6BC;
+constexpr uintptr_t AddrCentV1 = 0x00A7D6B0;
+constexpr uintptr_t AddrCentV2 = 0x00A7D6A4;
+// Stack slots, relative to the game's EBP: seed (int), blade weights a/b/c (float), face count (float).
+constexpr intptr_t kSlotSeed = -0x9C;
+constexpr intptr_t kSlotBladeA = -0xC;
+constexpr intptr_t kSlotBladeB = -0x8;
+constexpr intptr_t kSlotBladeC = -0x4;
+constexpr intptr_t kSlotFaceCount = -0x224;
 // Game import slots holding the __stdcall GL entry points the engine itself calls through.
 constexpr uintptr_t AddrSlotGlEnable = 0x00986268;
 constexpr uintptr_t AddrSlotGlDisable = 0x009862A0;
@@ -104,6 +129,10 @@ uint8_t g_windFldNew[6] = {};
 int g_windPatch = 0;   // codepatch::writeChecked result; 1 = patched
 uint8_t g_collectFldNew[6] = {};
 int g_collectPatch = 0;
+// PV4 blade size span the patched FMUL reads (vanilla 0.4).
+double g_sizeSpan = 0.4;
+uint8_t g_sizeFmulNew[6] = {};
+int g_sizePatch = 0;
 k2grass::PerfWindow g_perf{};
 // Grass bucket loop timing / alpha-to-coverage state (render thread only).
 LARGE_INTEGER g_qpcFreq{};
@@ -173,9 +202,9 @@ void writeEngineGlobals(const k2grass::EffectiveValues& ev) {
     }
 }
 
-// Rewrite the imm32 of a `FLD float ptr [abs]` (D9 05 imm32) to point at `target`. On a byte mismatch nothing is
+// Rewrite the imm32 of a 6-byte `op op imm32` absolute-operand instruction (FLD float / FMUL double) to point at `target`. On a byte mismatch nothing is
 // written (logged); the engine keeps reading its own global.
-int patchFldOperand(const char* name, uintptr_t at, const uint8_t* orig, uint8_t* repl, const float* target) {
+int patchFldOperand(const char* name, uintptr_t at, const uint8_t* orig, uint8_t* repl, const void* target) {
     memcpy(repl, orig, 2);
     const uint32_t a = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(target));
     memcpy(repl + 2, &a, 4);
@@ -201,11 +230,19 @@ void patchCollectOperand() {
     if (g_collectPatch != 1) KP_WARN("collect operand NOT patched: octree collect radius stays at the fade end");
 }
 
+// PV4: point the size FMUL at g_sizeSpan. On a mismatch the blade size span stays the game's vanilla 0.4.
+void patchSizeOperand() {
+    if (g_sizePatch == 1) return;
+    g_sizePatch = patchFldOperand("size_span_fmul", AddrSizeFmul, kSizeFmulOrig, g_sizeFmulNew, &g_sizeSpan);
+    if (g_sizePatch != 1) KP_WARN("size operand NOT patched: blade size span stays vanilla");
+}
+
 // FreeLibrary only: put the vanilla operands back before the globals go away.
 void unpatchOperands() {
     uint8_t seen[6] = {};
     if (g_windPatch == 1 && codepatch::writeChecked(AddrWindFld, g_windFldNew, kWindFldOrig, 6, seen) == 1) g_windPatch = 0;
     if (g_collectPatch == 1 && codepatch::writeChecked(AddrCollectFld, g_collectFldNew, kCollectFldOrig, 6, seen) == 1) g_collectPatch = 0;
+    if (g_sizePatch == 1 && codepatch::writeChecked(AddrSizeFmul, g_sizeFmulNew, kSizeFmulOrig, 6, seen) == 1) g_sizePatch = 0;
 }
 
 using GlCapFn = void(__stdcall*)(unsigned);
@@ -361,14 +398,16 @@ void perfSample(unsigned now) {
     KP_LOG(chPerf,
            "PERF fps=%.1f frames=%u bins_avg=%.0f bins_max=%u end=%.0fm start=%.0fm wind=%.0fm alpha=%.2f "
            "grass_ms_avg=%.2f grass_ms_max=%.2f collect=%.0fm trim=%d a2c=%d "
-           "gpu_ms_avg=%.2f gpu_ms_max=%.2f gpu=%d lod=%d quads_pct=%.0f pathA=%u pathB1=%u pathB2=%u",
+           "gpu_ms_avg=%.2f gpu_ms_max=%.2f gpu=%d lod=%d quads_pct=%.0f pathA=%u pathB1=%u pathB2=%u "
+           "blades=%u dens_faces=%u dens_in=%.0f dens_out=%.0f",
            g_perf.fps(now), g_perf.frames, g_perf.binsAvg(), g_perf.binsMax,
            std::sqrt(g_eff.fadeEndSq), std::sqrt(g_eff.fadeStartSq), std::sqrt(g_eff.windDistSq), g_eff.alphaCutoff,
            g_perf.grassMsAvg(), g_perf.grassMsMax(),
            std::sqrt(g_collectPatch == 1 ? g_collectSq : g_eff.fadeEndSq), trimmed ? 1 : 0,
            (g_a2cCapable && g_cfg.smoothEdges) ? 1 : 0,
            g_perf.gpuMsAvg(), g_perf.gpuMsMax(), (g_gpu.ok && g_cfg.gpuTiming) ? 1 : 0,
-           g_cfg.farLod ? 1 : 0, g_perf.quadsPct(), g_perf.pathA, g_perf.pathB1, g_perf.pathB2);
+           g_cfg.farLod ? 1 : 0, g_perf.quadsPct(), g_perf.pathA, g_perf.pathB1, g_perf.pathB2,
+           g_perf.blades, g_perf.densFaces, g_perf.densIn, g_perf.densOut);
     g_perf.reset(now);
 }
 
@@ -378,7 +417,7 @@ void ensureDefaultIniFile() {
         fclose(f);
         return;
     }
-    char buf[4096];
+    char buf[6144];
     const int n = k2grass::formatDefaultIni(buf, sizeof(buf), g_cfg);
     if (n > 0 && static_cast<size_t>(n) < sizeof(buf)) {
         filewatch::atomicWrite(k2grass::kIniFile, buf, static_cast<size_t>(n));
@@ -404,12 +443,13 @@ void loadAndApplyIni(bool initial) {
     g_eff = k2grass::computeEffective(g_cfg);
     writeEngineGlobals(g_eff);
     g_collectSq = k2grass::collectDistSq(g_eff, g_cfg.trimHidden);
+    g_sizeSpan = k2grass::sizeSpanValue(g_cfg.sizeVar);
     ++g_reloadCount;
 
     if (!g_bannerLogged) {
         g_bannerLogged = true;
         KP_LOG(chMain,
-               "%s %s loaded: enabled=%d fade=%.0fm..%.0fm (sq=%.0f..%.0f) wind=%.0fm (sq=%.0f) alpha=%.2f clip=%.1fm trim=%d collect=%.1fm (sq=%.0f) smooth_edges=%d perf_log=%d gpu_timing=%d wind_throttle=%d wind_near=%.0fm wind_every=%d far_lod=%d lod_start=%.0fm lod_min_keep=%.2f ini=%s(ok=%d,bad=%d)",
+               "%s %s loaded: enabled=%d fade=%.0fm..%.0fm (sq=%.0f..%.0f) wind=%.0fm (sq=%.0f) alpha=%.2f clip=%.1fm trim=%d collect=%.1fm (sq=%.0f) smooth_edges=%d perf_log=%d gpu_timing=%d wind_throttle=%d wind_near=%.0fm wind_every=%d far_lod=%d lod_start=%.0fm lod_min_keep=%.2f vary_seed=%d even_spread=%d density_noise=%d density_amount=%.2f density_cell=%.0fm size_var=%.2f ini=%s(ok=%d,bad=%d)",
                k2grass::kModId, k2grass::kVersion,
                g_cfg.enabled ? 1 : 0,
                g_cfg.fadeStartDist, g_cfg.fadeEndDist,
@@ -422,11 +462,14 @@ void loadAndApplyIni(bool initial) {
                g_cfg.perfLog ? 1 : 0,
                g_cfg.gpuTiming ? 1 : 0, g_cfg.windThrottle ? 1 : 0, g_cfg.windNear, g_cfg.windEvery,
                g_cfg.farLod ? 1 : 0, g_cfg.lodStart, static_cast<double>(g_cfg.lodMinKeep),
+               g_cfg.varySeed ? 1 : 0, g_cfg.evenSpread ? 1 : 0, g_cfg.densityNoise ? 1 : 0,
+               static_cast<double>(g_cfg.densityAmount), static_cast<double>(g_cfg.densityCell), g_sizeSpan,
                readOk ? "read" : "defaults", st.ok, st.bad);
     } else if (changed || g_cfg.verbose) {
         KP_LOG(chCfg,
                "INI reload #%u: enabled=%d fade=%.0fm..%.0fm wind=%.0fm alpha=%.2f clip=%.1fm trim=%d collect=%.1fm smooth_edges=%d "
-               "gpu_timing=%d wind_throttle=%d wind_near=%.0fm wind_every=%d far_lod=%d lod_start=%.0fm lod_min_keep=%.2f",
+               "gpu_timing=%d wind_throttle=%d wind_near=%.0fm wind_every=%d far_lod=%d lod_start=%.0fm lod_min_keep=%.2f "
+               "vary_seed=%d even_spread=%d density_noise=%d density_amount=%.2f density_cell=%.0fm size_var=%.2f",
                g_reloadCount,
                g_cfg.enabled ? 1 : 0,
                g_cfg.fadeStartDist, g_cfg.fadeEndDist,
@@ -434,7 +477,9 @@ void loadAndApplyIni(bool initial) {
                k2grass::effectiveClipDistMeters(g_eff),
                g_cfg.trimHidden ? 1 : 0, std::sqrt(g_collectSq), g_cfg.smoothEdges ? 1 : 0,
                g_cfg.gpuTiming ? 1 : 0, g_cfg.windThrottle ? 1 : 0, g_cfg.windNear, g_cfg.windEvery,
-               g_cfg.farLod ? 1 : 0, g_cfg.lodStart, static_cast<double>(g_cfg.lodMinKeep));
+               g_cfg.farLod ? 1 : 0, g_cfg.lodStart, static_cast<double>(g_cfg.lodMinKeep),
+               g_cfg.varySeed ? 1 : 0, g_cfg.evenSpread ? 1 : 0, g_cfg.densityNoise ? 1 : 0,
+               static_cast<double>(g_cfg.densityAmount), static_cast<double>(g_cfg.densityCell), g_sizeSpan);
     }
 }
 
@@ -528,6 +573,7 @@ void __cdecl KPatchInit(const KPatchApi* api) {
     loadAndApplyIni(true);
     patchWindOperand();
     patchCollectOperand();
+    patchSizeOperand();
     g_initialized = true;
     pollModConfig();
 }
@@ -540,6 +586,7 @@ void __cdecl K2GrassOnSceneCollect() {
         loadAndApplyIni(true);
         patchWindOperand();
         patchCollectOperand();
+        patchSizeOperand();
         g_initialized = true;
     } else if (filewatch::changed(g_iniPoll, k2grass::kIniFile, now)) {
         loadAndApplyIni(false);
@@ -612,6 +659,58 @@ void __cdecl K2GrassOnBin(const uint8_t* bin) {
         const int32_t f07c = g_pathReadable ? *reinterpret_cast<const volatile int32_t*>(AddrPathF07C) : 0;
         g_perf.addPath(k2grass::classifyBinPath(bin[kBinOffFlags], f07c, g_pathLast.P));
     }
+}
+
+// Read three consecutive floats of engine static data as raw u32 bits (fixed .data addresses; no game call).
+static void readBits3(uintptr_t at, uint32_t* out) {
+    for (int i = 0; i < 3; ++i) out[i] = *reinterpret_cast<const volatile uint32_t*>(at + 4u * static_cast<uintptr_t>(i));
+}
+
+// Hook 7 (PV1): blade generator FUN_0050EBC0 at 0x0050EF89 (MOV ECX,[EBP-0x9C]; PUSH ECX; CALL srand). `ebp` is the game's
+// frame pointer; the seed slot is overwritten with a hash of the face's nine vertex floats before the game loads it.
+void __cdecl K2GrassOnFaceSeed(uint8_t* ebp) {
+    if (!g_cfg.varySeed || ebp == nullptr) return;
+    uint32_t bits[9];
+    readBits3(AddrFaceV0, bits);
+    readBits3(AddrFaceV1, bits + 3);
+    readBits3(AddrFaceV2, bits + 6);
+    *reinterpret_cast<int32_t*>(ebp + kSlotSeed) = k2grass::faceSeed(bits);
+}
+
+// Hook 8 (PV2): per blade at 0x0050F177 (FLD [EBP-0xC]; FADD [EBP-0x8]), before the weight sum and normalise call. The two
+// raw randoms (each rand % 10000 / 10000) become uniform barycentric weights, written to all three weight slots.
+void __cdecl K2GrassOnBlade(uint8_t* ebp) {
+    if (!g_cfg.evenSpread || ebp == nullptr) return;
+    float* wa = reinterpret_cast<float*>(ebp + kSlotBladeA);
+    float* wb = reinterpret_cast<float*>(ebp + kSlotBladeB);
+    float* wc = reinterpret_cast<float*>(ebp + kSlotBladeC);
+    float w0 = 0.0f, w1 = 0.0f, w2 = 0.0f;
+    k2grass::uniformBary(*wa, *wb, &w0, &w1, &w2);
+    *wa = w0;
+    *wb = w1;
+    *wc = w2;
+    if (g_cfg.perfLog) g_perf.addBlade();
+}
+
+// Hook 9 (PV3): per face at 0x0050D35C (FLD [EBP-0x224], then FRNDINT / FISTP into the face blade count). The float slot is
+// the single source of the count; it is scaled by smooth patch noise at the face centroid.
+void __cdecl K2GrassOnFaceCount(uint8_t* ebp) {
+    if (!g_cfg.densityNoise || ebp == nullptr) return;
+    uint32_t b0[3], b1[3], b2[3];
+    readBits3(AddrCentV0, b0);
+    readBits3(AddrCentV1, b1);
+    readBits3(AddrCentV2, b2);
+    float v0[3], v1[3], v2[3];
+    memcpy(v0, b0, sizeof v0);
+    memcpy(v1, b1, sizeof v1);
+    memcpy(v2, b2, sizeof v2);
+    const float cx = (v0[0] + v1[0] + v2[0]) * (1.0f / 3.0f);
+    const float cy = (v0[1] + v1[1] + v2[1]) * (1.0f / 3.0f);
+    float* slot = reinterpret_cast<float*>(ebp + kSlotFaceCount);
+    const float x = *slot;
+    const float y = k2grass::densityCount(x, cx, cy, g_cfg);
+    *slot = y;
+    if (g_cfg.perfLog) g_perf.addDensity(x, y);
 }
 
 // Hook 5 / 6: the two CALL dword ptr [glDrawArrays] in the grass draw helper FUN_004369A0 (grass-only; callers

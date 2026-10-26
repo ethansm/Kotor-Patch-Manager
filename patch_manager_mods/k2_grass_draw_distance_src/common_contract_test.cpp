@@ -39,7 +39,7 @@ int main() {
     char err[96] = {};
     LCHECK("kPageSchema parses cleanly with ModConfigDecl",
            mcdecl::parseSchema(k2grass::kPageSchema, strlen(k2grass::kPageSchema), pd, err, sizeof(err)));
-    LCHECK("kPageSchema has 9 rows", pd.nRows == 9);
+    LCHECK("kPageSchema has 13 rows", pd.nRows == 13);
     LCHECK("kPageSchema title has K2 in name", strcmp(pd.name, "K2 Grass Draw Distance") == 0);
 
     // 4. FileWatch contract

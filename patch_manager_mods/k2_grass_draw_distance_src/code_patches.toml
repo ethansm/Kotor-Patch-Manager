@@ -14,6 +14,16 @@ enabled_by = "always (KPatchInit); restored on FreeLibrary"
 source = "K2GrassDrawDistance.cpp patchWindOperand / unpatchOperands (codepatch::writeChecked)"
 
 [[code_patches]]
+name = "size_span_fmul"
+address = 0x0050FEE7
+# 0.1.6 PV4: FUN_0050EBC0 blade size `FMUL double ptr [0x009921C8]` (vanilla 0.4); the imm32 becomes &g_sizeSpan (DLL .data)
+original_bytes = [0xDC, 0x0D, 0xC8, 0x21, 0x99, 0x00]
+kind = "code"
+verifies_original = true
+enabled_by = "always (KPatchInit); restored on FreeLibrary; value = size_var (0.4 = vanilla)"
+source = "K2GrassDrawDistance.cpp patchSizeOperand / unpatchOperands (codepatch::writeChecked)"
+
+[[code_patches]]
 name = "collect_fld"
 address = 0x00499ADC
 # Scene::CollectAndTraverse octree sphere query radius `FLD float ptr [0x00A0F074]`; the imm32 becomes &g_collectSq (DLL .data)
