@@ -39,7 +39,7 @@ by Opus in the Steam 6A522E71 asm), engine_research_findings/R7.md (per-frame co
   `npc-diversity_debug.txt` (WI-119), `equip3d_debug.txt` (EQ10-P1) are play-row signals; drop each after its row passes.
 
 - Levers 6-7: BUILT as new mod `k2-engine-perf` 0.1.0-dev (repo 9eb531de, KPM 76259f5, GATE PASS; doc 50 EP1,
-  play row EP1); awaiting install GO.
+  play row EP1); INSTALLED 2026-10-26 00:04, play EP1 pending.
 
 ## Order
 1-2 first (no code, measure with grass PERF + GPU timing), then a frame-pacing mod (3-4), then a
