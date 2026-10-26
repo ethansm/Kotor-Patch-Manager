@@ -23,6 +23,11 @@ inline const char* iconForSpell(int spell, bool debuff, bool* item) {
 }
 
 constexpr int EffType_Icon = 0x43;   // script SetEffectIcon: ints[0] = effecticon.2da row
+constexpr int EffIconRow_TrapPoison = 110;   // TRAP_EFFECT_POISON: the 2da names the placeholder ip_resistenergy (no texture), so the table holds nullptr
+
+// Opt-in icon for the poison row; nullptr (default) = untracked, the engine draws its debuff arrow. A mod sets it only once the texture exists
+// (Buff HUD: embedded bh_poison, PoisonIconTex.inc), so a consumer without that texture never gets the resref.
+inline const char* g_trapPoisonIcon = nullptr;
 
 // Harmful effecticon.2da row (good == 0) carried by a type-0x43 effect -> its icon, else nullptr. Row 0 is the "none" row.
 inline const char* iconForEffectIconEffect(int eff, bool* item) {
@@ -30,6 +35,7 @@ inline const char* iconForEffectIconEffect(int eff, bool* item) {
     unsigned short type = 0; int n = 0, ip = 0, row = 0;
     if (!rd(eff, Effect_Type, &type) || type != EffType_Icon) return nullptr;
     if (!rd(eff, Effect_IntCount, &n) || n <= 0 || !rd(eff, Effect_Ints, &ip) || !ip || !rd(ip, 0, &row)) return nullptr;
+    if (row == EffIconRow_TrapPoison && g_trapPoisonIcon) return g_trapPoisonIcon;
     if (row <= 0 || row >= kEffectIconRowCount || kEffectIconRows[row].good != 0 || !kEffectIconRows[row].resref) return nullptr;
     const char* r = kEffectIconRows[row].resref;
     *item = !strncmp(r, "ii_", 3) || !strncmp(r, "iw_", 3);
