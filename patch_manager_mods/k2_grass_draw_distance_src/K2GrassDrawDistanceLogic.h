@@ -1,4 +1,4 @@
-// K2GrassDrawDistanceLogic.h (0.1.6-dev) -- Pure config, math, and ModConfig schema for k2-grass-draw-distance.
+// K2GrassDrawDistanceLogic.h (0.1.7-dev) -- Pure config, math, and ModConfig schema for k2-grass-draw-distance.
 // Header-only and host-testable (no engine addresses or Win32 calls).
 #pragma once
 
@@ -12,7 +12,7 @@
 namespace k2grass {
 
 constexpr const char* kModId = "k2-grass-draw-distance";
-constexpr const char* kVersion = "0.1.6-dev";
+constexpr const char* kVersion = "0.1.7-dev";
 constexpr const char* kIniFile = "k2_grass_draw_distance.ini";
 constexpr const char* kIniSection = "Grass";
 

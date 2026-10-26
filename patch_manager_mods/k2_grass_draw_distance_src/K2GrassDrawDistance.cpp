@@ -1,4 +1,4 @@
-// K2GrassDrawDistance.cpp -- K2 Grass Draw Distance (0.1.6-dev)
+// K2GrassDrawDistance.cpp -- K2 Grass Draw Distance (0.1.7-dev)
 // Extends grass octree build/collect radius, fade-start/fade-end distances, alpha-test threshold,
 // and decouples CPU wind animation radius (one operand rewrite at KPatchInit, code_patches.toml).
 // 0.1.4: a second operand rewrite trims the octree collect radius to the visible clip distance (trim_hidden), two
@@ -16,6 +16,7 @@
 //   PV2 even_spread    hook before the blade weight sum rewrites the three barycentric weight slots [EBP-0xC..-0x4]
 //   PV3 density_noise  hook before the face count FRNDINT rewrites the float slot [EBP-0x224]
 //   PV4 size_var       the size FMUL's double operand is redirected to the DLL's g_sizeSpan (code_patches.toml)
+// 0.1.7: long log lines split under the core's 232-byte cut (PERF/PERF2, loaded or INI reload + CFG + VARIETY).
 // The hooks only rewrite the game's own stack slots; the DLL never calls rand/srand or any game function.
 // Generation tweaks apply to bins built after the change (an area reload, or grass newly collected).
 #define WIN32_LEAN_AND_MEAN
@@ -395,16 +396,18 @@ void perfSample(unsigned now) {
     g_perf.add(static_cast<uint32_t>(bins), now);
     if (!g_perf.due(now)) return;
     const bool trimmed = g_collectPatch == 1 && g_cfg.trimHidden;
+    // The core cuts a line's text at 232 bytes, so the window is logged as two lines (PERF, PERF2).
     KP_LOG(chPerf,
            "PERF fps=%.1f frames=%u bins_avg=%.0f bins_max=%u end=%.0fm start=%.0fm wind=%.0fm alpha=%.2f "
-           "grass_ms_avg=%.2f grass_ms_max=%.2f collect=%.0fm trim=%d a2c=%d "
-           "gpu_ms_avg=%.2f gpu_ms_max=%.2f gpu=%d lod=%d quads_pct=%.0f pathA=%u pathB1=%u pathB2=%u "
-           "blades=%u dens_faces=%u dens_in=%.0f dens_out=%.0f",
+           "grass_ms_avg=%.2f grass_ms_max=%.2f collect=%.0fm trim=%d a2c=%d",
            g_perf.fps(now), g_perf.frames, g_perf.binsAvg(), g_perf.binsMax,
            std::sqrt(g_eff.fadeEndSq), std::sqrt(g_eff.fadeStartSq), std::sqrt(g_eff.windDistSq), g_eff.alphaCutoff,
            g_perf.grassMsAvg(), g_perf.grassMsMax(),
            std::sqrt(g_collectPatch == 1 ? g_collectSq : g_eff.fadeEndSq), trimmed ? 1 : 0,
-           (g_a2cCapable && g_cfg.smoothEdges) ? 1 : 0,
+           (g_a2cCapable && g_cfg.smoothEdges) ? 1 : 0);
+    KP_LOG(chPerf,
+           "PERF2 gpu_ms_avg=%.2f gpu_ms_max=%.2f gpu=%d lod=%d quads_pct=%.0f pathA=%u pathB1=%u pathB2=%u "
+           "blades=%u dens_faces=%u dens_in=%.0f dens_out=%.0f",
            g_perf.gpuMsAvg(), g_perf.gpuMsMax(), (g_gpu.ok && g_cfg.gpuTiming) ? 1 : 0,
            g_cfg.farLod ? 1 : 0, g_perf.quadsPct(), g_perf.pathA, g_perf.pathB1, g_perf.pathB2,
            g_perf.blades, g_perf.densFaces, g_perf.densIn, g_perf.densOut);
@@ -446,10 +449,12 @@ void loadAndApplyIni(bool initial) {
     g_sizeSpan = k2grass::sizeSpanValue(g_cfg.sizeVar);
     ++g_reloadCount;
 
+    // The core cuts a line's text at 232 bytes: the settings go out as three short lines (main, timing/lod, variety).
     if (!g_bannerLogged) {
         g_bannerLogged = true;
         KP_LOG(chMain,
-               "%s %s loaded: enabled=%d fade=%.0fm..%.0fm (sq=%.0f..%.0f) wind=%.0fm (sq=%.0f) alpha=%.2f clip=%.1fm trim=%d collect=%.1fm (sq=%.0f) smooth_edges=%d perf_log=%d gpu_timing=%d wind_throttle=%d wind_near=%.0fm wind_every=%d far_lod=%d lod_start=%.0fm lod_min_keep=%.2f vary_seed=%d even_spread=%d density_noise=%d density_amount=%.2f density_cell=%.0fm size_var=%.2f ini=%s(ok=%d,bad=%d)",
+               "%s %s loaded: enabled=%d fade=%.0fm..%.0fm (sq=%.0f..%.0f) wind=%.0fm (sq=%.0f) alpha=%.2f clip=%.1fm trim=%d "
+               "collect=%.1fm (sq=%.0f) ini=%s(ok=%d,bad=%d)",
                k2grass::kModId, k2grass::kVersion,
                g_cfg.enabled ? 1 : 0,
                g_cfg.fadeStartDist, g_cfg.fadeEndDist,
@@ -458,29 +463,30 @@ void loadAndApplyIni(bool initial) {
                g_eff.alphaCutoff,
                k2grass::effectiveClipDistMeters(g_eff),
                g_cfg.trimHidden ? 1 : 0, std::sqrt(g_collectSq), g_collectSq,
-               g_cfg.smoothEdges ? 1 : 0,
-               g_cfg.perfLog ? 1 : 0,
-               g_cfg.gpuTiming ? 1 : 0, g_cfg.windThrottle ? 1 : 0, g_cfg.windNear, g_cfg.windEvery,
-               g_cfg.farLod ? 1 : 0, g_cfg.lodStart, static_cast<double>(g_cfg.lodMinKeep),
-               g_cfg.varySeed ? 1 : 0, g_cfg.evenSpread ? 1 : 0, g_cfg.densityNoise ? 1 : 0,
-               static_cast<double>(g_cfg.densityAmount), static_cast<double>(g_cfg.densityCell), g_sizeSpan,
                readOk ? "read" : "defaults", st.ok, st.bad);
     } else if (changed || g_cfg.verbose) {
         KP_LOG(chCfg,
-               "INI reload #%u: enabled=%d fade=%.0fm..%.0fm wind=%.0fm alpha=%.2f clip=%.1fm trim=%d collect=%.1fm smooth_edges=%d "
-               "gpu_timing=%d wind_throttle=%d wind_near=%.0fm wind_every=%d far_lod=%d lod_start=%.0fm lod_min_keep=%.2f "
-               "vary_seed=%d even_spread=%d density_noise=%d density_amount=%.2f density_cell=%.0fm size_var=%.2f",
+               "INI reload #%u: enabled=%d fade=%.0fm..%.0fm wind=%.0fm alpha=%.2f clip=%.1fm trim=%d collect=%.1fm",
                g_reloadCount,
                g_cfg.enabled ? 1 : 0,
                g_cfg.fadeStartDist, g_cfg.fadeEndDist,
                g_cfg.windDist, g_eff.alphaCutoff,
                k2grass::effectiveClipDistMeters(g_eff),
-               g_cfg.trimHidden ? 1 : 0, std::sqrt(g_collectSq), g_cfg.smoothEdges ? 1 : 0,
-               g_cfg.gpuTiming ? 1 : 0, g_cfg.windThrottle ? 1 : 0, g_cfg.windNear, g_cfg.windEvery,
-               g_cfg.farLod ? 1 : 0, g_cfg.lodStart, static_cast<double>(g_cfg.lodMinKeep),
-               g_cfg.varySeed ? 1 : 0, g_cfg.evenSpread ? 1 : 0, g_cfg.densityNoise ? 1 : 0,
-               static_cast<double>(g_cfg.densityAmount), static_cast<double>(g_cfg.densityCell), g_sizeSpan);
+               g_cfg.trimHidden ? 1 : 0, std::sqrt(g_collectSq));
+    } else {
+        return;
     }
+    KP_LOG(chCfg,
+           "CFG smooth_edges=%d perf_log=%d gpu_timing=%d wind_throttle=%d wind_near=%.0fm wind_every=%d far_lod=%d "
+           "lod_start=%.0fm lod_min_keep=%.2f",
+           g_cfg.smoothEdges ? 1 : 0, g_cfg.perfLog ? 1 : 0,
+           g_cfg.gpuTiming ? 1 : 0, g_cfg.windThrottle ? 1 : 0, g_cfg.windNear, g_cfg.windEvery,
+           g_cfg.farLod ? 1 : 0, g_cfg.lodStart, static_cast<double>(g_cfg.lodMinKeep));
+    KP_LOG(chCfg,
+           "VARIETY vary_seed=%d even_spread=%d density_noise=%d density_amount=%.2f density_cell=%.0fm size_var=%.2f "
+           "(applies to grass built after this; reload the save)",
+           g_cfg.varySeed ? 1 : 0, g_cfg.evenSpread ? 1 : 0, g_cfg.densityNoise ? 1 : 0,
+           static_cast<double>(g_cfg.densityAmount), static_cast<double>(g_cfg.densityCell), g_sizeSpan);
 }
 
 // Silent ini write for a row the code moved (Page::setValue writes no ini), so the next page build reads it back.
