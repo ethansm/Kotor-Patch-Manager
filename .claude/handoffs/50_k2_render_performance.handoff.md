@@ -7,17 +7,16 @@ Execute **PF2a**: Redundant per-bin state hoist (set texenv/material/client stat
 - **Master Plan:** `patch_manager_mods/50_k2_render_performance.md`
 - **Waves:** .claude/waves/w1-50-PF2/
 - **Waves:** .claude/waves/w1-50-PV/
-- **Branch:** `KOTOR-II` (5fef0fdd doc 50 PV1-PV4 BUILT (5f34be01); doc 48 P4c; play row GR7)
-- **Generated:** 2026-10-25 20:29:45 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (fa7a378f companion-ai 0.3.3-probe: WI-137 F1b debuff guard)
+- **Generated:** 2026-10-25 23:00:26 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-5fef0fdd doc 50 PV1-PV4 BUILT (5f34be01); doc 48 P4c; play row GR7
- patch_manager_mods/48_k2_grass_draw_distance.md | 1 +
- patch_manager_mods/50_k2_render_performance.md  | 8 ++++----
- patch_manager_mods/PLAY_TEST_QUEUE.md           | 1 +
- 3 files changed, 6 insertions(+), 4 deletions(-)
+fa7a378f companion-ai 0.3.3-probe: WI-137 F1b debuff guard
+ patch_manager_mods/companion_ai_src/CompanionAI.cpp | 2 +-
+ patch_manager_mods/companion_ai_src/manifest.toml   | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 ```
-- **Dirty Files (183):**
+- **Dirty Files (185):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
   - ` M .claude/handoffs/DECOMP_PLAN.handoff.md`
@@ -28,7 +27,7 @@ Execute **PF2a**: Redundant per-bin state hoist (set texenv/material/client stat
   - ` M .claude/reviews/gemini_20261014/tools/fix3_items.tsv`
   - ` M .claude/settings.json`
   - ` M CLAUDE.md`
-  - ... +173 more (run `git status --short`)
+  - ... +175 more (run `git status --short`)
 
 ## 2. Immediate Objective (**PF2a**)
 **Redundant per-bin state hoist (set texenv/material/client state once per bucket)**
@@ -38,8 +37,6 @@ Task: Redundant per-bin state hoist (set texenv/material/client state once per b
 
 ## 2b. Upcoming Batches in Pipeline
 - ****PF3**** : Defaults from A/B logs; log tightening (`perf_log` default off, verbose gating)
-- ****PV1**** : grass 0.1.6-dev variety: per-face RNG seed from a float-bit hash of the face verts (replaces `srand(round(x0+y1+z2))` at 0x50EF90; kills repeated clumps); toggle `vary_seed`
-- ****PV2**** : grass 0.1.6-dev variety: uniform barycentric blade positions (rewrite the 3 weights at 0x50F177 before the normalise call; no centre bunching); toggle `even_spread`
 
 ## 3. Strict Context Budget & Read Policy
 - **Fresh Session Bootstrap**: Run `python3 scripts/plan_manager.py resume patch_manager_mods/50_k2_render_performance.md`.
