@@ -7,16 +7,20 @@ Execute **PF2a**: Redundant per-bin state hoist (set texenv/material/client stat
 - **Master Plan:** `patch_manager_mods/50_k2_render_performance.md`
 - **Waves:** .claude/waves/w1-50-PF2/
 - **Waves:** .claude/waves/w1-50-PV/
-- **Branch:** `KOTOR-II` (a715f5fc grass 0.1.8-dev: variety counters survive the PERF gap reset (load-time PV3 calls were wiped); PERF2 seeds=)
-- **Generated:** 2026-10-26 01:28:06 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (e34a3b43 buff-duration-hud 0.2.4: embedded poison icon for effecticon row 110 instead of the engine's red debuff arrow)
+- **Generated:** 2026-10-26 01:36:56 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-a715f5fc grass 0.1.8-dev: variety counters survive the PERF gap reset (load-time PV3 calls were wiped); PERF2 seeds=
- .../K2GrassDrawDistance.cpp                           |  8 +++++---
- .../K2GrassDrawDistanceLogic.h                        | 19 ++++++++++++++++---
- .../grass_draw_distance_test.cpp                      |  9 +++++++++
- .../k2_grass_draw_distance_src/manifest.toml          |  2 +-
- 4 files changed, 31 insertions(+), 7 deletions(-)
+e34a3b43 buff-duration-hud 0.2.4: embedded poison icon for effecticon row 110 instead of the engine's red debuff arrow
+ patch_manager_mods/02_buff_duration_hud.md         |   3 +
+ patch_manager_mods/PLAY_TEST_QUEUE.md              |   1 +
+ patch_manager_mods/_shared_src/EffectIcons.h       |   6 +
+ .../buff_duration_hud_src/BuffDurationHUD.cpp      |  12 +
+ .../buff_duration_hud_src/PoisonIconTex.inc        | 695 +++++++++++++++++++++
+ .../buff_duration_hud_src/common_contract_test.cpp |  18 +
+ .../buff_duration_hud_src/manifest.toml            |   2 +-
+ scripts/gen_poison_icon.py                         | 184 ++++++
+ 8 files changed, 920 insertions(+), 1 deletion(-)
 ```
 - **Dirty Files (185):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
