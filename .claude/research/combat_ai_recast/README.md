@@ -95,7 +95,7 @@ CLR of that actor), Bao-Dur = `a9b1138`. Tools: `cmdq_idle_casts.py`, `cmdq_rn_b
   STUDIED (`O3_study.md`, WI-140): only Jedi Support (style 13) reaches GN_FindAOETarget (plain count in 4 m, no
   affected check); vanilla roll-chain typos at gensupport:3235 (Insanity tests nHorror) and :3310 (Sonic Howl tests
   nKillDroid). Recommendation B (keep the centre, require >= 2 unaffected for Horror/Insanity/Stasis Field, fix both
-  typos). Owner decision pending.
+  typos). DECIDED 2026-10-25: owner chose B (implementation = new WI, see dev_work_items.md, origin WI-140).
 
 ## Proposed fixes (ordered)
 

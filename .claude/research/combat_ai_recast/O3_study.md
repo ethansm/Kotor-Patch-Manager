@@ -53,3 +53,7 @@ Sources: vanilla `mod8_kite_script/vanilla/k_inc_gensupport.nss` (gensupport), `
 - C. Leave as is. Pro: zero cost, zero risk. Con: recasts on the same centre; FP and rounds wasted.
 - Recommendation: B, limited to lasting control powers (Horror 30, Insanity 31, Mass Stasis 44), K = 2 unaffected. Leave damage-type area powers (Force Storm 25, Scream 159-161) unfiltered. Fix the roll-chain bugs at :3235 and :3310 in the same change. Move to A only if a probe shows the vanilla centre is mostly affected.
 - OPEN: which of these powers leave a lasting, spell-tagged effect (`GetEffectSpellId`) needs a live probe; the scripts do not say.
+
+## 6. Decision
+
+- 2026-10-25: owner chose B as recommended (Horror 30, Insanity 31, Mass Stasis 44 need >= 2 unaffected enemies within 4 m of the vanilla centre; Storm 25 / Scream 159-161 unfiltered; fix gensupport :3235 and :3310). Party members only. Implementation WI added from WI-140.
