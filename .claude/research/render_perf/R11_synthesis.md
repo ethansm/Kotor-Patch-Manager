@@ -34,7 +34,8 @@ by Opus in the Steam 6A522E71 asm), engine_research_findings/R7.md (per-frame co
 
 ## Status
 - Lever 1: perf-lab turned OFF 2026-10-25 (`perflab_debug.txt` -> `perflab_debug.txt.disabled`; note in
-  `patch_manager_mods/perf_lab_src/README.md`). Other `*_debug.txt` flags kept: `hangprobe_debug.txt` (LHP-PT1),
+  `patch_manager_mods/perf_lab_src/README.md`). Also renamed to `.disabled` the same day: `buffhud_debug.txt`,
+  `inv3d_debug.txt`, `chareffects_debug.txt` (rename back to re-enable). Other `*_debug.txt` flags kept: `hangprobe_debug.txt` (LHP-PT1),
   `npc-diversity_debug.txt` (WI-119), `equip3d_debug.txt` (EQ10-P1) are play-row signals; drop each after its row passes.
 
 ## Order
