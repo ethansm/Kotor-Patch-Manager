@@ -28,3 +28,9 @@ Not worth it: extra yaw (already random), per-bin reseed (seed is per face; use 
 ## 3. Existing mods (web, Haiku)
 No K2 mod ships several grass variants. Sources for variants: Restored Dantooine Textures Pack [K1] (N-DReW25, deadlystream 2043; Grass 1-5 sets, no reuse without permission), New Grass (MadDerp, Nexus K1 1207), K1 Dantooine Textures Restoration for TSL (N-DReW25, deadlystream 1046; ask before reuse), Grass and Foliage Reimplanted (Malkior, deadlystream 1486, Dxun WIP), Vanilla Planets HD (deadlystream 2976). K2 grass names seen: DXn_grassfx.tga, DXN_jungfx.tga. Local-install only; never in repo/release.
 Asset route with no code: one 4-quadrant atlas mixing grass types + per-area Grass_Prob_* weights.
+
+## 4. Recon w1-50-PV (2026-10-25, `.claude/waves/w1-50-PV/u01..u04`)
+- KPM: `source = "ebp"` gives the game's EBP (PUSHAD copy); FXSAVE always, FXRSTOR with default preserve_registers, so mid-x87 hooks are safe (u01).
+- Seed site 0x50EF89 and barycentric site 0x50F177 confirmed, x87 depth 0, not jump targets. Face verts in 0x50EBC0: v0 = 0xA7D6EC/F0/F4, v1 = 0xA7D6E0/E4/E8, v2 = 0xA7D6D4/D8/DC. Weights also drive vertex colour and lightmap UV, so replacements must sum to 1. 6 rand calls per blade (u02).
+- Density site 0x50D35C is in CAurTriangleBin::AddTriangle 0x0050C8A0 (not 0x50EBC0); count [EBP-0x14] is the single source (record+0x14, bin+0x0C, blade loop), x87 depth 0, verts at 0xA7D6BC/C0/C4, 0xA7D6B0/B4/B8, 0xA7D6A4/A8/AC (u03).
+- UV flip REDUNDANT: yaw = (rand%10000/10000)*2*pi (0x50FD26-0x50FD40, [0x98BD60] = pi), glDisable(GL_CULL_FACE) at 0x466568 before grass, normals unrotated (u04). Replaced by #5 size range: FMUL double [0x009921C8] at 0x50FEE7 (`DC 0D C8 21 99 00`), operand rewrite, zero per-blade cost.
