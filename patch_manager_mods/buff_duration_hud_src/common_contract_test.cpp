@@ -543,7 +543,7 @@ static void effects_contract() {
     bool guardIntact = true; for (int i = 16; i < 20; ++i) guardIntact &= !strcmp(guardOut[i].resref, "sentinel");
     HCHECK("collectBuffs never writes past out[maxOut-1]", guardIntact);
     // poison (BuffDurationHUD.cpp onFrameBegin): effecticon row 110 TRAP_EFFECT_POISON has no art in the 2da table (placeholder resref) and
-    // stays untracked (engine arrow) until the mod sets g_trapPoisonIcon; then it is a debuff icon, never a buff, one per creature.
+    // stays untracked (engine arrow) until the mod's g_trapPoisonIcon hook returns a resref; then it is a debuff icon, never a buff, one per creature.
     {
         const Eff p[] = { { -1, 10.0f, 100, 55000 }, { -1, 10.0f, 100, 55000 } };
         uintptr_t cp = mkCreature(p, 2);
@@ -552,8 +552,10 @@ static void effects_contract() {
             at<unsigned short>(ef, 0x08) = EffType_Icon; at<int>(ef, 0x30) = 1; wptr(ef, 0x34, ints); at<int>(ints, 0) = EffIconRow_TrapPoison;
         }
         HCHECK("row 110 carries no table icon (placeholder ip_resistenergy)", kEffectIconRows[EffIconRow_TrapPoison].resref == nullptr);
-        HEQ("poison row without the override: untracked (engine arrow)", collectBuffs(cp, 100, 50000, true, out, 16, true), 0);
-        g_trapPoisonIcon = "bh_poison";
+        HEQ("poison row without the hook: untracked (engine arrow)", collectBuffs(cp, 100, 50000, true, out, 16, true), 0);
+        g_trapPoisonIcon = [] () -> const char* { return nullptr; };
+        HEQ("poison hook not ready yet (texture missing): untracked (engine arrow)", collectBuffs(cp, 100, 50000, true, out, 16, true), 0);
+        g_trapPoisonIcon = [] () -> const char* { return "bh_poison"; };
         n = collectBuffs(cp, 100, 50000, true, out, 16, true);
         HCHECK("poison row with the override: one debuff icon bh_poison (two effects deduped), no disc", n == 1 && !strcmp(out[0].resref, "bh_poison") && !out[0].item);
         HCHECK("poison override draws with the effect's drain ratio", near_(out[0].ratio, 0.5f));

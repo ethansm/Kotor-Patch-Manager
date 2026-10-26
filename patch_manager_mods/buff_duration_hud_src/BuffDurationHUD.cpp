@@ -161,6 +161,22 @@ void visColumn(int slotPtr, bool debuff, int tracked, int drawN, const int* rect
 KP_CHANNEL(chProbe, "probe");
 bool g_probe = false;
 int g_frame = 0;   // g_frame = the portrait-slots frame counter, copied in every phase callback
+
+// ---- poison icon (k2fx::g_trapPoisonIcon): effecticon row 110 has no real art, so the embedded bh_poison replaces the engine's red arrow.
+// Lazy: the first poisoned creature registers the texture (EmbedTex, Steam only; one attempt per 30 frames), the resref is handed out once the
+// pooled image resolves. Until then (or on any other exe) the row stays untracked and the engine arrow draws as before. heal() runs from
+// onFrameBegin once registered.
+bool g_poisonReady = false;
+const char* poisonIcon() {
+    if (g_poisonReady) return kPoisonTex[0].resref;
+    static int lastTry = -1000;
+    if (g_frame - lastTry < 30 && g_frame >= lastTry) return nullptr;
+    lastTry = g_frame;
+    if (!embtex::ensure(kPoisonTex, int(kPoisonTexCount)) || !guikit::imageForRetry(kPoisonTex[0].resref)) return nullptr;
+    g_poisonReady = true;
+    logf("poison icon %s registered (effecticon row %d)", kPoisonTex[0].resref, k2fx::EffIconRow_TrapPoison);
+    return kPoisonTex[0].resref;
+}
 void probeLog(const char* fmt, ...) {
     if (!KP_ENABLED(chProbe, KPLOG_DEBUG)) return;
     char buf[256];
@@ -464,15 +480,7 @@ static void KPATCH_CALL onPreEngineRead(const K2PsContext* c, void*) {
 static void KPATCH_CALL onFrameBegin(const K2PsContext* c, void*) {
     g_frame = int(c->frame);
     flushConnectNote();
-    // Poison icon (effecticon row 110 has no real art): register the embedded texture, then hand the resref to the debuff column. Until then
-    // (or on a non-Steam exe, where ensure() is a no-op false) the row stays untracked and the engine's red arrow draws as before.
-    static bool poisonReady = false;
-    if (!poisonReady && g_frame % 30 == 0 && embtex::ensure(kPoisonTex, int(kPoisonTexCount))) {
-        poisonReady = true;
-        k2fx::g_trapPoisonIcon = kPoisonTex[0].resref;
-        logf("poison icon %s registered (effecticon row %d)", kPoisonTex[0].resref, k2fx::EffIconRow_TrapPoison);
-    }
-    embtex::heal();
+    if (g_poisonReady) embtex::heal();
     if (g_frame % 30 == 0) {
         g_noBuff = fileExists("buffhud_off.txt");
         static int lastFlags = -1; int fl = g_noBuff;
@@ -520,6 +528,7 @@ static void KPATCH_CALL onMenuOverlay(const K2PsContext* c, void*) {
 void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
     embtex::g_log = logf;
+    k2fx::g_trapPoisonIcon = poisonIcon;
     logf("buffhud loaded");
     g_ps.init(api, "buff-duration-hud");
     g_ps.onConnect = onConnect;
