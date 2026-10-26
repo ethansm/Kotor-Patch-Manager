@@ -112,7 +112,10 @@ CLR of that actor), Bao-Dur = `a9b1138`. Tools: `cmdq_idle_casts.py`, `cmdq_rn_b
   (skip when the leader / player queued it; cmdq tags `real`, need a player-origin flag).
   F1a BUILT (WI-136): companion-ai G1 detour 0x6D9ADB -> 0x6D9B65 `CompanionAiCastGuard`, INI `cast_family_guard=1`:
   a non-leader party member's spell round node whose buff family (1-10) is active on it is skipped; log `G1 drop`.
-  Host tests + build_check PASS. New hook = KPM reinstall (needs GO). F1b debuffs = WI-137.
+  Host tests + build_check PASS. New hook = KPM reinstall (needs GO).
+  F1b BUILT (WI-137, 1d27d625): same G1 hook; debuff families 20-24 (Slow/Affliction/Plague, Wound/Choke, Fear,
+  Stun/Stasis, Drain Force; same rows as GN_PartyPowerFamily) read the TARGET's effects (round node +0x84 -> gameObject);
+  Kill/Horror/Insanity/Shock untracked. Log `G1 drop ... tgt=`. Host tests + build_check PASS; DLL rebuild = install GO; play CA-FG2.
 - F2 script (party AI patch set, `ranged_ai_src/script/party_ai_patches.py`): one family table + `GN_PartyFamilyActive
   (nSpell, oTarget)` used by the buff picker, the combo buff steps (R2 L2a-c, extended to Barrier, Valor, Energy
   Resist, Inspire, Crush Opposition) and the single-target debuff picker; when the family is active return an invalid
