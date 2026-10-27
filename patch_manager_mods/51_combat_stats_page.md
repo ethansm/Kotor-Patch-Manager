@@ -91,8 +91,8 @@ Total Defense stance flag `creature+0x110c`: 0 = Total Defense (written by `AIAc
 ## Phases
 | Id | Batch | Deps | Owner gate | Status | Commit | Next |
 |---|---|---|---|---|---|---|
-| ST1 | Pin read paths: HasFeat 0x006b83f0, HasSpell 0x006bd9c0, BAB 0x006a6f80, IsWieldingLightsaber 0x005763e0, GetLevel 0x006a4e00, effect-type globals (DAT_00996088/8c, AC types DAT_00996170..80), ability bytes stats+0xee..0xf8; `query_ghidra.py address` each, Haiku verify + decoys, into the mod's GameAddr | - | - | TODO | | sigs table in this doc |
-| ST2 | Pure `CombatStats.h` + host test: deflection, Defense parts, crit range/mult, Force DC, FP cost multipliers (forceadjust), saves breakdown; vectors: AJD+Force Redirection = +6, Shien BAB-only, forceadjust rows 0/5/10 | ST1 | - | TODO | | `run_tests.py <suite>` |
+| ST1 | Pin read paths: HasFeat 0x006b83f0, HasSpell 0x006bd9c0, BAB 0x006a6f80, IsWieldingLightsaber 0x005763e0, GetLevel 0x006a4e00, effect-type globals (DAT_00996088/8c, AC types DAT_00996170..80), ability bytes stats+0xee..0xf8; `query_ghidra.py address` each, Haiku verify + decoys, into the mod's GameAddr | - | - | DONE | fb39ff72 | sigs table in this doc |
+| ST2 | Pure `CombatStats.h` + host test: deflection, Defense parts, crit range/mult, Force DC, FP cost multipliers (forceadjust), saves breakdown; vectors: AJD+Force Redirection = +6, Shien BAB-only, forceadjust rows 0/5/10 | ST1 | - | DONE | fb39ff72 | `run_tests.py <suite>` |
 | ST3 | Mockup: `scripts/character_page_mockup.py` renders the Stats tab + one vanilla-row tooltip (Defense) | ST2 | user review | TODO | | user OK on look |
 | ST4 | Probe 0.3.0-probe: STATS log block per shown character (no UI) + read-only deflection check (engine total vs recompute) | ST2 | user GO install | TODO | | play row in PLAY_TEST_QUEUE.md |
 | ST5 | Stats tab UI (header toggle, sections, rows, breakdown tooltips, `show_influence`) | ST3, ST4 | user GO install | TODO | | play row |
