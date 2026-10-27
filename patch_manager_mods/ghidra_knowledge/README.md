@@ -57,7 +57,9 @@ traps, prompt schema, calibration). Pre-processing helper: `tools/re_card_prep.p
 `python3 patch_manager_mods/ghidra_knowledge/tools/fn_doc.py page <Class>` (-> `steam_docs/<Class>.md`; also
 `draft-input`, `check-drafts`). Validated purposes into the KDB:
 `python3 patch_manager_mods/ghidra_knowledge/tools/persist_purposes.py <validated.tsv> [--apply]` (dry-run default,
-never overwrites human purposes). The full tool order
+never overwrites human purposes). All static facts for one address: `python3 patch_manager_mods/ghidra_knowledge/tools/static_facts.py addr <hex>`;
+live-only facts in batch: `python3 patch_manager_mods/ghidra_knowledge/tools/rea_facts.py run --addrs FILE`; last resort, the `rea-recon` agent v2
+(facts file first, 3 REA calls per address). The full tool order
 (static dumps at $0, live REA last) is in `RE_AGENT_GUIDE.md` §2.1.
 
 **No `sqlite3` CLI is installed on this machine** (confirmed 2026-09-29,

@@ -74,6 +74,7 @@ Once you have the crash offset or instruction address (e.g. `0x0053f000`), immed
 python3 scripts/query_ghidra.py address 0x0053f000
 ```
 This maps the raw crash address to the verified function name, prototype, and GOG counterpart in < 40ms.
+For size, callers, callees and strings of the containing function: `python3 patch_manager_mods/ghidra_knowledge/tools/static_facts.py addr <hex>` ($0). Further RE tools, free first, REA last: `ghidra_knowledge/RE_AGENT_GUIDE.md` §2.1.
 
 ## Step 4: kill a hung process
 

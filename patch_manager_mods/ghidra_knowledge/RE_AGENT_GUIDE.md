@@ -88,7 +88,7 @@ $0 and take milliseconds; never ask REA or a model for them.
 | field reads/writes | `engine_ai_atlas/tools/field_census.py` |
 | all static facts for one address (size, RET, callers/callees named, INDIRECT vtable slots, strings, globals, imports, look-alike twins + the distinguishing asm line) | `python3 ghidra_knowledge/tools/static_facts.py addr <hex> [--json]` / `twins <hex>` (~0.4 s) |
 | the same facts on every review card (blind, real = decoy) | `steam_db_batches/tools/batch.py cards B<n> --facts` |
-| ledger hygiene before using or adding rows | `python3 ghidra_knowledge/tools/rea_ledger.py lint` (rules L1 L2 L4 L5 L6 L8; baseline 53 issues on 10-15) |
+| ledger hygiene before using or adding rows | `python3 ghidra_knowledge/tools/rea_ledger.py lint` (rules L1 L2 L4 L5 L6 L8; baseline 84 issues on 10-27) |
 
 Live REA, scripted ($0 tokens): `python3 ghidra_knowledge/tools/rea_session.py guard` (counts live REA sessions;
 max 2) then `rea_session.py call <tool> --args '<json>'` or the `ReaSession` class: one persistent MCP session,
@@ -115,6 +115,10 @@ Validated purposes into the KDB: `python3 ghidra_knowledge/tools/persist_purpose
 
 Live REA (`rea-recon`) is only for what the dumps cannot answer: targets of INDIRECT call sites, non-contiguous
 function bodies, live data xrefs, and named pseudo-C. At most 2 live REA sessions machine-wide.
+`rea-recon` v2 (D7, pinned by `tools/tests/test_agent_copy.py`): put the `static_facts.py addr` output in a file and
+name it in the brief (the agent Reads it first and never re-asks those facts); it Greps the ledger by address only
+(never reuses old `name` cells), writes ledger rows after each address, and has a hard budget of 3 REA calls per
+address plus 3 overall, then marks the rest unknown.
 
 ## 3. Traps (put the relevant ones in every small-model prompt as facts)
 

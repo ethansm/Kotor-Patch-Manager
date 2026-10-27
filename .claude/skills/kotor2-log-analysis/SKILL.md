@@ -64,7 +64,7 @@ Archive logs before a reinstall or new test round: `python3 scripts/archive_play
 bash patch_manager_mods/mods678_research/copy_dump_excerpts.sh 0x0074CFE0 0x005E3210
 ```
 
-This copies `<addr>.c` and `<addr>.asm` from the steam_6a522e71 full dump into `patch_manager_mods/mods678_research/dump_excerpts/`, next to the script (not the current directory). Check `wc -l` before reading. For symbol or struct facts, `python3 scripts/query_ghidra.py symbol|address|struct` is cheaper.
+This copies `<addr>.c` and `<addr>.asm` from the steam_6a522e71 full dump into `patch_manager_mods/mods678_research/dump_excerpts/`, next to the script (not the current directory). Check `wc -l` before reading. For symbol or struct facts, `python3 scripts/query_ghidra.py symbol|address|struct` is cheaper; for one function's size/callers/callees/strings, `python3 patch_manager_mods/ghidra_knowledge/tools/static_facts.py addr <hex>` (full tool order: `ghidra_knowledge/RE_AGENT_GUIDE.md` §2.1).
 
 ## 6. A log with no route and odd output
 

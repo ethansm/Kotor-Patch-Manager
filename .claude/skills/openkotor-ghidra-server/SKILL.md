@@ -27,6 +27,7 @@ python3 scripts/query_ghidra.py struct <class_name>
 ```
 - Backed by local SQLite `patch_manager_mods/ghidra_knowledge/kotor2_ghidra_knowledge.db` (server functions, symbols, struct fields).
 - Returns instantly without consuming network bandwidth or token overhead.
+- Steam exe facts per address ($0, local dumps): `python3 patch_manager_mods/ghidra_knowledge/tools/static_facts.py addr <hex>`; named pseudo-C `named_decomp.py`, class pages `fn_doc.py`, KDB purposes `persist_purposes.py`, ledger `rea_ledger.py lint` (order and flags: `ghidra_knowledge/RE_AGENT_GUIDE.md` §2.1). Use the server only when these miss.
 
 ---
 
