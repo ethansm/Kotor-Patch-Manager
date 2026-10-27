@@ -12,3 +12,6 @@ cxxflags = ["-I../_shared_src", "-I$HOME/Games/KOTOR2_Mod_Workspace/tools/kotor-
 
 [combat_stats_test]
 cxxflags = ["-I../_shared_src", "-Werror"]
+
+[stats_rows_test]
+cxxflags = ["-I../_shared_src", "-Werror", "-Wno-format-truncation"]

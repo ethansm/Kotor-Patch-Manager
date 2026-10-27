@@ -21,6 +21,7 @@ struct Entry {
     double remMs;         // < 0 = unknown
     char name[64]; char icon[17];
     char stat[96];        // stat column: short forms joined with ", " (cut with "..." at layout time)
+    char val[24];   // Stats tab value text; empty for effect rows
     char lines[MaxLines][LineLen]; int nLines;   // tooltip: one long form per stat
     const char* desc;     // tooltip description (kSpellDesc) or a fixed text, nullptr = none
 };

@@ -47,11 +47,11 @@ VANILLA_CROP = (40, 290, 480, 480)  # zoom box, bottom extended below if the too
 # sample: combat_stats_test vector a = AJD + Force Redirection, BAB 10
 SAMPLE = [
     ("DEFENSE", [("Deflection", "16"), ("Defense", "18"), ("Damage resist", "none")]),
-    ("OFFENSE", [("Attack (main hand)", "+14"), ("Critical", "19-20 x2"), ("Attacks / round", "2")]),
+    ("OFFENSE", [("Attack (main hand)", "+14"), ("Critical (main hand)", "19-20 x2")]),
     ("FORCE", [("Power DC", "26"), ("Light power cost", "x0.85"), ("Dark power cost", "x1.15"), ("Force resist", "0")]),
     ("CHARACTER", [("Alignment", "72 / 100")]),
 ]
-DEFLECTION_TIP_TITLE = "Blaster deflection 16"
+DEFLECTION_TIP_TITLE = "Deflection 16"
 DEFLECTION_TIP_LINES = ["Base attack bonus +10", "Advanced Jedi Defense +3", "Force Redirection +3", "",
                         "Attacker Precise Shot lowers this by 2-10."]
 DEFLECTION_TIP_DESC = ("Your d20 roll plus this total is checked against each blaster bolt; "

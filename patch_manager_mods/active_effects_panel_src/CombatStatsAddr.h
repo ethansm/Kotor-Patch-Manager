@@ -45,6 +45,18 @@ constexpr uint32_t Effect_Type           = 0x8;     // uint16 effect type id (ef
 constexpr uint32_t Stats_Ungated0        = 0x178;   // int8 terms summed into deflection: (int8)(stats+0x179 + stats+0x178)
 constexpr uint32_t Stats_Ungated1        = 0x179;
 
+// Combat information block (doc 51 ST5a): stats+0x11C -> pointer, filled by UpdateCombatInformation 0x006A7190.
+// Byte +0 is the GetAttacksPerRound stub (always 1): do not use. Attack bytes are int8 (signed).
+// NEVER call GetAttackModifierVersus / GetCriticalHitRoll: read these bytes instead.
+constexpr uint32_t Stats_CombatInfo      = 0x11C;
+constexpr uint32_t CI_AtkMain            = 0x1;     // int8 main-hand attack bonus
+constexpr uint32_t CI_AtkOff             = 0x3;     // int8 off-hand attack bonus
+constexpr uint32_t CI_CritThreatMain     = 0xA;     // byte
+constexpr uint32_t CI_CritMultMain       = 0xB;     // byte
+constexpr uint32_t CI_HasOff             = 0xC;     // dword, nonzero when an off-hand weapon is wielded
+constexpr uint32_t CI_CritThreatOff      = 0x10;    // byte
+constexpr uint32_t CI_CritMultOff        = 0x11;    // byte
+
 // Deflection hook: CSWSCreature::ResolveDefensiveEffects 0x006E1C60, hook site 0x006E2351 (after rec+0x168 = total; ECX = attack record).
 // Attack record (rec) offsets. Bytes other than 0x158/0x168 are written only when the term applies (may be stale from an earlier attack).
 constexpr uintptr_t DeflectHookSite = 0x006E2351;

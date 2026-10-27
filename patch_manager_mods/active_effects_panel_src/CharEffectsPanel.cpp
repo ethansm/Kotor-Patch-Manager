@@ -1,4 +1,4 @@
-// Character Active Effects Panel 0.2.0-probe (Steam Aspyr build 6A522E71...). Fills the right third of the character page
+// Character Active Effects Panel 0.4.0-dev (Steam Aspyr build 6A522E71...). Fills the right third of the character page
 // (CSWGuiInGameCharacter) with the shown character's active effects: icon, name, remaining time; Harmful section first,
 // then Beneficial; expiring first, permanent last; whole-entry scrolling with a scrollbar only when the list overflows.
 // Research trail: patch_manager_mods/14_character_active_effects_panel.md and active_effects_panel_src/research/R* (worktree
@@ -22,6 +22,7 @@
 // effect does, decoded from the live effect ints (decodeEffect, research R3 + R3b), short forms joined with ", " and cut
 // with "..."; long names/stats marquee after marquee_delay_ms without input; hover tooltips (name + time, every stat line,
 // the spells.2da description). GUI = 82 controls (S block inserted before MORE: ids of MORE..TIP moved by 14).
+// 0.4.0-dev (doc 51 ST5a): Stats tab. Click the panel header to switch Effects <-> Stats (ini stats_tab=0 hides the toggle); the Stats rows come from StatsRows.h (srows::build) fed by gatherStats; no hook or GUI change.
 // 0.3.0-probe (doc 51 ST4): log only, no UI change. STATS block (deflection/defense/Force DC/FP cost/resist via engine getters + CombatStats.h) on each creature change; DEFLECT hook H-C5 at 006e1c60+ compares the engine's blaster-deflection total with cstats::deflection (ini deflect_check).
 // 0.2.0-probe (doc 32 MG5): KpLog (core file character-effects-panel_log.txt, old core fallback chareffects_log.txt), IniKit primitives, PanelSlots, GuiKit wheel/screen/cursor/bindByTag, Party; lazy init from KPatchInit/first hook.
 #define WIN32_LEAN_AND_MEAN
@@ -39,6 +40,7 @@
 #include "GameAddr.h"
 #include "CombatStats.h"       // cstats:: pure stat math (doc 51)
 #include "CombatStatsAddr.h"   // cstats_addr:: engine getters + offsets (doc 51 ST4 probe)
+#include "StatsRows.h"         // srows:: Stats tab row builder (doc 51 ST5a, pure, host-tested)
 #include "GuiInput.h"
 #include "GuiKit.h"   // guikit:: setRect/getExtent/imageFor/setText/setTextColor/setFill/setBorderTint/bindByTag/wheel/screen/cursor + detail::textObjOk
 #include "PanelSlots.h"   // Common: panel -> slot table
@@ -122,7 +124,7 @@ void whyLog(int code, const char* fmt, ...) {
 struct Cfg {
     int enabled = 1, stage = 1, pollMs = 250, showPermanent = 1, wheelScroll = 1, tooltips = 1;
     int statColumn = 1, marquee = 1, marqueeDelayMs = 2500, marqueeStepMs = 160, marqueeHoldMs = 1200;
-    int tooltipDelayMs = 350, tooltipDesc = 1, deflectCheck = 1;
+    int tooltipDelayMs = 350, tooltipDesc = 1, deflectCheck = 1, statsTab = 1;   // statsTab 0 = no Effects/Stats header toggle
     float statMaxW = 0, statMinFrac = 0.4f, textK10 = 1.03f, tipLineScale = 1.0f;   // stat_max_w 0 = no cap
     int skipEquipped = 1, iconSource = 1, colorTimes = 1, discs = 1, soonS = 30;
     int fakeRows = 0;   // debug aid: N synthetic entries appended to the real list (overflow / scrollbar / sort tests)
@@ -151,7 +153,7 @@ void loadIni() {
         {"stat_column", &c.statColumn, nullptr}, {"stat_max_w", nullptr, &c.statMaxW}, {"stat_min_frac", nullptr, &c.statMinFrac}, {"text_k10", nullptr, &c.textK10}, {"marquee", &c.marquee, nullptr},
         {"marquee_delay_ms", &c.marqueeDelayMs, nullptr}, {"marquee_step_ms", &c.marqueeStepMs, nullptr},
         {"marquee_hold_ms", &c.marqueeHoldMs, nullptr}, {"tooltip_delay_ms", &c.tooltipDelayMs, nullptr},
-        {"tooltip_desc", &c.tooltipDesc, nullptr}, {"deflect_check", &c.deflectCheck, nullptr}, {"tip_line_scale", nullptr, &c.tipLineScale}};
+        {"tooltip_desc", &c.tooltipDesc, nullptr}, {"deflect_check", &c.deflectCheck, nullptr}, {"stats_tab", &c.statsTab, nullptr}, {"tip_line_scale", nullptr, &c.tipLineScale}};
     while (fgets(line, sizeof(line), f)) {
         ++ln; trim(line);
         char* k = nullptr; char* v = nullptr;
@@ -186,9 +188,9 @@ void loadIni() {
     if (c.tipLineScale < 0.5f || c.tipLineScale > 2.0f) c.tipLineScale = 1.0f;
     if (c.screenW < 100 || c.screenH < 100) { c.screenW = 3840; c.screenH = 1600; c.screenExplicit = false; }
     g_cfg = c; ++g_cfgGen; syncWheelCfg();
-    logf("INI loaded: %d keys ok, %d rejected, debug=%d gen=%u enabled=%d stage=%d poll_ms=%d fake_rows=%d stat=%d/%.0f marquee=%d (%d/%d/%d) tooltips=%d (%d ms, desc=%d)",
+    logf("INI loaded: %d keys ok, %d rejected, debug=%d gen=%u enabled=%d stage=%d poll_ms=%d fake_rows=%d stat=%d/%.0f marquee=%d (%d/%d/%d) tooltips=%d (%d ms, desc=%d) stats_tab=%d",
          ok, bad, g_debug, g_cfgGen, c.enabled, c.stage, c.pollMs, c.fakeRows, c.statColumn, c.statMaxW, c.marquee,
-         c.marqueeDelayMs, c.marqueeStepMs, c.marqueeHoldMs, c.tooltips, c.tooltipDelayMs, c.tooltipDesc);
+         c.marqueeDelayMs, c.marqueeStepMs, c.marqueeHoldMs, c.tooltips, c.tooltipDelayMs, c.tooltipDesc, c.statsTab);
 }
 void maybeReloadIni() {
     DWORD now = GetTickCount();
@@ -281,6 +283,7 @@ bool near3(const float* a, const float* b) { for (int k = 0; k < 3; ++k) if (fab
 
 // ---- per-panel slot ----
 constexpr int MaxEnt = 96;
+int g_lastTab = 0;   // tab of the last click (0 Effects, 1 Stats): new Slot binds start here
 struct Slot {
     int panel = 0; bool bound = false; unsigned seq = 0; DWORD bindTick = 0;
     unsigned char* ctl[NumTags] = {};
@@ -289,6 +292,7 @@ struct Slot {
     bool canTextColor = false, canBorderColor = false;
     int client = 0, server = 0; unsigned sig = 0; DWORD lastPoll = 0, lastBeat = 0;
     Entry ent[MaxEnt]; int nEnt = 0; int first = 0;
+    int tab = 0;   // 0 Effects, 1 Stats
     // input
     bool wasL = false, dragging = false; float dragOff = 0; int heldPart = 0; DWORD heldNext = 0;
     // last layout (engine px) for hit tests
@@ -355,6 +359,7 @@ bool clientValid(int c) { int vt = 0; return readAt<int>(c, 0, &vt) && vt == Cli
 
 struct Raw { int eff, type, sub, spell, iconRow; float dur; double rem; bool perm; };
 void fmtTime(const Entry& e, char* out, int n) {
+    if (e.val[0]) { snprintf(out, n, "%s", e.val); return; }   // Stats tab value text
     if (e.perm) { snprintf(out, n, "Permanent"); return; }
     if (e.remMs < 0) { snprintf(out, n, "--"); return; }
     long secs = (long)ceil(e.remMs / 1000.0);
@@ -573,8 +578,16 @@ void logLayout(Slot* s, int cnt, int lf, bool over, float rowW, const char* rows
 
 void hideAll(Slot* s) { for (int t = 0; t < NumTags; ++t) hide(s, t); s->over = false; s->tipShown = false; s->nPlaced = 0; guikit::g_wheel.setRect(0, 0, 0, 0, 0); }
 
+// Header text: "Effects | Stats" / "Stats | Effects" (active tab first); stats_tab=0 keeps the GUI's "Active Effects".
+void updateHeader(Slot* s) {
+    if (g_cfg.statsTab) setText(s, T_HEADER, s->tab == 1 ? "Stats | Effects" : "Effects | Stats");
+    else if (s->text[T_HEADER][0]) setText(s, T_HEADER, "Active Effects");
+}
+
 void layout(Slot* s) {
     const Entry* e = s->ent; int n = s->nEnt;
+    const bool st = s->tab == 1;   // Stats tab: section entries use the D control as the band and the N control as the title
+    updateHeader(s);
     if (g_cfg.stage < 1 || n == 0) {
         for (int t = T_TIPBG; t <= T_TIP; ++t) hide(s, t);
         s->nPlaced = 0; s->tipShown = false; s->mqMax = 0; s->mqRows = 0;
@@ -582,7 +595,7 @@ void layout(Slot* s) {
         for (int t = T_SBTRK; t <= T_SBDN; ++t) hide(s, t);
         char msg[64];
         int rows = 0; for (int i = 0; i < n; ++i) rows += !e[i].section;
-        if (n == 0) snprintf(msg, sizeof msg, "No active effects");
+        if (n == 0) snprintf(msg, sizeof msg, st ? "No stats" : "No active effects");
         else snprintf(msg, sizeof msg, "%d active effect%s (preview)", rows, rows == 1 ? "" : "s");
         place(s, T_MORE, X0, PanelY + PanelH / 2 - RowH / 2, InnerW, RowH);
         setText(s, T_MORE, msg);
@@ -611,14 +624,14 @@ void layout(Slot* s) {
     float timeCol = 0, statNeed = 0, nameNeed = 0;
     for (int k = 0, rr = 0; k < cnt && rr < MaxRows; ++k) {
         const Entry& x = e[s->first + k];
-        if (x.section) continue;
+        if (x.section) { if (st) ++rr; continue; }   // Stats tab: a section takes a row slot too
         ++rr;
-        char tm[16]; fmtTime(x, tm, sizeof tm);
+        char tm[24]; fmtTime(x, tm, sizeof tm);
         timeCol = fmaxf(timeCol, textPx(s, tm, (int)strlen(tm)) / s->sx + 1);
         if (g_cfg.statColumn && x.stat[0]) statNeed = fmaxf(statNeed, textPx(s, x.stat, (int)strlen(x.stat), F10) / s->sx + 3);
         nameNeed = fmaxf(nameNeed, textPx(s, x.name, (int)strlen(x.name)) / s->sx + 3);
     }
-    const float nx = X0 + IconW + 4, tr = X0 + rowW - TimePadR;
+    const float nx = st ? X0 : X0 + IconW + 4, tr = X0 + rowW - TimePadR;
     float room = tr - timeCol - nx - (statNeed > 0 ? StatGap + ColGap : NameGap), statCol = 0;
     if (statNeed > 0) {
         statCol = fminf(statNeed, fmaxf(room - nameNeed, fminf(statNeed, room * g_cfg.statMinFrac)));
@@ -629,6 +642,20 @@ void layout(Slot* s) {
     addRow(" cols[name %.0f/%.0f stat %.0f/%.0f time %.0f]", (statCol > 0 ? statX - ColGap : tr - timeCol - NameGap) - nx, nameNeed, statCol, statNeed, timeCol);
     for (int k = 0; k < cnt; ++k) {
         const Entry& x = e[s->first + k];
+        if (x.section && st) {   // Stats tab section: band in D (full width), title in N (cream), I/T/S hidden
+            if (r >= MaxRows) break;
+            place(s, T_D0 + r, X0 - SecOut, y, rowW + SecOut + (over ? 0 : SecOut), SecH);
+            setFill(s, T_D0 + r, "uibit_fill_2wt", TealFrame);
+            hide(s, T_I0 + r); hide(s, T_T0 + r); hide(s, T_S0 + r);
+            place(s, T_N0 + r, X0 - SecOut, y, rowW + SecOut, SecH);
+            char title[72]; snprintf(title, sizeof title, " %s", x.name);   // leading space = title inset
+            setText(s, T_N0 + r, title);
+            setTextColor(s, T_N0 + r, 3, Cream);
+            s->rowY[r] = -1000; s->rowEnt[r] = s->first + k;   // never hit by the hover test
+            addRow(" |%s|", x.name);
+            y += SecH + SecPad; ++r;
+            continue;
+        }
         if (x.section) {
             if (x.gap && k > 0) y += SecGap;
             int t = x.harmful ? T_SECB : T_SECG; secShown[x.harmful] = true;
@@ -639,12 +666,15 @@ void layout(Slot* s) {
             continue;
         }
         if (r >= MaxRows) break;
+        if (st) { hide(s, T_I0 + r); hide(s, T_D0 + r); }   // Stats value row: no icon, no fallback icon, no disc
+        else {
         place(s, T_I0 + r, X0, y + (RowH - IconH) / 2, IconW, IconH);
         setFill(s, T_I0 + r, x.icon[0] ? x.icon : g_cfg.fallbackIcon, White);
         if (x.item && g_cfg.discs) { place(s, T_D0 + r, X0, y + (RowH - IconH) / 2, IconW, IconH); setFill(s, T_D0 + r, DiscResref, DiscTeal); }
         else hide(s, T_D0 + r);
+        }
         // time right-aligned by placement: label = text width + 1 unit slack, so left- and right-aligned drawing both end at tr
-        char tm[16]; fmtTime(x, tm, sizeof tm);
+        char tm[24]; fmtTime(x, tm, sizeof tm);
         float tx = tr - textPx(s, tm, (int)strlen(tm)) / s->sx - 1;
         place(s, T_T0 + r, tx, y, tr - tx, RowH);
         setText(s, T_T0 + r, tm);
@@ -667,6 +697,7 @@ void layout(Slot* s) {
         if (mo > mqMax) mqMax = mo;
         mqRows += mo > 0;
         setText(s, T_N0 + r, nm);
+        if (s->col[T_N0 + r] == 3) setTextColor(s, T_N0 + r, 4, TealText);   // back from a Stats section title (cream) to the GUI's teal
         addRow(" [%d] \"%s\" {%s} %s%s", r, nm, st, tm, x.item ? " disc" : "");
         bool warn = g_cfg.colorTimes && (x.harmful || (!x.perm && x.remMs >= 0 && x.remMs < g_cfg.soonS * 1000.0));
         setTextColor(s, T_T0 + r, warn ? 2 : 1, warn ? Orange : Cream);
@@ -674,8 +705,8 @@ void layout(Slot* s) {
     }
     s->nPlaced = r; s->lastRowW = rowW; s->mqMax = mqMax; s->mqRows = mqRows;
     for (; r < MaxRows; ++r) { hide(s, T_D0 + r); hide(s, T_I0 + r); hide(s, T_N0 + r); hide(s, T_T0 + r); hide(s, T_S0 + r); }
-    if (!secShown[0]) hide(s, T_SECG);
-    if (!secShown[1]) hide(s, T_SECB);
+    if (!secShown[0] || st) hide(s, T_SECG);
+    if (!secShown[1] || st) hide(s, T_SECB);
     s->over = over; s->shownN = cnt; s->lastFirst = lf;
     if (!over) {
         for (int t = T_SBTRK; t <= T_SBDN; ++t) hide(s, t);
@@ -721,11 +752,22 @@ bool scrollTo(Slot* s, int f, const char* why) {
     s->first = f; return true;
 }
 // returns true when the scroll position changed
+void hideTip(Slot* s, const char* why);
 bool tickInput(Slot* s) {
     bool changed = false;
     LONG wheel = guikit::g_wheel.take();
     if (wheel && s->over) { int steps = -(int)(wheel / 120); if (!steps) steps = wheel > 0 ? -1 : 1; changed |= scrollTo(s, s->first + steps, "wheel"); }
     bool l = (GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0;
+    if (g_cfg.statsTab && l && !s->wasL) {   // header click toggles Effects <-> Stats (before the !over early return: over = list overflows)
+        float hx = 0, hy = 0, hr[4];
+        if (cursorEngine(&hx, &hy) && GetForegroundWindow() == g_hwnd && ctlRect(s->ctl[T_HEADER], hr) && inRect(hr, hx, hy)) {
+            s->tab ^= 1; g_lastTab = s->tab; s->first = 0; s->lastPoll = 0;   // lastPoll = 0: the next tick polls at once
+            hideTip(s, "tab");
+            logf("TAB -> %s", s->tab == 1 ? "stats" : "effects");
+            s->dragging = false; s->heldPart = 0; s->wasL = l;
+            return true;
+        }
+    }
     if (!s->over) {
         float px = 0, py = 0;
         if (l && !s->wasL && g_pressLogs < MaxPressLogs && cursorEngine(&px, &py)) logPress(s, px, py, GetForegroundWindow() == g_hwnd);
@@ -805,8 +847,9 @@ void showTip(Slot* s, int row) {
     const Entry& x = s->ent[s->rowEnt[row]];
     float tw = PanelW - 8, inner = tw - 2 * TipInX, tx = PanelX + 4;
     float innerPx = (ux(s, tx + TipInX + inner) - ux(s, tx + TipInX)) * 0.98f;
-    char tm[16], full[96], title[100]; fmtTime(x, tm, sizeof tm);
-    snprintf(full, sizeof full, "%s - %s", x.name, tm);
+    char tm[24], full[96], title[100]; fmtTime(x, tm, sizeof tm);
+    if (x.val[0]) snprintf(full, sizeof full, "%s %s", x.name, x.val);   // Stats tab: "Defense 12"
+    else snprintf(full, sizeof full, "%s - %s", x.name, tm);
     fitText(s, full, innerPx, title, sizeof title);
     static char body[1024]; int len = 0, lines = 0; body[0] = 0;
     for (int i = 0; i < x.nLines; ++i) lines += wrapAppend(s, x.lines[i], innerPx, body, &len, sizeof body);
@@ -942,6 +985,62 @@ void logStats(int server) {
     logf("STATS forceDC=%d [%s] goodEvil=%d light=x%.2f dark=x%.2f forceResist=%d", fd.total, fp, (int)ge, cm.light, cm.dark, fr);
 }
 
+// Short damage-resist text from the creature's effect list: A_RES / A_DR atoms (no absorb limit) via ChareffDecode, ", "-joined.
+void gatherResist(int server, char* out, size_t cap) {
+    using namespace cstats_addr;
+    out[0] = 0;
+    int arr = 0, cnt = 0;
+    if (!readAt<int>(server, Creature_Effects, &arr) || !readAt<int>(server, Creature_EffectCount, &cnt) || !arr || cnt <= 0 || cnt > MaxEffects) return;
+    AtomSet set = {};
+    for (int i = 0; i < cnt; ++i) {
+        int eff = 0, v[8], nv = 0; uint16_t ty = 0; Atom a;
+        if (!readAt<int>(arr, 4 * i, &eff) || !eff || !readAt<uint16_t>(eff, Effect_Type, &ty) || !readInts(eff, v, &nv) || !atomOf(ty, v, nv, &a)) continue;
+        if ((a.kind == A_RES || a.kind == A_DR) && a.limit <= 0) addAtom(set, a);
+    }
+    size_t len = 0;
+    for (int i = 0; i < set.n; ++i) {
+        char sh[48], lg[LineLen]; fmtAtom(set.at[i], sh, sizeof sh, lg, sizeof lg);
+        if (!sh[0]) continue;
+        int w = snprintf(out + len, cap - len, "%s%s", len ? ", " : "", sh);
+        if (w < 0 || static_cast<size_t>(w) >= cap - len) { out[len] = 0; break; }
+        len += static_cast<size_t>(w);
+    }
+}
+// Fills the Stats tab input from the engine getters (same calls as logStats). Never calls GetAttackModifierVersus / GetCriticalHitRoll.
+bool gatherStats(int server, srows::StatsIn* in) {
+    using namespace cstats_addr;
+    *in = srows::StatsIn{};
+    int stats = 0; const char* why = "";
+    if (!gatherDeflect(server, &in->defl, &stats, &why)) return false;
+    void* st = vp(stats);
+    int8_t u0 = 0, u1 = 0; readAt<int8_t>(stats, Stats_Ungated0, &u0); readAt<int8_t>(stats, Stats_Ungated1, &u1);
+    in->ungated = static_cast<int8_t>(u0 + u1);
+    int ci = 0;
+    if (readAt<int>(stats, Stats_CombatInfo, &ci) && ci) {
+        int8_t am = 0, ao = 0; uint8_t tm = 0, mm = 0, to = 0, mo = 0; int has = 0;
+        if (readAt<int8_t>(ci, CI_AtkMain, &am) && readAt<int8_t>(ci, CI_AtkOff, &ao) && readAt<uint8_t>(ci, CI_CritThreatMain, &tm) &&
+            readAt<uint8_t>(ci, CI_CritMultMain, &mm) && readAt<int>(ci, CI_HasOff, &has) && readAt<uint8_t>(ci, CI_CritThreatOff, &to) &&
+            readAt<uint8_t>(ci, CI_CritMultOff, &mo)) {
+            in->haveCombat = true; in->atkMain = am; in->atkOff = ao; in->critThreatMain = tm; in->critMultMain = mm;
+            in->hasOff = has != 0; in->critThreatOff = to; in->critMultOff = mo;
+        }
+    }
+    in->defense = reinterpret_cast<GetArmorClassFn>(GetArmorClass)(vp(server));
+    in->dexMod = reinterpret_cast<GetDEXModFn>(GetDEXMod)(st, 1);
+    in->stance = 0xFF; readAt<uint8_t>(server, Creature_StanceFlag, &in->stance);
+    in->fdc = cstats::ForceDCIn{};
+    in->fdc.level = reinterpret_cast<GetLevelFn>(GetLevel)(st, 1);
+    int8_t cha = 0, wis = 0; readAt<int8_t>(stats, Stats_ChaMod, &cha); readAt<int8_t>(stats, Stats_WisMod, &wis);
+    in->fdc.chaMod = cha; in->fdc.wisMod = wis;
+    in->fdc.ff1 = reinterpret_cast<HasFeatFn>(HasFeat)(st, cstats::kFeatFF1) != 0;
+    in->fdc.ff2 = reinterpret_cast<HasFeatFn>(HasFeat)(st, cstats::kFeatFF2) != 0;
+    in->fdc.ff3 = reinterpret_cast<HasFeatFn>(HasFeat)(st, cstats::kFeatFF3) != 0;
+    int16_t ge = 0; readAt<int16_t>(stats, Stats_GoodEvil, &ge); in->goodEvil = ge;
+    in->forceResist = reinterpret_cast<ForceResistFn>(ForceResist)(st);
+    gatherResist(server, in->resist, sizeof in->resist);
+    return true;
+}
+
 } // namespace
 
 extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
@@ -963,6 +1062,7 @@ extern "C" void __cdecl BindCharEffects(int panel) {
     if (!fresh && s->mqActive) logf("MARQUEE: reset (rebind)");
     *s = Slot();
     s->panel = panel; s->seq = g_seq; s->bindTick = GetTickCount();
+    s->tab = (g_cfg.statsTab && g_cfg.stage >= 1) ? g_lastTab : 0;
     static const char* const fixed[] = {"LBL_EFX_BACK", "LBL_EFX_HEADER", "LBL_EFX_SECG", "LBL_EFX_SECB"};
     static const char* const tail[] = {"LBL_EFX_MORE", "LBL_EFX_SBTRK", "LBL_EFX_SBTHM", "LBL_EFX_SBUP", "LBL_EFX_SBDN", "LBL_EFX_TIPBG", "LBL_EFX_TIPT", "LBL_EFX_TIP"};
     int bound = 0;
@@ -1020,6 +1120,10 @@ extern "C" void __cdecl CharEffectsTick(int panel) {
     maybeReloadIni();
     if (!g_cfg.enabled) { hideAll(s); whyLog(1, "H3: disabled by INI, panel hidden"); return; }
     setCtlVisible(s->ctl[T_BACK], true); setCtlVisible(s->ctl[T_HEADER], true);
+    {   // ini stats_tab=0 / stage 0 (also on hot reload): tab forced to Effects
+        int want = (g_cfg.statsTab && g_cfg.stage >= 1) ? s->tab : 0;
+        if (want != s->tab) { s->tab = want; s->first = 0; s->lastPoll = 0; hideTip(s, "tab"); }
+    }
     bool wheelPending = guikit::g_wheel.accum != 0;
     bool scrolled = g_cfg.stage >= 1 && tickInput(s);
     DWORD t = GetTickCount();
@@ -1045,16 +1149,38 @@ extern "C" void __cdecl CharEffectsTick(int panel) {
         logStats(server);
     }
     unsigned oldSig = s->sig; int oldN = s->nEnt;
-    int n = collect(s, server, s->ent, false);
-    if (n < 0) { whyLog(5, "H3: effect list of %08x unreadable", server); s->nEnt = 0; layout(s); return; }
+    int n = 0;
+    if (s->tab == 1) {   // Stats tab: rows from StatsRows.h; signature = FNV over name + value
+        srows::StatsIn in;
+        if (gatherStats(server, &in)) n = srows::build(in, s->ent, MaxEnt);
+        saferead::beginScope();   // engine getters ran
+        unsigned h = 2166136261u;
+        for (int i = 0; i < n; ++i) {
+            s->ent[i].key = 0x30000 + i;
+            for (const char* p = s->ent[i].name; *p; ++p) h = (h ^ (unsigned char)*p) * 16777619u;
+            h = (h ^ 0x1Fu) * 16777619u;
+            for (const char* p = s->ent[i].val; *p; ++p) h = (h ^ (unsigned char)*p) * 16777619u;
+            h = (h ^ 0x1Eu) * 16777619u;
+        }
+        s->sig = h;
+    } else {
+        n = collect(s, server, s->ent, false);
+        if (n < 0) { whyLog(5, "H3: effect list of %08x unreadable", server); s->nEnt = 0; layout(s); return; }
+    }
     s->nEnt = n;
-    if (changedCreature || s->sig != oldSig || n != oldN) {   // structure changed: dump once with reasons
+    if (s->tab == 1) {
+        if (changedCreature || s->sig != oldSig || n != oldN) {
+            dlogf("H3: stats changed: %d rows (sig %08x -> %08x)", n, oldSig, s->sig);
+            hideTip(s, "list changed");
+            trackInput(s, t, false, 0, 0, true);
+        }
+    } else if (changedCreature || s->sig != oldSig || n != oldN) {   // structure changed: dump once with reasons
         int arr = 0, cnt = 0; readAt<int>(server, EffArrOff, &arr); readAt<int>(server, EffCntOff, &cnt);
         logf("H3: list changed: %d entries (sig %08x -> %08x), %d raw effects", n, oldSig, s->sig, cnt);
         collect(s, server, s->ent, true);
         hideTip(s, "list changed");
         if (trackInput(s, t, false, 0, 0, true)) {}   // a new list restarts the idle clock (marquee back to offset 0)
-        for (int i = 0; i < n; ++i) { char tm[16]; fmtTime(s->ent[i], tm, sizeof tm); logf("  entry %d: %s%s%s icon=%s item=%d %s", i, s->ent[i].section ? "[SECTION] " : "", s->ent[i].section ? (s->ent[i].harmful ? "HARMFUL" : "BENEFICIAL") : s->ent[i].name, "", s->ent[i].icon, s->ent[i].item, s->ent[i].section ? "" : tm); }
+        for (int i = 0; i < n; ++i) { char tm[24]; fmtTime(s->ent[i], tm, sizeof tm); logf("  entry %d: %s%s%s icon=%s item=%d %s", i, s->ent[i].section ? "[SECTION] " : "", s->ent[i].section ? (s->ent[i].harmful ? "HARMFUL" : "BENEFICIAL") : s->ent[i].name, "", s->ent[i].icon, s->ent[i].item, s->ent[i].section ? "" : tm); }
     }
     layout(s);
     tickTooltip(s, t, haveCur, cx, cy, true);
@@ -1120,6 +1246,6 @@ extern "C" void __cdecl CharEffectsDestroy(int panel) {
 
 BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
     if (reason == DLL_PROCESS_DETACH) guikit::wheelUninstall();   // never leave a dangling window proc: restores if on top, else stays chained but inert
-    if (reason == DLL_PROCESS_ATTACH) { snprintf(g_loadLine, sizeof g_loadLine, "chareffects 0.3.0-probe build 6 loaded (KpLog + IniKit + PanelSlots + GuiKit wheel + Party + STATS/DEFLECT probe) tick=%lu", (unsigned long)GetTickCount()); }
+    if (reason == DLL_PROCESS_ATTACH) { snprintf(g_loadLine, sizeof g_loadLine, "chareffects 0.4.0-dev build 7 loaded (KpLog + IniKit + PanelSlots + GuiKit wheel + Party + STATS/DEFLECT probe + Stats tab) tick=%lu", (unsigned long)GetTickCount()); }
     return TRUE;
 }
