@@ -1,8 +1,10 @@
-// QuickLootLogic.h -- pure helpers of quick-loot (doc 52 QL0/QL1a): event filter, wrap-safe ms, item cap, the pending-container
-// tracker, the take-all decision functions (shouldConsume / readyToSend / giveUp), the pending-take state and the log line formatters. No game memory, no Win32: host-testable (quick_loot_logic_test.cpp).
+// QuickLootLogic.h -- pure helpers of quick-loot (doc 52 QL0/QL1a/QL1b): event filter, wrap-safe ms, item cap, the pending-container
+// tracker, the take-all decision functions (shouldConsume / readyToSend / giveUp), the pending-take state, the "Took:" toast text / timing /
+// placement (QL1b) and the log line formatters. No game memory, no Win32: host-testable (quick_loot_logic_test.cpp).
 #pragma once
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 
 namespace qlogic {
 
@@ -110,6 +112,92 @@ struct Take {
     }
 };
 
+// ---- QL1b: the "Took: ..." toast under the target name tag
+constexpr unsigned ToastMaxChars = 80;     // the whole toast line, "+K more" included
+constexpr unsigned ToastNameMax = 40;      // one item name is cut at this many chars
+constexpr unsigned ToastMaxItems = 16;     // names captured per take; further items only count towards "+K more"
+constexpr uint32_t ToastMs = 3000;         // how long the line stays up
+constexpr int ToastW = 420, ToastH = 20;   // label rect size (px)
+constexpr int ToastGapBelowName = 20;      // label top = name bottom + this (clears the health bar under the name)
+
+// True while the toast is up: strictly less than durMs since it was shown. Wrap-safe (32-bit ms counter).
+inline bool toastVisible(uint32_t nowMs, uint32_t shownAtMs, uint32_t durMs) { return msSince(nowMs, shownAtMs) < durMs; }
+
+struct Rect { int x, y, w, h; };
+inline bool operator==(const Rect& a, const Rect& b) { return a.x == b.x && a.y == b.y && a.w == b.w && a.h == b.h; }
+inline bool operator!=(const Rect& a, const Rect& b) { return !(a == b); }
+
+// Toast label rect: centred on the target name label (menu origin + name rect, all px), top = name bottom + gap.
+inline Rect toastRect(int menuX, int menuY, int nameX, int nameY, int nameW, int nameH) {
+    return { menuX + nameX + nameW / 2 - ToastW / 2, menuY + nameY + nameH + ToastGapBelowName, ToastW, ToastH };
+}
+
+// Copies an item name into out (cap >= 2): stops at the first NUL, cuts at ToastNameMax, replaces every byte outside 0x20..0x7E with '?',
+// trims trailing spaces. A null/empty result becomes "item". Returns the length.
+inline unsigned sanitizeName(char* out, unsigned cap, const char* in) {
+    unsigned n = 0;
+    const unsigned lim = cap - 1 < ToastNameMax ? cap - 1 : ToastNameMax;
+    if (in) {
+        while (n < lim && in[n]) {
+            const unsigned char c = static_cast<unsigned char>(in[n]);
+            out[n] = (c < 0x20 || c > 0x7E) ? '?' : static_cast<char>(c);
+            ++n;
+        }
+    }
+    while (n > 0 && out[n - 1] == ' ') --n;
+    if (n == 0) { const char* d = "item"; while (d[n]) { out[n] = d[n]; ++n; } }
+    out[n] = 0;
+    return n;
+}
+
+// "Took: A, B x2, C": one entry per item (name, then " xN" for 2 <= N <= 999). When the line would pass ToastMaxChars the entries that
+// fit are kept and ", +K more" is appended (K = items left out + `extra`, items beyond the captured ones). count 0 -> out = "" and 0
+// (no toast). names may hold null pointers; stacks may hold -1 (unknown). The result is cut to cap-1; returns its length.
+inline unsigned fmtTook(char* out, size_t cap, const char* const* names, const int* stacks, unsigned count, unsigned extra = 0) {
+    if (!out || cap == 0) return 0;
+    out[0] = 0;
+    if (count == 0) return 0;
+    if (count > ToastMaxItems) { extra += count - ToastMaxItems; count = ToastMaxItems; }
+    char ent[ToastMaxItems][ToastNameMax + 16];
+    unsigned len[ToastMaxItems];
+    for (unsigned i = 0; i < count; ++i) {
+        char nm[ToastNameMax + 1];
+        unsigned n = sanitizeName(nm, sizeof nm, names ? names[i] : nullptr);
+        memcpy(ent[i], nm, n);
+        const int st = stacks ? stacks[i] : -1;
+        if (st >= 2 && st <= 999) n += static_cast<unsigned>(snprintf(ent[i] + n, sizeof ent[i] - n, " x%d", st));
+        ent[i][n] = 0;
+        len[i] = n;
+    }
+    const unsigned prefix = 6;   // "Took: "
+    unsigned total = prefix;
+    for (unsigned i = 0; i < count; ++i) total += len[i] + (i ? 2u : 0u);
+    unsigned shown = count;
+    unsigned more = extra;
+    if (!(extra == 0 && total <= ToastMaxChars)) {
+        shown = 0;
+        unsigned used = prefix;
+        for (unsigned i = 0; i < count; ++i) {
+            const unsigned add = len[i] + (i ? 2u : 0u);
+            const unsigned after = count - i - 1 + extra;   // items still left out if this one is kept
+            const unsigned suffix = after ? static_cast<unsigned>(snprintf(nullptr, 0, ", +%u more", after)) : 0u;
+            if (used + add + suffix > ToastMaxChars) break;
+            used += add;
+            shown = i + 1;
+        }
+        if (shown == 0) shown = 1;   // cannot happen with the caps above; never emit an empty list
+        more = count - shown + extra;
+    }
+    char buf[ToastMaxChars + 48];
+    unsigned pos = static_cast<unsigned>(snprintf(buf, sizeof buf, "Took: "));
+    for (unsigned i = 0; i < shown; ++i) pos += static_cast<unsigned>(snprintf(buf + pos, sizeof buf - pos, "%s%s", i ? ", " : "", ent[i]));
+    if (more) pos += static_cast<unsigned>(snprintf(buf + pos, sizeof buf - pos, ", +%u more", more));
+    if (pos >= cap) pos = static_cast<unsigned>(cap - 1);
+    memcpy(out, buf, pos);
+    out[pos] = 0;
+    return pos;
+}
+
 // ---- formatters (fixed formats the play-test row greps for)
 inline int fmtShow(char* b, size_t n, uint32_t obj, int flag, uintptr_t plc, int open, int count) {
     return snprintf(b, n, "SHOW obj=%08x flag=%d plc=%08x open=%d n=%d", obj, flag, static_cast<unsigned>(plc), open, count);
@@ -129,6 +217,12 @@ inline int fmtVanilla(char* b, size_t n, Reason r) { return snprintf(b, n, "VANI
 inline int fmtTakeSend(char* b, size_t n, uint32_t obj, uint32_t dtMs, int open, int count) {
     return snprintf(b, n, "TAKE-SEND obj=%08x dt=%ums open=%d n=%d", obj, dtMs, open, count);
 }
+inline int fmtTookItem(char* b, size_t n, unsigned i, uint32_t id, const char* name, int stack) {
+    char nm[ToastNameMax + 1];
+    sanitizeName(nm, sizeof nm, name);
+    return snprintf(b, n, "TOOK %u id=%08x name=%s stack=%d", i, id, nm, stack);
+}
+inline int fmtToast(char* b, size_t n, const char* text) { return snprintf(b, n, "TOAST %s", text); }
 inline int fmtErr(char* b, size_t n, const char* what, uint32_t dtMs) { return snprintf(b, n, "ERR %s dt=%ums", what, dtMs); }
 
 }   // namespace qlogic

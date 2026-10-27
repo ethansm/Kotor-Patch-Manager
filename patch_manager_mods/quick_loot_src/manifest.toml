@@ -1,9 +1,9 @@
 [patch]
 id = "quick-loot"
 name = "Quick Loot"
-version = "0.1.0-dev"
+version = "0.2.0-dev"
 author = "local"
-description = "Clicking a loot container takes everything at once with no container menu (doc 52 QL1a): ShowContainerGui is consumed and the vanilla take-all Close is sent a couple of HUD frames after the container script has run. Hold Shift to open the vanilla menu. Configured by quick_loot.ini [QuickLoot] Enabled (default 1). Keeps the QL0 probe log lines (SHOW/ITEM/EVT/CLOSE). Needs hud-host for the per-frame tick."
+description = "Clicking a loot container takes everything at once with no container menu (doc 52 QL1a): ShowContainerGui is consumed and the vanilla take-all Close is sent a couple of HUD frames after the container script has run. QL1b: a one-line toast under the target name tag lists what was taken (\"Took: Medpac x2, Blaster Pistol, +3 more\") for 3 seconds. Hold Shift to open the vanilla menu. Configured by quick_loot.ini [QuickLoot] Enabled (default 1). Keeps the QL0 probe log lines (SHOW/ITEM/EVT/CLOSE) and adds TOOK/TOAST lines. Needs hud-host for the per-frame tick."
 
 requires = ["hud-host"]
 requires_interfaces = ["k2.hud@1"]

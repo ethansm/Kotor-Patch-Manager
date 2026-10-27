@@ -2,6 +2,7 @@
 #include "QuickLootLogic.h"
 #include "check.h"
 #include <string.h>
+#include <string>
 
 using namespace qlogic;
 
@@ -146,6 +147,89 @@ int main() {
     char tiny[8];
     fmtShow(tiny, sizeof tiny, 1, 1, 1, 1, 1);
     kt::Check("formatter truncates safely into a small buffer", strlen(tiny) == 7);
+
+    // ---- QL1b: toast timing (wrap-safe), placement, text
+    kt::Check("toast visible at 0 ms", toastVisible(1000, 1000, ToastMs));
+    kt::Check("toast visible at 2999 ms", toastVisible(3999, 1000, ToastMs));
+    kt::Check("toast gone at 3000 ms", !toastVisible(4000, 1000, ToastMs));
+    kt::Check("toast gone long after", !toastVisible(900000, 1000, ToastMs));
+    kt::Check("toast visible across the 32-bit wrap", toastVisible(100u, 0xFFFFFF9Cu, ToastMs));
+    kt::Check("toast gone across the 32-bit wrap", !toastVisible(3000u, 0xFFFFFF9Cu, ToastMs));
+    kt::Check("toast with the clock behind shownAt is not shown", !toastVisible(999u, 1000u, ToastMs));
+    {
+        Rect r = toastRect(100, 50, 20, 10, 200, 24);
+        kt::CheckEq("toast x = name centre - W/2", r.x, 100 + 20 + 100 - 210);
+        kt::CheckEq("toast y = name bottom + 20", r.y, 50 + 10 + 24 + 20);
+        kt::Check("toast size 420x20", r.w == 420 && r.h == 20);
+        kt::Check("rect equality", r == toastRect(100, 50, 20, 10, 200, 24) && r != toastRect(101, 50, 20, 10, 200, 24));
+    }
+    {
+        char t[200];
+        const char* n1[] = { "Medpac" };
+        kt::CheckEq("count 0 gives no toast", fmtTook(t, sizeof t, n1, nullptr, 0), 0u);
+        kt::Check("count 0 leaves an empty string", t[0] == 0);
+        kt::CheckEq("one item", fmtTook(t, sizeof t, n1, nullptr, 1), 12u);
+        kt::Check("one item text", strcmp(t, "Took: Medpac") == 0);
+        const char* n3[] = { "Medpac", "Blaster Pistol", "Vibroblade" };
+        int s3[] = { 2, 1, 999 };
+        fmtTook(t, sizeof t, n3, s3, 3);
+        kt::Check("stack suffix for 2 and 999, none for 1", strcmp(t, "Took: Medpac x2, Blaster Pistol, Vibroblade x999") == 0);
+        int s4[] = { 0, -1, 1000 };
+        fmtTook(t, sizeof t, n3, s4, 3);
+        kt::Check("no suffix for 0, -1, 1000", strcmp(t, "Took: Medpac, Blaster Pistol, Vibroblade") == 0);
+        kt::Check("null stacks array is fine", fmtTook(t, sizeof t, n3, nullptr, 3) > 0 && strstr(t, " x") == nullptr);
+        // names: garbage / NUL / null / empty / spaces / too long
+        const char* ng[] = { "Med\x01pac\xFF", "", nullptr, "   ", "Name\0Hidden" };
+        fmtTook(t, sizeof t, ng, nullptr, 5);
+        kt::Check("garbage bytes become ?, empty/null/blank become item, NUL ends the name",
+                  strcmp(t, "Took: Med?pac?, item, item, item, Name") == 0);
+        std::string longName(100, 'Z');
+        const char* nl[] = { longName.c_str() };
+        fmtTook(t, sizeof t, nl, nullptr, 1);
+        kt::CheckEq("a long name is cut at 40 chars", strlen(t), 46u);
+        // overflow and the 80-char boundary
+        std::string a(40, 'A'), b32(32, 'B'), b33(33, 'B');
+        const char* e1[] = { a.c_str(), b32.c_str() };
+        kt::CheckEq("exactly 80 chars fits whole", fmtTook(t, sizeof t, e1, nullptr, 2), 80u);
+        kt::Check("exactly 80 chars has no +K more", strstr(t, "more") == nullptr && strlen(t) == 80);
+        const char* e2[] = { a.c_str(), b33.c_str() };
+        unsigned l = fmtTook(t, sizeof t, e2, nullptr, 2);
+        kt::Check("81 chars overflows to +1 more", strcmp(t, ("Took: " + a + ", +1 more").c_str()) == 0 && l == strlen(t));
+        kt::Check("overflow text never passes 80 chars", l <= ToastMaxChars);
+        // all fit only without a suffix: three items, exactly 80
+        std::string c26(26, 'C'), d26(26, 'D');   // 6 + 26 + 2 + 26 + 2 + 18 = 80
+        std::string f18(18, 'F');
+        const char* e3[] = { c26.c_str(), d26.c_str(), f18.c_str() };
+        l = fmtTook(t, sizeof t, e3, nullptr, 3);
+        kt::Check("three items totalling exactly 80 all show", l == 80 && strstr(t, "more") == nullptr);
+        // many items: 16 captured + extra beyond the capture
+        std::string nm10(10, 'M');
+        const char* many[16];
+        for (int i = 0; i < 16; ++i) many[i] = nm10.c_str();
+        l = fmtTook(t, sizeof t, many, nullptr, 16, 5);
+        kt::Check("16 items + extra 5 stay within 80 and count all the rest", l <= 80 && strstr(t, "more") != nullptr);
+        unsigned k = 0; sscanf(strstr(t, "+") + 1, "%u", &k);
+        unsigned shownN = 0; for (const char* p = t; (p = strstr(p, nm10.c_str())) != nullptr; p += 10) ++shownN;
+        kt::CheckEq("shown + K = 21", shownN + k, 21u);
+        l = fmtTook(t, sizeof t, many, nullptr, 40);
+        kt::Check("count above the capture cap folds into +K more", l <= 80 && strstr(t, "more") != nullptr);
+        // small caller buffer
+        char small[10];
+        l = fmtTook(small, sizeof small, n3, s3, 3);
+        kt::Check("small buffer is cut and terminated", l == 9 && strlen(small) == 9 && strncmp(small, "Took: Med", 9) == 0);
+        kt::CheckEq("null out is harmless", fmtTook(nullptr, 5, n3, s3, 3), 0u);
+        // sanitizeName direct
+        char sn[8];
+        sanitizeName(sn, sizeof sn, "ABCDEFGHIJ");
+        kt::Check("sanitizeName honours a small cap", strcmp(sn, "ABCDEFG") == 0);
+        char tl[200];
+        fmtTookItem(tl, sizeof tl, 1, 0x7F000011u, "Med\x02pac", 3);
+        kt::Check("TOOK line", strcmp(tl, "TOOK 1 id=7f000011 name=Med?pac stack=3") == 0);
+        fmtTookItem(tl, sizeof tl, 0, 0x7F000012u, nullptr, -1);
+        kt::Check("TOOK line falls back to item", strcmp(tl, "TOOK 0 id=7f000012 name=item stack=-1") == 0);
+        fmtToast(tl, sizeof tl, "Took: Medpac");
+        kt::Check("TOAST line", strcmp(tl, "TOAST Took: Medpac") == 0);
+    }
 
     return kt::Report("quick_loot_logic_test");
 }

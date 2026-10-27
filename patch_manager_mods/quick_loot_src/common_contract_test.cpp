@@ -13,6 +13,7 @@
 #include "GameAddr.h"
 #include "KpLog.h"
 #include "HudHost.h"
+#include "GuiKit.h"
 #include "QuickLootLogic.h"
 #include "check.h"
 #include <sys/mman.h>
@@ -34,6 +35,18 @@ SIG(k2hud::Client::init, void (k2hud::Client::*)(const KPatchApi*, const char*))
 SIG(k2hud::Client::add, bool (k2hud::Client::*)(int32_t, int32_t, K2HudCallback, void*));
 SIG(k2hud::Client::connect, bool (k2hud::Client::*)());
 SIG(k2hud::Client::poll, void (k2hud::Client::*)());
+
+// GuiKit.h API QuickLoot.cpp (QL1b toast label) uses.
+SIG(guikit::createLabelFromTemplate, uintptr_t (*)(uintptr_t, const char*, int*, uint32_t*));
+SIG(guikit::appendToPanel, bool (*)(uintptr_t, uintptr_t));
+SIG(guikit::setVisible, bool (*)(uintptr_t, bool));
+SIG(guikit::setClickable, bool (*)(uintptr_t, bool));
+SIG(guikit::setRect, bool (*)(uintptr_t, int, int, int, int));
+SIG(guikit::setText, bool (*)(uintptr_t, const char*));
+SIG(guikit::setFont, bool (*)(uintptr_t, const char*));
+SIG(guikit::setAlign, bool (*)(uintptr_t, unsigned));
+SIG(guikit::setTextColor, bool (*)(uintptr_t, float, float, float));
+static_assert(guikit::CF_None == 0, "quick_loot relies on: CF_None == 0 (createLabelFromTemplate success reason)");
 
 KP_LOG_PATCH("quick-loot");   // QuickLoot.cpp (compile-time id validity)
 KP_CHANNEL(chMain, "main");
@@ -141,6 +154,44 @@ int main() {
     HEQ("gameaddr::AppGlobal is 0x00A1B4A4", (unsigned long long)gameaddr::AppGlobal, 0x00A1B4A4ULL);
     HEQ("gameaddr::ClientToServerObjectId is 0x0051C8B0", (unsigned long long)gameaddr::ClientToServerObjectId, 0x0051C8B0ULL);
 
+    HEQ("gameaddr::GetLocString is 0x007356B0 (item names, QL1b)", (unsigned long long)gameaddr::GetLocString, 0x007356B0ULL);
+    HEQ("gameaddr::ExoDtor is 0x00733780 (frees the GetString out string)", (unsigned long long)gameaddr::ExoDtor, 0x00733780ULL);
+    HEQ("gameaddr::GetClientLanguage is 0x0073F350 (GetString language)", (unsigned long long)gameaddr::GetClientLanguage, 0x0073F350ULL);
+
+    // ================= 2b. saferead::readExo as readItemName uses it (printableOnly = false, maxLen 255): CExoString {char* p; int len}
+    {
+        saferead::beginScope();
+        const uintptr_t exo = A + 0x1800, txt = A + 0x1900;
+        memcpy(reinterpret_cast<void*>(txt), "Medpac\0", 7);
+        *reinterpret_cast<uint32_t*>(exo) = static_cast<uint32_t>(txt);
+        *reinterpret_cast<int32_t*>(exo + 4) = 7;   // engine length includes the NUL
+        char tmp[256];
+        HEQ("readExo returns the length without the trailing NUL", saferead::readExo(0x7100, exo, tmp, sizeof tmp, 255, false), 6);
+        HCHECK("readExo text exact", strcmp(tmp, "Medpac") == 0);
+        memcpy(reinterpret_cast<void*>(txt), "A\x01\xFFz", 5);
+        *reinterpret_cast<int32_t*>(exo + 4) = 4;
+        HEQ("readExo with printableOnly=false keeps garbage bytes (the toast sanitiser replaces them)", saferead::readExo(0x7100, exo, tmp, sizeof tmp, 255, false), 4);
+        *reinterpret_cast<int32_t*>(exo + 4) = 300;
+        HEQ("readExo rejects a length above maxLen", saferead::readExo(0x7100, exo, tmp, sizeof tmp, 255, false), 0);
+        *reinterpret_cast<int32_t*>(exo + 4) = 0;
+        HEQ("readExo rejects length 0", saferead::readExo(0x7100, exo, tmp, sizeof tmp, 255, false), 0);
+        *reinterpret_cast<uint32_t*>(exo) = 0;
+        *reinterpret_cast<int32_t*>(exo + 4) = 5;
+        HEQ("readExo rejects a null text pointer", saferead::readExo(0x7100, exo, tmp, sizeof tmp, 255, false), 0);
+        // target menu fields (QL1b): same offsets as enemy-effects-strip; flags is one byte
+        const uintptr_t menu = A + 0x2000;
+        *reinterpret_cast<uint8_t*>(menu + 0x1BAC) = 1; *reinterpret_cast<uint8_t*>(menu + 0x1BAD) = 0xEE;
+        *reinterpret_cast<int32_t*>(menu + 0x1648) = 10; *reinterpret_cast<int32_t*>(menu + 0x164C) = 20;
+        *reinterpret_cast<int32_t*>(menu + 0x166C) = 3; *reinterpret_cast<int32_t*>(menu + 0x1670) = 4;
+        *reinterpret_cast<int32_t*>(menu + 0x1674) = 200; *reinterpret_cast<int32_t*>(menu + 0x1678) = 24;
+        uint8_t fl = 0; int32_t v[6] = {0};
+        HCHECK("rd<uint8_t>(menu, 0x1BAC) menu-shown flag", rd<uint8_t>(menu, 0x1BAC, &fl) && fl == 1);
+        HCHECK("rd<int32_t> of origin x/y + name rect x/y/w/h",
+               rd<int32_t>(menu, 0x1648, &v[0]) && rd<int32_t>(menu, 0x164C, &v[1]) && rd<int32_t>(menu, 0x166C, &v[2]) &&
+               rd<int32_t>(menu, 0x1670, &v[3]) && rd<int32_t>(menu, 0x1674, &v[4]) && rd<int32_t>(menu, 0x1678, &v[5]) &&
+               v[0] == 10 && v[1] == 20 && v[2] == 3 && v[3] == 4 && v[4] == 200 && v[5] == 24);
+    }
+
     // ================= 3. KpLog fallback sink (before any successful init)
     HCHECK("KpLog_HasCore() is false before KPatchInit: enter() skips the START line", !KpLog_HasCore());
     const char* td = getenv("TMPDIR"); if (!td || !*td) td = "/tmp";
@@ -195,6 +246,8 @@ int main() {
     HCHECK("the \"main\" channel was resolved for patch handle 5", !g_chans.empty() && g_chans[0] == "5:main");
 
     // ================= 6. HudHost.h (QL1a): K2HUD_FRAME tick with ctx->frame; connect() without hud-host is inert (mod still loads, falls back to vanilla)
+    HCHECK("K2HUD_TARGET_MENU_POST is phase 2, K2HUD_BUILD phase 3, K2HudContext.panel/hud/menu offsets (QL1b toast)",
+           K2HUD_TARGET_MENU_POST == 2 && K2HUD_BUILD == 3 && offsetof(K2HudContext, hud) == 12 && offsetof(K2HudContext, menu) == 16 && offsetof(K2HudContext, panel) == 36);
     HCHECK("K2HUD_FRAME is phase 0 and K2HudContext.frame is at offset 8", K2HUD_FRAME == 0 && offsetof(K2HudContext, frame) == 8);
     {
         k2hud::Client hud;
