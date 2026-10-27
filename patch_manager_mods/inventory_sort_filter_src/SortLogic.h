@@ -2,6 +2,7 @@
 // Doc: patch_manager_mods/11_inventory_sort_filter.md
 #pragma once
 #include <algorithm>
+#include <stdio.h>
 #include <string.h>
 
 namespace isf {
@@ -114,6 +115,15 @@ inline const char* captionOf(State s) {
     case S_Upgrade: return "Filter: Upgradeable";
     default: return "Filter";
     }
+}
+
+// Caption with the visible-row count for filtered states (WI-151): All stays "Filter"; New/Usable/Upgradeable get " (rows)".
+// kCaptionBytes is the caption buffer size: the longest text ("Filter: Upgradeable (1024)") is 25 chars + NUL. A small cap truncates, still NUL-terminated.
+constexpr int kCaptionBytes = 32;
+inline void captionWithCount(State s, int rows, char* out, int cap) {
+    if (!out || cap <= 0) return;
+    if (s == S_All) snprintf(out, cap, "%s", captionOf(s));
+    else snprintf(out, cap, "%s (%d)", captionOf(s), rows);
 }
 
 // Click on a tab whose engine mode is `clicked`. Only a click on the All tab (mode 0) while the panel is in a

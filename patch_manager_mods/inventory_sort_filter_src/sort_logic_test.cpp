@@ -130,6 +130,16 @@ int main() {
     CHECK(ieq("Abc", "aBC") && !ieq("ab", "abc"));
     // captions
     CHECK(!strcmp(captionOf(S_All), "Filter") && !strcmp(captionOf(S_Upgrade), "Filter: Upgradeable"));
+    // captions with the visible-row count (WI-151)
+    char cb[kCaptionBytes];
+    captionWithCount(S_All, 5, cb, sizeof cb);        CHECK(!strcmp(cb, "Filter"));
+    captionWithCount(S_Usable, 0, cb, sizeof cb);     CHECK(!strcmp(cb, "Filter: Usable (0)"));
+    captionWithCount(S_Upgrade, 123, cb, sizeof cb);  CHECK(!strcmp(cb, "Filter: Upgradeable (123)"));
+    captionWithCount(S_New, 7, cb, sizeof cb);        CHECK(!strcmp(cb, "Filter: New (7)"));
+    char tiny[8];
+    captionWithCount(S_Upgrade, 123, tiny, sizeof tiny); CHECK(!strcmp(tiny, "Filter:") && tiny[7] == 0);
+    char one[1];
+    captionWithCount(S_Usable, 0, one, sizeof one);   CHECK(one[0] == 0);
     // open upgrade slots
     int none[6] = {0, 0, 0, 0, 0, 0};
     CHECK(!hasOpenSlot(0, none));

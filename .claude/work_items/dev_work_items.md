@@ -196,7 +196,7 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [x] | 180 | WI-148 | P3 | ready | S | WI-147 | ISF: stale-buffer guard keyed on populate identity, not just loop index | 0 | 1 | aborted populate + first new idx > last idx re-emits stale item pointe |
 | [x] | 181 | WI-149 | P3 | ready | S | WI-148 | ISF: GetString gender arg (REA callers) - pass the shown character's gender | 0 | 1 | readItemName passes gender 0; REA says GetString writes it into talk m |
 | [x] | 182 | WI-150 | P3 | ready | S | WI-149 | ISF: bound the appended fallback log (rotate to .1 per session) | 0 | 1 | 0.2.1 dropped the truncate; log holds 69 launches, no .1, grows withou |
-| [ ] | 183 | WI-151 | P3 | ready | S | WI-150 | ISF UX: show the visible-row count in the filter caption (empty-filter state) | 0 | 3 | a filter with 0 matches shows a blank list with no feedback |
+| [x] | 183 | WI-151 | P3 | ready | S | WI-150 | ISF UX: show the visible-row count in the filter caption (empty-filter state) | 0 | 3 | a filter with 0 matches shows a blank list with no feedback |
 | [ ] | 184 | WI-152 | P3 | hold | S | WI-151 | ISF UX: caption hint for the hidden re-click-All cycle gesture | 0 | 3 | New/Usable/Upgradeable are reachable only by re-clicking the active Al |
 | [ ] | 185 | WI-153 | P3 | hold | M | WI-151 | ISF UX: controller access to Usable/Upgradeable filters | 0 | 2 | bumpers go through engine SetNextFilter, so controller players never r |
 | [ ] | 186 | WI-154 | P3 | hold | M | WI-151 | ISF UX: player-facing category group order + sort_order INI key | 0 | 3 | groups follow baseitems.2da row id, which is arbitrary to players |

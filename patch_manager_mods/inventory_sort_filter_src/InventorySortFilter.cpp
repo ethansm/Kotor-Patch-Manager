@@ -197,7 +197,7 @@ void setLabelText(int panel, const char* text) {
 // ---- state ----
 isf::Extra g_extra = isf::X_None;  // our filter on top of engine mode 0: Usable or Upgradeable
 int g_panel = 0;                   // panel instance the state belongs to
-char g_caption[24] = "Filter";     // caption last written by us
+char g_caption[isf::kCaptionBytes] = "Filter";     // caption last written by us
 bool g_labelDumped = false;
 
 void captionTo(int panel, const char* text) {
@@ -309,6 +309,19 @@ void emitBuffered(int panel, int cobj, int ebp) {
         createRow(panel, cobj, ebp, e.item, e.tint);
     }
     g_n = 0;
+}
+
+// WI-151: a filtered state shows its visible-row count in the caption. Call it only where g_n is final: before emitBuffered
+// (which empties the buffer) in SortFilterFlush, and on the !g_inPop path. g_n is 0 there, which is the empty-filter case:
+// no row reached the hook, so no populate started. normaliseState wrote the plain caption just before; this replaces it in
+// the same frame, so there is no visible flicker.
+void captionCountTo(int panel) {
+    if (!g_cfg.cycle) return;
+    isf::State st;
+    if (!isf::stateOf(filterMode(), g_extra, &st) || st == isf::S_All) return;
+    char text[isf::kCaptionBytes];
+    isf::captionWithCount(st, g_n, text, sizeof text);
+    captionTo(panel, text);
 }
 
 void startPopulate(int panel, int ebp) {
@@ -425,6 +438,7 @@ extern "C" void __cdecl SortFilterFlush(int ebp) {
     if (!g_inPop) {
         g_nTinted = 0;   // the rows at those indices may now be equipped rows
         normaliseState(panel);
+        captionCountTo(panel);   // empty filter: g_n is 0 here
         if (g_cfg.log) logf("flush: no backpack rows this populate (mode=%d extra=%d)", filterMode(), g_extra);
         return;
     }
@@ -461,6 +475,7 @@ extern "C" void __cdecl SortFilterFlush(int ebp) {
             logf("  creation order (vanilla loop index):%s", line);
         }
     }
+    captionCountTo(panel);   // g_n is final; emitBuffered below empties the buffer
     emitBuffered(panel, cobj, ebp);
     g_inPop = false; g_selSet = false;
 }
