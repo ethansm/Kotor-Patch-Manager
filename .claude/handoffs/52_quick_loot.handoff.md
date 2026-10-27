@@ -1,24 +1,30 @@
 # Session Handoff & Plan State: patch_manager_mods/52_quick_loot.md
 
 ## 0. Next-Phase Direction
-Execute QL2: peek on select (after play rows QL0-P1/QL1-P1)
+Execute **QL2p**: Proximity peek 0.3.0-dev (user choice 10-27): unlocked, untrapped container within OpenM=3 m auto-opens (OpenInventory), list under its name, click/key = take all; hides + Close(objId,0) past CloseM=5 m, on combat/dialog/area change/menu, or after take; nearest only; no re-open until you leave CloseM; ini knobs
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/52_quick_loot.md`
 - **Waves:** .claude/waves/w1-52-QL0/
 - **Waves:** .claude/waves/w2-52-QL1b/
-- **Branch:** `KOTOR-II` (bd635afa doc 52: QL1 umbrella row -> QL1a/QL1b)
-- **Generated:** 2026-10-27 19:08:20 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Waves:** .claude/waves/w3-52-R2/
+- **Branch:** `KOTOR-II` (aa8f0ece quick-loot 0.3.0-dev (doc 52 QL2p): proximity peek (auto-open unlocked containers within 3 m, F = take all, close past 5 m); empty-at-show containers now taken too)
+- **Generated:** 2026-10-27 19:30:57 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-bd635afa doc 52: QL1 umbrella row -> QL1a/QL1b
- .claude/handoffs/52_quick_loot.handoff.md | 22 ++++++++++------------
- patch_manager_mods/52_quick_loot.md       |  2 +-
- 2 files changed, 11 insertions(+), 13 deletions(-)
+aa8f0ece quick-loot 0.3.0-dev (doc 52 QL2p): proximity peek (auto-open unlocked containers within 3 m, F = take all, close past 5 m); empty-at-show containers now taken too
+ patch_manager_mods/52_quick_loot.md                |   2 +
+ patch_manager_mods/quick_loot_src/QuickLoot.cpp    | 426 +++++++++++++++++++--
+ patch_manager_mods/quick_loot_src/QuickLootLogic.h | 280 +++++++++++++-
+ patch_manager_mods/quick_loot_src/manifest.toml    |   4 +-
+ .../quick_loot_src/quick_loot_logic_test.cpp       | 298 ++++++++++++--
+ tests/static/raw_addresses.toml                    |   2 +-
+ 6 files changed, 935 insertions(+), 77 deletions(-)
 ```
-- **Dirty Files (186):**
+- **Dirty Files (187):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
+  - ` M .claude/handoffs/51_combat_stats_page.handoff.md`
   - ` M .claude/handoffs/DECOMP_PLAN.handoff.md`
   - ` M .claude/handoffs/PHASE7_COMMON_MASTER.handoff.md`
   - ` M .claude/handoffs/deep_haiku_review_skill.handoff.md`
@@ -26,16 +32,16 @@ bd635afa doc 52: QL1 umbrella row -> QL1a/QL1b
   - ` M .claude/plans/swarm_library_architecture.md`
   - ` M .claude/reviews/gemini_20261014/tools/fix3_items.tsv`
   - ` M .claude/settings.json`
-  - ` M CLAUDE.md`
-  - ... +176 more (run `git status --short`)
+  - ... +177 more (run `git status --short`)
 
-## 2. Immediate Objective (**QL2**)
-**Peek on select: list under the name tag after the first click; row click = walk + take one item**
+## 2. Immediate Objective (**QL2p**)
+**Proximity peek 0.3.0-dev (user choice 10-27): unlocked, untrapped container within OpenM=3 m auto-opens (OpenInventory), list under its name, click/key = take all; hides + Close(objId,0) past CloseM=5 m, on combat/dialog/area change/menu, or after take; nearest only; no re-open until you leave CloseM; ini knobs**
 
-Status: TODO
-Task: Peek on select: list under the name tag after the first click; row click = walk + take one item
+Status: PARTIAL
+Task: Proximity peek 0.3.0-dev (user choice 10-27): unlocked, untrapped container within OpenM=3 m auto-opens (OpenInventory), list under its name, click/key = take all; hides + Close(objId,0) past CloseM=5 m, on combat/dialog/area change/menu, or after take; nearest only; no re-open until you leave CloseM; ini knobs
 
 ## 2b. Upcoming Batches in Pipeline
+- ****QL2**** : Peek on select: list under the name tag after the first click; row click = walk + take one item
 - ****QL3**** : True hover peek: own floating name + list on hover (app+0x4B0), merge with doc 12 empty-container cursor
 
 ## 3. Strict Context Budget & Read Policy
@@ -43,7 +49,7 @@ Task: Peek on select: list under the name tag after the first click; row click =
 
 ## 4. Subagent Delegation Direction
 - **Claude Code**: parallel `model: haiku` Agent subagents; brief = `Contract` + `Write Scope` + `python3 scripts/agent_contract.py print worker|recon`.
-- **Other backends** (only when the user asks): `python3 scripts/plan_manager.py delegate **QL2**` or `oc-subagent <scout|code|ghidra|verify|gate|doc>`.
+- **Other backends** (only when the user asks): `python3 scripts/plan_manager.py delegate **QL2p**` or `oc-subagent <scout|code|ghidra|verify|gate|doc>`.
 
 ## 5. Dead Ends & Verification (manual)
 _(none recorded; append Dead Ends & Anti-Patterns and Verification Commands here)_
