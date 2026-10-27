@@ -1,0 +1,6 @@
+LIBRARY QuickLoot
+EXPORTS
+    KPatchInit
+    QlShowContainer
+    QlPlaceableEvent
+    QlCloseInventory
