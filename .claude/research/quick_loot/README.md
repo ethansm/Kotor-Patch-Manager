@@ -62,3 +62,10 @@ Merge with doc 12 (empty-container indicators) as one loot mod.
 Redirect 0x82AD21 to a stub: read the repo (names, counts) -> send Close(objId, 1) -> floating "Took: ..." list under
 the name tag; Shift held or give-quest containers -> call vanilla ShowContainerGui. Defer the Close a few
 frames (or until OnOpen ran) so loot-on-open containers are not drained before their loot spawns.
+
+## Prior-art deep search 2026-10-27 (W5-W8, 4 Haiku)
+- No KOTOR 1/2 quick-loot, take-all hotkey, auto-loot or container-bypass mod on Deadly Stream, Nexus (403, snippets only),
+  ModDB, Steam Workshop, GitHub (KotOR.js, reone, xoreos, KPM, K1CP), Reddit/Steam/LucasForums. No request thread got a mod answer.
+- Only near neighbour: K1 Marked Empty Containers (swkotor.exe patch, hover label; no TSL port).
+- Vanilla trick: Q/E cycles lootable objects (K2). Sibling engines: NWN1 EE script auto-loot (LSE).
+- Conflict to settle live in QL0: KotOR.js/reone fire OnInvDisturbed on take-all; static RE says CloseInventory's drain does not.
