@@ -12,6 +12,7 @@
 #include "SafeRead.h"
 #include "GameAddr.h"
 #include "KpLog.h"
+#include "HudHost.h"
 #include "QuickLootLogic.h"
 #include "check.h"
 #include <sys/mman.h>
@@ -20,10 +21,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
+#include <type_traits>
+#include <stddef.h>
 #include <vector>
 
 #define HCHECK(why, expr) ::kt::Check("quick_loot relies on: " why " (line " KT_STR(__LINE__) ")", static_cast<bool>(expr))
 #define HEQ(why, a, b) ::kt::CheckEq("quick_loot relies on: " why " (line " KT_STR(__LINE__) ")", (a), (b))
+
+// HudHost.h API QuickLoot.cpp (QL1a) uses: init / add / connect / poll and the connected flag.
+#define SIG(fn, ...) static_assert(std::is_same<decltype(&fn), __VA_ARGS__>::value, #fn " signature changed")
+SIG(k2hud::Client::init, void (k2hud::Client::*)(const KPatchApi*, const char*));
+SIG(k2hud::Client::add, bool (k2hud::Client::*)(int32_t, int32_t, K2HudCallback, void*));
+SIG(k2hud::Client::connect, bool (k2hud::Client::*)());
+SIG(k2hud::Client::poll, void (k2hud::Client::*)());
 
 KP_LOG_PATCH("quick-loot");   // QuickLoot.cpp (compile-time id validity)
 KP_CHANNEL(chMain, "main");
@@ -183,6 +193,19 @@ int main() {
         HCHECK("submitted text is exactly the formatted message", g_subs[0].text == "START quick-loot 0.0.1-probe");
     }
     HCHECK("the \"main\" channel was resolved for patch handle 5", !g_chans.empty() && g_chans[0] == "5:main");
+
+    // ================= 6. HudHost.h (QL1a): K2HUD_FRAME tick with ctx->frame; connect() without hud-host is inert (mod still loads, falls back to vanilla)
+    HCHECK("K2HUD_FRAME is phase 0 and K2HudContext.frame is at offset 8", K2HUD_FRAME == 0 && offsetof(K2HudContext, frame) == 8);
+    {
+        k2hud::Client hud;
+        hud.init(&g_api, "quick-loot");
+        g_service = nullptr;
+        HCHECK("add(FRAME) is accepted", hud.add(K2HUD_FRAME, 100, [](const K2HudContext*, void*) {}, nullptr));
+        HCHECK("connect() without hud-host is false and leaves connected false (shouldConsume then says nohud)", !hud.connect() && !hud.connected);
+        hud.poll();
+        HCHECK("poll() without hud-host keeps connected false", !hud.connected);
+        g_service = &g_log;
+    }
 
     return kt::Report("common_contract_test (quick_loot)");
 }

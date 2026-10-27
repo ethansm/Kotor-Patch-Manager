@@ -163,7 +163,7 @@ addresses = ["0x00400000", "0x004261CF", "0x004261D6", "0x004261E6", "0x004265F3
 addresses = ["0x00745774", "0x0074F25A", "0x0074F8AB"]
 
 [files."patch_manager_mods/quick_loot_src/QuickLoot.cpp"]
-addresses = ["0x0051C160", "0x00606100", "0x0099244C"]
+addresses = ["0x0051C160", "0x00606100", "0x0087A550", "0x0099244C"]
 
 [files."patch_manager_mods/queue_hud_src/QueueHud.cpp"]
 addresses = ["0x0074C168", "0x0074E0B0", "0x00A1B4D0"]

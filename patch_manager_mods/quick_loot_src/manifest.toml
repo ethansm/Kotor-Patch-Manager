@@ -1,11 +1,12 @@
 [patch]
 id = "quick-loot"
-name = "Quick Loot (probe)"
-version = "0.0.1-probe"
+name = "Quick Loot"
+version = "0.1.0-dev"
 author = "local"
-description = "Log-only probe for doc 52: times ShowContainerGui, the placeable event 0x16/0x17/0x1B and CloseInventory. Never writes game memory, never changes behaviour."
+description = "Clicking a loot container takes everything at once with no container menu (doc 52 QL1a): ShowContainerGui is consumed and the vanilla take-all Close is sent a couple of HUD frames after the container script has run. Hold Shift to open the vanilla menu. Configured by quick_loot.ini [QuickLoot] Enabled (default 1). Keeps the QL0 probe log lines (SHOW/ITEM/EVT/CLOSE). Needs hud-host for the per-frame tick."
 
-requires = []
+requires = ["hud-host"]
+requires_interfaces = ["k2.hud@1"]
 conflicts = []
 
 [patch.supported_versions]

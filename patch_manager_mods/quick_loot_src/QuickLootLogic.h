@@ -1,5 +1,5 @@
-// QuickLootLogic.h -- pure helpers of the quick-loot probe (doc 52 QL0): event filter, wrap-safe ms, item cap, the pending-container
-// tracker and the log line formatters. No game memory, no Win32: host-testable (quick_loot_logic_test.cpp).
+// QuickLootLogic.h -- pure helpers of quick-loot (doc 52 QL0/QL1a): event filter, wrap-safe ms, item cap, the pending-container
+// tracker, the take-all decision functions (shouldConsume / readyToSend / giveUp), the pending-take state and the log line formatters. No game memory, no Win32: host-testable (quick_loot_logic_test.cpp).
 #pragma once
 #include <stdint.h>
 #include <stdio.h>
@@ -51,6 +51,65 @@ struct Tracker {
     }
 };
 
+// ---- QL1a: take-all decision logic
+constexpr int EvtOpen = EvtOnOpenLoot;                 // the OnOpen event: loot generation has run once it was handled
+constexpr unsigned OpenSettleFrames = 2;               // HUD frames to wait after OnOpen before sending the Close
+constexpr uint32_t SendTimeoutMs = 1000;               // send anyway this long after Show when no OnOpen was seen
+constexpr uint32_t GiveUpMs = 5000;                    // stop retrying an unresolvable message object after this long
+
+enum class Reason { Consume = 0, Disabled, NoHud, Flag, Shift, NoPlc, Busy };
+
+// Consume (skip the vanilla container menu) only when every condition holds. First failing condition wins, in this order.
+inline Reason shouldConsume(bool enabled, bool hudOk, int flag, bool shift, bool plcOk, bool busy) {
+    if (!enabled) return Reason::Disabled;
+    if (!hudOk) return Reason::NoHud;
+    if (flag != 1) return Reason::Flag;
+    if (shift) return Reason::Shift;
+    if (!plcOk) return Reason::NoPlc;
+    if (busy) return Reason::Busy;
+    return Reason::Consume;
+}
+inline const char* reasonName(Reason r) {
+    switch (r) {
+        case Reason::Consume: return "consume";
+        case Reason::Disabled: return "disabled";
+        case Reason::NoHud: return "nohud";
+        case Reason::Flag: return "flag";
+        case Reason::Shift: return "shift";
+        case Reason::NoPlc: return "noplc";
+        case Reason::Busy: return "busy";
+    }
+    return "?";
+}
+
+// Send the Close when OnOpen was seen at least OpenSettleFrames HUD frames ago, or the Show is SendTimeoutMs old. Wrap-safe.
+inline bool readyToSend(bool openSeen, uint32_t frame, uint32_t openFrame, uint32_t nowMs, uint32_t showMs) {
+    if (openSeen && static_cast<uint32_t>(frame - openFrame) >= OpenSettleFrames && static_cast<uint32_t>(frame - openFrame) < 0x80000000u) return true;
+    return msSince(nowMs, showMs) >= SendTimeoutMs;
+}
+inline bool giveUp(uint32_t nowMs, uint32_t showMs) { return msSince(nowMs, showMs) >= GiveUpMs; }
+
+// The one take-all waiting for its Close.
+struct Take {
+    bool active = false;
+    uint32_t obj = 0;
+    uintptr_t plc = 0;
+    uint32_t showMs = 0, showFrame = 0;
+    bool openSeen = false;
+    uint32_t openFrame = 0;
+    bool errLogged = false;
+
+    void arm(uint32_t o, uintptr_t p, uint32_t now, uint32_t frame) {
+        active = true; obj = o; plc = p; showMs = now; showFrame = frame; openSeen = false; openFrame = 0; errLogged = false;
+    }
+    void clear() { active = false; plc = 0; obj = 0; openSeen = false; }
+    // Placeable event: the first OnOpen of the pending container marks it. Returns true when it did.
+    bool onEvent(uintptr_t p, int id, uint32_t frame) {
+        if (!active || p == 0 || p != plc || id != EvtOpen || openSeen) return false;
+        openSeen = true; openFrame = frame; return true;
+    }
+};
+
 // ---- formatters (fixed formats the play-test row greps for)
 inline int fmtShow(char* b, size_t n, uint32_t obj, int flag, uintptr_t plc, int open, int count) {
     return snprintf(b, n, "SHOW obj=%08x flag=%d plc=%08x open=%d n=%d", obj, flag, static_cast<unsigned>(plc), open, count);
@@ -63,5 +122,13 @@ inline int fmtEvt(char* b, size_t n, int id, uint32_t dtMs, int count) { return 
 inline int fmtClose(char* b, size_t n, int flag, uint32_t dtMs, int count, int open) {
     return snprintf(b, n, "CLOSE flag=%d dt=%ums n=%d open=%d", flag, dtMs, count, open);
 }
+inline int fmtTakeArm(char* b, size_t n, uint32_t obj, uintptr_t plc, int count) {
+    return snprintf(b, n, "TAKE-ARM obj=%08x plc=%08x n=%d", obj, static_cast<unsigned>(plc), count);
+}
+inline int fmtVanilla(char* b, size_t n, Reason r) { return snprintf(b, n, "VANILLA reason=%s", reasonName(r)); }
+inline int fmtTakeSend(char* b, size_t n, uint32_t obj, uint32_t dtMs, int open, int count) {
+    return snprintf(b, n, "TAKE-SEND obj=%08x dt=%ums open=%d n=%d", obj, dtMs, open, count);
+}
+inline int fmtErr(char* b, size_t n, const char* what, uint32_t dtMs) { return snprintf(b, n, "ERR %s dt=%ums", what, dtMs); }
 
 }   // namespace qlogic

@@ -1,4 +1,4 @@
-// quick_loot_logic_test.cpp -- host test of QuickLootLogic.h (doc 52 QL0): event filter, wrap-safe ms, item cap, tracker, formatters.
+// quick_loot_logic_test.cpp -- host test of QuickLootLogic.h (doc 52 QL0/QL1a): event filter, wrap-safe ms, item cap, tracker, take-all decisions, formatters.
 #include "QuickLootLogic.h"
 #include "check.h"
 #include <string.h>
@@ -55,6 +55,72 @@ int main() {
         kt::Check("a new Show resets the raw budget", r.wantRaw());
     }
 
+    // ---- QL1a: consume matrix. Base case consumes; each single failing condition yields exactly its reason.
+    {
+        kt::Check("all conditions met consumes", shouldConsume(true, true, 1, false, true, false) == Reason::Consume);
+        kt::Check("disabled", shouldConsume(false, true, 1, false, true, false) == Reason::Disabled);
+        kt::Check("no hud", shouldConsume(true, false, 1, false, true, false) == Reason::NoHud);
+        kt::Check("flag 0", shouldConsume(true, true, 0, false, true, false) == Reason::Flag);
+        kt::Check("flag 2", shouldConsume(true, true, 2, false, true, false) == Reason::Flag);
+        kt::Check("flag -1", shouldConsume(true, true, -1, false, true, false) == Reason::Flag);
+        kt::Check("shift held", shouldConsume(true, true, 1, true, true, false) == Reason::Shift);
+        kt::Check("no placeable", shouldConsume(true, true, 1, false, false, false) == Reason::NoPlc);
+        kt::Check("busy", shouldConsume(true, true, 1, false, true, true) == Reason::Busy);
+        // priority: disabled > nohud > flag > shift > noplc > busy
+        kt::Check("priority disabled over everything", shouldConsume(false, false, 0, true, false, true) == Reason::Disabled);
+        kt::Check("priority nohud over flag", shouldConsume(true, false, 0, true, false, true) == Reason::NoHud);
+        kt::Check("priority flag over shift", shouldConsume(true, true, 0, true, false, true) == Reason::Flag);
+        kt::Check("priority shift over noplc", shouldConsume(true, true, 1, true, false, true) == Reason::Shift);
+        kt::Check("priority noplc over busy", shouldConsume(true, true, 1, false, false, true) == Reason::NoPlc);
+        // exhaustive: only the one combination consumes
+        int consumes = 0;
+        for (int m = 0; m < 32; ++m)
+            for (int flag = 0; flag <= 2; ++flag)
+                if (shouldConsume(m & 1, m & 2, flag, m & 4, m & 8, m & 16) == Reason::Consume) ++consumes;
+        kt::CheckEq("exactly one input combination consumes", consumes, 1);
+        kt::Check("reason names", strcmp(reasonName(Reason::Shift), "shift") == 0 && strcmp(reasonName(Reason::Flag), "flag") == 0 &&
+                  strcmp(reasonName(Reason::NoHud), "nohud") == 0 && strcmp(reasonName(Reason::Busy), "busy") == 0 &&
+                  strcmp(reasonName(Reason::Disabled), "disabled") == 0 && strcmp(reasonName(Reason::NoPlc), "noplc") == 0);
+    }
+
+    // ---- QL1a: readyToSend (2-frame rule, 1000 ms timeout), giveUp (5000 ms), wrap
+    {
+        kt::Check("no OnOpen, fresh: not ready", !readyToSend(false, 10, 0, 1100, 1000));
+        kt::Check("OnOpen same frame: not ready", !readyToSend(true, 10, 10, 1010, 1000));
+        kt::Check("OnOpen 1 frame ago: not ready", !readyToSend(true, 11, 10, 1020, 1000));
+        kt::Check("OnOpen 2 frames ago: ready", readyToSend(true, 12, 10, 1030, 1000));
+        kt::Check("OnOpen 5 frames ago: ready", readyToSend(true, 15, 10, 1030, 1000));
+        kt::Check("frame difference ignored without OnOpen", !readyToSend(false, 500, 10, 1030, 1000));
+        kt::Check("timeout 999 ms: not ready", !readyToSend(false, 0, 0, 1999, 1000));
+        kt::Check("timeout 1000 ms: ready", readyToSend(false, 0, 0, 2000, 1000));
+        kt::Check("timeout also covers OnOpen seen but frames stalled", readyToSend(true, 10, 10, 2500, 1000));
+        kt::Check("frame counter wrap: 0xFFFFFFFF -> 1 is 2 frames", readyToSend(true, 1, 0xFFFFFFFFu, 1010, 1000));
+        kt::Check("frame counter wrap: 0xFFFFFFFF -> 0 is 1 frame", !readyToSend(true, 0, 0xFFFFFFFFu, 1010, 1000));
+        kt::Check("ms wrap: timeout across the 32-bit wrap", readyToSend(false, 0, 0, 100, 0xFFFFFC18u) && !readyToSend(false, 0, 0, 0xFFFFFE00u, 0xFFFFFC18u));
+        kt::Check("giveUp 4999 ms: no", !giveUp(5999, 1000));
+        kt::Check("giveUp 5000 ms: yes", giveUp(6000, 1000));
+        kt::Check("giveUp wrap-safe", giveUp(4000, 0xFFFFF000u) && !giveUp(500, 0xFFFFF000u));
+    }
+
+    // ---- QL1a: pending take
+    {
+        Take k;
+        kt::Check("idle take ignores events", !k.onEvent(0x1000, EvtOpen, 5));
+        k.arm(0x7F000001u, 0x1000, 100, 7);
+        kt::Check("armed", k.active && k.obj == 0x7F000001u && k.plc == 0x1000 && k.showMs == 100 && k.showFrame == 7 && !k.openSeen);
+        kt::Check("other placeable's OnOpen ignored", !k.onEvent(0x2000, EvtOpen, 8) && !k.openSeen);
+        kt::Check("other event id ignored", !k.onEvent(0x1000, EvtClosed, 8) && !k.onEvent(0x1000, 0, 8) && !k.openSeen);
+        kt::Check("null plc ignored", !k.onEvent(0, EvtOpen, 8));
+        kt::Check("OnOpen marks and records the frame", k.onEvent(0x1000, EvtOpen, 9) && k.openSeen && k.openFrame == 9);
+        kt::Check("second OnOpen does not move the frame", !k.onEvent(0x1000, EvtOpen, 20) && k.openFrame == 9);
+        k.errLogged = true;
+        k.clear();
+        kt::Check("clear", !k.active && k.plc == 0 && !k.openSeen);
+        kt::Check("cleared take ignores events", !k.onEvent(0x1000, EvtOpen, 30));
+        k.arm(0x7F000002u, 0x3000, 500, 40);
+        kt::Check("re-arm resets openSeen and errLogged", k.active && !k.openSeen && !k.errLogged && k.plc == 0x3000);
+    }
+
     // ---- formatters
     char b[160];
     fmtShow(b, sizeof b, 0x7F0000AAu, 0, 0x1234ABCDu, 1, 3);
@@ -69,6 +135,14 @@ int main() {
     kt::Check("EVTRAW line", strcmp(b, "EVTRAW plc=00001000 a1=5 a2=6 a3=00002000 u16=0016 ref=5") == 0);
     fmtEvtRaw(b, sizeof b, 0x1000u, 5, 6, 0x2000u, -1, 5);
     kt::Check("EVTRAW unreadable id prints ffff", strstr(b, "u16=ffff") != nullptr);
+    fmtTakeArm(b, sizeof b, 0x7F0000AAu, 0x1234ABCDu, 3);
+    kt::Check("TAKE-ARM line", strcmp(b, "TAKE-ARM obj=7f0000aa plc=1234abcd n=3") == 0);
+    fmtVanilla(b, sizeof b, Reason::Shift);
+    kt::Check("VANILLA line", strcmp(b, "VANILLA reason=shift") == 0);
+    fmtTakeSend(b, sizeof b, 0x7F0000AAu, 66, 1, 3);
+    kt::Check("TAKE-SEND line", strcmp(b, "TAKE-SEND obj=7f0000aa dt=66ms open=1 n=3") == 0);
+    fmtErr(b, sizeof b, "msgobj", 120);
+    kt::Check("ERR line", strcmp(b, "ERR msgobj dt=120ms") == 0);
     char tiny[8];
     fmtShow(tiny, sizeof tiny, 1, 1, 1, 1, 1);
     kt::Check("formatter truncates safely into a small buffer", strlen(tiny) == 7);
