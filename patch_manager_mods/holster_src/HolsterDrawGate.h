@@ -47,6 +47,16 @@ inline bool shouldWriteHip(bool drawgate, bool ownerReadable, uint32_t combatFla
     return ownerReadable && combatFlag == 0 && !flourishOpen;
 }
 
+// Scene hold (10-27: Atris showing the Exile's lightsaber was put on her hip): a weapon first placed while its owner is in a conversation was equipped
+// by the scene's script, so it stays in the hand until that conversation ends. Weapons placed before the conversation keep the normal gate.
+// partner = server creature +0x54, the conversation partner oid read by GetIsInConversation (RE "probable"; 0 / 0x7F000000 = none; logged live as SCENE).
+inline bool convPartnerSet(uint32_t partner) { return partner != 0 && partner != 0x7F000000u; }
+inline bool sceneHoldStep(uint8_t& hold, bool first, bool inConv) {
+    if (!inConv) hold = 0;
+    else if (first) hold = 1;
+    return hold != 0;
+}
+
 // Toggle-key draw hold (holster toggle key). True while `owner` is the creature the hold was set for and the hold deadline is still ahead of `now`.
 // All tick math is wrap-safe (signed 32-bit difference). holdOwner 0 = no hold. Does not affect shouldWriteHip; the caller ORs it in as "drawn".
 inline bool holdActive(uintptr_t owner, uintptr_t holdOwner, uint32_t holdUntil, uint32_t now) {

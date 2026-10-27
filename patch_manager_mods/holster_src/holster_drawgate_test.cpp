@@ -251,7 +251,23 @@ static void testReachHoldAllowed() {
     KT_CHECK(reachHoldAllowed(ReachHoldSolve, 0x01, 0, 0.5f, 3, false));
 }
 
+static void testSceneHold() {
+    KT_CHECK(!hs::convPartnerSet(0));
+    KT_CHECK(!hs::convPartnerSet(0x7F000000u));
+    KT_CHECK(hs::convPartnerSet(0x00000123u));
+    uint8_t h = 0;
+    KT_CHECK(!hs::sceneHoldStep(h, false, true));   // already placed before the conversation: normal gate
+    KT_CHECK(hs::sceneHoldStep(h, true, true));     // first placed during it: held in the hand
+    KT_CHECK(hs::sceneHoldStep(h, false, true));    // stays held while the conversation runs
+    KT_CHECK(!hs::sceneHoldStep(h, false, false));  // conversation over: released
+    KT_CHECK(!hs::sceneHoldStep(h, false, true));   // a later conversation does not re-arm it
+    KT_CHECK(!hs::sceneHoldStep(h, true, false));   // first placed outside a conversation: never held
+    // the hold feeds shouldWriteHip's keep-drawn argument
+    KT_CHECK(!hs::shouldWriteHip(true, true, 0, true));
+}
+
 int main() {
+    testSceneHold();
     testTruthTable();
     testFlourishWindowArg();
     testPlaceMode();

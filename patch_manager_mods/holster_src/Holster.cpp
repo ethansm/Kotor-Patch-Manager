@@ -72,6 +72,7 @@ static hs::PlaceMode g_placeMode = hs::PlaceDrawgate;
 static inline bool drawgateMode() { return g_placeMode == hs::PlaceDrawgate; }
 // flourish_draw (0.5.0-dev, HW13): 1 = a party member's weapon stays in the hand while its flourish window is open (flourishOpenFor, per owner).
 static bool g_flourishDraw = true;
+static bool g_sceneHold = true;   // scene_hold=1: a weapon first placed while its owner is in a conversation stays in the hand until it ends (hs::sceneHoldStep)
 // draw_slide_ms / stow_slide_ms (0.5.1-dev, HW14): a weapon eases between the hip and the hand over this many ms (HolsterSlide.h Slide). 0 = instant for that
 // direction; 0 and 0 = the 0.5.0 snap exactly. Clamped by clampDrawSlideMs (0..570, the vanilla draw window) / clampStowSlideMs (0..1000).
 // 0.15.0-dev (HW28): each key also has a per-category form (draw_slide_ms_<cat>, stow_slide_ms_<cat>, reach_grab_pct_<cat>); g_slideTune holds the parsed keys, and
@@ -445,6 +446,11 @@ static void readConfig() {
             else if (!_stricmp(key, "flourish_draw")) {
                 bool b = true;
                 if (hs::tuneParseBool(val, b)) g_flourishDraw = b;
+                else cfgWarn(key, val, "not a boolean word, keeping the default 1");
+            }
+            else if (!_stricmp(key, "scene_hold")) {
+                bool b = true;
+                if (hs::tuneParseBool(val, b)) g_sceneHold = b;
                 else cfgWarn(key, val, "not a boolean word, keeping the default 1");
             }
             else if (parseSlideKey(key, val)) {}   // draw_slide_ms[_<cat>], stow_slide_ms[_<cat>], reach_grab_pct[_<cat>] (HW28)
@@ -2480,7 +2486,7 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
     // Verdict cache keyed on node + gob + the node's name handle [N+4], so a freed and reused address pair is re-resolved. The full
     // resolve (weapon > type > global, plus the body delta) is cached with the tune sequence it was computed for and redone when it moves.
     // Repoint: both hands share the bone_name node; the hand comes from g_handRing (sticky via hs::resolveLeft when evicted). Drawgate: the node name (lhand) decides.
-    struct Ent { uintptr_t node, gob, handle, model; bool isTarget, left; hs::Category cat; char mname[17], body[17]; LONG seq; hs::Resolved r; hs::GateState gate; hs::Slide slide; uint32_t slFrames = 0, slMaxDt = 0, slPrev = 0; hs::Q pkQ = {1, 0, 0, 0}; uint32_t pkT = 0; float pkDps = 0.f; bool pkOn = false; uint8_t graceN = 0; CarryResid cres = {}; uint32_t dly = 0, mTick = 0, mKey = 0; bool mSeen = false; float slowArm = 1.f; hs::SnapState snap; };   // graceN: HW25 hard-reset grace, frames held so far; cres: HW26 hand-frame residual of the running carry; slowArm: HW44 slow_holster_x the running (or pending) slide was armed with; snap: 0.21.1-dev SNAP detector state of the weapon; pk*: HW50 peak turn speed of the shown weapon during the running slide
+    struct Ent { uintptr_t node, gob, handle, model; bool isTarget, left; hs::Category cat; char mname[17], body[17]; LONG seq; hs::Resolved r; hs::GateState gate; hs::Slide slide; uint32_t slFrames = 0, slMaxDt = 0, slPrev = 0; hs::Q pkQ = {1, 0, 0, 0}; uint32_t pkT = 0; float pkDps = 0.f; bool pkOn = false; uint8_t graceN = 0; CarryResid cres = {}; uint32_t dly = 0, mTick = 0, mKey = 0; bool mSeen = false; float slowArm = 1.f; hs::SnapState snap; uint8_t scene = 0; uint32_t convAt = 0, convPartner = 0; bool convRead = false; };   // graceN: HW25 hard-reset grace, frames held so far; cres: HW26 hand-frame residual of the running carry; slowArm: HW44 slow_holster_x the running (or pending) slide was armed with; snap: 0.21.1-dev SNAP detector state of the weapon; pk*: HW50 peak turn speed of the shown weapon during the running slide
     static Ent s_cache[128];
     static unsigned s_next = 0;
     // HW33a: ms to hold back this Gob's draw / stow target. The left-hand weapon of a dual wielder waits dual_stagger_ms behind the right-hand one (another live cache entry of the same
@@ -2607,9 +2613,32 @@ extern "C" void __cdecl HolsterPlace(void* gob, void* beh) {
         const int combatOff = k2addr::off(&K2AddrTable::Creature_ClientCombat);
         uint32_t combat = 0;
         const bool readable = owner != 0 && combatOff != 0 && rdU32Ok(kSitePlace, owner, combatOff, &combat);
+        // Scene hold: the owner's conversation partner (server creature +0x54), re-read at most every 250 ms per entry. Unreadable = not in a conversation.
+        bool scene = false;
+        if (g_sceneHold && readable) {
+            const uint32_t tk = GetTickCount();
+            if (!ent->convRead || static_cast<int32_t>(tk - ent->convAt) >= 250 || static_cast<int32_t>(tk - ent->convAt) < 0) {
+                const uintptr_t S = party::serverCreature(owner);
+                uint8_t type = 0;
+                uint32_t partner = 0;
+                if (!(S && saferead::readAt(kSitePlace, S, 0x08, &type) && type == 5 && rdU32Ok(kSitePlace, S, 0x54, &partner))) partner = 0;
+                static volatile LONG s_convLines = 0;   // probe: +0x54 is unverified live; one line per change of the partner set / unset state
+                if (ent->convRead && hs::convPartnerSet(partner) != hs::convPartnerSet(ent->convPartner) && KP_ENABLED(chMain, KPLOG_INFO) &&
+                    InterlockedIncrement(&s_convLines) <= 60 && takeLine())
+                    KP_LOG(chMain, "CONV creature=%x srv=%x gob=%x partner=%x was=%x", static_cast<unsigned>(owner), static_cast<unsigned>(S), static_cast<unsigned>(g),
+                           static_cast<unsigned>(partner), static_cast<unsigned>(ent->convPartner));
+                ent->convPartner = partner; ent->convAt = tk; ent->convRead = true;
+            }
+            const uint8_t was = ent->scene;
+            scene = hs::sceneHoldStep(ent->scene, ent->gate.hip < 0 || ent->gate.owner != owner, hs::convPartnerSet(ent->convPartner));
+            static volatile LONG s_sceneLines = 0;
+            if (was != ent->scene && KP_ENABLED(chMain, KPLOG_INFO) && InterlockedIncrement(&s_sceneLines) <= 60 && takeLine())
+                KP_LOG(chMain, "SCENE hold=%d creature=%x gob=%x mname=%s partner=%x combat=%u", ent->scene, static_cast<unsigned>(owner), static_cast<unsigned>(g),
+                       ent->mname[0] ? ent->mname : "-", static_cast<unsigned>(ent->convPartner), static_cast<unsigned>(combat));
+        }
         const bool hip = hs::shouldWriteHip(true, readable, combat,
                                         hs::holdActive(owner, g_holdOwner, g_holdUntil, GetTickCount()) || (g_flourishDraw && readable && combat == 0 && flourishOpenFor(owner)) ||
-                                        (g_partyCombatHold && g_partyCombat != 0 && ownerIsParty(owner)));
+                                        (g_partyCombatHold && g_partyCombat != 0 && ownerIsParty(owner)) || scene);
         if (readable) {   // HW15 probe: track which owners have a weapon on the hip (read by the ANIMRES line)
             if (hip) { const uintptr_t hb = rdU32(kSitePlace, owner, 0x68); if (hb) g_holSet.touch(owner, hb, GetTickCount()); }
             else g_holSet.remove(owner);
