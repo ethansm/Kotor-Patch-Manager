@@ -1,28 +1,23 @@
 # Session Handoff & Plan State: patch_manager_mods/51_combat_stats_page.md
 
 ## 0. Next-Phase Direction
-51 ST3 user review + ST4 install GO
+51 ST5 (after ST4-P1 play)
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/51_combat_stats_page.md`
-- **Branch:** `KOTOR-II` (265ae68b character-effects-panel 0.3.0-probe (doc 51 ST4): STATS log block + DEFLECT check hook H-C5 at 0x006E2351 (log only))
-- **Generated:** 2026-10-27 02:18:12 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (df038eb9 doc 52: QL1a/QL1b INSTALLED (quick-loot 0.2.0-dev live))
+- **Generated:** 2026-10-27 19:10:08 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-265ae68b character-effects-panel 0.3.0-probe (doc 51 ST4): STATS log block + DEFLECT check hook H-C5 at 0x006E2351 (log only)
- patch_manager_mods/PLAY_TEST_QUEUE.md              |   1 +
- .../active_effects_panel_src/CharEffectsPanel.cpp  | 136 ++++++++++++++++++++-
- .../active_effects_panel_src/CombatStatsAddr.h     |  27 ++++
- .../active_effects_panel_src/chareffects.ini       |   2 +
- .../active_effects_panel_src/exports.def           |   1 +
- .../kotor2-steam-aspyr.hooks.toml                  |  28 +++++
- .../active_effects_panel_src/manifest.toml         |   2 +-
- 7 files changed, 193 insertions(+), 4 deletions(-)
+df038eb9 doc 52: QL1a/QL1b INSTALLED (quick-loot 0.2.0-dev live)
+ .claude/handoffs/52_quick_loot.handoff.md | 33 ++++++++++++++-----------------
+ patch_manager_mods/52_quick_loot.md       |  6 +++---
+ patch_manager_mods/PLAY_TEST_QUEUE.md     |  2 +-
+ 3 files changed, 19 insertions(+), 22 deletions(-)
 ```
-- **Dirty Files (186):**
+- **Dirty Files (187):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
-  - ` M .claude/handoffs/51_combat_stats_page.handoff.md`
   - ` M .claude/handoffs/DECOMP_PLAN.handoff.md`
   - ` M .claude/handoffs/PHASE7_COMMON_MASTER.handoff.md`
   - ` M .claude/handoffs/deep_haiku_review_skill.handoff.md`
@@ -30,17 +25,16 @@
   - ` M .claude/plans/swarm_library_architecture.md`
   - ` M .claude/reviews/gemini_20261014/tools/fix3_items.tsv`
   - ` M .claude/settings.json`
-  - ... +176 more (run `git status --short`)
+  - ` M CLAUDE.md`
+  - ... +177 more (run `git status --short`)
 
-## 2. Immediate Objective (ST3)
-**Mockup: `scripts/character_page_mockup.py` renders the Stats tab + one vanilla-row tooltip (Defense)**
+## 2. Immediate Objective (ST5)
+**Stats tab UI (header toggle, sections, rows, breakdown tooltips, `show_influence`)**
 
-Status: PARTIAL
-Task: Mockup: `scripts/character_page_mockup.py` renders the Stats tab + one vanilla-row tooltip (Defense)
+Status: TODO
+Task: Stats tab UI (header toggle, sections, rows, breakdown tooltips, `show_influence`)
 
 ## 2b. Upcoming Batches in Pipeline
-- **ST4** [Sync / Header Mirroring] : Probe 0.3.0-probe: STATS log block per shown character (no UI) + read-only deflection check (engine total vs recompute)
-- **ST5** [Sync / Header Mirroring] : Stats tab UI (header toggle, sections, rows, breakdown tooltips, `show_influence`)
 - **ST6** [Sync / Header Mirroring] : Vanilla page tooltips (hover rects by tag, `vanilla_tooltips=1`, text table)
 
 ## 3. Strict Context Budget & Read Policy
@@ -48,7 +42,7 @@ Task: Mockup: `scripts/character_page_mockup.py` renders the Stats tab + one van
 
 ## 4. Subagent Delegation Direction
 - **Claude Code**: parallel `model: haiku` Agent subagents; brief = `Contract` + `Write Scope` + `python3 scripts/agent_contract.py print worker|recon`.
-- **Other backends** (only when the user asks): `python3 scripts/plan_manager.py delegate ST3` or `oc-subagent <scout|code|ghidra|verify|gate|doc>`.
+- **Other backends** (only when the user asks): `python3 scripts/plan_manager.py delegate ST5` or `oc-subagent <scout|code|ghidra|verify|gate|doc>`.
 
 ## 5. Dead Ends & Verification (manual)
 _(none recorded; append Dead Ends & Anti-Patterns and Verification Commands here)_
