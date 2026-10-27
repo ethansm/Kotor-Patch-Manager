@@ -30,12 +30,41 @@ constexpr int EffIconRow_TrapPoison = 110;   // TRAP_EFFECT_POISON: the 2da name
 // with a poisoned creature (Buff HUD: embedded bh_poison, PoisonIconTex.inc); a consumer without that texture never sets the hook.
 inline const char* (*g_trapPoisonIcon)() = nullptr;
 
+// effecticon.2da row of a type-0x43 effect (ints[0]), else -1.
+inline int effectIconRow(int eff) {
+    unsigned short type = 0; int n = 0, ip = 0, row = 0;
+    if (!rd(eff, Effect_Type, &type) || type != EffType_Icon) return -1;
+    if (!rd(eff, Effect_IntCount, &n) || n <= 0 || !rd(eff, Effect_Ints, &ip) || !ip || !rd(ip, 0, &row)) return -1;
+    return row;
+}
+
+// EffectPoison (type 0x23), as CSWSEffectListHandler::OnApplyPoison (Steam 0x59fd20) fills it on a failed save: ints[1]/[2] = world (day, ms) at
+// apply, ints[5] = poison.2da DURATION (s), ints[6] = PERIOD (s); +0x0c holds DURATION * 1000 (ms, not s), so effectRatio does not fit it.
+constexpr int EffType_Poison = 0x23;
+struct PoisonTiming { int startDay, startMs, durSec, period; };
+inline bool readPoison(int eff, PoisonTiming* t) {
+    unsigned short type = 0; int n = 0, ip = 0;
+    if (!rd(eff, Effect_Type, &type) || type != EffType_Poison) return false;
+    if (!rd(eff, Effect_IntCount, &n) || n < 7 || !rd(eff, Effect_Ints, &ip) || !ip) return false;
+    return rd(ip, 4, &t->startDay) && rd(ip, 8, &t->startMs) && rd(ip, 20, &t->durSec) && rd(ip, 24, &t->period) && t->durSec > 0;
+}
+// Remaining share of the longest-running poison in the effect array; 1.0 without a clock or a readable poison (draws fully bright, as before).
+inline float poisonRatio(int arr, int count, int day, int ms, bool haveTime, float minRatio = 0.0f) {
+    if (!haveTime) return 1.0f;
+    float best = -1.0f;
+    for (int i = 0; i < count; ++i) {
+        int eff = 0; PoisonTiming t;
+        if (!rd(arr, i * 4, &eff) || !readPoison(eff, &t)) continue;
+        float r = remainingRatio(t.startDay, t.startMs + t.durSec * 1000, float(t.durSec), day, ms, minRatio);
+        if (r > best) best = r;
+    }
+    return best < 0.0f ? 1.0f : best;
+}
+
 // Harmful effecticon.2da row (good == 0) carried by a type-0x43 effect -> its icon, else nullptr. Row 0 is the "none" row.
 inline const char* iconForEffectIconEffect(int eff, bool* item) {
     *item = false;
-    unsigned short type = 0; int n = 0, ip = 0, row = 0;
-    if (!rd(eff, Effect_Type, &type) || type != EffType_Icon) return nullptr;
-    if (!rd(eff, Effect_IntCount, &n) || n <= 0 || !rd(eff, Effect_Ints, &ip) || !ip || !rd(ip, 0, &row)) return nullptr;
+    const int row = effectIconRow(eff);
     if (row == EffIconRow_TrapPoison && g_trapPoisonIcon) { if (const char* r = g_trapPoisonIcon()) return r; }
     if (row <= 0 || row >= kEffectIconRowCount || kEffectIconRows[row].good != 0 || !kEffectIconRows[row].resref) return nullptr;
     const char* r = kEffectIconRows[row].resref;
@@ -65,7 +94,8 @@ inline int collectBuffs(uintptr_t creature, int day, int ms, bool haveTime, Buff
         }
         if (dup) continue;
         if (viaIcon) { if (nIcon < MaxEffects) iconSeen[nIcon++] = resref; } else seen[nSeen++] = spell;
-        out[n++] = { resref, effectRatio(eff, day, ms, haveTime, minRatio), item };
+        const bool poison = viaIcon && effectIconRow(eff) == EffIconRow_TrapPoison;   // the icon effect has no duration: drain by the poison itself
+        out[n++] = { resref, poison ? poisonRatio(arr, count, day, ms, haveTime, minRatio) : effectRatio(eff, day, ms, haveTime, minRatio), item };
     }
     return n;
 }

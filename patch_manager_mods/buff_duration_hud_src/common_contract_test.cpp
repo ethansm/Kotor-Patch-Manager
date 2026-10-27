@@ -558,8 +558,39 @@ static void effects_contract() {
         g_trapPoisonIcon = [] () -> const char* { return "bh_poison"; };
         n = collectBuffs(cp, 100, 50000, true, out, 16, true);
         HCHECK("poison row with the override: one debuff icon bh_poison (two effects deduped), no disc", n == 1 && !strcmp(out[0].resref, "bh_poison") && !out[0].item);
-        HCHECK("poison override draws with the effect's drain ratio", near_(out[0].ratio, 0.5f));
+        HCHECK("poison icon without a readable EffectPoison: fully bright (the icon effect's own duration is ignored)", near_(out[0].ratio, 1.0f));
         HEQ("poison row is never a buff", collectBuffs(cp, 100, 50000, true, out, 16, false), 0);
+
+        // drain (0.2.5): the type-0x23 EffectPoison carries OnApplyPoison's ints: [1]/[2] start (day, ms), [5] DURATION s, [6] PERIOD s.
+        auto mkPoison = [](int n, int day, int ms, int durSec) {
+            uintptr_t ef = arenaAlloc(0x40), ints = arenaAlloc(64);
+            at<unsigned short>(ef, 0x08) = EffType_Poison; at<int>(ef, 0x1c) = -1; at<float>(ef, 0x0c) = durSec * 1000.0f;
+            at<int>(ef, 0x30) = n; wptr(ef, 0x34, ints);
+            at<int>(ints, 4) = day; at<int>(ints, 8) = ms; at<int>(ints, 20) = durSec; at<int>(ints, 24) = 3;
+            return ef;
+        };
+        auto withPoisons = [&](std::initializer_list<uintptr_t> ps) {
+            uintptr_t c = arenaAlloc(0x200), arr = arenaAlloc(64); int k = 0;
+            wptr(arr, 0, at<uint32_t>(at<uint32_t>(cp, 0x148), 0)); ++k;   // the row-110 icon effect
+            for (uintptr_t p : ps) wptr(arr, 4 * k++, p);
+            wptr(c, 0x148, arr); at<int>(c, 0x14c) = k;
+            return c;
+        };
+        uintptr_t c1 = withPoisons({ mkPoison(8, 100, 40000, 30) });
+        n = collectBuffs(c1, 100, 50000, true, out, 16, true);
+        HCHECK("poison drains by its own start + DURATION: 10 s into 30 s -> 0.667", n == 1 && near_(out[0].ratio, 20.0f / 30.0f));
+        n = collectBuffs(c1, 100, 50000, false, out, 16, true);
+        HCHECK("no clock -> poison fully bright", n == 1 && near_(out[0].ratio, 1.0f));
+        n = collectBuffs(c1, 100, 75000, true, out, 16, true);
+        HCHECK("poison past start + DURATION clamps to 0.0", n == 1 && out[0].ratio == 0.0f);
+        n = collectBuffs(withPoisons({ mkPoison(8, 99, 86400000 - 5000, 30) }), 100, 5000, true, out, 16, true);
+        HCHECK("poison across midnight: 5 s before + 5 s after = 10 s into 30 s", n == 1 && near_(out[0].ratio, 20.0f / 30.0f));
+        n = collectBuffs(withPoisons({ mkPoison(8, 100, 40000, 30), mkPoison(8, 100, 45000, 72) }), 100, 50000, true, out, 16, true);
+        HCHECK("two poisons: the longest remaining one wins (67 s of 72)", n == 1 && near_(out[0].ratio, 67.0f / 72.0f));
+        n = collectBuffs(withPoisons({ mkPoison(6, 100, 40000, 30) }), 100, 50000, true, out, 16, true);
+        HCHECK("EffectPoison with < 7 ints (save passed, never timed) is ignored -> fully bright", n == 1 && near_(out[0].ratio, 1.0f));
+        n = collectBuffs(withPoisons({ mkPoison(8, 100, 40000, 0) }), 100, 50000, true, out, 16, true);
+        HCHECK("EffectPoison with DURATION 0 is ignored -> fully bright", n == 1 && near_(out[0].ratio, 1.0f));
         g_trapPoisonIcon = nullptr;
     }
     k2addr::setForTest(nullptr);

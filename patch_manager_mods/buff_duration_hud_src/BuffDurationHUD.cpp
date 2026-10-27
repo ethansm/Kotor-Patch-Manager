@@ -177,6 +177,32 @@ const char* poisonIcon() {
     logf("poison icon %s registered (effecticon row %d)", kPoisonTex[0].resref, k2fx::EffIconRow_TrapPoison);
     return kPoisonTex[0].resref;
 }
+
+// DIAG POISON (doc 02, 0.2.5 drain): the drain trusts OnApplyPoison's ints (start day/ms, DURATION s). One line per poison effect whenever its
+// ints change (ticks may rewrite ints[3]/[4]/[7]), with the clock and the computed ratio, so a play log shows whether the poison ends at
+// start + DURATION. Tracks up to 8 effects; a full table logs nothing new.
+void logPoisonDiag(int creature, int day, int ms, float ratio) {
+    int arr = 0, count = 0;
+    if (!k2fx::effectListNonEmpty(creature, &arr, &count)) return;
+    struct Seen { int eff; int sig; };
+    static Seen seen[8]; static int nSeen = 0;
+    for (int i = 0; i < count; ++i) {
+        int eff = 0, n = 0, ip = 0; unsigned short type = 0;
+        if (!readAt(arr, i * 4, &eff) || !readAt(eff, k2fx::Effect_Type, &type) || type != k2fx::EffType_Poison) continue;
+        int v[8] = {};
+        if (readAt(eff, k2fx::Effect_IntCount, &n) && n > 0 && readAt(eff, k2fx::Effect_Ints, &ip) && ip)
+            for (int k = 0; k < 8 && k < n; ++k) readAt(ip, k * 4, &v[k]);
+        int sig = n; for (int k = 0; k < 8; ++k) sig = sig * 31 + v[k];
+        int s = -1; for (int k = 0; k < nSeen; ++k) if (seen[k].eff == eff) { s = k; break; }
+        if (s >= 0 && seen[s].sig == sig) continue;
+        if (s < 0) { if (nSeen >= 8) continue; s = nSeen++; seen[s].eff = eff; }
+        seen[s].sig = sig;
+        float dur = 0.0f; int xDay = 0, xMs = 0;
+        readAt(eff, k2fx::Effect_Duration, &dur); readAt(eff, k2fx::Effect_ExpiryDay, &xDay); readAt(eff, k2fx::Effect_ExpiryTime, &xMs);
+        logf("POISON creature=%08x eff=%08x n=%d ints=[%d,%d,%d,%d,%d,%d,%d,%d] dur0c=%.1f expiry=(%d,%d) now=(%d,%d) ratio=%.3f",
+             creature, eff, n, v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], dur, xDay, xMs, day, ms, ratio);
+    }
+}
 void probeLog(const char* fmt, ...) {
     if (!KP_ENABLED(chProbe, KPLOG_DEBUG)) return;
     char buf[256];
@@ -306,6 +332,7 @@ static void drawColumnCore(int slotPtr, int creature, int iconWidget, int isLarg
         const bh::IconPos pos = bh::iconPos(lay, i, debuff, cardW);
         int ix = pos.x, iy = pos.y;
         float ratio = buffs[i].ratio;
+        if (debuff && buffs[i].resref == kPoisonTex[0].resref) logPoisonDiag(creature, day, ms, ratio);
         int bright = bh::brightPx(size, ratio);
         if (logIt) logf("  icon[%d] %s rect=(%d,%d,%d,%d) ratio=%.3f bright=%d dimAlpha=%.2f", i, buffs[i].resref, ix, iy, size, size, ratio, bright, DimAlpha);
         void* disc = buffs[i].item ? imageFor(CircleResref) : nullptr;   // round backing for item abilities only
