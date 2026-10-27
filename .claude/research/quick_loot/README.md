@@ -51,11 +51,14 @@ Merge with doc 12 (empty-container indicators) as one loot mod.
 - Per-item take (mod-side): `CSWSCreature::AcquireItem 0x5BDB60` thiscall ECX=creature, (int* itemRef, holderObjId=P,
   0x7F000000, 1), RET 0x10; item possessor must equal P. No range/opener check anywhere -> mod enforces range.
 - `AcquireItemsFromObject 0x5F5160` is SpawnBodyBag's corpse -> remains copy, not a GUI path.
-- CloseInventory has a `"lockertsfinv"` branch (likely the Ebon Hawk footlocker stash): exclude from auto take-all.
+- `CloseInventory` drain loop (0x5F586B..): per item, if `CSWItem::GetBaseItem 0x6D6E30` +0xAC == 0x18, it compares a string
+  with `"lockertsfinv"` (`CompareNoCase 0x734F60`), else reads item local bool 0x5E (`GetLocalBoolean 0x5E9210`); when unset it sets it and
+  shows a one-time pickup pop-up (`fnt_d16x16`). So it is a per-item first-pickup notice, NOT a stash container (RE R2/R3 guess wrong,
+  checked 005f5770.c:85-130). Using vanilla Close(objId,1) keeps these notices; a custom per-item take (QL2) must replicate them.
 - `HideContainerGui` is also called by `CSWSObject::StartDialog 0x545760` with no Close.
 - OPEN: container_p.gui control-id map; when event 0x16 runs relative to the next frame; OnOpen loot reaching the client.
 
 ## Revised QL1 (cheapest)
 Redirect 0x82AD21 to a stub: read the repo (names, counts) -> send Close(objId, 1) -> floating "Took: ..." list under
-the name tag; Shift held or lockertsfinv / give-quest containers -> call vanilla ShowContainerGui. Defer the Close a few
+the name tag; Shift held or give-quest containers -> call vanilla ShowContainerGui. Defer the Close a few
 frames (or until OnOpen ran) so loot-on-open containers are not drained before their loot spawns.
