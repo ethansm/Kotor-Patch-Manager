@@ -36,3 +36,31 @@ exclude_from_restore = []
 [[hooks.parameters]]
 source = "ecx"
 type = "int"
+
+# H-C5: ResolveDefensiveEffects 006e1c60 after rec+0x168 = total (MOVZX EDX,[ECX+0xc1]); ECX = rec
+[[hooks]]
+address = 0x006E2351
+type = "detour"
+function = "CharEffectsDeflectCheck"
+original_bytes = [0x0F, 0xB6, 0x91, 0xC1, 0x00, 0x00, 0x00]
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "int"
+
+[[hooks.parameters]]
+source = "[ebp-0x20]"
+type = "int"
+
+[[hooks.parameters]]
+source = "[ebp-0x18]"
+type = "int"
+
+[[hooks.parameters]]
+source = "[ebp-0x34]"
+type = "int"
+
+[[hooks.parameters]]
+source = "[ebp-0xb8]"
+type = "int"

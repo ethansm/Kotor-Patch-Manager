@@ -22,6 +22,7 @@
 // effect does, decoded from the live effect ints (decodeEffect, research R3 + R3b), short forms joined with ", " and cut
 // with "..."; long names/stats marquee after marquee_delay_ms without input; hover tooltips (name + time, every stat line,
 // the spells.2da description). GUI = 82 controls (S block inserted before MORE: ids of MORE..TIP moved by 14).
+// 0.3.0-probe (doc 51 ST4): log only, no UI change. STATS block (deflection/defense/Force DC/FP cost/resist via engine getters + CombatStats.h) on each creature change; DEFLECT hook H-C5 at 006e1c60+ compares the engine's blaster-deflection total with cstats::deflection (ini deflect_check).
 // 0.2.0-probe (doc 32 MG5): KpLog (core file character-effects-panel_log.txt, old core fallback chareffects_log.txt), IniKit primitives, PanelSlots, GuiKit wheel/screen/cursor/bindByTag, Party; lazy init from KPatchInit/first hook.
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -36,6 +37,8 @@
 #include "EffectIcons.h"   // k2fx: icon tables + collectBuffs (Buff HUD)
 #include "ChareffDecode.h"      // effect stat decoder + pixel-width text layer (pure, host-tested; includes EffectNameTable.inc)
 #include "GameAddr.h"
+#include "CombatStats.h"       // cstats:: pure stat math (doc 51)
+#include "CombatStatsAddr.h"   // cstats_addr:: engine getters + offsets (doc 51 ST4 probe)
 #include "GuiInput.h"
 #include "GuiKit.h"   // guikit:: setRect/getExtent/imageFor/setText/setTextColor/setFill/setBorderTint/bindByTag/wheel/screen/cursor + detail::textObjOk
 #include "PanelSlots.h"   // Common: panel -> slot table
@@ -119,7 +122,7 @@ void whyLog(int code, const char* fmt, ...) {
 struct Cfg {
     int enabled = 1, stage = 1, pollMs = 250, showPermanent = 1, wheelScroll = 1, tooltips = 1;
     int statColumn = 1, marquee = 1, marqueeDelayMs = 2500, marqueeStepMs = 160, marqueeHoldMs = 1200;
-    int tooltipDelayMs = 350, tooltipDesc = 1;
+    int tooltipDelayMs = 350, tooltipDesc = 1, deflectCheck = 1;
     float statMaxW = 0, statMinFrac = 0.4f, textK10 = 1.03f, tipLineScale = 1.0f;   // stat_max_w 0 = no cap
     int skipEquipped = 1, iconSource = 1, colorTimes = 1, discs = 1, soonS = 30;
     int fakeRows = 0;   // debug aid: N synthetic entries appended to the real list (overflow / scrollbar / sort tests)
@@ -148,7 +151,7 @@ void loadIni() {
         {"stat_column", &c.statColumn, nullptr}, {"stat_max_w", nullptr, &c.statMaxW}, {"stat_min_frac", nullptr, &c.statMinFrac}, {"text_k10", nullptr, &c.textK10}, {"marquee", &c.marquee, nullptr},
         {"marquee_delay_ms", &c.marqueeDelayMs, nullptr}, {"marquee_step_ms", &c.marqueeStepMs, nullptr},
         {"marquee_hold_ms", &c.marqueeHoldMs, nullptr}, {"tooltip_delay_ms", &c.tooltipDelayMs, nullptr},
-        {"tooltip_desc", &c.tooltipDesc, nullptr}, {"tip_line_scale", nullptr, &c.tipLineScale}};
+        {"tooltip_desc", &c.tooltipDesc, nullptr}, {"deflect_check", &c.deflectCheck, nullptr}, {"tip_line_scale", nullptr, &c.tipLineScale}};
     while (fgets(line, sizeof(line), f)) {
         ++ln; trim(line);
         char* k = nullptr; char* v = nullptr;
@@ -857,6 +860,88 @@ void ensureInit() {
     saferead::enableRing(g_debug);
 }
 
+// ---- doc 51 ST4: STATS / DEFLECT probe (log only) ----
+void* vp(int a) { return reinterpret_cast<void*>(static_cast<uintptr_t>(static_cast<unsigned>(a))); }
+// Fills DeflectIn from the engine getters (every memory read via readAt). Returns false (with *why) if the stats pointer is unusable.
+bool gatherDeflect(int server, cstats::DeflectIn* in, int* statsOut, const char** why) {
+    using namespace cstats_addr;
+    *in = cstats::DeflectIn{}; *statsOut = 0;
+    if (!server) { *why = "null creature"; return false; }
+    int stats = 0;
+    if (!readAt<int>(server, Creature_Stats, &stats) || !stats) { *why = "null stats pointer"; return false; }
+    uint8_t probe = 0;
+    if (!readAt<uint8_t>(stats, Stats_ClassCount, &probe)) { *why = "stats unreadable"; return false; }
+    *statsOut = stats;
+    void* st = vp(stats);
+    in->bab = static_cast<int>(reinterpret_cast<GetBaseAttackBonusFn>(GetBaseAttackBonus)(st));
+    in->hasAJD = reinterpret_cast<HasFeatFn>(HasFeat)(st, cstats::kFeatAJD) != 0;
+    in->hasMJD = reinterpret_cast<HasFeatFn>(HasFeat)(st, cstats::kFeatMJD) != 0;
+    in->hasForceRedirection = reinterpret_cast<HasSpellFn>(HasSpell)(st, 0, cstats::kSpellForceRedirection, 0) != 0;
+    in->hasWMDeflect = reinterpret_cast<HasFeatFn>(HasFeat)(st, cstats::kFeatWMDeflect) != 0;
+    in->saber = reinterpret_cast<IsWieldingLightsaberFn>(IsWieldingLightsaber)(vp(server)) != 0;
+    // Weapon Master: the engine only looks at the first 2 class slots
+    uint8_t nCls = probe;
+    for (int i = 0; i < 2 && i < nCls; ++i) {
+        uint8_t id = 0;
+        if (!readAt<uint8_t>(stats, static_cast<int>(Stats_ClassId0 + Stats_ClassStride * i), &id)) break;
+        if (id == cstats::kClassWeaponMaster) {
+            in->isWeaponMaster = true;
+            in->wmLevel = reinterpret_cast<GetClassLevelFn>(GetClassLevel)(st, static_cast<uint8_t>(i), 0);
+            break;
+        }
+    }
+    int32_t form = 0; readAt<int32_t>(server, Creature_Form, &form); in->form = form;
+    // effect walk: sum of deflection increase - decrease effects
+    int incT = 0, decT = 0, arr = 0, cnt = 0;
+    readAt<int>(static_cast<int>(EffDeflectInc), 0, &incT); readAt<int>(static_cast<int>(EffDeflectDec), 0, &decT);
+    if (readAt<int>(server, Creature_Effects, &arr) && readAt<int>(server, Creature_EffectCount, &cnt) && arr && cnt > 0 && cnt <= MaxEffects && (incT || decT)) {
+        int delta = 0;
+        for (int i = 0; i < cnt; ++i) {
+            int eff = 0; uint16_t ty = 0;
+            if (!readAt<int>(arr, 4 * i, &eff) || !eff || !readAt<uint16_t>(eff, Effect_Type, &ty)) continue;
+            if (incT && ty == incT) delta += reinterpret_cast<EffectGetIntegerFn>(EffectGetInteger)(vp(eff), 1);
+            else if (decT && ty == decT) delta -= reinterpret_cast<EffectGetIntegerFn>(EffectGetInteger)(vp(eff), 1);
+        }
+        in->effectDelta = delta;
+    }
+    return true;
+}
+void fmtParts(const cstats::Breakdown& b, char* buf, size_t cap) {
+    size_t n = 0; buf[0] = 0;
+    for (int i = 0; i < b.count && n + 1 < cap; ++i) {
+        int w = snprintf(buf + n, cap - n, "%s%s %+d", i ? ", " : "", b.parts[i].label, b.parts[i].value);
+        if (w < 0 || static_cast<size_t>(w) >= cap - n) break;
+        n += static_cast<size_t>(w);
+    }
+}
+// 3 log lines per creature change.
+void logStats(int server) {
+    using namespace cstats_addr;
+    cstats::DeflectIn in; int stats = 0; const char* why = "";
+    if (!gatherDeflect(server, &in, &stats, &why)) { logf("STATS server=%08x skipped: %s", server, why); return; }
+    void* st = vp(stats);
+    cstats::Breakdown d = cstats::deflection(in);
+    char dp[400]; fmtParts(d, dp, sizeof dp);
+    logf("STATS server=%08x deflect=%d [%s] form=%d saber=%d wm=%d/%d", server, d.total, dp, in.form, in.saber ? 1 : 0, in.isWeaponMaster ? 1 : 0, in.wmLevel);
+    int defense = reinterpret_cast<GetArmorClassFn>(GetArmorClass)(vp(server));
+    int dex = reinterpret_cast<GetDEXModFn>(GetDEXMod)(st, 1);
+    uint8_t stance = 0xFF; readAt<uint8_t>(server, Creature_StanceFlag, &stance);
+    logf("STATS defense=%d dex=%d stance=%u", defense, dex, (unsigned)stance);
+    cstats::ForceDCIn fi = {};
+    fi.level = reinterpret_cast<GetLevelFn>(GetLevel)(st, 1);
+    int8_t cha = 0, wis = 0; readAt<int8_t>(stats, Stats_ChaMod, &cha); readAt<int8_t>(stats, Stats_WisMod, &wis);
+    fi.chaMod = cha; fi.wisMod = wis;
+    fi.ff1 = reinterpret_cast<HasFeatFn>(HasFeat)(st, cstats::kFeatFF1) != 0;
+    fi.ff2 = reinterpret_cast<HasFeatFn>(HasFeat)(st, cstats::kFeatFF2) != 0;
+    fi.ff3 = reinterpret_cast<HasFeatFn>(HasFeat)(st, cstats::kFeatFF3) != 0;
+    cstats::Breakdown fd = cstats::forceDC(fi);
+    char fp[400]; fmtParts(fd, fp, sizeof fp);
+    int16_t ge = 0; readAt<int16_t>(stats, Stats_GoodEvil, &ge);
+    cstats::CostMult cm = cstats::fpCostMult(ge);
+    int fr = reinterpret_cast<ForceResistFn>(ForceResist)(st);
+    logf("STATS forceDC=%d [%s] goodEvil=%d light=x%.2f dark=x%.2f forceResist=%d", fd.total, fp, (int)ge, cm.light, cm.dark, fr);
+}
+
 } // namespace
 
 extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
@@ -957,6 +1042,7 @@ extern "C" void __cdecl CharEffectsTick(int panel) {
         int shown = 0; readAt<int>(panel, PanelShownOff, &shown);
         logf("H3: creature client=%08x server=%08x (panel+0x4b70=%08x%s) -> scroll reset", client, server, shown, shown == client ? "" : " differs: SetStats not run yet");
         s->client = client; s->server = server; s->first = 0;
+        logStats(server);
     }
     unsigned oldSig = s->sig; int oldN = s->nEnt;
     int n = collect(s, server, s->ent, false);
@@ -978,6 +1064,50 @@ extern "C" void __cdecl CharEffectsTick(int panel) {
     }
 }
 
+// H-C5: ResolveDefensiveEffects 006e1c60 after rec+0x168 = total. Log only: compares the engine total with cstats::deflection.
+// Runs inside combat for every blaster bolt: no allocation, no UI, logf only for the first 30 calls then mismatches.
+extern "C" void __cdecl CharEffectsDeflectCheck(int rec, int total, int defender, int effDelta, int attacker) {
+    using namespace cstats_addr;
+    ensureInit();
+    static unsigned calls = 0, mismatches = 0, loggedMis = 0; static bool capLogged = false;
+    ++calls;
+    if (!g_cfg.deflectCheck) return;
+    constexpr unsigned kFirstLogged = 30, kMaxMisLogged = 100, kMaxCalls = 5000;
+    if (capLogged) return;
+    if (loggedMis >= kMaxMisLogged || calls > kMaxCalls) {
+        capLogged = true;
+        logf("DEFLECT: log cap reached (%u calls, %u mismatches)", calls, mismatches);
+        return;
+    }
+    saferead::beginScope();   // engine code ran: drop the readable-region cache
+    cstats::DeflectIn in; int stats = 0; const char* why = "";
+    if (!gatherDeflect(defender, &in, &stats, &why)) {
+        if (calls <= kFirstLogged) logf("DEFLECT #%u def=%08x skipped: %s", calls, defender, why);
+        return;
+    }
+    uint8_t roll = 0, psFeat = 0, u0 = 0, u1 = 0; int8_t ps = 0;
+    readAt<uint8_t>(rec, Rec_Roll, &roll); readAt<uint8_t>(rec, Rec_PSFeat, &psFeat); readAt<int8_t>(rec, Rec_PS, &ps);
+    readAt<uint8_t>(stats, Stats_Ungated0, &u0); readAt<uint8_t>(stats, Stats_Ungated1, &u1);
+    int ungated = static_cast<int8_t>(static_cast<uint8_t>(u0 + u1));
+    // Precise Shot is the ATTACKER's feat (engine: HasFeat on [ebp-0xb8]->stats, 0xF4..0xF0 = -10..-2, highest only).
+    // rec+0x17A/B are written only when a tier applies, so they can be stale: recompute, log rec as a cross-check.
+    int psTerm = 0, attStats = 0;
+    if (attacker && readAt<int>(attacker, Creature_Stats, &attStats) && attStats) {
+        for (uint16_t f = 0xF4; f >= 0xF0; --f)
+            if (reinterpret_cast<HasFeatFn>(HasFeat)(vp(attStats), f)) { psTerm = -2 * (f - 0xEF); break; }
+    }
+    int psRec = (psFeat >= 0xF0 && psFeat <= 0xF4) ? static_cast<int>(ps) : 0;
+    cstats::Breakdown d = cstats::deflection(in);
+    int ours = static_cast<int>(roll) + d.total + ungated + psTerm;
+    bool match = ours == total;
+    if (!match) ++mismatches;
+    if (calls <= kFirstLogged || !match) {
+        if (!match && calls > kFirstLogged) ++loggedMis;
+        logf("DEFLECT #%u def=%08x att=%08x roll=%d engine=%d ours=%d diff=%d effEngine=%d effOurs=%d ps=%d psRec=%d form=%d %s",
+             calls, defender, attacker, (int)roll, total, ours, total - ours, effDelta, in.effectDelta, psTerm, psRec, (int)in.form, match ? "MATCH" : "MISMATCH");
+    }
+}
+
 extern "C" void __cdecl CharEffectsDestroy(int panel) {
     ensureInit();
     Slot* s = findSlot(panel); if (s && !s->bound) s = nullptr;
@@ -990,6 +1120,6 @@ extern "C" void __cdecl CharEffectsDestroy(int panel) {
 
 BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
     if (reason == DLL_PROCESS_DETACH) guikit::wheelUninstall();   // never leave a dangling window proc: restores if on top, else stays chained but inert
-    if (reason == DLL_PROCESS_ATTACH) { snprintf(g_loadLine, sizeof g_loadLine, "chareffects 0.2.0-probe build 5 loaded (KpLog + IniKit + PanelSlots + GuiKit wheel + Party) tick=%lu", (unsigned long)GetTickCount()); }
+    if (reason == DLL_PROCESS_ATTACH) { snprintf(g_loadLine, sizeof g_loadLine, "chareffects 0.3.0-probe build 6 loaded (KpLog + IniKit + PanelSlots + GuiKit wheel + Party + STATS/DEFLECT probe) tick=%lu", (unsigned long)GetTickCount()); }
     return TRUE;
 }

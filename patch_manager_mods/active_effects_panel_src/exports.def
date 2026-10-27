@@ -3,4 +3,5 @@ EXPORTS
     BindCharEffects
     CharEffectsTick
     CharEffectsDestroy
+    CharEffectsDeflectCheck
     KPatchInit

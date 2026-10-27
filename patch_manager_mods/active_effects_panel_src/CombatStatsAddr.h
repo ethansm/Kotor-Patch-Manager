@@ -26,6 +26,8 @@ constexpr uintptr_t GetLevel             = 0x006A4E00;  // 0x006A4E00 thiscall(s
 constexpr uintptr_t GetDEXMod            = 0x006B5DB0;  // 0x006B5DB0 thiscall(stats, int flag) -> int, RET 4 (Defense adds flag 1)
 constexpr uintptr_t GetArmorClass        = 0x0057E530;  // 0x0057E530 fastcall(serverCreature) -> int16 (Defense total, non-versus)
 constexpr uintptr_t ForceResist          = 0x006BAD10;  // 0x006BAD10 fastcall(stats) -> int (max(0, stats+0x12B - stats+0x12C))
+constexpr uintptr_t GetClassLevel        = 0x006AD2F0;  // 0x006AD2F0 thiscall(stats, uint8 classIdx, int flag) -> uint8, RET 8 (CSWSCreatureStats::GetClassLevel; engine passes flag 0)
+constexpr uintptr_t EffectGetInteger     = 0x005E4E60;  // 0x005E4E60 thiscall(effect, int idx) -> int, RET 4 (CGameEffect::GetInteger)
 
 // Offsets (Creature_* from creature object, Stats_* from stats object)
 constexpr uint32_t Creature_Stats        = 0x1198;  // creature -> stats object (the 'stats' arg of the functions above)
@@ -36,6 +38,29 @@ constexpr uint32_t Creature_EffectCount  = 0x14C;   // effect count
 constexpr uint32_t Stats_GoodEvil        = 0x18A;   // int16 0..100
 constexpr uint32_t Stats_WisMod          = 0xF6;    // stats offset
 constexpr uint32_t Stats_ChaMod          = 0xF8;    // stats offset
+constexpr uint32_t Stats_ClassCount      = 0x8D;    // byte: number of classes (engine loop reads the first 2)
+constexpr uint32_t Stats_ClassId0        = 0xAB;    // byte: class id of slot 0
+constexpr uint32_t Stats_ClassStride     = 0x28;    // bytes between class slots
+constexpr uint32_t Effect_Type           = 0x8;     // uint16 effect type id (effect object offset)
+constexpr uint32_t Stats_Ungated0        = 0x178;   // int8 terms summed into deflection: (int8)(stats+0x179 + stats+0x178)
+constexpr uint32_t Stats_Ungated1        = 0x179;
+
+// Deflection hook: CSWSCreature::ResolveDefensiveEffects 0x006E1C60, hook site 0x006E2351 (after rec+0x168 = total; ECX = attack record).
+// Attack record (rec) offsets. Bytes other than 0x158/0x168 are written only when the term applies (may be stale from an earlier attack).
+constexpr uintptr_t DeflectHookSite = 0x006E2351;
+constexpr uint32_t Rec_Roll      = 0x158;  // u8 d20
+constexpr uint32_t Rec_JDFeat    = 0x160;  // u8
+constexpr uint32_t Rec_JD        = 0x161;  // i8
+constexpr uint32_t Rec_EffDelta  = 0x162;  // i8
+constexpr uint32_t Rec_BAB       = 0x164;  // u8
+constexpr uint32_t Rec_Ungated   = 0x165;  // i8
+constexpr uint32_t Rec_Total     = 0x168;  // i32
+constexpr uint32_t Rec_FR        = 0x16C;  // i8
+constexpr uint32_t Rec_Form      = 0x170;  // i32
+constexpr uint32_t Rec_PSFeat    = 0x17A;  // u8 0xF0..0xF4 (attacker Precise Shot tier)
+constexpr uint32_t Rec_PS        = 0x17B;  // i8 -2..-10
+constexpr uint32_t Rec_ThreshA   = 0xC1;   // u8
+constexpr uint32_t Rec_ThreshB   = 0xC2;   // i8
 
 // Effect type globals: read the int stored at this address at runtime, it is the effect type id
 constexpr uintptr_t EffDeflectInc = 0x00996088;  // read the int stored at this address at runtime, it is the effect type id
@@ -50,5 +75,7 @@ typedef uint8_t  (CSTATS_THISCALL* GetLevelFn)(void* stats, int flag);
 typedef int      (CSTATS_THISCALL* GetDEXModFn)(void* stats, int flag);
 typedef int16_t  (CSTATS_FASTCALL* GetArmorClassFn)(void* serverCreature);
 typedef int      (CSTATS_FASTCALL* ForceResistFn)(void* stats);
+typedef uint8_t  (CSTATS_THISCALL* GetClassLevelFn)(void* stats, uint8_t classIdx, int flag);
+typedef int      (CSTATS_THISCALL* EffectGetIntegerFn)(void* effect, int idx);
 
 }  // namespace cstats_addr
