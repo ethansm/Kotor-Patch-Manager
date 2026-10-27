@@ -1,6 +1,6 @@
 # 51 — Combat Stats page (hidden stats made visible)
 
-Status: RESEARCH DONE (W0-W3, 2026-10-27). Nothing built. Next: design decision on placement, then a probe.
+Status: RESEARCH DONE + DESIGN set (2026-10-27): new Stats tab in the character-effects panel + vanilla page tooltips. Next: ST1.
 
 ## Why
 The vanilla character sheet shows one Defense number, save totals, and skill totals as base + one lump bonus. It never shows
@@ -69,17 +69,34 @@ Total Defense stance flag `creature+0x110c`: 0 = Total Defense (written by `AIAc
    ungated term reads `stats+0x178/+0x179`, which only the constructor writes (0), so no double count (field_census, W3).
 4. `GetAttacksPerRound 0x006a7170` is a stub (returns 1); the real count is computed in `0x005905f0`.
 
-## Proposal (needs owner decision)
-A read-only "Combat Stats" page for the selected party member. First rows (all verified, all computable without hooks in the
-combat path):
-1. Blaster deflection: total bonus + parts (Jedi Defense tier, Force Redirection, Deflect, form, effects).
-2. Defense parts (from `GetArmorClassVersus` breakdown).
-3. Crit range and multiplier per hand.
-4. Force power DC and real FP cost multiplier for light / dark powers.
-5. Exact alignment and companion influence (influence is spoiler-ish: make it opt-in).
+## Design (owner decisions 2026-10-27)
+- **Placement: a new "Stats" tab** in the character-effects panel (`active_effects_panel_src/`, character-effects-panel
+  0.2.0-probe, doc 14). The panel already has the shown character's server creature (`party::serverCreature`), name/stat/time
+  rows (`LBL_EFX_Nxx/Sxx/Txx`), hover tooltips (`TIPBG`, 10x10 wrapped body), scrolling, and a left-press hit test.
+  Tab switch: click on the panel header `LBL_EFX_HEADER` (text "Effects | Stats", active tab named first) unless the mockup
+  shows that 2 extra header labels are needed.
+- **Vanilla page tooltips too** (user 2026-10-27): hovering a vanilla `character_p.gui` row shows what it is, a short
+  description and, where we have it, the breakdown. Hover targets (live Override GUI rects): the 6 attribute rows
+  (`LBL_STRENGTH..LBL_CHARISMA` + `_STAT`/`_MOD`), `LBL_VITALITY(_STAT)`, `LBL_FORCE(_STAT)`, `LBL_DEFENSE(_STAT)`,
+  `LBL_FORTITUDE/REFLEX/WILL(_STAT)`, `SLD_ALIGN` (+ `LBL_LIGHT/DARK`), `LBL_EXPERIENCE/NEXT_LEVEL`, `LBL_FORCEMASTERY`.
+  Tooltip bodies: Defense = verified parts; saves = base + ability + effects (+ form vs Force powers); alignment = exact
+  GoodEvil 0-100 + forceadjust light/dark cost multipliers; Force = max FP, cost multipliers, regen; attributes = what the
+  stat feeds (e.g. WIS -> Will, Force DC, FP). Description text is ours (English, a `.inc` table), not TLK.
+- Stats tab sections: DEFENSE (deflection + parts, Defense, DR/resist), OFFENSE (attack per hand, crit range/mult, attacks
+  per round), FORCE (power DC, light/dark cost multiplier, Force resistance), CHARACTER (exact alignment; influence only
+  with `show_influence=1`, default 0: spoiler).
+- Data: recompute from fields in a pure host-tested header (no calls into the combat path); the probe logs the recompute
+  next to the engine's own deflection total so it can be proven live.
 
-Placement options: a tab in the chareffects panel (doc 14) vs a new provider-backed page. Logging rule: probe build first,
-with the computed numbers logged next to the engine's own `rec+0x168` totals after real deflections, to prove the recompute.
+## Phases
+| Id | Batch | Deps | Owner gate | Status | Commit | Next |
+|---|---|---|---|---|---|---|
+| ST1 | Pin read paths: HasFeat 0x006b83f0, HasSpell 0x006bd9c0, BAB 0x006a6f80, IsWieldingLightsaber 0x005763e0, GetLevel 0x006a4e00, effect-type globals (DAT_00996088/8c, AC types DAT_00996170..80), ability bytes stats+0xee..0xf8; `query_ghidra.py address` each, Haiku verify + decoys, into the mod's GameAddr | - | - | TODO | | sigs table in this doc |
+| ST2 | Pure `CombatStats.h` + host test: deflection, Defense parts, crit range/mult, Force DC, FP cost multipliers (forceadjust), saves breakdown; vectors: AJD+Force Redirection = +6, Shien BAB-only, forceadjust rows 0/5/10 | ST1 | - | TODO | | `run_tests.py <suite>` |
+| ST3 | Mockup: `scripts/character_page_mockup.py` renders the Stats tab + one vanilla-row tooltip (Defense) | ST2 | user review | TODO | | user OK on look |
+| ST4 | Probe 0.3.0-probe: STATS log block per shown character (no UI) + read-only deflection check (engine total vs recompute) | ST2 | user GO install | TODO | | play row in PLAY_TEST_QUEUE.md |
+| ST5 | Stats tab UI (header toggle, sections, rows, breakdown tooltips, `show_influence`) | ST3, ST4 | user GO install | TODO | | play row |
+| ST6 | Vanilla page tooltips (hover rects by tag, `vanilla_tooltips=1`, text table) | ST3, ST5 | user GO install | TODO | | play row |
 
 ## Open (UNVERIFIED in W2)
 - Two-weapon penalties, STR/DEX attack term, Offensive Training sign (`006a93a0` lines 177-222, 403-491).
