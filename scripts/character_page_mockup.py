@@ -11,7 +11,7 @@ spells.2da names; the times are fake.
 Geometry: GUI units are 800x600, the engine stretches them to the screen, so screen px = units * (4.8, 8/3) at
 3840x1600. A square on screen is therefore 10 x 18 units (48 x 48 px). Text is drawn at the DLL's calibrated scale
 (uniform in x and y): dialogfont16x16 = TEXT_K16 * SY = 2.0 px/texel, dialogfont10x10 = TEXT_K10 * SY = 2.75 px/texel,
-with the glyph advances of EffectNameTable.inc (kFontTexW / kFont10TexW), so widths equal the DLL's textPx. The column
+with the glyph advances of _shared_src/FontWidths.inc (kFontTexW / kFont10TexW), so widths equal the DLL's textPx. The column
 layout is CharEffectsPanel.cpp layout() (build 4b/4c).
 
 Thirds (columns as equip_p layout A: 48..284 | 294..526 | 536..752):
@@ -38,7 +38,6 @@ GAME = Path.home() / ".local/share/Steam/steamapps/common/Knights of the Old Rep
 REPO = Path(__file__).resolve().parent.parent
 BUFF_SRC = REPO / "patch_manager_mods/buff_duration_hud_src"
 SHARED_SRC = REPO / "patch_manager_mods/_shared_src"   # icon tables moved here (doc 21 W2)
-NAME_TABLE = Path.home() / "Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/CharEffectsPanel/EffectNameTable.inc"
 W, H = 3840, 1600
 SX, SY = W / 800, H / 600
 
@@ -140,8 +139,8 @@ def font(name):
 
 @lru_cache(None)
 def texel_widths():
-    """kFontTexW / kFont10TexW of the DLL's EffectNameTable.inc: {font name: 256 glyph advances in texels}."""
-    src = NAME_TABLE.read_text()
+    """kFontTexW / kFont10TexW of _shared_src/FontWidths.inc: {font name: 256 glyph advances in texels}."""
+    src = (SHARED_SRC / "FontWidths.inc").read_text()
     out = {}
     for var, name in (("kFontTexW", "dialogfont16x16"), ("kFont10TexW", "dialogfont10x10")):
         body = re.search(var + r"\[256\]\s*=\s*\{(.*?)\};", src, re.S).group(1)
