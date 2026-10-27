@@ -206,3 +206,4 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [ ] | 190 | WI-158 | P3 | hold | S | - | companion-ai: one party test for G1 and F4 (G1 uses .party truthy, F4 uses == 1) | 0 | 0 | Two fixes gate on the same party flag differently; a non-1 flag value  |
 | [ ] | 191 | WI-159 | P3 | hold | S | - | companion-ai logging leftovers: T2 suppressed flag with engine_print=0, pbudget spends bef | 0 | 0 | Audit .claude/research/combat_ai_logging/companion_ai.md gaps 7 and 9  |
 | [ ] | 192 | WI-160 | P3 | ready | S | - | Combat AI O3 option B: party AoE control powers need >= 2 unaffected enemies at the centre | 0 | 3 | Owner decision 2026-10-25 (O3_study.md section 5-6): party members onl |
+| [ ] | 193 | WI-161 | P3 | hold | S | - | ISF doc 11: describe the caption row count (WI-151) in the UX section | 0 | 0 | WI-151 worker OPEN: doc 11 UX section not updated; also note the 1024- |
