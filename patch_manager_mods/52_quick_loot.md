@@ -29,7 +29,7 @@ Research and RE: `.claude/research/quick_loot/README.md` (web W1-W4, static RE R
 | Id | Batch | Deps | Owner gate | Status | Commit | Next |
 |---|---|---|---|---|---|---|
 | **R1** | Web survey + static RE of container open/take path | - | - | DONE | 34100d1e | web survey + static RE |
-| **QL0** | Probe DLL `quick-loot` 0.0.1-probe: pass-through detour at 0x0082AD21 that logs objId, flag, resref, item list at Show and again N frames later; logs OnOpen timing; no behaviour change | R1 | install GO | TODO | - | gate, install GO (REINSTALL + kplog.ini `[quick-loot]`), then play row QL0-P1 (PLAY_TEST_QUEUE) |
+| **QL0** | Probe DLL `quick-loot` 0.0.1-probe: entry detours ShowContainerGui 0x7CACB0 (consumed exit 0x7CAD1F), EventHandler 0x5F2FE0, CloseInventory 0x5F5770; logs objId, flag, item list at Show, event 0x16/0x17/0x1B timing, n at Close; no behaviour change | R1 | install GO | PARTIAL | fc102dfc | probe built, tests 2/2, hook bytes verified; gate FAIL only on doc 51 CombatStatsAddr.h raw addrs (fb39ff72); install awaits GO |
 | **QL1** | Fast container 0.1.0-dev: auto take-all via Close(objId,1) after OnOpen settles, "Took: ..." list under the name tag; Shift / give containers -> vanilla menu | QL0 | install GO | TODO | - | - |
 | **QL2** | Peek on select: list under the name tag after the first click; row click = walk + take one item | QL1 | - | TODO | - | - |
 | **QL3** | True hover peek: own floating name + list on hover (app+0x4B0), merge with doc 12 empty-container cursor | QL2 | - | TODO | - | - |
