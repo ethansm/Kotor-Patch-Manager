@@ -32,6 +32,9 @@ addresses = ["0x0040EC90", "0x00414840", "0x00414C60", "0x00418D20", "0x00421C40
 [files."patch_manager_mods/activation_fix_src/ActivationFix.cpp"]
 addresses = ["0x0040D69E", "0x0098646C"]
 
+[files."patch_manager_mods/active_effects_panel_src/CombatStatsAddr.h"]
+addresses = ["0x005763E0", "0x0057E530", "0x005E4E60", "0x006A4E00", "0x006A6F80", "0x006A7170", "0x006AD2F0", "0x006B5DB0", "0x006B83F0", "0x006BAD10", "0x006BD9C0", "0x006E1C60", "0x006E2351", "0x00996088", "0x0099608C"]   # Opus-reviewed 10-27: 12 fns = query_ghidra names + dump fn start/RET match the comments (0x006A7170 GetAttacksPerRound comment only); 0x006E2351 insn boundary after rec+0x168 store, ECX=rec (dump 006e1c60.asm); 0x00996088/C effect-type globals CMP'd at 006e22df/006e230e
+
 [files."patch_manager_mods/active_effects_panel_src/CharEffectsPanel.cpp"]
 addresses = ["0x0084D871", "0x0084DEF0", "0x0084FBB0"]
 
