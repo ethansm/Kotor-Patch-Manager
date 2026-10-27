@@ -7,19 +7,17 @@ Execute **QL1**: Fast container 0.1.0-dev: auto take-all via Close(objId,1) afte
 - **Master Plan:** `patch_manager_mods/52_quick_loot.md`
 - **Waves:** .claude/waves/w1-52-QL0/
 - **Waves:** .claude/waves/w2-52-QL1b/
-- **Branch:** `KOTOR-II` (94cfdf05 quick-loot 0.2.0-dev (doc 52 QL1b): 'Took: ...' toast under the target name for 3 s)
-- **Generated:** 2026-10-27 02:21:16 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (d119fe8f doc 52: QL1a/QL1b built (install awaits GO); play row QL1-P1)
+- **Generated:** 2026-10-27 02:21:21 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-94cfdf05 quick-loot 0.2.0-dev (doc 52 QL1b): 'Took: ...' toast under the target name for 3 s
- patch_manager_mods/quick_loot_src/QuickLoot.cpp    | 204 ++++++++++++++++++++-
- patch_manager_mods/quick_loot_src/QuickLootLogic.h |  98 +++++++++-
- .../quick_loot_src/common_contract_test.cpp        |  53 ++++++
- patch_manager_mods/quick_loot_src/manifest.toml    |   4 +-
- .../quick_loot_src/quick_loot_logic_test.cpp       |  84 +++++++++
- 5 files changed, 435 insertions(+), 8 deletions(-)
+d119fe8f doc 52: QL1a/QL1b built (install awaits GO); play row QL1-P1
+ .claude/handoffs/52_quick_loot.handoff.md | 25 +++++++++++++++----------
+ patch_manager_mods/52_quick_loot.md       |  4 ++--
+ patch_manager_mods/PLAY_TEST_QUEUE.md     |  1 +
+ 3 files changed, 18 insertions(+), 12 deletions(-)
 ```
-- **Dirty Files (186):**
+- **Dirty Files (184):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
   - ` M .claude/handoffs/DECOMP_PLAN.handoff.md`
@@ -30,12 +28,12 @@ Execute **QL1**: Fast container 0.1.0-dev: auto take-all via Close(objId,1) afte
   - ` M .claude/reviews/gemini_20261014/tools/fix3_items.tsv`
   - ` M .claude/settings.json`
   - ` M CLAUDE.md`
-  - ... +176 more (run `git status --short`)
+  - ... +174 more (run `git status --short`)
 
 ## 2. Immediate Objective (**QL1**)
 **Fast container 0.1.0-dev: auto take-all via Close(objId,1) after OnOpen settles, "Took: ..." list under the name tag; Shift / give containers -> vanilla menu**
 
-Status: TODO
+Status: PARTIAL
 Task: Fast container 0.1.0-dev: auto take-all via Close(objId,1) after OnOpen settles, "Took: ..." list under the name tag; Shift / give containers -> vanilla menu
 
 ## 2b. Upcoming Batches in Pipeline
