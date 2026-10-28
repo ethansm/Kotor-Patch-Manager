@@ -44,7 +44,7 @@ int main() {
     KT_CHECK(e.nLines == 2 && hasLine(e, "Base 10") && hasLine(e, "Dexterity +4"));
   }
 
-  // d. Alignment: value and both power cost multipliers.
+  // d. Alignment: value and both power cost multipliers, no description.
   {
     srows::StatsIn in{};
     in.goodEvil = 72;
@@ -52,6 +52,8 @@ int main() {
     KT_CHECK(build(V_ALIGN, in, true, &e));
     KT_CHECK(std::strcmp(e.val, "72 / 100") == 0);
     KT_CHECK(hasLine(e, "Light power cost x0.85") && hasLine(e, "Dark power cost x1.15"));
+    KT_CHECK(e.desc == nullptr && e.nLines == 2);   // ST6d: multipliers only
+    KT_CHECK(build(V_ALIGN, in, false, &e) && e.desc != nullptr);   // no live values: the description stays
   }
 
   // e. Without live values: description only, no numbers.
@@ -63,13 +65,13 @@ int main() {
     KT_CHECK(e.val[0] == '\0' && e.nLines == 0 && e.desc != nullptr);
   }
 
-  // f. Every row builds with a name and a description; out-of-range rows fail.
+  // f. Every row builds with a name and a description (except Alignment with values); out-of-range rows fail.
   {
     srows::StatsIn in{};
     for (int i = 0; i < V_COUNT; ++i) {
       cfx::Entry e{};
       KT_CHECK(build(i, in, true, &e));
-      KT_CHECK(e.name[0] != '\0' && e.desc != nullptr);
+      KT_CHECK(e.name[0] != '\0' && (e.desc != nullptr || i == V_ALIGN));   // Alignment with values: multipliers only (ST6d)
     }
     cfx::Entry e{};
     KT_CHECK(!build(V_COUNT, in, true, &e));

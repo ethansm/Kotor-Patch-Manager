@@ -143,6 +143,7 @@ inline bool build(int row, const srows::StatsIn& in, bool have, cfx::Entry* e) {
   } else if (row == V_ALIGN) {
     snprintf(e->val, sizeof e->val, "%d / 100", in.goodEvil);
     addCostLines(e, in.goodEvil);
+    e->desc = nullptr;   // the multipliers say it; the text stays only for the no-values tip (ST6d)
   } else if (row == V_XP) {
     int nc = srows::classSlots(in.nClass);
     char line[cfx::LineLen];

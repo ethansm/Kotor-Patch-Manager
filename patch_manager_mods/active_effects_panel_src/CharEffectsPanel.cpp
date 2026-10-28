@@ -1,4 +1,4 @@
-// Character Active Effects Panel 0.5.2-dev (Steam Aspyr build 6A522E71...). Fills the right third of the character page
+// Character Active Effects Panel 0.5.3-dev (Steam Aspyr build 6A522E71...). Fills the right third of the character page
 // (CSWGuiInGameCharacter) with the shown character's active effects: icon, name, remaining time; Harmful section first,
 // then Beneficial; expiring first, permanent last; whole-entry scrolling with a scrollbar only when the list overflows.
 // Research trail: patch_manager_mods/14_character_active_effects_panel.md and active_effects_panel_src/research/R* (worktree
@@ -22,6 +22,7 @@
 // effect does, decoded from the live effect ints (decodeEffect, research R3 + R3b), short forms joined with ", " and cut
 // with "..."; long names/stats marquee after marquee_delay_ms without input; hover tooltips (name + time, every stat line,
 // the spells.2da description). GUI = 82 controls (S block inserted before MORE: ids of MORE..TIP moved by 14).
+// 0.5.3-dev (doc 51 ST6d, play feedback 10-28): vanilla tips sit over their own row (below it, like the panel tips) and shrink to their text; Alignment tip = multipliers only; value labels get 3 units of slack (Deflection "8" / Attack "-2" were wrapped away).
 // 0.5.2-dev (doc 51 ST6c): Fortitude/Reflex/Will tooltips break the total into class levels, ability, Conditioning feat, other bonuses and active effects (save getters 0x6BA620/0x6BA740/0x6BA6B0 with and without effects).
 // 0.5.1-dev (doc 51 ST6b): header hint tooltip, Force Mastery tooltip (marker effects 0x9960C8/CC), Level row + class lines on the Stats tab and Experience tip.
 // 0.5.0-dev (doc 51 ST6): hover tooltips on the vanilla character page rows (attributes, vitality, Force, Defense, saves, alignment, experience) from VanillaTips.h, drawn with the panel tooltip controls (ini vanilla_tips=0 disables); no hook or GUI change.
@@ -86,6 +87,7 @@ constexpr float SecOut = 4, TimePadR = 2, NameGap = 4;   // band overhang left o
 // 256 texel sheet, research R3b R-c), so the same factor; line pitch = kFont10LineH texels (calibrate live, tip_line_scale)
 // build 4 screenshot 15:09: "Shield 20 3" = 82 texels drew 224 px (2.73 px/texel, 16x16 names 1.99) -> ~1.03; INI text_k10
 constexpr float StatGap = 6, ColGap = 8;   // stat-time gap; name-stat gap (name-time gap without a stat = NameGap)
+constexpr float ValSlack = 3;   // units a value / shrunk tip label extends past its measured text (ST6d)
 constexpr float TipInX = 8, TipTitleY = 6, TipTitleH = 20, TipBodyY = 28, TipPadB = 8;   // tooltip insets (= mirror script)
 constexpr float SbW = 10, SbArrowH = 18, SbGap = 3, SbThumbMin = 16;
 constexpr float X0 = PanelX + PadX, InnerW = PanelW - 2 * PadX, Top = PanelY + PadTop, Win = PanelH - 2 * PadTop;
@@ -682,7 +684,7 @@ void layout(Slot* s) {
         // time right-aligned by placement: label = text width + 1 unit slack, so left- and right-aligned drawing both end at tr
         char tm[24]; fmtTime(x, tm, sizeof tm);
         float tx = tr - textPx(s, tm, (int)strlen(tm)) / s->sx - 1;
-        place(s, T_T0 + r, tx, y, tr - tx, RowH);
+        place(s, T_T0 + r, tx, y, tr - tx + ValSlack, RowH);   // slack past tr: a label 1 unit wider than the text still wrapped "8" / "-2" away (ST6d)
         setText(s, T_T0 + r, tm);
         float nr = tr - timeCol - NameGap;   // name right edge: the stat column when this row has a stat
         char st[64] = "";
@@ -850,7 +852,8 @@ void hideTip(Slot* s, const char* why) {
 }
 int wrapAppend(Slot* s, const char* src, float maxPx, char* out, int* len, int cap) { return cfx::wrapAppend(textCtx(s), src, maxPx, out, len, cap); }
 // Draws one tooltip. Panel rows: tx = PanelX + 4, tip below the row (rowTop/rowH), flipped above past the panel bottom.
-// Vanilla rows (vanilla = true): tx = left edge chosen by the caller, rowTop = rect top, placed at the same top, clamped to the 800x600 screen.
+// Vanilla rows (vanilla = true, ST6d): tx = the row's left edge, below the row like the panel tips (flipped above past the screen bottom;
+// rowH 0 = start at rowTop), width shrunk to the text, kept on the 800x600 screen.
 void showTipAt(Slot* s, const Entry& x, float tx, float rowTop, float rowH, const char* logWhat, bool vanilla) {
     if (!s->ctl[T_TIPBG] || !s->ctl[T_TIPT] || !s->ctl[T_TIP]) return;
     float tw = PanelW - 8, inner = tw - 2 * TipInX;
@@ -867,12 +870,24 @@ void showTipAt(Slot* s, const Entry& x, float tx, float rowTop, float rowH, cons
         lines += wrapAppend(s, x.desc, innerPx, body, &len, sizeof body);
     }
     if (!len) { snprintf(body, sizeof body, "No details"); lines = 1; }
+    if (vanilla) {   // shrink to the widest line (+ slack so the engine does not re-wrap a line the measure says fits)
+        float wPx = textPx(s, title, (int)strlen(title));
+        for (const char* p = body; *p;) {
+            const char* e = strchr(p, '\n'); int n = e ? (int)(e - p) : (int)strlen(p);
+            wPx = fmaxf(wPx, textPx(s, p, n, F10));
+            p += n + (e ? 1 : 0);
+        }
+        inner = fminf(inner, wPx / s->sx + ValSlack + 1);
+        tw = inner + 2 * TipInX;
+        if (tx + tw > 800) tx = 800 - tw;
+    }
     float lineU = kFont10LineH * g_cfg.textK10 * g_cfg.textScale * g_cfg.tipLineScale;   // texels -> units (px = units * sy)
     float h = fminf(TipBodyY + lines * lineU + TipPadB, PanelH);
     float y; bool flip = false;
     if (vanilla) {
-        y = rowTop;
-        if (y + h > 600) y = 600 - h;
+        y = rowTop + rowH;
+        flip = y + h > 600;
+        if (flip) y = rowTop - h;
         if (y < 0) y = 0;
     } else {
         y = rowTop + rowH;
@@ -911,7 +926,7 @@ int masteryOf(int server) {
     }
     return 0;
 }
-// Vanilla row tooltip: left = right of the rect (+6), else left of it; top = rect top. fresh = build the text now (gatherStats), else re-show the cached one.
+// Vanilla row tooltip: over the row's own column (left = rect left), below the row; a tall rect (alignment slider) starts at its top. fresh = build the text now (gatherStats), else re-show the cached one.
 bool gatherStats(int server, srows::StatsIn* in);
 void showVanillaTip(Slot* s, int vrow, bool fresh) {
     if (vrow < 0 || vrow >= vtips::V_COUNT) return;
@@ -924,9 +939,7 @@ void showVanillaTip(Slot* s, int vrow, bool fresh) {
         s->vtipValid = true;
     } else if (!s->vtipValid) return;
     const vtips::Rect& r = vtips::kRects[vrow];
-    float tw = PanelW - 8, left = r.x + r.w + 6;
-    if (left + tw > 800) left = r.x - 6 - tw;
-    showTipAt(s, s->vtipEnt, left, r.y, r.h, "vanilla", true);
+    showTipAt(s, s->vtipEnt, r.x, r.y, r.h > 2 * RowH ? 0 : r.h, "vanilla", true);
 }
 // hover hit test on the placed rows (sections, gaps and the scrollbar do not count); refresh = re-show (time update)
 void tickTooltip(Slot* s, DWORD t, bool haveCur, float cx, float cy, bool refresh) {
@@ -1359,6 +1372,6 @@ extern "C" void __cdecl CharEffectsDestroy(int panel) {
 
 BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
     if (reason == DLL_PROCESS_DETACH) guikit::wheelUninstall();   // never leave a dangling window proc: restores if on top, else stays chained but inert
-    if (reason == DLL_PROCESS_ATTACH) { snprintf(g_loadLine, sizeof g_loadLine, "chareffects 0.5.2-dev build 11 loaded (KpLog + IniKit + PanelSlots + GuiKit wheel + Party + STATS/DEFLECT probe + Stats tab + influence + vanilla tips + saves) tick=%lu", (unsigned long)GetTickCount()); }
+    if (reason == DLL_PROCESS_ATTACH) { snprintf(g_loadLine, sizeof g_loadLine, "chareffects 0.5.3-dev build 12 loaded (KpLog + IniKit + PanelSlots + GuiKit wheel + Party + STATS/DEFLECT probe + Stats tab + influence + vanilla tips + saves) tick=%lu", (unsigned long)GetTickCount()); }
     return TRUE;
 }
