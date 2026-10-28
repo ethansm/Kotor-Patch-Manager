@@ -13,6 +13,11 @@
 - Never run two installers at once; commit with explicit paths only.
 - Ask the user for GO before `kpm_hotswap.py --apply` (game closed).
 
+## Persist Ad-hoc Research (saved knowledge)
+- After any one-off investigation during mod/patch work (decompile read, address or offset worked out, log diagnosis, dead end, live finding), record it before ending the session or clearing context. Skill: `.claude/skills/kotor2-persist-knowledge/SKILL.md`.
+- Sinks: exe names/roles -> REA ledger rows `patch_manager_mods/ghidra_knowledge/rea_findings/<YYYYMMDD>_<topic>.tsv` (then `rea_ledger.py lint`); offsets/hook sites -> the mod's plan doc; model traps -> `RE_AGENT_GUIDE.md` §3; write-ups -> `.claude/research/<topic>/`; dead ends -> plan doc or handoff; live-only checks -> `PLAY_TEST_QUEUE.md`; status -> memory.
+- Never write `name_map` directly; names reach the knowledge DB only after a Haiku check with decoys and the user's OK. Commit with explicit paths.
+
 ## Upstream Issue & PR Notification Check
 When starting a new session or beginning mod work:
 - Run `python3 scripts/check_kpm_updates.py --quiet` to check for any new upstream replies on `LaneDibello/Kotor-Patch-Manager`.
