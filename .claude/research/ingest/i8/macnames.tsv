@@ -1,0 +1,31 @@
+gog	steam	gog_name	mac_name	mac_addr	fit	margin	strings	keep	classes	top3
+0x00401010	0x00401000	Global::FUN_00401010						no	Achievements,Material	
+0x00402a00	0x00402a40	Global::FUN_00402a00	GraphicsSettings::LoadCardQualitySettings	0x00002d00	0.44	0.31		no	GraphicsSettings,basic_filebuf<char,struct_std::char_traits<char>_>,basic_streambuf<char,struct_std::char_traits<char>_>,facet	GraphicsSettings::LoadCardQualitySettings:0.44,GraphicsSettings::GetDeviceFromGL:0.13
+0x00818bb0	0x004264b0	Global::FUN_00818bb0						no	CAurTextureBasic	
+0x00828910	0x00436250	Global::FUN_00828910	GLRender::RenderObjectsVTCQuad	0x0008af18	0.64	0.01		no	GLRender	GLRender::RenderObjectsVTCQuad:0.64,GLRender::RenderObjectsVTCQuadUP:0.64,GLRender::RenderObjectsVTQuadUP:0.59
+0x00829630	0x00436f70	Global::FUN_00829630						no	GLRender	
+0x008652a0	0x00473060	Global::FUN_008652a0	Scene::Render	0x000c5dca	0.74	0.02		no	List<T*>,List<T>,Scene	Scene::Render:0.74,Scene::HitCheck:0.72,Scene::SetSingleTileFlame:0.71
+0x008cebd0	0x0048e680	Global::FUN_008cebd0						no	Animation,CAurGUIStringInternal,List<AnimationEvent>	
+0x008700f0	0x004987e0	Global::FUN_008700f0						no	LightManager,List<PartLight*>,PartProjection,nodedata	
+0x00870520	0x00498c10	Global::FUN_00870520	LightManager::EnableHighestPriorityLightsFade	0x000def40	0.65	0.01		no	LightManager,List<PartLight*>,PartProjection,nodedata	LightManager::EnableHighestPriorityLightsFade:0.65,LightManager::SetUpVertexProgramLightShaderConstants:0.64,LightManager::ControlLightsFade:0.59
+0x00870c10	0x00499300	Global::FUN_00870c10	LightManager::~LightManager	0x000de746	0.77	0.27		yes	LightManager,List<PartLight*>,List<T*>,PartProjection	LightManager::~LightManager:0.77,LightManager::PrioritizeIllumination:0.51,LightManager::DisableThisLight:0.49
+0x00883810	0x0049cc50	Global::FUN_00883810	PartTriMesh::PartTriMesh	0x000a779c	0.67	0.09		no	PartTriMesh	PartTriMesh::PartTriMesh:0.67,PartTriMesh::Project:0.58,PartTriMesh::HitCheckGeom:0.47
+0x00944ba0	0x00519a50	Global::FUN_00944ba0	BSPNode::~BSPNode	0x003173ea	0.75	0.05		no	BSPNode,CResTPC	BSPNode::~BSPNode:0.75,BSPNode::BSPNode:0.70,CResTPC::OnResourceServiced:0.64
+0x007bca70	0x00539820	Global::FUN_007bca70						no	CServerExoAppInternal	
+0x006a4360	0x0058b880	Global::FUN_006a4360	CSWSCreature::CreateLinkedEffect	0x0037807e	0.96	0.14		no	CSWSCreature	CSWSCreature::CreateLinkedEffect:0.96,CSWSCreature::BroadcastMineDetectionData:0.82,CSWSCreature::BroadcastStealthDetectionData:0.82
+0x006a4470	0x0058b990	Global::FUN_006a4470	CSWSCreature::CreateLinkedEffect	0x0037807e	0.96	0.14		no	CSWSCreature	CSWSCreature::CreateLinkedEffect:0.96,CSWSCreature::BroadcastMineDetectionData:0.82,CSWSCreature::BroadcastStealthDetectionData:0.82
+0x006a46c0	0x0058bbe0	Global::FUN_006a46c0	CSWSCreature::RemoveMindTrickEffects	0x003b7866	0.80	0.01		no	CSWSCreature	CSWSCreature::RemoveMindTrickEffects:0.80,CSWSCreature::RemoveCombatInvisibilityEffects:0.80,CSWSCreature::RemovePureEvilPowers:0.77
+0x006f7220	0x006bada0	Global::FUN_006f7220	CSWSCreatureStats::RemoveKnownSpell	0x0040864c	0.79	0.04		no	CSWSCreatureStats	CSWSCreatureStats::RemoveKnownSpell:0.79,CSWSCreatureStats::GetClassString:0.75,CSWSCreatureStats::AddClass:0.74
+0x005229b0	0x00751230	Global::FUN_005229b0	CSWGuiMainInterface::UpdateAndDrawFogOfWar	0x001720b6	0.47	0.08		no	CSWGuiLabel,CSWGuiMainInterface	CSWGuiMainInterface::UpdateAndDrawFogOfWar:0.47,CSWGuiMainInterface::DrawMap:0.39,CSWGuiMainInterface::Update:0.33
+0x00448860	0x0079c260	Global::FUN_00448860	CClientExoAppInternal::UpdateDeathSequence	0x001938ec	0.75	0.12		no	CClientExoAppInternal	CClientExoAppInternal::UpdateDeathSequence:0.75,CClientExoAppInternal::RunDeathSequence:0.63,CClientExoAppInternal::SetGameOver:0.54
+0x005ce2f0	0x008ddf20	Global::FUN_005ce2f0	CSWGuiSwoopUpgrade::OnUpgradeSelected	0x001e1dee	0.67	0.20	template	yes	CSWGuiSwoopUpgrade	CSWGuiSwoopUpgrade::OnUpgradeSelected:0.67,CSWGuiSwoopUpgrade::OnEnterSlot:0.47,CSWGuiSwoopUpgrade::OnSlotSelected:0.46
+0x009244c6	0x0091c896	Global::FUN_009244c6						no	bad_exception,exception,type_info	
+0x0094190c	0x00939962	Global::FUN_0094190c						no	DINPUT8.DLL,GLU32.DLL,_Locinfo,locale	
+0x005977a0	0x0074ac30	CSWGuiBlackenedLabel::~CSWGuiBlackenedLabel	CSWGuiBlackenedLabel::~CSWGuiBlackenedLabel	0x001f5a04	0.88	0.38		yes	CSWGuiBlackenedLabel,CSWGuiInGameCharacter,CSWGuiSliderReadOnly	CSWGuiBlackenedLabel::~CSWGuiBlackenedLabel:0.88,CSWGuiInGameCharacter::DoAutoLevelup:0.50,CSWGuiInGameCharacter::AttachModel:0.44
+0x005c5330	0x008d4f60	CSWGuiCreateItem::InitializeStoreType	CSWGuiCreateItem::OnControlXButton	0x001d4e00	0.40	0.03		no	CSWGuiCreateItem	CSWGuiCreateItem::OnControlXButton:0.40,CSWGuiCreateItem::CloseCreateItem:0.37,CSWGuiCreateItem::CheckBreakdownFilter:0.30
+0x005c61f0	0x008d5e20	CSWGuiCreateItem::UpdateCreateFilters	CSWGuiCreateItem::CheckBreakdownFilter	0x001d7226	0.38	0.02		no	CSWGuiCreateItem	CSWGuiCreateItem::CheckBreakdownFilter:0.38,CSWGuiCreateItem::BuyItem:0.36,CSWGuiCreateItem::ShowSellGUI:0.31
+0x005ca130	0x008d9d60	CSWGuiCreateMedicalItem::DeleteItemEntries	CSWGuiCreateMedicalItem::OnControlXButton	0x001da50e	0.40	0.11		no	CSWGuiCreateMedicalItem	CSWGuiCreateMedicalItem::OnControlXButton:0.40,CSWGuiCreateMedicalItem::HandleInputEvent:0.29,CSWGuiCreateMedicalItem::BuyItem:0.25
+0x00645160	0x0044b210	CVirtualMachineInternal::ExecuteCode	CVirtualMachineInternal::DeleteScript	0x0031bd20	0.64	0.05		no	CVirtualMachineInternal	CVirtualMachineInternal::DeleteScript:0.64,CVirtualMachineInternal::SetUpScriptSituation:0.59,CVirtualMachineInternal::RunScriptFile:0.56
+0x00829060	0x004369a0	GLRender::FrameBufferModificationsATI	GLRender::RenderObjectsVTCQuad	0x0008af18	0.65	0.01		no	GLRender	GLRender::RenderObjectsVTCQuad:0.65,GLRender::RenderObjectsVTCQuadUP:0.65,GLRender::RenderObjectsVTQuadUP:0.60
+0x00867dc0	0x00475e50	Global::GetResource						no	CAurInternal,CAurInternalGL,ConsoleFunc	
+0x005c54b0		CSWGuiCreateItem::OnControlXButton	CSWGuiCreateItem::OnControlEntered	0x001d7b0e	0.54	0.07	base_skill | skill	no	CSWGuiCreateItem	CSWGuiCreateItem::OnControlEntered:0.54,CSWGuiCreateItem::OnControlStoreAButton:0.47,CSWGuiCreateMedicalItem::OnControlEntered:0.47

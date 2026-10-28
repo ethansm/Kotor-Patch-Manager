@@ -1,0 +1,4 @@
+addr	kind	name	confidence	evidence	topic	date
+0x00499300	function	LightManager::~LightManager	probable	0x00499300: PUSH EBP | src mac 0x000de746 fit=0.77 margin=0.27 via GOG 0x00870c10	ingest-macnames	2026-10-28
+0x008ddf20	function	CSWGuiSwoopUpgrade::OnUpgradeSelected	probable	0x008ddf20: PUSH EBP | src mac 0x001e1dee fit=0.67 margin=0.20 via GOG 0x005ce2f0	ingest-macnames	2026-10-28
+0x0074ac30	function	CSWGuiBlackenedLabel::~CSWGuiBlackenedLabel	probable	0x0074ac30: PUSH EBP | src mac 0x001f5a04 fit=0.88 margin=0.38 via GOG 0x005977a0	ingest-macnames	2026-10-28

@@ -1,0 +1,17 @@
+gog_addr	steam_addr	verdict	corrected_addr	content_anchor	confidence	reason
+0x0086ac50	0x00478d70	match	0x00478d70	caller 0x007bc520 CClientOptions::SetVSync (trusted GOG 0x004691f0)	3	Sole caller pair is trusted; size 43=43 and RET 0=0 agree; callee 0x004844e0 unnamed and unmapped so anchor is caller-only
+0x0090ca10	0x0040e360	unsure		none	4	Size 285 and RET 0 agree; offsets +4/+8/+C match decoy 0x0040e480 so they do not discriminate; GOG caller unmapped; no string or callee anchor
+0x0061a490	0x00710b70	unsure		none	4	GOG callee 0x9228ac and all GOG callers unmapped (0 of 24); CStr/strlen callees unconfirmed; script C0
+0x00827df0	0x00435e80	mismatch		none	4	Size 113 vs GOG 54; no direct callees (GOG has memset); body is vtable alloc/map/unmap, not a render
+0x00867ee0	0x00475f70	match	0x00475f70	callee 0x00476030 Global::AurResFree_2 (CALL; trusted GOG 0x00867fa0)	5	Size 69=69, RET 0=0, 2 callees=2; 3 trusted callers also agree
+0x008ce680	0x0048e130	match	0x0048e130	callee 0x0048E090 Global::BinaryInsertModel (CALL; trusted GOG 0x008ce5e0)	5	Size 48=48, RET 0=0, single callee matches GOG single callee; twin 0x48e060 differs at that CALL
+0x00827df0	0x004356e0	unsure		none	3	Size 54=54 and memset 0x18 agree, but 2 wgl IAT callees absent from GOG callee list; GOG callee and callers unmapped
+0x0090ca10	0x0040e750	mismatch		none	5	Size 20 vs GOG 285; body only stores CSWGuiObject vftable; no callees
+0x008d10b0	0x0047a740	mismatch		none	3	GOG has 1 callee, candidate has 0; candidate reads +0xC/+0x10 and writes float outputs (getter direction) while GOG name is Set
+0x008cfd00	0x00479460	mismatch		trusted holder GUI (G6 dup fail)	4	Candidate already trusted-held by another GUI row; size 845 vs GOG 101; 7 stack params vs GOG 0
+0x0086b4a0	0x00484710	match	0x00484710	caller 0x00427110 CAurTextureBasic::AsNormalizeVectorCubeMap (+3 trusted callers)	3	Four trusted callers agree; size 53=53, RET 0=0; twins 0x484750 and 0x484a20 share shape and their callers were not checked
+0x0086ae30	0x00478f50	match	0x00478f50	caller 0x0079e550 CClientExoAppInternal::EnableVideoEffect (+0x0079e960 DisableVideoEffect, both trusted)	3	Both trusted callers agree; size 18=18, RET 0=0, 2-byte stack arg on both; GOG callee GLRender::EnableFury unmapped
+0x0086b700	0x009852b0	mismatch		none	3	Size 15 vs GOG 100; candidate is a 15-byte MOV ECX + CALL forwarding stub from a 16-byte-spaced stub family
+0x008cfd00	0x004792c0	mismatch		trusted holder 0x004792c0 = Global::AurGUIStartLayer (G6 dup fail)	5	Candidate is the trusted StartLayer row; body resets DAT_00a309c0 to 0 and pushes matrix (start-type); size 301 vs 101
+0x0061a490	0x00710ad0	mismatch		none	3	Returns 1 on first differing char and 0 on equal (chunk_3.md:1507-1513): operator!= polarity vs GOG operator==; callee count matches
+0x0090deb0	0x0040fb70	mismatch		caller 0x0040fa80 (GOG ScaleToEdgeHelper_3, trusted) does not call candidate	4	Trusted caller contradicts; GOG shows no displacements vs candidate +0x24/+0x28/+0x4c; size 79 vs 209

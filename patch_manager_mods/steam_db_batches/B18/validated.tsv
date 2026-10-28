@@ -1,0 +1,12 @@
+steam_addr	name	verdict	tier	gog_addr	batch	fp_sha	evidence_ref
+0x0040fa30	InitControl::ScaleToEdgeHelper_2	verified	opus	0x0090deb0	B18	b5337172b91accd5	steam_db_batches/B18/final_rows.tsv
+0x00414b70	CSWGuiObject::SetExtent	verified	opus	0x00912f40	B18	9c631cff288ac91a	steam_db_batches/B18/final_rows.tsv
+0x00475f70	Global::AurResGetNextLine	verified	opus	0x00867ee0	B18	95e789dc10828f0c	steam_db_batches/B18/final_rows.tsv
+0x00478d70	Global::AurSetVSyncState	verified	opus	0x0086ac50	B18	6b9c3eafb8ff474e	steam_db_batches/B18/final_rows.tsv
+0x00478f50	Global::AurEnableForceFury	verified	opus	0x0086ae30	B18	ccd19a34b77f4bc9	steam_db_batches/B18/final_rows.tsv
+0x004793f0	Global::AurGUIStopLayer	verified	opus	0x008cfd00	B18	dea4ad54ee92bf2b	steam_db_batches/B18/final_rows.tsv
+0x004799c0	Global::AurGUICloseViewport	verified	opus	0x008d02d0	B18	6c89032a44f3807a	steam_db_batches/B18/final_rows.tsv
+0x00484710	Global::AurMultiTextureAvailable	verified	opus	0x0086b4a0	B18	6ac7062484508158	steam_db_batches/B18/final_rows.tsv
+0x0048e130	Global::InsertModel	verified	opus	0x008ce680	B18	5722289dff41db5b	steam_db_batches/B18/final_rows.tsv
+0x005eebf0	CSWCollisionMesh::NormalLocalToWorld	verified	opus	0x00728b10	B18	285e484813ca4578	steam_db_batches/B18/final_rows.tsv
+0x0070bb00	CExoSound::StopAllOneShots	verified	opus	0x0063aaa0	B18	3e4935aa39b9608b	steam_db_batches/B18/final_rows.tsv

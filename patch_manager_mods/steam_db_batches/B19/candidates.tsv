@@ -1,0 +1,15 @@
+class	name	gog	gog_callconv	gog_param	gog_size	gog_retn	candidates
+CSWCMessage	HandleServerToPlayerSafeProjectileSpell	0x004bdea0		0	4055	0	0x00829850|mapper:vote+near
+CSWSpellArray	Load	0x004ed490		0	10753	0	0x006c1490|near;0x006c1380|near;0x006c13e0|near
+CSWGuiInGameEquip	Constructor	0x0059d120		4	5143	4	0x008a92d0|mapper:vote+near;0x008a91c0|near
+C2DA	GetCExoStringEntry_3	0x00620c70		12	267	12	0x0071b1d0|mapper:vote+near;0x0071b3f0|near;0x0071afa0|near
+CExoKeyTable	AddEncapsulatedContents	0x0062d270		4	3921	4	0x00723820|mapper:vote+near
+CExoKeyTable	AddResourceImageContents	0x0062e1d0		4	967	4	0x00724780|mapper:vote+near;0x00724b50|near
+CSWSSpellScriptData	LoadData	0x0069e5e0		8	438	8	0x00585b00|near
+CSWSMessage	HandlePlayerToServerMessage	0x00805640	__thiscall	12	1449	12	0x0065f8a0|mapper:vote
+RequestPoolManagerVBO	Constructor	0x0081be20	__thiscall	0	488	0	0x004296f0|mapper:vote+near;0x00429a00|near;0x00429600|near
+PartEmitter	RenderMotionBlurred	0x008b1b50		0	1008		0x004f5f50|mapper:vote+near;0x004f5df0|near;0x004f5d90|near
+PartEmitter	RenderStandard	0x008b1f40		0	7354	0	0x004f5f50|near
+CSWGuiManager	Constructor	0x0090e540	__thiscall	0	697	0	0x004100c0|mapper:vote+near;0x00410380|near;0x0040fe10|near
+CSWGuiImage	Load	0x00914af0		12	372	12	0x00416720|mapper:vote+near;0x004168b0|near;0x00416530|near
+CSWGuiText	Load	0x00915850		12	666	12	0x00417480|mapper:vote+near;0x00417290|near;0x00417260|near

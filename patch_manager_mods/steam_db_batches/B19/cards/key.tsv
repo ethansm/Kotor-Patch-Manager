@@ -1,0 +1,7 @@
+card_id	chunk	gog	steam_addr	kind	expected
+B19-1-01	1	0x008b1b50	0x004f5df0	decoy_prev	mismatch
+B19-1-02	1	0x008b1f40	0x004f5f50	real	
+B19-1-03	1	0x008b1b50	0x004f5f50	real	
+B19-1-04	1	0x008b1f40	0x004f5df0	decoy_prev	mismatch
+B19-1-05	1	0x008b1f40	0x004f8000	decoy_next	mismatch
+B19-1-06	1	0x008b1b50	0x004f8000	decoy_next	mismatch

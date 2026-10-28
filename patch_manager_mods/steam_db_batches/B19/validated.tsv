@@ -1,0 +1,13 @@
+steam_addr	name	verdict	tier	gog_addr	batch	fp_sha	evidence_ref
+0x004100c0	CSWGuiManager::Constructor	verified	auto:c2	0x0090e540	B19	e0626e603df4a107	steam_db_batches/B19/final_rows.tsv
+0x00416720	CSWGuiImage::Load	verified	auto:c2	0x00914af0	B19	7ab2a0b8ea7a569d	steam_db_batches/B19/final_rows.tsv
+0x00417480	CSWGuiText::Load	verified	opus	0x00915850	B19	49eb8e0d59041835	steam_db_batches/B19/final_rows.tsv
+0x004f5f50	PartEmitter::RenderStandard	verified	opus	0x008b1f40	B19	94561d9321b18f90	steam_db_batches/B19/final_rows.tsv
+0x00585b00	CSWSSpellScriptData::LoadData	verified	auto:c2	0x0069e5e0	B19	fb85b26827370aaa	steam_db_batches/B19/final_rows.tsv
+0x0065f8a0	CSWSMessage::HandlePlayerToServerMessage	verified	auto:c2	0x00805640	B19	88bbc4108e871748	steam_db_batches/B19/final_rows.tsv
+0x006c1490	CSWSpellArray::Load	verified	opus	0x004ed490	B19	b6589eaca696dcc2	steam_db_batches/B19/final_rows.tsv
+0x0071b1d0	C2DA::GetCExoStringEntry_3	verified	auto:c2	0x00620c70	B19	163c2afe2354feeb	steam_db_batches/B19/final_rows.tsv
+0x00723820	CExoKeyTable::AddEncapsulatedContents	verified	opus	0x0062d270	B19	34dff788f1ae3f93	steam_db_batches/B19/final_rows.tsv
+0x00724780	CExoKeyTable::AddResourceImageContents	verified	opus	0x0062e1d0	B19	481e7dae69597559	steam_db_batches/B19/final_rows.tsv
+0x00829850	CSWCMessage::HandleServerToPlayerSafeProjectileSpell	verified	opus	0x004bdea0	B19	502fe3dd81ec8a2d	steam_db_batches/B19/final_rows.tsv
+0x008a92d0	CSWGuiInGameEquip::Constructor	verified	auto:c2	0x0059d120	B19	b69d5afcbcc4b05e	steam_db_batches/B19/final_rows.tsv

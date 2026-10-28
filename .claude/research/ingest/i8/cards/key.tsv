@@ -1,0 +1,7 @@
+card	addr	kind	name	is_decoy	facts_addr	src
+C01	0x008ddf20	function	CSWGuiSwoopUpgrade::OnUpgradeSelected	0	0x008ddf20	mac 0x001e1dee fit=0.67 margin=0.20 via GOG 0x005ce2f0
+C02	0x00499300	function	LightManager::~LightManager	0	0x00499300	mac 0x000de746 fit=0.77 margin=0.27 via GOG 0x00870c10
+C03	0x008ddf20	function	CSWGuiSwoopUpgrade::OnUpgradeSelected	1	0x0074ac30	mac 0x001e1dee fit=0.67 margin=0.20 via GOG 0x005ce2f0
+C04	0x0074ac30	function	CSWGuiBlackenedLabel::~CSWGuiBlackenedLabel	1	0x00499300	mac 0x001f5a04 fit=0.88 margin=0.38 via GOG 0x005977a0
+C05	0x0074ac30	function	CSWGuiBlackenedLabel::~CSWGuiBlackenedLabel	1	0x008ddf20	mac 0x001f5a04 fit=0.88 margin=0.38 via GOG 0x005977a0
+C06	0x0074ac30	function	CSWGuiBlackenedLabel::~CSWGuiBlackenedLabel	0	0x0074ac30	mac 0x001f5a04 fit=0.88 margin=0.38 via GOG 0x005977a0

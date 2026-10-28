@@ -1,0 +1,8 @@
+gog_addr	steam_addr	final_verdict	note
+0x004bdea0	0x00829850	verified	[a] 4 callees hit incl GetClientAIMaster 0x73f790, SetDesiredFade*; safe projectile spell handler shape
+0x004ed490	0x006c1490	verified	[a] strings 'bounce' 'IconResRef' 'Label' (spells.2da columns) + SIG 1.00: CSWSpellArray::Load
+0x0062d270	0x00723820	verified	[a] fp identical (3921/836 insn/17 callees), SIG 1.00; sibling AddResourceImageContents 967B so no swap (Mac 1307 vs 638 same order)
+0x0062e1d0	0x00724780	verified	[a] fp identical (967/256/12), SIG 1.00; distinct from 3921B sibling AddEncapsulatedContents
+0x0081be20	0x004296f0	likely	[a] same size 488 / 138 insn, SIG 1.00; callees GOG 6 vs Steam 4; Mac has no ctor symbol to compare; counterpart right, name thin
+0x008b1f40	0x004f5f50	verified	[a] callees 2/2 mapped hit (RenderObjectsVTCQuadUP 0x431140); Steam 8362B = GOG 7354 + 1008 (= GOG RenderMotionBlurred size): Steam inlined MotionBlurred; sample correct
+0x00915850	0x00417480	verified	[a] strings 'PULSING' 'ALIGNMENT' 'dialogfont16x16' = GUI text GFF load: CSWGuiText::Load

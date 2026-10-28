@@ -1,0 +1,98 @@
+[
+ {
+  "confidence": "high",
+  "date": "2026-10-28",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004bdea0] Steam batch B19: CALLEE 4 (callees: GetClientAIMaster 0x73f790, ? 0x7645f0, SetDesiredFadeState 0x7f1650); SIG 1.00 | override: [a] 4 callees hit incl GetClientAIMaster 0x73f790, SetDesiredFade*; safe projectile spell handler shape",
+  "name": "CSWCMessage::HandleServerToPlayerSafeProjectileSpell",
+  "source": "steam-db-B19",
+  "steam_addr": "0x00829850"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-28",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004ed490] Steam batch B19: STR 'bounce'@0098d2e0; 'IconResRef'@009963d0; 'Label'@009983a8; SIG 1.00 | override: [a] strings 'bounce' 'IconResRef' 'Label' (spells.2da columns) + SIG 1.00: CSWSpellArray::Load",
+  "name": "CSWSpellArray::Load",
+  "source": "steam-db-B19",
+  "steam_addr": "0x006c1490"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-28",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0059d120] Steam batch B19: STR 'BTN_SWAPWEAPONS'@0099da34; 'INV_WEAP_L'@009a73f0; 'BTN_NEXTNPC'@009a74dc; CALLEE 2 (callers: Initialize 0x7be4c0, UpdateCreatedInGameGUI 0x7d0760); SIG 1.00 | AUTO: STR 'BTN_SWAPWEAPONS'@0099da34; 'INV_WEAP_L'@009a73f0; 'BTN_NEXTNPC'@009a74dc; CALLEE 2 (callers: Initialize 0x7be4c0, UpdateCreatedInGameGUI 0x7d0760); SIG 1.0",
+  "name": "CSWGuiInGameEquip::Constructor",
+  "source": "steam-db-B19",
+  "steam_addr": "0x008a92d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-28",
+  "evidence": "[verified; thiscall retn=12; GOG 0x00620c70] Steam batch B19: CALLEE 54 (callees: GetColumnIndex 0x71aef0; callers: PlayFootstep 0x765e90, IsCreature 0x76fe00, ? 0x771d40); SIG 1.00 | AUTO: CALLEE 54 (callees: GetColumnIndex 0x71aef0; callers: PlayFootstep 0x765e90, IsCreature 0x76fe00, ? 0x771d40); SIG 1.00",
+  "name": "C2DA::GetCExoStringEntry_3",
+  "source": "steam-db-B19",
+  "steam_addr": "0x0071b1d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-28",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0062d270] Steam batch B19: SIG 1.00 | override: [a] fp identical (3921/836 insn/17 callees), SIG 1.00; sibling AddResourceImageContents 967B so no swap (Mac 1307 vs 638 same order)",
+  "name": "CExoKeyTable::AddEncapsulatedContents",
+  "source": "steam-db-B19",
+  "steam_addr": "0x00723820"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-28",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0062e1d0] Steam batch B19: SIG 1.00 | override: [a] fp identical (967/256/12), SIG 1.00; distinct from 3921B sibling AddEncapsulatedContents",
+  "name": "CExoKeyTable::AddResourceImageContents",
+  "source": "steam-db-B19",
+  "steam_addr": "0x00724780"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-28",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0069e5e0] Steam batch B19: CALLEE 1 (callers: LoadNode 0x5205f0); SIG 1.00 | AUTO: CALLEE 1 (callers: LoadNode 0x5205f0); SIG 1.00",
+  "name": "CSWSSpellScriptData::LoadData",
+  "source": "steam-db-B19",
+  "steam_addr": "0x00585b00"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-28",
+  "evidence": "[verified; thiscall retn=12; GOG 0x00805640] Steam batch B19: STR 'Server message UNDERFLOW in %s (0x%.2X)\\'@00998950; 'Server message OVERFLOW in %s (0x%.2X)\\n'@009989c0; 'PlayModuleCharacterList'@00998a30; CALLEE 3 (callees: GetClientObjectByPlayerId 0x51c620, HandlePlayerToServerLevelUpMessage 0x661c30; callers: HandleMessage 0x5314e0); SIG 1.00 | AUTO: STR 'Server message UNDERFLOW in %s (0x%.2X)\\'@00998950; 'Server message OVERFLOW in %s (0x%.2X)\\n'@009989c0; 'PlayModuleCharacterList'@00998a30; CALLEE 3 (call",
+  "name": "CSWSMessage::HandlePlayerToServerMessage",
+  "source": "steam-db-B19",
+  "steam_addr": "0x0065f8a0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-28",
+  "evidence": "[verified; thiscall retn=0; GOG 0x008b1f40] Steam batch B19: SIG 0.89 | override: [a] callees 2/2 mapped hit (RenderObjectsVTCQuadUP 0x431140); Steam 8362B = GOG 7354 + 1008 (= GOG RenderMotionBlurred size): Steam inlined MotionBlurred; sample correct",
+  "name": "PartEmitter::RenderStandard",
+  "source": "steam-db-B19",
+  "steam_addr": "0x004f5f50"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-28",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0090e540] Steam batch B19: CALLEE 1 (callers: StartServices 0x788d90); SIG 1.00 | AUTO: CALLEE 1 (callers: StartServices 0x788d90); SIG 1.00",
+  "name": "CSWGuiManager::Constructor",
+  "source": "steam-db-B19",
+  "steam_addr": "0x004100c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-28",
+  "evidence": "[verified; thiscall retn=12; GOG 0x00914af0] Steam batch B19: STR 'ROTATESTYLE'@00987660; 'ROTATE'@0098766c; 'ALIGNMENT'@00987674; CALLEE 3 (callees: GetStructFromStruct 0x718960, ReadFieldCResRef 0x718e40, SetImage 0x416090); SIG 1.00 | AUTO: STR 'ROTATESTYLE'@00987660; 'ROTATE'@0098766c; 'ALIGNMENT'@00987674; CALLEE 3 (callees: GetStructFromStruct 0x718960, ReadFieldCResRef 0x718e40, SetImage 0x4160",
+  "name": "CSWGuiImage::Load",
+  "source": "steam-db-B19",
+  "steam_addr": "0x00416720"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-28",
+  "evidence": "[verified; thiscall retn=12; GOG 0x00915850] Steam batch B19: STR 'PULSING'@009875e8; 'ALIGNMENT'@00987674; 'dialogfont16x16'@009876a0; CALLEE 7 (callees: GetStructFromStruct 0x718960, ReadFieldCResRef 0x718e40, ReadFieldVector 0x719520); SIG 1.00 | override: [a] strings 'PULSING' 'ALIGNMENT' 'dialogfont16x16' = GUI text GFF load: CSWGuiText::Load",
+  "name": "CSWGuiText::Load",
+  "source": "steam-db-B19",
+  "steam_addr": "0x00417480"
+ }
+]

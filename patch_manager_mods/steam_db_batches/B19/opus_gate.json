@@ -1,0 +1,77 @@
+{
+ "batch": "B19",
+ "chunks_short": [
+  "1"
+ ],
+ "chunks_unreviewed": [],
+ "clean": false,
+ "clean_streak_before": 0,
+ "decision": "INSUFFICIENT DECOYS (chunks 1; need >= 10 per chunk)",
+ "decoy_cards": 4,
+ "decoys_accepted": 0,
+ "decoys_per_chunk": {
+  "1": 4
+ },
+ "full_read": 0,
+ "key_error_cards": [],
+ "key_errors": 0,
+ "rows_auto": [
+  {
+   "class": "CExoKeyTable",
+   "gog": "0x0062d270",
+   "name": "AddEncapsulatedContents",
+   "route": "sig",
+   "steam_addr": "0x00723820"
+  },
+  {
+   "class": "RequestPoolManagerVBO",
+   "gog": "0x0081be20",
+   "name": "Constructor",
+   "route": "sig",
+   "steam_addr": "0x004296f0"
+  },
+  {
+   "class": "CExoKeyTable",
+   "gog": "0x0062e1d0",
+   "name": "AddResourceImageContents",
+   "route": "sig",
+   "steam_addr": "0x00724780"
+  },
+  {
+   "class": "CSWSpellArray",
+   "gog": "0x004ed490",
+   "name": "Load",
+   "route": "c2",
+   "steam_addr": "0x006c1490"
+  },
+  {
+   "class": "CSWCMessage",
+   "gog": "0x004bdea0",
+   "name": "HandleServerToPlayerSafeProjectileSpell",
+   "route": "c2",
+   "steam_addr": "0x00829850"
+  },
+  {
+   "class": "CSWGuiText",
+   "gog": "0x00915850",
+   "name": "Load",
+   "route": "c2",
+   "steam_addr": "0x00417480"
+  }
+ ],
+ "rows_full": [],
+ "rows_sample": [
+  {
+   "class": "PartEmitter",
+   "content_level": "C1",
+   "gog": "0x008b1f40",
+   "name": "RenderStandard",
+   "steam_addr": "0x004f5f50"
+  }
+ ],
+ "sample_errors": 0,
+ "sample_pool": 1,
+ "sample_rate": 0.2,
+ "sample_size": 1,
+ "unanswered_decoys": 0
+}

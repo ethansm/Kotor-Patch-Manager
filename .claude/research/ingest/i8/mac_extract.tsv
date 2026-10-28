@@ -1,0 +1,4 @@
+addr	kind	name	form	src	fn_start	offset	status	kdb_name
+0x00499300	function	LightManager::~LightManager	qualified	mac 0x000de746 fit=0.77 margin=0.27 via GOG 0x00870c10	0x00499300	0	new	
+0x008ddf20	function	CSWGuiSwoopUpgrade::OnUpgradeSelected	qualified	mac 0x001e1dee fit=0.67 margin=0.20 via GOG 0x005ce2f0	0x008ddf20	0	new	
+0x0074ac30	function	CSWGuiBlackenedLabel::~CSWGuiBlackenedLabel	qualified	mac 0x001f5a04 fit=0.88 margin=0.38 via GOG 0x005977a0	0x0074ac30	0	new	

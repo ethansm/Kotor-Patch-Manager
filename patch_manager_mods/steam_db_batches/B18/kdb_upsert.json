@@ -1,0 +1,90 @@
+[
+ {
+  "confidence": "high",
+  "date": "2026-10-28",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0063aaa0] Steam batch B18: CALLEE 2 (callees: StopAllOneShots 0x709cf0; callers: StartNewModule 0x52fda0) | override: [a] fp identical (29/ret0/13 insn); callee CExoSoundInternal::StopAllOneShots Steam 0x709cf0 + caller StartNewModule 0x52fda0 both hit; fptwin_order pair right, mapper 0x70b8f0 wrong",
+  "name": "CExoSound::StopAllOneShots",
+  "source": "steam-db-B18",
+  "steam_addr": "0x0070bb00"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-28",
+  "evidence": "[verified; thiscall retn=12; GOG 0x00728b10] Steam batch B18: CALLEE 2 (callers: GetMeshBoundingBox 0x617320, AddToArea 0x5f2a80); SIG 1.00 | override: [a] fp identical (331/ret12/107, disp 0x1c,0x58,0x58,0x64 imm 0x55ffff00); 2/2 trusted callers hit; mac_rotation flag outweighed by exact body",
+  "name": "CSWCollisionMesh::NormalLocalToWorld",
+  "source": "steam-db-B18",
+  "steam_addr": "0x005eebf0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-28",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00867ee0] Steam batch B18: CALLEE 4 (callees: AurResFree_2 0x476030; callers: Init 0x424b10, EnableRenderBumpedOut 0x45bf50, LoadVisibility 0x46fbd0) | override: [a] fp identical (69/ret0/24); callee AurResFree_2 0x476030 hit; 3/3 mapped callers hit (20 callers both sides)",
+  "name": "Global::AurResGetNextLine",
+  "source": "steam-db-B18",
+  "steam_addr": "0x00475f70"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-28",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0086ac50] Steam batch B18: CALLEE 1 (callers: SetVSync 0x7bc520) | override: [a] fp identical (43/ret0/16); sole caller CClientOptions::SetVSync 0x7bc520 trusted and hit",
+  "name": "Global::AurSetVSyncState",
+  "source": "steam-db-B18",
+  "steam_addr": "0x00478d70"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-28",
+  "evidence": "[verified; cdecl retn=0; GOG 0x0086ae30] Steam batch B18: CALLEE 2 (callers: EnableVideoEffect 0x79e550, DisableVideoEffect 0x79e960) | override: [a] fp identical (18/ret0); 2/2 trusted callers hit vs sibling 0x478ee0 1/2 (sibling AurEnableClairvoyance); fptwin_order pair holds",
+  "name": "Global::AurEnableForceFury",
+  "source": "steam-db-B18",
+  "steam_addr": "0x00478f50"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-28",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0086b4a0] Steam batch B18: CALLEE 4 (callers: AsNormalizeVectorCubeMap 0x427110, RenderSkinnedVP 0x4c3430, EnableFragmentShadersARB 0x4b50c0) | override: [a] fp identical (53/ret0/17); 4/4 mapped callers hit (47 vs 46 callers); fptwin_order pair holds",
+  "name": "Global::AurMultiTextureAvailable",
+  "source": "steam-db-B18",
+  "steam_addr": "0x00484710"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-28",
+  "evidence": "[verified; cdecl retn=0; GOG 0x008ce680] Steam batch B18: no content anchor (C0) | override: [a] fp identical (48/ret0/18, imm 0x8,0xc); its one callee maps via trusted row and is in candidate callees (BinaryInsertModel side, not BinaryFindModel); upgrade from likely",
+  "name": "Global::InsertModel",
+  "source": "steam-db-B18",
+  "steam_addr": "0x0048e130"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-28",
+  "evidence": "[verified; cdecl retn=0; GOG 0x008cfd00] Steam batch B18: SIG 0.50 | override: [a] fp identical (101/ret0/27); 2/2 mapped callers hit (8 both sides); sample row correct",
+  "name": "Global::AurGUIStopLayer",
+  "source": "steam-db-B18",
+  "steam_addr": "0x004793f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-28",
+  "evidence": "[verified; thiscall retn=0; GOG 0x008d02d0] Steam batch B18: SIG 0.50 | override: [a] fp identical (235/ret0/59); 4/4 mapped callers hit (12 callers both sides); sample row correct",
+  "name": "Global::AurGUICloseViewport",
+  "source": "steam-db-B18",
+  "steam_addr": "0x004799c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-28",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0090deb0] Steam batch B18: CALLEE 1 (callers: ScaleToEdgeHelper_3 0x40fa80) | override: [a] fp identical (79/ret0/29, imm 0x2,0x5); trusted caller 0x40fa80 calls it; sample row correct",
+  "name": "InitControl::ScaleToEdgeHelper_2",
+  "source": "steam-db-B18",
+  "steam_addr": "0x0040fa30"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-28",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00912f40] Steam batch B18: SIG 1.00 | override: [a] fp identical (44/ret4/18); stores this+0x4/+0x8/+0xC/+0x10 = disp set 0x4,0x8,0xc both sides; sample row correct",
+  "name": "CSWGuiObject::SetExtent",
+  "source": "steam-db-B18",
+  "steam_addr": "0x00414b70"
+ }
+]

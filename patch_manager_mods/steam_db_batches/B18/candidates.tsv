@@ -1,0 +1,29 @@
+class	name	gog	gog_callconv	gog_param	gog_size	gog_retn	candidates
+CClientExoAppInternal	StallServerCode	0x00430300		4	49	4	0x00783d80|b17_leftover+near;0x00783dc0|mapper:drift-0x1c0
+CClientExoAppInternal	IndicateObject	0x00444b60		0	63	0	0x00798540|b17_leftover+mapper:vote+near
+CClientAIMaster	AddObject	0x0044eeb0		4	36	4	0x007a2510|fptwin_order
+CSWGuiObject	SetActiveControl	0x005c0410		0	13	8	0x0042a470|b17_leftover
+CExoIni	ReadIniEntry	0x00608450		16	39	16	0x00736320|fptwin_order+mapper:vote+near;0x007362c0|near;0x00736240|near
+CExoFileInternal	Read	0x00610130		8	231	8	0x0073dc30|b17_leftover+mapper:vote+near;0x0073db70|near;0x0073dd20|near
+CResRef	operator==	0x0061a490		4	44	4	0x00710b40|b17_leftover+mapper:vote+near;0x00710980|near;0x00710b70|near
+CResRef	operator==_3	0x0061a570		4	113	4	0x00710c20|b17_leftover+mapper:vote+near;0x00710930|near;0x00710ca0|near
+CExoSound	StopAllOneShots	0x0063aaa0		0	29	0	0x0070bb00|fptwin_order+mapper:vote+near;0x0070bb80|near;0x0070bbb0|near
+CSWSCreature	RemoveFromInvitationsOffered	0x006ddee0		4	437	4	0x005d32c0|b17_leftover+mapper:vote
+CSWCollisionMesh	not_GetWalkableMaterialMask	0x00713530		0	26	0	0x00650de0|b17_leftover;0x004072f0|mapper:vote;0x005d9570|near;0x005d9690|near
+CSWCollisionMesh	NormalLocalToWorld	0x00728b10		12	331	12	0x005eebf0|b17_leftover+mapper:vote+near;0x005ee9f0|near;0x005ee7b0|near
+GLRender	RenderDrawableSquares	0x00827df0		0	54	0	0x00435720|b17_leftover+mapper:vote+near;0x004356c0|near;0x004356e0|near
+GLRender	FrameBufferModifications	0x00827e30		4	1885	0	0x00435720|b17_leftover+near;0x004356e0|near;0x004356c0|near
+Global	FindGob	0x0084b050		4	90	0	0x00458a80|b17_leftover;0x00735b70|near;0x00735840|near;0x007358d0|near
+Global	AurResGetNextLine	0x00867ee0		0	69	0	0x00475f70|b17_leftover
+Global	AurSetVSyncState	0x0086ac50		1	43	0	0x00478d70|b17_leftover
+Global	AurEnableForceFury	0x0086ae30		2	18	0	0x00478f50|fptwin_order
+Global	AurMultiTextureAvailable	0x0086b4a0		0	53	0	0x00484710|fptwin_order;0x00985050|mapper:vote+name_map:medium:gog_cluster_delta_map.py
+Global	AurCubeMapAvailable	0x0086b700		0	100	0	0x009852b0|b17_leftover+mapper:vote+name_map:medium:gog_cluster_delta_map.py;0x007563b0|near;0x00756380|near
+Global	InsertModel	0x008ce680		4	48	0	0x0048e130|fptwin_order
+Global	AurGUIStopLayer	0x008cfd00		0	101	0	0x004793f0|b17_leftover
+Global	AurGUICloseViewport	0x008d02d0		0	235	0	0x004799c0|b17_leftover
+CAurGUIStringInternal	SetSizeBoundingRect_2	0x008d10b0		8	89	8	0x0047a7a0|b17_leftover+mapper:vote+near;0x0047a740|near;0x0047a6e0|near
+CSWGuiExtent	Union	0x0090ca10		12	285	0	0x0040e480|fptwin_order
+InitControl	ScaleToEdgeHelper_2	0x0090deb0		12	79	0	0x0040fa30|b17_leftover+near;0x0040f9f0|near;0x0040fb40|near
+CSWGuiObject	SetExtent	0x00912f40	__thiscall	4	44	4	0x00414b70|b17_leftover
+Global	`eh_vector_constructor_iterator'	0x009258bf	__stdcall	20	77	20	0x0091d67e|b17_leftover;0x008103c0|near;0x00810510|near;0x008105e0|near

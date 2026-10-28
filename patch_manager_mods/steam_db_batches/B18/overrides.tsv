@@ -1,0 +1,13 @@
+gog_addr	steam_addr	final_verdict	note
+0x0063aaa0	0x0070bb00	verified	[a] fp identical (29/ret0/13 insn); callee CExoSoundInternal::StopAllOneShots Steam 0x709cf0 + caller StartNewModule 0x52fda0 both hit; fptwin_order pair right, mapper 0x70b8f0 wrong
+0x00728b10	0x005eebf0	verified	[a] fp identical (331/ret12/107, disp 0x1c,0x58,0x58,0x64 imm 0x55ffff00); 2/2 trusted callers hit; mac_rotation flag outweighed by exact body
+0x00827e30	0x00435720	likely	[a] fp identical (1885/ret0/370, disp 0x28, imm 6,6,6,0x14); counterpart right; name = GOG label, GLRender FBM labels rotated in B17 (Mac FBM 2507B) so name not proven
+0x00867ee0	0x00475f70	verified	[a] fp identical (69/ret0/24); callee AurResFree_2 0x476030 hit; 3/3 mapped callers hit (20 callers both sides)
+0x0086ac50	0x00478d70	verified	[a] fp identical (43/ret0/16); sole caller CClientOptions::SetVSync 0x7bc520 trusted and hit
+0x0086ae30	0x00478f50	verified	[a] fp identical (18/ret0); 2/2 trusted callers hit vs sibling 0x478ee0 1/2 (sibling AurEnableClairvoyance); fptwin_order pair holds
+0x0086b4a0	0x00484710	verified	[a] fp identical (53/ret0/17); 4/4 mapped callers hit (47 vs 46 callers); fptwin_order pair holds
+0x008ce680	0x0048e130	verified	[a] fp identical (48/ret0/18, imm 0x8,0xc); its one callee maps via trusted row and is in candidate callees (BinaryInsertModel side, not BinaryFindModel); upgrade from likely
+0x008cfd00	0x004793f0	verified	[a] fp identical (101/ret0/27); 2/2 mapped callers hit (8 both sides); sample row correct
+0x008d02d0	0x004799c0	verified	[a] fp identical (235/ret0/59); 4/4 mapped callers hit (12 callers both sides); sample row correct
+0x0090deb0	0x0040fa30	verified	[a] fp identical (79/ret0/29, imm 0x2,0x5); trusted caller 0x40fa80 calls it; sample row correct
+0x00912f40	0x00414b70	verified	[a] fp identical (44/ret4/18); stores this+0x4/+0x8/+0xC/+0x10 = disp set 0x4,0x8,0xc both sides; sample row correct

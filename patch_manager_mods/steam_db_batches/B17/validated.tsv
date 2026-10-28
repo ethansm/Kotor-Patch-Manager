@@ -57,6 +57,7 @@ steam_addr	name	verdict	tier	gog_addr	batch	fp_sha	evidence_ref
 0x004792c0	Global::AurGUIStartLayer	verified	opus	0x008cfbd0	B17	ac92d5fc6e7f8863	steam_db_batches/B17/final_rows.tsv
 0x00479ab0	Global::GetResolutionTextScalar	verified	reviewer	0x008d03c0	B17	250c7d4eca08f4cf	steam_db_batches/B17/final_rows.tsv
 0x0047a0c0	CAurGUIStringInternal::GetFontTexture	verified	reviewer	0x008d09d0	B17	52d28d4817ee7882	steam_db_batches/B17/final_rows.tsv
+0x0047a1d0	CAurGUIStringInternal::SetSizeBoundingRect	likely	opus	0x008d0ae0	B17	ea43770dc6d200f5	steam_db_batches/B17/final_rows.tsv
 0x0047aca0	CAurGUIStringInternal::GetIdealPixelHeight	verified	reviewer	0x008d15b0	B17	cef212d9baafc32b	steam_db_batches/B17/final_rows.tsv
 0x00480e40	Camera::Animate	verified	opus	0x008c1fb0	B17	2a6e8d6982bcc8ca	steam_db_batches/B17/final_rows.tsv
 0x00482ce0	Global::ImageRead16bit	verified	opus	0x008d7860	B17	9a2a4b1e1dbd1b67	steam_db_batches/B17/final_rows.tsv
@@ -163,6 +164,7 @@ steam_addr	name	verdict	tier	gog_addr	batch	fp_sha	evidence_ref
 0x00730750	CExoRawInputInternal::Constructor	verified	reviewer	0x00617350	B17	835fb2ae667a2dc7	steam_db_batches/B17/final_rows.tsv
 0x00732e00	CExoRawInputInternal::GetMouseState	verified	reviewer	0x00619a00	B17	7feea2a5149ace67	steam_db_batches/B17/final_rows.tsv
 0x00735c60	CExoBase::Constructor	verified	auto:sig	0x00607d90	B17	3407de1178259987	steam_db_batches/B17/final_rows.tsv
+0x00736130	CExoTimers::Constructor	likely	opus	0x00608260	B17	1f8b578be5580ee4	steam_db_batches/B17/final_rows.tsv
 0x0073a010	CExoLinkedListInternal::GetAtPos	verified	auto:c2	0x0060bf80	B17	517bfb192313e6f3	steam_db_batches/B17/final_rows.tsv
 0x0073dba0	CExoFileInternal::GetSize	verified	reviewer	0x006100a0	B17	97c156813f4b6bbf	steam_db_batches/B17/final_rows.tsv
 0x0073e5d0	CExoRandInternal::Constructor	verified	auto:c2	0x00610360	B17	ad4be489f4a03105	steam_db_batches/B17/final_rows.tsv
@@ -214,6 +216,7 @@ steam_addr	name	verdict	tier	gog_addr	batch	fp_sha	evidence_ref
 0x00816020	CSWCMessage::HandleServerToPlayerUpdate_GuiContainer	verified	reviewer	0x004aa610	B17	a39528e9904d12e4	steam_db_batches/B17/final_rows.tsv
 0x0082acb0	CSWCMessage::HandleServerToPlayerGuiContainerObjectMessage	verified	reviewer	0x004bf300	B17	b90622d577469b06	steam_db_batches/B17/final_rows.tsv
 0x00845ac0	CSWCLevelUpStats::Constructor	verified	auto:c2	0x00490650	B17	4191d0aa9edc142e	steam_db_batches/B17/final_rows.tsv
+0x0084de40	CSWGui3DSceneView::Draw	likely	opus	0x0053c050	B17	da0d3498ccca7fa9	steam_db_batches/B17/final_rows.tsv
 0x00857490	CSWGuiSaveLoad::UnpackGame	verified	reviewer	0x005d6e10	B17	0e8a2ef25b3040c8	steam_db_batches/B17/final_rows.tsv
 0x0085a1f0	CSWCCreatureAppearance::CreateBodyAppearance	verified	auto:c2	0x0048a280	B17	3679cc97c1affac3	steam_db_batches/B17/final_rows.tsv
 0x0085fbb0	CSWCAnimBase::GetModel	verified	reviewer	0x004c7a80	B17	34fc890d6c1b850d	steam_db_batches/B17/final_rows.tsv

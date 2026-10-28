@@ -1,0 +1,116 @@
+{
+ "batch": "B18",
+ "chunks_short": [
+  "5"
+ ],
+ "chunks_unreviewed": [],
+ "clean": false,
+ "clean_streak_before": 3,
+ "decision": "INSUFFICIENT DECOYS (chunks 5; need >= 10 per chunk)",
+ "decoy_cards": 43,
+ "decoys_accepted": 0,
+ "decoys_per_chunk": {
+  "1": 10,
+  "2": 10,
+  "3": 10,
+  "4": 10,
+  "5": 3
+ },
+ "full_read": 8,
+ "key_error_cards": [],
+ "key_errors": 0,
+ "rows_auto": [],
+ "rows_full": [
+  {
+   "class": "CExoSound",
+   "gog": "0x0063aaa0",
+   "name": "StopAllOneShots",
+   "steam_addr": "0x0070bb00",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "CSWCollisionMesh",
+   "gog": "0x00728b10",
+   "name": "NormalLocalToWorld",
+   "steam_addr": "0x005eebf0",
+   "why": "reviewer corrected_addr, match on a mac_rotation row"
+  },
+  {
+   "class": "GLRender",
+   "gog": "0x00827e30",
+   "name": "FrameBufferModifications",
+   "steam_addr": "0x00435720",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "Global",
+   "gog": "0x00867ee0",
+   "name": "AurResGetNextLine",
+   "steam_addr": "0x00475f70",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "Global",
+   "gog": "0x0086ac50",
+   "name": "AurSetVSyncState",
+   "steam_addr": "0x00478d70",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "Global",
+   "gog": "0x0086ae30",
+   "name": "AurEnableForceFury",
+   "steam_addr": "0x00478f50",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "Global",
+   "gog": "0x0086b4a0",
+   "name": "AurMultiTextureAvailable",
+   "steam_addr": "0x00484710",
+   "why": "reviewer corrected_addr"
+  },
+  {
+   "class": "Global",
+   "gog": "0x008ce680",
+   "name": "InsertModel",
+   "steam_addr": "0x0048e130",
+   "why": "reviewer corrected_addr"
+  }
+ ],
+ "rows_sample": [
+  {
+   "class": "InitControl",
+   "content_level": "C1",
+   "gog": "0x0090deb0",
+   "name": "ScaleToEdgeHelper_2",
+   "steam_addr": "0x0040fa30"
+  },
+  {
+   "class": "Global",
+   "content_level": "C1",
+   "gog": "0x008d02d0",
+   "name": "AurGUICloseViewport",
+   "steam_addr": "0x004799c0"
+  },
+  {
+   "class": "Global",
+   "content_level": "C1",
+   "gog": "0x008cfd00",
+   "name": "AurGUIStopLayer",
+   "steam_addr": "0x004793f0"
+  },
+  {
+   "class": "CSWGuiObject",
+   "content_level": "C1",
+   "gog": "0x00912f40",
+   "name": "SetExtent",
+   "steam_addr": "0x00414b70"
+  }
+ ],
+ "sample_errors": 0,
+ "sample_pool": 4,
+ "sample_rate": 0.1,
+ "sample_size": 4,
+ "unanswered_decoys": 0
+}

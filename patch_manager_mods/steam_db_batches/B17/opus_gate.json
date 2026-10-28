@@ -2,7 +2,7 @@
  "batch": "B17",
  "chunks_short": [],
  "chunks_unreviewed": [],
- "clean": true,
+ "clean": false,
  "clean_streak_before": 2,
  "decision": "OK: Opus reads the 100% classes plus a 20% sample (min 5) of the other reviewer matches",
  "decoy_cards": 150,
@@ -467,7 +467,7 @@
    "steam_addr": "0x008c2960"
   }
  ],
- "sample_errors": 0,
+ "sample_errors": null,
  "sample_pool": 132,
  "sample_rate": 0.2,
  "sample_size": 27,

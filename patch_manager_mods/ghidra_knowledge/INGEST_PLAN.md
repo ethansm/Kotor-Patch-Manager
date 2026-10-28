@@ -30,11 +30,11 @@ D6 R2 NO-GO root cause was missing names / caller context, so coverage is the le
 | I7a | Tools for the non-text source: `ingest_names.py twins` (gap fns -> unique GOG fingerprint twin) + `batch.py candidates --gog-list FILE` | DONE | spec §I7 |
 | I7b | Batch B17 (gap twins) through `steam_db_batches/tools/batch.py` candidates -> gates -> cards -> Haiku review -> finalize -> Opus gate | DONE | spec §I7 |
 | I7c | Persist B17 to `name_map` only (user OK), class pages, gap re-measure, docs sweep, memory | DONE | spec §I7 |
-| I8a | `ingest_names.py twins --buckets F`: write every gap fn with its bucket (named/unnamed/ambiguous/no_twin) + the colliding GOG/Steam addrs; `--order` pairs ambiguous groups by address order inside the run | TODO | spec §I8 |
-| I8b | `ingest_names.py macnames`: Mac x86 symbol hypotheses (bdlib `mac_fit`, strings) for GOG-unnamed twins + the 7 B17 label_suspect rows + GOG 0x5C54B0 | TODO | spec §I8 |
-| I8c | Batch B18: B17 leftovers (18 unresolved + 3 G6-wrong) + ambiguous rows I8a pairs uniquely; cards `--chunk 16 --decoys 10`; Haiku review -> finalize -> Opus gate | TODO | spec §I8 |
-| I8d | Mac-name verify: I8b hypotheses through `ingest_names.py cards --decomp-lines 10` (decoy names), Haiku verify, ledger rows topic `ingest-macnames` | TODO | spec §I8 |
-| I8e | no_twin 38: `batch.py candidates` (mapper + near only) + `gates` for B19, $0; report AUTO/REVIEW counts; review only if REVIEW <= 24 | TODO | spec §I8 |
+| I8a | `ingest_names.py twins --buckets F`: write every gap fn with its bucket (named/unnamed/ambiguous/no_twin) + the colliding GOG/Steam addrs; `--order` pairs ambiguous groups by address order inside the run | DONE | spec §I8 |
+| I8b | `ingest_names.py macnames`: Mac x86 symbol hypotheses (bdlib `mac_fit`, strings) for GOG-unnamed twins + the 7 B17 label_suspect rows + GOG 0x5C54B0 | DONE | spec §I8 |
+| I8c | Batch B18: B17 leftovers (18 unresolved + 3 G6-wrong) + ambiguous rows I8a pairs uniquely; cards `--chunk 16 --decoys 10`; Haiku review -> finalize -> Opus gate | DONE | spec §I8 |
+| I8d | Mac-name verify: I8b hypotheses through `ingest_names.py cards --decomp-lines 10` (decoy names), Haiku verify, ledger rows topic `ingest-macnames` | DONE | spec §I8 |
+| I8e | no_twin 38: `batch.py candidates` (mapper + near only) + `gates` for B19, $0; report AUTO/REVIEW counts; review only if REVIEW <= 24 | DONE | spec §I8 |
 | I8f | Persist B18 (+ B17 likely 3 via `finalize --with-likely`) + I8d names (user OK), gap re-measure, docs sweep, memory | TODO | spec §I8 |
 
 ## Cost log

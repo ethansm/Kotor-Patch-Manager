@@ -424,6 +424,14 @@
   "steam_addr": "0x0075f630"
  },
  {
+  "confidence": "medium",
+  "date": "2026-10-28",
+  "evidence": "[likely; thiscall retn=4; GOG 0x0053c050] Steam batch B17: SIG 1.00 | override: [b] 37B virtual forwarder: 0084de57 MOV EDX,[EAX+0x60]; 0084de5a MOV EAX,[EDX+0xc]; RET 0x4; fp identical, thin anchor only",
+  "name": "CSWGui3DSceneView::Draw",
+  "source": "steam-db-B17",
+  "steam_addr": "0x0084de40"
+ },
+ {
   "confidence": "high",
   "date": "2026-10-28",
   "evidence": "[verified; thiscall retn=0; GOG 0x0053d6a0] Steam batch B17: STR ':modules'@009a5ad0; CALLEE 3 (callees: SubString 0x734a00, GetDirectoryList 0x736050; callers: OnLoadGamePicked 0x8824f0); SIG 1.00 | AUTO: STR ':modules'@009a5ad0; CALLEE 3 (callees: SubString 0x734a00, GetDirectoryList 0x736050; callers: OnLoadGamePicked 0x8824f0); SIG 1.00",
@@ -1006,6 +1014,14 @@
   "name": "CExoBase::Constructor",
   "source": "steam-db-B17",
   "steam_addr": "0x00735c60"
+ },
+ {
+  "confidence": "medium",
+  "date": "2026-10-28",
+  "evidence": "[likely; thiscall retn=0; GOG 0x00608260] Steam batch B17: SIG 0.50 | override: [a] fp identical (125/ret0); 00736158 PUSH 0x20 alloc then ctor 0x73b720 (GOG 0x60dda0); thin ctor, no named callee anchor",
+  "name": "CExoTimers::Constructor",
+  "source": "steam-db-B17",
+  "steam_addr": "0x00736130"
  },
  {
   "confidence": "high",
@@ -1886,6 +1902,14 @@
   "name": "CAurGUIStringInternal::GetFontTexture",
   "source": "steam-db-B17",
   "steam_addr": "0x0047a0c0"
+ },
+ {
+  "confidence": "medium",
+  "date": "2026-10-28",
+  "evidence": "[likely; thiscall retn=8; GOG 0x008d0ae0] Steam batch B17: no content anchor (C0) | override: [b] 31B setter stub; 0047a1dd MOV [EAX+0xc],ECX, 0047a1e6 MOV [EDX+0x10],EAX = GOG disp; neighbour 0x0047a1a0 is the getter",
+  "name": "CAurGUIStringInternal::SetSizeBoundingRect",
+  "source": "steam-db-B17",
+  "steam_addr": "0x0047a1d0"
  },
  {
   "confidence": "high",
