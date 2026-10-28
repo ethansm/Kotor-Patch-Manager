@@ -30,6 +30,12 @@ D6 R2 NO-GO root cause was missing names / caller context, so coverage is the le
 | I7a | Tools for the non-text source: `ingest_names.py twins` (gap fns -> unique GOG fingerprint twin) + `batch.py candidates --gog-list FILE` | DONE | spec §I7 |
 | I7b | Batch B17 (gap twins) through `steam_db_batches/tools/batch.py` candidates -> gates -> cards -> Haiku review -> finalize -> Opus gate | DONE | spec §I7 |
 | I7c | Persist B17 to `name_map` only (user OK), class pages, gap re-measure, docs sweep, memory | DONE | spec §I7 |
+| I8a | `ingest_names.py twins --buckets F`: write every gap fn with its bucket (named/unnamed/ambiguous/no_twin) + the colliding GOG/Steam addrs; `--order` pairs ambiguous groups by address order inside the run | TODO | spec §I8 |
+| I8b | `ingest_names.py macnames`: Mac x86 symbol hypotheses (bdlib `mac_fit`, strings) for GOG-unnamed twins + the 7 B17 label_suspect rows + GOG 0x5C54B0 | TODO | spec §I8 |
+| I8c | Batch B18: B17 leftovers (18 unresolved + 3 G6-wrong) + ambiguous rows I8a pairs uniquely; cards `--chunk 16 --decoys 10`; Haiku review -> finalize -> Opus gate | TODO | spec §I8 |
+| I8d | Mac-name verify: I8b hypotheses through `ingest_names.py cards --decomp-lines 10` (decoy names), Haiku verify, ledger rows topic `ingest-macnames` | TODO | spec §I8 |
+| I8e | no_twin 38: `batch.py candidates` (mapper + near only) + `gates` for B19, $0; report AUTO/REVIEW counts; review only if REVIEW <= 24 | TODO | spec §I8 |
+| I8f | Persist B18 (+ B17 likely 3 via `finalize --with-likely`) + I8d names (user OK), gap re-measure, docs sweep, memory | TODO | spec §I8 |
 
 ## Cost log
 
@@ -104,6 +110,23 @@ D6 R2 NO-GO root cause was missing names / caller context, so coverage is the le
   0x652810), idempotent. Gap after: notes 171 / modcode 17 (was 452 / 52); twins left: named 58 (unshipped B17 rows),
   unnamed 20, ambiguous 58, no_twin 38. Cost: 15 Haiku reviewers at 186-265k tokens each (22-card chunks are 2x the
   100k ceiling; use <= 12-card chunks next time) + 3 Opus parts, $7.35 total.
+
+### I8: after B17 (gap 174 = named-unshipped 58 / unnamed 20 / ambiguous 58 / no_twin 38)
+- Inputs: `steam_db_batches/B17/final_rows.tsv` (18 unresolved, 6 rejected: 3 CRT G1 = final, 3 G6 `name_map ...
+  wrong` at 0x00430300/0x00444b60/0x006ddee0 = re-check the old demotion), `B17/gog_label_suspects.tsv` (7).
+  23 named twins are absent from `DUMP/inputs/gog_functions.tsv`, so `candidates` dropped them: I8a lists them.
+- I8a `--buckets F` columns: `steam bucket gog_addrs steam_peers name cites`. `--order`: inside one ambiguous key group,
+  pair the k-th Steam address with the k-th GOG address only when both groups have equal size and both lie in one
+  monotone run (no other trusted pair between them breaks the order); tag `fptwin_order`. Tests in
+  `tools/tests/test_ingest_names.py`. Verify: `cd patch_manager_mods/ghidra_knowledge/tools && python3 -m unittest
+  discover -s tests`.
+- I8b `macnames`: for each target GOG fn, the top-3 Mac x86 fns by `bdlib.Corpus.mac_fit` (fit >= 0.5, margin >= 0.15
+  over the 2nd) + shared strings; output `gog steam mac_name fit margin`. Mac names are hypotheses (different compiler):
+  they reach `name_map` only through I8d cards + decoys.
+- I8c/B18 cards: `--chunk N` counts real + decoy cards; 6 real + 10 decoys = `--chunk 16 --decoys 10`. B17 22-card
+  chunks cost Haiku 186-265k tokens each (2x the 100k ceiling).
+- Budget: I8a/I8b/I8e $0 (code: one Sonnet worker each, Haiku checks); I8c ~6 Haiku chunks + 1-2 Opus parts (~$3);
+  I8d ~3 Haiku chunks (~$1).
 
 ## Decisions
 - Ledger first, KDB later: ledger rows are agent observations (`[rea]`), promotion needs Haiku+decoys and user OK.

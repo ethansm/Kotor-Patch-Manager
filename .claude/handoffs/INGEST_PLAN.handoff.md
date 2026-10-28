@@ -1,23 +1,20 @@
 # Session Handoff & Plan State: patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md
 
 ## 0. Next-Phase Direction
-All phases complete
+INGEST follow-up: plan the next batch of research items after INGEST_PLAN complete (B17 leftovers, ambiguous/unnamed/no_twin twins, GOG label rotation, remaining gap 171/17)
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md`
-- **Branch:** `KOTOR-II` (e80e8c5f INGEST I7c: persist B17 -> name_map (283 insert + 2 update), class pages, gap re-measure)
-- **Generated:** 2026-10-28 01:57:04 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (4a87eb83 isf_inventory_mockup.py: --variant v1/v2/v3 UX redesign renders (status line, sort + filter buttons, category dividers) + fit/overlap tests)
+- **Generated:** 2026-10-28 16:58:28 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-e80e8c5f INGEST I7c: persist B17 -> name_map (283 insert + 2 update), class pages, gap re-measure
- patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md |   5 +++++
- .../ghidra_knowledge/kotor2_ghidra_knowledge.db    | Bin 9916416 -> 10055680 bytes
- .../ghidra_knowledge/steam_docs/CSWGuiControl.md   |   8 ++++----
- .../ghidra_knowledge/steam_docs/CSWGuiManager.md   |  18 +++++++++---------
- .../ghidra_knowledge/steam_docs/Scene.md           |   6 +++---
- 5 files changed, 21 insertions(+), 16 deletions(-)
+4a87eb83 isf_inventory_mockup.py: --variant v1/v2/v3 UX redesign renders (status line, sort + filter buttons, category dividers) + fit/overlap tests
+ scripts/isf_inventory_mockup.py      | 462 ++++++++++++++++++++++++++++++++---
+ scripts/test_isf_inventory_mockup.py | 114 +++++++++
+ 2 files changed, 545 insertions(+), 31 deletions(-)
 ```
-- **Dirty Files (192):**
+- **Dirty Files (191):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/25_pc_levelup_filter.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
@@ -28,10 +25,25 @@ e80e8c5f INGEST I7c: persist B17 -> name_map (283 insert + 2 update), class page
   - ` M .claude/handoffs/deep_haiku_review_skill.handoff.md`
   - ` M .claude/handoffs/variant_fix_wave_skill.handoff.md`
   - ` M .claude/plans/swarm_library_architecture.md`
-  - ... +182 more (run `git status --short`)
+  - ... +181 more (run `git status --short`)
+
+## 2. Immediate Objective (I8a)
+**`ingest_names.py twins --buckets F`: write every gap fn with its bucket (named/unnamed/ambiguous/no_twin) + the colliding GOG/Steam addrs; `--order` pairs ambiguous groups by address order inside the run**
+
+Status: TODO
+Task: `ingest_names.py twins --buckets F`: write every gap fn with its bucket (named/unnamed/ambiguous/no_twin) + the colliding GOG/Steam addrs; `--order` pairs ambiguous groups by address order inside the run
+
+## 2b. Upcoming Batches in Pipeline
+- **I8b** : `ingest_names.py macnames`: Mac x86 symbol hypotheses (bdlib `mac_fit`, strings) for GOG-unnamed twins + the 7 B17 label_suspect rows + GOG 0x5C54B0
+- **I8c** : Batch B18: B17 leftovers (18 unresolved + 3 G6-wrong) + ambiguous rows I8a pairs uniquely; cards `--chunk 16 --decoys 10`; Haiku review -> finalize -> Opus gate
+- **I8d** : Mac-name verify: I8b hypotheses through `ingest_names.py cards --decomp-lines 10` (decoy names), Haiku verify, ledger rows topic `ingest-macnames`
 
 ## 3. Strict Context Budget & Read Policy
 - **Fresh Session Bootstrap**: Run `python3 scripts/plan_manager.py resume patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md`.
+
+## 4. Subagent Delegation Direction
+- **Claude Code**: parallel `model: haiku` Agent subagents; brief = `Contract` + `Write Scope` + `python3 scripts/agent_contract.py print worker|recon`.
+- **Other backends** (only when the user asks): `python3 scripts/plan_manager.py delegate I8a` or `oc-subagent <scout|code|ghidra|verify|gate|doc>`.
 
 ## 5. Dead Ends & Verification (manual)
 - Gap prototype (I0 starting point): `.claude/research/ingest/gap_prototype.py` (4368b1e4); `python3 .claude/research/ingest/gap_prototype.py` prints 79 / 515.
@@ -54,3 +66,7 @@ e80e8c5f INGEST I7c: persist B17 -> name_map (283 insert + 2 update), class page
 - 10-28 I7 sizing (scratch script, not committed as a tool): `.claude/research/ingest/i7/sizing_gap_gog_twins_20261028.tsv` (342 rows `steam gog name`). Full gap list = `ingest_names.gap(top_n=100000)[g]["top"]`. Key that worked: `(size, retn, n_insn, disp, imm, #callees, #str_refs)` from fp.tsv, unique in BOTH exes. Server Steam names are mostly FID noise (ANALYSIS 15295); never use them as names.
 - I7 verify: `cd patch_manager_mods/steam_db_batches/tools && python3 -m unittest discover -s tests` (scope it alone, check exit); batch dir `patch_manager_mods/steam_db_batches/B17/`.
 - 10-28 I7a DONE (4b23629e): `ingest_names.py twins --out .claude/research/ingest/i7/twins.tsv` -> gap=458 named=342 unnamed=20 ambiguous=58 no_twin=38 no_fp=0 (twins.tsv committed, force-added). `batch.py candidates --gog-list FILE` landed. Suites: ghidra tools 346 OK, steam_db_batches tools 331 OK. 2 Sonnet workers ~122k tokens total; `agent_usage.py --since` read 0 (workers logged under another session id). Next = I7b (B17 candidates with `--gog-list` + `--extra-candidates` on twins.tsv).
+- 10-28 I7b/I7c: `batch.py cards --chunk N` counts real + decoy cards (`--chunk 12 --decoys 10` gives 2 real per chunk, 89 chunks). Haiku reviewers on 22-card chunks peaked 186-265k tokens: use `--chunk 16 --decoys 10`.
+- `merge_overrides.py B<n>` reads `B<n>/opus/overrides_*.tsv` (copy the Opus gate TSVs to that name). `plan_manager.py mark-done` needs `--plan <path>` (the shared pointer pointed at doc 51). Use the python sqlite3 backup API (no `sqlite3` CLI); backup `kdb_before_I7c.db` is in the 10-28 session scratch.
+- `fn_doc.py page` covers only branch Steam DB classes; B17 refreshed CSWGuiControl/CSWGuiManager/Scene only.
+- Commit e80e8c5f message wrongly says the 3 likely rows went in as medium: only 285 verified rows were persisted (no `--with-likely`).
