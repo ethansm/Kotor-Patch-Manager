@@ -161,7 +161,8 @@ void CSWSCreatureStats__Destructor(void)
   - 0x006a4ca8 CALL 0x00733780 CExoString::Destructor
 - Imports: none
 - Indirect slots: none
-- Ledger callsites in range: none
+- Ledger callsites in range (1):
+  - 0x006a4c84 FUN_006a4c30 -> FUN_00633620, gender PUSH 0 (constant 0)
 - Strings: none
 - Globals: none
 - Struct fields touched: none
@@ -718,7 +719,7 @@ undefined1 CSWSCreatureStats__GetAttacksPerRound(void)
   - 0x006a7b59 CALL 0x006a7d40 CSWSCreatureStats::GetForceResistance
   - 0x006a7b6a CALL 0x006bad10 CSWSCreatureStats::GetForceResistance
   - 0x006a7be4 CALL 0x006a8f10 CSWSCreatureStats::GetWeaponSpecialization
-  - 0x006a7c16 CALL 0x006a8fe0 CSWSCreatureStats::GetUseMonkAttackTables
+  - 0x006a7c16 CALL 0x006a8fe0
   - 0x006a7c4a CALL 0x006afcd0 CSWSCreatureStats::GetCriticalHitMultiplier
   - 0x006a7c7e CALL 0x006afa60 CSWSCreatureStats::GetCriticalHitRoll
   - 0x006a7cb9 CALL 0x006afcd0 CSWSCreatureStats::GetCriticalHitMultiplier
@@ -812,7 +813,12 @@ void CSWSCreatureStats__UpdateCombatInformation(void)
   - 0x006a834e CALL 0x006b83f0 CSWSCreatureStats::HasFeat
 - Imports: none
 - Indirect slots: none
-- Ledger callsites in range: none
+- Ledger callsites in range (5):
+  - 0x006a7df6 GetMeleeAttackBonus left/off hand (mask 0x20): PUSH 0x20; GetItemInSlot(0x20) when param_1 != 0 and param_4 == 0
+  - 0x006a7df6 mask 0x20 = left/off-hand weapon slot (nwscript INVENTORY_SLOT_LEFTWEAPON = 5, mask 1<<5)
+  - 0x006a7e1d GetMeleeAttackBonus right hand (mask 0x10): ECX=[[this+0x24]+0x1150]; PUSH 0x10; GetItemInSlot(0x10)
+  - 0x006a7e1d mask 0x10 = right-hand weapon slot (nwscript INVENTORY_SLOT_RIGHTWEAPON = 4, mask 1<<4)
+  - 0x006a7e29 right-hand item == 0 skips the item path (unarmed case)
 - Strings: none
 - Globals (3):
   - 0x00a1b4d0 READ (MOV EAX,[0x00a1b4d0])
@@ -1027,7 +1033,7 @@ undefined4 CSWSCreatureStats__GetUseMonkAttackTables(int param_1)
 - Callers (1 total):
   - 0x006adec0 CSWSCreatureStats::GetDamageRoll (site 0x006aeee3)
 - Callees (13):
-  - 0x006a913b CALL 0x006a8fe0 CSWSCreatureStats::GetUseMonkAttackTables
+  - 0x006a913b CALL 0x006a8fe0
   - 0x006a914c CALL 0x006a8f10 CSWSCreatureStats::GetWeaponSpecialization
   - 0x006a9171 CALL 0x006a2000
   - 0x006a919f indirect
@@ -1998,7 +2004,7 @@ void CSWSCreatureStats__UpdateLastStatsObject(uint param_1,undefined4 param_2,in
   - 0x006aed90 CALL 0x00591fd0 CSWSCombatRound::GetWeaponAttackType
   - 0x006aedc1 CALL 0x00591fd0 CSWSCombatRound::GetWeaponAttackType
   - 0x006aedd1 CALL 0x006a8f10 CSWSCreatureStats::GetWeaponSpecialization
-  - 0x006aede2 CALL 0x006a8fe0 CSWSCreatureStats::GetUseMonkAttackTables
+  - 0x006aede2 CALL 0x006a8fe0
   - 0x006aee1a CALL 0x006d5200
   - 0x006aee66 CALL 0x006d5200
   - 0x006aee9c CALL 0x00603f60 CSWSItem::GetPropertyByTypeExists
@@ -2566,7 +2572,9 @@ uint CSWSCreatureStats__GetCriticalHitMultiplier(int param_1)
   - 0x006b3331 slot +0x98 (006b332b MOV EDX,dword ptr [EAX + 0x98])
   - 0x006b3452 slot +0x98 (006b344c MOV EAX,dword ptr [EDX + 0x98])
   - 0x006b34db slot +0x9c (006b34d5 MOV EDX,dword ptr [EAX + 0x9c])
-- Ledger callsites in range: none
+- Ledger callsites in range (2):
+  - 0x006afff6 FUN_006afed0 -> 0x7356b0, gender PUSH 0 (constant 0)
+  - 0x006b00aa FUN_006afed0 -> 0x7356b0, gender PUSH 0 (constant 0)
 - Strings (37):
   - 0x009953dc "AssignedPup"
   - 0x009953e8 "BonusForcePoints"
@@ -2831,7 +2839,9 @@ void CSWSCreatureStats__ReadSpellsFromGff(undefined4 param_1,undefined4 param_2)
   - 0x006b48c6 slot +0xd0 (006b48c0 MOV EAX,dword ptr [EDX + 0xd0])
   - 0x006b490b slot +0xc8 (006b4905 MOV EAX,dword ptr [EDX + 0xc8])
   - 0x006b4950 slot +0xd0 (006b494a MOV EDX,dword ptr [EAX + 0xd0])
-- Ledger callsites in range: none
+- Ledger callsites in range (2):
+  - 0x006b4d37 FUN_006b3d10 -> 0x7356b0, gender PUSH 0 (constant 0)
+  - 0x006b4dba FUN_006b3d10 -> 0x7356b0, gender PUSH 0 (constant 0)
 - Strings: none
 - Globals (3):
   - 0x00a1b4a4 READ (MOV EAX,[0x00a1b4a4])
@@ -3325,7 +3335,7 @@ undefined4 CSWSCreatureStats__GetDEXMod(int param_1)
   - 0x008ad930 Equipment panel slot refresh (per frame from 0x8ABA50 via 0x8ABA8C): top placeholder resets ctl0/ctl9, slot loop k=[EBP-0x28] 0..10, slot image ctl = this+0x14D0+k*0x148 (site 0x008ade6f)
 - Callees (37):
   - 0x006b5f05 CALL 0x006a8f10 CSWSCreatureStats::GetWeaponSpecialization
-  - 0x006b5f16 CALL 0x006a8fe0 CSWSCreatureStats::GetUseMonkAttackTables
+  - 0x006b5f16 CALL 0x006a8fe0
   - 0x006b5f76 CALL 0x006b83f0 CSWSCreatureStats::HasFeat
   - 0x006b5f9e CALL 0x006b83f0 CSWSCreatureStats::HasFeat
   - 0x006b5fc6 CALL 0x006b83f0 CSWSCreatureStats::HasFeat
