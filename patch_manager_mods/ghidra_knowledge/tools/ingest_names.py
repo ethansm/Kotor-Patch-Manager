@@ -10,6 +10,7 @@ CLI:
   ingest_names.py ledger --in FILE --topic ingest-modcode [--apply] [--date YYYY-MM-DD]
   ingest_names.py cards --in LEDGER_TSV --out-dir DIR [--chunk 12] [--decoy-every 4] [--seed N] [--decomp-lines 10]
   ingest_names.py twins --out FILE [--buckets FILE] [--order] [--gog-functions TSV] [--server DIR]
+  ingest_names.py macnames --out FILE [--buckets FILE] [--targets TSV]... [--gog ADDR]... [--extract-out FILE]
   ingest_names.py score --key DIR/key.tsv --verdicts 'DIR/verdicts_*.tsv' --out promote.tsv
 Common flags: --kdb DB  --ledger-dir DIR  --functions TSV  --root DIR  --dump-root DIR
 
@@ -917,6 +918,115 @@ def twins(server, source="all", kdb_path=KDB_DEFAULT, ledger_dir=LEDGER_DEFAULT,
     return rows, counts
 
 
+# ---- macnames (I8b) ----------------------------------------------------------
+MAC_COLS = ("gog", "steam", "gog_name", "mac_name", "mac_addr", "fit", "margin", "strings", "keep", "classes", "top3")
+FP_MAC = "k2_mac_KOTOR2_x86"
+MAC_NEIGHBOURS = 2  # named GOG fns on each side whose classes join the candidate set
+BDLIB_DIR = REPO / "patch_manager_mods" / "steam_db_batches" / "tools"
+MAC_FIT_MIN, MAC_MARGIN_MIN = 0.5, 0.15
+
+
+def _bdlib():
+    if str(BDLIB_DIR) not in sys.path:
+        sys.path.insert(0, str(BDLIB_DIR))
+    import bdlib
+    return bdlib
+
+
+def mac_targets(buckets=None, targets=(), gogs=()):
+    """[(gog int, steam str, skip_named bool)] in input order, deduped by GOG addr.
+
+    buckets (twins --buckets TSV): unnamed rows + every ambiguous row paired by --order; skip_named is set for
+    these, so an order pair whose GOG fn already has a name is left to B18.  targets: TSVs with a gog|gog_addr
+    column and optional steam|steam_counterpart (e.g. label suspects: named, but the name is doubted).
+    """
+    out = collections.OrderedDict()
+    if buckets:
+        for r in read_tsv(buckets):
+            g = r["gog_addrs"] if r["bucket"] == "unnamed" else r.get("order_gog", "")
+            if _hex(g) is not None:
+                out.setdefault(_hex(g), (r["steam"], True))
+    for t in targets:
+        for r in read_tsv(t):
+            g = _hex(r.get("gog") or r.get("gog_addr"))
+            if g is not None:
+                out.setdefault(g, ((r.get("steam") or r.get("steam_counterpart") or "").strip(), False))
+    for g in gogs:
+        if _hex(g) is not None:
+            out.setdefault(_hex(g), ("", False))
+    return [(g, st, sk) for g, (st, sk) in out.items()]
+
+
+def macnames(server, targets):
+    """MAC_COLS rows: best Mac x86 symbol per target GOG fn by bdlib mac_fit (fit = 0.75 value overlap +
+    0.25 size closeness).  keep = yes when fit >= 0.5 and the margin over the best other Mac name >= 0.15.
+    strings = string texts the GOG fn and that Mac fn both reference.  Targets flagged skip_named are dropped
+    when their GOG fn already carries a real name."""
+    bd = _bdlib()
+    corpus = object.__new__(bd.Corpus)          # mac_fit needs only gog_fp (+ resolve_gog, _values)
+    gdir, mdir = os.path.join(server, FP_GOG), os.path.join(server, FP_MAC)
+    corpus.gog_fp = bd.load_fp(Path(gdir) / "fp.tsv")
+    mac_fp = bd.load_fp(Path(mdir) / "fp.tsv")
+    gtext = bd.load_server_strings(Path(gdir) / "strings.tsv")
+    mtext = bd.load_server_strings(Path(mdir) / "strings.tsv")
+    macs = [m for m in mac_fp.values() if m.name and not m.name.startswith("FUN_")]
+    mac_ns = collections.defaultdict(list)
+    mac_by_text = collections.defaultdict(set)
+    for m in macs:
+        mac_ns[m.namespace or ""].append(m)
+        for a in m.str_refs:
+            if mtext.get(a):
+                mac_by_text[mtext[a]].add(m.addr)
+    named = sorted(a for a, f in corpus.gog_fp.items()
+                   if f.name and not f.name.startswith("FUN_") and f.namespace and f.namespace != "Global")
+    rows = []
+    for g, steam, skip_named in targets:
+        gfp = corpus.gog_fp.get(g)
+        gname = ("%s::%s" % (gfp.namespace or "Global", gfp.name)) if gfp and gfp.name else ""
+        if skip_named and gname and not gfp.name.startswith("FUN_"):
+            continue
+        x = bd.GogFn(g, "", "", "", None, "")
+        # candidates: Mac fns of the target's class, of the classes of its nearest named GOG neighbours, or
+        # sharing a string text with it.  A search over every Mac fn is noise (value overlap fits ~everything).
+        i = bisect.bisect_left(named, g)
+        classes = {corpus.gog_fp[a].namespace for a in named[max(0, i - MAC_NEIGHBOURS):i + MAC_NEIGHBOURS]}
+        if gfp and gfp.namespace and gfp.namespace != "Global":
+            classes.add(gfp.namespace)
+        texts = {gtext.get(a, "") for a in (gfp.str_refs if gfp else ())} - {""}
+        by_text = set().union(*(mac_by_text.get(t, set()) for t in texts)) if texts else set()
+        cands = [m for c in sorted(classes) for m in mac_ns.get(c, [])] + [mac_fp[a] for a in sorted(by_text)]
+        best = {}
+        for m in cands:
+            f = corpus.mac_fit(x, m)
+            if f is None:
+                continue
+            n = "%s::%s" % (m.namespace or "Global", m.name)
+            if n not in best or f > best[n][0]:
+                best[n] = (f, m)
+        ranked = sorted(best.items(), key=lambda kv: (-kv[1][0], kv[0]))
+        r = {"gog": "0x%08x" % g, "steam": steam, "gog_name": gname, "mac_name": "", "mac_addr": "",
+             "fit": "", "margin": "", "strings": "", "keep": "no", "classes": ",".join(sorted(classes)),
+             "top3": ",".join("%s:%.2f" % (n, f) for n, (f, _m) in ranked[:3])}
+        if ranked:
+            n, (f, m) = ranked[0]
+            margin = f - ranked[1][1][0] if len(ranked) > 1 else f
+            shared = sorted({gtext.get(a, "") for a in (gfp.str_refs if gfp else ())} &
+                            {mtext.get(a, "") for a in m.str_refs} - {""})
+            r.update(mac_name=n, mac_addr="0x%08x" % m.addr, fit="%.2f" % f, margin="%.2f" % margin,
+                     strings=" | ".join(_clean(t)[:40] for t in shared[:3]),
+                     keep="yes" if f >= MAC_FIT_MIN and margin >= MAC_MARGIN_MIN else "no")
+        rows.append(r)
+    return rows
+
+
+def mac_extract_rows(rows):
+    """keep=yes rows with a Steam addr as extract rows (status new), ready for `ledger --in`."""
+    return [{"addr": r["steam"], "kind": "function", "name": r["mac_name"], "form": "qualified",
+             "src": "mac %s fit=%s margin=%s via GOG %s" % (r["mac_addr"], r["fit"], r["margin"], r["gog"]),
+             "fn_start": r["steam"], "offset": "0", "status": "new", "kdb_name": ""}
+            for r in rows if r["keep"] == "yes" and _hex(r["steam"]) is not None]
+
+
 # ---- CLI ---------------------------------------------------------------------
 def build_parser():
     p = argparse.ArgumentParser(prog="ingest_names.py", description=__doc__.split("\n")[0])
@@ -958,6 +1068,13 @@ def build_parser():
     t.add_argument("--gog-functions", default=None,
                    help="GOG functions TSV for the in_gog_functions column (default: DUMP/inputs/gog_functions.tsv "
                         "when it exists)")
+    mn = sub.add_parser("macnames", help="Mac x86 name hypotheses for GOG fns by value/size fit (bdlib mac_fit)")
+    mn.add_argument("--buckets", default=None, help="twins --buckets TSV: unnamed + order-paired rows")
+    mn.add_argument("--targets", action="append", default=[], help="TSV with gog|gog_addr [+ steam|steam_counterpart]")
+    mn.add_argument("--gog", action="append", default=[], help="extra GOG addr (repeatable)")
+    mn.add_argument("--server", default=None)
+    mn.add_argument("--out", required=True)
+    mn.add_argument("--extract-out", default=None, help="keep=yes rows as extract TSV for `ledger --in`")
     s = sub.add_parser("score", help="gate decoy rejection, write promote TSV")
     s.add_argument("--key", required=True)
     s.add_argument("--verdicts", required=True, help="glob of verdicts_*.tsv")
@@ -1013,6 +1130,17 @@ def main(argv=None, dump=None, out=None, err=None):
             if args.buckets:
                 write_tsv(args.buckets, buckets, BUCKET_COLS)
                 print(f"twins: buckets={len(buckets)} -> {args.buckets}", file=out)
+            return 0
+        if args.cmd == "macnames":
+            server = os.path.expanduser(args.server or os.environ.get("BD_SERVER") or SERVER_DEFAULT)
+            rows = macnames(server, mac_targets(args.buckets, args.targets, args.gog))
+            write_tsv(args.out, rows, MAC_COLS)
+            keep = sum(r["keep"] == "yes" for r in rows)
+            print(f"macnames: targets={len(rows)} keep={keep} -> {args.out}", file=out)
+            if args.extract_out:
+                ex = mac_extract_rows(rows)
+                write_tsv(args.extract_out, ex, EXTRACT_COLS)
+                print(f"macnames: extract rows={len(ex)} -> {args.extract_out}", file=out)
             return 0
         if args.cmd == "ledger":
             return run_ledger(args, dump if dump is not None else _make_dump(args.dump_root), out, err)

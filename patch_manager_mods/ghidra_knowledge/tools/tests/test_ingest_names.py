@@ -467,6 +467,73 @@ class OrderTwinsTests(Base):
         self.assertEqual(b["0x00404000"]["bucket"], "ambiguous")
 
 
+def write_strings(server, program, pairs):
+    with open(os.path.join(server, program, "strings.tsv"), "w", encoding="utf-8") as fh:
+        fh.write("addr\ttext\n" + "".join("%s\t%s\n" % p for p in pairs))
+
+
+def vrow(addr, name, ns="", disp="0x10,0x20,0x30,0x40", size="100", strs=""):
+    r = fp_row(addr, size, name, ns=ns, strs=strs)
+    r["disp"] = disp
+    return r
+
+
+class MacnamesTests(Base):
+    def setUp(self):
+        super().setUp()
+        self.server = os.path.join(self.tmp, "server")
+        write_fp(self.server, inn.FP_GOG, [
+            vrow("0x005ff000", "A", ns="Foo"), vrow("0x00600000", "FUN_00600000"),
+            vrow("0x00600800", "Named", ns="Foo"), vrow("0x00601000", "B", ns="Foo"),
+            vrow("0x00602000", "FUN_00602000", strs="0x700")])
+        write_fp(self.server, inn.FP_MAC, [
+            vrow("0x00001000", "Good", ns="Foo"), vrow("0x00002000", "Bad", ns="Foo", disp="0x500,0x600"),
+            vrow("0x00003000", "Other", ns="Bar"), vrow("0x00004000", "Str", ns="Baz", strs="0x900")])
+        write_strings(self.server, inn.FP_GOG, [("0x700", "hello")])
+        write_strings(self.server, inn.FP_MAC, [("0x900", "hello")])
+        self.buckets = os.path.join(self.tmp, "b.tsv")
+        inn.write_tsv(self.buckets, [
+            {"steam": "0x00400000", "bucket": "unnamed", "gog_addrs": "0x00600000", "steam_peers": "", "name": "",
+             "cites": 1, "in_gog_functions": "no", "order_gog": ""},
+            {"steam": "0x00400800", "bucket": "ambiguous", "gog_addrs": "0x00600800,0x00601000", "steam_peers": "",
+             "name": "Foo::Named,Foo::B", "cites": 1, "in_gog_functions": "yes", "order_gog": "0x00600800"},
+            {"steam": "0x00401000", "bucket": "named", "gog_addrs": "0x00601000", "steam_peers": "", "name": "Foo::B",
+             "cites": 1, "in_gog_functions": "yes", "order_gog": ""}], inn.BUCKET_COLS)
+        self.out_tsv = os.path.join(self.tmp, "mac.tsv")
+        self.ex = os.path.join(self.tmp, "ex.tsv")
+        self.args = ["macnames", "--server", self.server, "--out", self.out_tsv]
+
+    def test_class_neighbours_rank_and_keep(self):
+        rc, out, _e = run(self.args + ["--buckets", self.buckets, "--extract-out", self.ex])
+        self.assertEqual(rc, 0)
+        self.assertIn("macnames: targets=1 keep=1", out)  # order row with a named GOG fn left to B18
+        (r,) = read_tsv(self.out_tsv)
+        self.assertEqual((r["gog"], r["steam"], r["mac_name"], r["fit"], r["margin"], r["keep"]),
+                         ("0x00600000", "0x00400000", "Foo::Good", "1.00", "0.75", "yes"))
+        self.assertNotIn("Bar::Other", r["top3"])  # class not near the target, no shared string
+        (e,) = read_tsv(self.ex)
+        self.assertEqual((e["addr"], e["kind"], e["name"], e["status"]), ("0x00400000", "function", "Foo::Good", "new"))
+        self.assertIn("via GOG 0x00600000", e["src"])
+
+    def test_shared_string_adds_candidate_and_lowers_margin(self):
+        rc, _o, _e = run(self.args + ["--gog", "0x00602000"])
+        self.assertEqual(rc, 0)
+        (r,) = read_tsv(self.out_tsv)
+        self.assertIn("Baz::Str", r["top3"])
+        self.assertEqual(r["margin"], "0.00")
+        self.assertEqual(r["keep"], "no")
+        self.assertEqual(r["steam"], "")
+
+    def test_target_file_keeps_named_suspects(self):
+        t = os.path.join(self.tmp, "sus.tsv")
+        with open(t, "w", encoding="utf-8") as fh:
+            fh.write("gog_addr\tgog_name\tsteam_counterpart\n0x00600800\tFoo::Named\t0x00400800\n")
+        rc, out, _e = run(self.args + ["--targets", t])
+        self.assertEqual(rc, 0)
+        (r,) = read_tsv(self.out_tsv)
+        self.assertEqual((r["gog_name"], r["steam"]), ("Foo::Named", "0x00400800"))
+
+
 class LedgerTests(Base):
     def setUp(self):
         super().setUp()
