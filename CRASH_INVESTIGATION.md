@@ -948,3 +948,5 @@ than intermittently, that would be the trigger to escalate.
 - **Follow-up 2026-10-28:** same-class audit of every mod-config provider found enemy-effects-strip (slider labels holding its pooled
   art) -> fixed in 0.4.11-dev, played PASS (`DESTROY slider art detached=6`, page opened 6x, no crash). combat-hotbar (PreviewCanvas restores
   fills), selfheal and the declarative-only providers are clean. holster-editor 0.7.3-dev fix still unplayed (MC-PF3).
+- **Closed 2026-10-28:** holster-editor 0.7.3-dev played PASS (`DTOR art detached=44 of 85 ctls`, then mod-config `freed=239 clean=1`, no
+  crash). Both cross-DLL pooled-fill fixes verified live; rule for new providers: detach your own pooled fills in destroy().
