@@ -1,0 +1,22 @@
+gog_addr	steam_addr	final_verdict	note
+0x0047e830	0x007fd5b0	verified	fp identical (326/ret12/102 insn, disp+imm sets); 007fd5e1 PUSH 0xfc alloc = GOG imm 0xfc; callee 0x7ed830 GetAnimationBase; LoadModel fits
+0x00522830	0x007510b0	verified	fp identical (138/ret4); decomp *param_1=CSWGuiLabel::vftable then CALL 0x418640 CSWGuiControl dtor + conditional free 0x9196fd = scalar deleting dtor
+0x00571320	0x007dba10	verified	fp identical (129/ret0, 7 disp); 007dba70 MOV EDX,[ECX+0x18b4]; callee 0x72fb00 GetClientOptions = GOG 0x40ccf0; mac_contra not a body contradiction
+0x005977a0	0x0074ac30	label_suspect	fp identical (113/ret0); 0074ac59 MOV [EAX],0x9878bc (CSWGuiLabel::vftable), ~800 callers: body is CSWGuiLabel::~CSWGuiLabel, not BlackenedLabel dtor (Mac 53/61 B)
+0x0059f8a0	0x008aba50	verified	fp identical (209/ret4, disp 0x4ec4/0x50e4/0x50e8); 008aba94 FLD [EAX+0x50e4]; callees 0x73fb90 GetSWParty, 0x40ec90 CSWGuiPanel::Draw; fits Draw
+0x005a71d0	0x008b3630	verified	fp identical (243/ret0); 008b36a2 ADD ECX,0xb18; callee 0x40f3c0 CSWGuiPanel::OnPanelAdded (GOG 0x90d840); fits OnPanelAdded
+0x005c5330	0x008d4f60	label_suspect	fp identical (108/ret4); 008d4f6c CMP [EAX+0x3ed8],0 toggle, PlaySound, ShowSellGUI/ShowBuyGUI: = Mac CSWGuiCreateItem::OnControlXButton (77B same callees). GOG CreateItem label rotation
+0x005c61f0	0x008d5e20	label_suspect	fp identical (462/ret4); 008d5ed5 PUSH 0x30c new CSWSItem + CopyItem, credits -= buy value: = Mac CSWGuiCreateItem::BuyItem (calls GetItemBuyValue). GOG label rotation
+0x005ca130	0x008d9d60	label_suspect	fp identical (108/ret4); 008d9d6c CMP [EAX+0x33f8],0 toggle + ShowSellGUI/ShowBuyGUI (GOG 0x5cb540/0x5cb770): = CSWGuiCreateMedicalItem::OnControlXButton
+0x005cf920	0x008df550	verified	fp identical (93/ret4); 008df56f MOV EAX,[EDX+0x4340]; callees PlayGuiSound 0x4122a0, GetInGameGui 0x73f750; no body contradiction to SetDescription
+0x005f42f0	0x00914e70	verified	fp identical (203/ret4); 00914eb8 PUSH 0x1c08 alloc + CSWGuiFeatsCharGen ctor 0x909e00 + AddPanel 0x410530; fits OnSelectFeatsButton
+0x005fae20	0x0090bf90	verified	fp identical (395/ret4); 0090c0b0 MOV AL,[EDX+0x1bde]; callee 0x733780 CExoString dtor (GOG 0x605890); paired with AddChosenFeat 0x90c120 neighbour
+0x005fafb0	0x0090c120	verified	fp identical (271/ret4); 0090c16a MOV [ECX+0x1bde],AL; 0090c1fb CALL 0x0090c120 self-call = GOG self-callee 0x5fafb0
+0x00608260	0x00736130	likely	fp identical (125/ret0); 00736158 PUSH 0x20 alloc then ctor 0x73b720 (GOG 0x60dda0); thin ctor, no named callee anchor
+0x00615ec0	0x0072f110	verified	fp identical (492/ret4, disp 0x1a0/0x408/0x40c); 0072f113 SUB ESP,0x78; callee 0x732e00 (GOG 0x619a00) mouse state; mac_contra not body-level
+0x0061a300	0x007109b0	verified	fp identical (94/ret0); 007109dc IMUL EDX,EDX,0x11 + AND 0x80000003: 4-slot 17-byte rotating buffer = GetResRefStr
+0x00630410	0x007269c0	verified	fp identical (142/ret8); 007269f0 AND EDX,0xffffff; hash % [this+0xc] = GetTableIndex
+0x00645160	0x0044b210	label_suspect	fp identical (89/ret0); 0044b23f CALL 0x436200 (Vector::operator* GOG 0x419020) with 1.0/s, copy if s==1: = Vector::operator/(float), not ExecuteCode_5
+0x00648370	0x006fa580	verified	fp identical (3646/ret12/938 insn); 006fa583 SUB ESP,0x2c0; callees GetModule 0x51bd90, GetArea 0x557ef0, ComputeHeight 0x51ca40
+0x00714000	0x006518b0	verified	fp identical (1366/ret36/414 insn, disp 0xbc x10); 006518b3 SUB ESP,0x15c; caller 0x54b650 TestSafeLocationPoint
+0x00823860	0x00431140	verified	fp identical (737/ret0, 45 imm); 004312ca PUSH 0x8892 GL_ARRAY_BUFFER, imm 0x1406 GL_FLOAT, cmp 0x800: VTC quad render path

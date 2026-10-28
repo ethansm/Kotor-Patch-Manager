@@ -1,0 +1,8 @@
+gog_addr	gog_name	steam_counterpart	body_fits_name	source
+0x005977a0	CSWGuiBlackenedLabel::Destructor	0x0074ac30	[a] fp identical (113/ret0); 0074ac59 MOV [EAX],0x9878bc (CSWGuiLabel::vftable), ~800 callers: body is CSWGuiLabel::~CSWGuiLabel, not BlackenedLabel dtor (Mac 53/61 B)	override
+0x005c5330	CSWGuiCreateItem::InitializeStoreType	0x008d4f60	[a] fp identical (108/ret4); 008d4f6c CMP [EAX+0x3ed8],0 toggle, PlaySound, ShowSellGUI/ShowBuyGUI: = Mac CSWGuiCreateItem::OnControlXButton (77B same callees). GOG CreateItem label rotation	override
+0x005c61f0	CSWGuiCreateItem::UpdateCreateFilters	0x008d5e20	[a] fp identical (462/ret4); 008d5ed5 PUSH 0x30c new CSWSItem + CopyItem, credits -= buy value: = Mac CSWGuiCreateItem::BuyItem (calls GetItemBuyValue). GOG label rotation	override
+0x005ca130	CSWGuiCreateMedicalItem::DeleteItemEntries	0x008d9d60	[a] fp identical (108/ret4); 008d9d6c CMP [EAX+0x33f8],0 toggle + ShowSellGUI/ShowBuyGUI (GOG 0x5cb540/0x5cb770): = CSWGuiCreateMedicalItem::OnControlXButton	override
+0x00645160	CVirtualMachineInternal::ExecuteCode_5	0x0044b210	[a] fp identical (89/ret0); 0044b23f CALL 0x436200 (Vector::operator* GOG 0x419020) with 1.0/s, copy if s==1: = Vector::operator/(float), not ExecuteCode_5	override
+0x00829060	GLRender::FrameBufferModificationsATI	0x004369a0	[b] exact fp twin; 004369b5 PUSH 0x8892, ADD EDX,0x84c0, callees=AurMultiTexture/VBOARBAvailable: VBO+multitex array setup; Mac FrameBufferMod* use 0x302/0x303 blend, absent	override
+0x00867dc0	Global::GetResource	0x00475e50	[b] exact fp twin; 00475e8a CALL 0x0049b840 (size 75 = GOG CExoArrayList::DelIndex 0x903df0); body removes an array entry, not a getter	override

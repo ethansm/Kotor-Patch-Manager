@@ -1,0 +1,23 @@
+gog_addr	steam_addr	verdict	corrected_addr	content_anchor	confidence	reason
+0x0080c8b0	0x005147e0	mismatch	0x00514a20	0x00514a23 SUB ESP,0x74 (corrected 0x00514a20; GOG imm 0x74)	5	Size 561 vs 354; 0 GOG callees; disp 0xc-0x20 and imm 0x18/0x74 absent; not a transpose body.
+0x008f8b50	0x004dea20	match		0x004deb69 MOV byte ptr [EDX + 0x189],0x1; 0x004dea23 SUB ESP,0x12c	5	Size 1242 and RET 20 exact; disp 0x189 and imm 0x12c sets identical; 8 callees both sides; Control blends values.
+0x00901f50	0x0050a630	match		0x0050a9fb ADD ECX,0xb8; 0x0050aa15 ADD ECX,0xac	4	Size 1048 and RET 4 exact; disp and imm sets identical incl 0xac/0xb8; 6 callees both sides; picks shadow list.
+0x00912f40	0x00414b70	unsure			2	Size 44 and RET 4 match; pure rect copy with 0 callees; disp 4/8/C and imm 4 too generic to anchor.
+0x008f9cd0	0x004dfba0	match		0x004dfebf CALL 0x004dfba0 (self-call); 0x004dfcaa FADD float ptr [ECX + 0x13c]	4	Size 815 exact; 17 disp (0x13c-0x14c incl) identical; self-recursion; pool lock/unlock and rand pattern; cdecl RET 0.
+0x0080c8b0	0x00514b90	mismatch	0x00514a20	0x00514a23 SUB ESP,0x74 (corrected 0x00514a20; GOG imm 0x74)	5	Size 164 vs 354; GOG imm 0x74 and 0x18 absent; body is a vector-matrix product, not a transpose.
+0x00912250	0x00413dd0	match		0x00413e68 CALL 0x0073f750 (GetInGameGui, trusted GOG 0x0040cc10); 0x00413e86 CALL 0x007d1c90	5	Size 191 exact; GetInGameGui (trusted) and 0x7d1c90 callees both sides; disp 0x6c/0x88/0x8c identical.
+0x00908190	0x0093db70	match		0x0093db98 CALL 0x00733540 (CExoString::Constructor, trusted GOG 0x004eaed0)	5	Size 771 exact; 16 callees incl trusted CExoString ctor/dtor/op=; imm 0x7d2 identical; cdecl RET 0 matches.
+0x008fa000	0x004dfed0	match		0x004dff87 CALL 0x00459e20 (Gob::IsInCutscene, trusted GOG 0x0084c400); 0x004dffab FLD float ptr [EAX + 0x164]	5	Size 614 exact; 13 disp and 5 imm identical; trusted IsInCutscene callee; 21-byte cdecl args match GOG.
+0x008f7090	0x004dcf00	match		0x004dcf0c MOV ECX,dword ptr [EAX + 0x28]; 0x004dcf16 CALL 0x009196fd (delete)	4	Size 75 exact; disp 0x28/0x2c and imm 0x4/0xc identical; sole callee delete; GOG 0x921321 is same CRT delete (offset 0x7C24).
+0x0090deb0	0x0040fa30	unsure			2	Size 79 and cdecl RET 0 match; 0 callees and 0 disp both sides; only imm 0x2/0x5 shared.
+0x005047f0	0x00879310	mismatch		0x00478e60 Global::AurEnableSpeedBlur (candidate callee, absent on GOG side)	5	Size 213 vs 786; GetPlayerCreature, MiniGame and SpeedBlur callees absent on GOG; GOG 26 fx_tex strings absent.
+0x0063ca40	0x0070dc60	mismatch		0x0070dc60 body: AIL_stream_status(*param_1)==2 (IsDone predicate)	5	Size 71 vs 438; one-line stream-status predicate; GOG Update3DStream has strncmp and no status call.
+0x0063ca40	0x0070caa0	mismatch		0x0070d18a string '*%s*%d*%d' (0x0099C324); body opens AIL streams via fopen rb	4	Size 3882 vs 438; opens files and streams with path formats; GOG side has no strings or open calls.
+0x00614de0	0x0072e9c0	mismatch		0x0072e9c0 this+0x3e0 store only (GOG disp 0x3e4/0x3e8/0x3ec absent)	4	Size 84 vs 1743; GOG disp 0x3e4/0x3e8/0x3ec absent; body is a one-field flag setter.
+0x00614de0	0x0072df60	mismatch		0x0072df60 this+0x1b4 store, this+0x1a0 test	4	Size 55 vs 1743; disp 0x1a0/0x1b4 share nothing with GOG 0x3e4-0x3ec; one store plus one callee.
+0x0090bb40	0x00941520	match		0x00941548 CALL 0x007112b0 (CRes::Release, trusted GOG 0x0061ac10)	5	Size 49 exact; CRes::Release (trusted) and caller 0x93ea10 (trusted) match; disp 0x8 identical; RET 0.
+0x00915c10	0x00417840	match		0x0041785e MOV EAX,dword ptr [EDX + 0x48]; 0x00417878 MOV EAX,dword ptr [EDX + 0x50]	4	Size 95 exact; vtable slots 0x48/0x50, disp 0x14 and imm 0x10 identical; neighbour 0x4178b0 is GetFontHeight.
+0x005a61c0	0x008b1cc0	mismatch		0x008b1250 CSWGuiInGameItemEntry::SetItem (sole callee)	5	Size 60 vs 560; GOG 6 CSWGui destructor callees absent; body is one SetItem call.
+0x00907730	0x0093d110	match		0x0093d11f CALL 0x007111e0 (CRes::Demand, trusted GOG 0x0061ab40); 0x0093d13d MOV EDX,0x7d2	4	Size 74 exact; CRes::Demand (trusted) callee and imm 0x7d2 match; cdecl-style RET 0 matches GOG.
+0x005a61c0	0x008b3630	mismatch		0x008b3630 CALL 0x0040f3c0 (CSWGuiPanel::OnPanelAdded) plus positioning calls	5	Size 243 vs 560; positioning and OnPanelAdded calls, no GOG destructor callees; disp sets share nothing.
+0x005047f0	0x00878010	mismatch		0x00878010 body: this+0xd4 flag set; 0 callees	5	Size 61 vs 786; 0 callees vs GOG 8; disp 0xd4/0x8c vs GOG 0x4/0x2c/0xd8 share none.

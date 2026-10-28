@@ -1,0 +1,475 @@
+{
+ "batch": "B17",
+ "chunks_short": [],
+ "chunks_unreviewed": [],
+ "clean": true,
+ "clean_streak_before": 2,
+ "decision": "OK: Opus reads the 100% classes plus a 20% sample (min 5) of the other reviewer matches",
+ "decoy_cards": 150,
+ "decoys_accepted": 0,
+ "decoys_per_chunk": {
+  "1": 10,
+  "10": 10,
+  "11": 10,
+  "12": 10,
+  "13": 10,
+  "14": 10,
+  "15": 10,
+  "2": 10,
+  "3": 10,
+  "4": 10,
+  "5": 10,
+  "6": 10,
+  "7": 10,
+  "8": 10,
+  "9": 10
+ },
+ "full_read": 27,
+ "key_error_cards": [],
+ "key_errors": 0,
+ "rows_auto": [
+  {
+   "class": "CResTGA",
+   "gog": "0x00943fe0",
+   "name": "ReadUnmappedRLETGA",
+   "route": "sig",
+   "steam_addr": "0x00945990"
+  },
+  {
+   "class": "CSWGuiNavigable",
+   "gog": "0x009169f0",
+   "name": "HandleMouseOver",
+   "route": "sig",
+   "steam_addr": "0x00418750"
+  },
+  {
+   "class": "CERFFile",
+   "gog": "0x0062adc0",
+   "name": "Read",
+   "route": "sig",
+   "steam_addr": "0x00720e30"
+  },
+  {
+   "class": "Gob",
+   "gog": "0x008551e0",
+   "name": "SetPartLocalPosition",
+   "route": "sig",
+   "steam_addr": "0x00462c50"
+  },
+  {
+   "class": "CSWGuiInGameOptKeyMappings",
+   "gog": "0x005f0340",
+   "name": "Update",
+   "route": "sig",
+   "steam_addr": "0x00901590"
+  },
+  {
+   "class": "CSWGuiStatusSummary",
+   "gog": "0x0052e4c0",
+   "name": "Constructor",
+   "route": "c2",
+   "steam_addr": "0x0075cec0"
+  },
+  {
+   "class": "CSWSMessage",
+   "gog": "0x007d5c70",
+   "name": "WriteGameObjUpdate_PlayerUpdate",
+   "route": "c2",
+   "steam_addr": "0x0063f550"
+  },
+  {
+   "class": "CERFFile",
+   "gog": "0x0062be80",
+   "name": "ExportFilesFromERF",
+   "route": "c2",
+   "steam_addr": "0x00721ef0"
+  }
+ ],
+ "rows_full": [
+  {
+   "class": "CSWCItem",
+   "gog": "0x0047e830",
+   "name": "LoadModel",
+   "steam_addr": "0x007fd5b0",
+   "why": "match cites a layout/offset difference"
+  },
+  {
+   "class": "CSWGuiLabel",
+   "gog": "0x00522830",
+   "name": "`scalar",
+   "steam_addr": "0x007510b0",
+   "why": "match on a mac_rotation row"
+  },
+  {
+   "class": "CSWGuiOptionsSoundAdvanced",
+   "gog": "0x00571320",
+   "name": "SetNewOptions",
+   "steam_addr": "0x007dba10",
+   "why": "match on a mac_contra row"
+  },
+  {
+   "class": "CSWGuiBlackenedLabel",
+   "gog": "0x005977a0",
+   "name": "Destructor",
+   "steam_addr": "0x0074ac30",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CSWGuiInGameEquip",
+   "gog": "0x0059f8a0",
+   "name": "Draw",
+   "steam_addr": "0x008aba50",
+   "why": "match on a mac_contra row"
+  },
+  {
+   "class": "CSWGuiContainer",
+   "gog": "0x005a71d0",
+   "name": "OnPanelAdded",
+   "steam_addr": "0x008b3630",
+   "why": "match on a mac_contra row"
+  },
+  {
+   "class": "CSWGuiCreateItem",
+   "gog": "0x005c5330",
+   "name": "InitializeStoreType",
+   "steam_addr": "0x008d4f60",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CSWGuiCreateItem",
+   "gog": "0x005c61f0",
+   "name": "UpdateCreateFilters",
+   "steam_addr": "0x008d5e20",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CSWGuiCreateMedicalItem",
+   "gog": "0x005ca130",
+   "name": "DeleteItemEntries",
+   "steam_addr": "0x008d9d60",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CSWGuiSwoopUpgrade",
+   "gog": "0x005cf920",
+   "name": "SetDescription",
+   "steam_addr": "0x008df550",
+   "why": "match on a mac_contra row"
+  },
+  {
+   "class": "CSWGuiCustomPanel",
+   "gog": "0x005f42f0",
+   "name": "OnSelectFeatsButton",
+   "steam_addr": "0x00914e70",
+   "why": "match cites a layout/offset difference"
+  },
+  {
+   "class": "CSWGuiFeatsCharGen",
+   "gog": "0x005fae20",
+   "name": "RemoveChosenFeat",
+   "steam_addr": "0x0090bf90",
+   "why": "match on a mac_contra row, match on a mac_rotation row"
+  },
+  {
+   "class": "CSWGuiFeatsCharGen",
+   "gog": "0x005fafb0",
+   "name": "AddChosenFeat",
+   "steam_addr": "0x0090c120",
+   "why": "match on a mac_contra row"
+  },
+  {
+   "class": "CExoTimers",
+   "gog": "0x00608260",
+   "name": "Constructor",
+   "steam_addr": "0x00736130",
+   "why": "match cites a layout/offset difference"
+  },
+  {
+   "class": "CExoInputInternal",
+   "gog": "0x00615ec0",
+   "name": "UpdateMouseDelta",
+   "steam_addr": "0x0072f110",
+   "why": "match on a mac_contra row"
+  },
+  {
+   "class": "CResRef",
+   "gog": "0x0061a300",
+   "name": "GetResRefStr",
+   "steam_addr": "0x007109b0",
+   "why": "match on a mac_rotation row"
+  },
+  {
+   "class": "CExoKeyTable",
+   "gog": "0x00630410",
+   "name": "GetTableIndex",
+   "steam_addr": "0x007269c0",
+   "why": "match on a mac_rotation row"
+  },
+  {
+   "class": "CVirtualMachineInternal",
+   "gog": "0x00645160",
+   "name": "ExecuteCode_5",
+   "steam_addr": "0x0044b210",
+   "why": "label_suspect"
+  },
+  {
+   "class": "CAvoidCreature",
+   "gog": "0x00648370",
+   "name": "ComputeHexPoints",
+   "steam_addr": "0x006fa580",
+   "why": "match on a mac_rotation row"
+  },
+  {
+   "class": "CSWRoomSurfaceMesh",
+   "gog": "0x00714000",
+   "name": "ComputeClippedLineSegment",
+   "steam_addr": "0x006518b0",
+   "why": "match on a mac_rotation row"
+  },
+  {
+   "class": "GLRender",
+   "gog": "0x00823860",
+   "name": "RenderObjectsVTCQuadUP",
+   "steam_addr": "0x00431140",
+   "why": "match on a mac_rotation row"
+  },
+  {
+   "class": "GLRender",
+   "gog": "0x00829060",
+   "name": "FrameBufferModificationsATI",
+   "steam_addr": "0x004369a0",
+   "why": "label_suspect, match on a mac_rotation row"
+  },
+  {
+   "class": "Global",
+   "gog": "0x00867dc0",
+   "name": "GetResource",
+   "steam_addr": "0x00475e50",
+   "why": "label_suspect"
+  },
+  {
+   "class": "ExplosionEmitter",
+   "gog": "0x008b6ed0",
+   "name": "Update",
+   "steam_addr": "0x004fb2d0",
+   "why": "match cites a layout/offset difference"
+  },
+  {
+   "class": "Global",
+   "gog": "0x008d7860",
+   "name": "ImageRead16bit",
+   "steam_addr": "0x00482ce0",
+   "why": "match cites a layout/offset difference"
+  },
+  {
+   "class": "Gob",
+   "gog": "0x008f6ab0",
+   "name": "PlayOutOfOrderAnimation",
+   "steam_addr": "0x004dc920",
+   "why": "match cites a layout/offset difference"
+  },
+  {
+   "class": "Global",
+   "gog": "0x00925936",
+   "name": "rand",
+   "steam_addr": "0x0091eb8b",
+   "why": "reviewer corrected_addr"
+  }
+ ],
+ "rows_sample": [
+  {
+   "class": "CClientOptions",
+   "content_level": "C0",
+   "gog": "0x00468f00",
+   "name": "SetShadows",
+   "steam_addr": "0x007bc230"
+  },
+  {
+   "class": "Material",
+   "content_level": "C0",
+   "gog": "0x008f5380",
+   "name": "SetBlendingMode",
+   "steam_addr": "0x004db1f0"
+  },
+  {
+   "class": "CSWMessage",
+   "content_level": "C0",
+   "gog": "0x0054ba90",
+   "name": "WriteDWORD",
+   "steam_addr": "0x005e43b0"
+  },
+  {
+   "class": "CAurGUIStringInternal",
+   "content_level": "C0",
+   "gog": "0x008d0ae0",
+   "name": "SetSizeBoundingRect",
+   "steam_addr": "0x0047a1d0"
+  },
+  {
+   "class": "Global",
+   "content_level": "C0",
+   "gog": "0x00713490",
+   "name": "QueryTimer",
+   "steam_addr": "0x00650d40"
+  },
+  {
+   "class": "CAurInternal",
+   "content_level": "C0",
+   "gog": "0x008689c0",
+   "name": "RestoreDesktopDisplayMode",
+   "steam_addr": "0x00476ae0"
+  },
+  {
+   "class": "CClientOptions",
+   "content_level": "C0",
+   "gog": "0x00468f30",
+   "name": "SetSoftShadows",
+   "steam_addr": "0x007bc260"
+  },
+  {
+   "class": "CClientOptions",
+   "content_level": "C0",
+   "gog": "0x004691f0",
+   "name": "SetVSync",
+   "steam_addr": "0x007bc520"
+  },
+  {
+   "class": "CSWSPlayerLUOInventory",
+   "content_level": "C0",
+   "gog": "0x007f2b50",
+   "name": "Destructor",
+   "steam_addr": "0x006f2fb0"
+  },
+  {
+   "class": "CServerAIBodyBagInfo",
+   "content_level": "C0",
+   "gog": "0x006509e0",
+   "name": "LoadBodyBag",
+   "steam_addr": "0x00520fc0"
+  },
+  {
+   "class": "Global",
+   "content_level": "C0",
+   "gog": "0x008ce5e0",
+   "name": "BinaryInsertModel",
+   "steam_addr": "0x0048e090"
+  },
+  {
+   "class": "CSWGuiMainInterface",
+   "content_level": "C1",
+   "gog": "0x0044ccb0",
+   "name": "Quicksave",
+   "steam_addr": "0x007a06b0"
+  },
+  {
+   "class": "RequestPoolManagerVBO",
+   "content_level": "C1",
+   "gog": "0x0081c950",
+   "name": "ResizePool",
+   "steam_addr": "0x0042a220"
+  },
+  {
+   "class": "CSWGuiOptionsGraphicsAdvanced",
+   "content_level": "C1",
+   "gog": "0x0056d040",
+   "name": "OnTexQualLeft",
+   "steam_addr": "0x007d7730"
+  },
+  {
+   "class": "CSWGui3DSceneView",
+   "content_level": "C1",
+   "gog": "0x0053c050",
+   "name": "Draw",
+   "steam_addr": "0x0084de40"
+  },
+  {
+   "class": "CSWGuiExamine",
+   "content_level": "C2",
+   "gog": "0x005b3580",
+   "name": "HandleInputEvent",
+   "steam_addr": "0x008bed80"
+  },
+  {
+   "class": "CSWCModule",
+   "content_level": "C1",
+   "gog": "0x0046b6d0",
+   "name": "ZoomCamera",
+   "steam_addr": "0x007f44b0"
+  },
+  {
+   "class": "Global",
+   "content_level": "C1",
+   "gog": "0x008cfbd0",
+   "name": "AurGUIStartLayer",
+   "steam_addr": "0x004792c0"
+  },
+  {
+   "class": "CSWSpellArray",
+   "content_level": "C2",
+   "gog": "0x004ed450",
+   "name": "GetSpell",
+   "steam_addr": "0x006c1450"
+  },
+  {
+   "class": "Camera",
+   "content_level": "C1",
+   "gog": "0x008c1fb0",
+   "name": "Animate",
+   "steam_addr": "0x00480e40"
+  },
+  {
+   "class": "LightManager",
+   "content_level": "C1",
+   "gog": "0x00901f50",
+   "name": "GetShadowLights",
+   "steam_addr": "0x0050a630"
+  },
+  {
+   "class": "PartEmitter",
+   "content_level": "C1",
+   "gog": "0x008af6e0",
+   "name": "RenderLinked",
+   "steam_addr": "0x004f3b40"
+  },
+  {
+   "class": "Global",
+   "content_level": "C2",
+   "gog": "0x008d8010",
+   "name": "ImageReadTGA",
+   "steam_addr": "0x00483490"
+  },
+  {
+   "class": "CSWGuiSkillsCharGen",
+   "content_level": "C1",
+   "gog": "0x005fd330",
+   "name": "Destructor_2",
+   "steam_addr": "0x0090e440"
+  },
+  {
+   "class": "Global",
+   "content_level": "C1",
+   "gog": "0x0080c8b0",
+   "name": "Transpose",
+   "steam_addr": "0x00514a20"
+  },
+  {
+   "class": "Global",
+   "content_level": "C2",
+   "gog": "0x00408600",
+   "name": "InitOpenGLWindow",
+   "steam_addr": "0x00408af0"
+  },
+  {
+   "class": "CSWBehaviorCameraDialog",
+   "content_level": "C1",
+   "gog": "0x005750f0",
+   "name": "GetCameraParameters",
+   "steam_addr": "0x008c2960"
+  }
+ ],
+ "sample_errors": 0,
+ "sample_pool": 132,
+ "sample_rate": 0.2,
+ "sample_size": 27,
+ "unanswered_decoys": 0
+}

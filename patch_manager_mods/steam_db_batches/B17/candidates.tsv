@@ -1,0 +1,320 @@
+class	name	gog	gog_callconv	gog_param	gog_size	gog_retn	candidates
+Achievements	EvaluateAchievement	0x004010f0		4	1382	0	0x004010e0|fptwin
+CAppManager	DestroyServer	0x00401c30		0	125	0	0x00401c70|fptwin+mapper:vote+near;0x00401bc0|near;0x00401cf0|near
+Global	glClear_glClear_int_engineMask	0x00408250		4	90	0	0x00408740|fptwin
+Global	InitOpenGLWindow	0x00408600		4	320	0	0x00408af0|fptwin
+Global	UpdateScreen	0x004099e0	__cdecl	12	646	0	0x00409ed0|fptwin
+Global	StoreMouseTrailsState	0x0040bba0		0	80	0	0x0040c090|fptwin
+Global	HitEvent	0x0040ee90		0	1537	0	0x007631d0|fptwin
+Vector	Dot	0x00413780		8	52	0	0x0044b8a0|fptwin
+CSWCCreature	GetSaveCreatureFilename	0x00418b00		4	779	12	0x0076cce0|fptwin+near
+CClientExoAppInternal	StallServerCode	0x00430300		4	49	4	0x00783d80|fptwin+near;0x00783dc0|mapper:drift-0x1c0
+CClientExoAppInternal	IndicateObject	0x00444b60		0	63	0	0x00798540|fptwin+mapper:vote+near
+CSWGuiMainInterface	Quicksave	0x0044ccb0		0	148	0	0x007a06b0|fptwin
+CExoArrayList	IndexOf	0x0044dc90	__thiscall	4	70	4	0x004142e0|fptwin
+CSWPlayerList	GetFirstPlayer	0x0044e290		0	52	0	0x00521060|fptwin
+CClientOptions	SetShadows	0x00468f00		4	43	4	0x007bc230|fptwin+mapper:vote;0x007bc170|near;0x007bc1b0|near;0x007bc0f0|near
+CClientOptions	SetSoftShadows	0x00468f30		4	43	4	0x007bc260|fptwin+mapper:vote;0x007bc1b0|near;0x007bc170|near;0x007bc230|near
+CClientOptions	SetFrameBuffer	0x00469000		4	448	4	0x007bc330|fptwin+mapper:vote+near;0x007bc290|near;0x007bc260|near
+CClientOptions	SetVSync	0x004691f0		4	53	4	0x007bc520|fptwin+mapper:vote+near;0x007bc4f0|near;0x007bc560|near
+CSWCModule	TiltCamera	0x0046ae90		4	356	4	0x007f3c70|fptwin+mapper:vote+near;0x007f3de0|near;0x007f3ea0|near
+CSWCModule	TurnCamera	0x0046b0c0		8	885	8	0x007f3ea0|fptwin+mapper:vote+near;0x007f4220|near;0x007f3de0|near
+CSWCModule	AcclTurnCamera	0x0046b440		8	643	8	0x007f4220|fptwin+mapper:vote+near;0x007f3ea0|near;0x007f44b0|near
+CSWCModule	ZoomCamera	0x0046b6d0		4	159	4	0x007f44b0|fptwin+mapper:vote+near;0x007f4610|near;0x007f4550|near
+CSWCItem	LoadModel	0x0047e830		5	326	12	0x007fd5b0|fptwin+near;0x007fd700|near;0x007fd370|near
+CSWCCreatureAppearance	CreateBodyAppearance	0x0048a280		4	1218	4	0x0085a1f0|fptwin+mapper:vote+near;0x0085a0d0|near;0x00859ef0|near
+CSWCLevelUpStats	Constructor	0x00490650		4	197	4	0x00845ac0|fptwin+mapper:vote+near;0x00845a90|near;0x00845b90|near
+CSWCMessage	HandleServerToPlayerPlaceableUpdate_Add	0x004a1640		0	2848	0	0x0080d050|fptwin+mapper:vote;0x00815d00|near;0x00815be0|near;0x00815b00|near
+CSWCMessage	HandleServerToPlayerMessage	0x004a52e0	__thiscall	8	1685	8	0x00810cf0|fptwin+mapper:vote
+CSWCMessage	HandleServerToPlayerUpdate_GuiContainer	0x004aa610		0	647	0	0x00816020|fptwin+mapper:vote
+CSWCMessage	HandleServerToPlayerGuiContainerObjectMessage	0x004bf300		1	129	4	0x0082acb0|fptwin;0x00833db0|near;0x008339e0|near;0x00833a60|near
+CSWCAnimBase	GetModel	0x004c7a80		1	37	4	0x0085fbb0|fptwin+near;0x0085fb70|near;0x0085fad0|near
+CSWCAnimBase	LoadModel	0x004c7ab0		5	556	8	0x0085fbe0|fptwin+near;0x0085fbb0|near;0x0085fb70|near
+CSWGuiPanel	OnBButtonPressed	0x004ce370	__thiscall	0	30	4	0x008878d0|fptwin
+CSWCameraOnAStick	SetCameraStyle	0x004e7550		4	995	4	0x007e1ca0|fptwin+mapper:vote+near;0x007e1c20|near;0x007e1bd0|near
+CSWSpellArray	GetSpell	0x004ed450		4	57	4	0x006c1450|fptwin
+CSWSpell	GetAdjustedForcePoints	0x004f0120		17	408	20	0x006c4120|fptwin
+CSWPlayerControlCamRelative	GetPlayerWalking	0x004f0520	__thiscall	0	17	0	0x00726f80|fptwin
+CSWPlayerControlCamRelative	Control	0x004f0950		4	8823	4	0x00865830|fptwin
+CSWCAnimBaseTW	ReplaceTexture	0x004f7db0		12	323	12	0x0086c460|fptwin+mapper:vote+near;0x0086c5b0|near;0x0086c260|near
+CSWCVisualEffect	Constructor	0x004f90c0		4	390	4	0x0086d770|fptwin+mapper:vote+near;0x0086d900|near;0x0086da00|near
+CSWCVisualEffectOnObject	ApplyBumpedOutShell	0x005047f0		2	786	4	0x00878f10|fptwin+near;0x00879290|near;0x00879310|near
+CSWRules	LoadClassInfo	0x0050c520		0	3948	0	0x0069fee0|fptwin+mapper:vote+near
+CSWGuiMainInterfaceAction	HitCheckMouse	0x00512b90		8	204	8	0x00741590|fptwin+mapper:vote+near;0x00741660|near;0x007414d0|near
+CSWGuiTargetActionMenu	PositionMenu	0x00514e50		0	2570	8	0x00743850|fptwin+near
+CSWGuiTargetActionMenu	DoTargetAction	0x00515bd0		4	1017	8	0x007445d0|fptwin+near;0x00744410|near;0x00744260|near
+CSWGuiMainInterfaceChar	Initialize	0x005166e0		8	1148	8	0x007450e0|fptwin+mapper:vote+near
+CSWGuiMainInterfaceChar	Adjust	0x00516b60		4	519	4	0x00745560|fptwin+mapper:vote+near;0x00745770|near;0x007457e0|near
+CSWGuiMainInterfaceChar	DrawEffects_2	0x005172c0		4	121	4	0x00745cc0|fptwin+mapper:vote+near;0x00745d40|near;0x00745d90|near
+CSWGuiMainInterface	HandleInputEvent	0x00518020		4	1310	8	0x007469f0|fptwin+near;0x007468e0|near;0x007469a0|near
+CSWGuiLabel	`scalar	0x00522830		4	138	4	0x007510b0|fptwin
+CSWGuiMainInterface	OnCharacterRightClicked	0x00522e30		4	84	4	0x007516b0|fptwin+mapper:vote+near;0x00751710|near
+CSWGuiMainInterface	OnCharacterClicked	0x005237d0		4	614	4	0x00752050|fptwin+mapper:vote+near;0x00751e40|near;0x00752300|near
+CSWGuiInGameMessages	Constructor	0x00529340		4	3351	4	0x00757c40|fptwin+mapper:vote+near;0x00757ba0|near;0x00757b70|near
+CSWGuiMessageBox	SetCallback	0x0052e030	__thiscall	12	40	12	0x0075ca30|fptwin+mapper:drift-0x70+near;0x0075ca60|near;0x0075cc60|near
+CSWGuiStatusSummary	Constructor	0x0052e4c0		4	2343	4	0x0075cec0|fptwin+mapper:vote+near;0x0075ce80|near;0x0075ce40|near
+CSWGuiStatusSummary	PlayPendingSounds	0x00530c30		0	732	0	0x0075f630|fptwin+mapper:vote+near;0x0075f610|near;0x0075f910|near
+CSWGui3DSceneView	Draw	0x0053c050		4	37	4	0x0084de40|fptwin
+CSWGuiMainMenu	PopulateModules	0x0053d6a0		0	2382	0	0x00882c00|fptwin+mapper:vote+near;0x00882b10|near;0x00882a30|near
+CSWMessage	WriteDWORD	0x0054ba90		8	118	8	0x005e43b0|fptwin+mapper:vote+near;0x005e4430|near;0x005e41b0|near
+CSWMessage	GetWriteMessage	0x0054bec0		8	317	8	0x005e47e0|fptwin+mapper:vote+near;0x005e4740|near;0x005e46a0|near
+CSWGuiPazaakCard	HandleLMouseUp	0x0054cfa0		0	120	0	0x008868d0|fptwin+mapper:vote+near;0x008867d0|near;0x008864d0|near
+CSWGuiInGameCredits	Constructor	0x00558940		8	1319	8	0x00892090|fptwin+mapper:vote+near;0x00891dd0|near;0x00891d50|near
+CSWGuiInGameCredits	Destructor_2	0x00558ea0		0	625	0	0x008925f0|fptwin+mapper:vote+near;0x008928f0|near;0x008925c0|near
+CSWCSoundObject	AddToArea	0x0055b480		8	199	8	0x00800cb0|fptwin+mapper:vote+near;0x00800c50|near;0x00800bf0|near
+CSWCSoundObject	ChangePosition	0x0055b7e0		4	126	4	0x00801010|fptwin+mapper:vote+near;0x00800fd0|near;0x00800f90|near
+CSWCSoundObject	AIUpdate	0x0055b860		0	1399	0	0x00801090|fptwin+mapper:vote+near;0x00800e80|near;0x00800de0|near
+CSWCMessage	ReadOBJECTIDClient	0x00562510		0	428	0	0x008935a0|fptwin;0x008d6850|near;0x008d6b90|near;0x008d6b40|near
+CSWGuiOptionsMain	Constructor	0x00567d70		4	1637	4	0x007d23e0|fptwin+mapper:vote+near;0x007d22e0|near;0x007d2360|near
+CSWGuiOptionsFeedback	Constructor	0x00568aa0		4	1021	4	0x007d31d0|fptwin+mapper:vote+near;0x007d3060|near;0x007d3030|near
+CSWGuiOptionsFeedback	HandleInputEvent	0x00569480	__thiscall	8	413	8	0x007d3bb0|fptwin+mapper:vote+near;0x007d3d80|near;0x007d3dc0|near
+CSWGuiOptionsGraphics	Constructor	0x00569ef0		8	3078	8	0x007d4620|fptwin+mapper:drift+0x90+near;0x007d45b0|near;0x007d4460|near
+CSWGuiOptionsGraphicsAdvanced	OnTexQualLeft	0x0056d040		4	84	4	0x007d7730|fptwin+mapper:vote+near;0x007d7790|near;0x007d76e0|near
+CSWGuiOptionsResolution	OnResolutionChosen	0x0056eb90		4	1407	4	0x007d9280|fptwin+mapper:vote+near;0x007d8ff0|near;0x007d8ef0|near
+CSWGuiOptionsSound	Constructor	0x0056f110		4	2959	4	0x007d9800|fptwin+mapper:vote+near
+CSWGuiOptionsSoundAdvanced	Constructor	0x005705c0		4	2007	4	0x007dacb0|fptwin+mapper:vote+near;0x007dabf0|near;0x007da9c0|near
+CSWGuiOptionsSoundAdvanced	SetNewOptions	0x00571320		0	129	0	0x007dba10|fptwin+mapper:vote+near;0x007dbbb0|near;0x007dbaa0|near
+CSWGuiOptionsSoundAdvanced	OnEAXRight	0x00571420		4	146	4	0x007dbb10|fptwin+mapper:vote+near;0x007dbaa0|near;0x007dbd60|near
+CSWBehaviorCameraDialog	GetCameraParameters	0x005750f0		40	8676	40	0x008c2960|fptwin+mapper:vote+near
+CSWCProjectile	Constructor	0x00578ec0		0	1000	0	0x008e54e0|fptwin+mapper:vote+near;0x008e5480|near;0x008e5350|near
+CSWGuiSkillFlow	SetExtent	0x00587750		4	816	4	0x00899cb0|fptwin+mapper:vote+near;0x00899ac0|near;0x00899fe0|near
+CSWGuiSkillFlowChart	SetTopLeft	0x00589d30		0	181	0	0x0089c290|fptwin+mapper:vote+near;0x0089c5f0|near
+CSWGuiPartySelection	OnToggled	0x0058c660		4	567	4	0x0089eb50|fptwin+mapper:vote+near;0x0089ed90|near;0x0089ea20|near
+CSWGuiBlackenedLabel	Destructor	0x005977a0	__thiscall	0	113	0	0x0074ac30|fptwin
+CSWGuiInGameEquip	Draw	0x0059f8a0		4	209	4	0x008aba50|fptwin+mapper:vote+near;0x008ab860|near;0x008abe30|near
+CSWGuiContainer	Destructor_2	0x005a61c0		0	560	0	0x008b2620|fptwin+mapper:vote+near;0x008b25f0|near;0x008b2850|near
+CSWGuiContainer	GiveItem	0x005a70a0		4	198	4	0x008b3500|fptwin+mapper:vote+near;0x008b35d0|near;0x008b3820|near
+CSWGuiContainer	Update	0x005a7170		0	93	4	0x008b35d0|fptwin+near;0x008b3630|near;0x008b3730|near
+CSWGuiContainer	OnPanelAdded	0x005a71d0		0	243	0	0x008b3630|fptwin+mapper:vote+near;0x008b3730|near;0x008b3750|near
+CSWGuiStore	OnControlInvAButton	0x005aa0e0		4	1897	4	0x008b61c0|fptwin+mapper:vote+near;0x008b6010|near
+CSWGuiFade	HitCheckMouse	0x005ac8e0		8	82	8	0x007bccb0|fptwin+mapper:vote+near;0x007bcd10|near;0x007bce00|near
+CSWGuiDialog	HandleInputEvent	0x005aee50		8	537	8	0x008ba700|fptwin+mapper:vote+near;0x008ba6c0|near;0x008ba5a0|near
+CSWGuiDialog	HandleSelectReply	0x005af090		0	50	4	0x008ba940|fptwin+near;0x008baca0|mapper:drift+0x360;0x008ba5a0|near;0x008ba700|near
+CSWGuiExamine	HandleInputEvent	0x005b3580		8	117	8	0x008bed80|fptwin
+CSWGuiLoadModuleDebugMenu	Constructor	0x005b54b0		4	2532	4	0x008c0cb0|fptwin+near;0x008c0bd0|mapper:drift-0x10+near;0x008c0a00|near
+CSWGuiObject	SetActiveControl	0x005c0410		0	13	8	0x0042a470|fptwin
+CSWUpgradeItemEntry	SetExtent	0x005c04e0		4	622	4	0x008d0110|fptwin+mapper:vote+near;0x008d0380|near;0x008d0050|near
+CSWUpgradeItemEntry	Draw	0x005c0750		4	230	4	0x008d0380|fptwin+mapper:vote+near;0x008d0110|near;0x008d0050|near
+CSWGuiCreateItem	InitializeStoreType	0x005c5330		0	108	4	0x008d4f60|fptwin+near;0x008d4fd0|near;0x008d50e0|near
+CSWGuiCreateItem	OnControlXButton	0x005c54b0		4	3391	4	0x008d50e0|fptwin+mapper:vote+near;0x008d4f60|near;0x008d4fd0|near
+CSWGuiCreateItem	UpdateCreateFilters	0x005c61f0		4	462	4	0x008d5e20|fptwin+mapper:vote+near;0x008d6090|near;0x008d5ff0|near
+CSWGuiCreateItem	SellItem	0x005c6460		4	482	4	0x008d6090|fptwin+mapper:vote+near;0x008d5e20|near;0x008d5ff0|near
+CSWGuiCreateMedicalItem	DeleteItemEntries	0x005ca130		0	108	4	0x008d9d60|fptwin+near;0x008d9dd0|near;0x008d9ee0|near
+CSWGuiCreateMedicalItem	OnControlEntered	0x005ca2b0		4	2766	4	0x008d9ee0|fptwin+mapper:vote+near;0x008d9d60|near;0x008d9dd0|near
+CSWGuiCreateMedicalItem	BuyItem	0x005cad80		4	462	4	0x008da9b0|fptwin+mapper:vote+near;0x008dac20|near;0x008dab80|near
+CSWGuiCreateMedicalItem	SellItem	0x005caff0		4	482	4	0x008dac20|fptwin+mapper:vote+near;0x008da9b0|near;0x008dab80|near
+CSWGuiSwoopUpgrade	SetDescription	0x005cf920		0	93	4	0x008df550|fptwin+near;0x008df680|near;0x008df5b0|near
+CSWGuiSwoopUpgrade	OnAssemble	0x005cf980		4	198	4	0x008df5b0|fptwin+mapper:vote+near;0x008df550|near;0x008df680|near
+CSWGuiSaveLoad	UnpackGame	0x005d6e10		8	1040	12	0x00857490|fptwin;0x008578b0|near
+CSWGuiClassSelection	Constructor	0x005dd670		8	3843	8	0x008f92b0|fptwin+mapper:vote+near;0x008f9120|near;0x008f90a0|near
+CSWGuiClassSelection	OnPanelAdded	0x005de910		0	179	0	0x008fa550|fptwin+mapper:vote+near;0x008fa610|near;0x008fa2f0|near
+CSWGuiClassSelection	OnSelectButton	0x005dea60		4	295	4	0x008fa6a0|fptwin+mapper:vote+near;0x008fa7d0|near;0x008fa610|near
+CSWGuiClassSelection	Draw	0x005df4f0		4	1635	4	0x008fb130|fptwin+mapper:vote+near
+CSWGuiInGameAutoPause	Constructor	0x005e62c0		4	1702	4	0x008e1810|fptwin+mapper:vote+near
+CSWGuiMainCharGen	Draw	0x005eeb50		4	326	4	0x00907360|fptwin+mapper:vote+near;0x00907310|near;0x009074b0|near
+CSWGuiInGameOptKeyMappings	Constructor	0x005eecd0		4	1664	4	0x008fff20|fptwin+mapper:vote+near;0x008ffec0|near;0x008ffdb0|near
+CSWGuiInGameOptKeyMappings	HandleInputEvent	0x005ef550		8	374	8	0x009007a0|fptwin+mapper:vote+near;0x00900940|near;0x009005d0|near
+CSWGuiInGameOptKeyMappings	Update	0x005f0340		0	274	4	0x00901590|fptwin+near;0x009014b0|near;0x00901470|near
+CSWGuiKeyMapButton	Constructor	0x005f0560		4	279	4	0x009017b0|fptwin+mapper:vote+near;0x009016b0|near;0x009018d0|near
+CSWGuiKeyMapButton	HitCheckMouse	0x005f1910		8	76	8	0x00902b60|fptwin+mapper:vote+near;0x00902c70|near;0x00902f60|near
+CSWGuiLevelUpPanel	HandleInputEvent	0x005f28d0		8	101	8	0x00903ed0|fptwin+mapper:vote+near;0x00903f40|near;0x00903df0|near
+CSWGuiLevelUpPanel	OnSelectPowersButton	0x005f2e20		4	191	4	0x00904420|fptwin+mapper:vote+near;0x00904600|near;0x009046c0|near
+CSWGuiLevelUpPanel	OnSelectFeatsButton	0x005f2f10		4	239	4	0x00904510|fptwin+mapper:vote+near;0x00904600|near;0x009046c0|near
+CSWGuiCustomPanel	OnSelectFeatsButton	0x005f42f0		4	203	4	0x00914e70|fptwin+mapper:vote+near;0x00915010|near;0x00914f40|near
+CSWGuiMainCharGen	NameCreationCompleted	0x005f4630		0	121	0	0x009151b0|fptwin
+CSWGuiCustomPanel	OnCancelPressed	0x005f4770		0	144	4	0x009152f0|fptwin+near;0x009157d0|mapper:drift+0x4e0;0x009152d0|near;0x00915290|near
+CSWGuiQuickPanel	Constructor	0x005f4850		8	975	8	0x009153d0|fptwin+mapper:vote+near;0x00915380|near;0x009152f0|near
+CSWGuiPowersLevelUp	OnPanelAdded	0x005f72f0		0	139	0	0x00908460|fptwin+mapper:vote+near;0x00908070|near;0x009084f0|near
+CSWGuiFeatsCharGen	OnPanelAdded	0x005f9c20		0	142	0	0x0090ad90|fptwin+mapper:vote+near;0x0090a9a0|near;0x0090ae20|near
+CSWGuiFeatsCharGen	RemoveChosenFeat	0x005fae20		2	395	4	0x0090bf90|fptwin+near;0x0090c120|near;0x0090bbb0|near
+CSWGuiFeatsCharGen	AddChosenFeat	0x005fafb0		2	271	4	0x0090c120|fptwin+near;0x0090bf90|near;0x0090c390|near
+CSWGuiSkillsCharGen	Destructor_2	0x005fd330		0	974	0	0x0090e440|fptwin+mapper:vote+near;0x0090e810|near;0x0090e410|near
+CSWGuiAbilitiesCharGen	Constructor	0x005ff360		12	7519	12	0x00910490|fptwin+mapper:vote+near;0x00910470|near;0x009103a0|near
+CSWGuiPortraitCharGen	Constructor	0x00602ef0		8	2821	8	0x00916ef0|fptwin+mapper:vote+near;0x00916b30|near;0x00916cf0|near
+CSWGuiNameChargen	Destructor	0x00604f00		0	317	0	0x00918f00|fptwin+mapper:vote+near;0x00919040|near;0x00919230|near
+CExoBase	Constructor	0x00607d90		0	465	0	0x00735c60|fptwin+mapper:vote+near;0x00735e40|near;0x00735b70|near
+CExoTimers	Constructor	0x00608260		0	125	0	0x00736130|fptwin
+CExoLinkedListInternal	GetAtPos	0x0060bf80		4	57	4	0x0073a010|fptwin+mapper:vote+near;0x0073a050|near;0x0073a0c0|near
+CExoFileInternal	GetSize	0x006100a0		0	133	0	0x0073dba0|fptwin+mapper:vote+near;0x0073db70|near;0x0073db30|near
+CExoFileInternal	Read	0x00610130		8	231	8	0x0073dc30|fptwin+mapper:vote+near;0x0073dba0|near;0x0073db70|near
+CExoRandInternal	Constructor	0x00610360		0	730	0	0x0073e5d0|fptwin+mapper:vote+near;0x0073e5b0|near;0x0073e8b0|near
+CExoRandInternal	ReSeed	0x006109d0		16	306	16	0x0073ec40|fptwin+mapper:vote+near;0x0073ed80|near;0x0073ee10|near
+CExoRandInternal	GenSeed	0x00610b10		0	133	0	0x0073ed80|fptwin+mapper:vote+near;0x0073ea10|near;0x0073ee10|near
+CExoInputInternal	BufferEvent	0x00614de0		4	1743	4	0x0072e030|fptwin+mapper:vote+near;0x0072df60|near;0x0072e000|near
+CExoInputInternal	UpdateMouseDelta	0x00615ec0		0	492	4	0x0072f110|fptwin+near;0x0072f0f0|near;0x0072f0d0|near
+CExoRawInputInternal	Constructor	0x00617350		8	1847	8	0x00730750|fptwin+mapper:vote+near;0x007306c0|near;0x007306a0|near
+CExoRawInputInternal	GetMouseState	0x00619a00		4	253	4	0x00732e00|fptwin+mapper:vote+near;0x00732c40|near;0x00732f80|near
+CResRef	GetResRefStr	0x0061a300		0	94	0	0x007109b0|fptwin+mapper:vote+near;0x00710840|near;0x00710ca0|near
+CResRef	operator==	0x0061a490		4	44	4	0x00710b40|fptwin+mapper:vote+near;0x00710980|near;0x00710b70|near
+CResRef	operator==_3	0x0061a570		4	113	4	0x00710c20|fptwin+mapper:vote+near;0x00710930|near;0x00710ca0|near
+CResRef	operator=_4	0x0061a800	__thiscall	8	133	8	0x00710eb0|fptwin+mapper:vote+near;0x00710ca0|near;0x00710dc0|near
+CRes	Dump	0x0061ab90		4	32	4	0x00711230|fptwin+mapper:vote+near;0x00711250|near;0x00711200|near
+C2DA	SkipNewLines	0x00622a20		8	273	8	0x0071cf80|fptwin+mapper:vote+near;0x0071d360|near;0x0071d0a0|near
+CTlkTable	ClearCustomTokens	0x00628ac0		0	76	0	0x0071eb80|fptwin
+CTlkTable	ParseStr	0x00628b10	__thiscall	4	2040	4	0x0071ebd0|fptwin
+CERFFile	Destructor	0x0062abb0		0	143	0	0x00720c20|fptwin+mapper:vote+near;0x00720b60|near;0x00720e10|near
+CERFFile	Read	0x0062adc0		4	386	4	0x00720e30|fptwin+mapper:vote+near;0x00720fc0|near;0x00720b60|near
+CERFFile	ReadHeaderVariance	0x0062af50		4	533	4	0x00720fc0|fptwin+mapper:vote+near;0x00720e30|near;0x00720e10|near
+CERFFile	ExportFilesFromERF	0x0062be80		24	706	24	0x00721ef0|fptwin+mapper:vote+near;0x007222f0|near;0x00721e70|near
+CExoKeyTable	GetTableIndex	0x00630410		6	142	8	0x007269c0|fptwin+near;0x00726670|near;0x00726940|near
+CExoSoundInternal	SetListenerOrientation	0x00637160		8	232	8	0x007081e0|fptwin+mapper:vote+near;0x007082d0|near;0x00708070|near
+CExoSoundInternal	SetListenerPosition	0x00637250		4	135	4	0x007082d0|fptwin+mapper:vote+near;0x007081e0|near;0x00708360|near
+CExoSoundInternal	StopAllOneShots	0x00638c70		0	262	0	0x00709cf0|fptwin+mapper:vote+near;0x00709b80|near;0x00709b20|near
+CExoSoundSource	SetResRef	0x00639ec0		8	90	8	0x0070af20|fptwin+mapper:vote+near;0x0070aee0|near;0x0070ae90|near
+CExoSound	ReInitialize	0x0063a950		8	129	8	0x0070b9b0|fptwin+mapper:vote+near;0x0070b910|near;0x0070bc60|near
+CExoStreamingSoundSourceInternal	Update3DStream	0x0063ca40		0	438	0	0x0070daa0|fptwin+mapper:vote+near;0x0070dc60|near;0x0070dde0|near
+CExoStreamingSoundSourceInternal	IsDone	0x0063cc00		0	71	0	0x0070dc60|fptwin+mapper:vote+near;0x0070daa0|near;0x0070dde0|near
+CExoStreamingSoundSourceInternal	SetLooping	0x0063cc50		4	83	4	0x0070dcb0|fptwin+mapper:vote+near;0x0070dd10|near;0x0070d9d0|near
+CVirtualMachineInternal	ExecuteCode_5	0x00645160		12	89	0	0x0044b210|fptwin
+CPathfindInformation	Initialize	0x006470b0		0	1447	0	0x006f9440|fptwin
+CAvoidCreature	ComputeHexPoints	0x00648370		12	3646	12	0x006fa580|fptwin+mapper:drift+0x1a0+near;0x006fa3f0|near;0x006fa480|near
+CServerAIEventNode	LoadNode	0x00650010		8	1665	8	0x005205f0|fptwin
+CServerAIBodyBagInfo	LoadBodyBag	0x006509e0		8	147	8	0x00520fc0|fptwin
+CSWSSpellScriptData	SaveData	0x0069e4d0		8	266	8	0x005859f0|fptwin
+CSWSObject	RemoveGroup	0x006a6380		2	244	4	0x0053f6a0|fptwin+near
+CSWSObject	SetPosition	0x006aac30		8	475	16	0x00543f50|fptwin+near
+CSWSObject	SpellCastAndImpact	0x006aef80		12	2145	36	0x005482a0|fptwin+near
+CSWSCreature	RemoveFromInvitationsOffered	0x006ddee0		4	437	4	0x005d32c0|fptwin+mapper:vote
+Global	QueryTimer	0x00713490		0	158	0	0x00650d40|fptwin
+CSWCollisionMesh	not_GetWalkableMaterialMask	0x00713530		0	26	0	0x00650de0|fptwin;0x004072f0|mapper:vote;0x005d9570|near;0x005d9690|near
+CSWRoomSurfaceMesh	ClippedLineSegmentWalkable	0x007137e0		28	2068	28	0x00651090|fptwin+mapper:vote+near;0x00650e00|near;0x00650de0|near
+CSWRoomSurfaceMesh	ComputeClippedLineSegment	0x00714000		36	1366	36	0x006518b0|fptwin+mapper:vote+near
+CSWRoomSurfaceMesh	TransformToWorld	0x00714f10		4	78	4	0x006527c0|fptwin+mapper:vote+near;0x00652810|near;0x006526f0|near
+CSWRoomSurfaceMesh	TransformAABBToWorld	0x00714f60		8	286	8	0x00652810|fptwin+mapper:vote+near;0x00652930|near;0x006529c0|near
+CSWCollisionMesh	NormalLocalToWorld	0x00728b10		12	331	12	0x005eebf0|fptwin+mapper:vote+near;0x005ee9f0|near;0x005ee7b0|near
+CSWSPlayer	GetGameObject	0x0075ca90		0	101	0	0x00632a20|fptwin+mapper:vote+near;0x00632a90|near;0x00632830|near
+CSWSMessage	WriteGameObjUpdate_UpdateAppearance	0x007d1fb0		12	2329	12	0x0063b890|fptwin+mapper:vote;0x0062c1a0|near;0x0062c180|near;0x0062bf60|near
+CSWSMessage	WriteGameObjUpdate_PlayerUpdate	0x007d5c70		16	8327	16	0x0063f550|fptwin+mapper:vote;0x0062fdb0|near;0x0062fd80|near;0x00630080|near
+CSWSMessage	SendServerToPlayerExamineGui_CreatureData	0x007dbb80		8	963	8	0x00645460|fptwin+mapper:vote;0x00636050|near;0x00635fc0|near
+CSWSMessage	SendServerToPlayerGuiContainerObject_Open	0x007e1d40		12	121	12	0x0064b620|fptwin+mapper:vote;0x0063c1b0|near;0x0063c1e0|near;0x0063c2f0|near
+CSWSMessage	SendServerToPlayerJournalAddWorldStrref	0x007e21b0		20	151	20	0x0064ba90|fptwin+mapper:vote;0x0063c420|near;0x0063c2f0|near;0x0063c530|near
+CSWSMessage	SendServerToPlayerJournalFullUpdate	0x007e23a0		4	1691	4	0x0064bc80|fptwin+mapper:vote;0x0063c530|near;0x0063c420|near;0x0063c2f0|near
+CSWSPlayerLUOInventory	Destructor	0x007f2b50		0	164	0	0x006f2fb0|fptwin+mapper:vote+near;0x006f2f00|near;0x006f3060|near
+CSWSMessage	HandlePlayerToServerInputDriveControl	0x00801010		4	342	4	0x0065b270|fptwin+mapper:vote+near;0x0065b4f0|near;0x0065b3d0|near
+CSWSMessage	HandlePlayerToServerInputAbortDriveControl	0x00801170		4	182	4	0x0065b3d0|fptwin+mapper:vote+near;0x0065b490|near;0x0065b4f0|near
+CSWSMessage	HandlePlayerToServerInputWalkToWaypoint	0x00801290		4	2138	4	0x0065b4f0|fptwin+mapper:vote+near;0x0065b270|near;0x0065b490|near
+CWorldTimer	Constructor	0x0080ac50		0	144	0	0x0051a770|fptwin+mapper:vote+near;0x0051a860|near;0x0051a920|near
+CWorldTimer	SetSnapshotTime	0x0080ad40		0	189	0	0x0051a860|fptwin+mapper:vote+near;0x0051a920|near;0x0051a940|near
+CWorldTimer	GetSnapshotTime	0x0080ae00		0	20	0	0x0051a920|fptwin+mapper:vote+near;0x0051a940|near;0x0051a860|near
+CWorldTimer	GetSnapshotTimeDifference	0x0080ae20		0	46	0	0x0051a940|fptwin+mapper:vote+near;0x0051a920|near;0x0051a860|near
+CWorldTimer	SetWorldTime	0x0080b110		12	154	12	0x0051ac30|fptwin+mapper:vote+near;0x0051a970|near;0x0051abd0|near
+Global	Transpose	0x0080c8b0		8	354	0	0x00514a20|fptwin
+Plane	Transform	0x0080cad0		8	1605	8	0x00514c40|fptwin
+Global	RotationArc	0x0080df50		28	362	0	0x005160c0|fptwin
+Global	polyhit	0x0080e0c0		28	1033	0	0x00516230|fptwin
+Global	polyhit_2	0x0080e4d0		24	1874	0	0x00516640|fptwin;0x006f8f60|near;0x006f90a0|near;0x006f9130|near
+Global	BoxIntersect	0x0080ec30		20	1323	0	0x00516da0|fptwin;0x006f9440|near;0x006f9420|near;0x006f99f0|near
+Global	AurTextureBindTargetIndex	0x008144e0		8	69	0	0x00421de0|fptwin
+Global	AurTextureReplaceSingleReference	0x00819400		24	531	0	0x00426d00|fptwin;0x00703e40|near;0x00703d70|near;0x00703f30|near
+RequestPoolManagerVBO	ResizePool	0x0081c950		8	428	8	0x0042a220|fptwin+mapper:vote+near;0x0042a150|near;0x0042a0a0|near
+RequestPoolManagerVBO	DeletePool	0x0081cb00		4	159	4	0x0042a3d0|fptwin+mapper:vote+near;0x0042a150|near;0x0042a0a0|near
+GLRender	RenderObjectsVTCQuadUP	0x00823860		8	737	0	0x00431140|fptwin+near;0x00431430|near;0x00430ea0|near
+GLRender	RenderDrawableSquares	0x00827df0		0	54	0	0x004356e0|fptwin+near;0x00435720|mapper:vote+near;0x004356c0|near
+GLRender	FrameBufferModifications	0x00827e30		4	1885	0	0x00435720|fptwin+near;0x004356e0|near;0x004356c0|near
+GLRender	FrameBufferModificationsATI	0x00829060		8	496	0	0x004369a0|fptwin+near;0x00436780|near;0x00436700|near
+GLRender	RenderOverlayConvolution	0x00829250		0	985	0	0x00436b90|fptwin+mapper:vote+near;0x004369a0|near;0x00436780|near
+MdlNodeTriMesh	ProcessVerts	0x0083e200		0	2857	0	0x0044bd70|fptwin
+CAurObject	AnimateExternal	0x00844470	__thiscall	4	129	4	0x00451e60|fptwin
+Global	FindGob	0x0084b050		4	90	0	0x00458a80|fptwin;0x00735b70|near;0x00735840|near;0x007358d0|near
+Gob	HitCheck	0x0084d7a0		32	3275	32	0x0045b1c0|fptwin+mapper:vote+near
+Part	GetMinimumSphere	0x00852680		8	1394	8	0x004600f0|fptwin;0x004600a0|mapper:seeded;0x004835b0|near;0x004835f0|near;0x00483490|near
+Gob	GetMinimumSphere	0x00852da0		0	253	0	0x00460810|fptwin+mapper:vote+near;0x00460a80|near;0x00460bb0|near
+Gob	SetPartLocalPosition	0x008551e0		32	115	32	0x00462c50|fptwin+mapper:vote+near;0x00462b90|near;0x00462d50|near
+CHitInfo	Constructor	0x00857940		12	225	12	0x00465560|fptwin
+Scene	DoGobShadows	0x0085ab60		0	876	0	0x004687e0|fptwin+mapper:vote+near;0x00468b50|near;0x004686e0|near
+Scene	RenderDynamicGeometry	0x0085c9b0	__thiscall	0	155	0	0x0046a630|fptwin+mapper:vote+near;0x0046a530|near;0x0046a4d0|near
+Scene	RenderSinglePass	0x0085e940	__thiscall	0	1830	0	0x0046c5c0|fptwin+mapper:vote+near
+PostedString	Post	0x00866640	__thiscall	0	620	0	0x00474700|fptwin
+Global	FuncInterp	0x00867210		4	1099	0	0x004752a0|fptwin;0x00751c30|near;0x00751ce0|near;0x00751b00|near
+Global	GetResource	0x00867dc0		4	71	0	0x00475e50|fptwin
+Global	AurResGetNextLine	0x00867ee0		0	69	0	0x00475f70|fptwin
+Global	AurResFree_2	0x00867fa0		4	223	0	0x00476030|fptwin
+CAurInternal	RestoreDesktopDisplayMode	0x008689c0		0	56	0	0x00476ae0|fptwin+mapper:vote+near;0x00476b20|near;0x00476b80|near
+CAurInternalGL	Reshape	0x0086a150		8	130	8	0x00478270|fptwin+mapper:vote+near;0x00478300|near
+CAurInternal	ResetGammaRamp	0x0086a750		8	356	8	0x00478870|fptwin+mapper:vote+near;0x004787f0|near;0x004789e0|near
+Global	AurSetVSyncState	0x0086ac50		1	43	0	0x00478d70|fptwin
+Global	AurCubeMapAvailable	0x0086b700		0	100	0	0x00484970|fptwin;0x009852b0|mapper:vote+name_map:medium:gog_cluster_delta_map.py;0x007563b0|near;0x00756380|near
+Global	CheckExtension	0x0086b8b0		8	130	0	0x00484b20|fptwin;0x00756380|near;0x007563b0|near
+Global	PartOutside_2	0x0086bb10		8	162	0	0x00494200|fptwin;0x00756860|near;0x007563b0|near;0x00756380|near
+Global	SceneBSPAddGob	0x0086d830		8	135	0	0x00495f20|fptwin;0x00699690|mapper:vote
+Global	SceneBSPRemoveGob	0x0086d8c0		8	133	0	0x00495fb0|fptwin;0x00699720|mapper:vote
+Global	CollectBins	0x0086ffc0		12	291	0	0x004986b0|fptwin;0x0075a7c0|near;0x0075a630|near
+PartSkin	PostProcess	0x00874400		0	8182	4	0x004be9e0|fptwin
+Global	RenderSkinned	0x00877a20		5	4510	0	0x004c2000|fptwin;0x00762501|near;0x007625b1|near;0x00762251|near
+Global	RenderSkinnedVP	0x00878e50		4	25096	0	0x004c3430|fptwin;0x007637e0|near
+Global	RenderSkinnedVPBlur	0x0087f060		4	9743	0	0x004c9640|fptwin
+PartSkin	Draw	0x00882da0	__thiscall	1	229	4	0x004cd380|fptwin
+PartTriMesh	GetRenderPath	0x0088dc30		0	420	0	0x004a7070|fptwin
+Gob	ProxyPartDraw	0x0089a940	__thiscall	5	595	8	0x004b3d80|fptwin;0x004a81d0|near;0x004a8150|near
+PartEmitter	RenderLinked	0x008af6e0		0	8781	0	0x004f3b40|fptwin+near;0x004f3ae0|mapper:vote+near;0x004f3a40|near
+PartEmitter	RenderBoundingSphere	0x008b3c00		0	7939	0	0x004f8000|fptwin+mapper:vote+near
+FountainEmitter	Update	0x008b6860		4	1598	4	0x004fac30|fptwin
+ExplosionEmitter	Update	0x008b6ed0		4	1384	4	0x004fb2d0|fptwin
+Camera	Animate	0x008c1fb0	__thiscall	4	574	4	0x00480e40|fptwin+mapper:vote+near;0x00481120|near;0x00480df0|near
+CAurBehaviorCameraFollow	Control	0x008c4b30		4	1703	4	0x00505da0|fptwin+mapper:vote+near
+Global	CullUnnecessaryKeys	0x008c68e0		4	874	0	0x00486390|fptwin
+MdlNodeLight	InternalParseField	0x008c7500		4	2293	4	0x00486fb0|fptwin
+MdlNodeEmitter	InternalParseField	0x008c7e00		4	15890	4	0x004878b0|fptwin;0x0050be60|near;0x0050c210|near;0x0050c380|near
+Global	BinaryInsertModel	0x008ce5e0		12	148	0	0x0048e090|fptwin
+Global	AurGUIStartLayer	0x008cfbd0		0	301	0	0x004792c0|fptwin
+Global	AurGUIStopLayer	0x008cfd00		0	101	0	0x004793f0|fptwin
+Global	AurGUICloseViewport	0x008d02d0		0	235	0	0x004799c0|fptwin
+Global	GetResolutionTextScalar	0x008d03c0		0	92	0	0x00479ab0|fptwin
+CAurGUIStringInternal	GetFontTexture	0x008d09d0		0	71	0	0x0047a0c0|fptwin+mapper:vote+near;0x0047a0a0|near;0x0047a110|near
+CAurGUIStringInternal	SetSizeBoundingRect	0x008d0ae0		8	31	8	0x0047a1d0|fptwin+mapper:vote+near;0x0047a1a0|near;0x0047a180|near
+CAurGUIStringInternal	SetSizeBoundingRect_2	0x008d10b0		8	89	8	0x0047a7a0|fptwin+mapper:vote+near;0x0047a740|near;0x0047a6e0|near
+CAurGUIStringInternal	GetIdealPixelHeight	0x008d15b0		4	636	4	0x0047aca0|fptwin+mapper:vote+near;0x0047af30|near
+Global	ImageRead16bit	0x008d7860		20	340	0	0x00482ce0|fptwin
+Global	ImageReadTGA	0x008d8010		16	277	0	0x00483490|fptwin
+Global	ImageReadPLT	0x008d8290		12	204	0	0x00483700|fptwin
+Global	ImageGetSubImage	0x008d8c90		8	176	0	0x00484100|fptwin
+GLRender	EnableFragmentShadersARB	0x008de4b0		20	11495	0	0x004b50c0|fptwin;0x004ebad0|near;0x004ec060|near;0x004ec080|near
+VertexPrimitiveFlat	ReconnectArraysVAR	0x008e85f0		4	980	4	0x004ce460|fptwin+mapper:vote+near;0x004ce2d0|near;0x004ce1d0|near
+Material	SetBlendingMode	0x008f5380		4	234	4	0x004db1f0|fptwin+mapper:vote+near;0x004db2e0|near;0x004dae60|near
+Material	SetMaterialColor	0x008f5530		1	117	16	0x004db3a0|fptwin+near;0x004db1f0|near;0x004db160|near
+Material	HasBumpMap	0x008f55b0		0	332	0	0x004db420|fptwin+mapper:vote+near;0x004db2e0|near;0x004db580|near
+Gob	PlayOutOfOrderAnimation	0x008f6ab0		20	238	20	0x004dc920|fptwin+mapper:vote;0x00504550|near;0x005043d0|near;0x005045e0|near
+OOAnimRun	Destructor	0x008f7090		0	75	0	0x004dcf00|fptwin
+NewController	Control	0x008f8b50		20	1242	20	0x004dea20|fptwin+mapper:vote+near;0x004de880|near;0x004de630|near
+Global	ProceduralAnimateHierarchy	0x008f9cd0		4	815	0	0x004dfba0|fptwin
+Global	AnimateHierarchy	0x008fa000		21	614	0	0x004dfed0|fptwin
+LightManager	GetShadowLights	0x00901f50		4	1048	4	0x0050a630|fptwin+mapper:vote+near
+CAuroraModel	Load	0x00907730		0	74	0	0x0093d110|fptwin
+CAuroraInterface	GetModelResHelper	0x00908190		16	771	0	0x0093db70|fptwin+near;0x0093db50|near;0x0093db30|near
+CAuroraModel	Unload	0x0090bb40		0	49	0	0x00941520|fptwin
+InitControl	ScaleToEdgeHelper_2	0x0090deb0		12	79	0	0x0040fa30|fptwin+near;0x0040f9f0|near;0x0040fa80|near
+InitControl	ScaleToEdgeHelper_3	0x0090df00		8	188	8	0x0040fa80|fptwin+mapper:vote+near;0x0040fa30|near;0x0040f9f0|near
+CSWGuiManager	FindPanelIndex	0x0090ed10		4	101	4	0x00410890|fptwin+mapper:vote+near;0x00410830|near;0x00410900|near
+CSWGuiManager	PushModalPanel	0x0090ed80		4	180	4	0x00410900|fptwin+mapper:vote+near;0x00410890|near;0x00410830|near
+CSWGuiManager	DetermineNeedToDraw	0x0090f5f0	__thiscall	0	559	0	0x00411170|fptwin+mapper:vote+near;0x00411030|near;0x004113a0|near
+CSWGuiManager	UpdateAllFonts	0x00912250		0	191	0	0x00413dd0|fptwin+mapper:vote+near;0x00413f00|near;0x00413c50|near
+CSWGuiObject	SetExtent	0x00912f40	__thiscall	4	44	4	0x00414b70|fptwin
+CSWGuiImageParams	SetImage	0x00914460		8	254	8	0x00416090|fptwin+mapper:vote+near;0x004161e0|near;0x00416190|near
+CSWGuiText	Constructor	0x00915570	__thiscall	0	188	0	0x004171a0|fptwin+mapper:vote+near;0x00417480|near;0x00417290|near
+CSWGuiText	Initialize	0x00915710	__thiscall	12	310	12	0x00417340|fptwin+mapper:vote+near;0x00417480|near;0x00417290|near
+CSWGuiText	SetExtent	0x00915b50		4	128	4	0x00417780|fptwin+mapper:vote+near;0x00417720|near;0x00417910|near
+CSWGuiText	GetIdealHeight	0x00915c10		0	95	0	0x00417840|fptwin+mapper:vote+near;0x004178b0|near;0x00417800|near
+CSWGuiText	GetFontHeight	0x00915c80		0	91	0	0x004178b0|fptwin+mapper:vote+near;0x00417840|near;0x00417800|near
+CSWGuiScene	Draw	0x009168b0		4	120	4	0x004184f0|fptwin+mapper:vote+near;0x004184b0|near;0x004185d0|near
+CSWGuiNavigable	HandleMouseOver	0x009169f0		4	91	4	0x00418750|fptwin+mapper:vote+near;0x00418720|near;0x004186c0|near
+CSWGuiNavigable	HandleInputEvent	0x00916a50		8	253	8	0x004187b0|fptwin+mapper:vote+near;0x004186f0|near;0x004188e0|near
+CSWGuiControl	HitCheckMouse	0x00916fc0	__thiscall	8	122	8	0x00418d20|fptwin+mapper:vote+near;0x00418c50|near;0x00418f20|near
+CSWGuiControl	HandleFocusChange	0x00917280	__thiscall	4	116	4	0x00418fe0|fptwin+mapper:vote+near;0x00419060|near;0x00418f20|near
+CSWGuiControl	HandleMouseOver	0x00917300		4	54	4	0x00419060|fptwin+mapper:vote+near;0x00418fe0|near;0x00419130|near
+CSWGuiControl	HandleLMouseUp	0x00917430	__thiscall	0	168	0	0x00419190|fptwin+mapper:vote+near;0x004192a0|near;0x00419130|near
+CSWGuiLabel	Load	0x00917b70		8	207	8	0x004198d0|fptwin+mapper:vote+near;0x00419b30|near;0x00419880|near
+CSWGuiButtonToggle	Constructor	0x009185d0	__thiscall	0	160	0	0x0041a330|fptwin+near;0x0041a510|mapper:drift+0x10+near;0x0041a460|near
+CSWGuiRadioButton	HandleLMouseUp	0x00918bf0		0	154	0	0x0041aac0|fptwin
+CSWGuiSlider	HandleInputEvent	0x009192c0		8	537	8	0x0041b220|fptwin+mapper:vote+near;0x0041b030|near;0x0041b440|near
+CSWGuiProgressBarReveal	Draw	0x00919f50		4	137	4	0x0041bf40|fptwin
+CSWGuiListBox	HandleInputEvent	0x0091b950	__thiscall	8	3590	8	0x0041d940|fptwin+mapper:vote+near;0x0041d810|near;0x0041d8e0|near
+CSWGuiListBox	SetSelectedControl	0x0091c810	__thiscall	8	293	8	0x0041e870|fptwin+mapper:vote+near;0x0041e9a0|near;0x0041e800|near
+Global	sprintf	0x00921295	__cdecl	8	125	0	0x00919671|fptwin
+Global	memset	0x00924260	__cdecl	12	122	0	0x0091c630|fptwin;0x0080ef60|near;0x0080efb0|near
+Global	free	0x009242e5	__cdecl	4	133	0	0x0091c6b5|fptwin;0x0080ef60|near;0x0080efb0|near
+Global	`eh_vector_constructor_iterator'	0x009258bf	__stdcall	20	77	20	0x0091d67e|fptwin;0x008103c0|near;0x00810510|near;0x008105e0|near
+Global	rand	0x00925936	__cdecl	0	34	0	0x0091eb8b|fptwin;0x008103c0|near;0x00810510|near;0x008105e0|near
+Global	setSBUpLow	0x0092ccaf	__cdecl	4	403	0	0x0092504f|fptwin
+CResVIS	GetVISSize	0x009434e0		0	17	0	0x00703bd0|fptwin
+CResTGA	ReadUnmappedRLETGA	0x00943fe0		0	840	0	0x00945990|fptwin+mapper:vote+near;0x00945860|near;0x00945d90|near
+Global	BSPTraverseVolumeApprox	0x00944cf0		20	1154	0	0x00519ba0|fptwin

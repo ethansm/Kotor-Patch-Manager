@@ -1,0 +1,22 @@
+gog_addr	steam_addr	final_verdict	note
+0x00829060	0x004369a0	label_suspect	exact fp twin; 004369b5 PUSH 0x8892, ADD EDX,0x84c0, callees=AurMultiTexture/VBOARBAvailable: VBO+multitex array setup; Mac FrameBufferMod* use 0x302/0x303 blend, absent
+0x00867dc0	0x00475e50	label_suspect	exact fp twin; 00475e8a CALL 0x0049b840 (size 75 = GOG CExoArrayList::DelIndex 0x903df0); body removes an array entry, not a getter
+0x008b6ed0	0x004fb2d0	verified	exact fp twin (1384B, 13 disp/12 imm sets equal); 004fb3aa PUSH 0x74 + CALL 0x00919723 operator new; [ECX+0x1c8] x16 = GOG; name not contradicted
+0x008d7860	0x00482ce0	verified	exact fp twin 340B; 00482ce3 SUB ESP,0x114 = GOG imm 0x114; 7 CRT callees aligned (new, cookie); name not contradicted
+0x008f6ab0	0x004dc920	verified	exact fp twin 238B RET 20; 004dc96b PUSH 0x34, 004dc9e2 MOV [ECX+0x8],0x209; CALL 0x0050c380 (94B = GOG List::Insert 0x8fdd20)
+0x00925936	0x0091eb8b	verified	correction from 0x008103c0 (328B, no LCG); 0091eb93 IMUL ECX,ECX,0x343fd + ADD 0x269ec3; fp 34B identical to GOG rand, Steam fp names it _rand
+0x00468f00	0x007bc230	verified	007bc23d MOV [EAX+0x2c],ECX; callees 0x478ca0 (15B=AurEnableShadows) 0x478cb0 (20B=AurDisableShadows); fp identical
+0x008f5380	0x004db1f0	verified	exact fp twin 234B; .c glBlendFunc(tbl[*(+0x28)],tbl[*(+0x34)]), glDepthMask, glAlphaFunc; 004db213 MOV ECX,[EAX+0x28]
+0x0054ba90	0x005e43b0	verified	exact fp twin 118B RET 8; 005e43d6 CALL 0x005e3fe0 (129B=ExtendWriteBuffer), 005e441b CALL 0x005e31e0 (391B=WriteUnsigned)
+0x008d0ae0	0x0047a1d0	likely	31B setter stub; 0047a1dd MOV [EAX+0xc],ECX, 0047a1e6 MOV [EDX+0x10],EAX = GOG disp; neighbour 0x0047a1a0 is the getter
+0x00713490	0x00650d40	verified	exact fp twin 158B; 00650da8 PUSH 0xf4240; CALL [0x00986150] QPC; CALL 0x00650de0 (26B = GOG 0x713530 freq wrapper)
+0x008689c0	0x00476ae0	verified	exact fp twin 56B; 00476b0e CALL [0x00986418] = ChangeDisplaySettingsA(NULL,0) per .c; 00476aff CMP [ECX+0xa8],0
+0x00468f30	0x007bc260	verified	007bc26d MOV [EAX+0x30],ECX; 007bc279 CALL 0x00478cf0 (20B=AurEnableSoftShadows), CALL 0x00478d10 (15B=AurDisableSoftShadows)
+0x004691f0	0x007bc520	verified	007bc52d MOV [EAX+0x48],ECX; 007bc53b CALL 0x00478d70 (43B = GOG AurSetVSyncState 43B); fp identical
+0x007f2b50	0x006f2fb0	verified	exact fp twin 164B; 4 Clear* calls 006f2fe0..006f2ff8; 006f3006 MOV [EAX+0xa4],ECX; callee 0x72f5f0 78B = ~CExoLinkedListInternal 78B
+0x006509e0	0x00520fc0	verified	00520fcf PUSH 0x992ef0 'BodyBagId'; CALL 0x00718c00 ReadFieldDWORD; PositionX/Y/Z via 0x00718d00; 147B RET 8
+0x008ce5e0	0x0048e090	verified	exact fp twin 148B; 0048e0ff CALL 0x0048e090 self-recursion = GOG self-callee; 0048e0ab CALL 0x0050c380 (94B = List::Insert)
+0x0044ccb0	0x007a06b0	verified	007a06d8 PUSH 0x99d9a8 'QUICKSAVE'; 007a0715 CALL 0x0073f6f0 (36B = SendSaveGameRequest 36B); 148B RET 0
+0x0081c950	0x0042a220	verified	exact fp twin 428B RET 8; 0042a260 PUSH 0x8764 (GL_BUFFER_SIZE) to glGetBufferParameteriv; disp 0x2c/0x50/0x5c/0x68 = GOG
+0x0056d040	0x007d7730	verified	007d774b CMP [EDX+0x2920],0 then decrement; 007d7779 CALL 0x004122a0 (94B=PlayGuiSound); CALL 0x007d77f0 (563B=SetTexQualText)
+0x0053c050	0x0084de40	likely	37B virtual forwarder: 0084de57 MOV EDX,[EAX+0x60]; 0084de5a MOV EAX,[EDX+0xc]; RET 0x4; fp identical, thin anchor only

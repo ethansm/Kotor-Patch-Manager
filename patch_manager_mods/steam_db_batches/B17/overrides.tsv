@@ -1,0 +1,63 @@
+gog_addr	steam_addr	final_verdict	note
+0x00408600	0x00408af0	verified	[c] 00408b18 MOV EAX,[0x00986c00] 'Render Window' (GOG str 0x985bc8); 00408bc8 PUSH 0x2ca0000; size 320
+0x0044ccb0	0x007a06b0	verified	[b] 007a06d8 PUSH 0x99d9a8 'QUICKSAVE'; 007a0715 CALL 0x0073f6f0 (36B = SendSaveGameRequest 36B); 148B RET 0
+0x00468f00	0x007bc230	verified	[b] 007bc23d MOV [EAX+0x2c],ECX; callees 0x478ca0 (15B=AurEnableShadows) 0x478cb0 (20B=AurDisableShadows); fp identical
+0x00468f30	0x007bc260	verified	[b] 007bc26d MOV [EAX+0x30],ECX; 007bc279 CALL 0x00478cf0 (20B=AurEnableSoftShadows), CALL 0x00478d10 (15B=AurDisableSoftShadows)
+0x004691f0	0x007bc520	verified	[b] 007bc52d MOV [EAX+0x48],ECX; 007bc53b CALL 0x00478d70 (43B = GOG AurSetVSyncState 43B); fp identical
+0x0046b6d0	0x007f44b0	verified	[c] 007f452a MOV [EDX+0x104],0x1; 007f4522 TEST AH,0x44; disp 12/12 imm 3/3 identical, size 159 retn 4; zoom accumulates +0x34
+0x0047e830	0x007fd5b0	verified	[a] fp identical (326/ret12/102 insn, disp+imm sets); 007fd5e1 PUSH 0xfc alloc = GOG imm 0xfc; callee 0x7ed830 GetAnimationBase; LoadModel fits
+0x004ed450	0x006c1450	verified	[c] 006c1473 IMUL EAX,EAX,0x1a8 (spell stride = GOG imm 0x1a8); size 57 retn 4; 35 shared callers
+0x00522830	0x007510b0	verified	[a] fp identical (138/ret4); decomp *param_1=CSWGuiLabel::vftable then CALL 0x418640 CSWGuiControl dtor + conditional free 0x9196fd = scalar deleting dtor
+0x0052e4c0	0x0075cec0	verified	[c] strings "statussummary_p","LBL_JOURNAL","LBL_JOURNAL_DESC" (26 str shared); 0075cf8d ADD ECX,0x2478; size 2343
+0x0053c050	0x0084de40	likely	[b] 37B virtual forwarder: 0084de57 MOV EDX,[EAX+0x60]; 0084de5a MOV EAX,[EDX+0xc]; RET 0x4; fp identical, thin anchor only
+0x0054ba90	0x005e43b0	verified	[b] exact fp twin 118B RET 8; 005e43d6 CALL 0x005e3fe0 (129B=ExtendWriteBuffer), 005e441b CALL 0x005e31e0 (391B=WriteUnsigned)
+0x0056d040	0x007d7730	verified	[b] 007d774b CMP [EDX+0x2920],0 then decrement; 007d7779 CALL 0x004122a0 (94B=PlayGuiSound); CALL 0x007d77f0 (563B=SetTexQualText)
+0x00571320	0x007dba10	verified	[a] fp identical (129/ret0, 7 disp); 007dba70 MOV EDX,[ECX+0x18b4]; callee 0x72fb00 GetClientOptions = GOG 0x40ccf0; mac_contra not a body contradiction
+0x005750f0	0x008c2960	verified	[c] 008c399f CALL 0x0073f4d0 GetGameObject (GOG 0x40c990); 008c39cd CALL 0x007ed830 GetAnimationBase (GOG 0x472990); size 8676 retn 40
+0x005977a0	0x0074ac30	label_suspect	[a] fp identical (113/ret0); 0074ac59 MOV [EAX],0x9878bc (CSWGuiLabel::vftable), ~800 callers: body is CSWGuiLabel::~CSWGuiLabel, not BlackenedLabel dtor (Mac 53/61 B)
+0x0059f8a0	0x008aba50	verified	[a] fp identical (209/ret4, disp 0x4ec4/0x50e4/0x50e8); 008aba94 FLD [EAX+0x50e4]; callees 0x73fb90 GetSWParty, 0x40ec90 CSWGuiPanel::Draw; fits Draw
+0x005a71d0	0x008b3630	verified	[a] fp identical (243/ret0); 008b36a2 ADD ECX,0xb18; callee 0x40f3c0 CSWGuiPanel::OnPanelAdded (GOG 0x90d840); fits OnPanelAdded
+0x005b3580	0x008bed80	verified	[c] 008bedd8 CALL 0x007cac10 CGuiInGame::HideExamineBox (GOG 0x4db310) + 008bedbd CALL 0x004122a0 PlayGuiSound; fp size/retn/disp/imm identical
+0x005c5330	0x008d4f60	label_suspect	[a] fp identical (108/ret4); 008d4f6c CMP [EAX+0x3ed8],0 toggle, PlaySound, ShowSellGUI/ShowBuyGUI: = Mac CSWGuiCreateItem::OnControlXButton (77B same callees). GOG CreateItem label rotation
+0x005c61f0	0x008d5e20	label_suspect	[a] fp identical (462/ret4); 008d5ed5 PUSH 0x30c new CSWSItem + CopyItem, credits -= buy value: = Mac CSWGuiCreateItem::BuyItem (calls GetItemBuyValue). GOG label rotation
+0x005ca130	0x008d9d60	label_suspect	[a] fp identical (108/ret4); 008d9d6c CMP [EAX+0x33f8],0 toggle + ShowSellGUI/ShowBuyGUI (GOG 0x5cb540/0x5cb770): = CSWGuiCreateMedicalItem::OnControlXButton
+0x005cf920	0x008df550	verified	[a] fp identical (93/ret4); 008df56f MOV EAX,[EDX+0x4340]; callees PlayGuiSound 0x4122a0, GetInGameGui 0x73f750; no body contradiction to SetDescription
+0x005f0340	0x00901590	verified	[c] 0090159c MOV ECX,[EAX+0x1368]; fp callee 0x4122a0 PlayGuiSound (=GOG 0x910720); size 274 retn 4
+0x005f42f0	0x00914e70	verified	[a] fp identical (203/ret4); 00914eb8 PUSH 0x1c08 alloc + CSWGuiFeatsCharGen ctor 0x909e00 + AddPanel 0x410530; fits OnSelectFeatsButton
+0x005fae20	0x0090bf90	verified	[a] fp identical (395/ret4); 0090c0b0 MOV AL,[EDX+0x1bde]; callee 0x733780 CExoString dtor (GOG 0x605890); paired with AddChosenFeat 0x90c120 neighbour
+0x005fafb0	0x0090c120	verified	[a] fp identical (271/ret4); 0090c16a MOV [ECX+0x1bde],AL; 0090c1fb CALL 0x0090c120 self-call = GOG self-callee 0x5fafb0
+0x005fd330	0x0090e440	verified	[c] 0090e4c2 PUSH 0x41a3d0 CSWGuiButton::Destructor (GOG 0x4ce630); callee 0x418640 CSWGuiControl::Destructor; size 974
+0x00608260	0x00736130	likely	[a] fp identical (125/ret0); 00736158 PUSH 0x20 alloc then ctor 0x73b720 (GOG 0x60dda0); thin ctor, no named callee anchor
+0x00615ec0	0x0072f110	verified	[a] fp identical (492/ret4, disp 0x1a0/0x408/0x40c); 0072f113 SUB ESP,0x78; callee 0x732e00 (GOG 0x619a00) mouse state; mac_contra not body-level
+0x0061a300	0x007109b0	verified	[a] fp identical (94/ret0); 007109dc IMUL EDX,EDX,0x11 + AND 0x80000003: 4-slot 17-byte rotating buffer = GetResRefStr
+0x0062adc0	0x00720e30	verified	[c] 00720e70 PUSH 0x809 (GOG imm 0x809); callees 0x733570/0x733780 CExoString ctor/dtor (=GOG 0x605680/0x605890); size 386
+0x0062be80	0x00721ef0	verified	[c] 00721f37 PUSH 0x809; 007220b5 AND [EBP-0x64],0xfffffffe; CExoString callees 0x733570/0x733780; size 706 retn 24
+0x00630410	0x007269c0	verified	[a] fp identical (142/ret8); 007269f0 AND EDX,0xffffff; hash % [this+0xc] = GetTableIndex
+0x00645160	0x0044b210	label_suspect	[a] fp identical (89/ret0); 0044b23f CALL 0x436200 (Vector::operator* GOG 0x419020) with 1.0/s, copy if s==1: = Vector::operator/(float), not ExecuteCode_5
+0x00648370	0x006fa580	verified	[a] fp identical (3646/ret12/938 insn); 006fa583 SUB ESP,0x2c0; callees GetModule 0x51bd90, GetArea 0x557ef0, ComputeHeight 0x51ca40
+0x006509e0	0x00520fc0	verified	[b] 00520fcf PUSH 0x992ef0 'BodyBagId'; CALL 0x00718c00 ReadFieldDWORD; PositionX/Y/Z via 0x00718d00; 147B RET 8
+0x00713490	0x00650d40	verified	[b] exact fp twin 158B; 00650da8 PUSH 0xf4240; CALL [0x00986150] QPC; CALL 0x00650de0 (26B = GOG 0x713530 freq wrapper)
+0x00714000	0x006518b0	verified	[a] fp identical (1366/ret36/414 insn, disp 0xbc x10); 006518b3 SUB ESP,0x15c; caller 0x54b650 TestSafeLocationPoint
+0x007d5c70	0x0063f550	verified	[c] 00640bcd CALL 0x0083ea60 CExoArrayList<uint32>::Add; callee 0x6f2a30 IsForceUserClass; 17 shared callees, size 8327 retn 16
+0x007f2b50	0x006f2fb0	verified	[b] exact fp twin 164B; 4 Clear* calls 006f2fe0..006f2ff8; 006f3006 MOV [EAX+0xa4],ECX; callee 0x72f5f0 78B = ~CExoLinkedListInternal 78B
+0x0080c8b0	0x00514a20	verified	[c] 00514a23 SUB ESP,0x74 (GOG imm 0x74); 3x3 float transpose, disp 20/20, 0 callees, size 354
+0x0081c950	0x0042a220	verified	[b] exact fp twin 428B RET 8; 0042a260 PUSH 0x8764 (GL_BUFFER_SIZE) to glGetBufferParameteriv; disp 0x2c/0x50/0x5c/0x68 = GOG
+0x00823860	0x00431140	verified	[a] fp identical (737/ret0, 45 imm); 004312ca PUSH 0x8892 GL_ARRAY_BUFFER, imm 0x1406 GL_FLOAT, cmp 0x800: VTC quad render path
+0x00829060	0x004369a0	label_suspect	[b] exact fp twin; 004369b5 PUSH 0x8892, ADD EDX,0x84c0, callees=AurMultiTexture/VBOARBAvailable: VBO+multitex array setup; Mac FrameBufferMod* use 0x302/0x303 blend, absent
+0x008551e0	0x00462c50	verified	[c] 00462c65 MOV EAX,[EDX+0x10c] (GOG disp 0x10c); size 115 retn 32, disp/imm identical
+0x00867dc0	0x00475e50	label_suspect	[b] exact fp twin; 00475e8a CALL 0x0049b840 (size 75 = GOG CExoArrayList::DelIndex 0x903df0); body removes an array entry, not a getter
+0x008689c0	0x00476ae0	verified	[b] exact fp twin 56B; 00476b0e CALL [0x00986418] = ChangeDisplaySettingsA(NULL,0) per .c; 00476aff CMP [ECX+0xa8],0
+0x008af6e0	0x004f3b40	verified	[c] 004f3d0a CMP [EAX+0x1cc],0x0; size 8781 retn 0, full disp/imm identical, 19 callees each; name fit not contradicted
+0x008b6ed0	0x004fb2d0	verified	[b] exact fp twin (1384B, 13 disp/12 imm sets equal); 004fb3aa PUSH 0x74 + CALL 0x00919723 operator new; [ECX+0x1c8] x16 = GOG; name not contradicted
+0x008c1fb0	0x00480e40	verified	[c] 00480e4c CMP [EAX+0x208],0x0; disp 41/41 (+0x204/+0x208) and imm 13/13 identical, size 574
+0x008ce5e0	0x0048e090	verified	[b] exact fp twin 148B; 0048e0ff CALL 0x0048e090 self-recursion = GOG self-callee; 0048e0ab CALL 0x0050c380 (94B = List::Insert)
+0x008cfbd0	0x004792c0	verified	[c] 004792ca PUSH 0xba2 (GL_VIEWPORT save for layer); size 301, 18/18 imm identical
+0x008d0ae0	0x0047a1d0	likely	[b] 31B setter stub; 0047a1dd MOV [EAX+0xc],ECX, 0047a1e6 MOV [EDX+0x10],EAX = GOG disp; neighbour 0x0047a1a0 is the getter
+0x008d7860	0x00482ce0	verified	[b] exact fp twin 340B; 00482ce3 SUB ESP,0x114 = GOG imm 0x114; 7 CRT callees aligned (new, cookie); name not contradicted
+0x008d8010	0x00483490	verified	[c] 004834f3 PUSH 0x98c590 "%s.tga" (= GOG 0x9a4f00 '%s.tga'); 00483493 SUB ESP,0x10c; size 277
+0x008f5380	0x004db1f0	verified	[b] exact fp twin 234B; .c glBlendFunc(tbl[*(+0x28)],tbl[*(+0x34)]), glDepthMask, glAlphaFunc; 004db213 MOV ECX,[EAX+0x28]
+0x008f6ab0	0x004dc920	verified	[b] exact fp twin 238B RET 20; 004dc96b PUSH 0x34, 004dc9e2 MOV [ECX+0x8],0x209; CALL 0x0050c380 (94B = GOG List::Insert 0x8fdd20)
+0x00901f50	0x0050a630	verified	[c] 0050a9fb ADD ECX,0xb8; 0050a80e ADD ECX,0xac (GOG imm 0xac/0xb8); disp 32/32 imm 21/21, size 1048, 6 callees
+0x009169f0	0x00418750	verified	[c] 00418760 MOV ECX,[EAX+0x48]; fp callee 0x4122a0 PlayGuiSound (=GOG 0x910720); size 91 retn 4
+0x00925936	0x0091eb8b	verified	[b] correction from 0x008103c0 (328B, no LCG); 0091eb93 IMUL ECX,ECX,0x343fd + ADD 0x269ec3; fp 34B identical to GOG rand, Steam fp names it _rand
+0x00943fe0	0x00945990	verified	[c] 00945a08 AND EDX,0x7f; 00945a20 AND ECX,0x80 (RLE packet count/flag); size 840, disp/imm identical

@@ -429,3 +429,13 @@ Not errors in the audited windows:
 - ActionIconToMouseCursor: 4 vs RET 8.
 
 Steam ships its own RET n.
+
+**B17 (fingerprint twins, 10-28).** 7 label_suspect rows, none shipped (full list `B17/gog_label_suspects.tsv`):
+- CSWGuiCreateItem / CSWGuiCreateMedicalItem labels are rotated. GOG 0x5C5330 `InitializeStoreType` and 0x5CA130
+  `DeleteItemEntries` have the body of Mac `OnControlXButton` (toggle +0x3ed8 / +0x33f8, ShowSellGUI/ShowBuyGUI).
+  GOG 0x5C61F0 `UpdateCreateFilters` has the body of Mac `BuyItem` (`PUSH 0x30c` new item + CopyItem). GOG's own
+  `OnControlXButton` 0x5C54B0 (3391 B, 'base_skill') is mislabelled too; its real name is unchecked.
+- 0x5977A0 `CSWGuiBlackenedLabel::Destructor` = CSWGuiLabel::~CSWGuiLabel (writes the CSWGuiLabel vftable).
+- 0x645160 `CVirtualMachineInternal::ExecuteCode_5` = Vector::operator/(float) (1/s, then operator*).
+- 0x829060 `GLRender::FrameBufferModificationsATI` = VBO + multitexture array setup; right name unknown.
+- 0x867DC0 `Global::GetResource` removes an array entry (calls CExoArrayList::DelIndex); right name unknown.
