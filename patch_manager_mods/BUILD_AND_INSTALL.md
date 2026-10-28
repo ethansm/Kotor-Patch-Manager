@@ -163,6 +163,8 @@ Rollback restores DLLs only. It restores `patch_config.toml` and `kpm_install_st
 | (g) KPatchLauncher for a hot-swappable change | Peer DLLs reverted, config rewritten, other sessions' work lost. | Use `kpm_hotswap.py`. KPatchLauncher only for section 4's full-reinstall cases. |
 | (h) Guessing the live DLL path | Wrong file replaced or backed up. | Read `dll = "patches/<id>.dll"` from the live `patch_config.toml`; the script does this. |
 | (i) Hand md5 loops, or running `run_tests.py` before the gate | Wasted minutes, stale conclusions. | `kpm_status.py` has the md5s; the gate already runs the tests. |
+| (j) Trusting a LIVE-OTHER verdict after a peer's full reinstall (10-27) | `LIVE-OTHER` (mtime-based: live DLL newer than the kpatch) although the live DLL is an OLDER build that a peer's KPatchLauncher/`kpm_reinstall.py` wrote from a stale kpatch; `--apply` refuses. | Prove the content: `strings patches/<id>.dll` shows the old version / lacks a new log string. Then rebuild on purpose: `touch` the KPM source (verdict REBUILD), `--prepare`, gate, `--apply`. Check `pgrep -af 'kpm_hotswap\|kpm_reinstall\|KPatchLauncher'` first: no peer installer running. |
+| (k) `check_raw_addresses.py --write-baseline` to clear a raw-address gate FAIL | Rewrites the whole allowlist: strips every `# Opus-reviewed ...` evidence comment, drops stale entries, reorders other sessions' sections. | Hand-add only the reviewed `[files."<path>"]` section with an evidence comment (`query_ghidra.py address` + dump asm per address). If a rewrite already happened, restore with `git show HEAD:tests/static/raw_addresses.toml > tests/static/raw_addresses.toml` (`git checkout --` is permission-blocked). |
 
 ## 10. Time budget
 

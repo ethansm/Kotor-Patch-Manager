@@ -211,3 +211,18 @@ Holster session ("holster-toggle-key-delay") updated `holster_editor_src/common_
 4. `dragging` is also cleared when a slider drag ends; the thumb-drag code is skipped while a slider is held.
 ### Still open
 Play row (selftest=1 slider rows: press-jump, drag, snap to 5, 60 rejected, disabled no grab, Esc / Back during a drag, scroll page with `selftest=2`), art look at the real track size, thumb width (10 px at the reference size, not scaled).
+
+## 19 Provider rule: detach your own pooled fills in destroy() (crash 10-26 00:51, closed 10-28)
+- **Rule:** a provider that `setFill`/`setButtonFill`/`sliderArtFill`s a pooled image (`guikit::imageFor`/`imageForRetry`, SliderArt,
+  ResetIcon) onto a control mod-config frees (`AddLabel`/`AddButton`, not MUI_NOFREE) must call `guikit::detachPooledFills(ctl)` on each such
+  control in its `destroy` callback. The image pool is one per DLL (inline static), so mod-config's own `detachPooledFills` in `freeCtl`
+  cannot see a provider's images (`pooled=0` in its log).
+- **Why:** the label dtor 0x7510B0 runs the border dtor 0x414C60, which deletes the images at border +0x6C, +0x70 and +0x74 (ledger
+  `ghidra_knowledge/rea_findings/20261028_label-dtor-crash.tsv`). The first label sharing a pooled image deletes it; a later one calls the
+  freed object (page fault in the border dtor, backtrace via mod-config `freeCtl`).
+- **Order this relies on:** mod-config `McDestroy` = unlink (Control() now answers nullptr) -> each entry's `destroy()` -> free. So cache the
+  control pointers while the page is live (`Control()` is null by destroy time); the controls are still allocated during `destroy()`.
+- **Fixed:** holster-editor 0.7.3-dev (`3dbbabb4`, `artCtl[]` snapshot in `applyArt`, play MC-PF3 PASS: `DTOR art detached=44 of 85`),
+  enemy-effects-strip 0.4.11-dev (`b93d25cb`, slider groove/fill/thumb, play MC-PF4 PASS: `DESTROY slider art detached=6`).
+- **Audited clean 10-27:** combat-hotbar (PreviewCanvas `g_cv`/`g_mf` restore `origFill` before release), companion-selfheal (fills only its
+  own HUD widgets), grass/fog/shadow/frame-pacing/companion-ai (declarative rows only; mod-config draws them with its own pool).
