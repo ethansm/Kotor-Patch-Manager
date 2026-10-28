@@ -1175,6 +1175,24 @@ class CancelParseTests(unittest.TestCase):
         rc, out = run_log([cancel_after(1, 0, 1, 0, 1)])
         self.assertTrue(out[0].startswith("QUEUE-HUD lines=1 parsed=1 skipped=0 cmds=0"))
 
+    def test_cancel_one_parses_and_bad_forms_are_skipped(self):   # QH27; goldens from queue_hud_logic_test.cpp testCancelOne
+        good = ["CANCEL_ONE m=1 j=2 kind=buffered cmd=17 act=removed",
+                "CANCEL_ONE m=2 j=0 kind=round cmd=- act=refused why=guard",
+                "CANCEL_ONE m=1 j=0 kind=active cmd=4 act=removed",
+                "DROP cmd=17 m=1 why=cancel_one n=1"]
+        recs, skipped = parse(good)
+        self.assertEqual(skipped, [])
+        self.assertEqual([r["kw"] for r in recs], ["CANCEL_ONE"] * 3 + ["DROP"])
+        self.assertEqual(recs[1]["f"]["why"], "guard")
+        self.assertEqual([r["cmd"] for r in recs], [17, None, 4, 17])   # cmd=- (a round node of the engine's) carries no number
+        bad = ["CANCEL_ONE m=1 j=2 kind=item cmd=17 act=removed", "CANCEL_ONE m=1 j=2 kind=round cmd=x act=removed",
+               "CANCEL_ONE m=1 j=2 kind=round cmd=- act=maybe", "CANCEL_ONE m=1 kind=round cmd=- act=removed"]
+        recs, skipped = parse(bad)
+        self.assertEqual(recs, [])
+        self.assertEqual([s[2] for s in skipped], ["malformed kind=item", "malformed cmd=x", "malformed act=maybe", "missing j"])
+        rc, out = run_log(good)
+        self.assertTrue(out[0].startswith("QUEUE-HUD lines=4 parsed=4 skipped=0"))
+
     def test_bad_cancel_forms_are_skipped(self):
         bad = ["CANCEL m=0 act=maybe n=2", "CANCEL m=0 act=click", "CANCEL m=0 n=2"]
         recs, skipped = parse(bad)

@@ -1,4 +1,4 @@
-// Queue HUD 0.4.10-dev (CS10 strip slot, CS11 kit art, slim strip) (Steam Aspyr build 6A522E71...). A GREEN copy of the vanilla combat action-queue panel (up to 4 icons), drawn
+// Queue HUD 0.4.11-dev (CS10 strip slot, CS11 kit art, slim strip) (Steam Aspyr build 6A522E71...). A GREEN copy of the vanilla combat action-queue panel (up to 4 icons), drawn
 // OUT of combat so a command given while paused (a use-item / cast-spell that waits for unpause) is visible.
 // Research: patch_manager_mods/30_queue_hud_evidence/RE.md (0x74DC80 panel filler, 0x74E0B0 icon resolver); logic: QueueHudLogic.h.
 //
@@ -256,6 +256,7 @@ struct Snapshot {
     qh::RNode rn[qh::kMaxRound]; int nrn = 0;
     qh::RNode cur; bool haveCur = false;
     bool paused = false, waiting = false;
+    bool activeShown = false;   // QH27: gatherFor appended the active buffered action at entry engineNe (qh::slotKind)
     uint32_t staleSince = 0;   // RL20: staleCurSince of the owning buffer (0 = unknown / in combat), so a stale flagless cur node does not count as the engine holding an action
 };
 bool engineHoldsAction(const Snapshot& s);   // defined with the hand-off code below
@@ -307,6 +308,7 @@ bool gatherFor(uintptr_t cr, Snapshot& s) {
         // The active buffered action is a slot source too: a quickbar press wipes the engine queue, so without it the panel empties until our restore.
         // Appended after the engine entries (buildSlots gives the engine's cur node to the first qualifying entry); not counted in nBuffered.
         if (qh::activeNeedsSlot(ib.active, engineHoldsAction(s)) && s.ne < qh::kMaxEntries) {
+            s.activeShown = true;
             if (ib.activeAction.kind == qh::ActionKind::Spell) {
                 s.e[s.ne].type = qh::T_CAST_SPELL;
                 s.e[s.ne].param0 = ib.activeAction.spellId;
@@ -369,9 +371,9 @@ void heal() { embtex::heal(); }   // every frame (GL reset + missing rebuild, 20
 // ---- drawing ----
 // Kit look: the kit_frame image (white, alpha = style frameA) with the icon inset 15%; a missing frame texture (or kit = 0) falls back to the
 // 0.2.0 flat bg + border rects (logged once).
-void drawSlot(int x, int y, int w, int h, const qh::Style& st, void* img) {
+void drawSlot(int x, int y, int w, int h, const qh::Style& st, void* img, bool hi = false) {   // hi: kit_frame_hi (QH27 hover on a removable strip icon)
     static const float white[3] = { 1.0f, 1.0f, 1.0f };
-    void* frame = g_cfg.kit ? tex::image(tex::Frame) : nullptr;
+    void* frame = g_cfg.kit ? tex::image(hi ? tex::FrameHi : tex::Frame) : nullptr;
     qh::Rect ir{ x, y, w, h };
     if (frame) {
         gui2d::drawImage(frame, x, y, w, h, 0, white, st.frameA);
@@ -404,6 +406,19 @@ struct CW {
 CW g_cw[3];
 struct CWant { bool show = false; qh::Rect r{ 0, 0, 0, 0 }; };
 CWant g_want[3];             // set by the draw callback each frame, applied at its end
+// QH27: one invisible (alpha 0) LBL_QUEUE1 clone per companion over its strip row, shown while the row has a removable icon, so a
+// per-icon click never reaches the world (the leader would walk there). Same build / visible / click-through rules as the Cancel labels.
+struct Eat { uintptr_t c = 0; int vis = -1; qh::Rect r{ 0, 0, 0, 0 }; bool rectSet = false; };
+Eat g_eat[3];
+void eatShow(Eat& e, bool on) {
+    if (!e.c) return;
+    const int v = on ? 1 : 0;
+    if (e.vis == v) return;
+    guikit::setClickable(e.c, on);
+    guikit::setVisible(e.c, on);
+    e.vis = v;
+}
+void eatHideAll() { for (Eat& e : g_eat) eatShow(e, false); }
 guikit::ClickEdge g_lmb;
 struct CPending { bool on = false; int n = 0; int had3D = -1; DWORD at = 0; bool late = false; };   // RQ12: had3D = 0x3D (FollowLeader) entries before the Cancel, -1 unreadable
 CPending g_cpend[3];
@@ -557,6 +572,7 @@ void KPATCH_CALL onHudBuild(const K2HudContext* ctx, void*) {
         return;
     }
     for (CW& w : g_cw) w = CW();
+    for (Eat& e : g_eat) e = Eat();
     for (CWant& d : g_want) d = CWant();
     for (CPending& p : g_cpend) p = CPending();
     g_lmb = guikit::ClickEdge();
@@ -570,6 +586,13 @@ void KPATCH_CALL onHudBuild(const K2HudContext* ctx, void*) {
     }
     KP_LOGV(chCancel, n == 3 ? KPLOG_INFO : KPLOG_WARN, "BUILD panel=%08x cancel labels n=%d/3 why=%d,%d,%d btn=%d", (unsigned)panel, n, why[0], why[1], why[2], g_cw[0].btn ? 1 : 0);
     visLog("build", n == 3, n == 3 ? "ok" : "labels-missing", qh::Rect{ 0, 0, 0, 0 });
+    int ne = 0, ewhy[3] = {};
+    for (int k = 1; k <= 2; ++k) {
+        g_eat[k].c = makeCancelLabel(panel, "LBL_QUEUE1", &ewhy[k]);
+        if (g_eat[k].c && !guikit::setAlpha(g_eat[k].c, 0.0f)) g_eat[k].c = 0;   // never shown unless it is invisible (stays hidden + click-through)
+        if (g_eat[k].c) ++ne;
+    }
+    KP_LOGV(chCancel, ne == 2 ? KPLOG_INFO : KPLOG_WARN, "BUILD strip click labels n=%d/2 why=%d,%d", ne, ewhy[1], ewhy[2]);
 }
 
 void onHudConnect(bool ok, const char* why) { QLOGV(chMain, ok ? KPLOG_INFO : KPLOG_WARN, "hud-host: %s (%s)", ok ? "connected" : "NOT connected (no Cancel controls)", why ? why : ""); }
@@ -765,6 +788,11 @@ struct StripDraw { qh::Rect r[qh::kMaxSlots]; qh::Style st[qh::kMaxSlots]; char 
 // Last good strip per party index k (1-2): repainted for kPanelHoldMs on an empty queue, with its edge signature and type text so the log edge does not flip.
 struct HeldStrip { StripDraw d; DWORD tick = 0; uintptr_t creature = 0; uint32_t sig = 0; char types[48] = {}; };
 HeldStrip g_heldStrip[3];
+// QH27: what each drawn strip icon of the last HUD frame stands for. Strips draw in HUD_DRAW, clicks are handled in FRAME_BEGIN (next frame).
+struct StripPick { qh::SlotKind kind = qh::SK_ENGINE; int bufIdx = -1; uint32_t cmd = 0; uint32_t node = 0; qh::QueuedAction drawn; };
+struct StripHit { qh::Rect r[qh::kMaxSlots]; StripPick p[qh::kMaxSlots]; int n = 0; uintptr_t creature = 0; };
+StripHit g_stripHit[3];
+int g_stripHover[3] = { -1, -1, -1 };
 
 void drawStrips(uintptr_t hud, DWORD now, bool inMenu) {
     const K2AddrTable* T = k2addr::get();
@@ -814,6 +842,8 @@ void drawStrips(uintptr_t hud, DWORD now, bool inMenu) {
         StripDraw& sd = d[k];
         uint32_t sig = static_cast<uint32_t>(n) * 31u + (s.waiting ? 7u : 0u);
         int len = 0;
+        StripPick picks[qh::kMaxSlots];
+        const qh::ActionBuffer& ib = g_itemQueue[k];
         for (int j = 0; j < n && sd.n < cap; ++j) {
             const qh::Slot& sl = slots[j];
             uintptr_t node = 0;
@@ -822,6 +852,11 @@ void drawStrips(uintptr_t hud, DWORD now, bool inMenu) {
             char rr[17] = {};
             if (!resolveIcon(hud, s.round, s.e[sl.entry], s.eData[sl.entry], node, sl.key, now, rr)) continue;
             memcpy(sd.rr[sd.n], rr, 17);
+            StripPick& pk = picks[sd.n];
+            pk.kind = qh::slotKind(sl, s.engineNe, s.activeShown, &pk.bufIdx);
+            if (pk.kind == qh::SK_ACTIVE) { pk.drawn = ib.activeAction; pk.cmd = pk.drawn.cmdId; }
+            else if (pk.kind == qh::SK_BUFFERED) { if (pk.bufIdx >= 0 && pk.bufIdx < ib.count) { pk.drawn = ib.queue[pk.bufIdx]; pk.cmd = pk.drawn.cmdId; } else pk.kind = qh::SK_ENGINE; }
+            else if (pk.kind == qh::SK_ROUND) pk.node = static_cast<uint32_t>(node);
             sd.st[sd.n] = qh::slotStyle(g_cfg, sd.n, s.waiting);
             ++sd.n;
             sig = sig * 131u + static_cast<uint32_t>(s.e[sl.entry].type) + (static_cast<uint32_t>(sl.node + 3) << 8);
@@ -841,6 +876,9 @@ void drawStrips(uintptr_t hud, DWORD now, bool inMenu) {
         sd.n = qh::stripRects(card, vit, sd.n, g_cfg, sd.r, screenW, reserve);
         if (sd.n == 0) continue;
         sd.have = true;
+        StripHit& sh = g_stripHit[k];
+        for (int j = 0; j < sd.n; ++j) { sh.r[j] = sd.r[j]; sh.p[j] = picks[j]; }
+        sh.n = sd.n; sh.creature = srv[k];
         sd.cancelSq = qh::stripIconSize(vit, g_cfg);   // the Cancel X keeps the plain strip icon size even when the head is bigger
         sigs[k] = sig * 131u + static_cast<uint32_t>(sd.r[0].x) * 7u + static_cast<uint32_t>(sd.r[0].y) * 13u + static_cast<uint32_t>(sd.r[0].w);
         hs.d = sd; hs.tick = now; hs.sig = sigs[k]; memcpy(hs.types, types[k], sizeof hs.types);   // live draw: refresh the hold
@@ -856,7 +894,7 @@ void drawStrips(uintptr_t hud, DWORD now, bool inMenu) {
             if (d[k].have) { g_want[k].r = qh::stripCancelRect(d[k].r, d[k].n, g_cfg.stripSide, screenW, d[k].cancelSq); g_want[k].show = true; }   // RL18: a strip with no room for the square is "no-room" in cwApply, not "no-queue"
     gui2d::CapGuard capGuard;
     for (int k = 1; k <= 2; ++k)
-        for (int j = 0; d[k].have && j < d[k].n; ++j) drawSlot(d[k].r[j].x, d[k].r[j].y, d[k].r[j].w, d[k].r[j].h, d[k].st[j], guikit::imageFor(d[k].rr[j]));
+        for (int j = 0; d[k].have && j < d[k].n; ++j) drawSlot(d[k].r[j].x, d[k].r[j].y, d[k].r[j].w, d[k].r[j].h, d[k].st[j], guikit::imageFor(d[k].rr[j]), j < g_stripHit[k].n && g_stripHover[k] == j && qh::slotRemovable(g_stripHit[k].p[j].kind));
 }
 
 void drawAll(const K2PsContext* ctx) {
@@ -919,6 +957,23 @@ void modeEmit(bool inMenu) {
     for (const char*& r : g_cwWhy) r = nullptr;
 }
 
+// QH27: after the strips are drawn, cover each row that has a removable icon (bounds of the whole row, gaps included); hide the rest.
+void eatApply() {
+    for (int k = 1; k <= 2; ++k) {
+        Eat& e = g_eat[k];
+        const StripHit& sh = g_stripHit[k];
+        bool any = false;
+        for (int j = 0; j < sh.n; ++j) any = any || qh::slotRemovable(sh.p[j].kind);
+        const qh::Rect b = any && g_cfg.cancel ? qh::stripBounds(sh.r, sh.n) : qh::Rect{ 0, 0, 0, 0 };
+        if (!e.c || b.w <= 0) { eatShow(e, false); continue; }
+        if (!e.rectSet || e.r.x != b.x || e.r.y != b.y || e.r.w != b.w || e.r.h != b.h) {
+            if (guikit::setRect(e.c, b.x, b.y, b.w, b.h)) { e.r = b; e.rectSet = true; }
+            else { eatShow(e, false); continue; }
+        }
+        eatShow(e, true);
+    }
+}
+
 // HUD_DRAW prio 400: the wanted Cancel rects are collected by drawLeader / drawStrips, then applied (every other path hides them).
 void KPATCH_CALL onHudDraw(const K2PsContext* ctx, void*) {
     if (!g_cfg.enabled || !ctx) return;
@@ -926,8 +981,10 @@ void KPATCH_CALL onHudDraw(const K2PsContext* ctx, void*) {
     g_modeStrip[0] = "hidden:empty";
     g_modeStrip[1] = g_modeStrip[2] = g_cfg.companions ? "hidden:empty" : "hidden:off";
     g_modeHidden[0] = g_modeHidden[1] = g_modeHidden[2] = 0;   // RL20
+    for (StripHit& h : g_stripHit) h = StripHit();   // QH27: only strips drawn live this frame are clickable (a hold repaint is an empty queue)
     drawAll(ctx);
     cwApply();
+    eatApply();
     modeEmit(ctx->inMenu != 0);
     g_modeDrew = true;
 }
@@ -2276,6 +2333,76 @@ void edgeTick(bool inMenu) {
     if (inMenu != pMenu) { traceEdge("menu", pMenu, inMenu, "hud"); pMenu = inMenu; }
 }
 
+// QH27: remove the one action behind strip icon j of member k (1-2). Buffered / active buffered: out of our buffer (found again by
+// command number, the buffer may have moved since the draw). Round node: out of the engine round list (removeRoundNodes, identity
+// re-checked against a fresh snapshot); when it was our active action or the held hand-off head, that is dropped too so neither the
+// verdict nor the hand-off re-sends it. Not a Cancel click: g_lastClickTick stays (the hand-off would drop the whole queue).
+void cancelOne(int k, int j) {
+    const StripHit& sh = g_stripHit[k];
+    if (j < 0 || j >= sh.n) return;
+    const StripPick p = sh.p[j];
+    char line[200];
+    party::Fail pwhy = party::F_None;
+    const uintptr_t tbl = party::table(&pwhy);
+    const uintptr_t m = tbl ? party::member(tbl, k) : 0;
+    const uintptr_t srv = m ? party::serverCreature(m) : 0;
+    const char* bad = nullptr;
+    if (!srv || srv != sh.creature) bad = "member_changed";
+    else if (GetTickCount() - g_capTick >= 250u) bad = "stale";
+    qh::ActionBuffer& buf = g_itemQueue[k];
+    uint32_t cmd = p.cmd;
+    if (!bad && (p.kind == qh::SK_BUFFERED || p.kind == qh::SK_ACTIVE)) {
+        const int at = qh::findBuffered(buf, p.cmd, p.kind == qh::SK_ACTIVE, p.bufIdx, p.drawn);
+        qh::QueuedAction a;
+        if (at == qh::kBufActive ? qh::dropActive(buf, &a) : qh::removeAt(buf, at, &a)) {
+            cmd = a.cmdId;
+            if (g_logOn && g_cfg.traceQueue) { qh::fmtDrop(line, sizeof line, a.cmdId, k, qh::DR_CANCEL_ONE, 1); QTRACE("%s", line); }
+        } else bad = "gone";
+    } else if (!bad && p.kind == qh::SK_ROUND) {
+        Snapshot s;
+        int i = -1;
+        if (!gatherFor(srv, s)) bad = "unreadable";
+        else for (int q = 0; q < s.nrn && i < 0; ++q) if (s.rn[q].ptr == p.node) i = q;
+        if (!bad && i < 0) bad = "gone";
+        if (!bad && removeRoundNodes(srv, s, 1u << i) != 1) bad = "guard";
+        if (!bad) {
+            const qh::RNode node = s.rn[i];
+            if (buf.active && qh::detail::nodeIsAction(buf.activeAction, node)) {
+                qh::QueuedAction a;
+                qh::dropActive(buf, &a);
+                cmd = a.cmdId;
+                if (g_logOn && g_cfg.traceQueue) { qh::fmtDrop(line, sizeof line, a.cmdId, k, qh::DR_CANCEL_ONE, 1); QTRACE("%s", line); }
+            }
+            Handoff& h = g_handoff[k];
+            if (h.pending && h.headValid && qh::nodeIsHead(node, h.head)) {
+                if (!cmd) cmd = h.head.cmdId;
+                if (g_logOn && g_cfg.traceQueue) { qh::fmtDrop(line, sizeof line, h.head.cmdId, k, qh::DR_CANCEL_ONE, 1); QTRACE("%s", line); }
+                h.headValid = false; h.headHeld = false;
+            }
+        }
+    } else if (!bad) bad = "engine_owned";   // the click pass never offers these; kept so a future caller cannot remove one by accident
+    qh::fmtCancelOne(line, sizeof line, k, j, p.kind, cmd, bad == nullptr, bad);
+    QLOGV(chCancel, bad ? KPLOG_WARN : KPLOG_INFO, "%s", line);
+    if (!bad) { g_heldStrip[k] = HeldStrip(); g_lastOurs[k].tag = "cancel_one"; g_lastOurs[k].tick = GetTickCount(); }   // RL17: no hold repaint of the removed icon
+}
+
+// QH27 click pass (every FRAME_BEGIN): hover + LMB on a removable companion strip icon. Works in combat too (strips show there with
+// show_in_combat=1); off with cancel=0, in menus and once the HUD capture is stale (the labels then hide so they never swallow clicks).
+void stripClickTick(bool ledge, bool inMenu) {
+    const bool live = g_cfg.cancel && g_cfg.companions && !inMenu && GetTickCount() - g_capTick < 250u;
+    if (!live) { eatHideAll(); g_stripHover[1] = g_stripHover[2] = -1; return; }
+    int cx = 0, cy = 0;
+    const bool xy = guikit::cursorEngine(&cx, &cy);
+    for (int k = 1; k <= 2; ++k) {
+        const StripHit& sh = g_stripHit[k];
+        int j = xy ? qh::stripHit(sh.r, sh.n, cx, cy) : -1;
+        if (j >= 0 && !qh::slotRemovable(sh.p[j].kind)) j = -1;
+        if (j >= 0 && j != g_stripHover[k]) guikit::playHoverSound();
+        g_stripHover[k] = j;
+        if (ledge && j >= 0) cancelOne(k, j);
+    }
+}
+
 // RQ11: does a left press at engine px (x,y) land on a Cancel control (ours, or the vanilla combat Cancel / clear-one boxes)? Only these count as the player's cancel.
 static bool cancelClickAt(int x, int y) {
     qh::Rect r[6]; int n = 0;
@@ -2346,6 +2473,7 @@ void KPATCH_CALL onFrameBegin(const K2PsContext* ctx, void*) {
             if (ledge && on >= 0) doCancel(on);
         }
     }
+    stripClickTick(ledge, inMenu);
 
     if (inMenu && !g_modeDrew) { g_modeStrip[0] = g_modeStrip[1] = g_modeStrip[2] = "hidden:menu"; g_modeHidden[0] = g_modeHidden[1] = g_modeHidden[2] = 0; modeEmit(true); }   // HUD_DRAW does not run in a menu frame; one MODE pass per frame either way
     g_modeDrew = false;
@@ -2492,7 +2620,7 @@ void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
     loadIni();
     g_logOn = g_cfg.log;
-    KP_LOG(chMain, "0.4.10-dev: kit=%d frame_alpha=%.2f cancel=%d enabled=%d waiting_dim=%d border_px=%d log=%d companions=%d strip_icon_px=%d strip_side=%s strip_max=%d waiting_icon_dim=%d strip_head_pct=%d", g_cfg.kit ? 1 : 0, g_cfg.frameAlpha, g_cfg.cancel ? 1 : 0, g_cfg.enabled ? 1 : 0, g_cfg.waitingDim ? 1 : 0, g_cfg.borderPx, g_cfg.log ? 1 : 0, g_cfg.companions ? 1 : 0, g_cfg.stripIconPx, g_cfg.stripSide == qh::kSideBelow ? "below" : g_cfg.stripSide == qh::kSideAbove ? "above" : "left", g_cfg.stripMax, g_cfg.waitingIconDim ? 1 : 0, g_cfg.stripHeadPct);
+    KP_LOG(chMain, "0.4.11-dev: kit=%d frame_alpha=%.2f cancel=%d enabled=%d waiting_dim=%d border_px=%d log=%d companions=%d strip_icon_px=%d strip_side=%s strip_max=%d waiting_icon_dim=%d strip_head_pct=%d", g_cfg.kit ? 1 : 0, g_cfg.frameAlpha, g_cfg.cancel ? 1 : 0, g_cfg.enabled ? 1 : 0, g_cfg.waitingDim ? 1 : 0, g_cfg.borderPx, g_cfg.log ? 1 : 0, g_cfg.companions ? 1 : 0, g_cfg.stripIconPx, g_cfg.stripSide == qh::kSideBelow ? "below" : g_cfg.stripSide == qh::kSideAbove ? "above" : "left", g_cfg.stripMax, g_cfg.waitingIconDim ? 1 : 0, g_cfg.stripHeadPct);
     if (g_iniRejected > 0) QLOGV(chMain, KPLOG_WARN, "queue_hud.ini: %d line(s) not applied (unknown key, bad value or over 255 bytes), first at line %d; those keys keep their defaults", g_iniRejected, g_iniFirstBad);
     QLOG(chMain, "pause_eaten_wait=%d dispatch_wait_flags=%d", g_cfg.pauseEatenWait ? 1 : 0, g_cfg.dispatchWaitFlags ? 1 : 0);
     if (g_cfg.spellReplayPosSeen) QLOG(chMain, "ini: spell_replay_pos is obsolete and ignored (0.4.6-dev)");

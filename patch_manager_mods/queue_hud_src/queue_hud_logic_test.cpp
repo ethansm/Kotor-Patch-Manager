@@ -2917,7 +2917,117 @@ void testCancelStyle() {
     for (int k = 0; k < 3; ++k) KT_CHECK(B.hoverTint[k] > B.tint[k]);
 }
 
+// QH27: per-icon cancel on the companion strips.
+void testCancelOne() {
+    KT_CHECK_EQ(whyName(DR_CANCEL_ONE), "cancel_one");
+    // slotKind: engine entries 0..1, ours from 2; with the active shown, entry 2 = active, 3.. = queue[0..)
+    int bi = 99;
+    KT_CHECK_EQ((int)slotKind(Slot{ 0, NODE_NONE, 1 }, 2, false, &bi), (int)SK_ENGINE); KT_CHECK_EQ(bi, -1);
+    KT_CHECK_EQ((int)slotKind(Slot{ 0, NODE_CUR, 1 }, 2, false, &bi), (int)SK_CUR);
+    KT_CHECK_EQ((int)slotKind(Slot{ 1, 0, 1 }, 2, false, &bi), (int)SK_ROUND);
+    KT_CHECK_EQ((int)slotKind(Slot{ 1, 3, 1 }, 2, true, &bi), (int)SK_ROUND); KT_CHECK_EQ(bi, -1);
+    KT_CHECK_EQ((int)slotKind(Slot{ 2, NODE_NONE, 1 }, 2, false, &bi), (int)SK_BUFFERED); KT_CHECK_EQ(bi, 0);
+    KT_CHECK_EQ((int)slotKind(Slot{ 2, NODE_NONE, 1 }, 2, true, &bi), (int)SK_ACTIVE); KT_CHECK_EQ(bi, -1);
+    KT_CHECK_EQ((int)slotKind(Slot{ 4, NODE_NONE, 1 }, 2, true, &bi), (int)SK_BUFFERED); KT_CHECK_EQ(bi, 1);
+    KT_CHECK_EQ((int)slotKind(Slot{ 0, NODE_CUR, 1 }, 0, false, &bi), (int)SK_BUFFERED); KT_CHECK_EQ(bi, 0);   // cur on our first entry: the entry wins
+    KT_CHECK_EQ((int)slotKind(Slot{ 0, NODE_CUR, 1 }, 0, true, nullptr), (int)SK_ACTIVE);
+    KT_CHECK(slotRemovable(SK_ROUND) && slotRemovable(SK_ACTIVE) && slotRemovable(SK_BUFFERED));
+    KT_CHECK(!slotRemovable(SK_ENGINE) && !slotRemovable(SK_CUR));
+    KT_CHECK_EQ(slotKindName(SK_ENGINE), "engine"); KT_CHECK_EQ(slotKindName(SK_BUFFERED), "buffered");
+    // real buildSlots output: 0x0F engine entry with cur, then two of ours
+    {
+        const QEntry e[3] = { E(T_CAST_SPELL, 5), E(T_USE_ITEM, 7), E(T_CAST_SPELL, 9) };
+        const RNode cur = N(9, 0x100, 5);
+        Slot sl[kMaxSlots];
+        const int n = buildSlots(e, 3, nullptr, 0, &cur, sl);
+        KT_CHECK_EQ(n, 3);
+        KT_CHECK_EQ((int)slotKind(sl[0], 1, false, &bi), (int)SK_CUR);
+        KT_CHECK_EQ((int)slotKind(sl[1], 1, false, &bi), (int)SK_BUFFERED); KT_CHECK_EQ(bi, 0);
+        KT_CHECK_EQ((int)slotKind(sl[2], 1, false, &bi), (int)SK_BUFFERED); KT_CHECK_EQ(bi, 1);
+    }
+    // stripHit / stripBounds: head right, later icons left (stripRects order), 2 px gaps hit nothing
+    {
+        const Rect r[3] = { { 100, 10, 24, 24 }, { 78, 14, 20, 20 }, { 56, 14, 20, 20 } };
+        KT_CHECK_EQ(stripHit(r, 3, 100, 10), 0); KT_CHECK_EQ(stripHit(r, 3, 123, 33), 0);
+        KT_CHECK_EQ(stripHit(r, 3, 124, 20), -1); KT_CHECK_EQ(stripHit(r, 3, 98, 20), -1);   // half-open right edge, gap
+        KT_CHECK_EQ(stripHit(r, 3, 97, 20), 1); KT_CHECK_EQ(stripHit(r, 3, 56, 14), 2);
+        KT_CHECK_EQ(stripHit(r, 3, 60, 13), -1); KT_CHECK_EQ(stripHit(r, 2, 60, 20), -1);   // above icon 2; n limits the search
+        KT_CHECK_EQ(stripHit(nullptr, 3, 100, 10), -1);
+        const Rect z[1] = { { 5, 5, 0, 10 } };
+        KT_CHECK_EQ(stripHit(z, 1, 5, 5), -1);
+        const Rect b = stripBounds(r, 3);
+        KT_CHECK_EQ(b.x, 56); KT_CHECK_EQ(b.y, 10); KT_CHECK_EQ(b.w, 68); KT_CHECK_EQ(b.h, 24);
+        const Rect e0 = stripBounds(r, 0); KT_CHECK_EQ(e0.w, 0); KT_CHECK_EQ(e0.h, 0);
+        const Rect e1 = stripBounds(z, 1); KT_CHECK_EQ(e1.w, 0);
+    }
+    // removeAt keeps order and the active action
+    auto act = [](uint32_t cmd, uint32_t item) { QueuedAction a; a.kind = ActionKind::Item; a.clientItem = item; a.cmdId = cmd; return a; };
+    {
+        ActionBuffer b;
+        b.push(act(1, 0x11)); b.push(act(2, 0x22)); b.push(act(3, 0x33));
+        b.active = true; b.activeAction = act(9, 0x99); b.eatenReInjects = 2;
+        QueuedAction out;
+        KT_CHECK(!removeAt(b, 3)); KT_CHECK(!removeAt(b, -1)); KT_CHECK_EQ(b.count, 3);
+        KT_CHECK(removeAt(b, 1, &out)); KT_CHECK_EQ(out.cmdId, 2u);
+        KT_CHECK_EQ(b.count, 2); KT_CHECK_EQ(b.queue[0].cmdId, 1u); KT_CHECK_EQ(b.queue[1].cmdId, 3u);
+        KT_CHECK(b.active); KT_CHECK_EQ(b.activeAction.cmdId, 9u); KT_CHECK_EQ(b.eatenReInjects, 2);
+        KT_CHECK(removeAt(b, 1)); KT_CHECK(removeAt(b, 0)); KT_CHECK(b.empty()); KT_CHECK(!removeAt(b, 0));
+    }
+    // dropActive: verdict state reset, queue kept, not userCancelled
+    {
+        ActionBuffer b;
+        b.push(act(1, 0x11)); b.push(act(2, 0x22));
+        KT_CHECK(!dropActive(b));
+        b.active = true; b.activeAction = act(9, 0x99); b.eaten = true; b.reInjectPending = true; b.dispatchDeferred = true; b.totalReInjects = 4; b.staleCurSince = 7;
+        QueuedAction out;
+        KT_CHECK(dropActive(b, &out)); KT_CHECK_EQ(out.cmdId, 9u);
+        KT_CHECK(!b.active); KT_CHECK(!b.eaten); KT_CHECK(!b.reInjectPending); KT_CHECK(!b.dispatchDeferred); KT_CHECK_EQ(b.totalReInjects, 0);
+        KT_CHECK(!b.userCancelled); KT_CHECK_EQ(b.staleCurSince, 0u);
+        KT_CHECK_EQ(b.count, 2); KT_CHECK_EQ(b.queue[0].cmdId, 1u); KT_CHECK_EQ(b.queue[1].cmdId, 2u);
+        KT_CHECK_EQ((int)reInjectWhy(b, false, true), (int)RI_INACTIVE);   // never re-injected
+        KT_CHECK_EQ((int)dispatchWhy(b, 0), (int)DS_OK);                     // the next one goes as usual
+    }
+    // findBuffered: by cmd (after a shift), active, gone; cmd 0 by position + id
+    {
+        ActionBuffer b;
+        b.push(act(1, 0x11)); b.push(act(2, 0x22));
+        b.active = true; b.activeAction = act(9, 0x99);
+        const QueuedAction none;
+        KT_CHECK_EQ(findBuffered(b, 2, false, 1, none), 1);
+        KT_CHECK_EQ(findBuffered(b, 9, true, -1, none), kBufActive);
+        KT_CHECK_EQ(findBuffered(b, 9, false, 0, none), kBufActive);   // dispatched since the draw: still found
+        b.pop();
+        KT_CHECK_EQ(findBuffered(b, 2, false, 1, none), 0);          // moved up one
+        KT_CHECK_EQ(findBuffered(b, 1, false, 0, none), -1);         // gone
+        b.active = false;
+        KT_CHECK_EQ(findBuffered(b, 9, true, -1, none), -1);
+        ActionBuffer c;
+        c.push(act(0, 0x11)); c.push(act(0, 0x22));
+        KT_CHECK_EQ(findBuffered(c, 0, false, 1, act(0, 0x22)), 1);
+        KT_CHECK_EQ(findBuffered(c, 0, false, 1, act(0, 0x11)), -1);   // the slot holds something else now
+        KT_CHECK_EQ(findBuffered(c, 0, false, 2, act(0, 0x22)), -1);
+        KT_CHECK_EQ(findBuffered(c, 0, true, -1, act(0, 0x22)), -1);
+        c.active = true; c.activeAction = act(0, 0x44);
+        KT_CHECK_EQ(findBuffered(c, 0, true, -1, act(0, 0x44)), kBufActive);
+        QueuedAction sp; sp.kind = ActionKind::Spell; sp.spellId = 5;
+        KT_CHECK_EQ(findBuffered(c, 0, true, -1, sp), -1);           // kind differs
+    }
+    // log line
+    {
+        char o[200];
+        fmtCancelOne(o, sizeof o, 1, 2, SK_BUFFERED, 17, true, nullptr);
+        KT_CHECK_EQ(o, "CANCEL_ONE m=1 j=2 kind=buffered cmd=17 act=removed");
+        fmtCancelOne(o, sizeof o, 2, 0, SK_ROUND, 0, false, "guard");
+        KT_CHECK_EQ(o, "CANCEL_ONE m=2 j=0 kind=round cmd=- act=refused why=guard");
+        fmtCancelOne(o, sizeof o, -1, 3, SK_ACTIVE, 4, true, "x");
+        KT_CHECK_EQ(o, "CANCEL_ONE m=? j=3 kind=active cmd=4 act=removed why=x");
+        fmtDrop(o, sizeof o, 17, 1, DR_CANCEL_ONE, 1);
+        KT_CHECK_EQ(o, "DROP cmd=17 m=1 why=cancel_one n=1");
+    }
+}
+
 }  // namespace
+
 
 // Mutation-gate gaps: values that only a boundary or a default can tell apart.
 void testMutationGaps() {
@@ -3463,5 +3573,6 @@ int main() {
     testRL9DownHold();
     testRV3();
     testCombatColourEdges();
+    testCancelOne();
     return kt::Report("queue_hud_logic_test");
 }

@@ -26,6 +26,8 @@ these keywords are ignored; a keyword line with a missing or malformed field is 
   REINJECT|DISPATCH|CANCEL cmd=<n> [m=<k>] [why=<reason>] [attempt=<n>]   (REINJECT/DISPATCH: a why other than ok is a
     decline, except REINJECT why=eaten_paused, which is the re-inject reason and shows as REINJECT#<attempt>)
   CANCEL m=<k> act=<click|done|refused> n=<n> [drawn=<n>] [had3D=<n>] [route=<text>] [why=<free text to end of line>]   (no cmd=, no lifecycle)
+  CANCEL_ONE m=<k> j=<n> kind=<engine|cur|round|active|buffered> cmd=<n|-> act=<removed|refused> [why=<word>]   (QH27 per-icon
+    cancel on a companion strip; a removed command also logs DROP why=cancel_one; no lifecycle)
   CANCEL_AFTER m=<k> n=<n> had3D=<n> after3D=<n> late=<0|1>   (RQ12 measurement: 0x3D entries before the Cancel click and on the next frame (late=0) / ~1500 ms later (late=1); -1 = unreadable; no lifecycle)
   MODE m=<k|?> combat=<0|1|?> soft=<0|1|-> menu=<0|1> paused=<0|1> hostile=<0|1|?> party=<0|1|?> strip=<r> cancel=<r> banner=<r> why=<w>
     (one per member state change; strip/cancel: shown|hidden:combat|hidden:menu|hidden:empty|hidden:stale|hidden:off|hidden:no-room;
@@ -138,6 +140,7 @@ FIELD_RE = {
     "strip": MODE_STATE, "cancel": MODE_STATE, "banner": r"vanilla|hidden|restored|\?",
     "mode_tri": r"[01]|\?", "mode_soft": r"[01]|-", "mode_why": r"edge|ended|menu|pause|target|hostile|ui|\?",
     "cancel_act": r"click|done|refused", "cancel_why": r".*",
+    "slot_kind": r"engine|cur|round|active|buffered", "one_cmd": r"-|\d+", "one_act": r"removed|refused", "j": r"\d+",   # QH27 CANCEL_ONE
     "had3D": r"-?\d+", "after3D": r"-?\d+", "late": r"[01]", "drawn": r"-?\d+",   # RQ12 measure-first (CANCEL click / CANCEL_AFTER)
 }
 OVERRIDE = {("EDGE", "buf"): "buflist", ("VANISH", "kind"): "vanish_kind",
@@ -146,7 +149,8 @@ OVERRIDE = {("EDGE", "buf"): "buflist", ("VANISH", "kind"): "vanish_kind",
             ("BANNER", "act"): "banner_act", ("ROUND_DETACH", "act"): "detach_act",
             ("MODE", "combat"): "mode_tri", ("MODE", "hostile"): "mode_tri", ("MODE", "party"): "mode_tri",
             ("MODE", "soft"): "mode_soft", ("MODE", "why"): "mode_why",
-            ("CANCEL", "act"): "cancel_act", ("CANCEL", "why"): "cancel_why"}
+            ("CANCEL", "act"): "cancel_act", ("CANCEL", "why"): "cancel_why",
+            ("CANCEL_ONE", "kind"): "slot_kind", ("CANCEL_ONE", "cmd"): "one_cmd", ("CANCEL_ONE", "act"): "one_act"}
 REQUIRED = {
     "CMD": ("m", "cr", "kind", "id", "tgt", "dec", "fb", "engq", "buf", "paused", "combat"),
     "WAIT": ("cmd", "m", "why", "buf", "engNe", "age"),
@@ -156,6 +160,7 @@ REQUIRED = {
     "QJ": ("m", "ne", "types", "round", "cur", "aa8", "ab8", "paused", "combat", "ours"),
     "REINJECT": ("cmd",), "DISPATCH": ("cmd",), "CANCEL": ("cmd",),   # CANCEL: CANCEL_NEW when act= is present
     "CANCEL_AFTER": ("m", "n", "had3D", "after3D", "late"),
+    "CANCEL_ONE": ("m", "j", "kind", "cmd", "act"),
     "MODE": ("m", "combat", "soft", "menu", "paused", "hostile", "party", "strip", "cancel", "banner", "why"),
     "REINJECT_NO": ("cmd", "m", "why"),
     "VANISH": ("cmd", "m", "kind", "paused", "exec", "ne", "round", "cur", "aa8", "ab8", "age"),

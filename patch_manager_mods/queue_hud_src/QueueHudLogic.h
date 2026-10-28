@@ -938,7 +938,7 @@ struct FlagGate {
 // reInjectWhy(...) == RI_OK  <=>  shouldReInject(...);   dispatchWhy(...) == DS_OK  <=>  shouldDispatchNext(...).
 enum ReInjectWhy : uint8_t { RI_OK, RI_INACTIVE, RI_PENDING, RI_CANCEL, RI_MAX, RI_IN_QUEUE, RI_NO_LEADER, RI_EXECUTED, RI_NOT_CTRL, RI_DEFERRED, RI_OFF, RI_PAUSED, RI_SETTLE, RI_SPACING };
 enum DispatchWhy : uint8_t { DS_OK, DS_ACTIVE, DS_EMPTY, DS_ENGINE_BUSY, DS_CUR_BUSY, DS_NRN_BUSY, DS_FLAG_BUSY, DS_NOT_CTRL };
-enum DropWhy : uint8_t { DR_COMBAT_CLEAR, DR_NULL_CREATURE, DR_CANCEL, DR_BUFFER_FULL, DR_UNREADABLE_CREATURE, DR_REINJECT_EXHAUSTED, DR_EATEN_TIMEOUT, DR_IDENTITY_LOST, DR_REFUSED, DR_EXECUTED, DR_PRESENT_TIMEOUT, DR_PARTY_CHANGED, DR_MEMBER_DOWN };
+enum DropWhy : uint8_t { DR_COMBAT_CLEAR, DR_NULL_CREATURE, DR_CANCEL, DR_BUFFER_FULL, DR_UNREADABLE_CREATURE, DR_REINJECT_EXHAUSTED, DR_EATEN_TIMEOUT, DR_IDENTITY_LOST, DR_REFUSED, DR_EXECUTED, DR_PRESENT_TIMEOUT, DR_PARTY_CHANGED, DR_MEMBER_DOWN, DR_CANCEL_ONE };
 
 struct RiGate { bool on = false; bool pauseEatenWait = false; bool pauseReinject = true; };   // production passes on=true
 inline ReInjectWhy reInjectWhy(const ActionBuffer& buf, bool actionInQueue, bool hasFollowLeader, bool paused = false, uint32_t now = 0,
@@ -1029,6 +1029,7 @@ inline const char* whyName(DropWhy w) {
         case DR_PRESENT_TIMEOUT: return "present_timeout";
         case DR_PARTY_CHANGED: return "party_changed";
         case DR_MEMBER_DOWN: return "member_down";
+        case DR_CANCEL_ONE: return "cancel_one";
     }
     return "?";
 }
@@ -1821,5 +1822,107 @@ inline bool combatEdgeStep(bool& prev, bool readable, bool combat) {
     return edge;
 }
 
-}  // namespace qh
+// ---- QH27: per-icon cancel on the companion strips (LMB on one icon removes only that action; the Cancel X is unchanged) ----
+// What a strip slot stands for. Only ours (buffered / active buffered) and pending round nodes can be removed in v1; an engine
+// queue entry and the current round node ignore clicks (no per-entry engine removal is known).
+enum SlotKind : uint8_t { SK_ENGINE, SK_CUR, SK_ROUND, SK_ACTIVE, SK_BUFFERED };
+inline const char* slotKindName(SlotKind k) {
+    switch (k) {
+        case SK_ENGINE: return "engine";
+        case SK_CUR: return "cur";
+        case SK_ROUND: return "round";
+        case SK_ACTIVE: return "active";
+        case SK_BUFFERED: return "buffered";
+    }
+    return "?";
+}
+inline bool slotRemovable(SlotKind k) { return k == SK_ROUND || k == SK_ACTIVE || k == SK_BUFFERED; }
 
+// Entries at or past engineNe are ours (gatherFor appends them): the active buffered action first when activeShown, then queue[0..).
+// The entry decides before the node: buildSlots can give the cur node to our first entry when no engine entry qualifies.
+// *bufIndex = queue index for SK_BUFFERED, else -1.
+inline SlotKind slotKind(const Slot& s, int engineNe, bool activeShown, int* bufIndex) {
+    if (bufIndex) *bufIndex = -1;
+    if (s.entry >= engineNe) {
+        const int b = s.entry - engineNe;
+        if (activeShown && b == 0) return SK_ACTIVE;
+        if (bufIndex) *bufIndex = activeShown ? b - 1 : b;
+        return SK_BUFFERED;
+    }
+    if (s.node >= 0) return SK_ROUND;
+    return s.node == NODE_CUR ? SK_CUR : SK_ENGINE;
+}
+
+// Index of the strip icon under (x,y), or -1. Half-open, empty rects never match.
+inline int stripHit(const Rect* r, int n, int x, int y) {
+    for (int i = 0; r && i < n; ++i)
+        if (r[i].w > 0 && r[i].h > 0 && x >= r[i].x && x < r[i].x + r[i].w && y >= r[i].y && y < r[i].y + r[i].h) return i;
+    return -1;
+}
+
+// Bounding box of the non-empty rects (the click-eater label covers it). {0,0,0,0} when there is none.
+inline Rect stripBounds(const Rect* r, int n) {
+    int x0 = 0, y0 = 0, x1 = 0, y1 = 0; bool any = false;
+    for (int i = 0; r && i < n; ++i) {
+        if (r[i].w <= 0 || r[i].h <= 0) continue;
+        if (!any || r[i].x < x0) x0 = r[i].x;
+        if (!any || r[i].y < y0) y0 = r[i].y;
+        if (!any || r[i].x + r[i].w > x1) x1 = r[i].x + r[i].w;
+        if (!any || r[i].y + r[i].h > y1) y1 = r[i].y + r[i].h;
+        any = true;
+    }
+    return any ? Rect{ x0, y0, x1 - x0, y1 - y0 } : Rect{ 0, 0, 0, 0 };
+}
+
+// Remove queue[i], keeping the order of the rest. The active action and every verdict field are untouched.
+inline bool removeAt(ActionBuffer& b, int i, QueuedAction* out = nullptr) {
+    if (i < 0 || i >= b.count || i >= kMaxActionQueue) return false;
+    if (out) *out = b.queue[i];
+    for (int j = i + 1; j < b.count; ++j) b.queue[j - 1] = b.queue[j];
+    --b.count;
+    return true;
+}
+
+// Stop tracking the active action (never re-injected, never re-sent) and keep the buffered queue: the next one dispatches as usual.
+// Not userCancelled: that is the whole-queue Cancel's flag.
+inline bool dropActive(ActionBuffer& b, QueuedAction* out = nullptr) {
+    if (!b.active) return false;
+    if (out) *out = b.activeAction;
+    QueuedAction keep[kMaxActionQueue];
+    const int n = b.count;
+    for (int i = 0; i < n; ++i) keep[i] = b.queue[i];
+    b.clear();
+    for (int i = 0; i < n; ++i) b.queue[i] = keep[i];
+    b.count = n;
+    return true;
+}
+
+// Where a drawn buffered command is now (the buffer may have moved on since the draw). cmd != 0: by command number, queue first,
+// then the active action (active = the drawn icon was the active one). cmd == 0 (unassigned): the drawn position, only while it
+// still holds the same kind + id as `drawn`. Returns the queue index, kBufActive, or -1 (gone).
+constexpr int kBufActive = -2;
+inline int findBuffered(const ActionBuffer& b, uint32_t cmd, bool active, int idx, const QueuedAction& drawn) {
+    if (cmd != 0) {
+        for (int i = 0; i < b.count && i < kMaxActionQueue; ++i) if (b.queue[i].cmdId == cmd) return i;
+        return b.active && b.activeAction.cmdId == cmd ? kBufActive : -1;
+    }
+    const auto same = [&](const QueuedAction& a) {
+        return a.cmdId == 0 && a.kind == drawn.kind && (a.kind == ActionKind::Spell ? a.spellId == drawn.spellId : a.clientItem == drawn.clientItem);
+    };
+    if (active) return b.active && same(b.activeAction) ? kBufActive : -1;
+    return idx >= 0 && idx < b.count && idx < kMaxActionQueue && same(b.queue[idx]) ? idx : -1;
+}
+
+// CANCEL_ONE m=<k> j=<n> kind=<engine|cur|round|active|buffered> cmd=<n|-> act=<removed|refused> [why=<word>]
+inline int fmtCancelOne(char* out, int cap, int m, int j, SlotKind kind, uint32_t cmd, bool removed, const char* why) {
+    detail::LogWr w(out, cap);
+    w.s("CANCEL_ONE m="); w.mm(m);
+    w.s(" j="); w.i(j);
+    w.s(" kind="); w.s(slotKindName(kind));
+    w.s(" cmd="); if (cmd) w.u(cmd); else w.c('-');
+    w.s(removed ? " act=removed" : " act=refused");
+    if (why) { w.s(" why="); w.s(why); }
+    return w.done();
+}
+
+}  // namespace qh
