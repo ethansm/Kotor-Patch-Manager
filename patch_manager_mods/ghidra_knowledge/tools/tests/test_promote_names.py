@@ -82,8 +82,13 @@ class PromoteTest(unittest.TestCase):
         rows = self.rows()
         self.assertEqual(rows["0x00401000"][1:4], ("NewFn", "ingest-modcode", "medium"))
         self.assertIn("src a.h:1", rows["0x00401000"][4])
+        self.assertIn("ingest I2 Haiku", rows["0x00401000"][4])
         self.assertEqual(rows["0x009a0000"][1], "Other")
         self.assertIn("conflict 0x009a0000 Clash (name_map has Other)", out)
+
+    def test_stage_named_in_evidence(self):
+        self.run_main("--apply", "--stage", "I3")
+        self.assertIn("ingest I3 Haiku", self.rows()["0x00401000"][4])
 
     def test_strict_drops_retry_only_and_ignores_decoy_card(self):
         v = os.path.join(self.td.name, "verdicts_[1-8].tsv")

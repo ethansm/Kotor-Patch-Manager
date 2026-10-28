@@ -8,7 +8,7 @@ has a name_map row (any confidence) is reported as `exists` (same name) or `conf
 CLI:
   promote_names.py --promote promote.tsv --source ingest-modcode [--strict-key key.tsv
                    --strict-verdicts 'verdicts_[1-8].tsv'] [--confidence medium] [--date YYYY-MM-DD]
-                   [--kdb DB] [--apply]
+                   [--kdb DB] [--stage I2] [--apply]
 --strict-*: keep only rows whose real (non-decoy) card was `consistent` in those verdict files too
 (e.g. pass 1 of a retried wave), so a row promoted only by a retry is held back.
 Exit codes: 0 success, 1 integrity or database failure, 2 bad input or arguments.
@@ -36,14 +36,14 @@ def strict_filter(rows, key_rows, verdicts):
     return [r for r in rows if (r["addr"], r["name"]) in ok]
 
 
-def plan(conn, rows, source, confidence, date):
+def plan(conn, rows, source, confidence, date, stage="I2"):
     """-> list of (action, row dict, existing name); action = insert | exists | conflict."""
     out = []
     for r in rows:
         addr = "0x%08x" % int(r["addr"], 16)
         cur = conn.execute("select name from name_map where steam_addr = ?", (addr,)).fetchone()
         if cur is None:
-            ev = ("[rea] ingest I2 Haiku+decoys: %s | src %s" % (r.get("quote", ""), r.get("src", "")))
+            ev = ("[rea] ingest %s Haiku+decoys: %s | src %s" % (stage, r.get("quote", ""), r.get("src", "")))
             out.append(("insert", {"steam_addr": addr, "name": r["name"], "source": source,
                                    "confidence": confidence, "evidence": ev[:EVIDENCE_MAX], "date": date}, None))
         else:
@@ -77,6 +77,7 @@ def main(argv=None, out=sys.stdout, err=sys.stderr):
     ap.add_argument("--confidence", default="medium")
     ap.add_argument("--date", default=None)
     ap.add_argument("--kdb", default=str(KDB_DEFAULT))
+    ap.add_argument("--stage", default="I2", help="verify stage named in the evidence text (I2, I3, ...)")
     ap.add_argument("--apply", action="store_true")
     try:
         args = ap.parse_args(argv)
@@ -102,7 +103,7 @@ def main(argv=None, out=sys.stdout, err=sys.stderr):
         print(f"promote_names: {exc}", file=err)
         return 1
     try:
-        actions = plan(conn, rows, args.source, args.confidence, date)
+        actions = plan(conn, rows, args.source, args.confidence, date, args.stage)
         n = {a: sum(1 for x in actions if x[0] == a) for a in ("insert", "exists", "conflict")}
         verb = "inserted" if args.apply else "would-insert"
         print(f"{'apply' if args.apply else 'dry-run'}: in={n_in} kept={len(rows)} {verb}={n['insert']} "

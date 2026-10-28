@@ -1,0 +1,57 @@
+addr	kind	name	src	verdict	quote
+0x0098764c	global	CSWGuiImage	patch_manager_mods/02_buff_duration_hud.md:661	consistent	in 0x00416290 (CSWGuiImage::Constructor): 004162fb c7004c769800 MOV dword ptr [EAX],0x98764c
+0x0074b3a0	function	CSWGuiMainInterface::HitCheckMouse	patch_manager_mods/18_mouse_camera_investigation.md:71	consistent	local_8 = CSWGuiPanel::HitCheckMouse(param_1,param_2);
+0x00411f30	function	CSWGuiManager::GetDialogMargins	patch_manager_mods/engine_research_findings/V1.md:31	consistent	*param_1 = 0x30;
+0x005f7350	function	CSWMapInfo::GetMarkerPos	patch_manager_mods/engine_research_findings/V4.md:23	consistent	*param_3 = *(undefined4 *)(param_1 + 0x28 + param_2 * 4);
+0x00479ca0	function	CAurGUIStringInternal::Constructor	patch_manager_mods/engine_research_findings/V3.md:25	consistent	_eh_vector_constructor_iterator_(param_1 + 9,4,3,FUN_00451d00,FUN_00473e80);
+0x00750c10	function	CSWGuiMainInterface::InitializeMap	patch_manager_mods/engine_research_findings/V4.md:20	consistent	CExoString::Format(local_24,"lbl_map%s",uVar1);
+0x00727710	function	CExoBifFile::ReadHeader	patch_manager_mods/engine_research_findings/R2.md:45	consistent	if (*(int *)param_1[0xc] == 0x46464942) {
+0x008b2850	function	CSWGuiContainer::HandleInputEvent	.claude/research/quick_loot/R2_client_gui.md:32	consistent	CGuiInGame::HideContainerGui();
+0x00476b20	function	CAurInternalGL::RestoreDesktopMode	patch_manager_mods/engine_research_findings/U6.md:21	consistent	LVar1 = ChangeDisplaySettingsA((DEVMODEA *)(param_1 + 1),2)
+0x0075b370	function	CSWGuiMessageBox::Constructor_2	patch_manager_mods/engine_research_findings/V4.md:31	consistent	CSWGuiPanel::Constructor(param_2);
+0x005e39d0	function	CSWMessage::ReadDWORD	patch_manager_mods/engine_research_findings/V6.md:38	consistent	uVar1 = *(undefined4 *)(*(int *)(param_1 + 0x28) + *(int *)(param_1 + 0x30));
+0x00433cd0	function	GLRender::CreateTexture	patch_manager_mods/engine_research_findings/R9.md:64	consistent	imports: glTexImage2D (OPENGL32.DLL), glTexParameteri (OPENGL32.DLL), glTexSubImage2D (OPENGL32.DLL)
+0x0041fd90	function	CSWGuiListBox::AddControls	patch_manager_mods/engine_research_findings/V2.md:19	consistent	0x0083ea60 CExoArrayList<uint32>::Add (CALL)
+0x0041e790	function	CSWGuiListBox::IsOversized	patch_manager_mods/engine_research_findings/V2.md:23	consistent	if (((*(int *)(param_1 + 0x2a8) < (int)((uint)*(byte *)(param_1 + 0x2d0) + *(int *)(param_1 + 0x2c4))) &&
+0x0041ea50	function	CSWGuiListBox::OrganizeControls	patch_manager_mods/engine_research_findings/V2.md:16	consistent	callers 8: 0x0041d710 CSWGuiListBox::SetExtent, 0x0041d940, 0x0041e870, 0x0041e9d0 CSWGuiListBox::SetPadding, 0x0041fc30, ...
+0x00897250	function	CSWGuiMapHider::SetMapNote	patch_manager_mods/engine_research_findings/V9.md:33	consistent	*(int *)(param_1 + 0x24c) = local_8;
+0x0065afd0	function	CSWSMessage::HandlePlayerToServerGuiContainerMessage	.claude/research/quick_loot/R2_client_gui.md:44	consistent	if (param_3 == '\x02') {
+0x008b2f70	function	CSWGuiContainer::SetupGiveMode	.claude/research/quick_loot/R2_client_gui.md:29	consistent	local_20 = CSWPartyTable::GetPartyItems();
+0x0075bde0	function	CSWGuiMessageBox::SetMessage_2	patch_manager_mods/engine_research_findings/V4.md:33	consistent	local_10 = FUN_0071dee0(auStack_18,param_1);
+0x0041f7f0	function	CSWGuiListBox::OrganizeOversized	patch_manager_mods/engine_research_findings/V2.md:22	consistent	local_14 = (*(int *)(param_1 + 0x2a8) - *(int *)(param_1 + 0x2c4)) -
+0x0071b0b0	function	C2DA::GetInt	patch_manager_mods/engine_research_findings/R5.md:29	consistent	iVar3 = C2DA::GetColumnIndex(param_3);
+0x0041f170	function	CSWGuiListBox::OrganizeUnequal	patch_manager_mods/engine_research_findings/V2.md:21	consistent	*(undefined4 *)(param_1 + 0x2c4) = uVar2;
+0x0041fc30	function	CSWGuiListBox::AddControls	patch_manager_mods/engine_research_findings/V2.md:18	consistent	CExoArrayList<uint32>::Add(iVar2);
+0x0047a600	function	SetString	patch_manager_mods/engine_research_findings/V3.md:31	consistent	FUN_0091cff0(*(undefined4 *)(param_1 + 0x14),param_2);
+0x007457e0	function	CSWGuiMainInterfaceChar::DrawStack	patch_manager_mods/21b_gog_address_map.md:90	consistent	0x00479460 GUI fill rect (glViewport + coloured unit quad; returns 0 if rejected) (CALL)
+0x008b1ea0	function	CSWGuiContainer::CSWGuiContainer	.claude/research/quick_loot/R2_client_gui.md:7	consistent	CSWGuiPanel::Constructor(param_2);
+0x00987bb4	global	CSWGuiProgressBar	patch_manager_mods/02_buff_durati	consistent	0041b828 c700b47b9800 MOV dword ptr [EAX],0x987bb4
+0x00747210	function	CSWGuiMainInterface::Constructor	patch_manager_mods/engine_research_findings/V4.md:19	consistent	CSWGuiPanel::Constructor(param_2);
+0x008b0c30	function	CSWGuiInGameItemEntry::SetExtent	patch_manager_mods/engine_research_findings/V2.md:28	consistent	*(undefined4 *)(param_1 + 0xc) = param_2[2];
+0x00419880	function	CSWGuiLabel::Draw	patch_manager_mods/02_buff_duration_hud.md:716	consistent	(**(code **)(*(int *)(param_1 + 0x60) + 0xc))(param_2);
+0x005f6b90	function	CSWMapInfo::Initialize	patch_manager_mods/engine_research_findings/V4.md:22	consistent	param_1[1] = ((int)(iVar3 + (iVar3 >> 0x1f & 0x1fU)) >> 5) + 1;
+0x008bc100	function	DialogTop::SetReply	patch_manager_mods/engine_research_findings/V11.md:35	consistent	CSWGuiDialogLetterbox::SetExtentSpecial(local_1c,local_18,local_14,local_10);
+0x0071d0a0	function	C2DA::Free	patch_manager_mods/engine_research_findings/V6.md:23	consistent	operator delete(*(undefined4 *)(param_1 + 0x38));
+0x007224c0	function	CERFString::Destructor	patch_manager_mods/engine_research_findings/R9.md:159	consistent	*param_1 = 0;
+0x00479b10	function	CAurGUIStringInternal::RefreshResolutionTextScalar	patch_manager_mods/engine_research_findings/V3.md:24	consistent	*(float *)(param_1 + 0x54) = (*(float *)(param_1 + 0x5c) / fVar1) * *(float *)(param_1 + 0x54);
+0x00511fb0	function	CModelLoader::LoadModelByName	patch_manager_mods/engine_research_findings/R2.md:17	consistent	_sprintf(local_a4,"%s%s",param_2,&DAT_0098b9a8);
+0x008b29e0	function	CSWGuiContainer::SetContainer	.claude/research/quick_loot/R2_client_gui.md:23	consistent	CSWGuiInGameItemEntry::SetItem(local_28,0,0);
+0x00453860	function	MdlNode::ControlDispatch	.claude/research/holster_reach/hw18_write_point.md:15	consistent	switch(iVar1) {
+0x00744c20	function	CSWGuiCharButton::UpdateToolTipText	patch_manager_mods/21b_gog_address_map.md:91	consistent	CExoString::Format(param_1 + 0x1d4,"%s %s\n%s: %d/%d\n%s: %d\n%s: %d",uVar2);
+0x00420180	function	CSWGuiListBox::LoadProtoItem	patch_manager_mods/engine_research_findings/V2.md:27	consistent	iVar2 = CResGFF::GetStructFromStruct(local_14,param_3,"PROTOITEM");
+0x0075bd50	function	CSWGuiMessageBox::SetMessage	patch_manager_mods/engine_research_findings/V4.md:32	consistent	CSWGuiTextParams::SetText(&stack0x00000004);
+0x009454b0	function	CResTGA::OnServiced	patch_manager_mods/07_force_power_hotbar.md:652	consistent	param_1[0x10] = param_1[4] + 0x12 + (uint)*(byte *)param_1[0x12];
+0x0041d290	function	CSWGuiListBox::ClearItems	patch_manager_mods/engine_research_findings/V2.md:17	consistent	*(undefined4 *)(*(int *)(*(int *)(param_1 + 0x2ac) + local_8 * 4) + 0x38) = 0;
+0x0075bf60	function	CSWGuiMessageBox::AddMessageLabel_2	patch_manager_mods/engine_research_findings/V4.md:35	consistent	local_24 = _strlen(*(char **)(param_1 + 0x168));
+0x0041bb20	function	CSWGuiProgressBar::Draw	patch_manager_mods/02_buff_duration_hud.md:717	consistent	(**(code **)(*(int *)(param_1 + 0x6c) + 0xc))(param_2);
+0x0046d230	function	CAurScene::Animate	.claude/research/holster_edit/r13a_menu_attach_refresh.md:33	consistent	(**(code **)(**(int **)(*(int *)(param_1 + 0x54) + iVar1 * 4) + 0x14))(param_2);
+0x00449320	function	CExoPtrList::SetAllocated	patch_manager_mods/engine_research_findings/R2.md:190	consistent	iVar2 = operator new[](...)
+0x006fa530	function	CPathfindInformation::ResetAtEndOfPath	patch_manager_mods/engine_research_findings/U3.md:50	consistent	if (*(float *)(param_1 + 4) == (float)_DAT_00986b38) {
+0x00432fa0	function	GLRender::CreateCubeTexture	patch_manager_mods/engine_research_findings/R9.md:62	consistent	iVar5 = *(int *)(&DAT_009f50c0 + local_8 * 4) + 0x8515;
+0x00418f20	function	CSWGuiControl::LoadFromGFF	patch_manager_mods/engine_research_findings/W6.md:23	consistent	iVar1 = CResGFF::ReadFieldINT(param_3,"Obj_ParentID",local_8,0xffffffff);
+0x00429f00	function	CAurGLBufferPool::LockSlot	patch_manager_mods/engine_research_findings/R2.md:184	consistent	*(undefined4 *)(*(int *)(param_1 + 0x10) + param_2 * 4) = 1;
+0x009877d4	global	CSWGuiControl	patch_manager_mods/02_buff_duration_hud.md:657	consistent	in 0x00418990 (CSWGuiControl::Constructor): 004189fb c700d4779800 MOV dword ptr [EAX],0x9877d4
+0x008aa6f0	function	CSWGuiInGameEquipment::Destroy	patch_manager_mods/10_equipment_3d_character_feedback.md:15	consistent	operator delete(param_1);
+0x0098c27c	global	Camera::vftable	patch_manager_mods/01_inventory	consistent	in 0x0047ecd0: 0047ed27 c740047cc29800 MOV dword ptr [EAX + 0x4],0x98c27c
+0x00769f60	function	CSWCCreature::LoadModel	.claude/research/holster_c7/f_gob_to_creature.md:17	consistent	strings: 0x0099efe4 "CSWCCreature::LoadModel(): Failed to load creature model '%s'."
+0x00479b60	function	LoadAlternateFonts	patch_manager_mods/engine_research_findings/V3.md:28	consistent	uVar2 = FUN_004274e0("d2xfont16x16b",0);
