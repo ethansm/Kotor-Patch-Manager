@@ -166,6 +166,90 @@ class ExtractTests(Base):
         self.assertEqual(slurp(self.db), before)
 
 
+class NotesTests(Base):
+    def setUp(self):
+        super().setUp()
+        self.nroot = os.path.join(FIX, "notes_tree")
+        self.ncommon = ["--kdb", self.db, "--ledger-dir", self.ledger, "--functions", FUNCS, "--root", self.nroot]
+
+    def notes_rows(self, *extra):
+        out = os.path.join(self.tmp, "n.tsv")
+        rc, o, _e = run(["extract", "--source", "notes", "--out", out] + list(extra) + self.ncommon)
+        self.assertEqual(rc, 0)
+        return out, read_tsv(out), o
+
+    def test_header_has_cites_and_ranked(self):
+        out, rows, _o = self.notes_rows()
+        with open(out, encoding="utf-8") as fh:
+            self.assertEqual(fh.readline().rstrip("\n").split("\t"), list(inn.EXTRACT_COLS) + ["cites"])
+        cites = [int(r["cites"]) for r in rows]
+        self.assertEqual(cites, sorted(cites, reverse=True))
+        self.assertEqual(rows[0]["name"], "Foo::Bar")
+
+    def test_table_row_with_header_named_column(self):
+        _o, rows, _x = self.notes_rows()
+        # header "what" is not name-like, so the first identifier-only cell is used
+        r = self.find(rows, "0x00600000", "Gui::OnClick")
+        self.assertEqual(r["src"], ".claude/research/tables.md:12")
+        self.assertEqual(r["kind"], "function")
+        # header "Function" names the column
+        self.assertTrue(self.find(rows, "0x00500000", "SomeThing")["src"].endswith("tables.md:8"))
+
+    def test_prose_and_hex_cells_rejected(self):
+        _o, rows, _x = self.notes_rows()
+        self.assertFalse([r for r in rows if r["addr"] == "0x00402000"])  # prose cell
+        self.assertFalse([r for r in rows if r["addr"] == "0x00600004"])  # "hello world"
+        self.assertFalse([r for r in rows if r["addr"] == "0x00600008"])  # plain lowercase word
+        self.assertFalse([r for r in rows if r["name"].startswith("0x")])
+        self.assertFalse([r for r in rows if r["addr"] == "0x00403000" and r["src"].endswith("tables.md:7")])
+
+    def test_tool_names_rejected(self):
+        for junk in ("procedure_pseudo_code", "read_bytes", "invalid_parameter", "search_strings"):
+            self.assertFalse(inn.name_like(junk), junk)
+        self.assertTrue(inn.name_like("CSWGuiListBox::AddControls"))
+        self.assertTrue(inn.name_like("Read_Helper"))
+
+    def test_cites_counts_distinct_lines(self):
+        _o, rows, _x = self.notes_rows()
+        bar = [r for r in rows if r["name"] == "Foo::Bar"]
+        self.assertEqual({r["cites"] for r in bar}, {"3"})
+        self.assertEqual(len(bar), 3)  # table row, plain line, more.md; duplicate pattern hits on one line collapse
+        self.assertEqual(self.find(rows, "0x00990010", "g_Table")["kind"], "global")
+        self.assertEqual(self.find(rows, "0x00403000", "Mgr::PlayThing")["status"], "agrees")
+
+    def test_top_keeps_most_cited_new_only(self):
+        _o, rows, out = self.notes_rows("--top", "1")
+        # Foo::Bar (3 cites) and Mgr::PlayThing agree with the KDB, so only new rows compete; tie goes to the lowest addr
+        self.assertTrue(all(r["status"] == "new" for r in rows))
+        self.assertEqual(len({r["addr"] for r in rows}), 1)
+        self.assertEqual(rows[0]["addr"], "0x00500000")
+        _o2, all_rows, _x = self.notes_rows()
+        _o3, top2, _x = self.notes_rows("--top", "2")
+        self.assertEqual(len({r["addr"] for r in top2}), 2)
+        self.assertGreater(len(all_rows), len(top2))
+
+    def test_ledger_reads_notes_output_and_dry_run_out(self):
+        out, _rows, _o = self.notes_rows()
+        dump = StubDump({0x500000: ["PUSH EBP"], 0x600000: ["MOV EAX,1"], 0x990010: None})
+        rows_out = os.path.join(self.tmp, "dry.tsv")
+        rc, o, _e = run(["ledger", "--in", out, "--topic", "ingest-notes", "--date", DATE, "--out", rows_out]
+                        + self.ncommon, dump=dump)
+        self.assertEqual(rc, 0)
+        self.assertIn("dry-run: would-write=", o)
+        got = read_tsv(rows_out)
+        with open(rows_out, encoding="utf-8") as fh:
+            self.assertEqual(fh.readline().rstrip("\n").split("\t"), list(rl.COLS))
+        self.assertEqual({r["name"] for r in got}, {"SomeThing::Other", "Gui::OnClick", "g_Table"})  # tie: first by src
+        self.assertEqual(os.listdir(self.ledger), ["20261001_seed.tsv"])  # dry run never writes the ledger
+
+    def test_modcode_output_unchanged(self):
+        out, rows = self.extract_rows()
+        with open(out, encoding="utf-8") as fh:
+            self.assertEqual(fh.readline().rstrip("\n").split("\t"), list(inn.EXTRACT_COLS))
+        self.assertNotIn("cites", rows[0])
+        self.assertEqual(len(rows), 11)
+
+
 class GapTests(Base):
     def test_gap_counts(self):
         res = inn.gap("all", self.db, self.ledger, FUNCS, FIX)

@@ -1,0 +1,13 @@
+card	verdict	quote
+C061	consistent	- strings: 0x0098c018 "d3xfnt_d16x16b", 0x0098c028 "d2xfnt_d16x16b", 0x0098c038 "fnt_d16x16b", ...
+C062	consistent	- size 84 B, RET 0
+C063	consistent	- callees: 0x00416e30 CSWGuiTextParams::SetText (CALL)
+C064	unsure	- callees: 0x00475ab0 (CALL), 0x004762f0 (CALL), 0x00476370 (CALL), ... (no draw or GL callee named)
+C065	consistent	- callees: 0x0040fd80 CSWGuiPanel::AddControl (CALL)
+C066	unsure	- callees: 0x0091d288 operator new[] (CALL)
+C067	inconsistent	- callers 4: 0x00781be0 CClientExoAppInternal::MainLoop, 0x007ac470 CClientExoAppInternal::ProcessInput, 0x00839ad0, 0x0083a5b0
+C068	unsure	- callees: 0x0044c8a0 (CALL), 0x00652810 (CALL)
+C069	inconsistent	- kind: global
+C070	consistent	- size 43 B, RET 0
+C071	consistent	- size 78 B, RET 0
+C072	consistent	- callees: 0x007110d0 CRes::Constructor (CALL)

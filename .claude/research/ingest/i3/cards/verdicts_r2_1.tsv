@@ -1,0 +1,13 @@
+card	verdict	quote
+C001	consistent	strings: 0x00999080 "PrimaryAbil", 0x0099908c "AlignRstrctType", 0x0099909c "AlignRestrict"
+C002	inconsistent	0x00718c80 CResGFF::ReadFieldINT (CALL), ... 0x00419330 CSWGuiControl::AddChildControl (CALL)
+C003	unsure	indirect: 0x0041bb3d slot 0xc, 0x0041bb5b slot 0xc
+C004	unsure	in 0x0047ecd0: 0047ed27 c740047cc29800 MOV dword ptr [EAX + 0x4],0x98c27c
+C005	consistent	callers 1: 0x00523870 CSWSArea::LoadAreaHeader
+C006	inconsistent	size 1217 B, RET 0
+C007	consistent	0x004122a0 CSWGuiManager::PlayGuiSound (CALL)
+C008	unsure	in 0x0047ecd0: 0047ed27 c740047cc29800 MOV dword ptr [EAX + 0x4],0x98c27c
+C009	consistent	0x0071aef0 C2DA::GetColumnIndex (CALL)
+C010	unsure	callees: 0x00945860 (CALL), 0x00945990 (CALL)
+C011	consistent	0x0091c6aa operator delete[] (CALL)
+C012	consistent	size 71 B, RET 0

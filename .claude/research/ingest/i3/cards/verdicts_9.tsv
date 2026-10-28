@@ -1,0 +1,11 @@
+card	verdict	quote
+C097	consistent	strings: 0x00987660 "ROTATESTYLE", 0x0098766c "ROTATE", 0x00987680 "FLIPSTYLE"
+C098	consistent	callees: 0x00479460 GUI fill rect (glViewport + coloured unit quad; returns 0 if rejected) (CALL)
+C099	unsure	indirect: 0x0046d2ad slot 0x14, 0x0046d31a slot 0x14, 0x0046d367 slot 0x14
+C100	consistent	0x0073f750 CClientExoApp::GetInGameGui (CALL), 0x008bab20 CSWGuiDialogLetterbox::SetExtentSpecial (CALL)
+C101	consistent	strings: 0x00987ed4 "CONTROLTYPE", 0x00987ee0 "PROTOITEM"
+C102	consistent	0x0040eae0 CSWGuiPanel::HitCheckMouse (CALL)
+C103	unsure	callers 10: 0x0041d940, 0x0041ea50, 0x0041f980, 0x00420850, 0x00420c00, ...
+C104	unsure	callees: 0x0047cd10 (CALL), 0x0091d67e (CALL), 0x00449230 (CALL), 0x004741e0 (CALL), ...
+C105	consistent	0x0040e5a0 CSWGuiPanel::Constructor (CALL)
+C106	consistent	callers 8: 0x0041d710 CSWGuiListBox::SetExtent, 0x0041d940, 0x0041e870, 0x0041e9d0 CSWGuiListBox::SetPadding, 0x0041fc30, ...

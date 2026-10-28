@@ -1,0 +1,13 @@
+card	verdict	quote
+C037	consistent	0x0083ea60 CExoArrayList<uint32>::Add (CALL)
+C038	unsure	callees: 0x00945860 (CALL), 0x00945990 (CALL)
+C039	inconsistent	0x0040e5a0 CSWGuiPanel::Constructor (CALL)
+C040	consistent	0x0051c160 CServerExoApp::GetPlaceableByGameObjectID (CALL)
+C041	consistent	size 97 B, RET 4
+C042	inconsistent	0x0099efe4 "CSWCCreature::LoadModel(): Failed to load creature model '%s'."
+C043	consistent	0x00919f10 _strlen (CALL)
+C044	consistent	0x007337c0 CExoString::operator= (CALL)
+C045	unsure	callees: 0x0041e800 (CALL), 0x0041c7c0 (CALL), 0x0091c860 (CALL)
+C046	consistent	0x009196fd operator delete (CALL), 0x00919723 operator new (CALL)
+C047	unsure	callees: 0x0070b8c0 (CALL), 0x0070b890 (CALL), 0x007051c0 (CALL)
+C048	inconsistent	size 273 B, RET 8

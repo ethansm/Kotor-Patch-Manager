@@ -240,6 +240,93 @@ def scan_file(path, relpath):
                 yield int(m.group(1), 16), m.group(2), src
 
 
+TABLE_SEP_RX = re.compile(r"^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$")
+NAME_HEADER_RX = re.compile(r"name|function|symbol|method|func\b", re.I)
+CELL_ADDR_RX = re.compile(r"0x00[4-9][0-9a-fA-F]{5}")
+IDENT_RX = re.compile(r"^~?[A-Za-z_]\w*(?:::~?[A-Za-z_]\w*)*$")
+DEFAULT_NAME_RX = re.compile(r"^(?:thunk_)?(?:FUN|DAT|LAB|PTR|SUB|UNK|switchD|caseD)_[0-9a-fA-F]+$")
+# REA tool names and CRT/error words that notes put next to an address but that never name it
+TOOL_NAME_RX = re.compile(r"^(?:(?:procedure|read|search|batch|analyze|resolve|find|inspect|open|close)_\w+"
+                          r"|invalid_parameter)$")
+
+
+def _cell_text(cell):
+    t = cell.strip().strip("*_ ").strip("`").strip()
+    return re.sub(r"\(\s*\)$", "", t)
+
+
+def name_like(text):
+    """True for Class::Method, CamelCase or snake_case identifiers (not prose, hex, numbers)."""
+    if not IDENT_RX.match(text) or DEFAULT_NAME_RX.match(text) or TOOL_NAME_RX.match(text):
+        return False
+    if re.fullmatch(r"[0-9a-fA-F]+", text):
+        return False
+    if "::" in text or "_" in text.strip("_"):
+        return True
+    return bool(re.search(r"[a-z][A-Z]", text) or re.match(r"[A-Z][a-z]+[A-Z]", text) or
+                re.match(r"[A-Z]{2,}[a-z]", text))
+
+
+def _table_cells(line):
+    s = line.strip()
+    if not s.startswith("|"):
+        return None
+    s = s[1:]
+    if s.endswith("|"):
+        s = s[:-1]
+    return s.split("|")
+
+
+def table_pairs(cells, name_col):
+    """(addr int, name) from one table row, or None.  name_col None -> first identifier-only cell."""
+    texts = [_cell_text(c) for c in cells]
+    addrs = [i for i, t in enumerate(texts) if CELL_ADDR_RX.fullmatch(t)]
+    if len(addrs) != 1:
+        return None
+    ai = addrs[0]
+    if name_col is not None:
+        if name_col >= len(texts) or name_col == ai or not name_like(texts[name_col]):
+            return None
+        return int(texts[ai], 16), texts[name_col]
+    for i, t in enumerate(texts):
+        if i != ai and name_like(t):
+            return int(texts[ai], 16), t
+    return None
+
+
+def scan_notes(path, relpath):
+    """Yield (addr int, name, 'relpath:line') from one markdown note: pattern 3 anywhere + table rows."""
+    text = _read(path)
+    if text is None:
+        return
+    lines = text.splitlines()
+    header = None  # name column index of the table being read
+    for i, line in enumerate(lines):
+        src = "%s:%d" % (relpath, i + 1)
+        for m in NAME_THEN_ADDR_RX.finditer(line):
+            yield int(m.group(2), 16), m.group(1), src
+        for m in ADDR_THEN_NAME_RX.finditer(line):
+            yield int(m.group(1), 16), m.group(2), src
+        cells = _table_cells(line)
+        if cells is None:
+            header = None
+            continue
+        if TABLE_SEP_RX.match(line):
+            continue
+        nxt = lines[i + 1] if i + 1 < len(lines) else ""
+        if TABLE_SEP_RX.match(nxt) and _table_cells(nxt) is not None:  # this row is a header
+            header = None
+            for ci, c in enumerate(cells):
+                t = _cell_text(c)
+                if NAME_HEADER_RX.search(t) and "addr" not in t.lower():
+                    header = ci
+                    break
+            continue
+        pair = table_pairs(cells, header)
+        if pair:
+            yield pair[0], pair[1], src
+
+
 def classify(starts, a):
     """(kind, fn_start text, offset text)."""
     if a >= GLOBAL_MIN:
@@ -267,15 +354,19 @@ def status_of(a, name, kdb, ledger):
     return "new", ""
 
 
-def extract(kdb_path=KDB_DEFAULT, ledger_dir=LEDGER_DEFAULT, functions=FUNCS_DEFAULT, root=REPO):
-    """List of row dicts (EXTRACT_COLS) from mod code, deduped and sorted by addr then src."""
+def extract(kdb_path=KDB_DEFAULT, ledger_dir=LEDGER_DEFAULT, functions=FUNCS_DEFAULT, root=REPO,
+            source="modcode"):
+    """List of row dicts (EXTRACT_COLS) deduped.  modcode: sorted by addr then src.
+    notes: each row also has 'cites' (distinct note lines citing its addr+name); sorted by cites desc, addr, src."""
     kdb = load_kdb(kdb_path)
     ledger = load_ledger(ledger_dir)
     starts = load_starts(functions)
+    notes = source == "notes"
+    group, scanner = ("research_notes", scan_notes) if notes else ("mod_code", scan_file)
     seen = {}
-    for f in group_files(root, "mod_code"):
+    for f in group_files(root, group):
         rel = os.path.relpath(f, str(root))
-        for a, name, src in scan_file(f, rel):
+        for a, name, src in scanner(f, rel):
             key = (a, name, src)
             if key in seen:
                 continue
@@ -286,7 +377,28 @@ def extract(kdb_path=KDB_DEFAULT, ledger_dir=LEDGER_DEFAULT, functions=FUNCS_DEF
                 "form": "qualified" if "::" in name else "bare", "src": src,
                 "fn_start": fn_start, "offset": offset, "status": status, "kdb_name": kdb_name,
             }
-    return [seen[k] for k in sorted(seen, key=lambda k: (k[0], k[2], k[1]))]
+    rows = [seen[k] for k in sorted(seen, key=lambda k: (k[0], k[2], k[1]))]
+    if notes:
+        cites = collections.Counter((r["addr"], r["name"]) for r in rows)
+        for r in rows:
+            r["cites"] = cites[(r["addr"], r["name"])]
+        rows.sort(key=lambda r: (-r["cites"], r["addr"], r["src"], r["name"]))
+    return rows
+
+
+def top_new(rows, n):
+    """Rows of the n most-cited new function/global addresses (best name per address; ties by addr, name)."""
+    if n <= 0:
+        return rows
+    cites = collections.Counter((r["addr"], r["name"]) for r in rows)
+    pairs = sorted({(r["addr"], r["name"]) for r in rows if r["status"] == "new"
+                    and r["kind"] in ("function", "global")}, key=lambda p: (-cites[p], p[0], p[1]))
+    keep, used = set(), set()
+    for a, nm in pairs:
+        if a not in used and len(keep) < n:
+            used.add(a)
+            keep.add((a, nm))
+    return [r for r in rows if (r["addr"], r["name"]) in keep]
 
 
 def write_tsv(path, rows, cols):
@@ -371,6 +483,9 @@ def run_ledger(args, dump, out=sys.stdout, err=sys.stderr):
           f"conflicts={len(conflicts)} target={target}", file=out)
     for s in skipped[:10]:
         print(f"  skipped {s['addr']} {s['name']} ({s['reason']})", file=out)
+    if getattr(args, "out", None) and not args.apply:
+        write_tsv(args.out, ledger_rows, rea_ledger.COLS)
+        print(f"dry-run rows -> {args.out}", file=out)
     if args.apply:
         if ledger_rows:
             rea_ledger.append_rows(args.ledger_dir, target, ledger_rows)
@@ -601,13 +716,16 @@ def build_parser():
     g.add_argument("--source", choices=sorted(SOURCE_GROUPS), default="all")
     g.add_argument("--json", action="store_true")
     e = sub.add_parser("extract", parents=[common], help="name/address pairs from mod code")
-    e.add_argument("--source", choices=["modcode"], default="modcode")
+    e.add_argument("--source", choices=["modcode", "notes"], default="modcode")
+    e.add_argument("--top", type=int, default=0,
+                   help="keep only the N most-cited new function/global addresses (0 = all)")
     e.add_argument("--out", required=True)
     le = sub.add_parser("ledger", parents=[common], help="turn extract rows into ledger rows")
     le.add_argument("--in", dest="in_path", required=True)
     le.add_argument("--topic", required=True)
     le.add_argument("--apply", action="store_true")
     le.add_argument("--date", default=None)
+    le.add_argument("--out", default=None, help="dry run only: write the would-write ledger rows to this TSV")
     c = sub.add_parser("cards", parents=[common], help="blind Haiku verify cards with decoys")
     c.add_argument("--in", dest="in_path", required=True)
     c.add_argument("--out-dir", required=True)
@@ -646,8 +764,9 @@ def main(argv=None, dump=None, out=None, err=None):
                         print(f"  {t['fn']} cites={t['cites']} in={t['in']}", file=out)
             return 0
         if args.cmd == "extract":
-            rows = extract(args.kdb, args.ledger_dir, args.functions, args.root)
-            write_tsv(args.out, rows, EXTRACT_COLS)
+            rows = extract(args.kdb, args.ledger_dir, args.functions, args.root, args.source)
+            rows = top_new(rows, args.top)
+            write_tsv(args.out, rows, EXTRACT_COLS + (("cites",) if args.source == "notes" else ()))
             c = collections.Counter(r["status"] for r in rows)
             print(f"extract: rows={len(rows)} new={c['new']} agrees={c['agrees']} "
                   f"conflicts={c['conflicts']} -> {args.out}", file=out)

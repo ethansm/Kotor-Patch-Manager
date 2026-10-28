@@ -23,7 +23,7 @@ D6 R2 NO-GO root cause was missing names / caller context, so coverage is the le
 | I0 | `tools/ingest_names.py gap| DONE | TODO | spec §I0 |
 | I1 | `ingest_names.py ledger`: static gate + write `probable` ledger rows for `new` mod-code candidates (topic `ingest-modcode`); conflicts report only; lint stays at baseline | DONE | spec §I1 |
 | I2 | Haiku verify with decoys on I1 rows (cards from `static_facts.py`); verdict TSV; promotion list | DONE | spec §I2 |
-| I3 | Research-notes extraction (same tool, `--source notes`), top-cited first, Haiku verify, ledger rows topic `ingest-notes`; stop when yield < 30% | TODO | spec §I3 |
+| I3 | Research-notes extraction (same tool, `--source notes`), top-cited first, Haiku verify, ledger rows topic `ingest-notes`; stop when yield < 30% | PARTIAL | spec §I3 |
 | I4 | Promotion (user OK) of verified names into `name_map`; regen class pages for touched classes; gap re-measure | DONE | spec §I4 |
 | I5 | Docs sweep (tool listed free-first in CLAUDE.md, RE_AGENT_GUIDE §2.1, README, SUBAGENT_ROLES) + memory | TODO | Decisions |
 
@@ -34,6 +34,7 @@ D6 R2 NO-GO root cause was missing names / caller context, so coverage is the le
 | I0 | 2026-10-27T20:51 | 1 Sonnet worker (I0+I1 in one brief, 12 tool calls, peak 93k) | $0.52 | 21 tests, suite 314 OK; gap 79/515; extract 337 rows (new 150, agrees 71, conflicts 116) |
 | I1 | 2026-10-27T20:51 | (same worker) | $0 extra | 69 rows -> `rea_findings/20261027_ingest-modcode.tsv` (24 function, 45 global), 3 name conflicts; lint 84 -> 84; modcode gap 79 -> 57 |
 | I2 | 2026-10-27T22:40 | 8 Haiku recon (chunks) + 4 Haiku retries (chunks 3/5/6/7), 3 tool calls each, peak 51-69k | $0.15 | `ingest_names.py cards|score` (+8 tests, suite 322 OK); 86 cards (69 + 17 decoys, seed 1027); pass 1 FAIL 10/17 = 59% (all 7 misses `unsure`, 0 decoys accepted); retry with generic role calibration PASS 14/17 = 82% (function 2/4, global 12/13) but accepted 2 decoys (C31, C34); `promote.tsv` 62 rows (20 function, 42 global), 51 of them also consistent in pass 1 (strict set); 7 held back incl. `TexMgr::Tick`; lint 84 -> 84 |
+| I3 | 2026-10-27T22:48 | 1 Sonnet worker (`extract --source notes`, `--top`, `ledger --out`, +11 tests) + 9 Haiku + 6 Haiku retries | $0.57 (all I3+I4 agents) | gate FAIL: pass 1 decoys 8/21 = 38%, retry 12/21 = 57%, 4 decoys accepted; real rows 61% consistent (stop rule not hit); nothing written to the ledger; lead added `TOOL_NAME_RX` (REA tool names); details `.claude/research/ingest/i3/README.md` |
 | I4 | 2026-10-27T22:48 | none (lead) | $0 | user OK "I4 strict": new `tools/promote_names.py` (+4 tests; dry run default, one transaction + integrity_check, never overwrites); 51 strict rows -> `name_map` (source `ingest-modcode`, confidence `medium`, 0 exists/conflicts, integrity ok; pre-write copy in session scratch); class pages `steam_docs/CSWGuiMainCharGen.md` + `Scene.md` (CAurTriangleBin, CSWGuiMainInterface have no Steam-DB functions, so no page); gap after: modcode 57 (unchanged, rows were already ledgered at I1), notes 556 (was 515; notes corpus grew 10-27) |
 
 ## Spec

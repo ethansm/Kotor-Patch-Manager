@@ -1,0 +1,13 @@
+card	verdict	quote
+C085	consistent	callees: 0x008aa750 (CALL), 0x009196fd operator delete (CALL)
+C086	unsure	size 285 B, RET 0
+C087	unsure	size 419 B, RET 8
+C088	consistent	callees: 0x0040e5a0 CSWGuiPanel::Constructor (CALL)
+C089	inconsistent	callees: 0x00718c80 CResGFF::ReadFieldINT (CALL)
+C090	inconsistent	callers 3: 0x005f9220 CSWPartyTable::CreateParty, 0x00721bb0 CERFFile::WriteResource_2, 0x0085ee80
+C091	consistent	imports: glTexImage2D (OPENGL32.DLL), glTexParameteri (OPENGL32.DLL), glTexSubImage2D (OPENGL32.DLL)
+C092	consistent	callees: 0x009196fd operator delete (CALL), 0x007112b0 CRes::Release (CALL)
+C093	consistent	size 67 B, RET 4
+C094	consistent	callees: 0x00718c80 CResGFF::ReadFieldINT (CALL), 0x0040fea0 CSWGuiPanel::GetControl (CALL), 0x00419330 CSWGuiControl::AddChildControl (CALL)
+C095	consistent	callees: 0x00416bd0 CSWGuiTextParams::operator= (CALL)
+C096	consistent	callers 5: 0x0055e610 CSWSModule::SetIntraAreaGoal, 0x0057fce0 CSWSCreature::UpdatePersonalSpace, 0x005bfc00 CSWSCreature::AIActionMoveToPoint

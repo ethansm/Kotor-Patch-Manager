@@ -1,0 +1,13 @@
+card	verdict	quote
+C085	consistent	callees: 0x008aa750 (CALL), 0x009196fd operator delete (CALL)
+C086	unsure	callers 1: 0x008690a0
+C087	unsure	callees: 0x00475d50 (CALL), 0x004762f0 (CALL), 0x00476370 (CALL), 0x005122e0 (CALL), 0x00452830 (CALL), 0x00475f70 (CALL), ...
+C088	consistent	strings: 0x0099e670 "LB_MESSAGE", 0x0099e67c "BTN_CANCEL", 0x0099e688 "BTN_OK", ...
+C089	inconsistent	callees: 0x00718960 CResGFF::GetStructFromStruct (CALL), ..., 0x00718e40 CResGFF::ReadFieldCResRef (CALL), ..., 0x00718c80 CResGFF::ReadFieldINT (CALL)
+C090	unsure	callers 3: 0x005f9220 CSWPartyTable::CreateParty, 0x00721bb0 CERFFile::WriteResource_2, 0x0085ee80
+C091	consistent	imports: glTexImage2D (OPENGL32.DLL), glTexParameteri (OPENGL32.DLL), glTexSubImage2D (OPENGL32.DLL), ...
+C092	consistent	callees: 0x0040c170 (CALL), 0x009196fd operator delete (CALL), 0x007338d0 (CALL), 0x007112b0 CRes::Release (CALL)
+C093	unsure	indirect: 0x0041bb3d slot 0xc, 0x0041bb5b slot 0xc
+C094	consistent	callees: 0x0040e2c0 (CALL), 0x00718c80 CResGFF::ReadFieldINT (CALL), 0x0040fea0 CSWGuiPanel::GetControl (CALL), 0x00419330 CSWGuiControl::AddChildControl (CALL)
+C095	unsure	size 310 B, RET 12
+C096	consistent	callers 5: 0x0055e610 CSWSModule::SetIntraAreaGoal, 0x0057fce0 CSWSCreature::UpdatePersonalSpace, 0x005bfc00 CSWSCreature::AIActionMoveToPoint, 0x00656af0, 0x0065a170

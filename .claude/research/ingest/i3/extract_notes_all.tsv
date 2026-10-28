@@ -1,0 +1,1008 @@
+addr	kind	name	form	src	fn_start	offset	status	kdb_name	cites
+0x0040f620	function	CSWGuiPanel::InitControl	qualified	.claude/research/ingest/i2_cards/chunk_2.md:93	0x0040f620	0x0	agrees	CSWGuiPanel::InitControl	8
+0x0040f620	function	CSWGuiPanel::InitControl	qualified	.claude/research/ingest/i2_cards/chunk_5.md:34	0x0040f620	0x0	agrees	CSWGuiPanel::InitControl	8
+0x0040f620	function	CSWGuiPanel::InitControl	qualified	.claude/research/ingest/i2_cards/chunk_7.md:113	0x0040f620	0x0	agrees	CSWGuiPanel::InitControl	8
+0x0040f620	function	CSWGuiPanel::InitControl	qualified	.claude/research/quick_loot/R2_client_gui.md:11	0x0040f620	0x0	agrees	CSWGuiPanel::InitControl	8
+0x0040f620	function	CSWGuiPanel::InitControl	qualified	patch_manager_mods/engine_research_findings/R5.md:31	0x0040f620	0x0	agrees	CSWGuiPanel::InitControl	8
+0x0040f620	function	CSWGuiPanel::InitControl	qualified	patch_manager_mods/engine_research_findings/R9.md:26	0x0040f620	0x0	agrees	CSWGuiPanel::InitControl	8
+0x0040f620	function	CSWGuiPanel::InitControl	qualified	patch_manager_mods/engine_research_findings/V4.md:26	0x0040f620	0x0	agrees	CSWGuiPanel::InitControl	8
+0x0040f620	function	CSWGuiPanel::InitControl	qualified	patch_manager_mods/engine_research_findings/W6.md:20	0x0040f620	0x0	agrees	CSWGuiPanel::InitControl	8
+0x0040ec90	function	CSWGuiPanel::Draw	qualified	.claude/research/holster_edit/d2b_options_hooks.md:22	0x0040ec90	0x0	agrees	CSWGuiPanel::Draw	6
+0x0040ec90	function	CSWGuiPanel::Draw	qualified	.claude/research/holster_edit/r13a_menu_attach_refresh.md:20	0x0040ec90	0x0	agrees	CSWGuiPanel::Draw	6
+0x0040ec90	function	CSWGuiPanel::Draw	qualified	patch_manager_mods/07_force_power_hotbar.md:820	0x0040ec90	0x0	agrees	CSWGuiPanel::Draw	6
+0x0040ec90	function	CSWGuiPanel::Draw	qualified	patch_manager_mods/engine_research_findings/R5.md:33	0x0040ec90	0x0	agrees	CSWGuiPanel::Draw	6
+0x0040ec90	function	CSWGuiPanel::Draw	qualified	patch_manager_mods/engine_research_findings/R9.md:25	0x0040ec90	0x0	agrees	CSWGuiPanel::Draw	6
+0x0040ec90	function	CSWGuiPanel::Draw	qualified	patch_manager_mods/engine_research_findings/V8b.md:22	0x0040ec90	0x0	agrees	CSWGuiPanel::Draw	6
+0x004e3270	function	Gob::PlayAnimation	qualified	.claude/research/npc_variety/nb2_anim_driver_recon.md:39	0x004e3270	0x0	conflicts	rea:Gob::PlayAnimation(name,speed,flags,start) thiscall ret16	6
+0x004e3270	function	Gob::PlayAnimation	qualified	.claude/research/npc_variety/nb2_b_offset_check.md:15	0x004e3270	0x0	conflicts	rea:Gob::PlayAnimation(name,speed,flags,start) thiscall ret16	6
+0x004e3270	function	Gob::PlayAnimation	qualified	.claude/research/npc_variety/nb2_play_semantics_recon.md:1	0x004e3270	0x0	conflicts	rea:Gob::PlayAnimation(name,speed,flags,start) thiscall ret16	6
+0x004e3270	function	Gob::PlayAnimation	qualified	patch_manager_mods/40_npc_behaviour_variety.md:157	0x004e3270	0x0	conflicts	rea:Gob::PlayAnimation(name,speed,flags,start) thiscall ret16	6
+0x004e3270	function	Gob::PlayAnimation	qualified	patch_manager_mods/40_npc_behaviour_variety.md:446	0x004e3270	0x0	conflicts	rea:Gob::PlayAnimation(name,speed,flags,start) thiscall ret16	6
+0x004e3270	function	Gob::PlayAnimation	qualified	patch_manager_mods/40_npc_behaviour_variety.md:97	0x004e3270	0x0	conflicts	rea:Gob::PlayAnimation(name,speed,flags,start) thiscall ret16	6
+0x00712f30	function	CExoResMan::Malloc	qualified	patch_manager_mods/41_custom_voice_and_events.md:132	0x00712f30	0x0	agrees	CExoResMan::Malloc	6
+0x00712f30	function	CExoResMan::Malloc	qualified	patch_manager_mods/44_in_memory_asset_vfs_and_character_library.md:46	0x00712f30	0x0	agrees	CExoResMan::Malloc	6
+0x00712f30	function	CExoResMan::Malloc	qualified	patch_manager_mods/engine_research_findings/R2.md:15	0x00712f30	0x0	agrees	CExoResMan::Malloc	6
+0x00712f30	function	CExoResMan::Malloc	qualified	patch_manager_mods/engine_research_findings/R2.md:182	0x00712f30	0x0	agrees	CExoResMan::Malloc	6
+0x00712f30	function	CExoResMan::Malloc	qualified	patch_manager_mods/engine_research_findings/R2.md:187	0x00712f30	0x0	agrees	CExoResMan::Malloc	6
+0x00712f30	function	CExoResMan::Malloc	qualified	patch_manager_mods/engine_research_findings/R5.md:41	0x00712f30	0x0	agrees	CExoResMan::Malloc	6
+0x0084c3a0	function	CSWGuiInGameCharacter::Constructor	qualified	.claude/research/ingest/i2_cards/chunk_1.md:65	0x0084c3a0	0x0	conflicts	CSWGuiInGameCharacter::CSWGuiInGameCharacter (ctor; BTN_AUTO +0x34F0, BTN_LEVELUP +0x36C0)	6
+0x0084c3a0	function	CSWGuiInGameCharacter::Constructor	qualified	.claude/research/ingest/i2_cards/chunk_4.md:90	0x0084c3a0	0x0	conflicts	CSWGuiInGameCharacter::CSWGuiInGameCharacter (ctor; BTN_AUTO +0x34F0, BTN_LEVELUP +0x36C0)	6
+0x0084c3a0	function	CSWGuiInGameCharacter::Constructor	qualified	.claude/research/ingest/i2_cards/chunk_5.md:113	0x0084c3a0	0x0	conflicts	CSWGuiInGameCharacter::CSWGuiInGameCharacter (ctor; BTN_AUTO +0x34F0, BTN_LEVELUP +0x36C0)	6
+0x0084c3a0	function	CSWGuiInGameCharacter::Constructor	qualified	.claude/research/ingest/i2_cards/chunk_5.md:23	0x0084c3a0	0x0	conflicts	CSWGuiInGameCharacter::CSWGuiInGameCharacter (ctor; BTN_AUTO +0x34F0, BTN_LEVELUP +0x36C0)	6
+0x0084c3a0	function	CSWGuiInGameCharacter::Constructor	qualified	.claude/research/ingest/i2_cards/chunk_6.md:73	0x0084c3a0	0x0	conflicts	CSWGuiInGameCharacter::CSWGuiInGameCharacter (ctor; BTN_AUTO +0x34F0, BTN_LEVELUP +0x36C0)	6
+0x0084c3a0	function	CSWGuiInGameCharacter::Constructor	qualified	.claude/research/ingest/i2_cards/chunk_7.md:122	0x0084c3a0	0x0	conflicts	CSWGuiInGameCharacter::CSWGuiInGameCharacter (ctor; BTN_AUTO +0x34F0, BTN_LEVELUP +0x36C0)	6
+0x00499610	function	Scene::CollectAndTraverse	qualified	patch_manager_mods/48_k2_grass_draw_distance.md:16	0x00499610	0x0	agrees	Scene::CollectAndTraverse	5
+0x00499610	function	Scene::CollectAndTraverse	qualified	patch_manager_mods/50_k2_render_performance.md:13	0x00499610	0x0	agrees	Scene::CollectAndTraverse	5
+0x00499610	function	Scene::CollectAndTraverse	qualified	patch_manager_mods/engine_research_findings/R7.md:25	0x00499610	0x0	agrees	Scene::CollectAndTraverse	5
+0x00499610	function	Scene::CollectAndTraverse	qualified	patch_manager_mods/engine_research_findings/R9.md:289	0x00499610	0x0	agrees	Scene::CollectAndTraverse	5
+0x00499610	function	Scene::CollectAndTraverse	qualified	patch_manager_mods/engine_research_findings/R9.md:99	0x00499610	0x0	agrees	Scene::CollectAndTraverse	5
+0x00781be0	function	CClientExoAppInternal::MainLoop	qualified	patch_manager_mods/09_load_hang_investigation.md:128	0x00781be0	0x0	agrees	CClientExoAppInternal::MainLoop	5
+0x00781be0	function	CClientExoAppInternal::MainLoop	qualified	patch_manager_mods/09_load_hang_investigation.md:136	0x00781be0	0x0	agrees	CClientExoAppInternal::MainLoop	5
+0x00781be0	function	CClientExoAppInternal::MainLoop	qualified	patch_manager_mods/engine_research_findings/R7.md:15	0x00781be0	0x0	agrees	CClientExoAppInternal::MainLoop	5
+0x00781be0	function	CClientExoAppInternal::MainLoop	qualified	patch_manager_mods/engine_research_findings/R9.md:207	0x00781be0	0x0	agrees	CClientExoAppInternal::MainLoop	5
+0x00781be0	function	CClientExoAppInternal::MainLoop	qualified	patch_manager_mods/engine_research_findings/V5.md:28	0x00781be0	0x0	agrees	CClientExoAppInternal::MainLoop	5
+0x0040ee40	function	CSWGuiPanel::StartLoadFromLayout	qualified	.claude/research/ingest/i2_cards/chunk_2.md:92	0x0040ee40	0x0	agrees	CSWGuiPanel::StartLoadFromLayout	4
+0x0040ee40	function	CSWGuiPanel::StartLoadFromLayout	qualified	.claude/research/ingest/i2_cards/chunk_5.md:33	0x0040ee40	0x0	agrees	CSWGuiPanel::StartLoadFromLayout	4
+0x0040ee40	function	CSWGuiPanel::StartLoadFromLayout	qualified	.claude/research/ingest/i2_cards/chunk_7.md:112	0x0040ee40	0x0	agrees	CSWGuiPanel::StartLoadFromLayout	4
+0x0040ee40	function	CSWGuiPanel::StartLoadFromLayout	qualified	.claude/research/ingest/i2_cards/chunk_7.md:23	0x0040ee40	0x0	agrees	CSWGuiPanel::StartLoadFromLayout	4
+0x004317d0	function	GLRender::InitExtensions	qualified	.claude/research/ingest/i2_cards/chunk_1.md:93	0x004317d0	0x0	agrees	GLRender::InitExtensions	4
+0x004317d0	function	GLRender::InitExtensions	qualified	.claude/research/ingest/i2_cards/chunk_4.md:61	0x004317d0	0x0	agrees	GLRender::InitExtensions	4
+0x004317d0	function	GLRender::InitExtensions	qualified	.claude/research/render_perf/R8_models_anim.md:33	0x004317d0	0x0	agrees	GLRender::InitExtensions	4
+0x004317d0	function	GLRender::InitExtensions	qualified	patch_manager_mods/engine_research_findings/R9.md:60	0x004317d0	0x0	agrees	GLRender::InitExtensions	4
+0x00449320	function	CExoPtrList::SetAllocated	qualified	patch_manager_mods/engine_research_findings/R2.md:190	0x00449320	0x0	new		4
+0x00449320	function	CExoPtrList::SetAllocated	qualified	patch_manager_mods/engine_research_findings/R2.md:203	0x00449320	0x0	new		4
+0x00449320	function	CExoPtrList::SetAllocated	qualified	patch_manager_mods/engine_research_findings/R9.md:271	0x00449320	0x0	new		4
+0x00449320	function	CExoPtrList::SetAllocated	qualified	patch_manager_mods/engine_research_findings/R9.md:70	0x00449320	0x0	new		4
+0x004664e0	function	Scene::DoBinBucket	qualified	patch_manager_mods/48_k2_grass_draw_distance.md:25	0x004664e0	0x0	agrees	Scene::DoBinBucket	4
+0x004664e0	function	Scene::DoBinBucket	qualified	patch_manager_mods/50_k2_render_performance.md:20	0x004664e0	0x0	agrees	Scene::DoBinBucket	4
+0x004664e0	function	Scene::DoBinBucket	qualified	patch_manager_mods/engine_research_findings/R6.md:27	0x004664e0	0x0	agrees	Scene::DoBinBucket	4
+0x004664e0	function	Scene::DoBinBucket	qualified	patch_manager_mods/engine_research_findings/R9.md:74	0x004664e0	0x0	agrees	Scene::DoBinBucket	4
+0x0046c2b0	function	Scene::Render	qualified	.claude/research/render_perf/R8_models_anim.md:32	0x0046c2b0	0x0	agrees	Scene::Render	4
+0x0046c2b0	function	Scene::Render	qualified	patch_manager_mods/engine_research_findings/R7.md:24	0x0046c2b0	0x0	agrees	Scene::Render	4
+0x0046c2b0	function	Scene::Render	qualified	patch_manager_mods/engine_research_findings/R9.md:75	0x0046c2b0	0x0	agrees	Scene::Render	4
+0x0046c2b0	function	Scene::Render	qualified	patch_manager_mods/engine_research_findings/V5.md:37	0x0046c2b0	0x0	agrees	Scene::Render	4
+0x00473b30	function	std::_Tree::_Buynode	qualified	patch_manager_mods/engine_research_findings/R2.md:195	0x00473b30	0x0	conflicts	std::_Tree::_Buynode (map<uint,..> node ctor)	4
+0x00473b30	function	std::_Tree::_Buynode	qualified	patch_manager_mods/engine_research_findings/R2.md:31	0x00473b30	0x0	conflicts	std::_Tree::_Buynode (map<uint,..> node ctor)	4
+0x00473b30	function	std::_Tree::_Buynode	qualified	patch_manager_mods/engine_research_findings/R9.md:277	0x00473b30	0x0	conflicts	std::_Tree::_Buynode (map<uint,..> node ctor)	4
+0x00473b30	function	std::_Tree::_Buynode	qualified	patch_manager_mods/engine_research_findings/R9.md:81	0x00473b30	0x0	conflicts	std::_Tree::_Buynode (map<uint,..> node ctor)	4
+0x0050c8a0	function	CAurTriangleBin::AddTriangle	qualified	.claude/research/render_perf/R6_grass_variety.md:35	0x0050c8a0	0x0	agrees	CAurTriangleBin::AddTriangle	4
+0x0050c8a0	function	CAurTriangleBin::AddTriangle	qualified	patch_manager_mods/50_k2_render_performance.md:79	0x0050c8a0	0x0	agrees	CAurTriangleBin::AddTriangle	4
+0x0050c8a0	function	CAurTriangleBin::AddTriangle	qualified	patch_manager_mods/engine_research_findings/R6.md:20	0x0050c8a0	0x0	agrees	CAurTriangleBin::AddTriangle	4
+0x0050c8a0	function	CAurTriangleBin::AddTriangle	qualified	patch_manager_mods/engine_research_findings/R9.md:108	0x0050c8a0	0x0	agrees	CAurTriangleBin::AddTriangle	4
+0x005f5770	function	CSWSPlaceable::CloseInventory	qualified	.claude/research/quick_loot/R2_client_gui.md:52	0x005f5770	0x0	agrees	CSWSPlaceable::CloseInventory	4
+0x005f5770	function	CSWSPlaceable::CloseInventory	qualified	.claude/research/quick_loot/R3_server_take.md:10	0x005f5770	0x0	agrees	CSWSPlaceable::CloseInventory	4
+0x005f5770	function	CSWSPlaceable::CloseInventory	qualified	.claude/research/quick_loot/R3_server_take.md:57	0x005f5770	0x0	agrees	CSWSPlaceable::CloseInventory	4
+0x005f5770	function	CSWSPlaceable::CloseInventory	qualified	patch_manager_mods/52_quick_loot.md:10	0x005f5770	0x0	agrees	CSWSPlaceable::CloseInventory	4
+0x0071aef0	function	C2DA::GetColumnIndex	qualified	.claude/research/wi03_rescue/R4.md:13	0x0071aef0	0x0	agrees	C2DA::GetColumnIndex	4
+0x0071aef0	function	C2DA::GetColumnIndex	qualified	patch_manager_mods/engine_research_findings/R5.md:30	0x0071aef0	0x0	agrees	C2DA::GetColumnIndex	4
+0x0071aef0	function	C2DA::GetColumnIndex	qualified	patch_manager_mods/engine_research_findings/R8.md:198	0x0071aef0	0x0	agrees	C2DA::GetColumnIndex	4
+0x0071aef0	function	C2DA::GetColumnIndex	qualified	patch_manager_mods/engine_research_findings/R9.md:149	0x0071aef0	0x0	agrees	C2DA::GetColumnIndex	4
+0x007337c0	function	CExoString::operator	qualified	patch_manager_mods/engine_research_findings/R8.md:176	0x007337c0	0x0	conflicts	CExoString::operator=	4
+0x007337c0	function	CExoString::operator	qualified	patch_manager_mods/engine_research_findings/R9.md:172	0x007337c0	0x0	conflicts	CExoString::operator=	4
+0x007337c0	function	CExoString::operator	qualified	patch_manager_mods/engine_research_findings/V8.md:21	0x007337c0	0x0	conflicts	CExoString::operator=	4
+0x007337c0	function	CExoString::operator	qualified	patch_manager_mods/mods678_research/ai_review_2026-10-01/designs/design_ai_trace.md:98	0x007337c0	0x0	conflicts	CExoString::operator=	4
+0x00734690	function	CExoString::ToLower	qualified	.claude/reviews/fix_report.md:99	0x00734690	0x0	agrees	CExoString::ToLower	4
+0x00734690	function	CExoString::ToLower	qualified	.claude/reviews/master_findings.md:1511	0x00734690	0x0	agrees	CExoString::ToLower	4
+0x00734690	function	CExoString::ToLower	qualified	patch_manager_mods/engine_research_findings/R2.md:199	0x00734690	0x0	agrees	CExoString::ToLower	4
+0x00734690	function	CExoString::ToLower	qualified	patch_manager_mods/engine_research_findings/R8.md:184	0x00734690	0x0	agrees	CExoString::ToLower	4
+0x0074b3f0	function	CSWGuiMainInterface::Draw	qualified	.claude/reviews/master_findings.md:1863	0x0074b3f0	0x0	agrees	CSWGuiMainInterface::Draw	4
+0x0074b3f0	function	CSWGuiMainInterface::Draw	qualified	.claude/reviews/master_findings.md:945	0x0074b3f0	0x0	agrees	CSWGuiMainInterface::Draw	4
+0x0074b3f0	function	CSWGuiMainInterface::Draw	qualified	.claude/reviews/verified_findings.md:1209	0x0074b3f0	0x0	agrees	CSWGuiMainInterface::Draw	4
+0x0074b3f0	function	CSWGuiMainInterface::Draw	qualified	.claude/reviews/verified_findings.v2.md:1226	0x0074b3f0	0x0	agrees	CSWGuiMainInterface::Draw	4
+0x008baca0	function	CSWGuiDialogLetterbox::SetTop	qualified	.claude/research/ingest/i2_cards/chunk_1.md:111	0x008baca0	0x0	agrees	CSWGuiDialogLetterbox::SetTop	4
+0x008baca0	function	CSWGuiDialogLetterbox::SetTop	qualified	.claude/research/ingest/i2_cards/chunk_2.md:114	0x008baca0	0x0	agrees	CSWGuiDialogLetterbox::SetTop	4
+0x008baca0	function	CSWGuiDialogLetterbox::SetTop	qualified	patch_manager_mods/engine_research_findings/V1.md:18	0x008baca0	0x0	agrees	CSWGuiDialogLetterbox::SetTop	4
+0x008baca0	function	CSWGuiDialogLetterbox::SetTop	qualified	patch_manager_mods/engine_research_findings/V11.md:18	0x008baca0	0x0	agrees	CSWGuiDialogLetterbox::SetTop	4
+0x008bada0	function	CSWGuiDialogLetterbox::SetBottom	qualified	.claude/research/ingest/i2_cards/chunk_1.md:112	0x008bada0	0x0	agrees	CSWGuiDialogLetterbox::SetBottom	4
+0x008bada0	function	CSWGuiDialogLetterbox::SetBottom	qualified	.claude/research/ingest/i2_cards/chunk_2.md:115	0x008bada0	0x0	agrees	CSWGuiDialogLetterbox::SetBottom	4
+0x008bada0	function	CSWGuiDialogLetterbox::SetBottom	qualified	patch_manager_mods/engine_research_findings/V1.md:19	0x008bada0	0x0	agrees	CSWGuiDialogLetterbox::SetBottom	4
+0x008bada0	function	CSWGuiDialogLetterbox::SetBottom	qualified	patch_manager_mods/engine_research_findings/V11.md:19	0x008bada0	0x0	agrees	CSWGuiDialogLetterbox::SetBottom	4
+0x00414a50	function	CSWGuiBorder::Constructor	qualified	.claude/research/ingest/i2_cards/chunk_4.md:71	0x00414a50	0x0	agrees	CSWGuiBorder::Constructor	3
+0x00414a50	function	CSWGuiBorder::Constructor	qualified	.claude/research/ingest/i2_cards/chunk_5.md:94	0x00414a50	0x0	agrees	CSWGuiBorder::Constructor	3
+0x00414a50	function	CSWGuiBorder::Constructor	qualified	.claude/research/ingest/i2_cards/chunk_7.md:34	0x00414a50	0x0	agrees	CSWGuiBorder::Constructor	3
+0x00416e30	function	CSWGuiTextParams::SetText	qualified	.claude/research/ingest/i2_cards/chunk_2.md:51	0x00416e30	0x0	agrees	CSWGuiTextParams::SetText	3
+0x00416e30	function	CSWGuiTextParams::SetText	qualified	.claude/research/ingest/i2_cards/chunk_3.md:112	0x00416e30	0x0	agrees	CSWGuiTextParams::SetText	3
+0x00416e30	function	CSWGuiTextParams::SetText	qualified	patch_manager_mods/engine_research_findings/V8.md:23	0x00416e30	0x0	agrees	CSWGuiTextParams::SetText	3
+0x00416ea0	function	CSWGuiTextParams::SetStrRef	qualified	.claude/research/ingest/i2_cards/chunk_2.md:51	0x00416ea0	0x0	agrees	CSWGuiTextParams::SetStrRef	3
+0x00416ea0	function	CSWGuiTextParams::SetStrRef	qualified	.claude/research/ingest/i2_cards/chunk_3.md:112	0x00416ea0	0x0	agrees	CSWGuiTextParams::SetStrRef	3
+0x00416ea0	function	CSWGuiTextParams::SetStrRef	qualified	.claude/research/ingest/i2_cards/chunk_3.md:33	0x00416ea0	0x0	agrees	CSWGuiTextParams::SetStrRef	3
+0x0041a3d0	function	CSWGuiButton::Destructor	qualified	.claude/research/ingest/i2_cards/chunk_1.md:56	0x0041a3d0	0x0	agrees	CSWGuiButton::Destructor	3
+0x0041a3d0	function	CSWGuiButton::Destructor	qualified	.claude/research/ingest/i2_cards/chunk_2.md:42	0x0041a3d0	0x0	agrees	CSWGuiButton::Destructor	3
+0x0041a3d0	function	CSWGuiButton::Destructor	qualified	patch_manager_mods/engine_research_findings/R9.md:34	0x0041a3d0	0x0	agrees	CSWGuiButton::Destructor	3
+0x004491c0	function	CExoPtrList::Add	qualified	patch_manager_mods/engine_research_findings/R8.md:192	0x004491c0	0x0	conflicts	CExoPtrList::Add (doubling)	3
+0x004491c0	function	CExoPtrList::Add	qualified	patch_manager_mods/engine_research_findings/R9.md:270	0x004491c0	0x0	conflicts	CExoPtrList::Add (doubling)	3
+0x004491c0	function	CExoPtrList::Add	qualified	patch_manager_mods/engine_research_findings/R9.md:69	0x004491c0	0x0	conflicts	CExoPtrList::Add (doubling)	3
+0x004732a0	function	std::_Tree::_Insert	qualified	patch_manager_mods/engine_research_findings/R2.md:32	0x004732a0	0x0	conflicts	std::_Tree::_Insert (RB rebalance)	3
+0x004732a0	function	std::_Tree::_Insert	qualified	patch_manager_mods/engine_research_findings/R9.md:275	0x004732a0	0x0	conflicts	std::_Tree::_Insert (RB rebalance)	3
+0x004732a0	function	std::_Tree::_Insert	qualified	patch_manager_mods/engine_research_findings/R9.md:79	0x004732a0	0x0	conflicts	std::_Tree::_Insert (RB rebalance)	3
+0x00474110	function	std::allocator	qualified	patch_manager_mods/engine_research_findings/R2.md:30	0x00474110	0x0	conflicts	std::allocator<32B>::allocate(n) (map/set node)	3
+0x00474110	function	std::allocator	qualified	patch_manager_mods/engine_research_findings/R9.md:279	0x00474110	0x0	conflicts	std::allocator<32B>::allocate(n) (map/set node)	3
+0x00474110	function	std::allocator	qualified	patch_manager_mods/engine_research_findings/R9.md:84	0x00474110	0x0	conflicts	std::allocator<32B>::allocate(n) (map/set node)	3
+0x00474370	function	Target::AddBackRef	qualified	patch_manager_mods/engine_research_findings/R2.md:27	0x00474370	0x0	conflicts	Target::AddBackRef(holder)	3
+0x00474370	function	Target::AddBackRef	qualified	patch_manager_mods/engine_research_findings/R9.md:280	0x00474370	0x0	conflicts	Target::AddBackRef(holder)	3
+0x00474370	function	Target::AddBackRef	qualified	patch_manager_mods/engine_research_findings/R9.md:86	0x00474370	0x0	conflicts	Target::AddBackRef(holder)	3
+0x004762f0	function	ModelFile::ReadBlock	qualified	patch_manager_mods/engine_research_findings/R5.md:34	0x004762f0	0x0	conflicts	ModelFile::ReadBlock(n, src)	3
+0x004762f0	function	ModelFile::ReadBlock	qualified	patch_manager_mods/engine_research_findings/R9.md:282	0x004762f0	0x0	conflicts	ModelFile::ReadBlock(n, src)	3
+0x004762f0	function	ModelFile::ReadBlock	qualified	patch_manager_mods/engine_research_findings/R9.md:88	0x004762f0	0x0	conflicts	ModelFile::ReadBlock(n, src)	3
+0x0050dac0	function	CAurTriangleBin::RenderGrassPolys	qualified	patch_manager_mods/48_k2_grass_draw_distance.md:17	0x0050dac0	0x0	agrees	CAurTriangleBin::RenderGrassPolys	3
+0x0050dac0	function	CAurTriangleBin::RenderGrassPolys	qualified	patch_manager_mods/50_k2_render_performance.md:15	0x0050dac0	0x0	agrees	CAurTriangleBin::RenderGrassPolys	3
+0x0050dac0	function	CAurTriangleBin::RenderGrassPolys	qualified	patch_manager_mods/engine_research_findings/R6.md:24	0x0050dac0	0x0	agrees	CAurTriangleBin::RenderGrassPolys	3
+0x00510f70	function	CAurTriangleBin::UpdateGrassForWind	qualified	patch_manager_mods/48_k2_grass_draw_distance.md:20	0x00510f70	0x0	agrees	CAurTriangleBin::UpdateGrassForWind	3
+0x00510f70	function	CAurTriangleBin::UpdateGrassForWind	qualified	patch_manager_mods/engine_research_findings/R6.md:26	0x00510f70	0x0	agrees	CAurTriangleBin::UpdateGrassForWind	3
+0x00510f70	function	CAurTriangleBin::UpdateGrassForWind	qualified	patch_manager_mods/engine_research_findings/R9.md:114	0x00510f70	0x0	agrees	CAurTriangleBin::UpdateGrassForWind	3
+0x00568bd0	function	CSWSCreature::AddToArea	qualified	.claude/research/ingest/i2_cards/chunk_3.md:122	0x00568bd0	0x0	agrees	CSWSCreature::AddToArea	3
+0x00568bd0	function	CSWSCreature::AddToArea	qualified	.claude/research/ingest/i2_cards/chunk_5.md:72	0x00568bd0	0x0	agrees	CSWSCreature::AddToArea	3
+0x00568bd0	function	CSWSCreature::AddToArea	qualified	.claude/research/npc_add/R3_engine_route.md:14	0x00568bd0	0x0	agrees	CSWSCreature::AddToArea	3
+0x0057eca0	function	CSWSCreature::GetMaxForcePoints	qualified	.claude/research/combat_stats/w1/C4b.md:7	0x0057eca0	0x0	agrees	CSWSCreature::GetMaxForcePoints	3
+0x0057eca0	function	CSWSCreature::GetMaxForcePoints	qualified	.claude/research/ingest/i2_cards/chunk_3.md:124	0x0057eca0	0x0	agrees	CSWSCreature::GetMaxForcePoints	3
+0x0057eca0	function	CSWSCreature::GetMaxForcePoints	qualified	.claude/research/ingest/i2_cards/chunk_5.md:74	0x0057eca0	0x0	agrees	CSWSCreature::GetMaxForcePoints	3
+0x0058c700	function	ActionEntry::CopyFrom	qualified	patch_manager_mods/engine_research_findings/R2.md:198	0x0058c700	0x0	conflicts	ActionEntry::CopyFrom (CExoString deep copy in SetAllocated)	3
+0x0058c700	function	ActionEntry::CopyFrom	qualified	patch_manager_mods/engine_research_findings/R9.md:133	0x0058c700	0x0	conflicts	ActionEntry::CopyFrom (CExoString deep copy in SetAllocated)	3
+0x0058c700	function	ActionEntry::CopyFrom	qualified	patch_manager_mods/engine_research_findings/R9.md:295	0x0058c700	0x0	conflicts	ActionEntry::CopyFrom (CExoString deep copy in SetAllocated)	3
+0x006b9870	function	CSWSCreatureStats::LevelUp	qualified	patch_manager_mods/08_level_up_override.md:126	0x006b9870	0x0	agrees	CSWSCreatureStats::LevelUp	3
+0x006b9870	function	CSWSCreatureStats::LevelUp	qualified	patch_manager_mods/08_level_up_override.md:163	0x006b9870	0x0	agrees	CSWSCreatureStats::LevelUp	3
+0x006b9870	function	CSWSCreatureStats::LevelUp	qualified	patch_manager_mods/08_level_up_override.md:35	0x006b9870	0x0	agrees	CSWSCreatureStats::LevelUp	3
+0x00711c20	function	CExoResMan::Demand	qualified	patch_manager_mods/41_custom_voice_and_events.md:132	0x00711c20	0x0	agrees	CExoResMan::Demand	3
+0x00711c20	function	CExoResMan::Demand	qualified	patch_manager_mods/44_in_memory_asset_vfs_and_character_library.md:46	0x00711c20	0x0	agrees	CExoResMan::Demand	3
+0x00711c20	function	CExoResMan::Demand	qualified	patch_manager_mods/engine_research_findings/V6.md:25	0x00711c20	0x0	agrees	CExoResMan::Demand	3
+0x0071c180	function	C2DA::NextToken	qualified	patch_manager_mods/engine_research_findings/R5.md:24	0x0071c180	0x0	agrees	C2DA::NextToken	3
+0x0071c180	function	C2DA::NextToken	qualified	patch_manager_mods/engine_research_findings/V6.md:18	0x0071c180	0x0	agrees	C2DA::NextToken	3
+0x0071c180	function	C2DA::NextToken	qualified	patch_manager_mods/engine_research_findings/W6.md:35	0x0071c180	0x0	agrees	C2DA::NextToken	3
+0x00724f00	function	CExoKeyTable::LoadKeyFile	qualified	patch_manager_mods/engine_research_findings/R2.md:191	0x00724f00	0x0	agrees	CExoKeyTable::LoadKeyFile	3
+0x00724f00	function	CExoKeyTable::LoadKeyFile	qualified	patch_manager_mods/engine_research_findings/R9.md:162	0x00724f00	0x0	agrees	CExoKeyTable::LoadKeyFile	3
+0x00724f00	function	CExoKeyTable::LoadKeyFile	qualified	patch_manager_mods/engine_research_findings/R9.md:296	0x00724f00	0x0	agrees	CExoKeyTable::LoadKeyFile	3
+0x00729fd0	function	CRes2DA::OnResourceServiced	qualified	patch_manager_mods/44_in_memory_asset_vfs_and_character_library.md:63	0x00729fd0	0x0	agrees	CRes2DA::OnResourceServiced	3
+0x00729fd0	function	CRes2DA::OnResourceServiced	qualified	patch_manager_mods/engine_research_findings/V6.md:19	0x00729fd0	0x0	agrees	CRes2DA::OnResourceServiced	3
+0x00729fd0	function	CRes2DA::OnResourceServiced	qualified	patch_manager_mods/engine_research_findings/V6.md:51	0x00729fd0	0x0	agrees	CRes2DA::OnResourceServiced	3
+0x00733df0	function	CExoString::operator	qualified	patch_manager_mods/engine_research_findings/R8.md:179	0x00733df0	0x0	conflicts	CExoString::operator+	3
+0x00733df0	function	CExoString::operator	qualified	patch_manager_mods/engine_research_findings/R9.md:177	0x00733df0	0x0	conflicts	CExoString::operator+	3
+0x00733df0	function	CExoString::operator	qualified	patch_manager_mods/engine_research_findings/V8.md:20	0x00733df0	0x0	conflicts	CExoString::operator+	3
+0x00734270	function	CExoString::Format	qualified	patch_manager_mods/engine_research_findings/R8.md:182	0x00734270	0x0	agrees	CExoString::Format	3
+0x00734270	function	CExoString::Format	qualified	patch_manager_mods/engine_research_findings/R9.md:181	0x00734270	0x0	agrees	CExoString::Format	3
+0x00734270	function	CExoString::Format	qualified	patch_manager_mods/engine_research_findings/W5.md:127	0x00734270	0x0	agrees	CExoString::Format	3
+0x007356b0	function	CExoLocString::GetString	qualified	.claude/research/holster_edit/r10_creature_name.md:19	0x007356b0	0x0	conflicts	CExoLocString::GetString_3	3
+0x007356b0	function	CExoLocString::GetString	qualified	patch_manager_mods/engine_research_findings/R8.md:215	0x007356b0	0x0	conflicts	CExoLocString::GetString_3	3
+0x007356b0	function	CExoLocString::GetString	qualified	patch_manager_mods/mods678_research/ai_research_2026-10-02/R4_medpac_mod6v2.md:285	0x007356b0	0x0	conflicts	CExoLocString::GetString_3	3
+0x0074cfe0	function	ActionBar::RefreshPortrait	qualified	patch_manager_mods/engine_research_findings/R2.md:38	0x0074cfe0	0x0	conflicts	CSWGuiMainInterface::UpdateTargetMenu	3
+0x0074cfe0	function	ActionBar::RefreshPortrait	qualified	patch_manager_mods/engine_research_findings/R9.md:205	0x0074cfe0	0x0	conflicts	CSWGuiMainInterface::UpdateTargetMenu	3
+0x0074cfe0	function	ActionBar::RefreshPortrait	qualified	patch_manager_mods/engine_research_findings/R9.md:301	0x0074cfe0	0x0	conflicts	CSWGuiMainInterface::UpdateTargetMenu	3
+0x00775700	function	CSWCCreature::PerformCastSpell	qualified	patch_manager_mods/33_ui_queue_hotbar_fixes.md:148	0x00775700	0x0	agrees	CSWCCreature::PerformCastSpell	3
+0x00775700	function	CSWCCreature::PerformCastSpell	qualified	patch_manager_mods/37_bug_board.md:170	0x00775700	0x0	agrees	CSWCCreature::PerformCastSpell	3
+0x00775700	function	CSWCCreature::PerformCastSpell	qualified	patch_manager_mods/37_bug_board.md:28	0x00775700	0x0	agrees	CSWCCreature::PerformCastSpell	3
+0x007ecfa0	function	ActionEntry::Reset	qualified	patch_manager_mods/engine_research_findings/R7.md:35	0x007ecfa0	0x0	agrees	ActionEntry::Reset	3
+0x007ecfa0	function	ActionEntry::Reset	qualified	patch_manager_mods/engine_research_findings/R9.md:211	0x007ecfa0	0x0	agrees	ActionEntry::Reset	3
+0x007ecfa0	function	ActionEntry::Reset	qualified	patch_manager_mods/engine_research_findings/R9.md:302	0x007ecfa0	0x0	agrees	ActionEntry::Reset	3
+0x0084e6f0	function	CSWGuiInGameCharacter::SetStats	qualified	.claude/research/ingest/i2_cards/chunk_4.md:91	0x0084e6f0	0x0	conflicts	CSWGuiInGameCharacter::SetStats (CanLevelUp at 0x84F221 -> button visibility)	3
+0x0084e6f0	function	CSWGuiInGameCharacter::SetStats	qualified	.claude/research/ingest/i2_cards/chunk_5.md:114	0x0084e6f0	0x0	conflicts	CSWGuiInGameCharacter::SetStats (CanLevelUp at 0x84F221 -> button visibility)	3
+0x0084e6f0	function	CSWGuiInGameCharacter::SetStats	qualified	.claude/research/ingest/i2_cards/chunk_6.md:23	0x0084e6f0	0x0	conflicts	CSWGuiInGameCharacter::SetStats (CanLevelUp at 0x84F221 -> button visibility)	3
+0x00880740	function	CSWGuiInGameCharacter::Constructor	qualified	.claude/research/ingest/i2_cards/chunk_5.md:23	0x00880740	0x0	new		3
+0x00880740	function	CSWGuiInGameCharacter::Constructor	qualified	.claude/research/ingest/i2_cards/chunk_6.md:73	0x00880740	0x0	new		3
+0x00880740	function	CSWGuiInGameCharacter::Constructor	qualified	.claude/research/ingest/i2_cards/chunk_7.md:122	0x00880740	0x0	new		3
+0x008a8100	function	CSWGuiInGameInventory::OnControlEntered	qualified	.claude/research/wi03_rescue/C018.md:7	0x008a8100	0x0	agrees	CSWGuiInGameInventory::OnControlEntered	3
+0x008a8100	function	CSWGuiInGameInventory::OnControlEntered	qualified	patch_manager_mods/01_inventory_3d_viewport.md:578	0x008a8100	0x0	agrees	CSWGuiInGameInventory::OnControlEntered	3
+0x008a8100	function	CSWGuiInGameInventory::OnControlEntered	qualified	patch_manager_mods/engine_research_findings/V8.md:24	0x008a8100	0x0	agrees	CSWGuiInGameInventory::OnControlEntered	3
+0x008bb260	function	CSWGuiDialogLetterbox::Draw	qualified	patch_manager_mods/engine_research_findings/V1.md:22	0x008bb260	0x0	agrees	CSWGuiDialogLetterbox::Draw	3
+0x008bb260	function	CSWGuiDialogLetterbox::Draw	qualified	patch_manager_mods/engine_research_findings/V11.md:20	0x008bb260	0x0	agrees	CSWGuiDialogLetterbox::Draw	3
+0x008bb260	function	CSWGuiDialogLetterbox::Draw	qualified	patch_manager_mods/engine_research_findings/V8b.md:18	0x008bb260	0x0	agrees	CSWGuiDialogLetterbox::Draw	3
+0x00401cf0	function	LazyAlloc256KBBuffer	bare	patch_manager_mods/engine_research_findings/R2.md:51	0x00401cf0	0x0	agrees	LazyAlloc256KBBuffer	2
+0x00401cf0	function	LazyAlloc256KBBuffer	bare	patch_manager_mods/engine_research_findings/R9.md:19	0x00401cf0	0x0	agrees	LazyAlloc256KBBuffer	2
+0x00407920	function	Global::WinMain	qualified	patch_manager_mods/engine_research_findings/R9.md:20	0x00407920	0x0	agrees	Global::WinMain	2
+0x00407920	function	Global::WinMain	qualified	patch_manager_mods/engine_research_findings/V5.md:27	0x00407920	0x0	agrees	Global::WinMain	2
+0x0040a750	function	MainWndProc	bare	patch_manager_mods/engine_research_findings/T4.md:17	0x0040a750	0x0	agrees	MainWndProc	2
+0x0040a750	function	MainWndProc	bare	patch_manager_mods/engine_research_findings/U6.md:15	0x0040a750	0x0	agrees	MainWndProc	2
+0x0040bc40	function	AppDeactivated	bare	patch_manager_mods/engine_research_findings/T4.md:18	0x0040bc40	0x0	agrees	AppDeactivated	2
+0x0040bc40	function	AppDeactivated	bare	patch_manager_mods/engine_research_findings/U6.md:16	0x0040bc40	0x0	agrees	AppDeactivated	2
+0x0040bcf0	function	AppActivated	bare	patch_manager_mods/engine_research_findings/T4.md:19	0x0040bcf0	0x0	agrees	AppActivated	2
+0x0040bcf0	function	AppActivated	bare	patch_manager_mods/engine_research_findings/U6.md:17	0x0040bcf0	0x0	agrees	AppActivated	2
+0x0040bf40	function	Movie::RestoreAfterMovie	qualified	patch_manager_mods/engine_research_findings/T4.md:20	0x0040bf40	0x0	conflicts	Movie::RestoreAfterMovie (handler of WM_USER+10 0x40A and sync call)	2
+0x0040bf40	function	Movie::RestoreAfterMovie	qualified	patch_manager_mods/engine_research_findings/U6.md:18	0x0040bf40	0x0	conflicts	Movie::RestoreAfterMovie (handler of WM_USER+10 0x40A and sync call)	2
+0x0040cc00	function	Movie::NoteDeactivated	qualified	patch_manager_mods/engine_research_findings/T4.md:29	0x0040cc00	0x0	conflicts	CExoMoviePlayerInternal::RequestRestart	2
+0x0040cc00	function	Movie::NoteDeactivated	qualified	patch_manager_mods/engine_research_findings/U6.md:24	0x0040cc00	0x0	conflicts	CExoMoviePlayerInternal::RequestRestart	2
+0x0040cc70	function	CExoMoviePlayerInternal::StartMovie	qualified	.claude/research/ingest/i2_cards/chunk_3.md:94	0x0040cc70	0x0	agrees	CExoMoviePlayerInternal::StartMovie	2
+0x0040cc70	function	CExoMoviePlayerInternal::StartMovie	qualified	.claude/research/ingest/i2_cards/chunk_5.md:104	0x0040cc70	0x0	agrees	CExoMoviePlayerInternal::StartMovie	2
+0x0040eaa0	function	CSWGuiPanel::HandleInputEvent	qualified	.claude/research/holster_edit/d2b_options_hooks.md:30	0x0040eaa0	0x0	agrees	CSWGuiPanel::HandleInputEvent	2
+0x0040eaa0	function	CSWGuiPanel::HandleInputEvent	qualified	.claude/research/quick_loot/R2_client_gui.md:33	0x0040eaa0	0x0	agrees	CSWGuiPanel::HandleInputEvent	2
+0x0040ee40	function	CSWGuiPanel::LoadPanel	qualified	patch_manager_mods/engine_research_findings/V4.md:28	0x0040ee40	0x0	conflicts	CSWGuiPanel::StartLoadFromLayout	2
+0x0040ee40	function	CSWGuiPanel::LoadPanel	qualified	patch_manager_mods/engine_research_findings/V9.md:35	0x0040ee40	0x0	conflicts	CSWGuiPanel::StartLoadFromLayout	2
+0x00410800	function	GuiManager::Contains	qualified	patch_manager_mods/engine_research_findings/R7.md:29	0x00410800	0x0	agrees	GuiManager::Contains	2
+0x00410800	function	GuiManager::Contains	qualified	patch_manager_mods/engine_research_findings/V8b.md:33	0x00410800	0x0	agrees	GuiManager::Contains	2
+0x004113a0	function	CSWGuiManager::Draw	qualified	patch_manager_mods/engine_research_findings/R9.md:29	0x004113a0	0x0	agrees	CSWGuiManager::Draw	2
+0x004113a0	function	CSWGuiManager::Draw	qualified	patch_manager_mods/engine_research_findings/V1.md:36	0x004113a0	0x0	agrees	CSWGuiManager::Draw	2
+0x00411a80	function	CSWGuiManager::SetScreenSize	qualified	patch_manager_mods/engine_research_findings/V1.md:34	0x00411a80	0x0	agrees	CSWGuiManager::SetScreenSize	2
+0x00411a80	function	CSWGuiManager::SetScreenSize	qualified	patch_manager_mods/engine_research_findings/V7.md:32	0x00411a80	0x0	agrees	CSWGuiManager::SetScreenSize	2
+0x00414c60	function	CSWGuiBorder::Destructor_2	qualified	.claude/research/ingest/i2_cards/chunk_4.md:72	0x00414c60	0x0	agrees	CSWGuiBorder::Destructor_2	2
+0x00414c60	function	CSWGuiBorder::Destructor_2	qualified	patch_manager_mods/engine_research_findings/R9.md:31	0x00414c60	0x0	agrees	CSWGuiBorder::Destructor_2	2
+0x00415300	function	CSWGuiBorder::Draw	qualified	patch_manager_mods/00_code_review_feedback_2026-09-29.md:66	0x00415300	0x0	agrees	CSWGuiBorder::Draw	2
+0x00415300	function	CSWGuiBorder::Draw	qualified	patch_manager_mods/02_buff_duration_hud.md:751	0x00415300	0x0	agrees	CSWGuiBorder::Draw	2
+0x00416cc0	function	CSWGuiTextParams::SetFont	qualified	.claude/research/ingest/i2_cards/chunk_2.md:51	0x00416cc0	0x0	agrees	CSWGuiTextParams::SetFont	2
+0x00416cc0	function	CSWGuiTextParams::SetFont	qualified	.claude/research/ingest/i2_cards/chunk_3.md:112	0x00416cc0	0x0	agrees	CSWGuiTextParams::SetFont	2
+0x00416e30	function	CSWGuiTextParams::SetFont	qualified	.claude/research/ingest/i2_cards/chunk_2.md:51	0x00416e30	0x0	conflicts	CSWGuiTextParams::SetText	2
+0x00416e30	function	CSWGuiTextParams::SetFont	qualified	.claude/research/ingest/i2_cards/chunk_3.md:112	0x00416e30	0x0	conflicts	CSWGuiTextParams::SetText	2
+0x00416ea0	function	CSWGuiTextParams::SetText	qualified	.claude/research/ingest/i2_cards/chunk_2.md:51	0x00416ea0	0x0	conflicts	CSWGuiTextParams::SetStrRef	2
+0x00416ea0	function	CSWGuiTextParams::SetText	qualified	.claude/research/ingest/i2_cards/chunk_3.md:112	0x00416ea0	0x0	conflicts	CSWGuiTextParams::SetStrRef	2
+0x00416fa0	function	CSWGuiTextParams::SetAlignment	qualified	.claude/research/ingest/i2_cards/chunk_2.md:51	0x00416fa0	0x0	agrees	CSWGuiTextParams::SetAlignment	2
+0x00416fa0	function	CSWGuiTextParams::SetStrRef	qualified	.claude/research/ingest/i2_cards/chunk_2.md:51	0x00416fa0	0x0	conflicts	CSWGuiTextParams::SetAlignment	2
+0x00416fa0	function	CSWGuiTextParams::SetAlignment	qualified	.claude/research/ingest/i2_cards/chunk_3.md:112	0x00416fa0	0x0	agrees	CSWGuiTextParams::SetAlignment	2
+0x00416fa0	function	CSWGuiTextParams::SetStrRef	qualified	.claude/research/ingest/i2_cards/chunk_3.md:112	0x00416fa0	0x0	conflicts	CSWGuiTextParams::SetAlignment	2
+0x00417340	function	CSWGuiTextParams::SetAlignment	qualified	.claude/research/ingest/i2_cards/chunk_2.md:51	0x00417340	0x0	new		2
+0x00417340	function	CSWGuiTextParams::SetAlignment	qualified	.claude/research/ingest/i2_cards/chunk_3.md:112	0x00417340	0x0	new		2
+0x00418360	function	CSWGuiScene::AddModel	qualified	patch_manager_mods/00_code_review_feedback_2026-09-29.md:37	0x00418360	0x0	conflicts	rea:SceneAddModel	2
+0x00418360	function	CSWGuiScene::AddModel	qualified	patch_manager_mods/10_equipment_3d_character_feedback.md:31	0x00418360	0x0	conflicts	rea:SceneAddModel	2
+0x00419070	callsite	CSWCCreature::SetAppearance	qualified	.claude/reviews/master_findings.md:959	0x00419060	0x10	new		2
+0x00419070	callsite	CSWCCreature::SetAppearance	qualified	.claude/reviews/verified_findings.v2.md:1636	0x00419060	0x10	new		2
+0x0041bb20	function	CSWGuiProgressBar::Draw	qualified	patch_manager_mods/02_buff_duration_hud.md:717	0x0041bb20	0x0	new		2
+0x0041bb20	function	CSWGuiProgressBar::Draw	qualified	patch_manager_mods/08_shield_bar.md:152	0x0041bb20	0x0	new		2
+0x0041d710	function	CSWGuiListBox::SetExtent	qualified	patch_manager_mods/engine_research_findings/V2.md:24	0x0041d710	0x0	agrees	CSWGuiListBox::SetExtent	2
+0x0041d710	function	CSWGuiListBox::SetExtent	qualified	patch_manager_mods/engine_research_findings/V8.md:27	0x0041d710	0x0	agrees	CSWGuiListBox::SetExtent	2
+0x0041e9d0	function	CSWGuiListBox::SetPadding	qualified	patch_manager_mods/engine_research_findings/V2.md:25	0x0041e9d0	0x0	agrees	CSWGuiListBox::SetPadding	2
+0x0041e9d0	function	CSWGuiListBox::SetPadding	qualified	patch_manager_mods/engine_research_findings/V8.md:30	0x0041e9d0	0x0	agrees	CSWGuiListBox::SetPadding	2
+0x0041ffd0	function	CSWGuiListBox::Load	qualified	patch_manager_mods/engine_research_findings/V2.md:26	0x0041ffd0	0x0	agrees	CSWGuiListBox::Load	2
+0x0041ffd0	function	CSWGuiListBox::Load	qualified	patch_manager_mods/engine_research_findings/V8.md:31	0x0041ffd0	0x0	agrees	CSWGuiListBox::Load	2
+0x004265e0	function	CAurTextureBasic::glImage	qualified	.claude/research/ingest/i2_cards/chunk_2.md:126	0x004265e0	0x0	agrees	CAurTextureBasic::glImage	2
+0x004265e0	function	CAurTextureBasic::glImage	qualified	patch_manager_mods/engine_research_findings/R9.md:48	0x004265e0	0x0	agrees	CAurTextureBasic::glImage	2
+0x004274e0	function	CAurTexture::GetOrCreateHandle	qualified	patch_manager_mods/engine_research_findings/R2.md:19	0x004274e0	0x0	conflicts	Global::AurTextureGetReference	2
+0x004274e0	function	CAurTexture::GetOrCreateHandle	qualified	patch_manager_mods/engine_research_findings/R2.md:202	0x004274e0	0x0	conflicts	Global::AurTextureGetReference	2
+0x00429f00	function	CAurGLBufferPool::LockSlot	qualified	patch_manager_mods/engine_research_findings/R2.md:184	0x00429f00	0x0	new		2
+0x00429f00	function	CAurGLBufferPool::LockSlot	qualified	patch_manager_mods/engine_research_findings/R2.md:46	0x00429f00	0x0	new		2
+0x00461670	function	Gob::AttachToPart	qualified	.claude/research/holster_edit/r13a_menu_attach_refresh.md:57	0x00461670	0x0	conflicts	rea:FUN_00461670 Gob attach-by-name (child=ECX; parent,nodeName,type; RET 0xC); Gob vtbl+0x50	2
+0x00461670	function	Gob::AttachToPart	qualified	.claude/research/holster_edit/r13a_menu_attach_refresh.md:58	0x00461670	0x0	conflicts	rea:FUN_00461670 Gob attach-by-name (child=ECX; parent,nodeName,type; RET 0xC); Gob vtbl+0x50	2
+0x00465f90	function	Scene::DoMeshBuckets	qualified	patch_manager_mods/engine_research_findings/R6.md:28	0x00465f90	0x0	agrees	Scene::DoMeshBuckets	2
+0x00465f90	function	Scene::DoMeshBuckets	qualified	patch_manager_mods/engine_research_findings/R9.md:73	0x00465f90	0x0	agrees	Scene::DoMeshBuckets	2
+0x004687e0	function	Scene::DoGobShadows	qualified	.claude/research/render_distance/R3_shadows.md:19	0x004687e0	0x0	new		2
+0x004687e0	function	Scene::DoGobShadows	qualified	patch_manager_mods/49_k2_render_distance.md:20	0x004687e0	0x0	new		2
+0x0046d230	function	CAurScene::Animate	qualified	.claude/research/holster_edit/r13a_menu_attach_refresh.md:33	0x0046d230	0x0	new		2
+0x0046d230	function	CAurScene::Animate	qualified	.claude/research/holster_edit/r13a_menu_attach_refresh.md:74	0x0046d230	0x0	new		2
+0x0046d230	function	Scene::Animate	qualified	.claude/research/render_perf/R11_synthesis.md:22	0x0046d230	0x0	new		2
+0x0046d230	function	Scene::Animate	qualified	.claude/research/render_perf/R8_models_anim.md:16	0x0046d230	0x0	new		2
+0x004e1d40	function	Gob::Animate	qualified	.claude/research/render_perf/R11_synthesis.md:22	0x004e1d40	0x0	conflicts	rea:Gob per-frame advance (caller 0x00480e40; name unconfirmed): walks entries high index to 0, skips flags&0x20, adds dt*speed to entry+0x10	2
+0x004e1d40	function	Gob::Animate	qualified	.claude/research/render_perf/R8_models_anim.md:20	0x004e1d40	0x0	conflicts	rea:Gob per-frame advance (caller 0x00480e40; name unconfirmed): walks entries high index to 0, skips flags&0x20, adds dt*speed to entry+0x10	2
+0x0050d960	function	CAurTriangleBin::BuildGrassPolys	qualified	patch_manager_mods/engine_research_findings/R6.md:21	0x0050d960	0x0	agrees	CAurTriangleBin::BuildGrassPolys	2
+0x0050d960	function	CAurTriangleBin::BuildGrassPolys	qualified	patch_manager_mods/engine_research_findings/R9.md:109	0x0050d960	0x0	agrees	CAurTriangleBin::BuildGrassPolys	2
+0x0050da00	function	CAurTriangleBin::DestroyGrassPolys	qualified	patch_manager_mods/engine_research_findings/R6.md:23	0x0050da00	0x0	agrees	CAurTriangleBin::DestroyGrassPolys	2
+0x0050da00	function	CAurTriangleBin::DestroyGrassPolys	qualified	patch_manager_mods/engine_research_findings/R9.md:110	0x0050da00	0x0	agrees	CAurTriangleBin::DestroyGrassPolys	2
+0x0050e910	function	CAurTriangleBin::SortTriangles	qualified	patch_manager_mods/engine_research_findings/R6.md:25	0x0050e910	0x0	agrees	CAurTriangleBin::SortTriangles	2
+0x0050e910	function	CAurTriangleBin::SortTriangles	qualified	patch_manager_mods/engine_research_findings/R9.md:112	0x0050e910	0x0	agrees	CAurTriangleBin::SortTriangles	2
+0x0050ebc0	function	CAurTriangleBin::CreateArrays	qualified	patch_manager_mods/engine_research_findings/R6.md:22	0x0050ebc0	0x0	agrees	CAurTriangleBin::CreateArrays	2
+0x0050ebc0	function	CAurTriangleBin::CreateArrays	qualified	patch_manager_mods/engine_research_findings/R9.md:113	0x0050ebc0	0x0	agrees	CAurTriangleBin::CreateArrays	2
+0x00511fb0	function	CModelLoader::LoadModelByName	qualified	patch_manager_mods/engine_research_findings/R2.md:17	0x00511fb0	0x0	new		2
+0x00511fb0	function	CModelLoader::LoadModelByName	qualified	patch_manager_mods/engine_research_findings/R2.md:186	0x00511fb0	0x0	new		2
+0x005122e0	function	CModelLoader::LoadBinaryMdl	qualified	patch_manager_mods/engine_research_findings/R2.md:16	0x005122e0	0x0	conflicts	InputBinary::Read	2
+0x005122e0	function	CModelLoader::LoadBinaryMdl	qualified	patch_manager_mods/engine_research_findings/R2.md:183	0x005122e0	0x0	conflicts	InputBinary::Read	2
+0x00523870	function	CSWSArea::LoadAreaHeader	qualified	.claude/research/ingest/i2_cards/chunk_1.md:75	0x00523870	0x0	agrees	CSWSArea::LoadAreaHeader	2
+0x00523870	function	CSWSArea::LoadAreaHeader	qualified	patch_manager_mods/engine_research_findings/V4.md:24	0x00523870	0x0	agrees	CSWSArea::LoadAreaHeader	2
+0x00544210	function	CSWSObject::ApplyEffect	qualified	patch_manager_mods/02_buff_duration_hud.md:1626	0x00544210	0x0	agrees	CSWSObject::ApplyEffect	2
+0x00544210	function	CSWSObject::ApplyEffect	qualified	patch_manager_mods/engine_research_findings/U3.md:27	0x00544210	0x0	agrees	CSWSObject::ApplyEffect	2
+0x0056a230	function	CSWSCreature::HandleHPRegeneration	qualified	.claude/research/ingest/i2_cards/chunk_3.md:123	0x0056a230	0x0	agrees	CSWSCreature::HandleHPRegeneration	2
+0x0056a230	function	CSWSCreature::HandleHPRegeneration	qualified	.claude/research/ingest/i2_cards/chunk_5.md:73	0x0056a230	0x0	agrees	CSWSCreature::HandleHPRegeneration	2
+0x0057f320	function	CSWSCreatureStats::SetPortraitId	qualified	patch_manager_mods/engine_research_findings/V6.md:250	0x0057f320	0x0	conflicts	CSWSCreature::SetPortraitId	2
+0x0057f320	function	CSWSCreatureStats::SetPortraitId	qualified	patch_manager_mods/engine_research_findings/V6.md:33	0x0057f320	0x0	conflicts	CSWSCreature::SetPortraitId	2
+0x005908c0	function	CSWSCombatRound::GetAttack	qualified	.claude/research/combat_stats/w1/C1a.md:3	0x005908c0	0x0	agrees	CSWSCombatRound::GetAttack	2
+0x005908c0	function	CSWSCombatRound::GetAttack	qualified	patch_manager_mods/engine_research_findings/U3.md:37	0x005908c0	0x0	agrees	CSWSCombatRound::GetAttack	2
+0x005b2430	function	CSWSItemPropertyHandler::ApplyBlasterBoltDeflectionIncrease	qualified	.claude/research/ingest/i2_cards/chunk_3.md:62	0x005b2430	0x0	agrees	CSWSItemPropertyHandler::ApplyBlasterBoltDeflectionIncrease	2
+0x005b2430	function	CSWSItemPropertyHandler::ApplyBlasterBoltDeflectionIncrease	qualified	.claude/research/ingest/i2_cards/chunk_5.md:62	0x005b2430	0x0	agrees	CSWSItemPropertyHandler::ApplyBlasterBoltDeflectionIncrease	2
+0x005b2560	function	CSWSItemPropertyHandler::RemoveBlasterBoltDeflectionIncrease	qualified	.claude/research/ingest/i2_cards/chunk_3.md:63	0x005b2560	0x0	agrees	CSWSItemPropertyHandler::RemoveBlasterBoltDeflectionIncrease	2
+0x005b2560	function	CSWSItemPropertyHandler::RemoveBlasterBoltDeflectionIncrease	qualified	.claude/research/ingest/i2_cards/chunk_5.md:63	0x005b2560	0x0	agrees	CSWSItemPropertyHandler::RemoveBlasterBoltDeflectionIncrease	2
+0x005e4e60	function	PtrArray::GetAt	qualified	patch_manager_mods/engine_research_findings/R8.md:219	0x005e4e60	0x0	conflicts	CGameEffect::GetInteger	2
+0x005e4e60	function	PtrArray::GetAt	qualified	patch_manager_mods/engine_research_findings/R9.md:134	0x005e4e60	0x0	conflicts	CGameEffect::GetInteger	2
+0x005e4e80	function	PtrArray::SetAt	qualified	patch_manager_mods/engine_research_findings/R8.md:220	0x005e4e80	0x0	conflicts	CGameEffect::SetInteger	2
+0x005e4e80	function	PtrArray::SetAt	qualified	patch_manager_mods/engine_research_findings/R9.md:135	0x005e4e80	0x0	conflicts	CGameEffect::SetInteger	2
+0x005f2fe0	function	CSWSPlaceable::EventHandler	qualified	.claude/research/ingest/i2_cards/chunk_6.md:92	0x005f2fe0	0x0	agrees	CSWSPlaceable::EventHandler	2
+0x005f2fe0	function	CSWSPlaceable::EventHandler	qualified	.claude/research/quick_loot/R1_open_scripts.md:4	0x005f2fe0	0x0	agrees	CSWSPlaceable::EventHandler	2
+0x005f5590	function	CSWSPlaceable::OpenInventory	qualified	.claude/research/quick_loot/R2_client_gui.md:47	0x005f5590	0x0	agrees	CSWSPlaceable::OpenInventory	2
+0x005f5590	function	CSWSPlaceable::OpenInventory	qualified	.claude/research/quick_loot/R3_server_take.md:54	0x005f5590	0x0	agrees	CSWSPlaceable::OpenInventory	2
+0x006076d0	function	GetUpgradeType	bare	patch_manager_mods/11_inventory_sort_filter.md:27	0x006076d0	0x0	conflicts	CSWSItem::GetUpgradableType	2
+0x006076d0	function	GetUpgradeType	bare	patch_manager_mods/11_inventory_sort_filter.md:73	0x006076d0	0x0	conflicts	CSWSItem::GetUpgradableType	2
+0x00647050	function	CSWSMessage::SendServerToPlayerMessage	qualified	patch_manager_mods/engine_research_findings/T2.md:22	0x00647050	0x0	conflicts	CSWSMessage::SendServerToPlayerMessage (builds 0x50,major,minor)	2
+0x00647050	function	CSWSMessage::SendServerToPlayerMessage	qualified	patch_manager_mods/engine_research_findings/U6.md:32	0x00647050	0x0	conflicts	CSWSMessage::SendServerToPlayerMessage (builds 0x50,major,minor)	2
+0x00677b50	function	Global::ExecuteCommandEffectBlasterDeflectionIncrease	qualified	.claude/research/ingest/i2_cards/chunk_3.md:64	0x00677b50	0x0	agrees	Global::ExecuteCommandEffectBlasterDeflectionIncrease	2
+0x00677b50	function	Global::ExecuteCommandEffectBlasterDeflectionIncrease	qualified	.claude/research/ingest/i2_cards/chunk_5.md:64	0x00677b50	0x0	agrees	Global::ExecuteCommandEffectBlasterDeflectionIncrease	2
+0x006a4e00	function	CSWSCreatureStats::GetLevel	qualified	.claude/research/combat_stats/w1/C4a.md:8	0x006a4e00	0x0	agrees	CSWSCreatureStats::GetLevel	2
+0x006a4e00	function	CSWSCreatureStats::GetLevel	qualified	patch_manager_mods/mods678_research/ai_research_2026-10-02/R4_medpac_mod6v2.md:349	0x006a4e00	0x0	agrees	CSWSCreatureStats::GetLevel	2
+0x006d7390	function	CSWSCreature::AIActionPhysicalAttacks	qualified	patch_manager_mods/13_ranged_ai_spacing.md:11	0x006d7390	0x0	agrees	CSWSCreature::AIActionPhysicalAttacks	2
+0x006d7390	function	CSWSCreature::AIActionPhysicalAttacks	qualified	patch_manager_mods/13_ranged_ai_spacing_feedback.md:15	0x006d7390	0x0	agrees	CSWSCreature::AIActionPhysicalAttacks	2
+0x00704060	function	CNetLayer::SendMessageToPlayer	qualified	patch_manager_mods/engine_research_findings/U6.md:29	0x00704060	0x0	conflicts	message ring-buffer writer	2
+0x00704060	function	CNetLayer::SendMessageToPlayer	qualified	patch_manager_mods/engine_research_findings/W5.md:21	0x00704060	0x0	conflicts	message ring-buffer writer	2
+0x007051c0	function	CExoSoundInternal::Initialize	qualified	patch_manager_mods/engine_research_findings/U2.md:21	0x007051c0	0x0	conflicts	CExoSoundInternal::Initialize/ReInitialize (ret 16)	2
+0x007051c0	function	CExoSoundInternal::Initialize	qualified	patch_manager_mods/engine_research_findings/W5.md:16	0x007051c0	0x0	conflicts	CExoSoundInternal::Initialize/ReInitialize (ret 16)	2
+0x00708360	function	CExoSoundInternal::PlayOneShotSound	qualified	.claude/research/voice_audio/w2/v07.md:16	0x00708360	0x0	conflicts	CExoSoundInternal::PlayOneShotSound (ret 24)	2
+0x00708360	function	CExoSoundInternal::PlayOneShotSound	qualified	patch_manager_mods/engine_research_findings/U2.md:56	0x00708360	0x0	conflicts	CExoSoundInternal::PlayOneShotSound (ret 24)	2
+0x0070c0c0	function	StreamingSource::StartStream	qualified	.claude/research/voice_audio/w2/v07.md:17	0x0070c0c0	0x0	conflicts	StreamingSource::StartStream (ret 20)	2
+0x0070c0c0	function	StreamingSource::StartStream	qualified	patch_manager_mods/engine_research_findings/U2.md:45	0x0070c0c0	0x0	conflicts	StreamingSource::StartStream (ret 20)	2
+0x0070c590	callsite	CSWCCreature::LipSync	qualified	.claude/research/voice_audio/w1/u02.md:26	0x0070c0c0	0x4d0	new		2
+0x0070c590	callsite	CSWCCreature::LipSync	qualified	.claude/research/voice_audio/w1/u02.md:8	0x0070c0c0	0x4d0	new		2
+0x0070caa0	function	StreamingSource::OpenStream	qualified	patch_manager_mods/44_in_memory_asset_vfs_and_character_library.md:132	0x0070caa0	0x0	agrees	StreamingSource::OpenStream	2
+0x0070caa0	function	StreamingSource::OpenStream	qualified	patch_manager_mods/engine_research_findings/U2.md:44	0x0070caa0	0x0	agrees	StreamingSource::OpenStream	2
+0x007111e0	function	CRes::Demand	qualified	patch_manager_mods/44_in_memory_asset_vfs_and_character_library.md:46	0x007111e0	0x0	agrees	CRes::Demand	2
+0x007111e0	function	CRes::Demand	qualified	patch_manager_mods/engine_research_findings/R9.md:140	0x007111e0	0x0	agrees	CRes::Demand	2
+0x00713e80	function	CExoResMan::ServiceFromImage	qualified	patch_manager_mods/44_in_memory_asset_vfs_and_character_library.md:52	0x00713e80	0x0	agrees	CExoResMan::ServiceFromImage	2
+0x00713e80	function	CExoResMan::ServiceFromImage	qualified	patch_manager_mods/engine_research_findings/R9.md:143	0x00713e80	0x0	agrees	CExoResMan::ServiceFromImage	2
+0x00714300	function	CExoResMan::Update	qualified	patch_manager_mods/engine_research_findings/R7.md:36	0x00714300	0x0	agrees	CExoResMan::Update	2
+0x00714300	function	CExoResMan::Update	qualified	patch_manager_mods/engine_research_findings/R9.md:144	0x00714300	0x0	agrees	CExoResMan::Update	2
+0x0071afa0	function	C2DA::GetCExoStringEntry	qualified	patch_manager_mods/engine_research_findings/R8.md:200	0x0071afa0	0x0	agrees	C2DA::GetCExoStringEntry	2
+0x0071afa0	function	C2DA::GetCExoStringEntry	qualified	patch_manager_mods/engine_research_findings/R9.md:150	0x0071afa0	0x0	agrees	C2DA::GetCExoStringEntry	2
+0x0071c3d0	function	C2DA::Load	qualified	patch_manager_mods/engine_research_findings/V6.md:17	0x0071c3d0	0x0	conflicts	C2DA::LoadText	2
+0x0071c3d0	function	C2DA::Load	qualified	patch_manager_mods/engine_research_findings/W6.md:36	0x0071c3d0	0x0	conflicts	C2DA::LoadText	2
+0x0071d360	function	C2DA::Init	qualified	patch_manager_mods/engine_research_findings/V6.md:21	0x0071d360	0x0	agrees	C2DA::Init	2
+0x0071d360	function	C2DA::Init	qualified	patch_manager_mods/engine_research_findings/V6.md:241	0x0071d360	0x0	agrees	C2DA::Init	2
+0x00733540	function	CExoString::DefaultConstructor	qualified	.claude/research/ingest/i2_cards/chunk_1.md:45	0x00733540	0x0	conflicts	CExoString::Constructor	2
+0x00733540	function	CExoString::DefaultConstructor	qualified	.claude/research/ingest/i2_cards/chunk_6.md:24	0x00733540	0x0	conflicts	CExoString::Constructor	2
+0x00733540	function	CExoString::CExoString	qualified	patch_manager_mods/engine_research_findings/R8.md:170	0x00733540	0x0	conflicts	CExoString::Constructor	2
+0x00733540	function	CExoString::CExoString	qualified	patch_manager_mods/engine_research_findings/R9.md:166	0x00733540	0x0	conflicts	CExoString::Constructor	2
+0x007338d0	function	CExoString::operator	qualified	patch_manager_mods/engine_research_findings/R8.md:177	0x007338d0	0x0	conflicts	CExoString::operator=_2	2
+0x007338d0	function	CExoString::operator	qualified	patch_manager_mods/engine_research_findings/R9.md:173	0x007338d0	0x0	conflicts	CExoString::operator=_2	2
+0x00734010	function	CExoString::CStr	qualified	patch_manager_mods/engine_research_findings/R8.md:180	0x00734010	0x0	agrees	CExoString::CStr	2
+0x00734010	function	CExoString::CStr	qualified	patch_manager_mods/engine_research_findings/R9.md:178	0x00734010	0x0	agrees	CExoString::CStr	2
+0x00734500	function	CExoString::Left	qualified	patch_manager_mods/engine_research_findings/R8.md:183	0x00734500	0x0	agrees	CExoString::Left	2
+0x00734500	function	CExoString::Left	qualified	patch_manager_mods/engine_research_findings/R9.md:183	0x00734500	0x0	agrees	CExoString::Left	2
+0x00734870	function	CExoString::Right	qualified	patch_manager_mods/engine_research_findings/R8.md:185	0x00734870	0x0	agrees	CExoString::Right	2
+0x00734870	function	CExoString::Right	qualified	patch_manager_mods/engine_research_findings/R9.md:185	0x00734870	0x0	agrees	CExoString::Right	2
+0x00734a00	function	CExoString::SubString	qualified	patch_manager_mods/engine_research_findings/R2.md:200	0x00734a00	0x0	agrees	CExoString::SubString	2
+0x00734a00	function	CExoString::SubString	qualified	patch_manager_mods/engine_research_findings/R9.md:186	0x00734a00	0x0	agrees	CExoString::SubString	2
+0x00734d60	function	CExoString::CompareNoCase	qualified	patch_manager_mods/engine_research_findings/R8.md:210	0x00734d60	0x0	agrees	CExoString::CompareNoCase	2
+0x00734d60	function	CExoString::CompareNoCase	qualified	patch_manager_mods/engine_research_findings/R9.md:188	0x00734d60	0x0	agrees	CExoString::CompareNoCase	2
+0x00736220	function	CExoTimers::GetHighResolutionTimer	qualified	patch_manager_mods/engine_research_findings/R9.md:193	0x00736220	0x0	agrees	CExoTimers::GetHighResolutionTimer	2
+0x00736220	function	CExoTimers::GetHighResolutionTimer	qualified	patch_manager_mods/engine_research_findings/V5.md:18	0x00736220	0x0	agrees	CExoTimers::GetHighResolutionTimer	2
+0x0073b720	function	CExoTimersInternal::Constructor	qualified	patch_manager_mods/engine_research_findings/R9.md:201	0x0073b720	0x0	agrees	CExoTimersInternal::Constructor	2
+0x0073b720	function	CExoTimersInternal::Constructor	qualified	patch_manager_mods/engine_research_findings/V5.md:16	0x0073b720	0x0	agrees	CExoTimersInternal::Constructor	2
+0x0073f9c0	function	CClientExoApp::MainLoop	qualified	patch_manager_mods/engine_research_findings/R7.md:14	0x0073f9c0	0x0	agrees	CClientExoApp::MainLoop	2
+0x0073f9c0	function	CClientExoApp::MainLoop	qualified	patch_manager_mods/engine_research_findings/R9.md:203	0x0073f9c0	0x0	agrees	CClientExoApp::MainLoop	2
+0x0073fb90	function	CClientExoApp::GetSWParty	qualified	.claude/research/ingest/i2_cards/chunk_1.md:24	0x0073fb90	0x0	conflicts	ClientApp -> party (*(*(clientApp+4)+0x270)) thiscall(ecx)	2
+0x0073fb90	function	CClientExoApp::GetSWParty	qualified	.claude/research/ingest/i2_cards/chunk_4.md:41	0x0073fb90	0x0	conflicts	ClientApp -> party (*(*(clientApp+4)+0x270)) thiscall(ecx)	2
+0x007508aa	callsite	CSWGuiMainInterface::FUN_00750790	qualified	patch_manager_mods/06_gog_to_steam_conversions.md:229	0x00750790	0x11a	new		2
+0x007508aa	callsite	CSWGuiMainInterface::FUN_00750790	qualified	patch_manager_mods/15a_research_session_context_2026-10-01.md:46	0x00750790	0x11a	new		2
+0x0077b670	function	IsItemUsable	bare	patch_manager_mods/11_inventory_sort_filter.md:24	0x0077b670	0x0	conflicts	GuiInGame::IsItemUsableByCurrent	2
+0x0077b670	function	IsItemUsable	bare	patch_manager_mods/11_inventory_sort_filter.md:70	0x0077b670	0x0	conflicts	GuiInGame::IsItemUsableByCurrent	2
+0x00798c00	function	IsMoviePlaying	bare	patch_manager_mods/engine_research_findings/R7.md:42	0x00798c00	0x0	agrees	IsMoviePlaying	2
+0x00798c00	function	IsMoviePlaying	bare	patch_manager_mods/engine_research_findings/T4.md:14	0x00798c00	0x0	agrees	IsMoviePlaying	2
+0x007a23a0	function	CClientAIMaster::UpdateState	qualified	patch_manager_mods/engine_research_findings/R9.md:209	0x007a23a0	0x0	agrees	CClientAIMaster::UpdateState	2
+0x007a23a0	function	CClientAIMaster::UpdateState	qualified	patch_manager_mods/engine_research_findings/V5.md:29	0x007a23a0	0x0	agrees	CClientAIMaster::UpdateState	2
+0x007a5fa0	function	CSWCArea::UnloadArea	qualified	patch_manager_mods/engine_research_findings/T2.md:32	0x007a5fa0	0x0	agrees	CSWCArea::UnloadArea	2
+0x007a5fa0	function	CSWCArea::UnloadArea	qualified	patch_manager_mods/engine_research_findings/U2.md:60	0x007a5fa0	0x0	agrees	CSWCArea::UnloadArea	2
+0x007b12c0	function	CClientExoAppInternal::HandleInputEvent	qualified	.claude/research/ingest/i2_cards/chunk_1.md:23	0x007b12c0	0x0	agrees	CClientExoAppInternal::HandleInputEvent	2
+0x007b12c0	function	CClientExoAppInternal::HandleInputEvent	qualified	.claude/research/ingest/i2_cards/chunk_2.md:82	0x007b12c0	0x0	agrees	CClientExoAppInternal::HandleInputEvent	2
+0x007cacb0	function	CGuiInGame::ShowContainerGui	qualified	.claude/research/quick_loot/R2_client_gui.md:18	0x007cacb0	0x0	agrees	CGuiInGame::ShowContainerGui	2
+0x007cacb0	function	CGuiInGame::ShowContainerGui	qualified	patch_manager_mods/52_quick_loot.md:12	0x007cacb0	0x0	agrees	CGuiInGame::ShowContainerGui	2
+0x007ceb80	function	CGuiInGame::SetGlobalDialogState	qualified	patch_manager_mods/engine_research_findings/V11.md:22	0x007ceb80	0x0	agrees	CGuiInGame::SetGlobalDialogState	2
+0x007ceb80	function	CGuiInGame::SetGlobalDialogState	qualified	patch_manager_mods/engine_research_findings/V8b.md:31	0x007ceb80	0x0	agrees	CGuiInGame::SetGlobalDialogState	2
+0x007f2540	function	CSWCObject::GetServerObject	qualified	.claude/research/enemy_strip/R3_client_server_map.md:4	0x007f2540	0x0	agrees	CSWCObject::GetServerObject	2
+0x007f2540	function	CSWCObject::GetServerObject	qualified	.claude/research/holster_edit/r10_creature_name.md:9	0x007f2540	0x0	agrees	CSWCObject::GetServerObject	2
+0x0084fc00	function	CSWGuiInGameCharacter::AttachModel	qualified	.claude/research/ingest/i2_cards/chunk_4.md:92	0x0084fc00	0x0	agrees	CSWGuiInGameCharacter::AttachModel	2
+0x0084fc00	function	CSWGuiInGameCharacter::AttachModel	qualified	.claude/research/ingest/i2_cards/chunk_5.md:115	0x0084fc00	0x0	agrees	CSWGuiInGameCharacter::AttachModel	2
+0x00894cd0	function	CSWGuiInGameMap::Draw	qualified	patch_manager_mods/engine_research_findings/V4.md:40	0x00894cd0	0x0	agrees	CSWGuiInGameMap::Draw	2
+0x00894cd0	function	CSWGuiInGameMap::Draw	qualified	patch_manager_mods/engine_research_findings/V9.md:28	0x00894cd0	0x0	agrees	CSWGuiInGameMap::Draw	2
+0x00894dc0	function	CSWGuiInGameMap::HitCheckMouse	qualified	.claude/research/holster_edit/r2_labels.md:60	0x00894dc0	0x0	agrees	CSWGuiInGameMap::HitCheckMouse	2
+0x00894dc0	function	CSWGuiInGameMap::HitCheckMouse	qualified	patch_manager_mods/engine_research_findings/V9.md:29	0x00894dc0	0x0	agrees	CSWGuiInGameMap::HitCheckMouse	2
+0x008a75f0	function	CreateItemEntry	bare	patch_manager_mods/11_inventory_sort_filter.md:20	0x008a75f0	0x0	agrees	CSWGuiInGameInventory::CreateItemEntry	2
+0x008a75f0	function	CreateItemEntry	bare	patch_manager_mods/11_inventory_sort_filter.md:69	0x008a75f0	0x0	agrees	CSWGuiInGameInventory::CreateItemEntry	2
+0x008a8b30	function	SetNextFilter	bare	patch_manager_mods/11_inventory_sort_filter.md:22	0x008a8b30	0x0	agrees	CSWGuiInGameInventory::SetNextFilter	2
+0x008a8b30	function	SetNextFilter	bare	patch_manager_mods/11_inventory_sort_filter.md:72	0x008a8b30	0x0	agrees	CSWGuiInGameInventory::SetNextFilter	2
+0x008b1d00	function	SetCanUse	bare	patch_manager_mods/11_inventory_sort_filter.md:25	0x008b1d00	0x0	agrees	CSWGuiInGameItemEntry::SetCanUse	2
+0x008b1d00	function	SetCanUse	bare	patch_manager_mods/11_inventory_sort_filter.md:71	0x008b1d00	0x0	agrees	CSWGuiInGameItemEntry::SetCanUse	2
+0x008ba980	function	CSWGuiDialogLetterbox::Constructor	qualified	.claude/research/ingest/i2_cards/chunk_7.md:88	0x008ba980	0x0	agrees	CSWGuiDialogLetterbox::Constructor	2
+0x008ba980	function	CSWGuiDialogLetterbox::Constructor	qualified	patch_manager_mods/engine_research_findings/V8b.md:25	0x008ba980	0x0	agrees	CSWGuiDialogLetterbox::Constructor	2
+0x008baf10	function	CSWGuiDialogLetterbox::SetMiddle	qualified	.claude/research/ingest/i2_cards/chunk_1.md:113	0x008baf10	0x0	agrees	CSWGuiDialogLetterbox::SetMiddle	2
+0x008baf10	function	CSWGuiDialogLetterbox::SetMiddle	qualified	.claude/research/ingest/i2_cards/chunk_2.md:116	0x008baf10	0x0	agrees	CSWGuiDialogLetterbox::SetMiddle	2
+0x008bafd0	function	CSWGuiDialogLetterbox::ResetFade	qualified	patch_manager_mods/engine_research_findings/V1.md:21	0x008bafd0	0x0	agrees	CSWGuiDialogLetterbox::ResetFade	2
+0x008bafd0	function	CSWGuiDialogLetterbox::ResetFade	qualified	patch_manager_mods/engine_research_findings/V8b.md:26	0x008bafd0	0x0	agrees	CSWGuiDialogLetterbox::ResetFade	2
+0x008cd2c0	function	CSWGuiUpgrade::Update3DView	qualified	.claude/research/ingest/i2_cards/chunk_3.md:43	0x008cd2c0	0x0	agrees	CSWGuiUpgrade::Update3DView	2
+0x008cd2c0	function	CSWGuiUpgrade::Update3DView	qualified	.claude/research/ingest/i2_cards/chunk_4.md:119	0x008cd2c0	0x0	agrees	CSWGuiUpgrade::Update3DView	2
+0x0099d39c	global	CExoLinkedListInternal::Remove	qualified	.claude/research/ingest/i2_cards/chunk_2.md:104			new		2
+0x0099d39c	global	CExoLinkedListInternal::Remove	qualified	.claude/research/ingest/i2_cards/chunk_6.md:112			new		2
+0x00401730	function	CAppManager::Constructor	qualified	patch_manager_mods/engine_research_findings/R9.md:18	0x00401730	0x0	agrees	CAppManager::Constructor	1
+0x004094f0	function	Global::messagepump	qualified	patch_manager_mods/engine_research_findings/R9.md:21	0x004094f0	0x0	conflicts	MessagePump	1
+0x004094f0	function	MessagePump	bare	patch_manager_mods/engine_research_findings/T4.md:16	0x004094f0	0x0	agrees	MessagePump	1
+0x0040be50	function	Movie::PrepareWindowForMovie	qualified	patch_manager_mods/engine_research_findings/T4.md:21	0x0040be50	0x0	agrees	Movie::PrepareWindowForMovie	1
+0x0040be50	function	PrepareWindowForMovie	bare	patch_manager_mods/engine_research_findings/T4.md:235	0x0040be50	0x0	agrees	Movie::PrepareWindowForMovie	1
+0x0040bf40	function	RestoreAfterMovie	bare	patch_manager_mods/engine_research_findings/T4.md:234	0x0040bf40	0x0	conflicts	Movie::RestoreAfterMovie (handler of WM_USER+10 0x40A and sync call)	1
+0x0040c4a0	function	MovieWndProc	bare	patch_manager_mods/engine_research_findings/T4.md:28	0x0040c4a0	0x0	agrees	MovieWndProc	1
+0x0040c910	callsite	CClientExoApp::GetPlayerCreature	qualified	patch_manager_mods/19b_cross_patch_sharing_survey.md:129	0x0040c880	0x90	new		1
+0x0040cc30	function	Movie::Stop	qualified	patch_manager_mods/engine_research_findings/T4.md:30	0x0040cc30	0x0	conflicts	CExoMoviePlayerInternal::CancelMovie	1
+0x0040cc70	function	CExoMoviePlayerInternal::OpenClip	qualified	patch_manager_mods/engine_research_findings/T4.md:25	0x0040cc70	0x0	conflicts	CExoMoviePlayerInternal::StartMovie	1
+0x0040cc70	function	CExoMoviePlayerInternal::Open	qualified	patch_manager_mods/engine_research_findings/V9.md:19	0x0040cc70	0x0	conflicts	CExoMoviePlayerInternal::StartMovie	1
+0x0040ccf0	callsite	CClientExoApp::GetClientOptions	qualified	patch_manager_mods/19b_cross_patch_sharing_survey.md:131	0x0040cc70	0x80	new		1
+0x0040d6f0	function	Movie::PlayFrames	qualified	patch_manager_mods/engine_research_findings/T4.md:26	0x0040d6f0	0x0	conflicts	CExoMoviePlayerInternal::RunMovieFrameLoop	1
+0x0040da20	function	Movie::EndClip	qualified	patch_manager_mods/engine_research_findings/T4.md:27	0x0040da20	0x0	conflicts	CExoMoviePlayerInternal::StopMovie	1
+0x0040de10	function	Movie::PauseBink	qualified	patch_manager_mods/engine_research_findings/T4.md:31	0x0040de10	0x0	conflicts	CExoMoviePlayerInternal::PauseMovie	1
+0x0040e480	function	CClientExoApp::GetCharacterChangeInProgress	qualified	patch_manager_mods/19b_cross_patch_sharing_survey.md:130	0x0040e480	0x0	new		1
+0x0040e860	function	CSWGuiPanel::Destructor	qualified	.claude/research/holster_edit/d2b_options_hooks.md:44	0x0040e860	0x0	agrees	CSWGuiPanel::Destructor	1
+0x0040e980	function	CSWGuiPanel::SetExtent	qualified	patch_manager_mods/engine_research_findings/V8b.md:20	0x0040e980	0x0	agrees	CSWGuiPanel::SetExtent	1
+0x0040ec00	function	CSWGuiPanel::SetActiveControl	qualified	patch_manager_mods/31b_ch4c_style_re.md:29	0x0040ec00	0x0	agrees	CSWGuiPanel::SetActiveControl	1
+0x0040f5a0	function	CSWGuiPanel::StopLoadFromLayout	qualified	.claude/research/holster_edit/d2b_options_hooks.md:12	0x0040f5a0	0x0	agrees	CSWGuiPanel::StopLoadFromLayout	1
+0x00410530	function	GuiManager::AddPanel	qualified	patch_manager_mods/engine_research_findings/V8b.md:32	0x00410530	0x0	conflicts	CSWGuiManager::AddPanel	1
+0x00410800	function	CSWGuiManager::PanelExists	qualified	patch_manager_mods/engine_research_findings/R9.md:27	0x00410800	0x0	conflicts	GuiManager::Contains	1
+0x00410830	function	GuiManager::IndexInList2	qualified	patch_manager_mods/engine_research_findings/R7.md:30	0x00410830	0x0	conflicts	CSWGuiManager::FindModalPanelIndex	1
+0x00410830	function	CSWGuiManager::FindModalPanelIndex	qualified	patch_manager_mods/engine_research_findings/R9.md:28	0x00410830	0x0	agrees	CSWGuiManager::FindModalPanelIndex	1
+0x004113a0	function	GuiManager::Draw	qualified	patch_manager_mods/engine_research_findings/R7.md:27	0x004113a0	0x0	conflicts	CSWGuiManager::Draw	1
+0x00411870	function	GuiManager::Update	qualified	patch_manager_mods/engine_research_findings/R7.md:28	0x00411870	0x0	conflicts	CSWGuiManager::Update	1
+0x00411870	function	CSWGuiManager::Update	qualified	patch_manager_mods/engine_research_findings/R9.md:30	0x00411870	0x0	agrees	CSWGuiManager::Update	1
+0x00411b20	function	CSWGuiPanel::StartLoadFromLayout	qualified	.claude/research/ingest/i2_cards/chunk_7.md:23	0x00411b20	0x0	new		1
+0x00411f30	function	CSWGuiManager::GetDialogMargins	qualified	patch_manager_mods/engine_research_findings/V1.md:31	0x00411f30	0x0	new		1
+0x00413ce0	function	CSWGuiManager::ResolveFontName	qualified	patch_manager_mods/engine_research_findings/V8.md:33	0x00413ce0	0x0	conflicts	CSWGuiManager::ResolveFontName (appends 'b')	1
+0x00414ba0	function	CSWGuiControl::GetHeight	qualified	patch_manager_mods/engine_research_findings/V2.md:29	0x00414ba0	0x0	new		1
+0x00414c60	function	CSWGuiBorder::~CSWGuiBorder	qualified	patch_manager_mods/engine_research_findings/R8.md:218	0x00414c60	0x0	conflicts	CSWGuiBorder::Destructor_2	1
+0x00415080	function	CSWGuiBorder::Load	qualified	.claude/research/ingest/i2_cards/chunk_7.md:23	0x00415080	0x0	agrees	CSWGuiBorder::Load	1
+0x00416720	function	CSWGuiBorder::Load	qualified	.claude/research/ingest/i2_cards/chunk_7.md:23	0x00416720	0x0	new		1
+0x00416de0	function	CSWGuiTextParams::SetFontRename	qualified	patch_manager_mods/engine_research_findings/V8.md:34	0x00416de0	0x0	conflicts	CSWGuiTextParams::SetBaseFont	1
+0x00416e30	function	CSWGuiText::SetText	qualified	patch_manager_mods/engine_research_findings/V3.md:32	0x00416e30	0x0	conflicts	CSWGuiTextParams::SetText	1
+0x00417800	function	CSWGuiText::Relayout	qualified	patch_manager_mods/engine_research_findings/V3.md:33	0x00417800	0x0	conflicts	GuiTextObjRefresh	1
+0x00418640	function	CSWGuiControl::~CSWGuiControl	qualified	patch_manager_mods/engine_research_findings/R8.md:217	0x00418640	0x0	conflicts	CSWGuiControl::Destructor	1
+0x00418640	function	CSWGuiControl::Destructor	qualified	patch_manager_mods/engine_research_findings/R9.md:32	0x00418640	0x0	agrees	CSWGuiControl::Destructor	1
+0x00418990	function	CSWGuiControl::Constructor	qualified	.claude/research/ingest/i2_cards/chunk_7.md:34	0x00418990	0x0	agrees	CSWGuiControl::Constructor	1
+0x00418af0	function	CSWGuiControl::AddEvent	qualified	patch_manager_mods/engine_research_findings/R9.md:33	0x00418af0	0x0	agrees	CSWGuiControl::AddEvent	1
+0x00418f20	function	CSWGuiControl::LoadFromGFF	qualified	patch_manager_mods/engine_research_findings/W6.md:23	0x00418f20	0x0	new		1
+0x00419880	function	CSWGuiLabel::Draw	qualified	patch_manager_mods/02_buff_duration_hud.md:716	0x00419880	0x0	new		1
+0x0041a3d0	function	CSWGuiButton::~CSWGuiButton	qualified	patch_manager_mods/engine_research_findings/R8.md:216	0x0041a3d0	0x0	conflicts	CSWGuiButton::Destructor	1
+0x0041d290	function	CSWGuiListBox::ClearItems	qualified	patch_manager_mods/engine_research_findings/V2.md:17	0x0041d290	0x0	new		1
+0x0041d810	function	CSWGuiListBox::LayoutScrollBar	qualified	patch_manager_mods/engine_research_findings/V8.md:28	0x0041d810	0x0	conflicts	CSWGuiListBox::LayoutScrollBar (SPECULATIVE name)	1
+0x0041d8e0	function	CSWGuiListBox::SetLeftScrollbar	qualified	patch_manager_mods/engine_research_findings/V8.md:29	0x0041d8e0	0x0	agrees	CSWGuiListBox::SetLeftScrollbar	1
+0x0041e790	function	CSWGuiListBox::IsOversized	qualified	patch_manager_mods/engine_research_findings/V2.md:23	0x0041e790	0x0	new		1
+0x0041ea50	function	CSWGuiListBox::OrganizeControls	qualified	patch_manager_mods/engine_research_findings/V2.md:16	0x0041ea50	0x0	new		1
+0x0041f170	function	CSWGuiListBox::OrganizeUnequal	qualified	patch_manager_mods/engine_research_findings/V2.md:21	0x0041f170	0x0	new		1
+0x0041f7f0	function	CSWGuiListBox::OrganizeOversized	qualified	patch_manager_mods/engine_research_findings/V2.md:22	0x0041f7f0	0x0	new		1
+0x0041fc30	function	CSWGuiListBox::AddControls	qualified	patch_manager_mods/engine_research_findings/V2.md:18	0x0041fc30	0x0	new		1
+0x0041fd90	function	CSWGuiListBox::AddControls	qualified	patch_manager_mods/engine_research_findings/V2.md:19	0x0041fd90	0x0	new		1
+0x00420180	function	CSWGuiListBox::LoadProtoItem	qualified	patch_manager_mods/engine_research_findings/V2.md:27	0x00420180	0x0	new		1
+0x004219a0	function	Global::AurGetImageWrapper	qualified	patch_manager_mods/engine_research_findings/R9.md:35	0x004219a0	0x0	agrees	Global::AurGetImageWrapper	1
+0x00421c40	function	Global::AurFreeImageWrapper	qualified	patch_manager_mods/engine_research_findings/R9.md:36	0x00421c40	0x0	agrees	Global::AurFreeImageWrapper	1
+0x00421e30	function	CAurTexture::CAurTexture	qualified	patch_manager_mods/engine_research_findings/R2.md:25	0x00421e30	0x0	conflicts	CAurTexture::Constructor	1
+0x00421e30	function	CAurTexture::Constructor	qualified	patch_manager_mods/engine_research_findings/R9.md:37	0x00421e30	0x0	agrees	CAurTexture::Constructor	1
+0x00422010	function	CAurTexture::IsProcessed	qualified	patch_manager_mods/engine_research_findings/R9.md:38	0x00422010	0x0	conflicts	CAurTexture::IsTPCLoaded	1
+0x00422640	function	CAurTexture::GetImage	qualified	patch_manager_mods/engine_research_findings/R9.md:39	0x00422640	0x0	agrees	CAurTexture::GetImage	1
+0x00422ed0	function	CSWGuiBorder::Draw	qualified	patch_manager_mods/engine_research_findings/V11.md:36	0x00422ed0	0x0	conflicts	CAurTexture::Bind (slot 0xB8)	1
+0x00423000	function	CAurTextureBasic::CAurTextureBasic	qualified	patch_manager_mods/engine_research_findings/R2.md:22	0x00423000	0x0	conflicts	CAurTextureBasic::Constructor	1
+0x00423000	function	CAurTextureBasic::Constructor	qualified	patch_manager_mods/engine_research_findings/R9.md:40	0x00423000	0x0	agrees	CAurTextureBasic::Constructor	1
+0x00423480	function	CAurTextureBasic::~CAurTextureBasic	qualified	patch_manager_mods/engine_research_findings/R2.md:23	0x00423480	0x0	agrees	CAurTextureBasic::~CAurTextureBasic	1
+0x00423480	function	CAurTextureBasic::Destructor	qualified	patch_manager_mods/engine_research_findings/R9.md:41	0x00423480	0x0	conflicts	CAurTextureBasic::~CAurTextureBasic	1
+0x00423480	function	~CAurTextureBasic	bare	patch_manager_mods/engine_research_findings/T2.md:51	0x00423480	0x0	agrees	CAurTextureBasic::~CAurTextureBasic	1
+0x00423990	function	CAurTextureBasic::Unload	qualified	patch_manager_mods/engine_research_findings/R2.md:24	0x00423990	0x0	conflicts	CAurTextureBasic::Reset	1
+0x00423990	function	CAurTextureBasic::Reset	qualified	patch_manager_mods/engine_research_findings/R9.md:42	0x00423990	0x0	agrees	CAurTextureBasic::Reset	1
+0x00424f60	function	CAurFontInfo::ParseTXIKey	qualified	patch_manager_mods/engine_research_findings/V8.md:32	0x00424f60	0x0	agrees	CAurFontInfo::ParseTXIKey	1
+0x00425160	function	CAurTextureBasic::FreeImage	qualified	patch_manager_mods/engine_research_findings/R9.md:43	0x00425160	0x0	agrees	CAurTextureBasic::FreeImage	1
+0x004252c0	function	CAurTextureBasic::LoadImageA	qualified	patch_manager_mods/engine_research_findings/R9.md:44	0x004252c0	0x0	agrees	CAurTextureBasic::LoadImageA	1
+0x004258b0	function	CAurTextureBasic::ApplyDownSampleLevel	qualified	patch_manager_mods/engine_research_findings/R9.md:45	0x004258b0	0x0	agrees	CAurTextureBasic::ApplyDownSampleLevel	1
+0x004260e0	function	CAurTextureBasic::BuildAndStoreTexture	qualified	patch_manager_mods/engine_research_findings/R9.md:46	0x004260e0	0x0	agrees	CAurTextureBasic::BuildAndStoreTexture	1
+0x00426270	function	CAurTextureBasic::ConstructImage	qualified	patch_manager_mods/engine_research_findings/R9.md:47	0x00426270	0x0	agrees	CAurTextureBasic::ConstructImage	1
+0x00426960	function	CAurTextureBasic::SetNewDownSampleLevel	qualified	patch_manager_mods/engine_research_findings/R9.md:49	0x00426960	0x0	agrees	CAurTextureBasic::SetNewDownSampleLevel	1
+0x004269f0	function	CAurTextureMgr::FindRecord	qualified	patch_manager_mods/engine_research_findings/R2.md:21	0x004269f0	0x0	conflicts	Global::AurTextureFind	1
+0x004269f0	function	Global::AurTextureFind	qualified	patch_manager_mods/engine_research_findings/R9.md:50	0x004269f0	0x0	agrees	Global::AurTextureFind	1
+0x004274e0	function	Global::AurTextureGetReference	qualified	patch_manager_mods/engine_research_findings/R9.md:51	0x004274e0	0x0	agrees	Global::AurTextureGetReference	1
+0x00427520	function	CAurTextureMgr::FindOrCreate	qualified	patch_manager_mods/engine_research_findings/R2.md:20	0x00427520	0x0	conflicts	Global::AurTextureGet	1
+0x00427520	function	Global::AurTextureGet	qualified	patch_manager_mods/engine_research_findings/R9.md:52	0x00427520	0x0	agrees	Global::AurTextureGet	1
+0x00427520	function	GetOrCreateTexture	bare	patch_manager_mods/engine_research_findings/T2.md:54	0x00427520	0x0	conflicts	Global::AurTextureGet	1
+0x004276a0	function	Global::AurLiteReleaseFunctionHolder	qualified	patch_manager_mods/engine_research_findings/R9.md:53	0x004276a0	0x0	conflicts	ReleaseTextureProxy (delete if back-ref count 0)	1
+0x00427810	function	TextureMgr::FlushPendingAndRebuildIdList	qualified	patch_manager_mods/engine_research_findings/R7.md:20	0x00427810	0x0	conflicts	Global::AurTextureBuildAndStoreAll	1
+0x00427810	function	Global::AurTextureBuildAndStoreAll	qualified	patch_manager_mods/engine_research_findings/R9.md:54	0x00427810	0x0	agrees	Global::AurTextureBuildAndStoreAll	1
+0x00427970	function	CAurTextureMgr::CollectBoundTextureIds	qualified	patch_manager_mods/engine_research_findings/R2.md:36	0x00427970	0x0	conflicts	Global::AurTextureGetOrdering	1
+0x00427970	function	TextureMgr::RebuildIdList	qualified	patch_manager_mods/engine_research_findings/R7.md:21	0x00427970	0x0	conflicts	Global::AurTextureGetOrdering	1
+0x00427970	function	Global::AurTextureGetOrdering	qualified	patch_manager_mods/engine_research_findings/R9.md:55	0x00427970	0x0	agrees	Global::AurTextureGetOrdering	1
+0x00427a60	function	Global::AurTextureGetMaxTexID	qualified	patch_manager_mods/engine_research_findings/R9.md:56	0x00427a60	0x0	agrees	Global::AurTextureGetMaxTexID	1
+0x00427b60	function	Global::AurTextureMemCheck	qualified	patch_manager_mods/engine_research_findings/R9.md:57	0x00427b60	0x0	agrees	Global::AurTextureMemCheck	1
+0x00427de0	function	Global::AurTextureSetMem	qualified	patch_manager_mods/engine_research_findings/R9.md:58	0x00427de0	0x0	agrees	Global::AurTextureSetMem	1
+0x00427f30	function	TextureMgr::Tick	qualified	patch_manager_mods/engine_research_findings/R7.md:19	0x00427f30	0x0	conflicts	Global::AurTextureMakeCurrent_2	1
+0x00429f00	function	RequestPoolManagerVBO::LockPool	qualified	patch_manager_mods/engine_research_findings/R9.md:59	0x00429f00	0x0	new		1
+0x0042a3d0	function	GLBufferPool::Resize	qualified	patch_manager_mods/engine_research_findings/R2.md:47	0x0042a3d0	0x0	new		1
+0x00432ce0	function	GLRender::MakeLookUpTexture	qualified	patch_manager_mods/engine_research_findings/R9.md:61	0x00432ce0	0x0	agrees	GLRender::MakeLookUpTexture	1
+0x00432fa0	function	GLRender::CreateCubeTexture	qualified	patch_manager_mods/engine_research_findings/R9.md:62	0x00432fa0	0x0	new		1
+0x004337b0	function	Global::AurBuild2DMipMaps	qualified	patch_manager_mods/engine_research_findings/R9.md:63	0x004337b0	0x0	agrees	Global::AurBuild2DMipMaps	1
+0x00433cd0	function	GLRender::CreateTexture	qualified	patch_manager_mods/engine_research_findings/R9.md:64	0x00433cd0	0x0	new		1
+0x00434350	function	GLRender::CreateProcessedTexture	qualified	patch_manager_mods/engine_research_findings/R9.md:65	0x00434350	0x0	agrees	GLRender::CreateProcessedTexture	1
+0x00435720	function	GLRender::FrameBufferModifications	qualified	patch_manager_mods/engine_research_findings/R9.md:66	0x00435720	0x0	new		1
+0x004452b0	function	Vector3::Sub	qualified	patch_manager_mods/engine_research_findings/R8.md:208	0x004452b0	0x0	conflicts	Vector::operator- (Vector3 subtract)	1
+0x004452b0	function	Vector::operator	qualified	patch_manager_mods/engine_research_findings/R9.md:68	0x004452b0	0x0	conflicts	Vector::operator- (Vector3 subtract)	1
+0x00449320	function	CExoPtrList::Add	qualified	patch_manager_mods/engine_research_findings/R2.md:28	0x00449320	0x0	new		1
+0x0044c8a0	function	Vector3::Add	qualified	patch_manager_mods/engine_research_findings/R8.md:209	0x0044c8a0	0x0	conflicts	Vector::operator+ (Vector3 add)	1
+0x0044c8a0	function	Vector::operator	qualified	patch_manager_mods/engine_research_findings/R9.md:71	0x0044c8a0	0x0	conflicts	Vector::operator+ (Vector3 add)	1
+0x0044ef20	function	MdlNodeAnimMesh::InternalGenVertices	qualified	.claude/research/render_perf/R8_models_anim.md:30	0x0044ef20	0x0	new		1
+0x00452120	function	CAurModel::Destroy	qualified	patch_manager_mods/engine_research_findings/T2.md:41	0x00452120	0x0	agrees	CAurModel::Destroy	1
+0x00452cf0	function	CAurModel::Release	qualified	patch_manager_mods/engine_research_findings/T2.md:39	0x00452cf0	0x0	conflicts	CAurModel::Release (refcount `+0x54`)	1
+0x00452cf0	function	Model::AddRef	qualified	patch_manager_mods/engine_research_findings/U6.md:37	0x00452cf0	0x0	conflicts	CAurModel::Release (refcount `+0x54`)	1
+0x00452d40	function	CAurModel::AddRef	qualified	patch_manager_mods/engine_research_findings/T2.md:40	0x00452d40	0x0	agrees	CAurModel::AddRef	1
+0x00453860	function	MdlNode::ControlDispatch	qualified	.claude/research/holster_reach/hw18_write_point.md:15	0x00453860	0x0	new		1
+0x00459e20	function	Gob::IsInCutscene	qualified	.claude/research/ingest/i2_cards/chunk_4.md:100	0x00459e20	0x0	agrees	Gob::IsInCutscene	1
+0x00464d10	function	Scene::AddObject	qualified	.claude/research/render_perf/R8_models_anim.md:17	0x00464d10	0x0	new		1
+0x00465bb0	function	Scene::ChildAdd	qualified	.claude/research/render_perf/R8_models_anim.md:18	0x00465bb0	0x0	agrees	Scene::ChildAdd	1
+0x00465c90	function	Global::ProjectDynamicShadow	qualified	patch_manager_mods/engine_research_findings/R9.md:72	0x00465c90	0x0	agrees	Global::ProjectDynamicShadow	1
+0x00466700	function	CAurScene::RenderPass_	qualified	patch_manager_mods/engine_research_findings/R2.md:35	0x00466700	0x0	conflicts	Scene::DoFadeBuckets	1
+0x00466700	function	Scene::DoCapBucket	qualified	patch_manager_mods/engine_research_findings/R6.md:29	0x00466700	0x0	conflicts	Scene::DoFadeBuckets	1
+0x00466700	function	Scene::DoMeshBuckets	qualified	patch_manager_mods/engine_research_findings/R7.md:22	0x00466700	0x0	conflicts	Scene::DoFadeBuckets	1
+0x00468b50	function	Scene::DoGobShadowsForThisLight	qualified	.claude/research/render_distance/R3_shadows.md:20	0x00468b50	0x0	agrees	Scene::DoGobShadowsForThisLight	1
+0x0046a980	function	Scene::DoFog	qualified	patch_manager_mods/49_k2_render_distance.md:17	0x0046a980	0x0	agrees	Scene::DoFog	1
+0x0046d367	callsite	Gob::Animate	qualified	.claude/research/render_perf/R11_synthesis.md:22	0x0046d230	0x137	new		1
+0x00472630	function	TexBucketMap::operator	qualified	.claude/research/ingest/i2_cards/chunk_4.md:80	0x00472630	0x0	conflicts	TexBucketMap::operator[]	1
+0x00472630	function	std::map	qualified	patch_manager_mods/engine_research_findings/R7.md:23	0x00472630	0x0	conflicts	TexBucketMap::operator[]	1
+0x004737e0	function	CSWCArea::LoadArea	qualified	patch_manager_mods/engine_research_findings/T2.md:10	0x004737e0	0x0	conflicts	std::length_error scalar deleting dtor (NOT CSWCArea::LoadArea)	1
+0x00473f40	function	ArrayList::Add	qualified	.claude/research/holster_edit/r13a_menu_attach_refresh.md:71	0x00473f40	0x0	conflicts	vector<T*>::push_back (`ret 4`)	1
+0x004741e0	function	CSmartPtr::Assign	qualified	patch_manager_mods/engine_research_findings/R2.md:26	0x004741e0	0x0	conflicts	SafePointer_T_::operator=	1
+0x004741e0	function	SafePointer_T_::operator	qualified	patch_manager_mods/engine_research_findings/R9.md:85	0x004741e0	0x0	conflicts	SafePointer_T_::operator=	1
+0x00474370	function	SafePointer::Set	qualified	patch_manager_mods/engine_research_findings/T2.md:49	0x00474370	0x0	conflicts	Target::AddBackRef(holder)	1
+0x00475ea0	function	CloseModelStream	bare	patch_manager_mods/engine_research_findings/R9.md:87	0x00475ea0	0x0	agrees	CloseModelStream	1
+0x00476890	function	CAurInternalGL::IsFullscreen	qualified	patch_manager_mods/engine_research_findings/U6.md:20	0x00476890	0x0	conflicts	CAurInternalGL::IsFullscreen (vtable slot 1)	1
+0x00476b20	function	CAurInternalGL::RestoreDesktopMode	qualified	patch_manager_mods/engine_research_findings/U6.md:21	0x00476b20	0x0	new		1
+0x00476be0	function	CAurInternalGL::CreateWindow	qualified	patch_manager_mods/engine_research_findings/U6.md:22	0x00476be0	0x0	conflicts	CAurInternalGL::CreateWindow/GL init	1
+0x00478a20	function	Global::PerFrameStatsTick	qualified	patch_manager_mods/engine_research_findings/R7.md:18	0x00478a20	0x0	conflicts	Global::AurMakeCurrent	1
+0x00479b10	function	CAurGUIStringInternal::RefreshResolutionTextScalar	qualified	patch_manager_mods/engine_research_findings/V3.md:24	0x00479b10	0x0	new		1
+0x00479b60	function	LoadAlternateFonts	bare	patch_manager_mods/engine_research_findings/V3.md:28	0x00479b60	0x0	new		1
+0x00479ca0	function	CAurGUIStringInternal::Constructor	qualified	patch_manager_mods/engine_research_findings/V3.md:25	0x00479ca0	0x0	new		1
+0x0047a0c0	function	GetFontTexture	bare	patch_manager_mods/engine_research_findings/V3.md:26	0x0047a0c0	0x0	new		1
+0x0047a510	function	GetFontPixelHeight	bare	patch_manager_mods/engine_research_findings/V3.md:27	0x0047a510	0x0	new		1
+0x0047a510	function	CAurGUIStringInternal::GetFontPixelHeight	qualified	patch_manager_mods/engine_research_findings/V8.md:36	0x0047a510	0x0	new		1
+0x0047a600	function	SetString	bare	patch_manager_mods/engine_research_findings/V3.md:31	0x0047a600	0x0	new		1
+0x0047af30	function	CAurGUIStringInternal::WrapStrings	qualified	patch_manager_mods/engine_research_findings/V3.md:17	0x0047af30	0x0	agrees	CAurGUIStringInternal::WrapStrings	1
+0x0047b500	function	CAurGUIStringInternal::Draw_2	qualified	patch_manager_mods/engine_research_findings/V3.md:18	0x0047b500	0x0	agrees	CAurGUIStringInternal::Draw_2	1
+0x0047eb60	function	GuiLoadImage	bare	.claude/research/pv_missing_tex/README.md:11	0x0047eb60	0x0	conflicts	rea:GuiLoadImage cdecl(resref) returns 8-byte wrapper; resref 0 -> 0x47cd50 else alloc + 0x47d070	1
+0x004843c0	function	GL_HasFragmentShaderBit	bare	patch_manager_mods/engine_research_findings/R9.md:90	0x004843c0	0x0	agrees	GL_HasFragmentShaderBit	1
+0x00484a60	function	GL_UseSGISGenerateMipmap	bare	patch_manager_mods/engine_research_findings/R9.md:93	0x00484a60	0x0	agrees	GL_UseSGISGenerateMipmap	1
+0x00484d10	function	Global::AurMessageGetToken	qualified	patch_manager_mods/engine_research_findings/R9.md:94	0x00484d10	0x0	agrees	Global::AurMessageGetToken	1
+0x0048e160	function	Global::FindModel	qualified	patch_manager_mods/engine_research_findings/R9.md:95	0x0048e160	0x0	agrees	Global::FindModel	1
+0x0048e2a0	function	Global::LoadModel_2	qualified	patch_manager_mods/engine_research_findings/R9.md:96	0x0048e2a0	0x0	agrees	Global::LoadModel_2	1
+0x0048e691	callsite	CSWCCreatureAppearance::GetBTypeModelAndTextureResRef	qualified	.claude/reviews/master_findings.md:311	0x0048e680	0x11	new		1
+0x004ce720	callsite	CGuiInGame::AppendToMsgBuffer	qualified	patch_manager_mods/19b_cross_patch_sharing_survey.md:134	0x004ce460	0x2c0	new		1
+0x004d9ff0	function	Material::Constructor	qualified	patch_manager_mods/engine_research_findings/R9.md:101	0x004d9ff0	0x0	agrees	Material::Constructor	1
+0x004e1d40	function	Gob::Update	qualified	.claude/research/holster_edit/r13a_menu_attach_refresh.md:37	0x004e1d40	0x0	conflicts	rea:Gob per-frame advance (caller 0x00480e40; name unconfirmed): walks entries high index to 0, skips flags&0x20, adds dt*speed to entry+0x10	1
+0x004e8a30	function	PartEmitter::ctor	qualified	patch_manager_mods/engine_research_findings/U4.md:18	0x004e8a30	0x0	agrees	PartEmitter::ctor	1
+0x004e8f60	function	PartEmitter::dtor	qualified	patch_manager_mods/engine_research_findings/U4.md:19	0x004e8f60	0x0	agrees	PartEmitter::dtor	1
+0x004e92a0	function	PartEmitter::RenderFunc	qualified	patch_manager_mods/engine_research_findings/U4.md:26	0x004e92a0	0x0	agrees	PartEmitter::RenderFunc	1
+0x004eb6f0	function	PartEmitter::Initialize	qualified	patch_manager_mods/engine_research_findings/U4.md:20	0x004eb6f0	0x0	agrees	PartEmitter::Initialize	1
+0x004ec080	function	PartEmitter::AnimateParticles	qualified	patch_manager_mods/engine_research_findings/U4.md:21	0x004ec080	0x0	conflicts	PartEmitter::AnimateParticles (per tick, `ret 4`)	1
+0x004f31a0	function	PartEmitter::chkParticleLife	qualified	patch_manager_mods/engine_research_findings/U4.md:22	0x004f31a0	0x0	conflicts	PartEmitter::chkParticleLife (`ret 4`, ECX=emitter)	1
+0x00504d40	function	CAurBehaviorAttach::Control	qualified	.claude/research/holster_edit/r13a_menu_attach_refresh.md:41	0x00504d40	0x0	conflicts	rea:CAurBehaviorAttach vtbl+0x08 per-frame refresh: copies N pose into child when child's attached behavior is this and parent!=0	1
+0x00508980	function	LightManager::AddLight	qualified	patch_manager_mods/engine_research_findings/U4.md:30	0x00508980	0x0	conflicts	LightManager::AddLight (mapper vote)	1
+0x00508c10	function	LightManager::UpdateLights	qualified	patch_manager_mods/engine_research_findings/U4.md:29	0x00508c10	0x0	conflicts	LightManager::UpdateLights (mapper vote)	1
+0x00508ca0	function	LightManager::PrioritizeLights	qualified	patch_manager_mods/engine_research_findings/U4.md:28	0x00508ca0	0x0	conflicts	LightManager::PrioritizeLights (name SPECULATIVE; no caller in callgraph)	1
+0x00508f70	function	LightManager::EnableHighestPriorityLights	qualified	patch_manager_mods/engine_research_findings/U4.md:31	0x00508f70	0x0	conflicts	LightManager::EnableHighestPriorityLights (vote)	1
+0x0050c3e0	function	Global::AurGrassMaterialInUse	qualified	patch_manager_mods/engine_research_findings/R9.md:103	0x0050c3e0	0x0	agrees	Global::AurGrassMaterialInUse	1
+0x0050c430	function	Global::AurGrassAddInfo	qualified	patch_manager_mods/engine_research_findings/R9.md:104	0x0050c430	0x0	agrees	Global::AurGrassAddInfo	1
+0x0050c5a0	function	CAurGrassInfo::CAurGrassInfo	qualified	patch_manager_mods/engine_research_findings/R6.md:14	0x0050c5a0	0x0	conflicts	CAurGrassInfo::Constructor	1
+0x0050c5a0	function	CAurGrassInfo::Constructor	qualified	patch_manager_mods/engine_research_findings/R9.md:105	0x0050c5a0	0x0	agrees	CAurGrassInfo::Constructor	1
+0x0050c660	function	CAurTriangleBin::CAurTriangleBin	qualified	patch_manager_mods/engine_research_findings/R6.md:18	0x0050c660	0x0	conflicts	CAurTriangleBin::Constructor	1
+0x0050c660	function	CAurTriangleBin::Constructor	qualified	patch_manager_mods/engine_research_findings/R9.md:106	0x0050c660	0x0	agrees	CAurTriangleBin::Constructor	1
+0x0050c7a0	function	CAurTriangleBin::~CAurTriangleBin	qualified	patch_manager_mods/engine_research_findings/R6.md:19	0x0050c7a0	0x0	conflicts	CAurTriangleBin::Destructor	1
+0x0050c7a0	function	CAurTriangleBin::Destructor	qualified	patch_manager_mods/engine_research_findings/R9.md:107	0x0050c7a0	0x0	agrees	CAurTriangleBin::Destructor	1
+0x0050dac0	function	CAurTriangleBin::RenderGrassPolys_2	qualified	patch_manager_mods/engine_research_findings/R9.md:111	0x0050dac0	0x0	conflicts	CAurTriangleBin::RenderGrassPolys	1
+0x0050dcc8	callsite	CAurTriangleBin::UpdateGrassForWind	qualified	patch_manager_mods/48_k2_grass_draw_distance.md:20	0x0050dac0	0x208	new		1
+0x00511fb0	function	IODispatcher::ReadSync_3	qualified	patch_manager_mods/engine_research_findings/R9.md:116	0x00511fb0	0x0	new		1
+0x00512130	function	LoadModelFromListFile	bare	patch_manager_mods/engine_research_findings/R2.md:18	0x00512130	0x0	new		1
+0x00512130	function	IODispatcher::ReadSync_4	qualified	patch_manager_mods/engine_research_findings/R9.md:117	0x00512130	0x0	new		1
+0x005122e0	function	InputBinary::Read	qualified	patch_manager_mods/engine_research_findings/R9.md:118	0x005122e0	0x0	agrees	InputBinary::Read	1
+0x0051bc20	function	CServerExoAppInternal::CServerExoAppInternal	qualified	patch_manager_mods/engine_research_findings/R2.md:54	0x0051bc20	0x0	conflicts	CServerExoApp::CServerExoApp (Constructor)	1
+0x0051bc20	function	CServerExoApp::CServerExoApp	qualified	patch_manager_mods/engine_research_findings/R9.md:119	0x0051bc20	0x0	conflicts	CServerExoApp::CServerExoApp (Constructor)	1
+0x0051c080	function	CServerExoApp::GetObjectArray	qualified	.claude/research/npc_add/R3_engine_route.md:17	0x0051c080	0x0	agrees	CServerExoApp::GetObjectArray	1
+0x0051c0e0	function	CServerExoApp::GetItemByGameObjectID	qualified	.claude/research/ingest/i2_cards/chunk_2.md:62	0x0051c0e0	0x0	agrees	CServerExoApp::GetItemByGameObjectID	1
+0x0051c100	function	CServerExoApp::GetCreatureByGameObjectID	qualified	patch_manager_mods/engine_research_findings/R9.md:120	0x0051c100	0x0	agrees	CServerExoApp::GetCreatureByGameObjectID	1
+0x0051c890	function	CServerExoApp::GetGlobalVariableTable	qualified	.claude/research/combat_stats/w1/C5a.md:13	0x0051c890	0x0	agrees	CServerExoApp::GetGlobalVariableTable	1
+0x0051cd90	function	CServerExoApp::TestSafeLocation	qualified	patch_manager_mods/28_point_and_click_movement.md:33	0x0051cd90	0x0	agrees	CServerExoApp::TestSafeLocation	1
+0x0051d1c0	function	CServerAIMaster::NextObject	qualified	patch_manager_mods/engine_research_findings/U3.md:17	0x0051d1c0	0x0	conflicts	CServerAIList::GetNextObject	1
+0x0051d270	function	CServerAIMaster::GetObjectAt	qualified	patch_manager_mods/engine_research_findings/U3.md:18	0x0051d270	0x0	conflicts	CServerAIList::GetObjectAtPosition	1
+0x0051d790	function	CServerAIMaster::UpdateState	qualified	patch_manager_mods/engine_research_findings/U3.md:16	0x0051d790	0x0	agrees	CServerAIMaster::UpdateState	1
+0x0051dbe7	callsite	CompanionAiFm3Probe	bare	patch_manager_mods/mods678_research/ai_review_2026-10-01/designs/design_ai_engine_fixes.md:636	0x0051d790	0x457	new		1
+0x0051e170	function	CServerAIMaster::AddEventDeltaTime	qualified	.claude/research/quick_loot/R1_open_scripts.md:30	0x0051e170	0x0	conflicts	CServerAIMaster::AddEventDeltaTime(dayD,msD,callerId,targetId,eventId,data)	1
+0x0051f000	function	CServerAIMaster::OnEffectApplied	qualified	patch_manager_mods/engine_research_findings/U3.md:20	0x0051f000	0x0	conflicts	CServerAIMaster::OnEffectRemoved	1
+0x00522af0	function	CSWSArea::FindFirstObjectAtX	qualified	patch_manager_mods/engine_research_findings/U3.md:26	0x00522af0	0x0	conflicts	CSWSArea::GetFirstObjectIndiceByX	1
+0x00522bf0	function	CSWSArea::AddObjectToArea	qualified	.claude/research/npc_add/R3_engine_route.md:15	0x00522bf0	0x0	agrees	CSWSArea::AddObjectToArea	1
+0x00529dd0	function	CSWSArea::SaveGIT	qualified	patch_manager_mods/engine_research_findings/R9.md:121	0x00529dd0	0x0	agrees	CSWSArea::SaveGIT	1
+0x0052a600	function	CSWSArea::LoadAreaHeader	qualified	.claude/research/ingest/i2_cards/chunk_1.md:75	0x0052a600	0x0	conflicts	CSWSArea::SaveCreatures	1
+0x0052a600	function	CSWSArea::SaveCreatures	qualified	.claude/research/ingest/i2_cards/chunk_1.md:75	0x0052a600	0x0	agrees	CSWSArea::SaveCreatures	1
+0x0052dc50	function	CSWSArea::ClearObjects	qualified	patch_manager_mods/engine_research_findings/T2.md:78	0x0052dc50	0x0	agrees	CSWSArea::ClearObjects	1
+0x0052dd00	function	CSWSArea::AwardStealthXP	qualified	.claude/research/ingest/i2_cards/chunk_1.md:75	0x0052dd00	0x0	agrees	CSWSArea::AwardStealthXP	1
+0x0052dd00	function	CSWSArea::SaveCreatures	qualified	.claude/research/ingest/i2_cards/chunk_1.md:75	0x0052dd00	0x0	conflicts	CSWSArea::AwardStealthXP	1
+0x0052e170	function	CSWSArea::AwardStealthXP	qualified	.claude/research/ingest/i2_cards/chunk_1.md:75	0x0052e170	0x0	conflicts	CSWSArea::SetPlayerRestrictMode	1
+0x0052e170	function	CSWSArea::SetPlayerRestrictMode	qualified	.claude/research/ingest/i2_cards/chunk_1.md:75	0x0052e170	0x0	agrees	CSWSArea::SetPlayerRestrictMode	1
+0x0052f4c0	function	CServerExoAppInternal::GetModule	qualified	patch_manager_mods/engine_research_findings/T2.md:20	0x0052f4c0	0x0	agrees	CServerExoAppInternal::GetModule	1
+0x0052fd1e	callsite	HotbarOnLoadRequest	bare	patch_manager_mods/22_hotbar_shared_services.md:117	0x0052fb80	0x19e	new		1
+0x0052fda0	function	CServerExoAppInternal::StartNewModule	qualified	patch_manager_mods/engine_research_findings/T2.md:16	0x0052fda0	0x0	agrees	CServerExoAppInternal::StartNewModule	1
+0x00530170	function	CServerExoAppInternal::ExecuteLoadModule	qualified	patch_manager_mods/engine_research_findings/T2.md:17	0x00530170	0x0	agrees	CServerExoAppInternal::ExecuteLoadModule	1
+0x005315e0	function	CServerExoAppInternal::UnloadModule	qualified	patch_manager_mods/engine_research_findings/T2.md:19	0x005315e0	0x0	agrees	CServerExoAppInternal::UnloadModule	1
+0x00531c50	function	CSWSArea::SetPlayerRestrictMode	qualified	.claude/research/ingest/i2_cards/chunk_1.md:75	0x00531c50	0x0	conflicts	CServerExoAppInternal::LoadModule	1
+0x00531c50	function	CServerExoAppInternal::LoadModule	qualified	patch_manager_mods/engine_research_findings/T2.md:18	0x00531c50	0x0	agrees	CServerExoAppInternal::LoadModule	1
+0x00534527	callsite	HotbarOnSaved	bare	patch_manager_mods/22_hotbar_shared_services.md:115	0x00533830	0xcf7	new		1
+0x00539d30	function	CServerExoAppInternal::ClientToServerObjectId	qualified	.claude/research/ingest/i2_cards/chunk_6.md:101	0x00539d30	0x0	agrees	CServerExoAppInternal::ClientToServerObjectId	1
+0x0053af20	function	CServerExoAppInternal::DoPCAutosave	qualified	patch_manager_mods/engine_research_findings/R9.md:122	0x0053af20	0x0	agrees	CServerExoAppInternal::DoPCAutosave	1
+0x0053c5aa	callsite	HotbarOnAutosaved	bare	patch_manager_mods/22_hotbar_shared_services.md:116	0x0053af20	0x168a	new		1
+0x0053d690	function	CGameObjectArray::Constructor	qualified	patch_manager_mods/engine_research_findings/R9.md:123	0x0053d690	0x0	agrees	CGameObjectArray::Constructor	1
+0x0053dfb0	function	ObjectHash::Find	qualified	patch_manager_mods/engine_research_findings/R8.md:204	0x0053dfb0	0x0	conflicts	CGameObjectArray::GetGameObject	1
+0x0053dfb0	function	CGameObjectArray::GetGameObject	qualified	patch_manager_mods/engine_research_findings/R9.md:124	0x0053dfb0	0x0	agrees	CGameObjectArray::GetGameObject	1
+0x0053f050	function	CSWSObject::Destructor_2	qualified	patch_manager_mods/engine_research_findings/U3.md:32	0x0053f050	0x0	agrees	CSWSObject::Destructor_2	1
+0x00544640	function	CSWSObject::RemoveEffect	qualified	patch_manager_mods/engine_research_findings/U3.md:28	0x00544640	0x0	agrees	CSWSObject::RemoveEffect	1
+0x00544790	function	CSWSObject::RemoveEffectById	qualified	patch_manager_mods/engine_research_findings/U3.md:29	0x00544790	0x0	agrees	CSWSObject::RemoveEffectById	1
+0x00544ad0	function	CSWSObject::UpdateEffectList	qualified	patch_manager_mods/engine_research_findings/U3.md:30	0x00544ad0	0x0	agrees	CSWSObject::UpdateEffectList	1
+0x005453c0	function	CSWSObject::GetArea	qualified	patch_manager_mods/engine_research_findings/R9.md:125	0x005453c0	0x0	agrees	CSWSObject::GetArea	1
+0x00545760	function	CSWSObject::StartDialog	qualified	.claude/research/quick_loot/R2_client_gui.md:21	0x00545760	0x0	agrees	CSWSObject::StartDialog	1
+0x005476c0	function	CSWSObject::HasSpellEffectApplied	qualified	patch_manager_mods/21b_gog_address_map.md:121	0x005476c0	0x0	agrees	CSWSObject::HasSpellEffectApplied	1
+0x0054a520	function	CSWSObject::ClearAllEffects	qualified	patch_manager_mods/engine_research_findings/U3.md:31	0x0054a520	0x0	agrees	CSWSObject::ClearAllEffects	1
+0x0054a840	function	CSWSObject::GetClientObject	qualified	.claude/research/npc_variety/nb2_recon.md:22	0x0054a840	0x0	agrees	CSWSObject::GetClientObject	1
+0x0054aa10	function	CSWSObject::ClearAction	qualified	patch_manager_mods/engine_research_findings/R9.md:259	0x0054aa10	0x0	conflicts	CExoLinkedList::AddHead	1
+0x00550e30	function	CSWSArea::PlotGridPath	qualified	patch_manager_mods/engine_research_findings/U3.md:45	0x00550e30	0x0	agrees	CSWSArea::PlotGridPath	1
+0x00552a90	function	CSWSArea::GridDFSTransTableInitialize	qualified	patch_manager_mods/engine_research_findings/R9.md:241	0x00552a90	0x0	agrees	CSWSArea::GridDFSTransTableInitialize	1
+0x00552a90	function	CSWSArea::GridDFSTransTablePut	qualified	patch_manager_mods/engine_research_findings/R9.md:254	0x00552a90	0x0	conflicts	CSWSArea::GridDFSTransTableInitialize	1
+0x00552b40	function	CSWSArea::GridDFSTransTableGet	qualified	patch_manager_mods/engine_research_findings/R9.md:256	0x00552b40	0x0	agrees	CSWSArea::GridDFSTransTableGet	1
+0x00552c90	function	CSWSArea::PathPointDFSTransTablePut	qualified	patch_manager_mods/engine_research_findings/R9.md:242	0x00552c90	0x0	conflicts	CSWSArea::GridDFSTransTablePut	1
+0x00552c90	function	CSWSArea::PathPointDFSTransTableInitialize	qualified	patch_manager_mods/engine_research_findings/R9.md:255	0x00552c90	0x0	conflicts	CSWSArea::GridDFSTransTablePut	1
+0x005532f0	function	CSWSArea::PlotPathPointPath	qualified	patch_manager_mods/engine_research_findings/U3.md:44	0x005532f0	0x0	agrees	CSWSArea::PlotPathPointPath	1
+0x00554eb0	function	CSWSArea::PathPointDFSearch	qualified	patch_manager_mods/engine_research_findings/U3.md:47	0x00554eb0	0x0	agrees	CSWSArea::PathPointDFSearch	1
+0x00555d00	function	CSWSArea::PathPointDFSTransTableInitialize	qualified	patch_manager_mods/engine_research_findings/R9.md:126	0x00555d00	0x0	agrees	CSWSArea::PathPointDFSTransTableInitialize	1
+0x00555d00	function	PathPointDFSTransTableInitialize	bare	patch_manager_mods/engine_research_findings/U3.md:48	0x00555d00	0x0	agrees	CSWSArea::PathPointDFSTransTableInitialize	1
+0x0055a460	function	CSWSModule::LoadModuleInProgress	qualified	patch_manager_mods/35_npc_add_poc.md:76	0x0055a460	0x0	agrees	CSWSModule::LoadModuleInProgress	1
+0x0055a650	function	CSWSModule::LoadModuleFinish	qualified	patch_manager_mods/engine_research_findings/R9.md:127	0x0055a650	0x0	agrees	CSWSModule::LoadModuleFinish	1
+0x0055ab30	function	CSWSArea::PlotPath	qualified	patch_manager_mods/engine_research_findings/U3.md:41	0x0055ab30	0x0	conflicts	CSWSModule::PlotPath	1
+0x0055ac80	function	CSWSArea::PlotPathInArea	qualified	patch_manager_mods/engine_research_findings/U3.md:43	0x0055ac80	0x0	conflicts	CSWSModule::PlotPathInArea	1
+0x0055bb80	function	CSWSModule::SaveModuleFinish	qualified	patch_manager_mods/engine_research_findings/R9.md:128	0x0055bb80	0x0	agrees	CSWSModule::SaveModuleFinish	1
+0x0055cb50	function	CSWSModule::SaveModuleIFOFinish	qualified	patch_manager_mods/engine_research_findings/R9.md:129	0x0055cb50	0x0	agrees	CSWSModule::SaveModuleIFOFinish	1
+0x0055db00	function	CSWSModule::SaveStatic	qualified	patch_manager_mods/engine_research_findings/R9.md:130	0x0055db00	0x0	agrees	CSWSModule::SaveStatic	1
+0x00560070	function	CSWSModule::RemoveModuleResources	qualified	patch_manager_mods/engine_research_findings/T2.md:55	0x00560070	0x0	agrees	CSWSModule::RemoveModuleResources	1
+0x005632f0	function	CSWSCreature::GetFirstName	qualified	.claude/research/holster_edit/r10_creature_name.md:12	0x005632f0	0x0	agrees	CSWSCreature::GetFirstName	1
+0x00564770	function	CSWSCreature::AddMoveToPointAction	qualified	patch_manager_mods/28_point_and_click_movement.md:37	0x00564770	0x0	agrees	CSWSCreature::AddMoveToPointAction	1
+0x00569320	function	CSWSCreature::AIUpdate	qualified	patch_manager_mods/engine_research_findings/U3.md:22	0x00569320	0x0	agrees	CSWSCreature::AIUpdate	1
+0x0056bdb4	callsite	CompanionAiP1Interval	bare	patch_manager_mods/mods678_research/ai_review_2026-10-01/designs/design_ai_engine_fixes.md:627	0x0056b8a0	0x514	new		1
+0x0056bde3	callsite	CompanionAiP1Stamp	bare	patch_manager_mods/mods678_research/ai_review_2026-10-01/designs/design_ai_engine_fixes.md:628	0x0056b8a0	0x543	new		1
+0x0056efd0	function	CSWSCreature::EventHandler	qualified	.claude/research/ingest/i2_cards/chunk_6.md:91	0x0056efd0	0x0	agrees	CSWSCreature::EventHandler	1
+0x00574180	function	CSWSCreature::LoadCreature	qualified	.claude/research/npc_add/R3_engine_route.md:13	0x00574180	0x0	agrees	CSWSCreature::LoadCreature	1
+0x0057451f	callsite	CompanionAiFm4Snap	bare	patch_manager_mods/mods678_research/ai_review_2026-10-01/designs/design_ai_engine_fixes.md:630	0x00574500	0x1f	new		1
+0x0057452c	callsite	CompanionAiFm4Apply	bare	patch_manager_mods/mods678_research/ai_review_2026-10-01/designs/design_ai_engine_fixes.md:632	0x00574500	0x2c	new		1
+0x00575183	callsite	CompanionAiFm4Restore	bare	patch_manager_mods/mods678_research/ai_review_2026-10-01/designs/design_ai_engine_fixes.md:631	0x00574500	0xc83	new		1
+0x005763e0	function	CSWSCreature::IsWieldingLightsaber	qualified	.claude/research/combat_stats/w1/C3b.md:5	0x005763e0	0x0	agrees	CSWSCreature::IsWieldingLightsaber	1
+0x0057a560	function	CSWSCreature::SetCombatState	qualified	.claude/research/holster_c7/c_readers_combat.md:28	0x0057a560	0x0	agrees	CSWSCreature::SetCombatState	1
+0x00585120	function	CSWSCreature::Disguise	qualified	.claude/research/ingest/i2_cards/chunk_6.md:24	0x00585120	0x0	agrees	CSWSCreature::Disguise	1
+0x00586f43	callsite	CompanionAiBumpClear	bare	patch_manager_mods/mods678_research/ai_review_2026-10-01/designs/design_ai_engine_fixes.md:629	0x00586b70	0x3d3	new		1
+0x0058a1c0	function	CSWSCreature::CalculateSpellSaveDC	qualified	.claude/research/combat_stats/w1/C4a.md:7	0x0058a1c0	0x0	agrees	CSWSCreature::CalculateSpellSaveDC	1
+0x0058c700	function	ActionEntry::operator	qualified	patch_manager_mods/engine_research_findings/R8.md:191	0x0058c700	0x0	conflicts	ActionEntry::CopyFrom (CExoString deep copy in SetAllocated)	1
+0x0058e990	function	CSWSCombatRound::EndCombatRound	qualified	.claude/research/ingest/i2_cards/chunk_6.md:122	0x0058e990	0x0	agrees	CSWSCombatRound::EndCombatRound	1
+0x00590270	function	CSWSCombatRound::AddAction	qualified	patch_manager_mods/engine_research_findings/U3.md:36	0x00590270	0x0	agrees	CSWSCombatRound::AddAction	1
+0x005908f0	function	CSWSCombatRound::ClearAllAttacks	qualified	patch_manager_mods/engine_research_findings/U3.md:38	0x005908f0	0x0	agrees	CSWSCombatRound::ClearAllAttacks	1
+0x00592840	function	CSWSCombatRound::LoadCombatRound	qualified	patch_manager_mods/engine_research_findings/U3.md:39	0x00592840	0x0	agrees	CSWSCombatRound::LoadCombatRound	1
+0x005947a0	function	CSWSEffectListHandler::OnEffectApplied	qualified	patch_manager_mods/engine_research_findings/U3.md:21	0x005947a0	0x0	conflicts	CSWSEffectListHandler::OnEffectRemoved	1
+0x005a43c0	function	CSWSEffectListHandler::OnApplyEffectIcon	qualified	.claude/research/enemy_strip/R3_client_server_map.md:35	0x005a43c0	0x0	agrees	CSWSEffectListHandler::OnApplyEffectIcon	1
+0x005b2650	function	CSWSItemPropertyHandler::ApplyBlasterBoltDeflectionDecrease	qualified	.claude/research/ingest/i2_cards/chunk_8.md:23	0x005b2650	0x0	agrees	CSWSItemPropertyHandler::ApplyBlasterBoltDeflectionDecrease	1
+0x005b2780	function	CSWSItemPropertyHandler::RemoveBlasterBoltDeflectionDecrease	qualified	.claude/research/ingest/i2_cards/chunk_8.md:24	0x005b2780	0x0	agrees	CSWSItemPropertyHandler::RemoveBlasterBoltDeflectionDecrease	1
+0x005bd6a0	function	CSWSCreature::CanEquipItem	qualified	.claude/research/npc_equipment/engine_recon.md:6	0x005bd6a0	0x0	agrees	CSWSCreature::CanEquipItem	1
+0x005bdb60	function	CSWSCreature::AcquireItem	qualified	.claude/research/quick_loot/R3_server_take.md:34	0x005bdb60	0x0	agrees	CSWSCreature::AcquireItem	1
+0x005cf8a0	function	CSWSCreature::AIActionPickUpItem	qualified	.claude/research/quick_loot/R3_server_take.md:39	0x005cf8a0	0x0	agrees	CSWSCreature::AIActionPickUpItem	1
+0x005d3650	function	CSWSCreature::CheckItemRaceRestrictions	qualified	.claude/research/ingest/i2_cards/chunk_4.md:31	0x005d3650	0x0	agrees	CSWSCreature::CheckItemRaceRestrictions	1
+0x005dab80	function	CSWSObject::AIActionTakeItem	qualified	.claude/research/quick_loot/R3_server_take.md:40	0x005dab80	0x0	agrees	CSWSObject::AIActionTakeItem	1
+0x005e39d0	function	CSWMessage::ReadDWORD	qualified	patch_manager_mods/engine_research_findings/V6.md:38	0x005e39d0	0x0	new		1
+0x005e4e60	function	CGameEffect::GetInteger	qualified	.claude/research/combat_stats/w1/C1b.md:16	0x005e4e60	0x0	agrees	CGameEffect::GetInteger	1
+0x005e4e80	function	CGameEffect::GetInteger	qualified	patch_manager_mods/engine_research_findings/U3.md:34	0x005e4e80	0x0	conflicts	CGameEffect::SetInteger	1
+0x005e5510	function	CGameEffect::LoadGameEffect	qualified	patch_manager_mods/engine_research_findings/U3.md:35	0x005e5510	0x0	agrees	CGameEffect::LoadGameEffect	1
+0x005f4ed0	function	CSWSPlaceable::AcquireItem	qualified	.claude/research/quick_loot/R3_server_take.md:30	0x005f4ed0	0x0	agrees	CSWSPlaceable::AcquireItem	1
+0x005f5160	function	CSWSPlaceable::AcquireItemsFromObject	qualified	.claude/research/quick_loot/R3_server_take.md:16	0x005f5160	0x0	agrees	CSWSPlaceable::AcquireItemsFromObject	1
+0x005f67b0	function	CSWSPlaceable::GetItemCount	qualified	.claude/research/quick_loot/R3_server_take.md:50	0x005f67b0	0x0	agrees	CSWSPlaceable::GetItemCount	1
+0x005f67b0	function	GetItemCount	bare	patch_manager_mods/12_empty_container_indicators.md:60	0x005f67b0	0x0	agrees	CSWSPlaceable::GetItemCount	1
+0x005f6b90	function	CSWMapInfo::Initialize	qualified	patch_manager_mods/engine_research_findings/V4.md:22	0x005f6b90	0x0	new		1
+0x005f7350	function	CSWMapInfo::GetMarkerPos	qualified	patch_manager_mods/engine_research_findings/V4.md:23	0x005f7350	0x0	new		1
+0x00601740	function	CSWSItem::LoadFromGff	qualified	patch_manager_mods/engine_research_findings/V6.md:39	0x00601740	0x0	conflicts	CSWSItem::LoadDataFromGff	1
+0x00605090	function	AddItem	bare	patch_manager_mods/11_inventory_sort_filter.md:31	0x00605090	0x0	agrees	CItemRepository::AddItem	1
+0x00605f40	function	ClearNewItems	bare	patch_manager_mods/11_inventory_sort_filter.md:32	0x00605f40	0x0	agrees	CItemRepository::ClearNewItems	1
+0x00606460	function	CSWSItem::CloseInventory	qualified	.claude/research/quick_loot/R3_server_take.md:11	0x00606460	0x0	agrees	CSWSItem::CloseInventory	1
+0x00606c30	function	CSWSItem::GetMinEquipLevel	qualified	patch_manager_mods/mods678_research/ai_research_2026-10-02/R4_medpac_mod6v2.md:350	0x00606c30	0x0	agrees	CSWSItem::GetMinEquipLevel	1
+0x00607790	function	CSWSItem::GetPropertyDescription	qualified	patch_manager_mods/engine_research_findings/V8.md:16	0x00607790	0x0	agrees	CSWSItem::GetPropertyDescription	1
+0x0060a990	function	CSWSItem::AddAttributeRequirements	qualified	patch_manager_mods/engine_research_findings/V8.md:17	0x0060a990	0x0	agrees	CSWSItem::AddAttributeRequirements	1
+0x00610fc0	function	CSWSItem::Add	qualified	patch_manager_mods/engine_research_findings/V8.md:18	0x00610fc0	0x0	conflicts	CSWSItem::AddMiscellaneousProperties	1
+0x00615cc0	function	CSWSItem::GetIcon	qualified	.claude/research/ingest/i2_cards/chunk_2.md:62	0x00615cc0	0x0	agrees	CSWSItem::GetIcon	1
+0x00615ff0	function	CSWSItem::GetPropertiesOnlyDescription	qualified	patch_manager_mods/engine_research_findings/V8.md:19	0x00615ff0	0x0	agrees	CSWSItem::GetPropertiesOnlyDescription	1
+0x00617b40	function	CSWSDoor::EventHandler	qualified	.claude/research/ingest/i2_cards/chunk_6.md:93	0x00617b40	0x0	agrees	CSWSDoor::EventHandler	1
+0x0062c360	function	CSWSAreaOfEffectObject::AIUpdate	qualified	patch_manager_mods/engine_research_findings/U3.md:24	0x0062c360	0x0	agrees	CSWSAreaOfEffectObject::AIUpdate	1
+0x0062e320	function	CSWSAreaOfEffectObject::UpdateSubAreas	qualified	patch_manager_mods/engine_research_findings/U3.md:25	0x0062e320	0x0	agrees	CSWSAreaOfEffectObject::UpdateSubAreas	1
+0x006375f0	function	CSWSMessage::SendServerToPlayerModule_DumpPlayer	qualified	patch_manager_mods/engine_research_findings/T2.md:21	0x006375f0	0x0	conflicts	CSWSMessage::SendServerToPlayerModule_DumpPlayer (name derived from minor 8)	1
+0x0064be70	callsite	CServerExoApp::Initialize	qualified	patch_manager_mods/19b_cross_patch_sharing_survey.md:136	0x0064bc80	0x1f0	new		1
+0x0064c450	function	CSWSMessage::SendServerToPlayerLevelUp_Confirmation	qualified	patch_manager_mods/08_level_up_override.md:70	0x0064c450	0x0	agrees	CSWSMessage::SendServerToPlayerLevelUp_Confirmation	1
+0x00652810	function	Global::AurGrassMaterialInUse	qualified	patch_manager_mods/engine_research_findings/R9.md:260	0x00652810	0x0	new		1
+0x00656af0	function	CSWSCombatRound::EndCombatRound	qualified	.claude/research/ingest/i2_cards/chunk_6.md:122	0x00656af0	0x0	new		1
+0x0065afd0	function	CSWSMessage::HandlePlayerToServerGuiContainerMessage	qualified	.claude/research/quick_loot/R2_client_gui.md:44	0x0065afd0	0x0	new		1
+0x00661c30	function	CSWSMessage::HandlePlayerToServerLevelUpMessage	qualified	patch_manager_mods/08_level_up_override.md:69	0x00661c30	0x0	agrees	CSWSMessage::HandlePlayerToServerLevelUpMessage	1
+0x0066b8a0	function	Global::ExecuteCommandCreatureFlourishWeapon	qualified	.claude/research/holster_c7/c_readers_combat.md:13	0x0066b8a0	0x0	conflicts	Global::ExecuteCommandCreatureFlourishWeapon (847)	1
+0x00670760	function	Global::ExecuteCommandDestroyObject	qualified	.claude/research/ingest/i2_cards/chunk_6.md:122	0x00670760	0x0	agrees	Global::ExecuteCommandDestroyObject	1
+0x00677c70	function	Global::ExecuteCommandEffectBlasterDeflectionDecrease	qualified	.claude/research/ingest/i2_cards/chunk_8.md:25	0x00677c70	0x0	agrees	Global::ExecuteCommandEffectBlasterDeflectionDecrease	1
+0x0067b100	function	Global::ExecuteCommandGetCurrentAction	qualified	.claude/research/npc_variety/nb2_recon.md:62	0x0067b100	0x0	agrees	Global::ExecuteCommandGetCurrentAction	1
+0x0068ece0	function	Global::ExecuteCommandPopUpGUIPanel	qualified	patch_manager_mods/engine_research_findings/V4.md:39	0x0068ece0	0x0	agrees	Global::ExecuteCommandPopUpGUIPanel	1
+0x006986e0	function	Global::ExecuteCommandEnableVideoEffect	qualified	patch_manager_mods/engine_research_findings/V11.md:32	0x006986e0	0x0	agrees	Global::ExecuteCommandEnableVideoEffect	1
+0x0069bea0	function	Global::ExecuteCommandDisplayMessageBox	qualified	patch_manager_mods/engine_research_findings/V4.md:38	0x0069bea0	0x0	agrees	Global::ExecuteCommandDisplayMessageBox	1
+0x0069fee0	function	CSWBaseItemArray::Load	qualified	patch_manager_mods/engine_research_findings/V6.md:253	0x0069fee0	0x0	new		1
+0x0069fee0	function	CSWRules::LoadClasses	qualified	patch_manager_mods/engine_research_findings/V6.md:31	0x0069fee0	0x0	new		1
+0x006a4260	function	CSWSCreatureStats::Constructor	qualified	.claude/research/ingest/i2_cards/chunk_4.md:32	0x006a4260	0x0	agrees	CSWSCreatureStats::Constructor	1
+0x006a4c30	function	CSWSCreatureStats::GetFullName	qualified	.claude/research/holster_edit/r10_creature_name.md:15	0x006a4c30	0x0	agrees	CSWSCreatureStats::GetFullName	1
+0x006afed0	function	CSWSCreatureStats::ReadStatsFromGff	qualified	.claude/research/combat_stats/w1/C3b.md:4	0x006afed0	0x0	agrees	CSWSCreatureStats::ReadStatsFromGff	1
+0x006afed0	function	CSWSCreature::LoadCreature	qualified	patch_manager_mods/engine_research_findings/V6.md:34	0x006afed0	0x0	conflicts	CSWSCreatureStats::ReadStatsFromGff	1
+0x006b7bb0	function	CSWSCreatureStats::GetSkillRank	qualified	.claude/research/enemy_strip/R4_awareness_rank.md:10	0x006b7bb0	0x0	agrees	CSWSCreatureStats::GetSkillRank	1
+0x006b81c0	function	CSWSCreatureStats::SetSkillRank	qualified	.claude/research/enemy_strip/R4_awareness_rank.md:16	0x006b81c0	0x0	agrees	CSWSCreatureStats::SetSkillRank	1
+0x006b8280	function	CSWSCreatureStats::AddFeat	qualified	patch_manager_mods/08_level_up_override.md:47	0x006b8280	0x0	agrees	CSWSCreatureStats::AddFeat	1
+0x006b9640	function	CSWSCreatureStats::ValidateLevelUp	qualified	patch_manager_mods/08_level_up_override.md:169	0x006b9640	0x0	agrees	CSWSCreatureStats::ValidateLevelUp	1
+0x006ba620	function	CSWSCreatureStats::GetFortSavingThrow	qualified	.claude/research/combat_stats/w1/C4a.md:11	0x006ba620	0x0	agrees	CSWSCreatureStats::GetFortSavingThrow	1
+0x006bd9c0	function	CSWSCreatureStats::HasSpell	qualified	patch_manager_mods/00_code_review_feedback_2026-09-29.md:108	0x006bd9c0	0x0	agrees	CSWSCreatureStats::HasSpell	1
+0x006bedf0	function	CSWSCreatureStats::AutoLevelup	qualified	patch_manager_mods/08_level_up_override.md:171	0x006bedf0	0x0	agrees	CSWSCreatureStats::AutoLevelup	1
+0x006d5200	function	CSWBaseItemArray::GetBaseItem	qualified	patch_manager_mods/engine_research_findings/V6.md:29	0x006d5200	0x0	conflicts	rea:baseitem record = [tbl+4] + idx*0xC8 when 0 <= idx < [tbl] and [tbl+4] != 0; else 0	1
+0x006d5240	function	CSWBaseItemArray::Load	qualified	patch_manager_mods/engine_research_findings/V6.md:30	0x006d5240	0x0	conflicts	rea:FUN_006d5240 BASEITEMS row loader; 200-byte rows; row base in_ECX[1]	1
+0x006d6e30	function	CSWItem::GetBaseItem	qualified	.claude/research/wi03_rescue/R4.md:12	0x006d6e30	0x0	agrees	CSWItem::GetBaseItem	1
+0x006d78b7	callsite	CompanionAiA3	bare	patch_manager_mods/mods678_research/ai_review_2026-10-01/designs/design_ai_engine_fixes.md:635	0x006d7390	0x527	new		1
+0x006e1540	function	CSWSCreature::ResolveDamage	qualified	.claude/research/combat_stats/w1/C1b.md:35	0x006e1540	0x0	agrees	CSWSCreature::ResolveDamage	1
+0x006f0cd0	function	CSWClass::LoadFeatGain	qualified	patch_manager_mods/08_level_up_override.md:66	0x006f0cd0	0x0	agrees	CSWClass::LoadFeatGain	1
+0x006f5c10	callsite	CSWSCreatureStats::CanLevelUp	qualified	patch_manager_mods/19b_cross_patch_sharing_survey.md:132	0x006f5b80	0x90	new		1
+0x006fa530	function	CPathfindInformation::ResetAtEndOfPath	qualified	patch_manager_mods/engine_research_findings/U3.md:50	0x006fa530	0x0	new		1
+0x006fb270	callsite	CSWSCreatureStats::AutoLevelup	qualified	patch_manager_mods/19b_cross_patch_sharing_survey.md:133	0x006fa580	0xcf0	new		1
+0x006fd8d0	function	CVirtualMachine::RunScript	qualified	.claude/research/quick_loot/R1_open_scripts.md:29	0x006fd8d0	0x0	agrees	CVirtualMachine::RunScript	1
+0x007022a0	function	CVirtualMachineInternal::RunScript	qualified	.claude/research/npc_add/R3_engine_route.md:12	0x007022a0	0x0	agrees	CVirtualMachineInternal::RunScript	1
+0x00703ca0	function	CNetLayer::CNetLayer	qualified	patch_manager_mods/engine_research_findings/U6.md:25	0x00703ca0	0x0	conflicts	CNetLayer::CNetLayer (ctor, object 0x2007C B)	1
+0x00703e40	function	CNetLayer::Link	qualified	patch_manager_mods/engine_research_findings/U6.md:27	0x00703e40	0x0	conflicts	CNetLayer::Link/StartMode (mapper says NonWindowMessages: WRONG)	1
+0x00703f30	function	CNetLayer::ProcessReceivedFrames	qualified	patch_manager_mods/engine_research_findings/U6.md:28	0x00703f30	0x0	conflicts	CNetLayer::ProcessReceivedFrames (mapper `vote`, CONFIRMED by body)	1
+0x00703f30	function	CNetLayer::drain	qualified	patch_manager_mods/engine_research_findings/W5.md:22	0x00703f30	0x0	conflicts	CNetLayer::ProcessReceivedFrames (mapper `vote`, CONFIRMED by body)	1
+0x00704480	function	CNetLayer::Unlink	qualified	patch_manager_mods/engine_research_findings/U6.md:30	0x00704480	0x0	conflicts	CNetLayer::Unlink (mapper: EndServerMode)	1
+0x00704820	function	CNetLayer::SetDestNetLayer	qualified	patch_manager_mods/engine_research_findings/U6.md:31	0x00704820	0x0	agrees	CNetLayer::SetDestNetLayer	1
+0x00704d70	function	CExoSoundInternal::Constructor	qualified	patch_manager_mods/engine_research_findings/U2.md:20	0x00704d70	0x0	agrees	CExoSoundInternal::Constructor	1
+0x00705ae0	function	CExoSoundInternal::ShutDown	qualified	patch_manager_mods/engine_research_findings/U2.md:22	0x00705ae0	0x0	agrees	CExoSoundInternal::ShutDown	1
+0x00705d70	function	CExoSoundInternal::Render	qualified	patch_manager_mods/engine_research_findings/U2.md:23	0x00705d70	0x0	conflicts	CExoSoundInternal::Render (per-frame)	1
+0x00707050	function	CExoSoundInternal::OcclusionRender	qualified	patch_manager_mods/engine_research_findings/U2.md:26	0x00707050	0x0	agrees	CExoSoundInternal::OcclusionRender	1
+0x00708e30	function	AcquireVoice2D	bare	patch_manager_mods/engine_research_findings/U2.md:31	0x00708e30	0x0	agrees	AcquireVoice2D	1
+0x0070a8d0	function	Source::LoadWaveResource	qualified	patch_manager_mods/engine_research_findings/U2.md:38	0x0070a8d0	0x0	conflicts	Source::LoadWaveResource (ret 8)	1
+0x0070b4e0	function	CExoSound::Constructor	qualified	patch_manager_mods/engine_research_findings/U2.md:19	0x0070b4e0	0x0	conflicts	CExoSound::Constructor (ret 16)	1
+0x0070b8f0	function	CExoSound::Render	qualified	patch_manager_mods/engine_research_findings/U2.md:24	0x0070b8f0	0x0	conflicts	CExoSound::Render wrapper	1
+0x0070b9b0	function	CExoSound::ReInitialize	qualified	patch_manager_mods/engine_research_findings/W5.md:17	0x0070b9b0	0x0	new		1
+0x0070caa0	function	CExoStreamingSoundSourceInternal::InitializeSource	qualified	patch_manager_mods/44_in_memory_asset_vfs_and_character_library.md:47	0x0070caa0	0x0	conflicts	StreamingSource::OpenStream	1
+0x0070dd10	function	StreamingSource::Stop	qualified	patch_manager_mods/engine_research_findings/U2.md:48	0x0070dd10	0x0	conflicts	StreamingSource::Stop(closeFlag) (ret 4)	1
+0x0070e2e0	function	StreamSource::Update3D	qualified	patch_manager_mods/engine_research_findings/U2.md:52	0x0070e2e0	0x0	conflicts	StreamSource::Update3D (vol/pan/reverb)	1
+0x0070ec50	function	Source::DemandResource	qualified	patch_manager_mods/engine_research_findings/U2.md:33	0x0070ec50	0x0	agrees	Source::DemandResource	1
+0x0070ecb0	function	Source::ReleaseResource	qualified	patch_manager_mods/engine_research_findings/U2.md:34	0x0070ecb0	0x0	conflicts	Global::CExoSoundSourceInternal_loaded_resource_release_helper	1
+0x0070ed50	function	CExoSoundSourceInternal::Play	qualified	patch_manager_mods/engine_research_findings/U2.md:32	0x0070ed50	0x0	conflicts	CExoSoundSourceInternal::Play (ret 8)	1
+0x0070f950	function	Source::IsPlaying	qualified	patch_manager_mods/engine_research_findings/U2.md:51	0x0070f950	0x0	agrees	Source::IsPlaying	1
+0x0070fb90	function	Source::Stop	qualified	patch_manager_mods/engine_research_findings/U2.md:35	0x0070fb90	0x0	conflicts	Source::Stop/Unbind	1
+0x0070fd00	function	Source::SetPosition	qualified	patch_manager_mods/engine_research_findings/U2.md:53	0x0070fd00	0x0	agrees	Source::SetPosition	1
+0x0070fdc0	function	Source::ApplyVolume	qualified	patch_manager_mods/engine_research_findings/U2.md:54	0x0070fdc0	0x0	agrees	Source::ApplyVolume	1
+0x00710840	function	CResRef::CResRef	qualified	patch_manager_mods/engine_research_findings/R9.md:137	0x00710840	0x0	conflicts	rea:kAddrResrefInit	1
+0x007110d0	function	CRes::Constructor	qualified	patch_manager_mods/engine_research_findings/R9.md:138	0x007110d0	0x0	conflicts	CRes::CRes	1
+0x007111c0	function	CRes::CancelRequest	qualified	patch_manager_mods/engine_research_findings/R9.md:139	0x007111c0	0x0	agrees	CRes::CancelRequest	1
+0x007111e0	function	CExoResMan::Demand	qualified	patch_manager_mods/44_in_memory_asset_vfs_and_character_library.md:46	0x007111e0	0x0	conflicts	CRes::Demand	1
+0x007112b0	function	CRes::Release	qualified	patch_manager_mods/engine_research_findings/R9.md:141	0x007112b0	0x0	agrees	CRes::Release	1
+0x007112d0	function	CRes::Request	qualified	patch_manager_mods/engine_research_findings/R9.md:142	0x007112d0	0x0	agrees	CRes::Request	1
+0x00711360	function	CExoResMan::Constructor	qualified	.claude/research/ingest/i2_cards/chunk_7.md:70	0x00711360	0x0	agrees	CExoResMan::Constructor	1
+0x00711e60	function	CExoResMan::Dump	qualified	patch_manager_mods/engine_research_findings/R9.md:243	0x00711e60	0x0	agrees	CExoResMan::Dump	1
+0x00711e60	function	FreeIfUnreferenced	bare	patch_manager_mods/engine_research_findings/T2.md:62	0x00711e60	0x0	conflicts	CExoResMan::Dump	1
+0x00711ed0	function	CExoResMan::Exists	qualified	patch_manager_mods/44_in_memory_asset_vfs_and_character_library.md:46	0x00711ed0	0x0	agrees	CExoResMan::Exists	1
+0x007120c0	function	CExoResMan::FreeResourceData	qualified	patch_manager_mods/44_in_memory_asset_vfs_and_character_library.md:58	0x007120c0	0x0	agrees	CExoResMan::FreeResourceData	1
+0x007120c0	function	CExoResMan::FreeRawBuffer	qualified	patch_manager_mods/engine_research_findings/U2.md:42	0x007120c0	0x0	conflicts	CExoResMan::FreeResourceData	1
+0x00712360	function	CExoResMan::GetKeyEntry	qualified	patch_manager_mods/44_in_memory_asset_vfs_and_character_library.md:51	0x00712360	0x0	agrees	CExoResMan::GetKeyEntry	1
+0x00712be0	function	CExoResMan::GetResRefFromFile	qualified	patch_manager_mods/engine_research_findings/R8.md:196	0x00712be0	0x0	agrees	CExoResMan::GetResRefFromFile	1
+0x00712c90	function	CExoResMan::GetResTypeFromFile	qualified	patch_manager_mods/engine_research_findings/R8.md:197	0x00712c90	0x0	agrees	CExoResMan::GetResTypeFromFile	1
+0x00713010	function	CExoResMan::ReleaseResObject	qualified	patch_manager_mods/engine_research_findings/T2.md:61	0x00713010	0x0	agrees	CExoResMan::ReleaseResObject	1
+0x00713010	function	CRes::Unlock	qualified	patch_manager_mods/engine_research_findings/U2.md:43	0x00713010	0x0	conflicts	CExoResMan::ReleaseResObject	1
+0x007131d0	function	CExoResMan::RemoveKeyTable	qualified	patch_manager_mods/engine_research_findings/T2.md:57	0x007131d0	0x0	agrees	CExoResMan::RemoveKeyTable	1
+0x00713bf0	function	CExoResMan::ServiceFromEncapsulated	qualified	patch_manager_mods/engine_research_findings/R2.md:185	0x00713bf0	0x0	agrees	CExoResMan::ServiceFromEncapsulated	1
+0x00713e83	callsite	CExoResMan::ServiceFromImage	qualified	patch_manager_mods/44_in_memory_asset_vfs_and_character_library.md:57	0x00713e80	0x3	new		1
+0x00718c80	function	CResGFF::ReadFieldBYTE	qualified	patch_manager_mods/engine_research_findings/V6.md:28	0x00718c80	0x0	conflicts	CResGFF::ReadFieldINT	1
+0x00718c80	function	CResGFF::ReadFieldINT	qualified	patch_manager_mods/engine_research_findings/W6.md:24	0x00718c80	0x0	agrees	CResGFF::ReadFieldINT	1
+0x00718f90	function	CResGFF::ReadFieldCExoString	qualified	patch_manager_mods/engine_research_findings/R9.md:145	0x00718f90	0x0	agrees	CResGFF::ReadFieldCExoString	1
+0x0071a670	function	CResGFF::WriteGFFData	qualified	patch_manager_mods/engine_research_findings/R9.md:146	0x0071a670	0x0	agrees	CResGFF::WriteGFFData	1
+0x0071a8b0	function	CResGFF::Pack	qualified	patch_manager_mods/engine_research_findings/R9.md:147	0x0071a8b0	0x0	agrees	CResGFF::Pack	1
+0x0071acb0	function	CResGFF::GetTotalSize	qualified	patch_manager_mods/engine_research_findings/R9.md:148	0x0071acb0	0x0	agrees	CResGFF::GetTotalSize	1
+0x0071ad40	function	C2DA::C2DA	qualified	patch_manager_mods/engine_research_findings/V6.md:22	0x0071ad40	0x0	conflicts	CRes2DA helper ctor (name, flag)	1
+0x0071afa0	function	C2DA::GetCell	qualified	patch_manager_mods/engine_research_findings/R5.md:27	0x0071afa0	0x0	conflicts	C2DA::GetCExoStringEntry	1
+0x0071b0b0	function	C2DA::GetInt	qualified	patch_manager_mods/engine_research_findings/R5.md:29	0x0071b0b0	0x0	new		1
+0x0071b8b0	function	C2DA::GetFloat	qualified	patch_manager_mods/engine_research_findings/R5.md:28	0x0071b8b0	0x0	new		1
+0x0071bcf0	function	C2DA::GetINTEntry	qualified	.claude/research/wi03_rescue/R4.md:13	0x0071bcf0	0x0	conflicts	C2DA::GetINTEntry_2	1
+0x0071bcf0	function	C2DA::GetIntEntry	qualified	patch_manager_mods/engine_research_findings/R8.md:199	0x0071bcf0	0x0	conflicts	C2DA::GetINTEntry_2	1
+0x0071bcf0	function	C2DA::GetINTEntry_2	qualified	patch_manager_mods/engine_research_findings/R9.md:151	0x0071bcf0	0x0	agrees	C2DA::GetINTEntry_2	1
+0x0071c130	function	C2DA::GetNextLineLength	qualified	patch_manager_mods/engine_research_findings/R9.md:152	0x0071c130	0x0	agrees	C2DA::GetNextLineLength	1
+0x0071c180	function	C2DA::GetNextToken	qualified	patch_manager_mods/engine_research_findings/R9.md:153	0x0071c180	0x0	conflicts	C2DA::NextToken	1
+0x0071c3d0	function	C2DA::Load2DArray	qualified	patch_manager_mods/engine_research_findings/R9.md:154	0x0071c3d0	0x0	conflicts	C2DA::LoadText	1
+0x0071cf80	function	C2DA::SkipWhitespaceAndNewlines	qualified	patch_manager_mods/engine_research_findings/V6.md:24	0x0071cf80	0x0	new		1
+0x0071cf80	function	C2DA::Free	qualified	patch_manager_mods/engine_research_findings/V6.md:243	0x0071cf80	0x0	new		1
+0x0071d0a0	function	C2DA::Free	qualified	patch_manager_mods/engine_research_findings/V6.md:23	0x0071d0a0	0x0	new		1
+0x007211e0	function	CERFFile::Create	qualified	patch_manager_mods/engine_research_findings/R9.md:155	0x007211e0	0x0	agrees	CERFFile::Create	1
+0x007216c0	function	CERFFile::WriteResource	qualified	patch_manager_mods/engine_research_findings/R9.md:156	0x007216c0	0x0	agrees	CERFFile::WriteResource	1
+0x00721bb0	function	CERFFile::WriteResource_2	qualified	patch_manager_mods/engine_research_findings/R9.md:157	0x00721bb0	0x0	agrees	CERFFile::WriteResource_2	1
+0x00721e70	function	CERFFile::Finish	qualified	patch_manager_mods/engine_research_findings/R9.md:158	0x00721e70	0x0	agrees	CERFFile::Finish	1
+0x007224c0	function	CERFString::Destructor	qualified	patch_manager_mods/engine_research_findings/R9.md:159	0x007224c0	0x0	new		1
+0x007225e0	function	CERFRes::Write	qualified	patch_manager_mods/engine_research_findings/R9.md:160	0x007225e0	0x0	agrees	CERFRes::Write	1
+0x007228f0	function	CResWave::CResWave	qualified	patch_manager_mods/engine_research_findings/U2.md:39	0x007228f0	0x0	conflicts	CResWave::CResWave (Ghidra mislabels `CStatusBar::CStatusBar`)	1
+0x007229c0	function	CResWave::OnResourceFreed	qualified	patch_manager_mods/engine_research_findings/U2.md:41	0x007229c0	0x0	conflicts	CResWave::OnResourceFreed (vtbl, speculative slot)	1
+0x00722a30	function	CResWave::OnResourceServiced	qualified	patch_manager_mods/engine_research_findings/U2.md:40	0x00722a30	0x0	conflicts	CResWave::OnResourceServiced (vtbl, speculative slot)	1
+0x00723220	function	CExoKeyTable::AddDirectoryContents	qualified	patch_manager_mods/engine_research_findings/R9.md:161	0x00723220	0x0	agrees	CExoKeyTable::AddDirectoryContents	1
+0x00724780	function	CExoKeyTable::Load	qualified	patch_manager_mods/engine_research_findings/R2.md:43	0x00724780	0x0	new		1
+0x00724f00	function	CExoKeyTable::AddKeyTable	qualified	patch_manager_mods/engine_research_findings/R5.md:19	0x00724f00	0x0	conflicts	CExoKeyTable::LoadKeyFile	1
+0x00726350	function	CExoKeyTable::DestroyTable	qualified	patch_manager_mods/engine_research_findings/T2.md:58	0x00726350	0x0	agrees	CExoKeyTable::DestroyTable	1
+0x00727710	function	CExoBifFile::ReadHeader	qualified	patch_manager_mods/engine_research_findings/R2.md:45	0x00727710	0x0	new		1
+0x00727710	function	CExoResFile::LoadHeader	qualified	patch_manager_mods/engine_research_findings/R9.md:164	0x00727710	0x0	new		1
+0x00729ed0	function	CRes2DA::CRes2DA	qualified	patch_manager_mods/engine_research_findings/V6.md:20	0x00729ed0	0x0	new		1
+0x0072cb63	callsite	CExoInputInternal::GetEvents	qualified	patch_manager_mods/18_mouse_camera_investigation.md:50	0x0072c7e0	0x383	new		1
+0x0072cb84	callsite	CExoInputInternal::GetEvents	qualified	.claude/research/holstered_weapons/hotkey_prior_art.md:6	0x0072c7e0	0x3a4	new		1
+0x0072e8d0	function	Global::UpdateCusorVisible	qualified	patch_manager_mods/engine_research_findings/R9.md:165	0x0072e8d0	0x0	agrees	Global::UpdateCusorVisible	1
+0x00733570	function	CExoString::CExoString	qualified	patch_manager_mods/engine_research_findings/R8.md:171	0x00733570	0x0	conflicts	CExoString::CExoString_char	1
+0x00733570	function	CExoString::Constructor_2	qualified	patch_manager_mods/engine_research_findings/R9.md:167	0x00733570	0x0	conflicts	CExoString::CExoString_char	1
+0x007335f0	function	CExoString::CExoString_copy	qualified	.claude/research/ingest/i2_cards/chunk_3.md:33	0x007335f0	0x0	agrees	CExoString::CExoString_copy	1
+0x007335f0	function	CExoString::CExoString	qualified	patch_manager_mods/engine_research_findings/R8.md:172	0x007335f0	0x0	conflicts	CExoString::CExoString_copy	1
+0x007335f0	function	CExoString::Constructor_3	qualified	patch_manager_mods/engine_research_findings/R9.md:168	0x007335f0	0x0	conflicts	CExoString::CExoString_copy	1
+0x00733680	function	CExoString::CExoString	qualified	patch_manager_mods/engine_research_findings/R8.md:173	0x00733680	0x0	conflicts	CExoString::Constructor_4	1
+0x00733680	function	CExoString::Constructor_4	qualified	patch_manager_mods/engine_research_findings/R9.md:169	0x00733680	0x0	agrees	CExoString::Constructor_4	1
+0x00733700	function	CExoString::CExoString	qualified	patch_manager_mods/engine_research_findings/R8.md:174	0x00733700	0x0	conflicts	CExoString::Constructor_5	1
+0x00733700	function	CExoString::Constructor_5	qualified	patch_manager_mods/engine_research_findings/R9.md:170	0x00733700	0x0	agrees	CExoString::Constructor_5	1
+0x00733780	function	CExoString::Des	qualified	.claude/research/ingest/i2_cards/chunk_6.md:24	0x00733780	0x0	conflicts	CExoString::~CExoString	1
+0x00733780	function	CExoString::~CExoString	qualified	patch_manager_mods/engine_research_findings/R8.md:175	0x00733780	0x0	agrees	CExoString::~CExoString	1
+0x00733780	function	CExoString::Destructor	qualified	patch_manager_mods/engine_research_findings/R9.md:171	0x00733780	0x0	conflicts	CExoString::~CExoString	1
+0x00733780	function	CExoString::CExoString	qualified	patch_manager_mods/engine_research_findings/V3.md:22	0x00733780	0x0	conflicts	CExoString::~CExoString	1
+0x007339d0	function	CExoString::operator	qualified	patch_manager_mods/engine_research_findings/R9.md:174	0x007339d0	0x0	conflicts	CExoString::operator==	1
+0x00733a60	function	CExoString::Equals	qualified	patch_manager_mods/engine_research_findings/R8.md:212	0x00733a60	0x0	conflicts	CExoString::operator==_2	1
+0x00733a60	function	CExoString::operator	qualified	patch_manager_mods/engine_research_findings/R9.md:175	0x00733a60	0x0	conflicts	CExoString::operator==_2	1
+0x00733db0	function	CExoString::CharAt	qualified	patch_manager_mods/engine_research_findings/R8.md:178	0x00733db0	0x0	conflicts	CExoString::operator[]	1
+0x00733db0	function	CExoString::operator	qualified	patch_manager_mods/engine_research_findings/R9.md:176	0x00733db0	0x0	conflicts	CExoString::operator[]	1
+0x00734030	function	CExoString::Find	qualified	patch_manager_mods/engine_research_findings/R9.md:179	0x00734030	0x0	agrees	CExoString::Find	1
+0x00734190	function	CExoString::Find	qualified	patch_manager_mods/engine_research_findings/R8.md:181	0x00734190	0x0	conflicts	CExoString::Find_2	1
+0x00734190	function	CExoString::Find_2	qualified	patch_manager_mods/engine_research_findings/R9.md:180	0x00734190	0x0	agrees	CExoString::Find_2	1
+0x00734270	function	CExoString::ToLower	qualified	patch_manager_mods/engine_research_findings/R2.md:41	0x00734270	0x0	conflicts	CExoString::Format	1
+0x007343f0	function	CExoString::Insert	qualified	patch_manager_mods/engine_research_findings/R9.md:182	0x007343f0	0x0	agrees	CExoString::Insert	1
+0x00734690	function	CExoString::LowerCase	qualified	patch_manager_mods/engine_research_findings/R9.md:184	0x00734690	0x0	conflicts	CExoString::ToLower	1
+0x00734a00	function	CExoString::Substr	qualified	patch_manager_mods/engine_research_findings/R8.md:186	0x00734a00	0x0	conflicts	CExoString::SubString	1
+0x00734b80	function	CExoString::UpperCase	qualified	patch_manager_mods/engine_research_findings/R9.md:187	0x00734b80	0x0	agrees	CExoString::UpperCase	1
+0x00734f60	function	CExoString::CompareNoCase	qualified	.claude/research/ingest/i2_cards/chunk_6.md:24	0x00734f60	0x0	conflicts	CExoString::CompareNoCase(char*)	1
+0x00734f60	function	CExoString::EqualsNoCase	qualified	patch_manager_mods/engine_research_findings/R8.md:211	0x00734f60	0x0	conflicts	CExoString::CompareNoCase(char*)	1
+0x00734f60	function	CExoString::CompareNoCase_2	qualified	patch_manager_mods/engine_research_findings/R9.md:189	0x00734f60	0x0	conflicts	CExoString::CompareNoCase(char*)	1
+0x00735360	function	CExoLocString::Destructor	qualified	patch_manager_mods/engine_research_findings/R9.md:190	0x00735360	0x0	agrees	CExoLocString::Destructor	1
+0x007356b0	function	CExoLocString::GetString_3	qualified	patch_manager_mods/engine_research_findings/R9.md:191	0x007356b0	0x0	agrees	CExoLocString::GetString_3	1
+0x00736050	function	CExoFile::EnumerateDirectory	qualified	patch_manager_mods/engine_research_findings/R2.md:42	0x00736050	0x0	conflicts	CExoBase::GetDirectoryList	1
+0x00736050	function	CExoBase::GetDirectoryList	qualified	patch_manager_mods/engine_research_findings/R9.md:192	0x00736050	0x0	agrees	CExoBase::GetDirectoryList	1
+0x00736220	function	Timer::Now	qualified	patch_manager_mods/engine_research_findings/R7.md:16	0x00736220	0x0	conflicts	CExoTimers::GetHighResolutionTimer	1
+0x00737540	function	CExoFile::EnumerateDirectory	qualified	patch_manager_mods/engine_research_findings/R2.md:201	0x00737540	0x0	conflicts	ListDirectory	1
+0x00737540	function	CExoBaseInternal::GetDirectoryList	qualified	patch_manager_mods/engine_research_findings/R9.md:194	0x00737540	0x0	conflicts	ListDirectory	1
+0x0073a380	function	Global::malloc	qualified	patch_manager_mods/engine_research_findings/R9.md:196	0x0073a380	0x0	conflicts	Global::malloc wrapper (exoresfile.cpp)	1
+0x0073aed0	function	CExoLocString::AddString	qualified	patch_manager_mods/engine_research_findings/R8.md:214	0x0073aed0	0x0	conflicts	CExoLocStringInternal::AddString	1
+0x0073aed0	function	CExoLocStringInternal::AddString	qualified	patch_manager_mods/engine_research_findings/R9.md:199	0x0073aed0	0x0	agrees	CExoLocStringInternal::AddString	1
+0x0073b470	function	CExoLocString::GetStringInternal	qualified	patch_manager_mods/engine_research_findings/R8.md:213	0x0073b470	0x0	conflicts	CExoLocStringInternal::GetString_2	1
+0x0073b470	function	CExoLocStringInternal::GetString_2	qualified	patch_manager_mods/engine_research_findings/R9.md:200	0x0073b470	0x0	agrees	CExoLocStringInternal::GetString_2	1
+0x0073b810	function	Timer::Now	qualified	patch_manager_mods/engine_research_findings/V5.md:17	0x0073b810	0x0	conflicts	Timer::Now (int64 microseconds)	1
+0x0073d1a0	function	CExoFileThread::AsyncRead	qualified	patch_manager_mods/engine_research_findings/R9.md:202	0x0073d1a0	0x0	agrees	CExoFileThread::AsyncRead	1
+0x0073dd20	function	CExoFile::Read	qualified	patch_manager_mods/engine_research_findings/R5.md:38	0x0073dd20	0x0	conflicts	CExoFileInternal::Read_2	1
+0x0073dd20	function	CExoFileInternal::Read_2	qualified	patch_manager_mods/engine_research_findings/R9.md:244	0x0073dd20	0x0	agrees	CExoFileInternal::Read_2	1
+0x0073dd20	function	Global::GetAccelerationVector	qualified	patch_manager_mods/engine_research_findings/R9.md:258	0x0073dd20	0x0	conflicts	CExoFileInternal::Read_2	1
+0x0073f250	function	CClientExoApp::UnloadModule	qualified	patch_manager_mods/engine_research_findings/T2.md:25	0x0073f250	0x0	agrees	CClientExoApp::UnloadModule	1
+0x0073f3f0	function	CClientExoApp::GetAnimationTimer	qualified	.claude/research/npc_variety/nb2_recon.md:74	0x0073f3f0	0x0	agrees	CClientExoApp::GetAnimationTimer	1
+0x0073f4d0	function	CClientExoApp::GetGameObject	qualified	.claude/research/ingest/i2_cards/chunk_1.md:24	0x0073f4d0	0x0	agrees	CClientExoApp::GetGameObject	1
+0x0073f4d0	function	GetClientObject	bare	patch_manager_mods/12_empty_container_indicators.md:55	0x0073f4d0	0x0	conflicts	CClientExoApp::GetGameObject	1
+0x0073f750	function	CClientExoApp::GetInGameGui	qualified	.claude/research/ingest/i2_cards/chunk_1.md:45	0x0073f750	0x0	agrees	CClientExoApp::GetInGameGui	1
+0x0073f9c0	function	CClientExoApp::IsClientInitialized	qualified	patch_manager_mods/engine_research_findings/R9.md:253	0x0073f9c0	0x0	conflicts	CClientExoApp::MainLoop	1
+0x0073fbd0	function	CClientExoApp::SetResolutionMode	qualified	patch_manager_mods/engine_research_findings/V7.md:37	0x0073fbd0	0x0	conflicts	CClientExoApp::SetVideoMode	1
+0x00740260	function	CClientExoApp::BarkString	qualified	.claude/research/voice_audio/w1/u04.md:32	0x00740260	0x0	agrees	CClientExoApp::BarkString	1
+0x00740ee0	function	CClientExoApp::BusyWaitMenuMusic	qualified	.claude/research/ingest/i2_cards/chunk_1.md:45	0x00740ee0	0x0	agrees	CClientExoApp::BusyWaitMenuMusic	1
+0x00742750	function	Global::ExecuteCommandDestroyObject	qualified	.claude/research/ingest/i2_cards/chunk_6.md:122	0x00742750	0x0	conflicts	CSWGuiTargetActionMenu::SetNameLabel	1
+0x00743540	function	CSWGuiTargetActionMenu::PopulateMenus	qualified	patch_manager_mods/31_combat_action_hotbar.md:29	0x00743540	0x0	conflicts	CSWGuiTargetActionMenu::Update	1
+0x00744c20	function	CSWGuiCharButton::UpdateToolTipText	qualified	patch_manager_mods/21b_gog_address_map.md:91	0x00744c20	0x0	new		1
+0x00744f00	function	CSWGuiInGameGameplay::SetPortraitOverlay	qualified	.claude/research/enemy_strip/R3_client_server_map.md:51	0x00744f00	0x0	conflicts	CSWGuiInGameGameplay::SetPortraitOverlay (mask bits 1/2/4=LBL_LEVELUP; nonzero mask zeroes buff counters +0xddc/+0xddd)	1
+0x00744f00	function	CSWGuiMainInterfaceChar::Show	qualified	patch_manager_mods/21b_gog_address_map.md:92	0x00744f00	0x0	conflicts	CSWGuiInGameGameplay::SetPortraitOverlay (mask bits 1/2/4=LBL_LEVELUP; nonzero mask zeroes buff counters +0xddc/+0xddd)	1
+0x00745560	function	CSWGuiProgressBar::Draw	qualified	patch_manager_mods/08_shield_bar.md:152	0x00745560	0x0	new		1
+0x00745770	function	CSWGuiMainInterfaceChar::DrawEffects	qualified	patch_manager_mods/21b_gog_address_map.md:89	0x00745770	0x0	new		1
+0x007457e0	function	CSWGuiMainInterfaceChar::DrawStack	qualified	patch_manager_mods/21b_gog_address_map.md:90	0x007457e0	0x0	new		1
+0x00745a97	callsite	RestoreBuffIcon	bare	patch_manager_mods/02_buff_duration_hud.md:1678	0x007457e0	0x2b7	new		1
+0x00747210	function	CSWGuiMainInterface::Constructor	qualified	patch_manager_mods/engine_research_findings/V4.md:19	0x00747210	0x0	new		1
+0x0074b3a0	function	CSWGuiMainInterface::HitCheckMouse	qualified	patch_manager_mods/18_mouse_camera_investigation.md:71	0x0074b3a0	0x0	new		1
+0x0074b3f0	function	CSWGuiMainInterface::Update	qualified	patch_manager_mods/02_buff_duration_hud.md:362	0x0074b3f0	0x0	conflicts	CSWGuiMainInterface::Draw	1
+0x0074cfe0	function	ActionBar::UpdatePortrait	qualified	patch_manager_mods/engine_research_findings/R8.md:201	0x0074cfe0	0x0	conflicts	CSWGuiMainInterface::UpdateTargetMenu	1
+0x0074ee90	function	CSWGuiInGameGameplay::UpdatePartyPortraits	qualified	.claude/research/enemy_strip/R3_client_server_map.md:34	0x0074ee90	0x0	agrees	CSWGuiInGameGameplay::UpdatePartyPortraits	1
+0x00750790	function	CSWGuiMainInterface::DrawMap	qualified	patch_manager_mods/engine_research_findings/V4.md:18	0x00750790	0x0	new		1
+0x00750c10	function	CSWGuiMainInterface::InitializeMap	qualified	patch_manager_mods/engine_research_findings/V4.md:20	0x00750c10	0x0	new		1
+0x0075ae40	function	CSWGuiMessageBox::Constructor	qualified	patch_manager_mods/engine_research_findings/V4.md:30	0x0075ae40	0x0	agrees	CSWGuiMessageBox::Constructor	1
+0x0075b370	function	CSWGuiMessageBox::Constructor_2	qualified	patch_manager_mods/engine_research_findings/V4.md:31	0x0075b370	0x0	new		1
+0x0075bd50	function	CSWGuiMessageBox::SetMessage	qualified	patch_manager_mods/engine_research_findings/V4.md:32	0x0075bd50	0x0	new		1
+0x0075bde0	function	CSWGuiMessageBox::SetMessage_2	qualified	patch_manager_mods/engine_research_findings/V4.md:33	0x0075bde0	0x0	new		1
+0x0075bf60	function	CSWGuiMessageBox::AddMessageLabel_2	qualified	patch_manager_mods/engine_research_findings/V4.md:35	0x0075bf60	0x0	new		1
+0x0075c080	function	CSWGuiMessageBox::FixMessageLabel	qualified	patch_manager_mods/engine_research_findings/V4.md:34	0x0075c080	0x0	agrees	CSWGuiMessageBox::FixMessageLabel	1
+0x00765aa0	function	CSWCCreature::GetSoundSetStrres	qualified	.claude/research/voice_audio/w2/v08.md:11	0x00765aa0	0x0	agrees	CSWCCreature::GetSoundSetStrres	1
+0x00769f60	function	CSWCCreature::LoadModel	qualified	.claude/research/holster_c7/f_gob_to_creature.md:17	0x00769f60	0x0	new		1
+0x0076d590	function	CSWCCreature::UpdateWeaponClass	qualified	.claude/research/holster_c7/a_update_weapon_class.md:1	0x0076d590	0x0	agrees	CSWCCreature::UpdateWeaponClass	1
+0x0076e130	function	CSWCCreature::EquipToInventorySlot	qualified	.claude/research/npc_equipment/engine_recon.md:9	0x0076e130	0x0	agrees	CSWCCreature::EquipToInventorySlot	1
+0x0076f070	function	CSWCCreature::UpdateAttackData	qualified	.claude/research/holster_c7/b_readers_anim.md:9	0x0076f070	0x0	agrees	CSWCCreature::UpdateAttackData	1
+0x00772020	function	CSWCCreature::PlayHitSound	qualified	.claude/research/holster_c7/b_readers_anim.md:11	0x00772020	0x0	agrees	CSWCCreature::PlayHitSound	1
+0x00775600	function	CSWCCreature::PerformUseItem	qualified	.claude/reviews/gemini_round2/responses/06_queue_hud.md:338	0x00775600	0x0	agrees	CSWCCreature::PerformUseItem	1
+0x0077a9e0	function	ActionBar::PopulateBehaviors	qualified	patch_manager_mods/engine_research_findings/R8.md:203	0x0077a9e0	0x0	conflicts	CSWGuiTargetActionMenu::AddStanceActions	1
+0x0077bcf0	function	ActionBar::AddInventoryItemEntry	qualified	patch_manager_mods/engine_research_findings/R8.md:202	0x0077bcf0	0x0	conflicts	CSWCCreature::CreateUsableItemEntry	1
+0x0077bcf0	function	CSWCCreature::CreateUsableItemEntry	qualified	patch_manager_mods/engine_research_findings/R9.md:206	0x0077bcf0	0x0	agrees	CSWCCreature::CreateUsableItemEntry	1
+0x0077e650	function	ActionBar::RepopulateCategory	qualified	patch_manager_mods/engine_research_findings/R7.md:33	0x0077e650	0x0	conflicts	CSWCCreature::GetPersonalActions	1
+0x00780460	function	CClientExoAppInternal::ctor	qualified	patch_manager_mods/engine_research_findings/T4.md:34	0x00780460	0x0	conflicts	CClientExoAppInternal::Constructor	1
+0x00781be0	function	CClientExoAppInternal::Initialize	qualified	patch_manager_mods/engine_research_findings/R9.md:252	0x00781be0	0x0	conflicts	CClientExoAppInternal::MainLoop	1
+0x00783d80	function	CClientExoAppInternal::StallServerCode	qualified	patch_manager_mods/engine_research_findings/R9.md:245	0x00783d80	0x0	new		1
+0x00783dc0	function	CClientExoAppInternal::UpdateRoom	qualified	patch_manager_mods/engine_research_findings/R9.md:246	0x00783dc0	0x0	agrees	CClientExoAppInternal::UpdateRoom	1
+0x00783dc0	function	CClientExoAppInternal::StallServerCode	qualified	patch_manager_mods/engine_research_findings/R9.md:257	0x00783dc0	0x0	conflicts	CClientExoAppInternal::UpdateRoom	1
+0x00783ee0	function	UpdateSoundEngine	bare	patch_manager_mods/engine_research_findings/R7.md:40	0x00783ee0	0x0	agrees	CClientExoAppInternal::UpdateSoundEngine	1
+0x00783ee0	function	CClientExoAppInternal::UpdateSoundEngine	qualified	patch_manager_mods/engine_research_findings/R9.md:208	0x00783ee0	0x0	agrees	CClientExoAppInternal::UpdateSoundEngine	1
+0x00785410	function	CClientExoAppInternal::UnloadModule	qualified	patch_manager_mods/engine_research_findings/T2.md:26	0x00785410	0x0	agrees	CClientExoAppInternal::UnloadModule	1
+0x00788d90	function	CGuiInGame::Initialize	qualified	patch_manager_mods/engine_research_findings/V7.md:91	0x00788d90	0x0	conflicts	CClientExoAppInternal::StartServices	1
+0x0078a630	function	CClientExoAppInternal::ReadAndSetVideoMode	qualified	patch_manager_mods/engine_research_findings/V7.md:39	0x0078a630	0x0	agrees	CClientExoAppInternal::ReadAndSetVideoMode	1
+0x0078dbf0	function	CExoApp::SetResolutionMode	qualified	patch_manager_mods/engine_research_findings/V1.md:35	0x0078dbf0	0x0	conflicts	CClientExoAppInternal::SetVideoMode	1
+0x0078dbf0	function	CClientExoAppInternal::SetResolutionMode	qualified	patch_manager_mods/engine_research_findings/V7.md:36	0x0078dbf0	0x0	conflicts	CClientExoAppInternal::SetVideoMode	1
+0x00796ba0	function	CClientExoAppInternal::ShowQuitConfirm	qualified	patch_manager_mods/engine_research_findings/T4.md:32	0x00796ba0	0x0	conflicts	CClientExoAppInternal::QueryExitProgram	1
+0x007986a0	function	StartLoadMovie	bare	patch_manager_mods/engine_research_findings/T4.md:35	0x007986a0	0x0	conflicts	CClientExoAppInternal::PlayLoadModuleMovies	1
+0x00798820	function	CClientExoAppInternal::PlayMovies	qualified	patch_manager_mods/engine_research_findings/T4.md:13	0x00798820	0x0	conflicts	CClientExoAppInternal::WaitForMovie	1
+0x007a14c0	function	NextScreenshotName	bare	patch_manager_mods/engine_research_findings/W6.md:29	0x007a14c0	0x0	conflicts	CClientExoAppInternal::DoScreenShot	1
+0x007a2fb0	function	CSWCArea::LoadArea	qualified	patch_manager_mods/engine_research_findings/T2.md:30	0x007a2fb0	0x0	agrees	CSWCArea::LoadArea	1
+0x007aa460	function	HiliteAreaObjects	bare	patch_manager_mods/12_empty_container_indicators.md:61	0x007aa460	0x0	agrees	CSWCArea::HiliteAreaObjects	1
+0x007aa7a0	function	CSWCArea::UpdateShadowingLights	qualified	.claude/research/render_distance/R3_shadows.md:26	0x007aa7a0	0x0	agrees	CSWCArea::UpdateShadowingLights	1
+0x007ac470	function	CClientExoAppInternal::ProcessInput	qualified	patch_manager_mods/engine_research_findings/R9.md:210	0x007ac470	0x0	agrees	CClientExoAppInternal::ProcessInput	1
+0x007b3a00	function	CClientExoAppInternal::HandleMouseOver	qualified	patch_manager_mods/18_mouse_camera_investigation.md:71	0x007b3a00	0x0	agrees	CClientExoAppInternal::HandleMouseOver	1
+0x007b3ca0	function	CClientExoAppInternal::HandleMouseClickInWorld	qualified	patch_manager_mods/28_point_and_click_movement.md:27	0x007b3ca0	0x0	agrees	CClientExoAppInternal::HandleMouseClickInWorld	1
+0x007b3ee0	function	CSWGuiMainInterface::HitCheckMouse	qualified	patch_manager_mods/18_mouse_camera_investigation.md:71	0x007b3ee0	0x0	conflicts	ActionIconToMouseCursor	1
+0x007be1b0	function	FeedbackList::Add	qualified	patch_manager_mods/engine_research_findings/U6.md:34	0x007be1b0	0x0	conflicts	FeedbackList::Add (cap 0x3F)	1
+0x007be4c0	function	CGuiInGame::Initialize	qualified	patch_manager_mods/engine_research_findings/V7.md:45	0x007be4c0	0x0	agrees	CGuiInGame::Initialize	1
+0x007c6a20	function	CGuiInGame::CloseDialog	qualified	patch_manager_mods/engine_research_findings/V8b.md:28	0x007c6a20	0x0	agrees	CGuiInGame::CloseDialog	1
+0x007ce3e0	function	CGuiInGame::UpdateShotCamera	qualified	patch_manager_mods/engine_research_findings/V11.md:33	0x007ce3e0	0x0	conflicts	CGuiInGame::SetShotFromScript	1
+0x007ceb50	function	CGuiInGame::RePopulateMainInterface	qualified	patch_manager_mods/engine_research_findings/R7.md:31	0x007ceb50	0x0	agrees	CGuiInGame::RePopulateMainInterface	1
+0x007cfca0	function	CGuiInGame::ResetInterfaceForSize	qualified	patch_manager_mods/engine_research_findings/V7.md:44	0x007cfca0	0x0	agrees	CGuiInGame::ResetInterfaceForSize	1
+0x007d01b0	function	CGuiInGame::UpdateControllerPauseState	qualified	patch_manager_mods/engine_research_findings/R7.md:39	0x007d01b0	0x0	agrees	CGuiInGame::UpdateControllerPauseState	1
+0x007d0c70	function	CGuiInGame::UpdateDialogLipSync	qualified	.claude/research/voice_audio/w2/r2.md:15	0x007d0c70	0x0	agrees	CGuiInGame::UpdateDialogLipSync	1
+0x007ed4b0	function	CSWCObject::GetPortraitId	qualified	patch_manager_mods/07_force_power_hotbar.md:695	0x007ed4b0	0x0	agrees	CSWCObject::GetPortraitId	1
+0x007ed7d0	function	CSWCObject::GetCurrentAnimation	qualified	.claude/research/npc_variety/nb2_recon.md:73	0x007ed7d0	0x0	agrees	CSWCObject::GetCurrentAnimation	1
+0x007ed830	function	CSWCObject::GetAnimationBase	qualified	.claude/research/holster_c7/c_readers_combat.md:4	0x007ed830	0x0	agrees	CSWCObject::GetAnimationBase	1
+0x007f2500	function	CSWCObject::ClearAllQueuedCo	qualified	.claude/research/ingest/i2_cards/chunk_1.md:24	0x007f2500	0x0	conflicts	CSWCObject::ClearAllQueuedCombatActions	1
+0x007f2910	function	CSWCObject::AcquireAnimationBase	qualified	.claude/research/holster_c7/f_gob_to_creature.md:21	0x007f2910	0x0	agrees	CSWCObject::AcquireAnimationBase	1
+0x007f3040	function	CSWCModule::LoadModule	qualified	patch_manager_mods/engine_research_findings/T2.md:28	0x007f3040	0x0	agrees	CSWCModule::LoadModule	1
+0x00811450	function	CSWCMessage::HandleServerToPlayerModule	qualified	patch_manager_mods/engine_research_findings/T2.md:24	0x00811450	0x0	conflicts	CSWCMessage::HandleServerToPlayerModule (client, switch on minor)	1
+0x00816400	function	CSWCMessage::HandleClientSideMessage	qualified	patch_manager_mods/engine_research_findings/U6.md:33	0x00816400	0x0	conflicts	CSWCMessage::HandleClientSideMessage (minor switch 1..27)	1
+0x0083ea60	function	CExoArrayList::Add	qualified	patch_manager_mods/07_force_power_hotbar.md:641	0x0083ea60	0x0	conflicts	CExoArrayList<uint32>::Add	1
+0x008419b0	function	CSWCPlaceable::LoadModel	qualified	.claude/research/holster_c7/f_gob_to_creature.md:23	0x008419b0	0x0	agrees	CSWCPlaceable::LoadModel	1
+0x00842d00	function	GetServerPlaceable	bare	patch_manager_mods/12_empty_container_indicators.md:58	0x00842d00	0x0	agrees	CSWCPlaceable::GetServerPlaceable	1
+0x00843960	function	CSWCPlaceable::SetAppearance	qualified	patch_manager_mods/engine_research_findings/V6.md:36	0x00843960	0x0	agrees	CSWCPlaceable::SetAppearance	1
+0x0084fcd0	function	CSWGuiInGameCharacter::ShowLevelUpGUI	qualified	patch_manager_mods/08_level_up_override.md:74	0x0084fcd0	0x0	conflicts	CSWGuiInGameCharacter::ShowLevelUpGUI thiscall(panel, int) RET 4; callers 0x84F9BD, 0x7CB8E6	1
+0x008529e0	function	HotbarOnAutosaveSlotLoad	bare	patch_manager_mods/22_hotbar_shared_services.md:118	0x008529e0	0x0	conflicts	CSWGuiSaveLoad::LoadPCAutoSave	1
+0x0085ef00	function	C2DA::GetINTEntry	qualified	patch_manager_mods/44_in_memory_asset_vfs_and_character_library.md:68	0x0085ef00	0x0	new		1
+0x0085ef00	function	CSoundSetList::CSoundSetList	qualified	patch_manager_mods/engine_research_findings/V6.md:32	0x0085ef00	0x0	new		1
+0x008602c0	function	CSWCAnimBase::SetOverlayAnimation_2	qualified	.claude/research/holster_c7/b_readers_anim.md:12	0x008602c0	0x0	agrees	CSWCAnimBase::SetOverlayAnimation_2	1
+0x0086f480	function	CSWCVisualEffectOnObject::dtor	qualified	patch_manager_mods/engine_research_findings/U4.md:36	0x0086f480	0x0	conflicts	CSWCVisualEffectOnObject::dtor (mapper vote)	1
+0x0087a550	function	CSWCMessage::SendPlayerToServerGuiContainer_Close	qualified	.claude/research/quick_loot/R2_client_gui.md:41	0x0087a550	0x0	conflicts	rea:SendContainerClose	1
+0x0087a770	function	CSWCMessage::SendPlayerToServer_LevelUp	qualified	patch_manager_mods/08_level_up_override.md:71	0x0087a770	0x0	agrees	CSWCMessage::SendPlayerToServer_LevelUp	1
+0x00893950	function	CSWGuiInGameMap::Constructor	qualified	patch_manager_mods/engine_research_findings/V9.md:26	0x00893950	0x0	agrees	CSWGuiInGameMap::Constructor	1
+0x00894320	function	CSWGuiInGameMap::OnPanelAdded	qualified	patch_manager_mods/engine_research_findings/V9.md:27	0x00894320	0x0	agrees	CSWGuiInGameMap::OnPanelAdded	1
+0x00894435	callsite	CSWGuiInGameMap::FUN_00894320	qualified	patch_manager_mods/06_gog_to_steam_conversions.md:227	0x00894320	0x115	new		1
+0x00895620	function	CSWGuiMapHider::Constructor	qualified	patch_manager_mods/engine_research_findings/V9.md:30	0x00895620	0x0	agrees	CSWGuiMapHider::Constructor	1
+0x00895cc0	function	CSWGuiMapHider::Draw	qualified	patch_manager_mods/engine_research_findings/V9.md:31	0x00895cc0	0x0	agrees	CSWGuiMapHider::Draw	1
+0x00897250	function	CSWGuiMapHider::SetMapNote	qualified	patch_manager_mods/engine_research_findings/V9.md:33	0x00897250	0x0	new		1
+0x008972c0	function	CSWGuiMapHider::HitCheckMouse	qualified	patch_manager_mods/engine_research_findings/V9.md:32	0x008972c0	0x0	agrees	CSWGuiMapHider::HitCheckMouse	1
+0x008a1930	function	CSWGuiPanel::Draw	qualified	.claude/research/holster_edit/r11b_consumer_port.md:88	0x008a1930	0x0	conflicts	rea:CSWGuiInGameOptions scalar deleting dtor (vtable slot 0)	1
+0x008a7520	function	CSWGuiInGameInventory::OnPanelRemoved	qualified	patch_manager_mods/11_inventory_sort_filter_feedback.md:43	0x008a7520	0x0	agrees	CSWGuiInGameInventory::OnPanelRemoved	1
+0x008a75f0	function	CSWGuiInGameInventory::CreateItemEntry	qualified	patch_manager_mods/engine_research_findings/V2.md:33	0x008a75f0	0x0	agrees	CSWGuiInGameInventory::CreateItemEntry	1
+0x008a7ba0	function	PopulateItemListBox	bare	patch_manager_mods/11_inventory_sort_filter.md:19	0x008a7ba0	0x0	agrees	CSWGuiInGameInventory::PopulateItemListBox	1
+0x008a7ba0	function	CSWGuiInGameInventory::PopulateItemListBox	qualified	patch_manager_mods/engine_research_findings/V2.md:34	0x008a7ba0	0x0	agrees	CSWGuiInGameInventory::PopulateItemListBox	1
+0x008a8df0	function	CheckFilter	bare	patch_manager_mods/11_inventory_sort_filter.md:21	0x008a8df0	0x0	agrees	CSWGuiInGameInventory::CheckFilter	1
+0x008aa6f0	function	CSWGuiInGameEquipment::Destroy	qualified	patch_manager_mods/10_equipment_3d_character_feedback.md:15	0x008aa6f0	0x0	new		1
+0x008b0c30	function	CSWGuiInGameItemEntry::SetExtent	qualified	patch_manager_mods/engine_research_findings/V2.md:28	0x008b0c30	0x0	new		1
+0x008b1250	function	SetItem	bare	patch_manager_mods/11_inventory_sort_filter.md:26	0x008b1250	0x0	agrees	CSWGuiInGameItemEntry::SetItem	1
+0x008b1ea0	function	CSWGuiContainer::CSWGuiContainer	qualified	.claude/research/quick_loot/R2_client_gui.md:7	0x008b1ea0	0x0	new		1
+0x008b2850	function	CSWGuiContainer::HandleInputEvent	qualified	.claude/research/quick_loot/R2_client_gui.md:32	0x008b2850	0x0	new		1
+0x008b29e0	function	CSWGuiContainer::SetContainer	qualified	.claude/research/quick_loot/R2_client_gui.md:23	0x008b29e0	0x0	new		1
+0x008b2f70	function	CSWGuiContainer::SetupGiveMode	qualified	.claude/research/quick_loot/R2_client_gui.md:29	0x008b2f70	0x0	new		1
+0x008bab20	function	CSWGuiDialogLetterbox::ResizeToText	qualified	patch_manager_mods/engine_research_findings/V11.md:21	0x008bab20	0x0	conflicts	CSWGuiDialogLetterbox::SetExtentSpecial	1
+0x008bac30	function	CSWGuiDialogLetterbox::SetExtent	qualified	patch_manager_mods/engine_research_findings/V8b.md:19	0x008bac30	0x0	agrees	CSWGuiDialogLetterbox::SetExtent	1
+0x008bace9	callsite	SetTop	bare	patch_manager_mods/engine_research_findings/V1.md:48	0x008baca0	0x49	new		1
+0x008bade9	callsite	SetBottom	bare	patch_manager_mods/engine_research_findings/V1.md:49	0x008bada0	0x49	new		1
+0x008baf10	function	CSWGuiDialogLetterbox::SetFull	qualified	patch_manager_mods/engine_research_findings/V1.md:20	0x008baf10	0x0	conflicts	CSWGuiDialogLetterbox::SetMiddle	1
+0x008bb5d0	function	CSWGuiDialogTop::Constructor	qualified	patch_manager_mods/engine_research_findings/V1.md:23	0x008bb5d0	0x0	agrees	CSWGuiDialogTop::Constructor	1
+0x008bb8d0	function	CSWGuiDialogTop::SetReply	qualified	patch_manager_mods/engine_research_findings/V1.md:24	0x008bb8d0	0x0	agrees	CSWGuiDialogTop::SetReply	1
+0x008bb9a6	callsite	DialogTop::SetReply	qualified	patch_manager_mods/engine_research_findings/V1.md:52	0x008bb8d0	0xd6	new		1
+0x008bba80	function	CSWGuiDialogCinematic::Constructor	qualified	patch_manager_mods/engine_research_findings/V1.md:25	0x008bba80	0x0	agrees	CSWGuiDialogCinematic::Constructor	1
+0x008bc050	function	CSWGuiDialogCinematic::SetExtent	qualified	patch_manager_mods/engine_research_findings/V1.md:26	0x008bc050	0x0	agrees	CSWGuiDialogCinematic::SetExtent	1
+0x008bc100	function	DialogTop::SetReply	qualified	patch_manager_mods/engine_research_findings/V11.md:35	0x008bc100	0x0	new		1
+0x008bc230	function	CSWGuiDialogCinematic::SetReplies	qualified	patch_manager_mods/engine_research_findings/V1.md:27	0x008bc230	0x0	agrees	CSWGuiDialogCinematic::SetReplies	1
+0x008bc3e0	function	CSWGuiDialogCinematic::Reset	qualified	patch_manager_mods/engine_research_findings/V1.md:28	0x008bc3e0	0x0	agrees	CSWGuiDialogCinematic::Reset	1
+0x008bc3e0	function	DialogCinematic::Reset	qualified	patch_manager_mods/engine_research_findings/V7.md:47	0x008bc3e0	0x0	conflicts	CSWGuiDialogCinematic::Reset	1
+0x008bc467	callsite	DialogCinematic::Reset	qualified	patch_manager_mods/engine_research_findings/V1.md:54	0x008bc3e0	0x87	new		1
+0x008cb230	function	GetUpgradeSlotCount	bare	patch_manager_mods/11_inventory_sort_filter.md:28	0x008cb230	0x0	conflicts	CSWGuiUpgrade::GetCurrentUpgradeCategory	1
+0x008cce70	function	CSWGuiUpgrade::Draw	qualified	.claude/research/ingest/i2_cards/chunk_3.md:43	0x008cce70	0x0	agrees	CSWGuiUpgrade::Draw	1
+0x008cd2c0	function	CSWGuiUpgrade::Draw	qualified	.claude/research/ingest/i2_cards/chunk_3.md:43	0x008cd2c0	0x0	conflicts	CSWGuiUpgrade::Update3DView	1
+0x008cfa60	function	CSWGuiUpgrade::OnPanelAdded	qualified	patch_manager_mods/engine_research_findings/V6.md:41	0x008cfa60	0x0	conflicts	CSWGuiUpgrade::VerifyUpgrade	1
+0x008d4f60	function	PowersLevelUp::OnInputEvent	qualified	patch_manager_mods/31b_ch4c_style_re.md:25	0x008d4f60	0x0	new		1
+0x008e0a80	function	CSWGuiInGameGameplay::HandleInputEvent	qualified	patch_manager_mods/31b_ch4c_style_re.md:25	0x008e0a80	0x0	agrees	CSWGuiInGameGameplay::HandleInputEvent	1
+0x008faca0	function	HotbarOnNewGame	bare	patch_manager_mods/22_hotbar_shared_services.md:119	0x008faca0	0x0	conflicts	CSWGuiMainCharGen::BeginPlayGame	1
+0x00907340	function	CSWGuiMainCharGen::BeginPlayGame	qualified	.claude/research/ingest/i2_cards/chunk_1.md:44	0x00907340	0x0	agrees	CSWGuiMainCharGen::BeginPlayGame	1
+0x00908920	function	CSWGuiSkillsCharGen::OnInputEvent	qualified	patch_manager_mods/31b_ch4c_style_re.md:25	0x00908920	0x0	conflicts	CSWGuiPowersLevelUp::OnInputEvent	1
+0x00908920	function	PowersLevelUp::OnInputEvent	qualified	patch_manager_mods/31b_ch4c_style_re.md:25	0x00908920	0x0	conflicts	CSWGuiPowersLevelUp::OnInputEvent	1
+0x0090e850	function	CSWGuiSkillsCharGen::OnInputEvent	qualified	patch_manager_mods/31b_ch4c_style_re.md:25	0x0090e850	0x0	agrees	CSWGuiSkillsCharGen::OnInputEvent	1
+0x009196ee	function	security_check_cookie	bare	patch_manager_mods/engine_research_findings/R9.md:214	0x009196ee	0x0	conflicts	__security_check_cookie	1
+0x00919723	function	operator_new	bare	patch_manager_mods/engine_research_findings/R5.md:14	0x00919723	0x0	conflicts	operator new	1
+0x0091c860	function	ftol2_sse	bare	patch_manager_mods/engine_research_findings/R9.md:219	0x0091c860	0x0	conflicts	_ftol2_sse	1
+0x0093b9c0	function	CAuroraInterface::GetProcessedRaster	qualified	patch_manager_mods/engine_research_findings/R9.md:225	0x0093b9c0	0x0	agrees	CAuroraInterface::GetProcessedRaster	1
+0x0093bad0	function	CAuroraInterface::ReleaseRaster	qualified	patch_manager_mods/engine_research_findings/R9.md:226	0x0093bad0	0x0	agrees	CAuroraInterface::ReleaseRaster	1
+0x0093c130	function	CAuroraInterface::ReleaseResource	qualified	patch_manager_mods/engine_research_findings/R9.md:227	0x0093c130	0x0	agrees	CAuroraInterface::ReleaseResource	1
+0x0093e880	function	CAuroraInterface::GetProcessedTextureInternal	qualified	patch_manager_mods/engine_research_findings/R9.md:228	0x0093e880	0x0	agrees	CAuroraInterface::GetProcessedTextureInternal	1
+0x0093ea10	function	CAuroraInterface::ReleaseProcessedTextureInternal	qualified	patch_manager_mods/engine_research_findings/R9.md:229	0x0093ea10	0x0	agrees	CAuroraInterface::ReleaseProcessedTextureInternal	1
+0x0093ffb0	function	CAuroraProcessedTexture::Load	qualified	patch_manager_mods/engine_research_findings/R9.md:230	0x0093ffb0	0x0	agrees	CAuroraProcessedTexture::Load	1
+0x009454b0	function	CResTGA::OnServiced	qualified	patch_manager_mods/07_force_power_hotbar.md:652	0x009454b0	0x0	new		1
+0x00945db0	function	CResTPC::GetTPCAttrib	qualified	patch_manager_mods/engine_research_findings/R9.md:233	0x00945db0	0x0	agrees	CResTPC::GetTPCAttrib	1
+0x009875bc	global	CSWGuiBorder	bare	patch_manager_mods/02_buff_duration_hud.md:660			conflicts	BorderVtable	1
+0x0098764c	global	CSWGuiImage	bare	patch_manager_mods/02_buff_duration_hud.md:661			new		1
+0x009877d4	global	CSWGuiControl	bare	patch_manager_mods/02_buff_duration_hud.md:657			new		1
+0x009878bc	global	CSWGuiLabel	bare	patch_manager_mods/02_buff_duration_hud.md:658			conflicts	LabelVtable	1
+0x00987bb4	global	CSWGuiProgressBar	bare	patch_manager_mods/02_buff_duration_hud.md:659			new		1
+0x0098b5cc	global	Gob::vftable	qualified	patch_manager_mods/01_inventory_3d_viewport.md:68			conflicts	rea:Gob::vftable; +0x10C = FindPart 0x4587f0, +0x1B4 = dispatcher 0x4dd260	1
+0x0098c27c	global	Camera::vftable	qualified	patch_manager_mods/01_inventory_3d_viewport.md:90			new		1
+0x0098c45c	global	Camera::vftable	qualified	patch_manager_mods/01_inventory_3d_viewport.md:90			conflicts	SceneCameraVtable	1

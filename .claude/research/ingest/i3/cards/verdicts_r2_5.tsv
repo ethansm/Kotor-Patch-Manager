@@ -1,0 +1,13 @@
+card	verdict	quote
+C049	inconsistent	imports: glTexImage2D (OPENGL32.DLL), glTexParameteri (OPENGL32.DLL), glTexSubImage2D (OPENGL32.DLL), ...
+C050	consistent	in 0x00418990 (CSWGuiControl::Constructor): 004189fb c700d4779800 MOV dword ptr [EAX],0x9877d4
+C051	inconsistent	callers 1: 0x00523870 CSWSArea::LoadAreaHeader
+C052	consistent	callees: 0x0040e5a0 CSWGuiPanel::Constructor (CALL), 0x0041ce90 (CALL), 0x0040def0 (CALL), 0x00883f10 (CALL), 0x00418990 CSWGuiControl::Constructor (CALL)
+C053	consistent	callers 4: 0x00781be0 CClientExoAppInternal::MainLoop, 0x007ac470 CClientExoAppInternal::ProcessInput, 0x00839ad0, 0x0083a5b0
+C054	consistent	callees: 0x004122a0 CSWGuiManager::PlayGuiSound (CALL), 0x008d65d0 (CALL), 0x008d6850 (CALL)
+C055	consistent	callees: 0x00919f10 _strlen (CALL), 0x004178b0 (CALL), 0x0041fd90 (CALL), 0x0041e9a0 (CALL)
+C056	unsure	size 273 B, RET 8
+C057	inconsistent	callees: 0x0051bd90 CServerExoApp::GetModule (CALL)
+C058	consistent	strings: 0x0099876c "b_death", 0x00998774 "b_damage", 0x00998780 "b_attacked", ...
+C059	consistent	callees: 0x004122a0 CSWGuiManager::PlayGuiSound (CALL), 0x0073f810 CClientExoApp::GetSWCMessage (CALL)
+C060	consistent	callees: 0x00428f80 (CALL), 0x00429330 (CALL), 0x00919723 operator new (CALL), ...

@@ -1,0 +1,13 @@
+card	verdict	quote
+C013	inconsistent	callees: 0x00919f10 _strlen (CALL), 0x00416fa0 CSWGuiTextParams::SetAlignment (CALL), 0x00414d80 CSWGuiBorder::GetInnerExtent (CALL)
+C014	unsure	indirect: 0x00464d29 slot 0xb0
+C015	unsure	size 78 B, RET 0
+C016	unsure	callees: 0x0091c860 (CALL)
+C017	inconsistent	callees: 0x0051c080 CServerExoApp::GetObjectArray (CALL), 0x0053dfb0 CGameObjectArray::GetGameObject (CALL)
+C018	inconsistent	callees: 0x0051bd90 CServerExoApp::GetModule (CALL)
+C019	consistent	in 0x0041b7f0: 0041b828 c700b47b9800 MOV dword ptr [EAX],0x987bb4
+C020	consistent	indirect: 0x00727737 slot 0x4, 0x007277d3 slot 0x14, 0x00727814 slot 0x14, 0x00727856 slot 0x14, 0x007278d6 slot 0x14
+C021	unsure	callees: 0x00733540 CExoString::DefaultConstructor (CALL), 0x00733780 CExoString::Destructor (CALL)
+C022	inconsistent	size 526 B, RET 12
+C023	consistent	callees: 0x0091d288 operator new[] (CALL), 0x0091c6aa operator delete[] (CALL)
+C024	inconsistent	callees: 0x00479460 GUI fill rect (glViewport + coloured unit quad; returns 0 if rejected) (CALL)

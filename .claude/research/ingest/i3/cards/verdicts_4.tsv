@@ -1,0 +1,13 @@
+card	verdict	quote
+C037	consistent	callees: 0x0083ea60 CExoArrayList<uint32>::Add (CALL)
+C038	unsure	callees: 0x00945860 (CALL), 0x00945990 (CALL)
+C039	inconsistent	callees: 0x0040e5a0 CSWGuiPanel::Constructor (CALL) ... 0x0040fd80 CSWGuiPanel::AddControl (CALL)
+C040	consistent	strings: 0x0099d780 "UseSearch"
+C041	unsure	callees: 0x007a1720 (CALL), 0x00561430 (CALL), 0x0058c370 (CALL)
+C042	inconsistent	strings: 0x0099efe4 "CSWCCreature::LoadModel(): Failed to load creature model '%s'."
+C043	consistent	callers 37: ... 0x006bc9a0 CSWSCreatureStats::GetEffectLinkImmunity
+C044	consistent	callees: 0x00919723 operator new (CALL), 0x007337c0 CExoString::operator= (CALL)
+C045	unsure	callees: 0x0041e800 (CALL), 0x0041c7c0 (CALL), 0x0091c860 (CALL)
+C046	consistent	callees: 0x00919f10 _strlen (CALL), 0x009196fd operator delete (CALL), 0x00919723 operator new (CALL)
+C047	unsure	callees: 0x0070b8c0 (CALL), 0x0070b890 (CALL), 0x007051c0 (CALL)
+C048	unsure	callers 1: 0x0071c3d0
