@@ -27,6 +27,9 @@ D6 R2 NO-GO root cause was missing names / caller context, so coverage is the le
 | I4 | Promotion (user OK) of verified names into `name_map`; regen class pages for touched classes; gap re-measure | DONE | spec §I4 |
 | I5 | Docs sweep (tool listed free-first in CLAUDE.md, RE_AGENT_GUIDE §2.1, README, SUBAGENT_ROLES) + memory | DONE | Decisions |
 | I6 | Next batch: the last 26 extractable candidates (24 notes, 2 mod-code globals) through cards `--decomp-lines 10 --decoy-every 2`, Haiku verify, ledger + name_map (user OK) | DONE | handoff |
+| I7a | Tools for the non-text source: `ingest_names.py twins` (gap fns -> unique GOG fingerprint twin) + `batch.py candidates --gog-list FILE` | TODO | spec §I7 |
+| I7b | Batch B17 (gap twins) through `steam_db_batches/tools/batch.py` candidates -> gates -> cards -> Haiku review -> finalize -> Opus gate | TODO | spec §I7 |
+| I7c | Persist B17 to `name_map` only (user OK), class pages, gap re-measure, docs sweep, memory | TODO | spec §I7 |
 
 ## Cost log
 
@@ -80,6 +83,22 @@ D6 R2 NO-GO root cause was missing names / caller context, so coverage is the le
 ### I4: promotion
 - `promote.tsv` -> `name_map` only after user OK (lead write, source `ingest-<topic>`, confidence `medium`, integrity check).
 - `fn_doc.py page <Class>` for each touched class; `ingest_names.py gap` again (report the new missing counts).
+
+### I7: GOG fingerprint twins (the non-text source)
+- Why: after I6 no text names remain (gap notes 452 / modcode 52, 458 unique fns). A 10-28 dry sizing (fingerprint key
+  `size retn n_insn disp imm #callees #str_refs` from `upstream_server/k2_win_{steam,gog}_aspyr_swkotor2.exe/fp.tsv`,
+  unique on both sides) gave: 342 unique named GOG twins, 20 unique unnamed, 58 ambiguous, 38 no twin; 319 of the 342
+  are in `DUMP/inputs/gog_functions.tsv`; 153 classes (Global 69, 133 classes with <= 3 rows). Sample: 0x00652810 ->
+  `CSWRoomSurfaceMesh::TransformAABBToWorld` (I6 rejected `AurGrassMaterialInUse` there).
+- GOG labels are hypotheses (`steam_db_batches/GOG_LABEL_SUSPECTS.md`): every row goes through the B-batch gates G1-G8
+  (Mac contra/rotation), blind cards with decoys, and the Opus gate. A fingerprint twin alone never ships.
+- I7a `twins`: `ingest_names.py twins [--source all|notes|modcode] --out F` writes `gog steam source name cites`
+  (source `fptwin`), usable as `batch.py candidates --extra-candidates F`; prints the bucket counts above.
+  `batch.py candidates --gog-list F`: keep only GOG rows whose address is in F's `gog` column (combines with other filters).
+- I7b: `B17` = next free batch id. Classes = classes of the listed GOG rows. Haiku is the reviewer first pass (chunks of
+  12, >= 10 decoys per chunk via `cards`); `finalize` ESCALATE -> one Sonnet reviewer pass on that chunk (DESIGN §4.6).
+- I7c: `persist B17 --apply` writes `name_map` (source `steam-db-B17`) and the validated ledger. The branch address DB
+  (`kpm-pr-steam-db`) is NOT imported (Decision: address-DB out of scope); `B17/functions.csv` stays a file.
 
 ## Decisions
 - Ledger first, KDB later: ledger rows are agent observations (`[rea]`), promotion needs Haiku+decoys and user OK.

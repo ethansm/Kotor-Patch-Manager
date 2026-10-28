@@ -1,45 +1,19 @@
 # Session Handoff & Plan State: patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md
 
 ## 0. Next-Phase Direction
-All phases complete. Run master tests and prepare PR.
+INGEST I7: name the remaining gap from GOG fingerprint twins (non-text source)
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md`
-- **Branch:** `KOTOR-II` (74b64d63 INGEST I6: last 26 text candidates, Haiku gate 11/13 PASS, 12 names -> ledger + name_map)
-- **Generated:** 2026-10-28 00:49:45 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (0508110f WI-164: Steps add ctor creation hooks (0x90A327 / 0x9079F9, Hook 9 pattern))
+- **Generated:** 2026-10-28 00:55:55 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-74b64d63 INGEST I6: last 26 text candidates, Haiku gate 11/13 PASS, 12 names -> ledger + name_map
- .claude/research/ingest/i6/cards/chunk_1.md        | 232 ++++++++++++++
- .claude/research/ingest/i6/cards/chunk_2.md        | 228 ++++++++++++++
- .claude/research/ingest/i6/cards/chunk_3.md        | 226 ++++++++++++++
- .claude/research/ingest/i6/cards/chunk_4.md        |  65 ++++
- .claude/research/ingest/i6/cards/key.tsv           |  40 +++
- .claude/research/ingest/i6/cards/promote.tsv       |  13 +
- .claude/research/ingest/i6/cards/verdicts_1.tsv    |  13 +
- .claude/research/ingest/i6/cards/verdicts_2.tsv    |  13 +
- .claude/research/ingest/i6/cards/verdicts_3.tsv    |  13 +
- .claude/research/ingest/i6/cards/verdicts_4.tsv    |   4 +
- .claude/research/ingest/i6/conflicts.tsv           |   1 +
- .claude/research/ingest/i6/dry_m.tsv               |   2 +
- .claude/research/ingest/i6/dry_n.tsv               |  12 +
- .claude/research/ingest/i6/extract_modcode_all.tsv | 342 +++++++++++++++++++++
- .../ingest/i6/extract_modcode_all_promoted.tsv     |   2 +
- .claude/research/ingest/i6/extract_notes.tsv       |  26 ++
- .../research/ingest/i6/extract_notes_promoted.tsv  |  12 +
- .claude/research/ingest/i6/led_all.tsv             |  27 ++
- .claude/research/ingest/i6/led_modcode.tsv         |   3 +
- .claude/research/ingest/i6/led_notes.tsv           |  25 ++
- .claude/research/ingest/i6/promote_modcode.tsv     |   2 +
- .claude/research/ingest/i6/promote_notes.tsv       |  12 +
- .claude/research/ingest/i6/promoted_pairs.tsv      |  12 +
- patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md |   1 +
- .../ghidra_knowledge/kotor2_ghidra_knowledge.db    | Bin 9912320 -> 9916416 bytes
- .../rea_findings/20261028_ingest-modcode.tsv       |   2 +
- .../rea_findings/20261028_ingest-notes.tsv         |  12 +
- 27 files changed, 1340 insertions(+)
+0508110f WI-164: Steps add ctor creation hooks (0x90A327 / 0x9079F9, Hook 9 pattern)
+ .claude/work_items/WI-164.md | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 ```
-- **Dirty Files (189):**
+- **Dirty Files (193):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/25_pc_levelup_filter.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
@@ -50,10 +24,24 @@ All phases complete. Run master tests and prepare PR.
   - ` M .claude/handoffs/deep_haiku_review_skill.handoff.md`
   - ` M .claude/handoffs/variant_fix_wave_skill.handoff.md`
   - ` M .claude/plans/swarm_library_architecture.md`
-  - ... +179 more (run `git status --short`)
+  - ... +183 more (run `git status --short`)
+
+## 2. Immediate Objective (I7a)
+**Tools for the non-text source: `ingest_names.py twins` (gap fns -> unique GOG fingerprint twin) + `batch.py candidates --gog-list FILE`**
+
+Status: TODO
+Task: Tools for the non-text source: `ingest_names.py twins` (gap fns -> unique GOG fingerprint twin) + `batch.py candidates --gog-list FILE`
+
+## 2b. Upcoming Batches in Pipeline
+- **I7b** : Batch B17 (gap twins) through `steam_db_batches/tools/batch.py` candidates -> gates -> cards -> Haiku review -> finalize -> Opus gate
+- **I7c** : Persist B17 to `name_map` only (user OK), class pages, gap re-measure, docs sweep, memory
 
 ## 3. Strict Context Budget & Read Policy
 - **Fresh Session Bootstrap**: Run `python3 scripts/plan_manager.py resume patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md`.
+
+## 4. Subagent Delegation Direction
+- **Claude Code**: parallel `model: haiku` Agent subagents; brief = `Contract` + `Write Scope` + `python3 scripts/agent_contract.py print worker|recon`.
+- **Other backends** (only when the user asks): `python3 scripts/plan_manager.py delegate I7a` or `oc-subagent <scout|code|ghidra|verify|gate|doc>`.
 
 ## 5. Dead Ends & Verification (manual)
 - Gap prototype (I0 starting point): `.claude/research/ingest/gap_prototype.py` (4368b1e4); `python3 .claude/research/ingest/gap_prototype.py` prints 79 / 515.
@@ -72,3 +60,6 @@ All phases complete. Run master tests and prepare PR.
 - 10-28 next batch sizing (dry runs, nothing written): `extract --source notes --top 100` now yields only 25 new rows (24 ledger-able functions); `extract --source modcode` yields 2 (globals 0x009960c8 EffMasteryLight, 0x009960cc EffMasteryDark, 4 bytes apart so they cannot decoy each other). Gap 460 notes / 53 modcode is mostly addresses without any name in text: new names need another source.
 - `promote_names.py --stage I<n>` labels evidence; DB copies before writes went to session scratch (`kdb_before_I4*.db`).
 - Do not chain `test | tail && apply`: tail masks the test exit code (I4b applied with 1 red test; it was a test-edit bug).
+- 10-28 I6 (74b64d63): 12 names, gate 11/13; text extraction exhausted (gap 452/52). Only Steam-DB classes get `fn_doc.py page` output ("no functions for class X" is normal). `steam_docs/_work/` is another session's, never commit it.
+- 10-28 I7 sizing (scratch script, not committed as a tool): `.claude/research/ingest/i7/sizing_gap_gog_twins_20261028.tsv` (342 rows `steam gog name`). Full gap list = `ingest_names.gap(top_n=100000)[g]["top"]`. Key that worked: `(size, retn, n_insn, disp, imm, #callees, #str_refs)` from fp.tsv, unique in BOTH exes. Server Steam names are mostly FID noise (ANALYSIS 15295); never use them as names.
+- I7 verify: `cd patch_manager_mods/steam_db_batches/tools && python3 -m unittest discover -s tests` (scope it alone, check exit); batch dir `patch_manager_mods/steam_db_batches/B17/`.
