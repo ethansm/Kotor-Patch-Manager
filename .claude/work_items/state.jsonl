@@ -139,3 +139,4 @@
 {"ev": "park", "reason": "worker FAIL: Steps lack in-panel button template tag + click-dispatch/tick hook addresses for feats (0x909E00 CSWGuiFeatsCharGen) and powers (0x9074E0) panels; needs RE + hooks.toml (outside write scope); unchanged retry would fail", "session": "adcfea28-564e-4810-9848-60bc7638b126", "ts": "2026-10-28T00:49:20Z", "wi": "WI-36"}
 {"ev": "unpark", "reason": "re-park with canonical worker-FAIL reason", "session": "adcfea28-564e-4810-9848-60bc7638b126", "ts": "2026-10-28T00:49:30Z", "wi": "WI-36"}
 {"ev": "park", "reason": "worker reply FAIL: Steps lack feats/powers panel button template tag + click/tick hook addresses (0x909E00, 0x9074E0); needs RE + hooks.toml outside scope", "session": "adcfea28-564e-4810-9848-60bc7638b126", "ts": "2026-10-28T00:49:32Z", "wi": "WI-36"}
+{"ev": "rescue", "reason": "round 1: 7 recon briefs in WI-36-rescue", "session": "adcfea28-564e-4810-9848-60bc7638b126", "ts": "2026-10-28T00:49:35Z", "wi": "WI-36"}
