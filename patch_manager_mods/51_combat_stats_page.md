@@ -103,7 +103,7 @@ Total Defense stance flag `creature+0x110c`: 0 = Total Defense (written by `AIAc
 | ST4 | Probe 0.3.0-probe: STATS log block per shown character (no UI) + read-only deflection check (engine total vs recompute) | ST2 | user GO install | INSTALLED | 265ae68b | LIVE 10-27 19:10 (KPM d5384ec, rollback character-effects-panel_reinstall_20261027_190959); play ST4-P1 |
 | ST5a | Stats tab UI 0.4.0-dev: header click toggles Effects/Stats (`stats_tab=1`), 4 sections, label + value rows (pure `StatsRows.h`, host test `stats_rows_test`), breakdown tooltips; no "Attacks / round" (stub), off-hand attack/crit rows when dual-wielding; hot-swap (hooks unchanged) | ST3, ST4 | user GO install (after ST4-P1) | INSTALLED | 7a4bcc82 | LIVE 10-27 20:21 (KPM a211580, rollback character-effects-panel_swap_20261027_202152); play ST5-P1 |
 | ST5b | `show_influence` rows (needs RE: creature -> NPC slot 0..11 for GetInfluence) | ST5a | RE + user GO install | BUILT | 88200304 | 0.4.1-dev gate PASS; RE: table=*(*(*(0xA1B4A4)+8)+4)+0x1F0B4, slot=GetNPCID 0x5FDBF0 scan +0x1C else tag chain, infl +0x11C; not installed |
-| ST6 | Vanilla page tooltips (hover rects by tag, `vanilla_tooltips=1`, text table) | ST3, ST5 | user GO install | TODO | | play row |
+| ST6 | Vanilla page tooltips (hover rects by tag, `vanilla_tooltips=1`, text table) | ST3, ST5 | user GO install | BUILT | 2d701706 | 0.5.0-dev gate PASS, not installed; play ST6-P1 |
 
 ## Open (UNVERIFIED in W2)
 - Two-weapon penalties, STR/DEX attack term, Offensive Training sign (`006a93a0` lines 177-222, 403-491).
