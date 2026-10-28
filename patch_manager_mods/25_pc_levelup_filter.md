@@ -79,7 +79,7 @@ a forged save with a PC that can level (scenario S10 in `tests/luo_scenarios/sav
 3. Dim only, or dim then hide?
 
 ## 11. User proposal 2026-10-04: in-screen filter toggle (R10 UI)
-Proposal (user-pasted): a button ON the feats panel (`CSWGuiFeatSelection`, ctor 0x909E00, init 0x90AEA0, grid +0x1BF4) and the powers panel
+Proposal (user-pasted): a button ON the feats panel (`CSWGuiFeatsCharGen`, ctor 0x909E00, init 0x90AEA0, grid +0x1BF4) and the powers panel
 (`CSWGuiPowersLevelUp`, ctor 0x9074E0, grid +0x1BF8) cycling `Filter: [All] -> [Build (Dim)] -> [Build (Hide)] -> [Combat] -> [Force] -> [All]`,
 refreshed in place, last choice remembered per playthrough (`feat_filter=` / `power_filter=`). Phases: probe (section 8) -> dim toggle -> hide toggle.
 Same safety rules as sections 4-5 (fallback to All + `R10 FALLBACK` when picks remain and the filtered set is empty; PC gate = empty tag + IsPC).
