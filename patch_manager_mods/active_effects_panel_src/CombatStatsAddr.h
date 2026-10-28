@@ -89,6 +89,10 @@ constexpr uint32_t Rec_ThreshB   = 0xC2;   // i8
 // Effect type globals: read the int stored at this address at runtime, it is the effect type id
 constexpr uintptr_t EffDeflectInc = 0x00996088;  // read the int stored at this address at runtime, it is the effect type id
 constexpr uintptr_t EffDeflectDec = 0x0099608C;  // read the int stored at this address at runtime, it is the effect type id
+// Force Mastery marker effects: FUN_0058b7f0 applies Light at GoodEvil == 100 (0x0058b880) and Dark at GoodEvil == 0 (0x0058b990),
+// removes both otherwise; the character page shows LBL_FORCEMASTERY (strref 114161..114166 by the last class slot) while one is present.
+constexpr uintptr_t EffMasteryLight = 0x009960C8;  // read the int stored at this address at runtime, it is the effect type id
+constexpr uintptr_t EffMasteryDark  = 0x009960CC;  // read the int stored at this address at runtime, it is the effect type id
 
 // Function-pointer typedefs (thiscall: first arg is ECX; fastcall: first arg is ECX, takes one pointer here)
 typedef int      (CSTATS_THISCALL* HasFeatFn)(void* stats, uint16_t featId);

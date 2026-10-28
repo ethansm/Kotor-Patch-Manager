@@ -18,6 +18,8 @@ struct StatsIn {
   cstats::ForceDCIn fdc; int goodEvil, forceResist;
   char resist[48];                              // short damage-resist text, "" = none
   bool haveInfluence; int npcSlot, influence;   // party NPC slot 0..11 (nwscript NPC_*) + party table +0x11C+slot*4, -1 = unset
+  int nClass; uint8_t classId[3]; int classLvl[3];   // class slots in slot order (stats+0xAB+i*0x28); the last one picks the Mastery line
+  int mastery;                                       // 0 none, 1 Light Mastery effect present, 2 Dark Mastery effect present
 };
 
 // Party NPC slot -> tag, as the engine's fallback chain in HandleAlignmentInfluence 0x0056AE40 matches it (doc 51 ST5b).
@@ -26,6 +28,12 @@ constexpr const char* kNpcTags[12] = {"atton", "baodur", "mand", "g0t0", "handma
 constexpr int kNpcKreia = 6;
 constexpr const char* kInfluenceDesc =
     "How much this companion is swayed by you. Above 50 their alignment drifts toward yours, below 50 away from it.";
+
+// Class id -> name, classes.2da rows 0..16 (name strrefs, dialog.tlk).
+constexpr const char* kClassNames[17] = {"Soldier","Scout","Scoundrel","Jedi Guardian","Jedi Consular","Jedi Sentinel",
+                                         "Combat Droid","Expert Droid","Minion","Tech Specialist","Bounty Hunter",
+                                         "Jedi Weapon Master","Jedi Master","Jedi Watchman","Sith Marauder","Sith Lord",
+                                         "Sith Assassin"};
 
 constexpr const char* kDeflectDesc =
     "Your d20 roll plus this total is checked against each blaster bolt; beat it by 6 to reflect.";
@@ -111,6 +119,15 @@ inline void addCrit(Writer& w, const char* name, int threat, int mult) {
   addLine(e, line);
 }
 
+// Class slots in use, clamped to the 3 stored slots.
+inline int classSlots(int n) { return n < 0 ? 0 : (n > 3 ? 3 : n); }
+
+// Class line text: "Jedi Guardian 8"; ids outside the name table read "Class 23 8".
+inline void classText(char* out, size_t n, int id, int lvl) {
+  if (id >= 0 && id < 17) snprintf(out, n, "%s %d", kClassNames[id], lvl);
+  else snprintf(out, n, "Class %d %d", id, lvl);
+}
+
 // Writes the Stats tab rows into out[0..cap) in tab order. Returns the count written, never more than cap.
 inline int build(const StatsIn& in, cfx::Entry* out, int cap) {
   Writer w{out, cap, 0};
@@ -168,6 +185,20 @@ inline int build(const StatsIn& in, cfx::Entry* out, int cap) {
   row(w, "Force resist", val, nullptr);
 
   section(w, "Character");
+  {
+    int nc = classSlots(in.nClass);
+    if (nc > 0) {
+      int total = 0;
+      for (int i = 0; i < nc; ++i) total += in.classLvl[i];
+      snprintf(val, sizeof val, "%d", total);
+      cfx::Entry* e = row(w, "Level", val, nullptr);
+      char line[cfx::LineLen];
+      for (int i = 0; i < nc; ++i) {
+        classText(line, sizeof line, in.classId[i], in.classLvl[i]);
+        addLine(e, line);
+      }
+    }
+  }
   snprintf(val, sizeof val, "%d / 100", in.goodEvil);
   row(w, "Alignment", val, nullptr);
   if (in.haveInfluence && in.npcSlot >= 0 && in.npcSlot < 12) {

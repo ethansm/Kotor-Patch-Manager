@@ -74,6 +74,19 @@ Total Defense stance flag `creature+0x110c`: 0 = Total Defense (written by `AIAc
    else a stricmp chain on the tag (creature+0x18 CExoString): 0 atton, 1 baodur, 2 mand, 3 g0t0, 4 handmaiden, 5 hk47,
    6 kreia, 7 mira, 8 t3m4, 9 visasmarr, 10 hanharr, 11 disciple (strings `0x0099515c/54/40/38/30` read from the exe).
    Influence = `*(int*)(table+0x11C+i*4)`, -1 = unset. Kreia's alignment copies BaseCNPCAlignment instead (C5 KREIA_GUARD).
+6. **Force Mastery (ST6b, local dumps).** `FUN_0058b7f0(creature)` (called from ModifyAlignment `0x006ad400`, HandleAlignmentInfluence
+   `0x0056ae40`, `0x006bdcd0`): GoodEvil (stats+0x18a) == 100 -> remove dark, apply Light marker effect (type = int at `0x009960c8`,
+   `0x0058b880`); == 0 -> remove light, apply Dark marker (`0x009960cc`, `0x0058b990`); else remove both. SetStats `0x0084e6f0`
+   shows `LBL_FORCEMASTERY` only while a marker is present (`0x0058bbe0` = has effect type), text by the LAST class slot
+   (client +0xf8+i*0x20, i = count-1): Guardian line 3/11/14 -> 114161 "Light Mastery: +3 STR" / 114164 "Dark Mastery: +1-8 Dam";
+   Consular line 4/12/15 -> 114163 "+3 WIS" / 114166 "+50 FP"; Sentinel line 5/13/16 -> 114162 "+3 CON" / 114165 "+3 DEX".
+   Where the bonus itself is applied was not traced (the strings state it).
+7. **Saving throws (ST6b research, not yet shown).** Fort `0x006ba620` / Reflex `0x006ba740` / Will `0x006ba6b0`, thiscall(stats, int
+   noEffects) RET 4: total = misc byte (stats+0x1b0 Fort, +0x1b2 Reflex, +0x1b1 Will) + ability (CON +0xf2 / GetDEXMod(0) / WIS +0xf6)
+   + class term (`0x006b73a0` / `0x006b77e0` / `0x006b75c0`: sum of class save tables at each class level, + "SaveMult" scaling only
+   for non-party creatures with owner+0x250, + Conditioning feats 13/21/22 = +1/+2/+3 top tier) + effects (`0x00582010` cat 3,
+   subtype 1/2/3, only when noEffects == 0; the page passes 0). Breakdown plan: effects = get(0) - get(1); class+feat = get(1) - misc
+   - ability; feat tier from HasFeat. The page colours the value by `0x0077d800(3,...)` effect delta.
 
 ## Design (owner decisions 2026-10-27)
 - **Placement: a new "Stats" tab** in the character-effects panel (`active_effects_panel_src/`, character-effects-panel
@@ -104,6 +117,8 @@ Total Defense stance flag `creature+0x110c`: 0 = Total Defense (written by `AIAc
 | ST5a | Stats tab UI 0.4.0-dev: header click toggles Effects/Stats (`stats_tab=1`), 4 sections, label + value rows (pure `StatsRows.h`, host test `stats_rows_test`), breakdown tooltips; no "Attacks / round" (stub), off-hand attack/crit rows when dual-wielding; hot-swap (hooks unchanged) | ST3, ST4 | user GO install (after ST4-P1) | INSTALLED | 7a4bcc82 | LIVE 10-27 20:21 (KPM a211580, rollback character-effects-panel_swap_20261027_202152); play ST5-P1 |
 | ST5b | `show_influence` rows (needs RE: creature -> NPC slot 0..11 for GetInfluence) | ST5a | RE + user GO install | INSTALLED | 88200304 | 0.5.0-dev LIVE 10-27 20:47 (KPM ac7ac0f, rollback character-effects-panel_swap_20261027_204746) |
 | ST6 | Vanilla page tooltips (hover rects by tag, `vanilla_tooltips=1`, text table) | ST3, ST5 | user GO install | INSTALLED | 2d701706 | 0.5.0-dev LIVE 10-27 20:47 (KPM ac7ac0f, rollback character-effects-panel_swap_20261027_204746) |
+| ST6b | 0.5.1-dev: header hint tip, Force Mastery tip (marker effects, class line, finding 6), Level row + class lines (Stats tab, Experience tip) | ST6 | user GO install | TODO | | play ST6b-P1 |
+| ST6c | Save breakdown tooltips (Fortitude/Reflex/Will: misc + ability + class/feat + effects, finding 7) | ST6b | user GO install | TODO | | play row |
 
 ## Open (UNVERIFIED in W2)
 - Two-weapon penalties, STR/DEX attack term, Offensive Training sign (`006a93a0` lines 177-222, 403-491).

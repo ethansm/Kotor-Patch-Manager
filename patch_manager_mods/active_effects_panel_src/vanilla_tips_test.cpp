@@ -82,5 +82,45 @@ int main() {
     KT_CHECK(r.w > 0 && r.h > 0 && r.x >= 0 && r.y >= 0 && r.x + r.w <= 800 && r.y + r.h <= 600);
   }
 
+  // h. Hover rects for the two new rows: Force Mastery and the Effects/Stats header.
+  KT_CHECK(hit(400, 110) == V_MASTERY);
+  KT_CHECK(hit(600, 115) == V_HEADER);
+
+  // i. Mastery: the last class slot picks the line (Jedi Master here, not the first slot); active effect marked.
+  {
+    srows::StatsIn in{};
+    in.nClass = 2; in.classId[0] = 3; in.classId[1] = 12; in.classLvl[0] = 10; in.classLvl[1] = 2;
+    in.mastery = 1;
+    cfx::Entry e{};
+    KT_CHECK(build(V_MASTERY, in, true, &e));
+    KT_CHECK(e.nLines == 3 && hasLine(e, "Class line: Consular") &&
+             hasLine(e, "Light Mastery: +3 Wisdom (active)") && hasLine(e, "Dark Mastery: +50 Force points"));
+  }
+
+  // j. Mastery without a class line: the three static reference lines.
+  {
+    srows::StatsIn in{};
+    cfx::Entry e{};
+    KT_CHECK(build(V_MASTERY, in, true, &e));
+    KT_CHECK(e.nLines == 3 && std::strncmp(e.lines[0], "Guardian line:", 14) == 0);
+  }
+
+  // k. Experience: one line per class slot.
+  {
+    srows::StatsIn in{};
+    in.nClass = 2; in.classId[0] = 3; in.classId[1] = 11; in.classLvl[0] = 8; in.classLvl[1] = 4;
+    cfx::Entry e{};
+    KT_CHECK(build(V_XP, in, true, &e));
+    KT_CHECK(e.nLines == 2 && hasLine(e, "Jedi Guardian 8") && hasLine(e, "Jedi Weapon Master 4"));
+  }
+
+  // l. Effects/Stats header: description only, no lines.
+  {
+    srows::StatsIn in{};
+    cfx::Entry e{};
+    KT_CHECK(build(V_HEADER, in, true, &e));
+    KT_CHECK(e.desc != nullptr && e.nLines == 0);
+  }
+
   return kt::Report("vanilla_tips_test");
 }

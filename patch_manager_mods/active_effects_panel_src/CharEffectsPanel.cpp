@@ -1,4 +1,4 @@
-// Character Active Effects Panel 0.5.0-dev (Steam Aspyr build 6A522E71...). Fills the right third of the character page
+// Character Active Effects Panel 0.5.1-dev (Steam Aspyr build 6A522E71...). Fills the right third of the character page
 // (CSWGuiInGameCharacter) with the shown character's active effects: icon, name, remaining time; Harmful section first,
 // then Beneficial; expiring first, permanent last; whole-entry scrolling with a scrollbar only when the list overflows.
 // Research trail: patch_manager_mods/14_character_active_effects_panel.md and active_effects_panel_src/research/R* (worktree
@@ -22,6 +22,7 @@
 // effect does, decoded from the live effect ints (decodeEffect, research R3 + R3b), short forms joined with ", " and cut
 // with "..."; long names/stats marquee after marquee_delay_ms without input; hover tooltips (name + time, every stat line,
 // the spells.2da description). GUI = 82 controls (S block inserted before MORE: ids of MORE..TIP moved by 14).
+// 0.5.1-dev (doc 51 ST6b): header hint tooltip, Force Mastery tooltip (marker effects 0x9960C8/CC), Level row + class lines on the Stats tab and Experience tip.
 // 0.5.0-dev (doc 51 ST6): hover tooltips on the vanilla character page rows (attributes, vitality, Force, Defense, saves, alignment, experience) from VanillaTips.h, drawn with the panel tooltip controls (ini vanilla_tips=0 disables); no hook or GUI change.
 // 0.4.1-dev (doc 51 ST5b): Influence row on the Stats tab for party NPCs (party table +0x11C, slot via object id then tag; ini show_influence).
 // 0.4.0-dev (doc 51 ST5a): Stats tab. Click the panel header to switch Effects <-> Stats (ini stats_tab=0 hides the toggle); the Stats rows come from StatsRows.h (srows::build) fed by gatherStats; no hook or GUI change.
@@ -894,6 +895,21 @@ void showTip(Slot* s, int row) {
     if (row < 0 || row >= s->nPlaced) return;
     showTipAt(s, s->ent[s->rowEnt[row]], PanelX + 4, s->rowY[row], RowH, nullptr, false);
 }
+// Force Mastery marker effect on the creature: 0 none, 1 light, 2 dark (plain reads, no engine call).
+int masteryOf(int server) {
+    using namespace cstats_addr;
+    int lt = 0, dk = 0, arr = 0, cnt = 0;
+    if (!server) return 0;
+    readAt<int>(static_cast<int>(EffMasteryLight), 0, &lt); readAt<int>(static_cast<int>(EffMasteryDark), 0, &dk);
+    if ((!lt && !dk) || !readAt<int>(server, Creature_Effects, &arr) || !readAt<int>(server, Creature_EffectCount, &cnt) || !arr || cnt <= 0 || cnt > MaxEffects) return 0;
+    for (int i = 0; i < cnt; ++i) {
+        int eff = 0; uint16_t ty = 0;
+        if (!readAt<int>(arr, 4 * i, &eff) || !eff || !readAt<uint16_t>(eff, Effect_Type, &ty)) continue;
+        if (lt && ty == lt) return 1;
+        if (dk && ty == dk) return 2;
+    }
+    return 0;
+}
 // Vanilla row tooltip: left = right of the rect (+6), else left of it; top = rect top. fresh = build the text now (gatherStats), else re-show the cached one.
 bool gatherStats(int server, srows::StatsIn* in);
 void showVanillaTip(Slot* s, int vrow, bool fresh) {
@@ -920,6 +936,8 @@ void tickTooltip(Slot* s, DWORD t, bool haveCur, float cx, float cy, bool refres
         for (int r = 0; r < s->nPlaced; ++r)
             if (u >= X0 && u < X0 + s->lastRowW && v >= s->rowY[r] && v < s->rowY[r] + RowH) { row = r; break; }
         if (row < 0 && g_cfg.vanillaTips) vrow = vtips::hit(u, v);   // vanilla character page rows (doc 51 ST6); the effects list may be empty
+        if (vrow == vtips::V_HEADER && !g_cfg.statsTab) vrow = -1;   // no toggle, no hint
+        if (vrow == vtips::V_MASTERY && !masteryOf(s->server)) vrow = -1;   // LBL_FORCEMASTERY is hidden without a mastery effect
     }
     int key = row >= 0 ? s->ent[s->rowEnt[row]].key : vrow >= 0 ? 0x40000 + vrow : -1;
     int hrow = row >= 0 ? row : vrow >= 0 ? -2 - vrow : -1;
@@ -1105,6 +1123,14 @@ bool gatherStats(int server, srows::StatsIn* in) {
     in->fdc.ff3 = reinterpret_cast<HasFeatFn>(HasFeat)(st, cstats::kFeatFF3) != 0;
     int16_t ge = 0; readAt<int16_t>(stats, Stats_GoodEvil, &ge); in->goodEvil = ge;
     in->forceResist = reinterpret_cast<ForceResistFn>(ForceResist)(st);
+    uint8_t nc = 0; readAt<uint8_t>(stats, Stats_ClassCount, &nc);   // class slots for the Level row and the Mastery line (last slot)
+    for (int i = 0; i < nc && in->nClass < 3; ++i) {
+        uint8_t id = 0;
+        if (!readAt<uint8_t>(stats, static_cast<int>(Stats_ClassId0 + Stats_ClassStride * i), &id)) break;
+        in->classId[in->nClass] = id;
+        in->classLvl[in->nClass++] = reinterpret_cast<GetClassLevelFn>(GetClassLevel)(st, static_cast<uint8_t>(i), 0);
+    }
+    in->mastery = masteryOf(server);
     gatherResist(server, in->resist, sizeof in->resist);
     if (g_cfg.showInfluence) gatherInfluence(server, in);
     return true;
@@ -1315,6 +1341,6 @@ extern "C" void __cdecl CharEffectsDestroy(int panel) {
 
 BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
     if (reason == DLL_PROCESS_DETACH) guikit::wheelUninstall();   // never leave a dangling window proc: restores if on top, else stays chained but inert
-    if (reason == DLL_PROCESS_ATTACH) { snprintf(g_loadLine, sizeof g_loadLine, "chareffects 0.5.0-dev build 9 loaded (KpLog + IniKit + PanelSlots + GuiKit wheel + Party + STATS/DEFLECT probe + Stats tab + influence + vanilla tips) tick=%lu", (unsigned long)GetTickCount()); }
+    if (reason == DLL_PROCESS_ATTACH) { snprintf(g_loadLine, sizeof g_loadLine, "chareffects 0.5.1-dev build 10 loaded (KpLog + IniKit + PanelSlots + GuiKit wheel + Party + STATS/DEFLECT probe + Stats tab + influence + vanilla tips) tick=%lu", (unsigned long)GetTickCount()); }
     return TRUE;
 }

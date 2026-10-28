@@ -175,5 +175,24 @@ int main() {
     KT_CHECK(findRow(out, n, "Influence") < 0);
   }
 
+  // j. Level row (class slots): summed levels, one line per class, placed before Alignment; absent with no classes.
+  {
+    srows::StatsIn in{};
+    in.nClass = 2; in.classId[0] = 3; in.classId[1] = 11; in.classLvl[0] = 8; in.classLvl[1] = 4;
+    int n = srows::build(in, out, 64);
+    int r = findRow(out, n, "Level");
+    int a = findRow(out, n, "Alignment");
+    KT_CHECK(r >= 0 && std::strcmp(out[r].val, "12") == 0);
+    KT_CHECK(r >= 0 && hasLine(out[r], "Jedi Guardian 8") && hasLine(out[r], "Jedi Weapon Master 4"));
+    KT_CHECK(r >= 0 && a > r);
+    in.nClass = 0;
+    n = srows::build(in, out, 64);
+    KT_CHECK(findRow(out, n, "Level") < 0);
+    in.nClass = 1; in.classId[0] = 40; in.classLvl[0] = 3;
+    n = srows::build(in, out, 64);
+    r = findRow(out, n, "Level");
+    KT_CHECK(r >= 0 && hasLine(out[r], "Class 40 3"));
+  }
+
   return kt::Report("stats_rows_test");
 }
