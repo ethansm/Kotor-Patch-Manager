@@ -1,27 +1,72 @@
 # Session Handoff & Plan State: patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md
 
 ## 0. Next-Phase Direction
-Execute I7b: Batch B17 (gap twins) through `steam_db_batches/tools/batch.py` candidates -> gates -> cards -> Haiku review -> finalize -> Opus gate
+Execute I7c: Persist B17 to `name_map` only (user OK), class pages, gap re-measure, docs sweep, memory
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md`
-- **Branch:** `KOTOR-II` (4b23629e INGEST I7a: ingest_names.py twins + batch.py candidates --gog-list)
-- **Generated:** 2026-10-28 01:04:46 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (e63f6937 INGEST I7b: B17 fingerprint-twin batch gated (285 verified, 3 likely, 7 label_suspect))
+- **Generated:** 2026-10-28 01:30:52 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-4b23629e INGEST I7a: ingest_names.py twins + batch.py candidates --gog-list
- .claude/research/ingest/i7/twins.tsv               | 343 +++++++++++++++++++++
- CLAUDE.md                                          |   2 +-
- patch_manager_mods/ghidra_knowledge/README.md      |   4 +-
- .../ghidra_knowledge/RE_AGENT_GUIDE.md             |   1 +
- .../ghidra_knowledge/tools/ingest_names.py         |  71 +++++
- .../tools/tests/test_ingest_names.py               |  99 ++++++
- patch_manager_mods/steam_db_batches/DESIGN.md      |   1 +
- patch_manager_mods/steam_db_batches/tools/batch.py |  26 ++
- .../tools/tests/test_batch_ledger_cards.py         |  25 ++
- 9 files changed, 570 insertions(+), 2 deletions(-)
+e63f6937 INGEST I7b: B17 fingerprint-twin batch gated (285 verified, 3 likely, 7 label_suspect)
+ .../steam_db_batches/B17/candidates.tsv            |  320 ++
+ .../steam_db_batches/B17/cards/chunk_1.md          | 2684 ++++++++++++++++
+ .../steam_db_batches/B17/cards/chunk_10.md         | 2689 ++++++++++++++++
+ .../steam_db_batches/B17/cards/chunk_11.md         | 3231 +++++++++++++++++++
+ .../steam_db_batches/B17/cards/chunk_12.md         | 3306 ++++++++++++++++++++
+ .../steam_db_batches/B17/cards/chunk_13.md         | 2689 ++++++++++++++++
+ .../steam_db_batches/B17/cards/chunk_14.md         | 2825 +++++++++++++++++
+ .../steam_db_batches/B17/cards/chunk_15.md         | 2377 ++++++++++++++
+ .../steam_db_batches/B17/cards/chunk_2.md          | 2793 +++++++++++++++++
+ .../steam_db_batches/B17/cards/chunk_3.md          | 3148 +++++++++++++++++++
+ .../steam_db_batches/B17/cards/chunk_4.md          | 3174 +++++++++++++++++++
+ .../steam_db_batches/B17/cards/chunk_5.md          | 3032 ++++++++++++++++++
+ .../steam_db_batches/B17/cards/chunk_6.md          | 2943 +++++++++++++++++
+ .../steam_db_batches/B17/cards/chunk_7.md          | 2778 ++++++++++++++++
+ .../steam_db_batches/B17/cards/chunk_8.md          | 2904 +++++++++++++++++
+ .../steam_db_batches/B17/cards/chunk_9.md          | 2860 +++++++++++++++++
+ .../steam_db_batches/B17/cards/key.tsv             |  328 ++
+ .../steam_db_batches/B17/evidence.tsv              |  320 ++
+ .../steam_db_batches/B17/final_rows.tsv            |  320 ++
+ .../steam_db_batches/B17/functions.csv             |  286 ++
+ .../steam_db_batches/B17/gate_report.md            |  300 ++
+ .../steam_db_batches/B17/gog_label_suspects.tsv    |    8 +
+ .../steam_db_batches/B17/kdb_upsert.json           | 2282 ++++++++++++++
+ .../steam_db_batches/B17/opus/overrides_a.md       |   41 +
+ .../steam_db_batches/B17/opus/overrides_a.tsv      |   22 +
+ .../steam_db_batches/B17/opus/overrides_b.md       |   27 +
+ .../steam_db_batches/B17/opus/overrides_b.tsv      |   22 +
+ .../steam_db_batches/B17/opus/overrides_c.md       |   40 +
+ .../steam_db_batches/B17/opus/overrides_c.tsv      |   21 +
+ .../steam_db_batches/B17/opus/part_a.md            |   28 +
+ .../steam_db_batches/B17/opus/part_b.md            |   28 +
+ .../steam_db_batches/B17/opus/part_c.md            |   27 +
+ .../steam_db_batches/B17/opus/parts.json           |   90 +
+ .../steam_db_batches/B17/opus_gate.json            |  475 +++
+ .../steam_db_batches/B17/opus_gate.md              |   87 +
+ .../steam_db_batches/B17/overrides.tsv             |   63 +
+ .../steam_db_batches/B17/recheck.tsv               |    1 +
+ .../steam_db_batches/B17/review/haiku_c1.tsv       |   23 +
+ .../steam_db_batches/B17/review/haiku_c10.tsv      |   23 +
+ .../steam_db_batches/B17/review/haiku_c11.tsv      |   23 +
+ .../steam_db_batches/B17/review/haiku_c12.tsv      |   23 +
+ .../steam_db_batches/B17/review/haiku_c13.tsv      |   23 +
+ .../steam_db_batches/B17/review/haiku_c14.tsv      |   23 +
+ .../steam_db_batches/B17/review/haiku_c15.tsv      |   20 +
+ .../steam_db_batches/B17/review/haiku_c2.tsv       |   23 +
+ .../steam_db_batches/B17/review/haiku_c3.tsv       |   23 +
+ .../steam_db_batches/B17/review/haiku_c4.tsv       |   23 +
+ .../steam_db_batches/B17/review/haiku_c5.tsv       |   23 +
+ .../steam_db_batches/B17/review/haiku_c6.tsv       |   23 +
+ .../steam_db_batches/B17/review/haiku_c7.tsv       |   23 +
+ .../steam_db_batches/B17/review/haiku_c8.tsv       |   23 +
+ .../steam_db_batches/B17/review/haiku_c9.tsv       |   23 +
+ .../steam_db_batches/B17/validated.tsv             |  286 ++
+ .../steam_db_batches/GOG_LABEL_SUSPECTS.md         |   10 +
+ 54 files changed, 49207 insertions(+)
 ```
-- **Dirty Files (189):**
+- **Dirty Files (190):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/25_pc_levelup_filter.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
@@ -32,23 +77,20 @@ Execute I7b: Batch B17 (gap twins) through `steam_db_batches/tools/batch.py` can
   - ` M .claude/handoffs/deep_haiku_review_skill.handoff.md`
   - ` M .claude/handoffs/variant_fix_wave_skill.handoff.md`
   - ` M .claude/plans/swarm_library_architecture.md`
-  - ... +179 more (run `git status --short`)
+  - ... +180 more (run `git status --short`)
 
-## 2. Immediate Objective (I7b)
-**Batch B17 (gap twins) through `steam_db_batches/tools/batch.py` candidates -> gates -> cards -> Haiku review -> finalize -> Opus gate**
+## 2. Immediate Objective (I7c)
+**Persist B17 to `name_map` only (user OK), class pages, gap re-measure, docs sweep, memory**
 
 Status: TODO
-Task: Batch B17 (gap twins) through `steam_db_batches/tools/batch.py` candidates -> gates -> cards -> Haiku review -> finalize -> Opus gate
-
-## 2b. Upcoming Batches in Pipeline
-- **I7c** : Persist B17 to `name_map` only (user OK), class pages, gap re-measure, docs sweep, memory
+Task: Persist B17 to `name_map` only (user OK), class pages, gap re-measure, docs sweep, memory
 
 ## 3. Strict Context Budget & Read Policy
 - **Fresh Session Bootstrap**: Run `python3 scripts/plan_manager.py resume patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md`.
 
 ## 4. Subagent Delegation Direction
 - **Claude Code**: parallel `model: haiku` Agent subagents; brief = `Contract` + `Write Scope` + `python3 scripts/agent_contract.py print worker|recon`.
-- **Other backends** (only when the user asks): `python3 scripts/plan_manager.py delegate I7b` or `oc-subagent <scout|code|ghidra|verify|gate|doc>`.
+- **Other backends** (only when the user asks): `python3 scripts/plan_manager.py delegate I7c` or `oc-subagent <scout|code|ghidra|verify|gate|doc>`.
 
 ## 5. Dead Ends & Verification (manual)
 - Gap prototype (I0 starting point): `.claude/research/ingest/gap_prototype.py` (4368b1e4); `python3 .claude/research/ingest/gap_prototype.py` prints 79 / 515.

@@ -28,7 +28,7 @@ D6 R2 NO-GO root cause was missing names / caller context, so coverage is the le
 | I5 | Docs sweep (tool listed free-first in CLAUDE.md, RE_AGENT_GUIDE §2.1, README, SUBAGENT_ROLES) + memory | DONE | Decisions |
 | I6 | Next batch: the last 26 extractable candidates (24 notes, 2 mod-code globals) through cards `--decomp-lines 10 --decoy-every 2`, Haiku verify, ledger + name_map (user OK) | DONE | handoff |
 | I7a | Tools for the non-text source: `ingest_names.py twins` (gap fns -> unique GOG fingerprint twin) + `batch.py candidates --gog-list FILE` | DONE | spec §I7 |
-| I7b | Batch B17 (gap twins) through `steam_db_batches/tools/batch.py` candidates -> gates -> cards -> Haiku review -> finalize -> Opus gate | TODO | spec §I7 |
+| I7b | Batch B17 (gap twins) through `steam_db_batches/tools/batch.py` candidates -> gates -> cards -> Haiku review -> finalize -> Opus gate | DONE | spec §I7 |
 | I7c | Persist B17 to `name_map` only (user OK), class pages, gap re-measure, docs sweep, memory | TODO | spec §I7 |
 
 ## Cost log
