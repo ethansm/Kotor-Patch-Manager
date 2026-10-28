@@ -945,3 +945,6 @@ than intermittently, that would be the trigger to escalate.
 - **Ruled out:** KPM init (512 detours, SUCCESS), preview-3d (destroyed cleanly before), a vanilla fault.
 - **Fix:** holster-editor 0.7.3-dev snapshots its page controls in `applyArt` and calls `guikit::detachPooledFills` on each in `cbDestroy`
   (which mod-config runs before freeing). New log line `DTOR art detached=N of M ctls`.
+- **Follow-up 2026-10-28:** same-class audit of every mod-config provider found enemy-effects-strip (slider labels holding its pooled
+  art) -> fixed in 0.4.11-dev, played PASS (`DESTROY slider art detached=6`, page opened 6x, no crash). combat-hotbar (PreviewCanvas restores
+  fills), selfheal and the declarative-only providers are clean. holster-editor 0.7.3-dev fix still unplayed (MC-PF3).
