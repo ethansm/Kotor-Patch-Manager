@@ -20,8 +20,8 @@ D6 R2 NO-GO root cause was missing names / caller context, so coverage is the le
 
 | # | Phase | Status | Record |
 |---|---|---|---|
-| I0 | `tools/ingest_names.py gap|extract` + tests: mod-code candidates TSV (addr, name, kind, src path:line, fn_start, status new/agrees/conflicts) and the gap metric | TODO | spec §I0 |
-| I1 | `ingest_names.py ledger`: static gate + write `probable` ledger rows for `new` mod-code candidates (topic `ingest-modcode`); conflicts report only; lint stays at baseline | TODO | spec §I1 |
+| I0 | `tools/ingest_names.py gap| DONE | TODO | spec §I0 |
+| I1 | `ingest_names.py ledger`: static gate + write `probable` ledger rows for `new` mod-code candidates (topic `ingest-modcode`); conflicts report only; lint stays at baseline | DONE | spec §I1 |
 | I2 | Haiku verify with decoys on I1 rows (cards from `static_facts.py`); verdict TSV; promotion list | TODO | spec §I2 |
 | I3 | Research-notes extraction (same tool, `--source notes`), top-cited first, Haiku verify, ledger rows topic `ingest-notes`; stop when yield < 30% | TODO | spec §I3 |
 | I4 | Promotion (user OK) of verified names into `name_map`; regen class pages for touched classes; gap re-measure | TODO | spec §I4 |
