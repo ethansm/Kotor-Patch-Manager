@@ -1,52 +1,47 @@
 # Session Handoff & Plan State: patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md
 
 ## 0. Next-Phase Direction
-Execute I3: Research-notes extraction (same tool, `--source notes`), top-cited first, Haiku verify, ledger rows topic `ingest-notes`; stop when yield < 30%
+Execute I5: Docs sweep (tool listed free-first in CLAUDE.md, RE_AGENT_GUIDE §2.1, README, SUBAGENT_ROLES) + memory
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md`
-- **Branch:** `KOTOR-II` (dfbc3ec5 INGEST I3: notes extract + Haiku verify; gate FAIL (57% after retry), nothing written)
-- **Generated:** 2026-10-27 22:57:31 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (021c750f INGEST I3: richer cards PASS (81%), 56 ingest-notes ledger rows; fix comma-list name pairing)
+- **Generated:** 2026-10-27 23:23:05 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-dfbc3ec5 INGEST I3: notes extract + Haiku verify; gate FAIL (57% after retry), nothing written
- .claude/research/ingest/i3/README.md               |   16 +
- .claude/research/ingest/i3/cards/chunk_1.md        |  137 +++
- .claude/research/ingest/i3/cards/chunk_2.md        |  140 +++
- .claude/research/ingest/i3/cards/chunk_3.md        |  145 +++
- .claude/research/ingest/i3/cards/chunk_4.md        |  141 +++
- .claude/research/ingest/i3/cards/chunk_5.md        |  142 +++
- .claude/research/ingest/i3/cards/chunk_6.md        |  135 +++
- .claude/research/ingest/i3/cards/chunk_7.md        |  143 +++
- .claude/research/ingest/i3/cards/chunk_8.md        |  138 +++
- .claude/research/ingest/i3/cards/chunk_9.md        |  117 +++
- .claude/research/ingest/i3/cards/key.tsv           |  107 +++
- .claude/research/ingest/i3/cards/verdicts_1.tsv    |   13 +
- .claude/research/ingest/i3/cards/verdicts_2.tsv    |   13 +
- .claude/research/ingest/i3/cards/verdicts_3.tsv    |   13 +
- .claude/research/ingest/i3/cards/verdicts_4.tsv    |   13 +
- .claude/research/ingest/i3/cards/verdicts_5.tsv    |   13 +
- .claude/research/ingest/i3/cards/verdicts_6.tsv    |   13 +
- .claude/research/ingest/i3/cards/verdicts_7.tsv    |   13 +
- .claude/research/ingest/i3/cards/verdicts_8.tsv    |   13 +
- .claude/research/ingest/i3/cards/verdicts_9.tsv    |   11 +
- .claude/research/ingest/i3/cards/verdicts_r2_1.tsv |   13 +
- .claude/research/ingest/i3/cards/verdicts_r2_2.tsv |   13 +
- .claude/research/ingest/i3/cards/verdicts_r2_4.tsv |   13 +
- .claude/research/ingest/i3/cards/verdicts_r2_5.tsv |   13 +
- .claude/research/ingest/i3/cards/verdicts_r2_6.tsv |   13 +
- .claude/research/ingest/i3/cards/verdicts_r2_8.tsv |   13 +
- .claude/research/ingest/i3/extract_notes_all.tsv   | 1008 ++++++++++++++++++++
- .../research/ingest/i3/extract_notes_top100.tsv    |   98 ++
- .claude/research/ingest/i3/ledger_dry_top100.tsv   |   86 ++
- patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md |    3 +-
- .../ghidra_knowledge/tools/ingest_names.py         |  135 ++-
- .../ingest/notes_tree/.claude/research/more.md     |    3 +
- .../ingest/notes_tree/.claude/research/tables.md   |   16 +
- .../tools/tests/test_ingest_names.py               |   84 ++
- 34 files changed, 2978 insertions(+), 9 deletions(-)
+021c750f INGEST I3: richer cards PASS (81%), 56 ingest-notes ledger rows; fix comma-list name pairing
+ .claude/research/ingest/i3/README.md               |  12 +
+ .claude/research/ingest/i3/cards_v2/chunk_1.md     | 209 +++++
+ .claude/research/ingest/i3/cards_v2/chunk_2.md     | 254 ++++++
+ .claude/research/ingest/i3/cards_v2/chunk_3.md     | 241 ++++++
+ .claude/research/ingest/i3/cards_v2/chunk_4.md     | 254 ++++++
+ .claude/research/ingest/i3/cards_v2/chunk_5.md     | 254 ++++++
+ .claude/research/ingest/i3/cards_v2/chunk_6.md     | 222 ++++++
+ .claude/research/ingest/i3/cards_v2/chunk_7.md     | 244 ++++++
+ .claude/research/ingest/i3/cards_v2/chunk_8.md     | 229 ++++++
+ .claude/research/ingest/i3/cards_v2/chunk_9.md     | 191 +++++
+ .claude/research/ingest/i3/cards_v2/key.tsv        | 107 +++
+ .claude/research/ingest/i3/cards_v2/promote.tsv    |  62 ++
+ .claude/research/ingest/i3/cards_v2/score.txt      |   6 +
+ .claude/research/ingest/i3/cards_v2/verdicts_1.tsv |  13 +
+ .claude/research/ingest/i3/cards_v2/verdicts_2.tsv |  13 +
+ .claude/research/ingest/i3/cards_v2/verdicts_3.tsv |  13 +
+ .claude/research/ingest/i3/cards_v2/verdicts_4.tsv |  13 +
+ .claude/research/ingest/i3/cards_v2/verdicts_5.tsv |  13 +
+ .claude/research/ingest/i3/cards_v2/verdicts_6.tsv |  13 +
+ .claude/research/ingest/i3/cards_v2/verdicts_7.tsv |  13 +
+ .claude/research/ingest/i3/cards_v2/verdicts_8.tsv |  13 +
+ .claude/research/ingest/i3/cards_v2/verdicts_9.tsv |  11 +
+ .claude/research/ingest/i3/conflicts.tsv           |   1 +
+ .../research/ingest/i3/extract_notes_all_v2.tsv    | 888 +++++++++++++++++++++
+ .../research/ingest/i3/extract_notes_verified.tsv  |  69 ++
+ patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md |   1 +
+ .../rea_findings/20261027_ingest-notes.tsv         |  57 ++
+ .../ghidra_knowledge/tools/ingest_names.py         |  74 +-
+ .../tools/tests/test_ingest_names.py               |  56 ++
+ 29 files changed, 3538 insertions(+), 8 deletions(-)
 ```
-- **Dirty Files (193):**
+- **Dirty Files (188):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/25_pc_levelup_filter.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
@@ -57,23 +52,20 @@ dfbc3ec5 INGEST I3: notes extract + Haiku verify; gate FAIL (57% after retry), n
   - ` M .claude/handoffs/deep_haiku_review_skill.handoff.md`
   - ` M .claude/handoffs/variant_fix_wave_skill.handoff.md`
   - ` M .claude/plans/swarm_library_architecture.md`
-  - ... +183 more (run `git status --short`)
+  - ... +178 more (run `git status --short`)
 
-## 2. Immediate Objective (I3)
-**Research-notes extraction (same tool, `--source notes`), top-cited first, Haiku verify, ledger rows topic `ingest-notes`; stop when yield < 30%**
+## 2. Immediate Objective (I5)
+**Docs sweep (tool listed free-first in CLAUDE.md, RE_AGENT_GUIDE §2.1, README, SUBAGENT_ROLES) + memory**
 
-Status: PARTIAL
-Task: Research-notes extraction (same tool, `--source notes`), top-cited first, Haiku verify, ledger rows topic `ingest-notes`; stop when yield < 30%
-
-## 2b. Upcoming Batches in Pipeline
-- **I5** : Docs sweep (tool listed free-first in CLAUDE.md, RE_AGENT_GUIDE §2.1, README, SUBAGENT_ROLES) + memory
+Status: TODO
+Task: Docs sweep (tool listed free-first in CLAUDE.md, RE_AGENT_GUIDE §2.1, README, SUBAGENT_ROLES) + memory
 
 ## 3. Strict Context Budget & Read Policy
 - **Fresh Session Bootstrap**: Run `python3 scripts/plan_manager.py resume patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md`.
 
 ## 4. Subagent Delegation Direction
 - **Claude Code**: parallel `model: haiku` Agent subagents; brief = `Contract` + `Write Scope` + `python3 scripts/agent_contract.py print worker|recon`.
-- **Other backends** (only when the user asks): `python3 scripts/plan_manager.py delegate I3` or `oc-subagent <scout|code|ghidra|verify|gate|doc>`.
+- **Other backends** (only when the user asks): `python3 scripts/plan_manager.py delegate I5` or `oc-subagent <scout|code|ghidra|verify|gate|doc>`.
 
 ## 5. Dead Ends & Verification (manual)
 - Gap prototype (I0 starting point): `.claude/research/ingest/gap_prototype.py` (4368b1e4); `python3 .claude/research/ingest/gap_prototype.py` prints 79 / 515.
