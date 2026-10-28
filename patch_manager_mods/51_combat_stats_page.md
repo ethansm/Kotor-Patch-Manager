@@ -119,7 +119,7 @@ Total Defense stance flag `creature+0x110c`: 0 = Total Defense (written by `AIAc
 | ST6 | Vanilla page tooltips (hover rects by tag, `vanilla_tooltips=1`, text table) | ST3, ST5 | user GO install | INSTALLED | 2d701706 | 0.5.0-dev LIVE 10-27 20:47 (KPM ac7ac0f, rollback character-effects-panel_swap_20261027_204746) |
 | ST6b | 0.5.1-dev: header hint tip, Force Mastery tip (marker effects, class line, finding 6), Level row + class lines (Stats tab, Experience tip) | ST6 | user GO install | INSTALLED | 1701c24c | 0.5.2-dev LIVE 10-27 22:45 (KPM c67e7b9, rollback character-effects-panel_swap_20261027_224511) |
 | ST6c | 0.5.2-dev: save breakdown tooltips (Fortitude/Reflex/Will: class levels + ability + Conditioning feat + other + effects, finding 7) | ST6b | user GO install | INSTALLED | b7142165 | 0.5.2-dev LIVE 10-27 22:45 (KPM c67e7b9, rollback character-effects-panel_swap_20261027_224511) |
-| ST6d | 0.5.3-dev play feedback 10-28: vanilla tips over their own row + shrunk to the text, Alignment tip multipliers only, value label slack (Deflection/Attack main values wrapped away) | ST6c | user GO install | TODO | | play row |
+| ST6d | 0.5.3-dev play feedback 10-28: vanilla tips over their own row + shrunk to the text, Alignment tip multipliers only, value label slack (Deflection/Attack main values wrapped away) | ST6c | user GO install | BUILT | 2583d864 | 0.5.3-dev gate PASS; SWAP ready; not installed |
 
 ## Open (UNVERIFIED in W2)
 - Two-weapon penalties, STR/DEX attack term, Offensive Training sign (`006a93a0` lines 177-222, 403-491).
