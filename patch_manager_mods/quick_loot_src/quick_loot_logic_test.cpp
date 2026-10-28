@@ -692,12 +692,12 @@ int main() {
         rowText(b, sizeof b, "Medpac", -1);
         kt::Check("rowText unknown stack has no suffix", strcmp(b, "Medpac") == 0);
         rowText(b, sizeof b, n41, 3);   // 37 wide digits + "... x3" is wider than the block: cut further, stack kept
-        kt::Check("rowText cut name + stack", strncmp(b, "0123456789", 10) == 0 && strcmp(b + strlen(b) - 6, "... x3") == 0 && textPx10(b) <= RowInnerMaxPx && strlen(b) < 43);
+        kt::Check("rowText cut name + stack", strncmp(b, "0123456789", 10) == 0 && strcmp(b + strlen(b) - 6, "... x3") == 0 && textPx10(b) <= RowTextMaxPx && strlen(b) < 43);
         rowText(b, sizeof b, "Mandalorian Heavy Armor Plating Mk IV Upgrade Kit", 3);
         kt::Check("rowText 40-char cut + stack", strcmp(b, "Mandalorian Heavy Armor Plating Mk IV... x3") == 0 || strcmp(b + strlen(b) - 6, "... x3") == 0);
         // a row never wider than the budget: wide letters cut further
         rowText(b, sizeof b, "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW", 999);
-        kt::Check("rowText fits RowInnerMaxPx", textPx10(b) <= RowInnerMaxPx && strstr(b, "... x999") != nullptr);
+        kt::Check("rowText fits RowTextMaxPx", textPx10(b) <= RowTextMaxPx && strstr(b, "... x999") != nullptr);
         rowText(b, sizeof b, "WWWWWWWWWWWWWWWWWWWW", 1, 200);
         kt::Check("rowText honours a small budget", textPx10(b) <= 200 && strcmp(b + strlen(b) - 3, "...") == 0);
         kt::Check("textPx10 empty = 0, grows with text", textPx10("") == 0 && textPx10("ab") > textPx10("a"));
@@ -772,7 +772,7 @@ int main() {
         kt::Check("builds", buildListDraw(d, v, false, "F", &o));
         kt::Check("8 visible, scrollable, indicator", o.vis == 8 && o.scrollable && strcmp(o.indicator, "1-8 of 25") == 0 && o.off == 0);
         kt::Check("first / last row", strcmp(o.rows[0], "Item 1") == 0 && strcmp(o.rows[7], "Item 8") == 0);
-        kt::CheckEq("height = pads + header + gap + 8 rows", o.h, 2 * BlockPadY + RowH + HeaderGapPx + 8 * RowH);
+        kt::CheckEq("height = pads + header + gap + 8 rows", o.h, blockHeightPx(8));
         kt::Check("width within [min, max]", o.w >= BlockMinW && o.w <= BlockMaxW);
         v.off = 10;
         ListDraw o2;
@@ -790,7 +790,7 @@ int main() {
         ListDraw o4;
         buildListDraw(d4, v4, true, "F", &o4);
         kt::Check("4 items: 4 rows, no indicator", o4.vis == 4 && !o4.scrollable && o4.indicator[0] == 0 && strcmp(o4.header, "Took (4)") == 0);
-        kt::CheckEq("4 rows height", o4.h, 2 * BlockPadY + RowH + HeaderGapPx + 4 * RowH);
+        kt::CheckEq("4 rows height", o4.h, blockHeightPx(4));
         kt::CheckEq("single item min width", o4.w, BlockMinW);
         // the more row
         ListData d5; d5.set(names, nullptr, 20, 25);
@@ -815,7 +815,7 @@ int main() {
         kt::Check("ListRows 1", o8.vis == 1 && strcmp(o8.indicator, "1-1 of 25") == 0);
         ListView v12; v12.reset(25, 12);
         buildListDraw(d, v12, false, "F", &o8);
-        kt::CheckEq("ListRows 12 height", o8.h, 2 * BlockPadY + RowH + HeaderGapPx + 12 * RowH);
+        kt::CheckEq("ListRows 12 height", o8.h, blockHeightPx(12));
         ListView vbig; vbig.reset(25, 40);
         buildListDraw(d, vbig, false, "F", &o8);
         kt::Check("rows above 12 clamp to 12", o8.vis == 12);
@@ -890,16 +890,16 @@ int main() {
         r = blockRect(Pos::B, a, 400, 900, { 0, 0, 3840, 600 });
         kt::Check("block taller than the panel: top limit", r.y == 24);
         // child rects and hit test
-        kt::Check("header rect", headerRect(400) == Rect{ BlockPadX, BlockPadY, 400 - 2 * BlockPadX + LabelSlackPx, RowH });
-        kt::Check("row 0 under the header gap", rowRect(0, 400).y == BlockPadY + RowH + HeaderGapPx && rowRect(3, 400).y == rowRect(0, 400).y + 3 * RowH);
+        kt::Check("header rect", headerRect(400) == Rect{ BlockPadX, BlockPadY, 400 - 2 * BlockPadX + LabelSlackPx, HeaderH });
+        kt::Check("row 0 under the header gap", rowRect(0, 400).y == BlockPadY + HeaderH + HeaderGapPx && rowRect(3, 400).y == rowRect(0, 400).y + 3 * (RowH + RowGapPx));
         kt::Check("indicator ends on the right padding line", indicatorRect(500, 120).x + 120 == 500 - BlockPadX);
         const Rect blk = { 1000, 500, 400, 334 };
-        const float rowsTop = static_cast<float>(500 + BlockPadY + RowH + HeaderGapPx);
+        const float rowsTop = static_cast<float>(500 + BlockPadY + HeaderH + HeaderGapPx);
         kt::CheckEq("hover row 0", rowAtPoint(blk, 8, 1100.0f, rowsTop + 1.0f), 0);
-        kt::CheckEq("hover row 2", rowAtPoint(blk, 8, 1100.0f, rowsTop + 2 * RowH + 5.0f), 2);
+        kt::CheckEq("hover row 2", rowAtPoint(blk, 8, 1100.0f, rowsTop + 2 * (RowH + RowGapPx) + 5.0f), 2);
         kt::CheckEq("hover the header: none", rowAtPoint(blk, 8, 1100.0f, rowsTop - 10.0f), -1);
         kt::CheckEq("hover left of the text area: none", rowAtPoint(blk, 8, 1000.0f + BlockPadX - 1, rowsTop + 5.0f), -1);
-        kt::CheckEq("hover below the last visible row: none", rowAtPoint(blk, 3, 1100.0f, rowsTop + 3 * RowH + 1.0f), -1);
+        kt::CheckEq("hover below the last visible row: none", rowAtPoint(blk, 3, 1100.0f, rowsTop + 3 * (RowH + RowGapPx) + 1.0f), -1);
         kt::Check("point in rect", pointInRect(blk, 1000.0f, 500.0f) && pointInRect(blk, 1399.9f, 833.9f) && !pointInRect(blk, 1400.0f, 600.0f) && !pointInRect(blk, 1100.0f, 499.0f));
         // latch keeps the anchor and clears it
         Latch l;
@@ -915,6 +915,144 @@ int main() {
         kt::Check("SCROLL line", strcmp(b, "SCROLL off=3/17") == 0);
         fmtWheelSub(b, sizeof b, 2, 5);
         kt::Check("WHEEL-SUB line", strcmp(b, "WHEEL-SUB token=2 after=5") == 0);
+    }
+
+    {
+        // ---- 0.5.0-dev (QL2V): row / icon / text geometry, RowH variants, icon resref, scrollbar
+        kt::CheckEq("RowH is 64 (was 32)", RowH, 64);
+        kt::Check("alternatives 56 / 72", RowHAlt1 == 56 && RowHAlt2 == 72);
+        kt::CheckEq("icon = RowH - 2 pad", iconPx(), 56);
+        kt::CheckEq("icon at 56 / 72", iconPx(56) * 1000 + iconPx(72), 48 * 1000 + 64);
+        // rows: the gap, the scrollbar reserve, the icon square, the vertically centred text
+        const Rect r0 = rowRect(0, 800), r1 = rowRect(1, 800), r0s = rowRect(0, 800, true);
+        kt::Check("row 0 / 1 pitch = RowH + gap", r1.y - r0.y == RowH + RowGapPx && r0.h == RowH && r0.x == BlockPadX);
+        kt::CheckEq("row width without the scrollbar", r0.w, 800 - 2 * BlockPadX);
+        kt::CheckEq("row width with the scrollbar", r0s.w, 800 - 2 * BlockPadX - SbReserve);
+        const Rect ic = rowIconRect(r0), tx = rowTextRect(r0);
+        kt::Check("icon square inside the row", ic.w == ic.h && ic.x == r0.x + RowIconPad && ic.y == r0.y + RowIconPad && ic.y + ic.h == r0.y + r0.h - RowIconPad);
+        kt::Check("text after the icon, centred on the glyph box", tx.x == ic.x + ic.w + IconGapPx && tx.y == r0.y + (RowH - TextGlyphH) / 2 && tx.h == TextBoxH && tx.x + tx.w - LabelSlackPx == r0.x + r0.w - RowTextPadR);
+        kt::Check("text box stays inside the row", tx.y >= r0.y && tx.y + tx.h <= r0.y + r0.h);
+        // RowH variants fit the panel (ListRows 8 default and 12 max) and the scrollbar
+        const int rhs[3] = { RowHAlt1, RowH, RowHAlt2 };
+        for (int k = 0; k < 3; ++k) {
+            const int rh = rhs[k];
+            const std::string n = std::to_string(rh);
+            kt::Check(("RowH " + n + ": 12 rows fit 1600 px with the margins").c_str(), blockHeightPx(12, rh) + 2 * ScreenMarginPx <= 1600);
+            kt::Check(("RowH " + n + ": 8 rows block = pads + header + gap + rows + gaps").c_str(), blockHeightPx(8, rh) == 2 * BlockPadY + HeaderH + HeaderGapPx + 8 * rh + 7 * RowGapPx);
+            kt::Check(("RowH " + n + ": text box fits the row").c_str(), (rh - TextGlyphH) / 2 >= 0 && (rh - TextGlyphH) / 2 + TextBoxH <= rh + 4 && iconPx(rh) >= 32);
+            kt::Check(("RowH " + n + ": 2 rows already fit a scrollbar, 1 row does not").c_str(), sbFits(2, rh) && !sbFits(1, rh));
+        }
+        // buildListDraw carries rowH, the scrollbar flag and the width reserve
+        const char* names[25];
+        std::string store[25];
+        const char* icons[25];
+        for (int i = 0; i < 25; ++i) { store[i] = "Item " + std::to_string(i + 1); names[i] = store[i].c_str(); icons[i] = "iw_blstrpstl_001"; }
+        ListData d; d.set(names, nullptr, 25, 25, icons);
+        ListData d6; d6.set(names, nullptr, 6, 6, icons);
+        ListView v25; v25.reset(d.rowsTotal(), 8), v25.off = 3;
+        ListView v6; v6.reset(d6.rowsTotal(), 8);
+        ListDraw o, o6;
+        buildListDraw(d, v25, false, "F", &o);
+        buildListDraw(d6, v6, false, "F", &o6);
+        kt::Check("25 items: scrollbar, RowH, icons follow the offset", o.sb && o.rowH == RowH && strcmp(o.icons[0], "iw_blstrpstl_001") == 0 && strcmp(o.rows[0], "Item 4") == 0);
+        kt::Check("6 items: no scrollbar", !o6.sb && !o6.scrollable);
+        ListDraw ow;
+        buildListDraw(d, v25, false, "F", &ow, RowHAlt2);
+        kt::Check("RowH 72 build: taller block, rowH carried", ow.rowH == 72 && ow.h == blockHeightPx(8, 72) && ow.h > o.h);
+        // block width: rows + icon chrome + scrollbar
+        kt::Check("block width holds the widest row + icon chrome (+ scrollbar when shown)", o.w >= d.maxRowPx + rowChromePx() + SbReserve + 2 * BlockPadX || o.w == BlockMinW);
+        kt::Check("scrollbar column sits inside the block", sbLayout(o.w, o.vis, o.rowsTotal, o.off).col.x + SbW + BlockPadX == o.w);
+        // a "+K more" row has no icon; icons past the capture are empty
+        ListData dm; dm.set(names, nullptr, 3, 10, icons);
+        kt::Check("iconAt: items have one, the more row and past-the-end none", strcmp(dm.iconAt(0), "iw_blstrpstl_001") == 0 && dm.iconAt(3)[0] == 0 && dm.iconAt(99)[0] == 0);
+        // the widest worst-case row text still fits the max block
+        kt::Check("RowTextMaxPx leaves the max block room for the worst chrome", RowTextMaxPx + rowChromePx(RowHAlt2) + SbReserve + 2 * BlockPadX <= BlockMaxW);
+    }
+    {
+        // ---- icon resref: copy of the engine's 16-byte, non-terminated CResRef
+        char o[ResrefCap];
+        char raw[16];
+        memset(raw, 'a', sizeof raw);   // 16 chars, no NUL
+        kt::CheckEq("16 chars, not NUL-terminated: copied whole and terminated", static_cast<int>(sanitizeResref(o, raw)), 16);
+        kt::Check("... terminated at 16", o[16] == 0 && strncmp(o, "aaaaaaaaaaaaaaaa", 16) == 0);
+        memset(raw, 0, sizeof raw); memcpy(raw, "iw_blstrpstl_001", 16);
+        kt::Check("real resref", sanitizeResref(o, raw) == 16 && strcmp(o, "iw_blstrpstl_001") == 0);
+        memset(raw, 0, sizeof raw); memcpy(raw, "ii_medeqpmnt_1\0\0", 16);
+        kt::Check("stops at the first NUL", sanitizeResref(o, raw) == 14 && strcmp(o, "ii_medeqpmnt_1") == 0);
+        memset(raw, 0, sizeof raw); memcpy(raw, "ia\x01_c\xFFlass", 10);
+        sanitizeResref(o, raw);
+        kt::Check("bytes outside 0x20..0x7E become '?'", strcmp(o, "ia?_c?lass") == 0);
+        memset(raw, 0, sizeof raw); memcpy(raw, "abc   ", 6);
+        kt::Check("trailing spaces trimmed", sanitizeResref(o, raw) == 3 && strcmp(o, "abc") == 0);
+        memset(raw, 0, sizeof raw);
+        kt::Check("all NUL (engine empty result): empty", sanitizeResref(o, raw) == 0 && o[0] == 0);
+        kt::Check("null raw: empty", sanitizeResref(o, nullptr) == 0 && o[0] == 0);
+        kt::Check("base item index plausibility", baseItemIdxOk(0) && baseItemIdxOk(55) && baseItemIdxOk(MaxBaseItemIdx - 1) && !baseItemIdxOk(-1) && !baseItemIdxOk(MaxBaseItemIdx) && !baseItemIdxOk(0x7FFFFFFF));
+        // set() sanitizes the icon too, a too-long name never touches it
+        ListData d; const char* nm[2] = { "A", "B" }; const char* ic[2] = { "ok_icon", nullptr };
+        d.set(nm, nullptr, 2, 2, ic);
+        kt::Check("ListData icons: kept / null -> empty", strcmp(d.iconAt(0), "ok_icon") == 0 && d.iconAt(1)[0] == 0);
+        d.set(nm, nullptr, 2, 2);
+        kt::Check("ListData without icons: all empty", d.iconAt(0)[0] == 0 && d.iconAt(1)[0] == 0);
+    }
+    {
+        // ---- scrollbar: thumb size / position, arrows, track, hit test, click stepping
+        const int w = 800;
+        const Sb s0 = sbLayout(w, 8, 25, 0), sm = sbLayout(w, 8, 25, 8), se = sbLayout(w, 8, 25, 17);
+        kt::Check("shown for an overflowing list", s0.shown && sm.shown && se.shown);
+        kt::Check("hidden when the list fits / exactly the rows", !sbLayout(w, 6, 6, 0).shown && !sbLayout(w, 8, 8, 0).shown && !sbLayout(w, 0, 0, 0).shown);
+        kt::Check("hidden when the rows cannot hold a scrollbar (ListRows 1)", !sbLayout(w, 1, 25, 0).shown);
+        kt::CheckEq("column height = the list height", s0.col.h, listHeightPx(8));
+        kt::Check("column on the right padding line, at the first row", s0.col.x == w - BlockPadX - SbW && s0.col.w == SbW && s0.col.y == BlockPadY + HeaderH + HeaderGapPx);
+        kt::Check("arrows: square, at the column ends", s0.up == Rect{ s0.col.x, s0.col.y, SbW, SbW } && s0.down == Rect{ s0.col.x, s0.col.y + s0.col.h - SbW, SbW, SbW });
+        kt::Check("track between the arrows", s0.track.y == s0.up.y + SbW && s0.track.y + s0.track.h == s0.down.y);
+        const int th = s0.track.h * 8 / 25;
+        kt::CheckEq("thumb size = track x visible / total", s0.thumb.h, th);
+        kt::Check("thumb at the top of the track at off 0", s0.thumb.y == s0.track.y && s0.thumb.h == sm.thumb.h && s0.thumb.h == se.thumb.h);
+        kt::CheckEq("thumb at the bottom of the track at the last offset", se.thumb.y + se.thumb.h, s0.track.y + s0.track.h);
+        kt::CheckEq("thumb at the middle: (track - thumb) x off / maxOff", sm.thumb.y, s0.track.y + (s0.track.h - th) * 8 / 17);
+        kt::Check("thumb stays inside the track, moves down with the offset", sm.thumb.y > s0.thumb.y && sm.thumb.y < se.thumb.y && sm.thumb.x >= sm.track.x && sm.thumb.x + sm.thumb.w <= sm.track.x + sm.track.w);
+        kt::Check("offset past the end clamps like the last one", sbLayout(w, 8, 25, 99).thumb == se.thumb);
+        const Sb sbig = sbLayout(w, 8, 4000, 0);
+        kt::CheckEq("huge list: thumb at its minimum", sbig.thumb.h, SbThumbMin);
+        const Sb s2 = sbLayout(w, 2, 3, 1);
+        kt::Check("2 visible of 3: thumb inside the (short) track", s2.shown && s2.thumb.h <= s2.track.h && s2.thumb.y + s2.thumb.h <= s2.track.y + s2.track.h);
+        // hit test (block-relative)
+        const float cx = static_cast<float>(sm.col.x + SbW / 2);
+        kt::Check("up arrow", sbHitAt(sm, cx, static_cast<float>(sm.up.y + 5)) == SbPart::Up);
+        kt::Check("down arrow", sbHitAt(sm, cx, static_cast<float>(sm.down.y + SbW - 1)) == SbPart::Down);
+        kt::Check("track above the thumb = page up", sbHitAt(sm, cx, static_cast<float>(sm.thumb.y - 2)) == SbPart::PageUp);
+        kt::Check("track below the thumb = page down", sbHitAt(sm, cx, static_cast<float>(sm.thumb.y + sm.thumb.h + 2)) == SbPart::PageDown);
+        kt::Check("on the thumb = thumb", sbHitAt(sm, cx, static_cast<float>(sm.thumb.y + sm.thumb.h / 2)) == SbPart::Thumb);
+        kt::Check("outside the column (the rows) = none", sbHitAt(sm, static_cast<float>(sm.col.x - 1), static_cast<float>(sm.track.y + 5)) == SbPart::None && sbHitAt(sm, static_cast<float>(sm.col.x + SbW), static_cast<float>(sm.track.y + 5)) == SbPart::None);
+        kt::Check("above / below the column = none", sbHitAt(sm, cx, static_cast<float>(sm.col.y - 1)) == SbPart::None && sbHitAt(sm, cx, static_cast<float>(sm.col.y + sm.col.h)) == SbPart::None);
+        kt::Check("hidden scrollbar: never a hit", sbHitAt(sbLayout(w, 6, 6, 0), cx, 100.0f) == SbPart::None);
+        // click stepping: arrows one row, track one page (the visible rows), clamped at both ends
+        kt::Check("steps: up -1, down +1, pages +-rows, thumb / none 0", sbStepFor(SbPart::Up, 8) == -1 && sbStepFor(SbPart::Down, 8) == 1 && sbStepFor(SbPart::PageUp, 8) == -8 &&
+                  sbStepFor(SbPart::PageDown, 8) == 8 && sbStepFor(SbPart::Thumb, 8) == 0 && sbStepFor(SbPart::None, 8) == 0);
+        ListView v; v.reset(25, 8);
+        kt::Check("down arrow: one row", v.step(sbStepFor(SbPart::Down, v.rows)) && v.off == 1);
+        kt::Check("page down: 8 rows", v.step(sbStepFor(SbPart::PageDown, v.rows)) && v.off == 9);
+        kt::Check("page down clamps at 17", v.step(sbStepFor(SbPart::PageDown, v.rows)) && v.off == 17 && !v.step(sbStepFor(SbPart::PageDown, v.rows)) && v.off == 17);
+        kt::Check("down arrow at the end: no change", !v.step(1) && v.off == 17);
+        kt::Check("page up: 8 rows", v.step(sbStepFor(SbPart::PageUp, v.rows)) && v.off == 9);
+        kt::Check("page up clamps at 0", v.step(-8) && v.off == 1 && v.step(-8) && v.off == 0 && !v.step(-8));
+        kt::Check("up arrow at the top: no change", !v.step(sbStepFor(SbPart::Up, v.rows)) && v.off == 0);
+        v.acc = 77; v.step(1);
+        kt::Check("a click drops the half-notch wheel remainder", v.acc == 0);
+        ListView fit; fit.reset(5, 8);
+        kt::Check("a list that fits ignores steps", !fit.step(3) && fit.off == 0);
+        // hover rows leave the scrollbar column and the row gaps out
+        const Rect blk = { 100, 100, 900, 700 };
+        const float y0 = static_cast<float>(100 + rowsTopPx());
+        kt::CheckEq("hover: row 0", rowAtPoint(blk, 8, 300.0f, y0 + 10.0f, true), 0);
+        kt::CheckEq("hover: the gap between rows is no row", rowAtPoint(blk, 8, 300.0f, y0 + RowH + 1.0f, true), -1);
+        kt::CheckEq("hover: row 1 after the gap", rowAtPoint(blk, 8, 300.0f, y0 + RowH + RowGapPx + 1.0f, true), 1);
+        kt::CheckEq("hover: the scrollbar column is no row", rowAtPoint(blk, 8, static_cast<float>(100 + 900 - BlockPadX - 5), y0 + 10.0f, true), -1);
+        kt::CheckEq("hover: the same x is row 0 without a scrollbar", rowAtPoint(blk, 8, static_cast<float>(100 + 900 - BlockPadX - 5), y0 + 10.0f, false), 0);
+        char b[96];
+        fmtSbClick(b, sizeof b, SbPart::PageDown, 9, 17);
+        kt::Check("SBCLICK line", strcmp(b, "SBCLICK part=pagedown off=9/17") == 0);
     }
 
     return kt::Report("quick_loot_logic_test");

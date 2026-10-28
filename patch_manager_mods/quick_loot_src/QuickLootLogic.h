@@ -3,7 +3,9 @@
 // text / timing / placement (QL1b), the QL2p proximity peek (candidate filter, nearest pick, cooldown / hysteresis, leave decision, suppress
 // transitions, key edge, peek state, peek label), 0.3.1-dev label layout (one shared 1200 px rect, 56-char one-line text, latched position A/B,
 // x clamp, backing panel rect, Took duration rule, dwell debounce) and the log line formatters. 0.4.0-dev adds the multi-row list layer
-// (row text, scroll view, block geometry, bottom clamp, Took duration per row, hover hold) below the fmtPeek section. No game memory, no
+// (row text, scroll view, block geometry, bottom clamp, Took duration per row, hover hold) below the fmtPeek section. 0.5.0-dev (QL2V) restyles
+// that block like the vanilla inventory list: bordered protoitem rows with a gap, an item icon per row (resref sanitizer here), RowH 64, and a
+// vanilla-style scrollbar (geometry, thumb, hit test and step logic here). No game memory, no
 // Win32: host-testable (quick_loot_logic_test.cpp; build with -I../_shared_src for TextFit.h).
 #pragma once
 #include "TextFit.h"   // textfit::textPx: row / block widths use the DLL's own dialogfont10x10 advance table
@@ -443,19 +445,36 @@ inline Rect peekRectFixed(int px, int py, int pw, int ph) {
 }
 
 
-// ---- 0.4.0-dev: multi-row item list (doc 52 QL2L). One block = header row + up to ListRows item rows on a vanilla frame panel.
+// ---- 0.4.0-dev: multi-row item list (doc 52 QL2L); 0.5.0-dev (QL2V) restyle. One block = header row + up to ListRows item rows on a vanilla frame panel.
 // Geometry (engine px at 3840x1600, the dev box; all constants measured with scripts/character_page_mockup.py text_size):
 //   dialogfont10x10 = 2.7467 px per font texel (1.03 x 1600/600); glyph box 10 texels = 27.5 px tall; the tooltip line pitch is 12.5 texels = 34 px.
-//   RowH 32 px keeps the glyph box (27.5) plus 4.5 px of air; 12 rows + header = 13 x 32 = 416 px = 26 % of the screen height.
+//   0.5.0-dev rows are vanilla protoitem buttons (inventory_p: bordered uibit_brdr_16bct / 16bet + uibit_fill_2bt, teal; HILIGHT = the same images
+//   with the near-white-green tint): RowH 64 px (vanilla 50 units x 2.667 = 133 px; "a little larger than 0.4.0's 32"), RowGapPx between rows, an item
+//   icon square at the left (RowH - 2 x RowIconPad) and the name after it. The header keeps its 32 px row (HeaderH). The scrollbar (SbW wide, only
+//   when the list has more rows than ListRows) sits right of the rows, arrows at both ends, a thumb sized visible/total.
 constexpr int NameCap = 48;                // captured name buffer (rowName reads at most NameCap-1 chars)
 constexpr unsigned ListMaxItems = 64;      // names captured per peek / take; items past this only count towards the "+K more" row
 constexpr unsigned ListRowsDefault = 8, ListRowsMin = 1, ListRowsMax = 12;   // visible item rows (quick_loot.ini ListRows)
 constexpr unsigned RowNameMax = 40;        // an item name longer than this is cut: first RowNameMax-3 chars + "..."
 constexpr unsigned RowTextCap = 56;        // one row's text: name (<= 40) + " x999" + NUL fits
-constexpr int RowH = 32;                   // row pitch (px); see the measurement above
+constexpr unsigned ResrefCap = 17;         // icon resref buffer: 16 chars + NUL (the engine CResRef is char[16], NOT NUL-terminated)
+constexpr int RowH = 64;                   // item row height (px). Alternatives rendered by the mockup: RowHAlt1 / RowHAlt2
+constexpr int RowHAlt1 = 56, RowHAlt2 = 72;
+constexpr int RowGapPx = 4;                // air between item rows (the vanilla list shows the adjacent borders; a small gap reads as separate rows)
+constexpr int HeaderH = 32;                // header / indicator row height (the 0.4.0 RowH)
 constexpr int HeaderGapPx = 6;             // air between the header row and the first item row
+constexpr int RowIconPad = 4;              // icon inset from the row's left / top / bottom edge (the 16 px border's drawn line is only its outer ~3 px; the icon textures carry their own transparent margin)
+constexpr int IconGapPx = 12;              // icon -> text
+constexpr int RowTextPadR = 16;            // text -> row right edge
+constexpr int TextGlyphH = 28;             // glyph box (27.5 px), used to centre the text vertically in the row (align 9 = top-left)
+constexpr int TextBoxH = 32;               // text label height (a wrapped label is taller than this)
+constexpr int SbW = 36;                    // scrollbar column width (engine px); the vanilla bar is 16 units = 77 px wide, rows here are far narrower
+constexpr int SbGapPx = 8;                 // rows -> scrollbar
+constexpr int SbReserve = SbW + SbGapPx;   // width taken from the rows when the scrollbar shows
+constexpr int SbInset = 2;                 // track outline thickness (the outline is a teal label under a dark inset label)
+constexpr int SbThumbMin = 24;
 constexpr int BlockPadX = 28, BlockPadY = 20;   // inside the frame; the vanilla template frame (LBL_MOULDING3, DIMENSION 16) eats 16 px of each edge
-constexpr int BlockMinW = 300, BlockMaxW = 900;
+constexpr int BlockMinW = 300, BlockMaxW = 1000;
 constexpr int LabelSlackPx = 12;           // row / header label rects are this much wider than their text budget (a wrapped label is taller than a row)
 constexpr int IndicatorGapPx = 36;         // min gap between the header text and the "1-8 of 25" indicator
 constexpr float FrameAlpha = 1.0f;         // frame panel alpha: the template fill (uibit_fill_2bt) is already black at alpha 199/255 = 0.78 ("about 0.75"), alpha 1.0 keeps the vanilla look
@@ -463,6 +482,31 @@ constexpr int WheelStep = 120;             // wheel delta per row
 constexpr uint32_t WheelFreshMs = 250;     // the wheel callback consumes only while the block was drawn within this long
 constexpr uint32_t TookBaseMs = 3000, TookRowMs = 500, TookCapMs = 6000;   // Took list: 3 s + 0.5 s per list row past TookFreeRows, cap 6 s
 constexpr unsigned TookFreeRows = 3;
+
+// Icon geometry for a row height.
+inline int iconPx(int rowH = RowH) { return rowH - 2 * RowIconPad; }
+inline int rowChromePx(int rowH = RowH) { return RowIconPad + iconPx(rowH) + IconGapPx + RowTextPadR; }   // row width that is not text
+// Widest row text the block can hold: BlockMaxW minus the pads, the worst-case chrome (RowHAlt2) and the scrollbar.
+constexpr int RowTextMaxPx = BlockMaxW - 2 * BlockPadX - (RowIconPad + (RowHAlt2 - 2 * RowIconPad) + IconGapPx + RowTextPadR) - SbReserve;
+
+// Copies a 16-byte engine CResRef (not NUL-terminated) into out (>= ResrefCap): stops at the first NUL, bytes outside 0x20..0x7E become '?',
+// trailing spaces are trimmed. Returns the length (0 = no icon). raw may be null.
+inline unsigned sanitizeResref(char* out, const char* raw) {
+    unsigned n = 0;
+    if (raw) {
+        while (n < 16 && raw[n]) {
+            const unsigned char c = static_cast<unsigned char>(raw[n]);
+            out[n] = (c < 0x20 || c > 0x7E) ? '?' : static_cast<char>(c);
+            ++n;
+        }
+    }
+    while (n > 0 && out[n - 1] == ' ') --n;
+    out[n] = 0;
+    return n;
+}
+// A base item index from [item+0xC] is plausible (baseitems.2da has well under 1024 rows): the adapter refuses an icon call for anything else.
+constexpr int MaxBaseItemIdx = 1024;
+inline bool baseItemIdxOk(int idx) { return idx >= 0 && idx < MaxBaseItemIdx; }
 
 inline unsigned clampListRows(int v) {
     if (v < static_cast<int>(ListRowsMin)) return ListRowsMin;
@@ -479,7 +523,6 @@ inline int textPx10(const char* t) {
     const textfit::TextCtx c = { 1600.0f / 600.0f, 1.03f, 1.0f };
     return static_cast<int>(ceilf(textfit::textPx(c, t, static_cast<int>(strlen(t)), textfit::F10)));
 }
-constexpr int RowInnerMaxPx = BlockMaxW - 2 * BlockPadX;   // widest row text the block can hold
 
 // Row name: printable bytes (others '?'), at most NameCap-1 of them, trailing spaces trimmed, empty -> "item". Longer than RowNameMax: the first
 // RowNameMax-3 chars, trailing non-alphanumerics trimmed, "..." appended ("Mandalorian Heavy Armor Plating Mk IV Upgrade" -> "Mandalorian Heavy Armor Plating Mk IV Up...").
@@ -512,7 +555,7 @@ inline unsigned rowName(char* out, unsigned cap, const char* in) {
     return n;
 }
 // One item row: rowName + " xN" for 2 <= N <= 999. When the text is wider than maxPx the name is cut further (+ "...") so it never wraps.
-inline unsigned rowText(char* out, unsigned cap, const char* name, int stack, int maxPx = RowInnerMaxPx) {
+inline unsigned rowText(char* out, unsigned cap, const char* name, int stack, int maxPx = RowTextMaxPx) {
     char nm[RowNameMax + 8];
     unsigned n = rowName(nm, sizeof nm, name);
     char sfx[8] = "";
@@ -540,16 +583,18 @@ struct ListData {
     unsigned items = 0, more = 0;
     int maxRowPx = 0;                  // widest row text (incl. the "+K more" row)
     char rows[ListMaxItems][RowTextCap];
+    char icons[ListMaxItems][ResrefCap];   // 0.5.0-dev: icon resref per item row ("" = none; the "+K more" row has none)
     unsigned rowsTotal() const { return items + (more ? 1u : 0u); }
     unsigned totalItems() const { return items + more; }
     bool empty() const { return items == 0; }
     void clear() { items = 0; more = 0; maxRowPx = 0; }
-    // count names captured out of `total` items in the container (total < count is treated as count).
-    void set(const char* const* names, const int* stacks, unsigned count, unsigned total) {
+    // count names captured out of `total` items in the container (total < count is treated as count). icons: optional resref per item.
+    void set(const char* const* names, const int* stacks, unsigned count, unsigned total, const char* const* iconRes = nullptr) {
         clear();
         if (count > ListMaxItems) count = ListMaxItems;
         for (unsigned i = 0; i < count; ++i) {
             rowText(rows[i], RowTextCap, names ? names[i] : nullptr, stacks ? stacks[i] : -1);
+            sanitizeResref(icons[i], iconRes ? iconRes[i] : nullptr);
             const int w = textPx10(rows[i]);
             if (w > maxRowPx) maxRowPx = w;
         }
@@ -570,6 +615,7 @@ struct ListData {
         else if (i == items && more) moreText(out, cap);
         else if (cap) out[0] = 0;
     }
+    const char* iconAt(unsigned i) const { return i < items ? icons[i] : ""; }
 };
 
 // Scroll state of the list on screen: rows = visible item rows, total = list rows, off = first visible row. The wheel adds up to WheelStep per row.
@@ -594,7 +640,43 @@ struct ListView {
         off = static_cast<unsigned>(n);
         return ch;
     }
+    // 0.5.0-dev scrollbar: moves the first visible row by `rows` (+ = down the list), clamped. true when off changed.
+    bool step(int rows) {
+        acc = 0;
+        if (!scrollable()) return false;
+        long n = static_cast<long>(off) + rows;
+        const long hi = static_cast<long>(maxOff());
+        if (n < 0) n = 0;
+        if (n > hi) n = hi;
+        const bool ch = static_cast<unsigned>(n) != off;
+        off = static_cast<unsigned>(n);
+        return ch;
+    }
 };
+
+// Scrollbar parts a click can land on. Up / Down = one row, PageUp / PageDown (the track above / below the thumb) = one page (`rows`), Thumb = nothing.
+enum class SbPart { None = 0, Up, Down, PageUp, PageDown, Thumb };
+inline const char* sbPartName(SbPart p) {
+    switch (p) {
+        case SbPart::None: return "none";
+        case SbPart::Up: return "up";
+        case SbPart::Down: return "down";
+        case SbPart::PageUp: return "pageup";
+        case SbPart::PageDown: return "pagedown";
+        case SbPart::Thumb: return "thumb";
+    }
+    return "?";
+}
+// The scroll a click on `p` asks for: rows to step (+ = down), 0 = none.
+inline int sbStepFor(SbPart p, unsigned pageRows) {
+    switch (p) {
+        case SbPart::Up: return -1;
+        case SbPart::Down: return 1;
+        case SbPart::PageUp: return -static_cast<int>(pageRows);
+        case SbPart::PageDown: return static_cast<int>(pageRows);
+        default: return 0;
+    }
+}
 
 // "1-8 of 25": first / last item numbers of the visible rows (1-based), total items.
 inline int fmtRange(char* out, size_t cap, unsigned first, unsigned last, unsigned total) {
@@ -606,20 +688,67 @@ inline int fmtHeader(char* out, size_t cap, bool took, const char* key, unsigned
     return snprintf(out, cap, "[%s] Take all (%u)", key ? key : "key", total);
 }
 
+// ---- 0.5.0-dev: block / row / scrollbar geometry (block-relative px; add the block origin). rowH is a parameter only so the tests and the
+// mockup can check the 56 / 72 alternatives; the mod always uses RowH.
+inline int rowsTopPx() { return BlockPadY + HeaderH + HeaderGapPx; }
+// Height of the list area for vis rows: rows + the gaps between them.
+inline int listHeightPx(unsigned vis, int rowH = RowH) { return vis ? static_cast<int>(vis) * rowH + (static_cast<int>(vis) - 1) * RowGapPx : 0; }
+inline int blockHeightPx(unsigned vis, int rowH = RowH) { return 2 * BlockPadY + HeaderH + HeaderGapPx + listHeightPx(vis, rowH); }
+// The scrollbar needs room for both arrows and a minimum thumb; a list this short (ListRows 1) scrolls with the wheel only.
+inline bool sbFits(unsigned vis, int rowH = RowH) { return listHeightPx(vis, rowH) >= 2 * SbW + SbThumbMin; }
+
+struct Sb {
+    bool shown = false;
+    Rect col = {0, 0, 0, 0}, up = {0, 0, 0, 0}, down = {0, 0, 0, 0}, track = {0, 0, 0, 0}, thumb = {0, 0, 0, 0};   // block-relative
+};
+// Scrollbar layout for a block of width w showing vis rows of `total` list rows at first row `off`. shown only when total > vis and it fits.
+inline Sb sbLayout(int w, unsigned vis, unsigned total, unsigned off, int rowH = RowH) {
+    Sb o;
+    if (vis == 0 || total <= vis || !sbFits(vis, rowH)) return o;
+    o.shown = true;
+    const int listH = listHeightPx(vis, rowH);
+    o.col = { w - BlockPadX - SbW, rowsTopPx(), SbW, listH };
+    o.up = { o.col.x, o.col.y, SbW, SbW };
+    o.down = { o.col.x, o.col.y + listH - SbW, SbW, SbW };
+    o.track = { o.col.x, o.col.y + SbW, SbW, listH - 2 * SbW };
+    const unsigned maxOff = total - vis;
+    if (off > maxOff) off = maxOff;
+    int th = static_cast<int>((static_cast<long long>(o.track.h) * vis) / total);   // thumb length = track x visible / total
+    if (th < SbThumbMin) th = SbThumbMin;
+    if (th > o.track.h) th = o.track.h;
+    const int ty = o.track.y + static_cast<int>((static_cast<long long>(o.track.h - th) * off) / maxOff);
+    o.thumb = { o.track.x + 4, ty, SbW - 8, th };
+    return o;
+}
+// The scrollbar part under the block-relative point (rx, ry); None outside the column. Above / below the thumb on the track = page up / down.
+inline SbPart sbHitAt(const Sb& s, float rx, float ry) {
+    if (!s.shown) return SbPart::None;
+    auto in = [](const Rect& r, float x, float y) { return x >= static_cast<float>(r.x) && x < static_cast<float>(r.x + r.w) && y >= static_cast<float>(r.y) && y < static_cast<float>(r.y + r.h); };
+    if (in(s.up, rx, ry)) return SbPart::Up;
+    if (in(s.down, rx, ry)) return SbPart::Down;
+    if (!in(s.track, rx, ry)) return SbPart::None;
+    if (ry < static_cast<float>(s.thumb.y)) return SbPart::PageUp;
+    if (ry >= static_cast<float>(s.thumb.y + s.thumb.h)) return SbPart::PageDown;
+    return SbPart::Thumb;
+}
+
 // Everything the adapter draws for the block this frame.
 struct ListDraw {
     bool took = false, scrollable = false;
+    bool sb = false;                   // the scrollbar shows (scrollable and it fits): the rows are SbReserve narrower
+    int rowH = RowH;
     unsigned off = 0, vis = 0, rowsTotal = 0, items = 0;
     char header[40] = {0};
     char indicator[24] = {0};          // "" when the whole list fits
     int headerPx = 0, indicatorPx = 0;
     char rows[ListRowsMax][RowTextCap];
+    char icons[ListRowsMax][ResrefCap];   // icon resref per visible row ("" = none)
     int w = 0, h = 0;                  // block size (px), constant while scrolling
 };
 
 // Builds the block for list d seen through view v. false = nothing to draw (empty list). The width follows the widest of ALL rows (not only the
 // visible ones) so scrolling never resizes the block; h follows the visible row count (min(rows, list rows)).
-inline bool buildListDraw(const ListData& d, const ListView& v, bool took, const char* key, ListDraw* o) {
+inline bool buildListDraw(const ListData& d, const ListView& v, bool took, const char* key, ListDraw* o, int rowH = RowH) {
     *o = ListDraw();
     if (d.empty()) return false;
     const unsigned total = d.rowsTotal();
@@ -628,11 +757,12 @@ inline bool buildListDraw(const ListData& d, const ListView& v, bool took, const
     unsigned off = v.off;
     const unsigned maxOff = total > rows ? total - rows : 0u;
     if (off > maxOff) off = maxOff;
-    o->took = took; o->off = off; o->vis = vis; o->rowsTotal = total; o->items = d.totalItems();
+    o->took = took; o->off = off; o->vis = vis; o->rowsTotal = total; o->items = d.totalItems(); o->rowH = rowH;
     o->scrollable = total > rows;
+    o->sb = o->scrollable && sbFits(vis, rowH);
     fmtHeader(o->header, sizeof o->header, took, key, d.totalItems());
     o->headerPx = textPx10(o->header);
-    int need = d.maxRowPx;
+    int need = d.maxRowPx + rowChromePx(rowH) + (o->sb ? SbReserve : 0);
     if (o->scrollable) {
         const unsigned last = (off + vis > d.items) ? d.totalItems() : off + vis;
         fmtRange(o->indicator, sizeof o->indicator, off + 1, last, d.totalItems());
@@ -646,8 +776,11 @@ inline bool buildListDraw(const ListData& d, const ListView& v, bool took, const
     if (w < BlockMinW) w = BlockMinW;
     if (w > BlockMaxW) w = BlockMaxW;
     o->w = w;
-    o->h = 2 * BlockPadY + RowH + HeaderGapPx + static_cast<int>(vis) * RowH;
-    for (unsigned i = 0; i < vis; ++i) d.rowAt(off + i, o->rows[i], RowTextCap);
+    o->h = blockHeightPx(vis, rowH);
+    for (unsigned i = 0; i < vis; ++i) {
+        d.rowAt(off + i, o->rows[i], RowTextCap);
+        snprintf(o->icons[i], ResrefCap, "%s", d.iconAt(off + i));
+    }
     return true;
 }
 
@@ -734,16 +867,28 @@ inline Rect blockRect(Pos pos, const Anchor& a, int w, int h, const Rect& panel)
 }
 
 // Block-relative rects (add the block origin).
-inline Rect headerRect(int w) { return { BlockPadX, BlockPadY, w - 2 * BlockPadX + LabelSlackPx, RowH }; }
-inline Rect rowRect(unsigned i, int w) { return { BlockPadX, BlockPadY + RowH + HeaderGapPx + static_cast<int>(i) * RowH, w - 2 * BlockPadX + LabelSlackPx, RowH }; }
+inline Rect headerRect(int w) { return { BlockPadX, BlockPadY, w - 2 * BlockPadX + LabelSlackPx, HeaderH }; }
+// Item row i (the bordered protoitem frame): width w minus the pads, minus the scrollbar column when it shows.
+inline Rect rowRect(unsigned i, int w, bool sb = false, int rowH = RowH) {
+    return { BlockPadX, rowsTopPx() + static_cast<int>(i) * (rowH + RowGapPx), w - 2 * BlockPadX - (sb ? SbReserve : 0), rowH };
+}
+// Icon square inside a row frame, and the text label rect (vertically centred on the glyph box; align 9 = top-left).
+inline Rect rowIconRect(const Rect& r, int rowH = RowH) { return { r.x + RowIconPad, r.y + RowIconPad, iconPx(rowH), iconPx(rowH) }; }
+inline Rect rowTextRect(const Rect& r, int rowH = RowH) {
+    const int x = r.x + RowIconPad + iconPx(rowH) + IconGapPx;
+    return { x, r.y + (rowH - TextGlyphH) / 2, r.x + r.w - RowTextPadR - x + LabelSlackPx, TextBoxH };
+}
 // Indicator: text starts at w - BlockPadX - indPx so it ends on the right padding line.
-inline Rect indicatorRect(int w, int indPx) { return { w - BlockPadX - indPx, BlockPadY, indPx + LabelSlackPx, RowH }; }
-// Row index under the screen point (px, py) for the block at blk with vis visible rows, -1 = none (header, padding, outside).
-inline int rowAtPoint(const Rect& blk, unsigned vis, float px, float py) {
-    const float x0 = static_cast<float>(blk.x + BlockPadX), x1 = static_cast<float>(blk.x + blk.w - BlockPadX);
-    const float y0 = static_cast<float>(blk.y + BlockPadY + RowH + HeaderGapPx);
+inline Rect indicatorRect(int w, int indPx) { return { w - BlockPadX - indPx, BlockPadY, indPx + LabelSlackPx, HeaderH }; }
+// Row index under the screen point (px, py) for the block at blk with vis visible rows, -1 = none (header, padding, a gap between rows, the scrollbar, outside).
+inline int rowAtPoint(const Rect& blk, unsigned vis, float px, float py, bool sb = false, int rowH = RowH) {
+    const float x0 = static_cast<float>(blk.x + BlockPadX), x1 = static_cast<float>(blk.x + blk.w - BlockPadX - (sb ? SbReserve : 0));
+    const float y0 = static_cast<float>(blk.y + rowsTopPx());
     if (px < x0 || px >= x1 || py < y0) return -1;
-    const int i = static_cast<int>((py - y0) / static_cast<float>(RowH));
+    const int pitch = rowH + RowGapPx;
+    const int i = static_cast<int>((py - y0) / static_cast<float>(pitch));
+    const float inRow = (py - y0) - static_cast<float>(i * pitch);
+    if (inRow >= static_cast<float>(rowH)) return -1;   // in the gap
     return i < static_cast<int>(vis) ? i : -1;
 }
 inline bool pointInRect(const Rect& r, float px, float py) {
@@ -900,6 +1045,9 @@ inline int fmtListLog(char* b, size_t n, unsigned rows, unsigned items, unsigned
     return snprintf(b, n, "LIST rows=%u items=%u off=%u w=%d h=%d", rows, items, off, w, h);
 }
 inline int fmtScroll(char* b, size_t n, unsigned off, unsigned maxOff) { return snprintf(b, n, "SCROLL off=%u/%u", off, maxOff); }
+inline int fmtSbClick(char* b, size_t n, SbPart p, unsigned off, unsigned maxOff) {
+    return snprintf(b, n, "SBCLICK part=%s off=%u/%u", sbPartName(p), off, maxOff);
+}
 inline int fmtWheelSub(char* b, size_t n, int token, unsigned failedTries) {
     return snprintf(b, n, "WHEEL-SUB token=%d after=%u", token, failedTries);
 }

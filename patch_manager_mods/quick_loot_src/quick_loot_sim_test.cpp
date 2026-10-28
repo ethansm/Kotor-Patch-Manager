@@ -15,7 +15,7 @@ namespace {
 
 enum Kind { A_OPEN, A_SEND, A_SRV, A_LSHOW, A_LHIDE, A_TOAST, A_LOG };
 struct Act { Kind k; uintptr_t plc; uint32_t obj; int flag; std::string text; uint32_t frame; };
-struct Item { std::string name; int stack; };
+struct Item { std::string name; int stack; std::string icon = ""; };   // icon: the resref the capture reports ("" = none)
 struct Obj {
     uint32_t sid = 0;
     uintptr_t plc = 0;
@@ -53,6 +53,8 @@ struct Sim : Env {
     std::string label;   // last label text shown ("" = hidden)
     int wheel = 0;       // 0.4.0-dev: wheel delta collected over the list since the last frame (consumed by wheelDelta)
     bool hover = false;  // the cursor is over the list block
+    int sbPart = 0;      // 0.5.0-dev: a click on the scrollbar part (SbPart as int) delivered on the next sbClick() poll
+    unsigned sbPolls = 0;
 
     int add(float x, float y, std::vector<Item> items = {}) {
         Obj o;
@@ -173,6 +175,7 @@ struct Sim : Env {
             c.ids[k] = 0x9000u + static_cast<unsigned>(k);
             c.stacks[k] = it[k].stack;
             snprintf(c.names[k], NameCap, "%s", it[k].name.c_str());
+            snprintf(c.icons[k], ResrefCap, "%s", it[k].icon.c_str());
             ++c.count;
         }
     }
@@ -235,6 +238,7 @@ struct Sim : Env {
     void log(const char* l) override { rec(A_LOG, 0, 0, 0, l); }
     int wheelDelta() override { const int d = wheel; wheel = 0; return d; }
     bool overList() override { return hover; }
+    int sbClick() override { ++sbPolls; const int p = sbPart; sbPart = 0; return p; }
 };
 
 #define CHK(name, cond) kt::Check((std::string(scn) + ": " + (name)).c_str(), (cond))
@@ -1050,7 +1054,11 @@ void scenarioL() {
 // ---- m: 0.4.0-dev multi-row list: scrolling, "+K more" row, Took hold while hovered, block placement
 std::vector<Item> manyItems(int n) {
     std::vector<Item> v;
-    for (int i = 0; i < n; ++i) v.push_back(Item{"Item " + std::to_string(i + 1), i % 5 == 0 ? 2 : 1});
+    for (int i = 0; i < n; ++i) {
+        char ic[24];
+        snprintf(ic, sizeof ic, "i_item_%03d", i + 1);
+        v.push_back(Item{"Item " + std::to_string(i + 1), i % 5 == 0 ? 2 : 1, ic});
+    }
     return v;
 }
 unsigned countLogs(const Sim& s, const char* sub) { return static_cast<unsigned>(s.logCount(sub)); }
@@ -1190,6 +1198,94 @@ void scenarioM() {
         s.finishCheck(scn);
     }
     {
+        const char* scn = "m10 icons: the capture's resref reaches the drawn rows (scrolled too, '+K more' row has none)";
+        Sim s;
+        s.add(10, 0, manyItems(70));
+        s.setLeader(7.1f, 0);
+        s.run(80);
+        ListDraw d;
+        CHK("row 0 icon", s.m.listDraw(s.now, &d) && strcmp(d.icons[0], "i_item_001") == 0 && strcmp(d.icons[7], "i_item_008") == 0);
+        s.wheel = -120 * 10; s.run(1);
+        CHK("scrolled: icons follow the rows", s.m.listDraw(s.now, &d) && strcmp(d.icons[0], "i_item_011") == 0);
+        s.wheel = -120 * 500; s.run(1);
+        CHK("bottom: the '+6 more' row has no icon", s.m.listDraw(s.now, &d) && strcmp(d.rows[7], "+6 more") == 0 && d.icons[7][0] == 0 && strcmp(d.icons[6], "i_item_064") == 0);
+        s.finishCheck(scn);
+    }
+    {
+        const char* scn = "m11 scrollbar clicks: arrows one row, track one page, clamped; click while nothing is up does nothing";
+        Sim s;
+        s.add(10, 0, manyItems(25));
+        s.setLeader(7.1f, 0);
+        s.run(80);
+        ListDraw d;
+        CHK("scrollbar shows for 25 rows", s.m.listDraw(s.now, &d) && d.sb && d.scrollable);
+        s.sbPart = static_cast<int>(SbPart::Down); s.run(1);
+        CHK("down arrow: one row, SBCLICK + SCROLL logged", s.m.peekView.off == 1 && s.logCount("SBCLICK part=down off=1/17") == 1 && s.logCount("SCROLL off=1/17") == 1);
+        s.sbPart = static_cast<int>(SbPart::Up); s.run(1);
+        CHK("up arrow: back to 0", s.m.peekView.off == 0);
+        s.sbPart = static_cast<int>(SbPart::Up); s.run(1);
+        CHK("up arrow at the top: no change, no extra SCROLL", s.m.peekView.off == 0 && s.logCount("SBCLICK part=up off=0/17") == 2 && countLogs(s, "SCROLL ") == 2);
+        s.sbPart = static_cast<int>(SbPart::PageDown); s.run(1);
+        CHK("track below the thumb: a page (8 rows)", s.m.peekView.off == 8);
+        s.sbPart = static_cast<int>(SbPart::PageDown); s.run(1);
+        s.sbPart = static_cast<int>(SbPart::PageDown); s.run(1);
+        CHK("pages clamp at the bottom (17)", s.m.peekView.off == 17);
+        s.sbPart = static_cast<int>(SbPart::Down); s.run(1);
+        CHK("down arrow at the end: stays", s.m.peekView.off == 17);
+        s.sbPart = static_cast<int>(SbPart::PageUp); s.run(1);
+        CHK("track above the thumb: a page up", s.m.peekView.off == 9);
+        s.sbPart = static_cast<int>(SbPart::Thumb); s.run(1);
+        CHK("a click on the thumb moves nothing", s.m.peekView.off == 9);
+        CHK("rows follow", s.m.listDraw(s.now, &d) && strcmp(d.rows[0], "Item 10") == 0 && strcmp(d.indicator, "10-17 of 25") == 0);
+        s.finishCheck(scn);
+    }
+    {
+        const char* scn = "m12 25-item peek: arrow clicks + wheel + leaving range = exactly one Close";
+        Sim s;
+        s.add(10, 0, manyItems(25));
+        s.setLeader(7.1f, 0);
+        s.run(80);
+        s.sbPart = static_cast<int>(SbPart::Down); s.run(1);
+        s.wheel = -120 * 2; s.run(1);
+        s.sbPart = static_cast<int>(SbPart::Down); s.run(1);
+        s.sbPart = static_cast<int>(SbPart::PageDown); s.run(1);
+        s.wheel = 120; s.run(1);
+        CHK("1 + 2 + 1 + 8 - 1 = 11", s.m.peekView.off == 11);
+        CHK("no Close from scrolling", s.count(A_SEND) == 0 && s.count(A_SRV) == 0 && s.m.peek.active);
+        s.setLeader(4.0f - 11.0f, 0);
+        s.run(40);
+        CHK("leaving range: exactly one Close, flag 0", s.count(A_SEND) == 1 && s.nth(A_SEND, 0)->flag == 0 && !s.m.peek.active);
+        s.sbPart = static_cast<int>(SbPart::Down); s.run(1);
+        CHK("a stray scrollbar click with no list up does nothing", s.count(A_SEND) == 1 && s.logCount("SBCLICK") == 3);
+        s.finishCheck(scn);
+    }
+    {
+        const char* scn = "m13 a list that fits shows no scrollbar and ignores scrollbar clicks";
+        Sim s;
+        s.add(10, 0, manyItems(6));
+        s.setLeader(7.1f, 0);
+        s.run(80);
+        ListDraw d;
+        CHK("no scrollbar", s.m.listDraw(s.now, &d) && !d.sb && !d.scrollable);
+        s.sbPart = static_cast<int>(SbPart::PageDown); s.run(1);
+        CHK("click ignored: off 0", s.m.peekView.off == 0);
+        s.finishCheck(scn);
+    }
+    {
+        const char* scn = "m14 Took list: the scrollbar scrolls it and counts as hover (timer held by the adapter's overList)";
+        Sim s; s.m.cfg.proxOn = false;
+        const int A = s.add(1, 0, manyItems(12));
+        s.run(3);
+        s.click(A);
+        s.run(30);
+        ListDraw d;
+        CHK("Took with a scrollbar", s.m.toastS.active && s.m.listDraw(s.now, &d) && d.took && d.sb);
+        s.sbPart = static_cast<int>(SbPart::PageDown); s.run(1);
+        CHK("page down scrolls the Took list, not the peek list", s.m.tookView.off == 4 && s.m.peekView.off == 0);
+        CHK("Took icons", s.m.listDraw(s.now, &d) && strcmp(d.icons[0], "i_item_005") == 0);
+        s.finishCheck(scn);
+    }
+    {
         const char* scn = "m9 B on a short panel moves up";
         Sim s;
         s.add(10, 0, manyItems(25));
@@ -1198,9 +1294,9 @@ void scenarioM() {
         ListDraw d;
         s.m.listDraw(s.now, &d);
         Geometry g = geo(false);
-        g.panel = {0, 0, 3840, 600};
+        g.panel = {0, 0, 3840, 1000};
         Rect r = {0, 0, 0, 0};
-        CHK("B, bottom limit 576", s.m.placeBlock(s, g, d.w, d.h, &r) && s.m.latch.pos == Pos::B && r.y == 576 - d.h);
+        CHK("B, bottom limit 976", s.m.placeBlock(s, g, d.w, d.h, &r) && s.m.latch.pos == Pos::B && r.y == 976 - d.h);
         s.finishCheck(scn);
     }
 }

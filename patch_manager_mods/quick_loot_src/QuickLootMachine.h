@@ -2,6 +2,7 @@
 // host test can drive it frame by frame (quick_loot_sim_test.cpp). No game memory, no Win32. Every engine read and every engine / UI side
 // effect goes through qlogic::Env, which QuickLoot.cpp implements over the real engine and the sim test over a fake world. Actions are
 // executed immediately (not queued): OpenInventory may trigger a synchronous ShowContainerGui and the code that follows must see it.
+// 0.5.0-dev (QL2V) adds the item icon per row (Captured::icons -> ListData -> ListDraw) and scrollbar clicks (Env::sbClick -> ListView::step).
 // 0.4.0-dev adds the row lists (peekList / tookList + their scroll views, wheel and hover through Env, Took hold while hovered).
 // 0.3.1-dev (UX review .claude/reviews/quick_loot_pv1_ux.md) adds here: dwell debounce before the auto-open, the Took line state + duration,
 // the latched label position (A/B) shared by peek and Took, and the message-object give-up fallback (server-side Close, GIVEUP-SERVERCLOSE).
@@ -16,6 +17,7 @@ struct Captured {
     uint32_t ids[ListMaxItems];
     int stacks[ListMaxItems];
     char names[ListMaxItems][NameCap];   // NameCap in QuickLootLogic.h (rowName cuts at 40, the one-line fallback at ToastNameMax = 20)
+    char icons[ListMaxItems][ResrefCap]; // 0.5.0-dev: icon resref per item (sanitized, NUL-terminated; "" = unknown / none)
 };
 
 // Leader / area snapshot. ok = leader object and its area resolved; haveSrv = the server object table was reachable.
@@ -67,6 +69,7 @@ struct Env {
     virtual void log(const char* line) = 0;
     virtual int wheelDelta() = 0;                                              // wheel delta consumed over the list since the last call (cleared), +120 = up
     virtual bool overList() = 0;                                               // the cursor is over the list block drawn last frame
+    virtual int sbClick() = 0;                                                 // 0.5.0-dev: a left click on the scrollbar of the block drawn last frame since the last call (SbPart as int, 0 = none)
 };
 
 struct Machine {
@@ -93,17 +96,19 @@ struct Machine {
     void reportTook(Env& e, const Captured& c, uint32_t now) {
         char b[160];
         const char* np[ListMaxItems];
+        const char* ip[ListMaxItems];
         for (unsigned i = 0; i < c.count; ++i) {
             fmtTookItem(b, sizeof b, i, c.ids[i], c.names[i], c.stacks[i]);
             e.log(b);
             np[i] = c.names[i];
+            ip[i] = c.icons[i];
         }
         char text[96];
         ListInfo li;
         if (fmtTook(text, sizeof text, np, c.stacks, c.count, c.total > c.count ? c.total - c.count : 0, &li)) {
             fmtToast(b, sizeof b, text);
             e.log(b);
-            tookList.set(np, c.stacks, c.count, c.total);   // 0.4.0-dev: the row list, shown 3 s + 0.5 s per row past 3 (cap 6 s), held while hovered
+            tookList.set(np, c.stacks, c.count, c.total, ip);   // 0.4.0-dev: the row list, shown 3 s + 0.5 s per row past 3 (cap 6 s), held while hovered
             tookView.reset(tookList.rowsTotal(), cfg.listRows);
             logList(e, tookList, tookView, true);
             toastS.start(text, now, tookDurationMs(tookList.rowsTotal()));
@@ -172,9 +177,10 @@ struct Machine {
         char key[8];
         keyLabel(cfg.takeKey, key, sizeof key);
         const char* np[ListMaxItems];
-        for (unsigned i = 0; i < cap.count; ++i) np[i] = cap.names[i];
+        const char* ip[ListMaxItems];
+        for (unsigned i = 0; i < cap.count; ++i) { np[i] = cap.names[i]; ip[i] = cap.icons[i]; }
         const bool hadList = !peekList.empty();
-        peekList.set(np, cap.stacks, cap.count, n > 0 ? static_cast<unsigned>(n) : cap.count);
+        peekList.set(np, cap.stacks, cap.count, n > 0 ? static_cast<unsigned>(n) : cap.count, ip);
         peekView.rows = cfg.listRows;
         peekView.setTotal(peekList.rowsTotal());
         if (!hadList && !peekList.empty()) logList(e, peekList, peekView, false);
@@ -434,14 +440,25 @@ struct Machine {
         *out = blockRect(latch.pos, latch.anchor, w, h, panel);
         return true;
     }
-    // Per frame: the wheel delta the adapter collected over the list moves the shown list; a Took list is held while the cursor is over it.
+    // Per frame: the wheel delta the adapter collected over the list moves the shown list, and so does a click on its scrollbar (arrow = one row,
+    // the track above / below the thumb = one page; the adapter reports a click only while the scrollbar is drawn); a Took list is held while the
+    // cursor is over it.
     void listTick(Env& e, uint32_t now) {
         const int d = e.wheelDelta();
+        const int part = e.sbClick();   // polled every frame (the adapter tracks the button edge in it)
         ListView* v = shownView(now);
         if (d != 0 && v && v->scroll(d)) {
             char b[64];
             fmtScroll(b, sizeof b, v->off, v->maxOff());
             e.log(b);
+        }
+        if (part != 0 && v) {
+            const SbPart p = static_cast<SbPart>(part);
+            char b[80];
+            const bool ch = v->step(sbStepFor(p, v->rows));
+            fmtSbClick(b, sizeof b, p, v->off, v->maxOff());
+            e.log(b);
+            if (ch) { fmtScroll(b, sizeof b, v->off, v->maxOff()); e.log(b); }
         }
         toastS.tick(now, toastS.active && e.overList());
     }

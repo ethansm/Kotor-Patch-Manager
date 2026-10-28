@@ -53,6 +53,12 @@ SIG(guikit::setFill, bool (*)(uintptr_t, void*, const float*));
 SIG(guikit::setBorderTint, bool (*)(uintptr_t, const float*));
 SIG(guikit::setAlpha, bool (*)(uintptr_t, float));
 SIG(guikit::getExtent, bool (*)(uintptr_t, int*, int*, int*, int*));
+// 0.5.0-dev (QL2V): row icons (imageForRetry), fill style of the fill-only labels, the LMB edge for scrollbar clicks, the item probe.
+SIG(guikit::imageForRetry, void* (*)(const char*, bool*, int*));
+SIG(guikit::setFillStyle, bool (*)(uintptr_t, int));
+SIG(guikit::clickEdge, bool (*)(guikit::ClickEdge&));
+SIG(saferead::probeRead, bool (*)(unsigned, const void*, size_t));
+static_assert(sizeof(guikit::ClickEdge) == 1 && offsetof(guikit::ClickEdge, prev) == 0, "quick_loot relies on: guikit::ClickEdge is a lone bool (default-constructed per DLL)");
 // 0.4.0-dev GuiInput.h API QuickLoot.cpp (QL2L wheel scrolling) uses: init / connect / poll, subscribe, game_hwnd keep-alive, cursor_engine.
 SIG(k2input::Client::init, void (k2input::Client::*)(const KPatchApi*, const char*));
 SIG(k2input::Client::connect, bool (k2input::Client::*)());
