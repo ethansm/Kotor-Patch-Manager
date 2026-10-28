@@ -125,7 +125,7 @@ void whyLog(int code, const char* fmt, ...) {
 struct Cfg {
     int enabled = 1, stage = 1, pollMs = 250, showPermanent = 1, wheelScroll = 1, tooltips = 1;
     int statColumn = 1, marquee = 1, marqueeDelayMs = 2500, marqueeStepMs = 160, marqueeHoldMs = 1200;
-    int tooltipDelayMs = 350, tooltipDesc = 1, deflectCheck = 1, statsTab = 1, showInfluence = 1;   // statsTab 0 = no Effects/Stats header toggle; showInfluence 0 = no Influence row
+    int tooltipDelayMs = 350, tooltipDesc = 1, deflectCheck = 1, statsTab = 1, showInfluence = 0;   // statsTab 0 = no Effects/Stats header toggle; showInfluence 1 = Influence row (default 0: spoiler)
     float statMaxW = 0, statMinFrac = 0.4f, textK10 = 1.03f, tipLineScale = 1.0f;   // stat_max_w 0 = no cap
     int skipEquipped = 1, iconSource = 1, colorTimes = 1, discs = 1, soonS = 30;
     int fakeRows = 0;   // debug aid: N synthetic entries appended to the real list (overflow / scrollbar / sort tests)
