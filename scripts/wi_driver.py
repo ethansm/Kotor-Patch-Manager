@@ -517,6 +517,9 @@ def cmd_verify(a, st):
     paths = [f for f in wi.files if (root / f).exists() or f in ac.git_dirty(root)]
     d = ws.git(root, "diff", "HEAD", "--", *paths, check=False).stdout if paths else ""
     untracked = [p for p, s in ac.git_dirty(root).items() if s == "??" and any(p == f or p.startswith(f.rstrip("/") + "/") for f in wi.files)]
+    # new files as /dev/null diffs so the checker sees their content, not only their names
+    for p in untracked:
+        d += ws.git(root, "diff", "--no-index", "--", "/dev/null", p, check=False).stdout
     diff_path.write_text(d + ("\n# new files:\n" + "\n".join(untracked) if untracked else "") or "(no repo diff: verify-only)\n", encoding="utf-8")
     task = (f"Check {wi.id}: {wi.title}. Read the diff and the WI Goal and Steps. Reply VERDICT CONFIRMED if the diff does what the Goal "
             f"says and touches nothing else, REFUTED if it does not, PARTIAL or UNSURE otherwise. A diff cannot show an absence: when a Step says to "
