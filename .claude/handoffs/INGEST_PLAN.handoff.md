@@ -1,18 +1,43 @@
 # Session Handoff & Plan State: patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md
 
 ## 0. Next-Phase Direction
-INGEST next batch
+All phases complete. Run master tests and prepare PR.
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md`
-- **Branch:** `KOTOR-II` (657e2a00 backlog: add WI-167 WI-164 hook probe: log [CClientExoAppInternal+0x274] vs [pan)
-- **Generated:** 2026-10-28 00:24:37 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (74b64d63 INGEST I6: last 26 text candidates, Haiku gate 11/13 PASS, 12 names -> ledger + name_map)
+- **Generated:** 2026-10-28 00:49:45 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-657e2a00 backlog: add WI-167 WI-164 hook probe: log [CClientExoAppInternal+0x274] vs [pan
- .claude/work_items/WI-167.md         | 20 ++++++++++++++++++++
- .claude/work_items/dev_work_items.md |  1 +
- 2 files changed, 21 insertions(+)
+74b64d63 INGEST I6: last 26 text candidates, Haiku gate 11/13 PASS, 12 names -> ledger + name_map
+ .claude/research/ingest/i6/cards/chunk_1.md        | 232 ++++++++++++++
+ .claude/research/ingest/i6/cards/chunk_2.md        | 228 ++++++++++++++
+ .claude/research/ingest/i6/cards/chunk_3.md        | 226 ++++++++++++++
+ .claude/research/ingest/i6/cards/chunk_4.md        |  65 ++++
+ .claude/research/ingest/i6/cards/key.tsv           |  40 +++
+ .claude/research/ingest/i6/cards/promote.tsv       |  13 +
+ .claude/research/ingest/i6/cards/verdicts_1.tsv    |  13 +
+ .claude/research/ingest/i6/cards/verdicts_2.tsv    |  13 +
+ .claude/research/ingest/i6/cards/verdicts_3.tsv    |  13 +
+ .claude/research/ingest/i6/cards/verdicts_4.tsv    |   4 +
+ .claude/research/ingest/i6/conflicts.tsv           |   1 +
+ .claude/research/ingest/i6/dry_m.tsv               |   2 +
+ .claude/research/ingest/i6/dry_n.tsv               |  12 +
+ .claude/research/ingest/i6/extract_modcode_all.tsv | 342 +++++++++++++++++++++
+ .../ingest/i6/extract_modcode_all_promoted.tsv     |   2 +
+ .claude/research/ingest/i6/extract_notes.tsv       |  26 ++
+ .../research/ingest/i6/extract_notes_promoted.tsv  |  12 +
+ .claude/research/ingest/i6/led_all.tsv             |  27 ++
+ .claude/research/ingest/i6/led_modcode.tsv         |   3 +
+ .claude/research/ingest/i6/led_notes.tsv           |  25 ++
+ .claude/research/ingest/i6/promote_modcode.tsv     |   2 +
+ .claude/research/ingest/i6/promote_notes.tsv       |  12 +
+ .claude/research/ingest/i6/promoted_pairs.tsv      |  12 +
+ patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md |   1 +
+ .../ghidra_knowledge/kotor2_ghidra_knowledge.db    | Bin 9912320 -> 9916416 bytes
+ .../rea_findings/20261028_ingest-modcode.tsv       |   2 +
+ .../rea_findings/20261028_ingest-notes.tsv         |  12 +
+ 27 files changed, 1340 insertions(+)
 ```
 - **Dirty Files (189):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
@@ -27,18 +52,8 @@ INGEST next batch
   - ` M .claude/plans/swarm_library_architecture.md`
   - ... +179 more (run `git status --short`)
 
-## 2. Immediate Objective (I6)
-**Next batch: the last 26 extractable candidates (24 notes, 2 mod-code globals) through cards `--decomp-lines 10 --decoy-every 2`, Haiku verify, ledger + name_map (user OK)**
-
-Status: TODO
-Task: Next batch: the last 26 extractable candidates (24 notes, 2 mod-code globals) through cards `--decomp-lines 10 --decoy-every 2`, Haiku verify, ledger + name_map (user OK)
-
 ## 3. Strict Context Budget & Read Policy
 - **Fresh Session Bootstrap**: Run `python3 scripts/plan_manager.py resume patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md`.
-
-## 4. Subagent Delegation Direction
-- **Claude Code**: parallel `model: haiku` Agent subagents; brief = `Contract` + `Write Scope` + `python3 scripts/agent_contract.py print worker|recon`.
-- **Other backends** (only when the user asks): `python3 scripts/plan_manager.py delegate I6` or `oc-subagent <scout|code|ghidra|verify|gate|doc>`.
 
 ## 5. Dead Ends & Verification (manual)
 - Gap prototype (I0 starting point): `.claude/research/ingest/gap_prototype.py` (4368b1e4); `python3 .claude/research/ingest/gap_prototype.py` prints 79 / 515.
