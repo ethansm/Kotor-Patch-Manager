@@ -65,10 +65,10 @@
 - Size 177 B, RET 12
 - Callers (87 total, first 5 shown):
   - 0x00741940 (site 0x00741c32)
-  - 0x007450e0 (site 0x00745492)
+  - 0x007450e0 CSWGuiMainInterfaceChar::Initialize (site 0x00745492)
   - 0x00747210 (site 0x00748a40)
   - 0x00754ed0 (site 0x00755c84)
-  - 0x00757c40 (site 0x007586d4)
+  - 0x00757c40 CSWGuiInGameMessages::Constructor (site 0x007586d4)
 - Callees (2):
   - 0x00418b59 CALL 0x007a1940
   - 0x00418b96 CALL 0x008a5fb0
@@ -136,7 +136,7 @@
 - Callers (3 total):
   - 0x00418f20 (site 0x00418fce)
   - 0x00741940 (site 0x00741b01)
-  - 0x009017b0 (site 0x009018a7)
+  - 0x009017b0 CSWGuiKeyMapButton::Constructor (site 0x009018a7)
 - Callees (1):
   - 0x00419341 CALL 0x0083ea60 CExoArrayList<uint32>::Add
 - Imports: none
@@ -170,7 +170,7 @@
   - 0x00412c00 (site 0x00412d54)
   - 0x004134a0 (site 0x004135ff)
   - 0x00419130 (site 0x00419150)
-  - 0x00419190 (site 0x004191cd)
+  - 0x00419190 CSWGuiControl::HandleLMouseUp (site 0x004191cd)
   - 0x00419240 (site 0x00419260)
 - Callees (1):
   - 0x004193d5 indirect

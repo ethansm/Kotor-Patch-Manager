@@ -99,6 +99,11 @@ D6 R2 NO-GO root cause was missing names / caller context, so coverage is the le
   12, >= 10 decoys per chunk via `cards`); `finalize` ESCALATE -> one Sonnet reviewer pass on that chunk (DESIGN §4.6).
 - I7c: `persist B17 --apply` writes `name_map` (source `steam-db-B17`) and the validated ledger. The branch address DB
   (`kpm-pr-steam-db`) is NOT imported (Decision: address-DB out of scope); `B17/functions.csv` stays a file.
+- Result (10-28): B17 gated 285 verified / 3 likely / 6 rejected / 18 unresolved / 7 label_suspect (150/150 decoys
+  rejected, Opus sample_errors 0); `persist --apply` 283 insert + 2 update (replaced `wrong` grass names at 0x6527c0/
+  0x652810), idempotent. Gap after: notes 171 / modcode 17 (was 452 / 52); twins left: named 58 (unshipped B17 rows),
+  unnamed 20, ambiguous 58, no_twin 38. Cost: 15 Haiku reviewers at 186-265k tokens each (22-card chunks are 2x the
+  100k ceiling; use <= 12-card chunks next time) + 3 Opus parts, $7.35 total.
 
 ## Decisions
 - Ledger first, KDB later: ledger rows are agent observations (`[rea]`), promotion needs Haiku+decoys and user OK.

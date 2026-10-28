@@ -7,7 +7,7 @@
 - Size 143 B, RET 4
 - Callers (0 total): none
 - Callees (1):
-  - 0x004644b8 CALL 0x0044b8a0
+  - 0x004644b8 CALL 0x0044b8a0 Vector::Dot
 - Imports: none
 - Indirect slots: none
 - Ledger callsites in range: none
@@ -163,7 +163,7 @@
 - Size 112 B, RET 4
 - Callers (0 total): none
 - Callees (5):
-  - 0x00465bcb CALL 0x00495f20
+  - 0x00465bcb CALL 0x00495f20 Global::SceneBSPAddGob
   - 0x00465be0 CALL 0x004659f0
   - 0x00465bef CALL 0x00473f40
   - 0x00465c02 indirect
@@ -183,7 +183,7 @@
 - Size 112 B, RET 4
 - Callers (0 total): none
 - Callees (5):
-  - 0x00465c3b CALL 0x00495fb0
+  - 0x00465c3b CALL 0x00495fb0 Global::SceneBSPRemoveGob
   - 0x00465c50 CALL 0x00465ae0
   - 0x00465c5f CALL 0x00449170
   - 0x00465c72 indirect
