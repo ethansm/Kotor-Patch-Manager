@@ -1,4 +1,4 @@
-// Character Active Effects Panel 0.5.3-dev (Steam Aspyr build 6A522E71...). Fills the right third of the character page
+// Character Active Effects Panel 0.5.4-dev (Steam Aspyr build 6A522E71...). Fills the right third of the character page
 // (CSWGuiInGameCharacter) with the shown character's active effects: icon, name, remaining time; Harmful section first,
 // then Beneficial; expiring first, permanent last; whole-entry scrolling with a scrollbar only when the list overflows.
 // Research trail: patch_manager_mods/14_character_active_effects_panel.md and active_effects_panel_src/research/R* (worktree
@@ -22,6 +22,7 @@
 // effect does, decoded from the live effect ints (decodeEffect, research R3 + R3b), short forms joined with ", " and cut
 // with "..."; long names/stats marquee after marquee_delay_ms without input; hover tooltips (name + time, every stat line,
 // the spells.2da description). GUI = 82 controls (S block inserted before MORE: ids of MORE..TIP moved by 14).
+// 0.5.4-dev (doc 51 ST6e): tooltip text trimmed (no tip for Vitality / Next level, no text on Defense / Force points / Experience, shorter attribute, save, Mastery, Deflection and Influence text).
 // 0.5.3-dev (doc 51 ST6d, play feedback 10-28): vanilla tips sit over their own row (below it, like the panel tips) and shrink to their text; Alignment tip = multipliers only; value labels get 3 units of slack (Deflection "8" / Attack "-2" were wrapped away).
 // 0.5.2-dev (doc 51 ST6c): Fortitude/Reflex/Will tooltips break the total into class levels, ability, Conditioning feat, other bonuses and active effects (save getters 0x6BA620/0x6BA740/0x6BA6B0 with and without effects).
 // 0.5.1-dev (doc 51 ST6b): header hint tooltip, Force Mastery tooltip (marker effects 0x9960C8/CC), Level row + class lines on the Stats tab and Experience tip.
@@ -934,7 +935,7 @@ void showVanillaTip(Slot* s, int vrow, bool fresh) {
         srows::StatsIn in;
         bool have = s->server && gatherStats(s->server, &in);
         saferead::beginScope();   // engine getters ran
-        if (!vtips::build(vrow, in, have, &s->vtipEnt)) return;
+        if (!vtips::build(vrow, in, have, &s->vtipEnt)) { s->vtipValid = false; return; }   // nothing to show (e.g. Vitality)
         s->vtipEnt.key = 0x40000 + vrow;
         s->vtipValid = true;
     } else if (!s->vtipValid) return;
@@ -1372,6 +1373,6 @@ extern "C" void __cdecl CharEffectsDestroy(int panel) {
 
 BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
     if (reason == DLL_PROCESS_DETACH) guikit::wheelUninstall();   // never leave a dangling window proc: restores if on top, else stays chained but inert
-    if (reason == DLL_PROCESS_ATTACH) { snprintf(g_loadLine, sizeof g_loadLine, "chareffects 0.5.3-dev build 12 loaded (KpLog + IniKit + PanelSlots + GuiKit wheel + Party + STATS/DEFLECT probe + Stats tab + influence + vanilla tips + saves) tick=%lu", (unsigned long)GetTickCount()); }
+    if (reason == DLL_PROCESS_ATTACH) { snprintf(g_loadLine, sizeof g_loadLine, "chareffects 0.5.4-dev build 13 loaded (KpLog + IniKit + PanelSlots + GuiKit wheel + Party + STATS/DEFLECT probe + Stats tab + influence + vanilla tips + saves) tick=%lu", (unsigned long)GetTickCount()); }
     return TRUE;
 }

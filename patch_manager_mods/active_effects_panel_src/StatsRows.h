@@ -32,7 +32,7 @@ constexpr const char* kNpcTags[12] = {"atton", "baodur", "mand", "g0t0", "handma
                                       "kreia", "mira", "t3m4", "visasmarr", "hanharr", "disciple"};
 constexpr int kNpcKreia = 6;
 constexpr const char* kInfluenceDesc =
-    "How much this companion is swayed by you. Above 50 their alignment drifts toward yours, below 50 away from it.";
+    "Above 50 their alignment drifts toward yours, below 50 away from it.";
 
 // Class id -> name, classes.2da rows 0..16 (name strrefs, dialog.tlk).
 constexpr const char* kClassNames[17] = {"Soldier","Scout","Scoundrel","Jedi Guardian","Jedi Consular","Jedi Sentinel",
@@ -41,8 +41,7 @@ constexpr const char* kClassNames[17] = {"Soldier","Scout","Scoundrel","Jedi Gua
                                          "Sith Assassin"};
 
 constexpr const char* kDeflectDesc =
-    "Your d20 roll plus this total is checked against each blaster bolt; beat it by 6 to reflect.";
-constexpr const char* kDefenseDesc = "Attackers roll d20 + attack bonus against this.";
+    "d20 + this against each blaster bolt; win by 6 to reflect it.";
 
 // Hands out zeroed slots from out[0..cap). Every write goes through next(), so nothing lands past cap.
 struct Writer {
@@ -149,7 +148,7 @@ inline int build(const StatsIn& in, cfx::Entry* out, int cap) {
   }
   {
     snprintf(val, sizeof val, "%d", in.defense);
-    cfx::Entry* e = row(w, "Defense", val, kDefenseDesc);
+    cfx::Entry* e = row(w, "Defense", val, nullptr);
     addSigned(e, "Dexterity", in.dexMod);
     if (in.stance == 0) addLine(e, "Total Defense stance");
   }
@@ -213,7 +212,6 @@ inline int build(const StatsIn& in, cfx::Entry* out, int cap) {
     char line[cfx::LineLen];
     snprintf(line, sizeof line, "Party slot %d (%s)", in.npcSlot, kNpcTags[in.npcSlot]);
     addLine(e, line);
-    addLine(e, "Neutral is 50");
     if (in.influence < 0) addLine(e, "Not set yet: the game starts it from the companion's base value");
     if (in.npcSlot == kNpcKreia) addLine(e, "Kreia's alignment does not follow influence");
   }

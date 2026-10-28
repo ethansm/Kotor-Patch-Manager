@@ -29,26 +29,26 @@ inline int hit(float u, float v) {
   return -1;
 }
 
-// Row name and description (static literals). The description is shown with or without live values.
+// Row name and description (static literals, nullptr = none: the label says it). Shown with or without live values.
 struct Tip { const char* name; const char* desc; };
 constexpr Tip kTips[V_COUNT] = {
-  {"Strength", "Adds its modifier to melee attack and melee damage rolls."},
-  {"Dexterity", "Adds its modifier to Defense, ranged attack rolls and Reflex saves."},
-  {"Constitution", "Adds its modifier to the vitality gained each level and to Fortitude saves."},
-  {"Intelligence", "Adds its modifier to the skill points gained each level."},
-  {"Wisdom", "Adds its modifier to Will saves and to the save DC of your Force powers."},
-  {"Charisma", "Adds its modifier to the save DC of your Force powers."},
-  {"Vitality", "Damage lowers vitality; at 0 the character falls."},
-  {"Force points", "Force points pay for Force powers. Your alignment changes what light and dark side powers cost."},
-  {"Defense", srows::kDefenseDesc},
-  {"Fortitude", "Saving throw against poison, disease and similar physical effects: d20 + this must meet the effect's DC."},
-  {"Reflex", "Saving throw against grenades, mines and other area effects: d20 + this must meet the effect's DC."},
-  {"Will", "Saving throw against mind-affecting Force powers such as Stun and Fear: d20 + this must meet the effect's DC."},
-  {"Alignment", "Above 50 is the light side, below 50 the dark side. Alignment changes what Force powers cost."},
-  {"Experience", "Experience points earned so far."},
-  {"Next level", "Experience points needed for the next level."},
-  {"Force Mastery", "Reached only at alignment exactly 100 (light side) or exactly 0 (dark side), and lost as soon as alignment moves."},
-  {"Effects / Stats", "Click the header to switch between active effects and combat stats."},
+  {"Strength", "Modifier adds to melee attack and damage."},
+  {"Dexterity", "Modifier adds to Defense, ranged attack and Reflex."},
+  {"Constitution", "Modifier adds to vitality per level and Fortitude."},
+  {"Intelligence", "Modifier adds to skill points per level."},
+  {"Wisdom", "Modifier adds to Will and your Force power DC."},
+  {"Charisma", "Modifier adds to your Force power DC."},
+  {"Vitality", nullptr},
+  {"Force points", nullptr},
+  {"Defense", nullptr},
+  {"Fortitude", "Resists poison, disease and other physical effects."},
+  {"Reflex", "Resists grenades, mines and other area effects."},
+  {"Will", "Resists mind-affecting powers such as Stun and Fear."},
+  {"Alignment", "Above 50 is light side, below 50 dark side."},
+  {"Experience", nullptr},
+  {"Next level", nullptr},
+  {"Force Mastery", "Active only at alignment exactly 100 or 0."},
+  {"Effects / Stats", "Click to switch between active effects and combat stats."},
 };
 
 // "Light power cost x0.85" and "Dark power cost x1.15" from the alignment (same multipliers as the Stats tab).
@@ -115,7 +115,7 @@ inline void addSaveLines(cfx::Entry* e, const srows::StatsIn& in, int which) {
 
 // Fills one tooltip entry for a vanilla row. have = in holds live values (false: description only, no numbers).
 // Force Mastery is the exception: its static reference lines show without live values too.
-// Returns false for an out-of-range row. e is memset 0 first, spell = -1, remMs = -1.
+// Returns false for an out-of-range row or when there is nothing to show (no lines, no description: no tip). e is memset 0 first, spell = -1, remMs = -1.
 inline bool build(int row, const srows::StatsIn& in, bool have, cfx::Entry* e) {
   if (!e) return false;
   memset(e, 0, sizeof *e);
@@ -128,7 +128,7 @@ inline bool build(int row, const srows::StatsIn& in, bool have, cfx::Entry* e) {
     addMasteryLines(e, in, have);
     return true;
   }
-  if (!have) return true;
+  if (!have) return e->desc != nullptr;
   if (row == V_FORCE) {
     addCostLines(e, in.goodEvil);
   } else if (row == V_DEF) {
@@ -152,7 +152,7 @@ inline bool build(int row, const srows::StatsIn& in, bool have, cfx::Entry* e) {
       srows::addLine(e, line);
     }
   }
-  return true;
+  return e->nLines > 0 || e->desc;
 }
 
 }  // namespace vtips

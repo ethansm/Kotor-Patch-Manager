@@ -23,7 +23,7 @@ int main() {
   KT_CHECK(hit(167, 440) == V_XP);
   KT_CHECK(hit(200, 440) == V_NEXT);
 
-  // b. Defense with live values: base, dex, remainder as "other", stance line, description.
+  // b. Defense with live values: base, dex, remainder as "other", stance line, no description.
   {
     srows::StatsIn in{};
     in.defense = 18; in.dexMod = 4; in.stance = 0;
@@ -32,7 +32,7 @@ int main() {
     KT_CHECK(std::strcmp(e.name, "Defense") == 0 && std::strcmp(e.val, "18") == 0);
     KT_CHECK(hasLine(e, "Base 10") && hasLine(e, "Dexterity +4"));
     KT_CHECK(hasLine(e, "Armor, effects, other +4") && hasLine(e, "Total Defense stance"));
-    KT_CHECK(e.desc == srows::kDefenseDesc);
+    KT_CHECK(e.desc == nullptr);   // ST6e: the lines say it
   }
 
   // c. Remainder 0 and stance not Total: only the base and dex lines.
@@ -56,22 +56,24 @@ int main() {
     KT_CHECK(build(V_ALIGN, in, false, &e) && e.desc != nullptr);   // no live values: the description stays
   }
 
-  // e. Without live values: description only, no numbers.
+  // e. Without live values: description only, no numbers; a row with no description then has no tip.
   {
     srows::StatsIn in{};
     in.defense = 18; in.dexMod = 4;
     cfx::Entry e{};
-    KT_CHECK(build(V_DEF, in, false, &e));
+    KT_CHECK(build(V_STR, in, false, &e));
     KT_CHECK(e.val[0] == '\0' && e.nLines == 0 && e.desc != nullptr);
+    KT_CHECK(!build(V_DEF, in, false, &e));
   }
 
-  // f. Every row builds with a name and a description (except Alignment with values); out-of-range rows fail.
+  // f. Every row builds with a name; rows whose label says it all (Vitality, Next level, Experience without classes) have no tip.
   {
     srows::StatsIn in{};
     for (int i = 0; i < V_COUNT; ++i) {
       cfx::Entry e{};
-      KT_CHECK(build(i, in, true, &e));
-      KT_CHECK(e.name[0] != '\0' && (e.desc != nullptr || i == V_ALIGN));   // Alignment with values: multipliers only (ST6d)
+      bool none = i == V_VIT || i == V_NEXT || i == V_XP;
+      KT_CHECK(build(i, in, true, &e) == !none);
+      KT_CHECK(e.name[0] != '\0');
     }
     cfx::Entry e{};
     KT_CHECK(!build(V_COUNT, in, true, &e));
