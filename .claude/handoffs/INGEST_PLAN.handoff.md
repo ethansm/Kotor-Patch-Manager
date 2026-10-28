@@ -1,22 +1,18 @@
 # Session Handoff & Plan State: patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md
 
 ## 0. Next-Phase Direction
-All phases complete. Run master tests and prepare PR.
+INGEST next batch
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md`
-- **Branch:** `KOTOR-II` (b2d4aa6c INGEST I5: advertise ingest_names cards|score + promote_names in agent docs)
-- **Generated:** 2026-10-28 00:05:37 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (657e2a00 backlog: add WI-167 WI-164 hook probe: log [CClientExoAppInternal+0x274] vs [pan)
+- **Generated:** 2026-10-28 00:24:37 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-b2d4aa6c INGEST I5: advertise ingest_names cards|score + promote_names in agent docs
- .claude/skills/kotor2-persist-knowledge/SKILL.md      | 3 ++-
- AGENTS.md                                             | 1 +
- CLAUDE.md                                             | 2 +-
- patch_manager_mods/SUBAGENT_ROLES.md                  | 3 ++-
- patch_manager_mods/ghidra_knowledge/README.md         | 5 ++++-
- patch_manager_mods/ghidra_knowledge/RE_AGENT_GUIDE.md | 4 +++-
- 6 files changed, 13 insertions(+), 5 deletions(-)
+657e2a00 backlog: add WI-167 WI-164 hook probe: log [CClientExoAppInternal+0x274] vs [pan
+ .claude/work_items/WI-167.md         | 20 ++++++++++++++++++++
+ .claude/work_items/dev_work_items.md |  1 +
+ 2 files changed, 21 insertions(+)
 ```
 - **Dirty Files (189):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
@@ -31,8 +27,18 @@ b2d4aa6c INGEST I5: advertise ingest_names cards|score + promote_names in agent 
   - ` M .claude/plans/swarm_library_architecture.md`
   - ... +179 more (run `git status --short`)
 
+## 2. Immediate Objective (I6)
+**Next batch: the last 26 extractable candidates (24 notes, 2 mod-code globals) through cards `--decomp-lines 10 --decoy-every 2`, Haiku verify, ledger + name_map (user OK)**
+
+Status: TODO
+Task: Next batch: the last 26 extractable candidates (24 notes, 2 mod-code globals) through cards `--decomp-lines 10 --decoy-every 2`, Haiku verify, ledger + name_map (user OK)
+
 ## 3. Strict Context Budget & Read Policy
 - **Fresh Session Bootstrap**: Run `python3 scripts/plan_manager.py resume patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md`.
+
+## 4. Subagent Delegation Direction
+- **Claude Code**: parallel `model: haiku` Agent subagents; brief = `Contract` + `Write Scope` + `python3 scripts/agent_contract.py print worker|recon`.
+- **Other backends** (only when the user asks): `python3 scripts/plan_manager.py delegate I6` or `oc-subagent <scout|code|ghidra|verify|gate|doc>`.
 
 ## 5. Dead Ends & Verification (manual)
 - Gap prototype (I0 starting point): `.claude/research/ingest/gap_prototype.py` (4368b1e4); `python3 .claude/research/ingest/gap_prototype.py` prints 79 / 515.
@@ -46,3 +52,8 @@ b2d4aa6c INGEST I5: advertise ingest_names cards|score + promote_names in agent 
 - Extract quality: 45 globals are mostly bare mod constants (`AddrPathN`, `kConstVA`, IAT slots, vtables) and `0x0098bfe0 TexMgr::Tick` is a global (likely a vtable slot); weakest candidates for I2. The 116 KDB `conflicts` include comment prose captured as names (e.g. "Party entry -> creature ..."); never ledger them.
 - Name conflicts kept out: `.claude/research/ingest/conflicts.tsv` (0x0046a980 DoFog/SetFogRange, 0x0085d430, 0x0098c45c).
 - CLAUDE.md is dirty with another session's hunks: commit your hunk via `git hash-object -w` of HEAD+hunk, `git update-index --cacheinfo`, then mirror the edit to the working file.
+- 10-28 (I2-I5 lessons): Haiku defaults to `unsure` on thin cards; static-facts-only function cards gave 38-57% decoy rejection, `cards --decomp-lines 10` gave 81%. Getter decoys (one-field return) still pass: treat getter names as weak. Promote strict = consistent in every pass.
+- 10-28: name/addr regex used to span ", " in lists (mis-paired the next address); fixed, plus `.claude/research/ingest/` excluded from notes. After any extractor change, re-extract and drop ledger rows that lose source support.
+- 10-28 next batch sizing (dry runs, nothing written): `extract --source notes --top 100` now yields only 25 new rows (24 ledger-able functions); `extract --source modcode` yields 2 (globals 0x009960c8 EffMasteryLight, 0x009960cc EffMasteryDark, 4 bytes apart so they cannot decoy each other). Gap 460 notes / 53 modcode is mostly addresses without any name in text: new names need another source.
+- `promote_names.py --stage I<n>` labels evidence; DB copies before writes went to session scratch (`kdb_before_I4*.db`).
+- Do not chain `test | tail && apply`: tail masks the test exit code (I4b applied with 1 red test; it was a test-edit bug).
