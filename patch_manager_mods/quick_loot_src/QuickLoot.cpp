@@ -1,5 +1,17 @@
 // Structure (PV1 step 3): the peek / take decision machine lives in QuickLootMachine.h (host-simulated by quick_loot_sim_test.cpp); this file is the
 //   engine adapter (EngineEnv: SafeRead reads, OpenInventory / Close calls, label, toast) plus the three hooks.
+// Quick Loot 0.4.0-dev = 0.3.1-dev + QL2L, the multi-row item list (doc 52): peek and Took draw ONE block = header ("[F] Take all (25)" / "Took (25)",
+//   cream) + up to ListRows item rows (teal, one per item, names cut at 40 chars, " xN" stacks, the hovered row cream) on a vanilla frame panel
+//   (backing label created from the HUD template LBL_MOULDING3 / LBL_MENUBG: uibit_fill_2bt + uibit_brdr_16bet edges + uibit_brdr_16bct corners,
+//   teal tint, alpha 1.0 over the fill's own 0.78; LBL_QUEUE1 + a flat black fill only when the layout has neither), font dialogfont10x10. More rows than fit: the mouse
+//   wheel over the block scrolls it one row per 120 (gui-input k2.guiinput@1 wheel subscription; consumed only while the block is up, scrollable,
+//   drawn within 250 ms and the cursor is inside it, else the camera zoom still gets it) and the header row shows "1-8 of 25" in dim teal.
+//   Without gui-input the first rows show and nothing scrolls (WHEEL-SUB unavailable logged once). Items past the 64 captured count as one last
+//   "+K more" row. The Took list stays 3 s + 0.5 s per list row past 3 (cap 6 s) and its timer is held while the cursor is over the block. Labels:
+//   frame, header, indicator and 12 row labels made once per K2HUD_BUILD (no destroy API); if any row label fails the old one-line text is drawn in
+//   the header label (fallback). Config: quick_loot.ini [QuickLoot] ListRows=8 (1..12). New log lines: LIST (once per new list), SCROLL (each change),
+//   WHEEL-SUB (token or failure); LABEL-EXTENT now covers the header and the first row; LABEL-LATCH shows the block rect. Layout and text rules are
+//   pure (QuickLootLogic.h, host-tested); the scroll / hover / Took-hold state lives in the machine (QuickLootMachine.h, sim-tested).
 // Quick Loot 0.3.1-dev = 0.3.0-dev + the PV1 UX review (.claude/reviews/quick_loot_pv1_ux.md): peek and Took share one 1200 px / 56-char one-line
 //   label ("[F] Take all (4): Medpac x2, Blaster Pistol, +2 more" / "Took (4): ..."), item names cut at 20 chars, a black alpha-0.55 backing
 //   panel behind the text (second label made first in K2HUD_BUILD, same pill image + tint + alpha path as enemy-effects-strip), the label
@@ -21,7 +33,7 @@
 //   "pending". QlPlaceableEvent notes its OnOpen (event 0x16). The hud-host FRAME tick sends the vanilla OK-button message (0x0087A550, Close
 //   flag 1 = take all) 2 frames after OnOpen, or 1000 ms after Show when no OnOpen came. Close is never called from inside the EventHandler hook.
 //   Anything else returns 0 (vanilla menu). Shift held = vanilla menu. Config: quick_loot.ini [QuickLoot] (read once at init):
-//   Enabled=1, ProximityEnabled=1, OpenM=3.0, CloseM=5.0 (>= OpenM+1), TakeKey=70 (VK, 'F'), ScanMs=250.
+//   Enabled=1, ProximityEnabled=1, OpenM=3.0, CloseM=5.0 (>= OpenM+1), TakeKey=70 (VK, 'F'), ScanMs=250, ListRows=8 (1..12).
 // Below: the QL0 probe description (all its log lines are kept). Questions it answered (patch_manager_mods/52_quick_loot.md):
 //   1. does loot that OnOpen generates (queued event 0x16) reach the container before the player's Close?   (SHOW n vs CLOSE n, EVT 0x16 dt)
 //   2. timing: ms between Show, event 0x16 and Close.                                                        (dt= on EVT / CLOSE lines)
@@ -35,6 +47,7 @@
 #include "KpLog.h"
 #include "HudHost.h"
 #include "GuiKit.h"
+#include "GuiInput.h"        // k2input::Client: wheel subscription + cursor in engine px (provider gui-input)
 #include "QuickLootLogic.h"
 #include "QuickLootMachine.h"
 #include "SafeRead.h"
@@ -47,7 +60,7 @@ KP_LOG_PATCH("quick-loot");
 
 namespace {
 
-constexpr const char* Version = "0.3.1-dev";
+constexpr const char* Version = "0.4.0-dev";
 constexpr unsigned Site = 0x7100;   // saferead failure-ring site id
 // Steam addresses (static RE, doc 52 / .claude/research/quick_loot/README.md); AppGlobal and ClientToServerObjectId come from GameAddr.h.
 constexpr uintptr_t GetPlaceableByGameObjectID = 0x0051C160;   // thiscall(serverApp, serverId) RET 4 -> CSWSPlaceable* (0 = none)
@@ -60,7 +73,7 @@ constexpr int Item_Name = 0x2C0;                               // QL1b: CExoLocS
 // QL1b: target menu (menu = ctx->menu = hud + 0xCC): flags bit0 = shown, origin px, name label rect (panel-local px). Same offsets as enemy-effects-strip.
 constexpr int Menu_Flags = 0x1BAC, Menu_OriginX = 0x1648, Menu_OriginY = 0x164C;
 constexpr int Menu_NameX = 0x166C, Menu_NameY = 0x1670, Menu_NameW = 0x1674, Menu_NameH = 0x1678;
-constexpr int NameCap = qlogic::NameCap;                       // captured name buffer (sanitizeName cuts at NameRawMax = 40)
+constexpr int NameCap = qlogic::NameCap;                       // captured name buffer (rowName cuts rows at 40; the one-line fallback at ToastNameMax = 20)
 const char* const TexBacking = "lbl_miscroll_f";               // backing panel image: the enemy-effects-strip pill image (tinted black here)
 // QL1a: vanilla OK button path (0x8B2850): msgObj = *(*(*(*AppGlobal + 4) + 4) + 0x150); thiscall(msgObj, clientObjId, closeFlag) RET 8.
 constexpr uintptr_t SendContainerClose = 0x0087A550;
@@ -195,7 +208,7 @@ void captureItems(uintptr_t plc, Captured& c) {
     uint32_t arr = 0;
     if (!lines || !repo || !rd<uint32_t>(repo, Repo_Array, &arr) || !arr) return;
     c.total = static_cast<unsigned>(n);
-    if (lines > qlogic::ToastMaxItems) lines = qlogic::ToastMaxItems;
+    if (lines > qlogic::ListMaxItems) lines = qlogic::ListMaxItems;
     const int lang = clientLanguage();
     for (unsigned i = 0; i < lines; ++i) {
         uint32_t id = 0; int stack = -1;
@@ -208,113 +221,266 @@ void captureItems(uintptr_t plc, Captured& c) {
     }
 }
 
-char g_shownText[128] = {0};   // text currently set on the label (setText only when it differs)
-uintptr_t g_lbl = 0;          // the label (0 = none: creation failed or the HUD changed)
-uintptr_t g_back = 0;         // the backing panel label, created before g_lbl (drawn behind it); 0 = none
-int32_t g_panel = 0;          // HUD object the label belongs to (K2HudContext.panel at BUILD == ctx->hud later)
-int g_vis = -1;               // change-only caches: -1 unknown, 0 hidden, 1 shown
-int g_backVis = -1;
-bool g_styled = false;        // font / align / colour applied
-bool g_backStyled = false;    // backing fill / tint / alpha applied
+// ---- 0.4.0-dev labels: frame panel (back), header, scroll indicator, ListRowsMax row labels. Draw order = creation order (BUILD makes them in that
+// order). Every draw is change-only per label (text / rect / colour / align / visibility cached in Lbl).
+struct Lbl {
+    uintptr_t c = 0;                  // the control (0 = none: creation failed or the HUD changed)
+    int vis = -1;                     // -1 unknown, 0 hidden, 1 shown
+    bool styled = false, rectSet = false, colSet = false;
+    unsigned align = 0;
+    qlogic::Rect rect = {0, 0, 0, 0};
+    float col[3] = {0, 0, 0};
+    char text[qlogic::RowTextCap + 8] = {0};
+};
+Lbl g_back, g_head, g_ind, g_row[qlogic::ListRowsMax];
+bool g_rowsOk = false;        // header + indicator + all ListRowsMax row labels exist; false = one-line text in the header label (0.3.1 behaviour)
+bool g_backFrame = false;     // the backing is a vanilla frame template (fill + edges + corners from the .gui); false = flat tinted fill
+bool g_backStyled = false;    // backing tint / alpha (/ fill) applied
 bool g_backOff = false;       // backing could not be styled: text only
-bool g_rectSet = false, g_backRectSet = false;
-qlogic::Rect g_lastRect = {0, 0, 0, 0}, g_backLast = {0, 0, 0, 0};
+bool g_backRectSet = false;
+qlogic::Rect g_backLast = {0, 0, 0, 0};
+int32_t g_panel = 0;          // HUD object the labels belong to (K2HudContext.panel at BUILD == ctx->hud later)
 bool g_haveRect = false;      // a target-menu name rect has been seen
 qlogic::Rect g_nameRect = {0, 0, 0, 0};
 bool g_buildFailLogged = false;
-bool g_extentLogged = false;  // LABEL-EXTENT is logged once per session
+bool g_extentHead = false, g_extentRow = false;   // LABEL-EXTENT: header and first row, once per session
 
-void lblHide() {
-    if (g_back && g_backVis != 0) {
-        guikit::setVisible(g_back, false);
-        guikit::setClickable(g_back, false);
-        g_backVis = 0;
-    }
-    if (!g_lbl || g_vis == 0) return;
-    guikit::setVisible(g_lbl, false);
-    guikit::setClickable(g_lbl, false);
-    g_vis = 0;
+// Vanilla palette (character_p.gui BORDER / TEXT COLOR; scripts/character_page_mockup.py:45-47).
+const float TealFrame[3] = { 0.05098f, 0.34902f, 0.27059f };   // frame tint
+const float TealText[3] = { 0.10196f, 0.69804f, 0.54902f };    // item rows
+const float Cream[3] = { 0.8f, 0.8f, 0.69804f };               // header and the hovered row
+const float TealDim[3] = { 0.0663f, 0.4537f, 0.3569f };        // scroll indicator (TealText x 0.65)
+const char* const FontName = "dialogfont10x10";                  // vanilla list font
+// Vanilla frame templates in the HUD layout (mipc28x6_p.gui): FILL uibit_fill_2bt + EDGE uibit_brdr_16bet + CORNER uibit_brdr_16bct, DIMENSION 16,
+// COLOR = TealFrame. LBL_MOULDING3 is the vanilla tooltip frame, LBL_MENUBG the target-menu frame. The backing is created from the first one that
+// exists, so the edges and corners come from the .gui (GuiKit has no edge / corner setter); LBL_QUEUE1 + a flat black fill is the last resort.
+const char* const FrameTemplates[] = { "LBL_MOULDING3", "LBL_MENUBG" };
+
+void lblHideOne(Lbl& l) {
+    if (!l.c || l.vis == 0) return;
+    guikit::setVisible(l.c, false);
+    guikit::setClickable(l.c, false);
+    l.vis = 0;
+}
+
+// Wheel / hover state shared with the gui-input callback (it runs inside the game window's WM_MOUSEWHEEL, so it only touches these).
+volatile LONG g_wheelAccum = 0;
+volatile LONG g_listRect[4] = {0, 0, 0, 0};   // x, y, w, h of the block drawn last (w 0 = no list)
+volatile LONG g_listScroll = 0;               // the drawn list has more rows than fit
+volatile DWORD g_listTick = 0;                // GetTickCount() of that draw
+bool g_hover = false;                         // the cursor is over the block drawn last
+int g_hoverRow = -1;
+
+void listPublishHide() { g_listRect[2] = 0; g_listScroll = 0; g_hover = false; g_hoverRow = -1; }
+
+void lblHideAll() {
+    lblHideOne(g_back);
+    lblHideOne(g_head);
+    lblHideOne(g_ind);
+    for (Lbl& r : g_row) lblHideOne(r);
+    g_backRectSet = false;
+    listPublishHide();
 }
 
 // The HUD was rebuilt: the old labels may be freed. Drop every pointer without writing to them.
 void lblDrop() {
-    g_lbl = 0; g_back = 0; g_panel = 0; g_vis = -1; g_backVis = -1; g_styled = false; g_backStyled = false; g_rectSet = false; g_backRectSet = false;
-    g_haveRect = false;
-    g_shownText[0] = 0;
+    g_back = Lbl(); g_head = Lbl(); g_ind = Lbl();
+    for (Lbl& r : g_row) r = Lbl();
+    g_rowsOk = false; g_backFrame = false; g_backStyled = false; g_backOff = false; g_backRectSet = false;
+    g_panel = 0; g_haveRect = false;
+    listPublishHide();
 }
 
-// Creates one hidden, click-through label in the HUD panel from the LBL_QUEUE1 template (draw order = creation order). 0 on failure.
-uintptr_t makeLabel(uintptr_t panel, const char* what) {
+// Creates one hidden, click-through label in the HUD panel from the layout template `tag` (draw order = creation order). 0 on failure.
+uintptr_t makeLabel(uintptr_t panel, const char* tag, const char* what, bool logFail = true) {
     int why = guikit::CF_None;
     uint32_t bv = 0;
-    const uintptr_t c = guikit::createLabelFromTemplate(panel, "LBL_QUEUE1", &why, &bv);
+    const uintptr_t c = guikit::createLabelFromTemplate(panel, tag, &why, &bv);
     if (!c) {
-        if (!g_buildFailLogged) { g_buildFailLogged = true; KP_LOGV(chMain, KPLOG_WARN, "BUILD: %s label create failed (why=%d vtable=%08x): no %s", what, why, (unsigned)bv, what); }
+        if (logFail && !g_buildFailLogged) { g_buildFailLogged = true; KP_LOGV(chMain, KPLOG_WARN, "BUILD: %s label (%s) create failed (why=%d vtable=%08x): no %s", what, tag, why, (unsigned)bv, what); }
         return 0;
     }
     guikit::setVisible(c, false);
     guikit::setClickable(c, false);
     if (!guikit::appendToPanel(panel, c)) {
-        if (!g_buildFailLogged) { g_buildFailLogged = true; KP_LOGV(chMain, KPLOG_WARN, "BUILD: %s label append failed (control %08x left hidden): no %s", what, (unsigned)c, what); }
+        if (logFail && !g_buildFailLogged) { g_buildFailLogged = true; KP_LOGV(chMain, KPLOG_WARN, "BUILD: %s label append failed (control %08x left hidden): no %s", what, (unsigned)c, what); }
         return 0;
     }
     return c;
 }
 
-// K2HUD_BUILD: create the backing panel first, then the text label (hidden, click-through) in the HUD panel; draw order = creation order.
+// K2HUD_BUILD: the frame panel first, then header, indicator and the row pool (hidden, click-through) in the HUD panel; draw order = creation order.
+// There is no destroy API, so the pool is made once per BUILD at its maximum (ListRowsMax). Any row failing -> one-line fallback in the header label.
 void KPATCH_CALL onHudBuild(const K2HudContext* ctx, void*) {
     lblDrop();
     if (!ctx || ctx->struct_size < offsetof(K2HudContext, panel) + sizeof(ctx->panel) || !ctx->panel) return;
     enter();
     const uintptr_t panel = static_cast<uintptr_t>(static_cast<uint32_t>(ctx->panel));
-    const uintptr_t back = makeLabel(panel, "backing");   // behind the text; losing it only costs the dark panel
-    const uintptr_t c = makeLabel(panel, "toast");
-    if (!c) return;
-    g_back = back; g_backVis = back ? 0 : -1;
-    g_lbl = c; g_panel = ctx->panel; g_vis = 0;
+    const char* frameTag = "LBL_QUEUE1";
+    for (const char* tag : FrameTemplates) {
+        g_back.c = makeLabel(panel, tag, "frame", false);
+        if (g_back.c) { g_backFrame = true; frameTag = tag; break; }
+    }
+    if (!g_back.c) g_back.c = makeLabel(panel, "LBL_QUEUE1", "backing");   // flat fill; losing the backing only costs the dark panel
+    g_head.c = makeLabel(panel, "LBL_QUEUE1", "header");
+    if (!g_head.c) return;
+    g_panel = ctx->panel;
+    g_ind.c = makeLabel(panel, "LBL_QUEUE1", "indicator");
+    bool rowsOk = g_ind.c != 0;
+    for (Lbl& r : g_row) { r.c = rowsOk ? makeLabel(panel, "LBL_QUEUE1", "row") : 0; if (!r.c) rowsOk = false; }
+    g_rowsOk = rowsOk;
+    g_back.vis = g_back.c ? 0 : -1; g_head.vis = 0; g_ind.vis = g_ind.c ? 0 : -1;
+    for (Lbl& r : g_row) r.vis = r.c ? 0 : -1;
+    if (KpLog_HasCore()) KP_LOG(chMain, "BUILD frame=%s%s rows=%s", frameTag, g_backFrame ? "" : " (flat)", g_rowsOk ? "pool" : "fallback-oneline");
 }
 
-// Backing panel behind the text: black at BackAlpha (pill image + black tint + alpha, the enemy-effects-strip path), width follows the text.
-void backDraw(const qlogic::Rect& label, unsigned chars) {
-    if (!g_back || g_backOff) return;
+// Style (font once, align / colour on change), then text / rect / visibility change-only. false = a write failed (caller hides everything).
+bool lblDrawText(Lbl& l, const char* text, const qlogic::Rect& r, unsigned align, const float* col) {
+    if (!l.c) return false;
+    if (!l.styled) {
+        if (!guikit::setFont(l.c, FontName)) return false;
+        l.styled = true;
+    }
+    if (l.align != align) { if (!guikit::setAlign(l.c, align)) return false; l.align = align; }
+    if (!l.colSet || memcmp(l.col, col, sizeof l.col) != 0) {
+        if (!guikit::setTextColor(l.c, col[0], col[1], col[2])) return false;
+        memcpy(l.col, col, sizeof l.col);
+        l.colSet = true;
+    }
+    if (strcmp(l.text, text) != 0) {
+        if (!guikit::setText(l.c, text)) return false;
+        strncpy(l.text, text, sizeof l.text - 1);
+        l.text[sizeof l.text - 1] = 0;
+    }
+    if (!l.rectSet || r != l.rect) { guikit::setRect(l.c, r.x, r.y, r.w, r.h); l.rect = r; l.rectSet = true; }
+    if (l.vis != 1) { guikit::setVisible(l.c, true); guikit::setClickable(l.c, false); l.vis = 1; }   // shown labels stay click-through
+    return true;
+}
+
+// The backing panel under the text. Frame template: keeps the .gui's fill / edge / corner images, sets the tint (TealFrame) and FrameAlpha.
+// Flat fallback (no frame template in the HUD layout): the pill image tinted black at BackAlpha, the 0.3.1 look.
+void backDraw(const qlogic::Rect& r) {
+    if (!g_back.c || g_backOff) return;
     if (!g_backStyled) {
-        static const float black[3] = { 0.0f, 0.0f, 0.0f };
-        void* img = guikit::imageFor(TexBacking);
-        if (!img || !guikit::setFill(g_back, img) || !guikit::setBorderTint(g_back, black) || !guikit::setAlpha(g_back, qlogic::BackAlpha)) {
+        bool ok;
+        if (g_backFrame) {
+            ok = guikit::setBorderTint(g_back.c, TealFrame) && guikit::setAlpha(g_back.c, qlogic::FrameAlpha);
+        } else {
+            static const float black[3] = { 0.0f, 0.0f, 0.0f };
+            void* img = guikit::imageFor(TexBacking);
+            ok = img && guikit::setFill(g_back.c, img) && guikit::setBorderTint(g_back.c, black) && guikit::setAlpha(g_back.c, qlogic::BackAlpha);
+        }
+        if (!ok) {
             g_backOff = true;
-            KP_LOGV(chMain, KPLOG_WARN, "BACKING: image '%s' / fill / tint / alpha unavailable (img=%p): text without backing", TexBacking, img);
-            lblHide();
+            KP_LOGV(chMain, KPLOG_WARN, "BACKING: tint / alpha%s unavailable (frame=%d): text without backing", g_backFrame ? "" : " / fill", g_backFrame ? 1 : 0);
+            lblHideOne(g_back);
             return;
         }
         g_backStyled = true;
     }
-    const qlogic::Rect r = qlogic::backingRect(label, chars);
-    if (!g_backRectSet || r != g_backLast) { guikit::setRect(g_back, r.x, r.y, r.w, r.h); g_backLast = r; g_backRectSet = true; }
-    if (g_backVis != 1) { guikit::setVisible(g_back, true); guikit::setClickable(g_back, false); g_backVis = 1; }
+    if (!g_backRectSet || r != g_backLast) { guikit::setRect(g_back.c, r.x, r.y, r.w, r.h); g_backLast = r; g_backRectSet = true; }
+    if (g_back.vis != 1) { guikit::setVisible(g_back.c, true); guikit::setClickable(g_back.c, false); g_back.vis = 1; }
 }
 
-// Shared label draw (peek + Took): style once; text / rect / visibility change-only. The backing is drawn first (it sits behind the text).
-void labelDraw(const char* text, const qlogic::Rect& r) {
-    if (!g_styled) {
-        if (!(guikit::setFont(g_lbl, "dialogfont10x10") && guikit::setAlign(g_lbl, 18) && guikit::setTextColor(g_lbl, 0.9f, 0.85f, 0.5f))) { lblHide(); return; }
-        g_styled = true;
+void logExtent(Lbl& l, bool& done, const char* text) {
+    if (done || !l.c) return;
+    int x = 0, y = 0, w = 0, h = 0;
+    if (guikit::getExtent(l.c, &x, &y, &w, &h)) {   // the real extent after the first SetText (a wrapped label would show a taller extent than RowH)
+        done = true;
+        char b[128];
+        qlogic::fmtLabelExtent(b, sizeof b, static_cast<unsigned>(strlen(text)), x, y, w, h);
+        logLine(b);
     }
-    if (strcmp(g_shownText, text) != 0) {
-        if (!guikit::setText(g_lbl, text)) { lblHide(); return; }
-        strncpy(g_shownText, text, sizeof g_shownText - 1);
-        g_shownText[sizeof g_shownText - 1] = 0;
+}
+
+k2input::Client g_input;   // gui-input provider (wheel + cursor); not connected = no scrolling, the first rows are shown
+
+// The multi-row block at blk: frame, header, indicator (dim teal, right end of the header row), d.vis rows. The row under the cursor is cream.
+void blockDraw(const qlogic::ListDraw& d, const qlogic::Rect& blk) {
+    float cx = 0, cy = 0;
+    const bool haveCur = g_input.connected && g_input.cursor_engine(&cx, &cy);
+    g_hover = haveCur && qlogic::pointInRect(blk, cx, cy);
+    g_hoverRow = g_hover ? qlogic::rowAtPoint(blk, d.vis, cx, cy) : -1;
+    backDraw(blk);
+    const qlogic::Rect hr = qlogic::headerRect(blk.w);
+    if (!lblDrawText(g_head, d.header, { blk.x + hr.x, blk.y + hr.y, hr.w, hr.h }, 9, Cream)) { lblHideAll(); return; }
+    if (d.indicator[0]) {
+        const qlogic::Rect ir = qlogic::indicatorRect(blk.w, d.indicatorPx);
+        if (!lblDrawText(g_ind, d.indicator, { blk.x + ir.x, blk.y + ir.y, ir.w, ir.h }, 9, TealDim)) { lblHideAll(); return; }
+    } else {
+        lblHideOne(g_ind);
     }
-    if (!g_rectSet || r != g_lastRect) { guikit::setRect(g_lbl, r.x, r.y, r.w, r.h); g_lastRect = r; g_rectSet = true; }
-    backDraw(r, static_cast<unsigned>(strlen(text)));
-    if (g_vis != 1) { guikit::setVisible(g_lbl, true); guikit::setClickable(g_lbl, false); g_vis = 1; }   // shown labels stay click-through
-    if (!g_extentLogged) {   // the real extent after the first SetText: proves ~20 px/char at 3840x1600 (a wrapped label shows a taller extent)
-        int x = 0, y = 0, w = 0, h = 0;
-        if (guikit::getExtent(g_lbl, &x, &y, &w, &h)) {
-            g_extentLogged = true;
-            char b[128];
-            qlogic::fmtLabelExtent(b, sizeof b, static_cast<unsigned>(strlen(text)), x, y, w, h);
-            logLine(b);
+    for (unsigned i = 0; i < qlogic::ListRowsMax; ++i) {
+        if (i >= d.vis) { lblHideOne(g_row[i]); continue; }
+        const qlogic::Rect rr = qlogic::rowRect(i, blk.w);
+        if (!lblDrawText(g_row[i], d.rows[i], { blk.x + rr.x, blk.y + rr.y, rr.w, rr.h }, 9, static_cast<int>(i) == g_hoverRow ? Cream : TealText)) { lblHideAll(); return; }
+    }
+    g_listRect[0] = blk.x; g_listRect[1] = blk.y; g_listRect[2] = blk.w; g_listRect[3] = blk.h;
+    g_listScroll = d.scrollable ? 1 : 0;
+    g_listTick = GetTickCount();
+    logExtent(g_head, g_extentHead, d.header);
+    logExtent(g_row[0], g_extentRow, d.rows[0]);
+}
+
+// One-line fallback (row labels unavailable): the old single text line in the header label on the same frame, centred on the latched label rect.
+void lineDraw(const char* text, const qlogic::Rect& r) {
+    const int w = qlogic::textPx10(text) + 2 * qlogic::BlockPadX;
+    const qlogic::Rect blk = { r.x + r.w / 2 - w / 2, r.y - qlogic::BlockPadY, w, qlogic::RowH + 2 * qlogic::BlockPadY };
+    backDraw(blk);
+    if (!lblDrawText(g_head, text, { blk.x + qlogic::BlockPadX, blk.y + qlogic::BlockPadY, w - 2 * qlogic::BlockPadX + qlogic::LabelSlackPx, qlogic::RowH }, 9, TealText)) { lblHideAll(); return; }
+    logExtent(g_head, g_extentHead, text);
+}
+
+// gui-input wheel callback: consumes the wheel only while the list is up, scrollable, drawn within WheelFreshMs and the cursor (engine px, the
+// same space as GuiKit extents) is inside the block; otherwise 0 so the camera zoom still gets it. The HUD tick applies the sum (listTick).
+int32_t KPATCH_CALL listWheelCb(const K2WheelEvent* ev, void*) {
+    if (!ev || ev->struct_size < sizeof(K2WheelEvent) || !g_listScroll || g_listRect[2] <= 0) return 0;
+    if (GetTickCount() - g_listTick > qlogic::WheelFreshMs) return 0;
+    const float x = ev->engine_x, y = ev->engine_y;
+    const float rx = static_cast<float>(g_listRect[0]), ry = static_cast<float>(g_listRect[1]);
+    const bool inside = x >= rx && x < rx + static_cast<float>(g_listRect[2]) && y >= ry && y < ry + static_cast<float>(g_listRect[3]);
+    static int wheelLogs = 0;   // probe: proves the hit test in engine px against the drawn block (first 20 wheel events while scrollable)
+    if (wheelLogs < 20) {
+        ++wheelLogs;
+        KP_LOGV(chMain, KPLOG_INFO, "WHEEL delta=%d engine=(%.0f,%.0f) client=(%d,%d) rect=[%ld,%ld,%ld,%ld] inside=%d", ev->delta, x, y,
+                ev->client_x, ev->client_y, (long)g_listRect[0], (long)g_listRect[1], (long)g_listRect[2], (long)g_listRect[3], (int)inside);
+    }
+    if (!inside) return 0;
+    InterlockedExchangeAdd(&g_wheelAccum, ev->delta);
+    return 1;
+}
+
+bool g_wheelSub = false;
+long g_wheelNextTry = 0;
+unsigned g_wheelFails = 0, g_noProvFrames = 0;
+bool g_noProvLogged = false;
+
+// Per HUD frame: connect (poll), subscribe the wheel (retry every 60 frames, the provider WARNs per attempt), keep the provider's window hook alive.
+void ensureWheel(long frame) {
+    g_input.poll();
+    if (g_input.connected) {
+        if (!g_wheelSub) {
+            if (frame >= g_wheelNextTry) {
+                const int32_t tok = g_input.wheel_subscribe(listWheelCb, nullptr);
+                if (tok > 0) {
+                    g_wheelSub = true;
+                    char b[64];
+                    qlogic::fmtWheelSub(b, sizeof b, tok, g_wheelFails);
+                    logLine(b);
+                } else {
+                    ++g_wheelFails;
+                    g_wheelNextTry = frame + 60;
+                    if (g_wheelFails == 1) KP_LOGV(chMain, KPLOG_WARN, "WHEEL-SUB failed (%d): retrying every 60 frames, no list scrolling until it succeeds", static_cast<int>(tok));
+                }
+            }
+        } else {
+            (void)g_input.game_hwnd();   // subscribe is one-shot: this lets the provider re-subclass a recreated game window
         }
+        return;
+    }
+    if (!g_noProvLogged && ++g_noProvFrames >= 600) {   // poll() retries the connect every 256 calls; log once if it never came
+        g_noProvLogged = true;
+        logLine("WHEEL-SUB unavailable: gui-input provider not connected, the list does not scroll (first rows only)");
     }
 }
 
@@ -423,6 +589,8 @@ struct EngineEnv : qlogic::Env {
     void labelHide() override {}
     void toast(const char*) override {}       // the Took line lives in g_m.toastS (text + duration); drawn in onMenuPost
     void log(const char* line) override { logLine(line); }
+    int wheelDelta() override { return static_cast<int>(InterlockedExchange(&g_wheelAccum, 0)); }
+    bool overList() override { return g_hover; }
 };
 EngineEnv g_env;
 
@@ -431,8 +599,8 @@ EngineEnv g_env;
 // what the machine says: the Took line (while up) or the peek line. Position A (under the name, clamped to the panel) or B (fixed spot) is
 // chosen when the label first shows and latched until it is gone (QuickLootMachine.h placeLabel).
 void KPATCH_CALL onMenuPost(const K2HudContext* ctx, void*) {
-    if (!g_lbl || !ctx) return;
-    if (ctx->hud != g_panel) { lblDrop(); return; }   // stale HUD: no writes to the old label
+    if (!g_head.c || !ctx) return;
+    if (ctx->hud != g_panel) { lblDrop(); return; }   // stale HUD: no writes to the old labels
     saferead::beginScope();
     const uintptr_t menu = static_cast<uintptr_t>(static_cast<uint32_t>(ctx->menu));
     uint8_t flags = 0;
@@ -446,8 +614,9 @@ void KPATCH_CALL onMenuPost(const K2HudContext* ctx, void*) {
             g.menuShown = true;
         }
     }
-    const char* text = g_m.labelText(nowMs());
-    if (!text) { lblHide(); return; }
+    const uint32_t now = nowMs();
+    const char* text = g_m.labelText(now);
+    if (!text) { lblHideAll(); return; }
     g.haveName = g_haveRect;
     g.name = g_nameRect;
     int px = 0, py = 0, pw = 0, ph = 0;
@@ -455,20 +624,28 @@ void KPATCH_CALL onMenuPost(const K2HudContext* ctx, void*) {
         g.havePanel = true;
         g.panel = { px, py, pw, ph };
     }
-    qlogic::Rect r = { 0, 0, 0, 0 };
-    if (!g_m.placeLabel(g_env, g, &r)) { lblHide(); return; }
-    labelDraw(text, r);
+    qlogic::ListDraw d;
+    if (g_rowsOk && g_m.listDraw(now, &d)) {   // the multi-row block, positioned from the latched A / B anchor
+        qlogic::Rect blk = { 0, 0, 0, 0 };
+        if (!g_m.placeBlock(g_env, g, d.w, d.h, &blk)) { lblHideAll(); return; }
+        blockDraw(d, blk);
+        return;
+    }
+    qlogic::Rect r = { 0, 0, 0, 0 };   // fallback: the one-line text (row labels missing)
+    if (!g_m.placeLabel(g_env, g, &r)) { lblHideAll(); return; }
+    lineDraw(text, r);
 }
 
 // K2HUD_FRAME: the pending click-take Close, then the proximity peek. Runs on the game thread, outside any EventHandler.
 void KPATCH_CALL onHudFrame(const K2HudContext* ctx, void*) {
     g_env.ctx = ctx;
     const uint32_t now = nowMs();
+    ensureWheel(static_cast<long>(ctx ? ctx->frame : g_m.frame));
     g_m.onFrame(g_env, ctx ? ctx->frame : g_m.frame, now);
-    if (!g_m.labelText(now) && g_lbl && ctx && ctx->hud) {   // POST may not run when there is no target: hide an expired line here too
+    if (!g_m.labelText(now) && g_head.c && ctx && ctx->hud) {   // POST may not run when there is no target: hide an expired list here too
         if (ctx->hud != g_panel) { lblDrop(); return; }
         saferead::beginScope();
-        lblHide();
+        lblHideAll();
     }
 }
 
@@ -486,13 +663,16 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     GetPrivateProfileStringA("QuickLoot", "CloseM", "5.0", fb, sizeof fb, IniPath);
     g_closeM = qlogic::clampCloseM(g_openM, static_cast<float>(atof(fb)));
     g_m.cfg.enabled = g_enabled; g_m.cfg.proxOn = g_proxOn; g_m.cfg.openM = g_openM; g_m.cfg.closeM = g_closeM; g_m.cfg.takeKey = g_takeKey; g_m.cfg.scanMs = g_scanMs;
+    g_m.cfg.listRows = qlogic::clampListRows(GetPrivateProfileIntA("QuickLoot", "ListRows", static_cast<int>(qlogic::ListRowsDefault), IniPath));
+    g_input.init(api, "quick-loot");
+    g_input.connect();   // gui-input may load later: ensureWheel polls
     g_hud.init(api, "quick-loot");
     g_hud.add(K2HUD_FRAME, 100, onHudFrame);
     g_hud.add(K2HUD_BUILD, 300, onHudBuild);               // QL1b toast label
     g_hud.add(K2HUD_TARGET_MENU_POST, 300, onMenuPost);
     g_hud.connect();
-    if (KpLog_HasCore()) KP_LOG(chMain, "INIT quick-loot %s enabled=%d hud=%d prox=%d openM=%.2f closeM=%.2f key=%d scanMs=%u", Version, g_enabled ? 1 : 0,
-                                  g_hud.connected ? 1 : 0, g_proxOn ? 1 : 0, static_cast<double>(g_openM), static_cast<double>(g_closeM), g_takeKey, g_scanMs);
+    if (KpLog_HasCore()) KP_LOG(chMain, "INIT quick-loot %s enabled=%d hud=%d prox=%d openM=%.2f closeM=%.2f key=%d scanMs=%u rows=%u input=%d", Version, g_enabled ? 1 : 0,
+                                  g_hud.connected ? 1 : 0, g_proxOn ? 1 : 0, static_cast<double>(g_openM), static_cast<double>(g_closeM), g_takeKey, g_scanMs, g_m.cfg.listRows, g_input.connected ? 1 : 0);
 }
 
 // H1. ECX = gui, [esp+4] = container object id (client), [esp+8] = flag. Returns 1 to consume (take-all armed), 0 = the original menu runs.

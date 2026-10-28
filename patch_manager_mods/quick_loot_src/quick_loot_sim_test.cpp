@@ -51,6 +51,8 @@ struct Sim : Env {
     std::vector<std::vector<Item>> taken;
     int vanilla = 0;
     std::string label;   // last label text shown ("" = hidden)
+    int wheel = 0;       // 0.4.0-dev: wheel delta collected over the list since the last frame (consumed by wheelDelta)
+    bool hover = false;  // the cursor is over the list block
 
     int add(float x, float y, std::vector<Item> items = {}) {
         Obj o;
@@ -167,7 +169,7 @@ struct Sim : Env {
         if (i < 0) return;
         const std::vector<Item>& it = objs[static_cast<size_t>(i)].items;
         c.total = static_cast<unsigned>(it.size());
-        for (size_t k = 0; k < it.size() && k < ToastMaxItems; ++k) {
+        for (size_t k = 0; k < it.size() && k < ListMaxItems; ++k) {
             c.ids[k] = 0x9000u + static_cast<unsigned>(k);
             c.stacks[k] = it[k].stack;
             snprintf(c.names[k], NameCap, "%s", it[k].name.c_str());
@@ -231,6 +233,8 @@ struct Sim : Env {
     void toast(const char* t) override { rec(A_TOAST, 0, 0, 0, t); }
     Env& env() { return *this; }
     void log(const char* l) override { rec(A_LOG, 0, 0, 0, l); }
+    int wheelDelta() override { const int d = wheel; wheel = 0; return d; }
+    bool overList() override { return hover; }
 };
 
 #define CHK(name, cond) kt::Check((std::string(scn) + ": " + (name)).c_str(), (cond))
@@ -995,7 +999,7 @@ void scenarioL() {
         s.finishCheck(scn);
     }
     {
-        const char* scn = "l5 long Took (25 items, +K more): 3.5 s, within the 4 s cap";
+        const char* scn = "l5 long Took (25 items): one-line fallback text, 6 s cap";
         Sim s; s.m.cfg.proxOn = false;
         std::vector<Item> many;
         for (int i = 0; i < 25; ++i) many.push_back(Item{"Item number " + std::to_string(i), 1});
@@ -1005,7 +1009,7 @@ void scenarioL() {
         s.run(40);
         const Act* t = s.nth(A_TOAST, 0);
         CHK("toast lists a few names and +K more", t && t->text.find("Took (25): ") == 0 && t->text.find(", +") != std::string::npos && t->text.size() <= 56);
-        CHK("3.5 s, never above 4 s", s.m.toastS.durMs == 3500 && s.m.toastS.durMs <= ToastCapMs);
+        CHK("25 list rows: 6 s (3 s + 0.5 s per row past 3, capped)", s.m.toastS.durMs == 6000 && s.m.toastS.durMs <= TookCapMs);
         s.finishCheck(scn);
     }
     {
@@ -1043,6 +1047,164 @@ void scenarioL() {
     }
 }
 
+// ---- m: 0.4.0-dev multi-row list: scrolling, "+K more" row, Took hold while hovered, block placement
+std::vector<Item> manyItems(int n) {
+    std::vector<Item> v;
+    for (int i = 0; i < n; ++i) v.push_back(Item{"Item " + std::to_string(i + 1), i % 5 == 0 ? 2 : 1});
+    return v;
+}
+unsigned countLogs(const Sim& s, const char* sub) { return static_cast<unsigned>(s.logCount(sub)); }
+
+void scenarioM() {
+    {
+        const char* scn = "m1 25-item peek: LIST once, wheel scrolls and clamps, leaving sends exactly one Close, re-peek starts at the top";
+        Sim s;
+        s.add(10, 0, manyItems(25));
+        s.setLeader(7.1f, 0);
+        s.run(80);
+        CHK("peek up", s.m.peek.active && s.m.peekList.items == 25 && s.m.peekList.rowsTotal() == 25);
+        CHK("LIST logged once with 8 rows, 25 items, off 0", s.logCount("LIST rows=8 items=25 off=0 w=") == 1 && countLogs(s, "LIST ") == 1);
+        ListDraw d;
+        CHK("draws", s.m.listDraw(s.now, &d) && d.vis == 8 && d.scrollable && d.off == 0);
+        CHK("header", strcmp(d.header, "[F] Take all (25)") == 0 && strcmp(d.indicator, "1-8 of 25") == 0);
+        CHK("first row is item 1 (stack 2)", strcmp(d.rows[0], "Item 1 x2") == 0 && strcmp(d.rows[7], "Item 8") == 0);
+        s.wheel = -120 * 3; s.run(1);
+        CHK("3 notches down: off 3, SCROLL logged", s.m.peekView.off == 3 && s.logCount("SCROLL off=3/17") == 1);
+        CHK("rows follow", s.m.listDraw(s.now, &d) && strcmp(d.rows[0], "Item 4") == 0 && strcmp(d.indicator, "4-11 of 25") == 0);
+        s.wheel = -120 * 50; s.run(1);
+        CHK("clamped at the bottom: off 17", s.m.peekView.off == 17 && s.logCount("SCROLL off=17/17") == 1);
+        s.wheel = -120; s.run(1);
+        CHK("no change at the bottom: no extra SCROLL line", countLogs(s, "SCROLL ") == 2);
+        s.wheel = 120 * 99; s.run(1);
+        CHK("clamped at the top", s.m.peekView.off == 0);
+        s.wheel = -60; s.run(1);
+        CHK("half a notch does nothing yet", s.m.peekView.off == 0);
+        s.wheel = -60; s.run(1);
+        CHK("two half notches add up to one row", s.m.peekView.off == 1);
+        s.wheel = -120 * 4; s.run(1);
+        CHK("scrolled to 5", s.m.peekView.off == 5);
+        s.setLeader(4.0f - 11.0f, 0);   // 11 m away: past CloseM
+        s.run(40);
+        CHK("walked away: exactly one Close, flag 0, items stay", s.count(A_SEND) == 1 && s.nth(A_SEND, 0)->flag == 0 && !s.m.peek.active);
+        CHK("list cleared", s.m.peekList.empty());
+        s.setLeader(7.1f, 0);
+        s.run(120);
+        CHK("peek again", s.m.peek.active && s.m.peekList.items == 25);
+        CHK("back at the top", s.m.peekView.off == 0 && countLogs(s, "LIST ") == 2);
+        s.finishCheck(scn);
+    }
+    {
+        const char* scn = "m2 70 items: 64 captured, the last row is '+6 more'";
+        Sim s;
+        s.add(10, 0, manyItems(70));
+        s.setLeader(7.1f, 0);
+        s.run(80);
+        CHK("64 + more row", s.m.peekList.items == 64 && s.m.peekList.more == 6 && s.m.peekList.rowsTotal() == 65);
+        CHK("LIST items=70", s.logCount("LIST rows=8 items=70 off=0") == 1);
+        s.wheel = -120 * 500; s.run(1);
+        ListDraw d;
+        CHK("bottom", s.m.peekView.off == 57 && s.m.listDraw(s.now, &d) && d.vis == 8);
+        CHK("last row", strcmp(d.rows[7], "+6 more") == 0 && strcmp(d.rows[6], "Item 64") == 0);
+        CHK("indicator counts the items", strcmp(d.indicator, "58-70 of 70") == 0);
+        s.finishCheck(scn);
+    }
+    {
+        const char* scn = "m3 a list that fits does not scroll";
+        Sim s;
+        s.add(10, 0, manyItems(6));
+        s.setLeader(7.1f, 0);
+        s.run(80);
+        s.wheel = -120 * 3; s.run(1);
+        ListDraw d;
+        CHK("no scroll, no SCROLL line", s.m.listDraw(s.now, &d) && !d.scrollable && d.vis == 6 && d.indicator[0] == 0 && countLogs(s, "SCROLL ") == 0 && s.m.peekView.off == 0);
+        s.finishCheck(scn);
+    }
+    {
+        const char* scn = "m4 Took list: duration per row, held while hovered, scrollable";
+        Sim s; s.m.cfg.proxOn = false;
+        const int A = s.add(1, 0, manyItems(12));
+        s.run(3);
+        s.click(A);
+        s.run(30);
+        CHK("Took up with 12 rows", s.m.toastS.active && s.m.tookList.items == 12 && s.logCount("LIST rows=8 items=12 off=0") == 1);
+        CHK("3 s + 9 x 0.5 s = 7.5 s, capped at 6 s", s.m.toastS.durMs == 6000);
+        s.hover = true;
+        s.wheel = -120 * 2; s.run(1);
+        CHK("wheel scrolls the Took list", s.m.tookView.off == 2 && s.m.peekView.off == 0);
+        s.run(700);   // 11 s hovered
+        CHK("held while hovered (11 s > 6 s)", s.m.toastS.visible(s.now) && s.m.toastS.active);
+        s.hover = false;
+        s.run(300);   // 4.8 s
+        CHK("still up 4.8 s after the cursor left", s.m.toastS.visible(s.now));
+        s.run(100);   // 6.4 s
+        CHK("gone after the 6 s timer ran out", !s.m.toastS.visible(s.now) && !s.m.toastS.active && !s.m.latch.held);
+        s.finishCheck(scn);
+    }
+    {
+        const char* scn = "m5 Took list that is short: 3 s, +0.5 s per row past 3";
+        Sim s; s.m.cfg.proxOn = false;
+        const int A = s.add(1, 0, manyItems(5));
+        s.run(3);
+        s.click(A);
+        s.run(30);
+        CHK("5 rows: 4 s", s.m.toastS.durMs == 4000);
+        s.finishCheck(scn);
+    }
+    {
+        const char* scn = "m6 ListRows from the config";
+        Sim s; s.m.cfg.listRows = 4;
+        s.add(10, 0, manyItems(10));
+        s.setLeader(7.1f, 0);
+        s.run(80);
+        ListDraw d;
+        CHK("4 visible rows", s.m.listDraw(s.now, &d) && d.vis == 4 && strcmp(d.indicator, "1-4 of 10") == 0 && s.logCount("LIST rows=4 items=10") == 1);
+        s.wheel = -120 * 99; s.run(1);
+        CHK("max offset 6", s.m.peekView.off == 6);
+        s.finishCheck(scn);
+    }
+    {
+        const char* scn = "m7 block placement: latch A / B, bottom clamp flips above the name";
+        Sim s;
+        s.add(10, 0, manyItems(25));
+        s.setLeader(7.1f, 0);
+        s.run(80);
+        ListDraw d;
+        s.m.listDraw(s.now, &d);
+        Rect r = {0, 0, 0, 0};
+        CHK("placed in A", s.m.placeBlock(s, geo(true, {1700, 520, 533, 32}), d.w, d.h, &r) && s.m.latch.pos == Pos::A);
+        CHK("centred under the name", r == R(1700 + 266 - d.w / 2, 572, d.w, d.h));
+        Rect r2 = {0, 0, 0, 0};
+        CHK("latched: same rect with the tag gone", s.m.placeBlock(s, geo(false), d.w, d.h, &r2) && r2 == r && s.logCount("LABEL-LATCH") == 1);
+        s.finishCheck(scn);
+    }
+    {
+        const char* scn = "m8 block at the bottom of the screen";
+        Sim s;
+        s.add(10, 0, manyItems(25));
+        s.setLeader(7.1f, 0);
+        s.run(80);
+        ListDraw d;
+        s.m.listDraw(s.now, &d);
+        Rect r = {0, 0, 0, 0};
+        CHK("name low on screen: flipped above the name", s.m.placeBlock(s, geo(true, {1700, 1300, 533, 32}), d.w, d.h, &r) && r.y == 1300 - 20 - d.h && r.y + r.h <= 1600 - 24);
+        s.finishCheck(scn);
+    }
+    {
+        const char* scn = "m9 B on a short panel moves up";
+        Sim s;
+        s.add(10, 0, manyItems(25));
+        s.setLeader(7.1f, 0);
+        s.run(80);
+        ListDraw d;
+        s.m.listDraw(s.now, &d);
+        Geometry g = geo(false);
+        g.panel = {0, 0, 3840, 600};
+        Rect r = {0, 0, 0, 0};
+        CHK("B, bottom limit 576", s.m.placeBlock(s, g, d.w, d.h, &r) && s.m.latch.pos == Pos::B && r.y == 576 - d.h);
+        s.finishCheck(scn);
+    }
+}
+
 }   // namespace
 
 int main() {
@@ -1059,5 +1221,6 @@ int main() {
     scenarioJ();
     scenarioK();
     scenarioL();
+    scenarioM();
     return kt::Report("quick_loot_sim_test");
 }

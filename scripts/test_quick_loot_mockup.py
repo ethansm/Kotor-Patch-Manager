@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Stdlib unittest for scripts/quick_loot_mockup.py: formatter port vs quick_loot_logic_test.cpp vectors, width measurement
-on a synthetic glyph table, and (skipped without PIL/pykotor/the install) a real render smoke test.
+"""Stdlib unittest for scripts/quick_loot_mockup.py: formatter port vs quick_loot_logic_test.cpp vectors, the 0.4.0 list layer
+(row text, scroll view, block build, placement, Took duration) vs the same C++ vectors, width measurement on a synthetic glyph
+table, and (skipped without PIL/pykotor/the install) a real render smoke test.
 
 run: python3 -m unittest scripts/test_quick_loot_mockup.py
 """
@@ -99,6 +100,123 @@ class Geometry(unittest.TestCase):
         self.assertEqual(x + w // 2, 1600)
 
 
+class ListLayer(unittest.TestCase):
+    """Ports of the QL2L layer in QuickLootLogic.h; vectors mirror quick_loot_logic_test.cpp."""
+
+    def test_text_px10(self):
+        self.assertEqual(q.text_px10(""), 0)
+        self.assertEqual(q.text_px10("Medpac x2"), 201)   # cpp pin + cpm.text_size 200.5
+        self.assertGreater(q.text_px10("ab"), q.text_px10("a"))
+
+    def test_row_name(self):
+        self.assertEqual(q.row_name("Medpac"), "Medpac")
+        self.assertEqual(q.row_name("Lightsaber Crystal: Opila"), "Lightsaber Crystal: Opila")
+        n40 = "0123456789" * 4
+        self.assertEqual(q.row_name(n40), n40)
+        self.assertEqual(q.row_name(n40 + "X"), "0123456789012345678901234567890123456...")
+        self.assertEqual(len(q.row_name(n40 + "X")), 40)
+        self.assertTrue(q.row_name("Mandalorian Heavy Armor Plating Mk IV Upgrade Kit").endswith("..."))
+        self.assertEqual(q.row_name("Name   "), "Name")
+        self.assertEqual(q.row_name(""), "item")
+        self.assertEqual(q.row_name(None), "item")
+        self.assertEqual(q.row_name("Caf\xc3\xa9"), "Caf??")
+        self.assertNotIn(", ...", q.row_name("Aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, , , , bbb"))
+
+    def test_row_text(self):
+        self.assertEqual(q.row_text("Medpac", 2), "Medpac x2")
+        self.assertEqual(q.row_text("Medpac", 1), "Medpac")
+        self.assertEqual(q.row_text("Medpac", 999), "Medpac x999")
+        self.assertEqual(q.row_text("Medpac", 1000), "Medpac")
+        self.assertEqual(q.row_text("Medpac", -1), "Medpac")
+        t = q.row_text("W" * 42, 999)
+        self.assertLessEqual(q.text_px10(t), q.ROW_INNER_MAX_PX)
+        self.assertTrue(t.endswith("... x999"))
+        t = q.row_text("W" * 20, 1, 200)
+        self.assertLessEqual(q.text_px10(t), 200)
+        self.assertTrue(t.endswith("..."))
+
+    def test_list_data(self):
+        d = q.ListData(["Medpac", "Blaster Pistol", "Adhesive Grenade"], [2, 1, 3])
+        self.assertEqual((d.items, d.more, d.rows_total(), d.total_items()), (3, 0, 3, 3))
+        self.assertEqual((d.row_at(0), d.row_at(2), d.row_at(3)), ("Medpac x2", "Adhesive Grenade x3", ""))
+        d = q.ListData(["Medpac", "Blaster Pistol", "Adhesive Grenade"], [2, 1, 3], total=70)
+        self.assertEqual((d.more, d.rows_total(), d.total_items(), d.row_at(3)), (67, 4, 70, "+67 more"))
+        self.assertEqual(q.ListData(["a"], None, total=0).more, 0)
+        self.assertEqual(q.ListData([], None, total=5).rows_total(), 0)
+        big = q.ListData(["X"] * 100, None)
+        self.assertEqual((big.items, big.more), (64, 36))
+
+    def test_view_scroll(self):
+        v = q.ListView(25, 8)
+        self.assertEqual(v.max_off(), 17)
+        self.assertFalse(v.scroll(120))
+        self.assertTrue(v.scroll(-120) and v.off == 1)
+        self.assertTrue(v.scroll(120) and v.off == 0)
+        self.assertTrue(v.scroll(-360) and v.off == 3)
+        self.assertFalse(v.scroll(-60))
+        self.assertTrue(v.scroll(-60) and v.off == 4)
+        self.assertTrue(v.scroll(-120 * 99) and v.off == 17)
+        self.assertFalse(v.scroll(-120))
+        self.assertTrue(v.scroll(120) and v.off == 16)      # the clamp drops the remainder
+        self.assertTrue(v.scroll(120 * 99) and v.off == 0)
+        self.assertFalse(q.ListView(8, 8).scroll(-120))     # exactly the rows: not scrollable
+
+    def test_build(self):
+        names = ["Item %d" % (i + 1) for i in range(25)]
+        d = q.ListData(names, None)
+        v = q.ListView(d.rows_total(), 8)
+        o = q.build_list_draw(d, v, False)
+        self.assertEqual((o["header"], o["indicator"], o["vis"], o["off"]), ("[F] Take all (25)", "1-8 of 25", 8, 0))
+        self.assertEqual(o["h"], 2 * q.BLOCK_PAD_Y + q.ROW_H + q.HEADER_GAP + 8 * q.ROW_H)
+        self.assertTrue(q.BLOCK_MIN_W <= o["w"] <= q.BLOCK_MAX_W)
+        v.off = 10
+        o2 = q.build_list_draw(d, v, False)
+        self.assertEqual((o2["rows"][0], o2["indicator"], o2["w"], o2["h"]), ("Item 11", "11-18 of 25", o["w"], o["h"]))   # scrolling never resizes
+        v.off = 99
+        self.assertEqual(q.build_list_draw(d, v, False)["off"], 17)
+        d4 = q.ListData(names[:4], None)
+        o4 = q.build_list_draw(d4, q.ListView(4, 8), True)
+        self.assertEqual((o4["header"], o4["vis"], o4["indicator"], o4["w"]), ("Took (4)", 4, "", q.BLOCK_MIN_W))
+        d5 = q.ListData(names[:20], None, total=25)
+        v5 = q.ListView(d5.rows_total(), 8)
+        v5.off = v5.max_off()
+        o5 = q.build_list_draw(d5, v5, False)
+        self.assertEqual((o5["rows"][7], o5["indicator"]), ("+5 more", "14-25 of 25"))
+        self.assertIsNone(q.build_list_draw(q.ListData([], None), v5, False))
+        self.assertEqual(q.build_list_draw(d, q.ListView(25, 40), False)["vis"], 12)
+        self.assertEqual(q.clamp_list_rows(0), 1)
+        self.assertEqual(q.clamp_list_rows(40), 12)
+
+    def test_took_duration(self):
+        self.assertEqual([q.took_duration_ms(n) for n in (1, 3, 4, 8, 9, 65)], [3000, 3000, 3500, 5500, 6000, 6000])
+
+    def test_placement(self):
+        panel = (0, 0, 3840, 1600)
+        name = (1700, 520, 533, 32)
+        a = q.choose_anchor(True, True, name, True, panel)
+        self.assertEqual(a, ("A", 1966, 572, 520, True))
+        self.assertEqual(q.block_rect(a, 400, 334, panel), (1766, 572, 400, 334))
+        b = q.choose_anchor(False, True, name, True, panel)
+        self.assertEqual(b, ("B", 1920, 992, 0, False))
+        self.assertEqual(q.block_rect(b, 400, 334, panel), (1720, 992, 400, 334))
+        self.assertIsNone(q.choose_anchor(False, False, name, False, (0, 0, 0, 0)))
+        self.assertEqual(q.block_rect(("A", 50, 100, 0, False), 400, 300, panel)[0], 24)
+        self.assertEqual(q.block_rect(("A", 3830, 100, 0, False), 400, 300, panel)[0], 3840 - 24 - 400)
+        # bottom clamp: A flips above the name, B moves up, too tall -> top limit
+        self.assertEqual(q.block_rect(("A", 1966, 1352, 1300, True), 400, 334, panel)[1], 1300 - 20 - 334)
+        self.assertEqual(q.block_rect(("B", 1920, 992, 0, False), 400, 334, (0, 0, 3840, 600))[1], 600 - 24 - 334)
+        self.assertEqual(q.block_rect(("B", 1920, 992, 0, False), 400, 900, (0, 0, 3840, 600))[1], 24)
+        self.assertEqual(q.header_rect(400), (q.BLOCK_PAD_X, q.BLOCK_PAD_Y, 400 - 2 * q.BLOCK_PAD_X + q.LABEL_SLACK, q.ROW_H))
+        self.assertEqual(q.indicator_rect(500, 120)[0] + 120, 500 - q.BLOCK_PAD_X)
+        self.assertEqual(q.row_rect(3, 400)[1], q.row_rect(0, 400)[1] + 3 * q.ROW_H)
+
+    def test_samples_fit(self):
+        for smp in q.samples():
+            fr = q.fit_row(smp)
+            self.assertTrue(fr["rows_fit"] and fr["head_fit"] and fr["inside"], fr["desc"])
+        self.assertIn("rows_fit", q.format_table([q.fit_row(q.samples()[0])]))
+
+
 class WidthMeasure(unittest.TestCase):
     def test_synthetic_glyph_table(self):
         adv = [0] * 256
@@ -125,11 +243,12 @@ class RenderSmoke(unittest.TestCase):
             self.skipTest(f"render prerequisites missing: {e}")
         with tempfile.TemporaryDirectory() as d:
             rows, table, written = q.render_all(d)
-            self.assertEqual(len(rows), 8)
-            self.assertEqual(len(written), 16)
+            self.assertEqual(len(rows), 11)
+            self.assertEqual(len(written), 21)           # 10 samples x (full + zoom) + the low-target frame
             from PIL import Image
             self.assertEqual(Image.open(written[0]).size, (3840, 1600))
-            self.assertTrue(all(r[7] for r in rows))   # every sample fits the 1200 px label on one line
+            self.assertTrue(all(r["rows_fit"] and r["head_fit"] and r["inside"] for r in rows))   # every row fits its block, every block the panel
+            self.assertTrue((Path(d) / "ql2l_fit_table.txt").is_file())
 
 
 if __name__ == "__main__":

@@ -2,6 +2,7 @@
 // host test can drive it frame by frame (quick_loot_sim_test.cpp). No game memory, no Win32. Every engine read and every engine / UI side
 // effect goes through qlogic::Env, which QuickLoot.cpp implements over the real engine and the sim test over a fake world. Actions are
 // executed immediately (not queued): OpenInventory may trigger a synchronous ShowContainerGui and the code that follows must see it.
+// 0.4.0-dev adds the row lists (peekList / tookList + their scroll views, wheel and hover through Env, Took hold while hovered).
 // 0.3.1-dev (UX review .claude/reviews/quick_loot_pv1_ux.md) adds here: dwell debounce before the auto-open, the Took line state + duration,
 // the latched label position (A/B) shared by peek and Took, and the message-object give-up fallback (server-side Close, GIVEUP-SERVERCLOSE).
 #pragma once
@@ -9,14 +10,12 @@
 
 namespace qlogic {
 
-constexpr int NameCap = 48;   // captured name buffer (sanitizeName cuts at NameRawMax = 40; the label cuts entries at ToastNameMax = 20)
-
 struct Captured {
-    unsigned count = 0;   // names captured (<= ToastMaxItems)
+    unsigned count = 0;   // names captured (<= ListMaxItems)
     unsigned total = 0;   // real repository count
-    uint32_t ids[ToastMaxItems];
-    int stacks[ToastMaxItems];
-    char names[ToastMaxItems][NameCap];
+    uint32_t ids[ListMaxItems];
+    int stacks[ListMaxItems];
+    char names[ListMaxItems][NameCap];   // NameCap in QuickLootLogic.h (rowName cuts at 40, the one-line fallback at ToastNameMax = 20)
 };
 
 // Leader / area snapshot. ok = leader object and its area resolved; haveSrv = the server object table was reachable.
@@ -34,6 +33,7 @@ struct Config {
     int takeKey = DefaultTakeKey;
     uint32_t scanMs = DefaultScanMs;
     uint32_t dwellMs = DwellMs;   // 0 = open on the first scan that sees the container
+    unsigned listRows = ListRowsDefault;   // visible item rows of the list block (quick_loot.ini ListRows, 1..12)
 };
 
 // Engine / UI boundary. Reads first, then actions.
@@ -65,6 +65,8 @@ struct Env {
     virtual void labelHide() = 0;
     virtual void toast(const char* text) = 0;                                  // "Took (N): ..." notification (the machine owns the line's state)
     virtual void log(const char* line) = 0;
+    virtual int wheelDelta() = 0;                                              // wheel delta consumed over the list since the last call (cleared), +120 = up
+    virtual bool overList() = 0;                                               // the cursor is over the list block drawn last frame
 };
 
 struct Machine {
@@ -84,11 +86,13 @@ struct Machine {
     ToastState toastS;     // the Took line
     Latch latch;           // position (A/B) + rect of the label now up (peek or Took)
     Captured cap;          // scratch (shared: uses never overlap)
+    ListData peekList, tookList;   // 0.4.0-dev: the row texts of the peek / Took list (the Took list outlives the scratch `cap`)
+    ListView peekView, tookView;   // scroll state of each
 
     // ---- QL1b / QL2p helpers
     void reportTook(Env& e, const Captured& c, uint32_t now) {
         char b[160];
-        const char* np[ToastMaxItems];
+        const char* np[ListMaxItems];
         for (unsigned i = 0; i < c.count; ++i) {
             fmtTookItem(b, sizeof b, i, c.ids[i], c.names[i], c.stacks[i]);
             e.log(b);
@@ -99,9 +103,22 @@ struct Machine {
         if (fmtTook(text, sizeof text, np, c.stacks, c.count, c.total > c.count ? c.total - c.count : 0, &li)) {
             fmtToast(b, sizeof b, text);
             e.log(b);
-            toastS.start(text, now, toastDurationMs(li.shown, li.more));
+            tookList.set(np, c.stacks, c.count, c.total);   // 0.4.0-dev: the row list, shown 3 s + 0.5 s per row past 3 (cap 6 s), held while hovered
+            tookView.reset(tookList.rowsTotal(), cfg.listRows);
+            logList(e, tookList, tookView, true);
+            toastS.start(text, now, tookDurationMs(tookList.rowsTotal()));
             e.toast(text);
         }
+    }
+
+    // LIST log line for a new list (once per list).
+    void logList(Env& e, const ListData& d, const ListView& v, bool took) {
+        ListDraw ld;
+        char key[8], b[96];
+        keyLabel(cfg.takeKey, key, sizeof key);
+        if (!buildListDraw(d, v, took, key, &ld)) return;
+        fmtListLog(b, sizeof b, ld.vis, ld.items, ld.off, ld.w, ld.h);
+        e.log(b);
     }
 
     // Ends the peek (any outcome): the container goes into the cooldown set. addCooldown false after an area change: proxTick has just
@@ -116,6 +133,7 @@ struct Machine {
         }
         if (peek.text[0]) e.labelHide();
         peek.clear();
+        peekList.clear();
     }
 
     // Give-up fallback (message object never came): when the placeable still has its open flag (+0x390) set, close it server-side
@@ -153,8 +171,13 @@ struct Machine {
         e.capture(peek.plc, cap);
         char key[8];
         keyLabel(cfg.takeKey, key, sizeof key);
-        const char* np[ToastMaxItems];
+        const char* np[ListMaxItems];
         for (unsigned i = 0; i < cap.count; ++i) np[i] = cap.names[i];
+        const bool hadList = !peekList.empty();
+        peekList.set(np, cap.stacks, cap.count, n > 0 ? static_cast<unsigned>(n) : cap.count);
+        peekView.rows = cfg.listRows;
+        peekView.setTotal(peekList.rowsTotal());
+        if (!hadList && !peekList.empty()) logList(e, peekList, peekView, false);
         char text[sizeof peek.text];
         fmtPeek(text, sizeof text, key, n, np, cap.stacks, cap.count);
         if (strcmp(text, peek.text) != 0) {
@@ -378,6 +401,51 @@ struct Machine {
         if (peek.active && peek.text[0]) return peek.text;
         return nullptr;
     }
+    // ---- 0.4.0-dev list block
+    // The view the on-screen list is scrolled by (a Took list wins over the peek list for its duration); nullptr = no list up.
+    ListView* shownView(uint32_t now) {
+        if (toastS.visible(now)) return &tookView;
+        if (peek.active && peek.text[0]) return &peekView;
+        return nullptr;
+    }
+    // The block to draw now. false = nothing up (or an empty list). took tells which list it is.
+    bool listDraw(uint32_t now, ListDraw* out) const {
+        char key[8];
+        keyLabel(cfg.takeKey, key, sizeof key);
+        if (toastS.visible(now)) return buildListDraw(tookList, tookView, true, key, out);
+        if (peek.active && peek.text[0]) return buildListDraw(peekList, peekView, false, key, out);
+        return false;
+    }
+    // Block rect for a w x h block: latches the anchor (A/B) on first use and logs LABEL-LATCH with the block rect, then re-derives the rect every
+    // frame from the latched anchor (so the block follows its own size changes, clamped inside the panel). false = nothing to anchor to.
+    bool placeBlock(Env& e, const Geometry& g, int w, int h, Rect* out) {
+        const Rect panel = g.havePanel ? g.panel : Rect{0, 0, 0, 0};
+        if (!latch.held) {
+            Anchor a;
+            Pos p = Pos::None;
+            if (!chooseAnchor(g, &a, &p)) return false;
+            const Rect r = blockRect(p, a, w, h, panel);
+            latch.set(p, r);
+            latch.anchor = a;
+            char b[96];
+            fmtLatch(b, sizeof b, p, r);
+            e.log(b);
+        }
+        *out = blockRect(latch.pos, latch.anchor, w, h, panel);
+        return true;
+    }
+    // Per frame: the wheel delta the adapter collected over the list moves the shown list; a Took list is held while the cursor is over it.
+    void listTick(Env& e, uint32_t now) {
+        const int d = e.wheelDelta();
+        ListView* v = shownView(now);
+        if (d != 0 && v && v->scroll(d)) {
+            char b[64];
+            fmtScroll(b, sizeof b, v->off, v->maxOff());
+            e.log(b);
+        }
+        toastS.tick(now, toastS.active && e.overList());
+    }
+
     // The label rect for this frame: the latched one, or (first call) the placement for `g`, latched and logged. false = nothing to anchor to.
     bool placeLabel(Env& e, const Geometry& g, Rect* out) {
         if (latch.held) { *out = latch.rect; return true; }
@@ -402,6 +470,7 @@ struct Machine {
         frame = fr;
         if (take.active) takeTick(e, now);
         proxTick(e, now);
+        listTick(e, now);
         latchTick(now);
     }
 
@@ -409,6 +478,8 @@ struct Machine {
     int onShow(Env& e, uint32_t objId, uintptr_t plc, int flag, int n, uint32_t now) {
         char b[160];
         if (plc && peek.onShow(objId, plc, now, frame)) {   // QL2p: the ShowContainerGui of our OpenInventory = a peek, not a take (any flag)
+            peekList.clear();
+            peekView.reset(0, cfg.listRows);   // a new peek starts at the top of the list
             fmtPeekShow(b, sizeof b, objId, plc, flag, n);
             e.log(b);
             return 1;

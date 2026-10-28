@@ -1,34 +1,34 @@
 #!/usr/bin/env python3
-"""Offline render of the quick-loot HUD label (doc 52 PV1 step 1): judge text fit and placement before play testing.
+"""Offline render of the quick-loot HUD list block (doc 52 QL2L, 0.4.0-dev): judge fit, scrolling and the vanilla look before play testing.
 
 Reuses character_page_mockup.py (cpm): the dialogfont10x10 bitmap font (glyph boxes from the font TXI, advances from
-_shared_src/FontWidths.inc, DLL-calibrated 2.75 px/texel at 3840x1600) and the real draw_text(). Reads the live install
-read-only through pykotor; writes PNGs only to OUTDIR.
+_shared_src/FontWidths.inc, DLL-calibrated 2.75 px/texel at 3840x1600), the real draw_text() and the real draw_border() (the same call that
+draws the vanilla tooltip at character_page_mockup.py ~:553). Reads the live install read-only through pykotor; writes PNGs only to OUTDIR.
 
-What the mod draws (patch_manager_mods/quick_loot_src/QuickLoot.cpp labelDraw + QuickLootLogic.h, 0.3.1-dev):
-  one label cloned from the HUD template LBL_QUEUE1, font dialogfont10x10, align 18 (centre/middle), colour (0.9,0.85,0.5), on a backing
-  panel (a second label created first: black, alpha 0.55, pad 10 px x / 4 px y, width follows the text, centred on the label rect).
-  Rect units: ENGINE PIXELS (guikit::setRect writes the control rect directly; GuiKit.h getExtent "engine px"; the name rect
-  is read as menu origin + name rect, "all px"; doc 39 R6: absolute display px, 3840x1600 on the dev box). They are NOT
-  800x600 GUI units: 420 px = 87.5 units at 3840x1600. Label height 20 px is thinner than the 10x10 glyph cell (~44 px at
-  2.75 px/texel), so the text is vertically centred on a 20 px rect and overflows it above and below.
-  Overflow: the engine word-wraps text wider than the label rect (doc 14 build 4 finding), it does not clip; the mock draws one
-  unwrapped line and outlines an overflowing rect in red.
-  Widths: peek and Took share ONE rect, LabelW 1200 px (31 % of 3840), 56 chars max on one line, item names cut at 20 chars
-  ("Lightsaber Crysta...", " xN" added after the cut).
-  Position A (name-anchored): x centred on the target-menu name label (clamped to [24, screenW-24-w]), y = name bottom + 20.
-  Position B (fixed): x centred on the HUD panel, y = 62 % of the panel height. The mod latches A or B when the line first shows.
-Target menu mock (doc 39 R6 observed): name label local (0,2) w 533 h 32 (= LBL_NAME 200 units * 8/3), health bar local y 35 h 16.
-The live mipc28x6_p.gui LBL_NAME/PB_HEALTH rects (0,1,200,26)/(0,27,200,6) units are only the template; the engine re-lays
-the menu, so the observed px values are used.
+What the mod draws (patch_manager_mods/quick_loot_src/QuickLoot.cpp blockDraw + QuickLootLogic.h):
+  one BLOCK = frame panel + header row + up to ListRows item rows (default 8, 1..12), all engine px (guikit::setRect writes engine px;
+  3840x1600 on the dev box; NOT 800x600 gui units).
+  Frame: a label cloned from the HUD template LBL_MOULDING3 (the vanilla tooltip frame: FILL uibit_fill_2bt, EDGE uibit_brdr_16bet, CORNER
+  uibit_brdr_16bct, DIMENSION 16 taken as px, tint TEAL_FRAME) -- the engine draws the edges and corners from the .gui, GuiKit only sets tint
+  and alpha. The fill is black at alpha 0.78 (texture alpha 199/255), alpha 1.0.
+  Text: dialogfont10x10, align 9 (top-left) in a one-row rect. Header cream (CREAM), rows TEAL_TEXT, hovered row CREAM, scroll indicator dim
+  teal at the right end of the header row. Row pitch RowH = 32 px (glyph box 27.5 px; tooltip line pitch 34 px).
+  Rows: name cut at 40 chars (first 37 + "..."), " xN" for stacks 2..999, cut further to the block's max inner width; items past the 64 captured
+  become one last "+K more" row. Block width = widest row (ALL rows, so scrolling never resizes it) + 2 x 28 px pad, 300..900 px.
+  Placement: position A under the target name (x centred on the name, clamped to the panel), B at the fixed spot (centre of the panel, 62 %
+  down); bottom clamp: A flips above the name, B moves up. The mod latches A or B when the list first shows.
+Target menu mock (doc 39 R6 observed): name label local (0,2) w 533 h 32 (health bar local y 35 h 16).
 
-The formatters (fmtList / fmtTook / fmtPeek / sanitizeName) are ports of QuickLootLogic.h, checked against
-quick_loot_logic_test.cpp vectors in test_quick_loot_mockup.py.
+The one-line formatters (fmtList / fmtTook / fmtPeek, the 0.3.1 fallback text) and the list layer (rowName / rowText / ListData / ListView /
+buildListDraw / blockRect) are ports of QuickLootLogic.h, checked against quick_loot_logic_test.cpp vectors in test_quick_loot_mockup.py.
 
 usage: quick_loot_mockup.py OUTDIR
-Outputs: ql_<id>_full.png (A and B on one frame), ql_<id>_zoom.png (2x crops of both labels), ql_fit_table.txt
+Outputs: ql2l_<id>_full.png (A and B on one frame), ql2l_<id>_zoom.png (crops of both blocks), ql2l_fit_table.txt
 """
+import math
 import os
+import re
+import struct
 import sys
 from pathlib import Path
 
@@ -50,7 +50,7 @@ TOAST_MS, TOAST_LONG_MS, TOAST_CAP_MS = 3000, 3500, 4000
 PEEK_TOP_PERCENT = 62
 FONT = "dialogfont10x10"
 ALIGN = 18
-COLOR = (0.9, 0.85, 0.5)
+COLOR = (0.9, 0.85, 0.5)   # 0.3.1 one-line colour (the 0.4.0 block uses TEAL_TEXT / CREAM)
 
 # screen + target-menu mock (engine px)
 SCREEN_W, SCREEN_H = 3840, 1600
@@ -180,29 +180,294 @@ def text_width(s, advances, scale):
     return sum(advances[ord(c) if ord(c) < 256 else 63] for c in s) * scale
 
 
-# ---- the sample texts (the review examples plus worst cases) -----------------------------------------------------
-def sample_texts():
-    n_pair = ["Medpac", "Blaster Pistol"]
-    realistic = ["Medpac", "Blaster Pistol", "Adhesive Grenade", "Lightsaber Crystal: Opila", "Frag Grenade", "Credit Chip",
-                 "Vibroblade", "Combat Suit", "Stimulant", "Glow Rod", "Repair Kit", "Security Spike", "Power Cell",
-                 "Ion Blaster", "Datapad", "Cure Pack"]
-    st16 = [2, 1, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-    long_pair = ["Adhesive Grenade", "Lightsaber Crystal: Opila"]
-    wide = ["Mandalorian Heavy Armor Plating", "Lightsaber Crystal: Opila", "Ancient Sith Holocron Fragment"]
+# ---- 0.4.0-dev list layer: ports of QuickLootLogic.h (QL2L) -------------------------------------------------------
+NAME_CAP = 48
+LIST_MAX_ITEMS = 64
+LIST_ROWS_DEFAULT, LIST_ROWS_MIN, LIST_ROWS_MAX = 8, 1, 12
+ROW_NAME_MAX = 40
+ROW_H = 32                       # row pitch px (glyph box 27.5 px at 2.7467 px/texel; tooltip line pitch 34)
+HEADER_GAP = 6
+BLOCK_PAD_X, BLOCK_PAD_Y = 28, 20
+BLOCK_MIN_W, BLOCK_MAX_W = 300, 900
+LABEL_SLACK = 12
+INDICATOR_GAP = 36
+ROW_INNER_MAX_PX = BLOCK_MAX_W - 2 * BLOCK_PAD_X
+WHEEL_STEP = 120
+TOOK_BASE_MS, TOOK_ROW_MS, TOOK_CAP_MS, TOOK_FREE_ROWS = 3000, 500, 6000, 3
+FRAME_ALPHA = 1.0
+FRAME_DIM = 16                   # template DIMENSION, taken as engine px
+FRAME_TEMPLATE = {"FILL": "uibit_fill_2bt", "EDGE": "uibit_brdr_16bet", "CORNER": "uibit_brdr_16bct"}
+FONT_TEXTK, FONT_SY = 1.03, 1600.0 / 600.0   # textfit::TextCtx for dialogfont10x10
+# vanilla palette (character_page_mockup.py:45-47); the mod's constants in QuickLoot.cpp
+TEAL_FRAME = (0.05098, 0.34902, 0.27059)
+TEAL_TEXT = (0.10196, 0.69804, 0.54902)
+CREAM = (0.8, 0.8, 0.69804)
+TEAL_DIM = (0.0663, 0.4537, 0.3569)
+TEXT_ALIGN = 9                   # top-left
+
+_FONT10 = None
+
+
+def f32(x):
+    """Round to float32 (the C++ textPx runs in float)."""
+    return struct.unpack("f", struct.pack("f", x))[0]
+
+
+def font10_widths():
+    """kFont10TexW parsed from _shared_src/FontWidths.inc (stdlib only)."""
+    global _FONT10
+    if _FONT10 is None:
+        inc = (Path(__file__).resolve().parent.parent / "patch_manager_mods/_shared_src/FontWidths.inc").read_text()
+        body = inc[inc.index("kFont10TexW"):]
+        body = body[body.index("{") + 1:body.index("}")]
+        _FONT10 = [int(v) for v in re.findall(r"\d+", body)]
+        assert len(_FONT10) == 256
+    return _FONT10
+
+
+def text_px10(s):
+    """textPx10: textfit::textPx(F10) = float(sum of texel advances) * sy * textK10 * textScale, rounded up."""
+    tw = font10_widths()
+    w = float(sum(tw[ord(c) if ord(c) < 256 else 63] for c in s))
+    return int(math.ceil(f32(f32(f32(w * f32(FONT_SY)) * f32(FONT_TEXTK)) * 1.0)))
+
+
+def clamp_list_rows(v):
+    return max(LIST_ROWS_MIN, min(LIST_ROWS_MAX, v))
+
+
+def took_duration_ms(list_rows):
+    d = TOOK_BASE_MS + (list_rows - TOOK_FREE_ROWS) * TOOK_ROW_MS if list_rows > TOOK_FREE_ROWS else TOOK_BASE_MS
+    return min(d, TOOK_CAP_MS)
+
+
+def row_name(name):
+    """rowName: printable bytes (others '?') up to NAME_CAP-1, trailing spaces trimmed, empty -> 'item'; > 40 chars -> first 37 (trailing
+    non-alnum trimmed) + '...'."""
+    t = []
+    if name is not None:
+        for ch in name:
+            if ch == "\0" or len(t) >= NAME_CAP - 1:
+                break
+            t.append(ch if 0x20 <= ord(ch) <= 0x7E else "?")
+    s = "".join(t).rstrip(" ")
+    if not s:
+        s = "item"
+    if len(s) > ROW_NAME_MAX:
+        s = s[:ROW_NAME_MAX - 3]
+        while s and not (s[-1].isascii() and s[-1].isalnum()):
+            s = s[:-1]
+        s += "..."
+    return s
+
+
+def row_text(name, stack, max_px=ROW_INNER_MAX_PX):
+    """rowText: name + ' xN' (2..999); the name is cut further (+ '...') while the text is wider than max_px."""
+    nm = row_name(name)
+    sfx = " x%d" % stack if 2 <= stack <= 999 else ""
+    buf = nm + sfx
+    if text_px10(buf) > max_px:
+        n = len(nm)
+        if n >= 3 and nm.endswith("..."):
+            n -= 3
+        while n > 1:
+            n -= 1
+            t = nm[:n] + "..." + sfx
+            if text_px10(t) <= max_px:
+                buf = t
+                break
+    return buf
+
+
+class ListData:
+    """ListData: items = captured rows, more = items past the capture (one last '+K more' row)."""
+
+    def __init__(self, names, stacks, total=None):
+        count = min(len(names), LIST_MAX_ITEMS)
+        self.rows = [row_text(names[i], stacks[i] if stacks else -1) for i in range(count)]
+        self.items = count
+        t = len(names) if total is None else total
+        self.more = t - count if (count and t > count) else 0
+        self.max_row_px = max([text_px10(r) for r in self.rows] + ([text_px10(self.more_text())] if self.more else []) + [0])
+
+    def more_text(self):
+        return "+%u more" % self.more
+
+    def rows_total(self):
+        return self.items + (1 if self.more else 0)
+
+    def total_items(self):
+        return self.items + self.more
+
+    def row_at(self, i):
+        if i < self.items:
+            return self.rows[i]
+        return self.more_text() if (i == self.items and self.more) else ""
+
+
+class ListView:
+    """ListView: rows visible, total list rows, off first visible row; the wheel moves WHEEL_STEP per row (+ = up)."""
+
+    def __init__(self, total, rows=LIST_ROWS_DEFAULT):
+        self.rows, self.total, self.off, self.acc = rows, total, 0, 0
+
+    def max_off(self):
+        return self.total - self.rows if self.total > self.rows else 0
+
+    def scrollable(self):
+        return self.total > self.rows
+
+    def scroll(self, delta):
+        if not self.scrollable():
+            self.acc = 0
+            return False
+        self.acc += delta
+        steps = int(self.acc / WHEEL_STEP)
+        self.acc -= steps * WHEEL_STEP
+        n = self.off - steps
+        if n < 0:
+            n, self.acc = 0, 0
+        if n > self.max_off():
+            n, self.acc = self.max_off(), 0
+        ch = n != self.off
+        self.off = n
+        return ch
+
+
+def build_list_draw(d, v, took, key="F"):
+    """buildListDraw -> dict(header, indicator, rows, vis, off, w, h, scrollable, header_px, indicator_px) or None for an empty list."""
+    if d.items == 0:
+        return None
+    total = d.rows_total()
+    rows = max(LIST_ROWS_MIN, min(LIST_ROWS_MAX, v.rows))
+    vis = min(total, rows)
+    max_off = total - rows if total > rows else 0
+    off = min(v.off, max_off)
+    header = "Took (%u)" % d.total_items() if took else "[%s] Take all (%u)" % (key, d.total_items())
+    o = dict(took=took, off=off, vis=vis, rows_total=total, items=d.total_items(), scrollable=total > rows, header=header,
+             header_px=text_px10(header), indicator="", indicator_px=0)
+    need = d.max_row_px
+    if o["scrollable"]:
+        last = d.total_items() if off + vis > d.items else off + vis
+        o["indicator"] = "%u-%u of %u" % (off + 1, last, d.total_items())
+        o["indicator_px"] = text_px10(o["indicator"])
+        worst = "%u-%u of %u" % (max_off + 1, d.total_items(), d.total_items())
+        need = max(need, o["header_px"] + INDICATOR_GAP + text_px10(worst))
+    else:
+        need = max(need, o["header_px"])
+    o["w"] = max(BLOCK_MIN_W, min(BLOCK_MAX_W, need + 2 * BLOCK_PAD_X))
+    o["h"] = 2 * BLOCK_PAD_Y + ROW_H + HEADER_GAP + vis * ROW_H
+    o["rows"] = [d.row_at(off + i) for i in range(vis)]
+    return o
+
+
+def choose_anchor(menu_shown, have_name, name, have_panel, panel):
+    """chooseAnchor -> (pos, cx, top, name_top, has_name) or None."""
+    panel_ok = have_panel and panel[2] > 0 and panel[3] > 0
+    if menu_shown or (not panel_ok and have_name):
+        return ("A", name[0] + name[2] // 2, name[1] + name[3] + GAP_BELOW_NAME, name[1], True)
+    if panel_ok:
+        return ("B", panel[0] + panel[2] // 2, panel[1] + (panel[3] * PEEK_TOP_PERCENT) // 100, 0, False)
+    return None
+
+
+def block_rect(anchor, w, h, panel):
+    """blockRect: x clamped to the panel margins, bottom clamp (A flips above the name, B moves up), top limit panel.y + 24."""
+    pos, cx, top, name_top, has_name = anchor
+    r = (cx - w // 2, top, w, h)
+    if panel[2] <= 0 or panel[3] <= 0:
+        return r
+    r = clamp_label_x(r, panel[0], panel[2])
+    bottom, top_limit = panel[1] + panel[3] - SCREEN_MARGIN, panel[1] + SCREEN_MARGIN
+    x, y, w, h = r
+    if y + h > bottom:
+        ny = bottom - h
+        if pos == "A" and has_name:
+            flip = name_top - GAP_BELOW_NAME - h
+            if flip >= top_limit:
+                ny = flip
+        y = ny
+    if y < top_limit:
+        y = top_limit
+    return (x, y, w, h)
+
+
+def header_rect(w):
+    return (BLOCK_PAD_X, BLOCK_PAD_Y, w - 2 * BLOCK_PAD_X + LABEL_SLACK, ROW_H)
+
+
+def row_rect(i, w):
+    return (BLOCK_PAD_X, BLOCK_PAD_Y + ROW_H + HEADER_GAP + i * ROW_H, w - 2 * BLOCK_PAD_X + LABEL_SLACK, ROW_H)
+
+
+def indicator_rect(w, ind_px):
+    return (w - BLOCK_PAD_X - ind_px, BLOCK_PAD_Y, ind_px + LABEL_SLACK, ROW_H)
+
+
+# ---- sample lists --------------------------------------------------------------------------------------------------
+REALISTIC = ["Medpac", "Blaster Pistol", "Adhesive Grenade", "Lightsaber Crystal: Opila", "Frag Grenade", "Credit Chip", "Vibroblade",
+             "Combat Suit", "Stimulant", "Glow Rod", "Repair Kit", "Security Spike", "Power Cell", "Ion Blaster", "Datapad", "Cure Pack",
+             "Mandalorian Heavy Armor Mk IV", "Jedi Robe", "Energy Shield", "Comlink", "Targeting Scope", "Stun Baton", "Bacta Tank",
+             "Ancient Sith Holocron Fragment", "Droid Probe"]
+REALISTIC_STACKS = [2, 1, 3, 1, 1, 1, 1, 1, 1, 1, 5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 12, 1, 1]
+LONG_NAMES = ["Lightsaber Crystal: Opila", "Adhesive Grenade", "Mandalorian Heavy Armor Mk IV",
+              "Ancient Sith Holocron Fragment of the Old Republic Era", "Medpac"]
+LONG_STACKS = [1, 3, 1, 1, 999]
+
+
+def numbered(n):
+    return ["Salvage Part %d" % (i + 1) for i in range(n)]
+
+
+def samples():
+    """[(id, desc, took, ListData, scroll_off, hover_row, rows)] -- scroll_off in list rows."""
+    r25 = ListData(REALISTIC, REALISTIC_STACKS)
+    r70 = ListData(numbered(64), None, total=70)
     return [
-        (1, "Took, 2 items", "took", fmt_took(n_pair, [2, 1], 2)),
-        (2, "Took, 25 items", "took", fmt_took(realistic, st16, 16, 9)),
-        (3, "Peek, 4 items, +2 more", "peek", fmt_peek("F", 4, n_pair, [2, 1], 2)),
-        (4, "Peek, 25 items", "peek", fmt_peek("F", 25, realistic, st16, 16)),
-        (5, "Peek, 1 item", "peek", fmt_peek("F", 1, ["Medpac"], None, 1)),
-        (6, "Took, long item names", "took", fmt_took(long_pair, [3, 1], 2)),
-        (7, "Peek, 3 very long names", "peek", fmt_peek("F", 3, wide, [1, 1, 999], 3)),
-        (8, "Took, worst case (20-char names, x999)", "took", fmt_took(["W" * 20] * 16, [999] * 16, 16, 9)),
+        (1, "Peek, 1 item", False, ListData(["Medpac"], None), 0, None, 8),
+        (2, "Peek, 4 items", False, ListData(REALISTIC[:4], REALISTIC_STACKS[:4]), 0, None, 8),
+        (3, "Peek, 8 items (fills the list)", False, ListData(REALISTIC[:8], REALISTIC_STACKS[:8]), 0, 1, 8),
+        (4, "Peek, 25 items, off 0", False, r25, 0, None, 8),
+        (5, "Peek, 25 items scrolled to off 10, hover row 2", False, r25, 10, 2, 8),
+        (6, "Peek, long names (cut at 40 chars, stacks)", False, ListData(LONG_NAMES, LONG_STACKS), 0, None, 8),
+        (7, "Took, 6 items", True, ListData(REALISTIC[:6], REALISTIC_STACKS[:6]), 0, None, 8),
+        (8, "Peek, 70 items (64 captured) scrolled to the end", False, r70, 99, None, 8),
+        (9, "Peek, 25 items, ListRows 12", False, r25, 0, None, 12),
+        (10, "Peek, 25 items, ListRows 4", False, r25, 0, 0, 4),
     ]
 
 
-def label_w(kind):
-    return LABEL_W
+def sample_draw(sample):
+    sid, desc, took, d, off, hover, rows = sample
+    v = ListView(d.rows_total(), rows)
+    v.off = min(off, v.max_off())
+    return build_list_draw(d, v, took), v
+
+
+PANEL = (0, 0, SCREEN_W, SCREEN_H)
+
+
+def placements(o, name_origin=MENU_ORIGIN):
+    """([(label, rect)] for position A (target name at name_origin) and B (fixed spot), name rect)."""
+    name = (name_origin[0] + NAME_LOCAL[0], name_origin[1] + NAME_LOCAL[1], NAME_LOCAL[2], NAME_LOCAL[3])
+    a = choose_anchor(True, True, name, True, PANEL)
+    b = choose_anchor(False, True, name, True, PANEL)
+    return [("A", block_rect(a, o["w"], o["h"], PANEL)), ("B", block_rect(b, o["w"], o["h"], PANEL))], name
+
+
+def fit_row(sample):
+    """Fit-table row: every row fits the block's inner width, header + gap + indicator fit, block inside the panel with the margin."""
+    sid, desc, took, d, off, hover, rows = sample
+    o, v = sample_draw(sample)
+    inner = o["w"] - 2 * BLOCK_PAD_X
+    rows_fit = all(text_px10(d.row_at(i)) <= inner for i in range(d.rows_total()))
+    head_fit = o["header_px"] + (INDICATOR_GAP + o["indicator_px"] if o["scrollable"] else 0) <= inner
+    (pa, ra), (pb, rb) = placements(o)[0]
+    inside = all(r[0] >= SCREEN_MARGIN and r[1] >= SCREEN_MARGIN and r[0] + r[2] <= SCREEN_W - SCREEN_MARGIN and r[1] + r[3] <= SCREEN_H - SCREEN_MARGIN
+                 for r in (ra, rb))
+    return dict(id=sid, desc=desc, kind="took" if took else "peek", items=d.total_items(), list_rows=d.rows_total(), rows=o["vis"],
+                w=o["w"], h=o["h"], rows_fit=rows_fit, head_fit=head_fit, inside=inside, a=ra, b=rb, header=o["header"], indicator=o["indicator"],
+                dur=took_duration_ms(d.rows_total()) if took else 0)
 
 
 # ---- rendering (needs PIL + pykotor + the live install) ----------------------------------------------------------
@@ -236,15 +501,37 @@ def draw_target_tag(img, cpm, origin):
     return (nx, ny, nw, nh)
 
 
-def draw_label(img, cpm, text, rect, overflow):
-    from PIL import Image, ImageDraw
+def draw_frame(img, cpm, rect):
+    """The vanilla frame through cpm.draw_border (the call that draws the vanilla tooltip), at 1 unit = 1 engine px so DIMENSION 16 is 16 px."""
+    from PIL import Image
     x, y, w, h = rect
-    bx, by, bw, bh = back_rect(rect, len(text))       # backing panel: black, alpha 0.55 (drawn first = behind the text)
-    panel = Image.new("RGBA", (bw, bh), (0, 0, 0, int(round(255 * BACK_ALPHA))))
-    img.alpha_composite(panel, (max(0, bx), max(0, by)))
-    d = ImageDraw.Draw(img)
-    d.rectangle([x, y, x + w - 1, y + h - 1], outline=(200, 70, 70, 140) if overflow else (140, 140, 140, 60))
-    cpm.draw_text(img, FONT, text, (x, y, x + w, y + h), ALIGN, COLOR)
+    layer = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    saved = (cpm.SX, cpm.SY)
+    cpm.SX = cpm.SY = 1.0
+    try:
+        cpm.draw_border(layer, dict(FRAME_TEMPLATE, DIMENSION=FRAME_DIM, COLOR=TEAL_FRAME), (0, 0, w, h))
+    finally:
+        cpm.SX, cpm.SY = saved
+    if FRAME_ALPHA < 1.0:
+        a = layer.getchannel("A").point(lambda v: int(v * FRAME_ALPHA))
+        layer.putalpha(a)
+    img.alpha_composite(layer, (x, y))
+
+
+def draw_block(img, cpm, o, rect, hover_row=None):
+    """The whole block as the mod lays it out: frame, header (cream), indicator (dim teal), rows (teal, hovered row cream)."""
+    x, y, w, h = rect
+    draw_frame(img, cpm, rect)
+
+    def put(text, r, col):
+        rx, ry, rw, rh = r
+        cpm.draw_text(img, FONT, text, (x + rx, y + ry, x + rx + rw, y + ry + rh), TEXT_ALIGN, col)
+
+    put(o["header"], header_rect(w), CREAM)
+    if o["indicator"]:
+        put(o["indicator"], indicator_rect(w, o["indicator_px"]), TEAL_DIM)
+    for i, t in enumerate(o["rows"]):
+        put(t, row_rect(i, w), CREAM if i == hover_row else TEAL_TEXT)
 
 
 def caption(img, lines):
@@ -257,24 +544,12 @@ def caption(img, lines):
         y += 34
 
 
-def zoom(img, rect, z=2, pad_x=40, pad_y=40, min_w=0):
+def zoom(img, rect, z=2, pad=40):
     from PIL import Image
     x, y, w, h = rect
-    cx = x + w // 2
-    cw = max(w, min_w) + 2 * pad_x
-    box = (max(0, cx - cw // 2), max(0, y - pad_y), min(SCREEN_W, cx + cw // 2), min(SCREEN_H, y + h + pad_y))
+    box = (max(0, x - pad), max(0, y - pad), min(SCREEN_W, x + w + pad), min(SCREEN_H, y + h + pad))
     c = img.crop(box)
     return c.resize((c.width * z, c.height * z), Image.LANCZOS)
-
-
-def measure(cpm):
-    """[(id, desc, kind, text, chars, width_px, label_w, fits)]"""
-    rows = []
-    for tid, desc, kind, text in sample_texts():
-        wpx = cpm.text_size(FONT, text)[0]
-        lw = label_w(kind)
-        rows.append((tid, desc, kind, text, len(text), wpx, lw, wpx <= lw))
-    return rows
 
 
 def render_all(outdir):
@@ -282,38 +557,60 @@ def render_all(outdir):
     cpm = _cpm()
     outdir = Path(outdir)
     outdir.mkdir(parents=True, exist_ok=True)
-    rows = measure(cpm)
-    written = []
-    for tid, desc, kind, text, nch, wpx, lw, ok in rows:
+    rows, written = [], []
+    for sample in samples():
+        sid, desc = sample[0], sample[1]
+        o, v = sample_draw(sample)
+        hover = sample[5]
+        (pa, ra), (pb, rb) = placements(o)[0]
         img = background()
-        name_rect = draw_target_tag(img, cpm, MENU_ORIGIN)
-        ra = toast_rect(*name_rect, w=lw, screen=(0, SCREEN_W))
-        rb = fixed_rect(0, 0, SCREEN_W, SCREEN_H, w=lw)
-        draw_label(img, cpm, text, ra, not ok)
-        draw_label(img, cpm, text, rb, not ok)
+        draw_target_tag(img, cpm, MENU_ORIGIN)
+        draw_block(img, cpm, o, ra, hover)
+        draw_block(img, cpm, o, rb, hover)
+        fr = fit_row(sample)
+        rows.append(fr)
         caption(img, [
-            f"#{tid} {desc}: {nch} chars, text {wpx:.0f} px, label {lw} px -> {'fits' if ok else 'OVERFLOWS (engine word-wraps; red outline)'}",
-            "A: under target name (name bottom + 20, x clamped to [24, W-24-w]).   B: x centred, y = 62% of HUD height (992 px).",
-            "Backing: black alpha 0.55, pad 10x/4y, width follows the text. Rect units = engine px (setRect/getExtent), NOT 800x600 GUI units.",
+            f"#{sid} {desc}: {fr['items']} items, {fr['rows']} rows visible, block {fr['w']}x{fr['h']} px, header \"{fr['header']}\""
+            + (f", indicator \"{fr['indicator']}\"" if fr["indicator"] else ""),
+            f"A: under the target name {ra[:2]}.   B: fixed spot {rb[:2]} (62% of the panel).   rows fit: {'yes' if fr['rows_fit'] else 'NO'}, "
+            f"header+indicator fit: {'yes' if fr['head_fit'] else 'NO'}, inside the panel: {'yes' if fr['inside'] else 'NO'}",
+            "Frame: vanilla tooltip border (uibit_fill_2bt + uibit_brdr_16bet/16bct, teal), dialogfont10x10, header cream, rows teal, hover cream.",
         ])
-        full = outdir / f"ql_{tid}_full.png"
+        full = outdir / f"ql2l_{sid}_full.png"
         img.save(full)
-        za, zb = zoom(img, ra, min_w=lw), zoom(img, rb, min_w=lw)
+        za, zb = zoom(img, ra), zoom(img, rb)
         sheet = Image.new("RGBA", (max(za.width, zb.width), za.height + zb.height + 6), (0, 0, 0, 255))
         sheet.alpha_composite(za, (0, 0))
         sheet.alpha_composite(zb, (0, za.height + 6))
-        zp = outdir / f"ql_{tid}_zoom.png"
+        zp = outdir / f"ql2l_{sid}_zoom.png"
         sheet.save(zp)
         written += [full, zp]
+    # bottom-of-screen case: the target is low on screen, A flips above the name (ListRows 12, 25 items)
+    sample = samples()[8]
+    o, v = sample_draw(sample)
+    low = (1700, 1250)
+    (pa, ra), (pb, rb) = placements(o, name_origin=low)[0]
+    img = background()
+    draw_target_tag(img, cpm, low)
+    draw_block(img, cpm, o, ra)
+    caption(img, [f"#11 Peek, 25 items, ListRows 12, target low on screen: A flips above the name (block {ra}, name top {low[1] + NAME_LOCAL[1]})"])
+    p = outdir / "ql2l_11_full.png"
+    img.save(p)
+    written.append(p)
+    fr = fit_row(sample)
+    fr.update(id=11, desc="Peek, 25 items, ListRows 12, target low (A flips above)", a=ra, b=rb, inside=ra[1] + ra[3] <= SCREEN_H - SCREEN_MARGIN)
+    rows.append(fr)
     table = format_table(rows)
-    (outdir / "ql_fit_table.txt").write_text(table + "\n")
+    (outdir / "ql2l_fit_table.txt").write_text(table + "\n")
     return rows, table, written
 
 
 def format_table(rows):
-    lines = ["id  chars  text_px  label_px  back_px  fits  kind  text"]
-    for tid, desc, kind, text, nch, wpx, lw, ok in rows:
-        lines.append(f"{tid:<3} {nch:<6} {wpx:<8.0f} {lw:<9} {back_rect((0, 0, lw, TOAST_H), nch)[2]:<8} {'yes' if ok else 'NO':<5} {kind:<5} {text}")
+    lines = ["id  kind  items  rows  block_w  block_h  rows_fit  head_fit  inside  Took_ms  A_rect                  B_rect                  header / indicator"]
+    for r in rows:
+        lines.append(f"{r['id']:<3} {r['kind']:<5} {r['items']:<6} {r['rows']:<5} {r['w']:<8} {r['h']:<8} {'yes' if r['rows_fit'] else 'NO':<9} "
+                     f"{'yes' if r['head_fit'] else 'NO':<9} {'yes' if r['inside'] else 'NO':<7} {r['dur'] or '-':<8} {str(r['a']):<23} {str(r['b']):<23} "
+                     f"{r['header']} / {r['indicator'] or '-'}")
     return "\n".join(lines)
 
 

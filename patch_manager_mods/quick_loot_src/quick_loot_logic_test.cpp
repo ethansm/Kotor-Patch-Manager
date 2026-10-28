@@ -647,5 +647,275 @@ int main() {
         kt::Check("GIVEUP-SERVERCLOSE line", strcmp(b, "GIVEUP-SERVERCLOSE plc=1234abcd flag=1") == 0);
     }
 
+    // ---- 0.4.0-dev: multi-row list
+    {
+        char b[96];
+        // row names: 40-char cut (first 37 + "..."), stacks, trailing space trimmed, printable-only
+        kt::CheckEq("ListRows clamp: 0 -> 1", clampListRows(0), 1u);
+        kt::CheckEq("ListRows clamp: -3 -> 1", clampListRows(-3), 1u);
+        kt::CheckEq("ListRows clamp: 8 stays", clampListRows(8), 8u);
+        kt::CheckEq("ListRows clamp: 12 stays", clampListRows(12), 12u);
+        kt::CheckEq("ListRows clamp: 40 -> 12", clampListRows(40), 12u);
+        kt::Check("ListRows default 8", ListRowsDefault == 8 && ListRowsMin == 1 && ListRowsMax == 12);
+        rowName(b, sizeof b, "Medpac");
+        kt::Check("rowName short", strcmp(b, "Medpac") == 0);
+        rowName(b, sizeof b, "Lightsaber Crystal: Opila");
+        kt::Check("rowName 25 chars is not cut (the one-line label would cut at 20)", strcmp(b, "Lightsaber Crystal: Opila") == 0);
+        const char* n40 = "0123456789012345678901234567890123456789";   // exactly 40
+        rowName(b, sizeof b, n40);
+        kt::Check("rowName 40 chars kept", strcmp(b, n40) == 0);
+        const char* n41 = "0123456789012345678901234567890123456789X";
+        rowName(b, sizeof b, n41);
+        kt::Check("rowName 41 chars -> first 37 + ...", strcmp(b, "0123456789012345678901234567890123456...") == 0 && strlen(b) == 40);
+        rowName(b, sizeof b, "Mandalorian Heavy Armor Plating Mk IV Upgrade Kit");   // 49 > NameCap-1: read cap, then cut
+        kt::Check("rowName long name", strcmp(b, "Mandalorian Heavy Armor Plating Mk IV U...") != 0 && strlen(b) <= 40 && strcmp(b + strlen(b) - 3, "...") == 0);
+        rowName(b, sizeof b, "Mandalorian Heavy Armor Plating Mk IV Ugly Name Here Too");
+        kt::Check("rowName: trailing punctuation before the dots is trimmed", strlen(b) <= 40);
+        rowName(b, sizeof b, "Aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, , , , bbb");   // cut lands on punctuation
+        kt::Check("rowName cut trims trailing non-alnum", strstr(b, ", ...") == nullptr && strcmp(b + strlen(b) - 3, "...") == 0);
+        rowName(b, sizeof b, "Name   ");
+        kt::Check("rowName trims trailing spaces", strcmp(b, "Name") == 0);
+        rowName(b, sizeof b, "");
+        kt::Check("rowName empty -> item", strcmp(b, "item") == 0);
+        rowName(b, sizeof b, nullptr);
+        kt::Check("rowName null -> item", strcmp(b, "item") == 0);
+        rowName(b, sizeof b, "Caf\xC3\xA9");
+        kt::Check("rowName non-printable -> ?", strcmp(b, "Caf??") == 0);
+        rowText(b, sizeof b, "Medpac", 2);
+        kt::Check("rowText stack 2", strcmp(b, "Medpac x2") == 0);
+        rowText(b, sizeof b, "Medpac", 1);
+        kt::Check("rowText stack 1 has no suffix", strcmp(b, "Medpac") == 0);
+        rowText(b, sizeof b, "Medpac", 999);
+        kt::Check("rowText stack 999", strcmp(b, "Medpac x999") == 0);
+        rowText(b, sizeof b, "Medpac", 1000);
+        kt::Check("rowText stack 1000 has no suffix", strcmp(b, "Medpac") == 0);
+        rowText(b, sizeof b, "Medpac", -1);
+        kt::Check("rowText unknown stack has no suffix", strcmp(b, "Medpac") == 0);
+        rowText(b, sizeof b, n41, 3);   // 37 wide digits + "... x3" is wider than the block: cut further, stack kept
+        kt::Check("rowText cut name + stack", strncmp(b, "0123456789", 10) == 0 && strcmp(b + strlen(b) - 6, "... x3") == 0 && textPx10(b) <= RowInnerMaxPx && strlen(b) < 43);
+        rowText(b, sizeof b, "Mandalorian Heavy Armor Plating Mk IV Upgrade Kit", 3);
+        kt::Check("rowText 40-char cut + stack", strcmp(b, "Mandalorian Heavy Armor Plating Mk IV... x3") == 0 || strcmp(b + strlen(b) - 6, "... x3") == 0);
+        // a row never wider than the budget: wide letters cut further
+        rowText(b, sizeof b, "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW", 999);
+        kt::Check("rowText fits RowInnerMaxPx", textPx10(b) <= RowInnerMaxPx && strstr(b, "... x999") != nullptr);
+        rowText(b, sizeof b, "WWWWWWWWWWWWWWWWWWWW", 1, 200);
+        kt::Check("rowText honours a small budget", textPx10(b) <= 200 && strcmp(b + strlen(b) - 3, "...") == 0);
+        kt::Check("textPx10 empty = 0, grows with text", textPx10("") == 0 && textPx10("ab") > textPx10("a"));
+        kt::Check("textPx10 Medpac x2 = the mockup's 200.5 px", textPx10("Medpac x2") == 201);
+    }
+    {
+        // ListData: rows, "+K more" past the capture
+        const char* names[3] = { "Medpac", "Blaster Pistol", "Adhesive Grenade" };
+        const int st[3] = { 2, 1, 3 };
+        ListData d;
+        d.set(names, st, 3, 3);
+        kt::Check("3 items, no more", d.items == 3 && d.more == 0 && d.rowsTotal() == 3 && d.totalItems() == 3);
+        char b[64];
+        d.rowAt(0, b, sizeof b); kt::Check("row 0", strcmp(b, "Medpac x2") == 0);
+        d.rowAt(2, b, sizeof b); kt::Check("row 2", strcmp(b, "Adhesive Grenade x3") == 0);
+        d.rowAt(3, b, sizeof b); kt::Check("row past the end is empty", b[0] == 0);
+        d.set(names, st, 3, 70);
+        kt::Check("70 items, 3 captured: +67 more row", d.more == 67 && d.rowsTotal() == 4 && d.totalItems() == 70);
+        d.rowAt(3, b, sizeof b); kt::Check("last row is the more row", strcmp(b, "+67 more") == 0);
+        kt::Check("maxRowPx covers the widest row", d.maxRowPx >= textPx10("Adhesive Grenade x3"));
+        d.set(names, st, 3, 1);
+        kt::Check("total below count is treated as count", d.more == 0 && d.items == 3);
+        d.set(names, st, 0, 5);
+        kt::Check("no names: empty, no more row", d.empty() && d.more == 0 && d.rowsTotal() == 0);
+        const char* many[100];
+        for (int i = 0; i < 100; ++i) many[i] = "X";
+        d.set(many, nullptr, 100, 100);
+        kt::Check("capture cap 64, 36 more", d.items == ListMaxItems && ListMaxItems == 64 && d.more == 36);
+    }
+    {
+        // scroll view
+        ListView v; v.reset(25, 8);
+        kt::Check("25 rows / 8 visible: max offset 17", v.maxOff() == 17 && v.scrollable());
+        kt::Check("wheel back at the top does nothing", !v.scroll(120) && v.off == 0);
+        kt::Check("one notch down = 1 row", v.scroll(-120) && v.off == 1);
+        kt::Check("one notch up = back", v.scroll(120) && v.off == 0);
+        kt::Check("3 notches in one delta", v.scroll(-360) && v.off == 3);
+        kt::Check("half notch accumulates", !v.scroll(-60) && v.off == 3 && v.scroll(-60) && v.off == 4);
+        kt::Check("opposite half notches cancel", !v.scroll(-60) && !v.scroll(60) && v.off == 4);
+        kt::Check("big delta clamps at maxOff", v.scroll(-120 * 99) && v.off == 17);
+        kt::Check("at the bottom: no change", !v.scroll(-120) && v.off == 17);
+        kt::Check("clamp drops the remainder (no wind-up)", v.scroll(120) && v.off == 16);
+        kt::Check("big positive delta clamps at 0", v.scroll(120 * 99) && v.off == 0);
+        v.scroll(-120 * 5);
+        v.setTotal(10);
+        kt::Check("setTotal shrinks the offset into range", v.off == 2 && v.maxOff() == 2);
+        v.setTotal(6);
+        kt::Check("list fits: offset 0, not scrollable", v.off == 0 && !v.scrollable() && !v.scroll(-120));
+        v.reset(25, 8);
+        kt::Check("reset -> top", v.off == 0 && v.total == 25 && v.rows == 8 && v.acc == 0);
+        v.reset(8, 8);
+        kt::Check("exactly rows: not scrollable", !v.scrollable() && v.maxOff() == 0);
+    }
+    {
+        // headers, indicator, block build
+        char b[64];
+        fmtHeader(b, sizeof b, false, "F", 25);
+        kt::Check("peek header", strcmp(b, "[F] Take all (25)") == 0);
+        fmtHeader(b, sizeof b, true, "F", 4);
+        kt::Check("Took header", strcmp(b, "Took (4)") == 0);
+        fmtHeader(b, sizeof b, false, nullptr, 2);
+        kt::Check("null key -> key", strcmp(b, "[key] Take all (2)") == 0);
+        fmtRange(b, sizeof b, 1, 8, 25);
+        kt::Check("range", strcmp(b, "1-8 of 25") == 0);
+
+        const char* names[25];
+        std::string store[25];
+        for (int i = 0; i < 25; ++i) { store[i] = "Item " + std::to_string(i + 1); names[i] = store[i].c_str(); }
+        ListData d; d.set(names, nullptr, 25, 25);
+        ListView v; v.reset(d.rowsTotal(), 8);
+        ListDraw o;
+        kt::Check("builds", buildListDraw(d, v, false, "F", &o));
+        kt::Check("8 visible, scrollable, indicator", o.vis == 8 && o.scrollable && strcmp(o.indicator, "1-8 of 25") == 0 && o.off == 0);
+        kt::Check("first / last row", strcmp(o.rows[0], "Item 1") == 0 && strcmp(o.rows[7], "Item 8") == 0);
+        kt::CheckEq("height = pads + header + gap + 8 rows", o.h, 2 * BlockPadY + RowH + HeaderGapPx + 8 * RowH);
+        kt::Check("width within [min, max]", o.w >= BlockMinW && o.w <= BlockMaxW);
+        v.off = 10;
+        ListDraw o2;
+        buildListDraw(d, v, false, "F", &o2);
+        kt::Check("scrolled: rows and indicator follow, size does not", strcmp(o2.rows[0], "Item 11") == 0 && strcmp(o2.indicator, "11-18 of 25") == 0 && o2.w == o.w && o2.h == o.h);
+        v.off = 17;
+        buildListDraw(d, v, false, "F", &o2);
+        kt::Check("bottom", strcmp(o2.rows[7], "Item 25") == 0 && strcmp(o2.indicator, "18-25 of 25") == 0);
+        v.off = 99;
+        buildListDraw(d, v, false, "F", &o2);
+        kt::Check("offset past the end is clamped", o2.off == 17);
+        // fewer items than rows: short block, no indicator
+        ListData d4; d4.set(names, nullptr, 4, 4);
+        ListView v4; v4.reset(4, 8);
+        ListDraw o4;
+        buildListDraw(d4, v4, true, "F", &o4);
+        kt::Check("4 items: 4 rows, no indicator", o4.vis == 4 && !o4.scrollable && o4.indicator[0] == 0 && strcmp(o4.header, "Took (4)") == 0);
+        kt::CheckEq("4 rows height", o4.h, 2 * BlockPadY + RowH + HeaderGapPx + 4 * RowH);
+        kt::CheckEq("single item min width", o4.w, BlockMinW);
+        // the more row
+        ListData d5; d5.set(names, nullptr, 20, 25);
+        ListView v5; v5.reset(d5.rowsTotal(), 8);
+        v5.off = v5.maxOff();
+        ListDraw o5;
+        buildListDraw(d5, v5, false, "F", &o5);
+        kt::Check("more row last, indicator ends at the item total", strcmp(o5.rows[7], "+5 more") == 0 && strcmp(o5.indicator, "14-25 of 25") == 0);
+        // width follows the widest of all rows and is capped
+        const char* wide[3] = { "Medpac", "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW", "Credits" };
+        ListData d6; d6.set(wide, nullptr, 3, 3);
+        ListView v6; v6.reset(3, 8);
+        ListDraw o6;
+        buildListDraw(d6, v6, false, "F", &o6);
+        kt::Check("very wide name: block at (nearly) the max width", o6.w > BlockMaxW - 80 && o6.w <= BlockMaxW);
+        kt::Check("wide row still fits its budget", textPx10(o6.rows[1]) <= o6.w - 2 * BlockPadX);
+        ListData e; ListDraw o7;
+        kt::Check("empty list: nothing to draw", !buildListDraw(e, v6, false, "F", &o7));
+        ListView v1; v1.reset(25, 1);
+        ListDraw o8;
+        buildListDraw(d, v1, false, "F", &o8);
+        kt::Check("ListRows 1", o8.vis == 1 && strcmp(o8.indicator, "1-1 of 25") == 0);
+        ListView v12; v12.reset(25, 12);
+        buildListDraw(d, v12, false, "F", &o8);
+        kt::CheckEq("ListRows 12 height", o8.h, 2 * BlockPadY + RowH + HeaderGapPx + 12 * RowH);
+        ListView vbig; vbig.reset(25, 40);
+        buildListDraw(d, vbig, false, "F", &o8);
+        kt::Check("rows above 12 clamp to 12", o8.vis == 12);
+    }
+    {
+        // Took duration per list row
+        kt::CheckEq("Took 1 row: 3 s", tookDurationMs(1), 3000u);
+        kt::CheckEq("Took 3 rows: 3 s", tookDurationMs(3), 3000u);
+        kt::CheckEq("Took 4 rows: 3.5 s", tookDurationMs(4), 3500u);
+        kt::CheckEq("Took 8 rows: 5.5 s", tookDurationMs(8), 5500u);
+        kt::CheckEq("Took 9 rows: 6 s", tookDurationMs(9), 6000u);
+        kt::CheckEq("Took 65 rows: capped at 6 s", tookDurationMs(65), 6000u);
+        // hover hold
+        ToastState t;
+        t.start("x", 1000, 3000);
+        t.tick(2000, false);
+        kt::Check("no hover: timer runs", t.visible(3999) && !t.visible(4000));
+        t.tick(2500, true);
+        kt::Check("hover: shownAt moves with the clock", t.shownAt == 1500 && t.visible(4499) && !t.visible(4500));
+        for (uint32_t now = 2516; now <= 12500; now += 16) t.tick(now, true);   // ~10 s of 16 ms frames hovered
+        kt::Check("held through a long hover", t.visible(12500) && t.shownAt == 11500);
+        const uint32_t held = t.shownAt;
+        t.tick(12516, false);
+        kt::Check("released: runs from where it was", t.visible(held + 2999) && !t.visible(held + 3000));
+        ToastState w;
+        w.start("x", 0xFFFFFF9Cu, 3000);
+        w.tick(100u, true);
+        kt::Check("hold across the 32-bit wrap", w.shownAt == 100u && w.visible(100u + 2999u) && !w.visible(100u + 3000u));
+        ToastState idle;
+        idle.tick(500, true);
+        kt::Check("inactive toast: hold does nothing", !idle.active && idle.shownAt == 0);
+    }
+    {
+        // block placement: A / B, clamps, bottom flip
+        Geometry g;
+        g.menuShown = true; g.haveName = true; g.name = { 1700, 520, 533, 32 };
+        g.havePanel = true; g.panel = { 0, 0, 3840, 1600 };
+        Anchor a; Pos p = Pos::None;
+        kt::Check("anchor A", chooseAnchor(g, &a, &p) && p == Pos::A && a.cx == 1966 && a.top == 572 && a.nameTop == 520 && a.hasName);
+        Rect r = blockRect(p, a, 400, 334, g.panel);
+        kt::Check("A: centred on the name, under it", r == Rect{ 1766, 572, 400, 334 });
+        g.menuShown = false;
+        kt::Check("anchor still A when only the name rect is known and no panel", (g.havePanel = false, chooseAnchor(g, &a, &p) && p == Pos::A));
+        g.havePanel = true;
+        kt::Check("anchor B at the panel", chooseAnchor(g, &a, &p) && p == Pos::B && a.cx == 1920 && a.top == 992 && !a.hasName);
+        r = blockRect(p, a, 400, 334, g.panel);
+        kt::Check("B: centred, 62 %", r == Rect{ 1720, 992, 400, 334 });
+        Geometry none;
+        kt::Check("nothing to anchor to", !chooseAnchor(none, &a, &p));
+        // x clamp
+        a = Anchor(); a.cx = 50; a.top = 100;
+        r = blockRect(Pos::A, a, 400, 300, { 0, 0, 3840, 1600 });
+        kt::Check("x clamped to 24", r.x == 24);
+        a.cx = 3830;
+        r = blockRect(Pos::A, a, 400, 300, { 0, 0, 3840, 1600 });
+        kt::Check("x clamped to the right margin", r.x == 3840 - 24 - 400);
+        r = blockRect(Pos::A, a, 400, 300, { 0, 0, 0, 0 });
+        kt::Check("unknown panel: no clamp", r.x == 3830 - 200 && r.y == 100);
+        // bottom clamp: A flips above the name, B moves up
+        a = Anchor(); a.cx = 1966; a.top = 1352; a.nameTop = 1300; a.hasName = true;
+        r = blockRect(Pos::A, a, 400, 334, { 0, 0, 3840, 1600 });
+        kt::Check("A at the bottom: flipped above the name", r.y == 1300 - 20 - 334 && r.y + r.h <= 1576);
+        a.nameTop = 200;   // flipping would leave the panel at the top: slide up to the bottom limit instead
+        a.top = 1500;
+        r = blockRect(Pos::A, a, 400, 334, { 0, 0, 3840, 400 });
+        kt::Check("A, no room above: bottom limit", r.y == 376 - 334 || r.y == 24);
+        a = Anchor(); a.cx = 1920; a.top = 992;
+        r = blockRect(Pos::B, a, 400, 334, { 0, 0, 3840, 600 });
+        kt::Check("B on a short panel: moved up to the limit", r.y == 600 - 24 - 334);
+        r = blockRect(Pos::B, a, 400, 334, { 0, 0, 3840, 1600 });
+        kt::Check("B fits: unchanged", r.y == 992);
+        r = blockRect(Pos::B, a, 400, 900, { 0, 0, 3840, 600 });
+        kt::Check("block taller than the panel: top limit", r.y == 24);
+        // child rects and hit test
+        kt::Check("header rect", headerRect(400) == Rect{ BlockPadX, BlockPadY, 400 - 2 * BlockPadX + LabelSlackPx, RowH });
+        kt::Check("row 0 under the header gap", rowRect(0, 400).y == BlockPadY + RowH + HeaderGapPx && rowRect(3, 400).y == rowRect(0, 400).y + 3 * RowH);
+        kt::Check("indicator ends on the right padding line", indicatorRect(500, 120).x + 120 == 500 - BlockPadX);
+        const Rect blk = { 1000, 500, 400, 334 };
+        const float rowsTop = static_cast<float>(500 + BlockPadY + RowH + HeaderGapPx);
+        kt::CheckEq("hover row 0", rowAtPoint(blk, 8, 1100.0f, rowsTop + 1.0f), 0);
+        kt::CheckEq("hover row 2", rowAtPoint(blk, 8, 1100.0f, rowsTop + 2 * RowH + 5.0f), 2);
+        kt::CheckEq("hover the header: none", rowAtPoint(blk, 8, 1100.0f, rowsTop - 10.0f), -1);
+        kt::CheckEq("hover left of the text area: none", rowAtPoint(blk, 8, 1000.0f + BlockPadX - 1, rowsTop + 5.0f), -1);
+        kt::CheckEq("hover below the last visible row: none", rowAtPoint(blk, 3, 1100.0f, rowsTop + 3 * RowH + 1.0f), -1);
+        kt::Check("point in rect", pointInRect(blk, 1000.0f, 500.0f) && pointInRect(blk, 1399.9f, 833.9f) && !pointInRect(blk, 1400.0f, 600.0f) && !pointInRect(blk, 1100.0f, 499.0f));
+        // latch keeps the anchor and clears it
+        Latch l;
+        l.anchor.cx = 7;
+        l.set(Pos::B, { 1, 2, 3, 4 });
+        l.clear();
+        kt::Check("latch clear drops the anchor", l.anchor.cx == 0 && !l.held);
+        // log lines
+        char b[96];
+        fmtListLog(b, sizeof b, 8, 25, 0, 640, 334);
+        kt::Check("LIST line", strcmp(b, "LIST rows=8 items=25 off=0 w=640 h=334") == 0);
+        fmtScroll(b, sizeof b, 3, 17);
+        kt::Check("SCROLL line", strcmp(b, "SCROLL off=3/17") == 0);
+        fmtWheelSub(b, sizeof b, 2, 5);
+        kt::Check("WHEEL-SUB line", strcmp(b, "WHEEL-SUB token=2 after=5") == 0);
+    }
+
     return kt::Report("quick_loot_logic_test");
 }

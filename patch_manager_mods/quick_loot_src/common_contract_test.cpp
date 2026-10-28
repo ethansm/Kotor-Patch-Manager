@@ -13,6 +13,7 @@
 #include "GameAddr.h"
 #include "KpLog.h"
 #include "HudHost.h"
+#include "GuiInput.h"
 #include "GuiKit.h"
 #include "QuickLootLogic.h"
 #include "check.h"
@@ -52,6 +53,17 @@ SIG(guikit::setFill, bool (*)(uintptr_t, void*, const float*));
 SIG(guikit::setBorderTint, bool (*)(uintptr_t, const float*));
 SIG(guikit::setAlpha, bool (*)(uintptr_t, float));
 SIG(guikit::getExtent, bool (*)(uintptr_t, int*, int*, int*, int*));
+// 0.4.0-dev GuiInput.h API QuickLoot.cpp (QL2L wheel scrolling) uses: init / connect / poll, subscribe, game_hwnd keep-alive, cursor_engine.
+SIG(k2input::Client::init, void (k2input::Client::*)(const KPatchApi*, const char*));
+SIG(k2input::Client::connect, bool (k2input::Client::*)());
+SIG(k2input::Client::poll, void (k2input::Client::*)());
+SIG(k2input::Client::wheel_subscribe, int32_t (k2input::Client::*)(K2WheelCallback, void*));
+SIG(k2input::Client::cursor_engine, bool (k2input::Client::*)(float*, float*) const);
+SIG(k2input::Client::game_hwnd, intptr_t (k2input::Client::*)() const);
+static_assert(std::is_same<K2WheelCallback, int32_t (KPATCH_CALL*)(const K2WheelEvent*, void*)>::value, "quick_loot relies on: wheel callback signature");
+static_assert(offsetof(K2WheelEvent, delta) == 4 && offsetof(K2WheelEvent, engine_x) == 8 && offsetof(K2WheelEvent, engine_y) == 12,
+              "quick_loot relies on: K2WheelEvent delta / engine_x / engine_y offsets (the callback hit-tests engine px)");
+static_assert(sizeof(K2WheelEvent) == 32, "quick_loot relies on: K2WheelEvent size (struct_size check in the callback)");
 static_assert(guikit::CF_None == 0, "quick_loot relies on: CF_None == 0 (createLabelFromTemplate success reason)");
 
 KP_LOG_PATCH("quick-loot");   // QuickLoot.cpp (compile-time id validity)
@@ -265,6 +277,23 @@ int main() {
         HCHECK("poll() without hud-host keeps connected false", !hud.connected);
         g_service = &g_log;
     }
+
+    // ================= 7. GuiInput.h (QL2L): connect() without gui-input is inert (the list shows its first rows, no scrolling); the wheel helpers are no-ops
+    {
+        k2input::Client in;
+        in.init(&g_api, "quick-loot");
+        g_service = nullptr;
+        HCHECK("gui-input connect() without the provider is false", !in.connect() && !in.connected);
+        float x = 5, y = 6;
+        HCHECK("cursor_engine without the provider is false and leaves the out values", !in.cursor_engine(&x, &y) && x == 5 && y == 6);
+        HCHECK("wheel_subscribe without the provider returns <= 0 (no token)", in.wheel_subscribe([](const K2WheelEvent*, void*) -> int32_t { return 0; }, nullptr) <= 0);
+        HCHECK("game_hwnd without the provider is 0", in.game_hwnd() == 0);
+        g_service = &g_log;
+    }
+
+    // ================= 8. TextFit.h (QL2L): textPx10 = kFont10TexW x (1600/600) x 1.03 -- the mockup's cpm.text_size("dialogfont10x10") widths (row and block sizes)
+    HCHECK("TextFit dialogfont10x10: 'Medpac x2' is 201 px (cpm.text_size 200.5)", qlogic::textPx10("Medpac x2") == 201);
+    HCHECK("TextFit dialogfont10x10: kFont10TexW has a wide W and a narrow i (proportional font table)", textfit::kFont10TexW[(unsigned char)'W'] > textfit::kFont10TexW[(unsigned char)'i'] && textfit::kFont10TexW[(unsigned char)'i'] > 0);
 
     return kt::Report("common_contract_test (quick_loot)");
 }

@@ -2,9 +2,11 @@
 // tracker, the take-all decision functions (shouldConsume / readyToSend / giveUp / closeFlagFor), the pending-take state, the "Took:" toast
 // text / timing / placement (QL1b), the QL2p proximity peek (candidate filter, nearest pick, cooldown / hysteresis, leave decision, suppress
 // transitions, key edge, peek state, peek label), 0.3.1-dev label layout (one shared 1200 px rect, 56-char one-line text, latched position A/B,
-// x clamp, backing panel rect, Took duration rule, dwell debounce) and the log line formatters. No game memory, no Win32: host-testable
-// (quick_loot_logic_test.cpp).
+// x clamp, backing panel rect, Took duration rule, dwell debounce) and the log line formatters. 0.4.0-dev adds the multi-row list layer
+// (row text, scroll view, block geometry, bottom clamp, Took duration per row, hover hold) below the fmtPeek section. No game memory, no
+// Win32: host-testable (quick_loot_logic_test.cpp; build with -I../_shared_src for TextFit.h).
 #pragma once
+#include "TextFit.h"   // textfit::textPx: row / block widths use the DLL's own dialogfont10x10 advance table
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -440,6 +442,215 @@ inline Rect peekRectFixed(int px, int py, int pw, int ph) {
     return { px + pw / 2 - PeekW / 2, py + (ph * PeekTopPercent) / 100, PeekW, ToastH };
 }
 
+
+// ---- 0.4.0-dev: multi-row item list (doc 52 QL2L). One block = header row + up to ListRows item rows on a vanilla frame panel.
+// Geometry (engine px at 3840x1600, the dev box; all constants measured with scripts/character_page_mockup.py text_size):
+//   dialogfont10x10 = 2.7467 px per font texel (1.03 x 1600/600); glyph box 10 texels = 27.5 px tall; the tooltip line pitch is 12.5 texels = 34 px.
+//   RowH 32 px keeps the glyph box (27.5) plus 4.5 px of air; 12 rows + header = 13 x 32 = 416 px = 26 % of the screen height.
+constexpr int NameCap = 48;                // captured name buffer (rowName reads at most NameCap-1 chars)
+constexpr unsigned ListMaxItems = 64;      // names captured per peek / take; items past this only count towards the "+K more" row
+constexpr unsigned ListRowsDefault = 8, ListRowsMin = 1, ListRowsMax = 12;   // visible item rows (quick_loot.ini ListRows)
+constexpr unsigned RowNameMax = 40;        // an item name longer than this is cut: first RowNameMax-3 chars + "..."
+constexpr unsigned RowTextCap = 56;        // one row's text: name (<= 40) + " x999" + NUL fits
+constexpr int RowH = 32;                   // row pitch (px); see the measurement above
+constexpr int HeaderGapPx = 6;             // air between the header row and the first item row
+constexpr int BlockPadX = 28, BlockPadY = 20;   // inside the frame; the vanilla template frame (LBL_MOULDING3, DIMENSION 16) eats 16 px of each edge
+constexpr int BlockMinW = 300, BlockMaxW = 900;
+constexpr int LabelSlackPx = 12;           // row / header label rects are this much wider than their text budget (a wrapped label is taller than a row)
+constexpr int IndicatorGapPx = 36;         // min gap between the header text and the "1-8 of 25" indicator
+constexpr float FrameAlpha = 1.0f;         // frame panel alpha: the template fill (uibit_fill_2bt) is already black at alpha 199/255 = 0.78 ("about 0.75"), alpha 1.0 keeps the vanilla look
+constexpr int WheelStep = 120;             // wheel delta per row
+constexpr uint32_t WheelFreshMs = 250;     // the wheel callback consumes only while the block was drawn within this long
+constexpr uint32_t TookBaseMs = 3000, TookRowMs = 500, TookCapMs = 6000;   // Took list: 3 s + 0.5 s per list row past TookFreeRows, cap 6 s
+constexpr unsigned TookFreeRows = 3;
+
+inline unsigned clampListRows(int v) {
+    if (v < static_cast<int>(ListRowsMin)) return ListRowsMin;
+    return v > static_cast<int>(ListRowsMax) ? ListRowsMax : static_cast<unsigned>(v);
+}
+// Took list duration: 3 s for up to 3 list rows, +0.5 s per row past that, never above 6 s.
+inline uint32_t tookDurationMs(unsigned listRows) {
+    uint32_t d = TookBaseMs + (listRows > TookFreeRows ? (listRows - TookFreeRows) * TookRowMs : 0u);
+    return d > TookCapMs ? TookCapMs : d;
+}
+
+// dialogfont10x10 width of t in engine px at 1600 px screen height (rounded up).
+inline int textPx10(const char* t) {
+    const textfit::TextCtx c = { 1600.0f / 600.0f, 1.03f, 1.0f };
+    return static_cast<int>(ceilf(textfit::textPx(c, t, static_cast<int>(strlen(t)), textfit::F10)));
+}
+constexpr int RowInnerMaxPx = BlockMaxW - 2 * BlockPadX;   // widest row text the block can hold
+
+// Row name: printable bytes (others '?'), at most NameCap-1 of them, trailing spaces trimmed, empty -> "item". Longer than RowNameMax: the first
+// RowNameMax-3 chars, trailing non-alphanumerics trimmed, "..." appended ("Mandalorian Heavy Armor Plating Mk IV Upgrade" -> "Mandalorian Heavy Armor Plating Mk IV Up...").
+// cap >= RowNameMax + 1. Returns the length.
+inline unsigned rowName(char* out, unsigned cap, const char* in) {
+    char tmp[NameCap];
+    unsigned n = 0;
+    if (in) {
+        while (n < static_cast<unsigned>(NameCap) - 1 && in[n]) {
+            const unsigned char c = static_cast<unsigned char>(in[n]);
+            tmp[n] = (c < 0x20 || c > 0x7E) ? '?' : static_cast<char>(c);
+            ++n;
+        }
+    }
+    while (n > 0 && tmp[n - 1] == ' ') --n;
+    if (n == 0) { memcpy(tmp, "item", 4); n = 4; }
+    if (n > RowNameMax) {
+        n = RowNameMax - 3;
+        while (n > 0) {
+            const char c = tmp[n - 1];
+            if ((c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) break;
+            --n;
+        }
+        memcpy(tmp + n, "...", 3);
+        n += 3;
+    }
+    if (n >= cap) n = cap - 1;
+    memcpy(out, tmp, n);
+    out[n] = 0;
+    return n;
+}
+// One item row: rowName + " xN" for 2 <= N <= 999. When the text is wider than maxPx the name is cut further (+ "...") so it never wraps.
+inline unsigned rowText(char* out, unsigned cap, const char* name, int stack, int maxPx = RowInnerMaxPx) {
+    char nm[RowNameMax + 8];
+    unsigned n = rowName(nm, sizeof nm, name);
+    char sfx[8] = "";
+    if (stack >= 2 && stack <= 999) snprintf(sfx, sizeof sfx, " x%d", stack);
+    char buf[RowTextCap + 16];
+    snprintf(buf, sizeof buf, "%s%s", nm, sfx);
+    if (textPx10(buf) > maxPx) {
+        if (n >= 3 && memcmp(nm + n - 3, "...", 3) == 0) n -= 3;
+        while (n > 1) {
+            --n;
+            char t[RowTextCap + 16];
+            snprintf(t, sizeof t, "%.*s...%s", static_cast<int>(n), nm, sfx);
+            if (textPx10(t) <= maxPx) { memcpy(buf, t, sizeof t); break; }
+        }
+    }
+    unsigned len = static_cast<unsigned>(strlen(buf));
+    if (len >= cap) len = cap - 1;
+    memcpy(out, buf, len);
+    out[len] = 0;
+    return len;
+}
+
+// The captured list as rows. items = rows for captured names, more = items past the capture (shown as one last "+K more" row).
+struct ListData {
+    unsigned items = 0, more = 0;
+    int maxRowPx = 0;                  // widest row text (incl. the "+K more" row)
+    char rows[ListMaxItems][RowTextCap];
+    unsigned rowsTotal() const { return items + (more ? 1u : 0u); }
+    unsigned totalItems() const { return items + more; }
+    bool empty() const { return items == 0; }
+    void clear() { items = 0; more = 0; maxRowPx = 0; }
+    // count names captured out of `total` items in the container (total < count is treated as count).
+    void set(const char* const* names, const int* stacks, unsigned count, unsigned total) {
+        clear();
+        if (count > ListMaxItems) count = ListMaxItems;
+        for (unsigned i = 0; i < count; ++i) {
+            rowText(rows[i], RowTextCap, names ? names[i] : nullptr, stacks ? stacks[i] : -1);
+            const int w = textPx10(rows[i]);
+            if (w > maxRowPx) maxRowPx = w;
+        }
+        items = count;
+        if (count == 0) return;
+        more = total > count ? total - count : 0u;
+        if (more) {
+            char b[RowTextCap];
+            moreText(b, sizeof b);
+            const int w = textPx10(b);
+            if (w > maxRowPx) maxRowPx = w;
+        }
+    }
+    unsigned moreText(char* out, size_t cap) const { return static_cast<unsigned>(snprintf(out, cap, "+%u more", more)); }
+    // Row i of the whole list (items, then the "+K more" row); "" past the end.
+    void rowAt(unsigned i, char* out, size_t cap) const {
+        if (i < items) snprintf(out, cap, "%s", rows[i]);
+        else if (i == items && more) moreText(out, cap);
+        else if (cap) out[0] = 0;
+    }
+};
+
+// Scroll state of the list on screen: rows = visible item rows, total = list rows, off = first visible row. The wheel adds up to WheelStep per row.
+struct ListView {
+    unsigned rows = ListRowsDefault, total = 0, off = 0;
+    int acc = 0;                       // wheel delta not yet worth a row (high-resolution wheels send < 120)
+    unsigned maxOff() const { return total > rows ? total - rows : 0u; }
+    bool scrollable() const { return total > rows; }
+    void reset(unsigned newTotal, unsigned newRows) { rows = newRows; total = newTotal; off = 0; acc = 0; }
+    void setTotal(unsigned t) { total = t; if (off > maxOff()) off = maxOff(); }
+    // delta > 0 = wheel forward = up the list. true when off changed.
+    bool scroll(int delta) {
+        if (!scrollable()) { acc = 0; return false; }
+        acc += delta;
+        const int steps = acc / WheelStep;
+        acc -= steps * WheelStep;
+        long n = static_cast<long>(off) - steps;
+        const long hi = static_cast<long>(maxOff());
+        if (n < 0) { n = 0; acc = 0; }
+        if (n > hi) { n = hi; acc = 0; }
+        const bool ch = static_cast<unsigned>(n) != off;
+        off = static_cast<unsigned>(n);
+        return ch;
+    }
+};
+
+// "1-8 of 25": first / last item numbers of the visible rows (1-based), total items.
+inline int fmtRange(char* out, size_t cap, unsigned first, unsigned last, unsigned total) {
+    return snprintf(out, cap, "%u-%u of %u", first, last, total);
+}
+// "[F] Take all (25)" / "Took (25)". total = items in the container.
+inline int fmtHeader(char* out, size_t cap, bool took, const char* key, unsigned total) {
+    if (took) return snprintf(out, cap, "Took (%u)", total);
+    return snprintf(out, cap, "[%s] Take all (%u)", key ? key : "key", total);
+}
+
+// Everything the adapter draws for the block this frame.
+struct ListDraw {
+    bool took = false, scrollable = false;
+    unsigned off = 0, vis = 0, rowsTotal = 0, items = 0;
+    char header[40] = {0};
+    char indicator[24] = {0};          // "" when the whole list fits
+    int headerPx = 0, indicatorPx = 0;
+    char rows[ListRowsMax][RowTextCap];
+    int w = 0, h = 0;                  // block size (px), constant while scrolling
+};
+
+// Builds the block for list d seen through view v. false = nothing to draw (empty list). The width follows the widest of ALL rows (not only the
+// visible ones) so scrolling never resizes the block; h follows the visible row count (min(rows, list rows)).
+inline bool buildListDraw(const ListData& d, const ListView& v, bool took, const char* key, ListDraw* o) {
+    *o = ListDraw();
+    if (d.empty()) return false;
+    const unsigned total = d.rowsTotal();
+    unsigned rows = v.rows < ListRowsMin ? ListRowsMin : (v.rows > ListRowsMax ? ListRowsMax : v.rows);
+    const unsigned vis = total < rows ? total : rows;
+    unsigned off = v.off;
+    const unsigned maxOff = total > rows ? total - rows : 0u;
+    if (off > maxOff) off = maxOff;
+    o->took = took; o->off = off; o->vis = vis; o->rowsTotal = total; o->items = d.totalItems();
+    o->scrollable = total > rows;
+    fmtHeader(o->header, sizeof o->header, took, key, d.totalItems());
+    o->headerPx = textPx10(o->header);
+    int need = d.maxRowPx;
+    if (o->scrollable) {
+        const unsigned last = (off + vis > d.items) ? d.totalItems() : off + vis;
+        fmtRange(o->indicator, sizeof o->indicator, off + 1, last, d.totalItems());
+        o->indicatorPx = textPx10(o->indicator);
+        char worst[24];   // widest form (digits only grow with off): used for the width so the block stays still
+        fmtRange(worst, sizeof worst, maxOff + 1, d.totalItems(), d.totalItems());
+        const int hw = o->headerPx + IndicatorGapPx + textPx10(worst);
+        if (hw > need) need = hw;
+    } else if (o->headerPx > need) need = o->headerPx;
+    int w = need + 2 * BlockPadX;
+    if (w < BlockMinW) w = BlockMinW;
+    if (w > BlockMaxW) w = BlockMaxW;
+    o->w = w;
+    o->h = 2 * BlockPadY + RowH + HeaderGapPx + static_cast<int>(vis) * RowH;
+    for (unsigned i = 0; i < vis; ++i) d.rowAt(off + i, o->rows[i], RowTextCap);
+    return true;
+}
+
 // ---- 0.3.1-dev: label placement (position A under the target name, B at a fixed spot), latch, Took state, dwell
 enum class Pos { None = 0, A, B };
 inline const char* posName(Pos p) { return p == Pos::A ? "A" : (p == Pos::B ? "B" : "-"); }
@@ -472,25 +683,89 @@ inline bool choosePlacement(const Geometry& g, Rect* r, Pos* p) {
 
 // The position chosen when a label first shows, kept (same rect) until the label is gone, so the line never jumps when the name tag
 // appears or vanishes, and the Took line replaces the peek line in the very same rect.
+// 0.4.0-dev block anchor (kept by the latch): the unclamped horizontal centre and top of the block, plus the target name's top for the flip.
+struct Anchor { int cx = 0, top = 0, nameTop = 0; bool hasName = false; };
 struct Latch {
     bool held = false;
     Pos pos = Pos::None;
     Rect rect = {0, 0, 0, 0};
+    Anchor anchor;
     void set(Pos p, const Rect& r) { held = true; pos = p; rect = r; }
-    void clear() { held = false; pos = Pos::None; rect = {0, 0, 0, 0}; }
+    void clear() { held = false; pos = Pos::None; rect = {0, 0, 0, 0}; anchor = Anchor(); }
 };
+
+// Block anchor, same A/B rule as choosePlacement: A under the target name (centre = name centre, top = name bottom + gap) while the target menu is
+// shown or only a name rect is known, else B (centre of the HUD panel, PeekTopPercent % down). false = nothing to anchor to yet.
+inline bool chooseAnchor(const Geometry& g, Anchor* a, Pos* p) {
+    const bool panelOk = g.havePanel && g.panel.w > 0 && g.panel.h > 0;
+    *a = Anchor();
+    if (g.menuShown || (!panelOk && g.haveName)) {
+        a->cx = g.name.x + g.name.w / 2; a->top = g.name.y + g.name.h + ToastGapBelowName; a->nameTop = g.name.y; a->hasName = true;
+        *p = Pos::A;
+        return true;
+    }
+    if (panelOk) {
+        a->cx = g.panel.x + g.panel.w / 2; a->top = g.panel.y + (g.panel.h * PeekTopPercent) / 100;
+        *p = Pos::B;
+        return true;
+    }
+    return false;
+}
+
+// The block rect for anchor a and size w x h. x is clamped to [panel.x + 24, panel.x + panel.w - 24 - w] (centred when the block is wider).
+// Bottom clamp: when the block would pass panel bottom - 24, position A with a known name flips above the name (bottom = name top - gap) if that
+// fits inside the panel, else (and for B) the block moves up so its bottom sits on the limit. The top never goes above panel.y + 24.
+// panel.w <= 0 = unknown: no clamp.
+inline Rect blockRect(Pos pos, const Anchor& a, int w, int h, const Rect& panel) {
+    Rect r = { a.cx - w / 2, a.top, w, h };
+    if (panel.w <= 0 || panel.h <= 0) return r;
+    r = clampLabelX(r, panel.x, panel.w);
+    const int bottom = panel.y + panel.h - ScreenMarginPx, topLimit = panel.y + ScreenMarginPx;
+    if (r.y + h > bottom) {
+        int y = bottom - h;
+        if (pos == Pos::A && a.hasName) {
+            const int flip = a.nameTop - ToastGapBelowName - h;
+            if (flip >= topLimit) y = flip;
+        }
+        r.y = y;
+    }
+    if (r.y < topLimit) r.y = topLimit;
+    return r;
+}
+
+// Block-relative rects (add the block origin).
+inline Rect headerRect(int w) { return { BlockPadX, BlockPadY, w - 2 * BlockPadX + LabelSlackPx, RowH }; }
+inline Rect rowRect(unsigned i, int w) { return { BlockPadX, BlockPadY + RowH + HeaderGapPx + static_cast<int>(i) * RowH, w - 2 * BlockPadX + LabelSlackPx, RowH }; }
+// Indicator: text starts at w - BlockPadX - indPx so it ends on the right padding line.
+inline Rect indicatorRect(int w, int indPx) { return { w - BlockPadX - indPx, BlockPadY, indPx + LabelSlackPx, RowH }; }
+// Row index under the screen point (px, py) for the block at blk with vis visible rows, -1 = none (header, padding, outside).
+inline int rowAtPoint(const Rect& blk, unsigned vis, float px, float py) {
+    const float x0 = static_cast<float>(blk.x + BlockPadX), x1 = static_cast<float>(blk.x + blk.w - BlockPadX);
+    const float y0 = static_cast<float>(blk.y + BlockPadY + RowH + HeaderGapPx);
+    if (px < x0 || px >= x1 || py < y0) return -1;
+    const int i = static_cast<int>((py - y0) / static_cast<float>(RowH));
+    return i < static_cast<int>(vis) ? i : -1;
+}
+inline bool pointInRect(const Rect& r, float px, float py) {
+    return px >= static_cast<float>(r.x) && px < static_cast<float>(r.x + r.w) && py >= static_cast<float>(r.y) && py < static_cast<float>(r.y + r.h);
+}
 
 // The Took line: text + how long it stays up.
 struct ToastState {
     bool active = false;
-    uint32_t shownAt = 0, durMs = ToastMs;
+    uint32_t shownAt = 0, durMs = ToastMs, lastTick = 0;
     char text[96] = {0};
     void start(const char* t, uint32_t now, uint32_t dur) {
         strncpy(text, t, sizeof text - 1);
         text[sizeof text - 1] = 0;
-        shownAt = now; durMs = dur; active = true;
+        shownAt = now; durMs = dur; active = true; lastTick = now;
     }
     bool visible(uint32_t now) const { return active && toastVisible(now, shownAt, durMs); }
+    // Per frame: while `hold` (the cursor is over the list) the timer stands still -- shownAt moves forward by the time since the last tick.
+    void tick(uint32_t now, bool hold) {
+        if (active && hold && visible(now)) shownAt += msSince(now, lastTick);
+        lastTick = now;
+    }
 };
 
 // Dwell debounce for the auto-open: the same best candidate on consecutive scans for at least needMs.
@@ -620,6 +895,13 @@ inline int fmtLabelExtent(char* b, size_t n, unsigned chars, int x, int y, int w
 }
 inline int fmtGiveUpServerClose(char* b, size_t n, uintptr_t plc, int flag) {
     return snprintf(b, n, "GIVEUP-SERVERCLOSE plc=%08x flag=%d", static_cast<unsigned>(plc), flag);
+}
+inline int fmtListLog(char* b, size_t n, unsigned rows, unsigned items, unsigned off, int w, int h) {
+    return snprintf(b, n, "LIST rows=%u items=%u off=%u w=%d h=%d", rows, items, off, w, h);
+}
+inline int fmtScroll(char* b, size_t n, unsigned off, unsigned maxOff) { return snprintf(b, n, "SCROLL off=%u/%u", off, maxOff); }
+inline int fmtWheelSub(char* b, size_t n, int token, unsigned failedTries) {
+    return snprintf(b, n, "WHEEL-SUB token=%d after=%u", token, failedTries);
 }
 inline int fmtErr(char* b, size_t n, const char* what, uint32_t dtMs) { return snprintf(b, n, "ERR %s dt=%ums", what, dtMs); }
 
