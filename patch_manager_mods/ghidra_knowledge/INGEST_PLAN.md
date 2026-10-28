@@ -31,6 +31,8 @@ D6 R2 NO-GO root cause was missing names / caller context, so coverage is the le
 
 | phase | start (ISO) | agents | est. cost | note |
 |---|---|---|---|---|
+| I0 | 2026-10-27T20:51 | 1 Sonnet worker (I0+I1 in one brief, 12 tool calls, peak 93k) | $0.52 | 21 tests, suite 314 OK; gap 79/515; extract 337 rows (new 150, agrees 71, conflicts 116) |
+| I1 | 2026-10-27T20:51 | (same worker) | $0 extra | 69 rows -> `rea_findings/20261027_ingest-modcode.tsv` (24 function, 45 global), 3 name conflicts; lint 84 -> 84; modcode gap 79 -> 57 |
 
 ## Spec
 

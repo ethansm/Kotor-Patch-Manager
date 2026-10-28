@@ -87,6 +87,7 @@ $0 and take milliseconds; never ask REA or a model for them.
 | callers, callees, call path, vtable-slot sites | `engine_ai_atlas/tools/cg.py callers|callees|path|indirect --slot` |
 | field reads/writes | `engine_ai_atlas/tools/field_census.py` |
 | all static facts for one address (size, RET, callers/callees named, INDIRECT vtable slots, strings, globals, imports, look-alike twins + the distinguishing asm line) | `python3 ghidra_knowledge/tools/static_facts.py addr <hex> [--json]` / `twins <hex>` (~0.4 s) |
+| names mod code already knows but the KDB/ledger lack (gap count, candidates TSV, `probable` ledger rows) | `python3 ghidra_knowledge/tools/ingest_names.py gap [--source modcode\|notes\|all]` / `extract --source modcode --out F` / `ledger --in F --topic T [--apply]` (INGEST_PLAN) |
 | the same facts on every review card (blind, real = decoy) | `steam_db_batches/tools/batch.py cards B<n> --facts` |
 | ledger hygiene before using or adding rows | `python3 ghidra_knowledge/tools/rea_ledger.py lint` (rules L1 L2 L4 L5 L6 L8; baseline 84 issues on 10-27) |
 

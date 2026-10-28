@@ -1,0 +1,4 @@
+addr	chosen_name	other_name	src
+0x0046a980	Scene::DoFog	Scene::SetFogRange	patch_manager_mods/k2_fog_distance_src/K2FogDistanceLogic.h:20
+0x0085d430	PreviewSetAlign	FnSetAlign	patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp:64
+0x0098c45c	SceneCameraVtable	ExpectedCamVtable	patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp:53

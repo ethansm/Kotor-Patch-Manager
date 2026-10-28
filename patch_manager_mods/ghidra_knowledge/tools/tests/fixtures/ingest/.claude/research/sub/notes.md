@@ -1,0 +1,1 @@
+Notes cite 0x00401000, 0x00500000 and 0x00600000 and the data at 0x00990010.

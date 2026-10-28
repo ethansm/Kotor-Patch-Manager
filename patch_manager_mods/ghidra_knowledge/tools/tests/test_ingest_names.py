@@ -1,0 +1,289 @@
+"""Tests for ingest_names.py (name backfill from mod code).
+
+Run from the tools dir: python3 -m unittest tests.test_ingest_names -v
+Fixtures: tests/fixtures/ingest/ (fake mod tree + 5-row steam_functions.tsv); the KDB and the
+ledger are built per test in a temp dir.  The real dump and the real KDB are never opened.
+"""
+import csv
+import io
+import os
+import sqlite3
+import sys
+import tempfile
+import unittest
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(HERE, ".."))
+import ingest_names as inn  # noqa: E402
+import rea_ledger as rl  # noqa: E402
+
+FIX = os.path.join(HERE, "fixtures", "ingest")
+FUNCS = os.path.join(FIX, "steam_functions.tsv")
+DATE = "2026-10-27"
+
+KDB_ROWS = [
+    ("0x00401000", "Foo::Bar", "high"),
+    ("0x00402000", "Foo::Real", "high"),
+    ("0x00403000", "Mgr::PlayThing", "medium"),
+    ("0x00500000", "Old::Wrong", "wrong"),
+]
+LEDGER_ROWS = [
+    ("0x00402010", "function", "Foo::Baz"),
+    ("0x00402020", "function", "something else entirely"),
+]
+
+
+class StubDump:
+    def __init__(self, asm):
+        self._asm = asm
+
+    def asm(self, a):
+        return self._asm.get(a)
+
+
+def run(argv, dump=None):
+    out, err = io.StringIO(), io.StringIO()
+    rc = inn.main(argv, dump=dump, out=out, err=err)
+    return rc, out.getvalue(), err.getvalue()
+
+
+def slurp(path, mode="rb"):
+    with open(path, mode, **({} if "b" in mode else {"encoding": "utf-8"})) as fh:
+        return fh.read()
+
+
+def read_tsv(path):
+    with open(path, encoding="utf-8", newline="") as fh:
+        return list(csv.DictReader(fh, delimiter="\t", quoting=csv.QUOTE_NONE))
+
+
+class Base(unittest.TestCase):
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self.tmp = self._tmp.name
+        self.db = os.path.join(self.tmp, "kdb.db")
+        con = sqlite3.connect(self.db)
+        con.execute("create table name_map(steam_addr text primary key, name text, source text, "
+                    "confidence text, evidence text, date text)")
+        for a, n, c in KDB_ROWS:
+            con.execute("insert into name_map values (?,?,?,?,?,?)", (a, n, "test", c, "ev", "2026-10-01"))
+        con.commit()
+        con.close()
+        self.ledger = os.path.join(self.tmp, "ledger")
+        os.mkdir(self.ledger)
+        rl.append_rows(self.ledger, "20261001_seed.tsv", [
+            {"addr": a, "kind": k, "name": n, "confidence": "confirmed",
+             "evidence": "%s: PUSH EBP" % a, "topic": "seed", "date": "2026-10-01"}
+            for a, k, n in LEDGER_ROWS])
+        self.common = ["--kdb", self.db, "--ledger-dir", self.ledger, "--functions", FUNCS, "--root", FIX]
+
+    def extract_rows(self):
+        out = os.path.join(self.tmp, "c.tsv")
+        rc, _o, _e = run(["extract", "--source", "modcode", "--out", out] + self.common)
+        self.assertEqual(rc, 0)
+        return out, read_tsv(out)
+
+    def find(self, rows, addr, name):
+        got = [r for r in rows if r["addr"] == addr and r["name"] == name]
+        self.assertTrue(got, f"no row {addr} {name}")
+        return got[0]
+
+
+class ExtractTests(Base):
+    def test_header_and_sorted(self):
+        out, rows = self.extract_rows()
+        with open(out, encoding="utf-8") as fh:
+            self.assertEqual(fh.readline().rstrip("\n").split("\t"), list(inn.EXTRACT_COLS))
+        keys = [(r["addr"], r["src"]) for r in rows]
+        self.assertEqual(keys, sorted(keys))
+        self.assertEqual(len({(r["addr"], r["name"], r["src"]) for r in rows}), len(rows))
+
+    def test_pattern_a_hooks_toml(self):
+        _o, rows = self.extract_rows()
+        bar = self.find(rows, "0x00401000", "Foo::Bar")
+        self.assertEqual(bar["form"], "qualified")
+        self.assertTrue(bar["src"].endswith("foo.hooks.toml:4"), bar["src"])
+        self.assertEqual(self.find(rows, "0x00402010", "Foo::Baz")["src"].split(":")[0],
+                         "patch_manager_mods/foo_src/foo.hooks.toml")
+        # no class comment (0x00402000) and comment more than 6 lines above (0x00403004)
+        self.assertFalse([r for r in rows if r["addr"] == "0x00403004"])
+        self.assertFalse([r for r in rows if r["addr"] == "0x00402000" and r["src"].endswith("hooks.toml:8")])
+
+    def test_pattern_b_constexpr_bare(self):
+        _o, rows = self.extract_rows()
+        r = self.find(rows, "0x00403000", "PlayThing")
+        self.assertEqual((r["form"], r["kind"]), ("bare", "function"))
+        self.assertEqual(r["src"], "patch_manager_mods/foo_src/foo.h:2")
+
+    def test_pattern_c_comments(self):
+        _o, rows = self.extract_rows()
+        self.assertEqual(self.find(rows, "0x00500000", "Foo::Qux")["src"].split(":")[1], "1")  # name then address
+        self.assertTrue(self.find(rows, "0x00600000", "Baz::Zed"))  # /* ... */ with @
+        r = self.find(rows, "0x00600004", "Baz::Inner")  # address then name
+        self.assertEqual(r["kind"], "callsite")
+
+    def test_kind_fn_start_offset(self):
+        _o, rows = self.extract_rows()
+        fn = self.find(rows, "0x00500000", "Foo::Qux")
+        self.assertEqual((fn["kind"], fn["fn_start"], fn["offset"]), ("function", "0x00500000", "0x0"))
+        cs = self.find(rows, "0x00600004", "Baz::Inner")
+        self.assertEqual((cs["kind"], cs["fn_start"], cs["offset"]), ("callsite", "0x00600000", "0x4"))
+        cs2 = self.find(rows, "0x00402010", "Foo::Baz")
+        self.assertEqual((cs2["fn_start"], cs2["offset"]), ("0x00402000", "0x10"))
+        g = self.find(rows, "0x00990010", "SomeGlobal")
+        self.assertEqual((g["kind"], g["fn_start"], g["offset"]), ("global", "", ""))
+
+    def test_status_kdb(self):
+        _o, rows = self.extract_rows()
+        agrees = self.find(rows, "0x00401000", "Foo::Bar")
+        self.assertEqual((agrees["status"], agrees["kdb_name"]), ("agrees", "Foo::Bar"))
+        bare = self.find(rows, "0x00403000", "PlayThing")  # bare name agrees with Class::Name
+        self.assertEqual((bare["status"], bare["kdb_name"]), ("agrees", "Mgr::PlayThing"))
+        conf = self.find(rows, "0x00402000", "kConflictFn")
+        self.assertEqual((conf["status"], conf["kdb_name"]), ("conflicts", "Foo::Real"))
+        self.assertEqual(self.find(rows, "0x00990010", "SomeGlobal")["status"], "new")
+
+    def test_wrong_rows_ignored(self):
+        _o, rows = self.extract_rows()
+        r = self.find(rows, "0x00500000", "Foo::Qux")
+        self.assertEqual((r["status"], r["kdb_name"]), ("new", ""))
+
+    def test_status_ledger(self):
+        _o, rows = self.extract_rows()
+        same = self.find(rows, "0x00402010", "Foo::Baz")
+        self.assertEqual((same["status"], same["kdb_name"]), ("agrees", "rea:Foo::Baz"))
+        diff = self.find(rows, "0x00402020", "Foo::Other")
+        self.assertEqual((diff["status"], diff["kdb_name"]), ("conflicts", "rea:something else entirely"))
+
+    def test_dump_excerpts_excluded(self):
+        _o, rows = self.extract_rows()
+        self.assertFalse([r for r in rows if r["name"] == "Hidden::Fn"])
+
+    def test_kdb_opened_read_only(self):
+        before = slurp(self.db)
+        self.extract_rows()
+        self.assertEqual(slurp(self.db), before)
+
+
+class GapTests(Base):
+    def test_gap_counts(self):
+        res = inn.gap("all", self.db, self.ledger, FUNCS, FIX)
+        mc = res["mod_code"]
+        self.assertEqual(mc["files"], 3)  # dump_excerpts file excluded
+        self.assertEqual(mc["cited"], 5)
+        self.assertEqual(mc["unknown"], 2)  # 0x00500000 ('wrong' in KDB) and 0x00600000
+        self.assertEqual({t["fn"] for t in mc["top"]}, {"0x00500000", "0x00600000"})
+        notes = res["research_notes"]
+        self.assertEqual((notes["files"], notes["cited"], notes["unknown"]), (1, 3, 2))
+
+    def test_gap_source_filter_and_json(self):
+        rc, out, _e = run(["gap", "--source", "modcode", "--json"] + self.common)
+        self.assertEqual(rc, 0)
+        import json
+        self.assertEqual(list(json.loads(out)), ["mod_code"])
+        rc, out, _e = run(["gap", "--source", "notes"] + self.common)
+        self.assertIn("research_notes: files=1 functions cited=3 unnamed/unledgered=2", out)
+
+
+class LedgerTests(Base):
+    def setUp(self):
+        super().setUp()
+        self.extract_path, self.rows = self.extract_rows()
+        # 0x00500000 has no asm -> skipped; 0x00990010 is a global quoted from source
+        self.dump = StubDump({0x00600000: ["PUSH EBP", "MOV EBP,ESP"], 0x00403000: ["RET"]})
+        self.args = ["ledger", "--in", self.extract_path, "--topic", "ingest-modcode", "--date", DATE] + self.common
+        self.target = os.path.join(self.ledger, "20261027_ingest-modcode.tsv")
+
+    def snapshot(self):
+        return {f: slurp(os.path.join(self.ledger, f)) for f in sorted(os.listdir(self.ledger))}
+
+    def test_dry_run_writes_nothing(self):
+        before = self.snapshot()
+        rc, out, _e = run(self.args, self.dump)
+        self.assertEqual(rc, 0)
+        self.assertIn("dry-run: would-write=2 skipped=1 conflicts=1", out)
+        self.assertEqual(self.snapshot(), before)
+        self.assertFalse(os.path.exists(os.path.join(self.tmp, "conflicts.tsv")))
+
+    def test_apply_rows_pass_lint(self):
+        rc, out, _e = run(self.args + ["--apply"], self.dump)
+        self.assertEqual(rc, 0, out)
+        rows = [r for r in rl.read_rows(self.ledger) if r["file"] == "20261027_ingest-modcode.tsv"]
+        self.assertEqual({(r["addr"], r["kind"], r["name"]) for r in rows},
+                         {("0x00600000", "function", "Baz::Zed"), ("0x00990010", "global", "SomeGlobal")})
+        for r in rows:
+            self.assertEqual((r["confidence"], r["topic"], r["date"]), ("probable", "ingest-modcode", DATE))
+            self.assertLessEqual(len(r["evidence"]), 200)
+            self.assertIn("| src patch_manager_mods/foo_src/", r["evidence"])
+        fn = [r for r in rows if r["kind"] == "function"][0]
+        self.assertTrue(fn["evidence"].startswith("0x00600000: PUSH EBP | src "))
+        gl = [r for r in rows if r["kind"] == "global"][0]
+        self.assertIn("constexpr int SomeGlobal = 0x00990010;", gl["evidence"])
+        self.assertEqual(rl.lint(self.ledger), [])
+
+    def test_only_new_function_global(self):
+        run(self.args + ["--apply"], self.dump)
+        names = {r["name"] for r in rl.read_rows(self.ledger) if r["file"] == "20261027_ingest-modcode.tsv"}
+        # agrees/conflicts (KDB or ledger), callsites and 'wrong'-overridden-but-no-asm rows never land
+        for bad in ("Foo::Bar", "PlayThing", "kConflictFn", "Foo::Baz", "Foo::Other", "Baz::Inner", "Foo::Qux"):
+            self.assertNotIn(bad, names)
+
+    def test_kdb_conflicts_never_written(self):
+        run(self.args + ["--apply"], self.dump)
+        text = slurp(self.target, "r")
+        self.assertNotIn("kConflictFn", text)
+        self.assertNotIn("Foo::Real", text)
+        conflicts = slurp(os.path.join(self.tmp, "conflicts.tsv"), "r")
+        self.assertNotIn("kConflictFn", conflicts)
+
+    def test_multi_name_most_frequent_wins(self):
+        rc, _o, _e = run(self.args + ["--apply"], self.dump)
+        self.assertEqual(rc, 0)
+        conflicts = read_tsv(os.path.join(self.tmp, "conflicts.tsv"))
+        self.assertEqual(len(conflicts), 1)
+        c = conflicts[0]
+        self.assertEqual((c["addr"], c["chosen_name"], c["other_name"]), ("0x00600000", "Baz::Zed", "ZedAlt"))
+        self.assertTrue(c["src"].startswith("patch_manager_mods/foo_src/foo.h:"))
+        with open(os.path.join(self.tmp, "conflicts.tsv"), encoding="utf-8") as fh:
+            self.assertEqual(fh.readline().rstrip("\n").split("\t"), ["addr", "chosen_name", "other_name", "src"])
+
+    def test_tie_goes_to_first_by_src(self):
+        rows = [
+            {"addr": "0x00500000", "kind": "function", "name": "B::Two", "form": "qualified",
+             "src": "patch_manager_mods/foo_src/foo.cpp:1", "fn_start": "", "offset": "", "status": "new", "kdb_name": ""},
+            {"addr": "0x00500000", "kind": "function", "name": "A::One", "form": "qualified",
+             "src": "patch_manager_mods/foo_src/foo.cpp:2", "fn_start": "", "offset": "", "status": "new", "kdb_name": ""},
+        ]
+        out, conflicts, skipped = inn.build_ledger_rows(rows, StubDump({0x00500000: ["RET"]}), FIX, "t", DATE)
+        self.assertEqual([r["name"] for r in out], ["B::Two"])
+        self.assertEqual(conflicts[0]["other_name"], "A::One")
+        self.assertEqual(skipped, [])
+
+    def test_second_apply_refused(self):
+        rc, _o, _e = run(self.args + ["--apply"], self.dump)
+        self.assertEqual(rc, 0)
+        before = slurp(self.target)
+        rc, _o, err = run(self.args + ["--apply"], self.dump)
+        self.assertEqual(rc, 2)
+        self.assertIn("already exists", err)
+        self.assertEqual(slurp(self.target), before)
+
+    def test_evidence_truncated_and_anchored(self):
+        long_insn = "MOV EAX," + "A" * 400
+        rows = [{"addr": "0x00600000", "kind": "function", "name": "Baz::Zed", "form": "qualified",
+                 "src": "patch_manager_mods/foo_src/foo.cpp:2", "fn_start": "", "offset": "", "status": "new",
+                 "kdb_name": ""}]
+        out, _c, _s = inn.build_ledger_rows(rows, StubDump({0x00600000: [long_insn]}), FIX, "t", DATE)
+        self.assertEqual(len(out[0]["evidence"]), 200)
+        self.assertTrue(out[0]["evidence"].startswith("0x00600000: MOV EAX,"))
+
+    def test_bad_date_rejected(self):
+        args = [a if a != DATE else "27/10/2026" for a in self.args]
+        rc, _o, err = run(args, self.dump)
+        self.assertEqual(rc, 2)
+        self.assertIn("--date", err)
+
+
+if __name__ == "__main__":
+    unittest.main()

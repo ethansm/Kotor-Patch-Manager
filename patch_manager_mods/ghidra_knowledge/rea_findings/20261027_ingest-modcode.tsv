@@ -1,0 +1,70 @@
+addr	kind	name	confidence	evidence	topic	date
+0x00417800	function	GuiTextObjRefresh	probable	0x00417800: PUSH EBP | src patch_manager_mods/_shared_src/GameAddr.h:134	ingest-modcode	2026-10-27
+0x00417f40	function	GuiSceneCtor	probable	0x00417f40: PUSH EBP | src patch_manager_mods/_shared_src/GameAddr.h:51	ingest-modcode	2026-10-27
+0x00418360	function	SceneAddModel	probable	0x00418360: PUSH EBP | src patch_manager_mods/_shared_src/GameAddr.h:52	ingest-modcode	2026-10-27
+0x00418430	function	SceneRemoveModel	probable	0x00418430: PUSH EBP | src patch_manager_mods/_shared_src/GameAddr.h:53	ingest-modcode	2026-10-27
+0x004184b0	function	SceneGetModel	probable	0x004184b0: PUSH EBP | src patch_manager_mods/_shared_src/GameAddr.h:54	ingest-modcode	2026-10-27
+0x00419740	function	LabelCtor	probable	0x00419740: PUSH EBP | src patch_manager_mods/_shared_src/GameAddr.h:22	ingest-modcode	2026-10-27
+0x0041a510	function	ButtonCtor	probable	0x0041a510: PUSH EBP | src patch_manager_mods/_shared_src/GameAddr.h:23	ingest-modcode	2026-10-27
+0x004662e0	function	Scene::DoCapBucket	probable	0x004662e0: PUSH EBP | src patch_manager_mods/k2_engine_perf_src/code_patches.toml:17	ingest-modcode	2026-10-27
+0x00466700	function	Scene::DoFadeBuckets	probable	0x00466700: PUSH EBP | src patch_manager_mods/k2_engine_perf_src/code_patches.toml:27	ingest-modcode	2026-10-27
+0x00468b50	function	Scene::DoGobShadowsForThisLight	probable	0x00468b50: PUSH EBP | src patch_manager_mods/k2_shadow_distance_src/K2ShadowDistance.cpp:213	ingest-modcode	2026-10-27
+0x0046a980	function	Scene::DoFog	probable	0x0046a980: PUSH EBP | src patch_manager_mods/k2_fog_distance_src/K2FogDistance.cpp:25	ingest-modcode	2026-10-27
+0x0050dac0	function	CAurTriangleBin::RenderGrassPolys	probable	0x0050dac0: PUSH EBP | src patch_manager_mods/k2_grass_draw_distance_src/kotor2-steam-aspyr.hooks.toml:48	ingest-modcode	2026-10-27
+0x0051c8d0	function	FnPartyTable	probable	0x0051c8d0: PUSH EBP | src patch_manager_mods/companion_ai_src/CompanionAI.cpp:477	ingest-modcode	2026-10-27
+0x00710840	function	kAddrResrefInit	probable	0x00710840: PUSH EBP | src patch_manager_mods/npc_world_src/NpcWorldProvider.cpp:51	ingest-modcode	2026-10-27
+0x0073a130	function	FnListRemove	probable	0x0073a130: PUSH EBP | src patch_manager_mods/companion_ai_src/CompanionAI.cpp:480	ingest-modcode	2026-10-27
+0x0074b3f0	function	CSWGuiMainInterface::Draw	probable	0x0074b3f0: PUSH EBP | src patch_manager_mods/action_hotbar_src/ActionHotbar.cpp:7	ingest-modcode	2026-10-27
+0x0074e0b0	function	AddrIconResolver	probable	0x0074e0b0: PUSH EBP | src patch_manager_mods/queue_hud_src/QueueHud.cpp:66	ingest-modcode	2026-10-27
+0x00751710	function	HudTargetInvoke	probable	0x00751710: PUSH EBP | src patch_manager_mods/combat_hotbar_src/CombatHotbar.cpp:76	ingest-modcode	2026-10-27
+0x00751750	function	HudInvokeGroup	probable	0x00751750: PUSH EBP | src patch_manager_mods/_shared_src/GameAddr.h:69	ingest-modcode	2026-10-27
+0x007e5d80	function	GetControlledCreature	probable	0x007e5d80: PUSH EBP | src patch_manager_mods/_shared_src/GameAddr.h:34	ingest-modcode	2026-10-27
+0x0085d430	function	PreviewSetAlign	probable	0x0085d430: PUSH EBP | src patch_manager_mods/_shared_src/GameAddr.h:128	ingest-modcode	2026-10-27
+0x0087a550	function	SendContainerClose	probable	0x0087a550: PUSH EBP | src patch_manager_mods/quick_loot_src/QuickLoot.cpp:56	ingest-modcode	2026-10-27
+0x008a2320	function	OptionsSetDescription	probable	0x008a2320: PUSH EBP | src patch_manager_mods/_shared_src/GameAddr.h:132	ingest-modcode	2026-10-27
+0x008faca0	function	CSWGuiMainCharGen::BeginPlayGame	probable	0x008faca0: PUSH EBP | src patch_manager_mods/save_events_src/kotor2-steam-aspyr.hooks.toml:57	ingest-modcode	2026-10-27
+0x009860d4	global	SleepIat	probable	0x009860d4: constexpr uintptr_t MovResume = 0x00798A50, SleepIat = 0x009860D4; | src patch_manager_mods/robustness_fixes_src/RobustnessFixes.cpp:135	ingest-modcode	2026-10-27
+0x00986128	global	AddrGmsIat	probable	0x00986128: constexpr uintptr_t AddrGmsIat = 0x00986128;    // KERNEL32 GlobalMemoryStatus IAT slot | src patch_manager_mods/k2_engine_perf_src/K2EnginePerf.cpp:30	ingest-modcode	2026-10-27
+0x00986268	global	AddrSlotGlEnable	probable	0x00986268: constexpr uintptr_t AddrSlotGlEnable = 0x00986268; | src patch_manager_mods/k2_grass_draw_distance_src/K2GrassDrawDistance.cpp:80	ingest-modcode	2026-10-27
+0x009862a0	global	AddrSlotGlDisable	probable	0x009862a0: constexpr uintptr_t AddrSlotGlDisable = 0x009862A0; | src patch_manager_mods/k2_grass_draw_distance_src/K2GrassDrawDistance.cpp:81	ingest-modcode	2026-10-27
+0x009862cc	global	AddrSlotGlGetIntegerv	probable	0x009862cc: constexpr uintptr_t AddrSlotGlGetIntegerv = 0x009862CC; | src patch_manager_mods/k2_grass_draw_distance_src/K2GrassDrawDistance.cpp:82	ingest-modcode	2026-10-27
+0x0098657c	global	AilQuickShutdownIat	probable	0x0098657c: constexpr uintptr_t AilQuickShutdownIat = 0x0098657C; | src patch_manager_mods/robustness_fixes_src/RobustnessFixes.cpp:130	ingest-modcode	2026-10-27
+0x009875bc	global	BorderVtable	probable	0x009875bc: constexpr uintptr_t BorderVtable = 0x009875BC;          // CSWGuiBorder RTTI vtable | src patch_manager_mods/_shared_src/GameAddr.h:40	ingest-modcode	2026-10-27
+0x009876b4	global	TextVtable	probable	0x009876b4: constexpr uintptr_t TextVtable = 0x009876B4;            // CSWGuiText RTTI vtable | src patch_manager_mods/_shared_src/GameAddr.h:41	ingest-modcode	2026-10-27
+0x009878bc	global	LabelVtable	probable	0x009878bc: constexpr uintptr_t LabelVtable = 0x009878BC;           // CSWGuiLabel RTTI vtable | src patch_manager_mods/_shared_src/GameAddr.h:38	ingest-modcode	2026-10-27
+0x00987a1c	global	ButtonVtable	probable	0x00987a1c: constexpr uintptr_t ButtonVtable = 0x00987A1C;          // CSWGuiButton vtable, size 0x1D0 (dump decomp/41/0041a510.c writes it) | src patch_manager_mods/_shared_src/GameAddr.h:39	ingest-modcode	2026-10-27
+0x0098bfe0	global	TexMgr::Tick	probable	0x0098bfe0: // [0x0098BFE0]; TexMgr::Tick(); and runs twice per frame. The call at 0x00478A57 is `FF 15 28 61 98 00` | src patch_manager_mods/k2_engine_perf_src/MemStatusCache.h:5	ingest-modcode	2026-10-27
+0x0098c45c	global	SceneCameraVtable	probable	0x0098c45c: constexpr uintptr_t SceneCameraVtable = 0x0098C45C;     // scene camera object vtable (view+0x78) | src patch_manager_mods/_shared_src/GameAddr.h:56	ingest-modcode	2026-10-27
+0x0099244c	global	EventClassGlobal	probable	0x0099244c: constexpr uintptr_t EventClassGlobal = 0x0099244C;             // DAT_0099244c: the EventHandler's first argument is compared with it | src patch_manager_mods/quick_loot_src/QuickLoot.cpp:	ingest-modcode	2026-10-27
+0x0099449c	global	ServerIdMask	probable	0x0099449c: constexpr uintptr_t ServerIdMask = 0x0099449C;           // global: server id = client id & ~[mask] | src patch_manager_mods/_shared_src/GameAddr.h:89	ingest-modcode	2026-10-27
+0x00996088	global	EffDeflectInc	probable	0x00996088: constexpr uintptr_t EffDeflectInc = 0x00996088;  // read the int stored at this address at runtime, it is the effect type id | src patch_manager_mods/active_effects_panel_src/CombatStatsAd	ingest-modcode	2026-10-27
+0x0099608c	global	EffDeflectDec	probable	0x0099608c: constexpr uintptr_t EffDeflectDec = 0x0099608C;  // read the int stored at this address at runtime, it is the effect type id | src patch_manager_mods/active_effects_panel_src/CombatStatsAd	ingest-modcode	2026-10-27
+0x0099a8b8	global	GenderReq2Val	probable	0x0099a8b8: constexpr int GenderReq1Val = 0x0099A8BC, GenderReq2Val = 0x0099A8B8;   // u16 constants 0x8ac330 compares stats+0xE0 with | src patch_manager_mods/inventory_sort_filter_src/InventorySortF	ingest-modcode	2026-10-27
+0x0099a8bc	global	GenderReq1Val	probable	0x0099a8bc: constexpr int GenderReq1Val = 0x0099A8BC, GenderReq2Val = 0x0099A8B8;   // u16 constants 0x8ac330 compares stats+0xE0 with | src patch_manager_mods/inventory_sort_filter_src/InventorySortF	ingest-modcode	2026-10-27
+0x0099c884	global	KeyboardDeviceGlobal	probable	0x0099c884: constexpr uintptr_t KeyboardDeviceGlobal = 0x0099C884;  // rdata constant 0 (device-array index) | src patch_manager_mods/_shared_src/GameAddr.h:42	ingest-modcode	2026-10-27
+0x0099dcc4	global	HudVtable	probable	0x0099dcc4: constexpr uintptr_t HudVtable = 0x0099DCC4;             // CSWGuiInGame (HUD panel) RTTI vtable | src patch_manager_mods/_shared_src/GameAddr.h:83	ingest-modcode	2026-10-27
+0x0099e5ec	global	MessagesPanelVtable	probable	0x0099e5ec: constexpr uintptr_t MessagesPanelVtable = 0x0099E5EC;    // CSWGuiMessages | src patch_manager_mods/_shared_src/GameAddr.h:85	ingest-modcode	2026-10-27
+0x009a044c	global	FadePanelVtable	probable	0x009a044c: constexpr uintptr_t FadePanelVtable = 0x009A044C;        // fade panel | src patch_manager_mods/_shared_src/GameAddr.h:86	ingest-modcode	2026-10-27
+0x009a3d34	global	SceneViewVtable	probable	0x009a3d34: constexpr uintptr_t SceneViewVtable = 0x009A3D34;       // CSWGui3DSceneView RTTI vtable | src patch_manager_mods/_shared_src/GameAddr.h:55	ingest-modcode	2026-10-27
+0x009a4ab0	global	PreviewModelInstName	probable	0x009a4ab0: constexpr uintptr_t PreviewModelInstName = 0x009A4AB0;   // instance-name string passed to CreateModelGob (equip3d, live) | src patch_manager_mods/_shared_src/GameAddr.h:125	ingest-modcode	2026-10-27
+0x009a5c84	global	LoadScreenVtable	probable	0x009a5c84: constexpr uintptr_t LoadScreenVtable = 0x009A5C84;   // CSWGuiLoadScreen | src patch_manager_mods/load_hang_probe_src/LoadHangProbe.cpp:51	ingest-modcode	2026-10-27
+0x009a7bac	global	PausePanelVtable	probable	0x009a7bac: constexpr uintptr_t PausePanelVtable = 0x009A7BAC;       // pause panel | src patch_manager_mods/_shared_src/GameAddr.h:87	ingest-modcode	2026-10-27
+0x009a7cbc	global	kLetterboxVtbl	probable	0x009a7cbc: constexpr uint32_t kLetterboxVtbl = 0x009A7CBC;   // CSWGuiDialogLetterbox vtable (V8b) | src patch_manager_mods/dialogue_letterbox_fix_src/K2DialogueLetterboxFix.cpp:285	ingest-modcode	2026-10-27
+0x009a7d30	global	kConstVA	probable	0x009a7d30: constexpr uintptr_t kConstVA = 0x009A7D30; | src patch_manager_mods/dialogue_letterbox_fix_src/K2DialogueLetterboxFix.cpp:60	ingest-modcode	2026-10-27
+0x009a8fcc	global	AutoPausePanelVtable	probable	0x009a8fcc: constexpr uintptr_t AutoPausePanelVtable = 0x009A8FCC;   // auto-pause panel | src patch_manager_mods/_shared_src/GameAddr.h:88	ingest-modcode	2026-10-27
+0x009f42a4	global	ScreenW	probable	0x009f42a4: constexpr uintptr_t ScreenW = 0x009F42A4;               // engine framebuffer width (int)                  Mod14 syncScreen 218 | src patch_manager_mods/_shared_src/GameAddr.h:16	ingest-modcode	2026-10-27
+0x009f42a8	global	ScreenH	probable	0x009f42a8: constexpr uintptr_t ScreenH = 0x009F42A8;               // engine framebuffer height (int)                 Mod14 syncScreen 218 | src patch_manager_mods/_shared_src/GameAddr.h:17	ingest-modcode	2026-10-27
+0x009f42b4	global	GuiGateGlobal	probable	0x009f42b4: constexpr uintptr_t GuiGateGlobal = 0x009F42B4;         // int, non-zero once the GUI/3D layer is up (inv3d/equip refuse a scene view while 0) | src patch_manager_mods/_shared_src/GameAddr	ingest-modcode	2026-10-27
+0x009f4390	global	GuiRefW	probable	0x009f4390: constexpr uintptr_t GuiRefW = 0x009F4390;               // int (800): GUI layout reference space width | src patch_manager_mods/_shared_src/GameAddr.h:18	ingest-modcode	2026-10-27
+0x009f4394	global	GuiRefH	probable	0x009f4394: constexpr uintptr_t GuiRefH = 0x009F4394;               // int (600): GUI layout reference space height | src patch_manager_mods/_shared_src/GameAddr.h:19	ingest-modcode	2026-10-27
+0x009f5d30	global	AddrShadowsOn	probable	0x009f5d30: constexpr uintptr_t AddrShadowsOn = 0x009F5D30;   // int: master Shadows option | src patch_manager_mods/k2_shadow_distance_src/K2ShadowDistance.cpp:37	ingest-modcode	2026-10-27
+0x009f5d38	global	AddrGrassAlphaCutoff	probable	0x009f5d38: constexpr uintptr_t AddrGrassAlphaCutoff = 0x009F5D38; | src patch_manager_mods/k2_grass_draw_distance_src/K2GrassDrawDistance.cpp:53	ingest-modcode	2026-10-27
+0x009f5d50	global	AddrShadowDist	probable	0x009f5d50: constexpr uintptr_t AddrShadowDist = 0x009F5D50; | src patch_manager_mods/k2_shadow_distance_src/K2ShadowDistance.cpp:29	ingest-modcode	2026-10-27
+0x009f5d54	global	AddrCutFlag	probable	0x009f5d54: constexpr uintptr_t AddrCutFlag = 0x009F5D54;     // int, vanilla 1: object distance cut on | src patch_manager_mods/k2_shadow_distance_src/K2ShadowDistance.cpp:36	ingest-modcode	2026-10-27
+0x009f5da8	global	AddrSoftShadows	probable	0x009f5da8: constexpr uintptr_t AddrSoftShadows = 0x009F5DA8; // int: Soft Shadows option | src patch_manager_mods/k2_shadow_distance_src/K2ShadowDistance.cpp:38	ingest-modcode	2026-10-27
+0x009f60ec	global	AddrPathFlag60EC	probable	0x009f60ec: constexpr uintptr_t AddrPathFlag60EC = 0x009F60EC; | src patch_manager_mods/k2_grass_draw_distance_src/K2GrassDrawDistance.cpp:94	ingest-modcode	2026-10-27
+0x009f60f0	global	AddrPathN	probable	0x009f60f0: constexpr uintptr_t AddrPathN = 0x009F60F0; | src patch_manager_mods/k2_grass_draw_distance_src/K2GrassDrawDistance.cpp:93	ingest-modcode	2026-10-27
+0x009f60fc	global	AddrPathC60FC	probable	0x009f60fc: constexpr uintptr_t AddrPathC60FC = 0x009F60FC; | src patch_manager_mods/k2_grass_draw_distance_src/K2GrassDrawDistance.cpp:96	ingest-modcode	2026-10-27
+0x009f6100	global	G_GlFinishFlag	probable	0x009f6100: constexpr uintptr_t G_FrameLimit = 0x00A1B710, G_SleepGate = 0x00A1B704, G_FrameLimitSrc = 0x00A7EB9C, G_GlFinishFlag = 0x009F6100; | src patch_manager_mods/perf_lab_src/perflab/PerfLab.cp	ingest-modcode	2026-10-27
+0x009f6118	global	AddrPathC6118	probable	0x009f6118: constexpr uintptr_t AddrPathC6118 = 0x009F6118; | src patch_manager_mods/k2_grass_draw_distance_src/K2GrassDrawDistance.cpp:97	ingest-modcode	2026-10-27
+0x009f62dc	global	AddrPathFlag62DC	probable	0x009f62dc: constexpr uintptr_t AddrPathFlag62DC = 0x009F62DC; | src patch_manager_mods/k2_grass_draw_distance_src/K2GrassDrawDistance.cpp:95	ingest-modcode	2026-10-27

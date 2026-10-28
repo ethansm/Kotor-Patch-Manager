@@ -1,0 +1,22 @@
+[[hook]]
+# H1: pre-dispatch of Foo::Bar entry
+# plain remark
+address = 0x00401000
+
+[[hook]]
+# no class name in this block
+address = 0x00402000
+
+[[hook]]
+# Foo::Baz mid-body hook
+address = 0x00402010
+
+[[hook]]
+# Far::Away comment that is too many lines above
+#
+#
+#
+#
+#
+#
+address = 0x00403004
