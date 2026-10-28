@@ -162,10 +162,11 @@ SILENT_BY_DESIGN = {
     "H2d": "ratio operand fix inside an else-if condition; the returned member prints vanilla 'Return oP2'",
     "M2": "runs inside the per-object AoE scan loop (GN_FindAOETarget); a print would fire once per scanned object",
     "M4d": "counter decrement only (nRoll--), no pick; the pick itself prints in M4c",
+    "O3a": "roll-chain counter only (nRoll--), no pick; the Insanity pick itself is the vanilla block, which prints nothing",
     "L4": "else-if condition inside a buff-tree chain with no statement slot; PC-only trees, party members never reach it",
 }
 # Entries whose new text only calls a helper in party_ai_fixes.nss; the helper prints.
-HELPER_PRINTS = {"E1": "Party E1:", "E3": "Party E3:"}
+HELPER_PRINTS = {"E1": "Party E1:", "E3": "Party E3:", "O3": "Party D O3:"}
 
 
 class TraceCoverageTest(unittest.TestCase):
@@ -223,6 +224,143 @@ class TraceCoverageTest(unittest.TestCase):
         # MOD8_ONLY must rebuild the live k_ai_master.ncs byte for byte, so it carries no trace line.
         for e in P.MOD8_ONLY:
             self.assertNotIn("Party D", e[4], e[0])
+
+
+# WI-160 (O3 option B): Horror 30, Insanity 31 and Mass Stasis 44 need 2 unaffected enemies within 4 m of the AoE centre;
+# the roll-chain typos at gensupport:3235 and :3310 are fixed for party members only.
+# Vanilla select chain, gensupport:3218-3318: (power, flag its pick block tests, flag its decrement block tests).
+CHAIN_VANILLA = [
+    ("HORROR", "HORROR", "HORROR"),
+    ("INSANITY", "INSANITY", "HORROR"),      # :3235 decrement tests nHorror
+    ("STORM", "STORM", "STORM"),
+    ("WAVE", "WAVE", "WAVE"),
+    ("SABER", "SABER", "SABER"),
+    ("LIGHTNING", "LIGHTNING", "LIGHTNING"),
+    ("SLEEP", "SLEEP", "SLEEP"),
+    ("STUNDROID", "STUNDROID", "STUNDROID"),
+    ("KILLDROID", "KILLDROID", "KILLDROID"),
+    ("HOWL", "KILLDROID", "HOWL"),           # :3310 pick tests nKillDroid
+    ("SCREAM1", "SCREAM1", "SCREAM1"),
+    ("SCREAM2", "SCREAM2", "SCREAM2"),
+    ("SCREAM3", "SCREAM3", "SCREAM3"),
+]
+CHAIN_PARTY = [
+    ("HORROR", "HORROR", "HORROR"),
+    ("INSANITY", "INSANITY", "INSANITY"),
+    ("STORM", "STORM", "STORM"),
+    ("WAVE", "WAVE", "WAVE"),
+    ("SABER", "SABER", "SABER"),
+    ("LIGHTNING", "LIGHTNING", "LIGHTNING"),
+    ("SLEEP", "SLEEP", "SLEEP"),
+    ("STUNDROID", "STUNDROID", "STUNDROID"),
+    ("KILLDROID", "KILLDROID", "KILLDROID"),
+    ("HOWL", "HOWL", "HOWL"),
+    ("SCREAM1", "SCREAM1", "SCREAM1"),
+    ("SCREAM2", "SCREAM2", "SCREAM2"),
+    ("SCREAM3", "SCREAM3", "SCREAM3"),
+]
+
+
+def _chain_pick(chain, flags, roll):
+    """Replays the vanilla select chain: a pick block fires at roll 1, a decrement block lowers any roll above 1."""
+    picked, nRoll = None, roll
+    for name, pick_flag, dec_flag in chain:
+        if flags[pick_flag] and nRoll == 1:
+            picked = name
+            nRoll -= 1
+        if flags[dec_flag] and nRoll > 1:
+            nRoll -= 1
+    return picked
+
+
+def _chain_mismatches(chain):
+    names = [n for n, _, _ in CHAIN_VANILLA]
+    bad = 0
+    for mask in range(1 << len(names)):
+        flags = {name: bool(mask >> i & 1) for i, name in enumerate(names)}
+        applicable = [n for n in names if flags[n]]
+        for roll in range(1, len(applicable) + 1):
+            if _chain_pick(chain, flags, roll) != applicable[roll - 1]:
+                bad += 1
+    return bad
+
+
+class O3Test(unittest.TestCase):
+    def setUp(self):
+        with open(FIXES, encoding="utf-8") as fh:
+            self.src = fh.read()
+
+    def _entry(self, pid):
+        entries = [e for e in P.PATCHES if e[0] == pid]
+        self.assertEqual(len(entries), 1, pid)
+        return entries[0]
+
+    def _body(self, signature):
+        start = self.src.find(signature)
+        self.assertNotEqual(start, -1, signature)
+        end = self.src.find("\n}\n", start)
+        self.assertNotEqual(end, -1, signature)
+        return self.src[start:end + 3]
+
+    def test_h_o3_entries_are_party_only_on_their_files(self):
+        self.assertEqual(self._entry("O3")[1:3], ("party", P.G))
+        self.assertEqual(self._entry("O3a")[1:3], ("party", P.S))
+        self.assertEqual(self._entry("O3b")[1:3], ("party", P.S))
+
+    def test_h_o3_caller_runs_after_both_centre_branches(self):
+        old, new = self._entry("O3")[3], self._entry("O3")[4]
+        self.assertTrue(old.endswith("        }\n    }\n    else\n"), "anchor must end at the centre branch")
+        self.assertIn("        }\n        //Party AI fix O3", new)
+        self.assertIn("        tUse = GN_PartyAOEUnaffectedCheck(tUse, oTarget);\n    }\n    else\n", new)
+
+    def test_h_o3_proto_declared_for_the_generic_include(self):
+        self.assertIn("talent GN_PartyAOEUnaffectedCheck(talent tUse, object oCentre);\n", P.PARTY_PROTOS)
+
+    def test_h_o3_helper_matches_only_the_three_lasting_powers(self):
+        body = self._body("talent GN_PartyAOEUnaffectedCheck(talent tUse, object oCentre)")
+        self.assertIn("nSpell != 30 && nSpell != 31 && nSpell != 44", body)
+        self.assertIn("IsObjectPartyMember(OBJECT_SELF)", body)
+        self.assertIn("GetFirstObjectInShape(SHAPE_SPHERE, 4.0, lCentre)", body)
+        self.assertIn("!GN_PartySpellEffectOn(nSpell, oNear)", body)
+        self.assertIn("if (nFree >= 2)", body)
+        self.assertIn("return tNone;", body)
+
+    def test_h_o3_storm_and_scream_are_not_in_the_helper(self):
+        body = self._body("talent GN_PartyAOEUnaffectedCheck(talent tUse, object oCentre)")
+        for nid in (25, 159, 160, 161):
+            with self.subTest(spell=nid):
+                self.assertNotRegex(body, r"\b%d\b" % nid)
+
+    def test_h_o3_effect_walk_is_an_exact_spell_id_match(self):
+        body = self._body("int GN_PartySpellEffectOn(int nSpell, object oTarget)")
+        self.assertIn("GetEffectSpellId(eCur) == nSpell", body)
+        self.assertIn("GetFirstEffect(oTarget)", body)
+        self.assertIn("GetNextEffect(oTarget)", body)
+
+    def test_h_o3_drop_print_uses_the_party_d_prefix_and_tag(self):
+        self.assertIn(PARTY_D_PREFIX + "O3: spell ", self.src)
+        self.assertIn("dropped, ", self.src)
+
+    def test_h_o3a_fixes_the_insanity_decrement_only_for_party(self):
+        old, new = self._entry("O3a")[3], self._entry("O3a")[4]
+        self.assertIn("//Force Storm\n", old)
+        self.assertIn("nHorror == 1", old)
+        self.assertIn("(IsObjectPartyMember(OBJECT_SELF) && nInsanity == 1)", new)
+        self.assertIn("(!IsObjectPartyMember(OBJECT_SELF) && nHorror == 1)", new)
+
+    def test_h_o3b_fixes_the_sonic_howl_pick_only_for_party(self):
+        old, new = self._entry("O3b")[3], self._entry("O3b")[4]
+        self.assertIn("nKillDroid == 1 && nRoll == 1", old)
+        self.assertIn("(IsObjectPartyMember(OBJECT_SELF) && nHowl == 1)", new)
+        self.assertIn("(!IsObjectPartyMember(OBJECT_SELF) && nKillDroid == 1)", new)
+        self.assertIn("Party D O3b: Sonic Howl picked", new)
+
+    def test_h_o3_party_roll_chain_picks_the_rolled_power(self):
+        self.assertEqual(_chain_mismatches(CHAIN_PARTY), 0)
+
+    def test_h_o3_simulator_detects_the_vanilla_typos(self):
+        # Guards the simulator itself: the vanilla chain must fail it, or the party check above proves nothing.
+        self.assertGreater(_chain_mismatches(CHAIN_VANILLA), 0)
 
 
 if __name__ == "__main__":

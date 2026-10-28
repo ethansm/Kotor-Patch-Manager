@@ -34,6 +34,7 @@ PARTY_PROTOS = (
     "void GN_PartyApproachUnseen(object oIntruder);\n"
     "int GN_PartyPowerFamily(int nSpell);\n"
     "int GN_PartyFamilyActive(int nSpell, object oTarget);\n"
+    "talent GN_PartyAOEUnaffectedCheck(talent tUse, object oCentre);\n"
     "int SW_NUMBER_PARTY_DCR_STAMP = 22; //Party AI fix F5: local number, 0 = free, n = n-1 duplicate runs skipped\n")
 
 KITE_BRANCH = (
@@ -411,6 +412,21 @@ PATCHES = [
      "        talent tNone;\n"
      "        return tNone;\n"
      "    }\n"),
+    # O3 (party only, option B, owner decision 2026-10-25): the AoE centre keeps the vanilla choice; after the power is
+    # rolled for it, a lasting area power needs 2 unaffected enemies within 4 m of the centre (helper in party_ai_fixes.nss).
+    # Runs after both branches of the droid test, so the Jedi Support centre path gets the same rule either way.
+    ("O3", "party", G,
+     "            tUse = GN_GetBossCombatMove(SW_BOSS_ATTACK_TYPE_FORCE_POWER);\n"
+     "        }\n"
+     "    }\n"
+     "    else\n",
+     "            tUse = GN_GetBossCombatMove(SW_BOSS_ATTACK_TYPE_FORCE_POWER);\n"
+     "        }\n"
+     "        //Party AI fix O3 (party only): Horror, Insanity and Mass Stasis need 2 or more enemies within 4 m of this centre\n"
+     "        //without their effect, else the pick is a null roll. NPCs (helper returns tUse) keep the vanilla pick.\n"
+     "        tUse = GN_PartyAOEUnaffectedCheck(tUse, oTarget);\n"
+     "    }\n"
+     "    else\n"),
     # ---------------- k_inc_gensupport ----------------
     ("M2", "party", S,
      "        nEnemy = GN_CheckEnemyGroupingOnTarget(oCheck,4.0);\n"
@@ -493,6 +509,36 @@ PATCHES = [
      "        }\n"
      "    }\n"
      "    GN_MyPrintString(\"GENERIC DEBUG *************** Return No Weapon Type\");\n"),
+    # O3 roll-chain fixes (vanilla typos, party only; gensupport:3235 and :3310). Without them a roll above 1 is passed on
+    # one step early (Insanity's decrement tests nHorror) and Sonic Howl is never picked by its own roll (its select tests
+    # nKillDroid), so the roll falls through to Scream 1. NPCs keep the vanilla tests.
+    ("O3a", "party", S,
+     "    if(nHorror == 1 && nRoll > 1)\n"
+     "    {\n"
+     "        nRoll--;\n"
+     "    }\n"
+     "    //Force Storm\n",
+     "    //Party AI fix O3a (party only): this decrement is Insanity's; it tested nHorror (vanilla :3235). Party members\n"
+     "    //test nInsanity; NPCs keep nHorror.\n"
+     "    if(((IsObjectPartyMember(OBJECT_SELF) && nInsanity == 1) || (!IsObjectPartyMember(OBJECT_SELF) && nHorror == 1)) && nRoll > 1)\n"
+     "    {\n"
+     "        nRoll--;\n"
+     "    }\n"
+     "    //Force Storm\n"),
+    ("O3b", "party", S,
+     "    //Sonic Howl\n"
+     "    if(nKillDroid == 1 && nRoll == 1)\n"
+     "    {\n"
+     "        tUse = TalentSpell(131);\n",
+     "    //Party AI fix O3b (party only): the pick tested nKillDroid (vanilla :3310), so Sonic Howl was never picked by its\n"
+     "    //own roll. Party members pick on nHowl; NPCs keep nKillDroid.\n"
+     "    if(((IsObjectPartyMember(OBJECT_SELF) && nHowl == 1) || (!IsObjectPartyMember(OBJECT_SELF) && nKillDroid == 1)) && nRoll == 1)\n"
+     "    {\n"
+     "        if(IsObjectPartyMember(OBJECT_SELF))\n"
+     "        {\n"
+     "            GN_MyPrintString(\"GENERIC DEBUG *************** Party D O3b: Sonic Howl picked\");\n"
+     "        }\n"
+     "        tUse = TalentSpell(131);\n"),
     # ---------------- k_ai_master (hench cases: party only) ----------------
     ("E6", "hench", M,
      "            if ( nWeaponType == 1 || nWeaponType == 0)\n",
