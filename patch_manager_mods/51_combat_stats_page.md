@@ -68,6 +68,12 @@ Total Defense stance flag `creature+0x110c`: 0 = Total Defense (written by `AIAc
 3. **Weapon Master Deflect is counted once.** W1 claimed it was never summed (wrong, it is summed at `006e1ef9`). The second
    ungated term reads `stats+0x178/+0x179`, which only the constructor writes (0), so no double count (field_census, W3).
 4. `GetAttacksPerRound 0x006a7170` is a stub (returns 1); the real count is computed in `0x005905f0`.
+5. **Creature -> influence slot (ST5b, local dumps, $0).** HandleAlignmentInfluence `0x0056ae40` (asm `0x0056b470..0x0056b4a6`):
+   `MOV EAX,[0xA1B4A4]; MOV ECX,[EAX+8]; CALL 0x0051c8d0` -> party table = `*(*(*(0xA1B4A4)+8)+4) + 0x1F0B4`; slot =
+   GetNPCID `0x005fdbf0(table, *(creature+4))` = first i in 0..11 with `*(table+0x1C+i*4)` == object id (0x7F000000 skipped),
+   else a stricmp chain on the tag (creature+0x18 CExoString): 0 atton, 1 baodur, 2 mand, 3 g0t0, 4 handmaiden, 5 hk47,
+   6 kreia, 7 mira, 8 t3m4, 9 visasmarr, 10 hanharr, 11 disciple (strings `0x0099515c/54/40/38/30` read from the exe).
+   Influence = `*(int*)(table+0x11C+i*4)`, -1 = unset. Kreia's alignment copies BaseCNPCAlignment instead (C5 KREIA_GUARD).
 
 ## Design (owner decisions 2026-10-27)
 - **Placement: a new "Stats" tab** in the character-effects panel (`active_effects_panel_src/`, character-effects-panel
@@ -96,7 +102,7 @@ Total Defense stance flag `creature+0x110c`: 0 = Total Defense (written by `AIAc
 | ST3 | Mockup: `scripts/character_page_mockup.py` renders the Stats tab + one vanilla-row tooltip (Defense) | ST2 | user review | DONE | ad46e86d | user OK on look 10-27 |
 | ST4 | Probe 0.3.0-probe: STATS log block per shown character (no UI) + read-only deflection check (engine total vs recompute) | ST2 | user GO install | INSTALLED | 265ae68b | LIVE 10-27 19:10 (KPM d5384ec, rollback character-effects-panel_reinstall_20261027_190959); play ST4-P1 |
 | ST5a | Stats tab UI 0.4.0-dev: header click toggles Effects/Stats (`stats_tab=1`), 4 sections, label + value rows (pure `StatsRows.h`, host test `stats_rows_test`), breakdown tooltips; no "Attacks / round" (stub), off-hand attack/crit rows when dual-wielding; hot-swap (hooks unchanged) | ST3, ST4 | user GO install (after ST4-P1) | INSTALLED | 7a4bcc82 | LIVE 10-27 20:21 (KPM a211580, rollback character-effects-panel_swap_20261027_202152); play ST5-P1 |
-| ST5b | `show_influence` rows (needs RE: creature -> NPC slot 0..11 for GetInfluence) | ST5a | RE + user GO install | TODO | | play row |
+| ST5b | `show_influence` rows (needs RE: creature -> NPC slot 0..11 for GetInfluence) | ST5a | RE + user GO install | BUILT | 88200304 | 0.4.1-dev gate PASS; RE: table=*(*(*(0xA1B4A4)+8)+4)+0x1F0B4, slot=GetNPCID 0x5FDBF0 scan +0x1C else tag chain, infl +0x11C; not installed |
 | ST6 | Vanilla page tooltips (hover rects by tag, `vanilla_tooltips=1`, text table) | ST3, ST5 | user GO install | TODO | | play row |
 
 ## Open (UNVERIFIED in W2)

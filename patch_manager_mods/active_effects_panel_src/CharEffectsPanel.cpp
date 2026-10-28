@@ -1,4 +1,4 @@
-// Character Active Effects Panel 0.4.1-dev (Steam Aspyr build 6A522E71...). Fills the right third of the character page
+// Character Active Effects Panel 0.5.0-dev (Steam Aspyr build 6A522E71...). Fills the right third of the character page
 // (CSWGuiInGameCharacter) with the shown character's active effects: icon, name, remaining time; Harmful section first,
 // then Beneficial; expiring first, permanent last; whole-entry scrolling with a scrollbar only when the list overflows.
 // Research trail: patch_manager_mods/14_character_active_effects_panel.md and active_effects_panel_src/research/R* (worktree
@@ -22,6 +22,7 @@
 // effect does, decoded from the live effect ints (decodeEffect, research R3 + R3b), short forms joined with ", " and cut
 // with "..."; long names/stats marquee after marquee_delay_ms without input; hover tooltips (name + time, every stat line,
 // the spells.2da description). GUI = 82 controls (S block inserted before MORE: ids of MORE..TIP moved by 14).
+// 0.5.0-dev (doc 51 ST6): hover tooltips on the vanilla character page rows (attributes, vitality, Force, Defense, saves, alignment, experience) from VanillaTips.h, drawn with the panel tooltip controls (ini vanilla_tips=0 disables); no hook or GUI change.
 // 0.4.1-dev (doc 51 ST5b): Influence row on the Stats tab for party NPCs (party table +0x11C, slot via object id then tag; ini show_influence).
 // 0.4.0-dev (doc 51 ST5a): Stats tab. Click the panel header to switch Effects <-> Stats (ini stats_tab=0 hides the toggle); the Stats rows come from StatsRows.h (srows::build) fed by gatherStats; no hook or GUI change.
 // 0.3.0-probe (doc 51 ST4): log only, no UI change. STATS block (deflection/defense/Force DC/FP cost/resist via engine getters + CombatStats.h) on each creature change; DEFLECT hook H-C5 at 006e1c60+ compares the engine's blaster-deflection total with cstats::deflection (ini deflect_check).
@@ -42,6 +43,7 @@
 #include "CombatStats.h"       // cstats:: pure stat math (doc 51)
 #include "CombatStatsAddr.h"   // cstats_addr:: engine getters + offsets (doc 51 ST4 probe)
 #include "StatsRows.h"         // srows:: Stats tab row builder (doc 51 ST5a, pure, host-tested)
+#include "VanillaTips.h"        // vtips:: vanilla character page hover table + tooltip builder (doc 51 ST6, pure, host-tested)
 #include "GuiInput.h"
 #include "GuiKit.h"   // guikit:: setRect/getExtent/imageFor/setText/setTextColor/setFill/setBorderTint/bindByTag/wheel/screen/cursor + detail::textObjOk
 #include "PanelSlots.h"   // Common: panel -> slot table
@@ -125,7 +127,7 @@ void whyLog(int code, const char* fmt, ...) {
 struct Cfg {
     int enabled = 1, stage = 1, pollMs = 250, showPermanent = 1, wheelScroll = 1, tooltips = 1;
     int statColumn = 1, marquee = 1, marqueeDelayMs = 2500, marqueeStepMs = 160, marqueeHoldMs = 1200;
-    int tooltipDelayMs = 350, tooltipDesc = 1, deflectCheck = 1, statsTab = 1, showInfluence = 0;   // statsTab 0 = no Effects/Stats header toggle; showInfluence 1 = Influence row (default 0: spoiler)
+    int tooltipDelayMs = 350, tooltipDesc = 1, deflectCheck = 1, statsTab = 1, showInfluence = 0, vanillaTips = 1;   // statsTab 0 = no Effects/Stats header toggle; showInfluence 1 = Influence row (default 0: spoiler)
     float statMaxW = 0, statMinFrac = 0.4f, textK10 = 1.03f, tipLineScale = 1.0f;   // stat_max_w 0 = no cap
     int skipEquipped = 1, iconSource = 1, colorTimes = 1, discs = 1, soonS = 30;
     int fakeRows = 0;   // debug aid: N synthetic entries appended to the real list (overflow / scrollbar / sort tests)
@@ -154,7 +156,7 @@ void loadIni() {
         {"stat_column", &c.statColumn, nullptr}, {"stat_max_w", nullptr, &c.statMaxW}, {"stat_min_frac", nullptr, &c.statMinFrac}, {"text_k10", nullptr, &c.textK10}, {"marquee", &c.marquee, nullptr},
         {"marquee_delay_ms", &c.marqueeDelayMs, nullptr}, {"marquee_step_ms", &c.marqueeStepMs, nullptr},
         {"marquee_hold_ms", &c.marqueeHoldMs, nullptr}, {"tooltip_delay_ms", &c.tooltipDelayMs, nullptr},
-        {"tooltip_desc", &c.tooltipDesc, nullptr}, {"deflect_check", &c.deflectCheck, nullptr}, {"stats_tab", &c.statsTab, nullptr}, {"show_influence", &c.showInfluence, nullptr}, {"tip_line_scale", nullptr, &c.tipLineScale}};
+        {"tooltip_desc", &c.tooltipDesc, nullptr}, {"deflect_check", &c.deflectCheck, nullptr}, {"stats_tab", &c.statsTab, nullptr}, {"show_influence", &c.showInfluence, nullptr}, {"vanilla_tips", &c.vanillaTips, nullptr}, {"tip_line_scale", nullptr, &c.tipLineScale}};
     while (fgets(line, sizeof(line), f)) {
         ++ln; trim(line);
         char* k = nullptr; char* v = nullptr;
@@ -189,9 +191,9 @@ void loadIni() {
     if (c.tipLineScale < 0.5f || c.tipLineScale > 2.0f) c.tipLineScale = 1.0f;
     if (c.screenW < 100 || c.screenH < 100) { c.screenW = 3840; c.screenH = 1600; c.screenExplicit = false; }
     g_cfg = c; ++g_cfgGen; syncWheelCfg();
-    logf("INI loaded: %d keys ok, %d rejected, debug=%d gen=%u enabled=%d stage=%d poll_ms=%d fake_rows=%d stat=%d/%.0f marquee=%d (%d/%d/%d) tooltips=%d (%d ms, desc=%d) stats_tab=%d influence=%d",
+    logf("INI loaded: %d keys ok, %d rejected, debug=%d gen=%u enabled=%d stage=%d poll_ms=%d fake_rows=%d stat=%d/%.0f marquee=%d (%d/%d/%d) tooltips=%d (%d ms, desc=%d) stats_tab=%d influence=%d vanilla_tips=%d",
          ok, bad, g_debug, g_cfgGen, c.enabled, c.stage, c.pollMs, c.fakeRows, c.statColumn, c.statMaxW, c.marquee,
-         c.marqueeDelayMs, c.marqueeStepMs, c.marqueeHoldMs, c.tooltips, c.tooltipDelayMs, c.tooltipDesc, c.statsTab, c.showInfluence);
+         c.marqueeDelayMs, c.marqueeStepMs, c.marqueeHoldMs, c.tooltips, c.tooltipDelayMs, c.tooltipDesc, c.statsTab, c.showInfluence, c.vanillaTips);
 }
 void maybeReloadIni() {
     DWORD now = GetTickCount();
@@ -306,6 +308,7 @@ struct Slot {
     DWORD mqNext = 0; int mqRows = 0;   // mqPhase 0 scrolling, 1 hold at the end, 2 hold at the start; mqMax/mqRows from layout
     // tooltip
     int hoverKey = -1, hoverRow = -1; DWORD hoverSince = 0; bool tipShown = false; int tipKey = -1;
+    Entry vtipEnt; bool vtipValid = false;   // vanilla-row tooltip (doc 51 ST6): text built at show time, kept for refresh
 };
 panelslots::PanelSlots<Slot, 4> g_slots;
 unsigned g_seq = 0;
@@ -841,15 +844,18 @@ void hideTip(Slot* s, const char* why) {
     if (s->tipShown) logf("TIP: hide (%s)", why);
     if (s->tipShown) for (int t = T_TIPBG; t <= T_TIP; ++t) hide(s, t);
     s->tipShown = false; s->tipKey = -1;
+    if (s->hoverRow <= -2) { s->hoverRow = -1; s->hoverKey = -1; s->vtipValid = false; }   // vanilla hover state: re-delay after a forced hide
 }
 int wrapAppend(Slot* s, const char* src, float maxPx, char* out, int* len, int cap) { return cfx::wrapAppend(textCtx(s), src, maxPx, out, len, cap); }
-void showTip(Slot* s, int row) {
-    if (!s->ctl[T_TIPBG] || !s->ctl[T_TIPT] || !s->ctl[T_TIP] || row < 0 || row >= s->nPlaced) return;
-    const Entry& x = s->ent[s->rowEnt[row]];
-    float tw = PanelW - 8, inner = tw - 2 * TipInX, tx = PanelX + 4;
+// Draws one tooltip. Panel rows: tx = PanelX + 4, tip below the row (rowTop/rowH), flipped above past the panel bottom.
+// Vanilla rows (vanilla = true): tx = left edge chosen by the caller, rowTop = rect top, placed at the same top, clamped to the 800x600 screen.
+void showTipAt(Slot* s, const Entry& x, float tx, float rowTop, float rowH, const char* logWhat, bool vanilla) {
+    if (!s->ctl[T_TIPBG] || !s->ctl[T_TIPT] || !s->ctl[T_TIP]) return;
+    float tw = PanelW - 8, inner = tw - 2 * TipInX;
     float innerPx = (ux(s, tx + TipInX + inner) - ux(s, tx + TipInX)) * 0.98f;
     char tm[24], full[96], title[100]; fmtTime(x, tm, sizeof tm);
     if (x.val[0]) snprintf(full, sizeof full, "%s %s", x.name, x.val);   // Stats tab: "Defense 12"
+    else if (vanilla) snprintf(full, sizeof full, "%s", x.name);
     else snprintf(full, sizeof full, "%s - %s", x.name, tm);
     fitText(s, full, innerPx, title, sizeof title);
     static char body[1024]; int len = 0, lines = 0; body[0] = 0;
@@ -861,34 +867,72 @@ void showTip(Slot* s, int row) {
     if (!len) { snprintf(body, sizeof body, "No details"); lines = 1; }
     float lineU = kFont10LineH * g_cfg.textK10 * g_cfg.textScale * g_cfg.tipLineScale;   // texels -> units (px = units * sy)
     float h = fminf(TipBodyY + lines * lineU + TipPadB, PanelH);
-    float y = s->rowY[row] + RowH;
-    bool flip = y + h > PanelY + PanelH;
-    if (flip) y = s->rowY[row] - h;
-    if (y < PanelY) y = PanelY;
+    float y; bool flip = false;
+    if (vanilla) {
+        y = rowTop;
+        if (y + h > 600) y = 600 - h;
+        if (y < 0) y = 0;
+    } else {
+        y = rowTop + rowH;
+        flip = y + h > PanelY + PanelH;
+        if (flip) y = rowTop - h;
+        if (y < PanelY) y = PanelY;
+    }
     place(s, T_TIPBG, tx, y, tw, h);
     place(s, T_TIPT, tx + TipInX, y + TipTitleY, inner, TipTitleH);
     place(s, T_TIP, tx + TipInX, y + TipBodyY, inner, h - TipBodyY - TipPadB / 2);
     setText(s, T_TIPT, title); setText(s, T_TIP, body);
-    if (!s->tipShown || s->tipKey != x.key)
-        logf("TIP: show row=%d '%s' lines=%d stat='%s' flip=%d rect=[%d,%d,%d,%d] lineU=%.2f", row, x.name, lines, x.stat, flip,
-             s->rect[T_TIPBG][0], s->rect[T_TIPBG][1], s->rect[T_TIPBG][2], s->rect[T_TIPBG][3], lineU);
+    if (!s->tipShown || s->tipKey != x.key) {
+        if (logWhat) logf("TIP: %s %s lines=%d rect=[%d,%d,%d,%d] lineU=%.2f", logWhat, x.name, lines,
+                          s->rect[T_TIPBG][0], s->rect[T_TIPBG][1], s->rect[T_TIPBG][2], s->rect[T_TIPBG][3], lineU);
+        else logf("TIP: show '%s' lines=%d stat='%s' flip=%d rect=[%d,%d,%d,%d] lineU=%.2f", x.name, lines, x.stat, flip,
+                  s->rect[T_TIPBG][0], s->rect[T_TIPBG][1], s->rect[T_TIPBG][2], s->rect[T_TIPBG][3], lineU);
+    }
     s->tipShown = true; s->tipKey = x.key;
+}
+void showTip(Slot* s, int row) {
+    if (row < 0 || row >= s->nPlaced) return;
+    showTipAt(s, s->ent[s->rowEnt[row]], PanelX + 4, s->rowY[row], RowH, nullptr, false);
+}
+// Vanilla row tooltip: left = right of the rect (+6), else left of it; top = rect top. fresh = build the text now (gatherStats), else re-show the cached one.
+bool gatherStats(int server, srows::StatsIn* in);
+void showVanillaTip(Slot* s, int vrow, bool fresh) {
+    if (vrow < 0 || vrow >= vtips::V_COUNT) return;
+    if (fresh) {
+        srows::StatsIn in;
+        bool have = s->server && gatherStats(s->server, &in);
+        saferead::beginScope();   // engine getters ran
+        if (!vtips::build(vrow, in, have, &s->vtipEnt)) return;
+        s->vtipEnt.key = 0x40000 + vrow;
+        s->vtipValid = true;
+    } else if (!s->vtipValid) return;
+    const vtips::Rect& r = vtips::kRects[vrow];
+    float tw = PanelW - 8, left = r.x + r.w + 6;
+    if (left + tw > 800) left = r.x - 6 - tw;
+    showTipAt(s, s->vtipEnt, left, r.y, r.h, "vanilla", true);
 }
 // hover hit test on the placed rows (sections, gaps and the scrollbar do not count); refresh = re-show (time update)
 void tickTooltip(Slot* s, DWORD t, bool haveCur, float cx, float cy, bool refresh) {
-    if (!g_cfg.tooltips || g_cfg.stage < 1 || !s->nPlaced || s->sx <= 0 || s->sy <= 0) { s->hoverRow = -1; s->hoverKey = -1; hideTip(s, "off"); return; }
-    int row = -1;
+    if (!g_cfg.tooltips || g_cfg.stage < 1 || s->sx <= 0 || s->sy <= 0) { s->hoverRow = -1; s->hoverKey = -1; hideTip(s, "off"); return; }
+    int row = -1, vrow = -1;
     if (haveCur) {
         float u = PanelX + (cx - s->bx) / s->sx, v = PanelY + (cy - s->by) / s->sy;
         for (int r = 0; r < s->nPlaced; ++r)
             if (u >= X0 && u < X0 + s->lastRowW && v >= s->rowY[r] && v < s->rowY[r] + RowH) { row = r; break; }
+        if (row < 0 && g_cfg.vanillaTips) vrow = vtips::hit(u, v);   // vanilla character page rows (doc 51 ST6); the effects list may be empty
     }
-    int key = row >= 0 ? s->ent[s->rowEnt[row]].key : -1;
-    if (key != s->hoverKey || row != s->hoverRow) {
-        if (s->tipShown) hideTip(s, row < 0 ? "leave" : "other row");
-        s->hoverKey = key; s->hoverRow = row; s->hoverSince = t;
+    int key = row >= 0 ? s->ent[s->rowEnt[row]].key : vrow >= 0 ? 0x40000 + vrow : -1;
+    int hrow = row >= 0 ? row : vrow >= 0 ? -2 - vrow : -1;
+    if (key != s->hoverKey || hrow != s->hoverRow) {
+        if (s->tipShown) hideTip(s, hrow == -1 ? "leave" : "other row");
+        s->hoverKey = key; s->hoverRow = hrow; s->hoverSince = t; s->vtipValid = false;
     }
-    if (row < 0) return;
+    if (row < 0 && vrow < 0) return;
+    if (vrow >= 0) {
+        if (!s->tipShown) { if (t - s->hoverSince >= (DWORD)g_cfg.tooltipDelayMs) showVanillaTip(s, vrow, true); }
+        else if (refresh) showVanillaTip(s, vrow, false);
+        return;
+    }
     if (!s->tipShown ? t - s->hoverSince >= (DWORD)g_cfg.tooltipDelayMs : refresh) showTip(s, row);
 }
 
@@ -1271,6 +1315,6 @@ extern "C" void __cdecl CharEffectsDestroy(int panel) {
 
 BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
     if (reason == DLL_PROCESS_DETACH) guikit::wheelUninstall();   // never leave a dangling window proc: restores if on top, else stays chained but inert
-    if (reason == DLL_PROCESS_ATTACH) { snprintf(g_loadLine, sizeof g_loadLine, "chareffects 0.4.1-dev build 8 loaded (KpLog + IniKit + PanelSlots + GuiKit wheel + Party + STATS/DEFLECT probe + Stats tab + influence) tick=%lu", (unsigned long)GetTickCount()); }
+    if (reason == DLL_PROCESS_ATTACH) { snprintf(g_loadLine, sizeof g_loadLine, "chareffects 0.5.0-dev build 9 loaded (KpLog + IniKit + PanelSlots + GuiKit wheel + Party + STATS/DEFLECT probe + Stats tab + influence + vanilla tips) tick=%lu", (unsigned long)GetTickCount()); }
     return TRUE;
 }

@@ -15,3 +15,6 @@ cxxflags = ["-I../_shared_src", "-Werror"]
 
 [stats_rows_test]
 cxxflags = ["-I../_shared_src", "-Werror", "-Wno-format-truncation"]
+
+[vanilla_tips_test]
+cxxflags = ["-I../_shared_src", "-Werror", "-Wno-format-truncation"]

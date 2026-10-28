@@ -1,7 +1,7 @@
 [patch]
 id = "character-effects-panel"
 name = "Character Active Effects Panel"
-version = "0.4.1-dev"
+version = "0.5.0-dev"
 author = "local"
 description = "Lists the shown character's active effects (icon, name, remaining time; Harmful first, then Beneficial) in the right third of the character page, scrollable when the list overflows."
 
