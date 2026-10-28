@@ -390,6 +390,9 @@ inline std::string sfmt(const char* fmt, ...) {
     return r;
 }
 
+// TP3: refusal tip of a Lowest HP slot when nobody qualifies (threshold 100 = anyone hurt).
+inline std::string nobodyToHealTip(int thresholdPct) { return thresholdPct >= 100 ? std::string("Nobody needs healing") : sfmt("Nobody below %d%% HP", thresholdPct); }
+
 // One char per slot: -1 '?', 0 '0', anything else '1'.
 inline std::string fmtVisMask(const int* vis, int n) {
     std::string r;

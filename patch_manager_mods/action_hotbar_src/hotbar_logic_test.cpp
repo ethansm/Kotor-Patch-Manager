@@ -38,6 +38,18 @@ int main() {
     KT_CHECK(r.size() == 1 && r[0] == 1);
     KT_CHECK(p.slots[0][1].empty() && p.slots[0][1].blank);
   }
+  { // c2. TP3: the same item with another target mode is a different slot; the same mode still moves
+    ActionRef self = mk(K_Item, 0, "Medpac"); self.target.mode = TM_Self;
+    ActionRef low = mk(K_Item, 0, "medpac"); low.target.mode = TM_LowHp;
+    Profile p; p.slots[0][0] = mk(K_Item, 0, "Medpac"); p.slots[0][1] = self;
+    KT_CHECK(moveDuplicates(p, 0, 4, low).empty());
+    KT_CHECK(p.slots[0][0].kind == K_Item && p.slots[0][1].kind == K_Item);
+    std::vector<int> r = moveDuplicates(p, 0, 4, self);
+    KT_CHECK(r.size() == 1 && r[0] == 1);
+    KT_CHECK(p.slots[0][1].blank && p.slots[0][0].kind == K_Item);
+    ActionRef s8 = spell8; s8.target.mode = TM_Self;   // non-items ignore the mode
+    KT_CHECK(SameSlot(s8, spell8));
+  }
   { // d. spell vs feat with the same id are different actions
     Profile p; p.slots[0][1] = mk(K_Feat, 8);
     KT_CHECK(moveDuplicates(p, 0, 3, spell8).empty());
@@ -940,17 +952,18 @@ int main() {
     KT_CHECK(!slotView(true, false, false, 0, 0, "", true).hideSettling);          // unbound is never hidden by the settling rule
     SlotView o = slotView(false, true, false, 0, 0, "", false);                    // unchanged: a bound item that left the HUD is out of stock
     KT_CHECK(o.outOfStock && o.showQty && o.grayQty && o.qty == 0);
-    // moveDuplicates: the identity is kind + id/name, the target suffix does not matter: all holders move, whatever their suffix
+    // moveDuplicates (TP3): items move only from a holder with the same target mode; other modes stay (Medpac / Self / Lowest HP side by side)
     Profile p; ActionRef lo = mk(K_Item, 0, "Medpac"); lo.target.mode = TM_LowHp; lo.target.thresholdPct = 40; lo.target.fallback = 0;
     ActionRef se = mk(K_Item, 0, "medpac"); se.target.mode = TM_Self; ActionRef de = mk(K_Item, 0, "MEDPAC");
     p.slots[0][1] = lo; p.slots[0][2] = se; p.slots[0][7] = de; p.slots[0][4] = mk(K_Item, 0, "Stim");
     ActionRef pick = mk(K_Item, 0, "Medpac"); pick.target.mode = TM_Self;
     std::vector<int> mv = moveDuplicates(p, 0, 4, pick);
-    KT_CHECK_EQ(mv.size(), 3); KT_CHECK(mv.size() == 3 && mv[0] == 1 && mv[1] == 2 && mv[2] == 7);
-    for (int s : { 1, 2, 7 }) { KT_CHECK(p.slots[0][s].empty() && p.slots[0][s].blank); KT_CHECK_EQ(p.notes[0][s].c_str(), "moved"); KT_CHECK_EQ(p.slots[0][s].target.mode, TM_Default); }
+    KT_CHECK(mv.size() == 1 && mv[0] == 2);
+    KT_CHECK(p.slots[0][2].empty() && p.slots[0][2].blank); KT_CHECK_EQ(p.notes[0][2].c_str(), "moved");
+    KT_CHECK_EQ(p.slots[0][1].target.mode, TM_LowHp); KT_CHECK_EQ(p.slots[0][7].kind, K_Item);   // other modes untouched
     KT_CHECK_EQ(p.slots[0][4].name.c_str(), "Stim");                              // the target slot is the caller's: untouched
-    pick.target = TargetSpec(); p.slots[0][2] = se; mv = moveDuplicates(p, 0, 2, pick);   // picking onto a holder with a different suffix: that slot is the target, never moved
-    KT_CHECK_EQ(mv.size(), 0); KT_CHECK_EQ(p.slots[0][2].target.mode, TM_Self);
+    pick.target = TargetSpec(); p.slots[0][2] = se; mv = moveDuplicates(p, 0, 2, pick);   // default pick onto slot 2: only the default holder (7) moves
+    KT_CHECK(mv.size() == 1 && mv[0] == 7); KT_CHECK_EQ(p.slots[0][2].target.mode, TM_Self); KT_CHECK_EQ(p.slots[0][1].target.mode, TM_LowHp);
   }
   { // HB23 (was hotbar_bugs_test): slotDigit covers 0..9 and returns '?' for anything else
     KT_CHECK_EQ(slotDigit(0), '1'); KT_CHECK_EQ(slotDigit(8), '9'); KT_CHECK_EQ(slotDigit(9), '0');

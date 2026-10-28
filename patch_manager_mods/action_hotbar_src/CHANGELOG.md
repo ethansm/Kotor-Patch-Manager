@@ -2,7 +2,12 @@
 
 Action Hotbar (id `action-hotbar`), formerly Force Power Hotbar.
 
-## Unreleased (0.1.9-dev)
+## Unreleased (0.1.10-dev)
+
+- The same item can now sit in several slots with different targets (Medpac, Medpac Self, Medpac Lowest HP). Before, picking it again moved it out of the other slot. Picking the same item with the same target still moves it. (TP3)
+- Lowest HP now heals whoever is hurt the most: `HealThreshold` default 100 (was 50, which made the slot do nothing unless someone was below half HP). When nobody qualifies the slot shows "Nobody needs healing" and the log lists each member's HP. Existing INIs keep their written value. (TP3)
+
+## 0.1.9-dev
 
 - Picking a healing item, or one you can use on yourself, now asks "use on?" in the picker: Use normally / Lowest HP / Self. One click assigns the item with that target; Esc goes back to the list. Before, the item was assigned with the default target and had to be changed with the Mode button afterwards. (TP1)
 - Target badges: Self is now a "Self" pill (was a small teal person icon), Lowest HP keeps the red cross, the default has none. The badge area is 23x12 at the slot's top-right (was 13x13) so the pill fits beside the key digit; the "use on?" cells use square versions of the same art. (TP2)

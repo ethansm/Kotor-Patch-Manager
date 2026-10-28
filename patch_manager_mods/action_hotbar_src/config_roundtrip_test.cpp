@@ -160,8 +160,8 @@ int main(){
       Parse("other:8",&x); Parse("other:8@lowhp",&y); KT_CHECK(Same(x,y)); Parse("other:9@lowhp",&y); KT_CHECK(!Same(x,y)); }
     // effective values: slot override, else [General]
     { General g; TargetSpec t;
-      KT_CHECK_EQ(g.healThreshold,50); KT_CHECK_EQ(g.healFallbackSelf,1);
-      KT_CHECK_EQ(effectiveThreshold(t,g),50); KT_CHECK(effectiveFallbackSelf(t,g));
+      KT_CHECK_EQ(g.healThreshold,100); KT_CHECK_EQ(g.healFallbackSelf,1);
+      KT_CHECK_EQ(effectiveThreshold(t,g),100); KT_CHECK(effectiveFallbackSelf(t,g));
       g.healThreshold=70; g.healFallbackSelf=0;
       KT_CHECK_EQ(effectiveThreshold(t,g),70); KT_CHECK(!effectiveFallbackSelf(t,g));
       t.thresholdPct=30; t.fallback=1;
@@ -181,13 +181,13 @@ int main(){
     Config g3; g3.Parse("[General]\nHealThreshold=1\n"); KT_CHECK(g3.warnings.empty()); KT_CHECK_EQ(g3.general.healThreshold,1);
     for(const char* bad:{"HealThreshold=0","HealThreshold=101","HealThreshold=abc","HealThreshold=","HealThreshold=40x","HealThreshold=99999999999","HealThreshold=-5","HealFallback=maybe","HealFallback="}){
       Config w; w.Parse(std::string("[General]\n")+bad+"\n");
-      KT_CHECK_EQ(w.warnings.size(),1); KT_CHECK_EQ(w.general.healThreshold,50); KT_CHECK_EQ(w.general.healFallbackSelf,1); }
+      KT_CHECK_EQ(w.warnings.size(),1); KT_CHECK_EQ(w.general.healThreshold,100); KT_CHECK_EQ(w.general.healFallbackSelf,1); }
     { Config p; p.Parse("[General]\nHealThreshold=+25\nSyncActionBar=+0\n"); KT_CHECK(p.warnings.empty()); KT_CHECK_EQ(p.general.healThreshold,25); KT_CHECK_EQ(p.general.syncActionBar,0); }   // A39: checked parse keeps strtol's optional sign
     for(const char* bad:{"SyncActionBar=","SyncActionBar=1x","SyncActionBar=99999999999","SyncActionBar=-1","SyncActionBar=abc"}){
       Config w; w.Parse(std::string("[General]\n")+bad+"\n");
       KT_CHECK_EQ(w.warnings.size(),1); KT_CHECK_EQ(w.general.syncActionBar,1); }
     Config d; d.Parse("[General]\nInvoke=1\n"); std::string od=d.Serialize();
-    KT_CHECK(od.find("HealThreshold=50\n")!=std::string::npos); KT_CHECK(od.find("HealFallback=self\n")!=std::string::npos);
+    KT_CHECK(od.find("HealThreshold=100\n")!=std::string::npos); KT_CHECK(od.find("HealFallback=self\n")!=std::string::npos);
     KT_CHECK(od.find("HealThreshold")>od.find("AutoFill=")); }
   { const char* ini="[General]\nHealThreshold=60\nHealFallback=none\n[Profile.Default]\nBottom1=item:Medpac@lowhp\nBottom2=item:Medpac@lowhp:40:none ; heal\nBottom3=item:Stim@lowhp::self\nBottom4=item:Adrenal@default\nBottom5=item:A@bogus\n"
                     "[Profile.Atton]\nBottom1=item:Kit@lowhp:10\n";

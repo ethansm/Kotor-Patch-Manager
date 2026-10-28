@@ -44,7 +44,7 @@ Keys 1-0 belong to the hotbar while the bar is shown, also on an empty slot, so 
 3. Click a cell to put that action in the slot. The INI is saved at once. For an item that can target someone (a
    healing item, or one you can use on yourself), the cells change to a "use on?" row first: **Use normally**,
    **Lowest HP** (healing items) and **Self**. Click one to assign the item with that target mode; Esc goes back to the list.
-4. Press **Clear** in the picker to empty the slot. Assigning an action that is already in another slot moves it.
+4. Press **Clear** in the picker to empty the slot. Assigning an action that is already in another slot moves it. An item counts as a different action per target, so Medpac, Medpac (Self) and Medpac (Lowest HP) can sit in three slots.
 5. Esc closes the picker. Esc again leaves edit mode. Clicking the wrench also leaves edit mode.
 
 In the picker, the `<` and `>` buttons scroll one entry at a time (hold to repeat). The mouse wheel does the same
@@ -67,7 +67,7 @@ These apply to item slots only. Powers and modes always show "items only" on the
 
 For `@lowhp`:
 
-- The threshold is `HealThreshold` (default 50, range 1..100). A slot can set its own, see the slot syntax.
+- The threshold is `HealThreshold` (default 100 = anyone hurt, range 1..100; 0.1.10 raised it from 50). A slot can set its own, see the slot syntax.
 - If nobody is below the threshold, `HealFallback` decides: `self` uses the item on the controlled character,
   `none` does nothing. Default is `self`.
 - Only healing items offer Lowest HP. Which items count as healing, and which can be targeted at all, is read from the
@@ -157,7 +157,7 @@ Example:
 ```ini
 [General]
 Invoke=1
-HealThreshold=50
+HealThreshold=100
 HealFallback=self
 
 [Profile.Default]

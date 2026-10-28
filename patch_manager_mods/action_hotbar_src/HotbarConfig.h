@@ -232,14 +232,17 @@ struct Profile {
     std::vector<std::string> comments;   // free ';' / '#' lines inside [Profile.<name>], kept verbatim across Save (C061)
 };
 
-// Picking an action already on the bar MOVES it: every other slot holding `a` becomes explicit "none" (note "moved"),
+// Same action AND, for items, the same target mode: Medpac, Medpac@self and Medpac@lowhp are three different slots (TP3).
+inline bool SameSlot(const ActionRef& a, const ActionRef& b) { return Same(a, b) && (a.kind != K_Item || a.target.mode == b.target.mode); }
+
+// Picking an action already on the bar MOVES it: every other slot holding `a` (SameSlot) becomes explicit "none" (note "moved"),
 // returned in ascending order. blank, not empty: an empty slot would fall back to Default via slotFor and resurrect the action.
 // The caller sets the target slot itself; an empty/blank ref (the Clear path) matches nothing.
 inline std::vector<int> moveDuplicates(Profile& p, int row, int slot, const ActionRef& a) {
     std::vector<int> moved;
     if (a.empty() || row < 0 || row >= Rows) return moved;
     for (int i = 0; i < Slots; ++i) {
-        if (i == slot || !Same(p.slots[row][i], a)) continue;
+        if (i == slot || !SameSlot(p.slots[row][i], a)) continue;
         p.slots[row][i] = ActionRef(); p.slots[row][i].blank = true;
         p.notes[row][i] = "moved"; moved.push_back(i);
     }
@@ -251,7 +254,7 @@ struct General {
     int verbose = 0;              // 1 = detailed trace log (hover, widgets, every key), 0 = state changes and errors only
     int autoFill = 0;             // 1 = unbound Bottom slots show/invoke the character's known powers, in game order (default off: start empty)
     int keyboardDevice = -1;      // -1 = read the engine's constant (gameaddr::KeyboardDeviceGlobal)
-    int healThreshold = 50;       // 1..100: "@lowhp" slots only target a member below this HP%
+    int healThreshold = 100;      // 1..100: "@lowhp" slots only target a member below this HP% (100 = anyone hurt, TP3)
     int healFallbackSelf = 1;     // when nobody is below the threshold: 1 = use on self, 0 = do nothing
     int reserveDigits = 1;        // 1 = digits 1-0 never reach the game while the HUD is up, even on an empty slot (the vanilla quick bar keeps its clicks); 0 = unbound digits pass
     int syncActionBar = 1;        // 1 = resync the vanilla action bar (stance/form icons) after an AI stance or form change, 0 = off
@@ -277,7 +280,7 @@ struct Config {
                         "; [General] Invoke=1 use the action (0 = log only)  Verbose=1 detailed log  AutoFill=1 fill unbound slots with known powers\n"
                         "; Item value suffix @lowhp[:<pct>[:self|none]] = use on the party member with the lowest HP% (below pct, default HealThreshold; else self or none, default HealFallback)\n"
                         "; Item value suffix @self = always use the item on the controlled character, whatever is targeted\n"
-                        "; [General] HealThreshold=1..100 (default 50)  HealFallback=self|none (default self)\n"
+                        "; [General] HealThreshold=1..100 (default 100 = anyone hurt)  HealFallback=self|none (default self)\n"
                         "; [General] SyncActionBar=0|1 (default 1) resync the vanilla action bar (stance/form icons) after an AI stance or form change\n"
                         "; [General] ReserveDigits=0|1 (default 1) keys 1-0 are the hotbar's even on an empty slot (0 = an empty slot's key does its game action)\n"
                         "; [General] TargetProbe=0|1|2 (default 2) item target modes: 0 off, 1 log the decision only, 2 live\n"
