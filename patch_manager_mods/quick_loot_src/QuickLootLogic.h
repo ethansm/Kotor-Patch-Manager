@@ -1,7 +1,9 @@
 // QuickLootLogic.h -- pure helpers of quick-loot (doc 52 QL0/QL1a/QL1b/QL2p): event filter, wrap-safe ms, item cap, the pending-container
 // tracker, the take-all decision functions (shouldConsume / readyToSend / giveUp / closeFlagFor), the pending-take state, the "Took:" toast
 // text / timing / placement (QL1b), the QL2p proximity peek (candidate filter, nearest pick, cooldown / hysteresis, leave decision, suppress
-// transitions, key edge, peek state, peek label) and the log line formatters. No game memory, no Win32: host-testable (quick_loot_logic_test.cpp).
+// transitions, key edge, peek state, peek label), 0.3.1-dev label layout (one shared 1200 px rect, 56-char one-line text, latched position A/B,
+// x clamp, backing panel rect, Took duration rule, dwell debounce) and the log line formatters. No game memory, no Win32: host-testable
+// (quick_loot_logic_test.cpp).
 #pragma once
 #include <stdint.h>
 #include <stdio.h>
@@ -117,16 +119,33 @@ struct Take {
     }
 };
 
-// ---- QL1b: the "Took: ..." toast under the target name tag
-constexpr unsigned ToastMaxChars = 80;     // the whole toast line, "+K more" included
-constexpr unsigned ToastNameMax = 40;      // one item name is cut at this many chars
+// ---- QL1b: the "Took (N): ..." toast under the target name tag (0.3.1-dev layout: UX review .claude/reviews/quick_loot_pv1_ux.md)
+// The font runs ~20 px/char (measured at 3840x1600), so ONE shared 1200 px rect holds 56 chars on one line. Peek and Took use the same rect.
+constexpr unsigned LabelMaxChars = 56;     // the whole label line, "+K more" included (56 x 20.2 px = 1131 px <= 1200)
+constexpr unsigned ToastMaxChars = LabelMaxChars;
+constexpr unsigned ToastNameMax = 20;      // one item name longer than this is cut: first ToastNameMax-3 chars + "..."
+constexpr unsigned NameRawMax = 40;        // sanitizeName (log lines) cuts at this many chars
 constexpr unsigned ToastMaxItems = 16;     // names captured per take; further items only count towards "+K more"
 constexpr uint32_t ToastMs = 3000;         // how long the line stays up
-constexpr int ToastW = 420, ToastH = 20;   // label rect size (px)
+constexpr uint32_t ToastLongMs = 3500;     // ... when it lists more than ToastLongNames names or ends in "+K more"
+constexpr uint32_t ToastCapMs = 4000;      // never longer than this (a longer Took blocks the next peek)
+constexpr unsigned ToastLongNames = 3;
+constexpr int LabelW = 1200;               // shared peek / Took label width (px)
+constexpr int ToastW = LabelW, ToastH = 20;   // label rect size (px)
 constexpr int ToastGapBelowName = 20;      // label top = name bottom + this (clears the health bar under the name)
+constexpr int ScreenMarginPx = 24;         // position A keeps the label this far from the HUD panel edges
+constexpr int BackPadX = 10, BackPadY = 4; // backing panel padding around the label (px)
+constexpr float BackAlpha = 0.55f;         // backing panel: black at this alpha
+constexpr int PxPerCharEst = 24;           // backing width estimate per char (measured 19..22.2 for wide letters like W; 24 keeps a margin)
 
 // True while the toast is up: strictly less than durMs since it was shown. Wrap-safe (32-bit ms counter).
 inline bool toastVisible(uint32_t nowMs, uint32_t shownAtMs, uint32_t durMs) { return msSince(nowMs, shownAtMs) < durMs; }
+// How long a Took line stays up: 3 s, 3.5 s when it lists more than 3 names or ends in "+K more", never above the 4 s cap.
+inline uint32_t toastDurationMs(unsigned shownNames, unsigned moreCount) {
+    uint32_t d = ToastMs;
+    if (shownNames > ToastLongNames || moreCount > 0) d = ToastLongMs;
+    return d > ToastCapMs ? ToastCapMs : d;
+}
 
 struct Rect { int x, y, w, h; };
 inline bool operator==(const Rect& a, const Rect& b) { return a.x == b.x && a.y == b.y && a.w == b.w && a.h == b.h; }
@@ -137,11 +156,31 @@ inline Rect toastRect(int menuX, int menuY, int nameX, int nameY, int nameW, int
     return { menuX + nameX + nameW / 2 - ToastW / 2, menuY + nameY + nameH + ToastGapBelowName, ToastW, ToastH };
 }
 
-// Copies an item name into out (cap >= 2): stops at the first NUL, cuts at ToastNameMax, replaces every byte outside 0x20..0x7E with '?',
+// Position A clamp: x in [screenX + 24, screenX + screenW - 24 - w]. screenW <= 0 = unknown (no clamp); a label wider than the panel minus
+// the margins is centred on the panel instead.
+inline Rect clampLabelX(Rect r, int screenX, int screenW) {
+    if (screenW <= 0) return r;
+    const int lo = screenX + ScreenMarginPx, hi = screenX + screenW - ScreenMarginPx - r.w;
+    if (hi < lo) r.x = screenX + (screenW - r.w) / 2;
+    else if (r.x < lo) r.x = lo;
+    else if (r.x > hi) r.x = hi;
+    return r;
+}
+
+// Backing panel behind the text: black, BackAlpha. Width follows the text (chars x PxPerCharEst + 2 pad, at most the label width + 2 pad),
+// centred on the label rect; height = label height + 2 BackPadY.
+inline Rect backingRect(const Rect& label, unsigned chars) {
+    int w = static_cast<int>(chars) * PxPerCharEst + 2 * BackPadX;
+    const int maxW = label.w + 2 * BackPadX;
+    if (w > maxW) w = maxW;
+    return { label.x + label.w / 2 - w / 2, label.y - BackPadY, w, label.h + 2 * BackPadY };
+}
+
+// Copies an item name into out (cap >= 2): stops at the first NUL, cuts at NameRawMax, replaces every byte outside 0x20..0x7E with '?',
 // trims trailing spaces. A null/empty result becomes "item". Returns the length.
 inline unsigned sanitizeName(char* out, unsigned cap, const char* in) {
     unsigned n = 0;
-    const unsigned lim = cap - 1 < ToastNameMax ? cap - 1 : ToastNameMax;
+    const unsigned lim = cap - 1 < NameRawMax ? cap - 1 : NameRawMax;
     if (in) {
         while (n < lim && in[n]) {
             const unsigned char c = static_cast<unsigned char>(in[n]);
@@ -155,12 +194,41 @@ inline unsigned sanitizeName(char* out, unsigned cap, const char* in) {
     return n;
 }
 
+// Label entry for one item: sanitizeName, then a name longer than ToastNameMax is cut to its first ToastNameMax-3 chars, trailing spaces and
+// punctuation trimmed, "..." appended ("Lightsaber Crystal: Opila" -> "Lightsaber Crysta..."). cap >= ToastNameMax + 1. Returns the length.
+inline unsigned entryName(char* out, unsigned cap, const char* in) {
+    char tmp[NameRawMax + 1];
+    unsigned n = sanitizeName(tmp, sizeof tmp, in);
+    if (n > ToastNameMax && cap > ToastNameMax) {
+        n = ToastNameMax - 3;
+        while (n > 0) {
+            const char c = tmp[n - 1];
+            const bool alnum = (c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
+            if (alnum) break;
+            --n;
+        }
+        memcpy(out, tmp, n);
+        memcpy(out + n, "...", 3);
+        n += 3;
+        out[n] = 0;
+        return n;
+    }
+    if (n >= cap) n = cap - 1;
+    memcpy(out, tmp, n);
+    out[n] = 0;
+    return n;
+}
+
+// What fmtList / fmtTook / fmtPeek put on the line: names shown and the "+K more" count (0 = none).
+struct ListInfo { unsigned shown = 0, more = 0; };
+
 namespace detail {
-// "<prefix>A, B x2, C": one entry per item (name, then " xN" for 2 <= N <= 999). When the line would pass maxChars the entries that fit
+// "<prefix>A, B x2, C": one entry per item (entryName: names over ToastNameMax are cut with "..."; then " xN" for 2 <= N <= 999). When the line would pass maxChars the entries that fit
 // are kept and ", +K more" is appended (K = items left out + `extra`, items beyond the captured ones). count 0 -> out = "" and 0
 // (no line). names may hold null pointers; stacks may hold -1 (unknown). The result is cut to cap-1; returns its length.
 inline unsigned fmtList(char* out, size_t cap, const char* prefixText, unsigned maxChars, const char* const* names, const int* stacks,
-                        unsigned count, unsigned extra) {
+                        unsigned count, unsigned extra, ListInfo* info = nullptr) {
+    if (info) *info = ListInfo();
     if (!out || cap == 0) return 0;
     out[0] = 0;
     if (count == 0) return 0;
@@ -168,9 +236,7 @@ inline unsigned fmtList(char* out, size_t cap, const char* prefixText, unsigned 
     char ent[ToastMaxItems][ToastNameMax + 16];
     unsigned len[ToastMaxItems];
     for (unsigned i = 0; i < count; ++i) {
-        char nm[ToastNameMax + 1];
-        unsigned n = sanitizeName(nm, sizeof nm, names ? names[i] : nullptr);
-        memcpy(ent[i], nm, n);
+        unsigned n = entryName(ent[i], sizeof ent[i], names ? names[i] : nullptr);
         const int st = stacks ? stacks[i] : -1;
         if (st >= 2 && st <= 999) n += static_cast<unsigned>(snprintf(ent[i] + n, sizeof ent[i] - n, " x%d", st));
         ent[i][n] = 0;
@@ -195,6 +261,7 @@ inline unsigned fmtList(char* out, size_t cap, const char* prefixText, unsigned 
         if (shown == 0) shown = 1;   // cannot happen with the caps above; never emit an empty list
         more = count - shown + extra;
     }
+    if (info) { info->shown = shown; info->more = more; }
     char buf[256 + 64];
     unsigned pos = static_cast<unsigned>(snprintf(buf, sizeof buf, "%s", prefixText));
     for (unsigned i = 0; i < shown; ++i) pos += static_cast<unsigned>(snprintf(buf + pos, sizeof buf - pos, "%s%s", i ? ", " : "", ent[i]));
@@ -206,9 +273,14 @@ inline unsigned fmtList(char* out, size_t cap, const char* prefixText, unsigned 
 }
 }   // namespace detail
 
-// "Took: A, B x2, C" (80-char cap). See detail::fmtList.
-inline unsigned fmtTook(char* out, size_t cap, const char* const* names, const int* stacks, unsigned count, unsigned extra = 0) {
-    return detail::fmtList(out, cap, "Took: ", ToastMaxChars, names, stacks, count, extra);
+// "Took (4): A, B x2, +2 more" (56-char cap; "Took: A" for a single item). N = count + extra. See detail::fmtList.
+inline unsigned fmtTook(char* out, size_t cap, const char* const* names, const int* stacks, unsigned count, unsigned extra = 0,
+                        ListInfo* info = nullptr) {
+    char pre[24];
+    const unsigned total = count + extra;
+    if (total <= 1) snprintf(pre, sizeof pre, "Took: ");
+    else snprintf(pre, sizeof pre, "Took (%u): ", total);
+    return detail::fmtList(out, cap, pre, ToastMaxChars, names, stacks, count, extra, info);
 }
 
 // ---- QL2p: proximity peek ("show list, I take")
@@ -220,8 +292,9 @@ constexpr uint32_t MinScanMs = 50, MaxScanMs = 5000;
 constexpr unsigned MaxScanObjects = 2048;     // area object-list cap per scan
 constexpr unsigned CooldownCap = 64;
 constexpr uint32_t ExpectTimeoutMs = 1500;    // OpenInventory called but no ShowContainerGui for it after this long
-constexpr unsigned PeekMaxChars = 100;        // the whole peek line
-constexpr int PeekW = 760;                    // peek label width (px); wider than the toast
+constexpr unsigned PeekMaxChars = LabelMaxChars;   // the whole peek line (same cap as the Took line)
+constexpr int PeekW = LabelW;                 // peek label width (px); the same rect size as the Took line
+constexpr uint32_t DwellMs = 400;             // the leader must stay within OpenM of the same container this long before it is opened
 constexpr int PeekTopPercent = 62;            // fixed spot: this % of the HUD panel height
 
 inline float clampOpenM(float v) { return (v > 0.0f && v < 100.0f) ? v : DefaultOpenM; }
@@ -343,16 +416,19 @@ inline const char* keyLabel(int vk, char* buf, size_t cap) {
     return buf;
 }
 
-// "3 items  [F] take all: Medpac x2, Blaster Pistol, +1 more" (100-char cap). total = real repository count, count = names captured.
-// total 0 / count 0 -> "" and 0 (no label).
-inline unsigned fmtPeek(char* out, size_t cap, const char* key, int total, const char* const* names, const int* stacks, unsigned count) {
+// "[F] Take all (4): Medpac x2, Blaster Pistol, +2 more" (56-char cap); one item: "[F] Take: Medpac". total = real repository count,
+// count = names captured. total 0 / count 0 -> "" and 0 (no label).
+inline unsigned fmtPeek(char* out, size_t cap, const char* key, int total, const char* const* names, const int* stacks, unsigned count,
+                        ListInfo* info = nullptr) {
+    if (info) *info = ListInfo();
     if (!out || cap == 0) return 0;
     out[0] = 0;
     if (total <= 0 || count == 0) return 0;
     char pre[48];
-    snprintf(pre, sizeof pre, "%d item%s  [%s] take all: ", total, total == 1 ? "" : "s", key ? key : "key");
+    if (total == 1) snprintf(pre, sizeof pre, "[%s] Take: ", key ? key : "key");
+    else snprintf(pre, sizeof pre, "[%s] Take all (%d): ", key ? key : "key", total);
     const unsigned extra = static_cast<unsigned>(total) > count ? static_cast<unsigned>(total) - count : 0u;
-    return detail::fmtList(out, cap, pre, PeekMaxChars, names, stacks, count, extra);
+    return detail::fmtList(out, cap, pre, PeekMaxChars, names, stacks, count, extra, info);
 }
 
 // Peek label rects. Name-anchored: same placement rule as the toast (centred under the target name label), wider box.
@@ -363,6 +439,71 @@ inline Rect peekRectName(int nameX, int nameY, int nameW, int nameH) {
 inline Rect peekRectFixed(int px, int py, int pw, int ph) {
     return { px + pw / 2 - PeekW / 2, py + (ph * PeekTopPercent) / 100, PeekW, ToastH };
 }
+
+// ---- 0.3.1-dev: label placement (position A under the target name, B at a fixed spot), latch, Took state, dwell
+enum class Pos { None = 0, A, B };
+inline const char* posName(Pos p) { return p == Pos::A ? "A" : (p == Pos::B ? "B" : "-"); }
+
+// What the adapter sees of the screen this frame (all px): the target-menu name label (menuShown = on screen now; haveName = a rect was seen
+// at some point, `name` is the latest) and the HUD panel extent (havePanel; panel.w <= 0 = unknown).
+struct Geometry {
+    bool menuShown = false, haveName = false, havePanel = false;
+    Rect name = {0, 0, 0, 0}, panel = {0, 0, 0, 0};
+};
+
+// Where a new label goes: A (name-anchored, x clamped to the panel) while the target menu is shown, else B (fixed spot on the panel), else A at
+// the last seen name rect. false = nothing to anchor to yet.
+inline bool choosePlacement(const Geometry& g, Rect* r, Pos* p) {
+    const bool panelOk = g.havePanel && g.panel.w > 0 && g.panel.h > 0;
+    if (g.menuShown || (!panelOk && g.haveName)) {
+        *r = peekRectName(g.name.x, g.name.y, g.name.w, g.name.h);
+        *p = Pos::A;
+        if (panelOk) *r = clampLabelX(*r, g.panel.x, g.panel.w);
+        return true;
+    }
+    if (panelOk) {
+        *r = peekRectFixed(g.panel.x, g.panel.y, g.panel.w, g.panel.h);
+        *p = Pos::B;
+        *r = clampLabelX(*r, g.panel.x, g.panel.w);
+        return true;
+    }
+    return false;
+}
+
+// The position chosen when a label first shows, kept (same rect) until the label is gone, so the line never jumps when the name tag
+// appears or vanishes, and the Took line replaces the peek line in the very same rect.
+struct Latch {
+    bool held = false;
+    Pos pos = Pos::None;
+    Rect rect = {0, 0, 0, 0};
+    void set(Pos p, const Rect& r) { held = true; pos = p; rect = r; }
+    void clear() { held = false; pos = Pos::None; rect = {0, 0, 0, 0}; }
+};
+
+// The Took line: text + how long it stays up.
+struct ToastState {
+    bool active = false;
+    uint32_t shownAt = 0, durMs = ToastMs;
+    char text[96] = {0};
+    void start(const char* t, uint32_t now, uint32_t dur) {
+        strncpy(text, t, sizeof text - 1);
+        text[sizeof text - 1] = 0;
+        shownAt = now; durMs = dur; active = true;
+    }
+    bool visible(uint32_t now) const { return active && toastVisible(now, shownAt, durMs); }
+};
+
+// Dwell debounce for the auto-open: the same best candidate on consecutive scans for at least needMs.
+struct Dwell {
+    uint32_t id = 0, sinceMs = 0;
+    void reset() { id = 0; sinceMs = 0; }
+    // cand = the container the scan would open now (0 = none). True when it has been the candidate for >= needMs.
+    bool update(uint32_t cand, uint32_t now, uint32_t needMs) {
+        if (!cand) { reset(); return false; }
+        if (cand != id) { id = cand; sinceMs = now; }
+        return msSince(now, sinceMs) >= needMs;
+    }
+};
 
 // The one peek. Phases: idle -> expecting (OpenInventory called, waiting for its ShowContainerGui) -> active -> idle.
 struct Peek {
@@ -470,6 +611,15 @@ inline int fmtArea(char* b, size_t n, uintptr_t area, int objs) {
 }
 inline int fmtCooldown(char* b, size_t n, const char* what, uint32_t sid, float dist, unsigned size) {
     return snprintf(b, n, "COOLDOWN %s obj=%08x dist=%.2f size=%u", what, sid, static_cast<double>(dist), size);
+}
+inline int fmtLatch(char* b, size_t n, Pos p, const Rect& r) {
+    return snprintf(b, n, "LABEL-LATCH pos=%s rect=%d,%d,%d,%d", posName(p), r.x, r.y, r.w, r.h);
+}
+inline int fmtLabelExtent(char* b, size_t n, unsigned chars, int x, int y, int w, int h) {
+    return snprintf(b, n, "LABEL-EXTENT chars=%u extent=%d,%d,%d,%d", chars, x, y, w, h);
+}
+inline int fmtGiveUpServerClose(char* b, size_t n, uintptr_t plc, int flag) {
+    return snprintf(b, n, "GIVEUP-SERVERCLOSE plc=%08x flag=%d", static_cast<unsigned>(plc), flag);
 }
 inline int fmtErr(char* b, size_t n, const char* what, uint32_t dtMs) { return snprintf(b, n, "ERR %s dt=%ums", what, dtMs); }
 

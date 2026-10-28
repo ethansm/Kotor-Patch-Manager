@@ -2,13 +2,14 @@
 // host test can drive it frame by frame (quick_loot_sim_test.cpp). No game memory, no Win32. Every engine read and every engine / UI side
 // effect goes through qlogic::Env, which QuickLoot.cpp implements over the real engine and the sim test over a fake world. Actions are
 // executed immediately (not queued): OpenInventory may trigger a synchronous ShowContainerGui and the code that follows must see it.
-// Log line texts and behaviour are unchanged from the pre-extraction QuickLoot.cpp.
+// 0.3.1-dev (UX review .claude/reviews/quick_loot_pv1_ux.md) adds here: dwell debounce before the auto-open, the Took line state + duration,
+// the latched label position (A/B) shared by peek and Took, and the message-object give-up fallback (server-side Close, GIVEUP-SERVERCLOSE).
 #pragma once
 #include "QuickLootLogic.h"
 
 namespace qlogic {
 
-constexpr int NameCap = 48;   // captured name buffer (sanitizeName cuts at ToastNameMax = 40)
+constexpr int NameCap = 48;   // captured name buffer (sanitizeName cuts at NameRawMax = 40; the label cuts entries at ToastNameMax = 20)
 
 struct Captured {
     unsigned count = 0;   // names captured (<= ToastMaxItems)
@@ -32,6 +33,7 @@ struct Config {
     float openM = DefaultOpenM, closeM = DefaultCloseM;
     int takeKey = DefaultTakeKey;
     uint32_t scanMs = DefaultScanMs;
+    uint32_t dwellMs = DwellMs;   // 0 = open on the first scan that sees the container
 };
 
 // Engine / UI boundary. Reads first, then actions.
@@ -45,6 +47,7 @@ struct Env {
     virtual bool hudOk() = 0;                                                  // polls the hud-host, then: connected
     virtual bool shiftDown() = 0;
     virtual uintptr_t resolvePlc(uint32_t sid) = 0;                            // placeable for an area-list object id, 0 = gone (only with World::haveSrv)
+    virtual uintptr_t resolveClientPlc(uint32_t clientObj) = 0;                // placeable for a client container object id (ShowContainerGui), 0 = gone
     virtual bool plcPos(uintptr_t plc, float* x, float* y) = 0;
     virtual int itemCount(uintptr_t plc) = 0;                                  // -1 unreadable
     virtual int openFlag(uintptr_t plc) = 0;                                   // -1 unreadable
@@ -57,10 +60,10 @@ struct Env {
     // actions
     virtual void openInventory(uintptr_t plc, uint32_t opener) = 0;            // engine OpenInventory, playAnim = 1
     virtual void sendClose(uintptr_t msg, uint32_t obj, int flag) = 0;         // client OK-button Close message (flag 1 = take all)
-    virtual void serverClose(uintptr_t plc, uint32_t opener) = 0;              // CloseInventory(plc, opener, 0)
+    virtual void serverClose(uintptr_t plc, uint32_t opener, int flag) = 0;    // CloseInventory(plc, opener, flag): server-side Close (flag 1 = take all)
     virtual void labelShow(const char* text) = 0;                              // peek label text (changed)
     virtual void labelHide() = 0;
-    virtual void toast(const char* text) = 0;                                  // "Took: ..." toast
+    virtual void toast(const char* text) = 0;                                  // "Took (N): ..." notification (the machine owns the line's state)
     virtual void log(const char* line) = 0;
 };
 
@@ -71,15 +74,19 @@ struct Machine {
     Cooldown cool;
     SupTracker sup;
     uint32_t lastScan = 0;
+    uint32_t scanGap = DefaultScanMs;   // ms until the next scan: cfg.scanMs, shortened to land exactly on the end of a pending dwell
     bool keyPrev = false;
     uintptr_t lastArea = 0;
     uint32_t nearId = 0;   // SCAN change detector: nearest in-range placeable id (0 = none) and its ok flag
     int nearOk = -1;
     uint32_t frame = 0;    // last HUD frame counter seen by onFrame
+    Dwell dwell;           // auto-open debounce (DwellMs)
+    ToastState toastS;     // the Took line
+    Latch latch;           // position (A/B) + rect of the label now up (peek or Took)
     Captured cap;          // scratch (shared: uses never overlap)
 
     // ---- QL1b / QL2p helpers
-    void reportTook(Env& e, const Captured& c) {
+    void reportTook(Env& e, const Captured& c, uint32_t now) {
         char b[160];
         const char* np[ToastMaxItems];
         for (unsigned i = 0; i < c.count; ++i) {
@@ -88,9 +95,11 @@ struct Machine {
             np[i] = c.names[i];
         }
         char text[96];
-        if (fmtTook(text, sizeof text, np, c.stacks, c.count, c.total > c.count ? c.total - c.count : 0)) {
+        ListInfo li;
+        if (fmtTook(text, sizeof text, np, c.stacks, c.count, c.total > c.count ? c.total - c.count : 0, &li)) {
             fmtToast(b, sizeof b, text);
             e.log(b);
+            toastS.start(text, now, toastDurationMs(li.shown, li.more));
             e.toast(text);
         }
     }
@@ -109,7 +118,18 @@ struct Machine {
         peek.clear();
     }
 
+    // Give-up fallback (message object never came): when the placeable still has its open flag (+0x390) set, close it server-side
+    // (CloseInventory, the same call as the no-Show case) so it does not stay open for the rest of the session. flag 0 = items stay, 1 = take all.
+    void giveUpServerClose(Env& e, uintptr_t plc, uint32_t opener, int flag) {
+        if (!plc || !opener || e.openFlag(plc) <= 0) return;
+        e.serverClose(plc, opener, flag);
+        char b[96];
+        fmtGiveUpServerClose(b, sizeof b, plc, flag);
+        e.log(b);
+    }
+
     // Sends the peek's Close(flag) once. Returns false when the message object is not available yet (retry on the next tick, until GiveUpMs).
+    // On give-up (true, sent 0) the container is closed server-side when it is still open (giveUpServerClose).
     // plcResolves false: the container is gone, nothing to close (sent stays 0).
     bool peekSendClose(Env& e, int flag, bool plcResolves, uint32_t now, int* sent) {
         *sent = 0;
@@ -119,7 +139,9 @@ struct Machine {
         if (!msg) {
             char b[160];
             if (!peek.closeTried) { peek.closeTried = true; fmtErr(b, sizeof b, "peek-msgobj", msSince(now, peek.sinceMs)); e.log(b); }
-            return giveUp(now, peek.closeStartMs);   // true = give up, the peek ends without a Close
+            if (!giveUp(now, peek.closeStartMs)) return false;
+            giveUpServerClose(e, peek.plc, peek.opener, flag);   // true = give up: the peek ends with a server-side Close instead
+            return true;
         }
         e.sendClose(msg, peek.obj, flag);
         *sent = 1;
@@ -158,7 +180,7 @@ struct Machine {
         e.sendClose(msg, obj, closeFlagFor(n));
         fmtPeekTake(b, sizeof b, obj, dt, n);
         e.log(b);
-        reportTook(e, cap);
+        reportTook(e, cap, now);
         peekEnd(e);
     }
 
@@ -204,7 +226,7 @@ struct Machine {
         // Opened but no client Show came: no client object id to send the Close message with. Close it server-side (flag 0, items stay),
         // else the open flag (+0x390) stays set and OpenInventory refuses this container for the rest of the session.
         if (open == 1 && peek.opener) {
-            e.serverClose(peek.plc, peek.opener);
+            e.serverClose(peek.plc, peek.opener, 0);
             e.log("PEEK-NOSHOW server close sent");
         }
         peekEnd(e);
@@ -268,7 +290,12 @@ struct Machine {
             e.log(b);
         }
         nearId = curNear; nearOk = curNear ? okI : -1;
-        if (bestId) peekOpen(e, w, bestId, bestPlc, bestD, now);
+        if (bestId && dwell.update(bestId, now, cfg.dwellMs)) peekOpen(e, w, bestId, bestPlc, bestD, now);   // dwell: 400 ms on the same container
+        else if (!bestId) dwell.reset();
+        else {   // dwell pending: rescan when it ends instead of waiting for the next regular scan
+            const uint32_t rem = cfg.dwellMs - msSince(now, dwell.sinceMs);
+            if (rem < scanGap) scanGap = rem ? rem : 1;
+        }
     }
 
     // Proximity peek tick (K2HUD_FRAME). Key edge every frame; the scan / poll every ScanMs.
@@ -276,8 +303,9 @@ struct Machine {
         if (!cfg.proxOn || !cfg.enabled) return;
         const bool edge = risingEdge(keyPrev, e.keyDown());   // updated every frame: a key held while the peek opens never fires
         if (peek.active && edge) { e.enter(); peekTake(e, now); return; }
-        if (msSince(now, lastScan) < cfg.scanMs) return;
+        if (msSince(now, lastScan) < scanGap) return;
         lastScan = now;
+        scanGap = cfg.scanMs;
         e.enter();
         World w;
         const bool wok = e.readWorld(w);
@@ -298,9 +326,9 @@ struct Machine {
             fmtSuppress(b, sizeof b, supName(prevSup), supName(s));
             e.log(b);
         }
-        if (peek.active) { peekPoll(e, w, s, now); return; }
-        if (peek.expect) { peekExpectCheck(e, now); return; }
-        if (take.active || s != Sup::None || !wok) return;
+        if (peek.active) { dwell.reset(); peekPoll(e, w, s, now); return; }
+        if (peek.expect) { dwell.reset(); peekExpectCheck(e, now); return; }
+        if (take.active || s != Sup::None || !wok) { dwell.reset(); return; }
         proxScan(e, w, now);
     }
 
@@ -313,7 +341,15 @@ struct Machine {
         if (!msg) {
             const uint32_t dt = msSince(now, take.showMs);
             if (!take.errLogged) { take.errLogged = true; fmtErr(b, sizeof b, "msgobj", dt); e.log(b); }
-            if (giveUp(now, take.showMs)) { fmtErr(b, sizeof b, "giveup", dt); e.log(b); take.clear(); }
+            if (giveUp(now, take.showMs)) {
+                fmtErr(b, sizeof b, "giveup", dt);
+                e.log(b);
+                // The container is still open server-side: close it with take-all (the player asked to take) instead of leaving it open.
+                const uintptr_t cur = e.resolveClientPlc(take.obj);
+                World w;
+                if (cur && cur == take.plc && e.readWorld(w) && w.ctrl) giveUpServerClose(e, cur, w.ctrl, 1);
+                take.clear();
+            }
             return;
         }
         const int n = e.itemCount(take.plc);
@@ -332,7 +368,33 @@ struct Machine {
             e.log(b);
             return;
         }
-        reportTook(e, cap);
+        reportTook(e, cap, now);
+    }
+
+    // ---- 0.3.1-dev label state (the adapter draws what these say)
+    // The text the label shows now, nullptr = hidden. A Took line wins over the peek line for its duration.
+    const char* labelText(uint32_t now) const {
+        if (toastS.visible(now)) return toastS.text;
+        if (peek.active && peek.text[0]) return peek.text;
+        return nullptr;
+    }
+    // The label rect for this frame: the latched one, or (first call) the placement for `g`, latched and logged. false = nothing to anchor to.
+    bool placeLabel(Env& e, const Geometry& g, Rect* out) {
+        if (latch.held) { *out = latch.rect; return true; }
+        Rect r = {0, 0, 0, 0};
+        Pos p = Pos::None;
+        if (!choosePlacement(g, &r, &p)) return false;
+        latch.set(p, r);
+        char b[96];
+        fmtLatch(b, sizeof b, p, r);
+        e.log(b);
+        *out = r;
+        return true;
+    }
+    // Per frame: an expired Took line ends (its latch with it); the latch is dropped once no label is up.
+    void latchTick(uint32_t now) {
+        if (toastS.active && !toastS.visible(now)) { toastS.active = false; latch.clear(); }
+        if (!toastS.active && !(peek.active && peek.text[0])) latch.clear();
     }
 
     // K2HUD_FRAME: the pending click-take Close, then the proximity peek. `now` = ms clock, `fr` = HUD frame counter.
@@ -340,6 +402,7 @@ struct Machine {
         frame = fr;
         if (take.active) takeTick(e, now);
         proxTick(e, now);
+        latchTick(now);
     }
 
     // ShowContainerGui(objId, flag) for plc (0 = unresolved). n = item count read by the caller. Returns 1 = consumed (peek or armed take), 0 = vanilla.

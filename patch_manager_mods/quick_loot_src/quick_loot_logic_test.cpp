@@ -156,12 +156,45 @@ int main() {
     kt::Check("toast visible across the 32-bit wrap", toastVisible(100u, 0xFFFFFF9Cu, ToastMs));
     kt::Check("toast gone across the 32-bit wrap", !toastVisible(3000u, 0xFFFFFF9Cu, ToastMs));
     kt::Check("toast with the clock behind shownAt is not shown", !toastVisible(999u, 1000u, ToastMs));
+    kt::CheckEq("Took duration: <= 3 names, no more = 3000", toastDurationMs(3, 0), 3000u);
+    kt::CheckEq("Took duration: 1 name = 3000", toastDurationMs(1, 0), 3000u);
+    kt::CheckEq("Took duration: 4 names = 3500", toastDurationMs(4, 0), 3500u);
+    kt::CheckEq("Took duration: +K more = 3500", toastDurationMs(2, 1), 3500u);
+    kt::CheckEq("Took duration: long line with +K more stays 3500", toastDurationMs(9, 20), 3500u);
+    kt::Check("Took duration never above the 4 s cap", toastDurationMs(16, 4000) <= ToastCapMs && ToastLongMs <= ToastCapMs && ToastCapMs == 4000);
+    kt::Check("toast visible for the longer duration", toastVisible(4499, 1000, 3500) && !toastVisible(4500, 1000, 3500));
     {
         Rect r = toastRect(100, 50, 20, 10, 200, 24);
-        kt::CheckEq("toast x = name centre - W/2", r.x, 100 + 20 + 100 - 210);
+        kt::CheckEq("toast x = name centre - W/2", r.x, 100 + 20 + 100 - 600);
         kt::CheckEq("toast y = name bottom + 20", r.y, 50 + 10 + 24 + 20);
-        kt::Check("toast size 420x20", r.w == 420 && r.h == 20);
+        kt::Check("toast size 1200x20, the same as the peek", r.w == 1200 && r.h == 20 && r.w == PeekW && ToastW == LabelW);
         kt::Check("rect equality", r == toastRect(100, 50, 20, 10, 200, 24) && r != toastRect(101, 50, 20, 10, 200, 24));
+    }
+    {   // clampLabelX: x in [24, screenW - 24 - w]
+        Rect r = { -100, 500, 1200, 20 };
+        kt::CheckEq("clamp left edge to 24", clampLabelX(r, 0, 3840).x, 24);
+        r.x = 3000;
+        kt::CheckEq("clamp right edge to screenW - 24 - w", clampLabelX(r, 0, 3840).x, 3840 - 24 - 1200);
+        r.x = 1000;
+        kt::CheckEq("inside the range is untouched", clampLabelX(r, 0, 3840).x, 1000);
+        r.x = 24;
+        kt::CheckEq("exactly 24 is kept", clampLabelX(r, 0, 3840).x, 24);
+        r.x = 3840 - 24 - 1200;
+        kt::CheckEq("exactly screenW-24-w is kept", clampLabelX(r, 0, 3840).x, 3840 - 24 - 1200);
+        r.x = 5;
+        kt::CheckEq("panel origin offsets the range", clampLabelX(r, 100, 3840).x, 124);
+        kt::CheckEq("unknown screen width = no clamp", clampLabelX(r, 0, 0).x, 5);
+        kt::CheckEq("a label wider than the panel is centred", clampLabelX(r, 0, 1000).x, (1000 - 1200) / 2);
+        kt::Check("clamp keeps y/w/h", clampLabelX(r, 0, 3840).y == 500 && clampLabelX(r, 0, 3840).w == 1200 && clampLabelX(r, 0, 3840).h == 20);
+    }
+    {   // backing panel rect
+        Rect lab = { 1000, 600, 1200, 20 };
+        Rect full = backingRect(lab, 200);   // a very long text: the full label width + padding
+        kt::Check("backing at most label + 2 pad wide", full.x == 1000 - 10 && full.w == 1220 && full.y == 600 - 4 && full.h == 28);
+        Rect small = backingRect(lab, 28);
+        kt::CheckEq("backing width follows the text", small.w, 28 * 24 + 20);
+        kt::CheckEq("backing is centred on the label", small.x + small.w / 2, 1000 + 600);
+        kt::Check("black, alpha 0.55", BackAlpha == 0.55f && BackPadX == 10 && BackPadY == 4);
     }
     {
         char t[200];
@@ -169,54 +202,99 @@ int main() {
         kt::CheckEq("count 0 gives no toast", fmtTook(t, sizeof t, n1, nullptr, 0), 0u);
         kt::Check("count 0 leaves an empty string", t[0] == 0);
         kt::CheckEq("one item", fmtTook(t, sizeof t, n1, nullptr, 1), 12u);
-        kt::Check("one item text", strcmp(t, "Took: Medpac") == 0);
+        kt::Check("one item text (no count)", strcmp(t, "Took: Medpac") == 0);
         const char* n3[] = { "Medpac", "Blaster Pistol", "Vibroblade" };
         int s3[] = { 2, 1, 999 };
         fmtTook(t, sizeof t, n3, s3, 3);
-        kt::Check("stack suffix for 2 and 999, none for 1", strcmp(t, "Took: Medpac x2, Blaster Pistol, Vibroblade x999") == 0);
+        kt::Check("count in brackets, stack suffix for 2 and 999, none for 1", strcmp(t, "Took (3): Medpac x2, Blaster Pistol, Vibroblade x999") == 0);
         int s4[] = { 0, -1, 1000 };
         fmtTook(t, sizeof t, n3, s4, 3);
-        kt::Check("no suffix for 0, -1, 1000", strcmp(t, "Took: Medpac, Blaster Pistol, Vibroblade") == 0);
+        kt::Check("no suffix for 0, -1, 1000", strcmp(t, "Took (3): Medpac, Blaster Pistol, Vibroblade") == 0);
         kt::Check("null stacks array is fine", fmtTook(t, sizeof t, n3, nullptr, 3) > 0 && strstr(t, " x") == nullptr);
+        {   // the review example: 4 items, 2 listed names + "+2 more"
+            const char* n2[] = { "Medpac", "Blaster Pistol" };
+            int s2[] = { 2, 1 };
+            fmtTook(t, sizeof t, n2, s2, 2, 2);
+            kt::Check("Took (4): Medpac x2, Blaster Pistol, +2 more", strcmp(t, "Took (4): Medpac x2, Blaster Pistol, +2 more") == 0 && strlen(t) == 44);
+            fmtTook(t, sizeof t, n1, nullptr, 1, 3);
+            kt::Check("one captured name of four: count is count + extra", strcmp(t, "Took (4): Medpac, +3 more") == 0);
+            ListInfo li;
+            fmtTook(t, sizeof t, n2, s2, 2, 2, &li);
+            kt::Check("ListInfo: 2 shown, 2 more", li.shown == 2 && li.more == 2);
+            fmtTook(t, sizeof t, n3, s3, 3, 0, &li);
+            kt::Check("ListInfo: 3 shown, none more", li.shown == 3 && li.more == 0);
+            fmtTook(t, sizeof t, n1, nullptr, 0, 0, &li);
+            kt::Check("ListInfo: no line", li.shown == 0 && li.more == 0);
+        }
         // names: garbage / NUL / null / empty / spaces / too long
         const char* ng[] = { "Med\x01pac\xFF", "", nullptr, "   ", "Name\0Hidden" };
         fmtTook(t, sizeof t, ng, nullptr, 5);
         kt::Check("garbage bytes become ?, empty/null/blank become item, NUL ends the name",
-                  strcmp(t, "Took: Med?pac?, item, item, item, Name") == 0);
+                  strcmp(t, "Took (5): Med?pac?, item, item, item, Name") == 0);
         std::string longName(100, 'Z');
         const char* nl[] = { longName.c_str() };
         fmtTook(t, sizeof t, nl, nullptr, 1);
-        kt::CheckEq("a long name is cut at 40 chars", strlen(t), 46u);
-        // overflow and the 80-char boundary
-        std::string a(40, 'A'), b32(32, 'B'), b33(33, 'B');
-        const char* e1[] = { a.c_str(), b32.c_str() };
-        kt::CheckEq("exactly 80 chars fits whole", fmtTook(t, sizeof t, e1, nullptr, 2), 80u);
-        kt::Check("exactly 80 chars has no +K more", strstr(t, "more") == nullptr && strlen(t) == 80);
-        const char* e2[] = { a.c_str(), b33.c_str() };
-        unsigned l = fmtTook(t, sizeof t, e2, nullptr, 2);
-        kt::Check("81 chars overflows to +1 more", strcmp(t, ("Took: " + a + ", +1 more").c_str()) == 0 && l == strlen(t));
-        kt::Check("overflow text never passes 80 chars", l <= ToastMaxChars);
-        // all fit only without a suffix: three items, exactly 80
-        std::string c26(26, 'C'), d26(26, 'D');   // 6 + 26 + 2 + 26 + 2 + 18 = 80
-        std::string f18(18, 'F');
-        const char* e3[] = { c26.c_str(), d26.c_str(), f18.c_str() };
+        kt::Check("a long name is cut to 17 chars + ...", strcmp(t, ("Took: " + std::string(17, 'Z') + "...").c_str()) == 0 && strlen(t) == 26);
+        // per-entry cut: 20 chars stay, 21+ become 17 + "..."; trailing space / punctuation trimmed before the dots; " xN" after the cut
+        {
+            char en[64];
+            kt::CheckEq("entryName: 20 chars untouched", entryName(en, sizeof en, std::string(20, 'Q').c_str()), 20u);
+            kt::Check("entryName: 20 chars text", strcmp(en, std::string(20, 'Q').c_str()) == 0);
+            entryName(en, sizeof en, std::string(21, 'Q').c_str());
+            kt::Check("entryName: 21 chars -> 17 + ...", strcmp(en, (std::string(17, 'Q') + "...").c_str()) == 0);
+            entryName(en, sizeof en, "Lightsaber Crystal: Opila");
+            kt::Check("entryName: Lightsaber Crystal: Opila", strcmp(en, "Lightsaber Crysta...") == 0);
+            entryName(en, sizeof en, "Abcdefghijklmn: --xyzw");
+            kt::Check("entryName: trailing space/punctuation trimmed before ...", strcmp(en, "Abcdefghijklmn...") == 0);
+            entryName(en, sizeof en, "Medpac");
+            kt::Check("entryName: short name untouched", strcmp(en, "Medpac") == 0);
+            entryName(en, sizeof en, nullptr);
+            kt::Check("entryName: null -> item", strcmp(en, "item") == 0);
+            const char* nx[] = { "Lightsaber Crystal: Opila" };
+            int sx[] = { 3 };
+            fmtTook(t, sizeof t, nx, sx, 1);
+            kt::Check("suffix after the cut: Lightsaber Crysta... x3", strcmp(t, "Took: Lightsaber Crysta... x3") == 0);
+            char raw[64];
+            sanitizeName(raw, sizeof raw, std::string(100, 'Z').c_str());
+            kt::CheckEq("sanitizeName (log lines) still cuts at 40", strlen(raw), 40u);
+        }
+        // overflow and the 56-char boundary: "Took (2): " is 10 chars; entry 1 = 20 'A' + " x99" (24)
+        std::string a(20, 'A'), b17(17, 'B'), b18(18, 'B');
+        const char* e1[] = { a.c_str(), b17.c_str() };
+        int se1[] = { 99, 9 };   // 24 and 20 chars: 10 + 24 + 2 + 20 = 56
+        kt::CheckEq("exactly 56 chars fits whole", fmtTook(t, sizeof t, e1, se1, 2), 56u);
+        kt::Check("exactly 56 chars has no +K more", strstr(t, "more") == nullptr && strlen(t) == 56);
+        const char* e2[] = { a.c_str(), b18.c_str() };
+        unsigned l = fmtTook(t, sizeof t, e2, se1, 2);   // 57 chars
+        kt::Check("57 chars overflows to +1 more", strcmp(t, ("Took (2): " + a + " x99, +1 more").c_str()) == 0 && l == strlen(t));
+        kt::Check("overflow text never passes 56 chars", l <= ToastMaxChars && ToastMaxChars == 56);
+        // all fit only without a suffix: three items, exactly 56 ("Took (3): " 10 + 14 + 2 + 14 + 2 + 14)
+        std::string c14(14, 'C'), d14(14, 'D'), f14(14, 'F');
+        const char* e3[] = { c14.c_str(), d14.c_str(), f14.c_str() };
         l = fmtTook(t, sizeof t, e3, nullptr, 3);
-        kt::Check("three items totalling exactly 80 all show", l == 80 && strstr(t, "more") == nullptr);
+        kt::Check("three items totalling exactly 56 all show", l == 56 && strstr(t, "more") == nullptr);
         // many items: 16 captured + extra beyond the capture
         std::string nm10(10, 'M');
         const char* many[16];
         for (int i = 0; i < 16; ++i) many[i] = nm10.c_str();
         l = fmtTook(t, sizeof t, many, nullptr, 16, 5);
-        kt::Check("16 items + extra 5 stay within 80 and count all the rest", l <= 80 && strstr(t, "more") != nullptr);
+        kt::Check("16 items + extra 5 stay within 56 and count all the rest", l <= 56 && strstr(t, "more") != nullptr && strncmp(t, "Took (21): ", 11) == 0);
         unsigned k = 0; sscanf(strstr(t, "+") + 1, "%u", &k);
-        unsigned shownN = 0; for (const char* p = t; (p = strstr(p, nm10.c_str())) != nullptr; p += 10) ++shownN;
+        unsigned shownN = 0; for (const char* p = t + 11; (p = strstr(p, nm10.c_str())) != nullptr; p += 10) ++shownN;
         kt::CheckEq("shown + K = 21", shownN + k, 21u);
         l = fmtTook(t, sizeof t, many, nullptr, 40);
-        kt::Check("count above the capture cap folds into +K more", l <= 80 && strstr(t, "more") != nullptr);
+        kt::Check("count above the capture cap folds into +K more", l <= 56 && strstr(t, "more") != nullptr && strncmp(t, "Took (40): ", 11) == 0);
+        // worst case from the review: 25 items, 20-char names with the longest stack suffix still show one name and +K more within 56
+        std::string n20(20, 'W');
+        const char* wc[16];
+        int swc[16];
+        for (int i = 0; i < 16; ++i) { wc[i] = n20.c_str(); swc[i] = 999; }
+        l = fmtTook(t, sizeof t, wc, swc, 16, 9);
+        kt::Check("worst case: at least one name shows, within 56", l <= 56 && strstr(t, n20.c_str()) != nullptr && strstr(t, "more") != nullptr);
         // small caller buffer
         char small[10];
         l = fmtTook(small, sizeof small, n3, s3, 3);
-        kt::Check("small buffer is cut and terminated", l == 9 && strlen(small) == 9 && strncmp(small, "Took: Med", 9) == 0);
+        kt::Check("small buffer is cut and terminated", l == 9 && strlen(small) == 9 && strncmp(small, "Took (3):", 9) == 0);
         kt::CheckEq("null out is harmless", fmtTook(nullptr, 5, n3, s3, 3), 0u);
         // sanitizeName direct
         char sn[8];
@@ -380,33 +458,48 @@ int main() {
         const char* n3[] = { "Medpac", "Blaster Pistol", "Vibroblade" };
         int s3[] = { 2, 1, 1 };
         kt::Check("peek label, all shown", fmtPeek(t, sizeof t, "F", 3, n3, s3, 3) > 0 &&
-                  strcmp(t, "3 items  [F] take all: Medpac x2, Blaster Pistol, Vibroblade") == 0);
+                  strcmp(t, "[F] Take all (3): Medpac x2, Blaster Pistol, Vibroblade") == 0);
         const char* n1[] = { "Medpac" };
         fmtPeek(t, sizeof t, "F", 1, n1, nullptr, 1);
-        kt::Check("one item is singular", strcmp(t, "1 item  [F] take all: Medpac") == 0);
+        kt::Check("one item: [F] Take: Medpac (no count)", strcmp(t, "[F] Take: Medpac") == 0);
         fmtPeek(t, sizeof t, "F", 6, n3, s3, 3);
-        kt::Check("items beyond the captured ones fold into +K more", strcmp(t, "6 items  [F] take all: Medpac x2, Blaster Pistol, Vibroblade, +3 more") == 0);
+        kt::Check("items beyond the captured ones fold into +K more", strcmp(t, "[F] Take all (6): Medpac x2, Blaster Pistol, +4 more") == 0);
+        {
+            const char* n2[] = { "Medpac", "Blaster Pistol" };
+            int s2[] = { 2, 1 };
+            kt::CheckEq("review example 1 length", fmtPeek(t, sizeof t, "F", 4, n2, s2, 2), 52u);
+            kt::Check("[F] Take all (4): Medpac x2, Blaster Pistol, +2 more", strcmp(t, "[F] Take all (4): Medpac x2, Blaster Pistol, +2 more") == 0);
+            const char* real[16] = { "Medpac", "Blaster Pistol", "Adhesive Grenade", "Lightsaber Crystal: Opila", "Frag Grenade", "Credit Chip", "Vibroblade",
+                                     "Combat Suit", "Stimulant", "Glow Rod", "Repair Kit", "Security Spike", "Power Cell", "Ion Blaster", "Datapad", "Cure Pack" };
+            int sr[16] = { 2, 1, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+            ListInfo li;
+            kt::CheckEq("review example 2 length", fmtPeek(t, sizeof t, "F", 25, real, sr, 16, &li), 54u);
+            kt::Check("[F] Take all (25): Medpac x2, Blaster Pistol, +23 more", strcmp(t, "[F] Take all (25): Medpac x2, Blaster Pistol, +23 more") == 0);
+            kt::Check("ListInfo of the peek line", li.shown == 2 && li.more == 23);
+            kt::Check("a rebound key shows its name", (fmtPeek(t, sizeof t, "G", 1, n1, nullptr, 1), strcmp(t, "[G] Take: Medpac") == 0));
+            kt::Check("an unnamed key falls back to 'key'", (fmtPeek(t, sizeof t, "key", 2, n2, s2, 2), strcmp(t, "[key] Take all (2): Medpac x2, Blaster Pistol") == 0));
+        }
         kt::CheckEq("empty container: no label", fmtPeek(t, sizeof t, "F", 0, n3, s3, 0), 0u);
-        kt::Check("no label leaves an empty string", t[0] == 0);
+        kt::Check("no label leaves an empty string (never '0 items')", t[0] == 0);
         kt::CheckEq("total but nothing captured: no label", fmtPeek(t, sizeof t, "F", 4, n3, s3, 0), 0u);
-        // 100-char cap with +K more
+        // 56-char cap with +K more
         std::string nm(20, 'N');
         const char* many[16];
         for (int i = 0; i < 16; ++i) many[i] = nm.c_str();
         unsigned l = fmtPeek(t, sizeof t, "F", 25, many, nullptr, 16);
-        kt::Check("long list stays within 100 chars", l <= PeekMaxChars && l == strlen(t));
+        kt::Check("long list stays within 56 chars", l <= PeekMaxChars && PeekMaxChars == 56 && l == strlen(t));
         kt::Check("long list ends in +K more", strstr(t, "more") != nullptr);
         unsigned k = 0; sscanf(strstr(t, "+") + 1, "%u", &k);
         unsigned shownN = 0; for (const char* p = t; (p = strstr(p, nm.c_str())) != nullptr; p += 20) ++shownN;
         kt::CheckEq("shown + K = 25", shownN + k, 25u);
-        // exact 100 boundary: prefix "2 items  [F] take all: " is 23 chars; 23 + 38 + 2 + 37 = 100
-        std::string a(38, 'A'), b(37, 'B'), c(38, 'B');
+        // exact 56 boundary: prefix "[F] Take all (2): " is 18 chars; 18 + 20 + 2 + 16 = 56
+        std::string a(20, 'A'), b(16, 'B'), c(17, 'B');
         const char* e1[] = { a.c_str(), b.c_str() };
         l = fmtPeek(t, sizeof t, "F", 2, e1, nullptr, 2);
-        kt::Check("exactly 100 chars fits whole", l == 100 && strstr(t, "more") == nullptr);
+        kt::Check("exactly 56 chars fits whole", l == 56 && strstr(t, "more") == nullptr);
         const char* e2[] = { a.c_str(), c.c_str() };
         l = fmtPeek(t, sizeof t, "F", 2, e2, nullptr, 2);
-        kt::Check("101 chars overflows to +1 more", l <= 100 && strstr(t, ", +1 more") != nullptr);
+        kt::Check("57 chars overflows to +1 more", l <= 56 && strstr(t, ", +1 more") != nullptr);
         char small[12];
         l = fmtPeek(small, sizeof small, "F", 3, n3, s3, 3);
         kt::Check("small buffer is cut and terminated", l == 11 && strlen(small) == 11);
@@ -453,8 +546,8 @@ int main() {
     kt::Check("PEEK-OPEN line", strcmp(b, "PEEK-OPEN obj=7f000009 plc=1234abcd dist=2.50 n=0") == 0);
     fmtPeekShow(b, sizeof b, 0x7F0000AAu, 0x1234ABCDu, 0, 0);
     kt::Check("PEEK-SHOW line", strcmp(b, "PEEK-SHOW obj=7f0000aa plc=1234abcd flag=0 n=0") == 0);
-    fmtPeekLabel(b, sizeof b, "1 item  [F] take all: Medpac");
-    kt::Check("PEEK-LABEL line", strcmp(b, "PEEK-LABEL 1 item  [F] take all: Medpac") == 0);
+    fmtPeekLabel(b, sizeof b, "[F] Take: Medpac");
+    kt::Check("PEEK-LABEL line", strcmp(b, "PEEK-LABEL [F] Take: Medpac") == 0);
     fmtPeekEmpty(b, sizeof b, 0x7F0000AAu, 66, 1);
     kt::Check("PEEK-EMPTY line", strcmp(b, "PEEK-EMPTY obj=7f0000aa dt=66ms open=1") == 0);
     fmtPeekTake(b, sizeof b, 0x7F0000AAu, 1200, 3);
@@ -480,6 +573,79 @@ int main() {
     kt::Check("AREA line", strcmp(b, "AREA area=a0a0a0a0 objs=321") == 0);
     fmtCooldown(b, sizeof b, "release", 0x7F000009u, 5.5f, 2);
     kt::Check("COOLDOWN line", strcmp(b, "COOLDOWN release obj=7f000009 dist=5.50 size=2") == 0);
+
+    // ---- 0.3.1-dev: placement, latch, Took state, dwell, new log lines
+    {
+        Geometry g;
+        g.haveName = true; g.name = { 1700, 522, 533, 32 };
+        g.havePanel = true; g.panel = { 0, 0, 3840, 1600 };
+        Rect r; Pos p = Pos::None;
+        kt::Check("no menu shown, panel known: fixed spot B", choosePlacement(g, &r, &p) && p == Pos::B);
+        kt::Check("B is centred at 62% of the panel height", r.x == 1920 - 600 && r.y == 992 && r.w == 1200 && r.h == 20);
+        g.menuShown = true;
+        kt::Check("menu shown: A under the name", choosePlacement(g, &r, &p) && p == Pos::A);
+        kt::Check("A = name centre - 600, name bottom + 20", r.x == 1700 + 266 - 600 && r.y == 522 + 32 + 20 && r.w == 1200);
+        g.name = { 100, 522, 533, 32 };   // a target at the left edge: the 1200 px line would start at x < 0
+        kt::Check("A is clamped to x >= 24", choosePlacement(g, &r, &p) && r.x == 24);
+        g.name = { 3500, 522, 300, 32 };
+        kt::Check("A is clamped to x <= screenW - 24 - w", choosePlacement(g, &r, &p) && r.x == 3840 - 24 - 1200);
+        g.menuShown = false; g.havePanel = false;
+        kt::Check("no panel, no menu, a name seen: A at the last name rect (no clamp)", choosePlacement(g, &r, &p) && p == Pos::A && r.x == 3650 - 600);
+        g.haveName = false;
+        kt::Check("nothing to anchor to", !choosePlacement(g, &r, &p));
+        g.havePanel = true; g.panel = { 0, 0, 0, 0 };
+        kt::Check("a panel with zero size is unknown", !choosePlacement(g, &r, &p));
+        kt::Check("posName", strcmp(posName(Pos::A), "A") == 0 && strcmp(posName(Pos::B), "B") == 0 && strcmp(posName(Pos::None), "-") == 0);
+    }
+    {
+        Latch l;
+        kt::Check("latch starts free", !l.held && l.pos == Pos::None);
+        l.set(Pos::A, { 1, 2, 3, 4 });
+        kt::Check("latch holds position and rect", l.held && l.pos == Pos::A && l.rect == Rect{ 1, 2, 3, 4 });
+        l.clear();
+        kt::Check("latch clear", !l.held && l.pos == Pos::None && l.rect == Rect{ 0, 0, 0, 0 });
+    }
+    {
+        ToastState t;
+        kt::Check("toast idle", !t.active && !t.visible(1000));
+        t.start("Took: Medpac", 1000, 3500);
+        kt::Check("toast visible 0..3499 ms", t.visible(1000) && t.visible(4499) && !t.visible(4500));
+        kt::Check("toast text kept", strcmp(t.text, "Took: Medpac") == 0);
+        t.start("Took (2): A, B", 2000, ToastMs);
+        kt::Check("a new toast replaces the old one at once", t.visible(2000) && t.visible(4999) && !t.visible(5000) && strcmp(t.text, "Took (2): A, B") == 0);
+        t.start("Took: X", 0xFFFFFF9Cu, 3000);
+        kt::Check("toast across the 32-bit wrap", t.visible(100u) && !t.visible(3000u));
+        std::string longText(200, 'x');
+        t.start(longText.c_str(), 0, 3000);
+        kt::Check("overlong text is cut and terminated", strlen(t.text) == sizeof t.text - 1);
+    }
+    {
+        Dwell d;
+        kt::Check("no candidate: no open, state clear", !d.update(0, 1000, 400) && d.id == 0);
+        kt::Check("first sight does not open", !d.update(7, 1000, 400));
+        kt::Check("250 ms later: not yet", !d.update(7, 1250, 400));
+        kt::Check("399 ms: not yet", !d.update(7, 1399, 400));
+        kt::Check("400 ms: opens", d.update(7, 1400, 400));
+        kt::Check("a different candidate restarts the dwell", !d.update(8, 1500, 400) && !d.update(8, 1800, 400) && d.update(8, 1900, 400));
+        d.update(0, 2000, 400);
+        kt::Check("losing the candidate resets", !d.update(8, 2100, 400));
+        kt::Check("dwell 0 opens on first sight", d.update(9, 3000, 0));
+        Dwell w;
+        w.update(5, 0xFFFFFF9Cu, 400);
+        kt::Check("dwell across the 32-bit wrap", !w.update(5, 100u, 400) && w.update(5, 300u, 400));
+        d.reset();
+        kt::Check("reset", d.id == 0);
+        kt::Check("dwell constant", DwellMs == 400);
+    }
+    {
+        char b[160];
+        fmtLatch(b, sizeof b, Pos::A, { 676, 574, 1200, 20 });
+        kt::Check("LABEL-LATCH line", strcmp(b, "LABEL-LATCH pos=A rect=676,574,1200,20") == 0);
+        fmtLabelExtent(b, sizeof b, 52, 676, 574, 1200, 20);
+        kt::Check("LABEL-EXTENT line", strcmp(b, "LABEL-EXTENT chars=52 extent=676,574,1200,20") == 0);
+        fmtGiveUpServerClose(b, sizeof b, 0x1234ABCDu, 1);
+        kt::Check("GIVEUP-SERVERCLOSE line", strcmp(b, "GIVEUP-SERVERCLOSE plc=1234abcd flag=1") == 0);
+    }
 
     return kt::Report("quick_loot_logic_test");
 }

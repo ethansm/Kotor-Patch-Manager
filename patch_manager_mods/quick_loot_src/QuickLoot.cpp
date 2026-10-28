@@ -1,5 +1,11 @@
 // Structure (PV1 step 3): the peek / take decision machine lives in QuickLootMachine.h (host-simulated by quick_loot_sim_test.cpp); this file is the
 //   engine adapter (EngineEnv: SafeRead reads, OpenInventory / Close calls, label, toast) plus the three hooks.
+// Quick Loot 0.3.1-dev = 0.3.0-dev + the PV1 UX review (.claude/reviews/quick_loot_pv1_ux.md): peek and Took share one 1200 px / 56-char one-line
+//   label ("[F] Take all (4): Medpac x2, Blaster Pistol, +2 more" / "Took (4): ..."), item names cut at 20 chars, a black alpha-0.55 backing
+//   panel behind the text (second label made first in K2HUD_BUILD, same pill image + tint + alpha path as enemy-effects-strip), the label
+//   position (A under the name tag, x clamped to the panel / B fixed spot) latched until the label is gone, a 400 ms dwell before the
+//   auto-open, Took shown 3 s (3.5 s for a long line, cap 4 s), the label's real getExtent logged once (LABEL-EXTENT), and a give-up fallback
+//   (GIVEUP-SERVERCLOSE) so a container is never left open when the client message object never comes.
 // Quick Loot 0.3.0-dev (doc 52 QL2p on QL1b on QL1a). QL2p proximity peek: every ScanMs (K2HUD_FRAME) the leader's area is scanned for a
 //   placeable within OpenM (HasInventory, not locked, no armed trap, useable, closed, not in the cooldown set); the nearest is opened with the
 //   engine's OpenInventory (lid animation on), its ShowContainerGui is consumed as a PEEK, and a label lists the contents ("3 items  [F] take
@@ -41,7 +47,7 @@ KP_LOG_PATCH("quick-loot");
 
 namespace {
 
-constexpr const char* Version = "0.3.0-dev";
+constexpr const char* Version = "0.3.1-dev";
 constexpr unsigned Site = 0x7100;   // saferead failure-ring site id
 // Steam addresses (static RE, doc 52 / .claude/research/quick_loot/README.md); AppGlobal and ClientToServerObjectId come from GameAddr.h.
 constexpr uintptr_t GetPlaceableByGameObjectID = 0x0051C160;   // thiscall(serverApp, serverId) RET 4 -> CSWSPlaceable* (0 = none)
@@ -54,7 +60,8 @@ constexpr int Item_Name = 0x2C0;                               // QL1b: CExoLocS
 // QL1b: target menu (menu = ctx->menu = hud + 0xCC): flags bit0 = shown, origin px, name label rect (panel-local px). Same offsets as enemy-effects-strip.
 constexpr int Menu_Flags = 0x1BAC, Menu_OriginX = 0x1648, Menu_OriginY = 0x164C;
 constexpr int Menu_NameX = 0x166C, Menu_NameY = 0x1670, Menu_NameW = 0x1674, Menu_NameH = 0x1678;
-constexpr int NameCap = qlogic::NameCap;                       // captured name buffer (sanitizeName cuts at ToastNameMax = 40)
+constexpr int NameCap = qlogic::NameCap;                       // captured name buffer (sanitizeName cuts at NameRawMax = 40)
+const char* const TexBacking = "lbl_miscroll_f";               // backing panel image: the enemy-effects-strip pill image (tinted black here)
 // QL1a: vanilla OK button path (0x8B2850): msgObj = *(*(*(*AppGlobal + 4) + 4) + 0x150); thiscall(msgObj, clientObjId, closeFlag) RET 8.
 constexpr uintptr_t SendContainerClose = 0x0087A550;
 constexpr int App_Client = 4, Client_Inner = 4, Inner_MsgObj = 0x150;
@@ -201,60 +208,92 @@ void captureItems(uintptr_t plc, Captured& c) {
     }
 }
 
-struct Toast {
-    bool active = false;
-    uint32_t shownAt = 0;
-    char text[96] = {0};
-};
-Toast g_toast;
 char g_shownText[128] = {0};   // text currently set on the label (setText only when it differs)
-uintptr_t g_lbl = 0;          // the toast label (0 = none: creation failed or the HUD changed)
+uintptr_t g_lbl = 0;          // the label (0 = none: creation failed or the HUD changed)
+uintptr_t g_back = 0;         // the backing panel label, created before g_lbl (drawn behind it); 0 = none
 int32_t g_panel = 0;          // HUD object the label belongs to (K2HudContext.panel at BUILD == ctx->hud later)
 int g_vis = -1;               // change-only caches: -1 unknown, 0 hidden, 1 shown
+int g_backVis = -1;
 bool g_styled = false;        // font / align / colour applied
-bool g_rectSet = false;
-qlogic::Rect g_lastRect = {0, 0, 0, 0};
+bool g_backStyled = false;    // backing fill / tint / alpha applied
+bool g_backOff = false;       // backing could not be styled: text only
+bool g_rectSet = false, g_backRectSet = false;
+qlogic::Rect g_lastRect = {0, 0, 0, 0}, g_backLast = {0, 0, 0, 0};
 bool g_haveRect = false;      // a target-menu name rect has been seen
 qlogic::Rect g_nameRect = {0, 0, 0, 0};
 bool g_buildFailLogged = false;
+bool g_extentLogged = false;  // LABEL-EXTENT is logged once per session
 
 void lblHide() {
+    if (g_back && g_backVis != 0) {
+        guikit::setVisible(g_back, false);
+        guikit::setClickable(g_back, false);
+        g_backVis = 0;
+    }
     if (!g_lbl || g_vis == 0) return;
     guikit::setVisible(g_lbl, false);
     guikit::setClickable(g_lbl, false);
     g_vis = 0;
 }
 
-// The HUD was rebuilt: the old label may be freed. Drop every pointer without writing to it.
+// The HUD was rebuilt: the old labels may be freed. Drop every pointer without writing to them.
 void lblDrop() {
-    g_lbl = 0; g_panel = 0; g_vis = -1; g_styled = false; g_rectSet = false; g_haveRect = false;
+    g_lbl = 0; g_back = 0; g_panel = 0; g_vis = -1; g_backVis = -1; g_styled = false; g_backStyled = false; g_rectSet = false; g_backRectSet = false;
+    g_haveRect = false;
     g_shownText[0] = 0;
-    g_toast.active = false;
 }
 
-// K2HUD_BUILD: create the toast label (hidden, click-through) in the HUD panel; draw order = creation order.
+// Creates one hidden, click-through label in the HUD panel from the LBL_QUEUE1 template (draw order = creation order). 0 on failure.
+uintptr_t makeLabel(uintptr_t panel, const char* what) {
+    int why = guikit::CF_None;
+    uint32_t bv = 0;
+    const uintptr_t c = guikit::createLabelFromTemplate(panel, "LBL_QUEUE1", &why, &bv);
+    if (!c) {
+        if (!g_buildFailLogged) { g_buildFailLogged = true; KP_LOGV(chMain, KPLOG_WARN, "BUILD: %s label create failed (why=%d vtable=%08x): no %s", what, why, (unsigned)bv, what); }
+        return 0;
+    }
+    guikit::setVisible(c, false);
+    guikit::setClickable(c, false);
+    if (!guikit::appendToPanel(panel, c)) {
+        if (!g_buildFailLogged) { g_buildFailLogged = true; KP_LOGV(chMain, KPLOG_WARN, "BUILD: %s label append failed (control %08x left hidden): no %s", what, (unsigned)c, what); }
+        return 0;
+    }
+    return c;
+}
+
+// K2HUD_BUILD: create the backing panel first, then the text label (hidden, click-through) in the HUD panel; draw order = creation order.
 void KPATCH_CALL onHudBuild(const K2HudContext* ctx, void*) {
     lblDrop();
     if (!ctx || ctx->struct_size < offsetof(K2HudContext, panel) + sizeof(ctx->panel) || !ctx->panel) return;
     enter();
     const uintptr_t panel = static_cast<uintptr_t>(static_cast<uint32_t>(ctx->panel));
-    int why = guikit::CF_None;
-    uint32_t bv = 0;
-    const uintptr_t c = guikit::createLabelFromTemplate(panel, "LBL_QUEUE1", &why, &bv);
-    if (!c) {
-        if (!g_buildFailLogged) { g_buildFailLogged = true; KP_LOGV(chMain, KPLOG_WARN, "BUILD: toast label create failed (why=%d vtable=%08x): no toast", why, (unsigned)bv); }
-        return;
-    }
-    guikit::setVisible(c, false);
-    guikit::setClickable(c, false);
-    if (!guikit::appendToPanel(panel, c)) {
-        if (!g_buildFailLogged) { g_buildFailLogged = true; KP_LOGV(chMain, KPLOG_WARN, "BUILD: toast label append failed (control %08x left hidden): no toast", (unsigned)c); }
-        return;
-    }
+    const uintptr_t back = makeLabel(panel, "backing");   // behind the text; losing it only costs the dark panel
+    const uintptr_t c = makeLabel(panel, "toast");
+    if (!c) return;
+    g_back = back; g_backVis = back ? 0 : -1;
     g_lbl = c; g_panel = ctx->panel; g_vis = 0;
 }
 
-// Shared label draw (toast + peek): style once; text / rect / visibility change-only.
+// Backing panel behind the text: black at BackAlpha (pill image + black tint + alpha, the enemy-effects-strip path), width follows the text.
+void backDraw(const qlogic::Rect& label, unsigned chars) {
+    if (!g_back || g_backOff) return;
+    if (!g_backStyled) {
+        static const float black[3] = { 0.0f, 0.0f, 0.0f };
+        void* img = guikit::imageFor(TexBacking);
+        if (!img || !guikit::setFill(g_back, img) || !guikit::setBorderTint(g_back, black) || !guikit::setAlpha(g_back, qlogic::BackAlpha)) {
+            g_backOff = true;
+            KP_LOGV(chMain, KPLOG_WARN, "BACKING: image '%s' / fill / tint / alpha unavailable (img=%p): text without backing", TexBacking, img);
+            lblHide();
+            return;
+        }
+        g_backStyled = true;
+    }
+    const qlogic::Rect r = qlogic::backingRect(label, chars);
+    if (!g_backRectSet || r != g_backLast) { guikit::setRect(g_back, r.x, r.y, r.w, r.h); g_backLast = r; g_backRectSet = true; }
+    if (g_backVis != 1) { guikit::setVisible(g_back, true); guikit::setClickable(g_back, false); g_backVis = 1; }
+}
+
+// Shared label draw (peek + Took): style once; text / rect / visibility change-only. The backing is drawn first (it sits behind the text).
 void labelDraw(const char* text, const qlogic::Rect& r) {
     if (!g_styled) {
         if (!(guikit::setFont(g_lbl, "dialogfont10x10") && guikit::setAlign(g_lbl, 18) && guikit::setTextColor(g_lbl, 0.9f, 0.85f, 0.5f))) { lblHide(); return; }
@@ -266,59 +305,17 @@ void labelDraw(const char* text, const qlogic::Rect& r) {
         g_shownText[sizeof g_shownText - 1] = 0;
     }
     if (!g_rectSet || r != g_lastRect) { guikit::setRect(g_lbl, r.x, r.y, r.w, r.h); g_lastRect = r; g_rectSet = true; }
+    backDraw(r, static_cast<unsigned>(strlen(text)));
     if (g_vis != 1) { guikit::setVisible(g_lbl, true); guikit::setClickable(g_lbl, false); g_vis = 1; }   // shown labels stay click-through
-}
-
-// K2HUD_TARGET_MENU_POST: runs before every drawn HUD frame (also with no target). Caches the name rect while the target menu is shown.
-// The peek label (while a peek is active) wins over the toast: name-anchored while the target menu is shown, else a fixed spot on the HUD panel.
-void KPATCH_CALL onMenuPost(const K2HudContext* ctx, void*) {
-    if (!g_lbl || !ctx) return;
-    if (ctx->hud != g_panel) { lblDrop(); return; }   // stale HUD: no writes to the old label
-    saferead::beginScope();
-    const uintptr_t menu = static_cast<uintptr_t>(static_cast<uint32_t>(ctx->menu));
-    uint8_t flags = 0;
-    bool menuShown = false;
-    if (menu && rd<uint8_t>(menu, Menu_Flags, &flags) && (flags & 1)) {
-        int32_t mx = 0, my = 0, nx = 0, ny = 0, nw = 0, nh = 0;
-        if (rd<int32_t>(menu, Menu_OriginX, &mx) && rd<int32_t>(menu, Menu_OriginY, &my) && rd<int32_t>(menu, Menu_NameX, &nx) &&
-            rd<int32_t>(menu, Menu_NameY, &ny) && rd<int32_t>(menu, Menu_NameW, &nw) && rd<int32_t>(menu, Menu_NameH, &nh)) {
-            g_nameRect = { mx + nx, my + ny, nw, nh };   // screen rect of the name label
-            g_haveRect = true;
-            menuShown = true;
+    if (!g_extentLogged) {   // the real extent after the first SetText: proves ~20 px/char at 3840x1600 (a wrapped label shows a taller extent)
+        int x = 0, y = 0, w = 0, h = 0;
+        if (guikit::getExtent(g_lbl, &x, &y, &w, &h)) {
+            g_extentLogged = true;
+            char b[128];
+            qlogic::fmtLabelExtent(b, sizeof b, static_cast<unsigned>(strlen(text)), x, y, w, h);
+            logLine(b);
         }
     }
-    if (g_peek.active && g_peek.text[0]) {   // QL2p peek label
-        qlogic::Rect r = { 0, 0, 0, 0 };
-        int px = 0, py = 0, pw = 0, ph = 0;
-        if (menuShown) r = qlogic::peekRectName(g_nameRect.x, g_nameRect.y, g_nameRect.w, g_nameRect.h);
-        else if (guikit::getExtent(static_cast<uintptr_t>(static_cast<uint32_t>(g_panel)), &px, &py, &pw, &ph) && pw > 0 && ph > 0) r = qlogic::peekRectFixed(px, py, pw, ph);
-        else if (g_haveRect) r = qlogic::peekRectName(g_nameRect.x, g_nameRect.y, g_nameRect.w, g_nameRect.h);   // last name rect
-        else { lblHide(); return; }
-        labelDraw(g_peek.text, r);
-        return;
-    }
-    if (!g_toast.active) { lblHide(); return; }
-    if (!qlogic::toastVisible(GetTickCount(), g_toast.shownAt, qlogic::ToastMs) || !g_haveRect) { g_toast.active = false; lblHide(); return; }
-    labelDraw(g_toast.text, qlogic::toastRect(g_nameRect.x, g_nameRect.y, 0, 0, g_nameRect.w, g_nameRect.h));
-}
-
-// Called from the FRAME tick: POST may not run when there is no target, so expire the toast here too.
-void toastExpire(const K2HudContext* ctx) {
-    if (qlogic::toastVisible(GetTickCount(), g_toast.shownAt, qlogic::ToastMs)) return;
-    g_toast.active = false;
-    if (g_peek.active) return;   // the label belongs to the peek
-    if (!g_lbl || !ctx || !ctx->hud) return;   // hud unknown: POST hides it
-    if (ctx->hud != g_panel) { lblDrop(); return; }
-    saferead::beginScope();
-    lblHide();
-}
-
-void toastStart(const char* text) {
-    if (!g_lbl) return;
-    strncpy(g_toast.text, text, sizeof g_toast.text - 1);
-    g_toast.text[sizeof g_toast.text - 1] = 0;
-    g_toast.shownAt = GetTickCount();
-    g_toast.active = true;
 }
 
 using Fn0 = uint32_t(__thiscall*)(uintptr_t self);
@@ -391,6 +388,7 @@ struct EngineEnv : qlogic::Env {
         const uintptr_t s = serverApp();
         return s ? reinterpret_cast<LookupFn>(GetPlaceableByGameObjectID)(s, sid) : 0;
     }
+    uintptr_t resolveClientPlc(uint32_t clientObj) override { return placeableFor(clientObj); }
     bool plcPos(uintptr_t plc, float* x, float* y) override { return rd<float>(plc, Obj_PosX, x) && rd<float>(plc, Obj_PosY, y); }
     int itemCount(uintptr_t plc) override { return ::itemCount(plc); }
     int openFlag(uintptr_t plc) override { return ::openFlag(plc); }
@@ -417,23 +415,61 @@ struct EngineEnv : qlogic::Env {
     }
     void openInventory(uintptr_t plc, uint32_t opener) override { reinterpret_cast<OpenInvFn>(OpenInventory)(plc, opener, 1); }
     void sendClose(uintptr_t msg, uint32_t obj, int flag) override { reinterpret_cast<SendCloseFn>(SendContainerClose)(msg, obj, flag); }
-    void serverClose(uintptr_t plc, uint32_t opener) override {
+    void serverClose(uintptr_t plc, uint32_t opener, int flag) override {
         using CloseInvFn = void(__thiscall*)(uintptr_t plc, uint32_t player, int flag);
-        reinterpret_cast<CloseInvFn>(CloseInventory)(plc, opener, 0);
+        reinterpret_cast<CloseInvFn>(CloseInventory)(plc, opener, flag);
     }
-    void labelShow(const char*) override {}   // the peek label is drawn from g_peek.text in onMenuPost
+    void labelShow(const char*) override {}   // the label is drawn from g_m.labelText() in onMenuPost
     void labelHide() override {}
-    void toast(const char* text) override { toastStart(text); }
+    void toast(const char*) override {}       // the Took line lives in g_m.toastS (text + duration); drawn in onMenuPost
     void log(const char* line) override { logLine(line); }
 };
 EngineEnv g_env;
 
 
+// K2HUD_TARGET_MENU_POST: runs before every drawn HUD frame (also with no target). Caches the name rect while the target menu is shown, then draws
+// what the machine says: the Took line (while up) or the peek line. Position A (under the name, clamped to the panel) or B (fixed spot) is
+// chosen when the label first shows and latched until it is gone (QuickLootMachine.h placeLabel).
+void KPATCH_CALL onMenuPost(const K2HudContext* ctx, void*) {
+    if (!g_lbl || !ctx) return;
+    if (ctx->hud != g_panel) { lblDrop(); return; }   // stale HUD: no writes to the old label
+    saferead::beginScope();
+    const uintptr_t menu = static_cast<uintptr_t>(static_cast<uint32_t>(ctx->menu));
+    uint8_t flags = 0;
+    qlogic::Geometry g;
+    if (menu && rd<uint8_t>(menu, Menu_Flags, &flags) && (flags & 1)) {
+        int32_t mx = 0, my = 0, nx = 0, ny = 0, nw = 0, nh = 0;
+        if (rd<int32_t>(menu, Menu_OriginX, &mx) && rd<int32_t>(menu, Menu_OriginY, &my) && rd<int32_t>(menu, Menu_NameX, &nx) &&
+            rd<int32_t>(menu, Menu_NameY, &ny) && rd<int32_t>(menu, Menu_NameW, &nw) && rd<int32_t>(menu, Menu_NameH, &nh)) {
+            g_nameRect = { mx + nx, my + ny, nw, nh };   // screen rect of the name label
+            g_haveRect = true;
+            g.menuShown = true;
+        }
+    }
+    const char* text = g_m.labelText(nowMs());
+    if (!text) { lblHide(); return; }
+    g.haveName = g_haveRect;
+    g.name = g_nameRect;
+    int px = 0, py = 0, pw = 0, ph = 0;
+    if (guikit::getExtent(static_cast<uintptr_t>(static_cast<uint32_t>(g_panel)), &px, &py, &pw, &ph) && pw > 0 && ph > 0) {
+        g.havePanel = true;
+        g.panel = { px, py, pw, ph };
+    }
+    qlogic::Rect r = { 0, 0, 0, 0 };
+    if (!g_m.placeLabel(g_env, g, &r)) { lblHide(); return; }
+    labelDraw(text, r);
+}
+
 // K2HUD_FRAME: the pending click-take Close, then the proximity peek. Runs on the game thread, outside any EventHandler.
 void KPATCH_CALL onHudFrame(const K2HudContext* ctx, void*) {
     g_env.ctx = ctx;
-    if (g_toast.active) toastExpire(ctx);
-    g_m.onFrame(g_env, ctx ? ctx->frame : g_m.frame, nowMs());
+    const uint32_t now = nowMs();
+    g_m.onFrame(g_env, ctx ? ctx->frame : g_m.frame, now);
+    if (!g_m.labelText(now) && g_lbl && ctx && ctx->hud) {   // POST may not run when there is no target: hide an expired line here too
+        if (ctx->hud != g_panel) { lblDrop(); return; }
+        saferead::beginScope();
+        lblHide();
+    }
 }
 
 }   // namespace

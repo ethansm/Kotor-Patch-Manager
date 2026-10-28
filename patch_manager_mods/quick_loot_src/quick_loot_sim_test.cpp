@@ -151,6 +151,7 @@ struct Sim : Env {
     bool hudOk() override { return hud; }
     bool shiftDown() override { return shift; }
     uintptr_t resolvePlc(uint32_t sid) override { const int i = bySid(sid); return i < 0 ? 0 : objs[static_cast<size_t>(i)].plc; }
+    uintptr_t resolveClientPlc(uint32_t o) override { const int i = byObj(o); return i < 0 ? 0 : objs[static_cast<size_t>(i)].plc; }
     bool plcPos(uintptr_t plc, float* x, float* y) override {
         const int i = byPlc(plc);
         if (i < 0) return false;
@@ -215,18 +216,20 @@ struct Sim : Env {
         o.outstanding = false; o.open = 0;
         if (flag == 1) { taken.push_back(o.items); o.items.clear(); }
     }
-    void serverClose(uintptr_t plc, uint32_t opener) override {
+    void serverClose(uintptr_t plc, uint32_t opener, int flag) override {
         (void)opener;
-        rec(A_SRV, plc, 0, 0, "");
+        rec(A_SRV, plc, 0, flag, "");
         const int i = byPlc(plc);
         if (i < 0) { violate("ServerClose on a missing container"); return; }
         Obj& o = objs[static_cast<size_t>(i)];
         if (!o.outstanding) violate("ServerClose without an open container (double Close)");
         o.outstanding = false; o.open = 0;
+        if (flag == 1) { taken.push_back(o.items); o.items.clear(); }
     }
     void labelShow(const char* t) override { rec(A_LSHOW, 0, 0, 0, t); label = t; }
     void labelHide() override { rec(A_LHIDE, 0, 0, 0, ""); label.clear(); }
     void toast(const char* t) override { rec(A_TOAST, 0, 0, 0, t); }
+    Env& env() { return *this; }
     void log(const char* l) override { rec(A_LOG, 0, 0, 0, l); }
 };
 
@@ -256,7 +259,7 @@ void scenarioA() {
         CHK("sent shortly after the OnOpen (<= 4 frames after Show)", c && c->frame <= showFrame + 4 + 2);
         CHK("one Toast", s.count(A_TOAST) == 1);
         const Act* t = s.nth(A_TOAST, 0);
-        CHK("toast text", t && t->text == "Took: Medpac x2, Blaster Pistol");
+        CHK("toast text", t && t->text == "Took (2): Medpac x2, Blaster Pistol");
         CHK("TOOK lines logged", s.logCount("TOOK ") == 2);
         CHK("items taken, take cleared", s.taken.size() == 1 && s.taken[0].size() == 2 && !s.m.take.active);
         s.run(80);
@@ -276,7 +279,7 @@ void scenarioA() {
         CHK_EQ("one SendClose", s.count(A_SEND), 1);
         const Act* c = s.nth(A_SEND, 0);
         CHK("flag 1 (loot present at send time)", c && c->flag == 1);
-        CHK("toast lists the OnOpen loot", s.count(A_TOAST) == 1 && s.nth(A_TOAST, 0)->text == "Took: Blaster Pistol, Credits");
+        CHK("toast lists the OnOpen loot", s.count(A_TOAST) == 1 && s.nth(A_TOAST, 0)->text == "Took (2): Blaster Pistol, Credits");
         s.finishCheck(scn);
     }
     {   // a3: still empty after the OnOpen -> SendClose(0), no toast
@@ -377,13 +380,13 @@ void scenarioC() {
     s.run(40);
     CHK("far away: nothing opened", s.count(A_OPEN) == 0);
     s.setLeader(7.1f, 0);   // 2.9 m
-    s.run(70);
+    s.run(110);
     CHK_EQ("one OpenInventory", s.count(A_OPEN), 1);
     CHK("PEEK-OPEN logged once", s.logCount("PEEK-OPEN") == 1);
     CHK("Show consumed as a peek", s.vanilla == 0 && s.m.peek.active && s.logged("PEEK-SHOW"));
-    CHK("label shown after the OnOpen loot arrived", s.label == "2 items  [F] take all: Medpac x2, Blaster Pistol");
+    CHK("label shown after the OnOpen loot arrived", s.label == "[F] Take all (2): Medpac x2, Blaster Pistol");
     bool sawFirst = false;
-    for (const Act& a : s.acts) if (a.k == A_LSHOW && a.text == "1 item  [F] take all: Medpac x2") sawFirst = true;
+    for (const Act& a : s.acts) if (a.k == A_LSHOW && a.text == "[F] Take: Medpac x2") sawFirst = true;
     CHK("label first listed the pre-OnOpen contents", sawFirst);
     CHK("no Close yet", s.count(A_SEND) == 0 && s.count(A_SRV) == 0);
     const size_t mk = s.mark();
@@ -393,7 +396,7 @@ void scenarioC() {
     s.key = false;
     CHK_EQ("F edge: exactly one SendClose", s.count(A_SEND, mk), 1);
     CHK("flag 1 and a Toast", s.nth(A_SEND, 0, mk) && s.nth(A_SEND, 0, mk)->flag == 1 && s.count(A_TOAST, mk) == 1);
-    CHK("toast text", s.nth(A_TOAST, 0, mk) && s.nth(A_TOAST, 0, mk)->text == "Took: Medpac x2, Blaster Pistol");
+    CHK("toast text", s.nth(A_TOAST, 0, mk) && s.nth(A_TOAST, 0, mk)->text == "Took (2): Medpac x2, Blaster Pistol");
     CHK("label hidden, peek over, cooldown holds the container", s.label.empty() && !s.m.peek.active && s.m.cool.contains(s.objs[static_cast<size_t>(A)].sid));
     s.run(80);   // still standing there
     CHK("cooldown blocks the reopen", s.count(A_OPEN) == 1);
@@ -428,7 +431,7 @@ void scenarioC2() {
         const int A = s.add(10, 0, {Medpac2});
         s.objs[static_cast<size_t>(A)].showDelay = 0;
         s.setLeader(7.1f, 0);
-        s.run(30);
+        s.run(50);
         CHK("peek active, no NOSHOW, no refusal", s.count(A_OPEN) == 1 && s.m.peek.active && !s.logged("PEEK-NOSHOW") && !s.logged("PEEK-REFUSED"));
         s.key = true; s.run(2);
         CHK("take works", s.count(A_SEND) == 1);
@@ -444,7 +447,7 @@ void scenarioC2() {
         s.run(60);
         CHK("opened, Show consumed with flag 0", s.count(A_OPEN) == 1 && s.m.peek.active && s.logged("PEEK-SHOW obj=7f001000 plc=00050000 flag=0"));
         CHK("not closed as empty", s.count(A_SEND) == 0 && !s.logged("PEEK-EMPTY"));
-        CHK("label has the loot", s.label == "1 item  [F] take all: Credits");
+        CHK("label has the loot", s.label == "[F] Take: Credits");
         s.finishCheck(scn);
     }
 }
@@ -455,7 +458,7 @@ void scenarioD() {
     Sim s;
     const int A = s.add(10, 0, {Medpac2});
     s.setLeader(7.1f, 0);
-    s.run(40);
+    s.run(70);   // dwell 400 ms (3rd scan), Show 3 frames later, label at the next poll
     CHK("peek up with a label", s.m.peek.active && !s.label.empty());
     s.setLeader(5.5f, 0);   // 4.5 m: inside the hysteresis band
     s.run(40);
@@ -574,9 +577,9 @@ void scenarioG() {
         const int A = s.add(10, 0, {Medpac2});
         s.objs[static_cast<size_t>(A)].showDelay = -1;
         s.setLeader(7.1f, 0);
-        s.run(60);   // ~960 ms
+        s.run(60);   // opened after the 400 ms dwell, ~430 ms into the 1500 ms wait
         CHK("still expecting before the timeout", s.count(A_SRV) == 0 && s.m.peek.expect != 0);
-        s.run(60);
+        s.run(100);
         CHK_EQ("one ServerClose", s.count(A_SRV), 1);
         CHK("PEEK-NOSHOW open=1 + server close logged", s.logged("PEEK-NOSHOW obj=00001000") && s.logged("PEEK-NOSHOW server close sent"));
         CHK("no client Close", s.count(A_SEND) == 0);
@@ -593,7 +596,7 @@ void scenarioG() {
         s.objs[static_cast<size_t>(A)].autoCloseDelay = 10;
         s.objs[static_cast<size_t>(A)].onOpenDelay = -1;
         s.setLeader(7.1f, 0);
-        s.run(120);
+        s.run(200);
         CHK("NOSHOW logged, no ServerClose (flag not set)", s.logged("PEEK-NOSHOW") && s.count(A_SRV) == 0 && s.count(A_SEND) == 0);
         s.objs[static_cast<size_t>(A)].outstanding = false;   // the container closed itself
         s.finishCheck(scn);
@@ -636,18 +639,20 @@ void scenarioH() {
         Sim s;
         const int A = s.add(10, 0, {Medpac2});
         s.setLeader(7.1f, 0);
-        s.run(40);
+        s.run(60);
         s.msgOk = false;
         s.setLeader(4.9f, 0);
         s.run(250);   // ~4 s: not yet
-        CHK("retrying before GiveUpMs", s.m.peek.active && s.count(A_SEND) == 0);
+        CHK("retrying before GiveUpMs", s.m.peek.active && s.count(A_SEND) == 0 && s.count(A_SRV) == 0);
         s.run(150);   // past 5 s
-        CHK("gave up: peek ended, no Close", !s.m.peek.active && s.count(A_SEND) == 0 && s.logged("PEEK-CLOSE obj=7f001000 reason=far sent=0"));
+        CHK("gave up: peek ended, no client Close", !s.m.peek.active && s.count(A_SEND) == 0 && s.logged("PEEK-CLOSE obj=7f001000 reason=far sent=0"));
+        CHK_EQ("one server-side Close on give-up", s.count(A_SRV), 1);
+        CHK("flag 0 (items stay), GIVEUP-SERVERCLOSE logged", s.nth(A_SRV, 0)->flag == 0 && s.logCount("GIVEUP-SERVERCLOSE") == 1 && s.logged("GIVEUP-SERVERCLOSE plc=00050000 flag=0"));
+        CHK("container closed server-side, items stay", s.objs[static_cast<size_t>(A)].open == 0 && s.objs[static_cast<size_t>(A)].items.size() == 1);
         s.msgOk = true;
         s.run(120);
-        CHK("no late duplicate Close", s.count(A_SEND) == 0 && s.count(A_SRV) == 0);
-        s.objs[static_cast<size_t>(A)].excused = true;   // known gap: the container stays open server-side
-        s.finishCheck(scn);
+        CHK("no late duplicate Close", s.count(A_SEND) == 0 && s.count(A_SRV) == 1);
+        s.finishCheck(scn);   // invariant j holds here too: the open got its one Close
     }
     {
         const char* scn = "h3 F pressed while the message object is missing";
@@ -688,11 +693,39 @@ void scenarioH() {
         s.msgOk = false;
         s.click(A);
         s.run(400);   // 6.4 s
-        CHK("ERR giveup logged, take cleared, no Close", s.logged("ERR giveup") && !s.m.take.active && s.count(A_SEND) == 0);
+        CHK("ERR giveup logged, take cleared, no client Close", s.logged("ERR giveup") && !s.m.take.active && s.count(A_SEND) == 0);
+        CHK_EQ("one server-side Close", s.count(A_SRV), 1);
+        CHK("flag 1 (the player asked to take), GIVEUP-SERVERCLOSE logged", s.nth(A_SRV, 0)->flag == 1 && s.logged("GIVEUP-SERVERCLOSE plc=00050000 flag=1"));
+        CHK("items taken, container closed", s.taken.size() == 1 && s.objs[static_cast<size_t>(A)].items.empty() && s.objs[static_cast<size_t>(A)].open == 0);
         s.msgOk = true;
         s.run(80);
-        CHK("no late Close", s.count(A_SEND) == 0);
-        s.objs[static_cast<size_t>(A)].excused = true;   // known gap: the container stays open server-side
+        CHK("no late Close", s.count(A_SEND) == 0 && s.count(A_SRV) == 1);
+        s.finishCheck(scn);
+    }
+    {
+        const char* scn = "h6 click take: give up, container gone";
+        Sim s; s.m.cfg.proxOn = false;
+        const int A = s.add(1, 0, {Medpac2});
+        s.run(3);
+        s.msgOk = false;
+        s.click(A);
+        s.run(100);
+        s.remove(A);
+        s.run(300);
+        CHK("gave up without touching the missing container", s.logged("ERR giveup") && s.count(A_SRV) == 0 && s.count(A_SEND) == 0 && !s.m.take.active);
+        s.finishCheck(scn);
+    }
+    {
+        const char* scn = "h7 click take: give up, open flag already clear";
+        Sim s; s.m.cfg.proxOn = false;
+        const int A = s.add(1, 0, {Medpac2});
+        s.run(3);
+        s.msgOk = false;
+        s.click(A);
+        s.run(100);
+        s.objs[static_cast<size_t>(A)].open = 0; s.objs[static_cast<size_t>(A)].outstanding = false;   // something else closed it
+        s.run(300);
+        CHK("no server Close for a container that is not open", s.logged("ERR giveup") && s.count(A_SRV) == 0 && !s.logged("GIVEUP-SERVERCLOSE"));
         s.finishCheck(scn);
     }
 }
@@ -760,7 +793,7 @@ void scenarioI() {
         const char* scn = "i5 click on a container that is being peeked: one Close";
         Sim s;
         const int A = s.add(1, 0, {Medpac2});
-        s.run(30);
+        s.run(60);
         CHK("peek up", s.m.peek.active);
         s.click(A);   // the engine shows the container the leader already has peek-open (a second Show for the same open)
         s.run(120);
@@ -798,6 +831,218 @@ void scenarioJ() {
     }
 }
 
+// ---- k: dwell debounce before the auto-open (0.3.1-dev)
+void scenarioK() {
+    {
+        const char* scn = "k1 pass-by shorter than 400 ms never opens";
+        Sim s;
+        s.add(10, 0, {Medpac2});
+        s.run(3);
+        s.setLeader(7.1f, 0);   // 2.9 m
+        s.run(22);              // ~350 ms in range
+        s.setLeader(0, 0);
+        s.run(120);
+        CHK("no OpenInventory, no SCAN-driven open", s.count(A_OPEN) == 0 && !s.m.peek.busy() && s.count(A_SEND) == 0);
+        s.finishCheck(scn);
+    }
+    {
+        const char* scn = "k2 staying >= 400 ms opens exactly once";
+        Sim s;
+        s.add(10, 0, {Medpac2});
+        s.run(3);
+        s.setLeader(7.1f, 0);
+        s.run(60);
+        CHK_EQ("one OpenInventory", s.count(A_OPEN), 1);
+        const Act* o = s.nth(A_OPEN, 0);
+        uint32_t seen = 0;   // frame of the first scan that saw the container as a candidate
+        for (const Act& a : s.acts) if (a.k == A_LOG && a.text.find("SCAN nearest obj=00001000") != std::string::npos && a.text.find("why=ok") != std::string::npos) { seen = a.frame; break; }
+        CHK("candidate seen before the open", o && seen && seen < o->frame);
+        CHK("not before 400 ms after it was first seen", o && (o->frame - seen) * 16u >= DwellMs);
+        CHK("within one frame of the end of the dwell (the rescan lands on it)", o && (o->frame - seen) * 16u <= DwellMs + 16u);
+        s.run(200);
+        CHK("still one open while the peek is up", s.count(A_OPEN) == 1);
+        s.finishCheck(scn);
+    }
+    {
+        const char* scn = "k3 the nearest candidate changing restarts the dwell";
+        Sim s;
+        const int A = s.add(10, 0, {Medpac2}), B = s.add(14, 0, {Pistol});
+        s.run(3);
+        s.setLeader(7.1f, 0);   // A 2.9 m, B 6.9 m (out of range)
+        s.run(24);              // 384 ms: A would open next frame
+        CHK("A still waiting", s.count(A_OPEN) == 0);
+        s.setLeader(12.5f, 0);  // A 2.5 m, B 1.5 m: B is the nearest candidate now
+        s.run(24);
+        CHK("a fresh dwell for B: nothing yet", s.count(A_OPEN) == 0);
+        s.run(30);
+        CHK("then B opens, never A", s.count(A_OPEN) == 1 && s.nth(A_OPEN, 0)->plc == s.objs[static_cast<size_t>(B)].plc);
+        (void)A;
+        s.finishCheck(scn);
+    }
+    {
+        const char* scn = "k4 a suppress state resets the dwell";
+        Sim s;
+        s.add(10, 0, {Medpac2});
+        s.run(3);
+        s.setLeader(7.1f, 0);
+        s.run(18);   // ~290 ms of dwell
+        s.combat = 1;
+        s.run(20);
+        s.combat = 0;
+        s.run(20);   // ~320 ms after the combat ended
+        CHK("the dwell started over", s.count(A_OPEN) == 0);
+        s.run(30);
+        CHK("opens after a full dwell", s.count(A_OPEN) == 1);
+        s.finishCheck(scn);
+    }
+    {
+        const char* scn = "k5 dwell 0 opens on the first scan";
+        Sim s; s.m.cfg.dwellMs = 0;
+        s.add(10, 0, {Medpac2});
+        s.setLeader(7.1f, 0);
+        s.run(3);
+        CHK("opened at once", s.count(A_OPEN) == 1);
+        s.finishCheck(scn);
+    }
+}
+
+// ---- l: label placement latch, shared Took rect, Took duration (0.3.1-dev)
+Rect R(int x, int y, int w, int h) { return Rect{x, y, w, h}; }
+struct Drawn { const char* text = nullptr; bool placed = false; Rect r = {0, 0, 0, 0}; };
+Drawn draw(Sim& s, const Geometry& g) {   // what the HUD post hook does each frame
+    Drawn d;
+    d.text = s.m.labelText(s.now);
+    if (d.text) d.placed = s.m.placeLabel(s, g, &d.r);
+    return d;
+}
+Geometry geo(bool menuShown, Rect name = {1700, 520, 533, 32}) {
+    Geometry g;
+    g.menuShown = menuShown; g.haveName = true; g.name = name;
+    g.havePanel = true; g.panel = {0, 0, 3840, 1600};
+    return g;
+}
+
+void scenarioL() {
+    {
+        const char* scn = "l1 peek latched in A, Took in the same rect";
+        Sim s;
+        s.add(10, 0, {Medpac2, Pistol, Credits, Item{"Frag Grenade", 1}});
+        s.setLeader(7.1f, 0);
+        s.run(80);
+        CHK("peek up", s.m.peek.active && !s.label.empty());
+        const Drawn d1 = draw(s, geo(true));
+        CHK("A: centred under the name tag", d1.placed && s.m.latch.pos == Pos::A && d1.r == R(1700 + 266 - 600, 520 + 32 + 20, 1200, 20));
+        CHK("LABEL-LATCH logged once", s.logCount("LABEL-LATCH pos=A rect=1366,572,1200,20") == 1);
+        s.run(10);
+        const Drawn d2 = draw(s, geo(false));   // the name tag vanishes: the line stays
+        CHK("latched: same rect, still A, with the tag gone", d2.placed && d2.r == d1.r && s.m.latch.pos == Pos::A);
+        const Drawn d3 = draw(s, geo(true, {900, 300, 533, 32}));   // the tag moves: the line stays
+        CHK("latched: same rect after the tag moved", d3.r == d1.r && s.logCount("LABEL-LATCH") == 1);
+        s.key = true; s.run(2); s.key = false;
+        CHK("F took everything", s.count(A_SEND) == 1 && s.count(A_TOAST) == 1 && s.m.toastS.active);
+        const Drawn d4 = draw(s, geo(false));
+        CHK("Took text up in the very same rect", d4.placed && d4.r == d1.r && d4.text && strncmp(d4.text, "Took (4): ", 10) == 0);
+        CHK("4 names: 3.5 s", s.m.toastS.durMs == 3500);
+        const uint32_t t0 = s.m.toastS.shownAt;
+        CHK("still up at 3499 ms", s.m.labelText(t0 + 3499) != nullptr);
+        CHK("gone at 3500 ms", s.m.labelText(t0 + 3500) == nullptr);
+        s.run(240);   // 3.8 s: the latch ends with the Took line
+        CHK("latch released after the Took line", !s.m.latch.held && !s.m.toastS.active && s.m.labelText(s.now) == nullptr);
+        s.finishCheck(scn);
+    }
+    {
+        const char* scn = "l2 peek latched in B stays in B";
+        Sim s;
+        s.add(10, 0, {Medpac2});
+        s.setLeader(7.1f, 0);
+        s.run(80);
+        const Drawn d1 = draw(s, geo(false));
+        CHK("B: fixed spot at 62% of the panel", d1.placed && s.m.latch.pos == Pos::B && d1.r == R(1920 - 600, 992, 1200, 20));
+        const Drawn d2 = draw(s, geo(true));   // a target tag shows up: no jump
+        CHK("tag appears: still B, same rect", d2.r == d1.r && s.m.latch.pos == Pos::B);
+        s.setLeader(4.9f, 0);   // walk away: the peek ends, the latch with it
+        s.run(40);
+        CHK("walk-away: no label, latch released", s.m.labelText(s.now) == nullptr && !s.m.latch.held && s.label.empty());
+        s.finishCheck(scn);
+    }
+    {
+        const char* scn = "l3 A clamps x, the latched rect keeps the clamp";
+        Sim s;
+        s.add(10, 0, {Medpac2});
+        s.setLeader(7.1f, 0);
+        s.run(80);
+        const Drawn d1 = draw(s, geo(true, {50, 520, 300, 32}));   // target at the far left
+        CHK("x clamped to 24", d1.placed && d1.r.x == 24 && d1.r.w == 1200);
+        const Drawn d2 = draw(s, geo(true, {1700, 520, 533, 32}));
+        CHK("still 24 while latched", d2.r.x == 24);
+        s.finishCheck(scn);
+    }
+    {
+        const char* scn = "l4 click take: Took in A, 3 s for a short line";
+        Sim s; s.m.cfg.proxOn = false;
+        const int A = s.add(1, 0, {Medpac2, Pistol});
+        s.run(3);
+        s.click(A);
+        s.run(40);
+        CHK("Took up", s.m.toastS.active && s.count(A_TOAST) == 1);
+        const Drawn d = draw(s, geo(true));
+        CHK("A under the name tag", d.placed && s.m.latch.pos == Pos::A && d.r == R(1366, 572, 1200, 20));
+        CHK("short line: 3 s", s.m.toastS.durMs == 3000);
+        const uint32_t t0 = s.m.toastS.shownAt;
+        CHK("up at 2999 ms, gone at 3000 ms", s.m.labelText(t0 + 2999) != nullptr && s.m.labelText(t0 + 3000) == nullptr);
+        s.run(200);
+        CHK("latch released", !s.m.latch.held);
+        s.finishCheck(scn);
+    }
+    {
+        const char* scn = "l5 long Took (25 items, +K more): 3.5 s, within the 4 s cap";
+        Sim s; s.m.cfg.proxOn = false;
+        std::vector<Item> many;
+        for (int i = 0; i < 25; ++i) many.push_back(Item{"Item number " + std::to_string(i), 1});
+        const int A = s.add(1, 0, many);
+        s.run(3);
+        s.click(A);
+        s.run(40);
+        const Act* t = s.nth(A_TOAST, 0);
+        CHK("toast lists a few names and +K more", t && t->text.find("Took (25): ") == 0 && t->text.find(", +") != std::string::npos && t->text.size() <= 56);
+        CHK("3.5 s, never above 4 s", s.m.toastS.durMs == 3500 && s.m.toastS.durMs <= ToastCapMs);
+        s.finishCheck(scn);
+    }
+    {
+        const char* scn = "l6 a new Took replaces the old one at once; a peek waits for the Took to end";
+        Sim s;
+        const int A = s.add(1, 0, {Medpac2}), B = s.add(3, 0, {Pistol});
+        s.run(60);
+        CHK("peek A up", s.m.peek.active && s.m.peek.plc == s.objs[static_cast<size_t>(A)].plc);
+        s.key = true; s.run(2); s.key = false;
+        CHK("first Took", s.count(A_TOAST) == 1 && s.m.toastS.active);
+        const Drawn d1 = draw(s, geo(true));
+        s.run(60);   // B (2 m from the leader at x=0... it is 3 m: in range) peeks while the Took is up
+        CHK("peek B is up but the Took line is what shows", s.m.peek.active && s.m.peek.plc == s.objs[static_cast<size_t>(B)].plc && s.m.toastS.active);
+        const Drawn d2 = draw(s, geo(true));
+        CHK("Took wins over the peek line", d2.text && strncmp(d2.text, "Took", 4) == 0 && d2.r == d1.r);
+        s.run(200);   // the Took ends
+        const Drawn d3 = draw(s, geo(true, {1000, 500, 533, 32}));
+        CHK("then the peek line shows, latched afresh at the current geometry", d3.text && strncmp(d3.text, "[F] Take", 8) == 0 && d3.r.x == 1000 + 266 - 600);
+        s.key = true; s.run(2); s.key = false;
+        CHK("second Took replaces at once", s.count(A_TOAST) == 2 && s.m.toastS.active);
+        const Drawn d4 = draw(s, geo(true, {1000, 500, 533, 32}));
+        CHK("same rect as the peek it came from", d4.text && strncmp(d4.text, "Took", 4) == 0 && d4.r == d3.r);
+        s.finishCheck(scn);
+    }
+    {
+        const char* scn = "l7 empty container: no label text, never '0 items'";
+        Sim s;
+        s.add(10, 0, {});
+        s.setLeader(7.1f, 0);
+        s.run(120);
+        bool zero = false;
+        for (const Act& a : s.acts) if (a.k == A_LSHOW && a.text.find("0 item") != std::string::npos) zero = true;
+        CHK("no 0-item label ever shown", !zero && s.label.empty() && s.m.labelText(s.now) == nullptr);
+        s.finishCheck(scn);
+    }
+}
+
 }   // namespace
 
 int main() {
@@ -812,5 +1057,7 @@ int main() {
     scenarioH();
     scenarioI();
     scenarioJ();
+    scenarioK();
+    scenarioL();
     return kt::Report("quick_loot_sim_test");
 }

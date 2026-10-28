@@ -46,6 +46,12 @@ SIG(guikit::setText, bool (*)(uintptr_t, const char*));
 SIG(guikit::setFont, bool (*)(uintptr_t, const char*));
 SIG(guikit::setAlign, bool (*)(uintptr_t, unsigned));
 SIG(guikit::setTextColor, bool (*)(uintptr_t, float, float, float));
+// 0.3.1-dev backing panel + label extent log.
+SIG(guikit::imageFor, void* (*)(const char*, bool*, int*));
+SIG(guikit::setFill, bool (*)(uintptr_t, void*, const float*));
+SIG(guikit::setBorderTint, bool (*)(uintptr_t, const float*));
+SIG(guikit::setAlpha, bool (*)(uintptr_t, float));
+SIG(guikit::getExtent, bool (*)(uintptr_t, int*, int*, int*, int*));
 static_assert(guikit::CF_None == 0, "quick_loot relies on: CF_None == 0 (createLabelFromTemplate success reason)");
 
 KP_LOG_PATCH("quick-loot");   // QuickLoot.cpp (compile-time id validity)

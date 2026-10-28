@@ -5,18 +5,19 @@ Reuses character_page_mockup.py (cpm): the dialogfont10x10 bitmap font (glyph bo
 _shared_src/FontWidths.inc, DLL-calibrated 2.75 px/texel at 3840x1600) and the real draw_text(). Reads the live install
 read-only through pykotor; writes PNGs only to OUTDIR.
 
-What the mod draws (patch_manager_mods/quick_loot_src/QuickLoot.cpp labelDraw + QuickLootLogic.h):
-  one label cloned from the HUD template LBL_QUEUE1, font dialogfont10x10, align 18 (centre/middle), colour (0.9,0.85,0.5).
+What the mod draws (patch_manager_mods/quick_loot_src/QuickLoot.cpp labelDraw + QuickLootLogic.h, 0.3.1-dev):
+  one label cloned from the HUD template LBL_QUEUE1, font dialogfont10x10, align 18 (centre/middle), colour (0.9,0.85,0.5), on a backing
+  panel (a second label created first: black, alpha 0.55, pad 10 px x / 4 px y, width follows the text, centred on the label rect).
   Rect units: ENGINE PIXELS (guikit::setRect writes the control rect directly; GuiKit.h getExtent "engine px"; the name rect
   is read as menu origin + name rect, "all px"; doc 39 R6: absolute display px, 3840x1600 on the dev box). They are NOT
   800x600 GUI units: 420 px = 87.5 units at 3840x1600. Label height 20 px is thinner than the 10x10 glyph cell (~44 px at
   2.75 px/texel), so the text is vertically centred on a 20 px rect and overflows it above and below.
   Overflow: the engine word-wraps text wider than the label rect (doc 14 build 4 finding), it does not clip; the mock draws one
   unwrapped line and outlines an overflowing rect in red.
-  Widths: the "Took:" toast uses ToastW 420; the peek uses PeekW 760 (QuickLootLogic.h). The two kinds are rendered at
-  their own width.
-  Position A (name-anchored): x centred on the target-menu name label, y = name bottom + ToastGapBelowName (20).
-  Position B (fixed): x centred on the HUD panel, y = 62 % of the panel height.
+  Widths: peek and Took share ONE rect, LabelW 1200 px (31 % of 3840), 56 chars max on one line, item names cut at 20 chars
+  ("Lightsaber Crysta...", " xN" added after the cut).
+  Position A (name-anchored): x centred on the target-menu name label (clamped to [24, screenW-24-w]), y = name bottom + 20.
+  Position B (fixed): x centred on the HUD panel, y = 62 % of the panel height. The mod latches A or B when the line first shows.
 Target menu mock (doc 39 R6 observed): name label local (0,2) w 533 h 32 (= LBL_NAME 200 units * 8/3), health bar local y 35 h 16.
 The live mipc28x6_p.gui LBL_NAME/PB_HEALTH rects (0,1,200,26)/(0,27,200,6) units are only the template; the engine re-lays
 the menu, so the observed px values are used.
@@ -32,13 +33,20 @@ import sys
 from pathlib import Path
 
 # ---- constants mirrored from QuickLootLogic.h ----------------------------------------------------------------
-TOAST_MAX_CHARS = 80
-PEEK_MAX_CHARS = 100
-NAME_MAX = 40
+LABEL_MAX_CHARS = 56
+TOAST_MAX_CHARS = PEEK_MAX_CHARS = LABEL_MAX_CHARS
+NAME_RAW_MAX = 40       # sanitizeName (log lines)
+NAME_MAX = 20           # ToastNameMax: longer entries are cut to 17 chars + "..."
 MAX_ITEMS = 16
-TOAST_W, TOAST_H = 420, 20
-PEEK_W = 760
+LABEL_W = 1200
+TOAST_W, TOAST_H = LABEL_W, 20
+PEEK_W = LABEL_W
 GAP_BELOW_NAME = 20
+SCREEN_MARGIN = 24
+BACK_PAD_X, BACK_PAD_Y = 10, 4
+BACK_ALPHA = 0.55
+PX_PER_CHAR_EST = 24
+TOAST_MS, TOAST_LONG_MS, TOAST_CAP_MS = 3000, 3500, 4000
 PEEK_TOP_PERCENT = 62
 FONT = "dialogfont10x10"
 ALIGN = 18
@@ -53,15 +61,26 @@ MENU_ORIGIN = (1700, 520)         # arbitrary target screen position for the moc
 
 # ---- formatter ports -------------------------------------------------------------------------------------------
 def sanitize_name(name):
-    """QuickLootLogic.h sanitizeName: stop at NUL, cut at NAME_MAX, non-printable -> '?', trim trailing spaces, empty -> 'item'."""
+    """QuickLootLogic.h sanitizeName: stop at NUL, cut at NAME_RAW_MAX, non-printable -> '?', trim trailing spaces, empty -> 'item'."""
     out = []
     if name is not None:
         for ch in name:
-            if ch == "\0" or len(out) >= NAME_MAX:
+            if ch == "\0" or len(out) >= NAME_RAW_MAX:
                 break
             out.append(ch if 0x20 <= ord(ch) <= 0x7E else "?")
     s = "".join(out).rstrip(" ")
     return s if s else "item"
+
+
+def entry_name(name):
+    """QuickLootLogic.h entryName: names over NAME_MAX are cut to NAME_MAX-3 chars, trailing space/punctuation trimmed, '...' appended."""
+    s = sanitize_name(name)
+    if len(s) > NAME_MAX:
+        s = s[:NAME_MAX - 3]
+        while s and not s[-1].isalnum():
+            s = s[:-1]
+        s += "..."
+    return s
 
 
 def fmt_list(prefix, max_chars, names, stacks, count, extra, cap=None):
@@ -73,7 +92,7 @@ def fmt_list(prefix, max_chars, names, stacks, count, extra, cap=None):
         count = MAX_ITEMS
     ent = []
     for i in range(count):
-        e = sanitize_name(names[i] if names else None)
+        e = entry_name(names[i] if names else None)
         st = stacks[i] if stacks else -1
         if 2 <= st <= 999:
             e += " x%d" % st
@@ -102,26 +121,58 @@ def fmt_list(prefix, max_chars, names, stacks, count, extra, cap=None):
 
 
 def fmt_took(names, stacks, count, extra=0, cap=None):
-    return fmt_list("Took: ", TOAST_MAX_CHARS, names, stacks, count, extra, cap)
+    """'Took (N): ...' (N = count + extra), 'Took: X' for a single item."""
+    total = count + extra
+    pre = "Took: " if total <= 1 else "Took (%u): " % total
+    return fmt_list(pre, TOAST_MAX_CHARS, names, stacks, count, extra, cap)
 
 
 def fmt_peek(key, total, names, stacks, count, cap=None):
+    """'[F] Take all (N): ...', '[F] Take: X' for a single item; '' for an empty container."""
     if total <= 0 or count == 0:
         return ""
-    pre = "%d item%s  [%s] take all: " % (total, "" if total == 1 else "s", key if key else "key")
+    k = key if key else "key"
+    pre = "[%s] Take: " % k if total == 1 else "[%s] Take all (%d): " % (k, total)
     extra = total - count if total > count else 0
     return fmt_list(pre, PEEK_MAX_CHARS, names, stacks, count, extra, cap)
 
 
+def toast_duration_ms(shown_names, more):
+    """toastDurationMs: 3 s, 3.5 s for more than 3 names or '+K more', never above the 4 s cap."""
+    d = TOAST_LONG_MS if (shown_names > 3 or more > 0) else TOAST_MS
+    return min(d, TOAST_CAP_MS)
+
+
 # ---- geometry --------------------------------------------------------------------------------------------------
-def toast_rect(name_x, name_y, name_w, name_h, w=TOAST_W):
-    """Position A (toastRect / peekRectName): centred on the name label, top = name bottom + gap."""
-    return (name_x + name_w // 2 - w // 2, name_y + name_h + GAP_BELOW_NAME, w, TOAST_H)
+def clamp_label_x(rect, screen_x, screen_w):
+    """clampLabelX: x in [screen_x+24, screen_x+screen_w-24-w]; screen_w <= 0 = no clamp; too-wide labels are centred."""
+    x, y, w, h = rect
+    if screen_w <= 0:
+        return rect
+    lo, hi = screen_x + SCREEN_MARGIN, screen_x + screen_w - SCREEN_MARGIN - w
+    if hi < lo:
+        x = screen_x + (screen_w - w) // 2
+    else:
+        x = min(max(x, lo), hi)
+    return (x, y, w, h)
+
+
+def toast_rect(name_x, name_y, name_w, name_h, w=TOAST_W, screen=None):
+    """Position A (toastRect / peekRectName): centred on the name label, top = name bottom + gap; x clamped to the screen (x, w)."""
+    r = (name_x + name_w // 2 - w // 2, name_y + name_h + GAP_BELOW_NAME, w, TOAST_H)
+    return clamp_label_x(r, *screen) if screen else r
+
+
+def back_rect(rect, chars):
+    """backingRect: width follows the text (chars x 24 + 2 pad, at most label + 2 pad), centred on the label; height label + 2 pad."""
+    x, y, w, h = rect
+    bw = min(chars * PX_PER_CHAR_EST + 2 * BACK_PAD_X, w + 2 * BACK_PAD_X)
+    return (x + w // 2 - bw // 2, y - BACK_PAD_Y, bw, h + 2 * BACK_PAD_Y)
 
 
 def fixed_rect(px, py, pw, ph, w=PEEK_W):
-    """Position B (peekRectFixed): centred on the HUD panel, PEEK_TOP_PERCENT % down (integer division as C++)."""
-    return (px + pw // 2 - w // 2, py + (ph * PEEK_TOP_PERCENT) // 100, w, TOAST_H)
+    """Position B (peekRectFixed): centred on the HUD panel, PEEK_TOP_PERCENT % down (integer division as C++), x clamped like A."""
+    return clamp_label_x((px + pw // 2 - w // 2, py + (ph * PEEK_TOP_PERCENT) // 100, w, TOAST_H), px, pw)
 
 
 def text_width(s, advances, scale):
@@ -129,7 +180,7 @@ def text_width(s, advances, scale):
     return sum(advances[ord(c) if ord(c) < 256 else 63] for c in s) * scale
 
 
-# ---- the six sample texts --------------------------------------------------------------------------------------
+# ---- the sample texts (the review examples plus worst cases) -----------------------------------------------------
 def sample_texts():
     n_pair = ["Medpac", "Blaster Pistol"]
     realistic = ["Medpac", "Blaster Pistol", "Adhesive Grenade", "Lightsaber Crystal: Opila", "Frag Grenade", "Credit Chip",
@@ -137,18 +188,21 @@ def sample_texts():
                  "Ion Blaster", "Datapad", "Cure Pack"]
     st16 = [2, 1, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
     long_pair = ["Adhesive Grenade", "Lightsaber Crystal: Opila"]
+    wide = ["Mandalorian Heavy Armor Plating", "Lightsaber Crystal: Opila", "Ancient Sith Holocron Fragment"]
     return [
         (1, "Took, 2 items", "took", fmt_took(n_pair, [2, 1], 2)),
-        (2, "Took, max length + K more", "took", fmt_took(realistic, st16, 16, 4)),
+        (2, "Took, 25 items", "took", fmt_took(realistic, st16, 16, 9)),
         (3, "Peek, 4 items, +2 more", "peek", fmt_peek("F", 4, n_pair, [2, 1], 2)),
-        (4, "Peek, max length", "peek", fmt_peek("F", 25, realistic, st16, 16)),
+        (4, "Peek, 25 items", "peek", fmt_peek("F", 25, realistic, st16, 16)),
         (5, "Peek, 1 item", "peek", fmt_peek("F", 1, ["Medpac"], None, 1)),
         (6, "Took, long item names", "took", fmt_took(long_pair, [3, 1], 2)),
+        (7, "Peek, 3 very long names", "peek", fmt_peek("F", 3, wide, [1, 1, 999], 3)),
+        (8, "Took, worst case (20-char names, x999)", "took", fmt_took(["W" * 20] * 16, [999] * 16, 16, 9)),
     ]
 
 
 def label_w(kind):
-    return TOAST_W if kind == "took" else PEEK_W
+    return LABEL_W
 
 
 # ---- rendering (needs PIL + pykotor + the live install) ----------------------------------------------------------
@@ -183,10 +237,13 @@ def draw_target_tag(img, cpm, origin):
 
 
 def draw_label(img, cpm, text, rect, overflow):
-    from PIL import ImageDraw
-    d = ImageDraw.Draw(img)
+    from PIL import Image, ImageDraw
     x, y, w, h = rect
-    d.rectangle([x, y, x + w - 1, y + h - 1], outline=(200, 70, 70, 140) if overflow else (140, 140, 140, 110))
+    bx, by, bw, bh = back_rect(rect, len(text))       # backing panel: black, alpha 0.55 (drawn first = behind the text)
+    panel = Image.new("RGBA", (bw, bh), (0, 0, 0, int(round(255 * BACK_ALPHA))))
+    img.alpha_composite(panel, (max(0, bx), max(0, by)))
+    d = ImageDraw.Draw(img)
+    d.rectangle([x, y, x + w - 1, y + h - 1], outline=(200, 70, 70, 140) if overflow else (140, 140, 140, 60))
     cpm.draw_text(img, FONT, text, (x, y, x + w, y + h), ALIGN, COLOR)
 
 
@@ -230,14 +287,14 @@ def render_all(outdir):
     for tid, desc, kind, text, nch, wpx, lw, ok in rows:
         img = background()
         name_rect = draw_target_tag(img, cpm, MENU_ORIGIN)
-        ra = toast_rect(*name_rect, w=lw)
+        ra = toast_rect(*name_rect, w=lw, screen=(0, SCREEN_W))
         rb = fixed_rect(0, 0, SCREEN_W, SCREEN_H, w=lw)
         draw_label(img, cpm, text, ra, not ok)
         draw_label(img, cpm, text, rb, not ok)
         caption(img, [
             f"#{tid} {desc}: {nch} chars, text {wpx:.0f} px, label {lw} px -> {'fits' if ok else 'OVERFLOWS (engine word-wraps; red outline)'}",
-            "A: under target name (name bottom + 20).   B: x centred, y = 62% of HUD height (992 px).",
-            "Rect units = engine px (setRect/getExtent), NOT 800x600 GUI units. dialogfont10x10, align 18, colour (0.9,0.85,0.5).",
+            "A: under target name (name bottom + 20, x clamped to [24, W-24-w]).   B: x centred, y = 62% of HUD height (992 px).",
+            "Backing: black alpha 0.55, pad 10x/4y, width follows the text. Rect units = engine px (setRect/getExtent), NOT 800x600 GUI units.",
         ])
         full = outdir / f"ql_{tid}_full.png"
         img.save(full)
@@ -254,9 +311,9 @@ def render_all(outdir):
 
 
 def format_table(rows):
-    lines = ["id  chars  text_px  label_px  fits  kind  text"]
+    lines = ["id  chars  text_px  label_px  back_px  fits  kind  text"]
     for tid, desc, kind, text, nch, wpx, lw, ok in rows:
-        lines.append(f"{tid:<3} {nch:<6} {wpx:<8.0f} {lw:<9} {'yes' if ok else 'NO':<5} {kind:<5} {text}")
+        lines.append(f"{tid:<3} {nch:<6} {wpx:<8.0f} {lw:<9} {back_rect((0, 0, lw, TOAST_H), nch)[2]:<8} {'yes' if ok else 'NO':<5} {kind:<5} {text}")
     return "\n".join(lines)
 
 
