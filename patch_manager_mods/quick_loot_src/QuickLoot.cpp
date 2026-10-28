@@ -1,3 +1,5 @@
+// Structure (PV1 step 3): the peek / take decision machine lives in QuickLootMachine.h (host-simulated by quick_loot_sim_test.cpp); this file is the
+//   engine adapter (EngineEnv: SafeRead reads, OpenInventory / Close calls, label, toast) plus the three hooks.
 // Quick Loot 0.3.0-dev (doc 52 QL2p on QL1b on QL1a). QL2p proximity peek: every ScanMs (K2HUD_FRAME) the leader's area is scanned for a
 //   placeable within OpenM (HasInventory, not locked, no armed trap, useable, closed, not in the cooldown set); the nearest is opened with the
 //   engine's OpenInventory (lid animation on), its ShowContainerGui is consumed as a PEEK, and a label lists the contents ("3 items  [F] take
@@ -28,6 +30,7 @@
 #include "HudHost.h"
 #include "GuiKit.h"
 #include "QuickLootLogic.h"
+#include "QuickLootMachine.h"
 #include "SafeRead.h"
 #include "GameAddr.h"
 #include "ActQueue.h"          // actq::playerPaused
@@ -51,7 +54,7 @@ constexpr int Item_Name = 0x2C0;                               // QL1b: CExoLocS
 // QL1b: target menu (menu = ctx->menu = hud + 0xCC): flags bit0 = shown, origin px, name label rect (panel-local px). Same offsets as enemy-effects-strip.
 constexpr int Menu_Flags = 0x1BAC, Menu_OriginX = 0x1648, Menu_OriginY = 0x164C;
 constexpr int Menu_NameX = 0x166C, Menu_NameY = 0x1670, Menu_NameW = 0x1674, Menu_NameH = 0x1678;
-constexpr int NameCap = 48;                                    // captured name buffer (sanitizeName cuts at ToastNameMax = 40)
+constexpr int NameCap = qlogic::NameCap;                       // captured name buffer (sanitizeName cuts at ToastNameMax = 40)
 // QL1a: vanilla OK button path (0x8B2850): msgObj = *(*(*(*AppGlobal + 4) + 4) + 0x150); thiscall(msgObj, clientObjId, closeFlag) RET 8.
 constexpr uintptr_t SendContainerClose = 0x0087A550;
 constexpr int App_Client = 4, Client_Inner = 4, Inner_MsgObj = 0x150;
@@ -73,22 +76,15 @@ const char* const IniPath = ".\\quick_loot.ini";   // ".\\" prefix: GetPrivatePr
 KP_CHANNEL(chMain, "main");
 
 qlogic::Tracker g_t;
-qlogic::Take g_take;
-qlogic::Peek g_peek;
-qlogic::Cooldown g_cool;
-qlogic::SupTracker g_sup;
+qlogic::Machine g_m;   // the peek / take decision machine (QuickLootMachine.h); config copied into g_m.cfg at init
+qlogic::Take& g_take = g_m.take;
+qlogic::Peek& g_peek = g_m.peek;
 bool g_proxOn = true;
 float g_openM = qlogic::DefaultOpenM, g_closeM = qlogic::DefaultCloseM;
 int g_takeKey = qlogic::DefaultTakeKey;
 uint32_t g_scanMs = qlogic::DefaultScanMs;
-uint32_t g_lastScan = 0;
-bool g_keyPrev = false;
-uintptr_t g_lastArea = 0;
-uint32_t g_nearId = 0;   // SCAN change detector: nearest in-range placeable id (0 = none) and its ok flag
-int g_nearOk = -1;
 k2hud::Client g_hud;
 bool g_enabled = true;
-uint32_t g_frame = 0;   // last HUD frame counter seen by onHudFrame
 bool g_started = false;
 LARGE_INTEGER g_freq;
 bool g_timeInit = false;
@@ -181,13 +177,7 @@ void readItemName(uintptr_t item, int lang, char* out, int cap) {
     if (exo[0]) reinterpret_cast<ExoDtorFn>(gameaddr::ExoDtor)(exo);
 }
 
-struct Captured {
-    unsigned count = 0;   // names captured (<= ToastMaxItems)
-    unsigned total = 0;   // real repository count
-    uint32_t ids[qlogic::ToastMaxItems];
-    int stacks[qlogic::ToastMaxItems];
-    char names[qlogic::ToastMaxItems][NameCap];
-};
+using Captured = qlogic::Captured;
 
 // Reads the container's item names / stacks. SafeRead-guarded; an unreadable part just leaves fewer (or "item") entries.
 void captureItems(uintptr_t plc, Captured& c) {
@@ -331,39 +321,16 @@ void toastStart(const char* text) {
     g_toast.active = true;
 }
 
-// Logs the TOOK lines and starts the "Took:" toast for a captured item list (shared by the click take and the peek take).
-void reportTook(const Captured& cap) {
-    char b[160];
-    const char* np[qlogic::ToastMaxItems];
-    for (unsigned i = 0; i < cap.count; ++i) {
-        qlogic::fmtTookItem(b, sizeof b, i, cap.ids[i], cap.names[i], cap.stacks[i]);
-        logLine(b);
-        np[i] = cap.names[i];
-    }
-    char text[96];
-    if (qlogic::fmtTook(text, sizeof text, np, cap.stacks, cap.count, cap.total > cap.count ? cap.total - cap.count : 0)) {
-        qlogic::fmtToast(b, sizeof b, text);
-        logLine(b);
-        toastStart(text);
-    }
-}
-
-// ---- QL2p: world state (leader, area), suppress states, key
-struct World {
-    bool ok = false;
-    uint32_t ctrl = 0;           // leader server object id (the OpenInventory opener)
-    uintptr_t srv = 0, leader = 0, area = 0;
-    float x = 0, y = 0;
-};
 using Fn0 = uint32_t(__thiscall*)(uintptr_t self);
 using OpenInvFn = void(__thiscall*)(uintptr_t plc, uint32_t opener, int playAnim);
 
 // u02 recipe A (same chain as CompanionAI.cpp controlledId + leader object + area). ok = leader object and its area resolved.
-bool readWorld(World& w) {
-    w = World();
-    w.srv = serverApp();
+bool readWorld(qlogic::World& w) {
+    w = qlogic::World();
+    const uintptr_t srv = serverApp();
+    w.haveSrv = srv != 0;
     uint32_t app = 0, client = 0, inner = 0;
-    if (!w.srv || !rd<uint32_t>(gameaddr::AppGlobal, 0, &app) || !app || !rd<uint32_t>(app, App_Client, &client) || !client ||
+    if (!srv || !rd<uint32_t>(gameaddr::AppGlobal, 0, &app) || !app || !rd<uint32_t>(app, App_Client, &client) || !client ||
         !rd<uint32_t>(client, Client_Inner, &inner) || !inner)
         return false;
     if (!saferead::probeRead(SiteWorld, reinterpret_cast<const void*>(inner + Inner_PartyTable), 4)) return false;
@@ -373,9 +340,9 @@ bool readWorld(World& w) {
     if (!p || !saferead::probeRead(SiteWorld, reinterpret_cast<const void*>(p), 0x100)) return false;
     const uintptr_t q = reinterpret_cast<Fn0>(gameaddr::MemberServerCreature)(p);
     if (!q || !rd<uint32_t>(q, Obj_Id, &w.ctrl) || !w.ctrl) return false;
-    w.leader = reinterpret_cast<LookupFn>(GetGameObject)(w.srv, w.ctrl);
-    if (!w.leader || !rd<float>(w.leader, Obj_PosX, &w.x) || !rd<float>(w.leader, Obj_PosY, &w.y)) return false;
-    w.area = reinterpret_cast<Fn0>(gameaddr::ServerObjectGetArea)(w.leader);
+    const uintptr_t leader = reinterpret_cast<LookupFn>(GetGameObject)(srv, w.ctrl);
+    if (!leader || !rd<float>(leader, Obj_PosX, &w.x) || !rd<float>(leader, Obj_PosY, &w.y)) return false;
+    w.area = reinterpret_cast<Fn0>(gameaddr::ServerObjectGetArea)(leader);
     w.ok = w.area != 0;
     return w.ok;
 }
@@ -410,255 +377,63 @@ bool readCandFlags(uintptr_t plc, qlogic::CandFlags& f) {
     return true;
 }
 
-// Ends the peek (any outcome): the container goes into the cooldown set.
-void peekEnd() {
-    char b[160];
-    const uint32_t sid = g_peek.serverId;
-    g_cool.add(sid);
-    qlogic::fmtCooldown(b, sizeof b, "add", sid, -1.0f, g_cool.n);
-    logLine(b);
-    g_peek.clear();
-}
-
-// Sends the peek's Close(flag) once. Returns false when the message object is not available yet (retry on the next tick, until GiveUpMs).
-// plcResolves false: the container is gone, nothing to close (sent stays 0).
-bool peekSendClose(int flag, bool plcResolves, uint32_t now, int* sent) {
-    *sent = 0;
-    if (!plcResolves) return true;
-    if (!g_peek.closeStartMs) g_peek.closeStartMs = now ? now : 1;
-    const uintptr_t msg = messageObject();
-    if (!msg) {
-        char b[160];
-        if (!g_peek.closeTried) { g_peek.closeTried = true; qlogic::fmtErr(b, sizeof b, "peek-msgobj", qlogic::msSince(now, g_peek.sinceMs)); logLine(b); }
-        return qlogic::giveUp(now, g_peek.closeStartMs);   // true = give up, the peek ends without a Close
+// The engine side of qlogic::Env (QuickLootMachine.h): every read goes through SafeRead, every action is the same engine call as before.
+struct EngineEnv : qlogic::Env {
+    const K2HudContext* ctx = nullptr;
+    uintptr_t srv = 0;   // server app, cached by areaList for the scan that follows
+    void enter() override { ::enter(); }
+    bool readWorld(qlogic::World& w) override { return ::readWorld(w); }
+    qlogic::Sup suppress(bool worldOk) override { return currentSuppress(ctx, worldOk); }
+    bool keyDown() override { return takeKeyDown(); }
+    bool hudOk() override { g_hud.poll(); return g_hud.connected; }
+    bool shiftDown() override { return (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0; }
+    uintptr_t resolvePlc(uint32_t sid) override {
+        const uintptr_t s = serverApp();
+        return s ? reinterpret_cast<LookupFn>(GetPlaceableByGameObjectID)(s, sid) : 0;
     }
-    reinterpret_cast<SendCloseFn>(SendContainerClose)(msg, g_peek.obj, flag);
-    *sent = 1;
-    return true;
-}
-
-// Re-reads the peeked container and rebuilds the label text (change-only, logged).
-void peekRefresh(int n) {
-    static Captured cap;
-    captureItems(g_peek.plc, cap);
-    char key[8];
-    qlogic::keyLabel(g_takeKey, key, sizeof key);
-    const char* np[qlogic::ToastMaxItems];
-    for (unsigned i = 0; i < cap.count; ++i) np[i] = cap.names[i];
-    char text[sizeof g_peek.text];
-    qlogic::fmtPeek(text, sizeof text, key, n, np, cap.stacks, cap.count);
-    if (strcmp(text, g_peek.text) != 0) {
-        strncpy(g_peek.text, text, sizeof g_peek.text - 1);
-        g_peek.text[sizeof g_peek.text - 1] = 0;
-        char b[200];
-        qlogic::fmtPeekLabel(b, sizeof b, text);
-        logLine(b);
+    bool plcPos(uintptr_t plc, float* x, float* y) override { return rd<float>(plc, Obj_PosX, x) && rd<float>(plc, Obj_PosY, y); }
+    int itemCount(uintptr_t plc) override { return ::itemCount(plc); }
+    int openFlag(uintptr_t plc) override { return ::openFlag(plc); }
+    uintptr_t msgObject() override { return messageObject(); }
+    void capture(uintptr_t plc, qlogic::Captured& c) override { captureItems(plc, c); }
+    bool areaList(const qlogic::World& w, int* count) override {
+        uint32_t arr = 0;
+        srv = serverApp();
+        return rd<uint32_t>(w.area, Area_Ids, &arr) && arr && rd<int>(w.area, Area_Count, count);
     }
-}
-
-// Rising edge of TakeKey while peeking: take everything (Close flag 1), toast, cooldown.
-void peekTake(uint32_t now) {
-    const int n = itemCount(g_peek.plc);
-    if (n <= 0) return;   // nothing listed: the key does nothing
-    const uintptr_t msg = messageObject();
-    char b[160];
-    if (!msg) { qlogic::fmtErr(b, sizeof b, "peek-take-msgobj", qlogic::msSince(now, g_peek.sinceMs)); logLine(b); return; }
-    static Captured cap;   // names BEFORE the Close
-    captureItems(g_peek.plc, cap);
-    const uint32_t obj = g_peek.obj;
-    const uint32_t dt = qlogic::msSince(now, g_peek.sinceMs);
-    reinterpret_cast<SendCloseFn>(SendContainerClose)(msg, obj, qlogic::closeFlagFor(n));
-    qlogic::fmtPeekTake(b, sizeof b, obj, dt, n);
-    logLine(b);
-    reportTook(cap);
-    peekEnd();
-}
-
-// Active peek, every ScanMs: leave checks, empty check, label refresh.
-void peekPoll(const World& w, qlogic::Sup sup, uint32_t now) {
-    char b[200];
-    const uint32_t sid = g_peek.serverId;
-    const uintptr_t cur = w.srv ? reinterpret_cast<LookupFn>(GetPlaceableByGameObjectID)(w.srv, sid) : 0;
-    const bool resolves = cur != 0 && cur == g_peek.plc;
-    float dist = 1.0e9f;
-    float px = 0, py = 0;
-    if (resolves && w.ok && rd<float>(cur, Obj_PosX, &px) && rd<float>(cur, Obj_PosY, &py)) dist = qlogic::dist2d(w.x, w.y, px, py);
-    const qlogic::Leave lv = qlogic::leaveReason(resolves, sup != qlogic::Sup::None, qlogic::areaChanged(g_peek.area, w.area), dist, g_closeM);
-    if (lv != qlogic::Leave::None) {
-        const int n = resolves ? itemCount(cur) : -1;
-        int sent = 0;
-        if (!peekSendClose(0, resolves, now, &sent)) return;
-        qlogic::fmtPeekClose(b, sizeof b, g_peek.obj, lv == qlogic::Leave::Suppress ? (qlogic::supName(sup)) : qlogic::leaveName(lv), sent, dist, n);
-        logLine(b);
-        peekEnd();
-        return;
-    }
-    const int n = itemCount(cur);
-    if (g_peek.emptyNow(n, g_frame, now)) {   // OnOpen settled and still nothing in it: close quietly
-        int sent = 0;
-        if (!peekSendClose(0, true, now, &sent)) return;
-        qlogic::fmtPeekEmpty(b, sizeof b, g_peek.obj, qlogic::msSince(now, g_peek.sinceMs), openFlag(cur));
-        logLine(b);
-        peekEnd();
-        return;
-    }
-    peekRefresh(n);
-}
-
-// Expecting phase: OpenInventory was called, its ShowContainerGui has not come. Gives up after ExpectTimeoutMs.
-void peekExpectCheck(uint32_t now) {
-    if (!g_peek.expired(now)) return;
-    char b[160];
-    const int open = openFlag(g_peek.plc);
-    qlogic::fmtPeekNoShow(b, sizeof b, g_peek.serverId, qlogic::msSince(now, g_peek.expectMs), open);
-    logLine(b);
-    // Opened but no client Show came: no client object id to send the Close message with. Close it server-side (flag 0, items stay),
-    // else the open flag (+0x390) stays set and OpenInventory refuses this container for the rest of the session.
-    if (open == 1 && g_peek.opener) {
-        using CloseInvFn = void(__thiscall*)(uintptr_t plc, uint32_t player, int flag);
-        reinterpret_cast<CloseInvFn>(CloseInventory)(g_peek.plc, g_peek.opener, 0);
-        logLine("PEEK-NOSHOW server close sent");
-    }
-    peekEnd();
-}
-
-// Opens the chosen container with the engine's OpenInventory (lid animation on). The ShowContainerGui it triggers is consumed in QlShowContainer.
-void peekOpen(const World& w, uint32_t sid, uintptr_t plc, float dist, uint32_t now) {
-    char b[160];
-    g_peek.begin(plc, sid, w.area, now);   // before the call: a synchronous Show must already find the expectation
-    qlogic::fmtPeekOpen(b, sizeof b, sid, plc, dist, itemCount(plc));
-    logLine(b);
-    g_peek.opener = w.ctrl;
-    reinterpret_cast<OpenInvFn>(OpenInventory)(plc, w.ctrl, 1);
-    const int open = openFlag(plc);
-    if (open == 0 && !g_peek.active) {   // refused (OpenInventory gates failed): do not retry until the leader has left
-        qlogic::fmtPeekRefused(b, sizeof b, sid, open);
-        logLine(b);
-        peekEnd();
-    }
-}
-
-// Scan the leader's area for the nearest openable placeable; open it. Cooldown ids are released here once the leader is > CloseM away.
-void proxScan(const World& w, uint32_t now) {
-    char b[200];
-    uint32_t arr = 0; int cnt = 0;
-    if (!rd<uint32_t>(w.area, Area_Ids, &arr) || !arr || !rd<int>(w.area, Area_Count, &cnt)) return;
-    if (cnt < 0) cnt = 0;
-    if (cnt > static_cast<int>(qlogic::MaxScanObjects)) cnt = static_cast<int>(qlogic::MaxScanObjects);
-    uint32_t bestId = 0, nearId = 0;
-    uintptr_t bestPlc = 0;
-    float bestD = 0, nearD = 0;
-    qlogic::CandFlags nearF;
-    const char* nearWhy = "";
-    bool nearOk = false;
-    for (int i = 0; i < cnt; ++i) {
-        uint32_t id = 0;
-        if (!rd<uint32_t>(arr, i * 4, &id) || !id) continue;
-        const uintptr_t o = reinterpret_cast<LookupFn>(GetGameObject)(w.srv, id);
+    bool areaRawCount(const qlogic::World& w, int* count) override { return rd<int>(w.area, Area_Count, count); }
+    bool areaObject(const qlogic::World& w, int i, uint32_t* id, float* x, float* y) override {
+        uint32_t arr = 0;
+        *id = 0;
+        if (!rd<uint32_t>(w.area, Area_Ids, &arr) || !arr || !rd<uint32_t>(arr, i * 4, id) || !*id) return false;
+        const uintptr_t o = reinterpret_cast<LookupFn>(GetGameObject)(srv, *id);
         uint8_t type = 0;
-        if (!o || !rd<uint8_t>(o, Obj_Type, &type) || type != ObjTypePlaceable) continue;
-        float px = 0, py = 0;
-        if (!rd<float>(o, Obj_PosX, &px) || !rd<float>(o, Obj_PosY, &py)) continue;
-        const float d = qlogic::dist2d(w.x, w.y, px, py);
-        bool cd = g_cool.contains(id);
-        if (cd && g_cool.release(id, d, g_closeM)) {
-            qlogic::fmtCooldown(b, sizeof b, "release", id, d, g_cool.n);
-            logLine(b);
-            cd = false;
-        }
-        if (d > g_closeM) continue;
-        const uintptr_t plc = reinterpret_cast<LookupFn>(GetPlaceableByGameObjectID)(w.srv, id);
-        qlogic::CandFlags f;
-        if (!plc || !readCandFlags(plc, f)) continue;
-        f.cooldown = cd;
-        const char* why = qlogic::candidateWhy(f, d, g_openM);
-        const bool ok = strcmp(why, "ok") == 0;
-        if (!nearId || d < nearD) { nearId = id; nearD = d; nearF = f; nearWhy = why; nearOk = ok; }
-        if (ok && (!bestId || d < bestD)) { bestId = id; bestD = d; bestPlc = plc; }
+        if (!o || !rd<uint8_t>(o, Obj_Type, &type) || type != ObjTypePlaceable) return false;
+        return rd<float>(o, Obj_PosX, x) && rd<float>(o, Obj_PosY, y);
     }
-    // SCAN line only when the nearest in-range placeable (or its verdict) changes -- never per scan
-    const int okI = nearOk ? 1 : 0;
-    if (nearId != g_nearId || (nearId && okI != g_nearOk)) {
-        if (nearId) qlogic::fmtScan(b, sizeof b, nearId, nearD, nearF, nearWhy);
-        else qlogic::fmtScanNone(b, sizeof b);
-        logLine(b);
+    bool candFlags(uint32_t id, uintptr_t* plc, qlogic::CandFlags* f) override {
+        *plc = reinterpret_cast<LookupFn>(GetPlaceableByGameObjectID)(srv, id);
+        return *plc && readCandFlags(*plc, *f);
     }
-    g_nearId = nearId; g_nearOk = nearId ? okI : -1;
-    if (bestId) peekOpen(w, bestId, bestPlc, bestD, now);
-}
+    void openInventory(uintptr_t plc, uint32_t opener) override { reinterpret_cast<OpenInvFn>(OpenInventory)(plc, opener, 1); }
+    void sendClose(uintptr_t msg, uint32_t obj, int flag) override { reinterpret_cast<SendCloseFn>(SendContainerClose)(msg, obj, flag); }
+    void serverClose(uintptr_t plc, uint32_t opener) override {
+        using CloseInvFn = void(__thiscall*)(uintptr_t plc, uint32_t player, int flag);
+        reinterpret_cast<CloseInvFn>(CloseInventory)(plc, opener, 0);
+    }
+    void labelShow(const char*) override {}   // the peek label is drawn from g_peek.text in onMenuPost
+    void labelHide() override {}
+    void toast(const char* text) override { toastStart(text); }
+    void log(const char* line) override { logLine(line); }
+};
+EngineEnv g_env;
 
-// Proximity peek tick (K2HUD_FRAME). Key edge every frame; the scan / poll every ScanMs.
-void proxTick(const K2HudContext* ctx) {
-    if (!g_proxOn || !g_enabled) return;
-    const bool edge = qlogic::risingEdge(g_keyPrev, takeKeyDown());   // updated every frame: a key held while the peek opens never fires
-    const uint32_t now = nowMs();
-    if (g_peek.active && edge) { enter(); peekTake(now); return; }
-    if (qlogic::msSince(now, g_lastScan) < g_scanMs) return;
-    g_lastScan = now;
-    enter();
-    World w;
-    const bool wok = readWorld(w);
-    if (wok && qlogic::areaChanged(g_lastArea, w.area)) {
-        char b[160];
-        g_cool.clear();   // a new area: the old ids mean nothing
-        g_nearId = 0; g_nearOk = -1;
-        int cnt = -1;
-        rd<int>(w.area, Area_Count, &cnt);
-        qlogic::fmtArea(b, sizeof b, w.area, cnt);
-        logLine(b);
-    }
-    if (wok) g_lastArea = w.area;
-    const qlogic::Sup sup = currentSuppress(ctx, wok);
-    const qlogic::Sup prevSup = g_sup.last;
-    if (g_sup.update(sup)) {   // change-only
-        char b[96];
-        qlogic::fmtSuppress(b, sizeof b, qlogic::supName(prevSup), qlogic::supName(sup));
-        logLine(b);
-    }
-    if (g_peek.active) { peekPoll(w, sup, now); return; }
-    if (g_peek.expect) { peekExpectCheck(now); return; }
-    if (g_take.active || sup != qlogic::Sup::None || !wok) return;
-    proxScan(w, now);
-}
 
-// K2HUD_FRAME: send the pending take-all Close (click take), then the proximity peek. Runs on the game thread, outside any EventHandler.
-void takeTick() {
-    uint32_t now = nowMs();
-    if (!qlogic::readyToSend(g_take.openSeen, g_frame, g_take.openFrame, now, g_take.showMs)) return;
-    enter();
-    char b[160];
-    uintptr_t msg = messageObject();
-    if (!msg) {
-        uint32_t dt = qlogic::msSince(now, g_take.showMs);
-        if (!g_take.errLogged) { g_take.errLogged = true; qlogic::fmtErr(b, sizeof b, "msgobj", dt); logLine(b); }
-        if (qlogic::giveUp(now, g_take.showMs)) { qlogic::fmtErr(b, sizeof b, "giveup", dt); logLine(b); g_take.clear(); }
-        return;
-    }
-    int n = itemCount(g_take.plc);
-    const int closeFlag = qlogic::closeFlagFor(n);   // items at send time, not the Show flag (OnOpen loot arrives after Show)
-    uint32_t obj = g_take.obj;
-    int openSeen = g_take.openSeen ? 1 : 0;
-    uint32_t dt = qlogic::msSince(now, g_take.showMs);
-    static Captured cap;   // QL1b: names / stacks BEFORE the Close (the repository then includes the OnOpen loot)
-    cap.count = 0; cap.total = 0;
-    if (closeFlag) captureItems(g_take.plc, cap);
-    g_take.clear();   // before the call: a re-entrant Show must not see a stale pending take
-    reinterpret_cast<SendCloseFn>(SendContainerClose)(msg, obj, closeFlag);
-    qlogic::fmtTakeSend(b, sizeof b, obj, dt, openSeen, n);
-    logLine(b);
-    if (!closeFlag) {   // empty: closed with flag 0, no toast
-        qlogic::fmtTakeEmpty(b, sizeof b, obj, dt, openSeen);
-        logLine(b);
-        return;
-    }
-    reportTook(cap);
-}
-
+// K2HUD_FRAME: the pending click-take Close, then the proximity peek. Runs on the game thread, outside any EventHandler.
 void KPATCH_CALL onHudFrame(const K2HudContext* ctx, void*) {
-    if (ctx) g_frame = ctx->frame;
+    g_env.ctx = ctx;
     if (g_toast.active) toastExpire(ctx);
-    if (g_take.active) takeTick();
-    proxTick(ctx);
+    g_m.onFrame(g_env, ctx ? ctx->frame : g_m.frame, nowMs());
 }
 
 }   // namespace
@@ -674,6 +449,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     g_openM = qlogic::clampOpenM(static_cast<float>(atof(fb)));
     GetPrivateProfileStringA("QuickLoot", "CloseM", "5.0", fb, sizeof fb, IniPath);
     g_closeM = qlogic::clampCloseM(g_openM, static_cast<float>(atof(fb)));
+    g_m.cfg.enabled = g_enabled; g_m.cfg.proxOn = g_proxOn; g_m.cfg.openM = g_openM; g_m.cfg.closeM = g_closeM; g_m.cfg.takeKey = g_takeKey; g_m.cfg.scanMs = g_scanMs;
     g_hud.init(api, "quick-loot");
     g_hud.add(K2HUD_FRAME, 100, onHudFrame);
     g_hud.add(K2HUD_BUILD, 300, onHudBuild);               // QL1b toast label
@@ -706,34 +482,17 @@ extern "C" int __cdecl QlShowContainer(uintptr_t gui, uint32_t objId, int flag) 
         qlogic::fmtItem(b, sizeof b, i, id, stack);
         logLine(b);
     }
-    if (plc && g_peek.onShow(objId, plc, now, g_frame)) {   // QL2p: the ShowContainerGui of our OpenInventory = a peek, not a take (any flag)
-        qlogic::fmtPeekShow(b, sizeof b, objId, plc, flag, n);
-        logLine(b);
-        return 1;
-    }
-    g_hud.poll();
-    bool shift = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
-    qlogic::Reason why = qlogic::shouldConsume(g_enabled, g_hud.connected, shift, plc != 0, g_take.active);
-    if (why != qlogic::Reason::Consume) {
-        qlogic::fmtVanilla(b, sizeof b, why);
-        logLine(b);
-        return 0;
-    }
-    g_take.arm(objId, plc, now, g_frame);
-    qlogic::fmtTakeArm(b, sizeof b, objId, plc, n);
-    logLine(b);
-    return 1;
+    return g_m.onShow(g_env, objId, plc, flag, n, now);   // QL2p peek (any flag) or QL1a take-all armed (1), else the vanilla menu (0)
 }
 
 // H2. ECX = placeable, [esp+4] = a1, [esp+8] = a2, [esp+0xC] = a3 (event record pointer). Runs on every placeable heartbeat: filter first.
 extern "C" void __cdecl QlPlaceableEvent(uintptr_t plc, int a1, int a2, int a3) {
     uint32_t now = nowMs();
-    if ((g_take.active && plc == g_take.plc) || (plc && plc == g_peek.plc && g_peek.busy())) {   // QL1a / QL2p: note the container's OnOpen (the Close is sent from the HUD frame, never here)
+    if (g_m.wantsEvent(plc)) {   // QL1a / QL2p: note the container's OnOpen (the Close is sent from the HUD frame, never here)
         enter();
         uint16_t tid = 0;
         if (rd<uint16_t>(static_cast<uint32_t>(a3), 0, &tid)) {
-            g_take.onEvent(plc, static_cast<short>(tid), g_frame);
-            g_peek.onEvent(plc, static_cast<short>(tid), g_frame);
+            g_m.onEvent(plc, static_cast<short>(tid));
         }
     }
     if (!g_t.matches(plc, now)) return;
