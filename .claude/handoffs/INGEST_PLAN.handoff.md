@@ -5,16 +5,48 @@ Execute I3: Research-notes extraction (same tool, `--source notes`), top-cited f
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md`
-- **Branch:** `KOTOR-II` (53747f2f skill kotor2-persist-knowledge + AGENTS.md section: persist ad-hoc research to saved knowledge)
-- **Generated:** 2026-10-27 22:47:31 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (dfbc3ec5 INGEST I3: notes extract + Haiku verify; gate FAIL (57% after retry), nothing written)
+- **Generated:** 2026-10-27 22:57:31 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-53747f2f skill kotor2-persist-knowledge + AGENTS.md section: persist ad-hoc research to saved knowledge
- .claude/skills/kotor2-persist-knowledge/SKILL.md | 42 ++++++++++++++++++++++++
- AGENTS.md                                        |  5 +++
- 2 files changed, 47 insertions(+)
+dfbc3ec5 INGEST I3: notes extract + Haiku verify; gate FAIL (57% after retry), nothing written
+ .claude/research/ingest/i3/README.md               |   16 +
+ .claude/research/ingest/i3/cards/chunk_1.md        |  137 +++
+ .claude/research/ingest/i3/cards/chunk_2.md        |  140 +++
+ .claude/research/ingest/i3/cards/chunk_3.md        |  145 +++
+ .claude/research/ingest/i3/cards/chunk_4.md        |  141 +++
+ .claude/research/ingest/i3/cards/chunk_5.md        |  142 +++
+ .claude/research/ingest/i3/cards/chunk_6.md        |  135 +++
+ .claude/research/ingest/i3/cards/chunk_7.md        |  143 +++
+ .claude/research/ingest/i3/cards/chunk_8.md        |  138 +++
+ .claude/research/ingest/i3/cards/chunk_9.md        |  117 +++
+ .claude/research/ingest/i3/cards/key.tsv           |  107 +++
+ .claude/research/ingest/i3/cards/verdicts_1.tsv    |   13 +
+ .claude/research/ingest/i3/cards/verdicts_2.tsv    |   13 +
+ .claude/research/ingest/i3/cards/verdicts_3.tsv    |   13 +
+ .claude/research/ingest/i3/cards/verdicts_4.tsv    |   13 +
+ .claude/research/ingest/i3/cards/verdicts_5.tsv    |   13 +
+ .claude/research/ingest/i3/cards/verdicts_6.tsv    |   13 +
+ .claude/research/ingest/i3/cards/verdicts_7.tsv    |   13 +
+ .claude/research/ingest/i3/cards/verdicts_8.tsv    |   13 +
+ .claude/research/ingest/i3/cards/verdicts_9.tsv    |   11 +
+ .claude/research/ingest/i3/cards/verdicts_r2_1.tsv |   13 +
+ .claude/research/ingest/i3/cards/verdicts_r2_2.tsv |   13 +
+ .claude/research/ingest/i3/cards/verdicts_r2_4.tsv |   13 +
+ .claude/research/ingest/i3/cards/verdicts_r2_5.tsv |   13 +
+ .claude/research/ingest/i3/cards/verdicts_r2_6.tsv |   13 +
+ .claude/research/ingest/i3/cards/verdicts_r2_8.tsv |   13 +
+ .claude/research/ingest/i3/extract_notes_all.tsv   | 1008 ++++++++++++++++++++
+ .../research/ingest/i3/extract_notes_top100.tsv    |   98 ++
+ .claude/research/ingest/i3/ledger_dry_top100.tsv   |   86 ++
+ patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md |    3 +-
+ .../ghidra_knowledge/tools/ingest_names.py         |  135 ++-
+ .../ingest/notes_tree/.claude/research/more.md     |    3 +
+ .../ingest/notes_tree/.claude/research/tables.md   |   16 +
+ .../tools/tests/test_ingest_names.py               |   84 ++
+ 34 files changed, 2978 insertions(+), 9 deletions(-)
 ```
-- **Dirty Files (188):**
+- **Dirty Files (193):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/25_pc_levelup_filter.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
@@ -25,16 +57,15 @@ Execute I3: Research-notes extraction (same tool, `--source notes`), top-cited f
   - ` M .claude/handoffs/deep_haiku_review_skill.handoff.md`
   - ` M .claude/handoffs/variant_fix_wave_skill.handoff.md`
   - ` M .claude/plans/swarm_library_architecture.md`
-  - ... +178 more (run `git status --short`)
+  - ... +183 more (run `git status --short`)
 
 ## 2. Immediate Objective (I3)
 **Research-notes extraction (same tool, `--source notes`), top-cited first, Haiku verify, ledger rows topic `ingest-notes`; stop when yield < 30%**
 
-Status: TODO
+Status: PARTIAL
 Task: Research-notes extraction (same tool, `--source notes`), top-cited first, Haiku verify, ledger rows topic `ingest-notes`; stop when yield < 30%
 
 ## 2b. Upcoming Batches in Pipeline
-- **I4** : Promotion (user OK) of verified names into `name_map`; regen class pages for touched classes; gap re-measure
 - **I5** : Docs sweep (tool listed free-first in CLAUDE.md, RE_AGENT_GUIDE §2.1, README, SUBAGENT_ROLES) + memory
 
 ## 3. Strict Context Budget & Read Policy
