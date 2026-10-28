@@ -20,36 +20,36 @@ class FormatterVectors(unittest.TestCase):
 
     def test_took_stack_suffix(self):
         # cpp: "count in brackets, stack suffix for 2 and 999, none for 1"
-        self.assertEqual(q.fmt_took(self.N3, [2, 1, 999], 3), "Took (3): Medpac x2, Blaster Pistol, Vibroblade x999")
-        self.assertEqual(q.fmt_took(["Medpac"], None, 1), "Took: Medpac")
+        self.assertEqual(q.fmt_took(self.N3, [2, 1, 999], 3), "Acquired (3): Medpac x2, Blaster Pistol, Vibroblade x999")
+        self.assertEqual(q.fmt_took(["Medpac"], None, 1), "Acquired: Medpac")
 
     def test_took_garbage_names(self):
         ng = ["Med\x01pac\xff", "", None, "   ", "Name\0Hidden"]
-        self.assertEqual(q.fmt_took(ng, None, 5), "Took (5): Med?pac?, item, item, item, Name")
+        self.assertEqual(q.fmt_took(ng, None, 5), "Acquired (5): Med?pac?, item, item, item, Name")
 
     def test_review_examples(self):
         # cpp: review examples 1 and 2, and the Took twin
         n2 = ["Medpac", "Blaster Pistol"]
-        self.assertEqual(q.fmt_took(n2, [2, 1], 2, 2), "Took (4): Medpac x2, Blaster Pistol, +2 more")
-        self.assertEqual(q.fmt_peek("F", 4, n2, [2, 1], 2), "[F] Take all (4): Medpac x2, Blaster Pistol, +2 more")
+        self.assertEqual(q.fmt_took(n2, [2, 1], 2, 2), "Acquired (4): Medpac x2, Blaster Pistol, +2 more")
+        self.assertEqual(q.fmt_peek("F", 4, n2, [2, 1], 2), "[F] Get Items (4): Medpac x2, Blaster Pistol, +2 more")
         real = ["Medpac", "Blaster Pistol", "Adhesive Grenade", "Lightsaber Crystal: Opila"] + ["Z%d" % i for i in range(12)]
         st = [2] + [1] * 15
-        self.assertEqual(q.fmt_peek("F", 25, real, st, 16), "[F] Take all (25): Medpac x2, Blaster Pistol, +23 more")
+        self.assertEqual(q.fmt_peek("F", 25, real, st, 16), "[F] Get Items (25): Medpac x2, Blaster Pistol, +23 more")
 
     def test_took_56_boundary(self):
-        a, b17, b18 = "A" * 20, "B" * 17, "B" * 18
-        self.assertEqual(len(q.fmt_took([a, b17], [99, 9], 2)), 56)          # exactly 56 fits whole
-        self.assertEqual(q.fmt_took([a, b18], [99, 9], 2), "Took (2): " + a + " x99, +1 more")   # 57 overflows
+        a, b13, b14 = "A" * 20, "B" * 13, "B" * 14
+        self.assertEqual(len(q.fmt_took([a, b13], [99, 9], 2)), 56)          # exactly 56 fits whole
+        self.assertEqual(q.fmt_took([a, b14], [99, 9], 2), "Acquired (2): " + a + " x99, +1 more")   # 57 overflows
 
     def test_peek_label(self):
-        self.assertEqual(q.fmt_peek("F", 3, self.N3, [2, 1, 1], 3), "[F] Take all (3): Medpac x2, Blaster Pistol, Vibroblade")
-        self.assertEqual(q.fmt_peek("F", 1, ["Medpac"], None, 1), "[F] Take: Medpac")
-        self.assertEqual(q.fmt_peek("F", 6, self.N3, [2, 1, 1], 3), "[F] Take all (6): Medpac x2, Blaster Pistol, +4 more")
+        self.assertEqual(q.fmt_peek("F", 3, self.N3, [2, 1, 1], 3), "[F] Get Items (3): Medpac x2, Blaster Pistol, Vibroblade")
+        self.assertEqual(q.fmt_peek("F", 1, ["Medpac"], None, 1), "[F] Get Item: Medpac")
+        self.assertEqual(q.fmt_peek("F", 6, self.N3, [2, 1, 1], 3), "[F] Get Items (6): Medpac x2, Blaster Pistol, +4 more")
         self.assertEqual(q.fmt_peek("F", 0, self.N3, [2, 1, 1], 0), "")
         self.assertEqual(q.fmt_peek("F", 4, self.N3, [2, 1, 1], 0), "")
 
     def test_peek_56_boundary(self):
-        a, b, c = "A" * 20, "B" * 16, "B" * 17
+        a, b, c = "A" * 20, "B" * 15, "B" * 16
         self.assertEqual(len(q.fmt_peek("F", 2, [a, b], None, 2)), 56)
         self.assertIn(", +1 more", q.fmt_peek("F", 2, [a, c], None, 2))
 
@@ -66,8 +66,8 @@ class FormatterVectors(unittest.TestCase):
         self.assertEqual(q.entry_name("Q" * 21), "Q" * 17 + "...")
         self.assertEqual(q.entry_name("Lightsaber Crystal: Opila"), "Lightsaber Crysta...")
         self.assertEqual(q.entry_name("Abcdefghijklmn: --xyzw"), "Abcdefghijklmn...")
-        self.assertEqual(len(q.fmt_took(["Z" * 100], None, 1)), 26)
-        self.assertEqual(q.fmt_took(["Lightsaber Crystal: Opila"], [3], 1), "Took: Lightsaber Crysta... x3")
+        self.assertEqual(len(q.fmt_took(["Z" * 100], None, 1)), 30)
+        self.assertEqual(q.fmt_took(["Lightsaber Crystal: Opila"], [3], 1), "Acquired: Lightsaber Crysta... x3")
         self.assertEqual(len(q.sanitize_name("Z" * 100)), 40)
 
     def test_took_duration(self):
@@ -167,7 +167,7 @@ class ListLayer(unittest.TestCase):
         d = q.ListData(names, None)
         v = q.ListView(d.rows_total(), 8)
         o = q.build_list_draw(d, v, False)
-        self.assertEqual((o["header"], o["indicator"], o["vis"], o["off"]), ("[F] Take all (25)", "1-8 of 25", 8, 0))
+        self.assertEqual((o["header"], o["indicator"], o["vis"], o["off"]), ("[F] Get Items (25)", "1-8 of 25", 8, 0))
         self.assertEqual(o["h"], q.block_height_px(8))
         self.assertTrue(q.BLOCK_MIN_W <= o["w"] <= q.BLOCK_MAX_W)
         v.off = 10
@@ -177,7 +177,7 @@ class ListLayer(unittest.TestCase):
         self.assertEqual(q.build_list_draw(d, v, False)["off"], 17)
         d4 = q.ListData(names[:4], None)
         o4 = q.build_list_draw(d4, q.ListView(4, 8), True)
-        self.assertEqual((o4["header"], o4["vis"], o4["indicator"]), ("Took (4)", 4, ""))
+        self.assertEqual((o4["header"], o4["vis"], o4["indicator"]), ("Acquired Items (4)", 4, ""))
         self.assertTrue(q.BLOCK_MIN_W <= o4["w"] and not o4["sb"])
         d5 = q.ListData(names[:20], None, total=25)
         v5 = q.ListView(d5.rows_total(), 8)

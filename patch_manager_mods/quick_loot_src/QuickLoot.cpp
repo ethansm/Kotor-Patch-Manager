@@ -12,6 +12,7 @@
 //   scrollbar column is the only click-eating (non-click-through) label; the click itself is detected the way action-hotbar does (guikit::clickEdge =
 //   LMB edge with the game window foreground + the cursor in engine px against the drawn rects), so the world never gets a click on the bar. The wheel
 //   still works. New log lines: ICON (first 32 icon lookups per session), SBCLICK.
+// Quick Loot 0.5.1-dev = 0.5.0-dev + menu gate fix (HUD-on-top panel check, GATE log) + vanilla wording "[F] Get Items (N)" / "Acquired Items (N)".
 // Quick Loot 0.4.0-dev = 0.3.1-dev + QL2L, the multi-row item list (doc 52): peek and Took draw ONE block = header ("[F] Take all (25)" / "Took (25)",
 //   cream) + up to ListRows item rows (teal, one per item, names cut at 40 chars, " xN" stacks, the hovered row cream) on a vanilla frame panel
 //   (backing label created from the HUD template LBL_MOULDING3 / LBL_MENUBG: uibit_fill_2bt + uibit_brdr_16bet edges + uibit_brdr_16bct corners,
@@ -726,15 +727,58 @@ bool readWorld(qlogic::World& w) {
     return w.ok;
 }
 
+// Full-screen menu check = action_hotbar's live-verified gate (ActionHotbar.cpp gateEval): the HUD must be the top non-ignored panel of the GUI
+// manager and no non-ignored modal may be open; messages / fade / pause / auto-pause panels do not count. 0.5.0 read the clip stack index here
+// instead: it is only meaningful inside a draw batch (0xFFFF after any batch closed), so in K2HUD_FRAME it always said "menu" and the peek never
+// ran (live log 10-28: SUPPRESS none>menu, then nothing). Returns the reason text ("" = HUD on top) for the change-only GATE log.
+constexpr int Hud_Manager = 0x1C, Panel_Flags = 0x48, PanelIgnoredByInput = 0x600;
+constexpr int Mgr_Panels = 0x88, Mgr_PanelCount = 0x8C, Mgr_Modals = 0x94, Mgr_ModalCount = 0x98;
+const char* hudBlocked(uintptr_t hud, uint32_t* topVt) {
+    *topVt = 0;
+    if (!hud) return "no-hud";
+    uint32_t mgr = 0;
+    if (!rd<uint32_t>(hud, Hud_Manager, &mgr) || !mgr) return "no-manager";
+    auto ignored = [](uintptr_t p) { uint32_t f = 0; return rd<uint32_t>(p, Panel_Flags, &f) && (f & PanelIgnoredByInput) != 0; };
+    auto allowed = [](uintptr_t p) {
+        uint32_t vt = 0;
+        if (!rd<uint32_t>(p, 0, &vt)) return false;
+        return vt == gameaddr::MessagesPanelVtable || vt == gameaddr::FadePanelVtable || vt == gameaddr::PausePanelVtable || vt == gameaddr::AutoPausePanelVtable;
+    };
+    uint32_t modals = 0, panels = 0;
+    int modalCount = 0, panelCount = 0;
+    if (!rd<uint32_t>(mgr, Mgr_Modals, &modals) || !rd<int>(mgr, Mgr_ModalCount, &modalCount) || modalCount < 0 || modalCount > 64) return "bad-modals";
+    for (int i = modalCount - 1; i >= 0; --i) {
+        uint32_t p = 0;
+        if (!rd<uint32_t>(modals, i * 4, &p) || !p) return "bad-modal-ptr";
+        if (!ignored(p) && !allowed(p)) { rd<uint32_t>(p, 0, topVt); return "modal-open"; }
+    }
+    if (!rd<uint32_t>(mgr, Mgr_Panels, &panels) || !rd<int>(mgr, Mgr_PanelCount, &panelCount) || panelCount < 0 || panelCount > 256) return "bad-panels";
+    for (int i = panelCount - 1; i >= 0; --i) {
+        uint32_t p = 0;
+        if (!rd<uint32_t>(panels, i * 4, &p) || !p) return "bad-panel-ptr";
+        if (p == hud) return "";
+        if (ignored(p) || allowed(p)) continue;
+        rd<uint32_t>(p, 0, topVt);
+        return "other-panel-on-top";
+    }
+    return "hud-not-in-list";
+}
+
 qlogic::Sup currentSuppress(const K2HudContext* ctx, bool worldOk) {
-    int clip = 0;
-    const uintptr_t clipAddr = k2addr::addr(&K2AddrTable::ClipDepth);   // clip stack index: 0 in the HUD frame, 0xFFFF in menu frames (u03 (c))
-    if (clipAddr) rd<int>(clipAddr, 0, &clip);
+    const uintptr_t hud = ctx ? static_cast<uintptr_t>(static_cast<uint32_t>(ctx->hud)) : 0;
+    uint32_t topVt = 0;
+    const char* why = hudBlocked(hud, &topVt);
+    static const char* lastWhy = nullptr;
+    static uint32_t lastVt = 0;
+    if (why != lastWhy || topVt != lastVt) {   // change-only: names the panel that blocks the peek (vtable) so menus can be told apart in the log
+        lastWhy = why; lastVt = topVt;
+        KP_LOGV(chMain, KPLOG_INFO, "GATE %s top_vt=%08x hud=%08x", *why ? why : "hud-on-top", (unsigned)topVt, (unsigned)hud);
+    }
     uint8_t dlg = 0;
     rd<uint8_t>(DialogByte, 0, &dlg);
     const bool paused = actq::playerPaused(SitePause);
     const int combat = ctrace::readHudCombat(SiteWorld + 1, ctx ? static_cast<uintptr_t>(static_cast<uint32_t>(ctx->hud)) : 0);
-    return qlogic::suppressReason(worldOk, (clip & 0xffff) != 0, dlg != 0, paused, combat);
+    return qlogic::suppressReason(worldOk, *why != 0, dlg != 0, paused, combat);
 }
 
 bool takeKeyDown() {

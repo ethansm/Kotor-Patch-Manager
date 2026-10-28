@@ -131,18 +131,18 @@ def fmt_list(prefix, max_chars, names, stacks, count, extra, cap=None):
 
 
 def fmt_took(names, stacks, count, extra=0, cap=None):
-    """'Took (N): ...' (N = count + extra), 'Took: X' for a single item."""
+    """'Acquired (N): ...' (N = count + extra), 'Acquired: X' for a single item."""
     total = count + extra
-    pre = "Took: " if total <= 1 else "Took (%u): " % total
+    pre = "Acquired: " if total <= 1 else "Acquired (%u): " % total
     return fmt_list(pre, TOAST_MAX_CHARS, names, stacks, count, extra, cap)
 
 
 def fmt_peek(key, total, names, stacks, count, cap=None):
-    """'[F] Take all (N): ...', '[F] Take: X' for a single item; '' for an empty container."""
+    """'[F] Get Items (N): ...', '[F] Get Item: X' for a single item; '' for an empty container."""
     if total <= 0 or count == 0:
         return ""
     k = key if key else "key"
-    pre = "[%s] Take: " % k if total == 1 else "[%s] Take all (%d): " % (k, total)
+    pre = "[%s] Get Item: " % k if total == 1 else "[%s] Get Items (%d): " % (k, total)
     extra = total - count if total > count else 0
     return fmt_list(pre, PEEK_MAX_CHARS, names, stacks, count, extra, cap)
 
@@ -475,7 +475,7 @@ def build_list_draw(d, v, took, key="F", row_h=ROW_H):
     vis = min(total, rows)
     max_off = total - rows if total > rows else 0
     off = min(v.off, max_off)
-    header = "Took (%u)" % d.total_items() if took else "[%s] Take all (%u)" % (key, d.total_items())
+    header = "Acquired Items (%u)" % d.total_items() if took else "[%s] Get Items (%u)" % (key, d.total_items())
     o = dict(took=took, off=off, vis=vis, rows_total=total, items=d.total_items(), scrollable=total > rows, header=header, row_h=row_h,
              header_px=text_px10(header), indicator="", indicator_px=0)
     o["sb"] = o["scrollable"] and sb_fits(vis, row_h)

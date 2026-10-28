@@ -267,7 +267,7 @@ void scenarioA() {
         CHK("sent shortly after the OnOpen (<= 4 frames after Show)", c && c->frame <= showFrame + 4 + 2);
         CHK("one Toast", s.count(A_TOAST) == 1);
         const Act* t = s.nth(A_TOAST, 0);
-        CHK("toast text", t && t->text == "Took (2): Medpac x2, Blaster Pistol");
+        CHK("toast text", t && t->text == "Acquired (2): Medpac x2, Blaster Pistol");
         CHK("TOOK lines logged", s.logCount("TOOK ") == 2);
         CHK("items taken, take cleared", s.taken.size() == 1 && s.taken[0].size() == 2 && !s.m.take.active);
         s.run(80);
@@ -287,7 +287,7 @@ void scenarioA() {
         CHK_EQ("one SendClose", s.count(A_SEND), 1);
         const Act* c = s.nth(A_SEND, 0);
         CHK("flag 1 (loot present at send time)", c && c->flag == 1);
-        CHK("toast lists the OnOpen loot", s.count(A_TOAST) == 1 && s.nth(A_TOAST, 0)->text == "Took (2): Blaster Pistol, Credits");
+        CHK("toast lists the OnOpen loot", s.count(A_TOAST) == 1 && s.nth(A_TOAST, 0)->text == "Acquired (2): Blaster Pistol, Credits");
         s.finishCheck(scn);
     }
     {   // a3: still empty after the OnOpen -> SendClose(0), no toast
@@ -392,9 +392,9 @@ void scenarioC() {
     CHK_EQ("one OpenInventory", s.count(A_OPEN), 1);
     CHK("PEEK-OPEN logged once", s.logCount("PEEK-OPEN") == 1);
     CHK("Show consumed as a peek", s.vanilla == 0 && s.m.peek.active && s.logged("PEEK-SHOW"));
-    CHK("label shown after the OnOpen loot arrived", s.label == "[F] Take all (2): Medpac x2, Blaster Pistol");
+    CHK("label shown after the OnOpen loot arrived", s.label == "[F] Get Items (2): Medpac x2, Blaster Pistol");
     bool sawFirst = false;
-    for (const Act& a : s.acts) if (a.k == A_LSHOW && a.text == "[F] Take: Medpac x2") sawFirst = true;
+    for (const Act& a : s.acts) if (a.k == A_LSHOW && a.text == "[F] Get Item: Medpac x2") sawFirst = true;
     CHK("label first listed the pre-OnOpen contents", sawFirst);
     CHK("no Close yet", s.count(A_SEND) == 0 && s.count(A_SRV) == 0);
     const size_t mk = s.mark();
@@ -404,7 +404,7 @@ void scenarioC() {
     s.key = false;
     CHK_EQ("F edge: exactly one SendClose", s.count(A_SEND, mk), 1);
     CHK("flag 1 and a Toast", s.nth(A_SEND, 0, mk) && s.nth(A_SEND, 0, mk)->flag == 1 && s.count(A_TOAST, mk) == 1);
-    CHK("toast text", s.nth(A_TOAST, 0, mk) && s.nth(A_TOAST, 0, mk)->text == "Took (2): Medpac x2, Blaster Pistol");
+    CHK("toast text", s.nth(A_TOAST, 0, mk) && s.nth(A_TOAST, 0, mk)->text == "Acquired (2): Medpac x2, Blaster Pistol");
     CHK("label hidden, peek over, cooldown holds the container", s.label.empty() && !s.m.peek.active && s.m.cool.contains(s.objs[static_cast<size_t>(A)].sid));
     s.run(80);   // still standing there
     CHK("cooldown blocks the reopen", s.count(A_OPEN) == 1);
@@ -455,7 +455,7 @@ void scenarioC2() {
         s.run(60);
         CHK("opened, Show consumed with flag 0", s.count(A_OPEN) == 1 && s.m.peek.active && s.logged("PEEK-SHOW obj=7f001000 plc=00050000 flag=0"));
         CHK("not closed as empty", s.count(A_SEND) == 0 && !s.logged("PEEK-EMPTY"));
-        CHK("label has the loot", s.label == "[F] Take: Credits");
+        CHK("label has the loot", s.label == "[F] Get Item: Credits");
         s.finishCheck(scn);
     }
 }
@@ -949,7 +949,7 @@ void scenarioL() {
         s.key = true; s.run(2); s.key = false;
         CHK("F took everything", s.count(A_SEND) == 1 && s.count(A_TOAST) == 1 && s.m.toastS.active);
         const Drawn d4 = draw(s, geo(false));
-        CHK("Took text up in the very same rect", d4.placed && d4.r == d1.r && d4.text && strncmp(d4.text, "Took (4): ", 10) == 0);
+        CHK("Took text up in the very same rect", d4.placed && d4.r == d1.r && d4.text && strncmp(d4.text, "Acquired (4): ", 14) == 0);
         CHK("4 names: 3.5 s", s.m.toastS.durMs == 3500);
         const uint32_t t0 = s.m.toastS.shownAt;
         CHK("still up at 3499 ms", s.m.labelText(t0 + 3499) != nullptr);
@@ -1003,7 +1003,7 @@ void scenarioL() {
         s.finishCheck(scn);
     }
     {
-        const char* scn = "l5 long Took (25 items): one-line fallback text, 6 s cap";
+        const char* scn = "l5 long Acquired (25 items): one-line fallback text, 6 s cap";
         Sim s; s.m.cfg.proxOn = false;
         std::vector<Item> many;
         for (int i = 0; i < 25; ++i) many.push_back(Item{"Item number " + std::to_string(i), 1});
@@ -1012,7 +1012,7 @@ void scenarioL() {
         s.click(A);
         s.run(40);
         const Act* t = s.nth(A_TOAST, 0);
-        CHK("toast lists a few names and +K more", t && t->text.find("Took (25): ") == 0 && t->text.find(", +") != std::string::npos && t->text.size() <= 56);
+        CHK("toast lists a few names and +K more", t && t->text.find("Acquired (25): ") == 0 && t->text.find(", +") != std::string::npos && t->text.size() <= 56);
         CHK("25 list rows: 6 s (3 s + 0.5 s per row past 3, capped)", s.m.toastS.durMs == 6000 && s.m.toastS.durMs <= TookCapMs);
         s.finishCheck(scn);
     }
@@ -1028,14 +1028,14 @@ void scenarioL() {
         s.run(60);   // B (2 m from the leader at x=0... it is 3 m: in range) peeks while the Took is up
         CHK("peek B is up but the Took line is what shows", s.m.peek.active && s.m.peek.plc == s.objs[static_cast<size_t>(B)].plc && s.m.toastS.active);
         const Drawn d2 = draw(s, geo(true));
-        CHK("Took wins over the peek line", d2.text && strncmp(d2.text, "Took", 4) == 0 && d2.r == d1.r);
+        CHK("Took wins over the peek line", d2.text && strncmp(d2.text, "Acquired", 8) == 0 && d2.r == d1.r);
         s.run(200);   // the Took ends
         const Drawn d3 = draw(s, geo(true, {1000, 500, 533, 32}));
-        CHK("then the peek line shows, latched afresh at the current geometry", d3.text && strncmp(d3.text, "[F] Take", 8) == 0 && d3.r.x == 1000 + 266 - 600);
+        CHK("then the peek line shows, latched afresh at the current geometry", d3.text && strncmp(d3.text, "[F] Get Item", 12) == 0 && d3.r.x == 1000 + 266 - 600);
         s.key = true; s.run(2); s.key = false;
         CHK("second Took replaces at once", s.count(A_TOAST) == 2 && s.m.toastS.active);
         const Drawn d4 = draw(s, geo(true, {1000, 500, 533, 32}));
-        CHK("same rect as the peek it came from", d4.text && strncmp(d4.text, "Took", 4) == 0 && d4.r == d3.r);
+        CHK("same rect as the peek it came from", d4.text && strncmp(d4.text, "Acquired", 8) == 0 && d4.r == d3.r);
         s.finishCheck(scn);
     }
     {
@@ -1074,7 +1074,7 @@ void scenarioM() {
         CHK("LIST logged once with 8 rows, 25 items, off 0", s.logCount("LIST rows=8 items=25 off=0 w=") == 1 && countLogs(s, "LIST ") == 1);
         ListDraw d;
         CHK("draws", s.m.listDraw(s.now, &d) && d.vis == 8 && d.scrollable && d.off == 0);
-        CHK("header", strcmp(d.header, "[F] Take all (25)") == 0 && strcmp(d.indicator, "1-8 of 25") == 0);
+        CHK("header", strcmp(d.header, "[F] Get Items (25)") == 0 && strcmp(d.indicator, "1-8 of 25") == 0);
         CHK("first row is item 1 (stack 2)", strcmp(d.rows[0], "Item 1 x2") == 0 && strcmp(d.rows[7], "Item 8") == 0);
         s.wheel = -120 * 3; s.run(1);
         CHK("3 notches down: off 3, SCROLL logged", s.m.peekView.off == 3 && s.logCount("SCROLL off=3/17") == 1);

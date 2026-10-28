@@ -201,23 +201,23 @@ int main() {
         const char* n1[] = { "Medpac" };
         kt::CheckEq("count 0 gives no toast", fmtTook(t, sizeof t, n1, nullptr, 0), 0u);
         kt::Check("count 0 leaves an empty string", t[0] == 0);
-        kt::CheckEq("one item", fmtTook(t, sizeof t, n1, nullptr, 1), 12u);
-        kt::Check("one item text (no count)", strcmp(t, "Took: Medpac") == 0);
+        kt::CheckEq("one item", fmtTook(t, sizeof t, n1, nullptr, 1), 16u);
+        kt::Check("one item text (no count)", strcmp(t, "Acquired: Medpac") == 0);
         const char* n3[] = { "Medpac", "Blaster Pistol", "Vibroblade" };
         int s3[] = { 2, 1, 999 };
         fmtTook(t, sizeof t, n3, s3, 3);
-        kt::Check("count in brackets, stack suffix for 2 and 999, none for 1", strcmp(t, "Took (3): Medpac x2, Blaster Pistol, Vibroblade x999") == 0);
+        kt::Check("count in brackets, stack suffix for 2 and 999, none for 1", strcmp(t, "Acquired (3): Medpac x2, Blaster Pistol, Vibroblade x999") == 0);
         int s4[] = { 0, -1, 1000 };
         fmtTook(t, sizeof t, n3, s4, 3);
-        kt::Check("no suffix for 0, -1, 1000", strcmp(t, "Took (3): Medpac, Blaster Pistol, Vibroblade") == 0);
+        kt::Check("no suffix for 0, -1, 1000", strcmp(t, "Acquired (3): Medpac, Blaster Pistol, Vibroblade") == 0);
         kt::Check("null stacks array is fine", fmtTook(t, sizeof t, n3, nullptr, 3) > 0 && strstr(t, " x") == nullptr);
         {   // the review example: 4 items, 2 listed names + "+2 more"
             const char* n2[] = { "Medpac", "Blaster Pistol" };
             int s2[] = { 2, 1 };
             fmtTook(t, sizeof t, n2, s2, 2, 2);
-            kt::Check("Took (4): Medpac x2, Blaster Pistol, +2 more", strcmp(t, "Took (4): Medpac x2, Blaster Pistol, +2 more") == 0 && strlen(t) == 44);
+            kt::Check("Acquired (4): Medpac x2, Blaster Pistol, +2 more", strcmp(t, "Acquired (4): Medpac x2, Blaster Pistol, +2 more") == 0 && strlen(t) == 48);
             fmtTook(t, sizeof t, n1, nullptr, 1, 3);
-            kt::Check("one captured name of four: count is count + extra", strcmp(t, "Took (4): Medpac, +3 more") == 0);
+            kt::Check("one captured name of four: count is count + extra", strcmp(t, "Acquired (4): Medpac, +3 more") == 0);
             ListInfo li;
             fmtTook(t, sizeof t, n2, s2, 2, 2, &li);
             kt::Check("ListInfo: 2 shown, 2 more", li.shown == 2 && li.more == 2);
@@ -230,11 +230,11 @@ int main() {
         const char* ng[] = { "Med\x01pac\xFF", "", nullptr, "   ", "Name\0Hidden" };
         fmtTook(t, sizeof t, ng, nullptr, 5);
         kt::Check("garbage bytes become ?, empty/null/blank become item, NUL ends the name",
-                  strcmp(t, "Took (5): Med?pac?, item, item, item, Name") == 0);
+                  strcmp(t, "Acquired (5): Med?pac?, item, item, item, Name") == 0);
         std::string longName(100, 'Z');
         const char* nl[] = { longName.c_str() };
         fmtTook(t, sizeof t, nl, nullptr, 1);
-        kt::Check("a long name is cut to 17 chars + ...", strcmp(t, ("Took: " + std::string(17, 'Z') + "...").c_str()) == 0 && strlen(t) == 26);
+        kt::Check("a long name is cut to 17 chars + ...", strcmp(t, ("Acquired: " + std::string(17, 'Z') + "...").c_str()) == 0 && strlen(t) == 30);
         // per-entry cut: 20 chars stay, 21+ become 17 + "..."; trailing space / punctuation trimmed before the dots; " xN" after the cut
         {
             char en[64];
@@ -253,23 +253,23 @@ int main() {
             const char* nx[] = { "Lightsaber Crystal: Opila" };
             int sx[] = { 3 };
             fmtTook(t, sizeof t, nx, sx, 1);
-            kt::Check("suffix after the cut: Lightsaber Crysta... x3", strcmp(t, "Took: Lightsaber Crysta... x3") == 0);
+            kt::Check("suffix after the cut: Lightsaber Crysta... x3", strcmp(t, "Acquired: Lightsaber Crysta... x3") == 0);
             char raw[64];
             sanitizeName(raw, sizeof raw, std::string(100, 'Z').c_str());
             kt::CheckEq("sanitizeName (log lines) still cuts at 40", strlen(raw), 40u);
         }
-        // overflow and the 56-char boundary: "Took (2): " is 10 chars; entry 1 = 20 'A' + " x99" (24)
-        std::string a(20, 'A'), b17(17, 'B'), b18(18, 'B');
-        const char* e1[] = { a.c_str(), b17.c_str() };
-        int se1[] = { 99, 9 };   // 24 and 20 chars: 10 + 24 + 2 + 20 = 56
+        // overflow and the 56-char boundary: "Acquired (2): " is 14 chars; entry 1 = 20 'A' + " x99" (24)
+        std::string a(20, 'A'), b13(13, 'B'), b14(14, 'B');
+        const char* e1[] = { a.c_str(), b13.c_str() };
+        int se1[] = { 99, 9 };   // 24 and 16 chars (13 + " x9"): 14 + 24 + 2 + 16 = 56
         kt::CheckEq("exactly 56 chars fits whole", fmtTook(t, sizeof t, e1, se1, 2), 56u);
         kt::Check("exactly 56 chars has no +K more", strstr(t, "more") == nullptr && strlen(t) == 56);
-        const char* e2[] = { a.c_str(), b18.c_str() };
+        const char* e2[] = { a.c_str(), b14.c_str() };
         unsigned l = fmtTook(t, sizeof t, e2, se1, 2);   // 57 chars
-        kt::Check("57 chars overflows to +1 more", strcmp(t, ("Took (2): " + a + " x99, +1 more").c_str()) == 0 && l == strlen(t));
+        kt::Check("57 chars overflows to +1 more", strcmp(t, ("Acquired (2): " + a + " x99, +1 more").c_str()) == 0 && l == strlen(t));
         kt::Check("overflow text never passes 56 chars", l <= ToastMaxChars && ToastMaxChars == 56);
-        // all fit only without a suffix: three items, exactly 56 ("Took (3): " 10 + 14 + 2 + 14 + 2 + 14)
-        std::string c14(14, 'C'), d14(14, 'D'), f14(14, 'F');
+        // all fit only without a suffix: three items, exactly 56 ("Acquired (3): " 14 + 13 + 2 + 13 + 2 + 12)
+        std::string c14(13, 'C'), d14(13, 'D'), f14(12, 'F');
         const char* e3[] = { c14.c_str(), d14.c_str(), f14.c_str() };
         l = fmtTook(t, sizeof t, e3, nullptr, 3);
         kt::Check("three items totalling exactly 56 all show", l == 56 && strstr(t, "more") == nullptr);
@@ -278,12 +278,12 @@ int main() {
         const char* many[16];
         for (int i = 0; i < 16; ++i) many[i] = nm10.c_str();
         l = fmtTook(t, sizeof t, many, nullptr, 16, 5);
-        kt::Check("16 items + extra 5 stay within 56 and count all the rest", l <= 56 && strstr(t, "more") != nullptr && strncmp(t, "Took (21): ", 11) == 0);
+        kt::Check("16 items + extra 5 stay within 56 and count all the rest", l <= 56 && strstr(t, "more") != nullptr && strncmp(t, "Acquired (21): ", 15) == 0);
         unsigned k = 0; sscanf(strstr(t, "+") + 1, "%u", &k);
-        unsigned shownN = 0; for (const char* p = t + 11; (p = strstr(p, nm10.c_str())) != nullptr; p += 10) ++shownN;
+        unsigned shownN = 0; for (const char* p = t + 15; (p = strstr(p, nm10.c_str())) != nullptr; p += 10) ++shownN;
         kt::CheckEq("shown + K = 21", shownN + k, 21u);
         l = fmtTook(t, sizeof t, many, nullptr, 40);
-        kt::Check("count above the capture cap folds into +K more", l <= 56 && strstr(t, "more") != nullptr && strncmp(t, "Took (40): ", 11) == 0);
+        kt::Check("count above the capture cap folds into +K more", l <= 56 && strstr(t, "more") != nullptr && strncmp(t, "Acquired (40): ", 15) == 0);
         // worst case from the review: 25 items, 20-char names with the longest stack suffix still show one name and +K more within 56
         std::string n20(20, 'W');
         const char* wc[16];
@@ -294,7 +294,7 @@ int main() {
         // small caller buffer
         char small[10];
         l = fmtTook(small, sizeof small, n3, s3, 3);
-        kt::Check("small buffer is cut and terminated", l == 9 && strlen(small) == 9 && strncmp(small, "Took (3):", 9) == 0);
+        kt::Check("small buffer is cut and terminated", l == 9 && strlen(small) == 9 && strncmp(small, "Acquired (3):", 9) == 0);
         kt::CheckEq("null out is harmless", fmtTook(nullptr, 5, n3, s3, 3), 0u);
         // sanitizeName direct
         char sn[8];
@@ -305,8 +305,8 @@ int main() {
         kt::Check("TOOK line", strcmp(tl, "TOOK 1 id=7f000011 name=Med?pac stack=3") == 0);
         fmtTookItem(tl, sizeof tl, 0, 0x7F000012u, nullptr, -1);
         kt::Check("TOOK line falls back to item", strcmp(tl, "TOOK 0 id=7f000012 name=item stack=-1") == 0);
-        fmtToast(tl, sizeof tl, "Took: Medpac");
-        kt::Check("TOAST line", strcmp(tl, "TOAST Took: Medpac") == 0);
+        fmtToast(tl, sizeof tl, "Acquired: Medpac");
+        kt::Check("TOAST line", strcmp(tl, "TOAST Acquired: Medpac") == 0);
     }
 
     // ---- QL2p: config clamps
@@ -458,26 +458,26 @@ int main() {
         const char* n3[] = { "Medpac", "Blaster Pistol", "Vibroblade" };
         int s3[] = { 2, 1, 1 };
         kt::Check("peek label, all shown", fmtPeek(t, sizeof t, "F", 3, n3, s3, 3) > 0 &&
-                  strcmp(t, "[F] Take all (3): Medpac x2, Blaster Pistol, Vibroblade") == 0);
+                  strcmp(t, "[F] Get Items (3): Medpac x2, Blaster Pistol, Vibroblade") == 0);
         const char* n1[] = { "Medpac" };
         fmtPeek(t, sizeof t, "F", 1, n1, nullptr, 1);
-        kt::Check("one item: [F] Take: Medpac (no count)", strcmp(t, "[F] Take: Medpac") == 0);
+        kt::Check("one item: [F] Get Item: Medpac (no count)", strcmp(t, "[F] Get Item: Medpac") == 0);
         fmtPeek(t, sizeof t, "F", 6, n3, s3, 3);
-        kt::Check("items beyond the captured ones fold into +K more", strcmp(t, "[F] Take all (6): Medpac x2, Blaster Pistol, +4 more") == 0);
+        kt::Check("items beyond the captured ones fold into +K more", strcmp(t, "[F] Get Items (6): Medpac x2, Blaster Pistol, +4 more") == 0);
         {
             const char* n2[] = { "Medpac", "Blaster Pistol" };
             int s2[] = { 2, 1 };
-            kt::CheckEq("review example 1 length", fmtPeek(t, sizeof t, "F", 4, n2, s2, 2), 52u);
-            kt::Check("[F] Take all (4): Medpac x2, Blaster Pistol, +2 more", strcmp(t, "[F] Take all (4): Medpac x2, Blaster Pistol, +2 more") == 0);
+            kt::CheckEq("review example 1 length", fmtPeek(t, sizeof t, "F", 4, n2, s2, 2), 53u);
+            kt::Check("[F] Get Items (4): Medpac x2, Blaster Pistol, +2 more", strcmp(t, "[F] Get Items (4): Medpac x2, Blaster Pistol, +2 more") == 0);
             const char* real[16] = { "Medpac", "Blaster Pistol", "Adhesive Grenade", "Lightsaber Crystal: Opila", "Frag Grenade", "Credit Chip", "Vibroblade",
                                      "Combat Suit", "Stimulant", "Glow Rod", "Repair Kit", "Security Spike", "Power Cell", "Ion Blaster", "Datapad", "Cure Pack" };
             int sr[16] = { 2, 1, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
             ListInfo li;
-            kt::CheckEq("review example 2 length", fmtPeek(t, sizeof t, "F", 25, real, sr, 16, &li), 54u);
-            kt::Check("[F] Take all (25): Medpac x2, Blaster Pistol, +23 more", strcmp(t, "[F] Take all (25): Medpac x2, Blaster Pistol, +23 more") == 0);
+            kt::CheckEq("review example 2 length", fmtPeek(t, sizeof t, "F", 25, real, sr, 16, &li), 55u);
+            kt::Check("[F] Get Items (25): Medpac x2, Blaster Pistol, +23 more", strcmp(t, "[F] Get Items (25): Medpac x2, Blaster Pistol, +23 more") == 0);
             kt::Check("ListInfo of the peek line", li.shown == 2 && li.more == 23);
-            kt::Check("a rebound key shows its name", (fmtPeek(t, sizeof t, "G", 1, n1, nullptr, 1), strcmp(t, "[G] Take: Medpac") == 0));
-            kt::Check("an unnamed key falls back to 'key'", (fmtPeek(t, sizeof t, "key", 2, n2, s2, 2), strcmp(t, "[key] Take all (2): Medpac x2, Blaster Pistol") == 0));
+            kt::Check("a rebound key shows its name", (fmtPeek(t, sizeof t, "G", 1, n1, nullptr, 1), strcmp(t, "[G] Get Item: Medpac") == 0));
+            kt::Check("an unnamed key falls back to 'key'", (fmtPeek(t, sizeof t, "key", 2, n2, s2, 2), strcmp(t, "[key] Get Items (2): Medpac x2, Blaster Pistol") == 0));
         }
         kt::CheckEq("empty container: no label", fmtPeek(t, sizeof t, "F", 0, n3, s3, 0), 0u);
         kt::Check("no label leaves an empty string (never '0 items')", t[0] == 0);
@@ -492,8 +492,8 @@ int main() {
         unsigned k = 0; sscanf(strstr(t, "+") + 1, "%u", &k);
         unsigned shownN = 0; for (const char* p = t; (p = strstr(p, nm.c_str())) != nullptr; p += 20) ++shownN;
         kt::CheckEq("shown + K = 25", shownN + k, 25u);
-        // exact 56 boundary: prefix "[F] Take all (2): " is 18 chars; 18 + 20 + 2 + 16 = 56
-        std::string a(20, 'A'), b(16, 'B'), c(17, 'B');
+        // exact 56 boundary: prefix "[F] Get Items (2): " is 19 chars; 19 + 20 + 2 + 15 = 56
+        std::string a(20, 'A'), b(15, 'B'), c(16, 'B');
         const char* e1[] = { a.c_str(), b.c_str() };
         l = fmtPeek(t, sizeof t, "F", 2, e1, nullptr, 2);
         kt::Check("exactly 56 chars fits whole", l == 56 && strstr(t, "more") == nullptr);
@@ -546,8 +546,8 @@ int main() {
     kt::Check("PEEK-OPEN line", strcmp(b, "PEEK-OPEN obj=7f000009 plc=1234abcd dist=2.50 n=0") == 0);
     fmtPeekShow(b, sizeof b, 0x7F0000AAu, 0x1234ABCDu, 0, 0);
     kt::Check("PEEK-SHOW line", strcmp(b, "PEEK-SHOW obj=7f0000aa plc=1234abcd flag=0 n=0") == 0);
-    fmtPeekLabel(b, sizeof b, "[F] Take: Medpac");
-    kt::Check("PEEK-LABEL line", strcmp(b, "PEEK-LABEL [F] Take: Medpac") == 0);
+    fmtPeekLabel(b, sizeof b, "[F] Get Item: Medpac");
+    kt::Check("PEEK-LABEL line", strcmp(b, "PEEK-LABEL [F] Get Item: Medpac") == 0);
     fmtPeekEmpty(b, sizeof b, 0x7F0000AAu, 66, 1);
     kt::Check("PEEK-EMPTY line", strcmp(b, "PEEK-EMPTY obj=7f0000aa dt=66ms open=1") == 0);
     fmtPeekTake(b, sizeof b, 0x7F0000AAu, 1200, 3);
@@ -608,12 +608,12 @@ int main() {
     {
         ToastState t;
         kt::Check("toast idle", !t.active && !t.visible(1000));
-        t.start("Took: Medpac", 1000, 3500);
+        t.start("Acquired: Medpac", 1000, 3500);
         kt::Check("toast visible 0..3499 ms", t.visible(1000) && t.visible(4499) && !t.visible(4500));
-        kt::Check("toast text kept", strcmp(t.text, "Took: Medpac") == 0);
-        t.start("Took (2): A, B", 2000, ToastMs);
-        kt::Check("a new toast replaces the old one at once", t.visible(2000) && t.visible(4999) && !t.visible(5000) && strcmp(t.text, "Took (2): A, B") == 0);
-        t.start("Took: X", 0xFFFFFF9Cu, 3000);
+        kt::Check("toast text kept", strcmp(t.text, "Acquired: Medpac") == 0);
+        t.start("Acquired (2): A, B", 2000, ToastMs);
+        kt::Check("a new toast replaces the old one at once", t.visible(2000) && t.visible(4999) && !t.visible(5000) && strcmp(t.text, "Acquired (2): A, B") == 0);
+        t.start("Acquired: X", 0xFFFFFF9Cu, 3000);
         kt::Check("toast across the 32-bit wrap", t.visible(100u) && !t.visible(3000u));
         std::string longText(200, 'x');
         t.start(longText.c_str(), 0, 3000);
@@ -755,11 +755,11 @@ int main() {
         // headers, indicator, block build
         char b[64];
         fmtHeader(b, sizeof b, false, "F", 25);
-        kt::Check("peek header", strcmp(b, "[F] Take all (25)") == 0);
+        kt::Check("peek header", strcmp(b, "[F] Get Items (25)") == 0);
         fmtHeader(b, sizeof b, true, "F", 4);
-        kt::Check("Took header", strcmp(b, "Took (4)") == 0);
+        kt::Check("Took header", strcmp(b, "Acquired Items (4)") == 0);
         fmtHeader(b, sizeof b, false, nullptr, 2);
-        kt::Check("null key -> key", strcmp(b, "[key] Take all (2)") == 0);
+        kt::Check("null key -> key", strcmp(b, "[key] Get Items (2)") == 0);
         fmtRange(b, sizeof b, 1, 8, 25);
         kt::Check("range", strcmp(b, "1-8 of 25") == 0);
 
@@ -789,9 +789,18 @@ int main() {
         ListView v4; v4.reset(4, 8);
         ListDraw o4;
         buildListDraw(d4, v4, true, "F", &o4);
-        kt::Check("4 items: 4 rows, no indicator", o4.vis == 4 && !o4.scrollable && o4.indicator[0] == 0 && strcmp(o4.header, "Took (4)") == 0);
+        kt::Check("4 items: 4 rows, no indicator", o4.vis == 4 && !o4.scrollable && o4.indicator[0] == 0 && strcmp(o4.header, "Acquired Items (4)") == 0);
         kt::CheckEq("4 rows height", o4.h, blockHeightPx(4));
-        kt::CheckEq("single item min width", o4.w, BlockMinW);
+        // the Took header "Acquired Items (4)" is wider than the 300 px floor: the block grows to header + pads (headers are never cut)
+        kt::CheckEq("Took header wider than the floor widens the block", o4.w, o4.headerPx + 2 * BlockPadX);
+        {   // single short item: the narrowest real header ("[F] Get Items (1)", 303 px) already exceeds the 300 px floor, so the floor never binds now
+            ListData d1; d1.set(names, nullptr, 1, 1);
+            ListView v1b; v1b.reset(1, 8);
+            ListDraw o1;
+            buildListDraw(d1, v1b, false, "F", &o1);
+            kt::CheckEq("single item: width = header + pads", o1.w, o1.headerPx + 2 * BlockPadX);
+            kt::Check("single item: never below the floor", o1.w >= BlockMinW && o4.w >= BlockMinW);
+        }
         // the more row
         ListData d5; d5.set(names, nullptr, 20, 25);
         ListView v5; v5.reset(d5.rowsTotal(), 8);

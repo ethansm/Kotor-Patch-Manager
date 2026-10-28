@@ -282,8 +282,8 @@ inline unsigned fmtTook(char* out, size_t cap, const char* const* names, const i
                         ListInfo* info = nullptr) {
     char pre[24];
     const unsigned total = count + extra;
-    if (total <= 1) snprintf(pre, sizeof pre, "Took: ");
-    else snprintf(pre, sizeof pre, "Took (%u): ", total);
+    if (total <= 1) snprintf(pre, sizeof pre, "Acquired: ");
+    else snprintf(pre, sizeof pre, "Acquired (%u): ", total);
     return detail::fmtList(out, cap, pre, ToastMaxChars, names, stacks, count, extra, info);
 }
 
@@ -429,8 +429,8 @@ inline unsigned fmtPeek(char* out, size_t cap, const char* key, int total, const
     out[0] = 0;
     if (total <= 0 || count == 0) return 0;
     char pre[48];
-    if (total == 1) snprintf(pre, sizeof pre, "[%s] Take: ", key ? key : "key");
-    else snprintf(pre, sizeof pre, "[%s] Take all (%d): ", key ? key : "key", total);
+    if (total == 1) snprintf(pre, sizeof pre, "[%s] Get Item: ", key ? key : "key");
+    else snprintf(pre, sizeof pre, "[%s] Get Items (%d): ", key ? key : "key", total);
     const unsigned extra = static_cast<unsigned>(total) > count ? static_cast<unsigned>(total) - count : 0u;
     return detail::fmtList(out, cap, pre, PeekMaxChars, names, stacks, count, extra, info);
 }
@@ -684,8 +684,8 @@ inline int fmtRange(char* out, size_t cap, unsigned first, unsigned last, unsign
 }
 // "[F] Take all (25)" / "Took (25)". total = items in the container.
 inline int fmtHeader(char* out, size_t cap, bool took, const char* key, unsigned total) {
-    if (took) return snprintf(out, cap, "Took (%u)", total);
-    return snprintf(out, cap, "[%s] Take all (%u)", key ? key : "key", total);
+    if (took) return snprintf(out, cap, "Acquired Items (%u)", total);
+    return snprintf(out, cap, "[%s] Get Items (%u)", key ? key : "key", total);
 }
 
 // ---- 0.5.0-dev: block / row / scrollbar geometry (block-relative px; add the block origin). rowH is a parameter only so the tests and the
