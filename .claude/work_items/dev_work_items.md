@@ -213,3 +213,4 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [x] | 197 | WI-165 | P3 | ready | S | - | WI-36a2 rea-recon: feats/powers panel vftables, per-frame slot, prologue bytes | 0 | 0 | WI-163 static facts (.claude/research/wi36_rescue/WI-163_facts.md OPEN |
 | [x] | 198 | WI-166 | P3 | ready | S | - | rea-recon: find per-frame driver calling feats/powers panel vftable slot 0x34 (Draw) | 0 | 0 | WI-165 facts OPEN 1: REA slot-0x34 call sites found belong to other cl |
 | [ ] | 199 | WI-167 | P3 | hold | S | - | WI-164 hook probe: log [CClientExoAppInternal+0x274] vs [panel+0x1c] and [panel+0x48] bit  | 0 | 0 | WI-166 facts OPEN 2/4: manager identity and bit-2 gate are static-argu |
+| [ ] | 200 | WI-168 | P3 | hold | S | - | WI-164 follow-up: pin 4-step Filter cycle (All>BuildDim>Combat>Force) in r10_filter_test.c | 0 | 2 | WI-164 cycle lives in LevelUpOverride.cpp with no host test; r10_filte |
