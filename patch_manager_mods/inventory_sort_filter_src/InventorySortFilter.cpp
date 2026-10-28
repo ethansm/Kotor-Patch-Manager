@@ -111,6 +111,7 @@ void dumpMem(const char* tag, int addr, int bytes) {
 struct Config {
     bool sort = false, tint = false, cycle = false, log = true, logItems = false;
     unsigned mask = 0;
+    isf::SortOrder order = isf::SO_Category;   // [Inventory] sort_order (WI-154); vanilla also forces sort off
 };
 Config g_cfg;
 DWORD g_lastIni = 0;
@@ -133,6 +134,10 @@ void loadIni(bool force) {
     g_iniWrite = present ? fa.ftLastWriteTime : zero;   // stored before the reads so a mid-read edit is picked up next time
     Config c;
     c.sort = GetPrivateProfileIntA("Inventory", "sort", 0, IniName) != 0;
+    char so[32] = {};
+    GetPrivateProfileStringA("Inventory", "sort_order", "category", so, sizeof so, IniName);
+    c.order = isf::parseSortOrder(so);
+    if (c.order == isf::SO_Vanilla) c.sort = false;   // vanilla order = no sort, same as sort=0 (the buffer is then not even filled with names)
     c.tint = GetPrivateProfileIntA("Inventory", "tint", 0, IniName) != 0;
     c.cycle = GetPrivateProfileIntA("Inventory", "cycle", 0, IniName) != 0;
     c.log = GetPrivateProfileIntA("Inventory", "log", 1, IniName) != 0;
@@ -141,8 +146,9 @@ void loadIni(bool force) {
     GetPrivateProfileStringA("Inventory", "cycle_states", "new,usable,upgrade", cs, sizeof cs, IniName);
     c.mask = isf::parseCycleStates(cs);
     if (c.sort != g_cfg.sort || c.tint != g_cfg.tint || c.cycle != g_cfg.cycle || c.mask != g_cfg.mask || c.log != g_cfg.log ||
-        c.logItems != g_cfg.logItems || force)
-        logf("config: sort=%d tint=%d cycle=%d cycle_mask=%x log=%d log_items=%d", c.sort, c.tint, c.cycle, c.mask, c.log, c.logItems);
+        c.logItems != g_cfg.logItems || c.order != g_cfg.order || force)
+        logf("config: sort=%d tint=%d cycle=%d cycle_mask=%x log=%d log_items=%d sort_order=%d", c.sort, c.tint, c.cycle, c.mask, c.log, c.logItems,
+             (int)c.order);
     g_cfg = c;
 }
 
@@ -239,11 +245,15 @@ bool itemHasOpenSlot(int item) {
 
 // Equip test of the equipment-slot list 0x8ac330 for the character the inventory shows: gender restriction, then
 // 0x5BD6A0 for each slot bit of the baseitem mask (it wants one bit). *equippable = the item has any slot at all.
-bool canEquip(int creature, int item, bool* equippable) {
+// *slotMaskOut (optional) = the baseitem slot mask, read even for an unknown creature (WI-154 category), 0 when there is no item.
+bool canEquip(int creature, int item, bool* equippable, unsigned* slotMaskOut = nullptr) {
     *equippable = false;
-    if (!creature || !item) return true;   // unknown: never tint, never hide
+    if (slotMaskOut) *slotMaskOut = 0;
+    if (!item) return true;   // unknown: never tint, never hide
     int base = reinterpret_cast<GetBaseItemFn>(FnGetBaseItem)(item);
     unsigned mask = base ? rd<unsigned>(base, BaseSlotMaskOff) : 0;
+    if (slotMaskOut) *slotMaskOut = mask;
+    if (!creature) return true;
     if (!mask) return false;
     *equippable = true;
     int stats = rd<int>(creature, CrStatsOff);
@@ -402,8 +412,9 @@ extern "C" void __cdecl SortFilterBufferRow(int ebp) {
     // Equip test for the shown character (tint + sort + Usable filter); "activatable" (0x77b670) only widens Usable.
     bool needUsable = g_cfg.sort || g_cfg.tint || g_cfg.logItems || (extraOn && g_extra == isf::X_Usable);
     bool equippable = false, equipOk = true, activatable = false;
+    unsigned slotMask = 0;
     if (needUsable) {
-        equipOk = canEquip(creature, item, &equippable);
+        equipOk = canEquip(creature, item, &equippable, &slotMask);
         activatable = reinterpret_cast<IsUsableFn>(FnIsItemUsable)(cobj, item, 0, 0xFF) != 0;
     }
     bool usable = !needUsable || isf::usableForCycle(equipOk, activatable);
@@ -417,6 +428,9 @@ extern "C" void __cdecl SortFilterBufferRow(int ebp) {
     e.isNew = ((rd<unsigned>(item, ItemFlagsOff) >> 7) & 1) != 0;
     e.usable = usable; e.baseItem = rd<int>(item, ItemBaseOff);
     e.tint = needUsable && isf::tintRow(equippable, equipOk);
+    const bool catOn = g_cfg.sort && g_cfg.order == isf::SO_Category;   // one GetUpgradeType call per row, only for the category order (WI-154)
+    if (catOn)
+        e.category = isf::categoryOf(reinterpret_cast<GetUpgradeTypeFn>(FnGetUpgradeType)(item, 0) & 0xFF, slotMask, activatable, e.baseItem);
     // Names are not read here: SortFilterFlush reads them for tied rows only (WI-146), so e.name stays "" until then.
 
     // Reselect bookkeeping that the skipped vanilla code did; the row index is only known at flush time.
@@ -424,8 +438,8 @@ extern "C" void __cdecl SortFilterBufferRow(int ebp) {
     if (matched) { g_selSet = true; g_selId = id; wr32(panel + PanelSelectedIdOff, NoSelection); }
 
     if (g_cfg.log && g_cfg.logItems)
-        logf("  row: idx=%d item=%08x id=%08x base=%d new=%d equippable=%d canEquip=%d activatable=%d usable=%d tint=%d%s", idx, item, id,
-             e.baseItem, e.isNew, equippable, equipOk, activatable, e.usable, e.tint, matched ? " (selected)" : "");
+        logf("  row: idx=%d item=%08x id=%08x base=%d new=%d equippable=%d canEquip=%d activatable=%d usable=%d tint=%d category=%d%s", idx, item, id,
+             e.baseItem, e.isNew, equippable, equipOk, activatable, e.usable, e.tint, catOn ? (int)e.category : -1, matched ? " (selected)" : "");
 
     if (g_n >= BufCap) {   // overflow (never expected): emit what is buffered in arrival order, then keep going
         logf("buffer: overflow at %d rows, emitting unsorted", g_n);
@@ -450,17 +464,18 @@ extern "C" void __cdecl SortFilterFlush(int ebp) {
     if (g_cfg.sort) {
         static LONGLONG freq = 0;   // QPC frequency, read once
         if (!freq) { LARGE_INTEGER f; QueryPerformanceFrequency(&f); freq = f.QuadPart; }
-        // Names only for rows tied on (new, usable, base item), read here instead of per row in populate (WI-146). The item
+        // Names only for rows tied on the sort order's key (WI-146; category: new, usable, category, base item; base: new, usable, base
+        // item; name: new, usable), read here instead of per row in populate. The item
         // pointers are the ones emitBuffered turns into rows right after this, so they are still valid. Language fetched once.
         LARGE_INTEGER n0, n1;
         QueryPerformanceCounter(&n0);
         const int lang = clientLanguage();
-        const int nNames = isf::fillTiedNames(g_buf, g_n, [&](isf::Entry& e) { readItemName(e.item, lang, e.name, sizeof e.name); });
+        const int nNames = isf::fillTiedNames(g_buf, g_n, [&](isf::Entry& e) { readItemName(e.item, lang, e.name, sizeof e.name); }, g_cfg.order);
         QueryPerformanceCounter(&n1);
         g_nameTicks += n1.QuadPart - n0.QuadPart;
         LARGE_INTEGER t0, t1;
         QueryPerformanceCounter(&t0);
-        isf::sortEntries(g_buf, g_n);
+        isf::sortEntries(g_buf, g_n, g_cfg.order);
         QueryPerformanceCounter(&t1);
         if (g_cfg.log && freq > 0)
             logf("sort timing: sortEntries rows=%d took %u us; buffer %u us (names %u us) names=%d", g_n,

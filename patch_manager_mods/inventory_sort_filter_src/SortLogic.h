@@ -18,6 +18,7 @@ struct Entry {
     bool tint;      // tintRow(): equippable type the shown character cannot equip
     char name[64] = {};   // localised item name (CExoLocString at item+0x2C0), NUL-terminated; "" = unknown. Default member init keeps
                           // the 7-value aggregate inits warning-free (-Wmissing-field-initializers) and a default-built Entry empty.
+    unsigned char category = 6;   // categoryOf() (WI-154); 6 = misc. Last member, so the 7-value aggregate inits still compile.
 };
 
 // ASCII-only fold on unsigned char: locale-independent, cp1252 bytes >= 0x80 compare as raw bytes.
@@ -45,31 +46,54 @@ inline bool before(const Entry& a, const Entry& b) {
 
 inline void sortEntries(Entry* e, int n) { std::stable_sort(e, e + n, before); }
 
-// Lazy tie names (WI-146). before() reads the name only inside a tie on (isNew, usable, baseItem), so only rows that share that key
-// need one. Calls readName(row) for every row whose key is shared with another row (name cleared first) and clears name on the
-// rest. Returns the call count. Index array is a fixed stack buffer; above kMaxTieRows every name is read (same order, just slower).
+// [Inventory] sort_order (WI-154). The values double as the WI-155 mod-config list index (0..3).
+//   SO_Category: isNew, usable, category, baseItem, name, orig     SO_Base: before() (isNew, usable, baseItem, name, orig)
+//   SO_Name:     isNew, usable, name, orig                         SO_Vanilla: no sort (the buffer is already in vanilla order)
+enum SortOrder : unsigned char { SO_Category = 0, SO_Base = 1, SO_Name = 2, SO_Vanilla = 3 };
+inline bool beforeBy(SortOrder o, const Entry& a, const Entry& b) {
+    if (o == SO_Vanilla) return a.orig < b.orig;
+    if (a.isNew != b.isNew) return a.isNew;
+    if (a.usable != b.usable) return a.usable;
+    if (o == SO_Category && a.category != b.category) return a.category < b.category;
+    if (o != SO_Name && a.baseItem != b.baseItem) return a.baseItem < b.baseItem;
+    int c = foldCmp(a.name, b.name);
+    return c != 0 ? c < 0 : a.orig < b.orig;
+}
+inline void sortEntries(Entry* e, int n, SortOrder o) {
+    if (o == SO_Vanilla) return;   // already in vanilla order (the buffer is filled in loop order)
+    std::stable_sort(e, e + n, [o](const Entry& a, const Entry& b) { return beforeBy(o, a, b); });
+}
+
+// Lazy tie names (WI-146, per order WI-154). beforeBy() reads the name only inside a tie on every key before it, so only rows that
+// share the order's tie key need one: base (isNew, usable, baseItem), category (isNew, usable, category, baseItem), name (isNew, usable);
+// vanilla reads none. Calls readName(row) for every row whose key is shared with another row (name cleared first) and clears name on the
+// rest. Returns the call count. Index array is a fixed stack buffer; above kMaxTieRows every name is read (same order, just slower), except
+// vanilla, which never reads.
 constexpr int kMaxTieRows = 1024;
-inline bool tieKeyLess(const Entry& a, const Entry& b) {
+inline bool tieKeyLess(const Entry& a, const Entry& b, SortOrder o = SO_Base) {
     if (a.isNew != b.isNew) return b.isNew;
     if (a.usable != b.usable) return b.usable;
+    if (o == SO_Category && a.category != b.category) return a.category < b.category;
+    if (o == SO_Name) return false;
     return a.baseItem < b.baseItem;
 }
-inline bool tieKeySame(const Entry& a, const Entry& b) {
-    return a.isNew == b.isNew && a.usable == b.usable && a.baseItem == b.baseItem;
+inline bool tieKeySame(const Entry& a, const Entry& b, SortOrder o = SO_Base) {
+    return !tieKeyLess(a, b, o) && !tieKeyLess(b, a, o);
 }
-template <typename F> inline int fillTiedNames(Entry* e, int n, F readName) {
+template <typename F> inline int fillTiedNames(Entry* e, int n, F readName, SortOrder o = SO_Base) {
     if (n <= 0) return 0;
+    if (o == SO_Vanilla) { for (int i = 0; i < n; ++i) e[i].name[0] = 0; return 0; }
     if (n > kMaxTieRows) {
         for (int i = 0; i < n; ++i) { e[i].name[0] = 0; readName(e[i]); }
         return n;
     }
     int idx[kMaxTieRows];
     for (int i = 0; i < n; ++i) idx[i] = i;
-    std::sort(idx, idx + n, [e](int x, int y) { return tieKeyLess(e[x], e[y]); });
+    std::sort(idx, idx + n, [e, o](int x, int y) { return tieKeyLess(e[x], e[y], o); });
     int calls = 0;
     for (int i = 0; i < n;) {
         int j = i + 1;
-        while (j < n && tieKeySame(e[idx[i]], e[idx[j]])) ++j;
+        while (j < n && tieKeySame(e[idx[i]], e[idx[j]], o)) ++j;
         const bool tied = j - i >= 2;
         for (int k = i; k < j; ++k) {
             Entry& r = e[idx[k]];
@@ -165,12 +189,41 @@ inline bool genderAllows(int req, int gender, int g1, int g2) {
 inline bool tintRow(bool equippable, bool canEquip) { return equippable && !canEquip; }
 inline bool usableForCycle(bool canEquip, bool activatable) { return canEquip || activatable; }
 
+// ---- sort category (WI-154, owner-approved order) ----------------------------------------------------
+// 0 melee weapons, 1 ranged weapons, 2 armour/robes, 3 other equippable (head, hands, arms, belt, implant), 4 upgrades,
+// 5 consumables (activatable, not equippable: medpacs, stims, grenades), 6 misc/quest.
+// upgradeType = GetUpgradeType(item) (0 none, 1 melee, 2 ranged, 3 armor, 4 gloves/other); slotMask = baseitem+4 (0 = not equippable).
+// Upgrade items are the baseitems rows 11 Lightsaber_Crystals and 101 Upgrade_Items (K2 baseitems.2da dump
+// .claude/research/k1_items/baseitems_k2.tsv; also R8_item_model_survey_2026-09-29.txt). In items_k2.tsv every row with baseitem 101 is an
+// upgrade (60 rows) and rows with baseitem 11 are crystals. Neither has equip slots and GetUpgradeType is 0 for them.
+constexpr int kBaseLightsaberCrystals = 11, kBaseUpgradeItems = 101;
+inline unsigned char categoryOf(unsigned upgradeType, unsigned slotMask, bool activatable, int baseItem) {
+    if (upgradeType == 1) return 0;
+    if (upgradeType == 2) return 1;
+    if (upgradeType == 3) return 2;
+    if (upgradeType == 4 || slotMask) return 3;
+    if (baseItem == kBaseLightsaberCrystals || baseItem == kBaseUpgradeItems) return 4;
+    return activatable ? 5 : 6;
+}
+
 inline bool ieq(const char* a, const char* b) {
     for (; *a && *b; ++a, ++b) {
         char x = (*a >= 'A' && *a <= 'Z') ? char(*a + 32) : *a, y = (*b >= 'A' && *b <= 'Z') ? char(*b + 32) : *b;
         if (x != y) return false;
     }
     return *a == *b;
+}
+
+// [Inventory] sort_order: category|base|name|vanilla (ASCII case-insensitive, spaces around ignored) or the digits 0..3 in that order
+// (WI-155's mod-config list row stores the index). Unknown, empty or null -> category.
+inline SortOrder parseSortOrder(const char* s) {
+    char buf[32]; strncpy(buf, s ? s : "", sizeof buf - 1); buf[sizeof buf - 1] = 0;
+    char* a = buf; while (*a == ' ' || *a == '\t') ++a;
+    char* z = a + strlen(a); while (z > a && (z[-1] == ' ' || z[-1] == '\t')) *--z = 0;
+    if (ieq(a, "1") || ieq(a, "base")) return SO_Base;
+    if (ieq(a, "2") || ieq(a, "name")) return SO_Name;
+    if (ieq(a, "3") || ieq(a, "vanilla")) return SO_Vanilla;
+    return SO_Category;
 }
 
 // "new,usable,upgrade" -> mask (unknown names ignored, spaces around names ignored)

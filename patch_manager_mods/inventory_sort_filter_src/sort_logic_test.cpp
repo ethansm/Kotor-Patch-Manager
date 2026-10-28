@@ -226,6 +226,91 @@ int main() {
         captionWithCount(S_Upgrade, all3, 1024, none, 0);
         CHECK(none[0] == 'X');
     }
+    // ---- sort_order (WI-154): category / base / name / vanilla ----
+    {
+        auto withCat = [](Entry e, unsigned char c) { e.category = c; return e; };
+        auto nm = [&](Entry e, const char* n) { setName(e, n); return e; };
+        // categoryOf: upgrade type decides weapons/armour, then slot mask, upgrade base rows, activatable, misc
+        CHECK(categoryOf(1, 0x30, false, 2) == 0 && categoryOf(2, 0x10, false, 12) == 1 && categoryOf(3, 0x2, false, 38) == 2);
+        CHECK(categoryOf(4, 0x8, false, 45) == 3 && categoryOf(0, 0x400, false, 47) == 3 && categoryOf(0, 0x200, false, 48) == 3);
+        CHECK(categoryOf(0, 0, false, kBaseUpgradeItems) == 4 && categoryOf(0, 0, false, kBaseLightsaberCrystals) == 4);
+        CHECK(categoryOf(0, 0, true, kBaseUpgradeItems) == 4);                           // an upgrade stays an upgrade even if activatable
+        CHECK(categoryOf(0, 0, true, 53) == 5 && categoryOf(0, 0, false, 52) == 6 && categoryOf(0, 0, false, 0) == 6);
+        CHECK(categoryOf(1, 0x30, true, 2) == 0);                                        // a weapon with an activatable property is still a weapon
+        CHECK(categoryOf(0, 0, false, 100) == 6 && categoryOf(0, 0, false, 102) == 6);   // neighbours of the cited upgrade rows are not upgrades
+        { Entry d; CHECK(d.category == 6); }
+        // parseSortOrder: names, digits 0..3, case, spaces; anything else -> category
+        CHECK(parseSortOrder("category") == SO_Category && parseSortOrder("BASE") == SO_Base && parseSortOrder("Name") == SO_Name && parseSortOrder("vanilla") == SO_Vanilla);
+        CHECK(parseSortOrder("0") == SO_Category && parseSortOrder("1") == SO_Base && parseSortOrder("2") == SO_Name && parseSortOrder("3") == SO_Vanilla);
+        CHECK(parseSortOrder("  name ") == SO_Name && parseSortOrder("4") == SO_Category && parseSortOrder("13") == SO_Category);
+        CHECK(parseSortOrder("bogus") == SO_Category && parseSortOrder("") == SO_Category && parseSortOrder(nullptr) == SO_Category);
+        // one set, four orders. item: new/usable/category/base/name
+        //  130 usable cat6 base5 "delta"; 131 usable cat0 base9 "alpha"; 132 usable cat1 base3 "charlie"; 133 usable cat0 base1 "bravo"
+        //  134 NEW usable cat5 base7 "zulu"; 135 unusable cat0 base2 "echo"; 136 usable cat0 base9 "aardvark" (ties 131 on category+base)
+        std::vector<Entry> o7 = {nm(withCat({130, 130, 0, false, true, 5, false}, 6), "delta"), nm(withCat({131, 131, 1, false, true, 9, false}, 0), "alpha"),
+                                 nm(withCat({132, 132, 2, false, true, 3, false}, 1), "charlie"), nm(withCat({133, 133, 3, false, true, 1, false}, 0), "bravo"),
+                                 nm(withCat({134, 134, 4, true, true, 7, false}, 5), "zulu"), nm(withCat({135, 135, 5, false, false, 2, false}, 0), "echo"),
+                                 nm(withCat({136, 136, 6, false, true, 9, false}, 0), "aardvark")};
+        const SortOrder ords[4] = {SO_Category, SO_Base, SO_Name, SO_Vanilla};
+        const int want7[4][7] = {{134, 133, 136, 131, 132, 130, 135},    // new; usable: cat0 (base1 133, base9 tie by name 136 131), cat1 132, cat6 130; unusable
+                                 {134, 133, 132, 130, 136, 131, 135},    // new; usable by base 1,3,5,9 (136 before 131 by name); unusable
+                                 {134, 136, 131, 133, 132, 130, 135},    // new; usable by name: aardvark alpha bravo charlie delta; unusable
+                                 {130, 131, 132, 133, 134, 135, 136}};   // vanilla: untouched
+        for (int k = 0; k < 4; ++k) {
+            std::vector<Entry> ov = o7; sortEntries(ov.data(), (int)ov.size(), ords[k]);
+            for (int i = 0; i < 7; ++i) CHECK(ov[i].item == want7[k][i]);
+        }
+        // vanilla is a true no-op: a buffer that is NOT in orig order stays as it is (production buffers are in orig order already)
+        { std::vector<Entry> r(o7.rbegin(), o7.rend()); sortEntries(r.data(), 7, SO_Vanilla);
+          for (int i = 0; i < 7; ++i) CHECK(r[i].item == 136 - i); }
+        // sortEntries(..., SO_Base) is the 2-argument sortEntries()
+        { std::vector<Entry> a = o7, b = o7; sortEntries(a.data(), 7); sortEntries(b.data(), 7, SO_Base);
+          for (int i = 0; i < 7; ++i) CHECK(a[i].item == b[i].item); }
+        // strict weak order for every order: irreflexive, antisymmetric, total (orig last), transitive; mixed new/usable/category/base/names
+        {
+            std::vector<Entry> sw; const char* sn[] = {"", "Bow", "axe", "AXE", "bow", ""};
+            for (int i = 0; i < 24; ++i) { Entry e{300 + i, 300 + i, i, i % 3 == 0, i % 2 == 0, i % 4, false}; e.category = (unsigned char)(i % 7); setName(e, sn[i % 6]); sw.push_back(e); }
+            for (SortOrder o : ords) {
+                for (auto& a : sw) {
+                    CHECK(!beforeBy(o, a, a));
+                    for (auto& b : sw) {
+                        CHECK(!(beforeBy(o, a, b) && beforeBy(o, b, a)));
+                        if (&a != &b) CHECK(beforeBy(o, a, b) || beforeBy(o, b, a));
+                        for (auto& c : sw) if (beforeBy(o, a, b) && beforeBy(o, b, c)) CHECK(beforeBy(o, a, c));
+                    }
+                }
+            }
+        }
+        // fillTiedNames per order: only rows tied on the order's key are read, and the lazy order equals the all-named order
+        {
+            auto cnt = [&](SortOrder o, std::vector<int>* got) {
+                std::vector<Entry> t = o7;
+                for (auto& e : t) e.name[0] = 0;
+                int calls = fillTiedNames(t.data(), (int)t.size(), [&](Entry& e) { if (got) got->push_back(e.item); for (auto& r : o7) if (r.item == e.item) memcpy(e.name, r.name, sizeof e.name); }, o);
+                sortEntries(t.data(), (int)t.size(), o);
+                std::vector<Entry> full = o7; sortEntries(full.data(), (int)full.size(), o);
+                for (size_t i = 0; i < t.size(); ++i) CHECK(t[i].item == full[i].item);
+                return calls;
+            };
+            std::vector<int> g;
+            CHECK(cnt(SO_Category, &g) == 2 && g.size() == 2 && std::count(g.begin(), g.end(), 131) == 1 && std::count(g.begin(), g.end(), 136) == 1);   // only 131/136 share new+usable+cat+base
+            CHECK(cnt(SO_Base, nullptr) == 2);    // base ties on new+usable+base: the same pair 131/136
+            CHECK(cnt(SO_Name, nullptr) == 5);    // new+usable ties: the five usable non-new rows (130 131 132 133 136); 134 (new) and 135 (unusable) are alone
+            CHECK(cnt(SO_Vanilla, nullptr) == 0);
+            // category separates rows that base alone ties: same base, different category -> category order reads no name, base order reads both
+            std::vector<Entry> sb = {withCat({140, 140, 0, false, true, 4, false}, 0), withCat({141, 141, 1, false, true, 4, false}, 3)};
+            CHECK(fillTiedNames(sb.data(), 2, [](Entry&) {}, SO_Category) == 0 && fillTiedNames(sb.data(), 2, [](Entry&) {}, SO_Base) == 2);
+            // name order across different base items reads both names and sorts by name
+            std::vector<Entry> nb = {{150, 150, 0, false, true, 5, false}, {151, 151, 1, false, true, 9, false}};
+            CHECK(fillTiedNames(nb.data(), 2, [&](Entry& e) { setName(e, e.item == 150 ? "zulu" : "alpha"); }, SO_Name) == 2);
+            sortEntries(nb.data(), 2, SO_Name); CHECK(nb[0].item == 151);
+            // above kMaxTieRows the fallback reads every name for category/base/name, never for vanilla
+            std::vector<Entry> big;
+            for (int i = 0; i < kMaxTieRows + 1; ++i) big.push_back({i, i, i, false, true, i, false});
+            for (SortOrder o : {SO_Category, SO_Base, SO_Name}) { int nb2 = 0; CHECK(fillTiedNames(big.data(), (int)big.size(), [&](Entry&) { ++nb2; }, o) == kMaxTieRows + 1 && nb2 == kMaxTieRows + 1); }
+            int nv = 0; CHECK(fillTiedNames(big.data(), (int)big.size(), [&](Entry&) { ++nv; }, SO_Vanilla) == 0 && nv == 0);
+        }
+    }
     printf(g_fail ? "sort_logic_test: %d FAILED\n" : "sort_logic_test: ALL PASS\n", g_fail);
     return g_fail ? 1 : 0;
 }

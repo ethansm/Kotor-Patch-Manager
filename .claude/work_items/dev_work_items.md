@@ -199,7 +199,7 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [x] | 183 | WI-151 | P3 | ready | S | WI-150 | ISF UX: show the visible-row count in the filter caption (empty-filter state) | 0 | 3 | a filter with 0 matches shows a blank list with no feedback |
 | [x] | 184 | WI-152 | P3 | ready | S | WI-151 | ISF UX: caption hint for the hidden re-click-All cycle gesture | 0 | 3 | New/Usable/Upgradeable are reachable only by re-clicking the active Al |
 | [ ] | 185 | WI-153 | P3 | ready | M | WI-151 | ISF UX: controller access to Usable/Upgradeable filters | 0 | 2 | bumpers go through engine SetNextFilter, so controller players never r |
-| [ ] | 186 | WI-154 | P3 | ready | M | WI-151 | ISF UX: player-facing category group order + sort_order INI key | 0 | 3 | groups follow baseitems.2da row id, which is arbitrary to players |
+| [x] | 186 | WI-154 | P3 | ready | M | WI-151 | ISF UX: player-facing category group order + sort_order INI key | 0 | 3 | groups follow baseitems.2da row id, which is arbitrary to players |
 | [ ] | 187 | WI-155 | P3 | ready | M | WI-154 | ISF UX: mod-config row for sort order (doc 45) | 0 | 1 | sort order is a real taste setting; INI-only today |
 | [ ] | 188 | WI-156 | P3 | hold | S | - | analyze_play_logs: companion-ai expected hook/kind counts stale (31->33 hooks, 25->26 kind | 0 | 2 | RealHookTomls + probe-format tests red on HEAD; play-log analyzer suit |
 | [ ] | 189 | WI-157 | P3 | hold | S | - | Combat AI recast: Force Enlightenment (180) in the buff family tables (G1 castFamily + GN_ | 0 | 0 | Enlightenment applies Speed+Armor+Valor under spell id 180, which neit |
