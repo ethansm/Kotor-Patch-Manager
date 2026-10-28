@@ -142,3 +142,4 @@
 {"ev": "rescue", "reason": "round 1: 7 recon briefs in WI-36-rescue", "session": "adcfea28-564e-4810-9848-60bc7638b126", "ts": "2026-10-28T00:49:35Z", "wi": "WI-36"}
 {"ev": "done", "reason": "manual: split into WI-163 (RE) + WI-164 (build); WI-36 superseded", "session": "dec095da-08a6-4b8d-9694-3eda46c84371", "ts": "2026-10-28T00:55:32Z", "wi": "WI-36"}
 {"ev": "done", "reason": "manual: WI-154 fix wave vw2-A", "session": "d8e177e5-97c2-4bac-af2c-9e39ef6301dd", "ts": "2026-10-28T00:57:39Z", "wi": "WI-154"}
+{"ev": "done", "reason": "manual: WI-155 fix wave vw2-A", "session": "d8e177e5-97c2-4bac-af2c-9e39ef6301dd", "ts": "2026-10-28T01:06:40Z", "wi": "WI-155"}

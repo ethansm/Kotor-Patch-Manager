@@ -28,6 +28,11 @@ static SIZE_T fakeVQ(LPCVOID a, MEMORY_BASIC_INFORMATION* m, SIZE_T n) {
 #include "SafeRead.h"
 #include "check.h"
 #include "KpLog.h"
+#include "ModConfigApi.h"
+#include "ModConfigDecl.h"
+#include "ProviderClient.h"
+#include "SortOrderPage.h"
+#include <string>
 #include <sys/mman.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -64,7 +69,102 @@ static int dumpWords(int addr, int bytes, bool* got) {   // returns words read; 
     return n;
 }
 
+// ---- Mod Configuration page (WI-155; SortOrderPage.h + InventorySortFilter.cpp mcPageInit / mcPagePoll) ----
+// The shipped INI text the page edits (inventory_sort_filter.ini layout: [Inventory], comment lines, other keys). g_fakeIni stands for the file.
+static std::string g_fakeIni;
+static bool fakeRaw(const char*, const char* section, const char* key, char* out, int cap) {
+    return mcdecl::iniGet(g_fakeIni.data(), g_fakeIni.size(), section, key, out, cap);
+}
+static bool fakeRead(const char* path, const char* section, const char* key, char* out, int cap) {   // = mcRead in InventorySortFilter.cpp
+    return isf::readSortOrder(fakeRaw, path, section, key, out, cap);
+}
+
+static void moddecl_contract() {
+    static mcdecl::Page page;   // ~35 KB: static storage (ModConfigDecl.h)
+    char err[96] = {};
+    HCHECK("mcdecl::Page::load accepts isf::kPageSchema (mcPageInit; a rejected schema leaves the mod without its page)",
+           page.load(isf::kPageSchema, strlen(isf::kPageSchema), err, sizeof err));
+    HEQ("kPageSchema declares exactly one row (owner OK: ONE row, sort_order)", page.decl.nRows, 1);
+    const int i = page.decl.find("sort_order");
+    HCHECK("kPageSchema has the sort_order row", i == 0);
+    if (i < 0) return;
+    const mcdecl::RowDecl& r = page.decl.rows[i];
+    HCHECK("sort_order is a list row (not a cycle_states toggle or stepper)", r.kind == mcdecl::K_LIST);
+    HEQ("sort_order has 4 choices", r.nChoices, 4);
+    HCHECK("sort_order choices are Category, Base item, Name, Vanilla in that order (stored value = index = the digit sort_order accepts)",
+           !strcmp(r.choices[0], "Category") && !strcmp(r.choices[1], "Base item") && !strcmp(r.choices[2], "Name") && !strcmp(r.choices[3], "Vanilla"));
+    HCHECK("sort_order is bound to inventory_sort_filter.ini [Inventory] sort_order",
+           !strcmp(r.ini, "inventory_sort_filter.ini") && !strcmp(r.section, "Inventory") && !strcmp(r.key, "sort_order"));
+    HEQ("sort_order defaults to 0 (Category)", r.def, 0);
+    HEQ("a list row's range is 0 .. nChoices-1 (min)", r.minV, 0);
+    HEQ("a list row's range is 0 .. nChoices-1 (max)", r.maxV, 3);
+    HCHECK("page entry id is the patch id and the entry carries the build / enter callbacks",
+           !strcmp(page.entry(isf::kPageId).id, "inventory-sort-filter") && page.entry(isf::kPageId).build && page.entry(isf::kPageId).enter);
+
+    // Start value: the row reads the key from the INI when the page is built (Page::startValue through the injected io).
+    page.io.read = fakeRead;
+    g_fakeIni = "[Inventory]\r\n; backpack order\r\nsort=1\r\nsort_order=2\r\ntint=1\r\n";
+    HEQ("start value = the INI's sort_order digit", page.startValue(i), 2);
+    g_fakeIni = "[Inventory]\nsort=1\n";
+    HEQ("start value = default 0 when the INI has no sort_order key", page.startValue(i), 0);
+    // The shown value is the order loadIni applies (isf::parseSortOrder), including the word spellings WI-154 accepts.
+    g_fakeIni = "[Inventory]\nsort_order=name\n";
+    HEQ("a hand-edited sort_order=name shows Name (index 2)", page.startValue(i), 2);
+    g_fakeIni = "[Inventory]\nsort_order= VANILLA \n";
+    HEQ("sort_order words are case-insensitive and space-trimmed like loadIni (Vanilla = 3)", page.startValue(i), 3);
+    g_fakeIni = "[Inventory]\nsort_order=base\n";
+    HEQ("sort_order=base shows Base item (1)", page.startValue(i), 1);
+    g_fakeIni = "[Inventory]\nsort_order=7\n";
+    HEQ("an out-of-range sort_order shows Category (0): loadIni falls back to category, not to the nearest choice", page.startValue(i), 0);
+    g_fakeIni = "[Inventory]\nsort_order=bogus\n";
+    HEQ("an unknown sort_order word shows Category (0), like loadIni", page.startValue(i), 0);
+    g_fakeIni = "[Other]\nsort_order=2\n[Inventory]\nsort=1\n";
+    HEQ("sort_order in another section is ignored", page.startValue(i), 0);
+
+    // Index == WI-154's parseSortOrder digit: the stored schema index i is the order parseSortOrder("i") returns, and it is the order of the word.
+    {
+        static const char* const words[4] = {"category", "base", "name", "vanilla"};
+        static const isf::SortOrder orders[4] = {isf::SO_Category, isf::SO_Base, isf::SO_Name, isf::SO_Vanilla};
+        bool ok = true;
+        for (int c = 0; c < 4; ++c) {
+            char digit[16];
+            snprintf(digit, sizeof digit, "%d", c);
+            ok = ok && isf::parseSortOrder(digit) == orders[c] && isf::parseSortOrder(words[c]) == orders[c] && static_cast<int>(orders[c]) == c;
+            // what the page writes (the digit) and what it then shows after the INI is re-read
+            const char one[] = "[Inventory]\nsort_order=0\n";
+            char o[64]; size_t m = 0;
+            ok = ok && iniw::setKey(one, sizeof one - 1, "Inventory", "sort_order", digit, o, sizeof o, &m);
+            g_fakeIni.assign(o, m);
+            ok = ok && page.startValue(i) == c;
+        }
+        HCHECK("schema choice index i == isf::parseSortOrder(\"i\") == the order of the word (0 category, 1 base, 2 name, 3 vanilla), and the written digit reads back as i", ok);
+    }
+
+    // Persist: a page change is written by iniw::setKey into [Inventory] only, keeping the other keys and comments.
+    const char in[] = "[Inventory]\n; backpack order\nsort=1\nsort_order=0\ntint=1\n";
+    char out[256];
+    size_t n = 0;
+    HCHECK("iniw::setKey rewrites [Inventory] sort_order", iniw::setKey(in, sizeof in - 1, "Inventory", "sort_order", "3", out, sizeof out, &n));
+    HCHECK("the rewrite changes only the sort_order line (comments and the other keys stay byte for byte)",
+           std::string(out, n) == "[Inventory]\n; backpack order\nsort=1\nsort_order=3\ntint=1\n");
+    const char noKey[] = "[Inventory]\nsort=1\ntint=1\n\n[Other]\nx=1\n";
+    HCHECK("a missing sort_order key is appended inside [Inventory], not at the end of the file",
+           iniw::setKey(noKey, sizeof noKey - 1, "Inventory", "sort_order", "1", out, sizeof out, &n) &&
+               std::string(out, n) == "[Inventory]\nsort=1\ntint=1\nsort_order=1\n\n[Other]\nx=1\n");
+
+    // Lazy connect without mod-config: no KPatchApi -> never ok, never registers (mcPagePoll is then a no-op and the mod works as before).
+    k2mc::ConfigClient cc;
+    k2mc::MenuClient mc;
+    cc.init(nullptr);
+    mc.init(nullptr);
+    for (int k = 0; k < 600; ++k) { cc.poll(); mc.poll(); }
+    HCHECK("with no KPatchApi the config and menu clients stay unconnected", !cc.ok() && !mc.ok() && !mc.hasRows());
+    k2pc::RegisterOnce st;
+    HCHECK("registerOnce does nothing while mod-config is missing", !k2pc::registerOnce(st, cc, page.entry(isf::kPageId), nullptr) && !st.registered);
+}
+
 int main() {
+    moddecl_contract();
     void* m = mmap(nullptr, ArenaSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS
 #ifdef MAP_32BIT
                    | MAP_32BIT

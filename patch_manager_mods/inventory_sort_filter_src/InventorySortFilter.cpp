@@ -18,10 +18,17 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#define INIW_FILE_API 1   // ModConfigDecl.h ini-bound rows write through IniWrite.h's file API (doc 46); before the first include of it
+#define MCDECL_FILE_API 1
+
 #include "../_shared/SafeRead.h"
 #include "SortLogic.h"
 #include "GameAddr.h"
 #include "KpLog.h"
+#include "ModConfigApi.h"
+#include "ModConfigDecl.h"     // Options -> Mod Configuration page (isf::kPageSchema)
+#include "ProviderClient.h"
+#include "SortOrderPage.h"
 
 KP_LOG_PATCH("inventory-sort-filter");
 
@@ -118,7 +125,59 @@ DWORD g_lastIni = 0;
 FILETIME g_iniWrite = {};   // INI last-write time at the last read; zero = missing or never read
 char IniName[MAX_PATH + 40] = "inventory_sort_filter.ini";   // made absolute in DllMain: a bare name is searched in the Windows dir
 
+// ---- optional Mod Configuration page (WI-155): one list row, sort_order, bound to [Inventory] sort_order of the INI ----
+// Same adopter shape as companion-selfheal / companion-ai: lazy connect, no manifest `requires`, so without mod-config 0.2.0+ nothing is
+// registered and the mod behaves as before. The row reads its start value from the INI when the page is built and writes each accepted change
+// back (IniWrite.h); the mtime re-read in loadIni then picks it up at the next populate, no restart. ISF has no frame hook: KPatchInit tries
+// once, then loadIni (called at the top of every hook) retries until registered; after that it is one flag check.
+// LOAD ORDER: list mod-config before inventory-sort-filter. The retry only runs when the inventory is used, and the provider binds its
+// entry list when Options is first built; if Options is opened before any inventory use and mod-config loads after this mod, the page
+// misses that session and shows up the next time the game starts.
+k2mc::ConfigClient g_mcCfg;
+k2mc::MenuClient g_mcMenu;
+k2pc::RegisterOnce g_mcReg;
+mcdecl::Page g_page;
+K2ModConfigEntry g_mcEntry{};
+bool g_pageLoaded = false;
+
+void mcLog(int, const char* msg) { logf("modconfig: %s", msg); }
+
+// Start value of the row: the INI's sort_order as loadIni parses it (a hand-edited word shows too), not a digit-only read.
+bool mcRead(const char* path, const char* section, const char* key, char* out, int cap) {
+    return isf::readSortOrder(mcdecl::fileRead, path, section, key, out, cap);
+}
+
+int32_t mcOnChange(void*, int, const char* id, int32_t requested, int) {
+    logf("PAGE row=%s requested=%d", id, static_cast<int>(requested));
+    return requested;
+}
+
+void mcPageInit(const KPatchApi* api) {
+    g_mcCfg.init(api);
+    g_mcMenu.init(api);
+    g_mcCfg.onConnect = [](bool ok, const char* why) { logf("PAGE k2.modconfig %s: %s", ok ? "ok" : "unavailable", why); };
+    g_mcMenu.onConnect = [](bool ok, const char* why) { logf("PAGE k2.menuui %s: %s", ok ? "ok" : "unavailable", why); };
+    char err[96] = {};
+    g_pageLoaded = g_page.load(isf::kPageSchema, strlen(isf::kPageSchema), err, sizeof err);
+    if (!g_pageLoaded) { logf("PAGE schema rejected: %s", err); return; }
+    g_page.menu = &g_mcMenu;
+    g_page.io = mcdecl::fileIo();
+    g_page.io.read = mcRead;
+    g_page.hooks.onChange = mcOnChange;
+    g_mcEntry = g_page.entry(isf::kPageId);
+}
+
+// Connect lazily (each client retries on every 256th call), register once, only when the provider has option rows.
+void mcPagePoll() {
+    if (!g_pageLoaded || g_mcReg.registered) return;
+    g_mcCfg.poll();
+    g_mcMenu.poll();
+    if (!g_mcCfg.ok() || !g_mcMenu.ok() || !g_mcMenu.hasRows()) return;
+    k2pc::registerOnce(g_mcReg, g_mcCfg, g_mcEntry, mcLog);
+}
+
 void loadIni(bool force) {
+    mcPagePoll();
     DWORD now = GetTickCount();
     if (!force && g_lastIni && now - g_lastIni < 1000) return;
     g_lastIni = now ? now : 1;
@@ -516,6 +575,13 @@ extern "C" void __cdecl SortFilterRowSelect(int ebp) {
     if (!live) return;
     reinterpret_cast<SetCanUseFn>(FnSetCanUse)(row, 2);
     if (g_cfg.log && g_cfg.logItems) logf("row select: re-tint row=%08x item id=%08x", row, rd<int>(row, 0x1D0));
+}
+
+// Called by the patcher core after load (new cores only). Not KpLog_Init: the log keeps going to inventory_sort_filter_log.txt as before.
+// Registers the mod-config page now when mod-config is already loaded (it binds its entry list when the Options panel is first built).
+extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
+    mcPageInit(api);
+    mcPagePoll();
 }
 
 // Keeps the previous session as <log>.1 (one previous, replaced each time), like the other KpLog mods. Runs at attach before the first logf.

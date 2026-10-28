@@ -1,5 +1,6 @@
 LIBRARY InventorySortFilter
 EXPORTS
+    KPatchInit
     SortFilterTabClick
     SortFilterBufferRow
     SortFilterFlush
