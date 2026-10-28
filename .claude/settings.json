@@ -24,7 +24,19 @@
       "Bash(gh:*)",
       "Bash(kill:*)",
       "Bash(pkill:*)",
-      "Bash(steam:*)"
+      "Bash(steam:*)",
+      "mcp__rea__annotate_native_function",
+      "mcp__rea__set_address_name",
+      "mcp__rea__set_addresses_names",
+      "mcp__rea__set_comment",
+      "mcp__rea__set_inline_comment",
+      "mcp__rea__set_bookmark",
+      "mcp__rea__unset_bookmark",
+      "mcp__rea__goto_address",
+      "mcp__rea__observe_web_execution",
+      "mcp__rea__capture_native_ui_scenario",
+      "mcp__rea__capture_browser_scenario",
+      "mcp__rea__capture_electron_scenario"
     ]
   }
 }
