@@ -1,4 +1,4 @@
-// Character Active Effects Panel 0.4.0-dev (Steam Aspyr build 6A522E71...). Fills the right third of the character page
+// Character Active Effects Panel 0.4.1-dev (Steam Aspyr build 6A522E71...). Fills the right third of the character page
 // (CSWGuiInGameCharacter) with the shown character's active effects: icon, name, remaining time; Harmful section first,
 // then Beneficial; expiring first, permanent last; whole-entry scrolling with a scrollbar only when the list overflows.
 // Research trail: patch_manager_mods/14_character_active_effects_panel.md and active_effects_panel_src/research/R* (worktree
@@ -22,6 +22,7 @@
 // effect does, decoded from the live effect ints (decodeEffect, research R3 + R3b), short forms joined with ", " and cut
 // with "..."; long names/stats marquee after marquee_delay_ms without input; hover tooltips (name + time, every stat line,
 // the spells.2da description). GUI = 82 controls (S block inserted before MORE: ids of MORE..TIP moved by 14).
+// 0.4.1-dev (doc 51 ST5b): Influence row on the Stats tab for party NPCs (party table +0x11C, slot via object id then tag; ini show_influence).
 // 0.4.0-dev (doc 51 ST5a): Stats tab. Click the panel header to switch Effects <-> Stats (ini stats_tab=0 hides the toggle); the Stats rows come from StatsRows.h (srows::build) fed by gatherStats; no hook or GUI change.
 // 0.3.0-probe (doc 51 ST4): log only, no UI change. STATS block (deflection/defense/Force DC/FP cost/resist via engine getters + CombatStats.h) on each creature change; DEFLECT hook H-C5 at 006e1c60+ compares the engine's blaster-deflection total with cstats::deflection (ini deflect_check).
 // 0.2.0-probe (doc 32 MG5): KpLog (core file character-effects-panel_log.txt, old core fallback chareffects_log.txt), IniKit primitives, PanelSlots, GuiKit wheel/screen/cursor/bindByTag, Party; lazy init from KPatchInit/first hook.
@@ -124,7 +125,7 @@ void whyLog(int code, const char* fmt, ...) {
 struct Cfg {
     int enabled = 1, stage = 1, pollMs = 250, showPermanent = 1, wheelScroll = 1, tooltips = 1;
     int statColumn = 1, marquee = 1, marqueeDelayMs = 2500, marqueeStepMs = 160, marqueeHoldMs = 1200;
-    int tooltipDelayMs = 350, tooltipDesc = 1, deflectCheck = 1, statsTab = 1;   // statsTab 0 = no Effects/Stats header toggle
+    int tooltipDelayMs = 350, tooltipDesc = 1, deflectCheck = 1, statsTab = 1, showInfluence = 1;   // statsTab 0 = no Effects/Stats header toggle; showInfluence 0 = no Influence row
     float statMaxW = 0, statMinFrac = 0.4f, textK10 = 1.03f, tipLineScale = 1.0f;   // stat_max_w 0 = no cap
     int skipEquipped = 1, iconSource = 1, colorTimes = 1, discs = 1, soonS = 30;
     int fakeRows = 0;   // debug aid: N synthetic entries appended to the real list (overflow / scrollbar / sort tests)
@@ -153,7 +154,7 @@ void loadIni() {
         {"stat_column", &c.statColumn, nullptr}, {"stat_max_w", nullptr, &c.statMaxW}, {"stat_min_frac", nullptr, &c.statMinFrac}, {"text_k10", nullptr, &c.textK10}, {"marquee", &c.marquee, nullptr},
         {"marquee_delay_ms", &c.marqueeDelayMs, nullptr}, {"marquee_step_ms", &c.marqueeStepMs, nullptr},
         {"marquee_hold_ms", &c.marqueeHoldMs, nullptr}, {"tooltip_delay_ms", &c.tooltipDelayMs, nullptr},
-        {"tooltip_desc", &c.tooltipDesc, nullptr}, {"deflect_check", &c.deflectCheck, nullptr}, {"stats_tab", &c.statsTab, nullptr}, {"tip_line_scale", nullptr, &c.tipLineScale}};
+        {"tooltip_desc", &c.tooltipDesc, nullptr}, {"deflect_check", &c.deflectCheck, nullptr}, {"stats_tab", &c.statsTab, nullptr}, {"show_influence", &c.showInfluence, nullptr}, {"tip_line_scale", nullptr, &c.tipLineScale}};
     while (fgets(line, sizeof(line), f)) {
         ++ln; trim(line);
         char* k = nullptr; char* v = nullptr;
@@ -188,9 +189,9 @@ void loadIni() {
     if (c.tipLineScale < 0.5f || c.tipLineScale > 2.0f) c.tipLineScale = 1.0f;
     if (c.screenW < 100 || c.screenH < 100) { c.screenW = 3840; c.screenH = 1600; c.screenExplicit = false; }
     g_cfg = c; ++g_cfgGen; syncWheelCfg();
-    logf("INI loaded: %d keys ok, %d rejected, debug=%d gen=%u enabled=%d stage=%d poll_ms=%d fake_rows=%d stat=%d/%.0f marquee=%d (%d/%d/%d) tooltips=%d (%d ms, desc=%d) stats_tab=%d",
+    logf("INI loaded: %d keys ok, %d rejected, debug=%d gen=%u enabled=%d stage=%d poll_ms=%d fake_rows=%d stat=%d/%.0f marquee=%d (%d/%d/%d) tooltips=%d (%d ms, desc=%d) stats_tab=%d influence=%d",
          ok, bad, g_debug, g_cfgGen, c.enabled, c.stage, c.pollMs, c.fakeRows, c.statColumn, c.statMaxW, c.marquee,
-         c.marqueeDelayMs, c.marqueeStepMs, c.marqueeHoldMs, c.tooltips, c.tooltipDelayMs, c.tooltipDesc, c.statsTab);
+         c.marqueeDelayMs, c.marqueeStepMs, c.marqueeHoldMs, c.tooltips, c.tooltipDelayMs, c.tooltipDesc, c.statsTab, c.showInfluence);
 }
 void maybeReloadIni() {
     DWORD now = GetTickCount();
@@ -1006,6 +1007,29 @@ void gatherResist(int server, char* out, size_t cap) {
         len += static_cast<size_t>(w);
     }
 }
+// Party NPC slot (0..11) of a server creature, -1 = not a party NPC. Same order as the engine: object id scan, then tag.
+int npcSlot(int server, int table) {
+    using namespace cstats_addr;
+    uint32_t id = 0;
+    if (readAt<uint32_t>(server, Creature_ObjectId, &id) && id != 0x7F000000u)
+        for (int i = 0; i < 12; ++i) { uint32_t v = 0; if (readAt<uint32_t>(table, static_cast<int>(PT_NpcObjectIds + 4 * i), &v) && v == id) return i; }
+    int txt = 0, len = 0; char tag[17] = {};
+    if (!readAt<int>(server, Creature_Tag, &txt) || !txt || !readAt<int>(server, Creature_Tag + 4, &len) || len <= 0 || len > 16) return -1;
+    for (int k = 0; k < len; ++k) if (!readAt<char>(txt, k, &tag[k])) return -1;
+    for (int i = 0; i < 12; ++i) if (!_stricmp(tag, srows::kNpcTags[i])) return i;
+    return -1;
+}
+// Influence of the shown creature (doc 51 ST5b): plain reads, no engine call.
+void gatherInfluence(int server, srows::StatsIn* in) {
+    using namespace cstats_addr;
+    int app = 0, sv = 0, inner = 0;
+    if (!readAt<int>(static_cast<int>(AppGlobal), 0, &app) || !app || !readAt<int>(app, App_Server, &sv) || !sv ||
+        !readAt<int>(sv, Server_Internal, &inner) || !inner) return;
+    int table = inner + static_cast<int>(PartyTableOff);
+    int slot = npcSlot(server, table); if (slot < 0) return;
+    int v = 0; if (!readAt<int>(table, static_cast<int>(PT_Influence + 4 * slot), &v)) return;
+    in->haveInfluence = true; in->npcSlot = slot; in->influence = v;
+}
 // Fills the Stats tab input from the engine getters (same calls as logStats). Never calls GetAttackModifierVersus / GetCriticalHitRoll.
 bool gatherStats(int server, srows::StatsIn* in) {
     using namespace cstats_addr;
@@ -1038,6 +1062,7 @@ bool gatherStats(int server, srows::StatsIn* in) {
     int16_t ge = 0; readAt<int16_t>(stats, Stats_GoodEvil, &ge); in->goodEvil = ge;
     in->forceResist = reinterpret_cast<ForceResistFn>(ForceResist)(st);
     gatherResist(server, in->resist, sizeof in->resist);
+    if (g_cfg.showInfluence) gatherInfluence(server, in);
     return true;
 }
 
@@ -1246,6 +1271,6 @@ extern "C" void __cdecl CharEffectsDestroy(int panel) {
 
 BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
     if (reason == DLL_PROCESS_DETACH) guikit::wheelUninstall();   // never leave a dangling window proc: restores if on top, else stays chained but inert
-    if (reason == DLL_PROCESS_ATTACH) { snprintf(g_loadLine, sizeof g_loadLine, "chareffects 0.4.0-dev build 7 loaded (KpLog + IniKit + PanelSlots + GuiKit wheel + Party + STATS/DEFLECT probe + Stats tab) tick=%lu", (unsigned long)GetTickCount()); }
+    if (reason == DLL_PROCESS_ATTACH) { snprintf(g_loadLine, sizeof g_loadLine, "chareffects 0.4.1-dev build 8 loaded (KpLog + IniKit + PanelSlots + GuiKit wheel + Party + STATS/DEFLECT probe + Stats tab + influence) tick=%lu", (unsigned long)GetTickCount()); }
     return TRUE;
 }

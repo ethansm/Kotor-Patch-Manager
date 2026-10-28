@@ -17,7 +17,15 @@ struct StatsIn {
   bool haveCombat; int atkMain, atkOff, critThreatMain, critMultMain, critThreatOff, critMultOff; bool hasOff;
   cstats::ForceDCIn fdc; int goodEvil, forceResist;
   char resist[48];                              // short damage-resist text, "" = none
+  bool haveInfluence; int npcSlot, influence;   // party NPC slot 0..11 (nwscript NPC_*) + party table +0x11C+slot*4, -1 = unset
 };
+
+// Party NPC slot -> tag, as the engine's fallback chain in HandleAlignmentInfluence 0x0056AE40 matches it (doc 51 ST5b).
+constexpr const char* kNpcTags[12] = {"atton", "baodur", "mand", "g0t0", "handmaiden", "hk47",
+                                      "kreia", "mira", "t3m4", "visasmarr", "hanharr", "disciple"};
+constexpr int kNpcKreia = 6;
+constexpr const char* kInfluenceDesc =
+    "How much this companion is swayed by you. Above 50 their alignment drifts toward yours, below 50 away from it.";
 
 constexpr const char* kDeflectDesc =
     "Your d20 roll plus this total is checked against each blaster bolt; beat it by 6 to reflect.";
@@ -162,6 +170,17 @@ inline int build(const StatsIn& in, cfx::Entry* out, int cap) {
   section(w, "Character");
   snprintf(val, sizeof val, "%d / 100", in.goodEvil);
   row(w, "Alignment", val, nullptr);
+  if (in.haveInfluence && in.npcSlot >= 0 && in.npcSlot < 12) {
+    if (in.influence < 0) snprintf(val, sizeof val, "--");
+    else snprintf(val, sizeof val, "%d / 100", in.influence);
+    cfx::Entry* e = row(w, "Influence", val, kInfluenceDesc);
+    char line[cfx::LineLen];
+    snprintf(line, sizeof line, "Party slot %d (%s)", in.npcSlot, kNpcTags[in.npcSlot]);
+    addLine(e, line);
+    addLine(e, "Neutral is 50");
+    if (in.influence < 0) addLine(e, "Not set yet: the game starts it from the companion's base value");
+    if (in.npcSlot == kNpcKreia) addLine(e, "Kreia's alignment does not follow influence");
+  }
   return w.n;
 }
 

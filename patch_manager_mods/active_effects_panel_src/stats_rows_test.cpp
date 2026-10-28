@@ -157,5 +157,23 @@ int main() {
     KT_CHECK(r >= 0 && std::strcmp(out[r].val, "Energy 5") == 0 && hasLine(out[r], "Energy 5"));
   }
 
+  // i. Influence (ST5b): hidden without a party slot; "72 / 100" + slot line; -1 = "--"; Kreia note.
+  {
+    srows::StatsIn in{};
+    int n = srows::build(in, out, 64);
+    KT_CHECK(findRow(out, n, "Influence") < 0);
+    in.haveInfluence = true; in.npcSlot = 0; in.influence = 72;
+    n = srows::build(in, out, 64);
+    int r = findRow(out, n, "Influence");
+    KT_CHECK(r >= 0 && std::strcmp(out[r].val, "72 / 100") == 0 && hasLine(out[r], "Party slot 0 (atton)"));
+    in.npcSlot = 6; in.influence = -1;
+    n = srows::build(in, out, 64);
+    r = findRow(out, n, "Influence");
+    KT_CHECK(r >= 0 && std::strcmp(out[r].val, "--") == 0 && hasLine(out[r], "Kreia's alignment does not follow influence"));
+    in.npcSlot = 12;
+    n = srows::build(in, out, 64);
+    KT_CHECK(findRow(out, n, "Influence") < 0);
+  }
+
   return kt::Report("stats_rows_test");
 }

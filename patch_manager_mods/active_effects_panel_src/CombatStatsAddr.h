@@ -57,6 +57,18 @@ constexpr uint32_t CI_HasOff             = 0xC;     // dword, nonzero when an of
 constexpr uint32_t CI_CritThreatOff      = 0x10;    // byte
 constexpr uint32_t CI_CritMultOff        = 0x11;    // byte
 
+// Party influence (doc 51 ST5b), read path of HandleAlignmentInfluence 0x0056AE40 (asm 0x0056B470..0x0056B4A6):
+// table = *(*(*(AppGlobal)+8)+4) + 0x1F0B4 (accessor 0x0051C8D0); slot = GetNPCID 0x005FDBF0 = first i in 0..11 with
+// *(table+0x1C+i*4) == object id (creature+4), else the tag chain (srows::kNpcTags); influence = GetInfluence 0x005FA9C0.
+constexpr uintptr_t AppGlobal            = 0x00A1B4A4;  // app pointer (same global as GameAddr.h AppGlobal)
+constexpr uint32_t App_Server            = 0x8;     // *(app+8) -> server exo app (ECX of 0x0051C8D0)
+constexpr uint32_t Server_Internal       = 0x4;     // *(server+4) + PartyTableOff = party table
+constexpr uint32_t PartyTableOff         = 0x1F0B4;
+constexpr uint32_t PT_NpcObjectIds       = 0x1C;    // uint32[12] NPC object ids (0x7F000000 = invalid)
+constexpr uint32_t PT_Influence          = 0x11C;   // int32[12], -1 = unset (PT_NPC_INFLUENCE)
+constexpr uint32_t Creature_ObjectId     = 0x4;     // uint32 object id
+constexpr uint32_t Creature_Tag          = 0x18;    // CExoString {char* text; uint32 len}
+
 // Deflection hook: CSWSCreature::ResolveDefensiveEffects 0x006E1C60, hook site 0x006E2351 (after rec+0x168 = total; ECX = attack record).
 // Attack record (rec) offsets. Bytes other than 0x158/0x168 are written only when the term applies (may be stale from an earlier attack).
 constexpr uintptr_t DeflectHookSite = 0x006E2351;
