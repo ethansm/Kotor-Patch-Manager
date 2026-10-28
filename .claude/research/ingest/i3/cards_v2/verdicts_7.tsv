@@ -1,0 +1,13 @@
+card	verdict	quote
+C073	inconsistent	local_8 = CSWGuiPanel::HitCheckMouse(param_1,param_2);
+C074	consistent	CSWGuiInGameItemEntry::SetItem(local_28,0,0);
+C075	inconsistent	*param_3 = *(undefined4 *)(param_1 + 0x28 + param_2 * 4);
+C076	consistent	switch(iVar1) {
+C077	consistent	CExoString::Format(param_1 + 0x1d4,"%s %s\n%s: %d/%d\n%s: %d\n%s: %d",uVar2);
+C078	inconsistent	CExoString::CExoString_copy(param_1 + 0x10);
+C079	inconsistent	CSWGuiDialogLetterbox::SetExtentSpecial(local_1c,local_18,local_14,local_10);
+C080	consistent	iVar2 = CResGFF::GetStructFromStruct(local_14,param_3,"PROTOITEM");
+C081	inconsistent	*(float *)(param_1 + 0x54) = (*(float *)(param_1 + 0x5c) / fVar1) * *(float *)(param_1 + 0x54);
+C082	consistent	CSWGuiManager::PlayGuiSound(0);
+C083	consistent	CSWGuiTextParams::SetText(&stack0x00000004);
+C084	inconsistent	glDeleteTextures(1,&DAT_00a1ddcc);

@@ -1,0 +1,13 @@
+card	verdict	quote
+C085	unsure	(**(code **)(**(int **)(param_1 + 0x18) + 0x38))();
+C086	consistent	param_1[0x10] = param_1[4] + 0x12 + (uint)*(byte *)param_1[0x12];
+C087	consistent	*(undefined4 *)(*(int *)(*(int *)(param_1 + 0x2ac) + local_8 * 4) + 0x38) = 0;
+C088	inconsistent	if (param_2 == *piVar1) break;
+C089	consistent	local_c = *(undefined4 *)(param_1 + 0x2c4);
+C090	consistent	local_24 = _strlen(*(char **)(param_1 + 0x168));
+C091	consistent	(**(code **)(*(int *)(param_1 + 0x6c) + 0xc))(param_2);
+C092	consistent	(**(code **)(**(int **)(*(int *)(param_1 + 0x54) + iVar1 * 4) + 0x14))(param_2);
+C093	consistent	iVar2 = operator new[](...)
+C094	unsure	in 0x0073a130: 0073a13f 689cd39900 PUSH 0x99d39c
+C095	consistent	if (*(float *)(param_1 + 4) == (float)_DAT_00986b38) {
+C096	consistent	iVar5 = *(int *)(&DAT_009f50c0 + local_8 * 4) + 0x8515;

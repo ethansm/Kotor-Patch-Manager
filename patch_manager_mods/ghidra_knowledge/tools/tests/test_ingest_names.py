@@ -480,5 +480,61 @@ class ScoreTest(unittest.TestCase):
             self.assertEqual([r["name"] for r in inn.read_tsv(out)], ["A"])
 
 
+class ListPairingTest(unittest.TestCase):
+    def test_comma_list_does_not_pair_name_with_next_addr(self):
+        line = "- callers 3: 0x0040ee40 CSWGuiPanel::StartLoad, 0x00411b20, 0x00415080 CSWGuiBorder::Load; 0x00416720"
+        pairs = {(m.group(1), m.group(2)) for m in inn.ADDR_THEN_NAME_RX.finditer(line)}
+        self.assertEqual(pairs, {("0x0040ee40", "CSWGuiPanel::StartLoad"), ("0x00415080", "CSWGuiBorder::Load")})
+        self.assertEqual(list(inn.NAME_THEN_ADDR_RX.finditer(line)), [])
+        self.assertEqual(inn.NAME_THEN_ADDR_RX.search("Foo::Bar at 0x00401000").group(2), "0x00401000")
+        self.assertEqual(inn.NAME_THEN_ADDR_RX.search("`Foo::Bar` (0x00401000)").group(2), "0x00401000")
+
+    def test_ingest_research_dir_skipped(self):
+        with tempfile.TemporaryDirectory() as td:
+            for rel in (".claude/research/ingest/i3/cards/chunk_1.md", ".claude/research/x/README.md"):
+                os.makedirs(os.path.dirname(os.path.join(td, rel)), exist_ok=True)
+                open(os.path.join(td, rel), "w").close()
+            files = [f[len(td) + 1:] for f in inn.group_files(td, "research_notes")]
+            self.assertEqual(files, [".claude/research/x/README.md"])
+
+
+class DecompExcerptTest(unittest.TestCase):
+    C = """// FN 00500000 FUN_00500000 size=10 ret=4
+void __thiscall FUN_00500000(int param_1)
+
+{
+  undefined4 uVar1;
+  int local_8;
+
+  local_8 = 0;
+  uVar1 = FUN_00600000(param_1);
+  FUN_00700000();
+  DAT_00a00000 = "hello";
+  FUN_00500000(1);
+  return;
+}
+"""
+    NAMES = {0x00600000: "Foo::Bar", 0x00a00000: "gThing", 0x00500000: "Leak::Me"}
+
+    def test_names_substituted_self_blind_decls_dropped(self):
+        out = inn.decomp_excerpt(self.C, 0x00500000, self.NAMES, n=10)
+        text = "\n".join(out)
+        self.assertTrue(out[0].startswith("- decomp: void __thiscall this_fn(int param_1)"))
+        self.assertIn("Foo::Bar(param_1)", text)
+        self.assertIn('gThing = "hello"', text)
+        self.assertIn("FUN_00700000()", text)
+        self.assertNotIn("Leak::Me", text)
+        self.assertNotIn("undefined4 uVar1;", text)
+
+    def test_named_and_string_lines_first_source_order_kept(self):
+        out = inn.decomp_excerpt(self.C, 0x00500000, self.NAMES, n=3)
+        self.assertEqual(len(out), 3)
+        self.assertIn("Foo::Bar", out[1])
+        self.assertIn("gThing", out[2])
+
+    def test_empty_text(self):
+        self.assertEqual(inn.decomp_excerpt("", 0x1, {}), [])
+
+
 if __name__ == "__main__":
     unittest.main()

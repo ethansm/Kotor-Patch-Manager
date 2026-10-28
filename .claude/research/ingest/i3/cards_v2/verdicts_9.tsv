@@ -1,0 +1,11 @@
+card	verdict	quote
+C097	inconsistent	callers 12: 0x0053ad00 CServerExoAppInternal::AutoSaveOnEnteringModule, 0x0053af20 CServerExoAppInternal::DoPCAutosave, 0x0059ec70 CSWSEffectListHandler::OnApplyVisualEffect, 0x006de350 CSWSCreature
+C098	consistent	iVar1 = CResGFF::ReadFieldINT(param_3,"Obj_ParentID",local_8,0xffffffff);
+C099	consistent	*(undefined4 *)(*(int *)(param_1 + 0x10) + param_2 * 4) = 1;
+C100	consistent	in 0x00418990 (CSWGuiControl::Constructor): 004189fb c700d4779800 MOV dword ptr [EAX],0x9877d4
+C101	consistent	operator delete(param_1);
+C102	consistent	in 0x0047ecd0: 0047ed27 c740047cc29800 MOV dword ptr [EAX + 0x4],0x98c27c
+C103	consistent	strings: 0x0099efe4 "CSWCCreature::LoadModel(): Failed to load creature model '%s'."
+C104	inconsistent	if (*param_3 + param_3[2] < *param_2 + param_2[2]) {
+C105	inconsistent	FUN_00710840("CLASSES");
+C106	consistent	uVar2 = FUN_004274e0("d2xfont16x16b",0);

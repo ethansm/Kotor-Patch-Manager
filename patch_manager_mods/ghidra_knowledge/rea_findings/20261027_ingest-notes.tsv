@@ -1,0 +1,57 @@
+addr	kind	name	confidence	evidence	topic	date
+0x00449320	function	CExoPtrList::SetAllocated	probable	0x00449320: PUSH EBP | src patch_manager_mods/engine_research_findings/R2.md:190	ingest-notes	2026-10-27
+0x0041bb20	function	CSWGuiProgressBar::Draw	probable	0x0041bb20: PUSH EBP | src patch_manager_mods/02_buff_duration_hud.md:717	ingest-notes	2026-10-27
+0x00429f00	function	CAurGLBufferPool::LockSlot	probable	0x00429f00: PUSH EBP | src patch_manager_mods/engine_research_findings/R2.md:184	ingest-notes	2026-10-27
+0x0046d230	function	CAurScene::Animate	probable	0x0046d230: PUSH EBP | src .claude/research/holster_edit/r13a_menu_attach_refresh.md:33	ingest-notes	2026-10-27
+0x00511fb0	function	CModelLoader::LoadModelByName	probable	0x00511fb0: PUSH EBP | src patch_manager_mods/engine_research_findings/R2.md:17	ingest-notes	2026-10-27
+0x00411f30	function	CSWGuiManager::GetDialogMargins	probable	0x00411f30: PUSH EBP | src patch_manager_mods/engine_research_findings/V1.md:31	ingest-notes	2026-10-27
+0x00418f20	function	CSWGuiControl::LoadFromGFF	probable	0x00418f20: PUSH EBP | src patch_manager_mods/engine_research_findings/W6.md:23	ingest-notes	2026-10-27
+0x00419880	function	CSWGuiLabel::Draw	probable	0x00419880: PUSH EBP | src patch_manager_mods/02_buff_duration_hud.md:716	ingest-notes	2026-10-27
+0x0041d290	function	CSWGuiListBox::ClearItems	probable	0x0041d290: PUSH EBP | src patch_manager_mods/engine_research_findings/V2.md:17	ingest-notes	2026-10-27
+0x0041e790	function	CSWGuiListBox::IsOversized	probable	0x0041e790: PUSH EBP | src patch_manager_mods/engine_research_findings/V2.md:23	ingest-notes	2026-10-27
+0x0041ea50	function	CSWGuiListBox::OrganizeControls	probable	0x0041ea50: PUSH EBP | src patch_manager_mods/engine_research_findings/V2.md:16	ingest-notes	2026-10-27
+0x0041f170	function	CSWGuiListBox::OrganizeUnequal	probable	0x0041f170: PUSH EBP | src patch_manager_mods/engine_research_findings/V2.md:21	ingest-notes	2026-10-27
+0x0041f7f0	function	CSWGuiListBox::OrganizeOversized	probable	0x0041f7f0: PUSH EBP | src patch_manager_mods/engine_research_findings/V2.md:22	ingest-notes	2026-10-27
+0x0041fc30	function	CSWGuiListBox::AddControls	probable	0x0041fc30: PUSH EBP | src patch_manager_mods/engine_research_findings/V2.md:18	ingest-notes	2026-10-27
+0x0041fd90	function	CSWGuiListBox::AddControls	probable	0x0041fd90: PUSH EBP | src patch_manager_mods/engine_research_findings/V2.md:19	ingest-notes	2026-10-27
+0x00420180	function	CSWGuiListBox::LoadProtoItem	probable	0x00420180: PUSH EBP | src patch_manager_mods/engine_research_findings/V2.md:27	ingest-notes	2026-10-27
+0x00432fa0	function	GLRender::CreateCubeTexture	probable	0x00432fa0: PUSH EBP | src patch_manager_mods/engine_research_findings/R9.md:62	ingest-notes	2026-10-27
+0x00433cd0	function	GLRender::CreateTexture	probable	0x00433cd0: PUSH EBP | src patch_manager_mods/engine_research_findings/R9.md:64	ingest-notes	2026-10-27
+0x00453860	function	MdlNode::ControlDispatch	probable	0x00453860: PUSH EBP | src .claude/research/holster_reach/hw18_write_point.md:15	ingest-notes	2026-10-27
+0x00476b20	function	CAurInternalGL::RestoreDesktopMode	probable	0x00476b20: PUSH EBP | src patch_manager_mods/engine_research_findings/U6.md:21	ingest-notes	2026-10-27
+0x00479b10	function	CAurGUIStringInternal::RefreshResolutionTextScalar	probable	0x00479b10: PUSH EBP | src patch_manager_mods/engine_research_findings/V3.md:24	ingest-notes	2026-10-27
+0x00479b60	function	LoadAlternateFonts	probable	0x00479b60: PUSH EBP | src patch_manager_mods/engine_research_findings/V3.md:28	ingest-notes	2026-10-27
+0x00479ca0	function	CAurGUIStringInternal::Constructor	probable	0x00479ca0: PUSH EBP | src patch_manager_mods/engine_research_findings/V3.md:25	ingest-notes	2026-10-27
+0x0047a600	function	SetString	probable	0x0047a600: PUSH EBP | src patch_manager_mods/engine_research_findings/V3.md:31	ingest-notes	2026-10-27
+0x005e39d0	function	CSWMessage::ReadDWORD	probable	0x005e39d0: PUSH EBP | src patch_manager_mods/engine_research_findings/V6.md:38	ingest-notes	2026-10-27
+0x005f6b90	function	CSWMapInfo::Initialize	probable	0x005f6b90: PUSH EBP | src patch_manager_mods/engine_research_findings/V4.md:22	ingest-notes	2026-10-27
+0x005f7350	function	CSWMapInfo::GetMarkerPos	probable	0x005f7350: PUSH EBP | src patch_manager_mods/engine_research_findings/V4.md:23	ingest-notes	2026-10-27
+0x0065afd0	function	CSWSMessage::HandlePlayerToServerGuiContainerMessage	probable	0x0065afd0: PUSH EBP | src .claude/research/quick_loot/R2_client_gui.md:44	ingest-notes	2026-10-27
+0x006fa530	function	CPathfindInformation::ResetAtEndOfPath	probable	0x006fa530: PUSH EBP | src patch_manager_mods/engine_research_findings/U3.md:50	ingest-notes	2026-10-27
+0x0071b0b0	function	C2DA::GetInt	probable	0x0071b0b0: PUSH EBP | src patch_manager_mods/engine_research_findings/R5.md:29	ingest-notes	2026-10-27
+0x0071d0a0	function	C2DA::Free	probable	0x0071d0a0: PUSH EBP | src patch_manager_mods/engine_research_findings/V6.md:23	ingest-notes	2026-10-27
+0x007224c0	function	CERFString::Destructor	probable	0x007224c0: PUSH EBP | src patch_manager_mods/engine_research_findings/R9.md:159	ingest-notes	2026-10-27
+0x00727710	function	CExoBifFile::ReadHeader	probable	0x00727710: PUSH EBP | src patch_manager_mods/engine_research_findings/R2.md:45	ingest-notes	2026-10-27
+0x00744c20	function	CSWGuiCharButton::UpdateToolTipText	probable	0x00744c20: PUSH EBP | src patch_manager_mods/21b_gog_address_map.md:91	ingest-notes	2026-10-27
+0x007457e0	function	CSWGuiMainInterfaceChar::DrawStack	probable	0x007457e0: PUSH EBP | src patch_manager_mods/21b_gog_address_map.md:90	ingest-notes	2026-10-27
+0x00747210	function	CSWGuiMainInterface::Constructor	probable	0x00747210: PUSH EBP | src patch_manager_mods/engine_research_findings/V4.md:19	ingest-notes	2026-10-27
+0x0074b3a0	function	CSWGuiMainInterface::HitCheckMouse	probable	0x0074b3a0: PUSH EBP | src patch_manager_mods/18_mouse_camera_investigation.md:71	ingest-notes	2026-10-27
+0x00750c10	function	CSWGuiMainInterface::InitializeMap	probable	0x00750c10: PUSH EBP | src patch_manager_mods/engine_research_findings/V4.md:20	ingest-notes	2026-10-27
+0x0075b370	function	CSWGuiMessageBox::Constructor_2	probable	0x0075b370: PUSH EBP | src patch_manager_mods/engine_research_findings/V4.md:31	ingest-notes	2026-10-27
+0x0075bd50	function	CSWGuiMessageBox::SetMessage	probable	0x0075bd50: PUSH EBP | src patch_manager_mods/engine_research_findings/V4.md:32	ingest-notes	2026-10-27
+0x0075bde0	function	CSWGuiMessageBox::SetMessage_2	probable	0x0075bde0: PUSH EBP | src patch_manager_mods/engine_research_findings/V4.md:33	ingest-notes	2026-10-27
+0x0075bf60	function	CSWGuiMessageBox::AddMessageLabel_2	probable	0x0075bf60: PUSH EBP | src patch_manager_mods/engine_research_findings/V4.md:35	ingest-notes	2026-10-27
+0x00769f60	function	CSWCCreature::LoadModel	probable	0x00769f60: PUSH EBP | src .claude/research/holster_c7/f_gob_to_creature.md:17	ingest-notes	2026-10-27
+0x00897250	function	CSWGuiMapHider::SetMapNote	probable	0x00897250: PUSH EBP | src patch_manager_mods/engine_research_findings/V9.md:33	ingest-notes	2026-10-27
+0x008aa6f0	function	CSWGuiInGameEquipment::Destroy	probable	0x008aa6f0: PUSH EBP | src patch_manager_mods/10_equipment_3d_character_feedback.md:15	ingest-notes	2026-10-27
+0x008b0c30	function	CSWGuiInGameItemEntry::SetExtent	probable	0x008b0c30: PUSH EBP | src patch_manager_mods/engine_research_findings/V2.md:28	ingest-notes	2026-10-27
+0x008b1ea0	function	CSWGuiContainer::CSWGuiContainer	probable	0x008b1ea0: PUSH EBP | src .claude/research/quick_loot/R2_client_gui.md:7	ingest-notes	2026-10-27
+0x008b2850	function	CSWGuiContainer::HandleInputEvent	probable	0x008b2850: PUSH EBP | src .claude/research/quick_loot/R2_client_gui.md:32	ingest-notes	2026-10-27
+0x008b29e0	function	CSWGuiContainer::SetContainer	probable	0x008b29e0: PUSH EBP | src .claude/research/quick_loot/R2_client_gui.md:23	ingest-notes	2026-10-27
+0x008b2f70	function	CSWGuiContainer::SetupGiveMode	probable	0x008b2f70: PUSH EBP | src .claude/research/quick_loot/R2_client_gui.md:29	ingest-notes	2026-10-27
+0x008bc100	function	DialogTop::SetReply	probable	0x008bc100: PUSH EBP | src patch_manager_mods/engine_research_findings/V11.md:35	ingest-notes	2026-10-27
+0x009454b0	function	CResTGA::OnServiced	probable	0x009454b0: PUSH EBP | src patch_manager_mods/07_force_power_hotbar.md:652	ingest-notes	2026-10-27
+0x0098764c	global	CSWGuiImage	probable	0x0098764c: | `CSWGuiImage` | `0x0098764c` | 5 | derives `CSWGuiObject`, not `Control` | | src patch_manager_mods/02_buff_duration_hud.md:661	ingest-notes	2026-10-27
+0x009877d4	global	CSWGuiControl	probable	0x009877d4: | `CSWGuiControl` | `0x009877d4` | 38 | base; mostly boilerplate, few real overrides | | src patch_manager_mods/02_buff_duration_hud.md:657	ingest-notes	2026-10-27
+0x00987bb4	global	CSWGuiProgressBar	probable	0x00987bb4: | `CSWGuiProgressBar` | `0x00987bb4` | 40 | derives Control; slot14 Draw = `0x0041bb20` (PB_VIT%d/PB_FORCE%d's real draw — **not yet decompiled**) | | src patch_manager_mods/02_buff_durati	ingest-notes	2026-10-27
+0x0098c27c	global	Camera::vftable	probable	0x0098c27c: - RTTI finds three camera vtables: `Camera::vftable` 0x0098c27c (Gob-like base), **`Camera::vftable` 0x0098c45c**, and `CAurCamera` 0x0098c4f4 (pure). | src patch_manager_mods/01_inventory	ingest-notes	2026-10-27

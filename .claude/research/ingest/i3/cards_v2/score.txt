@@ -1,0 +1,6 @@
+decoy rejection 17/21 = 81% (function=17/20 global=0/1) -> PASS
+  miss C007 CSWGuiControl on facts 0x0098c27c: unsure (in 0x0047ecd0: 0047ed27 c740047cc29800 MOV dword ptr [EAX + 0x4],0x98c27c)
+  miss C053 CClientExoAppInternal::StallServerCode on facts 0x0070b9b0: unsure (callees: 0x0070b8c0 (CALL), 0x0070b890 (CALL), 0x007051c0 (CALL))
+  miss C063 C2DA::GetINTEntry on facts 0x00414ba0: consistent (return *(undefined4 *)(param_1 + 0x10);)
+  miss C089 CSWMessage::ReadDWORD on facts 0x0041f7f0: consistent (local_c = *(undefined4 *)(param_1 + 0x2c4);)
+promote: 61 rows -> .claude/research/ingest/i3/cards_v2/promote.tsv

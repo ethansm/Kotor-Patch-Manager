@@ -1,0 +1,13 @@
+card	verdict	quote
+C061	inconsistent	CSWGuiTextParams::operator=(param_3);
+C062	inconsistent	*(undefined4 *)(iVar4 + 0xc) = *puVar2;
+C063	consistent	return *(undefined4 *)(param_1 + 0x10);
+C064	consistent	(**(code **)(*(int *)(param_1 + 0x60) + 0xc))(param_2);
+C065	unsure	local_18 = (**(code **)(**(int **)(param_1 + 0x18) + 0x40))();
+C066	consistent	param_1[1] = ((int)(iVar3 + (iVar3 >> 0x1f & 0x1fU)) >> 5) + 1;
+C067	consistent	CSWGuiDialogLetterbox::SetExtentSpecial(local_1c,local_18,local_14,local_10);
+C068	consistent	operator delete(*(undefined4 *)(param_1 + 0x38));
+C069	inconsistent	operator delete[](*(undefined4 *)(*(int *)(param_1 + 0x68) + param_2 * 4));
+C070	consistent	*param_1 = 0;
+C071	consistent	*(float *)(param_1 + 0x54) = (*(float *)(param_1 + 0x5c) / fVar1) * *(float *)(param_1 + 0x54);
+C072	consistent	_sprintf(local_a4,"%s%s",param_2,&DAT_0098b9a8);

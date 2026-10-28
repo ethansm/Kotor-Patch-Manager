@@ -1,0 +1,13 @@
+card	verdict	quote
+C001	consistent	in 0x00416290 (CSWGuiImage::Constructor): 004162fb c7004c769800 MOV dword ptr [EAX],0x98764c
+C002	consistent	local_8 = CSWGuiPanel::HitCheckMouse(param_1,param_2);
+C003	unsure	- callees: 0x0070b8c0 (CALL), 0x0070b890 (CALL), 0x007051c0 (CALL)
+C004	unsure	FUN_007457e0(param_2,param_3,1);
+C005	consistent	*param_1 = 0x30;
+C006	inconsistent	_eh_vector_constructor_iterator_(param_1 + 9,4,3,FUN_00451d00,FUN_00473e80);
+C007	unsure	in 0x0047ecd0: 0047ed27 c740047cc29800 MOV dword ptr [EAX + 0x4],0x98c27c
+C008	inconsistent	CSWGuiPanel::StartLoadFromLayout(local_a00,1,1);
+C009	consistent	*param_3 = *(undefined4 *)(param_1 + 0x28 + param_2 * 4);
+C010	inconsistent	- callers 3: 0x00720fc0, 0x007216c0 CERFFile::WriteResource, 0x00721bb0 CERFFile::WriteResource_2
+C011	consistent	_eh_vector_constructor_iterator_(param_1 + 9,4,3,FUN_00451d00,FUN_00473e80);
+C012	inconsistent	local_b0 = CMFCRibbonProgressBar::CMFCRibbonProgressBar(this);

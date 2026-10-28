@@ -8,7 +8,7 @@ CLI:
   ingest_names.py gap [--source modcode|notes|all] [--json]
   ingest_names.py extract --source modcode --out FILE
   ingest_names.py ledger --in FILE --topic ingest-modcode [--apply] [--date YYYY-MM-DD]
-  ingest_names.py cards --in LEDGER_TSV --out-dir DIR [--chunk 12] [--decoy-every 4] [--seed N]
+  ingest_names.py cards --in LEDGER_TSV --out-dir DIR [--chunk 12] [--decoy-every 4] [--seed N] [--decomp-lines 10]
   ingest_names.py score --key DIR/key.tsv --verdicts 'DIR/verdicts_*.tsv' --out promote.tsv
 Common flags: --kdb DB  --ledger-dir DIR  --functions TSV  --root DIR  --dump-root DIR
 
@@ -72,8 +72,11 @@ HOOK_NAME_RX = re.compile(r"\b([A-Za-z_]\w*::~?[A-Za-z_]\w*)\b")
 HOOK_ADDR_RX = re.compile(r"^\s*address\s*=\s*(0x00[4-9][0-9a-fA-F]{5})\b")
 CONSTEXPR_LINE_RX = re.compile(r"^\s*(?:(?:static|inline)\s+)*constexpr\b")
 CONSTEXPR_ITEM_RX = re.compile(r"\b([A-Za-z_]\w*)\s*=\s*(0x00[4-9][0-9a-fA-F]{5})\b")
-NAME_THEN_ADDR_RX = re.compile(QNAME + r"\W{1,6}(?:at|@|=)?\s*(0x00[4-9][0-9a-fA-F]{5})\b")
-ADDR_THEN_NAME_RX = re.compile(r"\b(0x00[4-9][0-9a-fA-F]{5})\W{1,6}" + QNAME)
+# The separator never spans "," or ";": in lists like "0x0040ee40 A::B, 0x00411b20" the name belongs to
+# the address before it, not after.
+SEP = r"[^\w,;]{1,6}"
+NAME_THEN_ADDR_RX = re.compile(QNAME + SEP + r"(?:at|@|=)?\s*(0x00[4-9][0-9a-fA-F]{5})\b")
+ADDR_THEN_NAME_RX = re.compile(r"\b(0x00[4-9][0-9a-fA-F]{5})" + SEP + QNAME)
 
 EXTRACT_COLS = ("addr", "kind", "name", "form", "src", "fn_start", "offset", "status", "kdb_name")
 EVIDENCE_MAX = 200
@@ -137,7 +140,9 @@ def group_files(root, group):
     files = set()
     for p in GROUPS[group]:
         files.update(glob.glob(root + p, recursive=True))
-    return sorted(f for f in files if "dump_excerpts" not in f and os.path.isfile(f))
+    # ingest's own cards/extracts quote facts and decoy names; never read them back as notes
+    skip = ("dump_excerpts", "/.claude/research/ingest/")
+    return sorted(f for f in files if not any(s in f for s in skip) and os.path.isfile(f))
 
 
 def _read(path):
@@ -524,12 +529,64 @@ def _src_of(evidence):
     return evidence[i + 6:].strip() if i >= 0 else ""
 
 
-def function_fact_lines(dump):
-    """Callable addr -> fact lines from static_facts (each trimmed to FACT_LINE_MAX)."""
+PLACEHOLDER_RX = re.compile(r"\b(FUN|DAT|PTR|LAB)_([0-9a-fA-F]{8})\b")
+DECL_RX = re.compile(r"^[\w\s\*\[\]]+;$")  # bare local declarations such as `undefined4 local_30;`
+EXCERPT_LINE_MAX = 160
+
+
+def decomp_excerpt(c_text, a, names, n=10):
+    """Signature + up to n-1 body lines of dump pseudo-C, placeholders renamed from `names`.
+
+    The function's own placeholder becomes `this_fn` (the card stays blind).  Lines that call a named
+    function or hold a string literal come first, then other calls / vtable slots, then the rest; the
+    picked lines keep their source order."""
+    def rename(m):
+        v = int(m.group(2), 16)
+        if v == a:
+            return "this_fn"
+        nm = names.get(v)
+        return nm if nm else m.group(0)
+
+    sig, body = None, []
+    for raw in c_text.splitlines():
+        line = " ".join(raw.split())
+        if not line or line.startswith("//") or line in ("{", "}"):
+            continue
+        if sig is None:
+            sig = line
+            continue
+        if DECL_RX.match(line):
+            continue
+        body.append(line)
+    if sig is None:
+        return []
+
+    def rank(line):
+        named = re.search(r"\b[A-Za-z_]\w*::~?\w+\s*\(", line) or '"' in line
+        return 0 if named else (1 if "(" in line else 2)
+
+    renamed = [PLACEHOLDER_RX.sub(rename, ln) for ln in body]
+    picked = sorted(sorted(range(len(renamed)), key=lambda i: (rank(renamed[i]), i))[:max(n - 1, 0)])
+    out = ["- decomp: " + PLACEHOLDER_RX.sub(rename, sig)]
+    out += ["    " + renamed[i] for i in picked]
+    return [ln[:EXCERPT_LINE_MAX] for ln in out]
+
+
+def function_fact_lines(dump, decomp_lines=0, names=None):
+    """Callable addr -> fact lines from static_facts (each trimmed to FACT_LINE_MAX), plus an optional
+    `decomp_lines`-line pseudo-C excerpt from the dump (decomp/<bb>/<addr>.c)."""
     from static_facts import facts, card_lines
 
     def get(a):
-        return [ln[:FACT_LINE_MAX] for ln in card_lines(facts(dump, a))]
+        lines = [ln[:FACT_LINE_MAX] for ln in card_lines(facts(dump, a))]
+        if decomp_lines > 0:
+            p = Path(dump.root) / "decomp" / ("%02x" % ((a >> 16) & 0xFF)) / ("%08x.c" % a)
+            try:
+                text = p.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                return lines + ["- decomp: none in dump"]
+            lines += decomp_excerpt(text, a, names if names is not None else dump.names, decomp_lines)
+        return lines
     return get
 
 
@@ -673,7 +730,7 @@ def run_cards(args, dump, out=sys.stdout):
     if not dump.names:
         dump.names = dict(names)
     root = Path(args.dump_root) if args.dump_root else dump.root
-    cards, key = build_cards(rows, function_fact_lines(dump), global_fact_lines(root / "decomp", names),
+    cards, key = build_cards(rows, function_fact_lines(dump, args.decomp_lines, names), global_fact_lines(root / "decomp", names),
                              args.decoy_every, args.seed)
     paths = write_cards(cards, key, args.out_dir, args.chunk)
     nd = sum(k["is_decoy"] for k in key)
@@ -732,6 +789,7 @@ def build_parser():
     c.add_argument("--chunk", type=int, default=12)
     c.add_argument("--decoy-every", type=int, default=4)
     c.add_argument("--seed", type=int, default=0)
+    c.add_argument("--decomp-lines", type=int, default=0, help="add an N-line named pseudo-C excerpt to function cards")
     s = sub.add_parser("score", help="gate decoy rejection, write promote TSV")
     s.add_argument("--key", required=True)
     s.add_argument("--verdicts", required=True, help="glob of verdicts_*.tsv")

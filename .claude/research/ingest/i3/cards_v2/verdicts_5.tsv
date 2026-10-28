@@ -1,0 +1,13 @@
+card	verdict	quote
+C049	inconsistent	uVar1 = *(undefined4 *)(*(int *)(param_1 + 0x28) + *(int *)(param_1 + 0x30));
+C050	inconsistent	CStatusBar * __thiscall CStatusBar::CStatusBar(CStatusBar *this)
+C051	unsure	callees: 0x00463ed0 (CALL), 0x0050a630 (CALL), 0x00473fb0 (CALL)
+C052	consistent	0x00479460 GUI fill rect (glViewport + coloured unit quad; returns 0 if rejected) (CALL)
+C053	unsure	callees: 0x0070b8c0 (CALL), 0x0070b890 (CALL), 0x007051c0 (CALL)
+C054	consistent	CSWGuiPanel::Constructor(param_2);
+C055	consistent	uVar1 = CResGFF::ReadFieldINT(local_8,"DRAWSTYLE",&local_10,0);
+C056	consistent	0041b828 c700b47b9800 MOV dword ptr [EAX],0x987bb4
+C057	unsure	0x00919723 operator new (CALL)
+C058	inconsistent	CSWGuiControl::AddEvent(0x27,param_1,CSWGuiMainMenu::OnNewGamePicked);
+C059	consistent	CSWGuiPanel::Constructor(param_2);
+C060	consistent	*(undefined4 *)(param_1 + 0xc) = param_2[2];

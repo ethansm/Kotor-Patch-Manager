@@ -1,0 +1,13 @@
+card	verdict	quote
+C025	inconsistent	local_18 = (**(code **)(**(int **)(param_1 + 0x18) + 0x40))();
+C026	unsure	(**(code **)(*param_1 + 0xb0))(param_2);
+C027	inconsistent	FID_conflict__sscanf((char *)(*(int *)(param_1 + 0x40) + uVar2),"%i",param_4);
+C028	consistent	CSWGuiPanel::Constructor(param_2);
+C029	consistent	uVar1 = *(undefined4 *)(*(int *)(param_1 + 0x28) + *(int *)(param_1 + 0x30));
+C030	inconsistent	strings: 0x0099efe4 "CSWCCreature::LoadModel(): Failed to load creature model '%s'."
+C031	consistent	imports: glTexImage2D (OPENGL32.DLL), glTexParameteri (OPENGL32.DLL), glTexSubImage2D (OPENGL32.DLL)
+C032	consistent	0x0083ea60 CExoArrayList<uint32>::Add (CALL)
+C033	inconsistent	iVar2 = (int)*(short *)(param_1 + 0xdda) - (int)*(short *)(param_1 + 0xdd6);
+C034	consistent	if (((*(int *)(param_1 + 0x2a8) < (int)((uint)*(byte *)(param_1 + 0x2d0) + *(int *)(param_1 + 0x2c4))) &&
+C035	consistent	callers 8: 0x0041d710 CSWGuiListBox::SetExtent, 0x0041d940, 0x0041e870, 0x0041e9d0 CSWGuiListBox::SetPadding, 0x0041fc30, ...
+C036	consistent	*(int *)(param_1 + 0x24c) = local_8;
