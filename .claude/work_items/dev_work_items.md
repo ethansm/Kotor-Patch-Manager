@@ -48,7 +48,7 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [x] | 32 | WI-47 | P1 | ready | S | WI-46 | KPM production filter, ledger lock, GPG flag | 3 | 2 | KPM production filter, ledger lock and GPG flag; ready, tooling. |
 | [x] | 33 | WI-08 | P1 | ready | M | - | Shield bar tooltip, probe, and logging ToDos | 8 | 2 | Shield bar tooltip, probe and logging ToDos; 8 open, ready. |
 | [x] | 34 | WI-43 | P1 | ready | S | - | NPC diversity dispatcher open source fixes | 10 | 1 | NPC diversity dispatcher open source fixes; 10 open, ready. |
-| [!] | 35 | WI-36 | P1 | ready | L | - | PC level-up in-panel Filter button | 1 | 2 | PC level-up in-panel Filter button; new feature, ready. |
+| [x] | 35 | WI-36 | P1 | ready | L | - | PC level-up in-panel Filter button | 1 | 2 | PC level-up in-panel Filter button; new feature, ready. |
 | [x] | 36 | WI-02b | P2 | ready | M | WI-02,WI-02c | KPM tooling H7, H10, H9 new scripts | 3 | 3 | New KPM tooling scripts; tooling only, after WI-02. |
 | [ ] | 37 | WI-29 | P2 | verify-only | M | - | Portrait-slots verify and companion-AI KpLog scope | 2 | 0 | Portrait-slots verify and companion-AI KpLog scope; verify only. |
 | [x] | 38 | WI-21 | P2 | ready | M | WI-18 | Inventory sort name tie-break (C132); rest deferred | 6 | 2 | Inventory sort name tie-break; 1 open, 5 parked. |
