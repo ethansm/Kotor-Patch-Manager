@@ -285,5 +285,116 @@ class LedgerTests(Base):
         self.assertIn("--date", err)
 
 
+def _card_rows():
+    rows = []
+    for i in range(16):
+        rows.append({"addr": "0x%08x" % (0x00410000 + i * 0x2000), "kind": "function",
+                     "name": "Fn%02d" % i, "evidence": "0x0: PUSH EBP | src a.h:%d" % i})
+    for i in range(12):
+        rows.append({"addr": "0x%08x" % (0x009a0000 + i * 0x2000), "kind": "global",
+                     "name": "Glob%02d" % i, "evidence": "0x0: x | src b.h:%d" % i})
+    # a close neighbour pair that must never decoy each other
+    rows.append({"addr": "0x009f42a4", "kind": "global", "name": "ScreenW", "evidence": "| src c.h:1"})
+    rows.append({"addr": "0x009f42a8", "kind": "global", "name": "ScreenH", "evidence": "| src c.h:2"})
+    return rows
+
+
+def _facts(a):
+    return ["- facts for 0x%08x" % a]
+
+
+class CardsTest(unittest.TestCase):
+    def build(self, seed=7):
+        return inn.build_cards(_card_rows(), _facts, _facts, decoy_every=4, seed=seed)
+
+    def test_decoy_ratio(self):
+        cards, key = self.build()
+        rows = _card_rows()
+        self.assertEqual(sum(k["is_decoy"] for k in key), len(rows) // 4)
+        self.assertEqual(len(cards), len(rows) + len(rows) // 4)
+        self.assertEqual(sum(1 for k in key if not k["is_decoy"]), len(rows))
+
+    def test_decoys_same_kind_far_and_wrong_name(self):
+        _cards, key = self.build()
+        by_addr = {r["addr"]: r for r in _card_rows()}
+        for k in key:
+            if not k["is_decoy"]:
+                continue
+            src = by_addr[k["facts_addr"]]
+            self.assertEqual(src["kind"], k["kind"])
+            self.assertNotEqual(src["name"], k["name"])
+            self.assertGreaterEqual(abs(int(src["addr"], 16) - int(k["addr"], 16)), inn.DECOY_MIN_DIST)
+
+    def test_card_shows_facts_of_facts_addr(self):
+        cards, key = self.build()
+        for c, k in zip(cards, key):
+            self.assertEqual(c["addr"], k["facts_addr"])
+            self.assertEqual(c["name"], k["name"])
+            self.assertEqual(c["facts"], _facts(int(k["facts_addr"], 16)))
+
+    def test_deterministic_with_seed(self):
+        self.assertEqual(self.build(3), self.build(3))
+        self.assertNotEqual(self.build(3)[1], self.build(4)[1])
+
+    def test_key_never_in_chunks(self):
+        cards, key = self.build()
+        with tempfile.TemporaryDirectory() as td:
+            paths = inn.write_cards(cards, key, td, chunk=12)
+            self.assertEqual(len(paths), -(-len(cards) // 12))
+            text = "".join(open(p).read() for p in paths)
+            self.assertNotIn("is_decoy", text)
+            self.assertNotIn("decoy", text.lower())
+            self.assertNotIn("src a.h", text)
+            for k in key:
+                self.assertIn("## %s\n" % k["card"], text)
+            self.assertTrue(os.path.exists(os.path.join(td, "key.tsv")))
+
+
+class ScoreTest(unittest.TestCase):
+    KEY = [
+        {"card": "C01", "addr": "0x1", "kind": "function", "name": "A", "is_decoy": "0", "facts_addr": "0x1",
+         "src": "a.h:1"},
+        {"card": "C02", "addr": "0x2", "kind": "global", "name": "B", "is_decoy": "0", "facts_addr": "0x2",
+         "src": "b.h:1"},
+        {"card": "C03", "addr": "0x2", "kind": "global", "name": "B", "is_decoy": "1", "facts_addr": "0x9",
+         "src": "b.h:1"},
+        {"card": "C04", "addr": "0x1", "kind": "function", "name": "A", "is_decoy": "1", "facts_addr": "0x8",
+         "src": "a.h:1"},
+    ]
+
+    def test_pass_promotes_consistent_real_rows_only(self):
+        v = {"C01": ("consistent", "q1"), "C02": ("unsure", ""), "C03": ("inconsistent", ""),
+             "C04": ("inconsistent", "")}
+        res = inn.score(self.KEY, v)
+        self.assertTrue(res["pass"])
+        self.assertEqual(res["per_kind"], {"function": (1, 1), "global": (1, 1)})
+        self.assertEqual([p["name"] for p in res["promote"]], ["A"])
+        self.assertEqual(res["promote"][0]["src"], "a.h:1")
+
+    def test_fail_below_threshold_and_missing(self):
+        res = inn.score(self.KEY, {"C01": ("consistent", ""), "C03": ("consistent", "")})
+        self.assertFalse(res["pass"])
+        self.assertEqual(res["rejected"], 0)
+        self.assertEqual(res["missing"], ["C02", "C04"])
+
+    def test_cli_score_writes_promote_only_on_pass(self):
+        with tempfile.TemporaryDirectory() as td:
+            kp = os.path.join(td, "key.tsv")
+            inn.write_tsv(kp, self.KEY, inn.KEY_COLS)
+            vp = os.path.join(td, "verdicts_1.tsv")
+            with open(vp, "w") as fh:
+                fh.write("card\tverdict\tquote\nC01\tconsistent\tq\nC03\tINCONSISTENT\tq\nC04\tbogus\tq\n")
+            out = os.path.join(td, "promote.tsv")
+            argv = ["score", "--key", kp, "--verdicts", os.path.join(td, "verdicts_*.tsv"), "--out", out]
+            buf = io.StringIO()
+            self.assertEqual(inn.main(argv, out=buf), 1)
+            self.assertFalse(os.path.exists(out))
+            self.assertIn("FAIL", buf.getvalue())
+            with open(vp, "a") as fh:
+                fh.write("C04\tinconsistent\tq\n")
+            self.assertEqual(inn.main(argv, out=io.StringIO()), 0)
+            self.assertEqual([r["name"] for r in inn.read_tsv(out)], ["A"])
+
+
 if __name__ == "__main__":
     unittest.main()

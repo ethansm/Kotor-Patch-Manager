@@ -1,0 +1,13 @@
+card	verdict	quote
+C13	unsure	callees: 0x005e3f20 (CALL), 0x00893750 (CALL), 0x005e4130 (CALL), 0x005e47e0 (CALL), 0x0087a350 (CALL)
+C14	consistent	in 0x004843c0: return (DAT_009f60bc & DAT_00a32df8) == DAT_009f60bc & _DAT_009f60ec;
+C15	consistent	in 0x0041a3d0 (CSWGuiButton::Destructor): 0041a3f9 c7001c7a9800 MOV dword ptr [EAX],0x987a1c
+C16	consistent	callers 6: 0x00416cc0 CSWGuiTextParams::SetFont, 0x00416e30 CSWGuiTextParams::SetText, ...
+C17	consistent	0x00615cc0 CSWSItem::GetIcon (CALL)
+C18	consistent	in 0x004171a0: 0041720b c700b4769800 MOV dword ptr [EAX],0x9876b4
+C19	unsure	callers 4: 0x007469f0, 0x0074d930, 0x007516b0, 0x007b12c0 CClientExoAppInternal::HandleInputEvent
+C20	inconsistent	in 0x0040f620 (CSWGuiPanel::InitControl): local_c = (float)(int)*(short *)(iVar6 + 0x6e) / (float)DAT_009f4394;
+C21	consistent	strings: 0x0099d39c "CExoLinkedListInternal::Remove() Position paramter is NULL"
+C22	consistent	in 0x008baca0 (CSWGuiDialogLetterbox::SetTop): 008bace9 dc35307d9a00 FDIV double ptr [0x009a7d30]
+C23	consistent	in 0x004113a0: 00411501 ff15a0629800 CALL dword ptr [0x009862a0]
+C24	consistent	in 0x00409e10: 00409e40 ff1568629800 CALL dword ptr [0x00986268]

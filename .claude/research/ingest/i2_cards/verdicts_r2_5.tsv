@@ -1,0 +1,13 @@
+card	verdict	quote
+C49	consistent	callers 13: 0x00413650, 0x0084c3a0 CSWGuiInGameCharacter::Constructor, 0x00880740, 0x008973d0, 0x008988b0, ...
+C50	consistent	in 0x0040f620 (CSWGuiPanel::InitControl): local_c = (float)(int)*(short *)(iVar6 + 0x6e) / (float)DAT_009f4394;
+C51	consistent	in 0x00747210: 0074725d c701c4dc9900 MOV dword ptr [ECX],0x99dcc4
+C52	consistent	imports: glDisable (OPENGL32.DLL), glEnable (OPENGL32.DLL), glFogf (OPENGL32.DLL), ...
+C53	consistent	in 0x005b2560 (CSWSItemPropertyHandler::RemoveBlasterBoltDeflectionIncrease): if ((((*(ushort *)(puVar2 + 2) == DAT_00996088) && ...
+C54	consistent	in 0x0056a230 (CSWSCreature::HandleHPRegeneration): if (*(short *)(param_1[0x466] + 0xe0) == DAT_0099a8b8) {
+C55	consistent	imports: glColorMaterial (OPENGL32.DLL), glDisable (OPENGL32.DLL), glDisableClientState (OPENGL32.DLL), ...
+C56	consistent	callees: 0x00418570 (CALL), 0x00414a50 CSWGuiBorder::Constructor (CALL), 0x004171a0 (CALL)
+C57	consistent	in 0x00407920: 00408479 ff15d4609800 CALL dword ptr [0x009860d4]
+C58	inconsistent	in 0x0084c3a0 (CSWGuiInGameCharacter::Constructor): if (DAT_009f42b4 != 0) {
+C59	inconsistent	in 0x00409e10: 00409e40 ff1568629800 CALL dword ptr [0x00986268]
+C60	consistent	in 0x00484480: if ((iVar1 == 0) || (DAT_009f60f0 != 1)) {

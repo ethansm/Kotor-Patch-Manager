@@ -1,0 +1,13 @@
+card	verdict	quote
+C61	consistent	strings: 0x009a4488 "TEXMEVIL", 0x009a4494 "TEXLEVIL", 0x009a44a0 "TEXIEVIL"
+C62	consistent	in 0x004289d0: 00428aa0 ff15cc629800 CALL dword ptr [0x009862cc]
+C63	consistent	in 0x004687e0: if (DAT_009f5d54 != 0) {
+C64	consistent	in 0x0046a630: if (DAT_009f5d30 != 0) {
+C65	consistent	in 0x008b91f0: 008b922e c701ac7b9a00 MOV dword ptr [ECX],0x9a7bac
+C66	unsure	callees: 0x00734010 (CALL), 0x00462320 (CALL), 0x004183b0 (CALL)
+C67	inconsistent	in 0x008b91f0: 008b922e c701ac7b9a00 MOV dword ptr [ECX],0x9a7bac
+C68	consistent	in 0x0056efd0 (CSWSCreature::EventHandler): else if (param_2 == DAT_0099244c) {
+C69	consistent	in 0x00539d30 (CServerExoAppInternal::ClientToServerObjectId): param_1 = ~DAT_0099449c & param_1;
+C70	inconsistent	callees: 0x0073a560 (CALL), 0x009196fd operator delete (CALL)
+C71	consistent	callees: 0x007e5da0 Party member entry thiscall(party, int idx) RET 4 (0x7E5D80 = idx 0) (CALL)
+C72	consistent	in 0x004845a0: DAT_009f6100 = 0;

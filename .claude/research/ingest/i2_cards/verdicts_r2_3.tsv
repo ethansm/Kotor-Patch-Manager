@@ -1,0 +1,13 @@
+card	verdict	quote
+C25	consistent	in 0x004687e0: if ((float10)_DAT_009f5d50 < fVar5) goto LAB_00468855;
+C26	consistent	callees: 0x00416ea0 CSWGuiTextParams::SetStrRef (CALL), 0x007335f0 CExoString::CExoString_copy (CALL), ...
+C27	consistent	callers 3: 0x0077ec20, 0x008cce70 CSWGuiUpgrade::Draw, 0x008cd2c0 CSWGuiUpgrade::Update3DView
+C28	consistent	in 0x0040a750 (MainWndProc): local_18 = param_4 & 0xffff | ((DAT_009f42a8 + -1) - (param_4 >> 0x10)) * 0x10000;
+C29	inconsistent	in 0x005b2560 (CSWSItemPropertyHandler::RemoveBlasterBoltDeflectionIncrease): if ((((*(ushort *)(puVar2 + 2) == DAT_00996088)
+C30	consistent	in 0x00419740: 00419778 c700bc789800 MOV dword ptr [EAX],0x9878bc
+C31	consistent	in 0x0043bb50: if (((iVar2 == 0) || (DAT_009f48fa == '\0')) || (DAT_009f5da8 == 0)) {
+C32	consistent	in 0x0040cc70 (CExoMoviePlayerInternal::StartMovie): PatBlt(local_98,0,0,DAT_009f42a4,DAT_009f42a8,0x42);
+C33	inconsistent	imports: glDisable (OPENGL32.DLL), glEnable (OPENGL32.DLL), glFogf (OPENGL32.DLL), ...
+C34	consistent	callers 6: 0x00416cc0 CSWGuiTextParams::SetFont, 0x00416e30 CSWGuiTextParams::SetText, 0x00416ea0 CSWGuiTextParams::SetStrRef, 0x00416fa0 CSWGuiTextParams::SetAlignment, 0x00417340, ...
+C35	inconsistent	in 0x0056a230 (CSWSCreature::HandleHPRegeneration): if (*(short *)(param_1[0x466] + 0xe0) == DAT_0099a8b8) {
+C36	consistent	in 0x00732960: if (param_2 == DAT_0099c884) {

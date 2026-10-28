@@ -1,0 +1,63 @@
+addr	kind	name	src	verdict	quote
+0x00751750	function	HudInvokeGroup	patch_manager_mods/_shared_src/GameAddr.h:69	consistent	callers 4: 0x007469f0, 0x0074d930, 0x007516b0, 0x007b12c0 CClientExoAppInternal::HandleInputEvent
+0x0098c45c	global	SceneCameraVtable	patch_manager_mods/_shared_src/GameAddr.h:56	consistent	in 0x0047f0a0: 0047f0c9 c7005cc49800 MOV dword ptr [EAX],0x98c45c
+0x008faca0	function	CSWGuiMainCharGen::BeginPlayGame	patch_manager_mods/save_events_src/kotor2-steam-aspyr.hooks.toml:57	consistent	strings: 0x00992da0 "Module", 0x0099d6ac "GBL_GAME_COMPLETE", 0x009a5adc "%c%s.%s %s"
+0x009a3d34	global	SceneViewVtable	patch_manager_mods/_shared_src/GameAddr.h:55	consistent	in 0x0084c3a0 (CSWGuiInGameCharacter::Constructor): 0084c80c c700343d9a00 MOV dword ptr [EAX],0x9a3d34
+0x0098657c	global	AilQuickShutdownIat	patch_manager_mods/robustness_fixes_src/RobustnessFixes.cpp:130	consistent	in 0x007051c0: 00705562 ff157c659800 CALL dword ptr [0x0098657c]
+0x009a044c	global	FadePanelVtable	patch_manager_mods/_shared_src/GameAddr.h:86	consistent	in 0x007bc600: 007bc63e c7014c049a00 MOV dword ptr [ECX],0x9a044c
+0x0050dac0	function	CAurTriangleBin::RenderGrassPolys	patch_manager_mods/k2_grass_draw_distance_src/kotor2-steam-aspyr.hooks.toml:48	consistent	imports: glColor4f (OPENGL32.DLL), glDisable (OPENGL32.DLL), glDisableClientState (OPENGL32.DLL), ...
+0x009f60ec	global	AddrPathFlag60EC	patch_manager_mods/k2_grass_draw_distance_src/K2GrassDrawDistance.cpp:94	consistent	in 0x004843c0: return (DAT_009f60bc & DAT_00a32df8) == DAT_009f60bc & _DAT_009f60ec;
+0x00987a1c	global	ButtonVtable	patch_manager_mods/_shared_src/GameAddr.h:39	consistent	in 0x0041a3d0 (CSWGuiButton::Destructor): 0041a3f9 c7001c7a9800 MOV dword ptr [EAX],0x987a1c
+0x00417800	function	GuiTextObjRefresh	patch_manager_mods/_shared_src/GameAddr.h:134	consistent	callers 6: 0x00416cc0 CSWGuiTextParams::SetFont, 0x00416e30 CSWGuiTextParams::SetText, ...
+0x0074e0b0	function	AddrIconResolver	patch_manager_mods/queue_hud_src/QueueHud.cpp:66	consistent	0x00615cc0 CSWSItem::GetIcon (CALL)
+0x009876b4	global	TextVtable	patch_manager_mods/_shared_src/GameAddr.h:41	consistent	in 0x004171a0: 0041720b c700b4769800 MOV dword ptr [EAX],0x9876b4
+0x0073a130	function	FnListRemove	patch_manager_mods/companion_ai_src/CompanionAI.cpp:480	consistent	strings: 0x0099d39c "CExoLinkedListInternal::Remove() Position paramter is NULL"
+0x009a7d30	global	kConstVA	patch_manager_mods/dialogue_letterbox_fix_src/K2DialogueLetterboxFix.cpp:60	consistent	in 0x008baca0 (CSWGuiDialogLetterbox::SetTop): 008bace9 dc35307d9a00 FDIV double ptr [0x009a7d30]
+0x009862a0	global	AddrSlotGlDisable	patch_manager_mods/k2_grass_draw_distance_src/K2GrassDrawDistance.cpp:81	consistent	in 0x004113a0: 00411501 ff15a0629800 CALL dword ptr [0x009862a0]
+0x00986268	global	AddrSlotGlEnable	patch_manager_mods/k2_grass_draw_distance_src/K2GrassDrawDistance.cpp:80	consistent	in 0x00409e10: 00409e40 ff1568629800 CALL dword ptr [0x00986268]
+0x009f5d50	global	AddrShadowDist	patch_manager_mods/k2_shadow_distance_src/K2ShadowDistance.cpp:29	consistent	in 0x004687e0: if ((float10)_DAT_009f5d50 < fVar5) goto LAB_00468855;
+0x008a2320	function	OptionsSetDescription	patch_manager_mods/_shared_src/GameAddr.h:132	consistent	callees: 0x00416ea0 CSWGuiTextParams::SetStrRef (CALL), 0x007335f0 CExoString::CExoString_copy (CALL), ...
+0x004184b0	function	SceneGetModel	patch_manager_mods/_shared_src/GameAddr.h:54	consistent	callers 3: 0x0077ec20, 0x008cce70 CSWGuiUpgrade::Draw, 0x008cd2c0 CSWGuiUpgrade::Update3DView
+0x009f42a8	global	ScreenH	patch_manager_mods/_shared_src/GameAddr.h:17	consistent	in 0x0040a750 (MainWndProc): local_18 = param_4 & 0xffff | ((DAT_009f42a8 + -1) - (param_4 >> 0x10)) * 0x10000;
+0x009878bc	global	LabelVtable	patch_manager_mods/_shared_src/GameAddr.h:38	consistent	in 0x00419740: 00419778 c700bc789800 MOV dword ptr [EAX],0x9878bc
+0x009f42a4	global	ScreenW	patch_manager_mods/_shared_src/GameAddr.h:16	consistent	in 0x0040cc70 (CExoMoviePlayerInternal::StartMovie): PatBlt(local_98,0,0,DAT_009f42a4,DAT_009f42a8,0x42);
+0x0099c884	global	KeyboardDeviceGlobal	patch_manager_mods/_shared_src/GameAddr.h:42	consistent	in 0x00732960: if (param_2 == DAT_0099c884) {
+0x009a5c84	global	LoadScreenVtable	patch_manager_mods/load_hang_probe_src/LoadHangProbe.cpp:51	consistent	008850fa c701845c9a00 MOV dword ptr [ECX],0x9a5c84
+0x0099a8bc	global	GenderReq1Val	patch_manager_mods/inventory_sort_filter_src/InventorySortF	consistent	if (*(short *)(*(int *)(param_1 + 0x1198) + 0xe0) != DAT_0099a8bc) {
+0x0074b3f0	function	CSWGuiMainInterface::Draw	patch_manager_mods/action_hotbar_src/ActionHotbar.cpp:7	consistent	callees: 0x0073fb90 CClientExoApp::GetSWParty (CALL)
+0x009f62dc	global	AddrPathFlag62DC	patch_manager_mods/k2_grass_draw_distance_src/K2GrassDrawDistance.cpp:95	consistent	if (DAT_009f62dc != 0) {
+0x009875bc	global	BorderVtable	patch_manager_mods/_shared_src/GameAddr.h:40	consistent	00414abb c700bc759800 MOV dword ptr [EAX],0x9875bc
+0x004662e0	function	Scene::DoCapBucket	patch_manager_mods/k2_engine_perf_src/code_patches.toml:17	consistent	callees: 0x00472630 TexBucketMap::operator[] (CALL)
+0x009f42b4	global	GuiGateGlobal	patch_manager_mods/_shared_src/GameAddr	consistent	if (DAT_009f42b4 != 0) {
+0x00468b50	function	Scene::DoGobShadowsForThisLight	patch_manager_mods/k2_shadow_distance_src/K2ShadowDistance.cpp:213	consistent	callees: 0x00459e20 Gob::IsInCutscene (CALL)
+0x0099e5ec	global	MessagesPanelVtable	patch_manager_mods/_shared_src/GameAddr.h:85	consistent	00757c8b c701ece59900 MOV dword ptr [ECX],0x99e5ec
+0x00418360	function	SceneAddModel	patch_manager_mods/_shared_src/GameAddr.h:52	consistent	callers 13: 0x00413650, 0x0084c3a0 CSWGuiInGameCharacter::Constructor, 0x00880740, 0x008973d0, 0x008988b0, ...
+0x009f4394	global	GuiRefH	patch_manager_mods/_shared_src/GameAddr.h:19	consistent	in 0x0040f620 (CSWGuiPanel::InitControl): local_c = (float)(int)*(short *)(iVar6 + 0x6e) / (float)DAT_009f4394;
+0x0099dcc4	global	HudVtable	patch_manager_mods/_shared_src/GameAddr.h:83	consistent	in 0x00747210: 0074725d c701c4dc9900 MOV dword ptr [ECX],0x99dcc4
+0x0046a980	function	Scene::DoFog	patch_manager_mods/k2_fog_distance_src/K2FogDistance.cpp:25	consistent	imports: glDisable (OPENGL32.DLL), glEnable (OPENGL32.DLL), glFogf (OPENGL32.DLL), ...
+0x00996088	global	EffDeflectInc	patch_manager_mods/active_effects_panel_src/CombatStatsAd	consistent	in 0x005b2560 (CSWSItemPropertyHandler::RemoveBlasterBoltDeflectionIncrease): if ((((*(ushort *)(puVar2 + 2) == DAT_00996088) && ...
+0x0099a8b8	global	GenderReq2Val	patch_manager_mods/inventory_sort_filter_src/InventorySortF	consistent	in 0x0056a230 (CSWSCreature::HandleHPRegeneration): if (*(short *)(param_1[0x466] + 0xe0) == DAT_0099a8b8) {
+0x00466700	function	Scene::DoFadeBuckets	patch_manager_mods/k2_engine_perf_src/code_patches.toml:27	consistent	imports: glColorMaterial (OPENGL32.DLL), glDisable (OPENGL32.DLL), glDisableClientState (OPENGL32.DLL), ...
+0x0041a510	function	ButtonCtor	patch_manager_mods/_shared_src/GameAddr.h:23	consistent	callees: 0x00418570 (CALL), 0x00414a50 CSWGuiBorder::Constructor (CALL), 0x004171a0 (CALL)
+0x009860d4	global	SleepIat	patch_manager_mods/robustness_fixes_src/RobustnessFixes.cpp:135	consistent	in 0x00407920: 00408479 ff15d4609800 CALL dword ptr [0x009860d4]
+0x009f60f0	global	AddrPathN	patch_manager_mods/k2_grass_draw_distance_src/K2GrassDrawDistance.cpp:93	consistent	in 0x00484480: if ((iVar1 == 0) || (DAT_009f60f0 != 1)) {
+0x0085d430	function	PreviewSetAlign	patch_manager_mods/_shared_src/GameAddr.h:128	consistent	strings: 0x009a4488 "TEXMEVIL", 0x009a4494 "TEXLEVIL", 0x009a44a0 "TEXIEVIL"
+0x009862cc	global	AddrSlotGlGetIntegerv	patch_manager_mods/k2_grass_draw_distance_src/K2GrassDrawDistance.cpp:82	consistent	in 0x004289d0: 00428aa0 ff15cc629800 CALL dword ptr [0x009862cc]
+0x009f5d54	global	AddrCutFlag	patch_manager_mods/k2_shadow_distance_src/K2ShadowDistance.cpp:36	consistent	in 0x004687e0: if (DAT_009f5d54 != 0) {
+0x009f5d30	global	AddrShadowsOn	patch_manager_mods/k2_shadow_distance_src/K2ShadowDistance.cpp:37	consistent	in 0x0046a630: if (DAT_009f5d30 != 0) {
+0x009a7bac	global	PausePanelVtable	patch_manager_mods/_shared_src/GameAddr.h:87	consistent	in 0x008b91f0: 008b922e c701ac7b9a00 MOV dword ptr [ECX],0x9a7bac
+0x0099244c	global	EventClassGlobal	patch_manager_mods/quick_loot_src/QuickLoot.cpp:	consistent	in 0x0056efd0 (CSWSCreature::EventHandler): else if (param_2 == DAT_0099244c) {
+0x0099449c	global	ServerIdMask	patch_manager_mods/_shared_src/GameAddr.h:89	consistent	in 0x00539d30 (CServerExoAppInternal::ClientToServerObjectId): param_1 = ~DAT_0099449c & param_1;
+0x007e5d80	function	GetControlledCreature	patch_manager_mods/_shared_src/GameAddr.h:34	consistent	callees: 0x007e5da0 Party member entry thiscall(party, int idx) RET 4 (0x7E5D80 = idx 0) (CALL)
+0x009f6100	global	G_GlFinishFlag	patch_manager_mods/perf_lab_src/perflab/PerfLab.cp	consistent	in 0x004845a0: DAT_009f6100 = 0;
+0x00710840	function	kAddrResrefInit	patch_manager_mods/npc_world_src/NpcWorldProvider.cpp:51	consistent	callers 374: 0x0040ee40 CSWGuiPanel::StartLoadFromLayout, 0x00411b20, 0x00411f50, 0x00415080 CSWGuiBorder::Load, ...
+0x00419740	function	LabelCtor	patch_manager_mods/_shared_src/GameAddr.h:22	consistent	callees: 0x00418990 CSWGuiControl::Constructor (CALL), 0x00414a50 CSWGuiBorder::Constructor (CALL), 0x004171a0 (CALL)
+0x009f5d38	global	AddrGrassAlphaCutoff	patch_manager_mods/k2_grass_draw_distance_src/K2GrassDrawDistance.cpp:53	consistent	in 0x004664e0: glAlphaFunc(DAT_00988570,_DAT_009f5d38);
+0x009a8fcc	global	AutoPausePanelVtable	patch_manager_mods/_shared_src/GameAddr.h:88	consistent	in 0x008e1810: 008e185a c701cc8f9a00 MOV dword ptr [ECX],0x9a8fcc
+0x00986128	global	AddrGmsIat	patch_manager_mods/k2_engine_perf_src/K2EnginePerf.cpp:30	consistent	in 0x00478a20: 00478a57 ff1528619800 CALL dword ptr [0x00986128]
+0x009f5da8	global	AddrSoftShadows	patch_manager_mods/k2_shadow_distance_src/K2ShadowDistance.cpp:38	consistent	in 0x0043bb50: if (((iVar2 == 0) || (DAT_009f48fa == '\0')) || (DAT_009f5da8 == 0)) {
+0x009a7cbc	global	kLetterboxVtbl	patch_manager_mods/dialogue_letterbox_fix_src/K2DialogueLetterboxFix.cpp:285	consistent	in 0x008ba980 (CSWGuiDialogLetterbox::Constructor): 008ba9be c701bc7c9a00 MOV dword ptr [ECX],0x9a7cbc
+0x009a4ab0	global	PreviewModelInstName	patch_manager_mods/_shared_src/GameAddr.h:125	consistent	in 0x0086a430: 0086a5f5 68b04a9a00 PUSH 0x9a4ab0
+0x009f4390	global	GuiRefW	patch_manager_mods/_shared_src/GameAddr.h:18	consistent	in 0x0040f620 (CSWGuiPanel::InitControl): local_8 = (float)(int)*(short *)(iVar6 + 0x6c) / (float)DAT_009f4390;
+0x00417f40	function	GuiSceneCtor	patch_manager_mods/_shared_src/GameAddr.h:51	consistent	callers 11: 0x00413650, 0x0084c3a0 CSWGuiInGameCharacter::Constructor, 0x00880740, ...
+0x0099608c	global	EffDeflectDec	patch_manager_mods/active_effects_panel_src/CombatStatsAd	consistent	in 0x005b2650 (CSWSItemPropertyHandler::ApplyBlasterBoltDeflectionDecrease): local_28 = (undefined2)DAT_0099608c;

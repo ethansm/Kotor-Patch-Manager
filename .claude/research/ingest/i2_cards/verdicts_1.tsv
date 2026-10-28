@@ -1,0 +1,13 @@
+card	verdict	quote
+C01	consistent	callers 4: 0x007469f0, 0x0074d930, 0x007516b0, 0x007b12c0 CClientExoAppInternal::HandleInputEvent
+C02	consistent	in 0x0047f0a0: 0047f0c9 c7005cc49800 MOV dword ptr [EAX],0x98c45c
+C03	consistent	strings: 0x00992da0 "Module", 0x0099d6ac "GBL_GAME_COMPLETE", 0x009a5adc "%c%s.%s %s"
+C04	inconsistent	in 0x0041a3d0 (CSWGuiButton::Destructor): 0041a3f9 c7001c7a9800 MOV dword ptr [EAX],0x987a1c
+C05	consistent	in 0x0084c3a0 (CSWGuiInGameCharacter::Constructor): 0084c80c c700343d9a00 MOV dword ptr [EAX],0x9a3d34
+C06	unsure	twins: 0x0051c890 (distinguishing: 0x0051c8dd: ADD EAX,0x1f0b4)
+C07	consistent	in 0x007051c0: 00705562 ff157c659800 CALL dword ptr [0x0098657c]
+C08	inconsistent	in 0x004317d0 (GLRender::InitExtensions): if (DAT_009f62dc != 0) {
+C09	consistent	in 0x007bc600: 007bc63e c7014c049a00 MOV dword ptr [ECX],0x9a044c
+C10	inconsistent	in 0x008baca0 (CSWGuiDialogLetterbox::SetTop): 008bace9 dc35307d9a00 FDIV double ptr [0x009a7d30]
+C11	consistent	imports: glColor4f (OPENGL32.DLL), glDisable (OPENGL32.DLL), glDisableClientState (OPENGL32.DLL), ...
+C12	unsure	in 0x00484550: if (DAT_009f60fc == -1) {

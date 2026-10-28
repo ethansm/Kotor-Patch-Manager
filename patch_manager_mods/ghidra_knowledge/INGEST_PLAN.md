@@ -33,6 +33,7 @@ D6 R2 NO-GO root cause was missing names / caller context, so coverage is the le
 |---|---|---|---|---|
 | I0 | 2026-10-27T20:51 | 1 Sonnet worker (I0+I1 in one brief, 12 tool calls, peak 93k) | $0.52 | 21 tests, suite 314 OK; gap 79/515; extract 337 rows (new 150, agrees 71, conflicts 116) |
 | I1 | 2026-10-27T20:51 | (same worker) | $0 extra | 69 rows -> `rea_findings/20261027_ingest-modcode.tsv` (24 function, 45 global), 3 name conflicts; lint 84 -> 84; modcode gap 79 -> 57 |
+| I2 | 2026-10-27T22:40 | 8 Haiku recon (chunks) + 4 Haiku retries (chunks 3/5/6/7), 3 tool calls each, peak 51-69k | $0.15 | `ingest_names.py cards|score` (+8 tests, suite 322 OK); 86 cards (69 + 17 decoys, seed 1027); pass 1 FAIL 10/17 = 59% (all 7 misses `unsure`, 0 decoys accepted); retry with generic role calibration PASS 14/17 = 82% (function 2/4, global 12/13) but accepted 2 decoys (C31, C34); `promote.tsv` 62 rows (20 function, 42 global), 51 of them also consistent in pass 1 (strict set); 7 held back incl. `TexMgr::Tick`; lint 84 -> 84 |
 
 ## Spec
 

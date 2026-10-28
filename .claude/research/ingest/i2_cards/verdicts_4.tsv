@@ -1,0 +1,13 @@
+card	verdict	quote
+C37	consistent	008850fa c701845c9a00 MOV dword ptr [ECX],0x9a5c84
+C38	consistent	if (*(short *)(*(int *)(param_1 + 0x1198) + 0xe0) != DAT_0099a8bc) {
+C39	consistent	callees: 0x0073fb90 CClientExoApp::GetSWParty (CALL)
+C40	inconsistent	in 0x00478a20: _DAT_00a309ac = (float)((float10)local_24.dwAvailPhys / (float10)_PTR_0098bfe0);
+C41	consistent	if (DAT_009f62dc != 0) {
+C42	consistent	00414abb c700bc759800 MOV dword ptr [EAX],0x9875bc
+C43	consistent	callees: 0x00472630 TexBucketMap::operator[] (CALL)
+C44	consistent	if (DAT_009f42b4 != 0) {
+C45	consistent	callees: 0x00459e20 Gob::IsInCutscene (CALL)
+C46	consistent	00757c8b c701ece59900 MOV dword ptr [ECX],0x99e5ec
+C47	unsure	callees: 0x0049b840 (CALL)
+C48	inconsistent	00757c8b c701ece59900 MOV dword ptr [ECX],0x99e5ec

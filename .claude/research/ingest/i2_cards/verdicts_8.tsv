@@ -1,0 +1,3 @@
+card	verdict	quote
+C85	consistent	in 0x005b2650 (CSWSItemPropertyHandler::ApplyBlasterBoltDeflectionDecrease): local_28 = (undefined2)DAT_0099608c;
+C86	inconsistent	in 0x004289d0: 00428aa0 ff15cc629800 CALL dword ptr [0x009862cc]

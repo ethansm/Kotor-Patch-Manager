@@ -1,0 +1,13 @@
+card	verdict	quote
+C73	unsure	callees: 0x00710eb0 (CALL)
+C74	consistent	callees: 0x00418990 CSWGuiControl::Constructor (CALL), 0x00414a50 CSWGuiBorder::Constructor (CALL)
+C75	unsure	in 0x00419740: 00419778 c700bc789800 MOV dword ptr [EAX],0x9878bc
+C76	consistent	in 0x004664e0: glAlphaFunc(DAT_00988570,_DAT_009f5d38);
+C77	consistent	in 0x008e1810: 008e185a c701cc8f9a00 MOV dword ptr [ECX],0x9a8fcc
+C78	consistent	in 0x00478a20: 00478a57 ff1528619800 CALL dword ptr [0x00986128]
+C79	unsure	in 0x0043bb50: if (((iVar2 == 0) || (DAT_009f48fa == '\0')) || (DAT_009f5da8 == 0)) {
+C80	consistent	in 0x008ba980 (CSWGuiDialogLetterbox::Constructor): 008ba9be c701bc7c9a00 MOV dword ptr [ECX],0x9a7cbc
+C81	unsure	in 0x0086a430: 0086a5f5 68b04a9a00 PUSH 0x9a4ab0
+C82	unsure	in 0x004847e0: if (DAT_009f6118 == 0xffffffff) {
+C83	consistent	in 0x0040f620 (CSWGuiPanel::InitControl): local_8 = (float)(int)*(short *)(iVar6 + 0x6c) / (float)DAT_009f4390;
+C84	unsure	callers 11: 0x00413650, 0x0084c3a0 CSWGuiInGameCharacter::Constructor
