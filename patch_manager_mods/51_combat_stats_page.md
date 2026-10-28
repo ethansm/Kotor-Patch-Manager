@@ -117,7 +117,7 @@ Total Defense stance flag `creature+0x110c`: 0 = Total Defense (written by `AIAc
 | ST5a | Stats tab UI 0.4.0-dev: header click toggles Effects/Stats (`stats_tab=1`), 4 sections, label + value rows (pure `StatsRows.h`, host test `stats_rows_test`), breakdown tooltips; no "Attacks / round" (stub), off-hand attack/crit rows when dual-wielding; hot-swap (hooks unchanged) | ST3, ST4 | user GO install (after ST4-P1) | INSTALLED | 7a4bcc82 | LIVE 10-27 20:21 (KPM a211580, rollback character-effects-panel_swap_20261027_202152); play ST5-P1 |
 | ST5b | `show_influence` rows (needs RE: creature -> NPC slot 0..11 for GetInfluence) | ST5a | RE + user GO install | INSTALLED | 88200304 | 0.5.0-dev LIVE 10-27 20:47 (KPM ac7ac0f, rollback character-effects-panel_swap_20261027_204746) |
 | ST6 | Vanilla page tooltips (hover rects by tag, `vanilla_tooltips=1`, text table) | ST3, ST5 | user GO install | INSTALLED | 2d701706 | 0.5.0-dev LIVE 10-27 20:47 (KPM ac7ac0f, rollback character-effects-panel_swap_20261027_204746) |
-| ST6b | 0.5.1-dev: header hint tip, Force Mastery tip (marker effects, class line, finding 6), Level row + class lines (Stats tab, Experience tip) | ST6 | user GO install | TODO | | play ST6b-P1 |
+| ST6b | 0.5.1-dev: header hint tip, Force Mastery tip (marker effects, class line, finding 6), Level row + class lines (Stats tab, Experience tip) | ST6 | user GO install | BUILT | 1701c24c | 0.5.1-dev gate PASS; not installed |
 | ST6c | Save breakdown tooltips (Fortitude/Reflex/Will: misc + ability + class/feat + effects, finding 7) | ST6b | user GO install | TODO | | play row |
 
 ## Open (UNVERIFIED in W2)
