@@ -8,17 +8,25 @@ Execute **QL2**: Peek on select: list under the name tag after the first click; 
 - **Waves:** .claude/waves/w1-52-QL0/
 - **Waves:** .claude/waves/w2-52-QL1b/
 - **Waves:** .claude/waves/w3-52-R2/
-- **Branch:** `KOTOR-II` (c37a5949 doc 02 + play row BH-PO2: poison drain 0.2.5 (OnApplyPoison ints layout))
-- **Generated:** 2026-10-27 20:21:54 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (798bb008 quick-loot 0.3.1-dev (doc 52 PV1 UX fixes): 1200 px one-line label, '[F] Take all (N)'/'Took (N)' strings, 20-char entries, latched+clamped position, backing panel, 400 ms dwell, give-up server close)
+- **Generated:** 2026-10-27 21:15:06 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-c37a5949 doc 02 + play row BH-PO2: poison drain 0.2.5 (OnApplyPoison ints layout)
- patch_manager_mods/02_buff_duration_hud.md | 3 +++
- patch_manager_mods/PLAY_TEST_QUEUE.md      | 1 +
- 2 files changed, 4 insertions(+)
+798bb008 quick-loot 0.3.1-dev (doc 52 PV1 UX fixes): 1200 px one-line label, '[F] Take all (N)'/'Took (N)' strings, 20-char entries, latched+clamped position, backing panel, 400 ms dwell, give-up server close
+ patch_manager_mods/quick_loot_src/QuickLoot.cpp    | 198 ++++++++------
+ patch_manager_mods/quick_loot_src/QuickLootLogic.h | 194 ++++++++++++--
+ .../quick_loot_src/QuickLootMachine.h              |  95 +++++--
+ .../quick_loot_src/common_contract_test.cpp        |   6 +
+ patch_manager_mods/quick_loot_src/manifest.toml    |   4 +-
+ .../quick_loot_src/quick_loot_logic_test.cpp       | 240 ++++++++++++++---
+ .../quick_loot_src/quick_loot_sim_test.cpp         | 295 +++++++++++++++++++--
+ scripts/quick_loot_mockup.py                       | 123 ++++++---
+ scripts/test_quick_loot_mockup.py                  |  91 +++++--
+ 9 files changed, 1004 insertions(+), 242 deletions(-)
 ```
-- **Dirty Files (186):**
+- **Dirty Files (187):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
+  - ` M .claude/handoffs/25_pc_levelup_filter.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
   - ` M .claude/handoffs/51_combat_stats_page.handoff.md`
   - ` M .claude/handoffs/DECOMP_PLAN.handoff.md`
@@ -27,8 +35,7 @@ c37a5949 doc 02 + play row BH-PO2: poison drain 0.2.5 (OnApplyPoison ints layout
   - ` M .claude/handoffs/variant_fix_wave_skill.handoff.md`
   - ` M .claude/plans/swarm_library_architecture.md`
   - ` M .claude/reviews/gemini_20261014/tools/fix3_items.tsv`
-  - ` M .claude/settings.json`
-  - ... +176 more (run `git status --short`)
+  - ... +177 more (run `git status --short`)
 
 ## 2. Immediate Objective (**QL2**)
 **Peek on select: list under the name tag after the first click; row click = walk + take one item**
@@ -37,7 +44,9 @@ Status: TODO
 Task: Peek on select: list under the name tag after the first click; row click = walk + take one item
 
 ## 2b. Upcoming Batches in Pipeline
-- ****QL3**** : True hover peek: own floating name + list on hover (app+0x4B0), merge with doc 12 empty-container cursor
+- ****QL4**** : Per-item take: pick a row from the peek list -> `CSWSCreature::AcquireItem 0x5BDB60` (mod enforces range); replicate CloseInventory's first-pickup notice (item local bool 0x5E, lockertsfinv compare)
+- ****QL5**** : Empty / looted container marker (K1 "Marked Empty Containers" has no TSL port): mark on hover/name tag; merge with QL3 and doc 12
+- ****QL6**** : Give / quest hand-in containers: identify them (container_p "Give" view, ctrl 0x29, gui+0x70 bit0) from live logs and always route them to the vanilla menu
 
 ## 3. Strict Context Budget & Read Policy
 - **Fresh Session Bootstrap**: Run `python3 scripts/plan_manager.py resume patch_manager_mods/52_quick_loot.md`.
