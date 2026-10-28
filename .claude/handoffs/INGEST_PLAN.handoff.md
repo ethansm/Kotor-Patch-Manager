@@ -1,47 +1,24 @@
 # Session Handoff & Plan State: patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md
 
 ## 0. Next-Phase Direction
-Execute I5: Docs sweep (tool listed free-first in CLAUDE.md, RE_AGENT_GUIDE §2.1, README, SUBAGENT_ROLES) + memory
+All phases complete. Run master tests and prepare PR.
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md`
-- **Branch:** `KOTOR-II` (021c750f INGEST I3: richer cards PASS (81%), 56 ingest-notes ledger rows; fix comma-list name pairing)
-- **Generated:** 2026-10-27 23:23:05 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (b2d4aa6c INGEST I5: advertise ingest_names cards|score + promote_names in agent docs)
+- **Generated:** 2026-10-28 00:05:37 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-021c750f INGEST I3: richer cards PASS (81%), 56 ingest-notes ledger rows; fix comma-list name pairing
- .claude/research/ingest/i3/README.md               |  12 +
- .claude/research/ingest/i3/cards_v2/chunk_1.md     | 209 +++++
- .claude/research/ingest/i3/cards_v2/chunk_2.md     | 254 ++++++
- .claude/research/ingest/i3/cards_v2/chunk_3.md     | 241 ++++++
- .claude/research/ingest/i3/cards_v2/chunk_4.md     | 254 ++++++
- .claude/research/ingest/i3/cards_v2/chunk_5.md     | 254 ++++++
- .claude/research/ingest/i3/cards_v2/chunk_6.md     | 222 ++++++
- .claude/research/ingest/i3/cards_v2/chunk_7.md     | 244 ++++++
- .claude/research/ingest/i3/cards_v2/chunk_8.md     | 229 ++++++
- .claude/research/ingest/i3/cards_v2/chunk_9.md     | 191 +++++
- .claude/research/ingest/i3/cards_v2/key.tsv        | 107 +++
- .claude/research/ingest/i3/cards_v2/promote.tsv    |  62 ++
- .claude/research/ingest/i3/cards_v2/score.txt      |   6 +
- .claude/research/ingest/i3/cards_v2/verdicts_1.tsv |  13 +
- .claude/research/ingest/i3/cards_v2/verdicts_2.tsv |  13 +
- .claude/research/ingest/i3/cards_v2/verdicts_3.tsv |  13 +
- .claude/research/ingest/i3/cards_v2/verdicts_4.tsv |  13 +
- .claude/research/ingest/i3/cards_v2/verdicts_5.tsv |  13 +
- .claude/research/ingest/i3/cards_v2/verdicts_6.tsv |  13 +
- .claude/research/ingest/i3/cards_v2/verdicts_7.tsv |  13 +
- .claude/research/ingest/i3/cards_v2/verdicts_8.tsv |  13 +
- .claude/research/ingest/i3/cards_v2/verdicts_9.tsv |  11 +
- .claude/research/ingest/i3/conflicts.tsv           |   1 +
- .../research/ingest/i3/extract_notes_all_v2.tsv    | 888 +++++++++++++++++++++
- .../research/ingest/i3/extract_notes_verified.tsv  |  69 ++
- patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md |   1 +
- .../rea_findings/20261027_ingest-notes.tsv         |  57 ++
- .../ghidra_knowledge/tools/ingest_names.py         |  74 +-
- .../tools/tests/test_ingest_names.py               |  56 ++
- 29 files changed, 3538 insertions(+), 8 deletions(-)
+b2d4aa6c INGEST I5: advertise ingest_names cards|score + promote_names in agent docs
+ .claude/skills/kotor2-persist-knowledge/SKILL.md      | 3 ++-
+ AGENTS.md                                             | 1 +
+ CLAUDE.md                                             | 2 +-
+ patch_manager_mods/SUBAGENT_ROLES.md                  | 3 ++-
+ patch_manager_mods/ghidra_knowledge/README.md         | 5 ++++-
+ patch_manager_mods/ghidra_knowledge/RE_AGENT_GUIDE.md | 4 +++-
+ 6 files changed, 13 insertions(+), 5 deletions(-)
 ```
-- **Dirty Files (188):**
+- **Dirty Files (189):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/25_pc_levelup_filter.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
@@ -52,20 +29,10 @@ Execute I5: Docs sweep (tool listed free-first in CLAUDE.md, RE_AGENT_GUIDE §2.
   - ` M .claude/handoffs/deep_haiku_review_skill.handoff.md`
   - ` M .claude/handoffs/variant_fix_wave_skill.handoff.md`
   - ` M .claude/plans/swarm_library_architecture.md`
-  - ... +178 more (run `git status --short`)
-
-## 2. Immediate Objective (I5)
-**Docs sweep (tool listed free-first in CLAUDE.md, RE_AGENT_GUIDE §2.1, README, SUBAGENT_ROLES) + memory**
-
-Status: TODO
-Task: Docs sweep (tool listed free-first in CLAUDE.md, RE_AGENT_GUIDE §2.1, README, SUBAGENT_ROLES) + memory
+  - ... +179 more (run `git status --short`)
 
 ## 3. Strict Context Budget & Read Policy
 - **Fresh Session Bootstrap**: Run `python3 scripts/plan_manager.py resume patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md`.
-
-## 4. Subagent Delegation Direction
-- **Claude Code**: parallel `model: haiku` Agent subagents; brief = `Contract` + `Write Scope` + `python3 scripts/agent_contract.py print worker|recon`.
-- **Other backends** (only when the user asks): `python3 scripts/plan_manager.py delegate I5` or `oc-subagent <scout|code|ghidra|verify|gate|doc>`.
 
 ## 5. Dead Ends & Verification (manual)
 - Gap prototype (I0 starting point): `.claude/research/ingest/gap_prototype.py` (4368b1e4); `python3 .claude/research/ingest/gap_prototype.py` prints 79 / 515.
