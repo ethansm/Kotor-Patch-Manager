@@ -640,7 +640,7 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
     if (reason == DLL_PROCESS_ATTACH) {
         char cwd[MAX_PATH] = "?"; GetCurrentDirectoryA(MAX_PATH, cwd);
         rotateFallbackLog(cwd);
-        logf("inventory-sort-filter 0.2.3 loaded; cwd=%s pid=%lu", cwd, (unsigned long)GetCurrentProcessId());
+        logf("inventory-sort-filter 0.3.0-dev loaded; cwd=%s pid=%lu", cwd, (unsigned long)GetCurrentProcessId());
         // Bare names go to the Windows directory (Wine: C:\\windows), so anchor the INI to the game folder.
         if (GetCurrentDirectoryA(MAX_PATH, cwd) > 0) snprintf(IniName, sizeof IniName, "%s\\inventory_sort_filter.ini", cwd);
         logf("ini path: %s", IniName);
