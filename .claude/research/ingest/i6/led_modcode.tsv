@@ -1,0 +1,3 @@
+addr	kind	name	confidence	evidence	topic	date
+0x009960c8	global	EffMasteryLight	probable	0x009960c8: constexpr uintptr_t EffMasteryLight = 0x009960C8;  // read the int stored at this address at runtime, it is the effect type id | src patch_manager_mods/active_effects_panel_src/CombatStats	ingest-modcode	2026-10-28
+0x009960cc	global	EffMasteryDark	probable	0x009960cc: constexpr uintptr_t EffMasteryDark  = 0x009960CC;  // read the int stored at this address at runtime, it is the effect type id | src patch_manager_mods/active_effects_panel_src/CombatStats	ingest-modcode	2026-10-28

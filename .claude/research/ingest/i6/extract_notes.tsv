@@ -1,0 +1,26 @@
+addr	kind	name	form	src	fn_start	offset	status	kdb_name	cites
+0x004687e0	function	Scene::DoGobShadows	qualified	.claude/research/render_distance/R3_shadows.md:19	0x004687e0	0x0	new		2
+0x004687e0	function	Scene::DoGobShadows	qualified	patch_manager_mods/49_k2_render_distance.md:20	0x004687e0	0x0	new		2
+0x0040e480	function	CClientExoApp::GetCharacterChangeInProgress	qualified	patch_manager_mods/19b_cross_patch_sharing_survey.md:130	0x0040e480	0x0	new		1
+0x00414ba0	function	CSWGuiControl::GetHeight	qualified	patch_manager_mods/engine_research_findings/V2.md:29	0x00414ba0	0x0	new		1
+0x0042a3d0	function	GLBufferPool::Resize	qualified	patch_manager_mods/engine_research_findings/R2.md:47	0x0042a3d0	0x0	new		1
+0x00435720	function	GLRender::FrameBufferModifications	qualified	patch_manager_mods/engine_research_findings/R9.md:66	0x00435720	0x0	new		1
+0x0044ef20	function	MdlNodeAnimMesh::InternalGenVertices	qualified	.claude/research/render_perf/R8_models_anim.md:30	0x0044ef20	0x0	new		1
+0x00464d10	function	Scene::AddObject	qualified	.claude/research/render_perf/R8_models_anim.md:17	0x00464d10	0x0	new		1
+0x0047a0c0	function	GetFontTexture	bare	patch_manager_mods/engine_research_findings/V3.md:26	0x0047a0c0	0x0	new		1
+0x0047a510	function	CAurGUIStringInternal::GetFontPixelHeight	qualified	patch_manager_mods/engine_research_findings/V8.md:36	0x0047a510	0x0	new		1
+0x00512130	function	IODispatcher::ReadSync_4	qualified	patch_manager_mods/engine_research_findings/R9.md:117	0x00512130	0x0	new		1
+0x00652810	function	Global::AurGrassMaterialInUse	qualified	patch_manager_mods/engine_research_findings/R9.md:260	0x00652810	0x0	new		1
+0x0069fee0	function	CSWBaseItemArray::Load	qualified	patch_manager_mods/engine_research_findings/V6.md:253	0x0069fee0	0x0	new		1
+0x0070b9b0	function	CExoSound::ReInitialize	qualified	patch_manager_mods/engine_research_findings/W5.md:17	0x0070b9b0	0x0	new		1
+0x0071b8b0	function	C2DA::GetFloat	qualified	patch_manager_mods/engine_research_findings/R5.md:28	0x0071b8b0	0x0	new		1
+0x0071cf80	function	C2DA::Free	qualified	patch_manager_mods/engine_research_findings/V6.md:243	0x0071cf80	0x0	new		1
+0x00724780	function	CExoKeyTable::Load	qualified	patch_manager_mods/engine_research_findings/R2.md:43	0x00724780	0x0	new		1
+0x00729ed0	function	CRes2DA::CRes2DA	qualified	patch_manager_mods/engine_research_findings/V6.md:20	0x00729ed0	0x0	new		1
+0x00745770	function	CSWGuiMainInterfaceChar::DrawEffects	qualified	patch_manager_mods/21b_gog_address_map.md:89	0x00745770	0x0	new		1
+0x00750790	function	CSWGuiMainInterface::DrawMap	qualified	patch_manager_mods/engine_research_findings/V4.md:18	0x00750790	0x0	new		1
+0x00783d80	function	CClientExoAppInternal::StallServerCode	qualified	patch_manager_mods/engine_research_findings/R9.md:245	0x00783d80	0x0	new		1
+0x0085ef00	function	CSoundSetList::CSoundSetList	qualified	patch_manager_mods/engine_research_findings/V6.md:32	0x0085ef00	0x0	new		1
+0x009091e0	function	CSWGuiPowersLevelUp::Draw	qualified	.claude/research/wi36_rescue/WI-163_facts.md:55	0x009091e0	0x0	new		1
+0x0090a970	function	CSWGuiFeatsCharGen::~CSWGuiFeatsCharGen	qualified	.claude/research/wi36_rescue/WI-163_facts.md:53	0x0090a970	0x0	new		1
+0x0090bbb0	function	CSWGuiFeatsCharGen::Draw	qualified	.claude/research/wi36_rescue/WI-163_facts.md:54	0x0090bbb0	0x0	new		1

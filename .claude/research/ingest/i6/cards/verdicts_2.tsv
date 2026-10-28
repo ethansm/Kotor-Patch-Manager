@@ -1,0 +1,13 @@
+card	verdict	quote
+C13	unsure	(**(code **)(*param_1 + 0xb0))(param_2);
+C14	unsure	callees: 0x00463ed0 (CALL), 0x0050a630 (CALL), ...
+C15	consistent	*(undefined ***)this = CRes2DA::vftable;
+C16	inconsistent	0x0040ec90 CSWGuiPanel::Draw (CALL)
+C17	inconsistent	return *(undefined4 *)(param_1 + 0x10);
+C18	inconsistent	FID_conflict__sscanf((char *)(*(int *)(param_1 + 0x40) + uVar2),"%i",param_4);
+C19	unsure	(**(code **)(**(int **)(param_1 + 0x18) + 0x40))();
+C20	inconsistent	if (param_3[1] + param_3[3] < param_2[1] + param_2[3]) {
+C21	inconsistent	*(undefined4 *)(iVar4 + 0xc) = *puVar2;
+C22	inconsistent	*(uint *)(param_1 + 0x5da4) = *(uint *)(param_1 + 0x5da4) & 0xfffffffd;
+C23	inconsistent	if (param_3[1] + param_3[3] < param_2[1] + param_2[3]) {
+C24	consistent	CSWGuiPanel::Draw(param_2);

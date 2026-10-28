@@ -1,0 +1,12 @@
+addr	kind	name	form	src	fn_start	offset	status	kdb_name	cites
+0x0044ef20	function	MdlNodeAnimMesh::InternalGenVertices	qualified	.claude/research/render_perf/R8_models_anim.md:30	0x0044ef20	0x0	new		1
+0x00464d10	function	Scene::AddObject	qualified	.claude/research/render_perf/R8_models_anim.md:17	0x00464d10	0x0	new		1
+0x0047a510	function	CAurGUIStringInternal::GetFontPixelHeight	qualified	patch_manager_mods/engine_research_findings/V8.md:36	0x0047a510	0x0	new		1
+0x00512130	function	IODispatcher::ReadSync_4	qualified	patch_manager_mods/engine_research_findings/R9.md:117	0x00512130	0x0	new		1
+0x00729ed0	function	CRes2DA::CRes2DA	qualified	patch_manager_mods/engine_research_findings/V6.md:20	0x00729ed0	0x0	new		1
+0x00745770	function	CSWGuiMainInterfaceChar::DrawEffects	qualified	patch_manager_mods/21b_gog_address_map.md:89	0x00745770	0x0	new		1
+0x00750790	function	CSWGuiMainInterface::DrawMap	qualified	patch_manager_mods/engine_research_findings/V4.md:18	0x00750790	0x0	new		1
+0x0085ef00	function	CSoundSetList::CSoundSetList	qualified	patch_manager_mods/engine_research_findings/V6.md:32	0x0085ef00	0x0	new		1
+0x009091e0	function	CSWGuiPowersLevelUp::Draw	qualified	.claude/research/wi36_rescue/WI-163_facts.md:55	0x009091e0	0x0	new		1
+0x0090a970	function	CSWGuiFeatsCharGen::~CSWGuiFeatsCharGen	qualified	.claude/research/wi36_rescue/WI-163_facts.md:53	0x0090a970	0x0	new		1
+0x0090bbb0	function	CSWGuiFeatsCharGen::Draw	qualified	.claude/research/wi36_rescue/WI-163_facts.md:54	0x0090bbb0	0x0	new		1

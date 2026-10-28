@@ -1,0 +1,27 @@
+addr	kind	name	confidence	evidence	topic	date
+0x004687e0	function	Scene::DoGobShadows	probable	0x004687e0: PUSH EBP | src .claude/research/render_distance/R3_shadows.md:19	ingest-notes	2026-10-28
+0x0040e480	function	CClientExoApp::GetCharacterChangeInProgress	probable	0x0040e480: PUSH EBP | src patch_manager_mods/19b_cross_patch_sharing_survey.md:130	ingest-notes	2026-10-28
+0x00414ba0	function	CSWGuiControl::GetHeight	probable	0x00414ba0: PUSH EBP | src patch_manager_mods/engine_research_findings/V2.md:29	ingest-notes	2026-10-28
+0x0042a3d0	function	GLBufferPool::Resize	probable	0x0042a3d0: PUSH EBP | src patch_manager_mods/engine_research_findings/R2.md:47	ingest-notes	2026-10-28
+0x00435720	function	GLRender::FrameBufferModifications	probable	0x00435720: PUSH EBP | src patch_manager_mods/engine_research_findings/R9.md:66	ingest-notes	2026-10-28
+0x0044ef20	function	MdlNodeAnimMesh::InternalGenVertices	probable	0x0044ef20: PUSH EBP | src .claude/research/render_perf/R8_models_anim.md:30	ingest-notes	2026-10-28
+0x00464d10	function	Scene::AddObject	probable	0x00464d10: PUSH EBP | src .claude/research/render_perf/R8_models_anim.md:17	ingest-notes	2026-10-28
+0x0047a0c0	function	GetFontTexture	probable	0x0047a0c0: PUSH EBP | src patch_manager_mods/engine_research_findings/V3.md:26	ingest-notes	2026-10-28
+0x0047a510	function	CAurGUIStringInternal::GetFontPixelHeight	probable	0x0047a510: PUSH EBP | src patch_manager_mods/engine_research_findings/V8.md:36	ingest-notes	2026-10-28
+0x00512130	function	IODispatcher::ReadSync_4	probable	0x00512130: PUSH EBP | src patch_manager_mods/engine_research_findings/R9.md:117	ingest-notes	2026-10-28
+0x00652810	function	Global::AurGrassMaterialInUse	probable	0x00652810: PUSH EBP | src patch_manager_mods/engine_research_findings/R9.md:260	ingest-notes	2026-10-28
+0x0069fee0	function	CSWBaseItemArray::Load	probable	0x0069fee0: PUSH EBP | src patch_manager_mods/engine_research_findings/V6.md:253	ingest-notes	2026-10-28
+0x0070b9b0	function	CExoSound::ReInitialize	probable	0x0070b9b0: PUSH EBP | src patch_manager_mods/engine_research_findings/W5.md:17	ingest-notes	2026-10-28
+0x0071b8b0	function	C2DA::GetFloat	probable	0x0071b8b0: PUSH EBP | src patch_manager_mods/engine_research_findings/R5.md:28	ingest-notes	2026-10-28
+0x0071cf80	function	C2DA::Free	probable	0x0071cf80: PUSH EBP | src patch_manager_mods/engine_research_findings/V6.md:243	ingest-notes	2026-10-28
+0x00724780	function	CExoKeyTable::Load	probable	0x00724780: PUSH EBP | src patch_manager_mods/engine_research_findings/R2.md:43	ingest-notes	2026-10-28
+0x00729ed0	function	CRes2DA::CRes2DA	probable	0x00729ed0: PUSH EBP | src patch_manager_mods/engine_research_findings/V6.md:20	ingest-notes	2026-10-28
+0x00745770	function	CSWGuiMainInterfaceChar::DrawEffects	probable	0x00745770: PUSH EBP | src patch_manager_mods/21b_gog_address_map.md:89	ingest-notes	2026-10-28
+0x00750790	function	CSWGuiMainInterface::DrawMap	probable	0x00750790: PUSH EBP | src patch_manager_mods/engine_research_findings/V4.md:18	ingest-notes	2026-10-28
+0x00783d80	function	CClientExoAppInternal::StallServerCode	probable	0x00783d80: PUSH EBP | src patch_manager_mods/engine_research_findings/R9.md:245	ingest-notes	2026-10-28
+0x0085ef00	function	CSoundSetList::CSoundSetList	probable	0x0085ef00: PUSH EBP | src patch_manager_mods/engine_research_findings/V6.md:32	ingest-notes	2026-10-28
+0x009091e0	function	CSWGuiPowersLevelUp::Draw	probable	0x009091e0: PUSH EBP | src .claude/research/wi36_rescue/WI-163_facts.md:55	ingest-notes	2026-10-28
+0x0090a970	function	CSWGuiFeatsCharGen::~CSWGuiFeatsCharGen	probable	0x0090a970: PUSH EBP | src .claude/research/wi36_rescue/WI-163_facts.md:53	ingest-notes	2026-10-28
+0x0090bbb0	function	CSWGuiFeatsCharGen::Draw	probable	0x0090bbb0: PUSH EBP | src .claude/research/wi36_rescue/WI-163_facts.md:54	ingest-notes	2026-10-28
+0x009960c8	global	EffMasteryLight	probable	0x009960c8: constexpr uintptr_t EffMasteryLight = 0x009960C8;  // read the int stored at this address at runtime, it is the effect type id | src patch_manager_mods/active_effects_panel_src/CombatStats	ingest-modcode	2026-10-28
+0x009960cc	global	EffMasteryDark	probable	0x009960cc: constexpr uintptr_t EffMasteryDark  = 0x009960CC;  // read the int stored at this address at runtime, it is the effect type id | src patch_manager_mods/active_effects_panel_src/CombatStats	ingest-modcode	2026-10-28

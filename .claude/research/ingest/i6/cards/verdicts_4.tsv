@@ -1,0 +1,4 @@
+card	verdict	quote
+C37	inconsistent	local_b0 = CMFCRibbonProgressBar::CMFCRibbonProgressBar(this);
+C38	consistent	in 0x0057eca0 (CSWSCreature::GetMaxForcePoints): iVar3 = FUN_0058bbe0(DAT_009960cc);
+C39	consistent	0x0040ec90 CSWGuiPanel::Draw (CALL)

@@ -1,0 +1,342 @@
+addr	kind	name	form	src	fn_start	offset	status	kdb_name
+0x0040bcf0	function	FnAppActivated	bare	patch_manager_mods/load_hang_probe_src/LoadHangProbe.cpp:62	0x0040bcf0	0x0	conflicts	AppActivated
+0x0040ec90	function	CSWGuiPanel::Draw	qualified	patch_manager_mods/mod_config_src/kotor2-steam-aspyr.hooks.toml:22	0x0040ec90	0x0	agrees	CSWGuiPanel::Draw
+0x0040ec90	function	CSWGuiPanel::Draw	qualified	patch_manager_mods/mod_config_src/kotor2-steam-aspyr.hooks.toml:25	0x0040ec90	0x0	agrees	CSWGuiPanel::Draw
+0x0040ed9f	callsite	CSWGuiPanel::Draw	qualified	patch_manager_mods/dialogue_letterbox_fix_src/probe/kotor2-steam-aspyr.hooks.toml:94	0x0040ec90	0x10f	new	
+0x0040f5a0	function	StopLoadFromLayout	bare	patch_manager_mods/_shared_src/GameAddr.h:25	0x0040f5a0	0x0	agrees	CSWGuiPanel::StopLoadFromLayout
+0x0040f5a0	function	guikit::createLabelFromTemplate	qualified	patch_manager_mods/hud_host_src/kotor2-steam-aspyr.hooks.toml:59	0x0040f5a0	0x0	conflicts	CSWGuiPanel::StopLoadFromLayout
+0x0040f620	function	InitControl	bare	patch_manager_mods/_shared_src/GameAddr.h:24	0x0040f620	0x0	agrees	CSWGuiPanel::InitControl
+0x0040f978	callsite	GuiAccept	bare	patch_manager_mods/robustness_fixes_src/RobustnessFixes.cpp:129	0x0040f620	0x358	new	
+0x0040f9e4	callsite	GuiReject	bare	patch_manager_mods/robustness_fixes_src/RobustnessFixes.cpp:129	0x0040f620	0x3c4	new	
+0x00411ac1	callsite	CSWGuiManager::SetScreenSize	qualified	patch_manager_mods/dialogue_letterbox_fix_src/kotor2-steam-aspyr.hooks.toml:9	0x00411a80	0x41	new	
+0x00411ac1	callsite	CSWGuiManager::SetScreenSize	qualified	patch_manager_mods/dialogue_letterbox_fix_src/probe/kotor2-steam-aspyr.hooks.toml:9	0x00411a80	0x41	new	
+0x004122a0	function	PlayGuiSound	bare	patch_manager_mods/_shared_src/GameAddr.h:15	0x004122a0	0x0	agrees	CSWGuiManager::PlayGuiSound
+0x00414840	function	SetImage	bare	patch_manager_mods/equip_icon_fix_src/EquipIconFix.cpp:41	0x00414840	0x0	conflicts	CSWGuiControl image setter thiscall(CResRef* name, int force) RET 8; current resref at ctl+0x44; work only when name differs (0x710A70) or force
+0x00416de0	function	SetFont	bare	patch_manager_mods/_shared_src/GameAddr.h:29	0x00416de0	0x0	conflicts	CSWGuiTextParams::SetBaseFont
+0x00416e30	function	TextSet	bare	patch_manager_mods/_shared_src/GameAddr.h:28	0x00416e30	0x0	conflicts	CSWGuiTextParams::SetText
+0x00416e30	function	FnTextSet	bare	patch_manager_mods/inventory_sort_filter_src/InventorySortFilter.cpp:51	0x00416e30	0x0	conflicts	CSWGuiTextParams::SetText
+0x00416fa0	function	SetAlign	bare	patch_manager_mods/_shared_src/GameAddr.h:30	0x00416fa0	0x0	conflicts	CSWGuiTextParams::SetAlignment
+0x00417140	function	TextColor	bare	patch_manager_mods/_shared_src/GameAddr.h:31	0x00417140	0x0	conflicts	CSWGuiTextParams::SetDefaultColor
+0x00417800	function	GuiTextObjRefresh	bare	patch_manager_mods/_shared_src/GameAddr.h:134	0x00417800	0x0	agrees	GuiTextObjRefresh
+0x00417f40	function	GuiSceneCtor	bare	patch_manager_mods/_shared_src/GameAddr.h:51	0x00417f40	0x0	agrees	rea:GuiSceneCtor
+0x00418360	function	SceneAddModel	bare	patch_manager_mods/_shared_src/GameAddr.h:52	0x00418360	0x0	agrees	rea:SceneAddModel
+0x00418430	function	SceneRemoveModel	bare	patch_manager_mods/_shared_src/GameAddr.h:53	0x00418430	0x0	agrees	rea:SceneRemoveModel
+0x004184b0	function	SceneGetModel	bare	patch_manager_mods/_shared_src/GameAddr.h:54	0x004184b0	0x0	agrees	SceneGetModel
+0x00418990	function	GuiControlCtor	bare	patch_manager_mods/_shared_src/GameAddr.h:50	0x00418990	0x0	conflicts	CSWGuiControl::Constructor
+0x00419070	callsite	CSWCCreature::SetAppearance	qualified	patch_manager_mods/npc_diversity_src/kotor2-gog-aspyr.hooks.toml:24	0x00419060	0x10	new	
+0x00419740	function	LabelCtor	bare	patch_manager_mods/_shared_src/GameAddr.h:22	0x00419740	0x0	agrees	LabelCtor
+0x0041a510	function	ButtonCtor	bare	patch_manager_mods/_shared_src/GameAddr.h:23	0x0041a510	0x0	agrees	ButtonCtor
+0x00423000	function	TexBasicCtor	bare	patch_manager_mods/_shared_src/GameAddr.h:44	0x00423000	0x0	conflicts	CAurTextureBasic::Constructor
+0x00423990	function	TexReset	bare	patch_manager_mods/_shared_src/GameAddr.h:47	0x00423990	0x0	conflicts	CAurTextureBasic::Reset
+0x004260e0	function	CAurTextureBasic::BuildAndStoreTexture	qualified	patch_manager_mods/texture_memory_release_src/kotor2-steam-aspyr.hooks.toml:7	0x004260e0	0x0	agrees	CAurTextureBasic::BuildAndStoreTexture
+0x004261cf	callsite	PatchTx	bare	patch_manager_mods/perf_lab_src/perflab/PerfLab.cpp:272	0x004260e0	0xef	new	
+0x004261d6	callsite	TxFree	bare	patch_manager_mods/perf_lab_src/perflab/PerfLab.cpp:272	0x004260e0	0xf6	new	
+0x004261e6	callsite	TxSkip	bare	patch_manager_mods/perf_lab_src/perflab/PerfLab.cpp:272	0x004260e0	0x106	new	
+0x004265f3	callsite	PatchG1	bare	patch_manager_mods/perf_lab_src/perflab/PerfLab.cpp:272	0x004265e0	0x13	new	
+0x00427970	function	kOrigFn	bare	patch_manager_mods/k2_engine_perf_src/TexScanCache.h:48	0x00427970	0x0	conflicts	Global::AurTextureGetOrdering
+0x00427970	function	TexMgr::RebuildIdList	qualified	patch_manager_mods/k2_engine_perf_src/TexScanCache.h:5	0x00427970	0x0	conflicts	Global::AurTextureGetOrdering
+0x00427970	function	TexMgr::RebuildIdList	qualified	patch_manager_mods/k2_engine_perf_src/code_patches.toml:7	0x00427970	0x0	conflicts	Global::AurTextureGetOrdering
+0x00427970	function	kOrig	bare	patch_manager_mods/k2_engine_perf_src/tex_scan_cache_test.cpp:93	0x00427970	0x0	conflicts	Global::AurTextureGetOrdering
+0x00428aea	callsite	SscResume	bare	patch_manager_mods/robustness_fixes_src/RobustnessFixes.cpp:132	0x004289d0	0x11a	new	
+0x00428b33	callsite	SsbPresent	bare	patch_manager_mods/robustness_fixes_src/RobustnessFixes.cpp:132	0x004289d0	0x163	new	
+0x00428b88	callsite	SsbSkip	bare	patch_manager_mods/robustness_fixes_src/RobustnessFixes.cpp:132	0x004289d0	0x1b8	new	
+0x004491c0	function	TexListAdd	bare	patch_manager_mods/_shared_src/GameAddr.h:46	0x004491c0	0x0	conflicts	CExoPtrList::Add (doubling)
+0x00459710	function	GobGetPosition	bare	patch_manager_mods/_shared_src/GameAddr.h:60	0x00459710	0x0	conflicts	Gob::GetPosition
+0x00459740	function	GobGetOrientation	bare	patch_manager_mods/_shared_src/GameAddr.h:61	0x00459740	0x0	conflicts	Gob::GetOrientation
+0x00461490	function	GobSetPosition	bare	patch_manager_mods/_shared_src/GameAddr.h:58	0x00461490	0x0	conflicts	Gob::SetPosition
+0x004614e0	function	GobSetOrientation	bare	patch_manager_mods/_shared_src/GameAddr.h:59	0x004614e0	0x0	conflicts	Gob::SetOrientation
+0x00461530	function	GobGetParent	bare	patch_manager_mods/_shared_src/GameAddr.h:62	0x00461530	0x0	conflicts	rea:refuted: Gob+0x1B4 is the parent Gob (it holds the behavior object)
+0x00461670	function	GobAttachByName	bare	patch_manager_mods/_shared_src/GameAddr.h:82	0x00461670	0x0	conflicts	rea:FUN_00461670 Gob attach-by-name (child=ECX; parent,nodeName,type; RET 0xC); Gob vtbl+0x50
+0x00462320	function	CreateModelGob	bare	patch_manager_mods/_shared_src/GameAddr.h:124	0x00462320	0x0	conflicts	rea:FUN_00462320 model-based Gob creator (resref lookup FUN_0048e160)
+0x00462320	function	FnCreateModel	bare	patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp:41	0x00462320	0x0	conflicts	rea:FUN_00462320 model-based Gob creator (resref lookup FUN_0048e160)
+0x00464c80	function	Scene::SetFogRange	qualified	patch_manager_mods/k2_fog_distance_src/K2FogDistance.cpp:24	0x00464c80	0x0	agrees	Scene::SetFogRange
+0x00464c80	function	Scene::SetFogRange	qualified	patch_manager_mods/k2_fog_distance_src/K2FogDistanceLogic.h:20	0x00464c80	0x0	agrees	Scene::SetFogRange
+0x00465f90	function	Scene::DoMeshBuckets	qualified	patch_manager_mods/k2_engine_perf_src/code_patches.toml:7	0x00465f90	0x0	agrees	Scene::DoMeshBuckets
+0x004662e0	function	Scene::DoCapBucket	qualified	patch_manager_mods/k2_engine_perf_src/code_patches.toml:17	0x004662e0	0x0	agrees	Scene::DoCapBucket
+0x004664e0	function	Scene::DoBinBucket	qualified	patch_manager_mods/k2_grass_draw_distance_src/K2GrassDrawDistance.cpp:615	0x004664e0	0x0	agrees	Scene::DoBinBucket
+0x004664e0	function	Scene::DoBinBucket	qualified	patch_manager_mods/k2_grass_draw_distance_src/kotor2-steam-aspyr.hooks.toml:21	0x004664e0	0x0	agrees	Scene::DoBinBucket
+0x0046661b	callsite	Scene::DoBinBucket	qualified	patch_manager_mods/k2_grass_draw_distance_src/kotor2-steam-aspyr.hooks.toml:27	0x004664e0	0x13b	new	
+0x00466698	callsite	Scene::DoBinBucket	qualified	patch_manager_mods/k2_grass_draw_distance_src/K2GrassDrawDistance.cpp:635	0x004664e0	0x1b8	new	
+0x00466698	callsite	Scene::DoBinBucket	qualified	patch_manager_mods/k2_grass_draw_distance_src/kotor2-steam-aspyr.hooks.toml:34	0x004664e0	0x1b8	new	
+0x00466698	callsite	Scene::DoBinBucket	qualified	patch_manager_mods/k2_grass_draw_distance_src/kotor2-steam-aspyr.hooks.toml:37	0x004664e0	0x1b8	new	
+0x00466700	function	Scene::DoFadeBuckets	qualified	patch_manager_mods/k2_engine_perf_src/code_patches.toml:27	0x00466700	0x0	agrees	Scene::DoFadeBuckets
+0x00468b50	function	Scene::DoGobShadowsForThisLight	qualified	patch_manager_mods/k2_shadow_distance_src/K2ShadowDistance.cpp:213	0x00468b50	0x0	agrees	Scene::DoGobShadowsForThisLight
+0x00468b50	function	Scene::DoGobShadowsForThisLight	qualified	patch_manager_mods/k2_shadow_distance_src/kotor2-steam-aspyr.hooks.toml:4	0x00468b50	0x0	agrees	Scene::DoGobShadowsForThisLight
+0x00468cdb	callsite	AddrRefFld	bare	patch_manager_mods/k2_shadow_distance_src/K2ShadowDistance.cpp:32	0x00468b50	0x18b	new	
+0x0046a980	function	Scene::DoFog	qualified	patch_manager_mods/k2_fog_distance_src/K2FogDistance.cpp:25	0x0046a980	0x0	agrees	Scene::DoFog
+0x0046a980	function	Scene::DoFog	qualified	patch_manager_mods/k2_fog_distance_src/K2FogDistanceLogic.h:20	0x0046a980	0x0	agrees	Scene::DoFog
+0x0046a980	function	Scene::SetFogRange	qualified	patch_manager_mods/k2_fog_distance_src/K2FogDistanceLogic.h:20	0x0046a980	0x0	conflicts	Scene::DoFog
+0x0046a980	function	Scene::DoFog	qualified	patch_manager_mods/k2_fog_distance_src/kotor2-steam-aspyr.hooks.toml:4	0x0046a980	0x0	agrees	Scene::DoFog
+0x0046a989	callsite	Scene::DoFog	qualified	patch_manager_mods/k2_fog_distance_src/K2FogDistance.cpp:166	0x0046a980	0x9	new	
+0x0046a989	callsite	Scene::DoFog	qualified	patch_manager_mods/k2_fog_distance_src/kotor2-steam-aspyr.hooks.toml:10	0x0046a980	0x9	new	
+0x00472630	function	std::map	qualified	patch_manager_mods/perf_lab_src/perflab/kotor2-steam-aspyr.hooks.toml:156	0x00472630	0x0	conflicts	TexBucketMap::operator[]
+0x00478a20	function	CClientExoAppInternal::MainLoop	qualified	patch_manager_mods/perf_lab_src/perflab/kotor2-steam-aspyr.hooks.toml:8	0x00478a20	0x0	conflicts	Global::AurMakeCurrent
+0x00478a57	callsite	AddrGmsSite	bare	patch_manager_mods/k2_engine_perf_src/K2EnginePerf.cpp:29	0x00478a20	0x37	new	
+0x00478a57	callsite	memstat::install	qualified	patch_manager_mods/k2_engine_perf_src/MemStatusCache.h:28	0x00478a20	0x37	new	
+0x0047af30	function	CAurGUIStringInternal::WrapStrings	qualified	patch_manager_mods/wrap_measure_fix_src/kotor2-steam-aspyr.hooks.toml:6	0x0047af30	0x0	agrees	CAurGUIStringInternal::WrapStrings
+0x0047eb60	function	GuiLoadImage	bare	patch_manager_mods/_shared_src/GameAddr.h:33	0x0047eb60	0x0	conflicts	rea:GuiLoadImage cdecl(resref) returns 8-byte wrapper; resref 0 -> 0x47cd50 else alloc + 0x47d070
+0x0048e691	callsite	CSWCCreatureAppearance::GetBTypeModelAndTextureResRef	qualified	patch_manager_mods/npc_diversity_src/kotor2-gog-aspyr.hooks.toml:8	0x0048e680	0x11	new	
+0x00499610	function	Scene::CollectAndTraverse	qualified	patch_manager_mods/k2_grass_draw_distance_src/kotor2-steam-aspyr.hooks.toml:4	0x00499610	0x0	agrees	Scene::CollectAndTraverse
+0x00499abc	callsite	Scene::CollectAndTraverse	qualified	patch_manager_mods/k2_grass_draw_distance_src/K2GrassDrawDistance.cpp:588	0x00499610	0x4ac	new	
+0x00499adc	callsite	AddrCollectFld	bare	patch_manager_mods/k2_grass_draw_distance_src/K2GrassDrawDistance.cpp:59	0x00499610	0x4cc	new	
+0x005047b0	function	GobUpdateDependent	bare	patch_manager_mods/_shared_src/GameAddr.h:81	0x005047b0	0x0	conflicts	rea:FUN_005047b0 CAurBehaviorAttach update handler (vtbl 0x9918d8 +0x20): copies N pose to P, re-sends event to P
+0x0050dac0	function	CAurTriangleBin::RenderGrassPolys	qualified	patch_manager_mods/k2_grass_draw_distance_src/kotor2-steam-aspyr.hooks.toml:48	0x0050dac0	0x0	agrees	CAurTriangleBin::RenderGrassPolys
+0x0050dcc8	callsite	AddrWindFld	bare	patch_manager_mods/k2_grass_draw_distance_src/K2GrassDrawDistance.cpp:55	0x0050dac0	0x208	new	
+0x0050fee7	callsite	AddrSizeFmul	bare	patch_manager_mods/k2_grass_draw_distance_src/K2GrassDrawDistance.cpp:62	0x0050ebc0	0x1327	new	
+0x00514b40	callsite	CSWGuiTargetActionMenu::PopulateMenus	qualified	patch_manager_mods/hud_host_src/kotor2-gog-aspyr.hooks.toml:10	0x00514a20	0x120	new	
+0x00514e47	callsite	CSWGuiTargetActionMenu::PopulateMenus	qualified	patch_manager_mods/hud_host_src/kotor2-gog-aspyr.hooks.toml:36	0x00514c40	0x207	new	
+0x0051ad20	function	WorldTimerGetCurrentTime	bare	patch_manager_mods/_shared_src/GameAddr.h:108	0x0051ad20	0x0	conflicts	CWorldTimer::GetWorldTime
+0x0051c0a0	function	FnGetGameObject	bare	patch_manager_mods/companion_ai_src/CompanionAI.cpp:81	0x0051c0a0	0x0	conflicts	CServerExoApp::GetGameObject
+0x0051c0a0	function	kFnServerObject	bare	patch_manager_mods/npc_diversity_src/DiversityAnimEngine.h:19	0x0051c0a0	0x0	conflicts	CServerExoApp::GetGameObject
+0x0051c0a0	function	GetGameObject	bare	patch_manager_mods/quick_loot_src/QuickLoot.cpp:103	0x0051c0a0	0x0	agrees	CServerExoApp::GetGameObject
+0x0051c0e0	function	GetItemByObjectId	bare	patch_manager_mods/_shared_src/GameAddr.h:66	0x0051c0e0	0x0	conflicts	CServerExoApp::GetItemByGameObjectID
+0x0051c160	function	GetPlaceableByGameObjectID	bare	patch_manager_mods/quick_loot_src/QuickLoot.cpp:78	0x0051c160	0x0	agrees	CServerExoApp::GetPlaceableByGameObjectID
+0x0051c8b0	function	ClientToServerObjectId	bare	patch_manager_mods/_shared_src/GameAddr.h:65	0x0051c8b0	0x0	agrees	CServerExoApp::ClientToServerObjectId
+0x0051c8d0	function	FnPartyTable	bare	patch_manager_mods/companion_ai_src/CompanionAI.cpp:477	0x0051c8d0	0x0	agrees	rea:FnPartyTable
+0x0051c8f0	function	FnPlayerId	bare	patch_manager_mods/companion_ai_src/CompanionAI.cpp:478	0x0051c8f0	0x0	conflicts	CServerExoApp::GetPlayerCreatureId
+0x0051cb10	function	ServerClearAllActions	bare	patch_manager_mods/_shared_src/GameAddr.h:96	0x0051cb10	0x0	conflicts	CServerExoApp::ClearAllActions
+0x0051d790	function	CServerAIMaster::UpdateState	qualified	patch_manager_mods/perf_lab_src/perflab/kotor2-steam-aspyr.hooks.toml:501	0x0051d790	0x0	agrees	CServerAIMaster::UpdateState
+0x00522bf0	function	CSWSArea::AddObjectToArea	qualified	patch_manager_mods/area_hook_probe_src/AreaHookProbe.cpp:11	0x00522bf0	0x0	agrees	CSWSArea::AddObjectToArea
+0x00522bf0	function	CSWSArea::AddObjectToArea	qualified	patch_manager_mods/area_hook_probe_src/kotor2-steam-aspyr.hooks.toml:49	0x00522bf0	0x0	agrees	CSWSArea::AddObjectToArea
+0x0052fb80	function	CServerExoAppInternal::LoadGame	qualified	patch_manager_mods/save_events_src/kotor2-steam-aspyr.hooks.toml:29	0x0052fb80	0x0	conflicts	CServerExoAppInternal::LoadGame (SAVES:%06d - %s; partytable, globals 0x656710, LoadModule)
+0x0052fd1e	callsite	CServerExoAppInternal::LoadGame	qualified	patch_manager_mods/save_events_src/kotor2-steam-aspyr.hooks.toml:33	0x0052fb80	0x19e	new	
+0x00533830	function	CServerExoAppInternal::MainLoop	qualified	patch_manager_mods/area_hook_probe_src/AreaHookProbe.cpp:5	0x00533830	0x0	agrees	CServerExoAppInternal::MainLoop
+0x00533830	function	CServerExoAppInternal::MainLoop	qualified	patch_manager_mods/area_hook_probe_src/kotor2-steam-aspyr.hooks.toml:9	0x00533830	0x0	agrees	CServerExoAppInternal::MainLoop
+0x00533830	function	CServerExoAppInternal::MainLoop	qualified	patch_manager_mods/npc_world_src/kotor2-steam-aspyr.hooks.toml:41	0x00533830	0x0	agrees	CServerExoAppInternal::MainLoop
+0x00541080	function	FnClearAllActions	bare	patch_manager_mods/companion_ai_src/CompanionAI.cpp:86	0x00541080	0x0	conflicts	CSWSObject::ClearAllActions
+0x00543f10	function	kAddrSetOrient	bare	patch_manager_mods/npc_world_src/NpcWorldProvider.cpp:53	0x00543f10	0x0	conflicts	CSWSObject::SetOrientation
+0x005453c0	function	ServerObjectGetArea	bare	patch_manager_mods/_shared_src/GameAddr.h:104	0x005453c0	0x0	conflicts	CSWSObject::GetArea
+0x0054a840	function	kFnClientObject	bare	patch_manager_mods/npc_diversity_src/DiversityAnimEngine.h:20	0x0054a840	0x0	conflicts	CSWSObject::GetClientObject
+0x0054aa30	function	ActListAddTail	bare	patch_manager_mods/_shared_src/GameAddr.h:94	0x0054aa30	0x0	conflicts	rea:CExoLinkedList AddTail thiscall wrapper (ECX=*this, push data, RET 4) to 0x739E60
+0x005582f0	function	CSWSModule::LoadModuleStart	qualified	patch_manager_mods/area_hook_probe_src/AreaHookProbe.cpp:10	0x005582f0	0x0	agrees	CSWSModule::LoadModuleStart
+0x005582f0	function	CSWSModule::LoadModuleStart	qualified	patch_manager_mods/area_hook_probe_src/kotor2-steam-aspyr.hooks.toml:35	0x005582f0	0x0	agrees	CSWSModule::LoadModuleStart
+0x0055a460	function	CSWSModule::LoadModuleInProgress	qualified	patch_manager_mods/area_hook_probe_src/AreaHookProbe.cpp:9	0x0055a460	0x0	agrees	CSWSModule::LoadModuleInProgress
+0x0055a460	function	CSWSModule::LoadModuleInProgress	qualified	patch_manager_mods/area_hook_probe_src/kotor2-steam-aspyr.hooks.toml:22	0x0055a460	0x0	agrees	CSWSModule::LoadModuleInProgress
+0x0055a460	function	CSWSModule::LoadModuleInProgress	qualified	patch_manager_mods/npc_world_src/kotor2-steam-aspyr.hooks.toml:28	0x0055a460	0x0	agrees	CSWSModule::LoadModuleInProgress
+0x00561f30	function	kAddrCreatureCtor	bare	patch_manager_mods/npc_world_src/NpcWorldProvider.cpp:50	0x00561f30	0x0	conflicts	CSWSCreature::Constructor
+0x005644b0	function	AnimSend	bare	patch_manager_mods/_shared_src/GameAddr.h:80	0x005644b0	0x0	conflicts	CSWSCreature::AddMoveToPointActionToFront
+0x00568bd0	function	kAddrAddToArea	bare	patch_manager_mods/npc_world_src/NpcWorldProvider.cpp:54	0x00568bd0	0x0	conflicts	CSWSCreature::AddToArea
+0x00569a08	callsite	CSWSCreature::AIUpdate	qualified	patch_manager_mods/companion_ai_src/kotor2-steam-aspyr.hooks.toml:85	0x00569320	0x6e8	new	
+0x0056e1e0	function	FnRangeWeaponEquipped	bare	patch_manager_mods/ranged_ai_src/RangedAI.cpp:43	0x0056e1e0	0x0	conflicts	CSWSCreature::RangeWeaponEquipped
+0x00572a70	function	kAddrLoadTemplate	bare	patch_manager_mods/npc_world_src/NpcWorldProvider.cpp:52	0x00572a70	0x0	conflicts	CSWSCreature::LoadFromTemplate
+0x005763e0	function	IsWieldingLightsaber	bare	patch_manager_mods/active_effects_panel_src/CombatStatsAddr.h:24	0x005763e0	0x0	agrees	CSWSCreature::IsWieldingLightsaber
+0x0057c990	function	FnNearestEnemy	bare	patch_manager_mods/companion_ai_src/CompanionAI.cpp:85	0x0057c990	0x0	conflicts	CSWSCreature::GetNearestEnemy
+0x0057c990	function	CSWSCreature::GetNearestEnemy	qualified	patch_manager_mods/holster_src/Holster.cpp:1158	0x0057c990	0x0	agrees	CSWSCreature::GetNearestEnemy
+0x0057d370	function	FnSetLock	bare	patch_manager_mods/companion_ai_src/CompanionAI.cpp:87	0x0057d370	0x0	conflicts	CSWSCreature::SetLockOrientationToObject
+0x0057d8b0	function	AddUseTalentOnObject	bare	patch_manager_mods/_shared_src/GameAddr.h:90	0x0057d8b0	0x0	conflicts	CSWSCreature::AddUseTalentOnObjectActions
+0x0057e530	function	GetArmorClass	bare	patch_manager_mods/active_effects_panel_src/CombatStatsAddr.h:27	0x0057e530	0x0	agrees	CSWSCreature::GetArmorClass
+0x0058c406	callsite	PatchAb	bare	patch_manager_mods/perf_lab_src/perflab/PerfLab.cpp:786	0x0058c3b0	0x56	new	
+0x0058c622	callsite	AbBody	bare	patch_manager_mods/robustness_fixes_src/RobustnessFixes.cpp:128	0x0058c540	0xe2	new	
+0x0058c63e	callsite	AbExit	bare	patch_manager_mods/robustness_fixes_src/RobustnessFixes.cpp:128	0x0058c540	0xfe	new	
+0x00590110	function	RoundHasPending	bare	patch_manager_mods/_shared_src/GameAddr.h:95	0x00590110	0x0	conflicts	CSWSCombatRound::GetActionPending
+0x005bd6a0	function	FnCanEquipInSlot	bare	patch_manager_mods/inventory_sort_filter_src/InventorySortFilter.cpp:46	0x005bd6a0	0x0	conflicts	CSWSCreature::CanEquipItem
+0x005d2f80	function	CanUseItem	bare	patch_manager_mods/_shared_src/GameAddr.h:92	0x005d2f80	0x0	agrees	CSWSCreature::CanUseItem
+0x005df920	function	SwapWeaponsExec	bare	patch_manager_mods/_shared_src/GameAddr.h:77	0x005df920	0x0	conflicts	CSWSCreature::AIActionType47_ReequipResumeAttack (type 0x47)
+0x005e4e60	function	EffectGetInteger	bare	patch_manager_mods/active_effects_panel_src/CombatStatsAddr.h:30	0x005e4e60	0x0	conflicts	CGameEffect::GetInteger
+0x005f2fe0	function	CSWSPlaceable::EventHandler	qualified	patch_manager_mods/quick_loot_src/kotor2-steam-aspyr.hooks.toml:34	0x005f2fe0	0x0	agrees	CSWSPlaceable::EventHandler
+0x005f5590	function	OpenInventory	bare	patch_manager_mods/quick_loot_src/QuickLoot.cpp:104	0x005f5590	0x0	agrees	CSWSPlaceable::OpenInventory
+0x005f5770	function	CloseInventory	bare	patch_manager_mods/quick_loot_src/QuickLoot.cpp:105	0x005f5770	0x0	agrees	CSWSPlaceable::CloseInventory
+0x005f5770	function	CSWSPlaceable::CloseInventory	qualified	patch_manager_mods/quick_loot_src/kotor2-steam-aspyr.hooks.toml:59	0x005f5770	0x0	agrees	CSWSPlaceable::CloseInventory
+0x00606100	function	ItemListGetItem	bare	patch_manager_mods/quick_loot_src/QuickLoot.cpp:79	0x00606100	0x0	agrees	CItemRepository::ItemListGetItem
+0x006076d0	function	FnGetUpgradeType	bare	patch_manager_mods/inventory_sort_filter_src/InventorySortFilter.cpp:50	0x006076d0	0x0	conflicts	CSWSItem::GetUpgradableType
+0x00615cc0	function	ItemGetIcon	bare	patch_manager_mods/quick_loot_src/QuickLoot.cpp:87	0x00615cc0	0x0	conflicts	CSWSItem::GetIcon
+0x00623320	function	FnActionDtor	bare	patch_manager_mods/companion_ai_src/CompanionAI.cpp:481	0x00623320	0x0	conflicts	CSWSEncounter::AIUpdate
+0x00668fd0	function	CSWVirtualMachineCommands::ExecuteCommand	qualified	patch_manager_mods/script_events_src/kotor2-steam-aspyr.hooks.toml:38	0x00668fd0	0x0	agrees	CSWVirtualMachineCommands::ExecuteCommand
+0x00669017	callsite	VmidResume	bare	patch_manager_mods/robustness_fixes_src/RobustnessFixes.cpp:129	0x00668fd0	0x47	new	
+0x00669a32	callsite	VmlkSuccess	bare	patch_manager_mods/robustness_fixes_src/RobustnessFixes.cpp:133	0x006699d0	0x62	new	
+0x00669a3e	callsite	VmlkDone	bare	patch_manager_mods/robustness_fixes_src/RobustnessFixes.cpp:133	0x006699d0	0x6e	new	
+0x0068ea70	function	Global::ExecuteCommandPlaySound	qualified	patch_manager_mods/voice_probe_src/kotor2-steam-aspyr.hooks.toml:9	0x0068ea70	0x0	agrees	Global::ExecuteCommandPlaySound
+0x006a4e00	function	GetLevel	bare	patch_manager_mods/active_effects_panel_src/CombatStatsAddr.h:25	0x006a4e00	0x0	agrees	CSWSCreatureStats::GetLevel
+0x006a6f80	function	GetBaseAttackBonus	bare	patch_manager_mods/active_effects_panel_src/CombatStatsAddr.h:23	0x006a6f80	0x0	agrees	CSWSCreatureStats::GetBaseAttackBonus
+0x006ad2f0	function	GetClassLevel	bare	patch_manager_mods/active_effects_panel_src/CombatStatsAddr.h:29	0x006ad2f0	0x0	agrees	CSWSCreatureStats::GetClassLevel
+0x006b5db0	function	GetDEXMod	bare	patch_manager_mods/active_effects_panel_src/CombatStatsAddr.h:26	0x006b5db0	0x0	agrees	CSWSCreatureStats::GetDEXMod
+0x006b83f0	function	HasFeat	bare	patch_manager_mods/active_effects_panel_src/CombatStatsAddr.h:21	0x006b83f0	0x0	agrees	CSWSCreatureStats::HasFeat
+0x006b9870	function	CSWSCreatureStats::LevelUp	qualified	patch_manager_mods/level_up_override_src/LevelUpOverride.cpp:17	0x006b9870	0x0	agrees	CSWSCreatureStats::LevelUp
+0x006b9870	function	CSWSCreatureStats::LevelUp	qualified	patch_manager_mods/level_up_override_src/LevelUpOverride.cpp:2294	0x006b9870	0x0	agrees	CSWSCreatureStats::LevelUp
+0x006b9870	function	CSWSCreatureStats::LevelUp	qualified	patch_manager_mods/level_up_override_src/kotor2-steam-aspyr.hooks.toml:9	0x006b9870	0x0	agrees	CSWSCreatureStats::LevelUp
+0x006ba620	function	GetFortSave	bare	patch_manager_mods/active_effects_panel_src/CombatStatsAddr.h:32	0x006ba620	0x0	conflicts	CSWSCreatureStats::GetFortSavingThrow
+0x006ba6b0	function	GetWillSave	bare	patch_manager_mods/active_effects_panel_src/CombatStatsAddr.h:34	0x006ba6b0	0x0	conflicts	CSWSCreatureStats::GetWillSavingThrow
+0x006ba740	function	GetReflexSave	bare	patch_manager_mods/active_effects_panel_src/CombatStatsAddr.h:33	0x006ba740	0x0	conflicts	CSWSCreatureStats::GetReflexSavingThrow
+0x006bad10	function	ForceResist	bare	patch_manager_mods/active_effects_panel_src/CombatStatsAddr.h:28	0x006bad10	0x0	conflicts	CSWSCreatureStats::GetForceResistance
+0x006bd9c0	function	HasSpell	bare	patch_manager_mods/active_effects_panel_src/CombatStatsAddr.h:22	0x006bd9c0	0x0	agrees	CSWSCreatureStats::HasSpell
+0x006d6e30	function	GetBaseItem	bare	patch_manager_mods/_shared_src/GameAddr.h:103	0x006d6e30	0x0	agrees	CSWItem::GetBaseItem
+0x006e1c60	function	CSWSCreature::ResolveDefensiveEffects	qualified	patch_manager_mods/active_effects_panel_src/CombatStatsAddr.h:80	0x006e1c60	0x0	agrees	CSWSCreature::ResolveDefensiveEffects
+0x006e2351	callsite	DeflectHookSite	bare	patch_manager_mods/active_effects_panel_src/CombatStatsAddr.h:82	0x006e1c60	0x6f1	new	
+0x006fd8d0	function	kRunScript	bare	patch_manager_mods/voice_probe_src/VoiceProbe.cpp:92	0x006fd8d0	0x0	conflicts	CVirtualMachine::RunScript
+0x007022a0	function	CVirtualMachineInternal::RunScript	qualified	patch_manager_mods/perf_lab_src/perflab/kotor2-steam-aspyr.hooks.toml:388	0x007022a0	0x0	agrees	CVirtualMachineInternal::RunScript
+0x007022a0	function	CVirtualMachineInternal::RunScript	qualified	patch_manager_mods/script_events_src/kotor2-steam-aspyr.hooks.toml:4	0x007022a0	0x0	agrees	CVirtualMachineInternal::RunScript
+0x007022e0	callsite	CVirtualMachineInternal::RunScript	qualified	patch_manager_mods/script_events_src/kotor2-steam-aspyr.hooks.toml:9	0x007022a0	0x40	new	
+0x007023e6	callsite	CVirtualMachineInternal::RunScript	qualified	patch_manager_mods/script_events_src/kotor2-steam-aspyr.hooks.toml:23	0x007022a0	0x146	new	
+0x007037c0	function	VmlkDeleteSituation	bare	patch_manager_mods/robustness_fixes_src/RobustnessFixes.cpp:133	0x007037c0	0x0	conflicts	CVirtualMachineInternal::DeleteScriptSituation
+0x0070446d	callsite	NetEpilogue	bare	patch_manager_mods/robustness_fixes_src/RobustnessFixes.cpp:127	0x00704060	0x40d	new	
+0x007054da	callsite	SndriResume	bare	patch_manager_mods/robustness_fixes_src/RobustnessFixes.cpp:129	0x007051c0	0x31a	new	
+0x0070caa0	function	CExoStreamingSoundSourceInternal::InitializeSource	qualified	patch_manager_mods/asset_vfs_src/kotor2-steam-aspyr.hooks.toml:60	0x0070caa0	0x0	conflicts	StreamingSource::OpenStream
+0x0070cb76	callsite	StreamingSource::OpenStream	qualified	patch_manager_mods/_shared_src/CharacterProvider.h:114	0x0070caa0	0xd6	new	
+0x0070cb76	callsite	CExoStreamingSoundSourceInternal::InitializeSource	qualified	patch_manager_mods/asset_vfs_src/kotor2-steam-aspyr.hooks.toml:65	0x0070caa0	0xd6	new	
+0x00710840	function	kAddrResrefInit	bare	patch_manager_mods/npc_world_src/NpcWorldProvider.cpp:51	0x00710840	0x0	agrees	rea:kAddrResrefInit
+0x007112b0	function	ResRelease	bare	patch_manager_mods/_shared_src/GameAddr.h:116	0x007112b0	0x0	conflicts	CRes::Release
+0x00711c20	function	CExoResMan::Demand	qualified	patch_manager_mods/perf_lab_src/perflab/kotor2-steam-aspyr.hooks.toml:81	0x00711c20	0x0	agrees	CExoResMan::Demand
+0x007120c0	function	ResManFreeData	bare	patch_manager_mods/_shared_src/GameAddr.h:115	0x007120c0	0x0	conflicts	CExoResMan::FreeResourceData
+0x007120c0	function	CExoResMan::FreeResourceData	qualified	patch_manager_mods/perf_lab_src/perflab/kotor2-steam-aspyr.hooks.toml:51	0x007120c0	0x0	agrees	CExoResMan::FreeResourceData
+0x007120c0	function	FsFreeResData	bare	patch_manager_mods/robustness_fixes_src/RobustnessFixes.cpp:131	0x007120c0	0x0	conflicts	CExoResMan::FreeResourceData
+0x00712245	callsite	FreeChunkEvictRet	bare	patch_manager_mods/perf_lab_src/perflab/PerfLab.cpp:271	0x00712160	0xe5	new	
+0x00712360	function	CExoResMan::GetKeyEntry	qualified	patch_manager_mods/asset_vfs_src/kotor2-steam-aspyr.hooks.toml:4	0x00712360	0x0	agrees	CExoResMan::GetKeyEntry
+0x0071244e	callsite	CExoResMan::GetKeyEntry	qualified	patch_manager_mods/_shared_src/CharacterProvider.h:91	0x00712360	0xee	conflicts	rea:CExoResMan::GetKeyEntry claimed as entry; 0x71244E is interior miss branch of FUN_00712360 (entry 0x712360, 264 B)
+0x00712f30	function	ResManMalloc	bare	patch_manager_mods/_shared_src/GameAddr.h:113	0x00712f30	0x0	conflicts	CExoResMan::Malloc
+0x00712f30	function	CExoResMan::Malloc	qualified	patch_manager_mods/perf_lab_src/perflab/kotor2-steam-aspyr.hooks.toml:21	0x00712f30	0x0	agrees	CExoResMan::Malloc
+0x00712f5b	callsite	FsResume	bare	patch_manager_mods/robustness_fixes_src/RobustnessFixes.cpp:131	0x00712f30	0x2b	new	
+0x007130b0	function	CExoResMan::Release	qualified	patch_manager_mods/asset_vfs_src/kotor2-steam-aspyr.hooks.toml:76	0x007130b0	0x0	agrees	CExoResMan::Release
+0x007130b0	function	CExoResMan::Release	qualified	patch_manager_mods/perf_lab_src/perflab/kotor2-steam-aspyr.hooks.toml:68	0x007130b0	0x0	agrees	CExoResMan::Release
+0x007130d3	callsite	CExoResMan::Release	qualified	patch_manager_mods/asset_vfs_src/kotor2-steam-aspyr.hooks.toml:82	0x007130b0	0x23	new	
+0x00713e80	function	CExoResMan::ServiceFromImage	qualified	patch_manager_mods/asset_vfs_src/kotor2-steam-aspyr.hooks.toml:24	0x00713e80	0x0	agrees	CExoResMan::ServiceFromImage
+0x00713e83	callsite	CExoResMan::ServiceFromImage	qualified	patch_manager_mods/asset_vfs_src/kotor2-steam-aspyr.hooks.toml:30	0x00713e80	0x3	new	
+0x0071447a	callsite	CExoResMan::Update	qualified	patch_manager_mods/perf_lab_src/perflab/kotor2-steam-aspyr.hooks.toml:270	0x00714300	0x17a	new	
+0x00716fd0	function	ResGffCtor	bare	patch_manager_mods/_shared_src/GameAddr.h:112	0x00716fd0	0x0	conflicts	CResGFF::Constructor_2
+0x00717300	function	ResGffOnServiced	bare	patch_manager_mods/_shared_src/GameAddr.h:114	0x00717300	0x0	conflicts	CResGFF::OnResourceServiced
+0x0071c2f6	callsite	TdResume	bare	patch_manager_mods/robustness_fixes_src/RobustnessFixes.cpp:132	0x0071c180	0x176	new	
+0x00726350	function	CExoKeyTable::DestroyTable	qualified	patch_manager_mods/perf_lab_src/perflab/kotor2-steam-aspyr.hooks.toml:283	0x00726350	0x0	agrees	CExoKeyTable::DestroyTable
+0x00726531	callsite	KtAResume	bare	patch_manager_mods/robustness_fixes_src/RobustnessFixes.cpp:126	0x00726350	0x1e1	new	
+0x00726cdd	callsite	KtBResume	bare	patch_manager_mods/robustness_fixes_src/RobustnessFixes.cpp:126	0x00726a50	0x28d	new	
+0x00729fd0	function	CRes2DA::OnResourceServiced	qualified	patch_manager_mods/asset_vfs_src/kotor2-steam-aspyr.hooks.toml:45	0x00729fd0	0x0	agrees	CRes2DA::OnResourceServiced
+0x00729fd0	function	CRes2DA::OnResourceServiced	qualified	patch_manager_mods/asset_vfs_src/kotor2-steam-aspyr.hooks.toml:49	0x00729fd0	0x0	agrees	CRes2DA::OnResourceServiced
+0x0072cb84	callsite	CExoInputInternal::GetEvents	qualified	patch_manager_mods/action_hotbar_src/kotor2-steam-aspyr.hooks.toml:8	0x0072c7e0	0x3a4	new	
+0x00733570	function	ExoCtor	bare	patch_manager_mods/_shared_src/GameAddr.h:26	0x00733570	0x0	conflicts	CExoString::CExoString_char
+0x00733570	function	FnExoCtor	bare	patch_manager_mods/inventory_sort_filter_src/InventorySortFilter.cpp:51	0x00733570	0x0	conflicts	CExoString::CExoString_char
+0x00733780	function	ExoDtor	bare	patch_manager_mods/_shared_src/GameAddr.h:27	0x00733780	0x0	conflicts	CExoString::~CExoString
+0x00733780	function	FnExoDtor	bare	patch_manager_mods/inventory_sort_filter_src/InventorySortFilter.cpp:51	0x00733780	0x0	conflicts	CExoString::~CExoString
+0x00733780	function	NetStrDtor	bare	patch_manager_mods/robustness_fixes_src/RobustnessFixes.cpp:127	0x00733780	0x0	conflicts	CExoString::~CExoString
+0x007337c0	function	ExoStringAssign	bare	patch_manager_mods/_shared_src/GameAddr.h:133	0x007337c0	0x0	conflicts	CExoString::operator=
+0x00734690	function	CExoString::ToLower	qualified	patch_manager_mods/perf_lab_src/perflab/kotor2-steam-aspyr.hooks.toml:807	0x00734690	0x0	agrees	CExoString::ToLower
+0x007356b0	function	GetLocString	bare	patch_manager_mods/_shared_src/GameAddr.h:101	0x007356b0	0x0	conflicts	CExoLocString::GetString_3
+0x0073a130	function	FnListRemove	bare	patch_manager_mods/companion_ai_src/CompanionAI.cpp:480	0x0073a130	0x0	agrees	FnListRemove
+0x0073f350	function	GetClientLanguage	bare	patch_manager_mods/_shared_src/GameAddr.h:102	0x0073f350	0x0	agrees	CClientExoApp::GetClientLanguage
+0x0073f530	function	ClientGetItemById	bare	patch_manager_mods/_shared_src/GameAddr.h:122	0x0073f530	0x0	conflicts	CClientExoApp::GetItemByGameObjectID
+0x0073f530	function	FnGetItemObj	bare	patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp:41	0x0073f530	0x0	conflicts	CClientExoApp::GetItemByGameObjectID
+0x0073f750	function	FnGetGuiInGame	bare	patch_manager_mods/inventory_sort_filter_src/InventorySortFilter.cpp:41	0x0073f750	0x0	conflicts	CClientExoApp::GetInGameGui
+0x0073fb90	function	ClientPartyTable	bare	patch_manager_mods/_shared_src/GameAddr.h:37	0x0073fb90	0x0	conflicts	ClientApp -> party (*(*(clientApp+4)+0x270)) thiscall(ecx)
+0x0073fb90	function	FnClientList	bare	patch_manager_mods/companion_ai_src/CompanionAI.cpp:82	0x0073fb90	0x0	conflicts	ClientApp -> party (*(*(clientApp+4)+0x270)) thiscall(ecx)
+0x00743540	function	CSWGuiTargetActionMenu::PopulateMenus	qualified	patch_manager_mods/hud_host_src/kotor2-steam-aspyr.hooks.toml:4	0x00743540	0x0	conflicts	CSWGuiTargetActionMenu::Update
+0x00743540	function	CSWGuiTargetActionMenu::PopulateMenus	qualified	patch_manager_mods/hud_host_src/kotor2-steam-aspyr.hooks.toml:7	0x00743540	0x0	conflicts	CSWGuiTargetActionMenu::Update
+0x00743847	callsite	CSWGuiTargetActionMenu::PopulateMenus	qualified	patch_manager_mods/hud_host_src/kotor2-steam-aspyr.hooks.toml:36	0x00743540	0x307	new	
+0x0074b3f0	function	CSWGuiMainInterface::Draw	qualified	patch_manager_mods/action_hotbar_src/ActionHotbar.cpp:7	0x0074b3f0	0x0	agrees	CSWGuiMainInterface::Draw
+0x0074b3f0	function	CSWGuiMainInterface::Draw	qualified	patch_manager_mods/action_hotbar_src/kotor2-steam-aspyr.hooks.toml:23	0x0074b3f0	0x0	agrees	CSWGuiMainInterface::Draw
+0x0074da40	function	HudSyncStance	bare	patch_manager_mods/_shared_src/GameAddr.h:68	0x0074da40	0x0	conflicts	CSWGuiMainInterface::UpdateStanceAction
+0x0074e0b0	function	AddrIconResolver	bare	patch_manager_mods/queue_hud_src/QueueHud.cpp:66	0x0074e0b0	0x0	agrees	AddrIconResolver
+0x00751710	function	HudTargetInvoke	bare	patch_manager_mods/combat_hotbar_src/CombatHotbar.cpp:76	0x00751710	0x0	agrees	rea:HudTargetInvoke
+0x00751750	function	HudInvokeGroup	bare	patch_manager_mods/_shared_src/GameAddr.h:69	0x00751750	0x0	agrees	HudInvokeGroup
+0x007637e0	function	WeaponAttach	bare	patch_manager_mods/_shared_src/GameAddr.h:76	0x007637e0	0x0	conflicts	rea:FUN_007637e0 weapon attach: vtbl+0x7c(weapon+0x14 handle, "rhand"/"lhand", flag, scale) on the [ECX+0x68] singleton
+0x007645f0	function	ClientCreatureCtor	bare	patch_manager_mods/_shared_src/GameAddr.h:126	0x007645f0	0x0	conflicts	rea:FUN_007645f0 CSWCCreature ctor (writes CSWCCreature::vftable at 0x764635)
+0x007645f0	function	FnCreatureCtor	bare	patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp:57	0x007645f0	0x0	conflicts	rea:FUN_007645f0 CSWCCreature ctor (writes CSWCCreature::vftable at 0x764635)
+0x007682b0	function	ClientCombatStateSet	bare	patch_manager_mods/_shared_src/GameAddr.h:75	0x007682b0	0x0	conflicts	CSWCCreature::UpdateRollingFootstepSound
+0x0076d200	function	ClientCreatureSetAppearance	bare	patch_manager_mods/_shared_src/GameAddr.h:127	0x0076d200	0x0	conflicts	CSWCCreature::SetAppearance
+0x0076d200	function	FnBuildApp	bare	patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp:63	0x0076d200	0x0	conflicts	CSWCCreature::SetAppearance
+0x0076d200	function	CSWCCreature::SetAppearance	qualified	patch_manager_mods/npc_diversity_src/kotor2-steam-aspyr.hooks.toml:24	0x0076d200	0x0	agrees	CSWCCreature::SetAppearance
+0x00775600	function	PerformUseItem	bare	patch_manager_mods/_shared_src/GameAddr.h:70	0x00775600	0x0	agrees	CSWCCreature::PerformUseItem
+0x00775700	function	PerformCastSpell	bare	patch_manager_mods/_shared_src/GameAddr.h:71	0x00775700	0x0	agrees	CSWCCreature::PerformCastSpell
+0x0077b670	function	FnIsItemUsable	bare	patch_manager_mods/inventory_sort_filter_src/InventorySortFilter.cpp:44	0x0077b670	0x0	conflicts	GuiInGame::IsItemUsableByCurrent
+0x0077d800	function	MemberServerCreature	bare	patch_manager_mods/_shared_src/GameAddr.h:36	0x0077d800	0x0	conflicts	Party entry -> creature thiscall(entry); creature+0x1198 = stats
+0x0077d800	function	FnControlled	bare	patch_manager_mods/companion_ai_src/CompanionAI.cpp:84	0x0077d800	0x0	conflicts	Party entry -> creature thiscall(entry); creature+0x1198 = stats
+0x0077ec20	function	ClientCreatureSetup3DScene	bare	patch_manager_mods/_shared_src/GameAddr.h:129	0x0077ec20	0x0	conflicts	CSWCCreature::Setup3DScene
+0x0077ec20	function	FnSetupScene	bare	patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp:65	0x0077ec20	0x0	conflicts	CSWCCreature::Setup3DScene
+0x00781be0	function	CClientExoAppInternal::MainLoop	qualified	patch_manager_mods/load_hang_probe_src/LoadHangProbe.cpp:20	0x00781be0	0x0	agrees	CClientExoAppInternal::MainLoop
+0x00781be0	function	CClientExoAppInternal::MainLoop	qualified	patch_manager_mods/load_hang_probe_src/kotor2-steam-aspyr.hooks.toml:8	0x00781be0	0x0	agrees	CClientExoAppInternal::MainLoop
+0x00798660	function	CClientExoAppInternal::SetPlayerCreatureId	qualified	patch_manager_mods/load_hang_probe_src/LoadHangProbe.cpp:742	0x00798660	0x0	conflicts	CClientExoAppInternal::SetPlayerCreature
+0x00798660	function	CClientExoAppInternal::SetPlayerCreatureId	qualified	patch_manager_mods/load_hang_probe_src/kotor2-steam-aspyr.hooks.toml:19	0x00798660	0x0	conflicts	CClientExoAppInternal::SetPlayerCreature
+0x00798660	function	CClientExoAppInternal::SetPlayerCreatureId	qualified	patch_manager_mods/load_hang_probe_src/kotor2-steam-aspyr.hooks.toml:24	0x00798660	0x0	conflicts	CClientExoAppInternal::SetPlayerCreature
+0x00798a50	callsite	MovResume	bare	patch_manager_mods/robustness_fixes_src/RobustnessFixes.cpp:135	0x00798820	0x230	new	
+0x007b3817	callsite	RButtonDownHoldSite	bare	patch_manager_mods/_shared_src/GameAddr.h:98	0x007b3810	0x7	new	
+0x007cacb0	function	CGuiInGame::ShowContainerGui	qualified	patch_manager_mods/quick_loot_src/kotor2-steam-aspyr.hooks.toml:12	0x007cacb0	0x0	agrees	CGuiInGame::ShowContainerGui
+0x007ceb95	callsite	CGuiInGame::SetGlobalDialogState	qualified	patch_manager_mods/dialogue_letterbox_fix_src/probe/kotor2-steam-aspyr.hooks.toml:111	0x007ceb80	0x15	new	
+0x007e5d80	function	GetControlledCreature	bare	patch_manager_mods/_shared_src/GameAddr.h:34	0x007e5d80	0x0	agrees	GetControlledCreature
+0x007e5da0	function	PartyGetAt	bare	patch_manager_mods/_shared_src/GameAddr.h:35	0x007e5da0	0x0	conflicts	Party member entry thiscall(party, int idx) RET 4 (0x7E5D80 = idx 0)
+0x007e5da0	function	FnClientAt	bare	patch_manager_mods/companion_ai_src/CompanionAI.cpp:83	0x007e5da0	0x0	conflicts	Party member entry thiscall(party, int idx) RET 4 (0x7E5D80 = idx 0)
+0x007f2a90	function	ActListRemoveHead	bare	patch_manager_mods/_shared_src/GameAddr.h:93	0x007f2a90	0x0	conflicts	rea:CExoLinkedList RemoveHead thiscall wrapper (ECX=*this, no args, RET) to 0x73A200; returns data
+0x007fdfa0	function	ClientItemGetName	bare	patch_manager_mods/_shared_src/GameAddr.h:123	0x007fdfa0	0x0	conflicts	CSWCItem::GetName
+0x0083ea60	function	PtrListAdd	bare	patch_manager_mods/_shared_src/GameAddr.h:32	0x0083ea60	0x0	conflicts	CExoArrayList<uint32>::Add
+0x0084f221	callsite	CSWGuiInGameCharacter::SetStats	qualified	patch_manager_mods/level_up_override_src/kotor2-steam-aspyr.hooks.toml:55	0x0084e6f0	0xb31	new	
+0x0085d430	function	PreviewSetAlign	bare	patch_manager_mods/_shared_src/GameAddr.h:128	0x0085d430	0x0	agrees	PreviewSetAlign
+0x0085d430	function	FnSetAlign	bare	patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp:64	0x0085d430	0x0	conflicts	PreviewSetAlign
+0x0085e601	callsite	CSWCCreatureAppearance::GetBTypeModelAndTextureResRef	qualified	patch_manager_mods/npc_diversity_src/kotor2-steam-aspyr.hooks.toml:8	0x0085e320	0x2e1	new	
+0x00863650	function	AnimResolve	bare	patch_manager_mods/_shared_src/GameAddr.h:78	0x00863650	0x0	conflicts	rea:FUN_00863650 anim-id resolver: ushort(ushort id), thiscall ECX=creature
+0x0086367c	callsite	AnimStyleSite	bare	patch_manager_mods/_shared_src/GameAddr.h:79	0x00863650	0x2c	new	
+0x0087a550	function	SendContainerClose	bare	patch_manager_mods/quick_loot_src/QuickLoot.cpp:100	0x0087a550	0x0	agrees	rea:SendContainerClose
+0x008a2070	function	OptionsInGameKeyHandler	bare	patch_manager_mods/_shared_src/GameAddr.h:119	0x008a2070	0x0	conflicts	rea:CSWGuiInGameOptions slot 14 override: key switch (cases 0x28,0x2d,0x2e,0xdf,0x35,0x36,0x2a), then base 0x40eaa0
+0x008a2320	function	OptionsSetDescription	bare	patch_manager_mods/_shared_src/GameAddr.h:132	0x008a2320	0x0	agrees	OptionsSetDescription
+0x008a75f0	function	FnCreateItemEntry	bare	patch_manager_mods/inventory_sort_filter_src/InventorySortFilter.cpp:43	0x008a75f0	0x0	conflicts	CSWGuiInGameInventory::CreateItemEntry
+0x008a8b30	function	FnSetNextFilter	bare	patch_manager_mods/inventory_sort_filter_src/InventorySortFilter.cpp:49	0x008a8b30	0x0	conflicts	CSWGuiInGameInventory::SetNextFilter
+0x008ad930	function	PanelUpdate	bare	patch_manager_mods/equip_icon_fix_src/EquipIconFix.cpp:42	0x008ad930	0x0	conflicts	Equipment panel slot refresh (per frame from 0x8ABA50 via 0x8ABA8C): top placeholder resets ctl0/ctl9, slot loop k=[EBP-0x28] 0..10, slot image ctl = this+0x14D0+k*0x148
+0x008b1d00	function	FnSetCanUse	bare	patch_manager_mods/inventory_sort_filter_src/InventorySortFilter.cpp:48	0x008b1d00	0x0	conflicts	CSWGuiInGameItemEntry::SetCanUse
+0x008bad7c	callsite	CSWGuiDialogLetterbox::SetTop	qualified	patch_manager_mods/dialogue_letterbox_fix_src/kotor2-steam-aspyr.hooks.toml:23	0x008baca0	0xdc	new	
+0x008bad7c	callsite	CSWGuiDialogLetterbox::SetTop	qualified	patch_manager_mods/dialogue_letterbox_fix_src/probe/kotor2-steam-aspyr.hooks.toml:23	0x008baca0	0xdc	new	
+0x008baf01	callsite	CSWGuiDialogLetterbox::SetBottom	qualified	patch_manager_mods/dialogue_letterbox_fix_src/kotor2-steam-aspyr.hooks.toml:36	0x008bada0	0x161	new	
+0x008baf01	callsite	CSWGuiDialogLetterbox::SetBottom	qualified	patch_manager_mods/dialogue_letterbox_fix_src/probe/kotor2-steam-aspyr.hooks.toml:36	0x008bada0	0x161	new	
+0x008bb461	callsite	CSWGuiDialogLetterbox::Draw	qualified	patch_manager_mods/dialogue_letterbox_fix_src/probe/kotor2-steam-aspyr.hooks.toml:53	0x008bb260	0x201	new	
+0x008bb52b	callsite	CSWGuiDialogLetterbox::Draw	qualified	patch_manager_mods/dialogue_letterbox_fix_src/probe/kotor2-steam-aspyr.hooks.toml:66	0x008bb260	0x2cb	new	
+0x008bb538	callsite	CSWGuiDialogLetterbox::Draw	qualified	patch_manager_mods/dialogue_letterbox_fix_src/probe/kotor2-steam-aspyr.hooks.toml:80	0x008bb260	0x2d8	new	
+0x008cd2c0	function	FnRender	bare	patch_manager_mods/inventory_3d_viewport_src/Inventory3DViewport.cpp:41	0x008cd2c0	0x0	conflicts	CSWGuiUpgrade::Update3DView
+0x008faca0	function	CSWGuiMainCharGen::BeginPlayGame	qualified	patch_manager_mods/save_events_src/kotor2-steam-aspyr.hooks.toml:57	0x008faca0	0x0	agrees	CSWGuiMainCharGen::BeginPlayGame
+0x00907340	function	CSWGuiMainCharGen::BeginPlayGame	qualified	patch_manager_mods/save_events_src/SaveEventsProvider.cpp:182	0x00907340	0x0	agrees	CSWGuiMainCharGen::BeginPlayGame
+0x00907340	function	CSWGuiMainCharGen::BeginPlayGame	qualified	patch_manager_mods/save_events_src/kotor2-steam-aspyr.hooks.toml:54	0x00907340	0x0	agrees	CSWGuiMainCharGen::BeginPlayGame
+0x00919000	callsite	CrtLo	bare	patch_manager_mods/perf_lab_src/perflab/PerfLab.cpp:85	0x00918f00	0x100	new	
+0x009196fd	function	FnOpDelete	bare	patch_manager_mods/companion_ai_src/CompanionAI.cpp:482	0x009196fd	0x0	conflicts	operator delete
+0x009196fd	function	OperatorDelete	bare	patch_manager_mods/robustness_fixes_src/RobustnessFixes.cpp:134	0x009196fd	0x0	conflicts	operator delete
+0x00919723	function	New	bare	patch_manager_mods/_shared_src/GameAddr.h:21	0x00919723	0x0	conflicts	operator new
+0x00919723	function	FnNew	bare	patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp:39	0x00919723	0x0	conflicts	operator new
+0x0091d288	function	EngineNewArr	bare	patch_manager_mods/_shared_src/GameAddr.h:45	0x0091d288	0x0	conflicts	operator new[]
+0x0093a000	callsite	CrtHi	bare	patch_manager_mods/perf_lab_src/perflab/PerfLab.cpp:85	0x00939962	0x69e	new	
+0x009860d4	global	SleepIat	bare	patch_manager_mods/robustness_fixes_src/RobustnessFixes.cpp:135			agrees	SleepIat
+0x00986128	global	AddrGmsIat	bare	patch_manager_mods/k2_engine_perf_src/K2EnginePerf.cpp:30			agrees	AddrGmsIat
+0x00986268	global	AddrSlotGlEnable	bare	patch_manager_mods/k2_grass_draw_distance_src/K2GrassDrawDistance.cpp:80			agrees	AddrSlotGlEnable
+0x009862a0	global	AddrSlotGlDisable	bare	patch_manager_mods/k2_grass_draw_distance_src/K2GrassDrawDistance.cpp:81			agrees	AddrSlotGlDisable
+0x009862cc	global	AddrSlotGlGetIntegerv	bare	patch_manager_mods/k2_grass_draw_distance_src/K2GrassDrawDistance.cpp:82			agrees	AddrSlotGlGetIntegerv
+0x0098657c	global	AilQuickShutdownIat	bare	patch_manager_mods/robustness_fixes_src/RobustnessFixes.cpp:130			agrees	AilQuickShutdownIat
+0x009875bc	global	BorderVtable	bare	patch_manager_mods/_shared_src/GameAddr.h:40			agrees	BorderVtable
+0x009875bc	global	BorderVtable	bare	patch_manager_mods/active_effects_panel_src/CharEffectsPanel.cpp:62			agrees	BorderVtable
+0x009876b4	global	TextVtable	bare	patch_manager_mods/_shared_src/GameAddr.h:41			agrees	TextVtable
+0x009876b4	global	TextVtable	bare	patch_manager_mods/active_effects_panel_src/CharEffectsPanel.cpp:62			agrees	TextVtable
+0x009876b4	global	TextVtable	bare	patch_manager_mods/inventory_sort_filter_src/InventorySortFilter.cpp:53			agrees	TextVtable
+0x009878bc	global	LabelVtable	bare	patch_manager_mods/_shared_src/GameAddr.h:38			agrees	LabelVtable
+0x00987a1c	global	ButtonVtable	bare	patch_manager_mods/_shared_src/GameAddr.h:39			agrees	ButtonVtable
+0x0098b5cc	global	GobVtable	bare	patch_manager_mods/_shared_src/GameAddr.h:57			conflicts	rea:Gob::vftable; +0x10C = FindPart 0x4587f0, +0x1B4 = dispatcher 0x4dd260
+0x0098b5cc	global	ExpectedGobVtable	bare	patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp:54			conflicts	rea:Gob::vftable; +0x10C = FindPart 0x4587f0, +0x1B4 = dispatcher 0x4dd260
+0x0098c45c	global	SceneCameraVtable	bare	patch_manager_mods/_shared_src/GameAddr.h:56			agrees	SceneCameraVtable
+0x0098c45c	global	ExpectedCamVtable	bare	patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp:53			conflicts	SceneCameraVtable
+0x0099244c	global	EventClassGlobal	bare	patch_manager_mods/quick_loot_src/QuickLoot.cpp:80			agrees	EventClassGlobal
+0x0099449c	global	ServerIdMask	bare	patch_manager_mods/_shared_src/GameAddr.h:89			agrees	ServerIdMask
+0x00996088	global	EffDeflectInc	bare	patch_manager_mods/active_effects_panel_src/CombatStatsAddr.h:98			agrees	EffDeflectInc
+0x0099608c	global	EffDeflectDec	bare	patch_manager_mods/active_effects_panel_src/CombatStatsAddr.h:99			agrees	EffDeflectDec
+0x009960c8	global	EffMasteryLight	bare	patch_manager_mods/active_effects_panel_src/CombatStatsAddr.h:102			new	
+0x009960cc	global	EffMasteryDark	bare	patch_manager_mods/active_effects_panel_src/CombatStatsAddr.h:103			new	
+0x0099a8b8	global	GenderReq2Val	bare	patch_manager_mods/inventory_sort_filter_src/InventorySortFilter.cpp:47			agrees	rea:GenderReq2Val
+0x0099a8bc	global	GenderReq1Val	bare	patch_manager_mods/inventory_sort_filter_src/InventorySortFilter.cpp:47			agrees	GenderReq1Val
+0x0099c884	global	KeyboardDeviceGlobal	bare	patch_manager_mods/_shared_src/GameAddr.h:42			agrees	rea:KeyboardDeviceGlobal
+0x0099dcc4	global	HudVtable	bare	patch_manager_mods/_shared_src/GameAddr.h:83			agrees	HudVtable
+0x0099e5ec	global	MessagesPanelVtable	bare	patch_manager_mods/_shared_src/GameAddr.h:85			agrees	MessagesPanelVtable
+0x0099ee14	global	ClientCreatureVtable	bare	patch_manager_mods/_shared_src/GameAddr.h:107			conflicts	rea:CSWCCreature::vftable (client creature)
+0x0099ee14	global	kVtCreatureClient	bare	patch_manager_mods/npc_diversity_src/DiversityAnimEngine.h:21			conflicts	rea:CSWCCreature::vftable (client creature)
+0x009a044c	global	FadePanelVtable	bare	patch_manager_mods/_shared_src/GameAddr.h:86			agrees	FadePanelVtable
+0x009a3d34	global	SceneViewVtable	bare	patch_manager_mods/_shared_src/GameAddr.h:55			agrees	SceneViewVtable
+0x009a4ab0	global	PreviewModelInstName	bare	patch_manager_mods/_shared_src/GameAddr.h:125			agrees	rea:PreviewModelInstName
+0x009a5c84	global	LoadScreenVtable	bare	patch_manager_mods/load_hang_probe_src/LoadHangProbe.cpp:51			agrees	LoadScreenVtable
+0x009a5c84	global	LoadScreenVtable	bare	patch_manager_mods/perf_lab_src/perflab/PerfLab.cpp:87			agrees	LoadScreenVtable
+0x009a701c	global	OptionsInGameVtable	bare	patch_manager_mods/_shared_src/GameAddr.h:118			conflicts	rea:CSWGuiInGameOptions::vftable 27 slots 0..26 (slot0 0x8a1930; slot14 0x8a2070; slot17 0x8a24f0; slot18 0x8a2590; xref from ctor 0x8a11ba)
+0x009a7bac	global	PausePanelVtable	bare	patch_manager_mods/_shared_src/GameAddr.h:87			agrees	PausePanelVtable
+0x009a7cbc	global	kLetterboxVtbl	bare	patch_manager_mods/dialogue_letterbox_fix_src/K2DialogueLetterboxFix.cpp:285			agrees	kLetterboxVtbl
+0x009a7d30	global	kConstVA	bare	patch_manager_mods/dialogue_letterbox_fix_src/K2DialogueLetterboxFix.cpp:60			agrees	kConstVA
+0x009a8fcc	global	AutoPausePanelVtable	bare	patch_manager_mods/_shared_src/GameAddr.h:88			agrees	AutoPausePanelVtable
+0x009f42a4	global	ScreenW	bare	patch_manager_mods/_shared_src/GameAddr.h:16			agrees	ScreenW
+0x009f42a8	global	ScreenH	bare	patch_manager_mods/_shared_src/GameAddr.h:17			agrees	ScreenH
+0x009f42b4	global	GuiGateGlobal	bare	patch_manager_mods/_shared_src/GameAddr.h:49			agrees	GuiGateGlobal
+0x009f4390	global	GuiRefW	bare	patch_manager_mods/_shared_src/GameAddr.h:18			agrees	GuiRefW
+0x009f4394	global	GuiRefH	bare	patch_manager_mods/_shared_src/GameAddr.h:19			agrees	GuiRefH
+0x009f5d30	global	AddrShadowsOn	bare	patch_manager_mods/k2_shadow_distance_src/K2ShadowDistance.cpp:37			agrees	AddrShadowsOn
+0x009f5d38	global	AddrGrassAlphaCutoff	bare	patch_manager_mods/k2_grass_draw_distance_src/K2GrassDrawDistance.cpp:53			agrees	AddrGrassAlphaCutoff
+0x009f5d50	global	AddrShadowDist	bare	patch_manager_mods/k2_shadow_distance_src/K2ShadowDistance.cpp:29			agrees	rea:AddrShadowDist
+0x009f5d54	global	AddrCutFlag	bare	patch_manager_mods/k2_shadow_distance_src/K2ShadowDistance.cpp:36			agrees	rea:AddrCutFlag
+0x009f5da8	global	AddrSoftShadows	bare	patch_manager_mods/k2_shadow_distance_src/K2ShadowDistance.cpp:38			agrees	rea:AddrSoftShadows
+0x009f60ec	global	AddrPathFlag60EC	bare	patch_manager_mods/k2_grass_draw_distance_src/K2GrassDrawDistance.cpp:94			agrees	AddrPathFlag60EC
+0x009f60f0	global	AddrPathN	bare	patch_manager_mods/k2_grass_draw_distance_src/K2GrassDrawDistance.cpp:93			agrees	rea:AddrPathN
+0x009f60fc	global	AddrPathC60FC	bare	patch_manager_mods/k2_grass_draw_distance_src/K2GrassDrawDistance.cpp:96			agrees	rea:AddrPathC60FC
+0x009f6100	global	G_GlFinishFlag	bare	patch_manager_mods/perf_lab_src/perflab/PerfLab.cpp:280			agrees	rea:G_GlFinishFlag
+0x009f6118	global	AddrPathC6118	bare	patch_manager_mods/k2_grass_draw_distance_src/K2GrassDrawDistance.cpp:97			agrees	rea:AddrPathC6118
+0x009f62dc	global	AddrPathFlag62DC	bare	patch_manager_mods/k2_grass_draw_distance_src/K2GrassDrawDistance.cpp:95			agrees	AddrPathFlag62DC

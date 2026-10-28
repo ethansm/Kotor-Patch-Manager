@@ -1,0 +1,13 @@
+card	verdict	quote
+C25	inconsistent	for (; (local_c < *param_2 && ((*local_8 == '\n' || (*local_8 == '\r'))));
+C26	consistent	0x00919723 operator new (CALL)
+C27	inconsistent	CExoString::CExoString_copy(param_1 + 0x10);
+C28	inconsistent	FUN_00710840("CLASSES");
+C29	unsure	FUN_007051c0(uVar3,uVar2,param_2,param_3);
+C30	inconsistent	bool this_fn(int *param_1,uint *param_2)
+C31	consistent	piVar3 = (int *)CClientExoApp::GetModuleCamera();
+C32	consistent	FUN_00710840("SoundSet");
+C33	unsure	iVar6 = FUN_0058bbe0(DAT_009960c8);
+C34	consistent	FUN_005122e0(iVar2,uVar4,0);
+C35	consistent	(**(code **)(**(int **)(param_1 + 0x18) + 0x38))();
+C36	inconsistent	callers 3: 0x005f9220 CSWPartyTable::CreateParty, 0x00721bb0 CERFFile::WriteResource_2, 0x0085ee80

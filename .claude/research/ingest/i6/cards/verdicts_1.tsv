@@ -1,0 +1,13 @@
+card	verdict	quote
+C01	inconsistent	*(undefined4 *)(iVar4 + 0xc) = *puVar2;
+C02	consistent	FUN_007457e0(param_2,param_3,1);
+C03	inconsistent	FUN_007051c0(uVar3,uVar2,param_2,param_3);
+C04	consistent	operator delete(param_1);
+C05	inconsistent	operator delete[](*(undefined4 *)(*(int *)(param_1 + 0x68) + param_2 * 4));
+C06	inconsistent	*(undefined ***)this = CRes2DA::vftable;
+C07	consistent	*(int *)(param_1 + 0x1d4) = *(int *)(param_1 + 0x1ac) / *(int *)(*(int *)(param_1 + 0x134) + 4);
+C08	unsure	CExoString::CExoString_copy(param_1 + 0x10);
+C09	inconsistent	strings: 0x009a451c "RESREF", 0x009a4524 "SoundSetType", 0x009a4534 "SoundSet"
+C10	inconsistent	glDeleteTextures(1,&DAT_00a1ddcc);
+C11	consistent	(**(code **)(*param_1 + 0xb0))(param_2);
+C12	inconsistent	FID_conflict__sscanf((char *)(*(int *)(param_1 + 0x40) + uVar2),"%i",param_4);

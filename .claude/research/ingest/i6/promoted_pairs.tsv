@@ -1,0 +1,12 @@
+0x00745770	CSWGuiMainInterfaceChar::DrawEffects
+0x0090a970	CSWGuiFeatsCharGen::~CSWGuiFeatsCharGen
+0x00464d10	Scene::AddObject
+0x00729ed0	CRes2DA::CRes2DA
+0x009091e0	CSWGuiPowersLevelUp::Draw
+0x0044ef20	MdlNodeAnimMesh::InternalGenVertices
+0x00750790	CSWGuiMainInterface::DrawMap
+0x0085ef00	CSoundSetList::CSoundSetList
+0x00512130	IODispatcher::ReadSync_4
+0x0047a510	CAurGUIStringInternal::GetFontPixelHeight
+0x009960cc	EffMasteryDark
+0x0090bbb0	CSWGuiFeatsCharGen::Draw

@@ -1,0 +1,2 @@
+addr	kind	name	form	src	fn_start	offset	status	kdb_name
+0x009960cc	global	EffMasteryDark	bare	patch_manager_mods/active_effects_panel_src/CombatStatsAddr.h:103			new	

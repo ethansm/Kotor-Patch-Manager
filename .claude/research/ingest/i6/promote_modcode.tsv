@@ -1,0 +1,2 @@
+addr	kind	name	src	verdict	quote
+0x009960cc	global	EffMasteryDark	patch_manager_mods/active_effects_panel_src/CombatStats	consistent	in 0x0057eca0 (CSWSCreature::GetMaxForcePoints): iVar3 = FUN_0058bbe0(DAT_009960cc);
