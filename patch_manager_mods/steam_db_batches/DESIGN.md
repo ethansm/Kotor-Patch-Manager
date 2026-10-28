@@ -110,6 +110,7 @@ Working dir per batch: `BATCHES/B<n>/` (`B0` = re-audit of the branch DB). Subco
   candidates = `addr|src1+src2;addr|src...`.
 - `--name-regex RX` keeps only the GOG functions of the classes whose name matches (`re.search`). B15 uses
   `'^ExecuteCommand'` on `Global,CSWVirtualMachineCommands`.
+- `--gog-list FILE` keeps only the GOG functions whose address appears in the `gog` column of the TSV `FILE`; applied after `--name-regex` and `--gog-range`; a missing/unreadable file or missing `gog` column is an error.
 - `--extra-candidates FILE` (TSV `gog steam source`) adds each Steam address to its GOG row as a candidate tagged
   `source`. B15 uses the command-table candidates, `B15/extra_candidates.tsv` (section 4.8). The tags `cmdtable` and
   `cmdtable_overwritten` have `source_strength` 6 (engine data, label-independent).

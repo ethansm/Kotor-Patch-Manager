@@ -63,6 +63,27 @@ def die(msg: str) -> "None":
     raise SystemExit(2)
 
 
+def parse_gog_list(path: str) -> "set[int]":
+    """--gog-list FILE: the set of GOG addresses in the `gog` column of a TSV (dies on a missing/unreadable file or column)."""
+    try:
+        with open(path, encoding="utf-8", errors="replace", newline="") as f:
+            header = f.readline().rstrip("\r\n").split("\t")
+    except OSError as e:
+        die("--gog-list %r: cannot read file (%s)" % (path, e.strerror or e))
+    if "gog" not in header:
+        die("--gog-list %r: no `gog` column in the header" % path)
+    keep: set[int] = set()
+    for r in iter_tsv(Path(path)):
+        v = (r.get("gog") or "").strip()
+        if not v:
+            continue
+        try:
+            keep.add(parse_addr(v))
+        except ValueError:
+            die("--gog-list %r: bad address %r in the `gog` column" % (path, v))
+    return keep
+
+
 def batch_name(s: str) -> str:
     if not re.fullmatch(r"B[A-Za-z0-9_]+", s):
         raise argparse.ArgumentTypeError("batch name must look like B1 / B0 / Bsmoke")
@@ -237,6 +258,9 @@ def cmd_candidates(args) -> int:
     if args.gog_range is not None:
         lo, hi = parse_gog_range(args.gog_range)
         rows = [g for g in rows if lo <= g.addr < hi]
+    if args.gog_list is not None:
+        keep = parse_gog_list(args.gog_list)
+        rows = [g for g in rows if g.addr in keep]
     extra: dict[int, list] = {}
     if args.extra_candidates:
         for r in iter_tsv(Path(args.extra_candidates)):
@@ -2102,6 +2126,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--name-regex", default=None, help="keep only GOG functions whose name matches (re.search)")
     p.add_argument("--gog-range", default=None, metavar="LO:HI",
                    help="keep only GOG functions with LO <= address < HI (hex, e.g. 0x400000:0x6a0000)")
+    p.add_argument("--gog-list", default=None, metavar="FILE",
+                   help="keep only GOG functions whose address is in the `gog` column of this TSV")
     p.add_argument("--extra-candidates", default=None,
                    help="TSV `gog steam source`: extra candidates with that source tag (e.g. B<n>/extra_candidates.tsv)")
     p = sub.add_parser("gates", help="invariants, anchors, gate classes")

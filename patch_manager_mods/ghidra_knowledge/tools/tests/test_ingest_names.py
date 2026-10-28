@@ -11,6 +11,7 @@ import sqlite3
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, ".."))
@@ -268,6 +269,104 @@ class GapTests(Base):
         self.assertEqual(list(json.loads(out)), ["mod_code"])
         rc, out, _e = run(["gap", "--source", "notes"] + self.common)
         self.assertIn("research_notes: files=1 functions cited=3 unnamed/unledgered=2", out)
+
+
+FP_HEAD = "addr size retn n_insn callconv thunk_target callees str_refs disp imm name namespace source".split()
+
+
+def fp_row(addr, size, name, ns="", callees="", strs=""):
+    return {"addr": addr, "size": size, "retn": "0", "n_insn": "9", "callconv": "__stdcall",
+            "thunk_target": "", "callees": callees, "str_refs": strs, "disp": "", "imm": "",
+            "name": name, "namespace": ns, "source": "DEFAULT"}
+
+
+def write_fp(server, program, rows):
+    d = os.path.join(server, program)
+    os.makedirs(d)
+    with open(os.path.join(d, "fp.tsv"), "w", encoding="utf-8", newline="") as fh:
+        fh.write("\t".join(FP_HEAD) + "\n")
+        for r in rows:
+            fh.write("\t".join(r[c] for c in FP_HEAD) + "\n")
+
+
+def fake_gap(*_a, **_kw):
+    def top(*pairs):
+        return [{"fn": a, "cites": c, "in": ["x"]} for a, c in pairs]
+    ten = [("0x00401000", 3), ("0x00402000", 1), ("0x00403000", 1), ("0x00404000", 2),
+           ("0x00405000", 5), ("0x00406000", 1), ("0x00407000", 1)]
+    return {"research_notes": {"files": 1, "cited": 1, "unknown": len(ten), "top": top(*ten)},
+            "mod_code": {"files": 1, "cited": 1, "unknown": 1, "top": top(("0x00401000", 4))}}
+
+
+class TwinsTests(Base):
+    def setUp(self):
+        super().setUp()
+        self.server = os.path.join(self.tmp, "server")
+        # Steam gap fns: 401 unique+named twin, 402 steam key repeated, 403 gog key repeated,
+        # 404 FUN_ twin, 405 empty namespace twin, 406 no twin in GOG, 407 no fp row at all
+        write_fp(self.server, inn.FP_STEAM, [
+            fp_row("0x00401000", "40", "FUN_00401000", callees="0x1,0x2", strs="0x9"),
+            fp_row("0x00402000", "41", "FUN_00402000"),
+            fp_row("0x00402100", "41", "FUN_00402100"),
+            fp_row("0x00403000", "42", "FUN_00403000"),
+            fp_row("0x00404000", "43", "FUN_00404000"),
+            fp_row("0x00405000", "44", "FUN_00405000"),
+            fp_row("0x00406000", "45", "FUN_00406000"),
+        ])
+        write_fp(self.server, inn.FP_GOG, [
+            fp_row("0x00501000", "40", "Open", ns="Foo", callees="0x5,0x6", strs="0x7"),
+            fp_row("0x00502000", "41", "Dup", ns="Foo"),
+            fp_row("0x00503000", "42", "DupA", ns="Foo"),
+            fp_row("0x00503100", "42", "DupB", ns="Foo"),
+            fp_row("0x00504000", "43", "FUN_00504000"),
+            fp_row("0x00505000", "44", "Helper"),
+        ])
+        self.out_tsv = os.path.join(self.tmp, "twins.tsv")
+        self.args = ["twins", "--server", self.server, "--out", self.out_tsv] + self.common
+
+    def run_twins(self):
+        with mock.patch.object(inn, "gap", fake_gap):
+            return run(self.args)
+
+    def test_unique_twin_emitted_and_global_namespace(self):
+        rc, _o, _e = self.run_twins()
+        self.assertEqual(rc, 0)
+        rows = read_tsv(self.out_tsv)
+        self.assertEqual([tuple(r.values()) for r in rows], [
+            ("0x00501000", "0x00401000", "fptwin", "Foo::Open", "7"),  # 3 + 4 cites summed over groups
+            ("0x00505000", "0x00405000", "fptwin", "Global::Helper", "5"),
+        ])
+
+    def test_header(self):
+        self.run_twins()
+        with open(self.out_tsv, encoding="utf-8") as fh:
+            self.assertEqual(fh.readline().rstrip("\n").split("\t"), list(inn.TWIN_COLS))
+
+    def test_summary_counts(self):
+        rc, out, _e = self.run_twins()
+        self.assertEqual(rc, 0)
+        self.assertEqual(out.strip(), "twins: gap=7 named=2 unnamed=1 ambiguous=2 no_twin=1 no_fp=1 -> " + self.out_tsv)
+
+    def test_key_repeated_either_side_is_ambiguous(self):
+        res, counts = None, None
+        with mock.patch.object(inn, "gap", fake_gap):
+            res, counts = inn.twins(self.server)
+        self.assertEqual(counts["ambiguous"], 2)
+        self.assertNotIn("0x00402000", {r["steam"] for r in res})
+        self.assertNotIn("0x00403000", {r["steam"] for r in res})
+
+    def test_missing_fp_returns_2(self):
+        self.args[2] = os.path.join(self.tmp, "nowhere")
+        rc, _o, err = self.run_twins()
+        self.assertEqual(rc, 2)
+        self.assertIn("ingest_names:", err)
+
+    def test_server_env_default(self):
+        self.args[1:3] = []
+        with mock.patch.dict(os.environ, {"BD_SERVER": self.server}):
+            rc, out, _e = self.run_twins()
+        self.assertEqual(rc, 0)
+        self.assertIn("named=2", out)
 
 
 class LedgerTests(Base):

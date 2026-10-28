@@ -62,7 +62,9 @@ live-only facts in batch: `python3 patch_manager_mods/ghidra_knowledge/tools/rea
 (facts file first, 3 REA calls per address). Names that mod code or research notes already know:
 `tools/ingest_names.py gap|extract|ledger|cards|score` (candidates -> `probable` ledger rows -> blind Haiku cards with decoys
 -> `promote.tsv`), then `tools/promote_names.py --promote F --source ingest-<topic> [--apply]` writes verified names to
-`name_map` (user OK first; INGEST_PLAN.md). The full tool order
+`name_map` (user OK first; INGEST_PLAN.md). Gap functions with no name in any text: `tools/ingest_names.py twins --out F`
+(unique GOG fingerprint twin names, `gog steam source name cites`), then a Steam-DB batch with
+`steam_db_batches/tools/batch.py candidates B<n> --gog-list F --extra-candidates F` (gates + blind cards; INGEST_PLAN §I7). The full tool order
 (static dumps at $0, live REA last) is in `RE_AGENT_GUIDE.md` §2.1.
 
 **No `sqlite3` CLI is installed on this machine** (confirmed 2026-09-29,

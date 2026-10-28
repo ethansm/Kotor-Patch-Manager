@@ -360,6 +360,31 @@ class NameRegexExtraCandidatesTests(Base):
         rows, _out = self.candidates("--gog-range", "0x%x:0x%x" % (lo, hi), "--name-regex", "^Theta$")
         self.assertEqual(set(rows), {"Theta"})
 
+    def test_gog_list_keeps_only_listed_addresses(self):
+        everything, _out = self.candidates()
+        want = {"Alpha", "Theta"}
+        lines = [h(bd.parse_addr(everything[n]["gog"])) for n in sorted(want)]
+        p = self.root / "gog_list.tsv"
+        p.write_text("gog\tnote\n" + "".join(l + "\tx\n" for l in lines))
+        rows, _out = self.candidates("--gog-list", str(p))
+        self.assertEqual(set(rows), want)
+
+    def test_gog_list_combines_with_name_regex(self):
+        everything, _out = self.candidates()
+        p = self.root / "gog_list.tsv"
+        p.write_text("gog\n" + "".join(h(bd.parse_addr(everything[n]["gog"])) + "\n" for n in ("Alpha", "Theta")))
+        rows, _out = self.candidates("--gog-list", str(p), "--name-regex", "^Theta$")
+        self.assertEqual(set(rows), {"Theta"})
+
+    def test_gog_list_bad_file_dies(self):
+        nocol = self.root / "nocol.tsv"
+        nocol.write_text("addr\n0x401000\n")
+        for bad in (self.root / "missing.tsv", nocol):
+            rc, _out, err = run_exit("candidates", "B7", "--classes", "CFoo", "--no-reexport",
+                                     "--findings-dir", str(self.root / "findings"), "--gog-list", str(bad))
+            self.assertNotEqual(rc, 0, bad)
+            self.assertIn("--gog-list", err, bad)
+
     def test_gog_range_malformed_or_empty_dies(self):
         for bad in ("0x400000", "zz:0x500000", "0x400000-0x500000", "0x500000:0x400000", "0x400000:0x400000", ""):
             rc, _out, err = run_exit("candidates", "B7", "--classes", "CFoo", "--no-reexport",

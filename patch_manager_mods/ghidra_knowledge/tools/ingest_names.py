@@ -759,6 +759,66 @@ def run_score(args, out=sys.stdout):
     return 0
 
 
+# ---- twins -------------------------------------------------------------------
+TWIN_COLS = ("gog", "steam", "source", "name", "cites")
+SERVER_DEFAULT = "~/Games/KOTOR2_Mod_Workspace/ghidra_dumps/upstream_server/"
+FP_STEAM = "k2_win_steam_aspyr_swkotor2.exe"
+FP_GOG = "k2_win_gog_aspyr_swkotor2.exe"
+
+
+def _fp_key(r):
+    """Structural fingerprint of one fp.tsv row; identical code in two builds gives the same key."""
+    callees, strs = r["callees"], r["str_refs"]
+    return (r["size"], r["retn"], r["n_insn"], r["disp"], r["imm"],
+            len(callees.split(",")) if callees else 0, len(strs.split(",")) if strs else 0)
+
+
+def _load_fp(path):
+    """({addr int: row}, Counter of keys) for one fp.tsv."""
+    by_addr, keys = {}, collections.Counter()
+    for r in read_tsv(path):
+        by_addr[int(r["addr"], 16)] = r
+        keys[_fp_key(r)] += 1
+    return by_addr, keys
+
+
+def twins(server, source="all", kdb_path=KDB_DEFAULT, ledger_dir=LEDGER_DEFAULT, functions=FUNCS_DEFAULT,
+          root=REPO):
+    """Gap functions whose structural twin in the GOG exe carries a real name.
+
+    Returns (rows, counts); counts keys: gap named unnamed ambiguous no_twin no_fp (sum to gap).
+    """
+    steam, steam_keys = _load_fp(os.path.join(server, FP_STEAM, "fp.tsv"))
+    gog, gog_keys = _load_fp(os.path.join(server, FP_GOG, "fp.tsv"))
+    gog_by_key = {_fp_key(r): r for r in gog.values()}
+    # a function can sit in several source groups: dedupe by address, sum its cites across groups
+    cites = collections.Counter()
+    for d in gap(source, kdb_path, ledger_dir, functions, root, top_n=100000).values():
+        for t in d["top"]:
+            cites[int(t["fn"], 16)] += t["cites"]
+    counts = collections.Counter(gap=len(cites))
+    rows = []
+    for a in sorted(cites):
+        s = steam.get(a)
+        if s is None:
+            counts["no_fp"] += 1
+            continue
+        k = _fp_key(s)
+        if k not in gog_keys:
+            counts["no_twin"] += 1
+        elif steam_keys[k] > 1 or gog_keys[k] > 1:
+            counts["ambiguous"] += 1
+        else:
+            g = gog_by_key[k]
+            if not g["name"] or g["name"].startswith("FUN_"):
+                counts["unnamed"] += 1
+                continue
+            counts["named"] += 1
+            rows.append({"gog": "0x%08x" % int(g["addr"], 16), "steam": "0x%08x" % a, "source": "fptwin",
+                         "name": "%s::%s" % (g["namespace"] or "Global", g["name"]), "cites": cites[a]})
+    return rows, counts
+
+
 # ---- CLI ---------------------------------------------------------------------
 def build_parser():
     p = argparse.ArgumentParser(prog="ingest_names.py", description=__doc__.split("\n")[0])
@@ -790,6 +850,10 @@ def build_parser():
     c.add_argument("--decoy-every", type=int, default=4)
     c.add_argument("--seed", type=int, default=0)
     c.add_argument("--decomp-lines", type=int, default=0, help="add an N-line named pseudo-C excerpt to function cards")
+    t = sub.add_parser("twins", parents=[common], help="names for gap functions from unique GOG fingerprint twins")
+    t.add_argument("--source", choices=sorted(SOURCE_GROUPS), default="all")
+    t.add_argument("--server", default=None, help="upstream server dump dir (default: $BD_SERVER or %s)" % SERVER_DEFAULT)
+    t.add_argument("--out", required=True)
     s = sub.add_parser("score", help="gate decoy rejection, write promote TSV")
     s.add_argument("--key", required=True)
     s.add_argument("--verdicts", required=True, help="glob of verdicts_*.tsv")
@@ -828,6 +892,13 @@ def main(argv=None, dump=None, out=None, err=None):
             c = collections.Counter(r["status"] for r in rows)
             print(f"extract: rows={len(rows)} new={c['new']} agrees={c['agrees']} "
                   f"conflicts={c['conflicts']} -> {args.out}", file=out)
+            return 0
+        if args.cmd == "twins":
+            server = os.path.expanduser(args.server or os.environ.get("BD_SERVER") or SERVER_DEFAULT)
+            rows, c = twins(server, args.source, args.kdb, args.ledger_dir, args.functions, args.root)
+            write_tsv(args.out, rows, TWIN_COLS)
+            print(f"twins: gap={c['gap']} named={c['named']} unnamed={c['unnamed']} ambiguous={c['ambiguous']} "
+                  f"no_twin={c['no_twin']} no_fp={c['no_fp']} -> {args.out}", file=out)
             return 0
         if args.cmd == "ledger":
             return run_ledger(args, dump if dump is not None else _make_dump(args.dump_root), out, err)
