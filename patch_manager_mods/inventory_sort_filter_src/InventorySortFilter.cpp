@@ -295,7 +295,9 @@ void normaliseState(int panel) {
     if (g_extra != isf::X_None && (mode != 0 || !g_cfg.cycle)) g_extra = isf::X_None;
     if (g_cfg.cycle) {
         isf::State st;
-        captionTo(panel, isf::stateOf(mode, g_extra, &st) ? isf::captionOf(st) : "Filter");
+        char text[isf::kCaptionBytes] = "Filter";
+        if (isf::stateOf(mode, g_extra, &st)) isf::captionWithCount(st, g_cfg.mask, -1, text, sizeof text);
+        captionTo(panel, text);
     } else if (strcmp(g_caption, "Filter")) {
         captionTo(panel, "Filter");
     }
@@ -320,7 +322,7 @@ void captionCountTo(int panel) {
     isf::State st;
     if (!isf::stateOf(filterMode(), g_extra, &st) || st == isf::S_All) return;
     char text[isf::kCaptionBytes];
-    isf::captionWithCount(st, g_n, text, sizeof text);
+    isf::captionWithCount(st, g_cfg.mask, g_n, text, sizeof text);
     captionTo(panel, text);
 }
 
@@ -355,7 +357,9 @@ extern "C" int __cdecl SortFilterTabClick(int panel, int ctrl) {
         if (isf::onTabClick(clicked, mode, g_extra, g_cfg.mask, &next)) {
             g_extra = isf::extraOf(next);   // SetNextFilter only stores the mode and flags a deferred repopulate
             reinterpret_cast<SetNextFilterFn>(FnSetNextFilter)(panel, isf::engineModeOf(next));
-            captionTo(panel, isf::captionOf(next));
+            char text[isf::kCaptionBytes];
+            isf::captionWithCount(next, g_cfg.mask, -1, text, sizeof text);
+            captionTo(panel, text);
             if (g_cfg.log) logf("tab click: cycle -> state %d (engine mode %d, extra=%d)", static_cast<int>(next), isf::engineModeOf(next), g_extra);
             return 1;
         }

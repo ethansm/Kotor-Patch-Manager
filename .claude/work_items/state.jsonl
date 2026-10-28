@@ -135,3 +135,4 @@
 {"ev": "done", "session": "59c35a55-8a39-4fca-9937-97b39961061c", "ts": "2026-10-26T00:28:40Z", "wi": "WI-137"}
 {"ev": "done", "session": "f92f7b6b-d26a-466d-b18f-74b3ae28334f", "ts": "2026-10-27T23:21:09Z", "wi": "WI-151"}
 {"ev": "done", "session": "58de0ab0-0d3d-4a63-ae10-87a6e6fbe42c", "ts": "2026-10-28T00:34:23Z", "wi": "WI-160"}
+{"ev": "done", "reason": "manual: WI-152 fix wave vw2-A", "session": "d8e177e5-97c2-4bac-af2c-9e39ef6301dd", "ts": "2026-10-28T00:46:37Z", "wi": "WI-152"}

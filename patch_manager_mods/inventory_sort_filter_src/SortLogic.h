@@ -117,13 +117,26 @@ inline const char* captionOf(State s) {
     }
 }
 
-// Caption with the visible-row count for filtered states (WI-151): All stays "Filter"; New/Usable/Upgradeable get " (rows)".
-// kCaptionBytes is the caption buffer size: the longest text ("Filter: Upgradeable (1024)") is 25 chars + NUL. A small cap truncates, still NUL-terminated.
+// Caption for a filtered state (WI-151 count, WI-152 position). All stays "Filter". Otherwise "Filter: <name>", then " P/N"
+// (1-based place among the ENABLED non-All states in cycle order New, Usable, Upgradeable; shown only when N >= 2), then
+// " (rows)" when rows >= 0. rows < 0 omits the count (captionCountTo adds it once g_n is final). A state outside the mask
+// gets no place; an empty mask writes plain "Filter". The longest text "Filter: Upgradeable 3/3 (1024)" is 30 chars;
+// kCaptionBytes = 32 holds it with its NUL. A small cap truncates, still NUL-terminated.
 constexpr int kCaptionBytes = 32;
-inline void captionWithCount(State s, int rows, char* out, int cap) {
+constexpr State kCycleOrder[] = {S_New, S_Usable, S_Upgrade};
+inline void captionWithCount(State s, unsigned enabledMask, int rows, char* out, int cap) {
     if (!out || cap <= 0) return;
-    if (s == S_All) snprintf(out, cap, "%s", captionOf(s));
-    else snprintf(out, cap, "%s (%d)", captionOf(s), rows);
+    int total = 0, place = 0;
+    for (State c : kCycleOrder) {
+        if (!(enabledMask & (1u << c))) continue;
+        if (c == s) place = total + 1;
+        ++total;
+    }
+    if (s == S_All || total == 0) { snprintf(out, cap, "Filter"); return; }
+    char pos[32] = "", cnt[24] = "";
+    if (place > 0 && total > 1) snprintf(pos, sizeof pos, " %d/%d", place, total);
+    if (rows >= 0) snprintf(cnt, sizeof cnt, " (%d)", rows);
+    snprintf(out, cap, "%s%s%s", captionOf(s), pos, cnt);
 }
 
 // Click on a tab whose engine mode is `clicked`. Only a click on the All tab (mode 0) while the panel is in a

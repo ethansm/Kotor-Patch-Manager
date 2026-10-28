@@ -1,6 +1,7 @@
 // Host unit tests for SortLogic.h:  g++ -std=c++17 -Wall -Wextra -o /tmp/sort_logic_test sort_logic_test.cpp && /tmp/sort_logic_test
 #include "SortLogic.h"
 #include <stdio.h>
+#include <string.h>
 #include <vector>
 using namespace isf;
 
@@ -132,14 +133,14 @@ int main() {
     CHECK(!strcmp(captionOf(S_All), "Filter") && !strcmp(captionOf(S_Upgrade), "Filter: Upgradeable"));
     // captions with the visible-row count (WI-151)
     char cb[kCaptionBytes];
-    captionWithCount(S_All, 5, cb, sizeof cb);        CHECK(!strcmp(cb, "Filter"));
-    captionWithCount(S_Usable, 0, cb, sizeof cb);     CHECK(!strcmp(cb, "Filter: Usable (0)"));
-    captionWithCount(S_Upgrade, 123, cb, sizeof cb);  CHECK(!strcmp(cb, "Filter: Upgradeable (123)"));
-    captionWithCount(S_New, 7, cb, sizeof cb);        CHECK(!strcmp(cb, "Filter: New (7)"));
+    captionWithCount(S_All, all, 5, cb, sizeof cb);        CHECK(!strcmp(cb, "Filter"));
+    captionWithCount(S_Usable, all, 0, cb, sizeof cb);     CHECK(!strcmp(cb, "Filter: Usable 2/3 (0)"));
+    captionWithCount(S_Upgrade, all, 123, cb, sizeof cb);  CHECK(!strcmp(cb, "Filter: Upgradeable 3/3 (123)"));
+    captionWithCount(S_New, all, 7, cb, sizeof cb);        CHECK(!strcmp(cb, "Filter: New 1/3 (7)"));
     char tiny[8];
-    captionWithCount(S_Upgrade, 123, tiny, sizeof tiny); CHECK(!strcmp(tiny, "Filter:") && tiny[7] == 0);
+    captionWithCount(S_Upgrade, all, 123, tiny, sizeof tiny); CHECK(!strcmp(tiny, "Filter:") && tiny[7] == 0);
     char one[1];
-    captionWithCount(S_Usable, 0, one, sizeof one);   CHECK(one[0] == 0);
+    captionWithCount(S_Usable, all, 0, one, sizeof one);   CHECK(one[0] == 0);
     // open upgrade slots
     int none[6] = {0, 0, 0, 0, 0, 0};
     CHECK(!hasOpenSlot(0, none));
@@ -182,6 +183,48 @@ int main() {
         int nb = 0;
         CHECK(fillTiedNames(big.data(), (int)big.size(), [&](Entry&) { ++nb; }) == kMaxTieRows + 1 && nb == kMaxTieRows + 1);
         CHECK(fillTiedNames(big.data(), 0, [](Entry&) {}) == 0);
+    }
+    // caption_cycle_position (WI-152): place among the ENABLED New<Usable<Upgradeable states; stale state and empty mask get none
+    {
+        const unsigned nu = 1u << S_New, us = 1u << S_Usable, ug = 1u << S_Upgrade, all3 = nu | us | ug;
+        struct Cap { State s; unsigned mask; int rows; const char* want; };
+        const Cap caps[] = {
+            {S_New, all3, 5, "Filter: New 1/3 (5)"},             {S_Usable, all3, 14, "Filter: Usable 2/3 (14)"},
+            {S_Upgrade, all3, 1024, "Filter: Upgradeable 3/3 (1024)"},
+            {S_New, nu | us, 5, "Filter: New 1/2 (5)"},          {S_Usable, nu | us, 14, "Filter: Usable 2/2 (14)"},
+            {S_Usable, us | ug, 14, "Filter: Usable 1/2 (14)"},  {S_Upgrade, us | ug, 1024, "Filter: Upgradeable 2/2 (1024)"},
+            {S_Usable, nu | ug, 14, "Filter: Usable (14)"},      {S_Upgrade, nu | ug, 2, "Filter: Upgradeable 2/2 (2)"},
+            {S_Usable, us, 14, "Filter: Usable (14)"},           {S_New, ug, 2, "Filter: New (2)"},
+            {S_New, 0u, 14, "Filter"},                           {S_Upgrade, 0u, 1024, "Filter"},
+            {S_All, all3, 14, "Filter"},
+        };
+        for (const Cap& c : caps) {
+            char buf[isf::kCaptionBytes];
+            captionWithCount(c.s, c.mask, c.rows, buf, sizeof buf);
+            CHECK(strcmp(buf, c.want) == 0);
+        }
+        char buf[isf::kCaptionBytes];
+        captionWithCount(S_Usable, all3, -1, buf, sizeof buf);
+        CHECK(strcmp(buf, "Filter: Usable 2/3") == 0);   // rows < 0: count left to captionCountTo
+    }
+    // caption_longest_fits (WI-152): the 30-char longest caption fits kCaptionBytes with its NUL
+    {
+        char buf[isf::kCaptionBytes];
+        captionWithCount(S_Upgrade, (1u << S_New) | (1u << S_Usable) | (1u << S_Upgrade), 1024, buf, sizeof buf);
+        CHECK(strlen(buf) == 30 && strlen(buf) < sizeof buf);
+    }
+    // caption_truncation_nul (WI-152): a small cap truncates and stays NUL-terminated; cap 0 writes nothing
+    {
+        const unsigned all3 = (1u << S_New) | (1u << S_Usable) | (1u << S_Upgrade);
+        char six[6] = {'X', 'X', 'X', 'X', 'X', 'X'};
+        captionWithCount(S_Upgrade, all3, 1024, six, sizeof six);
+        CHECK(six[5] == 0 && strcmp(six, "Filte") == 0);
+        char one[1] = {'X'};
+        captionWithCount(S_Upgrade, all3, 1024, one, sizeof one);
+        CHECK(one[0] == 0);
+        char none[1] = {'X'};
+        captionWithCount(S_Upgrade, all3, 1024, none, 0);
+        CHECK(none[0] == 'X');
     }
     printf(g_fail ? "sort_logic_test: %d FAILED\n" : "sort_logic_test: ALL PASS\n", g_fail);
     return g_fail ? 1 : 0;
