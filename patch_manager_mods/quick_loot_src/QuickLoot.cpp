@@ -1,3 +1,23 @@
+// Quick Loot 0.6.0-dev = 0.5.1-dev + four user-picked features (doc 52, 10-28):
+//   QL2A anchor: the block position is no longer latched when it first shows (it drifted when the camera turned). K2HUD_TARGET_MENU_POST runs after the engine
+//   positioned the target name tag (0x743850) and before drawing, so onMenuPost re-places the block EVERY frame from the current name rect. quick_loot.ini
+//   Anchor: 0 = under the name tag (default; block top = name bottom + the gap that clears the health bar, centred on the name, clamped to the panel, flipped
+//   above the name at the bottom), 1 = below the container (the container's server position projected with the scene camera's MapToScreen, camera vtable slot
+//   0x28 = 0x4809D0 RET 0x14, normalized = 1, x / y times the GUI size shorts at [[[G+4]+0x274]+0x6C / +0x6E]: the same math as GetMenuPoint 0x77E970 without
+//   its +1.75 lift; behind-camera, NaN and off-panel results fall back to mode 0), 2 = beside the name tag (left = name right + gap, top = name top, flips to
+//   the left of the tag at the panel's right edge). With no name rect this frame the last one is kept NameHoldMs (250 ms), then the block hides (modes 0 / 2;
+//   the Took list keeps its last rect until it expires). Logs: ANCHOR (change-only: wanted mode, used mode, reason), PROJ (first 40 different points + every
+//   verdict change: name rect, projected px, ret, why) so a live session can calibrate mode 1. LABEL-LATCH is gone.
+//   QL4 per-item take: a left click on an item row of the PEEK list (rows are click-eating labels only while the peek list is up) takes that one item with the
+//   server CloseInventory drain sequence for the clicked index (engineTakeOne): ItemListGetItem, RemoveFromRepo 0x605E80, the first-pickup branch for base class
+//   0x18 (a silent local-boolean 0x5E set on "lockertsfinv"; the pop-up case is refused, F runs the real drain), GetItemRepository 0x58A2C0(1), InsertOrMerge
+//   0x605090, SetOwner 0x600380. HUD frame only, only with the open flag +0x390 == 1 and the leader within CloseM. The header flashes "Acquired: <name>" for 1.5 s;
+//   an emptied container is closed the normal way (Close flag 0, once). Logs: TAKE1 / TAKE1-REFUSED. F still takes all.
+//   QL8 tooltip: 300 ms on one row shows a vanilla-framed box beside the list (right, flipped left at the panel edge, top = the row, clamped): item name (16x16 when
+//   it fits), "Quantity: N", the description (item+0x2B0 DescIdentified through GetLocString like the name; word-wrapped, 10 lines max with "..."). The engine has no
+//   function for the stats / properties lines (u03.md B), so none are shown. Log: TIP (once per hover target, 20 max: lines + the body label's extent).
+//   QL7 Mod Configuration page (QuickLootPage.h, selfheal pattern): List position, Auto-open, List rows, Open distance; all live. TakeKey stays ini-only (the
+//   declarative layer has no key-binding row). New imports (ini writer): REINSTALL.
 // Structure (PV1 step 3): the peek / take decision machine lives in QuickLootMachine.h (host-simulated by quick_loot_sim_test.cpp); this file is the
 //   engine adapter (EngineEnv: SafeRead reads, OpenInventory / Close calls, label, toast) plus the three hooks.
 // Quick Loot 0.5.0-dev = 0.4.0-dev + QL2V (doc 52): the list looks and behaves like the vanilla INVENTORY list / EQUIPMENT picker. Each item row is a
@@ -46,12 +66,14 @@
 //   "pending". QlPlaceableEvent notes its OnOpen (event 0x16). The hud-host FRAME tick sends the vanilla OK-button message (0x0087A550, Close
 //   flag 1 = take all) 2 frames after OnOpen, or 1000 ms after Show when no OnOpen came. Close is never called from inside the EventHandler hook.
 //   Anything else returns 0 (vanilla menu). Shift held = vanilla menu. Config: quick_loot.ini [QuickLoot] (read once at init):
-//   Enabled=1, ProximityEnabled=1, OpenM=3.0, CloseM=5.0 (>= OpenM+1), TakeKey=70 (VK, 'F'), ScanMs=250, ListRows=8 (1..12).
+//   Enabled=1, ProximityEnabled=1, OpenM=3.0, CloseM=5.0 (>= OpenM+1), TakeKey=70 (VK, 'F'), ScanMs=250, ListRows=8 (1..12), Anchor=0 (0 under the name tag / 1 below the container / 2 beside the name tag; 0.6.0-dev).
 // Below: the QL0 probe description (all its log lines are kept). Questions it answered (patch_manager_mods/52_quick_loot.md):
 //   1. does loot that OnOpen generates (queued event 0x16) reach the container before the player's Close?   (SHOW n vs CLOSE n, EVT 0x16 dt)
 //   2. timing: ms between Show, event 0x16 and Close.                                                        (dt= on EVT / CLOSE lines)
 //   3. does take-all (Close flag 1) fire OnInvDisturbed (event 0x1B)?                                         (EVT id=1b after CLOSE flag=1)
 // Hooks read ECX / [ESP+4..] (KPM passes the game's stack: [esp+0] = return address). Log lines: QuickLootLogic.h fmt*.
+#define INIW_FILE_API 1    // ModConfigDecl.h ini-bound rows write through IniWrite.h's file API (doc 46); before the first include of it
+#define MCDECL_FILE_API 1
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <stdio.h>
@@ -67,13 +89,17 @@
 #include "GameAddr.h"
 #include "ActQueue.h"          // actq::playerPaused
 #include "CombatTraceRead.h"   // ctrace::readHudCombat
+#include "ProviderClient.h"    // k2pc::RegisterOnce (Mod Configuration page)
+#include "ModConfigDecl.h"
+#include "QuickLootPage.h"
+#include <math.h>
 #include <stdlib.h>
 
 KP_LOG_PATCH("quick-loot");
 
 namespace {
 
-constexpr const char* Version = "0.5.0-dev";
+constexpr const char* Version = "0.6.0-dev";
 constexpr unsigned Site = 0x7100;   // saferead failure-ring site id
 // Steam addresses (static RE, doc 52 / .claude/research/quick_loot/README.md); AppGlobal and ClientToServerObjectId come from GameAddr.h.
 constexpr uintptr_t GetPlaceableByGameObjectID = 0x0051C160;   // thiscall(serverApp, serverId) RET 4 -> CSWSPlaceable* (0 = none)
@@ -113,6 +139,26 @@ constexpr int Area_Ids = 0x194, Area_Count = 0x198; // area object-id array and 
 constexpr int ObjTypePlaceable = 9;
 constexpr int Inner_PartyTable = 0x270;             // [client+4]+0x270: probed before the party-table getter (CompanionAI.cpp:361)
 constexpr unsigned SiteWorld = 0x7110, SitePause = 0x7120;   // saferead sites (pause uses +0..+3)
+// ---- 0.6.0-dev (QL4 per-item take): the server CloseInventory drain (asm 0x5F5770..0x5F5A5A, .claude/waves/w5-52-QL2A/u03.md A1), call by call.
+constexpr uintptr_t GetCreatureObj = 0x0051C600;     // thiscall(serverApp, objId) RET 4 -> object (asm 0x5F57CF: ECX = [[AppGlobal]+8], arg = the opener's server id)
+constexpr uintptr_t CreatureHolder = 0x00632A20;     // fastcall(object) RET 0 -> the object found through [object+0x28] (0 = none) (asm 0x5F57E4)
+constexpr int Holder_VtCtx = 0x30;                   // vtable slot of that holder: thiscall(holder), no stack args -> ctx (asm 0x5F57FD..0x5F5800)
+constexpr uintptr_t GetItemRepository = 0x0058A2C0;  // thiscall(ctx, 1) RET 4 -> the destination item repository (asm 0x5F5A33..0x5F5A38)
+constexpr uintptr_t RepoRemove = 0x00605E80;         // thiscall(repo, item) RET 4 (asm 0x5F5852..0x5F585E)
+constexpr uintptr_t RepoInsert = 0x00605090;         // thiscall(dstRepo, CSWSItem** itemInOut, 1, 1, 1) RET 0x10 (asm 0x5F5A29..0x5F5A3F)
+constexpr uintptr_t ItemSetOwner = 0x00600380;       // thiscall(item, ownerServerId, 1, 1, 0x7F000000) RET 0x10 (asm 0x5F5A4A..0x5F5A5A)
+constexpr uintptr_t VarGetBool = 0x005E9210;         // thiscall(item + 0x124, bit) RET 4 -> 0 / 1 (asm 0x5F58C9..0x5F58D1)
+constexpr uintptr_t VarSetBool = 0x005E9260;         // thiscall(item + 0x124, bit, value) RET 8 (asm 0x5F58AC..0x5F58B9)
+constexpr int Item_Vars = 0x124, Item_Desc = 0x2B0;  // local variable table; DescIdentified (CExoLocString; +0x2B8 Description, +0x2C0 LocalizedName)
+constexpr int Base_NoticeClass = 0xAC;               // base item byte compared with 0x18 by the drain (asm 0x5F5871)
+constexpr int Plc_Tag = 0x18;                        // the placeable's CExoString tag (asm 0x5F5899: ADD ECX,0x18), compared with "lockertsfinv"
+constexpr unsigned SiteTake = 0x7140, SiteProj = 0x7150;
+// ---- 0.6.0-dev (QL2A mode 1): the scene camera's MapToScreen (.claude/waves/w5-52-QL2A/u01.md, holster-editor U4 K contract). G = [[AppGlobal]+4]; A = [G+4];
+// camera = [[A+0x18]+0x40]; GUI size shorts at [[A+0x274]+0x6C / +0x6E]. Camera vtable slot 0x28 must still be 0x4809D0 (RET 0x14) before it is called.
+constexpr uintptr_t CamMapToScreen = 0x004809D0;
+constexpr int Cam_Pos = 0xA8, Cam_Quat = 0xB4, Cam_Fovy = 0x204, Cam_Vp = 0x218, CamVt_MapToScreen = 0x28;
+constexpr int Gui_W = 0x6C, Gui_H = 0x6E, Inner_Gui = 0x274, Inner_CamHolder = 0x18, CamHolder_Cam = 0x40;
+constexpr int Obj_PosZ = 0x9C;                       // server object z (inferred next to +0x94 / +0x98; the PROJ line logs the world point)
 const char* const IniPath = ".\\quick_loot.ini";   // ".\\" prefix: GetPrivateProfile*A with a bare name looks in the Windows dir
 
 KP_CHANNEL(chMain, "main");
@@ -198,19 +244,19 @@ int clientLanguage() {
     return reinterpret_cast<GetClientLanguageFn>(gameaddr::GetClientLanguage)(static_cast<int>(client));
 }
 
-// Localised item name: CExoLocString at item+0x2C0 through GetString, copy of inventory-sort readItemName. Leaves out[0] = 0 (unknown) when the
-// handle / language is unusable, GetString fails or the text is unreadable. The engine out string is always freed with the CExoString dtor.
-void readItemName(uintptr_t item, int lang, char* out, int cap) {
+// Localised item text: the CExoLocString at item+`off` (0x2C0 name, 0x2B0 DescIdentified) through GetString, copy of inventory-sort readItemName. Leaves out[0] = 0
+// (unknown) when the handle / language is unusable, GetString fails or the text is unreadable. The engine out string is always freed with the CExoString dtor.
+void readItemText(uintptr_t item, int off, int lang, char* out, int cap) {
     out[0] = 0;
-    const uintptr_t handle = item + Item_Name;
+    const uintptr_t handle = item + off;
     uint32_t first = 0, probe = 0;
-    // GetString dereferences [handle+0] with no null check: require a readable pointer there (server items are unverified for this offset).
+    // GetString dereferences [handle+0] with no null check: require a readable pointer there (server items are unverified for these offsets).
     if (!item || lang < 0 || !rd<uint32_t>(handle, 0, &first) || !first || !rd<uint32_t>(first, 0, &probe)) return;
     int exo[2] = {0, 0};   // CExoString {char* p; uint32 len}
     const bool ok = reinterpret_cast<GetLocStringFn>(gameaddr::GetLocString)(reinterpret_cast<void*>(handle), lang, exo, 0);
     if (ok && exo[0]) {
-        char tmp[256];
-        if (saferead::readExo(Site, reinterpret_cast<uintptr_t>(exo), tmp, sizeof tmp, 255, false)) {
+        static char tmp[qlogic::TipDescCap + 16];
+        if (saferead::readExo(Site, reinterpret_cast<uintptr_t>(exo), tmp, static_cast<int>(sizeof tmp), static_cast<int>(sizeof tmp) - 1, false)) {
             int k = 0;
             while (tmp[k] && k < cap - 1) { out[k] = tmp[k]; ++k; }
             out[k] = 0;
@@ -218,6 +264,7 @@ void readItemName(uintptr_t item, int lang, char* out, int cap) {
     }
     if (exo[0]) reinterpret_cast<ExoDtorFn>(gameaddr::ExoDtor)(exo);
 }
+void readItemName(uintptr_t item, int lang, char* out, int cap) { readItemText(item, Item_Name, lang, out, cap); }
 
 using Captured = qlogic::Captured;
 
@@ -263,12 +310,136 @@ void captureItems(uintptr_t plc, Captured& c) {
     }
 }
 
+// Checks that the repository slot `index` still holds object id `expectId` and returns the item (0 = no). *repoOut = the repository.
+uintptr_t itemAt(uintptr_t plc, unsigned index, uint32_t expectId, uintptr_t* repoOut, qlogic::TakeWhy* why) {
+    uintptr_t repo = 0;
+    const int n = itemCount(plc, &repo);
+    uint32_t arr = 0, id = 0;
+    if (n <= 0 || !repo) { *why = qlogic::TakeWhy::NoRepo; return 0; }
+    if (index >= static_cast<unsigned>(n) || index >= qlogic::ListMaxItems) { *why = qlogic::TakeWhy::BadIndex; return 0; }
+    if (!rd<uint32_t>(repo, Repo_Array, &arr) || !arr || !rd<uint32_t>(arr, static_cast<int>(index * 4), &id) || id != expectId) { *why = qlogic::TakeWhy::Stale; return 0; }
+    const uintptr_t item = reinterpret_cast<LookupFn>(ItemListGetItem)(repo, index);
+    if (!item || !saferead::probeRead(SiteTake, reinterpret_cast<const void*>(item), Item_IconProbe)) { *why = qlogic::TakeWhy::NoItem; return 0; }
+    *repoOut = repo;
+    return item;
+}
+
+bool tagIsLocker(uintptr_t plc) {   // the drain compares the placeable's tag with "lockertsfinv" (CExoString compare, asm 0x5F5899)
+    char tag[40];
+    if (saferead::readExo(SiteTake, plc + Plc_Tag, tag, sizeof tag, 39, false) <= 0) return false;
+    const char* want = "lockertsfinv";
+    for (int i = 0;; ++i) {   // case-insensitive compare without a CRT import
+        const char a = tag[i] >= 'A' && tag[i] <= 'Z' ? static_cast<char>(tag[i] + 32) : tag[i];
+        if (a != want[i]) return false;
+        if (!want[i]) return true;
+    }
+}
+
+// QL4: ONE item from the container to the leader = the server CloseInventory drain body for the clicked index (u03.md A1). Everything that can fail is checked
+// BEFORE the item leaves the container: the slot still holds the expected id, the destination repository resolves, and the first-pickup pop-up case is refused.
+bool engineTakeOne(uintptr_t plc, uint32_t opener, unsigned index, uint32_t expectId, qlogic::TakeOneOut* out) {
+    using namespace qlogic;
+    saferead::beginScope();
+    out->why = TakeWhy::Failed; out->notice = 0; out->rc = 0; out->id = 0;
+    out->nBefore = itemCount(plc);
+    uintptr_t repo = 0;
+    const uintptr_t item = itemAt(plc, index, expectId, &repo, &out->why);
+    if (!item) return false;
+    const uintptr_t srv = serverApp();
+    if (!srv || !opener) { out->why = TakeWhy::NoCtx; return false; }
+    const uintptr_t cre = reinterpret_cast<LookupFn>(GetCreatureObj)(srv, opener);
+    if (!cre || !saferead::probeRead(SiteTake, reinterpret_cast<const void*>(cre), 0x30)) { out->why = TakeWhy::NoCtx; return false; }
+    const uintptr_t holder = reinterpret_cast<uintptr_t(__fastcall*)(uintptr_t)>(CreatureHolder)(cre);
+    uint32_t vt = 0, slot = 0;
+    if (!holder || !rd<uint32_t>(holder, 0, &vt) || !vt || !rd<uint32_t>(vt, Holder_VtCtx, &slot) || !slot || !saferead::probeRead(SiteTake, reinterpret_cast<const void*>(static_cast<uintptr_t>(slot)), 1)) { out->why = TakeWhy::NoCtx; return false; }
+    const uintptr_t ctx = reinterpret_cast<uintptr_t(__thiscall*)(uintptr_t)>(static_cast<uintptr_t>(slot))(holder);
+    if (!ctx) { out->why = TakeWhy::NoCtx; return false; }
+    const uintptr_t dst = reinterpret_cast<uintptr_t(__thiscall*)(uintptr_t, int)>(GetItemRepository)(ctx, 1);
+    if (!dst || !saferead::probeRead(SiteTake, reinterpret_cast<const void*>(dst), 0x20)) { out->why = TakeWhy::NoDst; return false; }
+    // The drain's first-pickup branch: base item class byte 0x18 only.
+    int idx = -1;
+    if (!rd<int>(item, Item_BaseIdx, &idx) || !baseItemIdxOk(idx)) { out->why = TakeWhy::NoItem; return false; }
+    const uintptr_t base = reinterpret_cast<BaseItemFn>(ItemGetBaseItem)(item);
+    uint8_t cls = 0;
+    if (!base || !rd<uint8_t>(base, Base_NoticeClass, &cls)) { out->why = TakeWhy::NoItem; return false; }
+    NoticePlan plan = NoticePlan::None;
+    if (cls == BaseItemNoticeClass) {
+        const bool bit = reinterpret_cast<int(__thiscall*)(uintptr_t, int)>(VarGetBool)(item + Item_Vars, ItemLocalBoolBit) != 0;
+        plan = noticePlan(cls, tagIsLocker(plc), bit);
+        if (plan != NoticePlan::None) out->notice = 1;
+        if (plan == NoticePlan::Popup) { out->why = TakeWhy::Popup; return false; }   // F (take all) runs the real drain and shows the pop-up
+    }
+    reinterpret_cast<int(__thiscall*)(uintptr_t, uintptr_t)>(RepoRemove)(repo, item);
+    if (plan == NoticePlan::SetBit) reinterpret_cast<void(__thiscall*)(uintptr_t, int, int)>(VarSetBool)(item + Item_Vars, ItemLocalBoolBit, 1);
+    uintptr_t held = item;   // InsertOrMerge may replace it with the merged stack or null it (special base types)
+    out->rc = reinterpret_cast<int(__thiscall*)(uintptr_t, uintptr_t*, int, int, int)>(RepoInsert)(dst, &held, 1, 1, 1);
+    if (held) reinterpret_cast<int(__thiscall*)(uintptr_t, uint32_t, int, int, int)>(ItemSetOwner)(held, opener, 1, 1, 0x7F000000);
+    out->why = TakeWhy::Ok; out->id = expectId;
+    out->nAfter = itemCount(plc);
+    return true;
+}
+
+// QL8: name, stack and description of the container item at `index` (the item stays where it is).
+bool engineDescribe(uintptr_t plc, unsigned index, uint32_t expectId, qlogic::TipData* out) {
+    saferead::beginScope();
+    uintptr_t repo = 0;
+    qlogic::TakeWhy why = qlogic::TakeWhy::Ok;
+    const uintptr_t item = itemAt(plc, index, expectId, &repo, &why);
+    if (!item) return false;
+    const int lang = clientLanguage();
+    int stack = -1;
+    rd<int>(item, Item_Stack, &stack);
+    out->stack = stack;
+    readItemText(item, Item_Name, lang, out->title, sizeof out->title);
+    readItemText(item, Item_Desc, lang, out->desc, sizeof out->desc);
+    return true;
+}
+
+// QL2A mode 1: the container's world point on screen. Reads the camera chain by SafeRead and calls ONLY the camera's MapToScreen, after checking that its
+// vtable slot 0x28 is still 0x4809D0. Fills `pr` (state 1 = a value, 2 = unavailable with a note) and the world point for the PROJ line.
+struct World3 { bool ok = false; float x = 0, y = 0, z = 0; };
+World3 g_projWorld;   // the container point last read (kept while the Took list is up)
+bool g_projNoted = false;
+void projectWorld(const World3& w, qlogic::Proj* pr) {
+    using namespace qlogic;
+    *pr = Proj();
+    pr->wx = w.x; pr->wy = w.y; pr->wz = w.z;
+    static char note[48];
+    auto fail = [&](const char* why) { snprintf(note, sizeof note, "%s", why); pr->state = 2; pr->note = note; };
+    if (!w.ok) { fail("noworld"); return; }
+    uint32_t app = 0, G = 0, A = 0, B = 0, cam = 0, gui = 0, vt = 0, slot = 0;
+    if (!rd<uint32_t>(gameaddr::AppGlobal, 0, &app) || !app || !rd<uint32_t>(app, 4, &G) || !G || !rd<uint32_t>(G, 4, &A) || !A) { fail("chain-G"); return; }
+    if (!rd<uint32_t>(A, Inner_CamHolder, &B) || !B || !rd<uint32_t>(B, CamHolder_Cam, &cam) || !cam) { fail("chain-cam"); return; }
+    if (!rd<uint32_t>(A, Inner_Gui, &gui) || !gui) { fail("chain-gui"); return; }
+    short gw = 0, gh = 0;
+    if (!rd<short>(gui, Gui_W, &gw) || !rd<short>(gui, Gui_H, &gh) || gw <= 0 || gh <= 0) { fail("gui-size"); return; }
+    if (!rd<uint32_t>(cam, 0, &vt) || !vt || !rd<uint32_t>(vt, CamVt_MapToScreen, &slot)) { fail("vtable"); return; }
+    if (slot != CamMapToScreen) { snprintf(note, sizeof note, "slot=%08x", (unsigned)slot); pr->state = 2; pr->note = note; return; }
+    float fovy = 0, pos[3], q[4];
+    int vp[4];
+    if (!rd<float>(cam, Cam_Fovy, &fovy) || !(fovy > 0.0f) || !rd<int>(cam, Cam_Vp + 8, &vp[2]) || !rd<int>(cam, Cam_Vp + 12, &vp[3]) || vp[2] <= 0 || vp[3] <= 0) { fail("viewport"); return; }
+    for (int i = 0; i < 3; ++i) if (!rd<float>(cam, Cam_Pos + 4 * i, &pos[i])) { fail("pose"); return; }
+    for (int i = 0; i < 4; ++i) if (!rd<float>(cam, Cam_Quat + 4 * i, &q[i])) { fail("pose"); return; }
+    float out[3] = {0, 0, 0};
+    reinterpret_cast<float*(__thiscall*)(uintptr_t, float*, float, float, float, int)>(static_cast<uintptr_t>(slot))(cam, out, w.x, w.y, w.z, 1);
+    pr->x = out[0] * static_cast<float>(gw);
+    pr->y = out[1] * static_cast<float>(gh);
+    // front / behind: Pc.z = (R(q) e_z) . (P - cam) with q = (w, x, y, z); in front when Pc.z < 0 (K contract; the call itself mirrors silently).
+    const float qw = q[0], qx = q[1], qy = q[2], qz = q[3];
+    const float rz[3] = { 2.0f * (qx * qz + qw * qy), 2.0f * (qy * qz - qw * qx), 1.0f - 2.0f * (qx * qx + qy * qy) };
+    const float pcz = rz[0] * (w.x - pos[0]) + rz[1] * (w.y - pos[1]) + rz[2] * (w.z - pos[2]);
+    pr->ret = std::isfinite(pcz) ? (pcz < 0.0f ? 1 : 2) : 0;
+    pr->state = 1;
+    if (!g_projNoted) { g_projNoted = true; KP_LOG(chMain, "PROJ-CALL world=%.2f,%.2f,%.2f cam=%08x gui=%d,%d fovy=%.1f vp=%d,%d out=%.4f,%.4f pc.z=%.2f", (double)w.x, (double)w.y, (double)w.z, (unsigned)cam, (int)gw, (int)gh, (double)fovy, vp[2], vp[3], (double)out[0], (double)out[1], (double)pcz); }
+}
+
 // ---- labels. Draw order = creation order (BUILD makes them in this order): frame panel (back), header, scroll indicator, then per row (12 max) the
 // bordered row frame, the icon, the text, then the scrollbar parts (track outline, track inset, thumb, up, down). Every draw is change-only per label.
 struct Lbl {
     uintptr_t c = 0;                  // the control (0 = none: creation failed or the HUD changed)
     int vis = -1;                     // -1 unknown, 0 hidden, 1 shown
-    bool styled = false, rectSet = false, colSet = false;
+    bool rectSet = false, colSet = false;
+    const char* font = nullptr;       // font resref last applied (static strings only)
     unsigned align = 0;
     qlogic::Rect rect = {0, 0, 0, 0};
     float col[3] = {0, 0, 0};
@@ -284,6 +455,9 @@ struct Lbl {
 };
 Lbl g_back, g_head, g_ind, g_row[qlogic::ListRowsMax], g_rowFrame[qlogic::ListRowsMax], g_rowIcon[qlogic::ListRowsMax];
 Lbl g_sbOuter, g_sbInner, g_sbThumb, g_sbUp, g_sbDown;
+Lbl g_tipFrame, g_tipTitle, g_tipQty, g_tipBody;   // 0.6.0-dev (QL8): the hover tooltip, created last (drawn above the list)
+bool g_tipOk = false;         // the four tooltip labels exist
+bool g_font16Ok = true;       // dialogfont16x16 could be set on the tooltip title (else the 10x10 font)
 bool g_rowsOk = false;        // header + indicator + every row / scrollbar label exists; false = one-line text in the header label (0.3.1 behaviour)
 bool g_rowFlat = false;       // the row frames are flat fills (no frame template in the HUD layout)
 bool g_backFrame = false;     // the backing is a vanilla frame template (fill + edges + corners from the .gui); false = flat tinted fill
@@ -292,8 +466,6 @@ bool g_backOff = false;       // backing could not be styled: text only
 bool g_backRectSet = false;
 qlogic::Rect g_backLast = {0, 0, 0, 0};
 int32_t g_panel = 0;          // HUD object the labels belong to (K2HudContext.panel at BUILD == ctx->hud later)
-bool g_haveRect = false;      // a target-menu name rect has been seen
-qlogic::Rect g_nameRect = {0, 0, 0, 0};
 bool g_buildFailLogged = false;
 bool g_extentHead = false, g_extentRow = false;   // LABEL-EXTENT: header and first row, once per session
 unsigned g_iconLogs = 0;      // ICON log lines written this session (first IconLogMax)
@@ -316,6 +488,7 @@ const char* const TexFill2bt = "uibit_fill_2bt";
 const char* const TexUpArrow = "uibit_uparrowg";
 const char* const TexDownArrow = "lbl_mapdown";                // 32x32 white down arrow (no uibit_*arrow* down texture exists)
 const char* const FontName = "dialogfont10x10";                  // vanilla list font
+const char* const FontTitle = "dialogfont16x16";                 // vanilla standard font (tooltip title)
 // Vanilla frame templates in the HUD layout (mipc28x6_p.gui): FILL uibit_fill_2bt + EDGE uibit_brdr_16bet + CORNER uibit_brdr_16bct, DIMENSION 16,
 // COLOR = TealFrame. LBL_MOULDING3 is the vanilla tooltip frame, LBL_MENUBG the target-menu frame. The backing is created from the first one that
 // exists, so the edges and corners come from the .gui (GuiKit has no edge / corner setter); LBL_QUEUE1 + a flat black fill is the last resort.
@@ -338,9 +511,15 @@ int g_hoverRow = -1;
 // The scrollbar of the block drawn last (absolute engine px), for the click test. Game thread only (FRAME and POST both run there).
 struct SbPub { bool shown = false; qlogic::Sb sb; qlogic::Rect blk = {0, 0, 0, 0}; DWORD tick = 0; };
 SbPub g_sbPub;
+// 0.6.0-dev: the block drawn last, for the row click test and the hover row (game thread only).
+struct BlockPub { bool shown = false, took = false, sb = false; qlogic::Rect blk = {0, 0, 0, 0}; unsigned vis = 0; DWORD tick = 0; };
+BlockPub g_blockPub;
+int g_rowClickPending = -1;                   // visible row of a left click on the peek list, delivered by Env::rowClick()
 guikit::ClickEdge g_clickEdge;                // LMB edge state (guikit::clickEdge), polled every frame by sbClickPoll
 
-void listPublishHide() { g_listRect[2] = 0; g_listScroll = 0; g_hover = false; g_hoverRow = -1; g_sbPub.shown = false; }
+void listPublishHide() { g_listRect[2] = 0; g_listScroll = 0; g_hover = false; g_hoverRow = -1; g_sbPub.shown = false; g_blockPub.shown = false; }
+
+void tipHide() { lblHideOne(g_tipFrame); lblHideOne(g_tipTitle); lblHideOne(g_tipQty); lblHideOne(g_tipBody); }
 
 void lblHideAll() {
     lblHideOne(g_back);
@@ -348,6 +527,7 @@ void lblHideAll() {
     lblHideOne(g_ind);
     for (unsigned i = 0; i < qlogic::ListRowsMax; ++i) { lblHideOne(g_rowFrame[i]); lblHideOne(g_rowIcon[i]); lblHideOne(g_row[i]); }
     lblHideOne(g_sbOuter); lblHideOne(g_sbInner); lblHideOne(g_sbThumb); lblHideOne(g_sbUp); lblHideOne(g_sbDown);
+    tipHide();
     g_backRectSet = false;
     listPublishHide();
 }
@@ -359,9 +539,10 @@ void lblDrop() {
     for (Lbl& r : g_rowFrame) r = Lbl();
     for (Lbl& r : g_rowIcon) r = Lbl();
     g_sbOuter = Lbl(); g_sbInner = Lbl(); g_sbThumb = Lbl(); g_sbUp = Lbl(); g_sbDown = Lbl();
+    g_tipFrame = Lbl(); g_tipTitle = Lbl(); g_tipQty = Lbl(); g_tipBody = Lbl(); g_tipOk = false;
     g_rowFlat = false;
     g_rowsOk = false; g_backFrame = false; g_backStyled = false; g_backOff = false; g_backRectSet = false;
-    g_panel = 0; g_haveRect = false;
+    g_panel = 0;
     listPublishHide();
 }
 
@@ -416,20 +597,28 @@ void KPATCH_CALL onHudBuild(const K2HudContext* ctx, void*) {
         if (!l->c) rowsOk = false;
     }
     g_rowsOk = rowsOk;
+    if (rowsOk) {   // 0.6.0-dev: the tooltip (frame, title, quantity, body), last = on top. A failure only costs the tooltip.
+        g_tipFrame.c = makeLabel(panel, frameTag, "tip frame", false);
+        g_tipTitle.c = g_tipFrame.c ? makeLabel(panel, "LBL_QUEUE1", "tip title", false) : 0;
+        g_tipQty.c = g_tipTitle.c ? makeLabel(panel, "LBL_QUEUE1", "tip quantity", false) : 0;
+        g_tipBody.c = g_tipQty.c ? makeLabel(panel, "LBL_QUEUE1", "tip body", false) : 0;
+        g_tipOk = g_tipBody.c != 0;
+        g_tipFrame.vis = g_tipFrame.c ? 0 : -1; g_tipTitle.vis = g_tipTitle.c ? 0 : -1; g_tipQty.vis = g_tipQty.c ? 0 : -1; g_tipBody.vis = g_tipBody.c ? 0 : -1;
+    }
     g_back.vis = g_back.c ? 0 : -1; g_head.vis = 0; g_ind.vis = g_ind.c ? 0 : -1;
     for (unsigned i = 0; i < qlogic::ListRowsMax; ++i) {
         g_row[i].vis = g_row[i].c ? 0 : -1; g_rowFrame[i].vis = g_rowFrame[i].c ? 0 : -1; g_rowIcon[i].vis = g_rowIcon[i].c ? 0 : -1;
     }
     for (Lbl* l : sbParts) l->vis = l->c ? 0 : -1;
-    if (KpLog_HasCore()) KP_LOG(chMain, "BUILD frame=%s%s rows=%s", frameTag, g_backFrame ? "" : " (flat)", g_rowsOk ? "pool" : "fallback-oneline");
+    if (KpLog_HasCore()) KP_LOG(chMain, "BUILD frame=%s%s rows=%s tip=%d", frameTag, g_backFrame ? "" : " (flat)", g_rowsOk ? "pool" : "fallback-oneline", g_tipOk ? 1 : 0);
 }
 
 // Style (font once, align / colour on change), then text / rect / visibility change-only. false = a write failed (caller hides everything).
-bool lblDrawText(Lbl& l, const char* text, const qlogic::Rect& r, unsigned align, const float* col) {
+bool lblDrawText(Lbl& l, const char* text, const qlogic::Rect& r, unsigned align, const float* col, const char* font = FontName) {
     if (!l.c) return false;
-    if (!l.styled) {
-        if (!guikit::setFont(l.c, FontName)) return false;
-        l.styled = true;
+    if (l.font != font) {   // font once per label (the tooltip title switches between 16x16 and 10x10)
+        if (!guikit::setFont(l.c, font)) return false;
+        l.font = font;
     }
     if (l.align != align) { if (!guikit::setAlign(l.c, align)) return false; l.align = align; }
     if (!l.colSet || memcmp(l.col, col, sizeof l.col) != 0) {
@@ -473,7 +662,7 @@ bool lblAlpha(Lbl& l, float a) {
 
 // A bordered row frame (template clone: the edges, corners and fill come from the .gui): tint = TealFrame, or RowHilight while hovered (the vanilla HILIGHT
 // is the same textures in another colour). Flat fallback (no frame template): the 2bt fill tinted the same. false = a write failed.
-bool lblDrawFrame(Lbl& l, const qlogic::Rect& r, const float* tint) {
+bool lblDrawFrame(Lbl& l, const qlogic::Rect& r, const float* tint, bool clickable = false) {
     if (!l.c) return false;
     if (g_rowFlat && !l.fillSet) {
         void* img = guikit::imageFor(TexFill2bt);
@@ -482,7 +671,7 @@ bool lblDrawFrame(Lbl& l, const qlogic::Rect& r, const float* tint) {
     }
     if (!lblTint(l, tint) || !lblAlpha(l, qlogic::FrameAlpha)) return false;
     lblPlace(l, r);
-    lblShow(l, false);
+    lblShow(l, clickable);   // 0.6.0-dev: the peek list's row frames eat the click (take that item) instead of walking the character
     return true;
 }
 
@@ -596,9 +785,41 @@ bool sbDraw(const qlogic::ListDraw& d, const qlogic::Rect& blk) {
     return true;
 }
 
+// QL8: the tooltip for the hovered peek row (Machine::tipShown), beside the block. false = a label write failed (the caller hides everything).
+unsigned g_tipLogged = 0, g_tipLoggedSerial = 0;
+constexpr unsigned TipLogMax = 20;
+bool tipDraw(const qlogic::ListDraw& d, const qlogic::Rect& blk, const qlogic::Rect& panel, uint32_t now) {
+    const qlogic::TipData* td = nullptr;
+    int absRow = -1;
+    if (!g_tipOk || d.took || !g_m.tipShown(now, &td, &absRow) || absRow < static_cast<int>(d.off) || absRow >= static_cast<int>(d.off + d.vis)) { tipHide(); return true; }
+    const qlogic::Rect rr = atBlock(qlogic::rowRect(static_cast<unsigned>(absRow) - d.off, blk.w, d.sb, d.rowH), blk);
+    qlogic::TipDraw t;
+    if (!qlogic::buildTip(*td, blk, rr, panel, &t)) { tipHide(); return true; }
+    const char* titleFont = (t.bigTitle && g_font16Ok) ? FontTitle : FontName;
+    if (!lblDrawFrame(g_tipFrame, t.frame, TealFrame)) return false;
+    if (!lblDrawText(g_tipTitle, t.titleText, t.title, 9, Cream, titleFont)) {
+        if (titleFont != FontTitle) return false;
+        g_font16Ok = false;   // no 16x16 font on this label: the 10x10 one from now on
+        logLine("TIP dialogfont16x16 unavailable: title in 10x10");
+        if (!lblDrawText(g_tipTitle, t.titleText, t.title, 9, Cream, FontName)) return false;
+    }
+    if (t.haveQty) { if (!lblDrawText(g_tipQty, t.qtyText, t.qty, 9, TealText)) return false; } else lblHideOne(g_tipQty);
+    if (t.haveBody) { if (!lblDrawText(g_tipBody, t.bodyText, t.body, 9, TealText)) return false; } else lblHideOne(g_tipBody);
+    if (g_m.tip.serial != g_tipLoggedSerial && g_tipLogged < TipLogMax) {   // once per new hover target: the body label's real extent shows whether the engine re-wrapped
+        g_tipLoggedSerial = g_m.tip.serial;
+        ++g_tipLogged;
+        int ex = 0, ey = 0, ew = 0, eh = 0;
+        if (t.haveBody) guikit::getExtent(g_tipBody.c, &ex, &ey, &ew, &eh);
+        char b[120];
+        qlogic::fmtTip(b, sizeof b, g_m.tip.serial, t.lines, ex, ey, ew, eh, t.flipped);
+        logLine(b);
+    }
+    return true;
+}
+
 // The multi-row block at blk: frame, header, indicator (dim teal, right end of the header row), d.vis bordered rows (frame, icon, text; the row under
 // the cursor gets the HILIGHT tint and cream text), the scrollbar when the list overflows.
-void blockDraw(const qlogic::ListDraw& d, const qlogic::Rect& blk) {
+void blockDraw(const qlogic::ListDraw& d, const qlogic::Rect& blk, const qlogic::Rect& panel, uint32_t now) {
     float cx = 0, cy = 0;
     const bool haveCur = g_input.connected && g_input.cursor_engine(&cx, &cy);
     g_hover = haveCur && qlogic::pointInRect(blk, cx, cy);
@@ -616,10 +837,12 @@ void blockDraw(const qlogic::ListDraw& d, const qlogic::Rect& blk) {
         if (i >= d.vis) { lblHideOne(g_rowFrame[i]); lblHideOne(g_rowIcon[i]); lblHideOne(g_row[i]); continue; }
         const bool hov = static_cast<int>(i) == g_hoverRow;
         const qlogic::Rect rr = atBlock(qlogic::rowRect(i, blk.w, d.sb, d.rowH), blk);
-        if (!lblDrawFrame(g_rowFrame[i], rr, hov ? RowHilight : TealFrame) || !lblDrawIcon(g_rowIcon[i], d.icons[i], qlogic::rowIconRect(rr, d.rowH)) ||
+        if (!lblDrawFrame(g_rowFrame[i], rr, hov ? RowHilight : TealFrame, qlogic::rowsEatClicks(d.took, true)) || !lblDrawIcon(g_rowIcon[i], d.icons[i], qlogic::rowIconRect(rr, d.rowH)) ||
             !lblDrawText(g_row[i], d.rows[i], qlogic::rowTextRect(rr, d.rowH), 9, hov ? Cream : TealText)) { lblHideAll(); return; }
     }
     if (!sbDraw(d, blk)) { lblHideAll(); return; }
+    g_blockPub.shown = true; g_blockPub.took = d.took; g_blockPub.sb = d.sb; g_blockPub.blk = blk; g_blockPub.vis = d.vis; g_blockPub.tick = GetTickCount();
+    if (!tipDraw(d, blk, panel, now)) { lblHideAll(); return; }
     g_listRect[0] = blk.x; g_listRect[1] = blk.y; g_listRect[2] = blk.w; g_listRect[3] = blk.h;
     g_listScroll = d.scrollable ? 1 : 0;
     g_listTick = GetTickCount();
@@ -627,25 +850,31 @@ void blockDraw(const qlogic::ListDraw& d, const qlogic::Rect& blk) {
     logExtent(g_row[0], g_extentRow, d.rows[0]);
 }
 
-// One-line fallback (row labels unavailable): the old single text line in the header label on the same frame, centred on the latched label rect.
-void lineDraw(const char* text, const qlogic::Rect& r) {
-    const int w = qlogic::textPx10(text) + 2 * qlogic::BlockPadX;
-    const qlogic::Rect blk = { r.x + r.w / 2 - w / 2, r.y - qlogic::BlockPadY, w, qlogic::HeaderH + 2 * qlogic::BlockPadY };
+// One-line fallback (row labels unavailable): the old single text line in the header label on the same frame, in the rect blk the anchor gave
+// (width = text + pads, one header row high).
+void lineDraw(const char* text, const qlogic::Rect& blk) {
     backDraw(blk);
-    if (!lblDrawText(g_head, text, { blk.x + qlogic::BlockPadX, blk.y + qlogic::BlockPadY, w - 2 * qlogic::BlockPadX + qlogic::LabelSlackPx, qlogic::HeaderH }, 9, TealText)) { lblHideAll(); return; }
+    if (!lblDrawText(g_head, text, { blk.x + qlogic::BlockPadX, blk.y + qlogic::BlockPadY, blk.w - 2 * qlogic::BlockPadX + qlogic::LabelSlackPx, qlogic::HeaderH }, 9, TealText)) { lblHideAll(); return; }
     logExtent(g_head, g_extentHead, text);
 }
 
-// Left click on the scrollbar of the block drawn last: the SbPart (as int) the cursor is over at the press edge, else 0. Polled every FRAME tick so the
-// edge state tracks the button even while no list is up. Same method as action-hotbar's slot clicks: guikit::clickEdge (LMB down AND the game window
-// is this process's foreground window) + the cursor in engine px (gui-input) against the drawn rects; the scrollbar column label is the only one that
-// eats the click, so it never reaches the world. A press that started elsewhere never fires (edge only).
+// Left click on the block drawn last: the SbPart (as int) of the scrollbar the cursor is over at the press edge, else 0; a press on an item row of the PEEK
+// list (not the Took list) is parked in g_rowClickPending for Env::rowClick(). Polled every FRAME tick so the edge state tracks the button even while no list
+// is up. Same method as action-hotbar's slot clicks: guikit::clickEdge (LMB down AND the game window is this process's foreground window) + the cursor in engine
+// px (gui-input) against the drawn rects; the scrollbar column and (peek list) the row frames are the labels that eat the click, so it never reaches the world.
+// A press that started elsewhere never fires (edge only).
 int sbClickPoll() {
+    g_rowClickPending = -1;
     const bool edge = guikit::clickEdge(g_clickEdge);
-    if (!edge || !g_sbPub.shown || GetTickCount() - g_sbPub.tick > qlogic::WheelFreshMs) return 0;
+    if (!edge || !g_blockPub.shown || GetTickCount() - g_blockPub.tick > qlogic::WheelFreshMs) return 0;
     float cx = 0, cy = 0;
     if (!g_input.connected || !g_input.cursor_engine(&cx, &cy)) return 0;
-    return static_cast<int>(qlogic::sbHitAt(g_sbPub.sb, cx - static_cast<float>(g_sbPub.blk.x), cy - static_cast<float>(g_sbPub.blk.y)));
+    if (g_sbPub.shown) {
+        const int part = static_cast<int>(qlogic::sbHitAt(g_sbPub.sb, cx - static_cast<float>(g_sbPub.blk.x), cy - static_cast<float>(g_sbPub.blk.y)));
+        if (part != 0) return part;
+    }
+    g_rowClickPending = qlogic::rowClickAt(g_blockPub.blk, g_blockPub.vis, g_blockPub.sb, g_blockPub.took, cx, cy);
+    return 0;
 }
 
 // gui-input wheel callback: consumes the wheel only while the list is up, scrollable, drawn within WheelFreshMs and the cursor (engine px, the
@@ -852,17 +1081,35 @@ struct EngineEnv : qlogic::Env {
     int wheelDelta() override { return static_cast<int>(InterlockedExchange(&g_wheelAccum, 0)); }
     bool overList() override { return g_hover; }
     int sbClick() override { return sbClickPoll(); }
+    int rowClick() override { const int r = g_rowClickPending; g_rowClickPending = -1; return r; }
+    int hoverRow() override { return g_blockPub.shown && !g_blockPub.took ? g_hoverRow : -1; }
+    bool takeOne(uintptr_t plc, uint32_t opener, unsigned index, uint32_t expectId, qlogic::TakeOneOut* out) override { return engineTakeOne(plc, opener, index, expectId, out); }
+    bool describe(uintptr_t plc, unsigned index, uint32_t expectId, qlogic::TipData* out) override { return engineDescribe(plc, index, expectId, out); }
 };
 EngineEnv g_env;
 
 
-// K2HUD_TARGET_MENU_POST: runs before every drawn HUD frame (also with no target). Caches the name rect while the target menu is shown, then draws
-// what the machine says: the Took line (while up) or the peek line. Position A (under the name, clamped to the panel) or B (fixed spot) is
-// chosen when the label first shows and latched until it is gone (QuickLootMachine.h placeLabel).
+// Mode 1: the world point of the container the list belongs to: the peek's (or the pending click-take's) server placeable position, kept while the Took
+// list of that container is up. Cleared when no label is up.
+void updateProjWorld() {
+    const uintptr_t plc = (g_m.peek.active || g_m.peek.expect) ? g_m.peek.plc : (g_m.take.active ? g_m.take.plc : 0);
+    if (!plc) return;
+    World3 w;
+    w.ok = rd<float>(plc, Obj_PosX, &w.x) && rd<float>(plc, Obj_PosY, &w.y) && rd<float>(plc, Obj_PosZ, &w.z) && std::isfinite(w.x) && std::isfinite(w.y) && std::isfinite(w.z) &&
+           fabsf(w.z) < 100000.0f;
+    if (w.ok) g_projWorld = w;
+}
+
+// K2HUD_TARGET_MENU_POST: runs after the engine positioned the target name tag (0x743850) and before every drawn HUD frame (also with no target). 0.6.0-dev (QL2A):
+// the name rect read here is THIS frame's, and the block is re-placed from it every frame (QuickLootMachine.h placeBlock; no latch). What is drawn: the Took
+// line (while up) or the peek list.
 void KPATCH_CALL onMenuPost(const K2HudContext* ctx, void*) {
     if (!g_head.c || !ctx) return;
     if (ctx->hud != g_panel) { lblDrop(); return; }   // stale HUD: no writes to the old labels
     saferead::beginScope();
+    const uint32_t now = nowMs();
+    const char* text = g_m.labelText(now);
+    if (!text) { g_projWorld.ok = false; lblHideAll(); return; }
     const uintptr_t menu = static_cast<uintptr_t>(static_cast<uint32_t>(ctx->menu));
     uint8_t flags = 0;
     qlogic::Geometry g;
@@ -870,35 +1117,104 @@ void KPATCH_CALL onMenuPost(const K2HudContext* ctx, void*) {
         int32_t mx = 0, my = 0, nx = 0, ny = 0, nw = 0, nh = 0;
         if (rd<int32_t>(menu, Menu_OriginX, &mx) && rd<int32_t>(menu, Menu_OriginY, &my) && rd<int32_t>(menu, Menu_NameX, &nx) &&
             rd<int32_t>(menu, Menu_NameY, &ny) && rd<int32_t>(menu, Menu_NameW, &nw) && rd<int32_t>(menu, Menu_NameH, &nh)) {
-            g_nameRect = { mx + nx, my + ny, nw, nh };   // screen rect of the name label
-            g_haveRect = true;
+            g.name = { mx + nx, my + ny, nw, nh };   // screen rect of the name label, as the engine just positioned it
             g.menuShown = true;
         }
     }
-    const uint32_t now = nowMs();
-    const char* text = g_m.labelText(now);
-    if (!text) { lblHideAll(); return; }
-    g.haveName = g_haveRect;
-    g.name = g_nameRect;
     int px = 0, py = 0, pw = 0, ph = 0;
     if (guikit::getExtent(static_cast<uintptr_t>(static_cast<uint32_t>(g_panel)), &px, &py, &pw, &ph) && pw > 0 && ph > 0) {
         g.havePanel = true;
         g.panel = { px, py, pw, ph };
     }
+    if (g_m.cfg.anchor == 1 || !g.menuShown) {   // mode 1, or no name tag this frame: the projection is the first fallback (anchorBlock)
+        updateProjWorld();
+        projectWorld(g_projWorld, &g.proj);
+    }
+    const qlogic::Rect panel = g.havePanel ? g.panel : qlogic::Rect{ 0, 0, 0, 0 };
     qlogic::ListDraw d;
-    if (g_rowsOk && g_m.listDraw(now, &d)) {   // the multi-row block, positioned from the latched A / B anchor
-        qlogic::Rect blk = { 0, 0, 0, 0 };
-        if (!g_m.placeBlock(g_env, g, d.w, d.h, &blk)) { lblHideAll(); return; }
-        blockDraw(d, blk);
+    qlogic::Rect blk = { 0, 0, 0, 0 };
+    if (g_rowsOk && g_m.listDraw(now, &d)) {   // the multi-row block
+        if (!g_m.placeBlock(g_env, g, d.w, d.h, now, &blk)) { lblHideAll(); return; }
+        blockDraw(d, blk, panel, now);
         return;
     }
-    qlogic::Rect r = { 0, 0, 0, 0 };   // fallback: the one-line text (row labels missing)
-    if (!g_m.placeLabel(g_env, g, &r)) { lblHideAll(); return; }
-    lineDraw(text, r);
+    // fallback: the one-line text (row labels missing)
+    if (!g_m.placeBlock(g_env, g, qlogic::textPx10(text) + 2 * qlogic::BlockPadX, qlogic::HeaderH + 2 * qlogic::BlockPadY, now, &blk)) { lblHideAll(); return; }
+    lineDraw(text, blk);
+}
+
+// ---- 0.6.0-dev (QL7): the Mod Configuration page (QuickLootPage.h, selfheal pattern: ModConfigDecl + TomlMini + IniWrite, lazy-connected from the HUD frame).
+// Every row applies live: pageOnChange updates g_live and copies it into the machine's config. The ini-bound rows (anchor, prox, rows) are written by the
+// declarative layer itself; the unbound "dist" row writes OpenM here (CloseM follows as OpenM + 2 unless the ini has its own CloseM). Page ini edits made by
+// hand are read once at start (KPatchInit); the page is the live editor.
+k2mc::ConfigClient g_mcCfg;
+k2mc::MenuClient g_mcMenu;
+k2pc::RegisterOnce g_mcReg;
+mcdecl::Page g_page;
+K2ModConfigEntry g_mcEntry;
+bool g_pageLoaded = false;
+qlpage::Live g_live;
+int g_pageLogs = 0;
+
+void mcLog(int level, const char* msg) { KP_LOGV(chMain, level, "%s", msg); }
+
+void applyLive() {
+    g_proxOn = g_live.prox;
+    g_openM = g_live.openM; g_closeM = g_live.closeM;
+    g_m.cfg.anchor = g_live.anchor; g_m.cfg.proxOn = g_live.prox; g_m.cfg.listRows = g_live.rows;
+    g_m.cfg.openM = g_live.openM; g_m.cfg.closeM = g_live.closeM;
+}
+
+int32_t pageOnChange(void*, int, const char* id, int32_t requested, int) {
+    bool persistOpen = false;
+    const int32_t fin = qlpage::applyRow(g_live, id, requested, &persistOpen);
+    applyLive();
+    bool wrote = true;
+    if (persistOpen) {
+        char v[16];
+        snprintf(v, sizeof v, "%.1f", static_cast<double>(g_live.openM));
+        wrote = iniw::updateFile(qlpage::kIniFile, qlpage::kSection, "OpenM", v);
+    }
+    if (g_pageLogs < 60) {
+        ++g_pageLogs;
+        KP_LOG(chMain, "PAGE row=%s req=%d final=%d anchor=%d prox=%d rows=%u openM=%.1f closeM=%.1f ini=%d", id, static_cast<int>(requested), static_cast<int>(fin), g_live.anchor,
+               g_live.prox ? 1 : 0, g_live.rows, static_cast<double>(g_live.openM), static_cast<double>(g_live.closeM), wrote ? 1 : 0);
+    }
+    return fin;
+}
+
+void pageOnEnter(void*) { g_page.setValue(qlpage::kRowDist, qlpage::distIndexFor(g_live.openM)); }   // the unbound row starts at the nearest preset of the current OpenM
+
+void pageInit(const KPatchApi* api) {
+    g_mcCfg.init(api);
+    g_mcMenu.init(api);
+    g_mcCfg.onConnect = [](bool ok, const char* why) { KP_LOGV(chMain, ok ? KPLOG_INFO : KPLOG_WARN, "PAGE k2.modconfig %s: %s", ok ? "ok" : "unavailable", why); };
+    g_mcMenu.onConnect = [](bool ok, const char* why) { KP_LOGV(chMain, ok ? KPLOG_INFO : KPLOG_WARN, "PAGE k2.menuui %s: %s", ok ? "ok" : "unavailable", why); };
+    char err[96] = {};
+    g_pageLoaded = g_page.load(qlpage::kPageSchema, strlen(qlpage::kPageSchema), err, sizeof err);
+    if (!g_pageLoaded) { KP_LOGV(chMain, KPLOG_WARN, "PAGE schema rejected: %s", err); return; }
+    g_page.menu = &g_mcMenu;
+    g_page.io = mcdecl::fileIo();
+    g_page.hooks.onChange = pageOnChange;
+    g_page.hooks.onEnter = pageOnEnter;
+    g_mcEntry = g_page.entry(qlpage::kEntryId);
+}
+
+// Every frame (cheap): connect lazily, register once, only when the provider has option rows.
+void pagePoll() {
+    if (!g_pageLoaded || g_mcReg.registered) return;
+    g_mcCfg.poll();
+    g_mcMenu.poll();
+    static unsigned s_polls = 0;
+    if (++s_polls == 600 && !(g_mcCfg.ok() && g_mcMenu.ok() && g_mcMenu.hasRows()))   // once, ~10 s of frames in
+        KP_LOGV(chMain, KPLOG_WARN, "PAGE not registered after %u polls: modconfig=%d menuui=%d hasRows=%d", s_polls, (int)g_mcCfg.ok(), (int)g_mcMenu.ok(), (int)g_mcMenu.hasRows());
+    if (!g_mcCfg.ok() || !g_mcMenu.ok() || !g_mcMenu.hasRows()) return;
+    k2pc::registerOnce(g_mcReg, g_mcCfg, g_mcEntry, mcLog);
 }
 
 // K2HUD_FRAME: the pending click-take Close, then the proximity peek. Runs on the game thread, outside any EventHandler.
 void KPATCH_CALL onHudFrame(const K2HudContext* ctx, void*) {
+    pagePoll();
     g_env.ctx = ctx;
     const uint32_t now = nowMs();
     ensureWheel(static_cast<long>(ctx ? ctx->frame : g_m.frame));
@@ -921,10 +1237,16 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     char fb[32];
     GetPrivateProfileStringA("QuickLoot", "OpenM", "3.0", fb, sizeof fb, IniPath);
     g_openM = qlogic::clampOpenM(static_cast<float>(atof(fb)));
-    GetPrivateProfileStringA("QuickLoot", "CloseM", "5.0", fb, sizeof fb, IniPath);
-    g_closeM = qlogic::clampCloseM(g_openM, static_cast<float>(atof(fb)));
+    GetPrivateProfileStringA("QuickLoot", "CloseM", "", fb, sizeof fb, IniPath);   // 0.6.0-dev: absent = OpenM + 2 (the page's distance presets move both); present = an explicit override
+    const bool closeExplicit = fb[0] != 0;
+    const float closeExplicitM = closeExplicit ? static_cast<float>(atof(fb)) : qlogic::DefaultCloseM;
+    g_closeM = qlpage::closeFor(g_openM, closeExplicit, closeExplicitM);
     g_m.cfg.enabled = g_enabled; g_m.cfg.proxOn = g_proxOn; g_m.cfg.openM = g_openM; g_m.cfg.closeM = g_closeM; g_m.cfg.takeKey = g_takeKey; g_m.cfg.scanMs = g_scanMs;
     g_m.cfg.listRows = qlogic::clampListRows(GetPrivateProfileIntA("QuickLoot", "ListRows", static_cast<int>(qlogic::ListRowsDefault), IniPath));
+    g_m.cfg.anchor = qlogic::clampAnchorMode(GetPrivateProfileIntA("QuickLoot", "Anchor", 0, IniPath));
+    g_live.anchor = g_m.cfg.anchor; g_live.prox = g_proxOn; g_live.rows = g_m.cfg.listRows; g_live.openM = g_openM; g_live.closeM = g_closeM;
+    g_live.closeExplicit = closeExplicit; g_live.closeExplicitM = closeExplicitM;
+    pageInit(api);
     g_input.init(api, "quick-loot");
     g_input.connect();   // gui-input may load later: ensureWheel polls
     g_hud.init(api, "quick-loot");
@@ -932,8 +1254,8 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     g_hud.add(K2HUD_BUILD, 300, onHudBuild);               // QL1b toast label
     g_hud.add(K2HUD_TARGET_MENU_POST, 300, onMenuPost);
     g_hud.connect();
-    if (KpLog_HasCore()) KP_LOG(chMain, "INIT quick-loot %s enabled=%d hud=%d prox=%d openM=%.2f closeM=%.2f key=%d scanMs=%u rows=%u input=%d", Version, g_enabled ? 1 : 0,
-                                  g_hud.connected ? 1 : 0, g_proxOn ? 1 : 0, static_cast<double>(g_openM), static_cast<double>(g_closeM), g_takeKey, g_scanMs, g_m.cfg.listRows, g_input.connected ? 1 : 0);
+    if (KpLog_HasCore()) KP_LOG(chMain, "INIT quick-loot %s enabled=%d hud=%d prox=%d openM=%.2f closeM=%.2f key=%d scanMs=%u rows=%u anchor=%d input=%d", Version, g_enabled ? 1 : 0,
+                                  g_hud.connected ? 1 : 0, g_proxOn ? 1 : 0, static_cast<double>(g_openM), static_cast<double>(g_closeM), g_takeKey, g_scanMs, g_m.cfg.listRows, g_m.cfg.anchor, g_input.connected ? 1 : 0);
 }
 
 // H1. ECX = gui, [esp+4] = container object id (client), [esp+8] = flag. Returns 1 to consume (take-all armed), 0 = the original menu runs.

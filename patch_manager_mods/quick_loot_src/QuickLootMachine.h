@@ -2,6 +2,9 @@
 // host test can drive it frame by frame (quick_loot_sim_test.cpp). No game memory, no Win32. Every engine read and every engine / UI side
 // effect goes through qlogic::Env, which QuickLoot.cpp implements over the real engine and the sim test over a fake world. Actions are
 // executed immediately (not queued): OpenInventory may trigger a synchronous ShowContainerGui and the code that follows must see it.
+// 0.6.0-dev: the latched label position is gone (the block is re-placed every frame by anchorBlock: Anchor 0 under the name tag / 1 below the
+// container / 2 beside the name tag, QL2A), a click on an item row takes that one item (QL4, Env::takeOne from the HUD frame), a hovered row shows
+// a tooltip after TipDelayMs (QL8, Env::describe) and the header flashes "Acquired: <name>" after a take.
 // 0.5.0-dev (QL2V) adds the item icon per row (Captured::icons -> ListData -> ListDraw) and scrollbar clicks (Env::sbClick -> ListView::step).
 // 0.4.0-dev adds the row lists (peekList / tookList + their scroll views, wheel and hover through Env, Took hold while hovered).
 // 0.3.1-dev (UX review .claude/reviews/quick_loot_pv1_ux.md) adds here: dwell debounce before the auto-open, the Took line state + duration,
@@ -36,6 +39,17 @@ struct Config {
     uint32_t scanMs = DefaultScanMs;
     uint32_t dwellMs = DwellMs;   // 0 = open on the first scan that sees the container
     unsigned listRows = ListRowsDefault;   // visible item rows of the list block (quick_loot.ini ListRows, 1..12)
+    int anchor = 0;                        // 0.6.0-dev: AnchorMode (quick_loot.ini Anchor)
+    uint32_t tipDelayMs = TipDelayMs;      // hover time on one row before the tooltip shows
+};
+
+// Result of one per-item take (Env::takeOne).
+struct TakeOneOut {
+    TakeWhy why = TakeWhy::Failed;
+    int rc = 0;                // InsertOrMerge's return value
+    int nBefore = -1, nAfter = -1;
+    int notice = 0;            // 1 = the drain's first-pickup branch applied (a silent local-boolean set, or the pop-up case that was refused)
+    uint32_t id = 0;           // object id of the item taken
 };
 
 // Engine / UI boundary. Reads first, then actions.
@@ -70,6 +84,30 @@ struct Env {
     virtual int wheelDelta() = 0;                                              // wheel delta consumed over the list since the last call (cleared), +120 = up
     virtual bool overList() = 0;                                               // the cursor is over the list block drawn last frame
     virtual int sbClick() = 0;                                                 // 0.5.0-dev: a left click on the scrollbar of the block drawn last frame since the last call (SbPart as int, 0 = none)
+    // 0.6.0-dev. Order per frame: sbClick() first (it polls the mouse edge once), then rowClick().
+    virtual int rowClick() = 0;                                                // a left click on an item row of the PEEK list drawn last frame since the last call: visible row index, -1 = none
+    virtual int hoverRow() = 0;                                                // visible row index of the PEEK list under the cursor (drawn last frame), -1 = none
+    // One item from the container to the leader, run from the HUD frame (never from the EventHandler / CloseInventory hooks). Refusals leave the container untouched.
+    virtual bool takeOne(uintptr_t plc, uint32_t opener, unsigned index, uint32_t expectId, TakeOneOut* out) = 0;
+    // Tooltip data of the container item at `index` (name, stack, description), false = unreadable / the id no longer matches.
+    virtual bool describe(uintptr_t plc, unsigned index, uint32_t expectId, TipData* out) = 0;
+};
+
+// The hovered-row tooltip state: abs = list row under the cursor (-1 none), shown after cfg.tipDelayMs; serial counts targets shown (TIP log).
+struct TipState {
+    int abs = -1;
+    uint32_t since = 0;
+    bool shown = false;
+    unsigned serial = 0;
+    TipData data;
+    void reset() { abs = -1; shown = false; }
+};
+struct Flash {
+    bool active = false;
+    uint32_t at = 0;
+    char name[NameCap] = {0};
+    void start(const char* n, uint32_t now) { snprintf(name, sizeof name, "%s", n ? n : ""); at = now; active = true; }
+    bool visible(uint32_t now) const { return active && msSince(now, at) < FlashMs; }
 };
 
 struct Machine {
@@ -87,7 +125,16 @@ struct Machine {
     uint32_t frame = 0;    // last HUD frame counter seen by onFrame
     Dwell dwell;           // auto-open debounce (DwellMs)
     ToastState toastS;     // the Took line
-    Latch latch;           // position (A/B) + rect of the label now up (peek or Took)
+    NameHold nameHold;     // 0.6.0-dev: the last target name rect (kept NameHoldMs after the target menu goes away)
+    AnchorTrack anchTrack; // change-only ANCHOR log
+    ProjTrack projTrack;   // PROJ log gate
+    Rect lastBlock = {0, 0, 0, 0};   // the block rect drawn last (the Took list keeps it while its anchor is missing)
+    bool haveLastBlock = false;
+    uint32_t peekIds[ListMaxItems];  // object ids of the captured peek rows (a take click checks the row is still the same item)
+    unsigned peekIdCount = 0;
+    TipState tip;
+    Flash flash;
+    unsigned takes = 0;    // per-item takes done this session
     Captured cap;          // scratch (shared: uses never overlap)
     ListData peekList, tookList;   // 0.4.0-dev: the row texts of the peek / Took list (the Took list outlives the scratch `cap`)
     ListView peekView, tookView;   // scroll state of each
@@ -139,6 +186,9 @@ struct Machine {
         if (peek.text[0]) e.labelHide();
         peek.clear();
         peekList.clear();
+        peekIdCount = 0;
+        tip.reset();
+        flash.active = false;
     }
 
     // Give-up fallback (message object never came): when the placeable still has its open flag (+0x390) set, close it server-side
@@ -181,6 +231,8 @@ struct Machine {
         for (unsigned i = 0; i < cap.count; ++i) { np[i] = cap.names[i]; ip[i] = cap.icons[i]; }
         const bool hadList = !peekList.empty();
         peekList.set(np, cap.stacks, cap.count, n > 0 ? static_cast<unsigned>(n) : cap.count, ip);
+        peekIdCount = cap.count;
+        for (unsigned i = 0; i < cap.count; ++i) peekIds[i] = cap.ids[i];
         peekView.rows = cfg.listRows;
         peekView.setTotal(peekList.rowsTotal());
         if (!hadList && !peekList.empty()) logList(e, peekList, peekView, false);
@@ -214,7 +266,7 @@ struct Machine {
     }
 
     // Active peek, every ScanMs: leave checks, empty check, label refresh.
-    void peekPoll(Env& e, const World& w, Sup s, uint32_t now) {
+    void peekPoll(Env& e, const World& w, Sup s, uint32_t now, bool off = false) {
         char b[200];
         const uint32_t sid = peek.serverId;
         const uintptr_t cur = w.haveSrv ? e.resolvePlc(sid) : 0;
@@ -223,7 +275,7 @@ struct Machine {
         float px = 0, py = 0;
         if (resolves && w.ok && e.plcPos(cur, &px, &py)) dist = dist2d(w.x, w.y, px, py);
         const bool newArea = areaChanged(peek.area, w.area);
-        const Leave lv = leaveReason(resolves, s != Sup::None, newArea, dist, cfg.closeM);
+        const Leave lv = off ? Leave::Off : leaveReason(resolves, s != Sup::None, newArea, dist, cfg.closeM);
         if (lv != Leave::None) {
             const int n = resolves ? e.itemCount(cur) : -1;
             int sent = 0;
@@ -235,14 +287,21 @@ struct Machine {
         }
         const int n = cur ? e.itemCount(cur) : -1;
         if (peek.emptyNow(n, frame, now)) {   // OnOpen settled and still nothing in it: close quietly
-            int sent = 0;
-            if (!peekSendClose(e, 0, true, now, &sent)) return;
-            fmtPeekEmpty(b, sizeof b, peek.obj, msSince(now, peek.sinceMs), e.openFlag(cur));
-            e.log(b);
-            peekEnd(e);
+            peekCloseEmpty(e, cur, now);
             return;
         }
         peekRefresh(e, n);
+    }
+
+    // The empty container's quiet Close (flag 0), once. false = the message object is not there yet (retry on the next tick).
+    bool peekCloseEmpty(Env& e, uintptr_t cur, uint32_t now) {
+        char b[200];
+        int sent = 0;
+        if (!peekSendClose(e, 0, true, now, &sent)) return false;
+        fmtPeekEmpty(b, sizeof b, peek.obj, msSince(now, peek.sinceMs), e.openFlag(cur));
+        e.log(b);
+        peekEnd(e);
+        return true;
     }
 
     // Expecting phase: OpenInventory was called, its ShowContainerGui has not come. Gives up after ExpectTimeoutMs.
@@ -329,7 +388,17 @@ struct Machine {
 
     // Proximity peek tick (K2HUD_FRAME). Key edge every frame; the scan / poll every ScanMs.
     void proxTick(Env& e, uint32_t now) {
-        if (!cfg.proxOn || !cfg.enabled) return;
+        if (!cfg.enabled) return;
+        if (!cfg.proxOn) {   // 0.6.0-dev: switched off from the Mod Configuration page while a peek is up: close it (items stay), once
+            if (!peek.busy() || msSince(now, lastScan) < scanGap) return;
+            lastScan = now;
+            e.enter();
+            World w;
+            e.readWorld(w);
+            if (peek.active) peekPoll(e, w, Sup::None, now, true);
+            else peekExpectCheck(e, now);
+            return;
+        }
         const bool edge = risingEdge(keyPrev, e.keyDown());   // updated every frame: a key held while the peek opens never fires
         if (peek.active && edge) { e.enter(); peekTake(e, now); return; }
         if (msSince(now, lastScan) < scanGap) return;
@@ -414,43 +483,119 @@ struct Machine {
         if (peek.active && peek.text[0]) return &peekView;
         return nullptr;
     }
-    // The block to draw now. false = nothing up (or an empty list). took tells which list it is.
+    // The block to draw now. false = nothing up (or an empty list). took tells which list it is. 0.6.0-dev: while the take flash is up the header
+    // reads "Acquired: <name>" (cut left of the scroll indicator; the block width does not change).
     bool listDraw(uint32_t now, ListDraw* out) const {
         char key[8];
         keyLabel(cfg.takeKey, key, sizeof key);
         if (toastS.visible(now)) return buildListDraw(tookList, tookView, true, key, out);
-        if (peek.active && peek.text[0]) return buildListDraw(peekList, peekView, false, key, out);
+        if (peek.active && peek.text[0]) return buildListDraw(peekList, peekView, false, key, out, RowH, flash.visible(now) ? flash.name : nullptr);
         return false;
     }
-    // Block rect for a w x h block: latches the anchor (A/B) on first use and logs LABEL-LATCH with the block rect, then re-derives the rect every
-    // frame from the latched anchor (so the block follows its own size changes, clamped inside the panel). false = nothing to anchor to.
-    bool placeBlock(Env& e, const Geometry& g, int w, int h, Rect* out) {
-        const Rect panel = g.havePanel ? g.panel : Rect{0, 0, 0, 0};
-        if (!latch.held) {
-            Anchor a;
-            Pos p = Pos::None;
-            if (!chooseAnchor(g, &a, &p)) return false;
-            const Rect r = blockRect(p, a, w, h, panel);
-            latch.set(p, r);
-            latch.anchor = a;
-            char b[96];
-            fmtLatch(b, sizeof b, p, r);
+    // 0.6.0-dev (QL2A): the block rect for this frame, re-derived from the CURRENT name tag rect (no latch). The name rect seen last is kept for
+    // NameHoldMs after the target menu goes away; then (any mode) the projected container point, else the fixed spot (an untargeted proximity peek still
+    // shows) -- except the Took list, which keeps
+    // its last rect until it expires. Mode 1 uses the adapter's projection of the container and falls back to mode 0 when it is unusable.
+    // Logs ANCHOR on a change of (mode, reason) and PROJ per ProjTrack. false = nothing to anchor to.
+    bool placeBlock(Env& e, const Geometry& g, int w, int h, uint32_t now, Rect* out) {
+        if (g.menuShown) nameHold.see(g.name, now);
+        const bool nameOk = nameHold.valid(now);
+        AnchorUse u;
+        Rect r = {0, 0, 0, 0};
+        const bool ok = anchorBlock(cfg.anchor, nameOk, nameHold.rect, g, w, h, &r, &u);
+        char b[200];
+        if (anchTrack.update(u)) { fmtAnchor(b, sizeof b, u); e.log(b); }
+        if (g.proj.state != 0 && projTrack.want(g.proj.state, u.projWhy, g.proj.x, g.proj.y)) { fmtProj(b, sizeof b, nameOk, nameHold.rect, g.proj, u.projWhy); e.log(b); }
+        // The Took list keeps its last rect once the tag is gone rather than jumping to a no-name fallback (projection / fixed spot).
+        if (toastS.active && haveLastBlock && (!ok || u.mode == 3 || (u.mode == 1 && cfg.anchor != 1))) { *out = lastBlock; return true; }
+        if (ok) { *out = r; lastBlock = r; haveLastBlock = true; return true; }
+        return false;
+    }
+    // 0.6.0-dev (QL4): a click on item row `absRow` of the peek list takes that ONE item (Env::takeOne, from the HUD frame). Accepted only while the peek
+    // is up with the open flag set and the leader within CloseM (takeRefusal); the row must still be the same item (id check). The list is re-captured
+    // after the take, the header flashes "Acquired: <name>", and an emptied container is closed the normal way (Close flag 0, once).
+    void peekTakeOne(Env& e, unsigned absRow, uint32_t now) {
+        char b[220];
+        e.enter();
+        World w;
+        const bool wok = e.readWorld(w) && w.ok;
+        float px = 0, py = 0, dist = 1.0e9f;
+        if (wok && e.plcPos(peek.plc, &px, &py)) dist = dist2d(w.x, w.y, px, py);
+        const char* why = takeRefusal(peek.active, peek.active ? e.openFlag(peek.plc) : -1, wok, dist, cfg.closeM, sup.last != Sup::None, absRow, peekList.items);
+        if (!why && absRow >= peekIdCount) why = "stale";
+        if (why) { fmtTake1Refused(b, sizeof b, absRow, why, 0); e.log(b); return; }
+        const uint32_t expect = peekIds[absRow];
+        const int nBefore = e.itemCount(peek.plc);
+        e.capture(peek.plc, cap);   // names BEFORE the take
+        if (absRow >= cap.count || cap.ids[absRow] != expect) {
+            fmtTake1Refused(b, sizeof b, absRow, takeWhyName(TakeWhy::Stale), 0);
             e.log(b);
+            peekRefresh(e, nBefore);
+            tip.reset();
+            return;
         }
-        *out = blockRect(latch.pos, latch.anchor, w, h, panel);
+        char name[NameCap], icon[ResrefCap];
+        snprintf(name, sizeof name, "%s", cap.names[absRow]);
+        snprintf(icon, sizeof icon, "%s", cap.icons[absRow]);
+        const int stack = cap.stacks[absRow];
+        TakeOneOut out;
+        out.nBefore = nBefore;
+        const bool ok = e.takeOne(peek.plc, w.ctrl, absRow, expect, &out);
+        const int nAfter = e.itemCount(peek.plc);
+        if (!ok) { fmtTake1Refused(b, sizeof b, absRow, takeWhyName(out.why), out.notice); e.log(b); return; }
+        fmtTake1(b, sizeof b, absRow, expect, name, stack, out.rc, nBefore, nAfter, out.notice);
+        e.log(b);
+        ++takes;
+        tip.reset();
+        flash.start(name, now);
+        peekRefresh(e, nAfter);
+        if (nAfter == 0) {   // that was the last item: show what was taken (the Took list) and close the container the normal way
+            cap.count = 1; cap.total = 1;
+            cap.ids[0] = expect; cap.stacks[0] = stack;
+            snprintf(cap.names[0], NameCap, "%s", name);
+            snprintf(cap.icons[0], ResrefCap, "%s", icon);
+            reportTook(e, cap, now);
+            peekCloseEmpty(e, peek.plc, now);
+        }
+    }
+
+    // Tooltip: after cfg.tipDelayMs on one row of the PEEK list the item's data is read once (Env::describe). Any scroll / take / peek end resets it.
+    void tipTick(Env& e, uint32_t now, const ListView* v) {
+        int abs = -1;
+        if (v == &peekView && !peekList.empty()) {
+            const int hv = e.hoverRow();
+            if (hv >= 0 && peekView.off + static_cast<unsigned>(hv) < peekList.items) abs = static_cast<int>(peekView.off) + hv;
+        }
+        if (abs != tip.abs) { tip.abs = abs; tip.since = now; tip.shown = false; return; }
+        if (abs >= 0 && !tip.shown && msSince(now, tip.since) >= cfg.tipDelayMs) {
+            if (static_cast<unsigned>(abs) < peekIdCount && e.describe(peek.plc, static_cast<unsigned>(abs), peekIds[abs], &tip.data)) { tip.shown = true; ++tip.serial; }
+            else tip.since = now;   // not readable now: ask again after another delay
+        }
+    }
+    // The tooltip to draw this frame (the hovered peek row), false = none.
+    bool tipShown(uint32_t now, const TipData** d, int* absRow) const {
+        if (!tip.shown || toastS.visible(now) || !peek.active) return false;
+        *d = &tip.data; *absRow = tip.abs;
         return true;
     }
-    // Per frame: the wheel delta the adapter collected over the list moves the shown list, and so does a click on its scrollbar (arrow = one row,
-    // the track above / below the thumb = one page; the adapter reports a click only while the scrollbar is drawn); a Took list is held while the
-    // cursor is over it.
+
+    // Per frame: a click on an item row, the wheel delta the adapter collected over the list and a click on its scrollbar (arrow = one row, the track
+    // above / below the thumb = one page; the adapter reports a click only while the scrollbar is drawn) move the shown list; a Took list is held
+    // while the cursor is over it; ListRows changes from the Mod Configuration page apply here.
     void listTick(Env& e, uint32_t now) {
         const int d = e.wheelDelta();
         const int part = e.sbClick();   // polled every frame (the adapter tracks the button edge in it)
+        const int rowC = e.rowClick();
+        if (peekView.rows != cfg.listRows) { peekView.rows = cfg.listRows; peekView.setTotal(peekView.total); }
+        if (tookView.rows != cfg.listRows) { tookView.rows = cfg.listRows; tookView.setTotal(tookView.total); }
         ListView* v = shownView(now);
+        if (rowC >= 0 && v == &peekView) peekTakeOne(e, peekView.off + static_cast<unsigned>(rowC), now);   // before any scroll: the click row is as drawn
+        v = shownView(now);
         if (d != 0 && v && v->scroll(d)) {
             char b[64];
             fmtScroll(b, sizeof b, v->off, v->maxOff());
             e.log(b);
+            tip.reset();
         }
         if (part != 0 && v) {
             const SbPart p = static_cast<SbPart>(part);
@@ -458,28 +603,16 @@ struct Machine {
             const bool ch = v->step(sbStepFor(p, v->rows));
             fmtSbClick(b, sizeof b, p, v->off, v->maxOff());
             e.log(b);
-            if (ch) { fmtScroll(b, sizeof b, v->off, v->maxOff()); e.log(b); }
+            if (ch) { fmtScroll(b, sizeof b, v->off, v->maxOff()); e.log(b); tip.reset(); }
         }
+        tipTick(e, now, v);
         toastS.tick(now, toastS.active && e.overList());
     }
 
-    // The label rect for this frame: the latched one, or (first call) the placement for `g`, latched and logged. false = nothing to anchor to.
-    bool placeLabel(Env& e, const Geometry& g, Rect* out) {
-        if (latch.held) { *out = latch.rect; return true; }
-        Rect r = {0, 0, 0, 0};
-        Pos p = Pos::None;
-        if (!choosePlacement(g, &r, &p)) return false;
-        latch.set(p, r);
-        char b[96];
-        fmtLatch(b, sizeof b, p, r);
-        e.log(b);
-        *out = r;
-        return true;
-    }
-    // Per frame: an expired Took line ends (its latch with it); the latch is dropped once no label is up.
-    void latchTick(uint32_t now) {
-        if (toastS.active && !toastS.visible(now)) { toastS.active = false; latch.clear(); }
-        if (!toastS.active && !(peek.active && peek.text[0])) latch.clear();
+    // Per frame: an expired Took line ends; with no label up the remembered block rect is dropped.
+    void anchorTick(uint32_t now) {
+        if (toastS.active && !toastS.visible(now)) toastS.active = false;
+        if (!toastS.active && !(peek.active && peek.text[0])) haveLastBlock = false;
     }
 
     // K2HUD_FRAME: the pending click-take Close, then the proximity peek. `now` = ms clock, `fr` = HUD frame counter.
@@ -488,7 +621,7 @@ struct Machine {
         if (take.active) takeTick(e, now);
         proxTick(e, now);
         listTick(e, now);
-        latchTick(now);
+        anchorTick(now);
     }
 
     // ShowContainerGui(objId, flag) for plc (0 = unresolved). n = item count read by the caller. Returns 1 = consumed (peek or armed take), 0 = vanilla.

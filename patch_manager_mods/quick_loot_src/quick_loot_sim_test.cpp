@@ -13,9 +13,9 @@ using namespace qlogic;
 
 namespace {
 
-enum Kind { A_OPEN, A_SEND, A_SRV, A_LSHOW, A_LHIDE, A_TOAST, A_LOG };
+enum Kind { A_OPEN, A_SEND, A_SRV, A_LSHOW, A_LHIDE, A_TOAST, A_LOG, A_TAKE1 };
 struct Act { Kind k; uintptr_t plc; uint32_t obj; int flag; std::string text; uint32_t frame; };
-struct Item { std::string name; int stack; std::string icon = ""; };   // icon: the resref the capture reports ("" = none)
+struct Item { std::string name; int stack; std::string icon = ""; std::string desc = ""; };   // icon: the resref the capture reports ("" = none); desc: DescIdentified text
 struct Obj {
     uint32_t sid = 0;
     uintptr_t plc = 0;
@@ -55,6 +55,12 @@ struct Sim : Env {
     bool hover = false;  // the cursor is over the list block
     int sbPart = 0;      // 0.5.0-dev: a click on the scrollbar part (SbPart as int) delivered on the next sbClick() poll
     unsigned sbPolls = 0;
+    int rowClickV = -1;  // 0.6.0-dev: a click on visible row N of the peek list, delivered on the next rowClick() poll
+    int hoverV = -1;     // the cursor is over visible row N of the peek list (-1 none)
+    TakeWhy takeForce = TakeWhy::Ok;   // anything but Ok: the engine side refuses the take with this reason
+    int takeRc = 1;      // InsertOrMerge's return value reported
+    unsigned takeCalls = 0;
+    std::vector<unsigned> takeIdx;     // container indices passed to takeOne
 
     int add(float x, float y, std::vector<Item> items = {}) {
         Obj o;
@@ -239,6 +245,36 @@ struct Sim : Env {
     int wheelDelta() override { const int d = wheel; wheel = 0; return d; }
     bool overList() override { return hover; }
     int sbClick() override { ++sbPolls; const int p = sbPart; sbPart = 0; return p; }
+    int rowClick() override { const int r = rowClickV; rowClickV = -1; return r; }
+    int hoverRow() override { return hoverV; }
+    bool takeOne(uintptr_t plc, uint32_t opener, unsigned index, uint32_t expectId, TakeOneOut* out) override {
+        (void)opener;
+        rec(A_TAKE1, plc, 0, static_cast<int>(index), "");
+        ++takeCalls; takeIdx.push_back(index);
+        const int i = byPlc(plc);
+        if (i < 0) { violate("takeOne on a missing container"); out->why = TakeWhy::NoRepo; return false; }
+        Obj& o = objs[static_cast<size_t>(i)];
+        if (!o.outstanding || o.open != 1) violate("takeOne while the container is not open");
+        const float dx = o.x - lx, dy = o.y - ly;
+        if (sqrtf(dx * dx + dy * dy) > m.cfg.closeM) violate("takeOne with the leader out of range");
+        out->nBefore = static_cast<int>(o.items.size());
+        if (takeForce != TakeWhy::Ok) { out->why = takeForce; return false; }
+        if (index >= o.items.size()) { out->why = TakeWhy::BadIndex; return false; }
+        if (expectId != 0x9000u + index) { out->why = TakeWhy::Stale; return false; }
+        taken.push_back({o.items[index]});
+        o.items.erase(o.items.begin() + static_cast<long>(index));
+        out->why = TakeWhy::Ok; out->rc = takeRc; out->nAfter = static_cast<int>(o.items.size()); out->id = expectId;
+        return true;
+    }
+    bool describe(uintptr_t plc, unsigned index, uint32_t expectId, TipData* out) override {
+        const int i = byPlc(plc);
+        if (i < 0 || index >= objs[static_cast<size_t>(i)].items.size() || expectId != 0x9000u + index) return false;
+        const Item& it = objs[static_cast<size_t>(i)].items[index];
+        snprintf(out->title, sizeof out->title, "%s", it.name.c_str());
+        out->stack = it.stack;
+        snprintf(out->desc, sizeof out->desc, "%s", it.desc.c_str());
+        return true;
+    }
 };
 
 #define CHK(name, cond) kt::Check((std::string(scn) + ": " + (name)).c_str(), (cond))
@@ -914,79 +950,146 @@ void scenarioK() {
     }
 }
 
-// ---- l: label placement latch, shared Took rect, Took duration (0.3.1-dev)
+// ---- l: block anchor (0.6.0-dev: no latch, re-placed every frame), shared Took rect, Took duration
 Rect R(int x, int y, int w, int h) { return Rect{x, y, w, h}; }
 struct Drawn { const char* text = nullptr; bool placed = false; Rect r = {0, 0, 0, 0}; };
-Drawn draw(Sim& s, const Geometry& g) {   // what the HUD post hook does each frame
+constexpr int BW = 400, BH = 300;   // block size used by the placement scenarios
+Drawn draw(Sim& s, const Geometry& g, int w = BW, int h = BH) {   // what the HUD post hook does each frame
     Drawn d;
     d.text = s.m.labelText(s.now);
-    if (d.text) d.placed = s.m.placeLabel(s, g, &d.r);
+    if (d.text) d.placed = s.m.placeBlock(s, g, w, h, s.now, &d.r);
     return d;
 }
 Geometry geo(bool menuShown, Rect name = {1700, 520, 533, 32}) {
     Geometry g;
-    g.menuShown = menuShown; g.haveName = true; g.name = name;
+    g.menuShown = menuShown; g.name = name;
     g.havePanel = true; g.panel = {0, 0, 3840, 1600};
+    return g;
+}
+Geometry geoProj(float x, float y, int ret, bool menuShown = false) {
+    Geometry g = geo(menuShown);
+    g.proj.state = 1; g.proj.x = x; g.proj.y = y; g.proj.ret = ret;
     return g;
 }
 
 void scenarioL() {
     {
-        const char* scn = "l1 peek latched in A, Took in the same rect";
+        const char* scn = "l1 anchor 0 follows the name tag every frame (no latch), holds the last rect 250 ms, then hides";
         Sim s;
         s.add(10, 0, {Medpac2, Pistol, Credits, Item{"Frag Grenade", 1}});
         s.setLeader(7.1f, 0);
         s.run(80);
         CHK("peek up", s.m.peek.active && !s.label.empty());
         const Drawn d1 = draw(s, geo(true));
-        CHK("A: centred under the name tag", d1.placed && s.m.latch.pos == Pos::A && d1.r == R(1700 + 266 - 600, 520 + 32 + 20, 1200, 20));
-        CHK("LABEL-LATCH logged once", s.logCount("LABEL-LATCH pos=A rect=1366,572,1200,20") == 1);
-        s.run(10);
-        const Drawn d2 = draw(s, geo(false));   // the name tag vanishes: the line stays
-        CHK("latched: same rect, still A, with the tag gone", d2.placed && d2.r == d1.r && s.m.latch.pos == Pos::A);
-        const Drawn d3 = draw(s, geo(true, {900, 300, 533, 32}));   // the tag moves: the line stays
-        CHK("latched: same rect after the tag moved", d3.r == d1.r && s.logCount("LABEL-LATCH") == 1);
-        s.key = true; s.run(2); s.key = false;
-        CHK("F took everything", s.count(A_SEND) == 1 && s.count(A_TOAST) == 1 && s.m.toastS.active);
+        CHK("A: centred under the name tag", d1.placed && d1.r == R(1700 + 266 - BW / 2, 520 + 32 + 20, BW, BH));
+        CHK("ANCHOR logged once (name, ok)", s.logCount("ANCHOR want=name used=name reason=ok proj=none") == 1);
+        s.run(2);
+        const Drawn d2 = draw(s, geo(true, {900, 300, 533, 32}));   // the camera turned: the tag moved, the block with it
+        CHK("follows the tag", d2.placed && d2.r == R(900 + 266 - BW / 2, 352, BW, BH));
+        s.run(5);   // 80 ms later the tag is gone: the last rect is held
+        const Drawn d3 = draw(s, geo(false));
+        CHK("tag gone < 250 ms: last rect kept", d3.placed && d3.r == d2.r);
+        s.run(15);  // 320 ms
         const Drawn d4 = draw(s, geo(false));
-        CHK("Took text up in the very same rect", d4.placed && d4.r == d1.r && d4.text && strncmp(d4.text, "Acquired (4): ", 14) == 0);
-        CHK("4 names: 3.5 s", s.m.toastS.durMs == 3500);
-        const uint32_t t0 = s.m.toastS.shownAt;
-        CHK("still up at 3499 ms", s.m.labelText(t0 + 3499) != nullptr);
-        CHK("gone at 3500 ms", s.m.labelText(t0 + 3500) == nullptr);
-        s.run(240);   // 3.8 s: the latch ends with the Took line
-        CHK("latch released after the Took line", !s.m.latch.held && !s.m.toastS.active && s.m.labelText(s.now) == nullptr);
+        CHK("tag gone > 250 ms: fixed-spot fallback", d4.placed);
+        CHK("ANCHOR logged noname-fixed once", s.logCount("reason=noname-fixed") == 1);
+        const Drawn d5 = draw(s, geo(true));
+        CHK("tag back: placed again", d5.placed && d5.r == d1.r);
         s.finishCheck(scn);
     }
     {
-        const char* scn = "l2 peek latched in B stays in B";
+        const char* scn = "l2 Took keeps its last rect until it expires, peek has no such grace";
         Sim s;
-        s.add(10, 0, {Medpac2});
+        s.add(10, 0, {Medpac2, Pistol, Credits, Item{"Frag Grenade", 1}});
         s.setLeader(7.1f, 0);
         s.run(80);
-        const Drawn d1 = draw(s, geo(false));
-        CHK("B: fixed spot at 62% of the panel", d1.placed && s.m.latch.pos == Pos::B && d1.r == R(1920 - 600, 992, 1200, 20));
-        const Drawn d2 = draw(s, geo(true));   // a target tag shows up: no jump
-        CHK("tag appears: still B, same rect", d2.r == d1.r && s.m.latch.pos == Pos::B);
-        s.setLeader(4.9f, 0);   // walk away: the peek ends, the latch with it
-        s.run(40);
-        CHK("walk-away: no label, latch released", s.m.labelText(s.now) == nullptr && !s.m.latch.held && s.label.empty());
+        const Drawn d1 = draw(s, geo(true));
+        s.key = true; s.run(2); s.key = false;
+        CHK("F took everything", s.count(A_SEND) == 1 && s.count(A_TOAST) == 1 && s.m.toastS.active);
+        const Drawn d2 = draw(s, geo(true));
+        CHK("Took text up in the same rect", d2.placed && d2.r == d1.r && d2.text && strncmp(d2.text, "Acquired (4): ", 14) == 0);
+        s.run(40);  // 640 ms, tag gone since
+        const Drawn d3 = draw(s, geo(false));
+        CHK("Took keeps its rect with the tag gone", d3.text && d3.placed && d3.r == d1.r);
+        CHK("4 names: 3.5 s", s.m.toastS.durMs == 3500);
+        const uint32_t t0 = s.m.toastS.shownAt;
+        CHK("still up at 3499 ms, gone at 3500 ms", s.m.labelText(t0 + 3499) != nullptr && s.m.labelText(t0 + 3500) == nullptr);
+        s.run(240);
+        CHK("rect dropped after the Took line", !s.m.haveLastBlock && !s.m.toastS.active && s.m.labelText(s.now) == nullptr);
         s.finishCheck(scn);
     }
     {
-        const char* scn = "l3 A clamps x, the latched rect keeps the clamp";
+        const char* scn = "l3 anchor 0 clamps x and re-places after the clamp";
         Sim s;
         s.add(10, 0, {Medpac2});
         s.setLeader(7.1f, 0);
         s.run(80);
         const Drawn d1 = draw(s, geo(true, {50, 520, 300, 32}));   // target at the far left
-        CHK("x clamped to 24", d1.placed && d1.r.x == 24 && d1.r.w == 1200);
+        CHK("x clamped to 24", d1.placed && d1.r.x == 24 && d1.r.w == BW);
         const Drawn d2 = draw(s, geo(true, {1700, 520, 533, 32}));
-        CHK("still 24 while latched", d2.r.x == 24);
+        CHK("no latch: back under the tag", d2.r.x == 1966 - BW / 2);
+        const Drawn d3 = draw(s, geo(true, {3500, 520, 300, 32}));
+        CHK("right clamp", d3.r.x == 3840 - 24 - BW);
         s.finishCheck(scn);
     }
     {
-        const char* scn = "l4 click take: Took in A, 3 s for a short line";
+        const char* scn = "l4 anchor 1 below the container: projected point, no name tag needed";
+        Sim s; s.m.cfg.anchor = 1;
+        s.add(10, 0, {Medpac2});
+        s.setLeader(7.1f, 0);
+        s.run(80);
+        const Drawn d1 = draw(s, geoProj(1000, 700, 1));
+        CHK("centred on the projected x, top = y + gap", d1.placed && d1.r == R(1000 - BW / 2, 700 + ProjGapPx, BW, BH));
+        CHK("ANCHOR container ok", s.logCount("ANCHOR want=container used=container reason=ok proj=ok") == 1);
+        CHK("PROJ logged", s.logCount("PROJ ") >= 1 && s.logged(" px=1000.0,700.0 ret=1 state=1 why=ok"));
+        const Drawn d2 = draw(s, geoProj(1000, 1590, 1));
+        CHK("near the bottom: moved up to the limit", d2.placed && d2.r.y + d2.r.h == 1600 - 24);
+        const Drawn d3 = draw(s, geoProj(1000, 700, 2, true));
+        CHK("behind the camera + a name tag: falls back to mode 0", d3.placed && d3.r == R(1966 - BW / 2, 572, BW, BH));
+        CHK("fallback logged (behind)", s.logged("ANCHOR want=container used=name reason=fallback-name proj=behind"));
+        s.run(20);   // the name rect seen above is older than 250 ms now
+        const Drawn d4 = draw(s, geoProj(5000, 700, 1, false));
+        CHK("outside the panel and no tag: fixed-spot fallback", d4.placed && s.logged("proj=outside") && s.logged("reason=noname-fixed"));
+        const Drawn d5 = draw(s, geoProj(1000, 700, 1));
+        CHK("valid again", d5.placed && d5.r == d1.r);
+        Geometry nan = geoProj(NAN, 700, 1, true);
+        CHK("NaN: falls back", draw(s, nan).r == R(1966 - BW / 2, 572, BW, BH) && s.logged("proj=nan"));
+        Geometry un = geo(true);
+        un.proj.state = 2; un.proj.note = "vtable";
+        CHK("engine call unavailable: falls back", draw(s, un).placed && s.logged("why=unavail note=vtable"));
+        s.finishCheck(scn);
+    }
+    {
+        const char* scn = "l5 PROJ log: at most 40 position lines, plus every verdict change";
+        Sim s; s.m.cfg.anchor = 1;
+        s.add(10, 0, {Medpac2});
+        s.setLeader(7.1f, 0);
+        s.run(80);
+        for (int i = 0; i < 300; ++i) draw(s, geoProj(100.0f + static_cast<float>(i) * 30.0f, 700, 1, true));   // a sweep: 300 distinct points
+        CHK("first 40 only", s.logCount("PROJ ") <= 40 + 2 && s.logCount("PROJ ") >= 38);
+        const int before = s.logCount("PROJ ");
+        draw(s, geoProj(500, 700, 2, true));
+        CHK("a verdict change always logs", s.logCount("PROJ ") == before + 1);
+        s.finishCheck(scn);
+    }
+    {
+        const char* scn = "l6 anchor 2 beside the name tag: right of it, flips left near the panel edge, clamped";
+        Sim s; s.m.cfg.anchor = 2;
+        s.add(10, 0, {Medpac2});
+        s.setLeader(7.1f, 0);
+        s.run(80);
+        const Drawn d1 = draw(s, geo(true, {1700, 520, 533, 32}));
+        CHK("left = name right + gap, top = name top", d1.placed && d1.r == R(1700 + 533 + BesideGapPx, 520, BW, BH));
+        const Drawn d2 = draw(s, geo(true, {3500, 520, 300, 32}));
+        CHK("past the right edge: flipped to the left", d2.placed && d2.r == R(3500 - BesideGapPx - BW, 520, BW, BH));
+        const Drawn d3 = draw(s, geo(true, {1700, 1500, 533, 32}));
+        CHK("bottom clamp", d3.placed && d3.r.y + d3.r.h == 1600 - 24);
+        s.run(30);
+        CHK("no name tag for > 250 ms: fixed-spot fallback", draw(s, geo(false)).placed);
+        s.finishCheck(scn);
+    }
+    {
+        const char* scn = "l7 click take: Took under the name tag, 3 s for a short line";
         Sim s; s.m.cfg.proxOn = false;
         const int A = s.add(1, 0, {Medpac2, Pistol});
         s.run(3);
@@ -994,16 +1097,16 @@ void scenarioL() {
         s.run(40);
         CHK("Took up", s.m.toastS.active && s.count(A_TOAST) == 1);
         const Drawn d = draw(s, geo(true));
-        CHK("A under the name tag", d.placed && s.m.latch.pos == Pos::A && d.r == R(1366, 572, 1200, 20));
+        CHK("under the name tag", d.placed && d.r == R(1966 - BW / 2, 572, BW, BH));
         CHK("short line: 3 s", s.m.toastS.durMs == 3000);
         const uint32_t t0 = s.m.toastS.shownAt;
         CHK("up at 2999 ms, gone at 3000 ms", s.m.labelText(t0 + 2999) != nullptr && s.m.labelText(t0 + 3000) == nullptr);
         s.run(200);
-        CHK("latch released", !s.m.latch.held);
+        CHK("rect dropped", !s.m.haveLastBlock);
         s.finishCheck(scn);
     }
     {
-        const char* scn = "l5 long Acquired (25 items): one-line fallback text, 6 s cap";
+        const char* scn = "l8 long Acquired (25 items): one-line fallback text, 6 s cap";
         Sim s; s.m.cfg.proxOn = false;
         std::vector<Item> many;
         for (int i = 0; i < 25; ++i) many.push_back(Item{"Item number " + std::to_string(i), 1});
@@ -1017,7 +1120,7 @@ void scenarioL() {
         s.finishCheck(scn);
     }
     {
-        const char* scn = "l6 a new Took replaces the old one at once; a peek waits for the Took to end";
+        const char* scn = "l9 a new Took replaces the old one at once; a peek waits for the Took to end";
         Sim s;
         const int A = s.add(1, 0, {Medpac2}), B = s.add(3, 0, {Pistol});
         s.run(60);
@@ -1031,7 +1134,7 @@ void scenarioL() {
         CHK("Took wins over the peek line", d2.text && strncmp(d2.text, "Acquired", 8) == 0 && d2.r == d1.r);
         s.run(200);   // the Took ends
         const Drawn d3 = draw(s, geo(true, {1000, 500, 533, 32}));
-        CHK("then the peek line shows, latched afresh at the current geometry", d3.text && strncmp(d3.text, "[F] Get Item", 12) == 0 && d3.r.x == 1000 + 266 - 600);
+        CHK("then the peek line shows, placed at the current geometry", d3.text && strncmp(d3.text, "[F] Get Item", 12) == 0 && d3.r.x == 1000 + 266 - BW / 2);
         s.key = true; s.run(2); s.key = false;
         CHK("second Took replaces at once", s.count(A_TOAST) == 2 && s.m.toastS.active);
         const Drawn d4 = draw(s, geo(true, {1000, 500, 533, 32}));
@@ -1039,7 +1142,7 @@ void scenarioL() {
         s.finishCheck(scn);
     }
     {
-        const char* scn = "l7 empty container: no label text, never '0 items'";
+        const char* scn = "l10 empty container: no label text, never '0 items'";
         Sim s;
         s.add(10, 0, {});
         s.setLeader(7.1f, 0);
@@ -1145,7 +1248,7 @@ void scenarioM() {
         s.run(300);   // 4.8 s
         CHK("still up 4.8 s after the cursor left", s.m.toastS.visible(s.now));
         s.run(100);   // 6.4 s
-        CHK("gone after the 6 s timer ran out", !s.m.toastS.visible(s.now) && !s.m.toastS.active && !s.m.latch.held);
+        CHK("gone after the 6 s timer ran out", !s.m.toastS.visible(s.now) && !s.m.toastS.active);
         s.finishCheck(scn);
     }
     {
@@ -1171,7 +1274,7 @@ void scenarioM() {
         s.finishCheck(scn);
     }
     {
-        const char* scn = "m7 block placement: latch A / B, bottom clamp flips above the name";
+        const char* scn = "m7 block placement: A, follows the tag, bottom clamp flips above the name";
         Sim s;
         s.add(10, 0, manyItems(25));
         s.setLeader(7.1f, 0);
@@ -1179,10 +1282,10 @@ void scenarioM() {
         ListDraw d;
         s.m.listDraw(s.now, &d);
         Rect r = {0, 0, 0, 0};
-        CHK("placed in A", s.m.placeBlock(s, geo(true, {1700, 520, 533, 32}), d.w, d.h, &r) && s.m.latch.pos == Pos::A);
+        CHK("placed under the name", s.m.placeBlock(s, geo(true, {1700, 520, 533, 32}), d.w, d.h, s.now, &r));
         CHK("centred under the name", r == R(1700 + 266 - d.w / 2, 572, d.w, d.h));
         Rect r2 = {0, 0, 0, 0};
-        CHK("latched: same rect with the tag gone", s.m.placeBlock(s, geo(false), d.w, d.h, &r2) && r2 == r && s.logCount("LABEL-LATCH") == 1);
+        CHK("the tag moved: the block moved", s.m.placeBlock(s, geo(true, {900, 520, 533, 32}), d.w, d.h, s.now, &r2) && r2.x == 900 + 266 - d.w / 2);
         s.finishCheck(scn);
     }
     {
@@ -1194,7 +1297,7 @@ void scenarioM() {
         ListDraw d;
         s.m.listDraw(s.now, &d);
         Rect r = {0, 0, 0, 0};
-        CHK("name low on screen: flipped above the name", s.m.placeBlock(s, geo(true, {1700, 1300, 533, 32}), d.w, d.h, &r) && r.y == 1300 - 20 - d.h && r.y + r.h <= 1600 - 24);
+        CHK("name low on screen: flipped above the name", s.m.placeBlock(s, geo(true, {1700, 1300, 533, 32}), d.w, d.h, s.now, &r) && r.y == 1300 - 20 - d.h && r.y + r.h <= 1600 - 24);
         s.finishCheck(scn);
     }
     {
@@ -1286,17 +1389,174 @@ void scenarioM() {
         s.finishCheck(scn);
     }
     {
-        const char* scn = "m9 B on a short panel moves up";
-        Sim s;
+        const char* scn = "m9 mode 1 on a short panel moves up";
+        Sim s; s.m.cfg.anchor = 1;
         s.add(10, 0, manyItems(25));
         s.setLeader(7.1f, 0);
         s.run(80);
         ListDraw d;
         s.m.listDraw(s.now, &d);
-        Geometry g = geo(false);
+        Geometry g = geoProj(1920, 700, 1);
         g.panel = {0, 0, 3840, 1000};
         Rect r = {0, 0, 0, 0};
-        CHK("B, bottom limit 976", s.m.placeBlock(s, g, d.w, d.h, &r) && s.m.latch.pos == Pos::B && r.y == 976 - d.h);
+        CHK("bottom limit 976", s.m.placeBlock(s, g, d.w, d.h, s.now, &r) && r.y == 976 - d.h);
+        s.finishCheck(scn);
+    }
+}
+
+// ---- n: 0.6.0-dev per-item take (QL4), header flash, tooltip (QL8), live config (QL7)
+Sim& peekUp(Sim& s, std::vector<Item> items) {
+    s.add(10, 0, items);
+    s.setLeader(7.1f, 0);
+    s.run(80);
+    return s;
+}
+
+void scenarioN() {
+    {
+        const char* scn = "n1 click row 3: that one item leaves, list shrinks, header flashes; click until empty -> exactly one Close";
+        Sim s;
+        peekUp(s, {Item{"Medpac", 2}, Item{"Blaster Pistol", 1}, Item{"Credits", 1}, Item{"Frag Grenade", 1}, Item{"Stim", 1}});
+        CHK("peek up with 5 rows", s.m.peek.active && s.m.peekList.items == 5);
+        s.rowClickV = 3; s.run(1);
+        CHK("one engine take, index 3", s.takeCalls == 1 && s.takeIdx[0] == 3);
+        CHK("the container lost exactly that item", s.objs[0].items.size() == 4 && s.objs[0].items[3].name == "Stim" && s.objs[0].items[2].name == "Credits");
+        CHK("list re-captured: 4 rows", s.m.peekList.items == 4 && s.m.peek.active);
+        CHK("TAKE1 logged with the counts", s.logged("TAKE1 i=3 id=00009003 name=Frag Grenade stack=1 rc=1 n_before=5 n_after=4 notice=0"));
+        ListDraw d;
+        CHK("header flashes Acquired: <name>", s.m.listDraw(s.now, &d) && strcmp(d.header, "Acquired: Frag Grenade") == 0);
+        s.run(80);   // 1.28 s
+        CHK("still flashing at 1.3 s", s.m.listDraw(s.now, &d) && strncmp(d.header, "Acquired:", 9) == 0);
+        s.run(30);   // 1.76 s
+        CHK("back to the count after 1.5 s", s.m.listDraw(s.now, &d) && strcmp(d.header, "[F] Get Items (4)") == 0);
+        CHK("no Close yet", s.count(A_SEND) == 0 && s.count(A_SRV) == 0);
+        for (int i = 0; i < 3; ++i) { s.rowClickV = 0; s.run(2); }
+        CHK("one item left", s.objs[0].items.size() == 1 && s.m.peek.active && s.count(A_SEND) == 0);
+        s.rowClickV = 0; s.run(1);
+        CHK("emptied: exactly one Close, flag 0", s.count(A_SEND) == 1 && s.nth(A_SEND, 0)->flag == 0 && !s.m.peek.active);
+        CHK("the last take shows as the Took line", s.m.toastS.active && s.count(A_TOAST) == 1 && s.nth(A_TOAST, 0)->text == "Acquired: Stim");
+        CHK("PEEK-EMPTY logged once", s.logCount("PEEK-EMPTY") == 1);
+        s.run(120);
+        CHK("no second Close, no re-open (cooldown)", s.count(A_SEND) == 1 && s.count(A_OPEN) == 1);
+        CHK("5 takes in all", s.takeCalls == 5 && s.taken.size() == 5);
+        s.finishCheck(scn);
+    }
+    {
+        const char* scn = "n2 take refused: out of range / not open / suppress / the +K more row / engine refusal";
+        Sim s;
+        peekUp(s, manyItems(70));
+        s.m.lastScan = s.now;   // no peek poll in the next frames: the click meets the peek as is
+        s.setLeader(4.9f, 0);   // 5.1 m from the container: past CloseM
+        s.rowClickV = 0; s.step();
+        CHK("out of range: refused, nothing taken", s.takeCalls == 0 && s.logged("TAKE1-REFUSED i=0 why=range") && s.objs[0].items.size() == 70);
+        s.setLeader(7.1f, 0);
+        s.objs[0].open = 0;
+        s.rowClickV = 1; s.step();
+        CHK("open flag clear: refused", s.takeCalls == 0 && s.logged("TAKE1-REFUSED i=1 why=notopen"));
+        s.objs[0].open = 1;
+        s.m.sup.last = Sup::Menu;
+        s.rowClickV = 1; s.step();
+        CHK("suppress state: refused", s.takeCalls == 0 && s.logged("TAKE1-REFUSED i=1 why=suppress"));
+        s.m.sup.last = Sup::None;
+        s.takeForce = TakeWhy::Popup;
+        s.rowClickV = 2; s.step();
+        CHK("engine side refusal (first-pickup pop-up): logged, nothing flashes", s.takeCalls == 1 && s.logged("TAKE1-REFUSED i=2 why=popup") && s.objs[0].items.size() == 70 && !s.m.flash.visible(s.now));
+        s.takeForce = TakeWhy::Ok;
+        s.wheel = -120 * 99; s.step();   // scroll to the end: the last visible row is the "+K more" row
+        ListDraw d;
+        s.m.listDraw(s.now, &d);
+        CHK("scrolled to the end", s.m.peekView.off == s.m.peekView.maxOff());
+        s.rowClickV = static_cast<int>(d.vis) - 1; s.step();
+        CHK("the +K more row is no item: refused", s.takeCalls == 1 && s.logged("why=morerow"));
+        s.finishCheck(scn);
+    }
+    {
+        const char* scn = "n3 take while out of range after the peek closed: nothing, and a click on a Took list does not take";
+        Sim s;
+        peekUp(s, {Item{"A", 1}, Item{"B", 1}});
+        s.key = true; s.run(2); s.key = false;
+        CHK("F took all (Took list up)", s.m.toastS.active && s.count(A_SEND) == 1);
+        s.rowClickV = 0; s.run(2);
+        CHK("a row click on the Took list does nothing", s.takeCalls == 0);
+        s.run(400);
+        s.rowClickV = 0; s.run(2);
+        CHK("no peek: no take", s.takeCalls == 0 && s.logged("TAKE1-REFUSED") == false);
+        s.finishCheck(scn);
+    }
+    {
+        const char* scn = "n4 a stale row (the list changed under the click): re-captured, nothing taken";
+        Sim s;
+        peekUp(s, {Item{"A", 1}, Item{"B", 1}, Item{"C", 1}});
+        s.m.peekIds[1] = 0x1234;   // the row on screen is a different item than the container now holds there
+        s.rowClickV = 1; s.run(1);
+        CHK("stale refused", s.takeCalls == 0 && s.logged("TAKE1-REFUSED i=1 why=stale"));
+        CHK("list re-read", s.m.peekIds[1] == 0x9001u);
+        s.finishCheck(scn);
+    }
+    {
+        const char* scn = "n5 tooltip: after 300 ms on one row, reset on leave / scroll / take / other row";
+        Sim s;
+        peekUp(s, {Item{"Medpac", 5, "i_medpac", "Heals vitality."}, Item{"Pistol", 1, "", "A blaster."}, Item{"Credits", 1}, Item{"Stim", 1}, Item{"Grenade", 1}});
+        const TipData* td = nullptr; int row = -1;
+        s.hoverV = 1; s.run(1);
+        CHK("not yet", !s.m.tipShown(s.now, &td, &row));
+        s.run(10);   // 176 ms
+        CHK("still not at 176 ms", !s.m.tipShown(s.now, &td, &row));
+        s.run(10);   // 336 ms
+        CHK("shown after 300 ms", s.m.tipShown(s.now, &td, &row) && row == 1 && td && strcmp(td->title, "Pistol") == 0 && strcmp(td->desc, "A blaster.") == 0);
+        CHK("one target counted", s.m.tip.serial == 1);
+        s.hoverV = 0; s.run(1);
+        CHK("another row: hidden, timer restarts", !s.m.tipShown(s.now, &td, &row));
+        s.run(21);
+        CHK("then shown for the new row with the stack", s.m.tipShown(s.now, &td, &row) && row == 0 && td->stack == 5 && s.m.tip.serial == 2);
+        s.hoverV = -1; s.run(1);
+        CHK("cursor left: hidden", !s.m.tipShown(s.now, &td, &row));
+        s.hoverV = 2; s.run(21);
+        CHK("row 2 shown", s.m.tipShown(s.now, &td, &row) && row == 2);
+        s.wheel = -120; s.run(1);
+        CHK("scroll (list that fits does not move): tooltip stays", s.m.tipShown(s.now, &td, &row));
+        s.rowClickV = 2; s.run(1);
+        CHK("a take hides it", !s.m.tipShown(s.now, &td, &row) && s.takeCalls == 1);
+        s.run(21);
+        CHK("and it comes back after the delay on whatever is under the cursor", s.m.tipShown(s.now, &td, &row) && row == 2 && strcmp(td->title, "Stim") == 0);
+        s.key = true; s.run(2); s.key = false;
+        CHK("a Took list shows no tooltip", !s.m.tipShown(s.now, &td, &row));
+        s.finishCheck(scn);
+    }
+    {
+        const char* scn = "n6 tooltip + scroll: a scroll hides it";
+        Sim s;
+        peekUp(s, manyItems(25));
+        const TipData* td = nullptr; int row = -1;
+        s.hoverV = 1; s.run(25);
+        CHK("shown", s.m.tipShown(s.now, &td, &row) && row == 1);
+        s.wheel = -120; s.run(1);
+        CHK("wheel scroll hides it", s.m.peekView.off == 1 && !s.m.tipShown(s.now, &td, &row));
+        s.run(25);
+        CHK("re-armed on the row now under the cursor", s.m.tipShown(s.now, &td, &row) && row == 2);
+        s.sbPart = static_cast<int>(SbPart::Down); s.run(1);
+        CHK("scrollbar click hides it", !s.m.tipShown(s.now, &td, &row));
+        s.finishCheck(scn);
+    }
+    {
+        const char* scn = "n7 live config: ListRows, and ProximityEnabled off closes the peek once";
+        Sim s;
+        peekUp(s, manyItems(12));
+        ListDraw d;
+        s.m.listDraw(s.now, &d);
+        CHK("8 rows", d.vis == 8);
+        s.m.cfg.listRows = 4; s.run(1);
+        s.m.listDraw(s.now, &d);
+        CHK("4 rows after the page changed it", d.vis == 4 && s.m.peekView.rows == 4);
+        s.m.cfg.listRows = 12; s.run(1);
+        s.m.listDraw(s.now, &d);
+        CHK("12 rows", d.vis == 12 && !d.scrollable);
+        s.m.cfg.proxOn = false;
+        s.run(40);
+        CHK("peek closed (items stay), one Close with flag 0", !s.m.peek.active && s.count(A_SEND) == 1 && s.nth(A_SEND, 0)->flag == 0 && s.logged("PEEK-CLOSE") && s.logged("reason=off"));
+        CHK("items stay", s.objs[0].items.size() == 12);
+        s.run(120);
+        CHK("and no re-open while off", s.count(A_OPEN) == 1 && s.count(A_SEND) == 1);
         s.finishCheck(scn);
     }
 }
@@ -1318,5 +1578,6 @@ int main() {
     scenarioK();
     scenarioL();
     scenarioM();
+    scenarioN();
     return kt::Report("quick_loot_sim_test");
 }

@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <cmath>
 
 namespace qlogic {
 
@@ -361,7 +362,7 @@ struct Cooldown {
 inline bool areaChanged(uintptr_t prev, uintptr_t cur) { return prev != 0 && cur != 0 && prev != cur; }
 
 // Why the peek ends. Priority: gone > suppress > area > far.
-enum class Leave { None = 0, Gone, Suppress, Area, Far };
+enum class Leave { None = 0, Gone, Suppress, Area, Far, Off };   // Off (0.6.0-dev): ProximityEnabled was switched off while a peek was up
 inline Leave leaveReason(bool plcResolves, bool suppressed, bool areaChangedNow, float dist, float closeM) {
     if (!plcResolves) return Leave::Gone;
     if (suppressed) return Leave::Suppress;
@@ -376,6 +377,7 @@ inline const char* leaveName(Leave l) {
         case Leave::Suppress: return "suppress";
         case Leave::Area: return "area";
         case Leave::Far: return "far";
+        case Leave::Off: return "off";
     }
     return "?";
 }
@@ -434,16 +436,6 @@ inline unsigned fmtPeek(char* out, size_t cap, const char* key, int total, const
     const unsigned extra = static_cast<unsigned>(total) > count ? static_cast<unsigned>(total) - count : 0u;
     return detail::fmtList(out, cap, pre, PeekMaxChars, names, stacks, count, extra, info);
 }
-
-// Peek label rects. Name-anchored: same placement rule as the toast (centred under the target name label), wider box.
-inline Rect peekRectName(int nameX, int nameY, int nameW, int nameH) {
-    return { nameX + nameW / 2 - PeekW / 2, nameY + nameH + ToastGapBelowName, PeekW, ToastH };
-}
-// Fixed spot: horizontally centred on the HUD panel, PeekTopPercent % down its height.
-inline Rect peekRectFixed(int px, int py, int pw, int ph) {
-    return { px + pw / 2 - PeekW / 2, py + (ph * PeekTopPercent) / 100, PeekW, ToastH };
-}
-
 
 // ---- 0.4.0-dev: multi-row item list (doc 52 QL2L); 0.5.0-dev (QL2V) restyle. One block = header row + up to ListRows item rows on a vanilla frame panel.
 // Geometry (engine px at 3840x1600, the dev box; all constants measured with scripts/character_page_mockup.py text_size):
@@ -732,13 +724,36 @@ inline SbPart sbHitAt(const Sb& s, float rx, float ry) {
     return SbPart::Thumb;
 }
 
+// Header flash after a per-item take: "Acquired: <name>" for FlashMs, cut so it fits maxPx (the width left of the scroll indicator).
+constexpr uint32_t FlashMs = 1500;
+inline unsigned fmtFlashHeader(char* out, size_t cap, const char* name, int maxPx) {
+    char nm[RowNameMax + 8];
+    unsigned n = rowName(nm, sizeof nm, name);
+    char buf[RowNameMax + 24];
+    snprintf(buf, sizeof buf, "Acquired: %s", nm);
+    if (textPx10(buf) > maxPx) {
+        if (n >= 3 && memcmp(nm + n - 3, "...", 3) == 0) n -= 3;
+        while (n > 1) {
+            --n;
+            char t[RowNameMax + 24];
+            snprintf(t, sizeof t, "Acquired: %.*s...", static_cast<int>(n), nm);
+            if (textPx10(t) <= maxPx) { memcpy(buf, t, sizeof t); break; }
+        }
+    }
+    unsigned len = static_cast<unsigned>(strlen(buf));
+    if (len >= cap) len = static_cast<unsigned>(cap - 1);
+    memcpy(out, buf, len);
+    out[len] = 0;
+    return len;
+}
+
 // Everything the adapter draws for the block this frame.
 struct ListDraw {
     bool took = false, scrollable = false;
     bool sb = false;                   // the scrollbar shows (scrollable and it fits): the rows are SbReserve narrower
     int rowH = RowH;
     unsigned off = 0, vis = 0, rowsTotal = 0, items = 0;
-    char header[40] = {0};
+    char header[72] = {0};             // "[F] Get Items (25)", or the 0.6.0-dev "Acquired: <name>" flash
     char indicator[24] = {0};          // "" when the whole list fits
     int headerPx = 0, indicatorPx = 0;
     char rows[ListRowsMax][RowTextCap];
@@ -748,7 +763,7 @@ struct ListDraw {
 
 // Builds the block for list d seen through view v. false = nothing to draw (empty list). The width follows the widest of ALL rows (not only the
 // visible ones) so scrolling never resizes the block; h follows the visible row count (min(rows, list rows)).
-inline bool buildListDraw(const ListData& d, const ListView& v, bool took, const char* key, ListDraw* o, int rowH = RowH) {
+inline bool buildListDraw(const ListData& d, const ListView& v, bool took, const char* key, ListDraw* o, int rowH = RowH, const char* flashName = nullptr) {
     *o = ListDraw();
     if (d.empty()) return false;
     const unsigned total = d.rowsTotal();
@@ -761,6 +776,9 @@ inline bool buildListDraw(const ListData& d, const ListView& v, bool took, const
     o->scrollable = total > rows;
     o->sb = o->scrollable && sbFits(vis, rowH);
     fmtHeader(o->header, sizeof o->header, took, key, d.totalItems());
+    if (flashName && !took) {   // 0.6.0-dev: the take flash replaces the header text (the block widens for it, up to BlockMaxW)
+        fmtFlashHeader(o->header, sizeof o->header, flashName, BlockMaxW - 2 * BlockPadX - (o->scrollable ? IndicatorGapPx + textPx10("999-999 of 999") : 0));
+    }
     o->headerPx = textPx10(o->header);
     int need = d.maxRowPx + rowChromePx(rowH) + (o->sb ? SbReserve : 0);
     if (o->scrollable) {
@@ -784,66 +802,95 @@ inline bool buildListDraw(const ListData& d, const ListView& v, bool took, const
     return true;
 }
 
-// ---- 0.3.1-dev: label placement (position A under the target name, B at a fixed spot), latch, Took state, dwell
+// ---- 0.6.0-dev (QL2A): block anchor. The 0.3.1 / 0.4.0 latch is gone: the block is re-placed EVERY frame from the target name tag the engine
+// just positioned (K2HUD_TARGET_MENU_POST runs after 0x743850), so it follows the tag when the camera turns.
 enum class Pos { None = 0, A, B };
 inline const char* posName(Pos p) { return p == Pos::A ? "A" : (p == Pos::B ? "B" : "-"); }
 
-// What the adapter sees of the screen this frame (all px): the target-menu name label (menuShown = on screen now; haveName = a rect was seen
-// at some point, `name` is the latest) and the HUD panel extent (havePanel; panel.w <= 0 = unknown).
+// What the adapter sees of the screen this frame (all px): the target-menu name label (menuShown = its rect was read THIS frame), the HUD panel
+// extent (havePanel; panel.w <= 0 = unknown) and the projected container point (Anchor 1; proj.state 0 = not tried, 1 = a value, 2 = the engine
+// call was unavailable (note says why)).
+struct Proj { int state = 0; float x = 0, y = 0; int ret = 0; const char* note = ""; float wx = 0, wy = 0, wz = 0; };   // wx..wz: the world point projected (PROJ log)   // ret: 1 in front of the camera, 2 behind, 0 unknown
 struct Geometry {
-    bool menuShown = false, haveName = false, havePanel = false;
+    bool menuShown = false, havePanel = false;
     Rect name = {0, 0, 0, 0}, panel = {0, 0, 0, 0};
+    Proj proj;
 };
 
-// Where a new label goes: A (name-anchored, x clamped to the panel) while the target menu is shown, else B (fixed spot on the panel), else A at
-// the last seen name rect. false = nothing to anchor to yet.
-inline bool choosePlacement(const Geometry& g, Rect* r, Pos* p) {
-    const bool panelOk = g.havePanel && g.panel.w > 0 && g.panel.h > 0;
-    if (g.menuShown || (!panelOk && g.haveName)) {
-        *r = peekRectName(g.name.x, g.name.y, g.name.w, g.name.h);
-        *p = Pos::A;
-        if (panelOk) *r = clampLabelX(*r, g.panel.x, g.panel.w);
-        return true;
+// Anchor modes (quick_loot.ini Anchor / the Mod Configuration page): 0 under the target name tag (default), 1 below the container (projected), 2 beside the name tag.
+enum class AnchorMode { UnderName = 0, BelowContainer = 1, BesideName = 2 };
+constexpr int AnchorModeCount = 3;
+constexpr uint32_t NameHoldMs = 250;       // the last name rect is kept this long after the target menu goes away, then the block hides
+constexpr int BesideGapPx = 24;            // mode 2: gap between the name tag and the block
+constexpr int ProjGapPx = 16;              // mode 1: block top = projected y + this
+inline int clampAnchorMode(int v) { return (v >= 0 && v < AnchorModeCount) ? v : 0; }
+inline const char* anchorModeName(int m) {
+    switch (m) {
+        case 0: return "name";
+        case 1: return "container";
+        case 2: return "beside";
+        case 3: return "fixed";
     }
-    if (panelOk) {
-        *r = peekRectFixed(g.panel.x, g.panel.y, g.panel.w, g.panel.h);
-        *p = Pos::B;
-        *r = clampLabelX(*r, g.panel.x, g.panel.w);
-        return true;
-    }
-    return false;
+    return "?";
 }
 
-// The position chosen when a label first shows, kept (same rect) until the label is gone, so the line never jumps when the name tag
-// appears or vanishes, and the Took line replaces the peek line in the very same rect.
-// 0.4.0-dev block anchor (kept by the latch): the unclamped horizontal centre and top of the block, plus the target name's top for the flip.
-struct Anchor { int cx = 0, top = 0, nameTop = 0; bool hasName = false; };
-struct Latch {
-    bool held = false;
-    Pos pos = Pos::None;
+// The name rect seen last and when. valid() = seen within NameHoldMs (wrap-safe).
+struct NameHold {
+    bool have = false;
     Rect rect = {0, 0, 0, 0};
-    Anchor anchor;
-    void set(Pos p, const Rect& r) { held = true; pos = p; rect = r; }
-    void clear() { held = false; pos = Pos::None; rect = {0, 0, 0, 0}; anchor = Anchor(); }
+    uint32_t seenMs = 0;
+    void see(const Rect& r, uint32_t now) { have = true; rect = r; seenMs = now; }
+    bool valid(uint32_t now) const { return have && msSince(now, seenMs) <= NameHoldMs; }
+    void clear() { have = false; rect = {0, 0, 0, 0}; seenMs = 0; }
 };
 
-// Block anchor, same A/B rule as choosePlacement: A under the target name (centre = name centre, top = name bottom + gap) while the target menu is
-// shown or only a name rect is known, else B (centre of the HUD panel, PeekTopPercent % down). false = nothing to anchor to yet.
-inline bool chooseAnchor(const Geometry& g, Anchor* a, Pos* p) {
-    const bool panelOk = g.havePanel && g.panel.w > 0 && g.panel.h > 0;
-    *a = Anchor();
-    if (g.menuShown || (!panelOk && g.haveName)) {
-        a->cx = g.name.x + g.name.w / 2; a->top = g.name.y + g.name.h + ToastGapBelowName; a->nameTop = g.name.y; a->hasName = true;
-        *p = Pos::A;
-        return true;
-    }
-    if (panelOk) {
-        a->cx = g.panel.x + g.panel.w / 2; a->top = g.panel.y + (g.panel.h * PeekTopPercent) / 100;
-        *p = Pos::B;
-        return true;
-    }
-    return false;
+// Why a projected container point cannot be used (nullptr = usable): not finite, behind the camera (ret 2), no panel to check against, outside the panel.
+inline const char* projReject(float x, float y, int ret, const Rect& panel) {
+    if (!std::isfinite(x) || !std::isfinite(y)) return "nan";
+    if (ret == 2) return "behind";
+    if (panel.w <= 0 || panel.h <= 0) return "nopanel";
+    if (x < static_cast<float>(panel.x) || x >= static_cast<float>(panel.x + panel.w) || y < static_cast<float>(panel.y) || y >= static_cast<float>(panel.y + panel.h)) return "outside";
+    return nullptr;
 }
+
+// Block anchor: the unclamped horizontal centre and top of the block, plus the target name's top for the flip.
+struct Anchor { int cx = 0, top = 0, nameTop = 0; bool hasName = false; };
+
+// What anchorBlock decided: the mode actually used (-1 = none), why (static text, change-only logged), and the projection verdict for the PROJ line.
+struct AnchorUse { int want = 0, mode = -1; const char* reason = "none"; const char* projWhy = "none"; };
+
+// Change detector for the ANCHOR log line (requested mode, mode used, reason): update() is true exactly when one of them differs from the last call.
+struct AnchorTrack {
+    bool any = false;
+    int want = 0, mode = -1;
+    char reason[24] = {0};
+    bool update(const AnchorUse& u) {
+        const bool ch = !any || want != u.want || mode != u.mode || strcmp(reason, u.reason) != 0;
+        any = true; want = u.want; mode = u.mode;
+        snprintf(reason, sizeof reason, "%s", u.reason);
+        return ch;
+    }
+    void reset() { any = false; }
+};
+
+// PROJ log gate: a verdict change (state + why) always logs; otherwise the first ProjLogMax lines of a session, and only when the projected point moved
+// ProjMovePx or more since the last logged one (so the 40 lines are 40 different camera angles, not 40 identical frames).
+constexpr unsigned ProjLogMax = 40;
+constexpr float ProjMovePx = 24.0f;
+struct ProjTrack {
+    unsigned n = 0;
+    int state = -1;
+    char why[16] = {0};
+    float lx = 0, ly = 0;
+    bool want(int st, const char* w, float x, float y) {
+        const bool ch = st != state || strcmp(why, w) != 0;
+        state = st;
+        snprintf(why, sizeof why, "%s", w);
+        const bool moved = n == 0 || fabsf(x - lx) >= ProjMovePx || fabsf(y - ly) >= ProjMovePx;
+        if (ch || (n < ProjLogMax && moved)) { if (n < ProjLogMax) ++n; lx = x; ly = y; return true; }
+        return false;
+    }
+};
 
 // The block rect for anchor a and size w x h. x is clamped to [panel.x + 24, panel.x + panel.w - 24 - w] (centred when the block is wider).
 // Bottom clamp: when the block would pass panel bottom - 24, position A with a known name flips above the name (bottom = name top - gap) if that
@@ -864,6 +911,79 @@ inline Rect blockRect(Pos pos, const Anchor& a, int w, int h, const Rect& panel)
     }
     if (r.y < topLimit) r.y = topLimit;
     return r;
+}
+
+// Mode 2: left edge = name right + BesideGapPx, top = the name's top. Flips to the left of the name when the block would pass the panel's right
+// margin; y is clamped inside the panel. panel.w <= 0 = unknown: no clamp, no flip.
+inline Rect besideRect(const Rect& name, int w, int h, const Rect& panel) {
+    Rect r = { name.x + name.w + BesideGapPx, name.y, w, h };
+    if (panel.w <= 0 || panel.h <= 0) return r;
+    const int right = panel.x + panel.w - ScreenMarginPx, left = panel.x + ScreenMarginPx;
+    if (r.x + w > right) r.x = name.x - BesideGapPx - w;
+    if (r.x < left) r.x = left;
+    const int bottom = panel.y + panel.h - ScreenMarginPx, topLimit = panel.y + ScreenMarginPx;
+    if (r.y + h > bottom) r.y = bottom - h;
+    if (r.y < topLimit) r.y = topLimit;
+    return r;
+}
+
+// This frame's anchor: the requested mode, or the fallback. Mode 1 needs a usable projection and falls back to mode 0 (reason says why) when it
+// has none; modes 0 / 2 need the name rect (nameOk = seen within NameHoldMs). false = no anchor (the caller hides the block).
+inline bool anchorBlock(int mode, bool nameOk, const Rect& name, const Geometry& g, int w, int h, Rect* out, AnchorUse* use) {
+    const Rect panel = g.havePanel ? g.panel : Rect{0, 0, 0, 0};
+    AnchorUse u;
+    u.want = clampAnchorMode(mode);
+    const char* why = nullptr;
+    if (u.want == 1) {
+        if (g.proj.state == 0) why = "proj-none";
+        else if (g.proj.state == 2) why = "proj-unavail";
+        else why = projReject(g.proj.x, g.proj.y, g.proj.ret, panel);
+        u.projWhy = g.proj.state == 1 ? (why ? why : "ok") : (g.proj.state == 2 ? "unavail" : "none");
+        if (g.proj.state == 1 && !why) {
+            Anchor a;
+            a.cx = static_cast<int>(g.proj.x); a.top = static_cast<int>(g.proj.y) + ProjGapPx;
+            *out = blockRect(Pos::B, a, w, h, panel);
+            u.mode = 1; u.reason = "ok";
+            *use = u;
+            return true;
+        }
+    }
+    if (u.want == 2 && nameOk) {
+        *out = besideRect(name, w, h, panel);
+        u.mode = 2; u.reason = "ok";
+        *use = u;
+        return true;
+    }
+    if (nameOk) {
+        Anchor a;
+        a.cx = name.x + name.w / 2; a.top = name.y + name.h + ToastGapBelowName; a.nameTop = name.y; a.hasName = true;
+        *out = blockRect(Pos::A, a, w, h, panel);
+        u.mode = 0;
+        u.reason = u.want == 0 ? "ok" : "fallback-name";   // mode 1 without a usable projection (projWhy says why)
+        *use = u;
+        return true;
+    }
+    // No name tag (the container is not the current target): follow the projected container point when it is usable, else the fixed spot
+    // (PeekTopPercent of the panel), so a proximity peek of an untargeted container still shows. No panel = nothing to place against.
+    if (g.proj.state == 1 && !projReject(g.proj.x, g.proj.y, g.proj.ret, panel)) {
+        Anchor a;
+        a.cx = static_cast<int>(g.proj.x); a.top = static_cast<int>(g.proj.y) + ProjGapPx;
+        *out = blockRect(Pos::B, a, w, h, panel);
+        u.mode = 1; u.reason = "noname-proj";
+        *use = u;
+        return true;
+    }
+    if (panel.w > 0 && panel.h > 0) {
+        Anchor a;
+        a.cx = panel.x + panel.w / 2; a.top = panel.y + panel.h * PeekTopPercent / 100;
+        *out = blockRect(Pos::B, a, w, h, panel);
+        u.mode = 3; u.reason = "noname-fixed";
+        *use = u;
+        return true;
+    }
+    u.reason = "no-name";
+    *use = u;
+    return false;
 }
 
 // Block-relative rects (add the block origin).
@@ -890,6 +1010,12 @@ inline int rowAtPoint(const Rect& blk, unsigned vis, float px, float py, bool sb
     const float inRow = (py - y0) - static_cast<float>(i * pitch);
     if (inRow >= static_cast<float>(rowH)) return -1;   // in the gap
     return i < static_cast<int>(vis) ? i : -1;
+}
+// 0.6.0-dev (QL4): the item row a left click at (px, py) lands on: only the PEEK list's rows take clicks (a Took list is read-only); -1 = none.
+// The adapter makes the row frame labels click-eating under the same rule (rowsEatClicks), so a click on a row never walks the character.
+inline bool rowsEatClicks(bool took, bool peekUp) { return !took && peekUp; }
+inline int rowClickAt(const Rect& blk, unsigned vis, bool sb, bool took, float px, float py, int rowH = RowH) {
+    return took ? -1 : rowAtPoint(blk, vis, px, py, sb, rowH);
 }
 inline bool pointInRect(const Rect& r, float px, float py) {
     return px >= static_cast<float>(r.x) && px < static_cast<float>(r.x + r.w) && py >= static_cast<float>(r.y) && py < static_cast<float>(r.y + r.h);
@@ -972,6 +1098,211 @@ struct Peek {
     }
 };
 
+// ---- 0.6.0-dev (QL4): per-item take. The click takes ONE item with the engine's own server CloseInventory drain sequence (ItemListGetItem,
+// RemoveFromRepo, [first-pickup branch], 0x58A2C0(1), InsertOrMerge, SetOwner) for the clicked index instead of count-1.
+enum class TakeWhy { Ok = 0, NoRepo, BadIndex, Stale, NoItem, NoCtx, NoDst, Popup, Failed };
+inline const char* takeWhyName(TakeWhy w) {
+    switch (w) {
+        case TakeWhy::Ok: return "ok";
+        case TakeWhy::NoRepo: return "norepo";
+        case TakeWhy::BadIndex: return "badindex";
+        case TakeWhy::Stale: return "stale";
+        case TakeWhy::NoItem: return "noitem";
+        case TakeWhy::NoCtx: return "noctx";
+        case TakeWhy::NoDst: return "nodst";
+        case TakeWhy::Popup: return "popup";
+        case TakeWhy::Failed: return "failed";
+    }
+    return "?";
+}
+// The drain's first-pickup branch (asm 0x5F5881..0x5F5A29) for an item whose base item byte [base+0xAC] is 0x18: on the "lockertsfinv" container it
+// sets the item's local boolean 0x5E silently; elsewhere the FIRST pickup (bit clear) sets it and shows the item-description pop-up. The pop-up is a
+// dozen GUI calls this mod does not replicate: such a row is refused (F, take all, runs the real drain and shows it).
+enum class NoticePlan { None = 0, SetBit, Popup };
+constexpr int BaseItemNoticeClass = 0x18, ItemLocalBoolBit = 0x5E;
+inline NoticePlan noticePlan(int baseClassByte, bool lockerTag, bool bitSet) {
+    if (baseClassByte != BaseItemNoticeClass) return NoticePlan::None;
+    if (lockerTag) return NoticePlan::SetBit;
+    return bitSet ? NoticePlan::None : NoticePlan::Popup;
+}
+// A take click is accepted: the peek is up with its open flag set, the leader is within CloseM, no suppress state, the row is a real item.
+inline const char* takeRefusal(bool peekUp, int openFlag, bool worldOk, float dist, float closeM, bool suppressed, unsigned absRow, unsigned items) {
+    if (!peekUp) return "nopeek";
+    if (suppressed) return "suppress";
+    if (openFlag != 1) return "notopen";
+    if (!worldOk) return "noworld";
+    if (!(dist <= closeM)) return "range";
+    if (absRow >= items) return "morerow";
+    return nullptr;
+}
+
+// ---- 0.6.0-dev (QL8): item tooltip beside the list after TipDelayMs on one row. Vanilla frame (the list's template), title (item name, cream,
+// dialogfont16x16 when it fits else 10x10), "Quantity: N" for stacks, the description text (DescIdentified, teal, 10x10, word-wrapped here and
+// capped at TipMaxLines with "..."). There is no engine function for the stats / properties lines (u03.md B): they are not shown.
+constexpr uint32_t TipDelayMs = 300;
+constexpr unsigned TipMaxLines = 10;
+constexpr int TipMinW = 360, TipMaxW = 720, TipPadX = 28, TipPadY = 22, TipTitleH = 36, TipLineH = 34, TipBlockGapPx = 8, TipGapPx = 10;
+constexpr unsigned TipDescCap = 1536, TipBodyCap = 1200;
+struct TipData {
+    char title[NameCap] = {0};
+    int stack = -1;
+    char desc[TipDescCap] = {0};
+};
+struct TipDraw {
+    Rect frame = {0, 0, 0, 0}, title = {0, 0, 0, 0}, qty = {0, 0, 0, 0}, body = {0, 0, 0, 0};   // absolute px
+    bool bigTitle = false, haveQty = false, haveBody = false, flipped = false, truncated = false;
+    int lines = 0;
+    char titleText[NameCap + 8] = {0};
+    char qtyText[24] = {0};
+    char bodyText[TipBodyCap] = {0};
+};
+inline int textPx16(const char* t) {
+    const textfit::TextCtx c = { 1600.0f / 600.0f, 1.03f, 1.0f };
+    return static_cast<int>(ceilf(textfit::textPx(c, t, static_cast<int>(strlen(t)), textfit::F16)));
+}
+// Description text for the label: '\r' dropped, '\n' kept as a line break (the TLK uses them for paragraphs; two in a row = one blank line, more collapse to two,
+// none at either end), other control bytes and runs of blanks become one space (none next to a line break), bytes outside 0x20..0x7E '?'. Returns the length.
+inline unsigned sanitizeDesc(char* out, unsigned cap, const char* in) {
+    unsigned n = 0;
+    bool pendingSpace = false;
+    int pendingNl = 0;
+    if (in) {
+        for (unsigned i = 0; in[i] && n + 4 < cap; ++i) {
+            const unsigned char c = static_cast<unsigned char>(in[i]);
+            if (c == '\r') continue;
+            if (c == '\n') { if (n > 0 && pendingNl < 2) ++pendingNl; pendingSpace = false; continue; }
+            if (c <= 0x20) { pendingSpace = n > 0 && pendingNl == 0; continue; }
+            if (pendingNl) { for (int k = 0; k < pendingNl; ++k) out[n++] = '\n'; pendingNl = 0; pendingSpace = false; }
+            else if (pendingSpace) { out[n++] = ' '; pendingSpace = false; }
+            out[n++] = c > 0x7E ? '?' : static_cast<char>(c);
+        }
+    }
+    out[n] = 0;
+    return n;
+}
+// Word wrap of text at innerPx (engine measure = textPx10) into out ('\n' between lines; a '\n' in the text is a paragraph break, an empty paragraph a blank
+// line), at most TipMaxLines lines: the rest is cut and the last line ends in "...". Returns the line count; *widest = the widest line in px; *cut = the text was
+// longer. (Own wrapper: TextFit.h's wrapAppendW trips -Werror=format-truncation in this test build and has no paragraph breaks.)
+inline int tipWrap(char* out, unsigned cap, const char* text, int innerPx, int* widest, bool* cut) {
+    constexpr unsigned LineCap = 256;
+    static char ln[TipMaxLines + 1][LineCap];
+    unsigned nl = 0;   // index of the line being filled
+    bool any = false;  // the current line holds text (or is a blank paragraph line)
+    ln[0][0] = 0;
+    *cut = false;
+    const char* p = text ? text : "";
+    bool full = false;
+    auto newLine = [&]() -> bool {
+        if (nl + 1 >= TipMaxLines) { *cut = true; full = true; return false; }
+        ++nl; ln[nl][0] = 0;
+        return true;
+    };
+    while (*p && !full) {
+        const char* e = strchr(p, '\n');
+        const unsigned plen = e ? static_cast<unsigned>(e - p) : static_cast<unsigned>(strlen(p));
+        if (any && !newLine()) break;          // each paragraph starts on a new line
+        any = true;
+        const char* q = p;
+        const char* pend = p + plen;
+        unsigned cur = 0;
+        while (q < pend) {
+            while (q < pend && *q == ' ') ++q;
+            if (q >= pend) break;
+            const char* w = q;
+            while (q < pend && *q != ' ') ++q;
+            unsigned wl = static_cast<unsigned>(q - w);
+            if (wl > 120) wl = 120;
+            char cand[LineCap + 130];
+            snprintf(cand, sizeof cand, "%s%s%.*s", ln[nl], cur ? " " : "", static_cast<int>(wl), w);
+            if (cur && textPx10(cand) > innerPx) {   // the word does not fit: start the next line
+                if (!newLine()) break;
+                cur = 0;
+                snprintf(ln[nl], LineCap, "%.*s", static_cast<int>(wl), w);
+            } else {
+                snprintf(ln[nl], LineCap, "%.*s", static_cast<int>(strlen(cand) < LineCap - 1 ? strlen(cand) : LineCap - 1), cand);
+            }
+            cur = static_cast<unsigned>(strlen(ln[nl]));
+        }
+        if (full) break;
+        p += plen + (e ? 1 : 0);
+        if (!e) break;
+        if (!*p) break;
+    }
+    // text left over after the 10th line (the loop stopped on a full table with input remaining)
+    const unsigned lines = nl + 1;
+    int w = 0;
+    unsigned o = 0;
+    out[0] = 0;
+    for (unsigned i = 0; i < lines; ++i) {
+        char t[LineCap + 8];
+        snprintf(t, sizeof t, "%s", ln[i]);
+        if (i + 1 == lines && *cut) {   // the 10th line ends in "..." (cut until it fits)
+            unsigned n = static_cast<unsigned>(strlen(t));
+            snprintf(t, sizeof t, "%s...", ln[i]);
+            while (n > 1 && textPx10(t) > innerPx) { --n; while (n > 1 && ln[i][n - 1] == ' ') --n; snprintf(t, sizeof t, "%.*s...", static_cast<int>(n), ln[i]); }
+        }
+        const int lw = textPx10(t);
+        if (lw > w) w = lw;
+        const int put = snprintf(out + o, cap > o ? cap - o : 0, "%s%s", i ? "\n" : "", t);
+        if (put < 0 || o + static_cast<unsigned>(put) >= cap) { o = cap - 1; out[o] = 0; break; }
+        o += static_cast<unsigned>(put);
+    }
+    *widest = w;
+    return static_cast<int>(lines);
+}
+// Builds the tooltip for item d beside block blk, its top aligned with row rect rowAbs (absolute px), inside panel (panel.w <= 0 = unknown).
+// false = nothing to show (no title).
+inline bool buildTip(const TipData& d, const Rect& blk, const Rect& rowAbs, const Rect& panel, TipDraw* o) {
+    *o = TipDraw();
+    char nm[RowNameMax + 8];
+    rowName(nm, sizeof nm, d.title);
+    const int innerMax = TipMaxW - 2 * TipPadX;
+    int titlePx = textPx16(nm);
+    o->bigTitle = titlePx <= innerMax;
+    if (o->bigTitle) snprintf(o->titleText, sizeof o->titleText, "%s", nm);
+    else {
+        titlePx = textPx10(nm);
+        snprintf(o->titleText, sizeof o->titleText, "%s", nm);
+        if (titlePx > innerMax) {   // 10x10 still too wide: cut with "..."
+            unsigned n = static_cast<unsigned>(strlen(nm));
+            while (n > 1) { --n; char t[RowNameMax + 8]; snprintf(t, sizeof t, "%.*s...", static_cast<int>(n), nm); if (textPx10(t) <= innerMax) { snprintf(o->titleText, sizeof o->titleText, "%s", t); titlePx = textPx10(t); break; } }
+        }
+    }
+    o->haveQty = d.stack >= 2;
+    int qtyPx = 0;
+    if (o->haveQty) { snprintf(o->qtyText, sizeof o->qtyText, "Quantity: %d", d.stack); qtyPx = textPx10(o->qtyText); }
+    char clean[TipDescCap];
+    int widest = 0;
+    if (sanitizeDesc(clean, sizeof clean, d.desc) > 0) {
+        o->lines = tipWrap(o->bodyText, sizeof o->bodyText, clean, innerMax, &widest, &o->truncated);
+        o->haveBody = o->lines > 0;
+    }
+    int w = titlePx;
+    if (qtyPx > w) w = qtyPx;
+    if (widest > w) w = widest;
+    w += 2 * TipPadX;
+    if (w < TipMinW) w = TipMinW;
+    if (w > TipMaxW) w = TipMaxW;
+    int h = TipPadY + TipTitleH + (o->haveQty ? TipLineH : 0) + (o->haveBody ? TipBlockGapPx + o->lines * TipLineH : 0) + TipPadY;
+    int x = blk.x + blk.w + TipGapPx;
+    int y = rowAbs.y;
+    if (panel.w > 0 && panel.h > 0) {
+        if (x + w > panel.x + panel.w - ScreenMarginPx) { x = blk.x - TipGapPx - w; o->flipped = true; }
+        if (x < panel.x + ScreenMarginPx) x = panel.x + ScreenMarginPx;
+        const int bottom = panel.y + panel.h - ScreenMarginPx, topLimit = panel.y + ScreenMarginPx;
+        if (y + h > bottom) y = bottom - h;
+        if (y < topLimit) y = topLimit;
+    }
+    o->frame = { x, y, w, h };
+    const int inner = w - 2 * TipPadX + LabelSlackPx;
+    int cy = y + TipPadY;
+    o->title = { x + TipPadX, cy, inner, TipTitleH };
+    cy += TipTitleH;
+    if (o->haveQty) { o->qty = { x + TipPadX, cy, inner, TipLineH }; cy += TipLineH; }
+    if (o->haveBody) { cy += TipBlockGapPx; o->body = { x + TipPadX, cy, inner, o->lines * TipLineH }; }
+    return o->titleText[0] != 0;
+}
+
 // ---- formatters (fixed formats the play-test row greps for)
 inline int fmtShow(char* b, size_t n, uint32_t obj, int flag, uintptr_t plc, int open, int count) {
     return snprintf(b, n, "SHOW obj=%08x flag=%d plc=%08x open=%d n=%d", obj, flag, static_cast<unsigned>(plc), open, count);
@@ -1032,9 +1363,6 @@ inline int fmtArea(char* b, size_t n, uintptr_t area, int objs) {
 inline int fmtCooldown(char* b, size_t n, const char* what, uint32_t sid, float dist, unsigned size) {
     return snprintf(b, n, "COOLDOWN %s obj=%08x dist=%.2f size=%u", what, sid, static_cast<double>(dist), size);
 }
-inline int fmtLatch(char* b, size_t n, Pos p, const Rect& r) {
-    return snprintf(b, n, "LABEL-LATCH pos=%s rect=%d,%d,%d,%d", posName(p), r.x, r.y, r.w, r.h);
-}
 inline int fmtLabelExtent(char* b, size_t n, unsigned chars, int x, int y, int w, int h) {
     return snprintf(b, n, "LABEL-EXTENT chars=%u extent=%d,%d,%d,%d", chars, x, y, w, h);
 }
@@ -1050,6 +1378,24 @@ inline int fmtSbClick(char* b, size_t n, SbPart p, unsigned off, unsigned maxOff
 }
 inline int fmtWheelSub(char* b, size_t n, int token, unsigned failedTries) {
     return snprintf(b, n, "WHEEL-SUB token=%d after=%u", token, failedTries);
+}
+inline int fmtAnchor(char* b, size_t n, const AnchorUse& u) {
+    return snprintf(b, n, "ANCHOR want=%s used=%s reason=%s proj=%s", anchorModeName(u.want), u.mode < 0 ? "none" : anchorModeName(u.mode), u.reason, u.projWhy);
+}
+inline int fmtProj(char* b, size_t n, bool nameOk, const Rect& name, const Proj& p, const char* why) {
+    return snprintf(b, n, "PROJ name=%d,%d,%d,%d world=%.2f,%.2f,%.2f px=%.1f,%.1f ret=%d state=%d why=%s%s%s", nameOk ? name.x : 0, nameOk ? name.y : 0, nameOk ? name.w : 0, nameOk ? name.h : 0,
+                    static_cast<double>(p.wx), static_cast<double>(p.wy), static_cast<double>(p.wz), static_cast<double>(p.x), static_cast<double>(p.y), p.ret, p.state, why, p.note && p.note[0] ? " note=" : "", p.note ? p.note : "");
+}
+inline int fmtTake1(char* b, size_t n, unsigned i, uint32_t id, const char* name, int stack, int rc, int nBefore, int nAfter, int notice) {
+    char nm[ToastNameMax + 1];
+    sanitizeName(nm, sizeof nm, name);
+    return snprintf(b, n, "TAKE1 i=%u id=%08x name=%s stack=%d rc=%d n_before=%d n_after=%d notice=%d", i, id, nm, stack, rc, nBefore, nAfter, notice);
+}
+inline int fmtTake1Refused(char* b, size_t n, unsigned i, const char* why, int notice) {
+    return snprintf(b, n, "TAKE1-REFUSED i=%u why=%s notice=%d", i, why, notice);
+}
+inline int fmtTip(char* b, size_t n, unsigned i, int lines, int ex, int ey, int ew, int eh, bool flipped) {
+    return snprintf(b, n, "TIP i=%u lines=%d extent=%d,%d,%d,%d flip=%d", i, lines, ex, ey, ew, eh, flipped ? 1 : 0);
 }
 inline int fmtErr(char* b, size_t n, const char* what, uint32_t dtMs) { return snprintf(b, n, "ERR %s dt=%ums", what, dtMs); }
 

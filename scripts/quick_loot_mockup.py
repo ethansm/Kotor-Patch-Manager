@@ -25,14 +25,17 @@ What the mod draws (patch_manager_mods/quick_loot_src/QuickLoot.cpp blockDraw + 
   stacks 2..999, cut further to the text budget; items past the 64 captured become one last "+K more" row (no icon). Block width = widest row (ALL
   rows, so scrolling never resizes it) + icon chrome + scrollbar reserve + 2 x 28 px pad, 300..1000 px.
   Placement: position A under the target name (x centred on the name, clamped to the panel), B at the fixed spot (centre of the panel, 62 %
-  down); bottom clamp: A flips above the name, B moves up. The mod latches A or B when the list first shows.
+  down); bottom clamp: A flips above the name, B moves up. 0.6.0-dev: NO latch any more -- Anchor 0 (under the name tag, default) / 1 (below the container,
+  projected) / 2 (beside the name tag) re-place the block every frame (render_ql06: ql06_anchor_*.png, ql06_tooltip_*.png, ql06_flash.png, ql06_fit_table.txt).
 Target menu mock (doc 39 R6 observed): name label local (0,2) w 533 h 32 (health bar local y 35 h 16).
 
 The one-line formatters (fmtList / fmtTook / fmtPeek, the 0.3.1 fallback text) and the list layer (rowName / rowText / ListData / ListView /
 buildListDraw / blockRect / sbLayout / sbHitAt) are ports of QuickLootLogic.h, checked against quick_loot_logic_test.cpp vectors in test_quick_loot_mockup.py.
 
 usage: quick_loot_mockup.py OUTDIR
-Outputs: ql2v_<id>_full.png (A and B on one frame), ql2v_<id>_zoom.png (crops of both blocks), ql2v_rowh_A.png / ql2v_rowh_B.png (RowH 56 / 64 / 72
+Outputs (0.6.0-dev, render_ql06): ql06_anchor_{0,1,2}_full.png + ql06_anchor_modes.png (three modes on one scene), ql06_anchor_edges.png, ql06_tooltip_{1..4}[_zoom].png
+(hovered row + tooltip, real item descriptions from dialog.tlk when the install is readable), ql06_flash.png (header "Acquired: <name>" before / after), ql06_fit_table.txt.
+Older: ql2v_<id>_full.png (A and B on one frame), ql2v_<id>_zoom.png (crops of both blocks), ql2v_rowh_A.png / ql2v_rowh_B.png (RowH 56 / 64 / 72
 side by side), ql2v_vs_vanilla.png (the mod block next to the vanilla inventory_p list rebuilt from its gui), ql2v_fit_table.txt
 """
 import math
@@ -466,7 +469,7 @@ def sb_hit_at(sb, rx, ry):
     return SB_THUMB
 
 
-def build_list_draw(d, v, took, key="F", row_h=ROW_H):
+def build_list_draw(d, v, took, key="F", row_h=ROW_H, flash_name=None):
     """buildListDraw -> dict(header, indicator, rows, icons, vis, off, w, h, scrollable, sb, row_h, ...) or None for an empty list."""
     if d.items == 0:
         return None
@@ -476,6 +479,8 @@ def build_list_draw(d, v, took, key="F", row_h=ROW_H):
     max_off = total - rows if total > rows else 0
     off = min(v.off, max_off)
     header = "Acquired Items (%u)" % d.total_items() if took else "[%s] Get Items (%u)" % (key, d.total_items())
+    if flash_name is not None and not took:   # 0.6.0-dev: the take flash replaces the header text (the block widens for it, up to BLOCK_MAX_W)
+        header = fmt_flash_header(flash_name, BLOCK_MAX_W - 2 * BLOCK_PAD_X - (INDICATOR_GAP + text_px10("999-999 of 999") if total > rows else 0))
     o = dict(took=took, off=off, vis=vis, rows_total=total, items=d.total_items(), scrollable=total > rows, header=header, row_h=row_h,
              header_px=text_px10(header), indicator="", indicator_px=0)
     o["sb"] = o["scrollable"] and sb_fits(vis, row_h)
@@ -663,6 +668,226 @@ def fit_row(sample, row_h=ROW_H):
     return dict(id=sid, desc=desc, kind="took" if took else "peek", items=d.total_items(), list_rows=d.rows_total(), rows=o["vis"], row_h=row_h,
                 w=o["w"], h=o["h"], rows_fit=rows_fit, head_fit=head_fit, inside=inside, sb=o["sb"], sb_inside=sb_inside, a=ra, b=rb,
                 header=o["header"], indicator=o["indicator"], dur=took_duration_ms(d.rows_total()) if took else 0)
+
+
+# ---- 0.6.0-dev ports: anchor modes (QL2A), take flash (QL4), tooltip (QL8) -- QuickLootLogic.h anchorBlock / besideRect / projReject / fmtFlashHeader /
+# sanitizeDesc / tipWrap / buildTip, checked against quick_loot_logic_test.cpp vectors in test_quick_loot_mockup.py.
+NAME_HOLD_MS = 250
+BESIDE_GAP = 24
+PROJ_GAP = 16
+FLASH_MS = 1500
+TIP_DELAY_MS = 300
+TIP_MAX_LINES = 10
+TIP_MIN_W, TIP_MAX_W, TIP_PAD_X, TIP_PAD_Y, TIP_TITLE_H, TIP_LINE_H, TIP_BLOCK_GAP, TIP_GAP = 360, 720, 28, 22, 36, 34, 8, 10
+ANCHOR_MODE_NAMES = ("name", "container", "beside")
+_FONT16 = None
+
+
+def font16_widths():
+    global _FONT16
+    if _FONT16 is None:
+        inc = (Path(__file__).resolve().parent.parent / "patch_manager_mods/_shared_src/FontWidths.inc").read_text()
+        body = inc[inc.index("kFontTexW"):inc.index("kFont10TexW")]
+        body = body[body.index("{") + 1:body.index("}")]
+        _FONT16 = [int(v) for v in re.findall(r"\d+", body)]
+        assert len(_FONT16) == 256
+    return _FONT16
+
+
+def text_px16(s):
+    """textfit::textPx(F16) = texels * sy * TextK (0.75) * textScale, rounded up."""
+    tw = font16_widths()
+    w = float(sum(tw[ord(c) if ord(c) < 256 else 63] for c in s))
+    return int(math.ceil(f32(f32(f32(w * f32(FONT_SY)) * f32(0.75)) * 1.0)))
+
+
+def proj_reject(x, y, ret, panel):
+    """projReject: None when usable, else 'nan' / 'behind' / 'nopanel' / 'outside'."""
+    if not (math.isfinite(x) and math.isfinite(y)):
+        return "nan"
+    if ret == 2:
+        return "behind"
+    if panel[2] <= 0 or panel[3] <= 0:
+        return "nopanel"
+    if x < panel[0] or x >= panel[0] + panel[2] or y < panel[1] or y >= panel[1] + panel[3]:
+        return "outside"
+    return None
+
+
+def beside_rect(name, w, h, panel):
+    """besideRect: left = name right + BESIDE_GAP, top = name top; flips left of the name at the panel's right margin; y clamped."""
+    x, y = name[0] + name[2] + BESIDE_GAP, name[1]
+    if panel[2] <= 0 or panel[3] <= 0:
+        return (x, y, w, h)
+    right, left = panel[0] + panel[2] - SCREEN_MARGIN, panel[0] + SCREEN_MARGIN
+    if x + w > right:
+        x = name[0] - BESIDE_GAP - w
+    x = max(x, left)
+    bottom, top_limit = panel[1] + panel[3] - SCREEN_MARGIN, panel[1] + SCREEN_MARGIN
+    if y + h > bottom:
+        y = bottom - h
+    y = max(y, top_limit)
+    return (x, y, w, h)
+
+
+def anchor_block(mode, name_ok, name, panel, proj, w, h):
+    """anchorBlock -> (rect, used_mode, reason, proj_why) or None. proj = None (not tried) / ('unavail', note) / (x, y, ret)."""
+    want = mode if 0 <= mode < 3 else 0
+    why = None
+    proj_why = "none"
+    if want == 1:
+        if proj is None:
+            why = "proj-none"
+        elif proj[0] == "unavail":
+            why, proj_why = "proj-unavail", "unavail"
+        else:
+            why = proj_reject(proj[0], proj[1], proj[2], panel)
+            proj_why = why or "ok"
+        if proj is not None and proj[0] != "unavail" and not why:
+            return (block_rect(("B", int(proj[0]), int(proj[1]) + PROJ_GAP, 0, False), w, h, panel), 1, "ok", proj_why)
+    if want == 2 and name_ok:
+        return (beside_rect(name, w, h, panel), 2, "ok", proj_why)
+    if name_ok:
+        a = ("A", name[0] + name[2] // 2, name[1] + name[3] + GAP_BELOW_NAME, name[1], True)
+        return (block_rect(a, w, h, panel), 0, "ok" if want == 0 else "fallback-name", proj_why)
+    return None
+
+
+def fmt_flash_header(name, max_px):
+    """fmtFlashHeader: 'Acquired: <name>' cut with '...' to max_px."""
+    nm = row_name(name)
+    buf = "Acquired: " + nm
+    if text_px10(buf) > max_px:
+        n = len(nm)
+        if n >= 3 and nm.endswith("..."):
+            n -= 3
+        while n > 1:
+            n -= 1
+            t = "Acquired: %s..." % nm[:n]
+            if text_px10(t) <= max_px:
+                buf = t
+                break
+    return buf
+
+
+def sanitize_desc(text):
+    """sanitizeDesc: '\\r' dropped, '\\n' kept (at most two in a row, none at either end), other blanks/control collapse to one space (none next to a break)."""
+    out, pend_space, pend_nl = [], False, 0
+    for ch in text or "":
+        c = ord(ch)
+        if ch == "\r":
+            continue
+        if ch == "\n":
+            if out and pend_nl < 2:
+                pend_nl += 1
+            pend_space = False
+            continue
+        if c <= 0x20:
+            pend_space = bool(out) and pend_nl == 0
+            continue
+        if pend_nl:
+            out.append("\n" * pend_nl)
+            pend_nl, pend_space = 0, False
+        elif pend_space:
+            out.append(" ")
+            pend_space = False
+        out.append(ch if c <= 0x7E else "?")
+    return "".join(out)
+
+
+def tip_wrap(text, inner_px):
+    """tipWrap -> (lines, widest_px, cut): greedy word wrap, '\\n' = paragraph break (empty paragraph = blank line), at most TIP_MAX_LINES, the 10th ends in '...'."""
+    lines, cut = [""], False
+
+    def new_line():
+        nonlocal cut
+        if len(lines) >= TIP_MAX_LINES:
+            cut = True
+            return False
+        lines.append("")
+        return True
+
+    any_line, paras, full = False, (text or "").split("\n"), False
+    for pi, para in enumerate(paras):
+        if any_line and not new_line():
+            break
+        any_line = True
+        cur = False
+        for word in para.split(" "):
+            if not word:
+                continue
+            word = word[:120]
+            cand = lines[-1] + (" " if cur else "") + word
+            if cur and text_px10(cand) > inner_px:
+                if not new_line():
+                    full = True
+                    break
+                lines[-1] = word
+            else:
+                lines[-1] = cand
+            cur = True
+        if full:
+            break
+    if cut:
+        last = lines[-1]
+        t = last + "..."
+        n = len(last)
+        while n > 1 and text_px10(t) > inner_px:
+            n -= 1
+            while n > 1 and last[n - 1] == " ":
+                n -= 1
+            t = last[:n] + "..."
+        lines[-1] = t
+    widest = max([text_px10(l) for l in lines] + [0])
+    return lines, widest, cut
+
+
+def build_tip(title, stack, desc, blk, row_abs, panel):
+    """buildTip -> dict(frame, title, qty, body, big_title, lines, flipped, title_text, qty_text, body_lines, truncated)."""
+    nm = row_name(title)
+    inner_max = TIP_MAX_W - 2 * TIP_PAD_X
+    title_px, big = text_px16(nm), True
+    title_text = nm
+    if title_px > inner_max:
+        big, title_px = False, text_px10(nm)
+        if title_px > inner_max:
+            n = len(nm)
+            while n > 1:
+                n -= 1
+                t = nm[:n] + "..."
+                if text_px10(t) <= inner_max:
+                    title_text, title_px = t, text_px10(t)
+                    break
+    have_qty = stack >= 2
+    qty_text = "Quantity: %d" % stack if have_qty else ""
+    qty_px = text_px10(qty_text) if have_qty else 0
+    clean = sanitize_desc(desc)
+    body_lines, widest, cut = tip_wrap(clean, inner_max) if clean else ([], 0, False)
+    have_body = len(body_lines) > 0
+    w = max(TIP_MIN_W, min(TIP_MAX_W, max(title_px, qty_px, widest) + 2 * TIP_PAD_X))
+    h = TIP_PAD_Y + TIP_TITLE_H + (TIP_LINE_H if have_qty else 0) + ((TIP_BLOCK_GAP + len(body_lines) * TIP_LINE_H) if have_body else 0) + TIP_PAD_Y
+    x, y, flipped = blk[0] + blk[2] + TIP_GAP, row_abs[1], False
+    if panel[2] > 0 and panel[3] > 0:
+        if x + w > panel[0] + panel[2] - SCREEN_MARGIN:
+            x, flipped = blk[0] - TIP_GAP - w, True
+        x = max(x, panel[0] + SCREEN_MARGIN)
+        bottom, top_limit = panel[1] + panel[3] - SCREEN_MARGIN, panel[1] + SCREEN_MARGIN
+        if y + h > bottom:
+            y = bottom - h
+        y = max(y, top_limit)
+    inner = w - 2 * TIP_PAD_X + LABEL_SLACK
+    cy = y + TIP_PAD_Y
+    t_rect = (x + TIP_PAD_X, cy, inner, TIP_TITLE_H)
+    cy += TIP_TITLE_H
+    q_rect = (x + TIP_PAD_X, cy, inner, TIP_LINE_H) if have_qty else None
+    if have_qty:
+        cy += TIP_LINE_H
+    b_rect = None
+    if have_body:
+        cy += TIP_BLOCK_GAP
+        b_rect = (x + TIP_PAD_X, cy, inner, len(body_lines) * TIP_LINE_H)
+    return dict(frame=(x, y, w, h), title=t_rect, qty=q_rect, body=b_rect, big_title=big, lines=len(body_lines), flipped=flipped, title_text=title_text,
+                qty_text=qty_text, body_lines=body_lines, truncated=cut)
 
 
 # ---- rendering (needs PIL + pykotor + the live install) ----------------------------------------------------------
@@ -963,7 +1188,190 @@ def render_all(outdir):
         written.append(vv)
     table = format_table(rows)
     (outdir / "ql2v_fit_table.txt").write_text(table + "\n")
-    return rows, table, written
+    _, w06, table06 = render_ql06(outdir)   # 0.6.0-dev: anchor modes, tooltip, flash
+    written += w06
+    return rows, table + "\n\n" + table06, written
+
+
+# ---- 0.6.0-dev renders: anchor modes on one scene, the tooltip on a hovered row, the take flash, fit table --------------------------------------------
+TIP_CANDIDATES = ["g_i_medeqpmnt01", "g_i_adrnaline001", "g_i_implant101", "g_w_lghtsbr01", "g_w_dblsbr001", "g_i_crstl01", "g_i_belt001", "g_a_class4001",
+                  "g_w_blstrpstl01", "g_i_secspike01", "g_i_progspike01", "g_i_dsrtscout01"]
+SAMPLE_DESC = ("A medpac contains essential equipment for the treatment of wounds. They cannot be used by droids. Basic medpacs heal 10 vitality points + "
+               "WIS modifier + user's skill in Treat Injury.")
+
+
+def real_item_text(resref):
+    """(name, DescIdentified) of an item template from the install through pykotor + dialog.tlk, or None."""
+    try:
+        cpm = _cpm()
+        from pykotor.resource.formats.gff import read_gff
+        from pykotor.resource.type import ResourceType
+        inst = cpm.inst()
+        res = inst.resource(resref, ResourceType.UTI)
+        g = read_gff(res.data)
+        tlk = inst.talktable()
+        return tlk.string(g.root.get_locstring("LocalizedName").stringref), tlk.string(g.root.get_locstring("DescIdentified").stringref)
+    except Exception:
+        return None
+
+
+def real_item_texts():
+    out = [(r, t) for r in TIP_CANDIDATES for t in [real_item_text(r)] if t and t[1]]
+    return out
+
+
+def draw_container(img, ground):
+    """A crate stand-in sitting on the projected ground point (x, y)."""
+    from PIL import ImageDraw
+    d = ImageDraw.Draw(img)
+    gx, gy = ground
+    d.rectangle([gx - 110, gy - 190, gx + 110, gy], fill=(86, 66, 40, 255), outline=(30, 22, 12, 255), width=4)
+    d.rectangle([gx - 110, gy - 190, gx + 110, gy - 150], fill=(104, 82, 52, 255), outline=(30, 22, 12, 255), width=4)
+    d.line([gx - 22, gy - 12, gx + 22, gy + 12], fill=(255, 80, 80, 255), width=4)
+    d.line([gx - 22, gy + 12, gx + 22, gy - 12], fill=(255, 80, 80, 255), width=4)
+
+
+def draw_tip(img, cpm, t):
+    x, y, w, h = t["frame"]
+    draw_frame(img, cpm, t["frame"])
+    tr = t["title"]
+    cpm.draw_text(img, "dialogfont16x16" if t["big_title"] else FONT, t["title_text"], (tr[0], tr[1], tr[0] + tr[2], tr[1] + tr[3]), TEXT_ALIGN, CREAM)
+    if t["qty"]:
+        q = t["qty"]
+        cpm.draw_text(img, FONT, t["qty_text"], (q[0], q[1], q[0] + q[2], q[1] + q[3]), TEXT_ALIGN, TEAL_TEXT)
+    if t["body"]:
+        b = t["body"]
+        for i, ln in enumerate(t["body_lines"]):
+            if ln:
+                cpm.draw_text(img, FONT, ln, (b[0], b[1] + i * TIP_LINE_H, b[0] + b[2], b[1] + (i + 1) * TIP_LINE_H), TEXT_ALIGN, TEAL_TEXT)
+
+
+def _rect_inside(r, panel=PANEL):
+    return r[0] >= panel[0] + SCREEN_MARGIN and r[1] >= panel[1] + SCREEN_MARGIN and r[0] + r[2] <= panel[0] + panel[2] - SCREEN_MARGIN and r[1] + r[3] <= panel[1] + panel[3] - SCREEN_MARGIN
+
+
+def _overlap(a, b):
+    return a[0] < b[0] + b[2] and b[0] < a[0] + a[2] and a[1] < b[1] + b[3] and b[1] < a[1] + a[3]
+
+
+def render_ql06(outdir):
+    """Anchor modes (same scene), edge cases, tooltips, the take flash and the fit table. Returns (fit lines, written paths)."""
+    from PIL import Image
+    cpm = _cpm()
+    outdir = Path(outdir)
+    outdir.mkdir(parents=True, exist_ok=True)
+    ics = sample_icons()
+    d25 = ListData(REALISTIC, REALISTIC_STACKS, icons=ics)
+    view = ListView(d25.rows_total(), LIST_ROWS_DEFAULT)
+    o = build_list_draw(d25, view, False)
+    fit, written = [], []
+
+    def scene(origin, ground, mode, proj_ret=1, hover=None, od=o, panel=PANEL):
+        name = (origin[0] + NAME_LOCAL[0], origin[1] + NAME_LOCAL[1], NAME_LOCAL[2], NAME_LOCAL[3])
+        res = anchor_block(mode, True, name, panel, (ground[0], ground[1], proj_ret), od["w"], od["h"])
+        img = background()
+        draw_container(img, ground)
+        draw_target_tag(img, cpm, origin)
+        draw_block(img, cpm, od, res[0], hover)
+        return img, res, name
+
+    # 1. the three anchor modes on one scene
+    origin = MENU_ORIGIN
+    ground = (origin[0] + NAME_LOCAL[2] // 2, 930)
+    thumbs = []
+    for mode in range(3):
+        img, (rect, used, reason, pw), name = scene(origin, ground, mode)
+        caption(img, [f"Anchor {mode} ({ANCHOR_MODE_NAMES[mode]}): block {rect[2]}x{rect[3]} at {rect[:2]}, used mode {used} ({reason}). Name tag {name}, container ground point {ground}.",
+                      "The block is re-placed every frame from the current name rect (no latch); a turning camera moves it with the tag / the container."])
+        p = outdir / f"ql06_anchor_{mode}_full.png"
+        img.save(p)
+        written.append(p)
+        thumbs.append(img.resize((SCREEN_W // 2, SCREEN_H // 2), Image.LANCZOS))
+        fit.append(("anchor", f"scene A mode {mode}", used, reason, rect, _rect_inside(rect), _overlap(rect, name)))
+    sheet = Image.new("RGBA", (SCREEN_W // 2, SCREEN_H // 2 * 3 + 12), (0, 0, 0, 255))
+    for i, t in enumerate(thumbs):
+        sheet.alpha_composite(t, (0, i * (SCREEN_H // 2 + 6)))
+    p = outdir / "ql06_anchor_modes.png"
+    sheet.save(p)
+    written.append(p)
+
+    # 2. edge cases: low target, right edge, left edge, container behind the camera
+    cases = [("low target, mode 0 (flips above the name)", (1700, 1250), (1966, 1500), 0, 1), ("right edge, mode 2 (flips left of the tag)", (3200, 520), (3466, 930), 2, 1),
+             ("left edge, mode 0 (x clamp)", (60, 520), (326, 930), 0, 1), ("container behind the camera, mode 1 (falls back to mode 0)", (1700, 520), (1966, 930), 1, 2),
+             ("container low on screen, mode 1 (moved up to the bottom limit)", (1700, 520), (1966, 1560), 1, 1)]
+    edge_thumbs = []
+    for title, org, gr, mode, ret in cases:
+        img, (rect, used, reason, pw), name = scene(org, gr, mode, ret)
+        caption(img, [f"{title}: used {used} ({reason}, proj {pw}) block {rect}"])
+        edge_thumbs.append(img.resize((SCREEN_W // 2, SCREEN_H // 2), Image.LANCZOS))
+        fit.append(("anchor", title, used, reason, rect, _rect_inside(rect), _overlap(rect, name)))
+    sheet = Image.new("RGBA", (SCREEN_W + 6, (SCREEN_H // 2 + 6) * 3), (0, 0, 0, 255))
+    for i, t in enumerate(edge_thumbs):
+        sheet.alpha_composite(t, ((i % 2) * (SCREEN_W // 2 + 6), (i // 2) * (SCREEN_H // 2 + 6)))
+    p = outdir / "ql06_anchor_edges.png"
+    sheet.save(p)
+    written.append(p)
+
+    # 3. the tooltip on a hovered row (real descriptions when the install is readable)
+    texts = real_item_texts()
+    longest = max(texts, key=lambda t: len(t[1][1])) if texts else None
+    medpac = next((t for t in texts if t[1][0] == "Medpac"), None)
+    cases = [("Medpac (real text)" if medpac else "Medpac (sample text)", 0, "Medpac", 2, medpac[1][1] if medpac else SAMPLE_DESC, MENU_ORIGIN),
+             ("longest real description" if longest else "long sample", 3, longest[1][0] if longest else "Lightsaber Crystal: Opila", 1,
+              longest[1][1] if longest else (SAMPLE_DESC + " ") * 5, MENU_ORIGIN),
+             ("near the right edge (flips left)", 2, "Adhesive Grenade", 3, medpac[1][1] if medpac else SAMPLE_DESC, (3100, 520)),
+             ("no description", 0, "Credits", 1, "", MENU_ORIGIN)]
+    for k, (title, hover, tname, stack, desc, org) in enumerate(cases):
+        ground = (org[0] + NAME_LOCAL[2] // 2, 930)
+        img, (rect, used, reason, pw), name = scene(org, ground, 0, 1, hover)
+        rr = row_rect(hover, o["w"], o["sb"], o["row_h"])
+        row_abs = (rect[0] + rr[0], rect[1] + rr[1], rr[2], rr[3])
+        t = build_tip(tname, stack, desc, rect, row_abs, PANEL)
+        draw_tip(img, cpm, t)
+        caption(img, [f"Tooltip after {TIP_DELAY_MS} ms on row {hover}: {title}. Frame {t['frame']}, {t['lines']} body lines{' (cut at 10 with ...)' if t['truncated'] else ''}, "
+                      f"title {'16x16' if t['big_title'] else '10x10'}, flipped={t['flipped']}. Stats / properties lines: none (no engine function)."])
+        p = outdir / f"ql06_tooltip_{k + 1}.png"
+        img.save(p)
+        written.append(p)
+        z = zoom(img, (min(rect[0], t["frame"][0]), min(rect[1], t["frame"][1]), max(rect[0] + rect[2], t["frame"][0] + t["frame"][2]) - min(rect[0], t["frame"][0]),
+                       max(rect[1] + rect[3], t["frame"][1] + t["frame"][3]) - min(rect[1], t["frame"][1])), 1, 30)
+        pz = outdir / f"ql06_tooltip_{k + 1}_zoom.png"
+        z.save(pz)
+        written.append(pz)
+        fit.append(("tooltip", title, "16x16" if t["big_title"] else "10x10", f"{t['lines']} lines{' cut' if t['truncated'] else ''}", t["frame"], _rect_inside(t["frame"]), t["flipped"]))
+
+    # 4. the take flash: the header reads Acquired: <name> for 1.5 s, then the count again
+    img = background()
+    draw_target_tag(img, cpm, MENU_ORIGIN)
+    flash_name = "Adhesive Grenade"
+    d24 = ListData(REALISTIC[:1] + REALISTIC[2:], REALISTIC_STACKS[:1] + REALISTIC_STACKS[2:], icons=ics[:1] + ics[2:])
+    of = build_list_draw(d24, ListView(d24.rows_total(), 8), False, flash_name=flash_name)
+    on = build_list_draw(d24, ListView(d24.rows_total(), 8), False)
+    name = (MENU_ORIGIN[0] + NAME_LOCAL[0], MENU_ORIGIN[1] + NAME_LOCAL[1], NAME_LOCAL[2], NAME_LOCAL[3])
+    ra = anchor_block(0, True, name, PANEL, None, of["w"], of["h"])[0]
+    rb = anchor_block(0, True, name, PANEL, None, on["w"], on["h"])[0]
+    imga = img.copy()
+    draw_block(imga, cpm, of, ra, 1)
+    imgb = img.copy()
+    draw_block(imgb, cpm, on, rb, None)
+    za, zb = zoom(imga, ra), zoom(imgb, rb)
+    sh = Image.new("RGBA", (za.width + zb.width + 6, max(za.height, zb.height)), (0, 0, 0, 255))
+    sh.alpha_composite(za, (0, 0))
+    sh.alpha_composite(zb, (za.width + 6, 0))
+    p = outdir / "ql06_flash.png"
+    sh.save(p)
+    written.append(p)
+    fit.append(("flash", f"'{of['header']}' (1.5 s)", of["header_px"], "ok" if of["w"] <= BLOCK_MAX_W else "TOO WIDE", ra, _rect_inside(ra), of["w"] != on["w"]))
+    for nm in ("Medpac", "Mandalorian Heavy Armor Plating Mk IV Upgrade", "Ancient Sith Holocron Fragment of the Old Republic Era"):
+        ob = build_list_draw(d25, ListView(d25.rows_total(), 8), False, flash_name=nm)
+        fit.append(("flash", f"'{ob['header']}'", ob["header_px"], "ok" if ob["w"] <= BLOCK_MAX_W else "TOO WIDE", (0, 0, ob["w"], ob["h"]), ob["w"] <= BLOCK_MAX_W, False))
+    lines = ["kind     case                                                              detail       reason / lines        rect                          inside  overlap-or-flip"]
+    for kind, case, det, why, rect, inside, extra in fit:
+        lines.append(f"{kind:<8} {case[:64]:<65} {str(det):<12} {why:<21} {str(rect):<29} {'yes' if inside else 'NO':<7} {extra}")
+    table = "\n".join(lines)
+    (outdir / "ql06_fit_table.txt").write_text(table + "\n")
+    written.append(outdir / "ql06_fit_table.txt")
+    return fit, written, table
 
 
 def format_table(rows):

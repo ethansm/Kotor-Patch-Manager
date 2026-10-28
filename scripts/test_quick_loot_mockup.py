@@ -332,6 +332,72 @@ class WidthMeasure(unittest.TestCase):
         self.assertFalse(q.text_width("A" * 60, adv, 2.75) <= q.TOAST_W)
 
 
+class Ql06Ports(unittest.TestCase):
+    """0.6.0-dev ports (anchor modes, flash, tooltip) vs the quick_loot_logic_test.cpp vectors."""
+    PANEL = (0, 0, 3840, 1600)
+    NAME = (1700, 520, 533, 32)
+
+    def test_modes(self):
+        r = q.anchor_block(0, True, self.NAME, self.PANEL, None, 400, 300)
+        self.assertEqual(r[:3], ((1766, 572, 400, 300), 0, "ok"))
+        self.assertIsNone(q.anchor_block(0, False, self.NAME, self.PANEL, None, 400, 300))
+        self.assertEqual(q.anchor_block(2, True, self.NAME, self.PANEL, None, 400, 300)[0], (1700 + 533 + q.BESIDE_GAP, 520, 400, 300))
+        self.assertEqual(q.anchor_block(2, True, (3500, 520, 300, 32), self.PANEL, None, 400, 300)[0], (3500 - q.BESIDE_GAP - 400, 520, 400, 300))
+        self.assertEqual(q.anchor_block(2, True, (1700, 1500, 533, 32), self.PANEL, None, 400, 300)[0][1], 1600 - 24 - 300)
+        self.assertEqual(q.anchor_block(1, False, self.NAME, self.PANEL, (1000, 700, 1), 400, 300)[:3], ((800, 700 + q.PROJ_GAP, 400, 300), 1, "ok"))
+        self.assertEqual(q.anchor_block(1, False, self.NAME, self.PANEL, (1000, 1590, 1), 400, 300)[0][1] + 300, 1600 - 24)
+        fb = q.anchor_block(1, True, self.NAME, self.PANEL, (1000, 700, 2), 400, 300)
+        self.assertEqual((fb[0][1], fb[1], fb[2], fb[3]), (572, 0, "fallback-name", "behind"))
+        self.assertIsNone(q.anchor_block(1, False, self.NAME, self.PANEL, (1000, 700, 2), 400, 300))
+        self.assertEqual(q.anchor_block(1, True, self.NAME, self.PANEL, ("unavail", "vtable"), 400, 300)[3], "unavail")
+
+    def test_proj_reject(self):
+        p = self.PANEL
+        self.assertIsNone(q.proj_reject(10, 10, 1, p))
+        self.assertEqual(q.proj_reject(10, 10, 2, p), "behind")
+        self.assertEqual(q.proj_reject(float("nan"), 1, 1, p), "nan")
+        self.assertEqual(q.proj_reject(-1, 5, 1, p), "outside")
+        self.assertEqual(q.proj_reject(5, 1600, 1, p), "outside")
+        self.assertEqual(q.proj_reject(5, 5, 1, (0, 0, 0, 0)), "nopanel")
+
+    def test_flash(self):
+        self.assertEqual(q.fmt_flash_header("Medpac", 2000), "Acquired: Medpac")
+        t = q.fmt_flash_header("Mandalorian Heavy Armor Plating Mk IV Upgrade", 600)
+        self.assertTrue(q.text_px10(t) <= 600 and t.startswith("Acquired: Mandalorian") and "..." in t)
+        self.assertEqual(q.fmt_flash_header(None, 2000), "Acquired: item")
+        d = q.ListData(["Medpac", "Pistol"], [1, 1])
+        plain = q.build_list_draw(d, q.ListView(2, 8), False)
+        fl = q.build_list_draw(d, q.ListView(2, 8), False, flash_name="Frag Grenade Launcher Mk II")
+        self.assertTrue(fl["header"].startswith("Acquired: Frag Grenade") and fl["w"] >= plain["w"] and fl["h"] == plain["h"] and fl["w"] <= q.BLOCK_MAX_W)
+        self.assertTrue(q.build_list_draw(d, q.ListView(2, 8), True, flash_name="x")["header"].startswith("Acquired Items"))
+
+    def test_sanitize_and_wrap(self):
+        self.assertEqual(q.sanitize_desc("  A  good\r\n\r\n \n\nblaster.\t \n"), "A good\n\nblaster.")
+        self.assertEqual(q.sanitize_desc("caf\xe9 ok"), "caf? ok")
+        lines, widest, cut = q.tip_wrap("Duration: 120 sec\n\nA shot of this enhancer provides a temporary boost.", 900)
+        self.assertEqual(lines[:3], ["Duration: 120 sec", "", "A shot of this enhancer provides a temporary"])
+        self.assertFalse(cut)
+        text = " ".join("word%d" % i for i in range(80))
+        lines, widest, cut = q.tip_wrap(text, 500)
+        self.assertEqual(len(lines), 10)
+        self.assertTrue(cut and lines[-1].endswith("...") and widest <= 500)
+
+    def test_tip(self):
+        blk, row, panel = (1000, 500, 640, 400), (1028, 600, 560, 64), self.PANEL
+        t = q.build_tip("Medpac", 5, "Heals a little.", blk, row, panel)
+        self.assertEqual(t["frame"][:2], (1000 + 640 + q.TIP_GAP, 600))
+        self.assertTrue(t["big_title"] and t["qty_text"] == "Quantity: 5" and t["lines"] == 1 and not t["flipped"])
+        self.assertTrue(q.TIP_MIN_W <= t["frame"][2] <= q.TIP_MAX_W)
+        t = q.build_tip("Medpac", 1, "", blk, row, panel)
+        self.assertEqual((t["qty"], t["body"], t["frame"][3]), (None, None, q.TIP_PAD_Y * 2 + q.TIP_TITLE_H))
+        t = q.build_tip("Medpac", 1, "x", (3000, 500, 640, 400), (3028, 600, 560, 64), panel)
+        self.assertTrue(t["flipped"] and t["frame"][0] == 3000 - q.TIP_GAP - t["frame"][2])
+        t = q.build_tip("Medpac", 3, " ".join("word%d" % i for i in range(80)), blk, (1028, 1500, 560, 64), panel)
+        self.assertEqual((t["frame"][1] + t["frame"][3], t["lines"], t["truncated"], t["body"][3]), (1600 - 24, 10, True, 10 * q.TIP_LINE_H))
+        t = q.build_tip("Mandalorian Heavy Armor Plating Mk IV Upgrade", 1, "", blk, row, panel)
+        self.assertFalse(t["big_title"])
+
+
 class RenderSmoke(unittest.TestCase):
     def test_render(self):
         try:
@@ -345,7 +411,7 @@ class RenderSmoke(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             rows, table, written = q.render_all(d)
             self.assertEqual(len(rows), 13)              # 10 samples + the low-target frame + RowH 56 / 72 variants
-            self.assertEqual(len(written), 24)           # 10 samples x (full + zoom) + the low-target frame + rowh A / B + vs vanilla
+            self.assertEqual(len(written), 39)           # 10 samples x (full + zoom) + the low-target frame + rowh A / B + vs vanilla + 15 ql06 files
             from PIL import Image
             self.assertEqual(Image.open(written[0]).size, (3840, 1600))
             self.assertTrue(all(r["rows_fit"] and r["head_fit"] and r["inside"] and r["sb_inside"] for r in rows))   # every row fits its block, every block the panel

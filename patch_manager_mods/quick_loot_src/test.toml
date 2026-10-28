@@ -11,3 +11,7 @@ cxxflags = ["-I../_shared_src", "-Werror"]
 
 [quick_loot_sim_test]
 cxxflags = ["-I../_shared_src", "-Werror"]
+
+# 0.6.0-dev (QL7): the Mod Configuration page schema + row handler (needs the shared ModConfigDecl / TomlMini and the KPM Common headers).
+[quick_loot_page_test]
+cxxflags = ["-I../_shared_src", "-I$HOME/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager/Patches/Common", "-Werror"]

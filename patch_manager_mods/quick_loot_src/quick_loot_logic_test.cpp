@@ -504,13 +504,6 @@ int main() {
         l = fmtPeek(small, sizeof small, "F", 3, n3, s3, 3);
         kt::Check("small buffer is cut and terminated", l == 11 && strlen(small) == 11);
         kt::CheckEq("null out is harmless", fmtPeek(nullptr, 5, "F", 3, n3, s3, 3), 0u);
-        // label rects
-        Rect r = peekRectName(100, 50, 200, 24);
-        kt::Check("peek rect under the name, centred", r.x == 100 + 100 - PeekW / 2 && r.y == 50 + 24 + ToastGapBelowName && r.w == PeekW && r.h == ToastH);
-        Rect fx = peekRectFixed(0, 0, 1920, 1080);
-        kt::Check("fixed rect centred at 62% of the panel height", fx.x == 960 - PeekW / 2 && fx.y == 669 && fx.w == PeekW && fx.h == ToastH);
-        Rect fo = peekRectFixed(100, 40, 800, 600);
-        kt::Check("fixed rect follows the panel origin", fo.x == 100 + 400 - PeekW / 2 && fo.y == 40 + 372);
     }
 
     // ---- QL2p: the peek state machine
@@ -574,36 +567,9 @@ int main() {
     fmtCooldown(b, sizeof b, "release", 0x7F000009u, 5.5f, 2);
     kt::Check("COOLDOWN line", strcmp(b, "COOLDOWN release obj=7f000009 dist=5.50 size=2") == 0);
 
-    // ---- 0.3.1-dev: placement, latch, Took state, dwell, new log lines
+    // ---- 0.3.1-dev: Took state, dwell, new log lines
     {
-        Geometry g;
-        g.haveName = true; g.name = { 1700, 522, 533, 32 };
-        g.havePanel = true; g.panel = { 0, 0, 3840, 1600 };
-        Rect r; Pos p = Pos::None;
-        kt::Check("no menu shown, panel known: fixed spot B", choosePlacement(g, &r, &p) && p == Pos::B);
-        kt::Check("B is centred at 62% of the panel height", r.x == 1920 - 600 && r.y == 992 && r.w == 1200 && r.h == 20);
-        g.menuShown = true;
-        kt::Check("menu shown: A under the name", choosePlacement(g, &r, &p) && p == Pos::A);
-        kt::Check("A = name centre - 600, name bottom + 20", r.x == 1700 + 266 - 600 && r.y == 522 + 32 + 20 && r.w == 1200);
-        g.name = { 100, 522, 533, 32 };   // a target at the left edge: the 1200 px line would start at x < 0
-        kt::Check("A is clamped to x >= 24", choosePlacement(g, &r, &p) && r.x == 24);
-        g.name = { 3500, 522, 300, 32 };
-        kt::Check("A is clamped to x <= screenW - 24 - w", choosePlacement(g, &r, &p) && r.x == 3840 - 24 - 1200);
-        g.menuShown = false; g.havePanel = false;
-        kt::Check("no panel, no menu, a name seen: A at the last name rect (no clamp)", choosePlacement(g, &r, &p) && p == Pos::A && r.x == 3650 - 600);
-        g.haveName = false;
-        kt::Check("nothing to anchor to", !choosePlacement(g, &r, &p));
-        g.havePanel = true; g.panel = { 0, 0, 0, 0 };
-        kt::Check("a panel with zero size is unknown", !choosePlacement(g, &r, &p));
         kt::Check("posName", strcmp(posName(Pos::A), "A") == 0 && strcmp(posName(Pos::B), "B") == 0 && strcmp(posName(Pos::None), "-") == 0);
-    }
-    {
-        Latch l;
-        kt::Check("latch starts free", !l.held && l.pos == Pos::None);
-        l.set(Pos::A, { 1, 2, 3, 4 });
-        kt::Check("latch holds position and rect", l.held && l.pos == Pos::A && l.rect == Rect{ 1, 2, 3, 4 });
-        l.clear();
-        kt::Check("latch clear", !l.held && l.pos == Pos::None && l.rect == Rect{ 0, 0, 0, 0 });
     }
     {
         ToastState t;
@@ -639,8 +605,6 @@ int main() {
     }
     {
         char b[160];
-        fmtLatch(b, sizeof b, Pos::A, { 676, 574, 1200, 20 });
-        kt::Check("LABEL-LATCH line", strcmp(b, "LABEL-LATCH pos=A rect=676,574,1200,20") == 0);
         fmtLabelExtent(b, sizeof b, 52, 676, 574, 1200, 20);
         kt::Check("LABEL-EXTENT line", strcmp(b, "LABEL-EXTENT chars=52 extent=676,574,1200,20") == 0);
         fmtGiveUpServerClose(b, sizeof b, 0x1234ABCDu, 1);
@@ -860,20 +824,15 @@ int main() {
     {
         // block placement: A / B, clamps, bottom flip
         Geometry g;
-        g.menuShown = true; g.haveName = true; g.name = { 1700, 520, 533, 32 };
+        g.menuShown = true; g.name = { 1700, 520, 533, 32 };
         g.havePanel = true; g.panel = { 0, 0, 3840, 1600 };
-        Anchor a; Pos p = Pos::None;
-        kt::Check("anchor A", chooseAnchor(g, &a, &p) && p == Pos::A && a.cx == 1966 && a.top == 572 && a.nameTop == 520 && a.hasName);
+        Anchor a; Pos p = Pos::A;
+        a.cx = 1966; a.top = 572; a.nameTop = 520; a.hasName = true;
         Rect r = blockRect(p, a, 400, 334, g.panel);
         kt::Check("A: centred on the name, under it", r == Rect{ 1766, 572, 400, 334 });
-        g.menuShown = false;
-        kt::Check("anchor still A when only the name rect is known and no panel", (g.havePanel = false, chooseAnchor(g, &a, &p) && p == Pos::A));
-        g.havePanel = true;
-        kt::Check("anchor B at the panel", chooseAnchor(g, &a, &p) && p == Pos::B && a.cx == 1920 && a.top == 992 && !a.hasName);
-        r = blockRect(p, a, 400, 334, g.panel);
+        a = Anchor(); a.cx = 1920; a.top = 992;
+        r = blockRect(Pos::B, a, 400, 334, g.panel);
         kt::Check("B: centred, 62 %", r == Rect{ 1720, 992, 400, 334 });
-        Geometry none;
-        kt::Check("nothing to anchor to", !chooseAnchor(none, &a, &p));
         // x clamp
         a = Anchor(); a.cx = 50; a.top = 100;
         r = blockRect(Pos::A, a, 400, 300, { 0, 0, 3840, 1600 });
@@ -910,12 +869,6 @@ int main() {
         kt::CheckEq("hover left of the text area: none", rowAtPoint(blk, 8, 1000.0f + BlockPadX - 1, rowsTop + 5.0f), -1);
         kt::CheckEq("hover below the last visible row: none", rowAtPoint(blk, 3, 1100.0f, rowsTop + 3 * (RowH + RowGapPx) + 1.0f), -1);
         kt::Check("point in rect", pointInRect(blk, 1000.0f, 500.0f) && pointInRect(blk, 1399.9f, 833.9f) && !pointInRect(blk, 1400.0f, 600.0f) && !pointInRect(blk, 1100.0f, 499.0f));
-        // latch keeps the anchor and clears it
-        Latch l;
-        l.anchor.cx = 7;
-        l.set(Pos::B, { 1, 2, 3, 4 });
-        l.clear();
-        kt::Check("latch clear drops the anchor", l.anchor.cx == 0 && !l.held);
         // log lines
         char b[96];
         fmtListLog(b, sizeof b, 8, 25, 0, 640, 334);
@@ -1062,6 +1015,221 @@ int main() {
         char b[96];
         fmtSbClick(b, sizeof b, SbPart::PageDown, 9, 17);
         kt::Check("SBCLICK line", strcmp(b, "SBCLICK part=pagedown off=9/17") == 0);
+    }
+
+    // ---- 0.6.0-dev: anchor modes (QL2A)
+    {
+        kt::CheckEq("clampAnchorMode in range", clampAnchorMode(2), 2);
+        kt::CheckEq("clampAnchorMode negative -> 0", clampAnchorMode(-1), 0);
+        kt::CheckEq("clampAnchorMode too big -> 0", clampAnchorMode(3), 0);
+        kt::Check("mode names", strcmp(anchorModeName(0), "name") == 0 && strcmp(anchorModeName(1), "container") == 0 && strcmp(anchorModeName(2), "beside") == 0);
+        const Rect panel = { 0, 0, 3840, 1600 };
+        const Rect name = { 1700, 520, 533, 32 };
+        Geometry g; g.havePanel = true; g.panel = panel;
+        Rect r; AnchorUse u;
+        // mode 0
+        kt::Check("mode 0: under the name", anchorBlock(0, true, name, g, 400, 300, &r, &u) && r == Rect{ 1766, 572, 400, 300 } && u.mode == 0 && strcmp(u.reason, "ok") == 0);
+        kt::Check("mode 0 without a name: fixed spot (no projection)", anchorBlock(0, false, name, g, 400, 300, &r, &u) && u.mode == 3 && strcmp(u.reason, "noname-fixed") == 0);
+        { Geometry g0 = g; g0.havePanel = false; g0.panel = {0, 0, 0, 0}; kt::Check("mode 0 without a name or panel: none", !anchorBlock(0, false, name, g0, 400, 300, &r, &u) && u.mode == -1 && strcmp(u.reason, "no-name") == 0); }
+        Rect lowName = { 1700, 1450, 533, 32 };
+        kt::Check("mode 0 low on screen: flipped above the name", anchorBlock(0, true, lowName, g, 400, 300, &r, &u) && r.y == 1450 - ToastGapBelowName - 300);
+        Rect leftName = { 10, 520, 100, 32 };
+        kt::Check("mode 0 x clamp left", anchorBlock(0, true, leftName, g, 400, 300, &r, &u) && r.x == ScreenMarginPx);
+        g.havePanel = false;
+        kt::Check("mode 0 with no panel: no clamp", anchorBlock(0, true, leftName, g, 400, 300, &r, &u) && r.x == 10 + 50 - 200);
+        g.havePanel = true;
+        // mode 2
+        kt::Check("mode 2: right of the tag, top aligned", anchorBlock(2, true, name, g, 400, 300, &r, &u) && r == Rect{ 1700 + 533 + BesideGapPx, 520, 400, 300 } && u.mode == 2);
+        Rect rightName = { 3500, 520, 300, 32 };
+        kt::Check("mode 2 flips left past the right margin", anchorBlock(2, true, rightName, g, 400, 300, &r, &u) && r.x == 3500 - BesideGapPx - 400 && r.y == 520);
+        Rect wideName = { 100, 520, 3600, 32 };
+        kt::Check("mode 2 flipped too far left: clamped to the margin", anchorBlock(2, true, wideName, g, 400, 300, &r, &u) && r.x == ScreenMarginPx);
+        Rect lowName2 = { 1700, 1500, 533, 32 };
+        kt::Check("mode 2 y clamped to the bottom limit", anchorBlock(2, true, lowName2, g, 400, 300, &r, &u) && r.y == 1600 - ScreenMarginPx - 300);
+        kt::Check("mode 2 without a name: fixed spot", anchorBlock(2, false, name, g, 400, 300, &r, &u) && u.mode == 3);
+        g.havePanel = false;
+        kt::Check("mode 2 with no panel: no flip, no clamp", anchorBlock(2, true, rightName, g, 400, 300, &r, &u) && r.x == 3500 + 300 + BesideGapPx);
+        g.havePanel = true;
+        // mode 1
+        g.proj.state = 1; g.proj.x = 1000; g.proj.y = 700; g.proj.ret = 1;
+        kt::Check("mode 1: centred on the projected point, below it", anchorBlock(1, false, name, g, 400, 300, &r, &u) && r == Rect{ 800, 700 + ProjGapPx, 400, 300 } && u.mode == 1 && strcmp(u.projWhy, "ok") == 0);
+        g.proj.y = 1590;
+        kt::Check("mode 1 near the bottom: moved up", anchorBlock(1, false, name, g, 400, 300, &r, &u) && r.y + r.h == 1600 - ScreenMarginPx);
+        g.proj.y = 700; g.proj.x = 20;
+        kt::Check("mode 1 near the left: x clamp", anchorBlock(1, false, name, g, 400, 300, &r, &u) && r.x == ScreenMarginPx);
+        g.proj.x = 1000; g.proj.ret = 2;
+        kt::Check("mode 1 behind the camera + a name: fallback to mode 0", anchorBlock(1, true, name, g, 400, 300, &r, &u) && u.mode == 0 && strcmp(u.reason, "fallback-name") == 0 && strcmp(u.projWhy, "behind") == 0 && r.y == 572);
+        kt::Check("mode 1 behind the camera, no name: fixed spot", anchorBlock(1, false, name, g, 400, 300, &r, &u) && u.mode == 3 && strcmp(u.projWhy, "behind") == 0);
+        g.proj.ret = 1; g.proj.x = NAN;
+        kt::Check("mode 1 NaN: fallback", anchorBlock(1, true, name, g, 400, 300, &r, &u) && u.mode == 0 && strcmp(u.projWhy, "nan") == 0);
+        g.proj.x = 4000;
+        kt::Check("mode 1 outside the panel: fallback", anchorBlock(1, true, name, g, 400, 300, &r, &u) && u.mode == 0 && strcmp(u.projWhy, "outside") == 0);
+        g.proj.state = 2;
+        kt::Check("mode 1 engine call unavailable: fallback", anchorBlock(1, true, name, g, 400, 300, &r, &u) && u.mode == 0 && strcmp(u.projWhy, "unavail") == 0);
+        g.proj.state = 0;
+        kt::Check("mode 1 never tried: fallback", anchorBlock(1, true, name, g, 400, 300, &r, &u) && u.mode == 0 && strcmp(u.projWhy, "none") == 0);
+        // projReject
+        kt::Check("projReject: inside", projReject(10, 10, 1, panel) == nullptr && projReject(10, 10, 0, panel) == nullptr);
+        kt::Check("projReject: behind / nan / inf / outside / no panel", strcmp(projReject(10, 10, 2, panel), "behind") == 0 && strcmp(projReject(NAN, 1, 1, panel), "nan") == 0 &&
+                  strcmp(projReject(1, INFINITY, 1, panel), "nan") == 0 && strcmp(projReject(-1, 5, 1, panel), "outside") == 0 && strcmp(projReject(5, 1600, 1, panel), "outside") == 0 &&
+                  strcmp(projReject(5, 5, 1, Rect{ 0, 0, 0, 0 }), "nopanel") == 0);
+        kt::Check("projReject: the right / bottom edge is outside", projReject(3839.9f, 1599.9f, 1, panel) == nullptr && projReject(3840.0f, 5, 1, panel) != nullptr);
+        // NameHold
+        NameHold nh;
+        kt::Check("name hold: nothing seen", !nh.valid(100));
+        nh.see(name, 1000);
+        kt::Check("name hold: valid for 250 ms", nh.valid(1000) && nh.valid(1250) && !nh.valid(1251) && nh.rect == name);
+        nh.see(leftName, 0xFFFFFFF0u);
+        kt::Check("name hold across the 32-bit wrap", nh.valid(0xFFFFFFF0u + 200u) && !nh.valid(0xFFFFFFF0u + 300u));
+        nh.clear();
+        kt::Check("name hold clear", !nh.valid(0));
+        // AnchorTrack / ProjTrack
+        AnchorTrack at;
+        AnchorUse a1; a1.want = 0; a1.mode = 0; a1.reason = "ok";
+        kt::Check("anchor track: first call logs, repeat does not", at.update(a1) && !at.update(a1));
+        a1.mode = -1; a1.reason = "no-name";
+        kt::Check("anchor track: a reason change logs once", at.update(a1) && !at.update(a1));
+        a1.want = 1;
+        kt::Check("anchor track: a mode change logs", at.update(a1));
+        ProjTrack pt;
+        unsigned logged = 0;
+        for (int i = 0; i < 200; ++i) if (pt.want(1, "ok", 100.0f + static_cast<float>(i) * 30.0f, 500)) ++logged;
+        kt::CheckEq("proj track: 40 moving samples max", logged, 40u);
+        kt::Check("proj track: a verdict change always logs", pt.want(2, "behind", 0, 0) && !pt.want(2, "behind", 5000, 0) && pt.want(1, "ok", 0, 0));
+        ProjTrack still;
+        kt::Check("proj track: a still point logs once", still.want(1, "ok", 5, 5) && !still.want(1, "ok", 6, 6) && !still.want(1, "ok", 7, 7));
+        char b[200];
+        AnchorUse lu; lu.want = 1; lu.mode = 0; lu.reason = "fallback-name"; lu.projWhy = "behind";
+        fmtAnchor(b, sizeof b, lu);
+        kt::Check("ANCHOR line", strcmp(b, "ANCHOR want=container used=name reason=fallback-name proj=behind") == 0);
+        Proj pj; pj.state = 1; pj.x = 1920.5f; pj.y = 801.0f; pj.ret = 1; pj.wx = 10.5f; pj.wy = -3.25f; pj.wz = 0.1f;
+        fmtProj(b, sizeof b, true, name, pj, "ok");
+        kt::Check("PROJ line", strcmp(b, "PROJ name=1700,520,533,32 world=10.50,-3.25,0.10 px=1920.5,801.0 ret=1 state=1 why=ok") == 0);
+        pj.state = 2; pj.note = "vtable";
+        fmtProj(b, sizeof b, false, name, pj, "unavail");
+        kt::Check("PROJ line, no name, note", strcmp(b, "PROJ name=0,0,0,0 world=10.50,-3.25,0.10 px=1920.5,801.0 ret=1 state=2 why=unavail note=vtable") == 0);
+    }
+
+    // ---- 0.6.0-dev: per-item take (QL4)
+    {
+        kt::Check("noticePlan: a normal item has none", noticePlan(0x05, false, false) == NoticePlan::None && noticePlan(0x05, true, false) == NoticePlan::None);
+        kt::Check("noticePlan: class 0x18 on the locker: silent bit set", noticePlan(0x18, true, false) == NoticePlan::SetBit && noticePlan(0x18, true, true) == NoticePlan::SetBit);
+        kt::Check("noticePlan: class 0x18 first pickup elsewhere: pop-up", noticePlan(0x18, false, false) == NoticePlan::Popup);
+        kt::Check("noticePlan: class 0x18 already noticed: none", noticePlan(0x18, false, true) == NoticePlan::None);
+        kt::Check("takeRefusal: ok", takeRefusal(true, 1, true, 2.0f, 5.0f, false, 3, 8) == nullptr);
+        kt::Check("takeRefusal: no peek / suppress / not open / no world", strcmp(takeRefusal(false, 1, true, 2, 5, false, 0, 8), "nopeek") == 0 && strcmp(takeRefusal(true, 1, true, 2, 5, true, 0, 8), "suppress") == 0 &&
+                  strcmp(takeRefusal(true, 0, true, 2, 5, false, 0, 8), "notopen") == 0 && strcmp(takeRefusal(true, -1, true, 2, 5, false, 0, 8), "notopen") == 0 && strcmp(takeRefusal(true, 1, false, 2, 5, false, 0, 8), "noworld") == 0);
+        kt::Check("takeRefusal: out of range / the +K more row", strcmp(takeRefusal(true, 1, true, 5.01f, 5.0f, false, 0, 8), "range") == 0 && takeRefusal(true, 1, true, 5.0f, 5.0f, false, 0, 8) == nullptr &&
+                  strcmp(takeRefusal(true, 1, true, 2, 5, false, 8, 8), "morerow") == 0);
+        kt::Check("takeWhyName", strcmp(takeWhyName(TakeWhy::Ok), "ok") == 0 && strcmp(takeWhyName(TakeWhy::Popup), "popup") == 0 && strcmp(takeWhyName(TakeWhy::Stale), "stale") == 0);
+        char b[200];
+        fmtTake1(b, sizeof b, 3, 0x7F001234u, "Medpac", 2, 1, 5, 4, 0);
+        kt::Check("TAKE1 line", strcmp(b, "TAKE1 i=3 id=7f001234 name=Medpac stack=2 rc=1 n_before=5 n_after=4 notice=0") == 0);
+        fmtTake1Refused(b, sizeof b, 3, "popup", 1);
+        kt::Check("TAKE1-REFUSED line", strcmp(b, "TAKE1-REFUSED i=3 why=popup notice=1") == 0);
+        // row click hit / eat rules
+        const Rect blk = { 100, 100, 900, 700 };
+        const float y0 = static_cast<float>(100 + rowsTopPx());
+        kt::CheckEq("row click on the peek list: row 2", rowClickAt(blk, 8, false, false, 300.0f, y0 + 2 * (RowH + RowGapPx) + 3.0f), 2);
+        kt::CheckEq("row click on the Took list: nothing", rowClickAt(blk, 8, false, true, 300.0f, y0 + 3.0f), -1);
+        kt::CheckEq("row click in the gap: nothing", rowClickAt(blk, 8, false, false, 300.0f, y0 + RowH + 1.0f), -1);
+        kt::CheckEq("row click in the scrollbar column: nothing (the bar takes it)", rowClickAt(blk, 8, true, false, static_cast<float>(100 + 900 - BlockPadX - 5), y0 + 5.0f), -1);
+        kt::CheckEq("row click on the header: nothing", rowClickAt(blk, 8, false, false, 300.0f, y0 - 5.0f), -1);
+        kt::CheckEq("row click below the last visible row", rowClickAt(blk, 3, false, false, 300.0f, y0 + 3 * (RowH + RowGapPx) + 1.0f), -1);
+        kt::Check("rows eat clicks only on the peek list", rowsEatClicks(false, true) && !rowsEatClicks(true, true) && !rowsEatClicks(false, false));
+        // flash header
+        char h[72];
+        fmtFlashHeader(h, sizeof h, "Medpac", 2000);
+        kt::Check("flash header", strcmp(h, "Acquired: Medpac") == 0);
+        fmtFlashHeader(h, sizeof h, "Mandalorian Heavy Armor Plating Mk IV Upgrade", 600);
+        kt::Check("flash header cut to fit", textPx10(h) <= 600 && strncmp(h, "Acquired: Mandalorian", 21) == 0 && strstr(h, "...") != nullptr);
+        fmtFlashHeader(h, sizeof h, nullptr, 2000);
+        kt::Check("flash header, unknown name", strcmp(h, "Acquired: item") == 0);
+        {   // the block widens for the flash (up to BlockMaxW) and the row layout stays put
+            ListData ld;
+            const char* nm[2] = { "Medpac", "Pistol" };
+            const int st[2] = { 1, 1 };
+            ld.set(nm, st, 2, 2);
+            ListView lv; lv.reset(ld.rowsTotal(), 8);
+            ListDraw plain, flash;
+            buildListDraw(ld, lv, false, "F", &plain);
+            buildListDraw(ld, lv, false, "F", &flash, RowH, "Frag Grenade Launcher Mk II");
+            kt::Check("flash: header text replaced", strncmp(flash.header, "Acquired: Frag Grenade", 22) == 0 && strcmp(plain.header, "[F] Get Items (2)") == 0);
+            kt::Check("flash: wider block, same height and rows", flash.w >= plain.w && flash.w >= textPx10(flash.header) + 2 * BlockPadX && flash.h == plain.h && flash.vis == plain.vis && flash.w <= BlockMaxW);
+            buildListDraw(ld, lv, true, "F", &flash, RowH, "ignored on the Took list");
+            kt::Check("flash: ignored on the Took list", strncmp(flash.header, "Acquired Items", 14) == 0);
+        }
+    }
+
+    // ---- 0.6.0-dev: tooltip (QL8)
+    {
+        char out[256];
+        kt::CheckEq("sanitizeDesc keeps paragraph breaks, collapses blanks", sanitizeDesc(out, sizeof out, "  A  good\r\n\r\n \n\nblaster.\t \n"), 16u);
+        kt::Check("sanitizeDesc text", strcmp(out, "A good\n\nblaster.") == 0);
+        sanitizeDesc(out, sizeof out, "Attribute Bonus: +4\nDuration: 120 sec\n\nA shot of this.");
+        kt::Check("sanitizeDesc: a single break stays a break", strcmp(out, "Attribute Bonus: +4\nDuration: 120 sec\n\nA shot of this.") == 0);
+        sanitizeDesc(out, sizeof out, "caf\xE9 ok");
+        kt::Check("sanitizeDesc non-ASCII -> ?", strcmp(out, "caf? ok") == 0);
+        kt::CheckEq("sanitizeDesc null", sanitizeDesc(out, sizeof out, nullptr), 0u);
+        // wrap + line cap
+        std::string longText;
+        for (int i = 0; i < 80; ++i) longText += "word" + std::to_string(i) + " ";
+        char body[TipBodyCap]; int widest = 0; bool cut = false;
+        const int n = tipWrap(body, sizeof body, longText.c_str(), 500, &widest, &cut);
+        kt::CheckEq("tipWrap caps at 10 lines", n, 10);
+        kt::Check("tipWrap marks the cut and ends in ...", cut && strlen(body) > 0 && strcmp(body + strlen(body) - 3, "...") == 0);
+        kt::Check("tipWrap lines fit the width", widest <= 500);
+        int nl = 1;
+        for (const char* p = body; *p; ++p) if (*p == '\n') ++nl;
+        kt::CheckEq("tipWrap newline count", nl, 10);
+        const int n2 = tipWrap(body, sizeof body, "A short description.", 500, &widest, &cut);
+        kt::Check("tipWrap short text: one line, no cut", n2 == 1 && !cut && strcmp(body, "A short description.") == 0);
+        const int n3 = tipWrap(body, sizeof body, "Duration: 120 sec\n\nA shot of this enhancer provides a temporary boost.", 900, &widest, &cut);
+        kt::Check("tipWrap: paragraphs and a blank line", n3 >= 4 && !cut && strncmp(body, "Duration: 120 sec\n\nA shot", 25) == 0 && widest <= 900);
+        const int n4 = tipWrap(body, sizeof body, "", 400, &widest, &cut);
+        kt::Check("tipWrap: empty text", n4 <= 1 && !cut);
+        // buildTip
+        TipData d;
+        snprintf(d.title, sizeof d.title, "Medpac");
+        d.stack = 5;
+        snprintf(d.desc, sizeof d.desc, "Heals a little.");
+        const Rect blk = { 1000, 500, 640, 400 };
+        const Rect row = { 1028, 600, 560, 64 };
+        const Rect panel = { 0, 0, 3840, 1600 };
+        TipDraw t;
+        kt::Check("buildTip", buildTip(d, blk, row, panel, &t));
+        kt::Check("tip: right of the list, top aligned with the row", t.frame.x == 1000 + 640 + TipGapPx && t.frame.y == 600 && !t.flipped);
+        kt::Check("tip: title 16x16 when it fits, quantity line, body", t.bigTitle && t.haveQty && strcmp(t.qtyText, "Quantity: 5") == 0 && t.haveBody && t.lines == 1 && strcmp(t.bodyText, "Heals a little.") == 0);
+        kt::Check("tip: child rects inside the frame", t.title.x >= t.frame.x && t.body.y + t.body.h <= t.frame.y + t.frame.h && t.qty.y == t.title.y + TipTitleH && t.body.y > t.qty.y);
+        kt::Check("tip: min width", t.frame.w >= TipMinW && t.frame.w <= TipMaxW);
+        d.stack = 1;
+        buildTip(d, blk, row, panel, &t);
+        kt::Check("tip: no quantity line for a single item", !t.haveQty && t.body.y == t.title.y + TipTitleH + TipBlockGapPx);
+        d.desc[0] = 0;
+        buildTip(d, blk, row, panel, &t);
+        kt::Check("tip: no description, no body", !t.haveBody && t.lines == 0 && t.frame.h == TipPadY + TipTitleH + TipPadY);
+        // flip near the right edge, clamp at the bottom
+        const Rect blkR = { 3000, 500, 640, 400 };
+        buildTip(d, blkR, { 3028, 600, 560, 64 }, panel, &t);
+        kt::Check("tip: flips to the left of the list near the panel edge", t.flipped && t.frame.x == 3000 - TipGapPx - t.frame.w);
+        d.stack = 3;
+        snprintf(d.desc, sizeof d.desc, "%s", longText.c_str());
+        buildTip(d, blk, { 1028, 1500, 560, 64 }, panel, &t);
+        kt::Check("tip: bottom clamp", t.frame.y + t.frame.h == 1600 - ScreenMarginPx && t.frame.y >= ScreenMarginPx);
+        kt::Check("tip: a long description is capped at 10 lines with ...", t.lines == 10 && t.truncated && strcmp(t.bodyText + strlen(t.bodyText) - 3, "...") == 0 && t.frame.w <= TipMaxW);
+        kt::CheckEq("tip: body height = lines x pitch", t.body.h, 10 * TipLineH);
+        buildTip(d, blk, { 1028, 100, 560, 64 }, panel, &t);
+        kt::Check("tip: top clamp", t.frame.y >= ScreenMarginPx);
+        buildTip(d, blk, { 1028, 600, 560, 64 }, { 0, 0, 0, 0 }, &t);
+        kt::Check("tip: unknown panel: no clamp, no flip", t.frame.y == 600 && !t.flipped);
+        // long name: 10x10, then cut
+        snprintf(d.title, sizeof d.title, "Mandalorian Heavy Armor Plating Mk IV Upgrade");
+        buildTip(d, blk, row, panel, &t);
+        kt::Check("tip: a long title falls back to the 10x10 font", !t.bigTitle && textPx10(t.titleText) <= TipMaxW - 2 * TipPadX);
+        kt::Check("tip: no title -> nothing", (d.title[0] = 0, buildTip(d, blk, row, panel, &t)) && strcmp(t.titleText, "item") == 0);
+        char b[96];
+        fmtTip(b, sizeof b, 2, 7, 1100, 640, 520, 238, true);
+        kt::Check("TIP line", strcmp(b, "TIP i=2 lines=7 extent=1100,640,520,238 flip=1") == 0);
     }
 
     return kt::Report("quick_loot_logic_test");
