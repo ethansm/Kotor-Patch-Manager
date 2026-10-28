@@ -136,3 +136,4 @@
 {"ev": "done", "session": "f92f7b6b-d26a-466d-b18f-74b3ae28334f", "ts": "2026-10-27T23:21:09Z", "wi": "WI-151"}
 {"ev": "done", "session": "58de0ab0-0d3d-4a63-ae10-87a6e6fbe42c", "ts": "2026-10-28T00:34:23Z", "wi": "WI-160"}
 {"ev": "done", "reason": "manual: WI-152 fix wave vw2-A", "session": "d8e177e5-97c2-4bac-af2c-9e39ef6301dd", "ts": "2026-10-28T00:46:37Z", "wi": "WI-152"}
+{"ev": "park", "reason": "worker FAIL: Steps lack in-panel button template tag + click-dispatch/tick hook addresses for feats (0x909E00 CSWGuiFeatsCharGen) and powers (0x9074E0) panels; needs RE + hooks.toml (outside write scope); unchanged retry would fail", "session": "adcfea28-564e-4810-9848-60bc7638b126", "ts": "2026-10-28T00:49:20Z", "wi": "WI-36"}
