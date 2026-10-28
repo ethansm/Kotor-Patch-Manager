@@ -132,6 +132,120 @@ class SampleBackpack(unittest.TestCase):
         first_unusable = 4 + next(i for i, e in enumerate(rows[4:]) if not e.usable)   # the New block (usable or not) comes first
         self.assertTrue(all(not e.usable for e in rows[first_unusable:]))
 
+SORT_LOGIC_H = Path(__file__).resolve().parent.parent / "patch_manager_mods" / "inventory_sort_filter_src" / "SortLogic.h"
+
+
+class VariantLogic(unittest.TestCase):
+    """Redesign-variant tables against SortLogic.h (kCycleOrder, SortOrder enum); no install needed."""
+
+    def src(self):
+        return SORT_LOGIC_H.read_text()
+
+    def test_filter_segments_match_kCycleOrder(self):
+        import re
+        mm = re.search(r"kCycleOrder\[\]\s*=\s*\{([^}]*)\}", self.src())
+        names = [t.strip() for t in mm.group(1).split(",")]
+        enum = {"S_New": m.S_NEW, "S_Usable": m.S_USABLE, "S_Upgrade": m.S_UPGRADE}
+        self.assertEqual([enum[n] for n in names], list(m.CYCLE_ORDER))
+        self.assertEqual(m.FILTER_SEGMENTS, (m.S_ALL,) + tuple(enum[n] for n in names))   # All | New | Can Equip | Upgradeable
+        self.assertEqual([m.VNAMES[s] for s in m.FILTER_SEGMENTS], ["All", "New", "Can Equip", "Upgradeable"])
+
+    def test_sort_cycle_matches_SortOrder_enum(self):
+        import re
+        mm = re.search(r"enum SortOrder[^{]*\{([^}]*)\}", self.src())
+        pairs = [(a.split("=")[0].strip(), int(a.split("=")[1])) for a in mm.group(1).split(",") if "=" in a]
+        self.assertEqual([n for n, _ in sorted(pairs, key=lambda t: t[1])], ["SO_Category", "SO_Base", "SO_Name", "SO_Vanilla"])
+        self.assertEqual([v for _, v in sorted(pairs, key=lambda t: t[1])], list(m.SORT_CYCLE))
+        self.assertEqual([m.SORT_LABELS[o] for o in m.SORT_CYCLE], ["Category", "Base item", "Name", "Vanilla"])
+        order, o = [], m.SO_CATEGORY
+        for _ in range(4):
+            o = m.next_sort(o)
+            order.append(o)
+        self.assertEqual(order, [m.SO_BASE, m.SO_NAME, m.SO_VANILLA, m.SO_CATEGORY])
+
+    def test_usable_renamed_in_variants_only(self):
+        self.assertEqual(m.VCAPTION[m.S_USABLE], "Can Equip")
+        self.assertEqual(m.VNAMES[m.S_USABLE], "Can Equip")
+        self.assertEqual(m.caption_of(m.S_USABLE), "Filter: Usable")           # the shipped (current) UX is untouched
+        self.assertEqual(m.VCAPTION[m.S_ALL], "Filter")
+
+    def test_filter_counts(self):
+        self.assertEqual(m.filter_counts(), {m.S_ALL: 22, m.S_NEW: 4, m.S_USABLE: 13, m.S_UPGRADE: 3})
+
+    def test_dividers_only_in_v3_category(self):
+        rows = m.arrange(m.S_ALL, m.SO_CATEGORY)
+        for v in ("current", "v1", "v2"):
+            self.assertTrue(all(k[0] == "row" for k in m.build_elements(rows, m.SO_CATEGORY, v)))
+        self.assertTrue(all(k[0] == "row" for k in m.build_elements(m.arrange(m.S_NEW, m.SO_NAME), m.SO_NAME, "v3")))   # no first-letter dividers in Name sort
+        els = m.build_elements(rows, m.SO_CATEGORY, "v3")
+        labels = [k[1] for k in els if k[0] == "div"]
+        self.assertEqual(labels[0], "New")
+        self.assertEqual(labels[1:5], ["Weapons", "Armour", "Gear", "Consumables"])
+        self.assertIn("Armour", [k[2][2] for k in els if k[0] == "div" and k[2][1] is False])
+        self.assertEqual([k[1].item for k in els if k[0] == "row"], [e.item for e in rows])    # dividers add no rows, order untouched
+        self.assertLessEqual(set(labels), set(m.DIV_LABEL.values()) | {m.NEW_DIV})
+
+    def test_scroll_helpers(self):
+        self.assertEqual(m.fit_count([10, 10, 5, 10], 0, 26), 3)
+        self.assertEqual(m.max_scroll([10, 10, 5, 10], 26), 1)
+        self.assertEqual(m.max_scroll([10], 26), 0)
+
+
+@unittest.skipUnless((Path.home() / ".local/share/Steam/steamapps/common/Knights of the Old Republic II").exists(), "game install not present")
+class VariantLayout(unittest.TestCase):
+    """Fit + overlap checks of every element a redesign adds (needs the install for inventory_p.gui and the font metrics)."""
+
+    @classmethod
+    def setUpClass(cls):
+        try:
+            import PIL  # noqa: F401
+            import pykotor  # noqa: F401
+        except ImportError:
+            raise unittest.SkipTest("PIL / pykotor not importable (use the repo .venv)")
+        cls.cpm = m._cpm()
+        _, cls.ctls = m.load_gui(cls.cpm)
+
+    def test_short_captions_fit_345px(self):
+        label = int(72 * self.cpm.SX)
+        self.assertEqual(label, 345)
+        for st, cap in m.VCAPTION.items():
+            self.assertLessEqual(self.cpm.text_size(m.FILTER_FONT, cap)[0], label, cap)
+        self.assertLessEqual(max(self.cpm.text_size(m.FILTER_FONT, c)[0] for c in m.VCAPTION.values()), label - 100)   # keeps a margin
+
+    def test_no_added_rect_overlaps_a_gui_control(self):
+        for v in ("v1", "v2", "v3"):
+            for tag, st, so in m.VSTATES:
+                L = m.variant_layout(self.cpm, v, st, so, self.ctls)
+                self.assertEqual(L["overlaps"], [], "%s %s" % (v, tag))
+                self.assertGreaterEqual(len(L["added"]), 5, v)
+
+    def test_all_fit_checks_pass(self):
+        for v in ("v1", "v2", "v3"):
+            for tag, st, so in m.VSTATES:
+                L = m.variant_layout(self.cpm, v, st, so, self.ctls)
+                bad = [f for f in L["fits"] if not f[4]]
+                self.assertEqual(bad, [], "%s %s" % (v, tag))
+
+    def test_overlap_detector_flags_a_clash(self):
+        px = m.free_report(self.cpm, self.ctls)["px"]
+        self.assertTrue(m.rects_overlap(px["BTN_USEITEM"], (px["BTN_USEITEM"][0] + 5, px["BTN_USEITEM"][1] + 5, 50, 20)))
+        self.assertFalse(m.rects_overlap((0, 0, 10, 10), (10, 0, 10, 10)))
+
+    def test_v2_controls_use_both_bands_and_v1_only_band_b(self):
+        l1 = m.variant_layout(self.cpm, "v1", m.S_USABLE, m.SO_CATEGORY, self.ctls)
+        l2 = m.variant_layout(self.cpm, "v2", m.S_USABLE, m.SO_CATEGORY, self.ctls)
+        self.assertFalse(any(a["name"] == "Sort button" for a in l1["added"]))
+        names = [a["name"] for a in l2["added"]]
+        self.assertIn("Sort button", names)
+        self.assertEqual([n for n in names if n.startswith("Filter segment")], ["Filter segment " + m.VNAMES[s] for s in m.FILTER_SEGMENTS])
+
+    def test_variant_render_smoke(self):
+        im, info = m.render(m.S_USABLE, m.SO_CATEGORY, variant="v3")
+        self.assertEqual(im.size, (3840, 1600))
+        self.assertEqual(info["caption"], "Can Equip")
+        self.assertFalse(info["overflow"])
+        self.assertEqual(info["layout"]["overlaps"], [])
+
 
 @unittest.skipUnless((Path.home() / ".local/share/Steam/steamapps/common/Knights of the Old Republic II").exists(), "game install not present")
 class RenderSmoke(unittest.TestCase):

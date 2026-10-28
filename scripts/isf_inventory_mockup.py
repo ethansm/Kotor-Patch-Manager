@@ -24,7 +24,7 @@ Geometry: every control comes from the live Override inventory_p.gui (the ultraw
 vanilla_inventory_list builds it. The visible window is as many whole rows as fit in LB_ITEMS (6 at this layout); the strip under the panel
 lists the complete order so the whole list can be judged.
 
-usage: isf_inventory_mockup.py OUTDIR
+usage: isf_inventory_mockup.py OUTDIR [--variant {current,v1,v2,v3,all}]   (default all)
 Outputs: isf_all_category.png, isf_all_name.png, isf_all_base.png, isf_all_vanilla.png (state All, each sort order), isf_new.png, isf_usable.png,
 isf_upgrade.png (sort Category), isf_caption_zoom.png (caption + tab strip, 3x, all 4 states + the 1024-row worst case), isf_sheet.png (contact sheet),
 isf_fit_table.txt (caption widths vs the label, rows visible vs total, full order per render).
@@ -222,6 +222,67 @@ def arrange(state, order, items=None):
     return sort_entries(visible_entries(state, build_entries(items), items), order)
 
 
+# ---- redesign variants (offline mock only; nothing here is in the mod yet) ----------------------------------------------
+VARIANTS = ("current", "v1", "v2", "v3")
+VNAMES = {S_ALL: "All", S_NEW: "New", S_USABLE: "Can Equip", S_UPGRADE: "Upgradeable"}   # the Usable filter is renamed "Can Equip" (vanilla has its own Useable tab)
+VCAPTION = {S_ALL: "Filter", S_NEW: "New", S_USABLE: "Can Equip", S_UPGRADE: "Upgradeable"}   # LBL_FILTER (345 px label)
+SORT_CYCLE = (SO_CATEGORY, SO_BASE, SO_NAME, SO_VANILLA)                  # SortLogic.h SortOrder enum order = the click cycle
+SORT_LABELS = {SO_CATEGORY: "Category", SO_BASE: "Base item", SO_NAME: "Name", SO_VANILLA: "Vanilla"}
+FILTER_SEGMENTS = (S_ALL,) + CYCLE_ORDER                                    # All | New | Can Equip | Upgradeable
+DIV_LABEL = {0: "Weapons", 1: "Weapons", 2: "Armour", 3: "Gear", 4: "Upgrades", 5: "Consumables", 6: "Other"}
+NEW_DIV = "New"
+# render states per variant: (file tag, filter state, sort order)
+VSTATES = [("all_category", S_ALL, SO_CATEGORY), ("canequip_category", S_USABLE, SO_CATEGORY), ("new_name", S_NEW, SO_NAME),
+           ("upgrade_category", S_UPGRADE, SO_CATEGORY)]
+
+
+def next_sort(o):
+    return SORT_CYCLE[(SORT_CYCLE.index(o) + 1) % len(SORT_CYCLE)]
+
+
+def filter_counts(items=None):
+    items = items if items is not None else SAMPLE
+    es = build_entries(items)
+    return {s: len(visible_entries(s, es, items)) for s in (S_ALL, S_NEW, S_USABLE, S_UPGRADE)}
+
+
+def build_elements(rows, order, variant):
+    """List of ("row", Entry) and, for v3 in Category sort only, ("div", label) category dividers (non-selectable, half a row high).
+    A divider opens each run of the same (isNew, usable, category label): the New block gets one "New" divider, categories 0 and 1 share "Weapons"."""
+    els, prev = [], None
+    for e in rows:
+        if variant == "v3" and order == SO_CATEGORY:
+            key = (True, True, NEW_DIV) if e.is_new else (False, e.usable, DIV_LABEL[e.category])
+            if key != prev:
+                els.append(("div", key[2], key))
+                prev = key
+        els.append(("row", e))
+    return els
+
+
+def fit_count(hts, start, avail):
+    n = used = 0
+    for h in hts[start:]:
+        if used + h > avail:
+            break
+        used += h
+        n += 1
+    return n
+
+
+def max_scroll(hts, avail):
+    for s0 in range(len(hts) + 1):
+        if sum(hts[s0:]) <= avail:
+            return s0
+    return len(hts)
+
+
+def scroll_to_unusable_divider(els, hts, avail, label="Armour"):
+    """Scroll index that shows the previous row, the (unusable-block) divider `label` and the tinted rows below it."""
+    i = next(i for i, k in enumerate(els) if k[0] == "div" and k[2][1] is False and k[2][2] == label)
+    return min(max(0, i - 1), max_scroll(hts, avail))
+
+
 # ---- rendering (needs PIL + pykotor + the live install) ------------------------------------------------------------
 TEAL_FRAME = (0.05098, 0.34902, 0.27059)
 TEAL_TEXT = (0.10196, 0.69804, 0.54902)
@@ -337,8 +398,208 @@ def draw_caption_overflow(img, cpm, label_px, text):
     return True
 
 
-def render(state, order, rows_for_caption=None, outpath=None, items=None, scroll=0):
-    """One full 3840x1600 frame. Returns (PIL image, info dict)."""
+PANEL_X = (163, 3676)           # inner panel span (LBL_BAR1/2 left edge, LBL_BAR4 right edge), px
+PANEL_BOTTOM = 1452             # the frame art ends ~1456; the legend strip of this mock starts there
+BTN_PAD = 28                    # text padding inside the added buttons (px); the 16 px frame is on top of it
+BTN_FRAME = 16
+SMALL = "dialogfont10x10"
+
+
+def rects_overlap(a, b):
+    return a[0] < b[0] + b[2] and b[0] < a[0] + a[2] and a[1] < b[1] + b[3] and b[1] < a[1] + a[3]
+
+
+def rect_inside(a, b):
+    return a[0] >= b[0] and a[1] >= b[1] and a[0] + a[2] <= b[0] + b[2] and a[1] + a[3] <= b[1] + b[3]
+
+
+def free_x(rects, y0, y1, xmin, xmax):
+    """Free x intervals of the horizontal strip y0..y1 (control rects in px subtracted)."""
+    iv = [(xmin, xmax)]
+    for (x, y, w, h) in rects:
+        if y < y1 and y0 < y + h:
+            out = []
+            for a, b in iv:
+                if x + w <= a or x >= b:
+                    out.append((a, b))
+                    continue
+                if x > a:
+                    out.append((a, x))
+                if x + w < b:
+                    out.append((x + w, b))
+            iv = out
+    return [(a, b) for a, b in iv if b - a > 0]
+
+
+def free_report(cpm, ctls):
+    """Free rects measured from the gui (px). Returns {"bands": {...}, "list": [(name, rect, used)]}. Band A = right of BTN_USEITEM under LBL_CREDITS,
+    band B = the strip under LBL_BAR3/4 right of BTN_EXIT; both are bounded by the control rects (LBL_BAR5 starts right of band A)."""
+    px = {c["TAG"]: unit_px(cpm, c["RECT"]) for c in ctls}
+    rects = list(px.values())
+
+    def bot(t):
+        return px[t][1] + px[t][3]
+    ay0, ay1 = bot("LBL_CREDITS") + 10, px["LBL_BAR3"][1] - 10
+    by0, by1 = max(bot("LBL_BAR3"), bot("LBL_BAR4")) + 5, PANEL_BOTTOM
+    a_iv = free_x(rects, ay0, ay1, PANEL_X[0], PANEL_X[1])
+    b_iv = free_x(rects, by0, by1, PANEL_X[0], PANEL_X[1])
+    a_main = max(a_iv, key=lambda t: t[1] - t[0] if t[0] > px["BTN_USEITEM"][0] else -1)
+    b_main = max(b_iv, key=lambda t: t[1] - t[0])
+    ma = 24
+    band_a = (a_main[0] + ma, ay0, a_main[1] - a_main[0] - 2 * ma, ay1 - ay0)
+    band_b = (b_main[0] + ma, by0, b_main[1] - b_main[0] - 2 * ma, by1 - by0)
+    lst = [("A  right of BTN_USEITEM, under LBL_CREDITS, left of LBL_BAR5 (free x %d..%d)" % a_main, (a_main[0], ay0, a_main[1] - a_main[0], ay1 - ay0), "sort button (v2, v3)"),
+           ("B  under LBL_BAR3/4, right of BTN_EXIT (free x %d..%d)" % b_main, (b_main[0], by0, b_main[1] - b_main[0], by1 - by0), "status + legend (v1); segmented filter + status + legend (v2, v3)")]
+    for iv in a_iv:
+        if iv != a_main and iv[1] - iv[0] > 100:
+            lst.append(("A2 same strip, free x %d..%d (beside LBL_BAR5 / panel edge)" % iv, (iv[0], ay0, iv[1] - iv[0], ay1 - ay0), "unused"))
+    d, cr = px["LB_DESCRIPTION"], px["LBL_CREDITS"]
+    lst.append(("gap LB_DESCRIPTION bottom .. LBL_CREDITS top", (d[0], d[1] + d[3], d[2], cr[1] - d[1] - d[3]), "unused (%d px tall)" % (cr[1] - d[1] - d[3])))
+    lst.append(("LB_DESCRIPTION interior below the text (a control rect, text uses the top ~25 %)", (d[0] + 24, d[1] + 360, d[2] - 48, d[3] - 384), "unused (control, not claimed)"))
+    return {"band_a": band_a, "band_b": band_b, "list": lst, "px": px}
+
+
+def variant_layout(cpm, variant, state, order, ctls, items=None, caption=None):
+    """Geometry + fit checks of everything a variant adds (no drawing, needs the gui + font metrics only).
+    Returns {"added": [{name, rect, kind}], "fits": [(name, text, text_px, box_px, ok)], "ops": [...], "overlaps": [str], "free": ...}."""
+    items = items if items is not None else SAMPLE
+    fr = free_report(cpm, ctls)
+    px = fr["px"]
+    L = {"variant": variant, "added": [], "fits": [], "ops": [], "free": fr["list"], "band_a": fr["band_a"], "band_b": fr["band_b"], "px": px}
+    T, C = TEAL_TEXT, CREAM
+
+    def tw(font, text):
+        return cpm.text_size(font, text)[0]
+
+    def fit(name, text, font, box_w):
+        w = tw(font, text)
+        L["fits"].append((name, text, w, box_w, w <= box_w))
+
+    def add(name, rect, kind="band"):
+        L["added"].append({"name": name, "rect": tuple(int(round(v)) for v in rect), "kind": kind})
+    fit("LBL_FILTER caption", caption if caption is not None else VCAPTION[state], FILTER_FONT, px["LBL_FILTER"][2])
+    counts = filter_counts(items)
+    shown, total = counts[state], counts[S_ALL]
+    bx, by, bw, bh = L["band_b"]
+    x_end_limit = bx + bw
+    x = bx
+    if variant in ("v2", "v3"):
+        ax, ay, aw, ah = L["band_a"]
+        widest = max(tw(FILTER_FONT, "Sort: " + v) for v in SORT_LABELS.values())
+        w = int(widest + 2 * (BTN_PAD + BTN_FRAME))
+        rect = (ax, ay, min(w, aw), ah)
+        add("Sort button", rect)
+        segs = [("Sort: ", T), (SORT_LABELS[order], C)]
+        fit("Sort button label (widest: Base item)", "Sort: Base item", FILTER_FONT, rect[2] - 2 * BTN_FRAME)
+        fit("Sort button label (now)", "Sort: " + SORT_LABELS[order], FILTER_FONT, rect[2] - 2 * BTN_FRAME)
+        L["ops"].append(("button", rect, segs, False))
+        gap = 8
+        for st in FILTER_SEGMENTS:
+            text = "%s %d" % (VNAMES[st], counts[st])
+            w = int(tw(FILTER_FONT, text) + 2 * BTN_PAD + 2 * BTN_FRAME)
+            r = (x, by, w, bh)
+            add("Filter segment " + VNAMES[st], r)
+            fit("Filter segment " + VNAMES[st], text, FILTER_FONT, w - 2 * BTN_FRAME)
+            L["ops"].append(("button", r, [(VNAMES[st] + " ", C if st == state else T), (str(counts[st]), C if st == state else T)], st == state))
+            x += w + gap
+        x += 52
+    status = [("Sorted: ", T), (SORT_LABELS[order], C), ("   ", T), ("Showing: ", T), (VNAMES[state], C),
+              ("  %d items" % total if state == S_ALL else "  %d of %d" % (shown, total), C)]
+    sw = sum(tw(SMALL, t) for t, _ in status)
+    th = cpm.text_size(SMALL, "A")[1]
+    r = (x, by, int(sw) + 2, bh)
+    add("Status line", r)
+    L["fits"].append(("Status line (to end of band B)", "".join(t for t, _ in status), sw, x_end_limit - x, sw <= x_end_limit - x))
+    L["ops"].append(("text", r, status))
+    x += int(sw) + 80
+    sq = 30
+    cy = by + (bh - sq) // 2
+    for nm, label, fr_c, fl_c in (("can't equip", "can't equip", TINT_COL, (0.20, 0.03, 0.0)), ("new", "new", NEW_FRAME, (0.16, 0.13, 0.02))):
+        sr = (x, cy, sq, sq)
+        add("Legend swatch " + nm, sr)
+        L["ops"].append(("swatch", sr, fr_c, fl_c, NEW_TEXT if nm == "new" else TINT_COL))
+        x += sq + 12
+        lw = tw(SMALL, label)
+        tr = (x, by, int(lw) + 2, bh)
+        add("Legend text " + nm, tr)
+        L["fits"].append(("Legend text " + nm, label, lw, x_end_limit - x, lw <= x_end_limit - x))
+        L["ops"].append(("text", tr, [(label, T)]))
+        x += int(lw) + 56
+    L["fits"].append(("Band B used width (status + legend end)", "x %d" % (x - 56), x - 56, x_end_limit, x - 56 <= x_end_limit))
+    L["text_h"] = th
+    # v3 dividers: labels vs the row width left of the rule, rect inside LB_ITEMS
+    if variant == "v3":
+        lb = px["LB_ITEMS"]
+        rx, ry0 = int(PROTO[0] * cpm.SX), int(PROTO[1] * cpm.SY)
+        row_w, row_h = int(PROTO[2] * cpm.SX), int(PROTO[3] * cpm.SY)
+        for lab in sorted(set(DIV_LABEL.values())) + [NEW_DIV]:
+            fit("Divider '%s'" % lab, lab, SMALL, row_w - 2 * 14 - 80)       # leave >= 80 px for the rule
+        add("Divider row", (rx, ry0, row_w, row_h // 2), "inlist")
+    # overlaps: every added band rect vs every gui control and vs each other; in-list rects must sit inside LB_ITEMS
+    bad = []
+    bands = [a for a in L["added"] if a["kind"] == "band"]
+    for a in bands:
+        for tag, cr in px.items():
+            if rects_overlap(a["rect"], cr):
+                bad.append("%s overlaps %s %s" % (a["name"], tag, cr))
+        if not (rect_inside(a["rect"], L["band_a"]) or rect_inside(a["rect"], L["band_b"])):
+            bad.append("%s leaves its free band" % a["name"])
+    for i, a in enumerate(bands):
+        for b in bands[i + 1:]:
+            if rects_overlap(a["rect"], b["rect"]):
+                bad.append("%s overlaps %s" % (a["name"], b["name"]))
+    for a in L["added"]:
+        if a["kind"] == "inlist" and not rect_inside(a["rect"], px["LB_ITEMS"]):
+            bad.append("%s leaves LB_ITEMS" % a["name"])
+    L["overlaps"] = bad
+    return L
+
+
+def draw_segs(img, cpm, font, segs, rect, center):
+    tot = sum(cpm.text_size(font, t)[0] for t, _ in segs)
+    x = rect[0] + (rect[2] - tot) / 2 if center else rect[0]
+    for t, col in segs:
+        w = cpm.text_size(font, t)[0]
+        cpm.draw_text(img, font, t, (x, rect[1], x + w + 2, rect[1] + rect[3]), 17, col)
+        x += w
+
+
+def draw_variant(img, cpm, L):
+    from PIL import ImageDraw
+    d = ImageDraw.Draw(img)
+    by_tag = {}
+    for op in L["ops"]:
+        if op[0] == "button":
+            _, rect, segs, active = op
+            b = BTN_BORDER_ACTIVE if active else BTN_BORDER
+            if active:
+                d.rectangle([rect[0] + 8, rect[1] + 8, rect[0] + rect[2] - 8, rect[1] + rect[3] - 8], fill=(int(TEAL_FRAME[0] * 255 * 0.7), int(TEAL_FRAME[1] * 255 * 0.7), int(TEAL_FRAME[2] * 255 * 0.7), 255))
+            frame_px(img, cpm, b, rect)
+            draw_segs(img, cpm, FILTER_FONT, segs, rect, True)
+        elif op[0] == "text":
+            draw_segs(img, cpm, SMALL, op[2], op[1], False)
+        elif op[0] == "swatch":
+            _, r, fr_c, fl_c, _t = op
+            d.rectangle([r[0], r[1], r[0] + r[2] - 1, r[1] + r[3] - 1], fill=tuple(int(v * 255) for v in fl_c) + (255,), outline=tuple(int(v * 255) for v in fr_c) + (255,), width=3)
+            d.rectangle([r[0] + 8, r[1] + r[3] // 2 - 2, r[0] + r[2] - 9, r[1] + r[3] // 2 + 2], fill=tuple(int(v * 255) for v in _t) + (255,))
+
+
+BTN_BORDER = {"FILL": "", "EDGE": "uibit_brdr_16we", "CORNER": "uibit_brdr_16wc", "DIMENSION": 16, "COLOR": TEAL_FRAME}   # BTN_USEITEM BORDER
+BTN_BORDER_ACTIVE = dict(BTN_BORDER, COLOR=CREAM)                                                                      # its HILIGHT colour
+
+
+def draw_divider(img, cpm, rect, label):
+    """Category divider row (v3): cream small-caps label, a thin teal rule to the right edge."""
+    from PIL import ImageDraw
+    x, y, w, h = rect
+    cpm.draw_text(img, SMALL, label, (x + 14, y, x + w - 14, y + h), 17, CREAM)
+    tx = x + 14 + int(cpm.text_size(SMALL, label)[0]) + 20
+    cy = y + h // 2
+    ImageDraw.Draw(img).rectangle([tx, cy - 1, x + w - 14, cy + 1], fill=tuple(int(v * 255) for v in TEAL_TEXT) + (255,))
+
+
+def render(state, order, rows_for_caption=None, outpath=None, items=None, scroll=0, variant="current"):
+    """One full 3840x1600 frame. Returns (PIL image, info dict). variant: "current" (the shipped ISF 0.3.1 UX) or a redesign v1/v2/v3 (see VARIANTS)."""
     from PIL import Image, ImageDraw
     cpm, qlm = _cpm(), _qlm()
     items = items if items is not None else SAMPLE
@@ -351,8 +612,10 @@ def render(state, order, rows_for_caption=None, outpath=None, items=None, scroll
     if bg is not None:
         cpm.paste_stretched(img, cpm.tint(bg, root.get("COLOR", (1, 1, 1))), (0, 0, SCREEN_W, SCREEN_H))
     caption = caption_with_count(state, ALL3, len(rows) if rows_for_caption is None else rows_for_caption)
+    if variant != "current":
+        caption = VCAPTION[state]
     sel = items[rows[0].item] if rows else None
-    info = {"caption": caption, "rows": rows, "overflow": False}
+    info = {"caption": caption, "rows": rows, "overflow": False, "variant": variant}
     for c in ctls:
         tag, b = c["TAG"], c["BORDER"]
         rect = c["RECT"]
@@ -397,6 +660,8 @@ def render(state, order, rows_for_caption=None, outpath=None, items=None, scroll
         s, col = tx["S"], tx["COLOR"]
         if tag == "LBL_FILTER":
             s = caption
+            if variant != "current" and state != S_ALL:
+                col = CREAM        # active-filter look: the caption takes the highlighted (cream) colour
         elif tag == "LBL_CREDITS_VALUE":
             s = CREDITS
         elif tag == "BTN_ALL":
@@ -407,18 +672,31 @@ def render(state, order, rows_for_caption=None, outpath=None, items=None, scroll
             info["overflow"] = draw_caption_overflow(img, cpm, rpx, s)
             info["caption_px"] = cpm.text_size(FILTER_FONT, s)[0]
             info["label_px"] = rpx[2]
-    # rows
+    # rows (+ v3 category dividers); heights in px, whole elements only
     lb = unit_px(cpm, by_tag["LB_ITEMS"]["RECT"])
     sx, sy = cpm.SX, cpm.SY
     row_w, row_h = int(PROTO[2] * sx), int(PROTO[3] * sy)
     rx, ry0 = int(PROTO[0] * sx), int(PROTO[1] * sy)
-    n_vis = max(0, (lb[1] + lb[3] - ry0) // row_h)
+    avail = lb[1] + lb[3] - ry0
+    els = build_elements(rows, order, variant)
+    hts = [row_h if k[0] == "row" else row_h // 2 for k in els]
+    n_vis = avail // row_h                 # window capacity in whole rows (reported)
+    n_top = fit_count(hts, 0, avail)        # elements visible from the top (scrollbar thumb)
+    scroll = max(0, min(scroll, max_scroll(hts, avail)))
     proto = {"FILL": "uibit_fill_2bt", "EDGE": "uibit_brdr_16bet", "CORNER": "uibit_brdr_16bct", "DIMENSION": 16}
-    scroll = max(0, min(scroll, max(0, len(rows) - n_vis)))
-    for i, e in enumerate(rows[scroll:scroll + n_vis]):
+    y = ry0
+    shown_rows = 0
+    for k in els[scroll:scroll + fit_count(hts, scroll, avail)]:
+        if k[0] == "div":
+            draw_divider(img, cpm, (rx, y, row_w, row_h // 2), k[1])
+            y += row_h // 2
+            continue
+        e = k[1]
         it = items[e.item]
-        r = (rx, ry0 + i * row_h, row_w, row_h)
-        ftint, ttint = row_colours(e, i == 0 and scroll == 0)
+        r = (rx, y, row_w, row_h)
+        y += row_h
+        shown_rows += 1
+        ftint, ttint = row_colours(e, e is rows[0])
         frame_px(img, cpm, proto, r, tint=ftint)
         isz = row_h - 2 * ICON_PAD
         ic = item_icon(cpm, qlm, it)
@@ -427,8 +705,9 @@ def render(state, order, rows_for_caption=None, outpath=None, items=None, scroll
         if it.stack > 1:
             cpm.draw_text(img, "dialogfont10x10", str(it.stack), (r[0] + ICON_PAD, r[1] + ICON_PAD, r[0] + ICON_PAD + isz - 4, r[1] + ICON_PAD + isz - 2), 35, (1, 1, 1))
         cpm.draw_text(img, FILTER_FONT, it.name, (r[0] + row_h + 6, r[1], r[0] + r[2] - 16, r[1] + r[3]), 17, ttint)
-    info["rows_visible"] = min(n_vis, len(rows) - scroll)
+    info["rows_visible"] = shown_rows
     info["rows_window"] = n_vis
+    info["scroll"] = scroll
     # scrollbar (SCROLLBAR EXTENT 268,134,16,329; 16ge/16gc DIMENSION 4, uibit_uparrowg, uibit_fill_16g thumb)
     sbx, sby, sbw, sbh = int(268 * sx), int(134 * sy), int(16 * sx), lb[3]
     frame_px(img, cpm, {"EDGE": "uibit_brdr_16ge", "CORNER": "uibit_brdr_16gc", "DIMENSION": 4}, (sbx, sby, sbw, sbh), tint=SB_THUMB_TINT)
@@ -438,9 +717,12 @@ def render(state, order, rows_for_caption=None, outpath=None, items=None, scroll
         cpm.paste_stretched(img, cpm.tint(up, SB_THUMB_TINT), (sbx, sby, sbx + sbw, sby + arrow))
         cpm.paste_stretched(img, cpm.tint(up.transpose(Image.FLIP_TOP_BOTTOM), SB_THUMB_TINT), (sbx, sby + sbh - arrow, sbx + sbw, sby + sbh))
     track = sbh - 2 * arrow - 8
-    th = track if len(rows) <= n_vis else max(24, int(track * n_vis / len(rows)))
-    toff = 0 if len(rows) <= n_vis else int((track - th) * scroll / (len(rows) - n_vis))
+    th = track if len(els) <= n_top else max(24, int(track * n_top / len(els)))
+    toff = 0 if len(els) <= n_top else int((track - th) * scroll / max(1, len(els) - n_top))
     qlm.draw_fill(img, cpm, "uibit_fill_16g", (sbx + 4, sby + arrow + 4 + toff, sbw - 8, th), SB_THUMB_TINT)
+    if variant != "current":
+        info["layout"] = variant_layout(cpm, variant, state, order, ctls, items, caption)
+        draw_variant(img, cpm, info["layout"])
     # full-order strip under the panel (what scrolling reveals)
     names = []
     for e in rows:
@@ -448,7 +730,9 @@ def render(state, order, rows_for_caption=None, outpath=None, items=None, scroll
         tag = ("*" if e.is_new else "") + ("!" if e.tint else "")
         names.append("%s%s%s" % (tag, it.name, " x%d" % it.stack if it.stack > 1 else ""))
     legend = "ISF 0.3.1-dev mock | filter: %s | sort_order: %s | %d of %d items, %d rows visible in LB_ITEMS | * = New, ! = cannot equip (tinted)" % (
-        STATE_NAMES[state], SORT_NAMES[order], len(rows), total_all, info["rows_visible"])
+        (STATE_NAMES if variant == "current" else VNAMES)[state], SORT_NAMES[order], len(rows), total_all, info["rows_visible"])
+    if variant != "current":
+        legend = legend.replace("ISF 0.3.1-dev mock", "ISF redesign mock %s" % variant)
     d = ImageDraw.Draw(img)
     d.rectangle([0, 1456, SCREEN_W, SCREEN_H], fill=(0, 0, 0, 255))   # the strip sits below the panel art, on black
     lh = 12.5 * cpm.tscale("dialogfont10x10")
@@ -531,32 +815,148 @@ def render_scrolled(outdir):
     return p
 
 
-def render_all(outdir):
+def v3_scroll(cpm):
+    """List scroll (in elements) for the second v3 frame: All + Category showing the unusable-block "Armour" divider and the tinted rows under it."""
+    _, ctls = load_gui(cpm)
+    lb = unit_px(cpm, next(c for c in ctls if c["TAG"] == "LB_ITEMS")["RECT"])
+    row_h, ry0 = int(PROTO[3] * cpm.SY), int(PROTO[1] * cpm.SY)
+    els = build_elements(arrange(S_ALL, SO_CATEGORY), SO_CATEGORY, "v3")
+    hts = [row_h if k[0] == "row" else row_h // 2 for k in els]
+    return scroll_to_unusable_divider(els, hts, lb[1] + lb[3] - ry0)
+
+
+def variant_fit_table(vinfos, cpm):
+    """Fit section for the redesign variants: free rects measured from the gui, then per variant / state every added element's text px vs box px
+    and the overlap check (an added rect overlapping a gui control or another added rect = FAIL)."""
+    lines = ["", "=" * 100, "REDESIGN VARIANTS (v1 status line, v2 visible controls, v3 in-list cues); fonts dialogfont10x10 / dialogfont16x16, 3840x1600", "=" * 100, ""]
+    shown = False
+    for name, info in vinfos:
+        L = info["layout"]
+        if not shown:
+            lines.append("free rects measured from inventory_p.gui (px; x, y, w, h):")
+            for nm, r, use in L["free"]:
+                lines.append("  %-92s %s  -> %s" % (nm, r, use))
+            lines.append("  band A box used: %s   band B box used: %s" % (L["band_a"], L["band_b"]))
+            lines.append("")
+            shown = True
+        lines.append("%s:" % name)
+        for nm, text, w, box, ok in L["fits"]:
+            lines.append("  %-44s | %7.1f px text | %6.1f px box | %s | \"%s\"" % (nm, w, box, "OK" if ok else "FAIL (overflow)", text))
+        for a in L["added"]:
+            lines.append("  rect %-28s %s (%s)" % (a["name"], a["rect"], a["kind"]))
+        lines.append("  overlap check vs %d gui controls + added rects: %s" % (len(L["px"]), "OK (none)" if not L["overlaps"] else "FAIL: " + "; ".join(L["overlaps"])))
+        lines.append("  rows visible %d of %d (window %d, scroll %d)" % (info["rows_visible"], len(info["rows"]), info["rows_window"], info.get("scroll", 0)))
+    allok = all(ok for _, i in vinfos for *_x, ok in i["layout"]["fits"]) and not any(i["layout"]["overlaps"] for _, i in vinfos)
+    lines += ["", "VARIANT FIT SUMMARY: %s" % ("PASS (all added elements fit, no overlaps)" if allok else "FAIL")]
+    return "\n".join(lines) + "\n", allok
+
+
+def variants_compare(frames, cols_w=1920):
+    """2x2 grid of the four variants (Can Equip + Category), each tile cols_w px wide, labelled."""
+    from PIL import Image, ImageDraw, ImageFont
+    h = int(1456 * cols_w / SCREEN_W)
+    f = ImageFont.load_default(size=44)
+    pad, gap = 64, 16
+    sheet = Image.new("RGBA", (2 * cols_w + 3 * gap, 2 * (h + pad) + gap), (0, 0, 0, 255))
+    d = ImageDraw.Draw(sheet)
+    for i, (label, im) in enumerate(frames):
+        x, y = gap + (i % 2) * (cols_w + gap), gap // 2 + (i // 2) * (h + pad)
+        d.text((x + 8, y + 8), label, fill=(240, 240, 240, 255), font=f)
+        sheet.alpha_composite(im.crop((0, 0, SCREEN_W, 1456)).resize((cols_w, h), Image.LANCZOS), (x, y + pad))
+    return sheet
+
+
+def variants_zoom(frames, z=2):
+    """Per variant (stacked): tab strip + LB_ITEMS + free band B, each cropped from the full frame and upscaled z x."""
+    from PIL import Image, ImageDraw, ImageFont
+    crops = [("tabs", (690, 270, 1700, 345)), ("list", (220, 350, 1372, 1240)), ("bands", (660, 1245, 3260, 1456))]
+    f = ImageFont.load_default(size=44)
+    blocks = []
+    for label, im in frames:
+        parts = [im.crop(b).resize(((b[2] - b[0]) * z, (b[3] - b[1]) * z), Image.LANCZOS) for _, b in crops]
+        blocks.append((label, parts))
+    w = max(p.width for _, parts in blocks for p in parts)
+    hh = sum(sum(p.height for p in parts) + 60 for _, parts in blocks)
+    sheet = Image.new("RGBA", (w, hh), (0, 0, 0, 255))
+    d = ImageDraw.Draw(sheet)
+    y = 0
+    for label, parts in blocks:
+        d.text((12, y + 8), label, fill=(240, 240, 240, 255), font=f)
+        y += 60
+        for p in parts:
+            sheet.alpha_composite(p, (0, y))
+            y += p.height
+    return sheet.convert("RGB")
+
+
+def render_variants(outdir, variants):
+    """Renders every VSTATES frame per variant (+ the v3 scrolled frame). Returns (vinfos [(name, info)], frames {(variant, tag): image})."""
+    cpm = _cpm()
+    vinfos, frames = [], {}
+    for v in variants:
+        for tag, st, so in VSTATES:
+            im, info = render(st, so, outpath=outdir / ("isf_%s_%s.png" % (v, tag)), variant=v)
+            frames[(v, tag)] = im
+            vinfos.append(("%s / %s + %s" % (v, VNAMES[st], SORT_LABELS[so]), info) if v != "current" else None)
+        if v == "v3":
+            im, info = render(S_ALL, SO_CATEGORY, outpath=outdir / "isf_v3_all_category_scrolled.png", variant=v, scroll=v3_scroll(cpm))
+            frames[(v, "all_category_scrolled")] = im
+            vinfos.append(("v3 / All + Category, scrolled to the Armour divider + tinted rows", info))
+    return [x for x in vinfos if x], frames
+
+
+def render_all(outdir, variant="all"):
     cpm = _cpm()
     outdir = Path(outdir)
     outdir.mkdir(parents=True, exist_ok=True)
-    frames, infos, by_state = [], [], {}
-    for name, st, so in RUNS:
-        im, info = render(st, so, outpath=outdir / (name + ".png"))
-        frames.append(("%s  (filter %s, sort %s)" % (name + ".png", STATE_NAMES[st], SORT_NAMES[so]), im))
-        infos.append((name, info))
-        if so == SO_CATEGORY:
-            by_state[st] = im
-    zoom_in = [("State %s: \"%s\"" % (STATE_NAMES[s], caption_with_count(s, ALL3, len(visible_entries(s, build_entries())))), by_state[s])
-               for s in (S_ALL, S_NEW, S_USABLE, S_UPGRADE)]
-    worst, _ = render(S_UPGRADE, SO_CATEGORY, rows_for_caption=1024)
-    caption_zoom(zoom_in, worst).save(outdir / "isf_caption_zoom.png")
-    contact_sheet(frames).save(outdir / "isf_sheet.png")
-    render_scrolled(outdir)
-    (outdir / "isf_fit_table.txt").write_text(fit_table(infos, cpm))
+    text = ""
+    if variant in ("current", "all"):
+        frames, infos, by_state = [], [], {}
+        for name, st, so in RUNS:
+            im, info = render(st, so, outpath=outdir / (name + ".png"))
+            frames.append(("%s  (filter %s, sort %s)" % (name + ".png", STATE_NAMES[st], SORT_NAMES[so]), im))
+            infos.append((name, info))
+            if so == SO_CATEGORY:
+                by_state[st] = im
+        zoom_in = [("State %s: \"%s\"" % (STATE_NAMES[s], caption_with_count(s, ALL3, len(visible_entries(s, build_entries())))), by_state[s])
+                   for s in (S_ALL, S_NEW, S_USABLE, S_UPGRADE)]
+        worst, _ = render(S_UPGRADE, SO_CATEGORY, rows_for_caption=1024)
+        caption_zoom(zoom_in, worst).save(outdir / "isf_caption_zoom.png")
+        contact_sheet(frames).save(outdir / "isf_sheet.png")
+        render_scrolled(outdir)
+        text = fit_table(infos, cpm)
+    vs = [v for v in VARIANTS if v != "current" and variant in (v, "all")]
+    allfr = {}
+    if variant in ("current", "all"):
+        _, fr = render_variants(outdir, ["current"])      # isf_current_<state>.png: the same four states as the redesigns, shipped UX
+        allfr.update(fr)
+    if vs:
+        vinfos, fr = render_variants(outdir, vs)
+        allfr.update(fr)
+        t, ok = variant_fit_table(vinfos, cpm)
+        text += t
+    if variant == "all":
+        order = [("current (ISF 0.3.1-dev, shipped)", "current"), ("v1 status line", "v1"), ("v2 visible controls", "v2"), ("v3 in-list cues", "v3")]
+        variants_compare([(lab + "   |   Can Equip + Category", allfr[(v, "canequip_category")]) for lab, v in order]).convert("RGB").save(outdir / "isf_variants_compare.png")
+        variants_zoom([(lab + "   |   Can Equip + Category", allfr[(v, "canequip_category")]) for lab, v in order]).save(outdir / "isf_variants_zoom.png")
+    (outdir / "isf_fit_table.txt").write_text(text)
     return sorted(p.name for p in outdir.iterdir())
 
 
 def main(argv):
-    if len(argv) != 2:
+    args = argv[1:]
+    variant = "all"
+    if "--variant" in args:
+        i = args.index("--variant")
+        if i + 1 >= len(args) or args[i + 1] not in VARIANTS + ("all",):
+            print("--variant needs one of: current, v1, v2, v3, all")
+            return 2
+        variant = args[i + 1]
+        del args[i:i + 2]
+    if len(args) != 1:
         print(__doc__.split("usage:")[1].split("\n")[0].strip())
         return 2
-    for n in render_all(argv[1]):
+    for n in render_all(args[0], variant):
         print(n)
     return 0
 
