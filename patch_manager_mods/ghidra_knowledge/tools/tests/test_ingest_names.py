@@ -369,6 +369,104 @@ class TwinsTests(Base):
         self.assertIn("named=2", out)
 
 
+    def test_buckets_file_lists_every_gap_fn(self):
+        gf = os.path.join(self.tmp, "gog_functions.tsv")
+        with open(gf, "w", encoding="utf-8") as fh:
+            fh.write("gog_addr\tclass\tfunction\tcallconv\tparam_size_bytes\tnotes\n00501000\tFoo\tOpen\t\t0\t\n")
+        bpath = os.path.join(self.tmp, "buckets.tsv")
+        self.args += ["--buckets", bpath, "--gog-functions", gf]
+        rc, out, _e = self.run_twins()
+        self.assertEqual(rc, 0)
+        self.assertIn("twins: buckets=7 -> " + bpath, out)
+        rows = {r["steam"]: r for r in read_tsv(bpath)}
+        self.assertEqual(list(read_tsv(bpath)[0]), list(inn.BUCKET_COLS))
+        self.assertEqual({a: r["bucket"] for a, r in rows.items()}, {
+            "0x00401000": "named", "0x00402000": "ambiguous", "0x00403000": "ambiguous", "0x00404000": "unnamed",
+            "0x00405000": "named", "0x00406000": "no_twin", "0x00407000": "no_fp"})
+        self.assertEqual(rows["0x00402000"]["steam_peers"], "0x00402100")
+        self.assertEqual(rows["0x00403000"]["gog_addrs"], "0x00503000,0x00503100")
+        self.assertEqual(rows["0x00403000"]["name"], "Foo::DupA,Foo::DupB")
+        self.assertEqual(rows["0x00401000"]["in_gog_functions"], "yes")
+        self.assertEqual(rows["0x00405000"]["in_gog_functions"], "no")
+        self.assertEqual(rows["0x00402000"]["order_gog"], "")
+
+    def test_order_flag_adds_count_but_unequal_groups_never_pair(self):
+        self.args.append("--order")
+        rc, out, _e = self.run_twins()
+        self.assertEqual(rc, 0)
+        self.assertIn("no_fp=1 order=0 -> ", out)
+        self.assertEqual({r["source"] for r in read_tsv(self.out_tsv)}, {"fptwin"})
+
+
+class OrderPairTests(unittest.TestCase):
+    S, G = [0x401000, 0x402000], [0x501000, 0x502000]
+
+    def test_monotone_run_pairs(self):
+        anchors = [(0x400000, 0x500000), (0x401800, 0x501800), (0x403000, 0x503000)]
+        self.assertEqual(inn.order_pairs(self.S, self.G, anchors), list(zip(self.S, self.G)))
+
+    def test_anchor_inside_span_breaks_order(self):
+        self.assertEqual(inn.order_pairs(self.S, self.G, [(0x401800, 0x502800)]), [])
+
+    def test_nearest_outside_anchor_breaks_order(self):
+        # steam before the group, gog after the first GOG member: crossing
+        self.assertEqual(inn.order_pairs(self.S, self.G, [(0x400000, 0x501800)]), [])
+
+    def test_far_anchor_out_of_run_ignored(self):
+        anchors = [(0x100000, 0x900000), (0x400000, 0x500000), (0x403000, 0x503000)]
+        self.assertEqual(len(inn.order_pairs(self.S, self.G, anchors)), 2)
+
+    def test_unequal_or_single_groups(self):
+        self.assertEqual(inn.order_pairs(self.S, self.G[:1], []), [])
+        self.assertEqual(inn.order_pairs(self.S[:1], self.G[:1], []), [])
+
+    def test_anchor_same_steam_other_gog_breaks(self):
+        self.assertEqual(inn.order_pairs(self.S, self.G, [(0x401000, 0x501100)]), [])
+
+
+class OrderTwinsTests(Base):
+    def setUp(self):
+        super().setUp()
+        self.server = os.path.join(self.tmp, "server")
+        # group A (size 41): steam 401/402, gog 501/502 -> pairs by order; group B (size 42): crossing anchor
+        write_fp(self.server, inn.FP_STEAM, [
+            fp_row("0x00401000", "41", "FUN_00401000"), fp_row("0x00402000", "41", "FUN_00402000"),
+            fp_row("0x00403000", "40", "FUN_00403000"),
+            fp_row("0x00404000", "42", "FUN_00404000"), fp_row("0x00405000", "42", "FUN_00405000"),
+            fp_row("0x00406000", "43", "FUN_00406000"), fp_row("0x00407000", "41", "FUN_00407000")])
+        write_fp(self.server, inn.FP_GOG, [
+            fp_row("0x00501000", "41", "A1", ns="Foo"), fp_row("0x00502000", "41", "FUN_00502000"),
+            fp_row("0x00503000", "40", "Mid", ns="Foo"),
+            fp_row("0x00504000", "42", "B1", ns="Foo"), fp_row("0x00505000", "42", "B2", ns="Foo"),
+            fp_row("0x00503500", "43", "Cross", ns="Foo"), fp_row("0x00507000", "41", "A3", ns="Foo")])
+        self.out_tsv = os.path.join(self.tmp, "twins.tsv")
+        self.bpath = os.path.join(self.tmp, "b.tsv")
+        self.args = ["twins", "--server", self.server, "--out", self.out_tsv, "--order",
+                     "--buckets", self.bpath, "--gog-functions", os.path.join(self.tmp, "none.tsv")] + self.common
+        with open(self.args[-len(self.common) - 1], "w", encoding="utf-8") as fh:
+            fh.write("gog_addr\n")
+
+    def gap7(self, *_a, **_kw):
+        top = [{"fn": "0x%08x" % a, "cites": 1, "in": ["x"]} for a in (0x401000, 0x402000, 0x404000, 0x405000)]
+        return {"research_notes": {"files": 1, "cited": 4, "unknown": 4, "top": top}}
+
+    def test_order_rows(self):
+        with mock.patch.object(inn, "gap", self.gap7):
+            rc, out, _e = run(self.args)
+        self.assertEqual(rc, 0)
+        # group A (3 steam: 401, 402, 407 vs 3 gog: 501, 502, 507) runs in order around anchor 403<->503;
+        # 402<->502 pairs but GOG is unnamed -> bucket only.  Group B crosses unique twin 406<->5035.
+        self.assertIn("order=1", out)
+        rows = read_tsv(self.out_tsv)
+        self.assertEqual([(r["steam"], r["gog"], r["source"], r["name"]) for r in rows],
+                         [("0x00401000", "0x00501000", "fptwin_order", "Foo::A1")])
+        b = {r["steam"]: r for r in read_tsv(self.bpath)}
+        self.assertEqual(b["0x00402000"]["order_gog"], "0x00502000")
+        self.assertEqual(b["0x00402000"]["in_gog_functions"], "no")
+        self.assertEqual(b["0x00404000"]["order_gog"], "")
+        self.assertEqual(b["0x00404000"]["bucket"], "ambiguous")
+
+
 class LedgerTests(Base):
     def setUp(self):
         super().setUp()

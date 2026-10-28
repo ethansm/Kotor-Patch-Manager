@@ -9,6 +9,7 @@ CLI:
   ingest_names.py extract --source modcode --out FILE
   ingest_names.py ledger --in FILE --topic ingest-modcode [--apply] [--date YYYY-MM-DD]
   ingest_names.py cards --in LEDGER_TSV --out-dir DIR [--chunk 12] [--decoy-every 4] [--seed N] [--decomp-lines 10]
+  ingest_names.py twins --out FILE [--buckets FILE] [--order] [--gog-functions TSV] [--server DIR]
   ingest_names.py score --key DIR/key.tsv --verdicts 'DIR/verdicts_*.tsv' --out promote.tsv
 Common flags: --kdb DB  --ledger-dir DIR  --functions TSV  --root DIR  --dump-root DIR
 
@@ -761,6 +762,7 @@ def run_score(args, out=sys.stdout):
 
 # ---- twins -------------------------------------------------------------------
 TWIN_COLS = ("gog", "steam", "source", "name", "cites")
+BUCKET_COLS = ("steam", "bucket", "gog_addrs", "steam_peers", "name", "cites", "in_gog_functions", "order_gog")
 SERVER_DEFAULT = "~/Games/KOTOR2_Mod_Workspace/ghidra_dumps/upstream_server/"
 FP_STEAM = "k2_win_steam_aspyr_swkotor2.exe"
 FP_GOG = "k2_win_gog_aspyr_swkotor2.exe"
@@ -774,48 +776,144 @@ def _fp_key(r):
 
 
 def _load_fp(path):
-    """({addr int: row}, Counter of keys) for one fp.tsv."""
-    by_addr, keys = {}, collections.Counter()
+    """({addr int: row}, {key: [addrs sorted]}) for one fp.tsv."""
+    by_addr, groups = {}, collections.defaultdict(list)
     for r in read_tsv(path):
-        by_addr[int(r["addr"], 16)] = r
-        keys[_fp_key(r)] += 1
-    return by_addr, keys
+        a = int(r["addr"], 16)
+        by_addr[a] = r
+        groups[_fp_key(r)].append(a)
+    for v in groups.values():
+        v.sort()
+    return by_addr, groups
 
 
-def twins(server, source="all", kdb_path=KDB_DEFAULT, ledger_dir=LEDGER_DEFAULT, functions=FUNCS_DEFAULT,
-          root=REPO):
-    """Gap functions whose structural twin in the GOG exe carries a real name.
+GOG_EVIDENCE_RX = re.compile(r"\bGOG (0x[0-9a-fA-F]{6,8})\b")
 
-    Returns (rows, counts); counts keys: gap named unnamed ambiguous no_twin no_fp (sum to gap).
+
+def load_kdb_pairs(path):
+    """[(steam int, gog int)] from name_map rows (confidence != 'wrong') whose evidence names the GOG addr."""
+    con = sqlite3.connect("file:" + str(path) + "?mode=ro", uri=True)
+    try:
+        out = []
+        for addr, ev in con.execute("select steam_addr, evidence from name_map where confidence != 'wrong'"):
+            m = GOG_EVIDENCE_RX.search(ev or "")
+            a = _hex(addr)
+            if m and a is not None:
+                out.append((a, int(m.group(1), 16)))
+        return out
+    finally:
+        con.close()
+
+
+def load_gog_functions(path):
+    """Set of GOG addrs (int) listed in DUMP/inputs/gog_functions.tsv."""
+    out = set()
+    for r in read_tsv(path):
+        a = _hex(r.get("gog_addr"))
+        if a is not None:
+            out.add(a)
+    return out
+
+
+def _gname(r):
+    return "%s::%s" % (r["namespace"] or "Global", r["name"]) if r["name"] and not r["name"].startswith("FUN_") else ""
+
+
+def order_pairs(s_addrs, g_addrs, anchors):
+    """k-th Steam <-> k-th GOG pairs of one ambiguous key group, or [] when the order is not proven.
+
+    Needs equal group sizes; the pairs plus every trusted anchor (steam, gog) whose Steam addr lies inside
+    the group's Steam span, plus the nearest anchor on each side, must form one strictly increasing run.
+    `anchors` is sorted by Steam addr.
     """
-    steam, steam_keys = _load_fp(os.path.join(server, FP_STEAM, "fp.tsv"))
-    gog, gog_keys = _load_fp(os.path.join(server, FP_GOG, "fp.tsv"))
-    gog_by_key = {_fp_key(r): r for r in gog.values()}
+    if len(s_addrs) != len(g_addrs) or len(s_addrs) < 2:
+        return []
+    pairs = list(zip(s_addrs, g_addrs))
+    steams = [a for a, _g in anchors]
+    lo = max(bisect.bisect_left(steams, s_addrs[0]) - 1, 0)
+    hi = bisect.bisect_right(steams, s_addrs[-1]) + 1
+    run = sorted(set(pairs) | set(anchors[lo:hi]))
+    for (s0, g0), (s1, g1) in zip(run, run[1:]):
+        if s1 <= s0 or g1 <= g0:
+            return []
+    return pairs
+
+
+def twins_full(server, source="all", kdb_path=KDB_DEFAULT, ledger_dir=LEDGER_DEFAULT, functions=FUNCS_DEFAULT,
+               root=REPO, order=False, gog_functions=None):
+    """(rows, counts, buckets) for every gap function.
+
+    rows: unique named GOG twins (source fptwin), plus with `order` ambiguous-group pairs proven by address
+    order (source fptwin_order).  counts keys: gap named unnamed ambiguous no_twin no_fp (sum to gap) + order.
+    buckets: one BUCKET_COLS row per gap function.  `gog_functions` (path) fills in_gog_functions.
+    """
+    steam, steam_groups = _load_fp(os.path.join(server, FP_STEAM, "fp.tsv"))
+    gog, gog_groups = _load_fp(os.path.join(server, FP_GOG, "fp.tsv"))
+    in_gog = load_gog_functions(gog_functions) if gog_functions else None
+    anchors = None
     # a function can sit in several source groups: dedupe by address, sum its cites across groups
     cites = collections.Counter()
     for d in gap(source, kdb_path, ledger_dir, functions, root, top_n=100000).values():
         for t in d["top"]:
             cites[int(t["fn"], 16)] += t["cites"]
-    counts = collections.Counter(gap=len(cites))
-    rows = []
+    counts = collections.Counter(gap=len(cites), order=0)
+    rows, buckets = [], []
+
+    def flag(g):
+        return "" if in_gog is None else ("yes" if g in in_gog else "no")
+
     for a in sorted(cites):
+        b = {"steam": "0x%08x" % a, "bucket": "no_fp", "gog_addrs": "", "steam_peers": "", "name": "",
+             "cites": cites[a], "in_gog_functions": "", "order_gog": ""}
+        buckets.append(b)
         s = steam.get(a)
         if s is None:
             counts["no_fp"] += 1
             continue
         k = _fp_key(s)
-        if k not in gog_keys:
+        gs, ss = gog_groups.get(k, []), steam_groups[k]
+        b["gog_addrs"] = ",".join("0x%08x" % g for g in gs)
+        b["steam_peers"] = ",".join("0x%08x" % x for x in ss if x != a)
+        if not gs:
+            b["bucket"] = "no_twin"
             counts["no_twin"] += 1
-        elif steam_keys[k] > 1 or gog_keys[k] > 1:
+        elif len(ss) > 1 or len(gs) > 1:
+            b["bucket"] = "ambiguous"
+            b["name"] = ",".join(_gname(gog[g]) or "-" for g in gs)
+            if order:
+                if anchors is None:
+                    anchors = sorted(set(load_kdb_pairs(kdb_path)) |
+                                     {(v[0], gog_groups[kk][0]) for kk, v in steam_groups.items()
+                                      if len(v) == 1 and len(gog_groups.get(kk, ())) == 1})
+                g = dict(order_pairs(ss, gs, anchors)).get(a)
+                if g is not None:
+                    b["order_gog"] = "0x%08x" % g
+                    b["in_gog_functions"] = flag(g)
+                    name = _gname(gog[g])
+                    if name:
+                        counts["order"] += 1
+                        rows.append({"gog": "0x%08x" % g, "steam": "0x%08x" % a, "source": "fptwin_order",
+                                     "name": name, "cites": cites[a]})
             counts["ambiguous"] += 1
         else:
-            g = gog_by_key[k]
-            if not g["name"] or g["name"].startswith("FUN_"):
+            g = gs[0]
+            name = _gname(gog[g])
+            b["in_gog_functions"] = flag(g)
+            if not name:
+                b["bucket"] = "unnamed"
                 counts["unnamed"] += 1
                 continue
+            b["bucket"], b["name"] = "named", name
             counts["named"] += 1
-            rows.append({"gog": "0x%08x" % int(g["addr"], 16), "steam": "0x%08x" % a, "source": "fptwin",
-                         "name": "%s::%s" % (g["namespace"] or "Global", g["name"]), "cites": cites[a]})
+            rows.append({"gog": "0x%08x" % g, "steam": "0x%08x" % a, "source": "fptwin",
+                         "name": name, "cites": cites[a]})
+    return rows, counts, buckets
+
+
+def twins(server, source="all", kdb_path=KDB_DEFAULT, ledger_dir=LEDGER_DEFAULT, functions=FUNCS_DEFAULT,
+          root=REPO, order=False):
+    """Gap functions whose structural twin in the GOG exe carries a real name: (rows, counts)."""
+    rows, counts, _b = twins_full(server, source, kdb_path, ledger_dir, functions, root, order)
     return rows, counts
 
 
@@ -854,6 +952,12 @@ def build_parser():
     t.add_argument("--source", choices=sorted(SOURCE_GROUPS), default="all")
     t.add_argument("--server", default=None, help="upstream server dump dir (default: $BD_SERVER or %s)" % SERVER_DEFAULT)
     t.add_argument("--out", required=True)
+    t.add_argument("--buckets", default=None, help="also write every gap fn with its bucket to this TSV")
+    t.add_argument("--order", action="store_true",
+                   help="pair equal-size ambiguous key groups by address order (source fptwin_order)")
+    t.add_argument("--gog-functions", default=None,
+                   help="GOG functions TSV for the in_gog_functions column (default: DUMP/inputs/gog_functions.tsv "
+                        "when it exists)")
     s = sub.add_parser("score", help="gate decoy rejection, write promote TSV")
     s.add_argument("--key", required=True)
     s.add_argument("--verdicts", required=True, help="glob of verdicts_*.tsv")
@@ -895,10 +999,20 @@ def main(argv=None, dump=None, out=None, err=None):
             return 0
         if args.cmd == "twins":
             server = os.path.expanduser(args.server or os.environ.get("BD_SERVER") or SERVER_DEFAULT)
-            rows, c = twins(server, args.source, args.kdb, args.ledger_dir, args.functions, args.root)
+            gf = args.gog_functions
+            if gf is None and args.buckets:
+                from static_facts import DUMP_ROOT
+                cand = os.path.join(args.dump_root or str(DUMP_ROOT), "inputs", "gog_functions.tsv")
+                gf = cand if os.path.exists(cand) else None
+            rows, c, buckets = twins_full(server, args.source, args.kdb, args.ledger_dir, args.functions, args.root,
+                                          args.order, gf)
             write_tsv(args.out, rows, TWIN_COLS)
+            extra = f" order={c['order']}" if args.order else ""
             print(f"twins: gap={c['gap']} named={c['named']} unnamed={c['unnamed']} ambiguous={c['ambiguous']} "
-                  f"no_twin={c['no_twin']} no_fp={c['no_fp']} -> {args.out}", file=out)
+                  f"no_twin={c['no_twin']} no_fp={c['no_fp']}{extra} -> {args.out}", file=out)
+            if args.buckets:
+                write_tsv(args.buckets, buckets, BUCKET_COLS)
+                print(f"twins: buckets={len(buckets)} -> {args.buckets}", file=out)
             return 0
         if args.cmd == "ledger":
             return run_ledger(args, dump if dump is not None else _make_dump(args.dump_root), out, err)
