@@ -174,6 +174,32 @@ inline bool onTabClick(int clicked, int engineMode, Extra extra, unsigned enable
     return true;
 }
 
+// ---- controller bumper ring (WI-153) -----------------------------------------------------------------
+// The engine steps the filter mode inline on the bumpers (0->6->7..->11->0, reverse for prev; New=1 is not in it). With the cycle
+// on, our states join that ring after All: All > New > Usable > Upgradeable > 6 > .. > 11 > All (prev is the reverse). Slots 0..3
+// are the State values (mask bit 1u << slot), slots 4..9 are engine modes 6..11 (always visited, no mask bit).
+// Pass-through (result = the engine's computed mode, extra None, i.e. the vanilla ring exactly): cycle off, dir 0, none of
+// New/Usable/Upgradeable enabled in the mask, or a current mode outside the ring (2..5, unknown 0xFF).
+struct Bump { int mode; Extra extra; };
+constexpr int kRingLen = 10;
+inline Bump bumperNext(bool cycle, int curMode, Extra curExtra, int computedMode, unsigned enabledMask, int dir) {
+    const Bump engine = {computedMode, X_None};
+    constexpr unsigned kOurs = (1u << S_New) | (1u << S_Usable) | (1u << S_Upgrade);
+    if (!cycle || dir == 0 || !(enabledMask & kOurs)) return engine;
+    State s;
+    int p;
+    if (curMode >= 6 && curMode <= 11) p = curMode - 2;
+    else if (stateOf(curMode, curExtra, &s)) p = int(s);
+    else return engine;
+    for (int i = 1; i < kRingLen; ++i) {
+        const int q = ((p + dir * i) % kRingLen + kRingLen) % kRingLen;
+        if (q == S_All) return Bump{0, X_None};
+        if (q >= S_Count) return Bump{q + 2, X_None};   // slots 4..9 = engine modes 6..11
+        if (enabledMask & (1u << q)) return Bump{engineModeOf(State(q)), extraOf(State(q))};
+    }
+    return Bump{0, X_None};   // unreachable: the walk reaches slot 0 (All) within kRingLen steps
+}
+
 // ---- equip predicate (doc 11 "0.2.0 tint predicate") -------------------------------------------------
 // The engine's equip test 0x5BD6A0 takes ONE slot bit (it dispatches on 0x10/0x20, 0x40000/0x80000, other).
 // An item fits the shown character if any bit of its baseitem slot mask passes. Stops at the first pass.

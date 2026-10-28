@@ -55,6 +55,8 @@ WINDOWS = [
     W("M6 backpack row buffer",     0x8A7E22, 79, 0x8A7BA0, skip=True),
     W("M6 flush before finalise",   0x8A7E76, 22, 0x8A7BA0),
     W("M6 row-select epilogue (re-tint)", 0x8A8478, 6, 0x8A83D0),  # H6d 0.2.0: MOV ESP,EBP; POP EBP; RET 4 (RET is the last stolen insn)
+    W("M6 bumper prev (0x2F)",      0x8A8997, 9,  0x8A8880, skip=True),  # H6e: PUSH ECX / MOV ECX,[EBP-0x2C] / CALL SetNextFilter (skipped)
+    W("M6 bumper next (0x30)",      0x8A89F7, 9,  0x8A8880, skip=True),  # H6f: PUSH EDX / MOV ECX,[EBP-0x2C] / CALL SetNextFilter (skipped)
     # Mod 7 (designed, not built)
     W("M7 SetMouseCursor entry",    0x7B3870, 7,  0x7B3870),
     W("M7 hilite placeable colour", 0x7AA747, 10, 0x7AA460),

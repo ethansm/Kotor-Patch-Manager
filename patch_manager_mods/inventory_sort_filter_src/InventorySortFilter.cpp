@@ -9,6 +9,8 @@
 //   H6c 0x008a7e76 SortFilterFlush      PopulateItemListBox loop exit; sorts the buffer and creates the rows
 //   H6d 0x008a8478 SortFilterRowSelect  row-select handler 0x8a83d0 epilogue; re-applies the tint that SetItem
 //                                       (via 0x8b1cc0, only for New items) just reset
+//   H6e 008a8997  SortFilterBumperPrev  controller bumper prev (input 0x2F): PUSH/MOV/CALL SetNextFilter replaced (9 bytes, skipped);
+//   H6f 008a89f7  SortFilterBumperNext  bumper next (input 0x30): with the cycle on, New / Usable / Upgradeable join the bumper ring
 //
 // Stages are controlled from inventory_sort_filter.ini (re-read at most once a second, no restart needed):
 //   all flags 0 = stage 0 (logging only; rows are still created through the buffer, in vanilla order).
@@ -409,6 +411,36 @@ void startPopulate(int panel, int ebp) {
 }
 
 } // namespace
+
+// H6e (input 0x2F, prev) and H6f (input 0x30, next): CSWGuiInGameInventory::HandleInputEvent 0x8a8880 steps the engine mode inline
+// and calls SetNextFilter. The 9-byte windows (PUSH reg / MOV ECX,[EBP-0x2C] / CALL SetNextFilter) are skipped, so the hook makes
+// that call itself with the mode from isf::bumperNext (our New / Usable / Upgradeable states join the bumper ring). Which physical
+// bumper is 0x2F / 0x30 is unverified: every press logs the input code, so the play test settles it.
+namespace {
+void bumperStep(int panel, int computedMode, int dir) {
+    saferead::beginScope();
+    loadIni(false);
+    if (panel != g_panel) {   // same reset as SortFilterTabClick (WI-148)
+        g_panel = panel; g_extra = isf::X_None; strcpy(g_caption, "Filter");
+        g_n = 0; g_inPop = false;
+    }
+    const int mode = filterMode();
+    const isf::Bump next = isf::bumperNext(g_cfg.cycle, mode, g_extra, computedMode, g_cfg.mask, dir);
+    logf("bumper: input=0x%02X %s panel=%08x cycle=%d mask=%x mode=%d extra=%d computed=%d -> mode=%d extra=%d", dir > 0 ? 0x30 : 0x2F,
+         dir > 0 ? "next" : "prev", panel, g_cfg.cycle, g_cfg.mask, mode, g_extra, computedMode, next.mode, next.extra);   // every press, ungated
+    if (!panel) return;     // unreadable frame: SetNextFilter would dereference ECX = 0, so skip the whole step
+    g_extra = next.extra;   // SetNextFilter only stores the mode and flags a deferred repopulate
+    reinterpret_cast<SetNextFilterFn>(FnSetNextFilter)(panel, next.mode);
+    char text[isf::kCaptionBytes] = "Filter";
+    isf::State st;
+    if (g_cfg.cycle && isf::stateOf(next.mode, next.extra, &st)) isf::captionWithCount(st, g_cfg.mask, -1, text, sizeof text);
+    captionTo(panel, text);
+}
+} // namespace
+
+// ECX / EDX = the engine's computed mode (pushed as the SetNextFilter argument), [ebp-0x2C] = panel.
+extern "C" void __cdecl SortFilterBumperPrev(int computedMode, int panel) { bumperStep(panel, computedMode, -1); }
+extern "C" void __cdecl SortFilterBumperNext(int computedMode, int panel) { bumperStep(panel, computedMode, +1); }
 
 // H6a. ECX = panel, [esp+4] = tab control. Returns 1 when the click is consumed.
 extern "C" int __cdecl SortFilterTabClick(int panel, int ctrl) {

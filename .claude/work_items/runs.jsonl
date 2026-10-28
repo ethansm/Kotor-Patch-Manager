@@ -121,3 +121,4 @@
 {"claimed_at": "2026-10-28T00:55:32Z", "closed_at": "2026-10-28T00:55:32Z", "duration_s": 0, "outcome": "manual-close", "paths": 1, "reason": "split into WI-163 (RE) + WI-164 (build); WI-36 superseded", "session": "dec095da-08a6-4b8d-9694-3eda46c84371", "wi": "WI-36"}
 {"claimed_at": "2026-10-28T00:57:39Z", "closed_at": "2026-10-28T00:57:39Z", "duration_s": 0, "outcome": "manual-close", "paths": 6, "reason": "WI-154 fix wave vw2-A", "session": "d8e177e5-97c2-4bac-af2c-9e39ef6301dd", "wi": "WI-154"}
 {"claimed_at": "2026-10-28T01:06:40Z", "closed_at": "2026-10-28T01:06:40Z", "duration_s": 0, "outcome": "manual-close", "paths": 6, "reason": "WI-155 fix wave vw2-A", "session": "d8e177e5-97c2-4bac-af2c-9e39ef6301dd", "wi": "WI-155"}
+{"claimed_at": "2026-10-28T01:09:40Z", "closed_at": "2026-10-28T01:09:40Z", "duration_s": 0, "outcome": "manual-close", "paths": 10, "reason": "WI-153 fix wave vw2-A", "session": "d8e177e5-97c2-4bac-af2c-9e39ef6301dd", "wi": "WI-153"}

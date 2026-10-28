@@ -5,3 +5,5 @@ EXPORTS
     SortFilterBufferRow
     SortFilterFlush
     SortFilterRowSelect
+    SortFilterBumperPrev
+    SortFilterBumperNext

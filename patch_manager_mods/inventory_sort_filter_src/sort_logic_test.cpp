@@ -226,6 +226,73 @@ int main() {
         captionWithCount(S_Upgrade, all3, 1024, none, 0);
         CHECK(none[0] == 'X');
     }
+    {   // WI-153 bumper ring. engineNext mimics the engine's inline step (0x8a8880): next 0->6, +1, >11 -> 0; prev 6->0, -1, <0 -> 11
+        auto engineNext = [](int m, int d) { return d > 0 ? (m == 0 ? 6 : m == 11 ? 0 : m + 1) : (m == 6 ? 0 : m == 0 ? 11 : m - 1); };
+        auto walk = [&](int d, unsigned mask, const int* wm, const isf::Extra* wx, int n) {   // n presses from All, exact order
+            int m = 0; isf::Extra x = isf::X_None; bool ok = true;
+            for (int i = 0; i < n; ++i) {
+                isf::Bump b = isf::bumperNext(true, m, x, engineNext(m, d), mask, d);
+                ok = ok && b.mode == wm[i] && b.extra == wx[i]; m = b.mode; x = b.extra;
+            }
+            return ok;
+        };
+        const int fm[10] = {1, 0, 0, 6, 7, 8, 9, 10, 11, 0};   // all three on (mask 0xE): All > New > Usable > Upgradeable > 6..11 > All
+        const isf::Extra fx[10] = {isf::X_None, isf::X_Usable, isf::X_Upgrade, isf::X_None, isf::X_None, isf::X_None, isf::X_None, isf::X_None, isf::X_None, isf::X_None};
+        const int bm[10] = {11, 10, 9, 8, 7, 6, 0, 0, 1, 0};
+        const isf::Extra bx[10] = {isf::X_None, isf::X_None, isf::X_None, isf::X_None, isf::X_None, isf::X_None, isf::X_Upgrade, isf::X_Usable, isf::X_None, isf::X_None};
+        CHECK(walk(1, 0xEu, fm, fx, 10));
+        CHECK(walk(-1, 0xEu, bm, bx, 10));
+        // only Usable on (mask 0x4): New and Upgradeable are skipped both ways
+        const int um[9] = {0, 6, 7, 8, 9, 10, 11, 0, 0};
+        const isf::Extra ux[9] = {isf::X_Usable, isf::X_None, isf::X_None, isf::X_None, isf::X_None, isf::X_None, isf::X_None, isf::X_None, isf::X_None};
+        CHECK(walk(1, 0x4u, um, ux, 8));
+        const int ubm[9] = {11, 10, 9, 8, 7, 6, 0, 0};
+        const isf::Extra ubx[9] = {isf::X_None, isf::X_None, isf::X_None, isf::X_None, isf::X_None, isf::X_None, isf::X_Usable, isf::X_None};
+        CHECK(walk(-1, 0x4u, ubm, ubx, 8));
+    }
+    {   // WI-153 every enabled subset (bit 0 = All, ignored): a lap from All visits only enabled states, never repeats, closes after
+        // 7 + nOn presses, and the opposite press steps back to the previous state
+        for (unsigned mask = 0; mask < 16; ++mask) {
+            const int nOn = int((mask >> 1) & 1u) + int((mask >> 2) & 1u) + int((mask >> 3) & 1u);
+            for (int d = -1; d <= 1; d += 2) {
+                auto step = [&](int m, isf::Extra x, int dd) {
+                    return isf::bumperNext(true, m, x, dd > 0 ? (m == 0 ? 6 : m == 11 ? 0 : m + 1) : (m == 6 ? 0 : m == 0 ? 11 : m - 1), mask, dd);
+                };
+                bool seen[64] = {}, ok = true; int m = 0, steps = 0; isf::Extra x = isf::X_None;
+                do {
+                    isf::Bump b = step(m, x, d);
+                    ++steps;
+                    ok = ok && !(b.mode == 1 && !(mask & 2u)) && !(b.extra == isf::X_Usable && !(mask & 4u)) && !(b.extra == isf::X_Upgrade && !(mask & 8u));
+                    const int key = b.mode * 4 + int(b.extra);   // unique per state, max 46
+                    if (!(b.mode == 0 && b.extra == isf::X_None)) { ok = ok && !seen[key]; seen[key] = true; }
+                    isf::Bump back = step(b.mode, b.extra, -d);
+                    ok = ok && back.mode == m && back.extra == x;
+                    m = b.mode; x = b.extra;
+                } while (!(m == 0 && x == isf::X_None) && steps < 32);
+                CHECK(ok && steps == 7 + nOn);
+            }
+        }
+    }
+    {   // WI-153 pass-through = the vanilla engine ring: cycle off, no extra enabled (mask 0 or only bit 0), dir 0, or a mode outside the ring
+        bool ok = true;
+        for (int m = 0; m <= 11; ++m)
+            for (int d = -1; d <= 1; d += 2)
+                for (unsigned mask = 0; mask <= 1; ++mask) {
+                    const int c = d > 0 ? (m == 0 ? 6 : m == 11 ? 0 : m + 1) : (m == 6 ? 0 : m == 0 ? 11 : m - 1);
+                    isf::Bump a = isf::bumperNext(true, m, isf::X_None, c, mask, d), b = isf::bumperNext(false, m, isf::X_Usable, c, 0xEu, d);
+                    ok = ok && a.mode == c && a.extra == isf::X_None && b.mode == c && b.extra == isf::X_None;
+                }
+        CHECK(ok);
+        isf::Bump a = isf::bumperNext(true, 0, isf::X_Usable, 6, 0xEu, 0);       // dir 0
+        isf::Bump c = isf::bumperNext(true, 0xFF, isf::X_None, 3, 0xEu, 1);      // unknown mode
+        isf::Bump e = isf::bumperNext(true, 3, isf::X_None, 4, 0xEu, 1);         // engine modes 2..5 are not in the ring
+        isf::Bump f = isf::bumperNext(true, -1, isf::X_None, 0, 0xEu, -1);       // filterMode() unreadable
+        CHECK(a.mode == 6 && a.extra == isf::X_None && c.mode == 3 && c.extra == isf::X_None && e.mode == 4 && e.extra == isf::X_None);
+        CHECK(f.mode == 0 && f.extra == isf::X_None);
+        isf::Bump g = isf::bumperNext(true, 1, isf::X_None, 2, 0x4u, 1);         // clicked the New tab while New is off: next = Usable, prev = All
+        isf::Bump h = isf::bumperNext(true, 1, isf::X_None, 0, 0x4u, -1);
+        CHECK(g.mode == 0 && g.extra == isf::X_Usable && h.mode == 0 && h.extra == isf::X_None);
+    }
     // ---- sort_order (WI-154): category / base / name / vanilla ----
     {
         auto withCat = [](Entry e, unsigned char c) { e.category = c; return e; };
