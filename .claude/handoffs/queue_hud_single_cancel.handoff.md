@@ -41,4 +41,4 @@ The existing Cancel X (doCancel -> ClearAllActions for the whole member) stays a
 - queue-hud 0.4.11-dev committed d40aa8f7 (repo), KPM 159d077; kpm_status = SWAP. --apply refused: game was running. User gave GO with gate waiver.
 - Gate: step 1 fails on peer commits (level-up-override WI-164 exports/compile, character-effects-panel raw addresses); Wine smoke wire/combat/badhud fail IDENTICALLY on committed 0.4.10 (smoke_queuehud.cpp pinned to 0.4.0 strings, stale) -> smoke refresh is a follow-up.
 - Removable kinds: buffered, active buffered (dropActive), pending round node (removeRoundNodes + drops matching active / hand-off head). Invisible LBL_QUEUE1 click-eater label per companion row (alpha 0) so clicks never reach the world.
-- Next: close game, `python3 scripts/kpm_hotswap.py --mod queue-hud --apply`, play row QH27.
+- LIVE 2026-10-28 01:21 (dll 7d4bf251, rollback queue-hud_swap_20261028_012153). Next: play QH27 (+ QH18/25/26), then `python3 scripts/kotor2_logs.py check queue_hud --new`.
