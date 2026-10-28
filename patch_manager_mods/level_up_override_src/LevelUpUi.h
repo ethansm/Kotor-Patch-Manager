@@ -858,3 +858,117 @@ void uiTick(uintptr_t panel, uintptr_t stats, int realCan, int heldResult) {
     uiShow(r, C_STATUS, sv);
     uiTipTick(r, sc, haveCur ? uiTipHit(r, cx, cy) : -1, click);
 }
+
+// ---- WI-164 / WI-36b: in-panel Filter button on the PC's feats / powers level-up panels (4-mode cycle) -------------------------------------
+// Creation: the panels' own ctors (feats 0x909E00 site 0x90A327, powers 0x9074E0 site 0x9079F9, `push imm32` of "BTN_RECOMMENDED" / "RECOMMENDED_BTN",
+//   NOT skipped, layout GFF still open) -> filterCtor(kind, panel) creates a clone of that template (addToList=0, hidden) and stores {panel, label}.
+// Tick: the panels' own Draw overrides (vftable slot 0x34, thiscall ECX = panel, prologue 55 8B EC 83 EC 08; feats 0x90BBB0, powers 0x9091E0) ->
+//   filterTick(kind, panel): append once, place beside the template (left of it, right when that would leave the screen), show only for the PC while the
+//   filter is on, text "Filter: <mode>", click polling (guikit::ClickEdge, the same pattern as uiTick).
+// Click: mode cycles all > build_dim > combat > force > all (NOT r10f::nextMode: it includes build_hide), saved with ptSetPc (profile and the other
+//   list's mode kept), then the rebuild pair runs: builder then RefreshGridStates, thiscall(panel), no stack args (feats 0x90C230 + 0x90BD50, powers
+//   0x9098D0 + 0x909360). The R10 dim detours inside the builders apply the new mode.
+constexpr int FbFeats = 0, FbPowers = 1;
+struct FilterBtn {
+    uintptr_t panel = 0, label = 0;
+    bool appended = false, placed = false, hover = false, shown = false;
+    int textMode = -1;           // modeAt() index currently in the label text (-1 = none yet)
+    int pcState = -2;            // r10IsPc result once known (1 PC / 0 tagged); -2 = not asked, -1 = unreadable (asked again next tick)
+    guikit::ClickEdge edge;
+};
+FilterBtn g_fb[2];
+
+inline r10f::Mode filterNext4(r10f::Mode m) {
+    m = r10f::dimMode(m);   // build_hide is not offered: it counts as build_dim
+    return m == r10f::All ? r10f::BuildDim : m == r10f::BuildDim ? r10f::Combat : m == r10f::Combat ? r10f::Force : r10f::All;
+}
+const char* filterKindName(int kind) { return kind == FbPowers ? "powers" : "feats"; }
+
+// Ctor hook body (layout open). param = the panel. Always resets the record first, so a reused panel address never keeps a stale label.
+void filterCtor(int kind, uintptr_t panel) {
+    saferead::beginScope();
+    FilterBtn& f = g_fb[kind];
+    f = FilterBtn();
+    if (!panel) return;
+    reloadConfig();
+    reloadPlay();
+    const R10Eff eff = r10Effective();
+    if (!eff.on || g_cfg.mode == Mode::Off) return;   // filter off: no button (the next panel open picks up a change made on the character screen)
+    static const char* const kTags[2][2] = {{"BTN_RECOMMENDED", "LBL_NAME"}, {"RECOMMENDED_BTN", "LBL_POWER"}};   // template, fallback template
+    uintptr_t c = 0;
+    for (int t = 0; t < 2 && !c; ++t) {
+        int why = 0;
+        c = guikit::createLabelFromTemplate(panel, kTags[kind][t], &why);
+        logLine("FILTER btn ctor kind=%s panel=%08x tag=%s label=%08x why=%d", filterKindName(kind), (unsigned)panel, kTags[kind][t], (unsigned)c, why);
+    }
+    if (!c) return;
+    f.panel = panel;
+    f.label = c;
+}
+
+void filterClick(int kind, FilterBtn& f, const R10Eff& eff) {
+    typedef void (__thiscall* Rebuild_t)(void* panel);
+    static const uintptr_t kRebuild[2][2] = {{0x0090C230, 0x0090BD50}, {0x009098D0, 0x00909360}};   // builder, RefreshGridStates
+    r10p::State st = r10p::fromTokens(true, eff.profile, r10f::modeName(eff.feats), r10f::modeName(eff.powers));
+    int& slot = kind == FbPowers ? st.powers : st.feats;
+    const r10f::Mode before = r10p::modeAt(slot);
+    const r10f::Mode after = filterNext4(before);
+    slot = r10p::modeIndex(after);
+    char pcf[r10p::TokenLen];
+    const char* ff = nullptr; const char* pf = nullptr;
+    r10p::toTokens(st, pcf, sizeof pcf, &ff, &pf);
+    const bool ok = ptSetPc(true, pcf, ff, pf);
+    logLine("FILTER btn click kind=%s panel=%08x %s -> %s saved=%d", filterKindName(kind), (unsigned)f.panel, r10f::modeName(before), r10f::modeName(after), ok);
+    if (!ok || !engineOk()) return;
+    void* const p = reinterpret_cast<void*>(f.panel);
+    reinterpret_cast<Rebuild_t>(kRebuild[kind][0])(p);
+    reinterpret_cast<Rebuild_t>(kRebuild[kind][1])(p);
+    logLine("FILTER btn rebuild kind=%s panel=%08x builder=%08x refresh=%08x done", filterKindName(kind), (unsigned)f.panel, (unsigned)kRebuild[kind][0], (unsigned)kRebuild[kind][1]);
+}
+
+// Draw hook body (every frame while the panel is drawn): returns at once for any panel but the one filterCtor stored.
+void filterTick(int kind, uintptr_t panel) {
+    FilterBtn& f = g_fb[kind];
+    if (!f.label || f.panel != panel) return;
+    saferead::beginScope();
+    const bool click = guikit::clickEdge(f.edge);   // sampled every tick so a press that began elsewhere never fires
+    reloadConfig();
+    reloadPlay();
+    const R10Eff eff = r10Effective();
+    if (f.pcState < 0 && eff.on && g_cfg.mode != Mode::Off) f.pcState = r10IsPc(panel);
+    const bool show = eff.on && g_cfg.mode != Mode::Off && f.pcState == 1;
+    if (!show) {
+        if (f.shown) { guikit::setVisible(f.label, false); f.shown = false; f.hover = false; }
+        return;
+    }
+    if (!f.appended) {
+        if (!guikit::appendToPanel(panel, f.label)) {
+            logLine("FILTER btn append failed kind=%s panel=%08x (button disabled for this panel)", filterKindName(kind), (unsigned)panel);
+            f.label = 0;
+            return;
+        }
+        f.appended = true;
+        logLine("FILTER btn appended kind=%s panel=%08x label=%08x", filterKindName(kind), (unsigned)panel, (unsigned)f.label);
+    }
+    if (!f.placed) {
+        int x, y, w, h;
+        if (guikit::getExtent(f.label, &x, &y, &w, &h) && w > 0 && h > 0) {
+            int nx = x - w - 6;   // beside the template: to its left, to its right when that would start off-screen
+            if (nx < 0) nx = x + w + 6;
+            f.placed = guikit::setRect(f.label, nx, y, w, h);
+            logLine("FILTER btn placed kind=%s panel=%08x template=%d,%d,%d,%d at x=%d ok=%d", filterKindName(kind), (unsigned)panel, x, y, w, h, nx, f.placed);
+        }
+    }
+    const int mi = r10p::modeIndex(kind == FbPowers ? eff.powers : eff.feats);
+    if (f.textMode != mi) {
+        char t[48];
+        snprintf(t, sizeof t, "Filter: %s", r10f::modeName(r10p::modeAt(mi)));
+        if (guikit::setText(f.label, t)) f.textMode = mi;
+    }
+    if (!f.shown) f.shown = guikit::setVisible(f.label, true);
+    int cx = 0, cy = 0;
+    const bool over = guikit::cursorEngine(&cx, &cy) && guikit::hit(f.label, cx, cy);
+    const bool hovered = over && f.hover;   // the cursor was already over the button on the previous tick (a click meant for something on top never fires)
+    f.hover = over;
+    if (click && hovered) filterClick(kind, f, eff);
+}

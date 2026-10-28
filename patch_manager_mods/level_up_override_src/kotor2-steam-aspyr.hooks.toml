@@ -463,3 +463,58 @@ exclude_from_restore = []
 [[hooks.parameters]]
 source = "ebp"
 type = "pointer"
+
+# ---- WI-164 / WI-36b: in-panel Filter button on the PC's feats / powers level-up panels (facts: .claude/research/wi36_rescue/WI-163/165/166_facts.md) ----
+# Ctor creation sites, same pattern as Hook 9 (0x84D82C): a plain relocatable 5-byte `push imm32` of the button template tag, NOT skipped, the layout GFF is
+# still open, so the handler can create a label from the template (addToList=0). feats ctor 0x909E00 site 0x90A327 pushes "BTN_RECOMMENDED" (0x9AA3C8),
+# panel = [ebp-0x104]; powers ctor 0x9074E0 site 0x9079F9 pushes "RECOMMENDED_BTN" (0x9AA2B8), panel = [ebp-0x108].
+[[hooks]]
+address = 0x0090A327
+type = "detour"
+function = "LuoFeatsCtor"
+original_bytes = [0x68, 0xC8, 0xA3, 0x9A, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[ebp-0x104]"
+type = "int"
+
+[[hooks]]
+address = 0x009079F9
+type = "detour"
+function = "LuoPowersCtor"
+original_bytes = [0x68, 0xB8, 0xA2, 0x9A, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[ebp-0x108]"
+type = "int"
+
+# Per-frame tick = the panels' own Draw overrides (vftable slot 0x34, thiscall, ECX = panel, RET 4, one float arg). Prologue 55 8B EC 83 EC 08 =
+# PUSH EBP / MOV EBP,ESP / SUB ESP,8 (6 bytes, whole instructions; a 5-byte cut would split the SUB). skip_original_bytes=false: our code runs BEFORE the
+# original bytes, so ECX/EBP are still the caller's. feats CSWGuiFeatsCharGen 0x90BBB0, powers CSWGuiPowersLevelUp 0x9091E0.
+[[hooks]]
+address = 0x0090BBB0
+type = "detour"
+function = "LuoFeatsDraw"
+original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x08]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks]]
+address = 0x009091E0
+type = "detour"
+function = "LuoPowersDraw"
+original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x08]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"

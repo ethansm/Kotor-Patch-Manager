@@ -209,7 +209,7 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [ ] | 193 | WI-161 | P3 | hold | S | - | ISF doc 11: describe the caption row count (WI-151) in the UX section | 0 | 0 | WI-151 worker OPEN: doc 11 UX section not updated; also note the 1024- |
 | [ ] | 194 | WI-162 | P3 | hold | S | - | WI-160 follow-up: confirm O3 helper oTarget is the AoE centre and is reached only on the c | 0 | 0 | Checker CONFIRMED but OPEN: vanilla caller outside the read ranges; ef |
 | [x] | 195 | WI-163 | P3 | ready | S | - | WI-36a RE: feats/powers level-up panel tick + button template + rebuild call conv | 0 | 0 | WI-36 needs: (1) a per-frame site running while each panel (CSWGuiFeat |
-| [ ] | 196 | WI-164 | P3 | ready | S | WI-163,WI-165 | WI-36b build: in-panel Filter button on feats/powers panels (4-mode cycle) | 0 | 3 | After WI-163 (WI-36a RE): ctor + tick hooks in kotor2-steam-aspyr.hook |
+| [x] | 196 | WI-164 | P3 | ready | S | WI-163,WI-165 | WI-36b build: in-panel Filter button on feats/powers panels (4-mode cycle) | 0 | 3 | After WI-163 (WI-36a RE): ctor + tick hooks in kotor2-steam-aspyr.hook |
 | [x] | 197 | WI-165 | P3 | ready | S | - | WI-36a2 rea-recon: feats/powers panel vftables, per-frame slot, prologue bytes | 0 | 0 | WI-163 static facts (.claude/research/wi36_rescue/WI-163_facts.md OPEN |
 | [x] | 198 | WI-166 | P3 | ready | S | - | rea-recon: find per-frame driver calling feats/powers panel vftable slot 0x34 (Draw) | 0 | 0 | WI-165 facts OPEN 1: REA slot-0x34 call sites found belong to other cl |
 | [ ] | 199 | WI-167 | P3 | hold | S | - | WI-164 hook probe: log [CClientExoAppInternal+0x274] vs [panel+0x1c] and [panel+0x48] bit  | 0 | 0 | WI-166 facts OPEN 2/4: manager identity and bit-2 gate are static-argu |

@@ -42,6 +42,8 @@
 //   68 DC 39 9A 00, plain relocatable instruction, NOT skipped), param [ebp-0x254] = the panel. The layout GFF is still open here: LuoUiPanelCtor
 //   creates our labels (guikit::createLabelFromTemplate, addToList=0) and does NOT append them (Mod 14's 0x84D871 hook later binds LBL_EFX_* with
 //   InitControl addToList=1 and expects ids 69..150).
+// Hooks 10-13 (WI-164 / WI-36b, in-panel Filter button on the PC's feats/powers level-up panels, LevelUpUi.h): ctor creation sites 0x90A327 / 0x9079F9
+//   (`push imm32` of the BTN_RECOMMENDED / RECOMMENDED_BTN template tag, NOT skipped, like Hook 9) and the panels' Draw overrides 0x90BBB0 / 0x9091E0 (tick).
 // Hook 4b (M4 UI, tick): the SetStats hold-gate site 0x84F221 now also passes ebp (panel = [ebp-0x288]) to LuoHold_84F221, which keeps the hold
 //   semantics and then runs the UI tick (append once on the first tick, placement, Configure button / status line / options page, click polling).
 //   SetStats runs every frame from CSWGuiInGameCharacter::Update 0x84FBB0 (the hook Mod 14 ticks on), i.e. only while the character screen is the
@@ -2337,6 +2339,13 @@ void __cdecl LuoR10Dim_90C36A(void* ebp) { r10Dim(r10::Feats, reinterpret_cast<u
 void __cdecl LuoR10Dim_909B56(void* ebp) { r10Dim(r10::Powers, reinterpret_cast<uintptr_t>(ebp), P2_Panel); }
 // CSWGuiInGameCharacter ctor 0x84C3A0, site 0x84D82C (layout still open): param [ebp-0x254] = the panel. Creates (does not append) the UI labels.
 void __cdecl LuoUiPanelCtor(int panel) { uiPanelCtor(static_cast<uintptr_t>(static_cast<uint32_t>(panel))); }
+
+// WI-164 / WI-36b in-panel Filter button (LevelUpUi.h filterCtor / filterTick). Ctor sites: feats ctor 0x909E00 site 0x90A327 (panel = [ebp-0x104]),
+// powers ctor 0x9074E0 site 0x9079F9 (panel = [ebp-0x108]); Draw overrides: feats 0x90BBB0, powers 0x9091E0 (ECX = panel). dllexport: exports.def is outside this item's scope.
+__declspec(dllexport) void __cdecl LuoFeatsCtor(int panel) { filterCtor(FbFeats, static_cast<uintptr_t>(static_cast<uint32_t>(panel))); }
+__declspec(dllexport) void __cdecl LuoPowersCtor(int panel) { filterCtor(FbPowers, static_cast<uintptr_t>(static_cast<uint32_t>(panel))); }
+__declspec(dllexport) void __cdecl LuoFeatsDraw(void* panel) { filterTick(FbFeats, reinterpret_cast<uintptr_t>(panel)); }
+__declspec(dllexport) void __cdecl LuoPowersDraw(void* panel) { filterTick(FbPowers, reinterpret_cast<uintptr_t>(panel)); }
 
 // GetCharacterChangeInProgress 0x740FC0 call sites (ecx).
 int __cdecl LuoGuardGui_84FD2F(void* ecx) { return guiGuard(0x84FD2F, "gui", ecx); }
