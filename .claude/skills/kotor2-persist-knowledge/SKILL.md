@@ -26,7 +26,8 @@ Research spans many sessions and context clears; an unrecorded fact gets paid fo
 | Cross-session status, user preference, decision | Memory (`~/.claude/projects/.../memory/`) | Update the existing project file; add an index line only for a new file |
 
 Never write `name_map` / the knowledge DB directly from ad-hoc research: names reach it only via a ledger row that
-passed a Haiku check with decoys (see `ghidra_knowledge/INGEST_PLAN.md` I2/I4) and the user's OK.
+passed a Haiku check with decoys and the user's OK: `ingest_names.py cards|score` then `promote_names.py`
+(all in `patch_manager_mods/ghidra_knowledge/tools/`, see `ghidra_knowledge/INGEST_PLAN.md` I2/I4).
 
 ## 2. Steps (about 5-10 min)
 1. List the findings of this session (max 10 lines; drop anything already recorded: `rg -n '<addr or name>'` first).

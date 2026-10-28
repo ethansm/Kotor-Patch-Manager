@@ -35,6 +35,7 @@ When starting a new session or beginning mod work:
 ## Fast Local Development Tools
 - **Master Plan & Context Resume:** `python3 scripts/plan_manager.py resume | next | delegate <phase> | handoff` (instant phase recovery & autonomous subagent execution < 200 tokens; never scrape past session logs). Spec & Legend: `patch_manager_mods/MASTER_KEY.md`.
 - **Symbol & Struct Resolution:** `python3 scripts/query_ghidra.py symbol <name> | address <hex> | struct <class>` (instant lookup; never write inline sqlite scripts)
+- **Steam exe RE, free first:** tool order in `patch_manager_mods/ghidra_knowledge/RE_AGENT_GUIDE.md` §2.1 (`static_facts.py`, `named_decomp.py`, `fn_doc.py`, ...). Names known in mod code or notes: `ingest_names.py gap|extract|ledger|cards|score` (blind Haiku cards with decoys, `--decomp-lines 10` for functions), then `promote_names.py` writes verified names to the KDB `name_map` (user OK first).
 - **Fast Code Search:** `rg "<pattern>" [dir]` (ripgrep v15.2.0 installed in PATH)
 - **Structural Repo Map:** `python3 scripts/generate_repo_map.py [dir]` (compact class/fn skeleton)
 - **Doc Semantic Search:** `python3 scripts/search_docs.py "<query>"` (local vector search via LM Studio / FTS5)

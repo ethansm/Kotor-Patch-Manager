@@ -85,7 +85,8 @@ VERDICT: <CONFIRMED | REFUTED | PARTIAL | UNSURE>
   `ghidra_knowledge/RE_AGENT_GUIDE.md` §2.1. Put their output in the brief; never ask a Haiku or REA for them.
   Order, free/fast first (all under `ghidra_knowledge/tools/`): `static_facts.py addr|twins` (per-address facts) ·
   `named_decomp.py run` (named pseudo-C) · `fn_doc.py page` (class page) · `persist_purposes.py` (KDB purposes) ·
-  `rea_facts.py run` (scripted live-only facts) · `rea_ledger.py lint` (ledger hygiene).
+  `rea_facts.py run` (scripted live-only facts) · `rea_ledger.py lint` (ledger hygiene) · `ingest_names.py cards|score`
+  (blind Haiku name cards with decoys; use `--decomp-lines 10` for functions) · `promote_names.py` (verified names -> KDB, user OK).
 - `rea-recon` v2: write the `static_facts.py` output to a file and name it in the brief; the agent reads it first,
   Greps the ledger by address only, and stops after 3 REA calls per address (+3 overall).
 - Live REA (`rea-recon`) only for indirect call targets, non-contiguous bodies, data xrefs and named pseudo-C.
