@@ -122,5 +122,40 @@ int main() {
     KT_CHECK(e.desc != nullptr && e.nLines == 0);
   }
 
+  // s1. Fortitude: class term = noEff - misc - ability - feat; effects = total - noEff; parts add up to the value.
+  {
+    srows::StatsIn in{};
+    in.haveSaves = true; in.condTier = 2;
+    in.save[0] = {11, 9, 1, 2};
+    cfx::Entry e{};
+    KT_CHECK(build(V_FORT, in, true, &e));
+    KT_CHECK(std::strcmp(e.name, "Fortitude") == 0 && std::strcmp(e.val, "11") == 0);
+    KT_CHECK(hasLine(e, "Class levels +4") && hasLine(e, "Constitution +2"));
+    KT_CHECK(hasLine(e, "Improved Conditioning +2") && hasLine(e, "Other bonuses +1"));
+    KT_CHECK(hasLine(e, "Active effects +2") && e.nLines == 5);
+  }
+
+  // s2. Will with a negative ability, no feat, no misc, an effect penalty; Reflex picks Dexterity.
+  {
+    srows::StatsIn in{};
+    in.haveSaves = true;
+    in.save[2] = {1, 3, 0, -1};
+    in.save[1] = {5, 5, 0, 3};
+    cfx::Entry e{};
+    KT_CHECK(build(V_WILL, in, true, &e));
+    KT_CHECK(std::strcmp(e.val, "1") == 0 && hasLine(e, "Class levels +4") && hasLine(e, "Wisdom -1"));
+    KT_CHECK(hasLine(e, "Active effects -2") && e.nLines == 3);
+    KT_CHECK(build(V_REF, in, true, &e));
+    KT_CHECK(hasLine(e, "Dexterity +3") && hasLine(e, "Class levels +2") && e.nLines == 2);
+  }
+
+  // s3. No save data (read failed): description only, no value.
+  {
+    srows::StatsIn in{};
+    cfx::Entry e{};
+    KT_CHECK(build(V_FORT, in, true, &e));
+    KT_CHECK(e.nLines == 0 && e.val[0] == 0 && e.desc != nullptr);
+  }
+
   return kt::Report("vanilla_tips_test");
 }

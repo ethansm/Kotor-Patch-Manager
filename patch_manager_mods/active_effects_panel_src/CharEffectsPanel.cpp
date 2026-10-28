@@ -1,4 +1,4 @@
-// Character Active Effects Panel 0.5.1-dev (Steam Aspyr build 6A522E71...). Fills the right third of the character page
+// Character Active Effects Panel 0.5.2-dev (Steam Aspyr build 6A522E71...). Fills the right third of the character page
 // (CSWGuiInGameCharacter) with the shown character's active effects: icon, name, remaining time; Harmful section first,
 // then Beneficial; expiring first, permanent last; whole-entry scrolling with a scrollbar only when the list overflows.
 // Research trail: patch_manager_mods/14_character_active_effects_panel.md and active_effects_panel_src/research/R* (worktree
@@ -22,6 +22,7 @@
 // effect does, decoded from the live effect ints (decodeEffect, research R3 + R3b), short forms joined with ", " and cut
 // with "..."; long names/stats marquee after marquee_delay_ms without input; hover tooltips (name + time, every stat line,
 // the spells.2da description). GUI = 82 controls (S block inserted before MORE: ids of MORE..TIP moved by 14).
+// 0.5.2-dev (doc 51 ST6c): Fortitude/Reflex/Will tooltips break the total into class levels, ability, Conditioning feat, other bonuses and active effects (save getters 0x6BA620/0x6BA740/0x6BA6B0 with and without effects).
 // 0.5.1-dev (doc 51 ST6b): header hint tooltip, Force Mastery tooltip (marker effects 0x9960C8/CC), Level row + class lines on the Stats tab and Experience tip.
 // 0.5.0-dev (doc 51 ST6): hover tooltips on the vanilla character page rows (attributes, vitality, Force, Defense, saves, alignment, experience) from VanillaTips.h, drawn with the panel tooltip controls (ini vanilla_tips=0 disables); no hook or GUI change.
 // 0.4.1-dev (doc 51 ST5b): Influence row on the Stats tab for party NPCs (party table +0x11C, slot via object id then tag; ini show_influence).
@@ -1131,6 +1132,23 @@ bool gatherStats(int server, srows::StatsIn* in) {
         in->classLvl[in->nClass++] = reinterpret_cast<GetClassLevelFn>(GetClassLevel)(st, static_cast<uint8_t>(i), 0);
     }
     in->mastery = masteryOf(server);
+    {   // saves (doc 51 ST6c): the page's own getters, with and without effects, plus the raw misc + ability terms
+        static const uintptr_t kGet[3] = {GetFortSave, GetReflexSave, GetWillSave};
+        static const uint32_t kMisc[3] = {Stats_SaveMiscFort, Stats_SaveMiscReflex, Stats_SaveMiscWill};
+        int8_t con = 0; readAt<int8_t>(stats, Stats_ConMod, &con);
+        const int ability[3] = {con, reinterpret_cast<GetDEXModFn>(GetDEXMod)(st, 0), wis};
+        in->haveSaves = true;
+        for (int k = 0; k < 3; ++k) {
+            int8_t misc = 0;
+            if (!readAt<int8_t>(stats, static_cast<int>(kMisc[k]), &misc)) { in->haveSaves = false; break; }
+            srows::SaveIn& sv = in->save[k];
+            sv.total = reinterpret_cast<GetSaveFn>(kGet[k])(st, 0);
+            sv.noEff = reinterpret_cast<GetSaveFn>(kGet[k])(st, 1);
+            sv.misc = misc; sv.ability = ability[k];
+        }
+        for (int t = 3; t >= 1 && !in->condTier; --t)
+            if (reinterpret_cast<HasFeatFn>(HasFeat)(st, srows::kFeatCond[t - 1])) in->condTier = t;
+    }
     gatherResist(server, in->resist, sizeof in->resist);
     if (g_cfg.showInfluence) gatherInfluence(server, in);
     return true;
@@ -1341,6 +1359,6 @@ extern "C" void __cdecl CharEffectsDestroy(int panel) {
 
 BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
     if (reason == DLL_PROCESS_DETACH) guikit::wheelUninstall();   // never leave a dangling window proc: restores if on top, else stays chained but inert
-    if (reason == DLL_PROCESS_ATTACH) { snprintf(g_loadLine, sizeof g_loadLine, "chareffects 0.5.1-dev build 10 loaded (KpLog + IniKit + PanelSlots + GuiKit wheel + Party + STATS/DEFLECT probe + Stats tab + influence + vanilla tips) tick=%lu", (unsigned long)GetTickCount()); }
+    if (reason == DLL_PROCESS_ATTACH) { snprintf(g_loadLine, sizeof g_loadLine, "chareffects 0.5.2-dev build 11 loaded (KpLog + IniKit + PanelSlots + GuiKit wheel + Party + STATS/DEFLECT probe + Stats tab + influence + vanilla tips + saves) tick=%lu", (unsigned long)GetTickCount()); }
     return TRUE;
 }

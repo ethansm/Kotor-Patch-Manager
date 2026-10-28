@@ -99,6 +99,20 @@ inline void addMasteryLines(cfx::Entry* e, const srows::StatsIn& in, bool have) 
   }
 }
 
+// Save breakdown lines (doc 51 finding 7). which: 0 Fortitude, 1 Reflex, 2 Will. The class term is what is left of the
+// no-effects total after misc, ability and the Conditioning feat, so the parts always add up to the shown value.
+constexpr const char* kSaveAbility[3] = {"Constitution", "Dexterity", "Wisdom"};
+inline void addSaveLines(cfx::Entry* e, const srows::StatsIn& in, int which) {
+  const srows::SaveIn& sv = in.save[which];
+  snprintf(e->val, sizeof e->val, "%d", sv.total);
+  int tier = in.condTier < 0 ? 0 : (in.condTier > 3 ? 3 : in.condTier);
+  srows::addSigned(e, "Class levels", sv.noEff - sv.misc - sv.ability - tier);
+  srows::addSigned(e, kSaveAbility[which], sv.ability);
+  if (tier) srows::addSigned(e, tier == 1 ? "Conditioning" : (tier == 2 ? "Improved Conditioning" : "Master Conditioning"), tier);
+  if (sv.misc) srows::addSigned(e, "Other bonuses", sv.misc);
+  if (sv.total != sv.noEff) srows::addSigned(e, "Active effects", sv.total - sv.noEff);
+}
+
 // Fills one tooltip entry for a vanilla row. have = in holds live values (false: description only, no numbers).
 // Force Mastery is the exception: its static reference lines show without live values too.
 // Returns false for an out-of-range row. e is memset 0 first, spell = -1, remMs = -1.
@@ -124,6 +138,8 @@ inline bool build(int row, const srows::StatsIn& in, bool have, cfx::Entry* e) {
     int other = in.defense - 10 - in.dexMod;   // armor, active effects and other sources
     if (other != 0) srows::addSigned(e, "Armor, effects, other", other);
     if (in.stance == 0) srows::addLine(e, "Total Defense stance");
+  } else if (row >= V_FORT && row <= V_WILL) {
+    if (in.haveSaves) addSaveLines(e, in, row - V_FORT);
   } else if (row == V_ALIGN) {
     snprintf(e->val, sizeof e->val, "%d / 100", in.goodEvil);
     addCostLines(e, in.goodEvil);

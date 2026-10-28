@@ -11,6 +11,10 @@
 namespace srows {
 
 // Everything the Stats tab shows, as plain values.
+// One saving throw (doc 51 finding 7): total = misc + ability + class term + effects. noEff = the getter with noEffects=1.
+struct SaveIn { int total, noEff, misc, ability; };
+constexpr uint16_t kFeatCond[3] = {13, 21, 22};   // Conditioning / Improved / Master: +1/+2/+3 to all saves (only the top tier counts)
+
 struct StatsIn {
   cstats::DeflectIn defl; int ungated;          // stats+0x178/+0x179 sum (int8)
   int defense, dexMod; uint8_t stance;          // GetArmorClass, GetDEXMod(stats,1), creature+0x110C
@@ -20,6 +24,7 @@ struct StatsIn {
   bool haveInfluence; int npcSlot, influence;   // party NPC slot 0..11 (nwscript NPC_*) + party table +0x11C+slot*4, -1 = unset
   int nClass; uint8_t classId[3]; int classLvl[3];   // class slots in slot order (stats+0xAB+i*0x28); the last one picks the Mastery line
   int mastery;                                       // 0 none, 1 Light Mastery effect present, 2 Dark Mastery effect present
+  bool haveSaves; SaveIn save[3]; int condTier;      // 0 Fortitude, 1 Reflex, 2 Will; Conditioning feat tier 0..3 (feats 13/21/22)
 };
 
 // Party NPC slot -> tag, as the engine's fallback chain in HandleAlignmentInfluence 0x0056AE40 matches it (doc 51 ST5b).

@@ -81,7 +81,7 @@ Total Defense stance flag `creature+0x110c`: 0 = Total Defense (written by `AIAc
    (client +0xf8+i*0x20, i = count-1): Guardian line 3/11/14 -> 114161 "Light Mastery: +3 STR" / 114164 "Dark Mastery: +1-8 Dam";
    Consular line 4/12/15 -> 114163 "+3 WIS" / 114166 "+50 FP"; Sentinel line 5/13/16 -> 114162 "+3 CON" / 114165 "+3 DEX".
    Where the bonus itself is applied was not traced (the strings state it).
-7. **Saving throws (ST6b research, not yet shown).** Fort `0x006ba620` / Reflex `0x006ba740` / Will `0x006ba6b0`, thiscall(stats, int
+7. **Saving throws (ST6b research; shown by ST6c 0.5.2-dev).** Fort `0x006ba620` / Reflex `0x006ba740` / Will `0x006ba6b0`, thiscall(stats, int
    noEffects) RET 4: total = misc byte (stats+0x1b0 Fort, +0x1b2 Reflex, +0x1b1 Will) + ability (CON +0xf2 / GetDEXMod(0) / WIS +0xf6)
    + class term (`0x006b73a0` / `0x006b77e0` / `0x006b75c0`: sum of class save tables at each class level, + "SaveMult" scaling only
    for non-party creatures with owner+0x250, + Conditioning feats 13/21/22 = +1/+2/+3 top tier) + effects (`0x00582010` cat 3,
@@ -118,7 +118,7 @@ Total Defense stance flag `creature+0x110c`: 0 = Total Defense (written by `AIAc
 | ST5b | `show_influence` rows (needs RE: creature -> NPC slot 0..11 for GetInfluence) | ST5a | RE + user GO install | INSTALLED | 88200304 | 0.5.0-dev LIVE 10-27 20:47 (KPM ac7ac0f, rollback character-effects-panel_swap_20261027_204746) |
 | ST6 | Vanilla page tooltips (hover rects by tag, `vanilla_tooltips=1`, text table) | ST3, ST5 | user GO install | INSTALLED | 2d701706 | 0.5.0-dev LIVE 10-27 20:47 (KPM ac7ac0f, rollback character-effects-panel_swap_20261027_204746) |
 | ST6b | 0.5.1-dev: header hint tip, Force Mastery tip (marker effects, class line, finding 6), Level row + class lines (Stats tab, Experience tip) | ST6 | user GO install | BUILT | 1701c24c | 0.5.1-dev gate PASS; not installed |
-| ST6c | Save breakdown tooltips (Fortitude/Reflex/Will: misc + ability + class/feat + effects, finding 7) | ST6b | user GO install | TODO | | play row |
+| ST6c | 0.5.2-dev: save breakdown tooltips (Fortitude/Reflex/Will: class levels + ability + Conditioning feat + other + effects, finding 7) | ST6b | user GO install | TODO | | play row |
 
 ## Open (UNVERIFIED in W2)
 - Two-weapon penalties, STR/DEX attack term, Offensive Training sign (`006a93a0` lines 177-222, 403-491).

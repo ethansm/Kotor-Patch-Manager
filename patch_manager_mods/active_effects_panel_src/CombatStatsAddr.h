@@ -28,6 +28,10 @@ constexpr uintptr_t GetArmorClass        = 0x0057E530;  // 0x0057E530 fastcall(s
 constexpr uintptr_t ForceResist          = 0x006BAD10;  // 0x006BAD10 fastcall(stats) -> int (max(0, stats+0x12B - stats+0x12C))
 constexpr uintptr_t GetClassLevel        = 0x006AD2F0;  // 0x006AD2F0 thiscall(stats, uint8 classIdx, int flag) -> uint8, RET 8 (CSWSCreatureStats::GetClassLevel; engine passes flag 0)
 constexpr uintptr_t EffectGetInteger     = 0x005E4E60;  // 0x005E4E60 thiscall(effect, int idx) -> int, RET 4 (CGameEffect::GetInteger)
+// Saving throws (doc 51 finding 7): thiscall(stats, int noEffects) -> int, RET 4. noEffects=0 adds the effect scan (0x00582010 cat 3).
+constexpr uintptr_t GetFortSave          = 0x006BA620;  // misc +0x1B0 + CON mod +0xF2 + class term 0x006B73A0 + effects
+constexpr uintptr_t GetReflexSave        = 0x006BA740;  // misc +0x1B2 + GetDEXMod(0) + class term 0x006B77E0 + effects
+constexpr uintptr_t GetWillSave          = 0x006BA6B0;  // misc +0x1B1 + WIS mod +0xF6 + class term 0x006B75C0 + effects
 
 // Offsets (Creature_* from creature object, Stats_* from stats object)
 constexpr uint32_t Creature_Stats        = 0x1198;  // creature -> stats object (the 'stats' arg of the functions above)
@@ -37,6 +41,10 @@ constexpr uint32_t Creature_Effects      = 0x148;   // effect array pointer
 constexpr uint32_t Creature_EffectCount  = 0x14C;   // effect count
 constexpr uint32_t Stats_GoodEvil        = 0x18A;   // int16 0..100
 constexpr uint32_t Stats_WisMod          = 0xF6;    // stats offset
+constexpr uint32_t Stats_ConMod          = 0xF2;    // int8 stats offset (Fortitude ability term)
+constexpr uint32_t Stats_SaveMiscFort    = 0x1B0;   // int8 misc save bonuses (Fort / Will / Reflex order in memory)
+constexpr uint32_t Stats_SaveMiscWill    = 0x1B1;
+constexpr uint32_t Stats_SaveMiscReflex  = 0x1B2;
 constexpr uint32_t Stats_ChaMod          = 0xF8;    // stats offset
 constexpr uint32_t Stats_ClassCount      = 0x8D;    // byte: number of classes (engine loop reads the first 2)
 constexpr uint32_t Stats_ClassId0        = 0xAB;    // byte: class id of slot 0
@@ -105,5 +113,6 @@ typedef int16_t  (CSTATS_FASTCALL* GetArmorClassFn)(void* serverCreature);
 typedef int      (CSTATS_FASTCALL* ForceResistFn)(void* stats);
 typedef uint8_t  (CSTATS_THISCALL* GetClassLevelFn)(void* stats, uint8_t classIdx, int flag);
 typedef int      (CSTATS_THISCALL* EffectGetIntegerFn)(void* effect, int idx);
+typedef int      (CSTATS_THISCALL* GetSaveFn)(void* stats, int noEffects);
 
 }  // namespace cstats_addr
