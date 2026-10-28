@@ -22,7 +22,7 @@ D6 R2 NO-GO root cause was missing names / caller context, so coverage is the le
 |---|---|---|---|
 | I0 | `tools/ingest_names.py gap| DONE | TODO | spec §I0 |
 | I1 | `ingest_names.py ledger`: static gate + write `probable` ledger rows for `new` mod-code candidates (topic `ingest-modcode`); conflicts report only; lint stays at baseline | DONE | spec §I1 |
-| I2 | Haiku verify with decoys on I1 rows (cards from `static_facts.py`); verdict TSV; promotion list | TODO | spec §I2 |
+| I2 | Haiku verify with decoys on I1 rows (cards from `static_facts.py`); verdict TSV; promotion list | DONE | spec §I2 |
 | I3 | Research-notes extraction (same tool, `--source notes`), top-cited first, Haiku verify, ledger rows topic `ingest-notes`; stop when yield < 30% | TODO | spec §I3 |
 | I4 | Promotion (user OK) of verified names into `name_map`; regen class pages for touched classes; gap re-measure | TODO | spec §I4 |
 | I5 | Docs sweep (tool listed free-first in CLAUDE.md, RE_AGENT_GUIDE §2.1, README, SUBAGENT_ROLES) + memory | TODO | Decisions |

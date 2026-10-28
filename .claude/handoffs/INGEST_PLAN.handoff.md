@@ -1,39 +1,39 @@
 # Session Handoff & Plan State: patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md
 
 ## 0. Next-Phase Direction
-Execute I2: Haiku verify with decoys on the 69 ingest-modcode ledger rows
+Execute I3: Research-notes extraction (same tool, `--source notes`), top-cited first, Haiku verify, ledger rows topic `ingest-notes`; stop when yield < 30%
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md`
-- **Branch:** `KOTOR-II` (3bf1bf2e INGEST_PLAN: I0, I1 DONE (335c5487))
-- **Generated:** 2026-10-27 20:57:04 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (53747f2f skill kotor2-persist-knowledge + AGENTS.md section: persist ad-hoc research to saved knowledge)
+- **Generated:** 2026-10-27 22:47:31 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-3bf1bf2e INGEST_PLAN: I0, I1 DONE (335c5487)
- patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+53747f2f skill kotor2-persist-knowledge + AGENTS.md section: persist ad-hoc research to saved knowledge
+ .claude/skills/kotor2-persist-knowledge/SKILL.md | 42 ++++++++++++++++++++++++
+ AGENTS.md                                        |  5 +++
+ 2 files changed, 47 insertions(+)
 ```
-- **Dirty Files (197):**
+- **Dirty Files (188):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/25_pc_levelup_filter.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
   - ` M .claude/handoffs/51_combat_stats_page.handoff.md`
+  - ` M .claude/handoffs/52_quick_loot.handoff.md`
   - ` M .claude/handoffs/DECOMP_PLAN.handoff.md`
   - ` M .claude/handoffs/PHASE7_COMMON_MASTER.handoff.md`
   - ` M .claude/handoffs/deep_haiku_review_skill.handoff.md`
   - ` M .claude/handoffs/variant_fix_wave_skill.handoff.md`
   - ` M .claude/plans/swarm_library_architecture.md`
-  - ` M .claude/reviews/gemini_20261014/tools/fix3_items.tsv`
-  - ... +187 more (run `git status --short`)
+  - ... +178 more (run `git status --short`)
 
-## 2. Immediate Objective (I2)
-**Haiku verify with decoys on I1 rows (cards from `static_facts.py`); verdict TSV; promotion list**
+## 2. Immediate Objective (I3)
+**Research-notes extraction (same tool, `--source notes`), top-cited first, Haiku verify, ledger rows topic `ingest-notes`; stop when yield < 30%**
 
 Status: TODO
-Task: Haiku verify with decoys on I1 rows (cards from `static_facts.py`); verdict TSV; promotion list
+Task: Research-notes extraction (same tool, `--source notes`), top-cited first, Haiku verify, ledger rows topic `ingest-notes`; stop when yield < 30%
 
 ## 2b. Upcoming Batches in Pipeline
-- **I3** : Research-notes extraction (same tool, `--source notes`), top-cited first, Haiku verify, ledger rows topic `ingest-notes`; stop when yield < 30%
 - **I4** : Promotion (user OK) of verified names into `name_map`; regen class pages for touched classes; gap re-measure
 - **I5** : Docs sweep (tool listed free-first in CLAUDE.md, RE_AGENT_GUIDE §2.1, README, SUBAGENT_ROLES) + memory
 
@@ -42,7 +42,7 @@ Task: Haiku verify with decoys on I1 rows (cards from `static_facts.py`); verdic
 
 ## 4. Subagent Delegation Direction
 - **Claude Code**: parallel `model: haiku` Agent subagents; brief = `Contract` + `Write Scope` + `python3 scripts/agent_contract.py print worker|recon`.
-- **Other backends** (only when the user asks): `python3 scripts/plan_manager.py delegate I2` or `oc-subagent <scout|code|ghidra|verify|gate|doc>`.
+- **Other backends** (only when the user asks): `python3 scripts/plan_manager.py delegate I3` or `oc-subagent <scout|code|ghidra|verify|gate|doc>`.
 
 ## 5. Dead Ends & Verification (manual)
 - Gap prototype (I0 starting point): `.claude/research/ingest/gap_prototype.py` (4368b1e4); `python3 .claude/research/ingest/gap_prototype.py` prints 79 / 515.
