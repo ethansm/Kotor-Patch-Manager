@@ -8,3 +8,4 @@
 {"key": "repeat-park:WI-05", "scope": "WI-05", "text": "WI-05 has been parked 2 times; do not claim it until its scope or verify line is fixed.", "ts": "2026-10-15T19:13:40Z"}
 {"key": "missing-replies", "scope": "global", "text": "Workers skip the reply file when they run long: the last action must be writing the 5-line reply file named in the brief.", "ts": "2026-10-15T21:22:42Z"}
 {"key": "out-of-scope", "scope": "global", "text": "Edit only the Write Scope files; log any other needed change under OPEN instead of editing it.", "ts": "2026-10-25T22:07:46Z"}
+{"key": "repeat-park:WI-36", "scope": "WI-36", "text": "WI-36 has been parked 2 times; do not claim it until its scope or verify line is fixed.", "ts": "2026-10-28T03:16:35Z"}
