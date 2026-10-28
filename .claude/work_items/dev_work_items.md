@@ -208,3 +208,4 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [x] | 192 | WI-160 | P3 | ready | S | - | Combat AI O3 option B: party AoE control powers need >= 2 unaffected enemies at the centre | 0 | 3 | Owner decision 2026-10-25 (O3_study.md section 5-6): party members onl |
 | [ ] | 193 | WI-161 | P3 | hold | S | - | ISF doc 11: describe the caption row count (WI-151) in the UX section | 0 | 0 | WI-151 worker OPEN: doc 11 UX section not updated; also note the 1024- |
 | [ ] | 194 | WI-162 | P3 | hold | S | - | WI-160 follow-up: confirm O3 helper oTarget is the AoE centre and is reached only on the c | 0 | 0 | Checker CONFIRMED but OPEN: vanilla caller outside the read ranges; ef |
+| [ ] | 195 | WI-163 | P3 | hold | S | - | WI-36a RE: feats/powers level-up panel tick + button template + rebuild call conv | 0 | 0 | WI-36 needs: (1) a per-frame site running while each panel (CSWGuiFeat |
