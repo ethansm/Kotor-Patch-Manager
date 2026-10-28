@@ -76,6 +76,7 @@ ROUTES = {
     "ranged_ai_log.txt": ("analyze_play_logs", "playlogs"),
     "ranged-ai_log.txt": ("analyze_play_logs", "playlogs"),
     "inventory_sort_filter_log.txt": ("analyze_play_logs", "playlogs"),
+    "inventory-sort-filter_log.txt": ("analyze_play_logs", "playlogs"),
 }
 KPLOG_HEADER = "# kplog session"
 KPLOG_HINT = "hint: scripts/kplog_parse.py <file> --stats for structured kplog fields"

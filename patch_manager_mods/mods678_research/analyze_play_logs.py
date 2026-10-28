@@ -6,7 +6,8 @@ Usage:
                                  [--anchor "YYYY-MM-DD HH:MM:SS=TICK_MS"] [--out PATH] [--strict]
 
 Reads (each optional) from PLAYLOGS_DIR: companion-ai_log.txt (KpLog core, companion-ai 0.2.1) or ai_trace.txt (legacy / fallback shape),
-ranged_ai_log.txt or ranged-ai_log.txt (KpLog core, ranged-ai 0.4.0), inventory_sort_filter_log.txt,
+ranged_ai_log.txt or ranged-ai_log.txt (KpLog core, ranged-ai 0.4.0), inventory_sort_filter_log.txt or
+inventory-sort-filter_log.txt (KpLog core),
 steam-208580.log (the Proton/Wine log). Writes REPORT.md into PLAYLOGS_DIR (or --out).
 Python 3.12, stdlib only. Never reads the live game folder: it only reads the directory it is given.
 
@@ -127,6 +128,8 @@ TRACE_NAMES = ("companion-ai_log.txt", "ai_trace.txt")
 # ranged-ai 0.4.0 logs through KpLog: core file ranged-ai_log.txt (T=... prefix + "# kplog session" header), or ranged_ai_log.txt in the
 # fallback shape ("<ms> ranged-ai/main ..."); 0.3.0 and older wrote raw lines to ranged_ai_log.txt. find_files picks one (see there).
 RANGED_NAMES = ("ranged_ai_log.txt", "ranged-ai_log.txt")
+# inventory-sort-filter: same two-name rule (fallback/legacy inventory_sort_filter_log.txt vs KpLog core inventory-sort-filter_log.txt).
+INV_NAMES = ("inventory_sort_filter_log.txt", "inventory-sort-filter_log.txt")
 QUOTE_MAX = 220
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -2233,7 +2236,7 @@ def render(dirp: Path, found: dict, S, T, RG, I, hooks, hook_notes, checklist, a
     if not I.get("present"):
         A("inventory_sort_filter_log.txt: not present.")
     else:
-        A(f"{I['n_lines']} lines; tab-click lines: {I['clicks']}; flush lines: {len(I['flushes'])} (+{len(I['empty_flushes'])} without backpack rows)")
+        A(f"{I['name']}: {I['n_lines']} lines; tab-click lines: {I['clicks']}; flush lines: {len(I['flushes'])} (+{len(I['empty_flushes'])} without backpack rows)")
         L.extend(quotes_block([q(ln, t, I["name"]) for ln, t in I["cfg"][-1:]], 1))
         A("")
         by = defaultdict(lambda: Counter())
@@ -2291,6 +2294,9 @@ def find_files(d: Path) -> dict:
     cands = [d / n for n in RANGED_NAMES if (d / n).is_file()]
     if cands:
         found["ranged"] = max(cands, key=lambda c: (c.stat().st_mtime_ns, c.name == RANGED_NAMES[0]))
+    cands = [d / n for n in INV_NAMES if (d / n).is_file()]
+    if cands:
+        found["inv"] = max(cands, key=lambda c: (c.stat().st_mtime_ns, c.name == INV_NAMES[0]))
     steam = d / "steam-208580.log"
     if not steam.is_file():
         cands = sorted(d.glob("steam-*.log"))

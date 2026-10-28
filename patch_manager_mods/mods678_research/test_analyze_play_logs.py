@@ -215,6 +215,21 @@ class DetectedProblems(Base):
         self.assertEqual((kp["clicks"], len(kp["loaded"]), kp["errs"]), (raw["clicks"], len(raw["loaded"]), raw["errs"]))
         self.assertEqual(len(kp["flushes"]), 5)
 
+    def test_inventory_core_shape_and_names(self):
+        # KpLog core file inventory-sort-filter_log.txt ("# kplog session" header + "T=..." prefix): same answers as the fallback shape
+        kp, core = self.run_case("inventory_kplog")["I"], self.run_case("inventory_core")["I"]
+        self.assertEqual(core["name"], "inventory-sort-filter_log.txt")
+        self.assertEqual((core["clicks"], len(core["cfg"]), len(core["flushes"]), len(core["loaded"]), core["errs"]),
+                         (kp["clicks"], len(kp["cfg"]), len(kp["flushes"]), len(kp["loaded"]), kp["errs"]))
+        self.assertEqual(len(core["loaded"]), 1)
+        d = self.copy_case("inventory_core")
+        shutil.copy(FIX / "inventory_kplog" / "inventory_sort_filter_log.txt", d)
+        for n in apl.INV_NAMES:
+            os.utime(d / n, ns=(10**18, 10**18))
+        self.assertEqual(apl.find_files(d)["inv"].name, "inventory_sort_filter_log.txt")
+        os.utime(d / "inventory-sort-filter_log.txt", ns=(2 * 10**18, 2 * 10**18))
+        self.assertEqual(apl.find_files(d)["inv"].name, "inventory-sort-filter_log.txt")
+
     def test_inventory_errors(self):
         r = self.run_case("inventory_errors")
         self.assertEqual(set(r["I"]["errs"]), {"bad frame", "counter"})

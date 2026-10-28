@@ -76,15 +76,50 @@ static bool fakeRaw(const char*, const char* section, const char* key, char* out
     return mcdecl::iniGet(g_fakeIni.data(), g_fakeIni.size(), section, key, out, cap);
 }
 static bool fakeRead(const char* path, const char* section, const char* key, char* out, int cap) {   // = mcRead in InventorySortFilter.cpp
-    return isf::readSortOrder(fakeRaw, path, section, key, out, cap);
+    return isf::readPageValue(fakeRaw, path, section, key, out, cap);
 }
+static std::string g_lastWrite;
+static bool fakeRawWrite(const char*, const char*, const char*, const char* val) { g_lastWrite = val; return true; }
 
 static void moddecl_contract() {
     static mcdecl::Page page;   // ~35 KB: static storage (ModConfigDecl.h)
     char err[96] = {};
     HCHECK("mcdecl::Page::load accepts isf::kPageSchema (mcPageInit; a rejected schema leaves the mod without its page)",
            page.load(isf::kPageSchema, strlen(isf::kPageSchema), err, sizeof err));
-    HEQ("kPageSchema declares exactly one row (owner OK: ONE row, sort_order)", page.decl.nRows, 1);
+    HEQ("kPageSchema declares two rows (sort_order, log_level)", page.decl.nRows, 2);
+    {   // Debug logging row: kplog.ini [inventory-sort-filter] level, index <-> the word the KpLog core parses
+        const int L = page.decl.find("log_level");
+        HCHECK("kPageSchema has the log_level row", L == 1);
+        if (L >= 0) {
+            const mcdecl::RowDecl& r = page.decl.rows[L];
+            HCHECK("log_level is a list row Off, On, Verbose", r.kind == mcdecl::K_LIST && r.nChoices == 3 && !strcmp(r.choices[0], "Off") &&
+                   !strcmp(r.choices[1], "On") && !strcmp(r.choices[2], "Verbose"));
+            HCHECK("log_level is bound to kplog.ini [inventory-sort-filter] level (section == patch id)",
+                   !strcmp(r.ini, "kplog.ini") && !strcmp(r.section, isf::kPageId) && !strcmp(r.key, "level"));
+            page.io.read = fakeRead;
+            g_fakeIni = "[global]\nenabled=1\n[inventory-sort-filter]\nenabled=1\nlevel=debug\nchannels=*\n";
+            HEQ("level=debug shows On", page.startValue(L), 1);
+            g_fakeIni = "[inventory-sort-filter]\nlevel= TRACE \n";
+            HEQ("level=TRACE (case, spaces) shows Verbose", page.startValue(L), 2);
+            g_fakeIni = "[inventory-sort-filter]\nlevel=info\n";
+            HEQ("level=info shows Off", page.startValue(L), 0);
+            g_fakeIni = "[inventory-sort-filter]\nlevel=3\n";
+            HEQ("level=3 (digit debug) shows On", page.startValue(L), 1);
+            g_fakeIni = "[inventory-sort-filter]\nlevel=warn\n";
+            HEQ("level=warn shows Off", page.startValue(L), 0);
+            g_fakeIni = "[action-hotbar]\nlevel=debug\n";
+            HEQ("another mod's level is ignored (default Off)", page.startValue(L), 0);
+            const char* const words[3] = {"info", "debug", "trace"};
+            bool ok = true;
+            for (int k = 0; k < 3; ++k) {
+                char d[16]; snprintf(d, sizeof d, "%d", k);
+                ok = ok && isf::writePageValue(fakeRawWrite, "kplog.ini", isf::kPageId, "level", d) && g_lastWrite == words[k];
+            }
+            HCHECK("writePageValue stores info / debug / trace for 0 / 1 / 2", ok);
+            HCHECK("writePageValue passes sort_order through unchanged",
+                   isf::writePageValue(fakeRawWrite, "inventory_sort_filter.ini", "Inventory", "sort_order", "2") && g_lastWrite == "2");
+        }
+    }
     const int i = page.decl.find("sort_order");
     HCHECK("kPageSchema has the sort_order row", i == 0);
     if (i < 0) return;

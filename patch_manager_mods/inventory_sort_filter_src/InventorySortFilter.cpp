@@ -81,17 +81,23 @@ using GetClientLanguageFn = int(__fastcall*)(int);                            //
 using CanEquipFn = unsigned char(__thiscall*)(int, int, unsigned*, int, int, int);
 
 // ---- log ----
-// The fallback file is appended; sessions split on the "inventory-sort-filter <ver> loaded" line. At attach the previous session moves to <name>.1 (rotateFallbackLog). logf forwards to the KpLog fallback sink (own line cap).
+// KpLog core (KPatchInit): inventory-sort-filter_log.txt, level from kplog.ini. Before KPatchInit and on old cores: the fallback file below,
+// appended; sessions split on the "inventory-sort-filter <ver> loaded" line. At attach the previous session moves to <name>.1 (rotateFallbackLog). logf forwards to the KpLog fallback sink (own line cap).
 KP_CHANNEL(chMain, "main");
 
 // Only stores the path and the level (no I/O): safe from a static initialiser. Same file name as before (tooling reads it).
 const bool g_fallbackSet = (KpLog_SetFallbackFile("inventory_sort_filter_log.txt"), KpLog_SetFallbackLevel(KPLOG_INFO), true);
 
-void logf(const char* fmt, ...) {
+void logAt(int lvl, const char* fmt, va_list ap) {
+    if (!KP_ENABLED(chMain, lvl)) return;   // kplog.ini [inventory-sort-filter] level (Debug logging row) decides; no format cost when off
     char buf[480];
-    va_list ap; va_start(ap, fmt); vsnprintf(buf, sizeof buf, fmt, ap); va_end(ap);
-    KP_LOG(chMain, "%s", buf);
+    vsnprintf(buf, sizeof buf, fmt, ap);
+    KP_LOGV(chMain, lvl, "%s", buf);
 }
+// INFO: startup, config, page, errors. DEBUG (Debug logging On): per-populate / tab-click / flush lines. TRACE (Verbose): per-item lines.
+void logf(const char* fmt, ...) { va_list ap; va_start(ap, fmt); logAt(KPLOG_INFO, fmt, ap); va_end(ap); }
+void logd(const char* fmt, ...) { va_list ap; va_start(ap, fmt); logAt(KPLOG_DEBUG, fmt, ap); va_end(ap); }
+void logt(const char* fmt, ...) { va_list ap; va_start(ap, fmt); logAt(KPLOG_TRACE, fmt, ap); va_end(ap); }
 
 template <typename T> T rd(int base, int off, T def = T()) {
     T v = def;
@@ -112,13 +118,13 @@ void dumpMem(const char* tag, int addr, int bytes) {
             if (saferead::readAt<int>(3, static_cast<uintptr_t>(addr), j, &v)) p += snprintf(line + p, sizeof line - p, " %08x", v);
             else p += snprintf(line + p, sizeof line - p, " ????????");
         }
-        logf("  dump %s +%03x:%s", tag, i, line);
+        logd("  dump %s +%03x:%s", tag, i, line);
     }
 }
 
 // ---- config ----
 struct Config {
-    bool sort = false, tint = false, cycle = false, log = true, logItems = false;
+    bool sort = false, tint = false, cycle = false;
     unsigned mask = 0;
     isf::SortOrder order = isf::SO_Category;   // [Inventory] sort_order (WI-154); vanilla also forces sort off
 };
@@ -145,8 +151,12 @@ bool g_pageLoaded = false;
 void mcLog(int, const char* msg) { logf("modconfig: %s", msg); }
 
 // Start value of the row: the INI's sort_order as loadIni parses it (a hand-edited word shows too), not a digit-only read.
+// Debug logging row: kplog.ini [inventory-sort-filter] level word <-> choice index (isf::readPageValue / writePageValue, SortOrderPage.h).
 bool mcRead(const char* path, const char* section, const char* key, char* out, int cap) {
-    return isf::readSortOrder(mcdecl::fileRead, path, section, key, out, cap);
+    return isf::readPageValue(mcdecl::fileRead, path, section, key, out, cap);
+}
+bool mcWrite(const char* path, const char* section, const char* key, const char* val) {
+    return isf::writePageValue(mcdecl::fileWrite, path, section, key, val);
 }
 
 int32_t mcOnChange(void*, int, const char* id, int32_t requested, int) {
@@ -165,6 +175,7 @@ void mcPageInit(const KPatchApi* api) {
     g_page.menu = &g_mcMenu;
     g_page.io = mcdecl::fileIo();
     g_page.io.read = mcRead;
+    g_page.io.write = mcWrite;
     g_page.hooks.onChange = mcOnChange;
     g_mcEntry = g_page.entry(isf::kPageId);
 }
@@ -201,14 +212,11 @@ void loadIni(bool force) {
     if (c.order == isf::SO_Vanilla) c.sort = false;   // vanilla order = no sort, same as sort=0 (the buffer is then not even filled with names)
     c.tint = GetPrivateProfileIntA("Inventory", "tint", 0, IniName) != 0;
     c.cycle = GetPrivateProfileIntA("Inventory", "cycle", 0, IniName) != 0;
-    c.log = GetPrivateProfileIntA("Inventory", "log", 1, IniName) != 0;
-    c.logItems = GetPrivateProfileIntA("Inventory", "log_items", 0, IniName) != 0;
     char cs[128] = {};
     GetPrivateProfileStringA("Inventory", "cycle_states", "new,usable,upgrade", cs, sizeof cs, IniName);
     c.mask = isf::parseCycleStates(cs);
-    if (c.sort != g_cfg.sort || c.tint != g_cfg.tint || c.cycle != g_cfg.cycle || c.mask != g_cfg.mask || c.log != g_cfg.log ||
-        c.logItems != g_cfg.logItems || c.order != g_cfg.order || force)
-        logf("config: sort=%d tint=%d cycle=%d cycle_mask=%x log=%d log_items=%d sort_order=%d", c.sort, c.tint, c.cycle, c.mask, c.log, c.logItems,
+    if (c.sort != g_cfg.sort || c.tint != g_cfg.tint || c.cycle != g_cfg.cycle || c.mask != g_cfg.mask || c.order != g_cfg.order || force)
+        logf("config: sort=%d tint=%d cycle=%d cycle_mask=%x sort_order=%d", c.sort, c.tint, c.cycle, c.mask,
              (int)c.order);
     g_cfg = c;
 }
@@ -269,7 +277,7 @@ bool g_labelDumped = false;
 
 void captionTo(int panel, const char* text) {
     if (!strcmp(g_caption, text)) return;
-    if (g_cfg.log && !g_labelDumped) { g_labelDumped = true; dumpMem("LBL_FILTER", panel + PanelFilterLabelOff, 0x120); }
+    if (KP_ENABLED(chMain, KPLOG_DEBUG) && !g_labelDumped) { g_labelDumped = true; dumpMem("LBL_FILTER", panel + PanelFilterLabelOff, 0x120); }
     setLabelText(panel, text);
     strncpy(g_caption, text, sizeof g_caption - 1); g_caption[sizeof g_caption - 1] = 0;
 }
@@ -406,7 +414,7 @@ void startPopulate(int panel, int ebp) {
     g_inPop = true; g_n = 0; g_lastIdx = -1; g_selSet = false; g_seen = g_dropped = g_direct = 0; g_nTinted = 0;
     g_bufTicks = g_nameTicks = 0;
     g_popEbp = ebp; g_popCounter0 = rd<int>(ebp, F_Counter);
-    if (g_cfg.log) logf("populate: panel=%08x mode=%d extra=%d creature=%08x ebp=%08x rows-so-far=%d", panel, filterMode(), g_extra,
+    logd("populate: panel=%08x mode=%d extra=%d creature=%08x ebp=%08x rows-so-far=%d", panel, filterMode(), g_extra,
                         rd<int>(ebp, F_Creature), ebp, g_popCounter0);
 }
 
@@ -448,7 +456,7 @@ extern "C" int __cdecl SortFilterTabClick(int panel, int ctrl) {
     loadIni(false);
     int clicked = rd<int>(ctrl, TabClickedOff, -1);
     int mode = filterMode();
-    if (g_cfg.log) logf("tab click: panel=%08x ctrl=%08x clicked=%d mode=%d extra=%d", panel, ctrl, clicked, mode, g_extra);
+    logd("tab click: panel=%08x ctrl=%08x clicked=%d mode=%d extra=%d", panel, ctrl, clicked, mode, g_extra);
     if (panel != g_panel) {   // new panel instance: drop any rows still buffered for the old one (WI-148)
         g_panel = panel; g_extra = isf::X_None; strcpy(g_caption, "Filter");
         g_n = 0; g_inPop = false;
@@ -461,7 +469,7 @@ extern "C" int __cdecl SortFilterTabClick(int panel, int ctrl) {
             char text[isf::kCaptionBytes];
             isf::captionWithCount(next, g_cfg.mask, -1, text, sizeof text);
             captionTo(panel, text);
-            if (g_cfg.log) logf("tab click: cycle -> state %d (engine mode %d, extra=%d)", static_cast<int>(next), isf::engineModeOf(next), g_extra);
+            logd("tab click: cycle -> state %d (engine mode %d, extra=%d)", static_cast<int>(next), isf::engineModeOf(next), g_extra);
             return 1;
         }
     }
@@ -496,12 +504,12 @@ extern "C" void __cdecl SortFilterBufferRow(int ebp) {
     bool extraOn = g_extra != isf::X_None && g_cfg.cycle && filterMode() == 0;
     if (extraOn && g_extra == isf::X_Upgrade && !itemHasOpenSlot(item)) {
         ++g_dropped;
-        if (g_cfg.log && g_cfg.logItems) logf("  drop (no open upgrade slot): item=%08x id=%08x base=%d", item, id, rd<int>(item, ItemBaseOff));
+        logt("  drop (no open upgrade slot): item=%08x id=%08x base=%d", item, id, rd<int>(item, ItemBaseOff));
         return;
     }
 
     // Equip test for the shown character (tint + sort + Usable filter); "activatable" (0x77b670) only widens Usable.
-    bool needUsable = g_cfg.sort || g_cfg.tint || g_cfg.logItems || (extraOn && g_extra == isf::X_Usable);
+    bool needUsable = g_cfg.sort || g_cfg.tint || KP_ENABLED(chMain, KPLOG_TRACE) || (extraOn && g_extra == isf::X_Usable);
     bool equippable = false, equipOk = true, activatable = false;
     unsigned slotMask = 0;
     if (needUsable) {
@@ -511,7 +519,7 @@ extern "C" void __cdecl SortFilterBufferRow(int ebp) {
     bool usable = !needUsable || isf::usableForCycle(equipOk, activatable);
     if (extraOn && g_extra == isf::X_Usable && !usable) {
         ++g_dropped;
-        if (g_cfg.log && g_cfg.logItems) logf("  drop (not usable): item=%08x id=%08x base=%d equippable=%d", item, id, rd<int>(item, ItemBaseOff), equippable);
+        logt("  drop (not usable): item=%08x id=%08x base=%d equippable=%d", item, id, rd<int>(item, ItemBaseOff), equippable);
         return;
     }
     isf::Entry e;
@@ -528,8 +536,7 @@ extern "C" void __cdecl SortFilterBufferRow(int ebp) {
     bool matched = (rd<int>(panel, PanelSelectedIdOff) == id);
     if (matched) { g_selSet = true; g_selId = id; wr32(panel + PanelSelectedIdOff, NoSelection); }
 
-    if (g_cfg.log && g_cfg.logItems)
-        logf("  row: idx=%d item=%08x id=%08x base=%d new=%d equippable=%d canEquip=%d activatable=%d usable=%d tint=%d category=%d%s", idx, item, id,
+    logt("  row: idx=%d item=%08x id=%08x base=%d new=%d equippable=%d canEquip=%d activatable=%d usable=%d tint=%d category=%d%s", idx, item, id,
              e.baseItem, e.isNew, equippable, equipOk, activatable, e.usable, e.tint, catOn ? (int)e.category : -1, matched ? " (selected)" : "");
 
     if (g_n >= BufCap) {   // overflow (never expected): emit what is buffered in arrival order, then keep going
@@ -548,7 +555,7 @@ extern "C" void __cdecl SortFilterFlush(int ebp) {
         g_nTinted = 0;   // the rows at those indices may now be equipped rows
         normaliseState(panel);
         captionCountTo(panel);   // empty filter: g_n is 0 here
-        if (g_cfg.log) logf("flush: no backpack rows this populate (mode=%d extra=%d)", filterMode(), g_extra);
+        logd("flush: no backpack rows this populate (mode=%d extra=%d)", filterMode(), g_extra);
         return;
     }
     normaliseState(panel);
@@ -568,21 +575,21 @@ extern "C" void __cdecl SortFilterFlush(int ebp) {
         QueryPerformanceCounter(&t0);
         isf::sortEntries(g_buf, g_n, g_cfg.order);
         QueryPerformanceCounter(&t1);
-        if (g_cfg.log && freq > 0)
-            logf("sort timing: sortEntries rows=%d took %u us; buffer %u us (names %u us) names=%d", g_n,
+        if (freq > 0)
+            logd("sort timing: sortEntries rows=%d took %u us; buffer %u us (names %u us) names=%d", g_n,
                  (unsigned)((t1.QuadPart - t0.QuadPart) * 1000000 / freq),
                  (unsigned)(g_bufTicks * 1000000 / freq), (unsigned)(g_nameTicks * 1000000 / freq), nNames);
     }
-    if (g_cfg.log) {
+    if (KP_ENABLED(chMain, KPLOG_DEBUG)) {
         int nTint = 0, nUsable = 0;
         for (int i = 0; i < g_n; ++i) { nTint += g_buf[i].tint; nUsable += g_buf[i].usable; }
-        logf("flush: panel=%08x creature=%08x rows=%d seen=%d dropped=%d direct=%d usable=%d tint-candidates=%d sort=%d tint=%d extra=%d selected=%d counter=%d",
+        logd("flush: panel=%08x creature=%08x rows=%d seen=%d dropped=%d direct=%d usable=%d tint-candidates=%d sort=%d tint=%d extra=%d selected=%d counter=%d",
              panel, rd<int>(ebp, F_Creature), g_n, g_seen, g_dropped, g_direct, nUsable, nTint, g_cfg.sort, g_cfg.tint, g_extra, g_selSet,
              rd<int>(ebp, F_Counter));
-        if (g_cfg.logItems) {
+        if (KP_ENABLED(chMain, KPLOG_TRACE)) {
             char line[512]; int p = 0;
             for (int i = 0; i < g_n && p < (int)sizeof line - 24; ++i) p += snprintf(line + p, sizeof line - p, " %d", g_buf[i].orig);
-            logf("  creation order (vanilla loop index):%s", line);
+            logt("  creation order (vanilla loop index):%s", line);
         }
     }
     captionCountTo(panel);   // g_n is final; emitBuffered below empties the buffer
@@ -606,12 +613,20 @@ extern "C" void __cdecl SortFilterRowSelect(int ebp) {
     for (int i = 0; arr && i < cnt && i < 4096 && !live; ++i) live = rd<int>(arr, 4 * i) == row;
     if (!live) return;
     reinterpret_cast<SetCanUseFn>(FnSetCanUse)(row, 2);
-    if (g_cfg.log && g_cfg.logItems) logf("row select: re-tint row=%08x item id=%08x", row, rd<int>(row, 0x1D0));
+    logt("row select: re-tint row=%08x item id=%08x", row, rd<int>(row, 0x1D0));
 }
 
-// Called by the patcher core after load (new cores only). Not KpLog_Init: the log keeps going to inventory_sort_filter_log.txt as before.
+// Called by the patcher core after load (new cores only). KpLog_Init moves logging onto the shared core: inventory-sort-filter_log.txt,
+// level from kplog.ini [inventory-sort-filter] (the page's Debug logging row). DllMain ran before the core existed, so its banner went to the
+// fallback file; repeat it here so the core log starts with the loaded / config lines. Old core: no call, everything stays in the fallback.
 // Registers the mod-config page now when mod-config is already loaded (it binds its entry list when the Options panel is first built).
 extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
+    KpLog_Init(api);
+    if (KpLog_HasCore()) {
+        logf("inventory-sort-filter 0.3.1-dev loaded (KpLog core); pid=%lu", (unsigned long)GetCurrentProcessId());
+        logf("ini path: %s", IniName);
+        loadIni(true);
+    }
     mcPageInit(api);
     mcPagePoll();
 }
@@ -640,7 +655,7 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
     if (reason == DLL_PROCESS_ATTACH) {
         char cwd[MAX_PATH] = "?"; GetCurrentDirectoryA(MAX_PATH, cwd);
         rotateFallbackLog(cwd);
-        logf("inventory-sort-filter 0.3.0-dev loaded; cwd=%s pid=%lu", cwd, (unsigned long)GetCurrentProcessId());
+        logf("inventory-sort-filter 0.3.1-dev loaded; cwd=%s pid=%lu", cwd, (unsigned long)GetCurrentProcessId());
         // Bare names go to the Windows directory (Wine: C:\\windows), so anchor the INI to the game folder.
         if (GetCurrentDirectoryA(MAX_PATH, cwd) > 0) snprintf(IniName, sizeof IniName, "%s\\inventory_sort_filter.ini", cwd);
         logf("ini path: %s", IniName);
