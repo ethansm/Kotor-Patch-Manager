@@ -81,6 +81,8 @@ The cost run at one spot on Dantooine (RTX 5070, 3840x1600, V-Sync on, Proton):
 
 The fps barely followed the bin count (correlation -0.36 across the session). The same bin counts ran at 58-67 fps early in one session and 37-45 fps later, so grass is not the main frame cost on this machine. That is why every cost control is measured on its own before any becomes a default.
 
+A later session at 150 m with all variety options on (314-492 bins, V-Sync 60) measured the grass pass at 0.45-1.8 ms CPU and 0.04-0.14 ms GPU per frame, at 52-60 fps. Density Patches changed the total blade count of a load by +3.9% (13,660 -> 14,189), close to the "same average" design.
+
 ---
 
 ### What Didn't Work: Dead Ends & Engine Traps
@@ -111,14 +113,15 @@ The fps barely followed the bin count (correlation -0.36 across the session). Th
 
 * **`K2GrassFogFix`:** owns `0x004665D8..0x004665F5` in `Scene::DoBinBucket`. This patch does not touch that range; its bin-loop timing detours are at `0x0046661B` and `0x00466698`.
 * **KPM shader fixes:** own `0x0046AADD`; not touched.
-* **K1 `GrassRenderFix` / `GrassMemorySafety`:** both are K1-only today. KotOR 2's `RenderGrassPolys` also has three draw paths. I have not yet checked whether the K2 non-shader paths pass the wrong vertex pointer (`field_0x40`) the way K1's do, or whether `CreateArrays` has the same double free. This patch logs which path runs live (a `path probe` line); I have not read that line from a grassy area yet.
+* **K1 `GrassRenderFix` / `GrassMemorySafety`:** both are K1-only today. KotOR 2's `RenderGrassPolys` also has three draw paths. I have not yet checked whether the K2 non-shader paths pass the wrong vertex pointer (`field_0x40`) the way K1's do, or whether `CreateArrays` has the same double free. This patch logs which path runs live. On my machine (NVIDIA, Proton) only path A runs (the backend-dispatcher path); the two direct-GL paths drew 0 times, so I could not see that bug either way.
 
 ---
 
 ### Verification Status
 
 * **Played and passed:** banner and patch lines clean; grass to 150 m with a smooth fade; the distance/cost run above; the linked fade start slider.
-* **Installed, not yet played in a grassy area:** Trim Hidden Grass, Smooth Grass Edges, Wind Throttle, Far Grass Thinning, GPU timing, all four variety options.
+* **Running in play, logs clean, side-by-side comparison still to do:** Trim Hidden Grass, Smooth Grass Edges, GPU timing, all four variety options (each hook's counters fire; the on-vs-off look and fps comparison is next).
+* **Installed, not yet played:** Wind Throttle, Far Grass Thinning.
 * **Not started:** no GOG or native Linux/macOS hooks.
 * **Needs a port before a PR:** my local build uses shared headers that are not upstream yet (`CodePatch.h`, `IniKit.h`, `KpLog.h`, `FileWatch.h`, `SafeRead.h`, `ModConfigDecl.h`). The patch works without `mod-config` (ini only).
 
