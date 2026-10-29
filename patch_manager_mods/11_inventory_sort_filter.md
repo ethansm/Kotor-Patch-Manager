@@ -197,6 +197,10 @@ category groups not perceivable (6 rows visible); tint and New have no legend. O
 - **Owner 10-29: "v4b, I like the new strip being above"** -> ISF strip directly above LB_ITEMS (LB_ITEMS 357..1234 px split into a 133 px
   strip at 357 + items 490..1234; window 5 rows, 4 at the top with a divider): line 1 filter buttons with counts, line 2 "Sort: <order>"
   + "N of M shown"; legend as a quiet line in band B. Needs LB_ITEMS resized at panel build (VU2 (d) open).
+- **Owner 10-29: rule A + tile 3 default.** Category sort key becomes new -> category -> usable -> base item -> name (usable-first INSIDE each
+  category, so each divider appears once; New stays the first group). Default list look: Row height Compact (96 px @3840x1600), Icon
+  88 px (vanilla 125 clamped to the row), List font Large (dialogfont16x16), Category dividers On; Small icon (64 px) dropped (choices
+  Vanilla / Large). Both land with VU6 / VU7; SortLogic.h beforeBy(SO_Category) + sort_logic_test vectors + the mockup port change together.
 - Config-page mockup (`scripts/isf_config_page_mockup.py`, 33ba911e): duplicate dividers ("Armour" twice: cannot-equip rows sort after
   usable ones, so categories restart) -> owner to pick rule A (usable-first inside each category) or B (one "Can't equip" divider at the
   end); Small icon (64 px) unreadable -> drop it; suggested default = Compact rows 96 px + icon 88 px + Large font + dividers on (4 items visible).
