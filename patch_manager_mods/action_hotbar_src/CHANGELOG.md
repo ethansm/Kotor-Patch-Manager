@@ -2,7 +2,18 @@
 
 Action Hotbar (id `action-hotbar`), formerly Force Power Hotbar.
 
-## Unreleased (0.1.10-dev)
+## Unreleased (0.1.11-dev)
+
+Fixes from the Gemini review of TP1-TP3:
+
+- Mode button: cycling a slot's target skips a mode another slot already holds for that item. Before, stepping through Lowest HP on the way to Self cleared the slot that held Medpac Lowest HP.
+- The "Nobody needs healing" / "Not usable right now" tip stays its full 1.5 s when the slot was clicked. Before, the hover tip replaced it after one frame.
+- A Lowest HP slot now dims exactly when a press would find nobody, including when self cannot take the item (full HP), and while the only hurt member has a pending heal.
+- Energy shields and the Squad Recovery Kit no longer ask "use on?" or offer target modes (the game uses them directly).
+- While "use on?" is showing, the arrows and the Mode button do nothing; Esc, a refused assign or another slot click also removes the choice tooltip.
+- README: HealThreshold default 100 in the INI table, hook address 0x0072CB84, comments are kept on save, `spell:`/`feat:` refuse target suffixes.
+
+## 0.1.10-dev
 
 - The same item can now sit in several slots with different targets (Medpac, Medpac Self, Medpac Lowest HP). Before, picking it again moved it out of the other slot. Picking the same item with the same target still moves it. (TP3)
 - Lowest HP now heals whoever is hurt the most: `HealThreshold` default 100 (was 50, which made the slot do nothing unless someone was below half HP). When nobody qualifies the slot shows "Nobody needs healing" and the log lists each member's HP. Existing INIs keep their written value. (TP3)

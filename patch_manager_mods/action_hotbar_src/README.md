@@ -76,7 +76,11 @@ For `@lowhp`:
 - A member who just received a heal from the hotbar is skipped for the next press (up to 5 seconds, or until their HP rises), so two quick presses heal two different members. Heals held in a paused queue for longer than 5 seconds are not tracked.
 - `TargetProbe=2` (the default) is needed for `@lowhp` and `@self` to act. See the INI table.
 
-`@lowhp` and `@self` are meant for items. The parser also accepts them on `spell:` and `feat:` values, but that is not a supported use.
+`@lowhp` and `@self` are meant for items. On `spell:` and `feat:` values they are refused (the slot stays empty and the log warns). `other:` values still accept them, but they do nothing there.
+
+Energy shields and the Squad Recovery Kit are always used the game's way: they get no "use on?" prompt and no target modes.
+
+The Mode button skips a mode that another slot already holds for the same item, so cycling never moves the item off that slot.
 
 ## Per-save
 
@@ -107,8 +111,7 @@ The old file is left untouched. If both exist, nothing is copied. The log line i
 
 ## INI reference
 
-The file is `action_hotbar.ini` in the game folder. It is rewritten by the editor, so unknown keys in `[General]` are kept
-but comments are not.
+The file is `action_hotbar.ini` in the game folder. It is rewritten by the editor. Unknown keys and comment lines in `[General]` are kept.
 
 ### [General]
 
@@ -120,7 +123,7 @@ but comments are not.
 | `AutoFill` | 0 | integer | 1: unbound slots show and use the character's known powers, in game order. 0: unbound slots stay empty. |
 | `ReserveDigits` | 1 | 0 or 1 | 1: keys 1-0 are the hotbar's while the HUD is shown, even on an empty slot or in the editor. 0: an empty slot's key does its game action (vanilla quick bar, party switch). |
 | `KeyboardDevice` | automatic | integer | DirectInput keyboard index. Leave it out unless keys do nothing. |
-| `HealThreshold` | 50 | 1..100 | `@lowhp` only picks a member below this HP percent. |
+| `HealThreshold` | 100 | 1..100 | `@lowhp` only picks a member below this HP percent. |
 | `HealFallback` | `self` | `self`, `none` | What `@lowhp` does when nobody is below the threshold. |
 | `SyncActionBar` | 1 | 0 or 1 | 1: refresh the vanilla action bar after an AI stance or form change. 0: off. |
 | `TargetProbe` | 2 | 0, 1, 2 | Diagnostic. 0: item target modes off. 1: log the target decision only, do not act. 2: live. |
@@ -213,7 +216,7 @@ One direct detour for the Steam Aspyr build (`CaptureHotbarKey`). HUD hooks are 
 
 | Address | Function | Purpose |
 |---|---|---|
-| `0x0072CB63` | `CaptureHotbarKey` | Reads the DirectInput key event, so the bound keys can be taken. |
+| `0x0072CB84` | `CaptureHotbarKey` | Reads the DirectInput key event, so the bound keys can be taken. |
 | (hud-host) | `HotbarHudTick` | Per-frame update of the bar, editor and tooltips via `k2.hud@1`. |
 | (hud-host) | `HotbarBuildButtons` | Builds the controls in the HUD constructor via `k2.hud@1`. |
 | (save-events) | `onSaveEvent` | Per-save INI snapshots and restores via `k2.saveevents@1`. |

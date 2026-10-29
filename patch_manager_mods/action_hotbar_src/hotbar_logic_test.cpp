@@ -191,6 +191,9 @@ int main() {
     KT_CHECK(!slotEnabled(full, 2, 0, unset, g));
     g.healFallbackSelf = 1;
     KT_CHECK(slotEnabled(full, 2, 0, unset, g));
+    Candidate selfNo[2] = { C(100, 100, false), C(100, 100) };   // fallback to a self who cannot take it (medpac at full HP): dimmed like the press refuses
+    KT_CHECK(!slotEnabled(selfNo, 2, 0, unset, g));
+    KT_CHECK(!slotEnabled(selfNo, 2, 0, ls, g));
     g.healFallbackSelf = 0; g.healThreshold = 5;                // General threshold applies: 10% not below 5
     KT_CHECK(!slotEnabled(hurt, 2, 0, unset, g));
     unset.thresholdPct = 20;                                    // per-slot override wins
@@ -703,6 +706,27 @@ int main() {
     KT_CHECK_EQ(modeTooltip(sp, true, true).c_str(), "Target modes: items only");
     KT_CHECK_EQ(modeTooltip(it, false, false).c_str(), "Target: cannot target this item");
     KT_CHECK_EQ(modeTooltip(em, true, true).c_str(), "");
+    { // Mode button skips modes another slot already holds for the same item (cycling must not move it off that slot)
+      ActionRef slots[Slots]; slots[0] = it; slots[1] = it; slots[1].target = M(TM_LowHp);
+      KT_CHECK_EQ(nextFreeTargetMode(slots, Slots, 0, slots[0], true, true).mode, TM_Self);      // Lowest HP on slot 2: skipped
+      slots[2] = it; slots[2].target = M(TM_Self);
+      KT_CHECK_EQ(nextFreeTargetMode(slots, Slots, 0, slots[0], true, true).mode, TM_Default);   // all taken: unchanged
+      KT_CHECK_EQ(nextFreeTargetMode(slots, Slots, 1, slots[1], true, true).mode, TM_LowHp);
+      TargetSpec nx = nextFreeTargetMode(slots, Slots, 0, slots[0], true, true);
+      KT_CHECK_EQ(modeTooltip(slots[0], true, true, &nx).c_str(), "Target: Default (other modes are on other slots)");
+      slots[2] = ActionRef();
+      KT_CHECK_EQ(nextFreeTargetMode(slots, Slots, 1, slots[1], true, true).mode, TM_Self);    // own slot never counts
+      ActionRef other = it; other.name = "Repair Kit"; slots[3] = other; slots[3].target = M(TM_Self);
+      KT_CHECK_EQ(nextFreeTargetMode(slots, Slots, 1, slots[1], true, true).mode, TM_Self);    // another item's Self does not block
+      KT_CHECK_EQ(nextFreeTargetMode(slots, 0, 0, it, true, false).mode, TM_LowHp);
+    }
+    { // energy shields (20) / squad recovery kit (47): no target modes; an unread type keeps the flags
+      ItemClass c; c.row = 5; c.healing = true; c.selfOk = true;
+      ItemClass s20 = applyItemType(c, 20), s47 = applyItemType(c, 47), med = applyItemType(c, 45), unk = applyItemType(c, -1);
+      KT_CHECK(!s20.healing && !s20.selfOk && !s47.healing && !s47.selfOk);
+      KT_CHECK(med.healing && med.selfOk && unk.healing && unk.selfOk);
+      KT_CHECK_EQ(s20.row, 5);
+    }
     KT_CHECK_EQ(slotTargetLine(M(TM_LowHp), 50).c_str(), "Target: Lowest HP (below 50%)");
     KT_CHECK_EQ(slotTargetLine(M(TM_LowHp, 30), 30).c_str(), "Target: Lowest HP (below 30%)");
     KT_CHECK_EQ(slotTargetLine(M(TM_Self), 50).c_str(), "Target: Self");

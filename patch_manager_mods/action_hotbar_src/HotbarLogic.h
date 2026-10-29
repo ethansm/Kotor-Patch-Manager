@@ -41,9 +41,10 @@ inline int chooseTarget(const Candidate* m, int n, int selfIdx, int thresholdPct
 constexpr uint32_t PendingHealMs = 5000;
 inline bool pendingHealLive(uint32_t now, uint32_t since, int hpNow, int hpAtPress) { return now - since < PendingHealMs && hpNow <= hpAtPress; }
 
-// False => draw the slot dimmed and ignore clicks/keys: lowest-HP with no fallback and nobody to heal.
+// False => draw the slot dimmed: a lowest-HP press would find nobody (same chooseTarget call as the press, so an ineligible self
+// fallback, e.g. a medpac at full HP, dims too). Clicks/keys still go through and show the refusal tip.
 inline bool slotEnabled(const Candidate* m, int n, int selfIdx, const TargetSpec& t, const General& g) {
-    return !(t.mode == TM_LowHp && !effectiveFallbackSelf(t, g) && chooseTarget(m, n, selfIdx, effectiveThreshold(t, g), false) == -1);
+    return t.mode != TM_LowHp || chooseTarget(m, n, selfIdx, effectiveThreshold(t, g), effectiveFallbackSelf(t, g)) != -1;
 }
 
 // Vanilla's "usable on another party member" rule: baseitems.2da itemtype (engine GetBaseItem+0xAC) is not 20 (forearm bands =
@@ -491,6 +492,19 @@ inline TargetSpec nextTargetMode(const ActionRef& a, bool isHealing, bool selfAl
     else n.mode = TM_Default;
     return n;
 }
+// Mode button: the next mode in the cycle that no other slot already holds for this item (taking it would move the item off
+// that slot, moveDuplicates). Returns a.target unchanged when every other mode is taken.
+inline TargetSpec nextFreeTargetMode(const ActionRef* slots, int count, int slot, const ActionRef& a, bool isHealing, bool selfAllowed) {
+    ActionRef c = a;
+    for (int k = 0; k < 3; ++k) {
+        c.target = nextTargetMode(c, isHealing, selfAllowed);
+        if (c.target.mode == a.target.mode) break;   // wrapped around
+        bool taken = false;
+        for (int i = 0; i < count && !taken; ++i) taken = i != slot && SameSlot(slots[i], c);
+        if (!taken) return c.target;
+    }
+    return a.target;
+}
 // TP1: "use on?" choices offered when an item is picked in the editor (same modes the Mode button cycles through).
 // Empty = no prompt (not an item, or the item can only be used the game's way): the pick assigns directly.
 inline std::vector<TargetMode> targetChoices(const ActionRef& a, bool isHealing, bool selfAllowed) {
@@ -523,9 +537,13 @@ inline ModeBtn modeButtonState(const ActionRef& a, bool isHealing, bool selfAllo
     return (!isHealing && !selfAllowed) ? MB_DisabledCannotTarget : MB_Enabled;
 }
 inline const char* targetModeName(TargetMode m) { return m == TM_LowHp ? "Lowest HP" : m == TM_Self ? "Self" : "Default"; }
-inline std::string modeTooltip(const ActionRef& a, bool isHealing, bool selfAllowed) {
+// next = the mode a click would set (nextFreeTargetMode); nullptr = plain cycle. Same mode = the others are on other slots.
+inline std::string modeTooltip(const ActionRef& a, bool isHealing, bool selfAllowed, const TargetSpec* next = nullptr) {
+    TargetMode nm = next ? next->mode : nextTargetMode(a, isHealing, selfAllowed).mode;
     switch (modeButtonState(a, isHealing, selfAllowed)) {
-    case MB_Enabled: return std::string("Target: ") + targetModeName(a.target.mode) + " (click: " + targetModeName(nextTargetMode(a, isHealing, selfAllowed).mode) + ")";
+    case MB_Enabled:
+        if (nm == a.target.mode) return std::string("Target: ") + targetModeName(a.target.mode) + " (other modes are on other slots)";
+        return std::string("Target: ") + targetModeName(a.target.mode) + " (click: " + targetModeName(nm) + ")";
     case MB_DisabledItemsOnly: return "Target modes: items only";
     case MB_DisabledCannotTarget: return "Target: cannot target this item";
     default: return "";
@@ -571,6 +589,12 @@ inline ItemClass classifyRow(int row, const char* propWhy, int nRows, const std:
     if (nRows <= 0 || row >= nRows) { c.why = "spells.2da row unknown"; return c; }
     c.healing = isHealingRow(parseHexOrInt(usertype), range, parseHexOrInt(category));
     c.selfOk = selfAllowedRow(range, parseHexOrInt(hostile));
+    return c;
+}
+// Energy shields (itemtype 20) and the squad recovery kit (47) are used the game's way only: no Lowest HP / Self, no "use on?".
+// itemType < 0 = unread: flags kept (never strip on a failed read).
+inline ItemClass applyItemType(ItemClass c, int itemType) {
+    if (itemType >= 0 && !isTargetableItemType(itemType)) c.healing = c.selfOk = false;
     return c;
 }
 
