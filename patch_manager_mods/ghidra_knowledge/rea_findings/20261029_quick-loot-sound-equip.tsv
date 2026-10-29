@@ -1,0 +1,32 @@
+addr	kind	name	confidence	evidence	topic	date
+0x004122a0	function	GUI sound by table index (thiscall ECX=holder, byte idx, RET 4)	confirmed	dump 41/004122a0.c:6-9: if idx!=-1 && idx<*(char*)(this+0xa4) && table[idx]!=0 then FUN_0070ad50()	QL9-u02	2026-10-29
+0x00411f50	function	guisounds 2DA to sound-table loader	confirmed	dump 41/00411f50.c:55 FUN_00710840("guisounds"); :93 "SoundResRef"; :85 count to +0xa4; :90 table to +0xa0	QL9-u02	2026-10-29
+0x00411f50	callsite	per-row CExoSoundSource build from SoundResRef	confirmed	dump 41/00411f50.c:119 local_7c=FUN_0070ab90(); :123 table[row]=local_7c	QL9-u02	2026-10-29
+0x007ca207	callsite	GUI sound index 5, ECX=[[EBP-0x2c]+0x38]	confirmed	asm 7c/007ca060.asm: 0x007ca1ff PUSH 0x5; 0x007ca204 MOV ECX,[EDX+0x38]; 0x007ca207 CALL 0x004122a0	QL9-u02	2026-10-29
+0x0040ec00	callsite	GUI sound index = byte at param_2+0x59	confirmed	dump 40/0040ec00.c:14 FUN_004122a0(*(undefined1 *)(param_2 + 0x59))	QL9-u02	2026-10-29
+0x008b74b0	callsite	store buy path plays GUI sound index 9	probable	dump 8b/008b74b0.c:22 FUN_004122a0(9); :24 credits-=price; :26 FUN_0062bc60(item,buyer)	QL9-u02	2026-10-29
+0x008b7700	callsite	store sell path plays GUI sound index 0xb then removes item	probable	dump 8b/008b7700.c:24 FUN_004122a0(0xb); :26 credits+=price; :29 FUN_00605e80(item)	QL9-u02	2026-10-29
+0x0070ab90	function	CExoSoundSource ctor from resref	probable	dump 70/0070ab90.c:18 *param_1=CExoSoundSource::vftable; :26 FUN_0070e9f0(*DAT_00a1b494); header ret=4	QL9-u02	2026-10-29
+0x0070ad50	function	play sound object (fastcall ECX=obj)	probable	dump 70/0070ad50.c:8-12 if *(param_1+4)!=0 then FUN_0070ed50(0,0); header ret=0	QL9-u02	2026-10-29
+0x008bc620	callsite	resref-literal sound computer_lp_04 then ctor	probable	dump 8b/008bc620.c:67-68 FUN_00710840("computer_lp_04"); local_114=FUN_0070ab90(local_3c)	QL9-u02	2026-10-29
+0x00a1b494	global	sound system pointer (name unresolved)	probable	dump 70/0070ab90.c:26 FUN_0070e9f0(*DAT_00a1b494)	QL9-u02	2026-10-29
+0x0074e0b0	function	hotbar icon resref switch (i_equip is not a sound)	probable	dump 74/0074e0b0.c:84-99 FUN_00710eb0(local_78,"i_equip") case 6; "i_unequip" case 7	QL9-u02	2026-10-29
+n/a	string	gui_actscroll gui_actuse gui_click gui_scroll gui_select gui_actequip i_pickup	refuted	strings.tsv case-insensitive grep: no match for brief example names	QL9-u02	2026-10-29
+0x00740b80	function	GUI sound player candidate (not a sound player)	refuted	dump 74/00740b80.c:6 body is only FUN_0079f770(param_1,param_2,param_3); header callees=0079f770	QL9-u02	2026-10-29
+0x0079f770	function	non-sound helper (party iteration)	probable	dump 79/0079f770.c:1 header callees lack 0x4122a0 and 0x70ad50; body uses DAT_00a1b4a4+8	QL9-u02	2026-10-29
+0x005f5770	function	placeable take-all (no direct GUI sound callee)	probable	dump 5f/005f5770.c:1 header callees 0058a2c0,00606100,00605e80,00605090; none of 0x4122a0 or 0x70ad50	QL9-u02	2026-10-29
+0x006d0620	function	get item in slot mask on CSWInventory (thiscall ECX=inv, RET 4)	confirmed	dump 6d/006d0620.c:9-15 puVar1=FUN_006d0670(param_1); FUN_0051c0e0(*puVar1); header ret=4	QL9-u02	2026-10-29
+0x006d0670	function	slot mask to CSWInventory offset map	confirmed	dump 6d/006d0670.c:12-44 0x1->+4 0x2->+8 0x10->+0x14 0x20->+0x18 0x8000->+0x34	QL9-u02	2026-10-29
+0x006a7e0f	field	creature+0x1150 = CSWInventory pointer	confirmed	asm 6a/006a7db0.asm:16 MOV EAX,[EDX+0x1150]; :27 MOV ECX,[EAX+0x1150]	QL9-u02	2026-10-29
+0x0057af90	callsite	mask 0x2 slot read, item+0x8a (body label unproven)	probable	dump 57/0057af90.c:9 iVar1=FUN_006d0620(2); :14 local_5=*(iVar1+0x8a)	QL9-u02	2026-10-29
+0x00606100	function	repo get-by-index (count +0x10, ids +0xc)	confirmed	dump 60/00606100.c:8-12 if param_2<0 or *(param_1+0x10)<=param_2 return 0; else FUN_0051c0e0(ids[param_2])	QL9-u02	2026-10-29
+0x0058a2c0	function	active item repo getter (party repo obj+0x1154 unless container open)	probable	dump 58/0058a2c0.c:11-20 cond (*(obj+0x11ac)==0 or arg==0) and FUN_007d2250()==-1 then *(obj+0x1154); RET 4	QL9-u02	2026-10-29
+0x00574500	callsite	iterates active repo count +0x10 via 0x58a2c0(1)	confirmed	dump 57/00574500.c:103 while(FUN_0058a2c0(1) count at +0x10); :106 FUN_00606100(uVar2)	QL9-u02	2026-10-29
+0x00602dd0	field	CSWSItem+0x0C BaseItem (dword)	confirmed	dump 60/00602dd0.c:10 FUN_00719bf0(param_3,*(param_1+0xc),"BaseItem")	QL9-u02	2026-10-29
+0x00602dd0	field	CSWSItem+0x2A0 AddCost (dword)	confirmed	dump 60/00602dd0.c:51 FUN_00719b90(...,*(param_1+0x2a0),"AddCost"); 60/00601740.c:124-125 read/write	QL9-u02	2026-10-29
+0x00602dd0	field	CSWSItem+0x2CC StackSize (low 16 bits)	confirmed	dump 60/00602dd0.c:16 *(param_1+0x2cc)&0xffff "StackSize"; 60/00601740.c:77-78	QL9-u02	2026-10-29
+0x00602dd0	field	CSWSItem+0x2C8 bits Dropable b3 Pickpocketable b4 Stolen b5 NonEquippable b6 NewItem b7 DELETING b8	confirmed	dump 60/00602dd0.c:17,38-39,64-66; 60/00601740.c:79-80,98,101-102,120-123	QL9-u02	2026-10-29
+0x00601740	field	CSWSItem+0x10C byte, name DAT_00996df4 unresolved (Plot candidate)	probable	dump 60/00601740.c:130-131 FUN_00718a00(...,&DAT_00996df4,...,*(param_1+0x10c)&0xff); name not in strings.tsv	QL9-u02	2026-10-29
+0x00602dd0	field	CSWSItem+0x28 resref-sized, name DAT_00993538 unresolved (Tag or TemplateResRef)	probable	dump 60/00602dd0.c:11 FUN_00719e50(param_3,param_1+0x28,&DAT_00993538); 60/00601740.c:51 FUN_00718f90; no strings.tsv entry	QL9-u02	2026-10-29
+0x00602dd0	field	CSWSItem+0x298 Charges, +0x29C MaxCharges, +0x2F0 UpgradeLevel (bytes)	confirmed	dump 60/00602dd0.c:19,46,47	QL9-u02	2026-10-29
+0x008b74b0	field	store object +0x34C8 = credits (buy subtracts price, sell adds)	probable	dump 8b/008b74b0.c:24-25 *(param_1+0x34c8)-iVar4; 8b/008b7700.c:26 credits add	QL9-u02	2026-10-29
