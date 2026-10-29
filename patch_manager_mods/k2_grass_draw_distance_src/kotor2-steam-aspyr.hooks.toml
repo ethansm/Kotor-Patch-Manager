@@ -58,8 +58,9 @@ type = "pointer"
 
 # Hook 5 / 6 (0.1.5): the two CALL dword ptr [0x00986304] (glDrawArrays) in FUN_004369A0, the grass-only draw helper
 # (callers 0x0050E16B, 0x0050E487, 0x0050E695). The hook receives a pointer to the three pushed args (mode, first, count);
-# with far_lod on and mode == GL_QUADS it lowers only `count` (first quads of the bin). The helper's own offset argument
-# (count * 0x30, also the normals/UV offset) is never touched.
+# with far_lod on and mode == GL_QUADS it draws an evenly spaced subset of the bin's quads itself (0.1.10: glDrawElements on the
+# bound client arrays) and sets `count` to 0 so the game's call draws nothing; with an element buffer bound it lowers `count` to a
+# prefix of quads instead (the 0.1.5 behaviour). The helper's own offset argument (count * 0x30, also the normals/UV offset) is never touched.
 [[hooks]]
 address = 0x00436A95
 type = "detour"
@@ -123,6 +124,28 @@ type = "detour"
 function = "K2GrassOnFaceCount"
 original_bytes = [0xD9, 0x85, 0xDC, 0xFD, 0xFF, 0xFF]
 skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ebp"
+type = "pointer"
+
+# Hook 10 (0.1.10, fast_bin_diff): FUN_004987E0 (called once per frame from Scene::CollectAndTraverse) at 0x00498829,
+# MOV dword ptr [EBP-4], 0 (7 bytes): the loop-2 counter init, reached from the loop-1 exit JGE at 0x0049880F (so the address is a
+# jump target, which is fine: the patch starts at it, and the next instruction JMP 0x0049883B at 0x00498830 is not touched).
+# Loop 1 builds the current bins (FUN_0050D960); loop 2 destroys (FUN_0050DA00) each previous bin that a linear scan of the current
+# list does not find, which is O(N^2) (~405k iterations at 900 bins). The handler hashes the current list and destroys the missing
+# previous bins in the same order, then sets the counter to the previous count so loop 2 exits at once; or, when fast_bin_diff is
+# off or anything is unusual, writes the counter 0 and returns (the vanilla loop).
+# skip_original_bytes = true: the KPM wrapper runs the stolen bytes AFTER the handler, which would reset the counter the handler set
+# to the previous count and run the whole O(N^2) loop again (same precedent: asset_vfs_src/kotor2-steam-aspyr.hooks.toml H1).
+# K2GrassBinDiff therefore writes [EBP-4] itself on every path.
+[[hooks]]
+address = 0x00498829
+type = "detour"
+function = "K2GrassBinDiff"
+original_bytes = [0xC7, 0x45, 0xFC, 0x00, 0x00, 0x00, 0x00]
+skip_original_bytes = true
 exclude_from_restore = []
 
 [[hooks.parameters]]

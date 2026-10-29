@@ -1,4 +1,4 @@
-// K2GrassDrawDistance.cpp -- K2 Grass Draw Distance (0.1.9-dev)
+// K2GrassDrawDistance.cpp -- K2 Grass Draw Distance (0.1.10-dev)
 // Extends grass octree build/collect radius, fade-start/fade-end distances, alpha-test threshold,
 // and decouples CPU wind animation radius (one operand rewrite at KPatchInit, code_patches.toml).
 // 0.1.4: a second operand rewrite trims the octree collect radius to the visible clip distance (trim_hidden), two
@@ -16,10 +16,13 @@
 //   PV2 even_spread    hook before the blade weight sum rewrites the three barycentric weight slots [EBP-0xC..-0x4]
 //   PV3 density_noise  hook before the face count FRNDINT rewrites the float slot [EBP-0x224]
 //   PV4 size_var       the size FMUL's double operand is redirected to the DLL's g_sizeSpan (code_patches.toml)
+// 0.1.10: far_lod draws an evenly spaced quad subset (own glDrawElements); wind_dist clamp 90 (= menu max); fast_bin_diff
+//         hash-based FUN_004987E0 bin list diff (hook 10); fix_b1_pointer (path B1 vertex pointer, code patch).
 // 0.1.9: Varied Grass Pattern + Even Grass Spread default on (GR7: looks better, no measured cost).
 // 0.1.8: PERF2 seeds=; variety counters survive the PERF gap reset (load-time hook calls were wiped).
 // 0.1.7: long log lines split under the core's 232-byte cut (PERF/PERF2, loaded or INI reload + CFG + VARIETY).
-// The hooks only rewrite the game's own stack slots; the DLL never calls rand/srand or any game function.
+// The variety hooks only rewrite the game's own stack slots; the DLL never calls rand/srand. The only game function it
+// calls is the bin destroy FUN_0050DA00 (fast_bin_diff, hook 10), with exactly the arguments the engine's own loop uses.
 // Generation tweaks apply to bins built after the change (an area reload, or grass newly collected).
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -87,6 +90,23 @@ constexpr unsigned GlSamples = 0x80A9;
 // int: count of the previous frame's in-range grass bin list (list = {ptr, count}, count at +4). The per-frame
 // list swap in Scene::CollectAndTraverse copies the current list there before hook 1 runs (doc 48 section 1.5).
 constexpr uintptr_t AddrGrassPrevBinCount = 0x00A73304;
+// 0.1.10 fast bin diff: FUN_004987E0 (called once per frame from Scene::CollectAndTraverse) builds the current bins, then
+// destroys every previous bin missing from the current list with a linear scan per bin. Lists are {ptr, count} pairs of
+// 4-byte bin pointers: previous {0x00A73300, 0x00A73304}, current {0x00A7330C, 0x00A73310}. Destroy = FUN_0050DA00 (__thiscall).
+constexpr uintptr_t AddrGrassPrevBinPtr = 0x00A73300;
+constexpr uintptr_t AddrGrassCurBinPtr = 0x00A7330C;
+constexpr uintptr_t AddrGrassCurBinCount = 0x00A73310;
+constexpr uintptr_t AddrBinDestroy = 0x0050DA00;
+constexpr intptr_t kSlotDiffCounter = -0x4;   // loop-2 counter of FUN_004987E0, [EBP-4]
+// Path B1 pushes `ADD ECX,0x40` (address of bin field +0x40) as the vertex pointer base; paths A and B2 push [bin+0x38].
+// The 3-byte `ADD ECX,0x40` at 0x0050E483 (MOV ECX,[EBP-0x114] is at 0x0050E47D) becomes `MOV ECX,[ECX+0x38]`.
+constexpr uintptr_t AddrB1Ptr = 0x0050E483;
+const uint8_t kB1PtrOrig[3] = {0x83, 0xC1, 0x40};
+const uint8_t kB1PtrNew[3] = {0x8B, 0x49, 0x38};
+// Draw helper FUN_004369A0 sets the vertex/normal/UV pointers and calls glDrawArrays(7, first, count).
+constexpr unsigned GlElementArrayBufferBinding = 0x8895;
+constexpr unsigned GlUnsignedInt = 0x1405;
+constexpr int32_t kEvenIdxCap = 1 << 18;   // indices; a bin keeping more than 65536 quads falls back to the prefix
 // PF2a path probe inputs (read with saferead only; the game functions that derive the path cache on first call, so the
 // probe never calls them): F = u32 flags word, N = int, the two flag ints (low bit), the two -1-sentinel ints, plus the
 // int that splits bins into path A / B and a byte logged for context.
@@ -136,6 +156,15 @@ int g_collectPatch = 0;
 double g_sizeSpan = 0.4;
 uint8_t g_sizeFmulNew[6] = {};
 int g_sizePatch = 0;
+uint8_t g_b1Patched = 0;   // 1 = the B1 vertex pointer fix is written
+// Far LOD even selection (render thread only): index list for glDrawElements, and whether this pass may use it.
+uint32_t g_evenIdx[kEvenIdxCap];
+bool g_elemClear = false;   // no GL_ELEMENT_ARRAY_BUFFER bound at this pass's Begin (client-memory indices are valid)
+using GlDrawElementsFn = void(__stdcall*)(unsigned, int, unsigned, const void*);
+GlDrawElementsFn g_glDrawElements = nullptr;
+bool g_glDrawElementsTried = false;
+// Fast bin diff state (render thread only).
+k2grass::PtrSet g_diffSet;
 k2grass::PerfWindow g_perf{};
 // Grass bucket loop timing / alpha-to-coverage state (render thread only).
 LARGE_INTEGER g_qpcFreq{};
@@ -240,9 +269,21 @@ void patchSizeOperand() {
     if (g_sizePatch != 1) KP_WARN("size operand NOT patched: blade size span stays vanilla");
 }
 
+// 0.1.10 (fix_b1_pointer, read at load): path B1 vertex pointer = [bin+0x38] like paths A and B2. Mismatch: nothing written.
+void patchB1Pointer() {
+    if (g_b1Patched || !g_cfg.fixB1Pointer) return;
+    uint8_t seen[3] = {};
+    const int rc = codepatch::writeChecked(AddrB1Ptr, kB1PtrOrig, kB1PtrNew, 3, seen);
+    KP_LOG(chMain, "patch b1_vertex_ptr @0x%08X rc=%d seen=%02X %02X %02X", static_cast<unsigned>(AddrB1Ptr), rc, seen[0],
+           seen[1], seen[2]);
+    if (rc == 1) g_b1Patched = 1;
+    else KP_WARN("b1 vertex pointer NOT patched: path B1 keeps the vanilla pointer");
+}
+
 // FreeLibrary only: put the vanilla operands back before the globals go away.
 void unpatchOperands() {
     uint8_t seen[6] = {};
+    if (g_b1Patched && codepatch::writeChecked(AddrB1Ptr, kB1PtrNew, kB1PtrOrig, 3, seen) == 1) g_b1Patched = 0;
     if (g_windPatch == 1 && codepatch::writeChecked(AddrWindFld, g_windFldNew, kWindFldOrig, 6, seen) == 1) g_windPatch = 0;
     if (g_collectPatch == 1 && codepatch::writeChecked(AddrCollectFld, g_collectFldNew, kCollectFldOrig, 6, seen) == 1) g_collectPatch = 0;
     if (g_sizePatch == 1 && codepatch::writeChecked(AddrSizeFmul, g_sizeFmulNew, kSizeFmulOrig, 6, seen) == 1) g_sizePatch = 0;
@@ -409,10 +450,11 @@ void perfSample(unsigned now) {
            (g_a2cCapable && g_cfg.smoothEdges) ? 1 : 0);
     KP_LOG(chPerf,
            "PERF2 gpu_ms_avg=%.2f gpu_ms_max=%.2f gpu=%d lod=%d quads_pct=%.0f pathA=%u pathB1=%u pathB2=%u "
-           "seeds=%u blades=%u dens_faces=%u dens_in=%.0f dens_out=%.0f",
+           "seeds=%u blades=%u dens_faces=%u dens_in=%.0f dens_out=%.0f diff_calls=%u diff_destroyed=%u diff_us_avg=%.1f",
            g_perf.gpuMsAvg(), g_perf.gpuMsMax(), (g_gpu.ok && g_cfg.gpuTiming) ? 1 : 0,
            g_cfg.farLod ? 1 : 0, g_perf.quadsPct(), g_perf.pathA, g_perf.pathB1, g_perf.pathB2,
-           g_perf.seeds, g_perf.blades, g_perf.densFaces, g_perf.densIn, g_perf.densOut);
+           g_perf.seeds, g_perf.blades, g_perf.densFaces, g_perf.densIn, g_perf.densOut,
+           g_perf.diffCalls, g_perf.diffDestroyed, static_cast<double>(g_perf.diffUsAvg()));
     g_perf.reset(now);
 }
 
@@ -480,10 +522,11 @@ void loadAndApplyIni(bool initial) {
     }
     KP_LOG(chCfg,
            "CFG smooth_edges=%d perf_log=%d gpu_timing=%d wind_throttle=%d wind_near=%.0fm wind_every=%d far_lod=%d "
-           "lod_start=%.0fm lod_min_keep=%.2f",
+           "lod_start=%.0fm lod_min_keep=%.2f fast_bin_diff=%d b1_fix=%d",
            g_cfg.smoothEdges ? 1 : 0, g_cfg.perfLog ? 1 : 0,
            g_cfg.gpuTiming ? 1 : 0, g_cfg.windThrottle ? 1 : 0, g_cfg.windNear, g_cfg.windEvery,
-           g_cfg.farLod ? 1 : 0, g_cfg.lodStart, static_cast<double>(g_cfg.lodMinKeep));
+           g_cfg.farLod ? 1 : 0, g_cfg.lodStart, static_cast<double>(g_cfg.lodMinKeep),
+           g_cfg.fastBinDiff ? 1 : 0, g_cfg.fixB1Pointer ? 1 : 0);
     KP_LOG(chCfg,
            "VARIETY vary_seed=%d even_spread=%d density_noise=%d density_amount=%.2f density_cell=%.0fm size_var=%.2f "
            "(applies to grass built after this; reload the save)",
@@ -554,16 +597,35 @@ struct DrawArraysArgs {
     int32_t count;
 };
 
-// Far LOD: draw only the first K quads of the bin. Prefix thinning: if quads are spatially ordered inside a bin this
-// leaves bald patches (a play-test question); there is no alpha compensation in this version. Only the pushed count
-// changes: the helper's offset argument (count * 0x30) is also the normals/UV offset, so it must stay as the game set it.
+// Far LOD: draw K of the bin's N quads. The bin's vertex buffer is written face by face, so a prefix drops whole faces
+// (bald holes); instead K quads spaced evenly through the buffer (q_i = floor(i * N / K)) are drawn with our own
+// glDrawElements on the client arrays the helper has bound, and the pushed count becomes 0 so the game's glDrawArrays
+// draws nothing. When an element buffer is bound, glDrawElements is missing, or the index list does not fit, the old
+// prefix (lower the pushed count to K quads) is used. Either way the helper's offset argument (count * 0x30, also the
+// normals/UV offset) stays as the game set it, and there is no alpha compensation.
+bool drawEvenQuads(int32_t first, int32_t nQuads, int32_t keepQuads) {
+    if (!g_elemClear) return false;
+    if (!g_glDrawElementsTried) {
+        g_glDrawElementsTried = true;
+        HMODULE gl = GetModuleHandleA("opengl32.dll");
+        if (gl) g_glDrawElements = reinterpret_cast<GlDrawElementsFn>(reinterpret_cast<void*>(GetProcAddress(gl, "glDrawElements")));
+        KP_LOG(chMain, "far_lod even thinning: glDrawElements=%s", g_glDrawElements ? "found" : "missing (prefix fallback)");
+    }
+    if (!g_glDrawElements) return false;
+    const int32_t n = k2grass::fillEvenQuadIndices(g_evenIdx, kEvenIdxCap, first, nQuads, keepQuads);
+    if (n <= 0) return false;
+    g_glDrawElements(GlQuads, n, GlUnsignedInt, g_evenIdx);
+    return true;
+}
+
 void thinDrawArrays(DrawArraysArgs* args) {
     if (!g_inGrass || args == nullptr || args->mode != GlQuads || args->count < 0) return;
     const int32_t before = args->count;
     int32_t after = before;
     if (g_cfg.farLod) {
         after = k2grass::thinCount(before, g_binKeep);
-        args->count = after;
+        if (after < before && drawEvenQuads(args->first, before / 4, after / 4)) args->count = 0;
+        else args->count = after;
     }
     if (g_cfg.perfLog) g_perf.addQuads(static_cast<uint32_t>(before / 4), static_cast<uint32_t>(after / 4));
 }
@@ -582,6 +644,7 @@ void __cdecl KPatchInit(const KPatchApi* api) {
     patchWindOperand();
     patchCollectOperand();
     patchSizeOperand();
+    patchB1Pointer();
     g_initialized = true;
     pollModConfig();
 }
@@ -595,6 +658,7 @@ void __cdecl K2GrassOnSceneCollect() {
         patchWindOperand();
         patchCollectOperand();
         patchSizeOperand();
+        patchB1Pointer();
         g_initialized = true;
     } else if (filewatch::changed(g_iniPoll, k2grass::kIniFile, now)) {
         loadAndApplyIni(false);
@@ -620,6 +684,16 @@ void __cdecl K2GrassBinLoopBegin() {
     probeGrassPath();
     g_inGrass = true;
     g_binKeep = 1.0f;
+    g_elemClear = false;
+    if (g_cfg.farLod) {
+        // Client-memory indices are only valid when no element buffer is bound; one query per pass.
+        uint32_t fn = 0;
+        if (saferead::readAt<uint32_t>(15, AddrSlotGlGetIntegerv, 0, &fn) && fn != 0) {
+            int bound = -1;
+            (*reinterpret_cast<GlGetIntFn*>(AddrSlotGlGetIntegerv))(GlElementArrayBufferBinding, &bound);
+            g_elemClear = bound == 0;
+        }
+    }
     gpuBegin();   // before the CPU timer so the query call is not counted as grass CPU time
     if (g_cfg.perfLog) {
         if (!g_qpcFreq.QuadPart) QueryPerformanceFrequency(&g_qpcFreq);
@@ -720,6 +794,64 @@ void __cdecl K2GrassOnFaceCount(uint8_t* ebp) {
     const float y = k2grass::densityCount(x, cx, cy, g_cfg);
     *slot = y;
     if (g_cfg.perfLog) g_perf.addDensity(x, y);
+}
+
+// Hook 10 (0.1.10, fast_bin_diff): FUN_004987E0 at 0x00498829, the loop-2 counter init `MOV dword ptr [EBP-4], 0` (7 bytes;
+// the original bytes are skipped, so this handler writes the counter itself on every path). Loop 2 destroys each previous
+// bin that is not in the current list, scanning the current list per bin (O(N^2)). Fast path: hash the current bins, destroy
+// the missing previous bins in list order with the game's own destroy, then set the counter to the previous count so loop 2
+// ends at once. Anything unusual (off, null/short lists, > kMaxDiffBins, null entries, unreadable arrays, full table) leaves
+// the counter at 0 before any destroy ran: exactly the vanilla loop.
+void __cdecl K2GrassBinDiff(uint8_t* ebp) {
+    if (ebp == nullptr) return;
+    int32_t* counter = reinterpret_cast<int32_t*>(ebp + kSlotDiffCounter);
+    *counter = 0;
+    if (!g_cfg.fastBinDiff) return;
+    saferead::beginScope();
+    uint32_t prevPtr = 0, curPtr = 0;
+    int32_t prevCount = 0, curCount = 0;
+    if (!saferead::readAt<uint32_t>(16, AddrGrassPrevBinPtr, 0, &prevPtr) ||
+        !saferead::readAt<int32_t>(17, AddrGrassPrevBinCount, 0, &prevCount) ||
+        !saferead::readAt<uint32_t>(18, AddrGrassCurBinPtr, 0, &curPtr) ||
+        !saferead::readAt<int32_t>(19, AddrGrassCurBinCount, 0, &curCount)) return;
+    if (prevCount <= 0 || prevCount > k2grass::kMaxDiffBins || curCount < 0 || curCount > k2grass::kMaxDiffBins) return;
+    if (prevPtr == 0 || (curCount > 0 && curPtr == 0)) return;
+    if (!saferead::probeRead(20, reinterpret_cast<const void*>(static_cast<uintptr_t>(prevPtr)), 4u * static_cast<size_t>(prevCount))) return;
+    if (curCount > 0 && !saferead::probeRead(21, reinterpret_cast<const void*>(static_cast<uintptr_t>(curPtr)), 4u * static_cast<size_t>(curCount))) return;
+    LARGE_INTEGER t0{};
+    bool timing = false;
+    if (g_cfg.perfLog) {
+        if (!g_qpcFreq.QuadPart) QueryPerformanceFrequency(&g_qpcFreq);
+        timing = g_qpcFreq.QuadPart > 0 && QueryPerformanceCounter(&t0) != 0;
+    }
+    const volatile uint32_t* cur = reinterpret_cast<const volatile uint32_t*>(static_cast<uintptr_t>(curPtr));
+    const volatile uint32_t* prev = reinterpret_cast<const volatile uint32_t*>(static_cast<uintptr_t>(prevPtr));
+    g_diffSet.clear();
+    for (int32_t i = 0; i < curCount; ++i) {
+        if (!g_diffSet.insert(cur[i])) return;   // null entry or full table: vanilla loop
+    }
+    for (int32_t i = 0; i < prevCount; ++i) {
+        if (prev[i] == 0) return;
+    }
+    using BinDestroyFn = void(__thiscall*)(void*);
+    const BinDestroyFn destroy = reinterpret_cast<BinDestroyFn>(AddrBinDestroy);
+    uint32_t destroyed = 0;
+    for (int32_t i = 0; i < prevCount; ++i) {
+        const uint32_t bin = prev[i];
+        if (g_diffSet.contains(bin)) continue;
+        destroy(reinterpret_cast<void*>(static_cast<uintptr_t>(bin)));
+        ++destroyed;
+    }
+    *counter = prevCount;
+    if (timing) {
+        LARGE_INTEGER t1{};
+        if (QueryPerformanceCounter(&t1) && t1.QuadPart >= t0.QuadPart) {
+            const uint64_t us = static_cast<uint64_t>(t1.QuadPart - t0.QuadPart) * 1000000ull / static_cast<uint64_t>(g_qpcFreq.QuadPart);
+            g_perf.addDiff(destroyed, us > 0xFFFFFFFFull ? 0xFFFFFFFFu : static_cast<uint32_t>(us));
+            return;
+        }
+    }
+    g_perf.addDiff(destroyed, 0);
 }
 
 // Hook 5 / 6: the two CALL dword ptr [glDrawArrays] in the grass draw helper FUN_004369A0 (grass-only; callers

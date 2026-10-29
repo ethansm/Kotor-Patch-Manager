@@ -1,4 +1,4 @@
-// K2GrassDrawDistanceLogic.h (0.1.9-dev) -- Pure config, math, and ModConfig schema for k2-grass-draw-distance.
+// K2GrassDrawDistanceLogic.h (0.1.10-dev) -- Pure config, math, and ModConfig schema for k2-grass-draw-distance.
 // Header-only and host-testable (no engine addresses or Win32 calls).
 #pragma once
 
@@ -12,7 +12,7 @@
 namespace k2grass {
 
 constexpr const char* kModId = "k2-grass-draw-distance";
-constexpr const char* kVersion = "0.1.9-dev";
+constexpr const char* kVersion = "0.1.10-dev";
 constexpr const char* kIniFile = "k2_grass_draw_distance.ini";
 constexpr const char* kIniSection = "Grass";
 
@@ -44,7 +44,7 @@ constexpr float kTrimMarginMeters = 2.0f;
 // 0.1.5 experiments (all off by default except the log-only GPU timer; with them off the picture and CPU work equal 0.1.4):
 //   gpu_timing   GL_TIME_ELAPSED query around the grass bucket loop (PERF gpu_ms_*), ini only
 //   wind_*       PF2b: only every wind_every-th frame animates wind out to wind_dist; in between wind is capped to wind_near
-//   far_lod      PF2c: far bins draw only a prefix of their quads (linear from 100% at lod_start to lod_min_keep at the fade end)
+//   far_lod      PF2c: far bins draw an evenly spaced subset of their quads (linear from 100% at lod_start to lod_min_keep at the fade end)
 constexpr bool kDefaultGpuTiming = true;
 constexpr bool kDefaultWindThrottle = false;
 constexpr float kDefaultWindNear = 10.0f;
@@ -60,6 +60,10 @@ constexpr float kMinLodStart = 10.0f;
 constexpr float kMaxLodStart = 150.0f;
 constexpr float kMinLodMinKeep = 0.1f;
 constexpr float kMaxLodMinKeep = 1.0f;
+// 0.1.10: fast_bin_diff replaces the engine's O(N^2) previous/current grass bin list comparison (FUN_004987E0) with a hash
+// lookup, same destroy set and order (menu row); fix_b1_pointer corrects path B1's vertex pointer (ini only, read at load).
+constexpr bool kDefaultFastBinDiff = true;
+constexpr bool kDefaultFixB1Pointer = true;
 // 0.1.6 variety (doc 50 PV1-PV4); 0.1.9: vary_seed + even_spread default on (GR7 PASS), density_noise off, size_var vanilla. Generation tweaks apply to bins built after the change.
 //   vary_seed      PV1: per-face srand seed hashed from the face vertices (vanilla seeds from a rounded coordinate sum)
 //   even_spread    PV2: uniform barycentric weights per blade (vanilla clusters toward the face centre)
@@ -86,7 +90,7 @@ constexpr float kMinFadeEndDist = 10.0f;
 constexpr float kMaxFadeEndDist = 150.0f;
 constexpr float kMinFadeSpan = 5.0f;
 constexpr float kMinWindDist = 0.0f;
-constexpr float kMaxWindDist = 200.0f;
+constexpr float kMaxWindDist = 90.0f;   // 0.1.10: equals the menu row max (was 200)
 constexpr float kMinAlphaCutoff = 0.01f;
 constexpr float kMaxAlphaCutoff = 0.90f;
 
@@ -112,6 +116,8 @@ struct Config {
     bool farLod = kDefaultFarLod;
     float lodStart = kDefaultLodStart;
     float lodMinKeep = kDefaultLodMinKeep;
+    bool fastBinDiff = kDefaultFastBinDiff;
+    bool fixB1Pointer = kDefaultFixB1Pointer;
     bool varySeed = kDefaultVarySeed;
     bool evenSpread = kDefaultEvenSpread;
     bool densityNoise = kDefaultDensityNoise;
@@ -153,6 +159,8 @@ struct Config {
                farLod == o.farLod &&
                std::fabs(lodStart - o.lodStart) < 1e-4f &&
                std::fabs(lodMinKeep - o.lodMinKeep) < 1e-4f &&
+               fastBinDiff == o.fastBinDiff &&
+               fixB1Pointer == o.fixB1Pointer &&
                varySeed == o.varySeed &&
                evenSpread == o.evenSpread &&
                densityNoise == o.densityNoise &&
@@ -243,7 +251,8 @@ inline float lodKeep(float binDistSq, const Config& cfg, const EffectiveValues& 
     return 1.0f - (1.0f - minKeep) * (d - start) / (end - start);
 }
 
-// Vertex count to hand glDrawArrays(GL_QUADS) for a bin kept at `keep`: the first ceil(quads * keep) quads, at least 1.
+// Vertex count to hand glDrawArrays(GL_QUADS) for a bin kept at `keep`: ceil(quads * keep) quads, at least 1 (the K the
+// even selection below draws; the prefix fallback draws the first K).
 // Counts that are not a whole number of quads (or under one quad) pass through untouched.
 inline int32_t thinCount(int32_t count, float keep) {
     if (!(keep < 1.0f) || count < 4 || (count % 4) != 0) return count;
@@ -253,6 +262,79 @@ inline int32_t thinCount(int32_t count, float keep) {
     if (k > quads) k = quads;
     return k * 4;
 }
+
+// 0.1.10 even thinning: of N quads draw K (K <= N) spread evenly, quad q_i = floor(i * N / K), i = 0..K-1. Strictly
+// increasing, q_0 = 0, consecutive gaps differ by at most 1, K == N is the identity. (A prefix drops whole faces: the bin
+// vertex buffer is written face by face, so the tail quads belong to the same few faces.)
+inline int32_t evenQuadIndex(int32_t i, int32_t n, int32_t k) {
+    if (n <= 0 || k <= 0 || i < 0) return 0;
+    if (k >= n) return i < n ? i : n - 1;
+    if (i >= k) i = k - 1;
+    return static_cast<int32_t>(static_cast<uint64_t>(static_cast<uint32_t>(i)) * static_cast<uint64_t>(static_cast<uint32_t>(n)) /
+                                static_cast<uint64_t>(static_cast<uint32_t>(k)));
+}
+
+// Fill `out` with the 4 * k vertex indices (first + 4 * q_i + 0..3) of the evenly selected quads. Returns the index count,
+// or 0 when the request cannot be served (bad sizes, k > n, first < 0, overflow, or 4 * k > cap): the caller then keeps
+// the prefix behaviour.
+inline int32_t fillEvenQuadIndices(uint32_t* out, int32_t cap, int32_t first, int32_t n, int32_t k) {
+    if (out == nullptr || first < 0 || n < 1 || k < 1 || k > n) return 0;
+    if (k > cap / 4) return 0;
+    if (static_cast<int64_t>(first) + 4 * static_cast<int64_t>(n) > 0x7FFFFFFF) return 0;
+    for (int32_t i = 0; i < k; ++i) {
+        const uint32_t base = static_cast<uint32_t>(first) + 4u * static_cast<uint32_t>(evenQuadIndex(i, n, k));
+        out[4 * i + 0] = base;
+        out[4 * i + 1] = base + 1u;
+        out[4 * i + 2] = base + 2u;
+        out[4 * i + 3] = base + 3u;
+    }
+    return k * 4;
+}
+
+// 0.1.10 fast bin diff: open-addressing set of 32-bit pointers (0 is the empty key, so it is never stored). Slots are
+// generation-stamped: clear() is O(1) except on the 2^32nd wrap. Capacity 8192; the engine caller admits at most 4096 keys.
+inline uint32_t fmix32(uint32_t h);   // defined with the variety math below
+constexpr int32_t kMaxDiffBins = 4096;
+struct PtrSet {
+    static constexpr uint32_t kCap = 8192;
+    uint32_t gen = 0;
+    uint32_t used = 0;
+    uint32_t stamp[kCap];
+    uint32_t key[kCap];
+    PtrSet() { memset(stamp, 0, sizeof stamp); memset(key, 0, sizeof key); }
+    void clear() {
+        if (++gen == 0) {
+            memset(stamp, 0, sizeof stamp);
+            gen = 1;
+        }
+        used = 0;
+    }
+    // false when k == 0 or the table is full; a duplicate is accepted (and not stored twice).
+    bool insert(uint32_t k) {
+        if (k == 0 || gen == 0) return false;
+        uint32_t h = fmix32(k) & (kCap - 1);
+        for (uint32_t n = 0; n < kCap; ++n, h = (h + 1) & (kCap - 1)) {
+            if (stamp[h] != gen) {
+                if (used >= kCap - 1) return false;   // keep one slot free so contains() always terminates
+                stamp[h] = gen;
+                key[h] = k;
+                ++used;
+                return true;
+            }
+            if (key[h] == k) return true;
+        }
+        return false;
+    }
+    bool contains(uint32_t k) const {
+        if (k == 0 || gen == 0) return false;
+        uint32_t h = fmix32(k) & (kCap - 1);
+        for (uint32_t n = 0; n < kCap; ++n, h = (h + 1) & (kCap - 1)) {
+            if (stamp[h] != gen) return false;
+            if (key[h] == k) return true;
+        }
+        return false;
+    }
+};
 
 // PF2a path probe: which branch of the engine's grass draw setup the current globals select. Decoded from globals only
 // (the game's own helpers cache on first call). F = flags word [0x00A32DF8], N = [0x009F60F0], c60FC / c6118 = ints with
@@ -438,9 +520,19 @@ struct PerfWindow {
     uint32_t blades = 0;       // PV2 hook calls (blades generated)
     uint32_t seeds = 0;        // PV1 hook calls (faces reseeded)
     uint32_t densFaces = 0;    // PV3 hook calls (faces)
+    // 0.1.10 fast bin diff (per window): fast-path calls, bins destroyed, handler time (microseconds).
+    uint32_t diffCalls = 0;
+    uint32_t diffDestroyed = 0;
+    uint64_t diffUsSum = 0;
     double densIn = 0.0;       // sum of the game's face counts before the change
     double densOut = 0.0;      // sum after
 
+    void addDiff(uint32_t destroyed, uint32_t us) {
+        ++diffCalls;
+        diffDestroyed += destroyed;
+        diffUsSum += us;
+    }
+    float diffUsAvg() const { return diffCalls ? static_cast<float>(static_cast<double>(diffUsSum) / diffCalls) : 0.0f; }
     void addBlade() { ++blades; }
     void addSeed() { ++seeds; }
     void addDensity(float in, float out) {
@@ -581,6 +673,18 @@ inline inikit::LoadStats parseIniText(char* text, Config& cfg) {
             cfg.farLod = b;
             return inikit::IniVerdictOk;
         }
+        if (strcmp(key, "fast_bin_diff") == 0) {
+            bool b = true;
+            if (!parseBoolVal(val, &b)) return inikit::IniVerdictBad;
+            cfg.fastBinDiff = b;
+            return inikit::IniVerdictOk;
+        }
+        if (strcmp(key, "fix_b1_pointer") == 0) {
+            bool b = true;
+            if (!parseBoolVal(val, &b)) return inikit::IniVerdictBad;
+            cfg.fixB1Pointer = b;
+            return inikit::IniVerdictOk;
+        }
         if (strcmp(key, "vary_seed") == 0) {
             bool b = false;
             if (!parseBoolVal(val, &b)) return inikit::IniVerdictBad;
@@ -704,10 +808,14 @@ inline int formatDefaultIni(char* buf, size_t cap, const Config& c = Config{}) {
         "wind_throttle = %d\n"
         "wind_near = %.0f\n"
         "wind_every = %d\n"
-        "; Far grass thinning: draw only a prefix of each far bin's quads; 100%% at lod_start meters, lod_min_keep at the draw distance\n"
+        "; Far grass thinning: draw an evenly spaced subset of each far bin's quads; 100%% at lod_start meters, lod_min_keep at the draw distance\n"
         "far_lod = %d\n"
         "lod_start = %.0f\n"
         "lod_min_keep = %.2f\n"
+        "; Fast grass bin check: hash lookup instead of the engine's per-frame list scan, same result (1 = on, 0 = vanilla scan)\n"
+        "fast_bin_diff = %d\n"
+        "; Draw-path fix: path B1 passes the right vertex pointer (1 = on, 0 = vanilla; read at game start)\n"
+        "fix_b1_pointer = %d\n"
         "; Variety (generation tweaks apply to bins built after the change, e.g. after an area reload)\n"
         "; Per-face random pattern hashed from the face vertices instead of a rounded coordinate sum (1 = on, 0 = vanilla)\n"
         "vary_seed = %d\n"
@@ -737,6 +845,8 @@ inline int formatDefaultIni(char* buf, size_t cap, const Config& c = Config{}) {
         c.farLod ? 1 : 0,
         c.lodStart,
         static_cast<double>(c.lodMinKeep),
+        c.fastBinDiff ? 1 : 0,
+        c.fixB1Pointer ? 1 : 0,
         c.varySeed ? 1 : 0,
         c.evenSpread ? 1 : 0,
         c.densityNoise ? 1 : 0,
@@ -832,6 +942,16 @@ default = 1
 ini = "k2_grass_draw_distance.ini"
 section = "Grass"
 key = "trim_hidden"
+
+[[row]]
+id = "fast_bin_diff"
+kind = "toggle"
+label = "Fast Grass Bin Check"
+desc = "Faster per-frame grass bookkeeping (saves CPU, same picture). Off = original check."
+default = 1
+ini = "k2_grass_draw_distance.ini"
+section = "Grass"
+key = "fast_bin_diff"
 
 [[row]]
 id = "smooth_edges"

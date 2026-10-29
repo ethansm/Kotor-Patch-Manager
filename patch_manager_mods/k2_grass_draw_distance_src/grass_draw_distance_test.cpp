@@ -107,6 +107,11 @@ static void test_sanitize_clamps_and_span_guard() {
     KT_CHECK(std::fabs(c.fadeEndDist - 80.0f) < 1e-5f);
     KT_CHECK(std::fabs(c.windDist - 0.0f) < 1e-5f);
     KT_CHECK(std::fabs(c.alphaCutoff - k2grass::kMaxAlphaCutoff) < 1e-5f);
+    // 0.1.10: wind_dist upper clamp equals the menu row max (90).
+    c.windDist = 500.0f;
+    c.sanitize();
+    KT_CHECK(std::fabs(c.windDist - 90.0f) < 1e-5f);
+    KT_CHECK(std::fabs(k2grass::kMaxWindDist - 90.0f) < 1e-5f);
 
     // Extreme upper clamp
     c.fadeStartDist = 9999.0f;
@@ -384,6 +389,8 @@ static void test_ini_roundtrip_and_direct_float_alpha() {
     orig.farLod = true;
     orig.lodStart = 80.0f;
     orig.lodMinKeep = 0.25f;
+    orig.fastBinDiff = false;
+    orig.fixB1Pointer = false;
     orig.varySeed = true;
     orig.evenSpread = true;
     orig.densityNoise = true;
@@ -398,6 +405,7 @@ static void test_ini_roundtrip_and_direct_float_alpha() {
     KT_CHECK_EQ(st.bad, 0);
     KT_CHECK(parsed == orig);
     KT_CHECK(parsed.varySeed && parsed.evenSpread && parsed.densityNoise);
+    KT_CHECK(!parsed.fastBinDiff && !parsed.fixB1Pointer);
     KT_CHECK(std::fabs(parsed.densityAmount - 0.7f) < 1e-4f && std::fabs(parsed.densityCell - 12.0f) < 1e-4f);
     KT_CHECK(std::fabs(parsed.sizeVar - 0.8f) < 1e-4f);
     KT_CHECK(!parsed.trimHidden && parsed.smoothEdges);
@@ -415,6 +423,8 @@ static void test_ini_roundtrip_and_direct_float_alpha() {
     KT_CHECK_EQ(dst.unknown, 0);
     KT_CHECK(dparsed == k2grass::Config{});
     KT_CHECK(dparsed.trimHidden && !dparsed.smoothEdges);
+    // 0.1.10 defaults: fast_bin_diff and fix_b1_pointer on.
+    KT_CHECK(dparsed.fastBinDiff && dparsed.fixB1Pointer);
     // 0.1.9 defaults: vary_seed + even_spread on, density_noise off, vanilla size span.
     KT_CHECK(dparsed.varySeed && dparsed.evenSpread && !dparsed.densityNoise);
     KT_CHECK(std::fabs(dparsed.densityAmount - 0.5f) < 1e-4f && std::fabs(dparsed.densityCell - 6.0f) < 1e-4f);
@@ -648,11 +658,133 @@ static void test_perf_window_variety_counters() {
     KT_CHECK(std::fabs(w.densIn - 7.0) < 1e-9 && std::fabs(w.densOut - 9.0) < 1e-9);
 }
 
+static void test_even_quad_selection() {
+    // Identity at K == N, and K > N is clamped to the last quad.
+    for (int32_t i = 0; i < 17; ++i) KT_CHECK_EQ(k2grass::evenQuadIndex(i, 17, 17), i);
+    KT_CHECK_EQ(k2grass::evenQuadIndex(20, 17, 17), 16);
+    // Properties over many (N, K): strictly increasing, in [0, N), first 0, gaps differ by at most 1 (floor/ceil of N/K).
+    bool ok = true;
+    for (int32_t n = 1; n <= 150; ++n) {
+        for (int32_t k = 1; k <= n; ++k) {
+            int32_t prev = -1, minGap = 1 << 30, maxGap = 0;
+            for (int32_t i = 0; i < k; ++i) {
+                const int32_t q = k2grass::evenQuadIndex(i, n, k);
+                if (q < 0 || q >= n || q <= prev) ok = false;
+                if (i == 0 && q != 0) ok = false;
+                if (i > 0) {
+                    if (q - prev < minGap) minGap = q - prev;
+                    if (q - prev > maxGap) maxGap = q - prev;
+                }
+                prev = q;
+            }
+            if (k > 1 && maxGap - minGap > 1) ok = false;
+            if (k == n && maxGap > 1) ok = false;
+        }
+    }
+    KT_CHECK(ok);
+    // Large bin: 60000 quads keep 30000 -> every other quad.
+    KT_CHECK_EQ(k2grass::evenQuadIndex(29999, 60000, 30000), 59998);
+    // Degenerate arguments do not crash and return a valid index.
+    KT_CHECK_EQ(k2grass::evenQuadIndex(0, 0, 0), 0);
+    KT_CHECK_EQ(k2grass::evenQuadIndex(-1, 10, 5), 0);
+
+    // Index list: 10 quads from vertex 8, keep 4 -> quads 0,2,5,7 -> vertices first + 4q + 0..3.
+    uint32_t idx[64] = {};
+    KT_CHECK_EQ(k2grass::fillEvenQuadIndices(idx, 64, 8, 10, 4), 16);
+    const int32_t wantQ[4] = {0, 2, 5, 7};
+    bool listOk = true;
+    for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < 4; ++j) {
+            if (idx[4 * i + j] != static_cast<uint32_t>(8 + 4 * wantQ[i] + j)) listOk = false;
+        }
+    }
+    KT_CHECK(listOk);
+    // Refusals: cap too small, k > n, bad first, no output buffer, no quads.
+    KT_CHECK_EQ(k2grass::fillEvenQuadIndices(idx, 12, 0, 10, 4), 0);
+    KT_CHECK_EQ(k2grass::fillEvenQuadIndices(idx, 16, 0, 10, 4), 16);
+    KT_CHECK_EQ(k2grass::fillEvenQuadIndices(idx, 64, 0, 4, 5), 0);
+    KT_CHECK_EQ(k2grass::fillEvenQuadIndices(idx, 64, -4, 10, 4), 0);
+    KT_CHECK_EQ(k2grass::fillEvenQuadIndices(nullptr, 64, 0, 10, 4), 0);
+    KT_CHECK_EQ(k2grass::fillEvenQuadIndices(idx, 64, 0, 0, 0), 0);
+    // It agrees with thinCount: a 40-vertex bin at keep 0.3 draws 3 of 10 quads.
+    const int32_t keepQuads = k2grass::thinCount(40, 0.3f) / 4;
+    KT_CHECK_EQ(keepQuads, 3);
+    KT_CHECK_EQ(k2grass::fillEvenQuadIndices(idx, 64, 0, 10, keepQuads), 12);
+}
+
+static k2grass::PtrSet g_set;   // 64 KB: keep off the stack
+
+static void test_ptr_set() {
+    g_set.clear();
+    KT_CHECK(!g_set.contains(0x1000));
+    KT_CHECK(g_set.insert(0x1000));
+    KT_CHECK(g_set.contains(0x1000));
+    KT_CHECK(!g_set.contains(0x1004));
+    // Duplicate accepted, stored once.
+    KT_CHECK(g_set.insert(0x1000));
+    KT_CHECK_EQ(g_set.used, 1u);
+    // Null is never a member and cannot be inserted.
+    KT_CHECK(!g_set.insert(0));
+    KT_CHECK(!g_set.contains(0));
+    // clear() empties the set in O(1).
+    g_set.clear();
+    KT_CHECK(!g_set.contains(0x1000));
+    KT_CHECK_EQ(g_set.used, 0u);
+    // 4096 engine-like pointers (16-byte aligned heap addresses) all found, neighbours absent.
+    bool ok = true;
+    for (uint32_t i = 0; i < 4096; ++i) ok = ok && g_set.insert(0x08000000u + i * 0x70u);
+    KT_CHECK(ok);
+    ok = true;
+    for (uint32_t i = 0; i < 4096; ++i) {
+        ok = ok && g_set.contains(0x08000000u + i * 0x70u);
+        ok = ok && !g_set.contains(0x08000000u + i * 0x70u + 4u);
+    }
+    KT_CHECK(ok);
+    // Full-ish table: fill to capacity - 1, every key is still found and absent keys terminate; the next insert fails.
+    g_set.clear();
+    ok = true;
+    for (uint32_t i = 0; i < k2grass::PtrSet::kCap - 1; ++i) ok = ok && g_set.insert(0x10000u + i * 4u);
+    KT_CHECK(ok);
+    KT_CHECK(!g_set.insert(0x7FFF0000u));
+    KT_CHECK(g_set.insert(0x10000u));   // an existing key is still accepted
+    ok = true;
+    for (uint32_t i = 0; i < k2grass::PtrSet::kCap - 1; ++i) ok = ok && g_set.contains(0x10000u + i * 4u);
+    KT_CHECK(ok);
+    KT_CHECK(!g_set.contains(0x7FFF0000u));
+    KT_CHECK(!g_set.contains(0x10000u + (k2grass::PtrSet::kCap - 1) * 4u));
+    // Vanilla-equivalent diff: previous bins missing from the current list, in previous order.
+    g_set.clear();
+    const uint32_t cur[5] = {0x2000, 0x2010, 0x2030, 0x2050, 0x2070};
+    const uint32_t prev[6] = {0x2010, 0x2020, 0x2030, 0x2040, 0x2070, 0x2020};
+    for (uint32_t b : cur) g_set.insert(b);
+    uint32_t gone[6] = {};
+    int ng = 0;
+    for (uint32_t b : prev) {
+        if (!g_set.contains(b)) gone[ng++] = b;
+    }
+    KT_CHECK_EQ(ng, 3);
+    KT_CHECK(gone[0] == 0x2020 && gone[1] == 0x2040 && gone[2] == 0x2020);
+}
+
+static void test_perf_window_diff_counters() {
+    k2grass::PerfWindow w;
+    w.reset(100);
+    KT_CHECK(w.diffUsAvg() == 0.0f);
+    w.addDiff(3, 100);
+    w.addDiff(0, 50);
+    KT_CHECK_EQ(w.diffCalls, 2u);
+    KT_CHECK_EQ(w.diffDestroyed, 3u);
+    KT_CHECK(std::fabs(w.diffUsAvg() - 75.0f) < 1e-4f);
+    w.reset(200);
+    KT_CHECK_EQ(w.diffCalls, 0u);
+    KT_CHECK_EQ(w.diffDestroyed, 0u);
+}
+
 static void test_modconfig_schema_bindings() {
     mcdecl::PageDecl pd{};
     char err[96] = {};
     KT_CHECK(mcdecl::parseSchema(k2grass::kPageSchema, strlen(k2grass::kPageSchema), pd, err, sizeof(err)));
-    KT_CHECK_EQ(pd.nRows, 13);
+    KT_CHECK_EQ(pd.nRows, 14);
     for (int i = 0; i < pd.nRows; ++i) {
         const mcdecl::RowDecl& r = pd.rows[i];
         KT_CHECK(strcmp(r.ini, k2grass::kIniFile) == 0);
@@ -680,6 +812,9 @@ int main() {
     test_uniform_bary();
     test_value_noise_and_density();
     test_perf_window_variety_counters();
+    test_even_quad_selection();
+    test_ptr_set();
+    test_perf_window_diff_counters();
     test_modconfig_schema_bindings();
     return kt::Report("grass_draw_distance_test");
 }
