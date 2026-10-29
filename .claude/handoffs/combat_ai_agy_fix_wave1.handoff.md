@@ -1,20 +1,19 @@
 # Session Handoff & Plan State: .claude/plans/combat_ai_agy_fix_wave1.md
 
 ## 0. Next-Phase Direction
-combat-AI agy review batch 1: WI-169 (ranged-ai controlled-creature gate), WI-170 (companion-ai F4 keep older node + g_f4Seen evict), WI-171 (Force Enlightenment 180 buff families). Source: .claude/reviews/combat_ai_agy_20261029/validation/validated.tsv + summary.md
+Execute CAX.3: party-script batch WI-172..175
 
 ## 1. Active State & Provenance
 - **Master Plan:** `.claude/plans/combat_ai_agy_fix_wave1.md`
-- **Branch:** `KOTOR-II` (c29ad400 INGEST: I10d done + handoff (plan complete))
-- **Generated:** 2026-10-29 01:05:44 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (0bba15ca play queue: CA-RH1 / CA-EN1 / CA-F4K (WI-169/171/170, not installed))
+- **Generated:** 2026-10-29 01:27:22 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-c29ad400 INGEST: I10d done + handoff (plan complete)
- .claude/handoffs/INGEST_PLAN.handoff.md            | 34 +++++++---------------
- patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md |  2 +-
- 2 files changed, 11 insertions(+), 25 deletions(-)
+0bba15ca play queue: CA-RH1 / CA-EN1 / CA-F4K (WI-169/171/170, not installed)
+ patch_manager_mods/PLAY_TEST_QUEUE.md | 3 +++
+ 1 file changed, 3 insertions(+)
 ```
-- **Dirty Files (212):**
+- **Dirty Files (202):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/25_pc_levelup_filter.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
@@ -25,16 +24,15 @@ c29ad400 INGEST: I10d done + handoff (plan complete)
   - ` M .claude/handoffs/PHASE7_COMMON_MASTER.handoff.md`
   - ` M .claude/handoffs/deep_haiku_review_skill.handoff.md`
   - ` M .claude/handoffs/variant_fix_wave_skill.handoff.md`
-  - ... +202 more (run `git status --short`)
+  - ... +192 more (run `git status --short`)
 
-## 2. Immediate Objective (CAX.2)
-**Batch 1 (native DLLs): WI-169 ranged-ai controlled gate, WI-170 companion-ai F4, WI-171 Enlightenment 180**
+## 2. Immediate Objective (CAX.3)
+**Batch 2 (party scripts): WI-172 Defensive sticky target, WI-173 buff picker, WI-174 O3 series, WI-175 Drain Force droids**
 
 Status: TODO
-Task: Batch 1 (native DLLs): WI-169 ranged-ai controlled gate, WI-170 companion-ai F4, WI-171 Enlightenment 180
+Task: Batch 2 (party scripts): WI-172 Defensive sticky target, WI-173 buff picker, WI-174 O3 series, WI-175 Drain Force droids
 
 ## 2b. Upcoming Batches in Pipeline
-- **CAX.3** [Common Extraction] : Batch 2 (party scripts): WI-172 Defensive sticky target, WI-173 buff picker, WI-174 O3 series, WI-175 Drain Force droids
 - **CAX.4** [Common Extraction] : Hold items: WI-176 (O3 reject fallback), WI-177 (combo 29), WI-178 (intruder-first)
 
 ## 3. Strict Context Budget & Read Policy
@@ -42,7 +40,7 @@ Task: Batch 1 (native DLLs): WI-169 ranged-ai controlled gate, WI-170 companion-
 
 ## 4. Subagent Delegation Direction
 - **Claude Code**: parallel `model: haiku` Agent subagents; brief = `Contract` + `Write Scope` + `python3 scripts/agent_contract.py print worker|recon`.
-- **Other backends** (only when the user asks): `python3 scripts/plan_manager.py delegate CAX.2` or `oc-subagent <scout|code|ghidra|verify|gate|doc>`.
+- **Other backends** (only when the user asks): `python3 scripts/plan_manager.py delegate CAX.3` or `oc-subagent <scout|code|ghidra|verify|gate|doc>`.
 
 ## 5. Dead Ends & Verification (manual)
 - Agy review spell IDs are wrong in several places; trust validated.tsv fix_note (Enlightenment 180, Rage 271-273, Crush 177).
