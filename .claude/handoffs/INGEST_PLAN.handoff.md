@@ -1,49 +1,48 @@
 # Session Handoff & Plan State: patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md
 
 ## 0. Next-Phase Direction
-INGEST follow-up: plan the next batch of research items after INGEST_PLAN complete (B17 leftovers, ambiguous/unnamed/no_twin twins, GOG label rotation, remaining gap 171/17)
+INGEST follow-up after I8a-e: plan next research batch (I8f persist pending user OK; remaining gap: 13 B18 unresolved, 25 no_twin w/o anchor window, 23 named twins missing from gog_functions.tsv, ambiguous groups not order-provable, 51 off-gap B19 AUTO rows, OnUpgradeSelected re-card, RenderMotionBlurred inlined)
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md`
-- **Branch:** `KOTOR-II` (4a87eb83 isf_inventory_mockup.py: --variant v1/v2/v3 UX redesign renders (status line, sort + filter buttons, category dividers) + fit/overlap tests)
-- **Generated:** 2026-10-28 16:58:28 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (9907f2b4 PLAY_TEST_QUEUE: QL06-P1 PARTIAL from 10-28 log)
+- **Generated:** 2026-10-28 23:53:24 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-4a87eb83 isf_inventory_mockup.py: --variant v1/v2/v3 UX redesign renders (status line, sort + filter buttons, category dividers) + fit/overlap tests
- scripts/isf_inventory_mockup.py      | 462 ++++++++++++++++++++++++++++++++---
- scripts/test_isf_inventory_mockup.py | 114 +++++++++
- 2 files changed, 545 insertions(+), 31 deletions(-)
+9907f2b4 PLAY_TEST_QUEUE: QL06-P1 PARTIAL from 10-28 log
+ patch_manager_mods/PLAY_TEST_QUEUE.md | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 ```
-- **Dirty Files (191):**
+- **Dirty Files (194):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/25_pc_levelup_filter.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
   - ` M .claude/handoffs/51_combat_stats_page.handoff.md`
   - ` M .claude/handoffs/52_quick_loot.handoff.md`
   - ` M .claude/handoffs/DECOMP_PLAN.handoff.md`
+  - ` M .claude/handoffs/INGEST_PLAN.handoff.md`
   - ` M .claude/handoffs/PHASE7_COMMON_MASTER.handoff.md`
   - ` M .claude/handoffs/deep_haiku_review_skill.handoff.md`
   - ` M .claude/handoffs/variant_fix_wave_skill.handoff.md`
-  - ` M .claude/plans/swarm_library_architecture.md`
-  - ... +181 more (run `git status --short`)
+  - ... +184 more (run `git status --short`)
 
-## 2. Immediate Objective (I8a)
-**`ingest_names.py twins --buckets F`: write every gap fn with its bucket (named/unnamed/ambiguous/no_twin) + the colliding GOG/Steam addrs; `--order` pairs ambiguous groups by address order inside the run**
+## 2. Immediate Objective (I8f)
+**Persist B18 (+ B17 likely 3 via `finalize --with-likely`) + I8d names (user OK), gap re-measure, docs sweep, memory**
 
 Status: TODO
-Task: `ingest_names.py twins --buckets F`: write every gap fn with its bucket (named/unnamed/ambiguous/no_twin) + the colliding GOG/Steam addrs; `--order` pairs ambiguous groups by address order inside the run
+Task: Persist B18 (+ B17 likely 3 via `finalize --with-likely`) + I8d names (user OK), gap re-measure, docs sweep, memory
 
 ## 2b. Upcoming Batches in Pipeline
-- **I8b** : `ingest_names.py macnames`: Mac x86 symbol hypotheses (bdlib `mac_fit`, strings) for GOG-unnamed twins + the 7 B17 label_suspect rows + GOG 0x5C54B0
-- **I8c** : Batch B18: B17 leftovers (18 unresolved + 3 G6-wrong) + ambiguous rows I8a pairs uniquely; cards `--chunk 16 --decoys 10`; Haiku review -> finalize -> Opus gate
-- **I8d** : Mac-name verify: I8b hypotheses through `ingest_names.py cards --decomp-lines 10` (decoy names), Haiku verify, ledger rows topic `ingest-macnames`
+- **I9a** : `ingest_names.py graphpair`: score GOG candidates for ambiguous + no_twin gap fns by callers/callees mapped through trusted pairs (+ fp equality); emit unique winners as `fpgraph` rows; + `bdlib` tolerate non-hex `corrected_addr`
+- **I9b** : CRT lane: the 23 named twins absent from `gog_functions.tsv` (21 MSVC CRT by FID) -> `twins --extract-out` -> ledger topic `ingest-crt` + blind cards (decoy pool from name_map), Haiku verify
+- **I9c** : `graphpair` re-check of the 13 B18 unresolved (incl. fp-group peers as alt candidates); corrections go into B20
 
 ## 3. Strict Context Budget & Read Policy
 - **Fresh Session Bootstrap**: Run `python3 scripts/plan_manager.py resume patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md`.
 
 ## 4. Subagent Delegation Direction
 - **Claude Code**: parallel `model: haiku` Agent subagents; brief = `Contract` + `Write Scope` + `python3 scripts/agent_contract.py print worker|recon`.
-- **Other backends** (only when the user asks): `python3 scripts/plan_manager.py delegate I8a` or `oc-subagent <scout|code|ghidra|verify|gate|doc>`.
+- **Other backends** (only when the user asks): `python3 scripts/plan_manager.py delegate I8f` or `oc-subagent <scout|code|ghidra|verify|gate|doc>`.
 
 ## 5. Dead Ends & Verification (manual)
 - Gap prototype (I0 starting point): `.claude/research/ingest/gap_prototype.py` (4368b1e4); `python3 .claude/research/ingest/gap_prototype.py` prints 79 / 515.
@@ -70,3 +69,10 @@ Task: `ingest_names.py twins --buckets F`: write every gap fn with its bucket (n
 - `merge_overrides.py B<n>` reads `B<n>/opus/overrides_*.tsv` (copy the Opus gate TSVs to that name). `plan_manager.py mark-done` needs `--plan <path>` (the shared pointer pointed at doc 51). Use the python sqlite3 backup API (no `sqlite3` CLI); backup `kdb_before_I7c.db` is in the 10-28 session scratch.
 - `fn_doc.py page` covers only branch Steam DB classes; B17 refreshed CSWGuiControl/CSWGuiManager/Scene only.
 - Commit e80e8c5f message wrongly says the 3 likely rows went in as medium: only 285 verified rows were persisted (no `--with-likely`).
+- 10-28 I8a-e (1ea4cc11, 16c942af, f7b574f1): twins --buckets/--order; macnames; B18 11 verified/1 likely; B19 12 verified/1 likely; I8d 0 promoted (decoy 2/3). I8f (persist 26 rows: B17 likely 3 + B18 11 + B19 12) awaits user OK; B18/B19 likely rows not in kdb_upsert (no --with-likely).
+- I8 inputs kept in `.claude/research/ingest/i8/` (buckets.tsv, twins.tsv, macnames.tsv). I8e span script (not a tool): for each no_twin steam fn take nearest trusted pairs (load_kdb_pairs) on both sides; if gog increasing, GOG fns of gog_functions.tsv strictly between them not in name_map (<= 25) -> `candidates B19 --gog-list`. 22 of 38 had windows > 25 or crossing anchors.
+- Global Mac search by mac_fit is noise (margin ~0 over 15.6k fns); restrict candidates by class. Mac name hypotheses yield little (3/30 kept).
+- Haiku reviewers wrote `corrected_addr=none` -> finalize ValueError in bdlib.parse_addr; workaround = blank non-hex cells in review TSVs (I9a fixes the tool).
+- Opus gate check that decided every row: `fp equal + callers/callees mapped through load_kdb_pairs`; mapper pick for StopAllOneShots (0x70b8f0) was wrong, fptwin_order 0x70bb00 right. Steam RenderStandard 0x4f5f50 inlines GOG RenderMotionBlurred (+1008 B).
+- `batch.py finalize` prints INSUFFICIENT DECOYS whenever a chunk has < 10 decoys (short last chunk); it is not a reviewer failure.
+- Verify: ghidra tools `python3 -m unittest discover -s tests` (from tools/) OK; steam_db_batches `python3 -m unittest discover -s tools/tests` OK (10-28).
