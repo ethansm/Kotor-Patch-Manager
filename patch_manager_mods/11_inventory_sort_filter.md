@@ -177,6 +177,35 @@ The 10-01 22:13 session did not open the inventory: the Mod 6 checklist is still
 - **WI-155 (`d3f1d4e2`):** one Mod Configuration row, "Sort order", that writes the index to `sort_order` (`SortOrderPage.h`, `KPatchInit` export). Registration is lazy, from the inventory hooks, so mod-config must be listed before inventory-sort-filter in the load order. The page shows a hand-set word value correctly (ISF-T10).
 - **WI-153 (`65d5313c`):** controller bumpers join the cycle. H6e 0x8A8997 (input 0x2F, prev) and H6f 0x8A89F7 (input 0x30, next) are 9-byte skip-only windows over PUSH/MOV/CALL SetNextFilter in `CSWGuiInGameInventory::HandleInputEvent` 0x8A8880. `isf::bumperNext` makes the ring All -> New -> Usable -> Upgradeable -> 6..11; with the cycle off it passes the vanilla ring through. Which physical bumper is 0x2F is unverified: every press logs `bumper: input=...` (ISF-T8). Recon: `.claude/research/isf_controller_filter.md`.
 
+### UX wave vw3 (2026-10-28/29): visible sort + filter state (mockup variant v2)
+
+Owner verdict 10-28 on 0.3.1-dev: "no indicator of what is going on or that it's sorted or filtered; the caption strip piece is broken".
+Mockup `scripts/isf_inventory_mockup.py --variant all OUTDIR` (`.venv/bin/python`; real inventory_p gui, dialogfont, icons; commits
+9b0ecdc6, 4a87eb83) measured it: LBL_FILTER is 345 px, every filtered caption overflows into the All tab ("Filter: New 1/3 (4)" 348 px,
+"Filter: Usable 2/3 (13)" 420, "Filter: Upgradeable 3/3 (3)" 514, worst "(1024)" 576), so the WI-152 "not clipped" claim is wrong if the
+mock's font scale is right (VU0 calibrates it). Also: ISF "Usable" clashes with vanilla's own "Useable" tab; sort order shown nowhere;
+category groups not perceivable (6 rows visible); tint and New have no legend. Owner picked **v2** ("continue" after the v2 recommendation):
+- LBL_FILTER = short caption that fits: "Filter" in All, else the filter name only ("New", "Can Equip", "Upgradeable"); Usable renamed **Can Equip**.
+- Free band B (gui 657..3676 x 1388..1452 px @3840x1600, under LBL_BAR3/4, right of BTN_EXIT): segmented filter buttons
+  "All 22 | New 4 | Can Equip 13 | Upgradeable 3" (active lit) + status "Showing: Can Equip 13 of 22" + legend (red-orange swatch "can't equip", New marker "new").
+- Free band A (1319..1953 x 1262..1336, right of BTN_USEITEM): button "Sort: Category", a click cycles Category -> Base item -> Name -> Vanilla (writes `sort_order`).
+- Re-clicking All and the bumpers keep working. v3 category divider rows are deferred (fake rows in the engine list; selection / controller risk).
+
+Engine facts (10-29, static): labels and button clones exist only while the panel's layout GFF is open (`GuiKit.h:176`; `GuiButton.h:55`
+createButtonFromTemplate, used by mod-config). hud-host already detours StopLoadFromLayout 0x40F5A0 for every panel ctor but dispatches
+K2HUD_BUILD only for the HUD vtable (`HudHostProvider.cpp:204`, `HhDispatch.h:85`). inventory-3d-viewport owns the inventory ctor hook
+0x8A69AD and the inventory Update prologue 0x8A7350 (`InventoryTick`). Mod clicks elsewhere are polled release edges + cursor hit test per
+frame (mui::ClickTracker, gui-input CursorEngine), so the buttons need a per-frame tick while the inventory is open.
+
+| Id | Batch | Deps | Owner gate | Status | Commit | Next |
+|---|---|---|---|---|---|---|
+| **VU0** | Calibrate the mockup on one owner screenshot (inventory open, cycle on Usable): font scale, New colour, tab highlight, does the engine clip LBL_FILTER | - | owner screenshot | TODO | - | owner sends a screenshot path |
+| **VU1** | Quick fix 0.3.2-dev (hot-swap): short captions + "Can Equip" rename in SortLogic.h captionWithCount (drop " P/N (n)"; counts move to the buttons); sort_logic_test vectors; mockup `current` = new captions; ISF-T11 rewritten | - | install GO | TODO | - | Sonnet worker |
+| **VU2** | Static RE ($0 first): (a) per-frame tick while the inventory is open without a second detour on 0x8A7350 (KPM one detour per address? alternative site or an inv3d/hud-host provider callback); (b) does a button cloned from a BTN_* tab template keep the event-0x27 binding to the tab handler 0x8A8CF0 (then ISF's existing SortFilterTabClick sees the click, ctrl+0x5C = our id, no tick needed) | - | - | TODO | - | Haiku facts via static_facts.py, rea-recon only for (b) |
+| **VU3** | hud-host provider: new phase K2HUD_PANEL_BUILD fired from HH_LayoutClosing for EVERY panel (ctx.panel + panel vtable), additive API, consumers filter by vtable; existing K2HUD_BUILD unchanged; hh_dispatch_test + common_contract_test pins | VU2 | install GO (hot-swap) | TODO | - | compat_check.py on _shared_src edits |
+| **VU4** | ISF 0.4.0-dev labels: subscribe to K2HUD_PANEL_BUILD for the inventory vtable, clone LBL_* templates into bands A/B: status line + legend + read-only filter / sort indicators, refreshed at each populate (no tick needed) | VU1, VU3 | install GO | TODO | - | play row ISF-T13 |
+| **VU5** | ISF 0.5.0-dev buttons: segmented filter + Sort button clickable (path from VU2), keyboard / controller unchanged | VU2, VU4 | install GO | TODO | - | play row ISF-T14 |
+
 ## Planned shared state and shared code (doc 19 / 19b, added 2026-10-02)
 **Nothing here is built yet.** When a piece lands, use it instead of extending this patch's local copy. The ids (A1, B2, ...) refer to [`19b_cross_patch_sharing_survey.md`](19b_cross_patch_sharing_survey.md), which has the evidence. Line numbers there are from 10-02.
 - **Registry interfaces** (A-ids) use the RFC #180 registry from [`19_shared_logging_design.md`](19_shared_logging_design.md). Call `require` lazily at first use, and keep the current local code as the fallback when the provider is not installed.
