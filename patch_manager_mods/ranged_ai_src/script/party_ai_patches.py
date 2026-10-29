@@ -160,6 +160,35 @@ PATCHES = [
      "                    GN_MyPrintString(\"GENERIC DEBUG *************** Party D M9: defensive, enemy beyond 5 m of leader ignored \" + GetTag(oClose));\n"
      "                }\n"
      "                if ( GetIsObjectValid(oClose) && GetDistanceBetween(oClose, oLeader) > 5.0f )\n"),
+    ("SK1a", "party", G,
+     "        }\n"
+     "        else\n"
+     "        {\n"
+     "            //RWT-OEI 11/01/04 - Trying to make the bosses more aggressive\n",
+     "            //Party AI fix SK1a (party only, WI-172): Defensive targets only oClose (the leader's target with a ranged\n"
+     "            //weapon, the nearest enemy within 5 m of the leader in melee). The sticky last target would bypass that leash.\n"
+     "            if(IsObjectPartyMember(OBJECT_SELF) && oTarget != oClose)\n"
+     "            {\n"
+     "                GN_MyPrintString(\"GENERIC DEBUG *************** Party D SK1a: defensive, sticky target dropped for \" + GetTag(oClose));\n"
+     "                oTarget = oClose;\n"
+     "            }\n"
+     "        }\n"
+     "        else\n"
+     "        {\n"
+     "            //RWT-OEI 11/01/04 - Trying to make the bosses more aggressive\n"),
+    ("SK1b", "party", G,
+     "        //MODIFIED by Preston Watamaniuk on June 3, 2003\n"
+     "        //I put this check in to make sure the party members only attack what you want until that things dies or leaves.\n"
+     "        if(IsObjectPartyMember(OBJECT_SELF) && GetIsObjectValid(oTarget) && !GetIsDead(oTarget) && GetObjectSeen(oTarget))\n",
+     "        //MODIFIED by Preston Watamaniuk on June 3, 2003\n"
+     "        //I put this check in to make sure the party members only attack what you want until that things dies or leaves.\n"
+     "        //Party AI fix SK1b (party only, WI-172): a debilitated (stunned, held, asleep) sticky target is not kept; the\n"
+     "        //intruder / nearest-enemy picks below run instead (GN_DetermineAttackTarget already skips debilitated targets).\n"
+     "        if(IsObjectPartyMember(OBJECT_SELF) && GetIsObjectValid(oTarget) && GetIsDebilitated(oTarget))\n"
+     "        {\n"
+     "            GN_MyPrintString(\"GENERIC DEBUG *************** Party D SK1b: sticky target debilitated, not kept \" + GetTag(oTarget));\n"
+     "        }\n"
+     "        if(IsObjectPartyMember(OBJECT_SELF) && GetIsObjectValid(oTarget) && !GetIsDead(oTarget) && GetObjectSeen(oTarget) && !GetIsDebilitated(oTarget))\n"),
     ("H1a", "party", G,
      "    if (GN_CheckSeriesRevitalize() != -1)\n",
      "    //Party AI fix H1: GN_CheckSeriesRevitalize returns TRUE/FALSE, never -1, so this gate was always open.\n"

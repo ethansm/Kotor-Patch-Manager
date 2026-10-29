@@ -388,5 +388,19 @@ class DR1DrainForceTest(unittest.TestCase):
                 self.assertNotIn(name, added)
 
 
+class SK1DefensiveStickyTest(unittest.TestCase):
+    def test_sk1_defensive_sticky_and_debilitated(self):
+        for pid in ("SK1a", "SK1b"):
+            with self.subTest(patch=pid):
+                entries = [e for e in P.PATCHES if e[0] == pid]
+                self.assertEqual(len(entries), 1, pid)
+                self.assertEqual(entries[0][1], "party", pid)
+                self.assertEqual(entries[0][2], P.G, pid)
+        new_a = [e for e in P.PATCHES if e[0] == "SK1a"][0][4]
+        self.assertIn("oTarget = oClose;", new_a)
+        new_b = [e for e in P.PATCHES if e[0] == "SK1b"][0][4]
+        self.assertIn("&& !GetIsDebilitated(oTarget))", new_b)
+
+
 if __name__ == "__main__":
     unittest.main()
