@@ -1,23 +1,32 @@
 # Session Handoff & Plan State: patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md
 
 ## 0. Next-Phase Direction
-Execute I9e: Off-gap bonus: B21 = the 51 AUTO rows the wide B19 run found outside the gap; Opus gate AUTO (20% sample + all C1), REVIEW rows parked
+All phases complete. Run master tests and prepare PR.
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md`
-- **Branch:** `KOTOR-II` (a6c62d70 INGEST I8f+I9f: persist B17 likely 3 + B18 11 + B19 12 + B20 35, promote 25 CRT names + OnUpgradeSelected (name_map 5029 -> 5116; second persist 0; gap notes 85 / modcode 9))
-- **Generated:** 2026-10-29 00:14:34 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (5738907d INGEST I9e: batch B21 off-gap AUTO rows: 61 verified / 6 likely, graph check on all 67; persist dry run insert=61)
+- **Generated:** 2026-10-29 00:17:39 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-a6c62d70 INGEST I8f+I9f: persist B17 likely 3 + B18 11 + B19 12 + B20 35, promote 25 CRT names + OnUpgradeSelected (name_map 5029 -> 5116; second persist 0; gap notes 85 / modcode 9)
- .../ghidra_knowledge/kotor2_ghidra_knowledge.db    | Bin 10055680 -> 10100736 bytes
- .../rea_findings/20261029_ingest-macnames.tsv      |   2 +
- .../steam_db_batches/B17/kdb_upsert.json           | 576 ++++++++++-----------
- .../steam_db_batches/B17/opus_gate.json            |   4 +-
- .../steam_db_batches/B17/opus_gate.md              |   2 +-
- 5 files changed, 293 insertions(+), 291 deletions(-)
+5738907d INGEST I9e: batch B21 off-gap AUTO rows: 61 verified / 6 likely, graph check on all 67; persist dry run insert=61
+ .../steam_db_batches/B21/candidates.tsv            |  68 +++
+ .../steam_db_batches/B21/evidence.tsv              |  68 +++
+ .../steam_db_batches/B21/final_rows.tsv            |  68 +++
+ .../steam_db_batches/B21/functions.csv             |  62 +++
+ .../steam_db_batches/B21/gate_report.md            | 103 +++++
+ .../steam_db_batches/B21/gog_label_suspects.tsv    |   1 +
+ .../steam_db_batches/B21/kdb_upsert.json           | 490 +++++++++++++++++++++
+ .../steam_db_batches/B21/opus/overrides_a.md       |   7 +
+ .../steam_db_batches/B21/opus/overrides_a.tsv      |   7 +
+ .../steam_db_batches/B21/opus_gate.json            |  79 ++++
+ .../steam_db_batches/B21/opus_gate.md              |  35 ++
+ .../steam_db_batches/B21/overrides.tsv             |   7 +
+ .../steam_db_batches/B21/recheck.tsv               |   1 +
+ .../steam_db_batches/B21/validated.tsv             |  62 +++
+ 14 files changed, 1058 insertions(+)
 ```
-- **Dirty Files (194):**
+- **Dirty Files (198):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/25_pc_levelup_filter.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
@@ -28,20 +37,10 @@ a6c62d70 INGEST I8f+I9f: persist B17 likely 3 + B18 11 + B19 12 + B20 35, promot
   - ` M .claude/handoffs/deep_haiku_review_skill.handoff.md`
   - ` M .claude/handoffs/variant_fix_wave_skill.handoff.md`
   - ` M .claude/plans/swarm_library_architecture.md`
-  - ... +184 more (run `git status --short`)
-
-## 2. Immediate Objective (I9e)
-**Off-gap bonus: B21 = the 51 AUTO rows the wide B19 run found outside the gap; Opus gate AUTO (20% sample + all C1), REVIEW rows parked**
-
-Status: TODO
-Task: Off-gap bonus: B21 = the 51 AUTO rows the wide B19 run found outside the gap; Opus gate AUTO (20% sample + all C1), REVIEW rows parked
+  - ... +188 more (run `git status --short`)
 
 ## 3. Strict Context Budget & Read Policy
 - **Fresh Session Bootstrap**: Run `python3 scripts/plan_manager.py resume patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md`.
-
-## 4. Subagent Delegation Direction
-- **Claude Code**: parallel `model: haiku` Agent subagents; brief = `Contract` + `Write Scope` + `python3 scripts/agent_contract.py print worker|recon`.
-- **Other backends** (only when the user asks): `python3 scripts/plan_manager.py delegate I9e` or `oc-subagent <scout|code|ghidra|verify|gate|doc>`.
 
 ## 5. Dead Ends & Verification (manual)
 - Gap prototype (I0 starting point): `.claude/research/ingest/gap_prototype.py` (4368b1e4); `python3 .claude/research/ingest/gap_prototype.py` prints 79 / 515.
@@ -81,3 +80,4 @@ Task: Off-gap bonus: B21 = the 51 AUTO rows the wide B19 run found outside the g
 - Haiku B20 reviewers peaked 137-149k on 18-card chunks (4 tool calls held); 3 rows had column shift (verdict blank, `match` in corrected_addr) -> finalize ignores them; read them in the Opus gate. CRT cards (13/chunk, 10 KB) peaked ~60k.
 - I9e (B21 off-gap) skipped this session (optional).
 - 10-29 I8f+I9f (a6c62d70): KDB backup in session scratch `kdb_before_I9f.db` (5029 rows); persist B17 (finalize --with-likely --opus-sample-errors 0) 3 + B18 11 + B19 12 + B20 35, promote 25 CRT + OnUpgradeSelected (3 seeded card sets, 3/3 decoys rejected) -> 5116. Second persist 0. Gap notes 85 / modcode 9. Left: I9e (B21 off-gap 51 AUTO rows), B20 8 unresolved incl. 4 graph corrections to re-gate, B20 likely 13 not persisted (no --with-likely).
+- 10-29 I9e: wide span after I9f = 26/38 windows <= 25 (was 16), 166 GOG fns, 81 AUTO; 67 off-gap unnamed -> B21 61 verified / 6 likely (graph check script = scratch b21check.py: hits vs best rival neighbour). `persist B21 --apply` (insert=61) awaits user OK; backup first.

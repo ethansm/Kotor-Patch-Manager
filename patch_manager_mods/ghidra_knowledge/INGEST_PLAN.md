@@ -40,7 +40,7 @@ D6 R2 NO-GO root cause was missing names / caller context, so coverage is the le
 | I9b | CRT lane: the 23 named twins absent from `gog_functions.tsv` (21 MSVC CRT by FID) -> `twins --extract-out` -> ledger topic `ingest-crt` + blind cards (decoy pool from name_map), Haiku verify | DONE | spec §I9 |
 | I9c | `graphpair` re-check of the 13 B18 unresolved (incl. fp-group peers as alt candidates); corrections go into B20 | DONE | spec §I9 |
 | I9d | Batch B20: graphpair rows (ambiguous + no_twin + I9c corrections) -> gates -> cards `--chunk 16 --decoys 10` -> Haiku -> finalize -> Opus gate | DONE | spec §I9 |
-| I9e | Off-gap bonus: B21 = the 51 AUTO rows the wide B19 run found outside the gap; Opus gate AUTO (20% sample + all C1), REVIEW rows parked | TODO | spec §I9 |
+| I9e | Off-gap bonus: B21 = the 51 AUTO rows the wide B19 run found outside the gap; Opus gate AUTO (20% sample + all C1), REVIEW rows parked | DONE | spec §I9 |
 | I9f | Persist B20/B21 + I9b promote list (user OK), re-card OnUpgradeSelected with the new decoy pool, gap re-measure, docs, memory | DONE | spec §I9 |
 
 ## Cost log
