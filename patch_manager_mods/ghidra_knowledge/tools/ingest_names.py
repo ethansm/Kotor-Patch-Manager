@@ -9,7 +9,8 @@ CLI:
   ingest_names.py extract --source modcode --out FILE
   ingest_names.py ledger --in FILE --topic ingest-modcode [--apply] [--date YYYY-MM-DD]
   ingest_names.py cards --in LEDGER_TSV --out-dir DIR [--chunk 12] [--decoy-every 4] [--seed N] [--decomp-lines 10]
-  ingest_names.py twins --out FILE [--buckets FILE] [--order] [--gog-functions TSV] [--server DIR]
+                      [--decoy-pool batch|kdb]
+  ingest_names.py twins --out FILE [--buckets FILE] [--order] [--gog-functions TSV] [--server DIR] [--extract-out F]
   ingest_names.py graphpair --buckets FILE --out FILE [--min-hits 2] [--margin 2] [--server DIR]
   ingest_names.py macnames --out FILE [--buckets FILE] [--targets TSV]... [--gog ADDR]... [--extract-out FILE]
   ingest_names.py score --key DIR/key.tsv --verdicts 'DIR/verdicts_*.tsv' --out promote.tsv
@@ -508,6 +509,7 @@ PROMOTE_COLS = ("addr", "kind", "name", "src", "verdict", "quote")
 VERDICTS = ("consistent", "inconsistent", "unsure")
 DECOY_MIN_DIST = 0x1000  # ScreenW/ScreenH-style neighbours would make a decoy look right
 DECOY_PASS = 0.80
+DECOY_SAME_QUAL = 20
 FACT_LINE_MAX = 200
 CHUNK_HEAD = """# Name check cards (blind)
 
@@ -625,23 +627,39 @@ def global_fact_lines(decomp_root, names, max_hits=3):
     return get
 
 
-def pick_decoys(rows, n, rng):
-    """n (facts_row, name_row) pairs: same kind, different name, addresses >= DECOY_MIN_DIST apart."""
+def _qual(name):
+    return name.rpartition("::")[0]
+
+
+def kdb_decoy_pool(kdb_path):
+    """name_map function rows (addr < GLOBAL_MIN) as decoy-name rows: {addr kind name evidence}."""
+    return [{"addr": "0x%08x" % a, "kind": "function", "name": n, "evidence": "| src kdb name_map"}
+            for a, n in sorted(load_kdb(kdb_path).items()) if a < GLOBAL_MIN and n]
+
+
+def pick_decoys(rows, n, rng, pool=None):
+    """n (facts_row, name_row) pairs: same kind, different name, addresses >= DECOY_MIN_DIST apart.
+
+    `pool` (e.g. kdb_decoy_pool) supplies the decoy names instead of `rows`; names with the same
+    qualifier as the real one (Global::, CExoFile::) are preferred when there are >= DECOY_SAME_QUAL.
+    """
     by_kind = collections.defaultdict(list)
-    for r in rows:
+    for r in (rows if pool is None else pool):
         by_kind[r["kind"]].append(r)
     sources = rng.sample(rows, min(n, len(rows)))
     out = []
     for src in sources:
         a = int(src["addr"], 16)
-        pool = [r for r in by_kind[src["kind"]]
-                if r["name"] != src["name"] and abs(int(r["addr"], 16) - a) >= DECOY_MIN_DIST]
-        if pool:
-            out.append((src, rng.choice(pool)))
+        pool_ = [r for r in by_kind[src["kind"]]
+                 if r["name"] != src["name"] and abs(int(r["addr"], 16) - a) >= DECOY_MIN_DIST]
+        same = [r for r in pool_ if _qual(r["name"]) == _qual(src["name"])]
+        cand = same if len(same) >= DECOY_SAME_QUAL else pool_
+        if cand:
+            out.append((src, rng.choice(cand)))
     return out
 
 
-def build_cards(rows, fn_facts, glob_facts, decoy_every=4, seed=0):
+def build_cards(rows, fn_facts, glob_facts, decoy_every=4, seed=0, decoy_pool=None):
     """-> (cards, key): cards = [{card, kind, name, facts}], key rows per KEY_COLS.  Shuffled, seeded."""
     import random
     rng = random.Random(seed)
@@ -655,7 +673,7 @@ def build_cards(rows, fn_facts, glob_facts, decoy_every=4, seed=0):
 
     items = [(r, r, False) for r in rows]
     n_decoys = len(rows) // decoy_every if decoy_every > 0 else 0
-    items += [(src, nm, True) for src, nm in pick_decoys(rows, n_decoys, rng)]
+    items += [(src, nm, True) for src, nm in pick_decoys(rows, n_decoys, rng, decoy_pool)]
     rng.shuffle(items)
     width = max(2, len(str(len(items))))
     cards, key = [], []
@@ -734,7 +752,8 @@ def run_cards(args, dump, out=sys.stdout):
         dump.names = dict(names)
     root = Path(args.dump_root) if args.dump_root else dump.root
     cards, key = build_cards(rows, function_fact_lines(dump, args.decomp_lines, names), global_fact_lines(root / "decomp", names),
-                             args.decoy_every, args.seed)
+                             args.decoy_every, args.seed,
+                             kdb_decoy_pool(args.kdb) if args.decoy_pool == "kdb" else None)
     paths = write_cards(cards, key, args.out_dir, args.chunk)
     nd = sum(k["is_decoy"] for k in key)
     print(f"cards: rows={len(rows)} decoys={nd} cards={len(cards)} chunks={len(paths)} -> {args.out_dir}",
@@ -910,6 +929,19 @@ def twins_full(server, source="all", kdb_path=KDB_DEFAULT, ledger_dir=LEDGER_DEF
             rows.append({"gog": "0x%08x" % g, "steam": "0x%08x" % a, "source": "fptwin",
                          "name": name, "cites": cites[a]})
     return rows, counts, buckets
+
+
+def twin_extract_rows(rows, buckets):
+    """fptwin rows whose GOG fn is absent from gog_functions.tsv (in_gog_functions=no) as extract rows.
+
+    batch.py cannot see these GOG fns, so they go through ledger + cards instead.  FID_conflict names
+    (one FLIRT signature, several library fns) are skipped.
+    """
+    absent = {b["steam"] for b in buckets if b["bucket"] == "named" and b["in_gog_functions"] == "no"}
+    return [{"addr": r["steam"], "kind": "function", "name": r["name"], "form": "qualified",
+             "src": "fptwin GOG %s" % r["gog"], "fn_start": r["steam"], "offset": "0", "status": "new",
+             "kdb_name": ""}
+            for r in rows if r["source"] == "fptwin" and r["steam"] in absent and "FID_conflict" not in r["name"]]
 
 
 def twins(server, source="all", kdb_path=KDB_DEFAULT, ledger_dir=LEDGER_DEFAULT, functions=FUNCS_DEFAULT,
@@ -1143,6 +1175,8 @@ def build_parser():
     c.add_argument("--chunk", type=int, default=12)
     c.add_argument("--decoy-every", type=int, default=4)
     c.add_argument("--seed", type=int, default=0)
+    c.add_argument("--decoy-pool", choices=["batch", "kdb"], default="batch",
+                   help="decoy names from the input rows (batch) or from name_map functions (kdb)")
     c.add_argument("--decomp-lines", type=int, default=0, help="add an N-line named pseudo-C excerpt to function cards")
     t = sub.add_parser("twins", parents=[common], help="names for gap functions from unique GOG fingerprint twins")
     t.add_argument("--source", choices=sorted(SOURCE_GROUPS), default="all")
@@ -1151,6 +1185,8 @@ def build_parser():
     t.add_argument("--buckets", default=None, help="also write every gap fn with its bucket to this TSV")
     t.add_argument("--order", action="store_true",
                    help="pair equal-size ambiguous key groups by address order (source fptwin_order)")
+    t.add_argument("--extract-out", default=None,
+                   help="named twins absent from gog_functions.tsv as extract TSV for `ledger --in` (CRT lane)")
     t.add_argument("--gog-functions", default=None,
                    help="GOG functions TSV for the in_gog_functions column (default: DUMP/inputs/gog_functions.tsv "
                         "when it exists)")
@@ -1223,6 +1259,10 @@ def main(argv=None, dump=None, out=None, err=None):
             if args.buckets:
                 write_tsv(args.buckets, buckets, BUCKET_COLS)
                 print(f"twins: buckets={len(buckets)} -> {args.buckets}", file=out)
+            if args.extract_out:
+                ex = twin_extract_rows(rows, buckets)
+                write_tsv(args.extract_out, ex, EXTRACT_COLS)
+                print(f"twins: extract rows={len(ex)} -> {args.extract_out}", file=out)
             return 0
         if args.cmd == "graphpair":
             server = os.path.expanduser(args.server or os.environ.get("BD_SERVER") or SERVER_DEFAULT)

@@ -467,6 +467,22 @@ class OrderTwinsTests(Base):
         self.assertEqual(b["0x00404000"]["bucket"], "ambiguous")
 
 
+class TwinExtractTests(unittest.TestCase):
+    def test_only_named_absent_non_fid(self):
+        rows = [{"gog": "0x00501000", "steam": "0x00401000", "source": "fptwin", "name": "Global::_strcmp"},
+                {"gog": "0x00502000", "steam": "0x00402000", "source": "fptwin", "name": "Foo::InList"},
+                {"gog": "0x00503000", "steam": "0x00403000", "source": "fptwin", "name": "Global::FID_conflict:x"},
+                {"gog": "0x00504000", "steam": "0x00404000", "source": "fptwin_order", "name": "Foo::Ord"}]
+        buckets = [{"steam": "0x00401000", "bucket": "named", "in_gog_functions": "no"},
+                   {"steam": "0x00402000", "bucket": "named", "in_gog_functions": "yes"},
+                   {"steam": "0x00403000", "bucket": "named", "in_gog_functions": "no"},
+                   {"steam": "0x00404000", "bucket": "ambiguous", "in_gog_functions": "no"}]
+        ex = inn.twin_extract_rows(rows, buckets)
+        self.assertEqual([(r["addr"], r["name"], r["src"], r["status"]) for r in ex],
+                         [("0x00401000", "Global::_strcmp", "fptwin GOG 0x00501000", "new")])
+        self.assertEqual(set(ex[0]), set(inn.EXTRACT_COLS))
+
+
 class GraphPairTests(Base):
     """Anchors (unique fp twins, sizes 11-16) map callers/callees; gap fns sit in size 50/60 groups or have no twin."""
 
@@ -750,6 +766,30 @@ class CardsTest(unittest.TestCase):
             self.assertEqual(c["addr"], k["facts_addr"])
             self.assertEqual(c["name"], k["name"])
             self.assertEqual(c["facts"], _facts(int(k["facts_addr"], 16)))
+
+    def test_decoy_pool_names_come_from_pool_and_prefer_same_qualifier(self):
+        rows = [{"addr": "0x%08x" % (0x00910000 + i * 0x2000), "kind": "function", "name": "Global::_crt%02d" % i,
+                 "evidence": "src fptwin GOG 0x1"} for i in range(8)]
+        pool = [{"addr": "0x%08x" % (0x00420000 + i * 0x2000), "kind": "function",
+                 "name": ("Global::_pool%02d" if i < inn.DECOY_SAME_QUAL else "CFoo::M%02d") % i,
+                 "evidence": "| src kdb name_map"} for i in range(inn.DECOY_SAME_QUAL + 10)]
+        _cards, key = inn.build_cards(rows, _facts, _facts, decoy_every=1, seed=5, decoy_pool=pool)
+        decoys = [k for k in key if k["is_decoy"]]
+        self.assertEqual(len(decoys), len(rows))
+        for k in decoys:
+            self.assertTrue(k["name"].startswith("Global::_pool"), k["name"])
+            self.assertEqual(k["src"], "kdb name_map")
+
+    def test_kdb_decoy_pool_functions_only(self):
+        with tempfile.TemporaryDirectory() as td:
+            db = os.path.join(td, "k.db")
+            con = sqlite3.connect(db)
+            con.execute("create table name_map(steam_addr text, name text, confidence text)")
+            con.executemany("insert into name_map values (?,?,?)", [
+                ("0x00401000", "Foo::A", "high"), ("0x009a0000", "g_Glob", "high"), ("0x00402000", "Foo::W", "wrong")])
+            con.commit()
+            con.close()
+            self.assertEqual([r["name"] for r in inn.kdb_decoy_pool(db)], ["Foo::A"])
 
     def test_deterministic_with_seed(self):
         self.assertEqual(self.build(3), self.build(3))
