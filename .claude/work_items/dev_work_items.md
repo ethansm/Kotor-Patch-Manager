@@ -216,3 +216,4 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [ ] | 200 | WI-168 | P3 | hold | S | - | WI-164 follow-up: pin 4-step Filter cycle (All>BuildDim>Combat>Force) in r10_filter_test.c | 0 | 2 | WI-164 cycle lives in LevelUpOverride.cpp with no host test; r10_filte |
 | [ ] | 201 | WI-169 | P3 | ready | S | - | ranged-ai: E-H1/E-H2 gate on controlled creature, not +0x10E8 | 0 | 3 | RangedAI.cpp:262/300 test !isPC (+0x10E8), which stays on the Exile (R |
 | [ ] | 202 | WI-170 | P3 | ready | S | - | companion-ai F4: keep older spell node when the new one is family-blocked; evict g_f4Seen  | 0 | 3 | F4 frees older valid spell nodes, G1 then drops the family-active newe |
+| [ ] | 203 | WI-171 | P3 | ready | S | - | Combat AI: Force Enlightenment (180) satisfies buff families 1/2/3 | 0 | 3 | Enlightenment 180 (not 176 = Force Sight) maps to no family, so Speed/ |
