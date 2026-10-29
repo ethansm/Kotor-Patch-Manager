@@ -2341,11 +2341,11 @@ void __cdecl LuoR10Dim_909B56(void* ebp) { r10Dim(r10::Powers, reinterpret_cast<
 void __cdecl LuoUiPanelCtor(int panel) { uiPanelCtor(static_cast<uintptr_t>(static_cast<uint32_t>(panel))); }
 
 // WI-164 / WI-36b in-panel Filter button (LevelUpUi.h filterCtor / filterTick). Ctor sites: feats ctor 0x909E00 site 0x90A327 (panel = [ebp-0x104]),
-// powers ctor 0x9074E0 site 0x9079F9 (panel = [ebp-0x108]); Draw overrides: feats 0x90BBB0, powers 0x9091E0 (ECX = panel). dllexport: exports.def is outside this item's scope.
-__declspec(dllexport) void __cdecl LuoFeatsCtor(int panel) { filterCtor(FbFeats, static_cast<uintptr_t>(static_cast<uint32_t>(panel))); }
-__declspec(dllexport) void __cdecl LuoPowersCtor(int panel) { filterCtor(FbPowers, static_cast<uintptr_t>(static_cast<uint32_t>(panel))); }
-__declspec(dllexport) void __cdecl LuoFeatsDraw(void* panel) { filterTick(FbFeats, reinterpret_cast<uintptr_t>(panel)); }
-__declspec(dllexport) void __cdecl LuoPowersDraw(void* panel) { filterTick(FbPowers, reinterpret_cast<uintptr_t>(panel)); }
+// powers ctor 0x9074E0 site 0x9079F9 (panel = [ebp-0x108]); Draw overrides: feats 0x90BBB0, powers 0x9091E0 (ECX = panel).
+void __cdecl LuoFeatsCtor(int panel) { filterCtor(FbFeats, static_cast<uintptr_t>(static_cast<uint32_t>(panel))); }
+void __cdecl LuoPowersCtor(int panel) { filterCtor(FbPowers, static_cast<uintptr_t>(static_cast<uint32_t>(panel))); }
+void __cdecl LuoFeatsDraw(void* panel) { filterTick(FbFeats, reinterpret_cast<uintptr_t>(panel)); }
+void __cdecl LuoPowersDraw(void* panel) { filterTick(FbPowers, reinterpret_cast<uintptr_t>(panel)); }
 
 // GetCharacterChangeInProgress 0x740FC0 call sites (ecx).
 int __cdecl LuoGuardGui_84FD2F(void* ecx) { return guiGuard(0x84FD2F, "gui", ecx); }

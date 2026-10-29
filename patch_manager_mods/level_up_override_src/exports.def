@@ -32,4 +32,8 @@ EXPORTS
     LuoR10_9099A2
     LuoR10Dim_90C36A
     LuoR10Dim_909B56
+    LuoFeatsCtor
+    LuoPowersCtor
+    LuoFeatsDraw
+    LuoPowersDraw
     KPatchInit
