@@ -1,0 +1,26 @@
+addr	kind	name	confidence	evidence	topic	date
+0x00403bf0	function	basic_filebuf<char,struct_std::char_traits<char>_>::setbuf	probable	0x00403bf0: PUSH EBP | src fptwin GOG 0x00403bb0	ingest-crt	2026-10-29
+0x0091a0d2	function	Global::__invalid_parameter	probable	0x0091a0d2: MOV EDI,EDI | src fptwin GOG 0x00921d02	ingest-crt	2026-10-29
+0x0091a338	function	Global::_fwrite	probable	0x0091a338: PUSH 0xc | src fptwin GOG 0x00921f68	ingest-crt	2026-10-29
+0x0091c5b3	function	Global::_fclose	probable	0x0091c5b3: PUSH 0xc | src fptwin GOG 0x009241e3	ingest-crt	2026-10-29
+0x0091caeb	function	Global::_fopen	probable	0x0091caeb: MOV EDI,EDI | src fptwin GOG 0x0092471b	ingest-crt	2026-10-29
+0x0091d220	function	Global::__aulldiv	probable	0x0091d220: PUSH EBX | src fptwin GOG 0x00924e50	ingest-crt	2026-10-29
+0x0091d424	function	Global::___tmainCRTStartup	probable	0x0091d424: PUSH 0x58 | src fptwin GOG 0x0092502a	ingest-crt	2026-10-29
+0x0091d6f0	function	Global::_strstr	probable	0x0091d6f0: MOV ECX,dword ptr [ESP + 0x8] | src fptwin GOG 0x009275f0	ingest-crt	2026-10-29
+0x0091d780	function	Global::_strcmp	probable	0x0091d780: MOV EDX,dword ptr [ESP + 0x4] | src fptwin GOG 0x00925960	ingest-crt	2026-10-29
+0x0091e050	function	Global::__alloca_probe	probable	0x0091e050: PUSH ECX | src fptwin GOG 0x00926ed0	ingest-crt	2026-10-29
+0x0091e140	function	Global::_qsort	probable	0x0091e140: MOV EDI,EDI | src fptwin GOG 0x0092a1e0	ingest-crt	2026-10-29
+0x0091f4e0	function	Global::_isalpha	probable	0x0091f4e0: MOV EDI,EDI | src fptwin GOG 0x0092995e	ingest-crt	2026-10-29
+0x0091fc30	function	Global::__allmul	probable	0x0091fc30: MOV EAX,dword ptr [ESP + 0x8] | src fptwin GOG 0x00929ca0	ingest-crt	2026-10-29
+0x00920670	function	Global::__alldiv	probable	0x00920670: PUSH EDI | src fptwin GOG 0x00927050	ingest-crt	2026-10-29
+0x00920aa1	function	Global::__alloc_osfhnd	probable	0x00920aa1: PUSH 0x18 | src fptwin GOG 0x0092963d	ingest-crt	2026-10-29
+0x00921597	function	Global::_V6_HeapAlloc	probable	0x00921597: PUSH 0xc | src fptwin GOG 0x00927f07	ingest-crt	2026-10-29
+0x0092394d	function	Global::___report_gsfailure	probable	0x0092394d: MOV EDI,EDI | src fptwin GOG 0x0092b5af	ingest-crt	2026-10-29
+0x0092aacb	function	Global::__msize	probable	0x0092aacb: PUSH 0x10 | src fptwin GOG 0x0093272c	ingest-crt	2026-10-29
+0x0092b087	function	Global::___security_init_cookie	probable	0x0092b087: MOV EDI,EDI | src fptwin GOG 0x00932ce8	ingest-crt	2026-10-29
+0x00931ab0	function	Global::__calloc_impl	probable	0x00931ab0: PUSH 0xc | src fptwin GOG 0x00938c11	ingest-crt	2026-10-29
+0x00934311	function	Global::_realloc	probable	0x00934311: PUSH 0x10 | src fptwin GOG 0x0093cac9	ingest-crt	2026-10-29
+0x0094784c	function	Global::___crtLCMapStringW	probable	0x0094784c: MOV EDI,EDI | src fptwin GOG 0x00946e32	ingest-crt	2026-10-29
+0x0091f3ef	function	Global::_fread	probable	0x0091f3ef: MOV EDI,EDI | src fpgraph GOG 0x0092866d score=15	ingest-crt	2026-10-29
+0x0091fcf0	function	Global::_memmove	probable	0x0091fcf0: PUSH EBP | src fpgraph GOG 0x009251c0 score=9	ingest-crt	2026-10-29
+0x0092133d	function	Global::__vsnprintf	probable	0x0092133d: MOV EDI,EDI | src fpgraph GOG 0x00927cad score=2	ingest-crt	2026-10-29
