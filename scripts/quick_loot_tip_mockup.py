@@ -7,8 +7,11 @@ Renders the proposed tooltip next to a hovered list row for real items from the 
   header   icon + title (cream, dialogfont16x16) + one dim category line (baseitems name; the description's tag line, e.g. "Not Upgradeable")
   rules    two columns, label dim teal / value cream: computed from baseitems.2da (damage dice + type, critical, range, defense, max Dex) and the
            item's PropertiesList (itempropdef name + subtype + cost table value), plus the "Label: value" lines the description itself starts with
-  flavor   the first one or two sentences of the description (teal, at most 3 lines)
-  footer   dim key hints
+  flavor   the first one or two sentences of the description (teal, at most 3 lines); an item with no rules lines shows its whole
+           description (up to 7 lines: it usually is the rules, e.g. the medpac heal formula)
+v2 (after the Gemini review, .claude/reviews/quick_loot_ux_agy/REVIEW_gemini.md): damage as min-max + the engine's own damage word (TLK 38552..),
+bonus damage folded into Damage, armor category = weight class, Defense net of Decrease AC, no Range / Use / Human restriction / "Upgrades: None"
+rows, no footer, tooltip top flush with the list block.
 Names and text drop BioWare's {tag} prefixes ("{08}Disruptor Carbine" -> "Disruptor Carbine"), as the engine does.
 Outputs ql09_tip_<n>.png (zoomed) and ql09_sheet.png. Before / after: ql09_before_after.png (0.6.0 tooltip vs the new one, same item).
 """
@@ -26,10 +29,8 @@ PAD_X, PAD_Y = 26, 20
 ICON = 72
 TITLE_H, SUB_H, LINE_H, GAP = 34, 28, 30, 12
 LABEL_COL_MAX = 230        # px cap of the label column (measured from the longest label, + 24)
-LABEL_ALIAS = {"Damage Immunity": "Immunity", "Defense Penalty": "Penalty", "User Limitation": "Only for", "Max Dex Bonus": "Max Dex",
-               "Activate Item": "Use", "Area of Effect": "Area", "Save (Will)": "Will Save", "Save (Reflex)": "Reflex Save", "Save (Fort)": "Fort Save",
-               "Bonus Feat": "Feat", "Damage Bonus": "Bonus Dmg", "Attack Bonus": "Attack", "Ability Bonus": "Ability", "Skill Bonus": "Skill"}
 FLAVOR_LINES = 3
+FLAVOR_LINES_FULL = 7      # items with no rules lines show the whole description
 DIVIDER_TINT = qm.TEAL_FRAME
 TAG_RE = re.compile(r"\{[^{}]{0,12}\}")
 
@@ -77,56 +78,84 @@ def cell(t, row, col):
     return "" if v in ("", "****") else v
 
 
-DMG_TYPES = [(0x10, "Energy"), (0x01, "Bludgeoning"), (0x02, "Piercing"), (0x04, "Slashing"), (0x80, "Sonic"), (0x20, "Ion"), (0x08, "Universal")]
+# Damage words exactly as the engine builds them (0x6140c0 -> TLK): bits 0-2 "Physical" 38552, bit 3.. bit 12 -> 38553..38562, bit 13 -> 0xa3af.
+def dmg_words(flags):
+    out = []
+    if flags & 0x7:
+        out.append(tlk(38552))
+    for bit in range(3, 13):
+        if flags & (1 << bit):
+            out.append(tlk(38553 + bit - 3))
+    if flags & (1 << 13):
+        out.append(tlk(0xA3AF))
+    return "/".join(w for w in out if w)
+
+
+def dice_range(nd, die):
+    return f"{nd}-{nd * die}"
 
 
 def base_rules(base):
-    """Computed lines from baseitems.2da (what the vanilla equip screen lists for weapons / armor)."""
+    """Computed lines from baseitems.2da: weapons Damage (min-max + engine damage word) and Critical; armor Defense and Max Dex.
+    Range is left out (every blaster is the same; melee is obvious from the category)."""
     b = twoda("baseitems")
     out = []
     nd, die = cell(b, base, "numdice"), cell(b, base, "dietoroll")
     if nd and die and int(nd) > 0:
-        flags = int(cell(b, base, "damageflags") or 0)
-        kinds = [n for bit, n in DMG_TYPES if flags & bit]
-        out.append(("Damage", f"{nd}d{die}" + (f" {'/'.join(kinds)}" if kinds else "")))
+        w = dmg_words(int(cell(b, base, "damageflags") or 0))
+        out.append(("Damage", dice_range(int(nd), int(die)) + (f" {w}" if w else "")))
         ct, cm = int(cell(b, base, "critthreat") or 1), int(cell(b, base, "crithitmult") or 2)
         out.append(("Critical", (f"{21 - ct}-20" if ct > 1 else "20") + f" / x{cm}"))
-        if cell(b, base, "rangedweapon") and cell(b, base, "rangedweapon") not in ("0",):
-            mr = cell(b, base, "maxattackrange")
-            out.append(("Range", f"{int(float(mr))} m" if mr else "Ranged"))
-        else:
-            out.append(("Range", "Melee"))
     ac = cell(b, base, "baseac")
     if ac and int(ac) > 0:
         out.append(("Defense", f"+{ac}"))
         dx = cell(b, base, "dexbonus")
         if dx and int(dx) < 99:
-            out.append(("Max Dex Bonus", f"+{dx}"))
+            out.append(("Max Dex", f"+{dx}"))
     return out
 
 
+def armor_class(base):
+    """'Light Armor' from reqfeat0 = 'Armor Proficiency: Light' (rows 38-43); None for other items."""
+    b, f = twoda("baseitems"), twoda("feat")
+    rf = cell(b, base, "reqfeat0")
+    n = tlk(cell(f, int(rf), "name")) if rf else ""
+    return n.split(":", 1)[1].strip() + " Armor" if n.startswith("Armor Proficiency:") else None
+
+
+HIDE_PROPS = {"CastSpell", "UseLimitationRacial_human"}   # the description says what the use does; every party member counts as Human
+
+
 def prop_rules(uti):
-    """One line per item property: itempropdef name + subtype name + cost table value name."""
-    ipd, cts = twoda("itempropdef"), twoda("iprp_costtable")
+    """(label, value, kind) per item property: itempropdef name + subtype name + cost table value name."""
+    ipd, cts, rt = twoda("itempropdef"), twoda("iprp_costtable"), twoda("racialtypes")
     out = []
     for p in uti.get_list("PropertiesList"):
         pn = p.get_uint16("PropertyName")
-        name = tlk(cell(ipd, pn, "name")) or cell(ipd, pn, "label")
+        lab = cell(ipd, pn, "label")
+        sub_i = p.get_uint16("Subtype")
+        if lab == "CastSpell" or (lab == "UseLimitationRacial" and cell(rt, sub_i, "label") == "Human"):
+            continue
+        name = tlk(cell(ipd, pn, "name")) or lab
         sub_t = cell(ipd, pn, "subtyperesref")
         sub = ""
         if sub_t:
             st = twoda(sub_t)
             if st:
-                sub = tlk(cell(st, p.get_uint16("Subtype"), "name")) or cell(st, p.get_uint16("Subtype"), "label")
+                sub = tlk(cell(st, sub_i, "name")) or cell(st, sub_i, "label")
         val = ""
         ctn = cell(cts, p.get_uint8("CostTable"), "name") if p.get_uint8("CostTable") else ""
         if ctn:
             ct = twoda(ctn)
             if ct:
                 val = tlk(cell(ct, p.get_uint16("CostValue"), "name")) or cell(ct, p.get_uint16("CostValue"), "label")
-        v = " ".join(x for x in (sub, val) if x)
-        out.append((name, v or "Yes"))
+        out.append((name, " ".join(x for x in (sub, val) if x) or "Yes", lab))
     return out
+
+
+LABELS = {"Damage Immunity": "Immunity", "User Limitation": "Restricted", "Activate Item": "Use", "Area of Effect": "Area", "Save (Will)": "Will Save",
+          "Save (Reflex)": "Reflex Save", "Save (Fort)": "Fort Save", "Secondary": "Effect", "Attack Bonus": "Attack", "Ability Bonus": "Ability",
+          "Skill Bonus": "Skill"}
 
 
 def split_desc(desc):
@@ -146,7 +175,7 @@ def split_desc(desc):
         v = v.strip()
         if not v and i + 1 < len(lines) and lines[i + 1] and ":" not in lines[i + 1]:
             v, i = lines[i + 1], i + 1
-        stats.append((k.strip(), v))
+        stats.append((k.strip(), re.sub(r"\bDC(\d)", r"DC \1", v)))
         i += 1
     flavor = " ".join(ln for ln in lines[i:] if ln)
     return tag, stats, flavor
@@ -165,6 +194,45 @@ def short_flavor(text, max_chars=170):
     return out
 
 
+def build_rules(base, uti, stats, tag):
+    rules = [(k, v, "") for k, v in base_rules(base)] + prop_rules(uti)
+    rules += [(k, v, "desc") for k, v in stats]
+    # bonus damage folds into the Damage line ("1-10 Physical + 2 Unstoppable"); a Damage Decrease / AC decrease folds into Defense
+    dmg = next((r for r in rules if r[0] == "Damage" and not r[2]), None)
+    out = []
+    for k, v, kind in rules:
+        if kind == "Damage" and dmg:
+            dmg = (dmg[0], f"{dmg[1]} + {v.split(' ', 1)[1] if ' ' in v else v} {v.split(' ', 1)[0]}".replace("  ", " "), dmg[2])
+            continue
+        if kind == "DecreaseAC":
+            dfn = next((i for i, r in enumerate(out) if r[0] == "Defense"), None)
+            n = int(re.sub(r"\D", "", v) or 0)
+            if dfn is not None:
+                cur = int(out[dfn][1].lstrip("+"))
+                out[dfn] = ("Defense", f"+{cur - n}", "")
+                continue
+        if kind == "BonusFeats":
+            k = "Bonus Feat"
+        if kind == "desc" and k == "Damage" and v.lower() == "none":
+            continue
+        out.append((LABELS.get(k, k), v, kind))
+    if dmg:
+        out = [(d if d[0] != "Damage" or d[2] else dmg) for d in out]
+    if tag and "Not" not in tag:
+        slots = "All slots" if tag.startswith("Fully") else (tag.replace("Upgradeable", "").strip(" ()") + " only").strip() if "(" in tag else "Yes"
+        out.append(("Upgrades", slots, ""))
+    merged = []
+    for k, v, _ in out:
+        hit = next((m for m in merged if m[0] == k), None)
+        if hit and k != "Damage":
+            a, b = hit[1].rsplit(" ", 1) if " " in hit[1] else (hit[1], ""), v.rsplit(" ", 1) if " " in v else (v, "")
+            hit[1] = f"{a[0]}, {b[0]} {a[1]}".strip() if a[1] == b[1] and a[1] else f"{hit[1]}, {v}"
+        else:
+            merged.append([k, v])
+    dice = lambda v: re.sub(r"\b(\d+)d(\d+)\b", lambda m: f"{m.group(1)}-{int(m.group(1)) * int(m.group(2))}", v)   # 1D10 reads as 1010 in dialogfont
+    return [(k, dice(v)) for k, v in merged]
+
+
 def item(resref):
     from pykotor.resource.formats.gff import read_gff
     from pykotor.resource.type import ResourceType
@@ -175,31 +243,20 @@ def item(resref):
     base = g.get_int32("BaseItem")
     raw_desc = _C["tlk"].string(g.get_locstring("DescIdentified").stringref)
     tag, stats, flavor = split_desc(raw_desc)
-    rules = base_rules(base) + prop_rules(g) + stats
-    if tag:
-        up = tag.replace("Fully Upgradeable", "Full").replace("Not Upgradeable", "None").replace("Upgradeable", "").strip(" ()") or "Yes"
-        rules.append(("Upgrades", up))
-    merged = []
-    for k, v in rules:
-        k = LABEL_ALIAS.get(k, k)
-        hit = next((m for m in merged if m[0] == k), None)
-        if hit and k not in ("Damage",):
-            a, b = hit[1].rsplit(" ", 1) if " " in hit[1] else (hit[1], ""), v.rsplit(" ", 1) if " " in v else (v, "")
-            hit[1] = f"{a[0]}, {b[0]} {a[1]}".strip() if a[1] == b[1] and a[1] else f"{hit[1]}, {v}"
-        else:
-            merged.append([k, v])
+    rules = build_rules(base, g, stats, tag)
     b = twoda("baseitems")
-    cat = tlk(cell(b, base, "name"))
+    cat = armor_class(base) or tlk(cell(b, base, "name"))
     ic = cell(b, base, "itemclass")
     var = g.get_uint8("ModelVariation") if g.exists("ModelVariation") else 1
+    # no rules: the whole description (it often IS the rules, e.g. the medpac heal formula), up to FLAVOR_LINES_FULL lines
     return dict(resref=resref, name=strip_tags(_C["tlk"].string(g.get_locstring("LocalizedName").stringref)),
-                raw_name=_C["tlk"].string(g.get_locstring("LocalizedName").stringref), raw_desc=raw_desc,
-                sub=cat, rules=[tuple(m) for m in merged],
-                flavor=short_flavor(flavor), icon=qm.icon_resref(ic, var or 1) if ic else "", stack=g.get_uint16("StackSize") if g.exists("StackSize") else 1)
+                raw_name=_C["tlk"].string(g.get_locstring("LocalizedName").stringref), raw_desc=raw_desc, sub=cat, rules=rules,
+                flavor=short_flavor(flavor) if rules else flavor, full=not rules, icon=qm.icon_resref(ic, var or 1) if ic else "",
+                stack=g.get_uint16("StackSize") if g.exists("StackSize") else 1)
 
 
 # ---- layout + draw
-def wrap(text, px):
+def wrap(text, px, max_lines=FLAVOR_LINES):
     words, lines, cur = text.split(), [], ""
     for w in words:
         t = (cur + " " + w).strip()
@@ -210,15 +267,15 @@ def wrap(text, px):
             cur = w
     if cur:
         lines.append(cur)
-    if len(lines) > FLAVOR_LINES:
-        lines = lines[:FLAVOR_LINES]
+    if len(lines) > max_lines:
+        lines = lines[:max_lines]
         lines[-1] = lines[-1].rstrip(".,;") + "..."
     return lines
 
 
 def layout(it, x, y):
     inner = TIP_W - 2 * PAD_X
-    flav = wrap(it["flavor"], inner) if it["flavor"] else []
+    flav = wrap(it["flavor"], inner, FLAVOR_LINES_FULL if it["full"] else FLAVOR_LINES) if it["flavor"] else []
     col = min(LABEL_COL_MAX, max((qm.text_px10(k) for k, _ in it["rules"]), default=0) + 24)
     rules = []
     for k, v in it["rules"]:
@@ -229,8 +286,8 @@ def layout(it, x, y):
     if rules:
         h += 2 + GAP + n_rule_lines * LINE_H + GAP
     if flav:
-        h += 2 + GAP + len(flav) * LINE_H + GAP
-    h += 2 + GAP + LINE_H + PAD_Y - GAP
+        h += 2 + GAP + len(flav) * LINE_H
+    h += PAD_Y
     return dict(frame=(x, y, TIP_W, h), flav=flav, rules=rules, col=col)
 
 
@@ -269,9 +326,6 @@ def draw(img, cpm, it, L):
         for ln in L["flav"]:
             text(ln, (ix, cy, w - 2 * PAD_X, LINE_H), qm.TEAL_TEXT)
             cy += LINE_H
-        cy += GAP
-    divider()
-    text("Click: Take     F: Take All", (ix, cy, w - 2 * PAD_X, LINE_H), qm.TEAL_DIM)
 
 
 def scene(cpm, items, hover, it):
@@ -286,7 +340,7 @@ def scene(cpm, items, hover, it):
     rect = qm.anchor_block(0, True, name, qm.PANEL, None, o["w"], o["h"])[0]
     qm.draw_block(img, cpm, o, rect, hover)
     rr = qm.row_rect(hover, o["w"], o["sb"], o["row_h"])
-    L = layout(it, rect[0] + rect[2] + qm.TIP_GAP, rect[1] + rr[1])
+    L = layout(it, rect[0] + rect[2] + qm.TIP_GAP, rect[1])   # top edge flush with the list block: the title stays at one eye level
     draw(img, cpm, it, L)
     fx, fy, fw, fh = L["frame"]
     box = (min(rect[0], fx), min(rect[1], fy) - 120, max(rect[0] + rect[2], fx + fw) - min(rect[0], fx), max(rect[1] + rect[3], fy + fh) - min(rect[1], fy) + 120)
