@@ -650,7 +650,7 @@ inline bool c1Who(const Config& c, int objType, int party) { return !c.c1PartyOn
 inline int c1Value(bool enabled, bool who, bool capOk) { return (enabled && who && capOk) ? -1 : 0; }
 
 // G1 (0x6D9ADB, cast_family_guard, WI-136 F1a / WI-137 F1b). Family of a spell: the rows of GN_PartyPowerFamily in
-// ranged_ai_src/script/party_ai_fixes.nss. Families 1-10 are buffs (read the caster's effects); 20-24 are single-target
+// ranged_ai_src/script/party_ai_fixes.nss. Families 1-11 are buffs (read the caster's effects); 20-24 are single-target
 // debuffs (read the TARGET's effects, see castFamilyOnTarget). 0 = untracked (area powers, Kill, Horror, Insanity, damage).
 inline int castFamily(int spell) {
     switch (spell) {
@@ -664,6 +664,7 @@ inline int castFamily(int spell) {
     case 167: case 168: case 169: case 170: case 171: case 172: return 8;   // Inspire Followers
     case 150: case 151: case 152: return 9;                          // Force Body
     case 20: case 41: return 10;                                     // Force Immunity / Resist Force
+    case 180: return 11;                                             // Force Enlightenment (applies the caster's best Speed, Armor and Valor; k_inc_force.nss:5221)
     case 45: case 7: case 38: return 20;                             // Slow / Affliction / Plague (debuff, WI-137)
     case 50: case 9: return 21;                                      // Wound / Choke (Kill 32 untracked)
     case 16: return 22;                                              // Fear (Horror / Insanity untracked)
@@ -672,6 +673,8 @@ inline int castFamily(int spell) {
     default: return 0;
     }
 }
+// An active effect of family `active` satisfies a cast of family `fam`: same family, or Enlightenment (11) covering Speed/Armor/Valor.
+inline bool castFamilyCovers(int active, int fam) { return active == fam || (active == 11 && fam >= 1 && fam <= 3); }
 // Families 20-24 are debuffs: the guard reads the target's effect list (node +0x84), not the caster's.
 inline bool castFamilyOnTarget(int fam) { return fam >= 20; }
 // true = drop the build: the guard is on, the actor is not the party leader (player-issued casts are never dropped), the spell
@@ -680,7 +683,7 @@ inline bool castGuardDrops(bool enabled, bool actorIsLeader, int spell, const in
     if (!enabled || actorIsLeader) return false;
     const int fam = castFamily(spell);
     if (!fam || !activeSpellIds) return false;
-    for (int i = 0; i < n; ++i) if (castFamily(activeSpellIds[i]) == fam) return true;
+    for (int i = 0; i < n; ++i) if (castFamilyCovers(castFamily(activeSpellIds[i]), fam)) return true;
     return false;
 }
 

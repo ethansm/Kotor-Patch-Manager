@@ -475,7 +475,7 @@ static void testPartyArea() {
 
 // G1 cast family guard (WI-136): family table, drop decision, INI key
 static void testCastGuard() {
-    // buff families 1-10: every id of party_ai_fixes.nss GN_PartyPowerFamily's buff rows
+    // buff families 1-11: every id of party_ai_fixes.nss GN_PartyPowerFamily's buff rows
     CHECK(castFamily(8) == 1 && castFamily(34) == 1 && castFamily(37) == 1);                 // Speed
     CHECK(castFamily(17) == 2 && castFamily(18) == 2 && castFamily(24) == 2);                 // Armor
     CHECK(castFamily(22) == 3 && castFamily(33) == 3 && castFamily(36) == 3);                 // Valor
@@ -486,6 +486,7 @@ static void testCastGuard() {
     for (int s = 167; s <= 172; ++s) CHECK(castFamily(s) == 8);                              // Inspire Followers
     CHECK(castFamily(150) == 9 && castFamily(151) == 9 && castFamily(152) == 9);              // Force Body
     CHECK(castFamily(20) == 10 && castFamily(41) == 10);                                      // Force Immunity / Resist Force
+    CHECK(castFamily(180) == 11);                                                             // Force Enlightenment (Speed, Armor, Valor applied by the caster)
     // debuff families 20-24 (WI-137): single-target hostile powers, read from the target's effects
     CHECK(castFamily(45) == 20 && castFamily(7) == 20 && castFamily(38) == 20);              // Slow / Affliction / Plague
     CHECK(castFamily(50) == 21 && castFamily(9) == 21);                                       // Wound / Choke
@@ -493,7 +494,7 @@ static void testCastGuard() {
     CHECK(castFamily(46) == 23 && castFamily(29) == 23);                                      // Stun / Stasis
     CHECK(castFamily(153) == 24 && castFamily(154) == 24 && castFamily(155) == 24);          // Drain Force
     int tracked = 0; for (int s = 0; s < 256; ++s) tracked += castFamily(s) != 0;
-    CHECK(tracked == 43);                                                                     // 32 buff rows + 11 debuff rows; no other id in 0..255 is tracked
+    CHECK(tracked == 44);                                                                     // 33 buff rows + 11 debuff rows; no other id in 0..255 is tracked
     CHECK(castFamilyOnTarget(20) && castFamilyOnTarget(24) && !castFamilyOnTarget(10) && !castFamilyOnTarget(0));   // debuffs read the target
     // untracked: area powers, Kill, Horror, Insanity, unknown and invalid ids
     CHECK(castFamily(30) == 0 && castFamily(31) == 0 && castFamily(32) == 0);                 // Horror / Insanity / Kill
@@ -514,6 +515,15 @@ static void testCastGuard() {
     CHECK(!castGuardDrops(true, false, 45, speedHi, 1));      // debuff family not active on the target (a buff is): keep
     CHECK(!castGuardDrops(true, false, -1, speedHi, 1));      // unknown spell row: keep
     CHECK(!castGuardDrops(false, false, 8, speedHi, 1));      // cast_family_guard=0: vanilla
+    // Force Enlightenment (WI-171, family 11) covers Speed 1, Armor 2, Valor 3 on both sides of the guard, nothing else
+    const int enl[] = {180};
+    CHECK(castGuardDrops(true, false, 8, enl, 1));            // Speed cast, Enlightenment active: drop
+    CHECK(castGuardDrops(true, false, 17, enl, 1));           // Armor cast, Enlightenment active: drop
+    CHECK(castGuardDrops(true, false, 22, enl, 1));           // Valor cast, Enlightenment active: drop
+    CHECK(castGuardDrops(true, false, 180, enl, 1));          // Enlightenment cast, Enlightenment active: drop
+    CHECK(!castGuardDrops(true, false, 180, speedHi, 1));     // Enlightenment cast, Speed active: keep (Speed does not cover 11)
+    CHECK(!castGuardDrops(true, false, 135, enl, 1));         // Barrier cast, Enlightenment active: keep (Barrier not covered)
+    CHECK(!castFamilyOnTarget(11));                           // buff family: reads the caster's effects
     // debuff families (WI-137): the caller passes the TARGET's effect ids
     const int slowOn[] = {7}, wound[] = {50}, stasis[] = {29};
     CHECK(castGuardDrops(true, false, 45, slowOn, 1));        // Slow cast, Slow active on the target: drop

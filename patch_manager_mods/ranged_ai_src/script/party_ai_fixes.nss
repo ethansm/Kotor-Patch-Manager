@@ -88,7 +88,7 @@ void GN_PartyApproachUnseen(object oIntruder)
     ActionDoCommand(GN_DetermineCombatRound(oIntruder));
 }
 
-// F2 (party only): power family of a spell, 0 = untracked. Buff families 1-10 are self buffs (checked on the
+// F2 (party only): power family of a spell, 0 = untracked. Buff families 1-11 are self buffs (checked on the
 // caster); families 20-24 are single-target debuffs (checked on the target). Ids are spells.2da rows (labels
 // checked 2026-10-25). Kill (32) is instant damage, Horror (30) and Insanity (31) are area powers: untracked.
 int GN_PartyPowerFamily(int nSpell)
@@ -143,6 +143,11 @@ int GN_PartyPowerFamily(int nSpell)
     {
         return 10;
     }
+    // 11 Force Enlightenment (applies Speed, Armor and Valor)
+    if (nSpell == 180)
+    {
+        return 11;
+    }
     // 20 Slow / Affliction / Plague
     if (nSpell == 45 || nSpell == 7 || nSpell == 38)
     {
@@ -171,6 +176,20 @@ int GN_PartyPowerFamily(int nSpell)
     return 0;
 }
 
+// TRUE when an active effect of family nActive satisfies family nFamily (Enlightenment 11 covers Speed 1, Armor 2, Valor 3).
+int GN_PartyFamilyCovers(int nActive, int nFamily)
+{
+    if (nActive == nFamily)
+    {
+        return TRUE;
+    }
+    if (nActive == 11 && nFamily >= 1 && nFamily <= 3)
+    {
+        return TRUE;
+    }
+    return FALSE;
+}
+
 // F2 (party only): TRUE when a power of the same family as nSpell is already on oTarget. Buff families check
 // OBJECT_SELF (the caster), debuff families check the target. Untracked spells and invalid targets give FALSE.
 int GN_PartyFamilyActive(int nSpell, object oTarget)
@@ -192,7 +211,7 @@ int GN_PartyFamilyActive(int nSpell, object oTarget)
     effect eCur = GetFirstEffect(oCheck);
     while (GetIsEffectValid(eCur))
     {
-        if (GN_PartyPowerFamily(GetEffectSpellId(eCur)) == nFamily)
+        if (GN_PartyFamilyCovers(GN_PartyPowerFamily(GetEffectSpellId(eCur)), nFamily))
         {
             return TRUE;
         }

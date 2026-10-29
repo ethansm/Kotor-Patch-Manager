@@ -18,7 +18,7 @@ import party_ai_patches as P  # noqa: E402
 VANILLA_DIR = os.path.expanduser("~/Games/KOTOR2_Mod_Workspace/mod8_kite_script/vanilla")
 FIXES = os.path.join(HERE, "party_ai_fixes.nss")
 
-# Step 1 of WI-138: power family -> spells.2da ids. Buff families 1-10, single-target debuffs 20-24.
+# Step 1 of WI-138: power family -> spells.2da ids. Buff families 1-11, single-target debuffs 20-24.
 FAMILY_IDS = {
     1: [8, 34, 37],
     2: [17, 18, 24],
@@ -30,6 +30,7 @@ FAMILY_IDS = {
     8: [167, 168, 169, 170, 171, 172],
     9: [150, 151, 152],
     10: [20, 41],
+    11: [180],
     20: [45, 7, 38],
     21: [50, 9],
     22: [16],
@@ -106,9 +107,13 @@ class HelperBodyTest(unittest.TestCase):
 
     def test_d_active_check_uses_effect_spell_ids(self):
         body = self._body("int GN_PartyFamilyActive(int nSpell, object oTarget)")
-        self.assertIn("GN_PartyPowerFamily(GetEffectSpellId(eCur)) == nFamily", body)
+        self.assertIn("GN_PartyFamilyCovers(GN_PartyPowerFamily(GetEffectSpellId(eCur)), nFamily)", body)
         self.assertIn("GetFirstEffect(oCheck)", body)
         self.assertIn("GetNextEffect(oCheck)", body)
+
+    def test_d_family_covers_is_enlightenment_only(self):
+        body = self._body("int GN_PartyFamilyCovers(int nActive, int nFamily)")
+        self.assertIn("nActive == 11 && nFamily >= 1 && nFamily <= 3", body)
 
 
 class F5DcrStampTest(unittest.TestCase):
