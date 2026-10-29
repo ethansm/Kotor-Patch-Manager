@@ -33,7 +33,8 @@ MOD8_MD5 = "94db830439f1d33572ba911174e20a04"   # live k_ai_master.ncs (Mod 8 0.
 PREV_PARTY_MD5S = {"b003ea4135c7e15841111107eb69fc4b",   # earlier party AI builds of ours (2ddec63, 2026-09-30)
                    "668968300fedfb4273d4b1500d8a149d",  # F2 build (WI-138/139), installed 2026-10-25 17:36
                    "e5ff7aa45d0d0f0dfa676ca7492828e3",  # F5 + Party D prints (WI-142, 990e5044), installed 2026-10-25 20:12
-                   "4eae8a5f8203962d5e22c48c443de0d9"}  # WI-160 O3 + WI-171 Enlightenment (cd757d6a), installed 2026-10-29 01:34
+                   "4eae8a5f8203962d5e22c48c443de0d9",  # WI-160 O3 + WI-171 Enlightenment (cd757d6a), installed 2026-10-29 01:34
+                   "82fc6cc052cc8a1a2357696e198b48fc"}  # CAX.3 WI-172..175 DR1/SK1/O3 series/BT1 (74c8ac21), installed 2026-10-29 02:39
 
 
 def md5(p):
