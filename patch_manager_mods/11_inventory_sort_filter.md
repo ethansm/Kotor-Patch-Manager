@@ -189,7 +189,11 @@ category groups not perceivable (6 rows visible); tint and New have no legend. O
 - Free band B (gui 657..3676 x 1388..1452 px @3840x1600, under LBL_BAR3/4, right of BTN_EXIT): segmented filter buttons
   "All 22 | New 4 | Can Equip 13 | Upgradeable 3" (active lit) + status "Showing: Can Equip 13 of 22" + legend (red-orange swatch "can't equip", New marker "new").
 - Free band A (1319..1953 x 1262..1336, right of BTN_USEITEM): button "Sort: Category", a click cycles Category -> Base item -> Name -> Vanilla (writes `sort_order`).
-- Re-clicking All and the bumpers keep working. v3 category divider rows are deferred (fake rows in the engine list; selection / controller risk).
+- Re-clicking All and the bumpers keep working.
+- **Owner 10-29: "I really like the in list clues UX"** -> v3 category divider rows are IN scope (VU6), not deferred.
+- **Owner 10-29: "we need a better UX for the top bar, its too small"** -> the top tab strip goes back to pure vanilla (LBL_FILTER always
+  "Filter"; even "Upgradeable (1024)" is 358 px > 345). ISF state moves to its own bar: mockup v4a (framed bar in bottom band B + A) vs v4b
+  (framed strip above LB_ITEMS, list one row shorter); owner picks from `isf_v4_compare.png`. VU1 is replaced by that choice.
 
 Engine facts (10-29, static): labels and button clones exist only while the panel's layout GFF is open (`GuiKit.h:176`; `GuiButton.h:55`
 createButtonFromTemplate, used by mod-config). hud-host already detours StopLoadFromLayout 0x40F5A0 for every panel ctor but dispatches
@@ -200,11 +204,12 @@ frame (mui::ClickTracker, gui-input CursorEngine), so the buttons need a per-fra
 | Id | Batch | Deps | Owner gate | Status | Commit | Next |
 |---|---|---|---|---|---|---|
 | **VU0** | Calibrate the mockup on one owner screenshot (inventory open, cycle on Usable): font scale, New colour, tab highlight, does the engine clip LBL_FILTER | - | owner screenshot | TODO | - | owner sends a screenshot path |
-| **VU1** | Quick fix 0.3.2-dev (hot-swap): short captions + "Can Equip" rename in SortLogic.h captionWithCount (drop " P/N (n)"; counts move to the buttons); sort_logic_test vectors; mockup `current` = new captions; ISF-T11 rewritten | - | install GO | TODO | - | Sonnet worker |
-| **VU2** | Static RE ($0 first): (a) per-frame tick while the inventory is open without a second detour on 0x8A7350 (KPM one detour per address? alternative site or an inv3d/hud-host provider callback); (b) does a button cloned from a BTN_* tab template keep the event-0x27 binding to the tab handler 0x8A8CF0 (then ISF's existing SortFilterTabClick sees the click, ctrl+0x5C = our id, no tick needed) | - | - | TODO | - | Haiku facts via static_facts.py, rea-recon only for (b) |
+| **VU1** | SUPERSEDED 10-29 (top bar back to vanilla; ISF bar VU4). Was: quick fix 0.3.2-dev (hot-swap): short captions + "Can Equip" rename in SortLogic.h captionWithCount (drop " P/N (n)"; counts move to the buttons); sort_logic_test vectors; mockup `current` = new captions; ISF-T11 rewritten | - | install GO | SKIPPED | - | superseded by the own-bar decision |
+| **VU2** | Static RE ($0 first): (a) per-frame tick while the inventory is open without a second detour on 0x8A7350 (KPM one detour per address? alternative site or an inv3d/hud-host provider callback); (b) does a button cloned from a BTN_* tab template keep the event-0x27 binding to the tab handler 0x8A8CF0 (then ISF's existing SortFilterTabClick sees the click, ctrl+0x5C = our id, no tick needed); (c) how to add a non-item divider row to LB_ITEMS (protoitem clone in the list box control list vs a CreateItemEntry variant), and keep selection index, reselect, tint indices (PanelRowArrayOff) and keyboard / controller navigation skipping it; (d) for v4b: can ISF resize LB_ITEMS at panel build (guikit::setRect) without breaking its scrollbar | - | - | TODO | - | Haiku facts via static_facts.py, rea-recon only for (b) |
 | **VU3** | hud-host provider: new phase K2HUD_PANEL_BUILD fired from HH_LayoutClosing for EVERY panel (ctx.panel + panel vtable), additive API, consumers filter by vtable; existing K2HUD_BUILD unchanged; hh_dispatch_test + common_contract_test pins | VU2 | install GO (hot-swap) | TODO | - | compat_check.py on _shared_src edits |
-| **VU4** | ISF 0.4.0-dev labels: subscribe to K2HUD_PANEL_BUILD for the inventory vtable, clone LBL_* templates into bands A/B: status line + legend + read-only filter / sort indicators, refreshed at each populate (no tick needed) | VU1, VU3 | install GO | TODO | - | play row ISF-T13 |
+| **VU4** | ISF 0.4.0-dev own bar (layout v4a or v4b per owner pick), labels first: subscribe to K2HUD_PANEL_BUILD for the inventory vtable, clone LBL_* templates into bands A/B: status line + legend + read-only filter / sort indicators, refreshed at each populate (no tick needed) | VU1, VU3 | install GO | TODO | - | play row ISF-T13 |
 | **VU5** | ISF 0.5.0-dev buttons: segmented filter + Sort button clickable (path from VU2), keyboard / controller unchanged | VU2, VU4 | install GO | TODO | - | play row ISF-T14 |
+| **VU6** | ISF 0.6.0-dev in-list cues: non-selectable divider rows ("New", "Weapons", "Armour", "Gear", "Upgrades", "Consumables", "Other") in Category sort, from the VU2(c) path; host test for the row-index mapping | VU2, VU5 | install GO | TODO | - | play row ISF-T15 (selection, scroll, controller) |
 
 ## Planned shared state and shared code (doc 19 / 19b, added 2026-10-02)
 **Nothing here is built yet.** When a piece lands, use it instead of extending this patch's local copy. The ids (A1, B2, ...) refer to [`19b_cross_patch_sharing_survey.md`](19b_cross_patch_sharing_survey.md), which has the evidence. Line numbers there are from 10-02.
