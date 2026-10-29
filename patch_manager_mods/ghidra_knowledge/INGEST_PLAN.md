@@ -36,10 +36,10 @@ D6 R2 NO-GO root cause was missing names / caller context, so coverage is the le
 | I8d | Mac-name verify: I8b hypotheses through `ingest_names.py cards --decomp-lines 10` (decoy names), Haiku verify, ledger rows topic `ingest-macnames` | DONE | spec §I8 |
 | I8e | no_twin 38: `batch.py candidates` (mapper + near only) + `gates` for B19, $0; report AUTO/REVIEW counts; review only if REVIEW <= 24 | DONE | spec §I8 |
 | I8f | Persist B18 (+ B17 likely 3 via `finalize --with-likely`) + I8d names (user OK), gap re-measure, docs sweep, memory | TODO | spec §I8 |
-| I9a | `ingest_names.py graphpair`: score GOG candidates for ambiguous + no_twin gap fns by callers/callees mapped through trusted pairs (+ fp equality); emit unique winners as `fpgraph` rows; + `bdlib` tolerate non-hex `corrected_addr` | TODO | spec §I9 |
-| I9b | CRT lane: the 23 named twins absent from `gog_functions.tsv` (21 MSVC CRT by FID) -> `twins --extract-out` -> ledger topic `ingest-crt` + blind cards (decoy pool from name_map), Haiku verify | TODO | spec §I9 |
-| I9c | `graphpair` re-check of the 13 B18 unresolved (incl. fp-group peers as alt candidates); corrections go into B20 | TODO | spec §I9 |
-| I9d | Batch B20: graphpair rows (ambiguous + no_twin + I9c corrections) -> gates -> cards `--chunk 16 --decoys 10` -> Haiku -> finalize -> Opus gate | TODO | spec §I9 |
+| I9a | `ingest_names.py graphpair`: score GOG candidates for ambiguous + no_twin gap fns by callers/callees mapped through trusted pairs (+ fp equality); emit unique winners as `fpgraph` rows; + `bdlib` tolerate non-hex `corrected_addr` | DONE | spec §I9 |
+| I9b | CRT lane: the 23 named twins absent from `gog_functions.tsv` (21 MSVC CRT by FID) -> `twins --extract-out` -> ledger topic `ingest-crt` + blind cards (decoy pool from name_map), Haiku verify | DONE | spec §I9 |
+| I9c | `graphpair` re-check of the 13 B18 unresolved (incl. fp-group peers as alt candidates); corrections go into B20 | DONE | spec §I9 |
+| I9d | Batch B20: graphpair rows (ambiguous + no_twin + I9c corrections) -> gates -> cards `--chunk 16 --decoys 10` -> Haiku -> finalize -> Opus gate | DONE | spec §I9 |
 | I9e | Off-gap bonus: B21 = the 51 AUTO rows the wide B19 run found outside the gap; Opus gate AUTO (20% sample + all C1), REVIEW rows parked | TODO | spec §I9 |
 | I9f | Persist B20/B21 + I9b promote list (user OK), re-card OnUpgradeSelected with the new decoy pool, gap re-measure, docs, memory | TODO | spec §I9 |
 

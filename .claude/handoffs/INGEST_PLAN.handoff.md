@@ -1,30 +1,58 @@
 # Session Handoff & Plan State: patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md
 
 ## 0. Next-Phase Direction
-INGEST follow-up after I8a-e: plan next research batch (I8f persist pending user OK; remaining gap: 13 B18 unresolved, 25 no_twin w/o anchor window, 23 named twins missing from gog_functions.tsv, ambiguous groups not order-provable, 51 off-gap B19 AUTO rows, OnUpgradeSelected re-card, RenderMotionBlurred inlined)
+Execute I8f: Persist B18 (+ B17 likely 3 via `finalize --with-likely`) + I8d names (user OK), gap re-measure, docs sweep, memory
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md`
-- **Branch:** `KOTOR-II` (9907f2b4 PLAY_TEST_QUEUE: QL06-P1 PARTIAL from 10-28 log)
-- **Generated:** 2026-10-28 23:53:24 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (6177ec90 INGEST I9d: batch B20 (graphpair + I9c rows): 36 verified, 13 likely, 8 unresolved; decoys 0/60 accepted, Opus sample_errors 0; persist dry run insert=35)
+- **Generated:** 2026-10-29 00:08:45 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-9907f2b4 PLAY_TEST_QUEUE: QL06-P1 PARTIAL from 10-28 log
- patch_manager_mods/PLAY_TEST_QUEUE.md | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+6177ec90 INGEST I9d: batch B20 (graphpair + I9c rows): 36 verified, 13 likely, 8 unresolved; decoys 0/60 accepted, Opus sample_errors 0; persist dry run insert=35
+ .../steam_db_batches/B20/candidates.tsv            |   58 +
+ .../steam_db_batches/B20/cards/chunk_1.md          | 2140 ++++++++++++++++++++
+ .../steam_db_batches/B20/cards/chunk_2.md          | 1843 +++++++++++++++++
+ .../steam_db_batches/B20/cards/chunk_3.md          | 2102 +++++++++++++++++++
+ .../steam_db_batches/B20/cards/chunk_4.md          | 1980 ++++++++++++++++++
+ .../steam_db_batches/B20/cards/chunk_5.md          | 1823 +++++++++++++++++
+ .../steam_db_batches/B20/cards/chunk_6.md          | 1884 +++++++++++++++++
+ .../steam_db_batches/B20/cards/key.tsv             |  107 +
+ .../steam_db_batches/B20/evidence.tsv              |   58 +
+ .../steam_db_batches/B20/final_rows.tsv            |   58 +
+ .../steam_db_batches/B20/functions.csv             |   37 +
+ .../steam_db_batches/B20/gate_report.md            |  133 ++
+ .../steam_db_batches/B20/gog_label_suspects.tsv    |    1 +
+ .../steam_db_batches/B20/kdb_upsert.json           |  290 +++
+ .../steam_db_batches/B20/opus/overrides_a.md       |    9 +
+ .../steam_db_batches/B20/opus/overrides_a.tsv      |   23 +
+ .../steam_db_batches/B20/opus/part_a.md            |   15 +
+ .../steam_db_batches/B20/opus/parts.json           |   22 +
+ .../steam_db_batches/B20/opus_gate.json            |   87 +
+ .../steam_db_batches/B20/opus_gate.md              |   34 +
+ .../steam_db_batches/B20/overrides.tsv             |   23 +
+ .../steam_db_batches/B20/recheck.tsv               |    1 +
+ .../steam_db_batches/B20/review/haiku_c1.tsv       |   19 +
+ .../steam_db_batches/B20/review/haiku_c2.tsv       |   19 +
+ .../steam_db_batches/B20/review/haiku_c3.tsv       |   19 +
+ .../steam_db_batches/B20/review/haiku_c4.tsv       |   19 +
+ .../steam_db_batches/B20/review/haiku_c5.tsv       |   19 +
+ .../steam_db_batches/B20/review/haiku_c6.tsv       |   17 +
+ .../steam_db_batches/B20/validated.tsv             |   36 +
+ 29 files changed, 12876 insertions(+)
 ```
-- **Dirty Files (194):**
+- **Dirty Files (195):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/25_pc_levelup_filter.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
   - ` M .claude/handoffs/51_combat_stats_page.handoff.md`
   - ` M .claude/handoffs/52_quick_loot.handoff.md`
   - ` M .claude/handoffs/DECOMP_PLAN.handoff.md`
-  - ` M .claude/handoffs/INGEST_PLAN.handoff.md`
   - ` M .claude/handoffs/PHASE7_COMMON_MASTER.handoff.md`
   - ` M .claude/handoffs/deep_haiku_review_skill.handoff.md`
   - ` M .claude/handoffs/variant_fix_wave_skill.handoff.md`
-  - ... +184 more (run `git status --short`)
+  - ` M .claude/plans/swarm_library_architecture.md`
+  - ... +185 more (run `git status --short`)
 
 ## 2. Immediate Objective (I8f)
 **Persist B18 (+ B17 likely 3 via `finalize --with-likely`) + I8d names (user OK), gap re-measure, docs sweep, memory**
@@ -33,9 +61,8 @@ Status: TODO
 Task: Persist B18 (+ B17 likely 3 via `finalize --with-likely`) + I8d names (user OK), gap re-measure, docs sweep, memory
 
 ## 2b. Upcoming Batches in Pipeline
-- **I9a** : `ingest_names.py graphpair`: score GOG candidates for ambiguous + no_twin gap fns by callers/callees mapped through trusted pairs (+ fp equality); emit unique winners as `fpgraph` rows; + `bdlib` tolerate non-hex `corrected_addr`
-- **I9b** : CRT lane: the 23 named twins absent from `gog_functions.tsv` (21 MSVC CRT by FID) -> `twins --extract-out` -> ledger topic `ingest-crt` + blind cards (decoy pool from name_map), Haiku verify
-- **I9c** : `graphpair` re-check of the 13 B18 unresolved (incl. fp-group peers as alt candidates); corrections go into B20
+- **I9e** : Off-gap bonus: B21 = the 51 AUTO rows the wide B19 run found outside the gap; Opus gate AUTO (20% sample + all C1), REVIEW rows parked
+- **I9f** : Persist B20/B21 + I9b promote list (user OK), re-card OnUpgradeSelected with the new decoy pool, gap re-measure, docs, memory
 
 ## 3. Strict Context Budget & Read Policy
 - **Fresh Session Bootstrap**: Run `python3 scripts/plan_manager.py resume patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md`.
@@ -76,3 +103,8 @@ Task: Persist B18 (+ B17 likely 3 via `finalize --with-likely`) + I8d names (use
 - Opus gate check that decided every row: `fp equal + callers/callees mapped through load_kdb_pairs`; mapper pick for StopAllOneShots (0x70b8f0) was wrong, fptwin_order 0x70bb00 right. Steam RenderStandard 0x4f5f50 inlines GOG RenderMotionBlurred (+1008 B).
 - `batch.py finalize` prints INSUFFICIENT DECOYS whenever a chunk has < 10 decoys (short last chunk); it is not a reviewer failure.
 - Verify: ghidra tools `python3 -m unittest discover -s tests` (from tools/) OK; steam_db_batches `python3 -m unittest discover -s tools/tests` OK (10-28).
+- 10-29 I9a-d (75eb6bfd, 79874e21, c6ac2086, 6177ec90): `graphpair` on i8 buckets = 73 rows (66 named); 14/14 rows overlapping B17-B19 verified agree (precision signal). Inputs/outputs in `.claude/research/ingest/i9/` (graphpair.tsv, b20_extra.tsv, crt/). Explain helper (not a tool): session scratch `explain.py` = per-pair mapped caller/callee hits via `trusted_map` + `_caller_index`.
+- I9b CRT: 25 ledger rows `rea_findings/20261029_ingest-crt.tsv` (22 twins, FID_conflict skipped, + _fread/_memmove/__vsnprintf from graphpair); score 96% decoys (C18 miss on _fread, FLIRT header in decomp says _fread). Promote list `.claude/research/ingest/i9/crt/promote.tsv` (25) awaits user OK.
+- B20: 36 verified / 13 likely / 8 unresolved; persist dry run insert=35. Re-gate later (gate top != graph pick): RenderDrawableSquares 0x004356e0, AurCubeMapAvailable 0x00484970, AurEnableShadows 0x00478ca0, GetTextureTID 0x004daf90. GetAtPos (0x007f3870 -> 0x00561430) skipped: fp namespace splits the template name ("long>").
+- Haiku B20 reviewers peaked 137-149k on 18-card chunks (4 tool calls held); 3 rows had column shift (verdict blank, `match` in corrected_addr) -> finalize ignores them; read them in the Opus gate. CRT cards (13/chunk, 10 KB) peaked ~60k.
+- I9e (B21 off-gap) skipped this session (optional).
