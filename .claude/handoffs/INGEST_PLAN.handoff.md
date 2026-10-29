@@ -81,3 +81,4 @@ All phases complete. Run master tests and prepare PR.
 - I9e (B21 off-gap) skipped this session (optional).
 - 10-29 I8f+I9f (a6c62d70): KDB backup in session scratch `kdb_before_I9f.db` (5029 rows); persist B17 (finalize --with-likely --opus-sample-errors 0) 3 + B18 11 + B19 12 + B20 35, promote 25 CRT + OnUpgradeSelected (3 seeded card sets, 3/3 decoys rejected) -> 5116. Second persist 0. Gap notes 85 / modcode 9. Left: I9e (B21 off-gap 51 AUTO rows), B20 8 unresolved incl. 4 graph corrections to re-gate, B20 likely 13 not persisted (no --with-likely).
 - 10-29 I9e: wide span after I9f = 26/38 windows <= 25 (was 16), 166 GOG fns, 81 AUTO; 67 off-gap unnamed -> B21 61 verified / 6 likely (graph check script = scratch b21check.py: hits vs best rival neighbour). `persist B21 --apply` (insert=61) awaits user OK; backup first.
+- 10-29 B21 persisted (0feddb76): name_map 5177, backup scratch kdb_before_B21.db; gap notes 84 / modcode 9.
