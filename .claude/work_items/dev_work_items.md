@@ -218,3 +218,4 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [ ] | 202 | WI-170 | P3 | ready | S | - | companion-ai F4: keep older spell node when the new one is family-blocked; evict g_f4Seen  | 0 | 3 | F4 frees older valid spell nodes, G1 then drops the family-active newe |
 | [ ] | 203 | WI-171 | P3 | ready | S | - | Combat AI: Force Enlightenment (180) satisfies buff families 1/2/3 | 0 | 3 | Enlightenment 180 (not 176 = Force Sight) maps to no family, so Speed/ |
 | [ ] | 204 | WI-172 | P3 | ready | S | - | Combat AI DefaultAI: Defensive clears sticky oLastTarget, skip debilitated sticky target | 0 | 2 | k_inc_generic.nss:754 keeps tPR.oLastTarget outside the Defensive 5 m  |
+| [ ] | 205 | WI-173 | P3 | ready | S | - | Combat AI GEN_TALENT_BUFF: pick from known, inactive buff trees | 0 | 3 | GEN_TALENT_BUFF (k_inc_generic.nss:2678-2853) rolls one tree per call  |
