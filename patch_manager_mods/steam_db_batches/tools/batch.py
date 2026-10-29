@@ -102,6 +102,14 @@ def clean(v) -> str:
     return str(v if v is not None else "").replace("\t", " ").replace("\r", " ").replace("\n", " ")
 
 
+def _maybe_addr(s) -> "Optional[int]":
+    """parse_addr, or None for blank / non-hex text (reviewers write corrected_addr=none)."""
+    try:
+        return parse_addr(s) if str(s if s is not None else "").strip() else None
+    except ValueError:
+        return None
+
+
 def sanitize_source(s: str) -> str:
     """Candidate sources are joined with + | ; so those characters (and blanks) must not occur inside one."""
     return re.sub(r"[|+;\s]+", "_", s)[:48]
@@ -1346,10 +1354,10 @@ def decide_review(ev: dict, reviews: list[dict]) -> tuple[str, str, str]:
             return "likely", cand, "reviewer match; %s" % ("no cited anchor" if not anchored else "content level C0")
         return "unresolved", cand, "reviewer match without a cited anchor and content level C0"
     if mism:
-        fixed = [r for r in mism if (r.get("corrected_addr") or "").strip()]
+        fixed = [r for r in mism if _maybe_addr(r.get("corrected_addr")) is not None]
         if fixed:       # Opus gate R5: never `likely` by itself; the corrected address is re-gated (recheck.tsv)
             return "unresolved", cand, "reviewer mismatch with corrected_addr %s: recheck (re-gate or Opus override): %s" % (
-                hx8(parse_addr(fixed[0]["corrected_addr"])), (fixed[0].get("reason") or "")[:140])
+                hx8(_maybe_addr(fixed[0]["corrected_addr"])), (fixed[0].get("reason") or "")[:140])
         return "unresolved", cand, "reviewer mismatch: %s" % (mism[0].get("reason") or "")[:160]
     return "unresolved", cand, "reviewer unsure" if reviews else "REVIEW row without a reviewer verdict"
 
@@ -1514,7 +1522,7 @@ def opus_gate(bdir: Path, batch: str, evs: list[dict], finals: list[dict], revie
         rvs = real.get(ga, [])
         ev = ev_by.get(ga, {})
         why = []
-        if any((r.get("corrected_addr") or "").strip() for r in rvs):
+        if any(_maybe_addr(r.get("corrected_addr")) is not None for r in rvs):
             why.append("reviewer corrected_addr")
         if f["final_verdict"] == "label_suspect":
             why.append("label_suspect")
@@ -1643,8 +1651,8 @@ def cmd_finalize(args) -> int:
         if r["final_verdict"] != "unresolved":
             continue
         for x in reviews.get(ga, []):
-            if x.get("verdict") == "mismatch" and (x.get("corrected_addr") or "").strip():
-                rechecks.append({"gog_addr": r["gog"], "corrected_addr": hx8(parse_addr(x["corrected_addr"])),
+            if x.get("verdict") == "mismatch" and _maybe_addr(x.get("corrected_addr")) is not None:
+                rechecks.append({"gog_addr": r["gog"], "corrected_addr": hx8(_maybe_addr(x["corrected_addr"])),
                                  "source": "review:%s" % x.get("_file", "?"), "reason": (x.get("reason") or "")[:160]})
     write_tsv(bdir / "recheck.tsv", RECHECK_COLS, rechecks)
     suspects = []
@@ -1658,9 +1666,9 @@ def cmd_finalize(args) -> int:
         else:
             rv = next((x for x in reviews.get(ga, []) if x.get("verdict") == "label_suspect"), {})
             src, fits = "review:%s" % rv.get("_file", "?"), rv.get("reason") or ""
-        counterpart = (rv.get("corrected_addr") or "").strip() if not (ov and ov["final_verdict"] == "label_suspect") else ""
+        counterpart = _maybe_addr(rv.get("corrected_addr")) if not (ov and ov["final_verdict"] == "label_suspect") else None
         suspects.append({"gog_addr": r["gog"], "gog_name": "%s::%s" % (r["class"], r["name"]),
-                         "steam_counterpart": hx8(parse_addr(counterpart)) if counterpart else r["steam_addr"], "body_fits_name": fits, "source": src})
+                         "steam_counterpart": hx8(counterpart) if counterpart is not None else r["steam_addr"], "body_fits_name": fits, "source": src})
     write_tsv(bdir / "gog_label_suspects.tsv", LABEL_SUSPECT_COLS, suspects)
     if args.batch != "B0":      # B0 ships the branch (KPM) names: tools/branch_apply.py writes its validated.tsv
         write_validated(bdir, args.batch, [

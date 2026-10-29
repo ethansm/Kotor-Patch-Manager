@@ -10,6 +10,7 @@ CLI:
   ingest_names.py ledger --in FILE --topic ingest-modcode [--apply] [--date YYYY-MM-DD]
   ingest_names.py cards --in LEDGER_TSV --out-dir DIR [--chunk 12] [--decoy-every 4] [--seed N] [--decomp-lines 10]
   ingest_names.py twins --out FILE [--buckets FILE] [--order] [--gog-functions TSV] [--server DIR]
+  ingest_names.py graphpair --buckets FILE --out FILE [--min-hits 2] [--margin 2] [--server DIR]
   ingest_names.py macnames --out FILE [--buckets FILE] [--targets TSV]... [--gog ADDR]... [--extract-out FILE]
   ingest_names.py score --key DIR/key.tsv --verdicts 'DIR/verdicts_*.tsv' --out promote.tsv
 Common flags: --kdb DB  --ledger-dir DIR  --functions TSV  --root DIR  --dump-root DIR
@@ -918,7 +919,92 @@ def twins(server, source="all", kdb_path=KDB_DEFAULT, ledger_dir=LEDGER_DEFAULT,
     return rows, counts
 
 
-# ---- macnames (I8b) ----------------------------------------------------------
+# ---- graphpair (I9a) ---------------------------------------------------------
+GRAPH_COLS = ("gog", "steam", "source", "name", "score", "margin", "fp_equal", "bucket")
+GRAPH_SKIP = ("named", "unnamed", "no_fp")  # a unique twin already decides these rows
+
+
+def _callee_set(r):
+    return {a for a in (_hex(x) for x in r["callees"].split(",")) if a is not None} if r["callees"] else set()
+
+
+def _caller_index(by_addr):
+    out = collections.defaultdict(set)
+    for a, r in by_addr.items():
+        for c in _callee_set(r):
+            out[c].add(a)
+    return out
+
+
+def trusted_map(steam_groups, gog_groups, kdb_path):
+    """({gog: steam}, {steam: gog}): KDB pairs plus unique fingerprint twins; an addr claimed twice is dropped."""
+    pairs = set(load_kdb_pairs(kdb_path)) if kdb_path and os.path.exists(kdb_path) else set()
+    pairs |= {(v[0], gog_groups[k][0]) for k, v in steam_groups.items()
+              if len(v) == 1 and len(gog_groups.get(k, ())) == 1}
+    gs = collections.Counter(g for _s, g in pairs)
+    ss = collections.Counter(s for s, _g in pairs)
+    g2s = {g: s for s, g in pairs if gs[g] == 1 and ss[s] == 1}
+    return g2s, {s: g for g, s in g2s.items()}
+
+
+def graphpair(server, buckets, kdb_path=KDB_DEFAULT, min_hits=2, margin=2):
+    """(rows, counts) GOG twins for gap rows decided by call-graph neighbours mapped through trusted pairs.
+
+    Candidates: the row's `gog_addrs` when set, else the GOG callees of each mapped Steam caller and the GOG
+    callers of each mapped Steam callee.  GOG fns already in the trusted map are dropped.  score = mapped
+    callee hits + mapped caller hits.  A row ships when best >= min_hits and best - 2nd >= margin, or when the
+    best is fp-equal with best >= 1 and no rival scores.  A GOG fn won by two Steam rows ships for neither.
+    """
+    steam, steam_groups = _load_fp(os.path.join(server, FP_STEAM, "fp.tsv"))
+    gog, gog_groups = _load_fp(os.path.join(server, FP_GOG, "fp.tsv"))
+    g2s, s2g = trusted_map(steam_groups, gog_groups, kdb_path)
+    s_callers, g_callers = _caller_index(steam), _caller_index(gog)
+    counts = collections.Counter()
+    won = []
+    for b in read_tsv(buckets):
+        a = _hex(b["steam"])
+        bucket = b.get("bucket", "")
+        if bucket in GRAPH_SKIP:
+            continue
+        counts["in_" + bucket] += 1
+        s = steam.get(a)
+        if s is None:
+            counts["no_fp"] += 1
+            continue
+        s_out, s_in = _callee_set(s), s_callers.get(a, set())
+        cands = {g for g in (_hex(x) for x in (b.get("gog_addrs") or "").split(",")) if g is not None}
+        if not cands:
+            for c in s_in:
+                if c in s2g and s2g[c] in gog:
+                    cands |= _callee_set(gog[s2g[c]])
+            for x in s_out:
+                if x in s2g:
+                    cands |= g_callers.get(s2g[x], set())
+        cands = [g for g in cands if g in gog and g not in g2s]
+        if not cands:
+            counts["no_cand"] += 1
+            continue
+        key = _fp_key(s)
+        scored = sorted(((sum(g2s.get(c) in s_out for c in _callee_set(gog[g])) +
+                          sum(g2s.get(c) in s_in for c in g_callers.get(g, ())),
+                          _fp_key(gog[g]) == key, g) for g in cands), key=lambda t: (-t[0], -t[1], t[2]))
+        best, fp_eq, g = scored[0]
+        second = scored[1][0] if len(scored) > 1 else 0
+        if not ((best >= min_hits and best - second >= margin) or (fp_eq and best >= 1 and second == 0)):
+            counts["undecided"] += 1
+            continue
+        won.append({"gog": "0x%08x" % g, "steam": "0x%08x" % a, "source": "fpgraph", "name": _gname(gog[g]),
+                    "score": best, "margin": best - second, "fp_equal": "yes" if fp_eq else "no", "bucket": bucket})
+    claims = collections.Counter(r["gog"] for r in won)
+    rows = [r for r in won if claims[r["gog"]] == 1]
+    counts["conflict"] = len(won) - len(rows)
+    for r in rows:
+        counts["win_" + r["bucket"]] += 1
+        counts["named"] += bool(r["name"])
+    return rows, counts
+
+
+# ---- macnames (I8b)----------------------------------------------------------
 MAC_COLS = ("gog", "steam", "gog_name", "mac_name", "mac_addr", "fit", "margin", "strings", "keep", "classes", "top3")
 FP_MAC = "k2_mac_KOTOR2_x86"
 MAC_NEIGHBOURS = 2  # named GOG fns on each side whose classes join the candidate set
@@ -1068,6 +1154,13 @@ def build_parser():
     t.add_argument("--gog-functions", default=None,
                    help="GOG functions TSV for the in_gog_functions column (default: DUMP/inputs/gog_functions.tsv "
                         "when it exists)")
+    gp = sub.add_parser("graphpair", parents=[common],
+                        help="GOG twins for ambiguous/no_twin gap fns from mapped callers/callees")
+    gp.add_argument("--buckets", required=True, help="twins --buckets TSV (or any steam/bucket/gog_addrs TSV)")
+    gp.add_argument("--out", required=True)
+    gp.add_argument("--server", default=None)
+    gp.add_argument("--min-hits", type=int, default=2)
+    gp.add_argument("--margin", type=int, default=2)
     mn = sub.add_parser("macnames", help="Mac x86 name hypotheses for GOG fns by value/size fit (bdlib mac_fit)")
     mn.add_argument("--buckets", default=None, help="twins --buckets TSV: unnamed + order-paired rows")
     mn.add_argument("--targets", action="append", default=[], help="TSV with gog|gog_addr [+ steam|steam_counterpart]")
@@ -1130,6 +1223,14 @@ def main(argv=None, dump=None, out=None, err=None):
             if args.buckets:
                 write_tsv(args.buckets, buckets, BUCKET_COLS)
                 print(f"twins: buckets={len(buckets)} -> {args.buckets}", file=out)
+            return 0
+        if args.cmd == "graphpair":
+            server = os.path.expanduser(args.server or os.environ.get("BD_SERVER") or SERVER_DEFAULT)
+            rows, c = graphpair(server, args.buckets, args.kdb, args.min_hits, args.margin)
+            write_tsv(args.out, rows, GRAPH_COLS)
+            per = " ".join(f"{k[3:]}={c['win_' + k[3:]]}/{v}" for k, v in sorted(c.items()) if k.startswith("in_"))
+            print(f"graphpair: rows={len(rows)} named={c['named']} {per} undecided={c['undecided']} "
+                  f"no_cand={c['no_cand']} no_fp={c['no_fp']} conflict={c['conflict']} -> {args.out}", file=out)
             return 0
         if args.cmd == "macnames":
             server = os.path.expanduser(args.server or os.environ.get("BD_SERVER") or SERVER_DEFAULT)

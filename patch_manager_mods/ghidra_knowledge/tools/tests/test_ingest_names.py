@@ -467,6 +467,77 @@ class OrderTwinsTests(Base):
         self.assertEqual(b["0x00404000"]["bucket"], "ambiguous")
 
 
+class GraphPairTests(Base):
+    """Anchors (unique fp twins, sizes 11-16) map callers/callees; gap fns sit in size 50/60 groups or have no twin."""
+
+    def setUp(self):
+        super().setUp()
+        self.server = os.path.join(self.tmp, "server")
+        write_fp(self.server, inn.FP_STEAM, [
+            fp_row("0x00402000", "50", "FUN_00402000"), fp_row("0x00403000", "50", "FUN_00403000"),
+            fp_row("0x00404000", "11", "FUN_00404000", callees="0x00402000"),
+            fp_row("0x00405000", "12", "FUN_00405000", callees="0x00402000"),
+            fp_row("0x00406000", "60", "FUN_00406000"), fp_row("0x00407000", "60", "FUN_00407000"),
+            fp_row("0x00408000", "13", "FUN_00408000", callees="0x00406000,0x00407000"),
+            fp_row("0x00408800", "17", "FUN_00408800", callees="0x00406000,0x00407000"),
+            fp_row("0x00409000", "70", "FUN_00409000", callees="0x0040b000"),
+            fp_row("0x0040a000", "14", "FUN_0040a000", callees="0x00409000"),
+            fp_row("0x0040b000", "15", "FUN_0040b000"),
+            fp_row("0x0040c000", "80", "FUN_0040c000"),
+            fp_row("0x0040d000", "16", "FUN_0040d000", callees="0x0040c000")])
+        write_fp(self.server, inn.FP_GOG, [
+            fp_row("0x00502000", "50", "Win", ns="Foo"), fp_row("0x00503000", "50", "Lose", ns="Foo"),
+            fp_row("0x00504000", "11", "C1", ns="Foo", callees="0x00502000"),
+            fp_row("0x00505000", "12", "C2", ns="Foo", callees="0x00502000"),
+            fp_row("0x00506000", "60", "T1", ns="Foo"), fp_row("0x00507000", "60", "T2", ns="Foo"),
+            fp_row("0x00508000", "13", "C3", ns="Foo", callees="0x00506000,0x00507000"),
+            fp_row("0x00508800", "17", "C4", ns="Foo", callees="0x00506000,0x00507000"),
+            fp_row("0x00509000", "71", "NoTwin", ns="Foo", callees="0x0050b000"),
+            fp_row("0x0050a000", "14", "C5", ns="Foo", callees="0x00509000"),
+            fp_row("0x0050b000", "15", "X", ns="Foo"),
+            fp_row("0x0050d000", "16", "C6", ns="Foo", callees="0x0050b000")])
+        self.bpath = os.path.join(self.tmp, "b.tsv")
+        with open(self.bpath, "w", encoding="utf-8") as fh:
+            fh.write("steam\tbucket\tgog_addrs\n"
+                     "0x00402000\tambiguous\t0x00502000,0x00503000\n"
+                     "0x00406000\tambiguous\t0x00506000,0x00507000\n"
+                     "0x00409000\tno_twin\t\n"
+                     "0x0040c000\tno_twin\t\n")
+        self.out_tsv = os.path.join(self.tmp, "g.tsv")
+
+    def test_graphpair(self):
+        rc, out, _e = run(["graphpair", "--server", self.server, "--buckets", self.bpath, "--out", self.out_tsv]
+                          + self.common)
+        self.assertEqual(rc, 0)
+        rows = {r["steam"]: r for r in read_tsv(self.out_tsv)}
+        # ambiguous pair decided by 2 mapped caller hits
+        self.assertEqual((rows["0x00402000"]["gog"], rows["0x00402000"]["name"], rows["0x00402000"]["score"],
+                          rows["0x00402000"]["margin"], rows["0x00402000"]["fp_equal"]),
+                         ("0x00502000", "Foo::Win", "2", "2", "yes"))
+        # tie 2:2 -> no row
+        self.assertNotIn("0x00406000", rows)
+        # no_twin found via its mapped caller's GOG callee (+ mapped callee hit)
+        self.assertEqual((rows["0x00409000"]["gog"], rows["0x00409000"]["fp_equal"], rows["0x00409000"]["bucket"]),
+                         ("0x00509000", "no", "no_twin"))
+        # the only candidate (C6's callee X) is already mapped -> excluded
+        self.assertNotIn("0x0040c000", rows)
+        self.assertIn("ambiguous=1/2", out)
+        self.assertIn("no_twin=1/2", out)
+        self.assertIn("no_cand=1", out)
+        self.assertIn("undecided=1", out)
+
+    def test_conflict_dropped(self):
+        # the same GOG fn won by two rows ships for neither
+        with open(self.bpath, "w", encoding="utf-8") as fh:
+            fh.write("steam\tbucket\tgog_addrs\n0x00402000\tambiguous\t0x00502000,0x00503000\n"
+                     "0x00402000\tambiguous\t0x00502000\n")
+        rc, out, _e = run(["graphpair", "--server", self.server, "--buckets", self.bpath, "--out", self.out_tsv]
+                          + self.common)
+        self.assertEqual(rc, 0)
+        self.assertEqual(read_tsv(self.out_tsv), [])
+        self.assertIn("conflict=2", out)
+
+
 def write_strings(server, program, pairs):
     with open(os.path.join(server, program, "strings.tsv"), "w", encoding="utf-8") as fh:
         fh.write("addr\ttext\n" + "".join("%s\t%s\n" % p for p in pairs))

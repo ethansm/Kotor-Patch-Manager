@@ -1342,6 +1342,20 @@ class ReviewerCorrectionTests(Base):
         self.assertIn("0x00510340|recheck", ev["cand_sources"])
         self.assertIn("0x005102c0", ev["cand_sources"])
 
+    def test_corrected_addr_none_counts_as_blank(self):
+        write_candidates(self.root, "B1", B1_SPEC)
+        run("gates", "B1")
+        bdir = self.root / "batches" / "B1"
+        (bdir / "review").mkdir(exist_ok=True)
+        (bdir / "review" / "r.tsv").write_text(
+            "gog_addr\tsteam_addr\tverdict\tcorrected_addr\tcontent_anchor\tconfidence\treason\n"
+            "%s\t0x005102c0\tmismatch\tnone\tx\t4\tbody differs\n" % h(GOG_BASE + 0x2C0))
+        rc, _out = run("finalize", "B1", "--date", "2026-10-03")
+        f = {r["name"]: r for r in bd.iter_tsv(bdir / "final_rows.tsv")}
+        self.assertEqual(f["Theta"]["final_verdict"], "unresolved")
+        self.assertNotIn("recheck", f["Theta"]["final_note"])
+        self.assertEqual(list(bd.iter_tsv(bdir / "recheck.tsv")), [])
+
 
 class PersistR4Tests(Base):
     def make_con(self):
