@@ -35,6 +35,7 @@ PARTY_PROTOS = (
     "int GN_PartyPowerFamily(int nSpell);\n"
     "int GN_PartyFamilyActive(int nSpell, object oTarget);\n"
     "talent GN_PartyAOEUnaffectedCheck(talent tUse, object oCentre);\n"
+    "int GN_PartyPickBuffTree(int nTrees);\n"
     "int SW_NUMBER_PARTY_DCR_STAMP = 22; //Party AI fix F5: local number, 0 = free, n = n-1 duplicate runs skipped\n")
 
 KITE_BRANCH = (
@@ -338,6 +339,23 @@ PATCHES = [
      "                                    {\n"
      "                                        ActionMoveToObject(oIntruder, TRUE, 2.0);\n"
      "                                    }\n"),
+    ("BT1", "party", G,
+     "                nSpellTree = Random(10000) % 6;\n"
+     "            }\n",
+     "                nSpellTree = Random(10000) % 6;\n"
+     "            }\n"
+     "            //Party AI fix BT1 (party only, WI-173): pick among the trees with a known buff whose family is not active,\n"
+     "            //instead of one blind roll that wastes the call on a miss. -1 = nothing useful: no tree matches, no buff cast.\n"
+     "            if(IsObjectPartyMember(OBJECT_SELF))\n"
+     "            {\n"
+     "                int nPartyTrees = 6;\n"
+     "                if ( GetFirstPC() == OBJECT_SELF )\n"
+     "                {\n"
+     "                    nPartyTrees = 9;\n"
+     "                }\n"
+     "                nSpellTree = GN_PartyPickBuffTree(nPartyTrees);\n"
+     "                GN_MyPrintString(\"GENERIC DEBUG *************** Party D BT1: buff tree \" + GN_ITS(nSpellTree) + \" of \" + GN_ITS(nPartyTrees));\n"
+     "            }\n"),
     ("L4", "party (PC-only trees)", G,
      "            else if ( GetIsTalentValid(tBuff_05) &&\n"
      "                      GetCreatureHasTalent(tBuff_06) )\n",

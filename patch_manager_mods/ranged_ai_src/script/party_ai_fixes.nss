@@ -306,3 +306,144 @@ talent GN_PartyAOEUnaffectedCheck(talent tUse, object oCentre)
     GN_MyPrintString("GENERIC DEBUG *************** Party D O3: spell " + GN_ITS(nSpell) + " dropped, " + GN_ITS(nFree) + " unaffected enemy within 4 m of the centre");
     return tNone;
 }
+
+// WI-173 (party only): nSpell if the caster knows it, else -1 (the vanilla GEN_TALENT_BUFF test: GetCreatureHasTalent(TalentSpell(id))).
+int GN_PartyKnownSpell(int nSpell)
+{
+    if (GetCreatureHasTalent(TalentSpell(nSpell)))
+    {
+        return nSpell;
+    }
+    return -1;
+}
+
+// WI-173 (party only): first known of three ids (best tier first), -1 when none.
+int GN_PartyFirstKnown(int nA, int nB, int nC)
+{
+    if (GN_PartyKnownSpell(nA) != -1)
+    {
+        return nA;
+    }
+    if (GN_PartyKnownSpell(nB) != -1)
+    {
+        return nB;
+    }
+    return GN_PartyKnownSpell(nC);
+}
+
+// WI-173 (party only): best known spell of GEN_TALENT_BUFF tree nTree (k_inc_generic.nss "Rewriting this lame function"),
+// same tier order as the vanilla picker (tBuff_06 .. tBuff_01), -1 when none.
+int GN_PartyBuffTreeBest(int nTree)
+{
+    int nBest = -1;
+    if (nTree == 0)
+    {
+        nBest = GN_PartyFirstKnown(37, 34, 8);
+    }
+    else if (nTree == 1)
+    {
+        nBest = GN_PartyFirstKnown(17, 24, 18);
+    }
+    else if (nTree == 2)
+    {
+        nBest = GN_PartyFirstKnown(36, 33, 22);
+    }
+    else if (nTree == 3)
+    {
+        nBest = GN_PartyFirstKnown(133, 40, 42);
+    }
+    else if (nTree == 4)
+    {
+        nBest = GN_PartyFirstKnown(137, 136, 135);
+    }
+    else if (nTree == 5)
+    {
+        nBest = GN_PartyFirstKnown(140, 139, 138);
+    }
+    else if (nTree == 6)
+    {
+        nBest = GN_PartyFirstKnown(149, 148, 147);
+        if (nBest == -1)
+        {
+            nBest = GN_PartyFirstKnown(146, 145, 144);
+        }
+    }
+    else if (nTree == 7)
+    {
+        nBest = GN_PartyFirstKnown(172, 171, 170);
+        if (nBest == -1)
+        {
+            nBest = GN_PartyFirstKnown(169, 168, 167);
+        }
+    }
+    else if (nTree == 8)
+    {
+        nBest = GN_PartyFirstKnown(166, 165, 164);
+    }
+    return nBest;
+}
+
+// WI-173 (party only): TRUE when tree nTree has a known buff that is not already on the caster (family via
+// GN_PartyFamilyActive, exact id via GN_PartySpellEffectOn). Tree 6 (Crush Opposition, an enemy power, PC-only tree)
+// also needs the nearest seen enemy within 15 m to carry no Crush Opposition 144-149 effect.
+int GN_PartyBuffTreeUseful(int nTree)
+{
+    int nSpell = GN_PartyBuffTreeBest(nTree);
+    if (nSpell == -1)
+    {
+        return FALSE;
+    }
+    if (GN_PartyFamilyActive(nSpell, OBJECT_SELF) || GN_PartySpellEffectOn(nSpell, OBJECT_SELF))
+    {
+        return FALSE;
+    }
+    if (nTree == 6)
+    {
+        object oEnemy = GetNearestCreature(CREATURE_TYPE_REPUTATION, REPUTATION_TYPE_ENEMY, OBJECT_SELF, 1, CREATURE_TYPE_PERCEPTION, PERCEPTION_SEEN);
+        if (!GetIsObjectValid(oEnemy) || GetDistanceToObject(oEnemy) > 15.0)
+        {
+            return FALSE;
+        }
+        effect eCur = GetFirstEffect(oEnemy);
+        while (GetIsEffectValid(eCur))
+        {
+            if (GetEffectSpellId(eCur) >= 144 && GetEffectSpellId(eCur) <= 149)
+            {
+                return FALSE;
+            }
+            eCur = GetNextEffect(oEnemy);
+        }
+    }
+    return TRUE;
+}
+
+// WI-173 (party only): random tree among the useful trees 0..nTrees-1, -1 when none.
+int GN_PartyPickBuffTree(int nTrees)
+{
+    int nCount = 0;
+    int nTree;
+    for (nTree = 0; nTree < nTrees; nTree++)
+    {
+        if (GN_PartyBuffTreeUseful(nTree))
+        {
+            nCount++;
+        }
+    }
+    if (nCount == 0)
+    {
+        return -1;
+    }
+    int nPick = Random(nCount);
+    for (nTree = 0; nTree < nTrees; nTree++)
+    {
+        if (GN_PartyBuffTreeUseful(nTree))
+        {
+            if (nPick == 0)
+            {
+                return nTree;
+            }
+            nPick--;
+        }
+    }
+    return -1;
+}

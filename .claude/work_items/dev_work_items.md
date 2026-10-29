@@ -218,7 +218,7 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [x] | 202 | WI-170 | P3 | ready | S | WI-171 | companion-ai F4: keep older spell node when the new one is family-blocked; evict g_f4Seen  | 0 | 3 | F4 frees older valid spell nodes, G1 then drops the family-active newe |
 | [x] | 203 | WI-171 | P3 | ready | S | - | Combat AI: Force Enlightenment (180) satisfies buff families 1/2/3 | 0 | 3 | Enlightenment 180 (not 176 = Force Sight) maps to no family, so Speed/ |
 | [x] | 204 | WI-172 | P3 | ready | S | WI-175 | Combat AI DefaultAI: Defensive clears sticky oLastTarget, skip debilitated sticky target | 0 | 2 | k_inc_generic.nss:754 keeps tPR.oLastTarget outside the Defensive 5 m  |
-| [ ] | 205 | WI-173 | P3 | ready | S | WI-174 | Combat AI GEN_TALENT_BUFF: pick from known, inactive buff trees | 0 | 3 | GEN_TALENT_BUFF (k_inc_generic.nss:2678-2853) rolls one tree per call  |
+| [x] | 205 | WI-173 | P3 | ready | S | WI-174 | Combat AI GEN_TALENT_BUFF: pick from known, inactive buff trees | 0 | 3 | GEN_TALENT_BUFF (k_inc_generic.nss:2678-2853) rolls one tree per call  |
 | [x] | 206 | WI-174 | P3 | ready | S | WI-172 | Combat AI O3: count enemies free of the whole AoE series (Horror/Insanity/Sleep) | 0 | 3 | O3 matches exact spell id, so Horror 30 / Insanity 31 / Sleep 44 overl |
 | [x] | 207 | WI-175 | P3 | ready | S | - | Combat AI droid list: add Drain Force 153-155 to GN_CheckNonDroidForcePower | 0 | 2 | Drain Force fails vs droids (k_inc_force.nss:4595) but is missing from |
 | [ ] | 208 | WI-176 | P3 | hold | S | - | Combat AI O3 reject: fall back to single-target support instead of default routine | 0 | 2 | After O3 drops the AoE roll in GN_RunJediSupportAIRoutine, control fal |

@@ -415,5 +415,44 @@ class SK1DefensiveStickyTest(unittest.TestCase):
         self.assertIn("&& !GetIsDebilitated(oTarget))", new_b)
 
 
+class BT1BuffTreeTest(unittest.TestCase):
+    def setUp(self):
+        with open(FIXES, encoding="utf-8") as fh:
+            self.src = fh.read()
+
+    def _body(self, signature):
+        start = self.src.find(signature)
+        self.assertNotEqual(start, -1, signature)
+        end = self.src.find("\n}\n", start)
+        self.assertNotEqual(end, -1, signature)
+        return self.src[start:end + 3]
+
+    def test_bt1_buff_tree_pick(self):
+        entries = [e for e in P.PATCHES if e[0] == "BT1"]
+        self.assertEqual(len(entries), 1, "BT1")
+        pid, scope, fname, old, new = entries[0]
+        self.assertEqual(scope, "party")
+        self.assertEqual(fname, P.G)
+        self.assertIn("int GN_PartyPickBuffTree(int nTrees);\n", P.PARTY_PROTOS)
+        best = self._body("int GN_PartyBuffTreeBest(int nTree)")
+        self.assertIn("GN_PartyFirstKnown(37, 34, 8)", best)
+        self.assertIn("GN_PartyFirstKnown(166, 165, 164)", best)
+        useful = self._body("int GN_PartyBuffTreeUseful(int nTree)")
+        self.assertIn("GN_PartyFamilyActive(nSpell, OBJECT_SELF)", useful)
+        self.assertIn("15.0", useful)
+
+    def test_h_helpers_defined_before_use(self):
+        defs = {}
+        for m in re.finditer(r"(?m)^(?:int|void|talent|object) (GN_Party\w+)\(", self.src):
+            defs.setdefault(m.group(1), m.start(1))
+        self.assertTrue(defs)
+        for name, def_pos in defs.items():
+            for m in re.finditer(r"\b%s\(" % re.escape(name), self.src):
+                if m.start() == def_pos:
+                    continue
+                with self.subTest(helper=name, at=m.start()):
+                    self.assertGreater(m.start(), def_pos, name + " called before its definition")
+
+
 if __name__ == "__main__":
     unittest.main()
