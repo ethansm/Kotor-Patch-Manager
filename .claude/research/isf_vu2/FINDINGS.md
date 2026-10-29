@@ -49,3 +49,18 @@ Haiku recon (static, $0; dump_excerpts + static_facts + name_map), report persis
 3. Dividers: follow the pool + counter rules in (d); host-test the index mapping.
 4. VU7 knobs (row height, icon size, font): decompile 0x8B0A60, SetItem 0x8B1250 and the vt58 rect object at *(panel+0x864) first.
 5. Next free step: named_decomp / knowledge-DB for 0x8A7350, 0x8B0A60, 0x418AF0, 0x8B1250 before any REA call.
+
+## Follow-up (10-29, Opus, named_decomp.py, $0): (e) closed, VU7 path found
+Decompiles saved to patch_manager_mods/mods678_research/dump_excerpts/{008a7350,008b0a60,00418af0}.c (008a7520 / 008b1250 already there).
+- **Draw 0x8A7350 repopulates only when panel+0x24D0 bit 2 is set** (008a7350.c top: `if (*(panel+0x24d0) >> 2 & 1) PopulateItemListBox()`).
+  The ISF strip can refresh at each populate (H6b/H6c); no per-frame tick and no second detour on 0x8A7350. CONFIRMED.
+- **Row ctor 0x8B0A60** sets no size or font: vtable CSWGuiInGameItemEntry, 3 CSWGuiBorder + 1 CSWGuiText sub-objects, flags at +0x3AC
+  (in_ECX[0xeb]), +0x3B0 byte = 0 (SetCanUse mode). Sizes come from the row init call vt+0xA0(vt58+0x160, +0x70, +0xE8, width, 1) in
+  CreateItemEntry, i.e. the template rects of the vt58 object at *(panel+0x864). CONFIRMED.
+- **SetItem 0x8B1250** hard-codes the stack-count text font "fnt_d16x16" and the stack frames UIBIT_EQP_ITM1/2/3 (count <2 / <100 / >=100),
+  icon = CSWSItem::GetIcon -> border fill image; New colour = runtime globals DAT_00a7fe48..50 written to row +0x110/+0x274 (in_ECX[0x44..0x46],
+  [0x9d..0x9f]). CONFIRMED (008b1250.c:180-230).
+- **Implication for VU7 (row height / icon size / font):** ISF already creates every backpack row itself (InventorySortFilter.cpp createRow
+  :351, emitBuffered :386, right after CreateItemEntry). It can restyle each row there: row extent, icon border rect, name text font
+  (GuiKit setRect / SetFont), with no new hook. Open: the sub-object offsets inside the 0x3B4-byte row (3 borders + text) and whether
+  LB_ITEMS scrolls by its own row-height field (needed for Compact rows and the v4b list resize).
