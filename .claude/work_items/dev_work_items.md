@@ -222,3 +222,4 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [ ] | 206 | WI-174 | P3 | ready | S | - | Combat AI O3: count enemies free of the whole AoE series (Horror/Insanity/Sleep) | 0 | 3 | O3 matches exact spell id, so Horror 30 / Insanity 31 / Sleep 44 overl |
 | [ ] | 207 | WI-175 | P3 | ready | S | - | Combat AI droid list: add Drain Force 153-155 to GN_CheckNonDroidForcePower | 0 | 2 | Drain Force fails vs droids (k_inc_force.nss:4595) but is missing from |
 | [ ] | 208 | WI-176 | P3 | hold | S | - | Combat AI O3 reject: fall back to single-target support instead of default routine | 0 | 2 | After O3 drops the AoE roll in GN_RunJediSupportAIRoutine, control fal |
+| [ ] | 209 | WI-177 | P3 | hold | S | - | Combat AI combo roll: SW_COMBO_JEDI_FOCUS (29) unreachable | 0 | 2 | GN_GetStandardJediCombo rolls max 28 (gensupport:575-588), so 29 never |
