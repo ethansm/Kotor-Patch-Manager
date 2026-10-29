@@ -1,0 +1,12 @@
+addr	kind	name	confidence	evidence	topic	date
+0x00464500	function	Scene constructor: stores Scene::vftable and writes Scene+0x60/+0x64/+0x68 directly	confirmed	procedure_pseudo_code(0x464566) 0x464500: *in_ECX = Scene::vftable;	scene-fog-range-writers	2026-10-29
+0x00464500	field	Scene+0x64 fog start = 5.0f (0x40a00000) written in ctor, not via SetFogRange	confirmed	procedure_pseudo_code(0x464566) 0x464500: in_ECX[0x19] = 0x40a00000;	scene-fog-range-writers	2026-10-29
+0x00464500	field	Scene+0x68 fog end = 40.0f (0x42200000) written in ctor, not via SetFogRange	confirmed	procedure_pseudo_code(0x464566) 0x464500: in_ECX[0x1a] = 0x42200000;	scene-fog-range-writers	2026-10-29
+0x00464500	field	Scene+0x60 = 0 written in ctor (fog-on meaning unverified)	confirmed	procedure_pseudo_code(0x464566) 0x464500: in_ECX[0x18] = 0;	scene-fog-range-writers	2026-10-29
+0x00464c80	xref	callers 0: none; callees: none; size 31 B RET 8; only ref = data 0x98bb88 (Scene::vftable +0x44)	confirmed	xrefs 0x464c80: raw_result ["0x98bb88"]	scene-fog-range-writers	2026-10-29
+0x00464c80	function	vftable slot 17 (+0x44) of Scene::vftable (SetFogRange label from brief, not re-verified)	confirmed	read_bytes 0x98bb40: c4ac9b00 404d4600 304c4600 70444600 ... 804c4600 (dword at 0x98bb88)	scene-fog-range-writers	2026-10-29
+0x0098bb44	vtable	Scene::vftable, entries 0..21 (end inferred): slot1=0x464c30 slot2=0x464470 slot16=0x464c50 slot17=0x464c80	confirmed	read_bytes 0x98bb40: c4ac9b00 404d4600 304c4600 70444600 90524600 b0254700 ...	scene-fog-range-writers	2026-10-29
+0x00464566	callsite	store of Scene::vftable inside Scene constructor 0x00464500	confirmed	xrefs 0x98bb44: raw_result ["0x464566", "0x464d9b"]	scene-fog-range-writers	2026-10-29
+0x00464d9b	callsite	second store of Scene::vftable; containing function unverified (probable dtor)	probable	xrefs 0x98bb44: raw_result ["0x464d9b"]	scene-fog-range-writers	2026-10-29
+0x0046d3c0	function	Scene factory: operator new 0x318 B then calls Scene ctor (FID banner ThreadScheduler::Create does not match body)	confirmed	procedure_pseudo_code(0x46d3c0) 0x46d3c0: local_1c = FUN_00464500(param_1);	scene-fog-range-writers	2026-10-29
+0x0046d3c0	callsite	calls Scene constructor 0x00464500	confirmed	procedure_callers 0x464500: raw_result ["0x46d3c0"]	scene-fog-range-writers	2026-10-29

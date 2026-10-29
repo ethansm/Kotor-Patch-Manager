@@ -13,7 +13,7 @@
 namespace k2fog {
 
 constexpr const char* kModId = "k2-fog-distance";
-constexpr const char* kVersion = "0.1.0-dev";
+constexpr const char* kVersion = "0.1.1-dev";
 constexpr const char* kIniFile = "k2_fog_distance.ini";
 constexpr const char* kIniSection = "Fog";
 
@@ -84,6 +84,7 @@ struct SceneSlot {
     float lastStart = 0.0f;
     float lastEnd = 0.0f;
     uint32_t stamp = 0;
+    bool engineSet = false;   // 0.1.1: the engine just set this range (SetFogRange); the next update reports a new origin
 };
 
 struct UpdateResult {
@@ -107,7 +108,12 @@ struct FogTracker {
             r.newOrigin = true;
         } else if (curStart != s->lastStart || curEnd != s->lastEnd) {
             r.newOrigin = true;
+        } else if (s->engineSet) {
+            r.newOrigin = true;   // origin already recorded by noteEngineRange
+            curStart = s->origStart;
+            curEnd = s->origEnd;
         }
+        s->engineSet = false;
         if (r.newOrigin) {
             s->origStart = curStart;
             s->origEnd = curEnd;
@@ -119,6 +125,26 @@ struct FogTracker {
         s->lastStart = r.range.start;
         s->lastEnd = r.range.end;
         return r;
+    }
+
+    // 0.1.1: Scene::SetFogRange stored a range the engine chose (area load, script). That is the origin even when it
+    // happens to equal the last scaled value we wrote (area A 20..100 at 200% = 40..200, then area B with vanilla
+    // 40..200 in the same Scene), which update() alone cannot tell apart. The constructor's 5..40 default does not
+    // go through SetFogRange; a fresh scene is still caught by find() missing.
+    void noteEngineRange(uintptr_t scene, float start, float end) {
+        if (scene == 0) return;
+        SceneSlot* s = find(scene);
+        if (!s) {
+            s = victim();
+            *s = SceneSlot{};
+            s->scene = scene;
+        }
+        s->origStart = start;
+        s->origEnd = end;
+        s->lastStart = start;
+        s->lastEnd = end;
+        s->engineSet = true;
+        s->stamp = ++clock;
     }
 
     SceneSlot* find(uintptr_t scene) {

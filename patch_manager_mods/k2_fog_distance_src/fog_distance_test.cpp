@@ -46,6 +46,30 @@ static void test_apply_scale() {
     KT_CHECK(near(r.end, 400.0f) && near(r.start, 0.0f));
 }
 
+static void test_tracker_engine_range_collision() {
+    k2fog::FogTracker t{};
+    k2fog::Config c{};
+    c.fogEndPct = 200;
+    c.fogStartPct = 200;
+    const uintptr_t scene = 0x2000;
+    k2fog::UpdateResult u = t.update(scene, 20.0f, 100.0f, c);
+    KT_CHECK(near(u.range.start, 40.0f) && near(u.range.end, 200.0f));
+    u = t.update(scene, u.range.start, u.range.end, c);
+    KT_CHECK(!u.newOrigin && !u.write);
+    // Area B: the engine sets exactly our last scaled values. Without the SetFogRange note this was left unscaled.
+    t.noteEngineRange(scene, 40.0f, 200.0f);
+    u = t.update(scene, 40.0f, 200.0f, c);
+    KT_CHECK(u.newOrigin && u.write && near(u.orig.end, 200.0f) && near(u.range.start, 80.0f) && near(u.range.end, 400.0f));
+    // Next frame holds our write: stable, no compounding.
+    u = t.update(scene, u.range.start, u.range.end, c);
+    KT_CHECK(!u.newOrigin && !u.write && near(u.range.end, 400.0f));
+    // A note for a scene never seen creates its slot.
+    t.noteEngineRange(0x3000, 10.0f, 50.0f);
+    u = t.update(0x3000, 10.0f, 50.0f, c);
+    KT_CHECK(u.newOrigin && near(u.range.end, 100.0f));
+    t.noteEngineRange(0, 1.0f, 2.0f);   // null scene ignored
+}
+
 static void test_tracker_no_compound() {
     k2fog::FogTracker t{};
     k2fog::Config c{};
@@ -134,6 +158,7 @@ static void test_modconfig_schema() {
 int main() {
     test_apply_scale();
     test_tracker_no_compound();
+    test_tracker_engine_range_collision();
     test_tracker_slots();
     test_ini_roundtrip();
     test_modconfig_schema();

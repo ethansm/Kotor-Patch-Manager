@@ -1,4 +1,6 @@
-// K2FogDistance.cpp -- K2 Fog Distance (0.1.0-dev)
+// K2FogDistance.cpp -- K2 Fog Distance (0.1.1-dev)
+// 0.1.1: Scene::SetFogRange hook records the engine-set area range, so an area whose vanilla fog equals the last scaled
+// value written to the same Scene is still scaled (R12 review 1.5a).
 // Scales each area's distance fog (Scene +0x64 start / +0x68 end) by configurable percentages, or removes it.
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -42,6 +44,7 @@ filewatch::ReloadPoll g_iniPoll{};
 bool g_initialized = false;
 bool g_bannerLogged = false;
 uint32_t g_fogCalls = 0;
+uint32_t g_setRangeCalls = 0;
 uint32_t g_reloadCount = 0;
 uint32_t g_areaLogs = 0;
 // Last logged area fog, so a day/night flip back and forth logs once per distinct value pair.
@@ -178,6 +181,26 @@ void __cdecl K2FogOnDoFog(void* scene) {
     }
     if (scene) applyFog(reinterpret_cast<uintptr_t>(scene));
     ++g_fogCalls;
+}
+
+// Hook 2 (0.1.1): Scene::SetFogRange (0x00464C80, virtual, __thiscall(start, end)) at 0x00464C8A, before the stores:
+// [EBP-4] = Scene, [EBP+8] = start, [EBP+0xC] = end. Records the engine's range as the area origin.
+void __cdecl K2FogOnSetFogRange(uint8_t* ebp) {
+    if (ebp == nullptr) return;
+    saferead::beginScope();
+    uint32_t scene = 0;
+    float start = 0.0f, end = 0.0f;
+    const uintptr_t base = reinterpret_cast<uintptr_t>(ebp);
+    if (!saferead::readAt<uint32_t>(4, base - 4, 0, &scene) || !saferead::readAt<float>(5, base, 8, &start) ||
+        !saferead::readAt<float>(6, base, 0xC, &end)) {
+        return;
+    }
+    g_tracker.noteEngineRange(scene, start, end);
+    if (g_cfg.verbose || g_setRangeCalls < 20) {
+        KP_LOG(chArea, "SetFogRange scene=0x%08X %.1f..%.1fm (call %u)", static_cast<unsigned>(scene), start, end,
+               static_cast<unsigned>(g_setRangeCalls + 1));
+    }
+    ++g_setRangeCalls;
 }
 
 } // extern "C"

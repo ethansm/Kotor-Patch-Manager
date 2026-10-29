@@ -1,7 +1,7 @@
 [patch]
 id = "k2-fog-distance"
 name = "K2 Fog Distance"
-version = "0.1.0-dev"
+version = "0.1.1-dev"
 author = "ethansm"
 description = "Scales each KOTOR II area's distance fog start and end (default 200%, up to 400%, or No Fog) so distant scenery stays visible while each area keeps its own fog colour and shape. Configured via k2_fog_distance.ini or in-game Options -> Mod Configuration when mod-config is installed."
 
