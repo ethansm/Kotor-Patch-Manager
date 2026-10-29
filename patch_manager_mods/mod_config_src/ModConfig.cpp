@@ -2249,6 +2249,14 @@ void __fastcall escKeyHook(void* self, void* edx, int id, int state) {
         g_escConsumedAt = GetTickCount();
         return;   // swallowed: the GUI stays open
     }
+    // Arrow keys (id 0x3d, live 10-29) fall through to the engine's focus navigation (0x40EAA0 -> control 0x4187B0), which walks the panel's child list and
+    // read a non-pointer (ecx=0xe, crash at 0x418850) while a mod-config page was up. Our pages have no keyboard navigation, so on a non-MAIN page only Esc
+    // (above) and 0xdf (the Esc-release companion, harmless) reach the engine.
+    if (g_mc.appended && g_mc.ps.state != mui::MAIN && id != kEscKeyDownId && id != kEscEventId && id != 0xdf) {
+        static volatile LONG s_sw = 0;
+        if (InterlockedIncrement(&s_sw) <= 20) KP_LOG(chInput, "KEYSWALLOW id=%02x state=%d page=%d", id, state, curPageId());
+        return;
+    }
     g_keyOrig(self, edx, id, state);
 }
 
@@ -2532,7 +2540,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
     embtex::g_log = embedLog;   // gear + slider art textures (EmbedTex) log through the main channel
     guikit::initGuiInput(api, "mod-config");   // optional: the wheel provider (k2.guiinput); a missing provider only means no wheel
-    KP_LOG(chMain, "mod-config 0.4.7-dev loaded (Mod Configuration button under Gameplay; k2.modconfig@1 + k2.menuui@1; config mod_config.ini is read at the first Options panel: enabled debug button_clone reflow desc free_labels)");
+    KP_LOG(chMain, "mod-config 0.4.8-dev loaded (Mod Configuration button under Gameplay; k2.modconfig@1 + k2.menuui@1; config mod_config.ini is read at the first Options panel: enabled debug button_clone reflow desc free_labels)");
     int rcC = -1, rcM = -1;
     if (api && api->struct_size >= offsetof(KPatchApi, require) + sizeof(api->require) && api->provide) {
         rcC = api->provide(K2MODCONFIG_IFACE, K2MODCONFIG_VERSION, &g_mcApi);
