@@ -45,7 +45,7 @@ D6 R2 NO-GO root cause was missing names / caller context, so coverage is the le
 | I10a | Batch B22 re-gate: 4 B20 graph corrections (RenderDrawableSquares 0x004356e0, AurCubeMapAvailable 0x00484970, AurEnableShadows 0x00478ca0, GetTextureTID 0x004daf90) + Camera::MapToScreen (never batched) + 2 fresh graph rows + 6 B21 likely -> gates -> cards -> Haiku -> Opus gate | DONE | spec §I10 |
 | I10b | CRT G1 lane: sprintf/memset/free rejected by G1 (Steam ANALYSIS already says `_sprintf`/`_memset`/`_free`) -> extract rows with the FLIRT name -> ledger `ingest-crt` -> cards `--decoy-pool kdb` -> Haiku -> score | DONE | spec §I10 |
 | I10c | Label suspects (7, B17/B18): graph check each Steam fn vs its GOG label + neighbours; record verdicts in `steam_db_batches/GOG_LABEL_SUSPECTS.md` ($0, no KDB write) | DONE | spec §I10 |
-| I10d | Persist B22 + I10b promote (user OK); user decision on the 13 B20 likely (`finalize B20 --with-likely` = persist at likely); gap re-measure, memory | TODO | spec §I10 |
+| I10d | Persist B22 + I10b promote (user OK); user decision on the 13 B20 likely (`finalize B20 --with-likely` = persist at likely); gap re-measure, memory | DONE | spec §I10 |
 
 ## Cost log
 

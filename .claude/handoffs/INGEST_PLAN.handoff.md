@@ -1,48 +1,33 @@
 # Session Handoff & Plan State: patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md
 
 ## 0. Next-Phase Direction
-INGEST I10
+All phases complete. Run master tests and prepare PR.
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md`
-- **Branch:** `KOTOR-II` (47916881 INGEST: plan I10a-I10d (B22 re-gate, CRT G1 lane, label suspects, persist) + spec §I10)
-- **Generated:** 2026-10-29 00:48:34 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (5321abd2 PLAY_TEST_QUEUE: CA-T10 (agy review #10 lower-tier power picks))
+- **Generated:** 2026-10-29 01:05:27 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-47916881 INGEST: plan I10a-I10d (B22 re-gate, CRT G1 lane, label suspects, persist) + spec §I10
- patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md | 15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+5321abd2 PLAY_TEST_QUEUE: CA-T10 (agy review #10 lower-tier power picks)
+ patch_manager_mods/PLAY_TEST_QUEUE.md | 1 +
+ 1 file changed, 1 insertion(+)
 ```
-- **Dirty Files (195):**
+- **Dirty Files (211):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/25_pc_levelup_filter.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
+  - ` M .claude/handoffs/50_k2_render_performance.handoff.md`
   - ` M .claude/handoffs/51_combat_stats_page.handoff.md`
   - ` M .claude/handoffs/52_quick_loot.handoff.md`
   - ` M .claude/handoffs/DECOMP_PLAN.handoff.md`
   - ` M .claude/handoffs/PHASE7_COMMON_MASTER.handoff.md`
   - ` M .claude/handoffs/deep_haiku_review_skill.handoff.md`
   - ` M .claude/handoffs/variant_fix_wave_skill.handoff.md`
-  - ` M .claude/plans/swarm_library_architecture.md`
-  - ... +185 more (run `git status --short`)
-
-## 2. Immediate Objective (I10a)
-**Batch B22 re-gate: 4 B20 graph corrections (RenderDrawableSquares 0x004356e0, AurCubeMapAvailable 0x00484970, AurEnableShadows 0x00478ca0, GetTextureTID 0x004daf90) + Camera::MapToScreen (never batched) + 2 fresh graph rows + 6 B21 likely -> gates -> cards -> Haiku -> Opus gate**
-
-Status: TODO
-Task: Batch B22 re-gate: 4 B20 graph corrections (RenderDrawableSquares 0x004356e0, AurCubeMapAvailable 0x00484970, AurEnableShadows 0x00478ca0, GetTextureTID 0x004daf90) + Camera::MapToScreen (never batched) + 2 fresh graph rows + 6 B21 likely -> gates -> cards -> Haiku -> Opus gate
-
-## 2b. Upcoming Batches in Pipeline
-- **I10b** : CRT G1 lane: sprintf/memset/free rejected by G1 (Steam ANALYSIS already says `_sprintf`/`_memset`/`_free`) -> extract rows with the FLIRT name -> ledger `ingest-crt` -> cards `--decoy-pool kdb` -> Haiku -> score
-- **I10c** : Label suspects (7, B17/B18): graph check each Steam fn vs its GOG label + neighbours; record verdicts in `steam_db_batches/GOG_LABEL_SUSPECTS.md` ($0, no KDB write)
-- **I10d** : Persist B22 + I10b promote (user OK); user decision on the 13 B20 likely (`finalize B20 --with-likely` = persist at likely); gap re-measure, memory
+  - ... +201 more (run `git status --short`)
 
 ## 3. Strict Context Budget & Read Policy
 - **Fresh Session Bootstrap**: Run `python3 scripts/plan_manager.py resume patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md`.
-
-## 4. Subagent Delegation Direction
-- **Claude Code**: parallel `model: haiku` Agent subagents; brief = `Contract` + `Write Scope` + `python3 scripts/agent_contract.py print worker|recon`.
-- **Other backends** (only when the user asks): `python3 scripts/plan_manager.py delegate I10a` or `oc-subagent <scout|code|ghidra|verify|gate|doc>`.
 
 ## 5. Dead Ends & Verification (manual)
 - Gap prototype (I0 starting point): `.claude/research/ingest/gap_prototype.py` (4368b1e4); `python3 .claude/research/ingest/gap_prototype.py` prints 79 / 515.
@@ -86,3 +71,4 @@ Task: Batch B22 re-gate: 4 B20 graph corrections (RenderDrawableSquares 0x004356
 - 10-29 B21 persisted (0feddb76): name_map 5177, backup scratch kdb_before_B21.db; gap notes 84 / modcode 9.
 - 10-29 I10 sizing: `.claude/research/ingest/i10/` holds fresh `twins.tsv`, `buckets.tsv` (gap 87), `graphpair.tsv` (26 rows, 19 named; only 3 never batched). Graph check script for AUTO rows = scratch b21check.py (session scratch, recreate from §I10 spec: hits vs best rival neighbour via `trusted_map` + `_caller_index`).
 - B21 likely 6 (never carded): GOG 0x0048d460, 0x004f9350, 0x004fa9f0, 0x004fd290, 0x0053e460, 0x008f7380 (steam in `B21/opus/overrides_a.tsv`).
+- 10-29 I10a-d DONE (033a4b1d, ccec926c, 03a0c88f): B22 6 verified / 7 likely (graph helper = session scratch gcheck.py: score(g,s) mapped callee+caller hits, rivals from mapped neighbours). In B22 cards the graph pick sat as a *decoy* (gate top was the "real" card): a decoy match there would have been right; read the gate, not just "decoys accepted". CRT G1: ledger topic ingest-crt-g1 (existing 20261029_ingest-crt.tsv blocks --apply). KDB backup scratch kdb_before_I10d.db (5177) -> 5186. Gap notes 76 / modcode 9. Lint baseline now 108. B20 likely 13: user said no. All 26 plan rows done.
