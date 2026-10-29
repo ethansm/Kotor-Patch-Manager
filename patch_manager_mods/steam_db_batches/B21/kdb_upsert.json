@@ -1,0 +1,490 @@
+[
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0048aa70] Steam batch B21: STR 'GoggleHook'@009a43e0; '0_HEAD'@009a43f4; '_HEAD'@009a43fc; CALLEE 5 (callees: GetPausedByCombat 0x740330, ? 0x7679f0, ReplaceTexture 0x7ed890); SIG 1.00 | AUTO: STR 'GoggleHook'@009a43e0; '0_HEAD'@009a43f4; '_HEAD'@009a43fc; CALLEE 5 (callees: GetPausedByCombat 0x740330, ? 0x7679f0, ReplaceTexture 0x7ed890); SIG 1.00",
+  "name": "CSWCCreatureAppearance::CreateHead",
+  "source": "steam-db-B21",
+  "steam_addr": "0x0085a9e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0048cbd0] Steam batch B21: STR 'HEAD_G'@009a4420; SIG 1.00 | AUTO: STR 'HEAD_G'@009a4420; SIG 1.00",
+  "name": "CSWCCreatureAppearance::GetHeight",
+  "source": "steam-db-B21",
+  "steam_addr": "0x0085cb40"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0048cc90] Steam batch B21: STR 'ENVMAP'@0099aa44; 'AppearanceForceUpdate'@0099edf4; 'HeadHook'@009a4428; CALLEE 6 (callees: IsPlayerCreature 0x73fe80, GetPausedByCombat 0x740330, ReplaceTexture 0x7ed890; callers: CreateBodyAppearance 0x85a1f0); SIG 1.00 | AUTO: STR 'ENVMAP'@0099aa44; 'AppearanceForceUpdate'@0099edf4; 'HeadHook'@009a4428; CALLEE 6 (callees: IsPlayerCreature 0x73fe80, GetPausedByCombat 0x740330, ReplaceT",
+  "name": "CSWCCreatureAppearance::CreateBTypeBody",
+  "source": "steam-db-B21",
+  "steam_addr": "0x0085cc00"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0048d3b0] Steam batch B21: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWCCreatureAppearance::GetHeadHeightOffset",
+  "source": "steam-db-B21",
+  "steam_addr": "0x0085d320"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004990c0] Steam batch B21: CALLEE 6 (callees: GetClientAIMaster 0x73f790, ? 0x7645f0, UpdateRelativePerception_2 0x76df50); SIG 1.00 | AUTO: CALLEE 6 (callees: GetClientAIMaster 0x73f790, ? 0x7645f0, UpdateRelativePerception_2 0x76df50); SIG 1.00",
+  "name": "CSWCMessage::HandleServerToPlayerCreatureUpdate_Add",
+  "source": "steam-db-B21",
+  "steam_addr": "0x00804ad0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00499500] Steam batch B21: STR 'Loading'@0099edec; 'soundapptype'@009a29cc; CALLEE 18 (callees: GetPlayerCreatureId 0x73f470, GetPlayerByGameObjectID 0x73f510, GetPauseState 0x73f680); SIG 1.00 | AUTO: STR 'Loading'@0099edec; 'soundapptype'@009a29cc; CALLEE 18 (callees: GetPlayerCreatureId 0x73f470, GetPlayerByGameObjectID 0x73f510, GetPauseState 0x73f680); SI",
+  "name": "CSWCMessage::HandleServerToPlayerCreatureUpdate_Appearance",
+  "source": "steam-db-B21",
+  "steam_addr": "0x00804f10"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0049af50] Steam batch B21: CALLEE 3 (callees: GetClientAIMaster 0x73f790, ? 0x7645f0, SetDesiredFadeState 0x7f1650); SIG 1.00 | AUTO: CALLEE 3 (callees: GetClientAIMaster 0x73f790, ? 0x7645f0, SetDesiredFadeState 0x7f1650); SIG 1.00",
+  "name": "CSWCMessage::HandleServerToPlayerCreatureUpdate_VisEffect",
+  "source": "steam-db-B21",
+  "steam_addr": "0x00806960"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0049bad0] Steam batch B21: CALLEE 4 (callees: GetPlayerByGameObjectID 0x73f510, AttachPlayerGameObjectToArea 0x73f850, SetPlayerCreature 0x73f910); SIG 1.00 | AUTO: CALLEE 4 (callees: GetPlayerByGameObjectID 0x73f510, AttachPlayerGameObjectToArea 0x73f850, SetPlayerCreature 0x73f910); SIG 1.00",
+  "name": "CSWCMessage::HandleServerToPlayerCreatureUpdate_ControlObject",
+  "source": "steam-db-B21",
+  "steam_addr": "0x008074e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0049bd20] Steam batch B21: STR 'Corpse'@009946b8; 'Body_Bag'@009958bc; CALLEE 4 (callees: UpdateRollingFootstepSound 0x7682b0, AddCorpse 0x7aaec0, SetDesiredFadeState 0x7f1650); SIG 1.00 | AUTO: STR 'Corpse'@009946b8; 'Body_Bag'@009958bc; CALLEE 4 (callees: UpdateRollingFootstepSound 0x7682b0, AddCorpse 0x7aaec0, SetDesiredFadeState 0x7f1650); SIG 1.00",
+  "name": "CSWCMessage::HandleServerToPlayerCreatureUpdate_Delete",
+  "source": "steam-db-B21",
+  "steam_addr": "0x00807730"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004aa8b0] Steam batch B21: CALLEE 1 (callees: HandleServerToPlayerCreatureUpdate_Update 0x8079b0); SIG 0.50 | AUTO: CALLEE 1 (callees: HandleServerToPlayerCreatureUpdate_Update 0x8079b0); SIG 0.50",
+  "name": "CSWCMessage::HandleServerToPlayerUpdate_Update",
+  "source": "steam-db-B21",
+  "steam_addr": "0x008162c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004bd130] Steam batch B21: CALLEE 2 (callees: HandleServerToPlayerSafeProjectileSpell 0x829850; callers: HandleServerToPlayerMessage 0x810cf0); SIG 0.50 | AUTO: CALLEE 2 (callees: HandleServerToPlayerSafeProjectileSpell 0x829850; callers: HandleServerToPlayerMessage 0x810cf0); SIG 0.50",
+  "name": "CSWCMessage::HandleServerToPlayerSafeProjectile",
+  "source": "steam-db-B21",
+  "steam_addr": "0x00828ae0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004bd180] Steam batch B21: STR 'bullethook'@0099f0d0; 'ShotSound%d'@009a2c04; 'MuzzleFlash'@009a2c10; CALLEE 2 (callees: GetForceShield 0x77eb60, Constructor 0x8e54e0); SIG 1.00 | AUTO: STR 'bullethook'@0099f0d0; 'ShotSound%d'@009a2c04; 'MuzzleFlash'@009a2c10; CALLEE 2 (callees: GetForceShield 0x77eb60, Constructor 0x8e54e0); SIG 1.00",
+  "name": "CSWCMessage::HandleServerToPlayerSafeProjectileProjectile",
+  "source": "steam-db-B21",
+  "steam_addr": "0x00828b30"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004f9280] Steam batch B21: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWCVisualEffect::Destructor",
+  "source": "steam-db-B21",
+  "steam_addr": "0x0086d930"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004f9380] Steam batch B21: CALLEE 1 (callees: SubtractWorldTimes 0x51af60); SIG 1.00 | AUTO: CALLEE 1 (callees: SubtractWorldTimes 0x51af60); SIG 1.00",
+  "name": "CSWCVisualEffect::AIUpdate",
+  "source": "steam-db-B21",
+  "steam_addr": "0x0086da30"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004f95d0] Steam batch B21: CALLEE 1 (callers: ApplyFireAndForgetVisualEffect 0x7a7ac0); SIG 1.00 | AUTO: CALLEE 1 (callers: ApplyFireAndForgetVisualEffect 0x7a7ac0); SIG 1.00",
+  "name": "CSWCVisualEffect::LoadEffect",
+  "source": "steam-db-B21",
+  "steam_addr": "0x0086dc80"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=12; GOG 0x004f9b10] Steam batch B21: STR 'CSWCVisualEffect::LoadModel: Failed to l'@009a4e38; CALLEE 1 (callees: GetResRefStr 0x7109b0); SIG 1.00 | AUTO: STR 'CSWCVisualEffect::LoadModel: Failed to l'@009a4e38; CALLEE 1 (callees: GetResRefStr 0x7109b0); SIG 1.00",
+  "name": "CSWCVisualEffect::LoadModel",
+  "source": "steam-db-B21",
+  "steam_addr": "0x0086e1c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004f9d00] Steam batch B21: STR 'SoundImpact'@0099ab38; 'SoundDuration'@0099ab44; 'SoundCessation'@009a4e80; CALLEE 4 (callers: DoFootstepVisual 0x772900, ApplyFireAndForgetVisualEffect 0x7a7ac0, LoadEffect 0x8eef70); SIG 1.00 | AUTO: STR 'SoundImpact'@0099ab38; 'SoundDuration'@0099ab44; 'SoundCessation'@009a4e80; CALLEE 4 (callers: DoFootstepVisual 0x772900, ApplyFireAndForgetVisualEffect 0x",
+  "name": "CSWCVisualEffect::SetAnimation",
+  "source": "steam-db-B21",
+  "steam_addr": "0x0086e420"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004fa340] Steam batch B21: CALLEE 4 (callees: GetHitCheckMaterialMask 0x73fbb0, SetPosition 0x7eef90, RotationArc 0x5160c0); SIG 1.00 | AUTO: CALLEE 4 (callees: GetHitCheckMaterialMask 0x73fbb0, SetPosition 0x7eef90, RotationArc 0x5160c0); SIG 1.00",
+  "name": "CSWCVisualEffect::SetPosition",
+  "source": "steam-db-B21",
+  "steam_addr": "0x0086ea60"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004fa9b0] Steam batch B21: CALLEE 2 (callees: LookUpAndPerformRumbleWithCutOff 0x740a70; callers: ApplyFireAndForgetVisualEffect 0x7a7ac0); SIG 1.00 | AUTO: CALLEE 2 (callees: LookUpAndPerformRumbleWithCutOff 0x740a70; callers: ApplyFireAndForgetVisualEffect 0x7a7ac0); SIG 1.00",
+  "name": "CSWCVisualEffect::DoVFXRumble",
+  "source": "steam-db-B21",
+  "steam_addr": "0x0086f0d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=40; GOG 0x004fae10] Steam batch B21: STR 'Imp_Root_M_Node'@0099abac; 'Imp_Root_L_Node'@0099abbc; 'Imp_Root_H_Node'@0099abcc; CALLEE 2 (callees: GetINTEntry 0x71b8b0; callers: AddVisualEffect 0x7f0790); SIG 1.00 | AUTO: STR 'Imp_Root_M_Node'@0099abac; 'Imp_Root_L_Node'@0099abbc; 'Imp_Root_H_Node'@0099abcc; CALLEE 2 (callees: GetINTEntry 0x71b8b0; callers: AddVisualEffect 0x7f07",
+  "name": "CSWCVisualEffectOnObject::LoadVisualEffect",
+  "source": "steam-db-B21",
+  "steam_addr": "0x0086f530"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004fc8d0] Steam batch B21: CALLEE 1 (callers: UpdateVisualEffectsList 0x7f0b50); SIG 1.00 | AUTO: CALLEE 1 (callers: UpdateVisualEffectsList 0x7f0b50); SIG 1.00",
+  "name": "CSWCVisualEffectOnObject::UnloadVisualEffect",
+  "source": "steam-db-B21",
+  "steam_addr": "0x00870ff0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004fc9b0] Steam batch B21: STR 'talkdummy'@009a4f20; CALLEE 2 (callers: AddVisualEffect 0x7f0790, ? 0x7f0ad0); SIG 1.00 | AUTO: STR 'talkdummy'@009a4f20; CALLEE 2 (callers: AddVisualEffect 0x7f0790, ? 0x7f0ad0); SIG 1.00",
+  "name": "CSWCVisualEffectOnObject::ShowVisualEffect",
+  "source": "steam-db-B21",
+  "steam_addr": "0x008710d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004fd100] Steam batch B21: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWCVisualEffectOnObject::HideVisualEffect",
+  "source": "steam-db-B21",
+  "steam_addr": "0x00871820"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004fdbe0] Steam batch B21: STR 'cessation'@0099ef94; 'SoundCessation'@009a4e80; CALLEE 2 (callers: ? 0x7f0920, ? 0x7f0ca0); SIG 1.00 | AUTO: STR 'cessation'@0099ef94; 'SoundCessation'@009a4e80; CALLEE 2 (callers: ? 0x7f0920, ? 0x7f0ca0); SIG 1.00",
+  "name": "CSWCVisualEffectOnObject::StopVisualEffect",
+  "source": "steam-db-B21",
+  "steam_addr": "0x00872300"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004fe0d0] Steam batch B21: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWCVisualEffectOnObject::KillVisualEffect",
+  "source": "steam-db-B21",
+  "steam_addr": "0x008727f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004fe1f0] Steam batch B21: CALLEE 2 (callees: ApplyLightsaberThrow 0x873360, ApplyBumpedOutShell 0x878f10); SIG 1.00 | AUTO: CALLEE 2 (callees: ApplyLightsaberThrow 0x873360, ApplyBumpedOutShell 0x878f10); SIG 1.00",
+  "name": "CSWCVisualEffectOnObject::ApplyHardCodedVisualEffect",
+  "source": "steam-db-B21",
+  "steam_addr": "0x00872910"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004fe950] Steam batch B21: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWCVisualEffectOnObject::ApplySpellVisual",
+  "source": "steam-db-B21",
+  "steam_addr": "0x00873070"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0052a170] Steam batch B21: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWGuiInGameMessages::Destructor_2",
+  "source": "steam-db-B21",
+  "steam_addr": "0x00758a70"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0052a530] Steam batch B21: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWGuiInGameMessages::AddMessages",
+  "source": "steam-db-B21",
+  "steam_addr": "0x00758e30"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0052a9f0] Steam batch B21: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWGuiInGameMessages::AddDialogMessages",
+  "source": "steam-db-B21",
+  "steam_addr": "0x007592f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0052af20] Steam batch B21: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWGuiInGameMessages::AddCombatMessages",
+  "source": "steam-db-B21",
+  "steam_addr": "0x00759820"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0052b520] Steam batch B21: CALLEE 3 (callees: ChangeCharacterToNextLivingPartyMember 0x740b80, AppendToMsgBuffer 0x7be090, UpdateMessageGUI 0x7cd040); SIG 1.00 | AUTO: CALLEE 3 (callees: ChangeCharacterToNextLivingPartyMember 0x740b80, AppendToMsgBuffer 0x7be090, UpdateMessageGUI 0x7cd040); SIG 1.00",
+  "name": "CSWGuiInGameMessages::HandleInputEvent",
+  "source": "steam-db-B21",
+  "steam_addr": "0x00759e20"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0052b8f0] Steam batch B21: CALLEE 4 (callees: ShowTutorialWindow 0x740a20, UpdateMessageGUI 0x7cd040, ShowEffects 0x75a7c0); SIG 1.00 | AUTO: CALLEE 4 (callees: ShowTutorialWindow 0x740a20, UpdateMessageGUI 0x7cd040, ShowEffects 0x75a7c0); SIG 1.00",
+  "name": "CSWGuiInGameMessages::OnPanelAdded",
+  "source": "steam-db-B21",
+  "steam_addr": "0x0075a1f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0052b9b0] Steam batch B21: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWGuiInGameMessages::ChangeMessageDisplay",
+  "source": "steam-db-B21",
+  "steam_addr": "0x0075a2b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0053e000] Steam batch B21: STR '%c%s.%s %s'@009a5adc; CALLEE 16 (callees: GetClientName 0x73f310, ShowLoadScreen 0x73ff20, SetPlayerCharacterName 0x73ffc0); SIG 1.00 | AUTO: STR '%c%s.%s %s'@009a5adc; CALLEE 16 (callees: GetClientName 0x73f310, ShowLoadScreen 0x73ff20, SetPlayerCharacterName 0x73ffc0); SIG 1.00",
+  "name": "CSWGuiMainMenu::OnModulePicked",
+  "source": "steam-db-B21",
+  "steam_addr": "0x00883560"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0053e6e0] Steam batch B21: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWGuiMainMenu::DeleteModuleList",
+  "source": "steam-db-B21",
+  "steam_addr": "0x00883c40"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0053e790] Steam batch B21: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWGuiMainMenu::LaunchDashboard",
+  "source": "steam-db-B21",
+  "steam_addr": "0x00883cf0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0053e7c0] Steam batch B21: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWGuiMainMenu::OnQuitButtonPressed",
+  "source": "steam-db-B21",
+  "steam_addr": "0x00883d20"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0053e8a0] Steam batch B21: STR 'You must restart the game to toggle the '@009a5ae8; SIG 1.00 | AUTO: STR 'You must restart the game to toggle the '@009a5ae8; SIG 1.00",
+  "name": "CSWGuiMainMenu::OnModsButtonPressed",
+  "source": "steam-db-B21",
+  "steam_addr": "0x00883e00"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0053ef40] Steam batch B21: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CClientMsgSysAdmin::SendSysAdminToServerMessage",
+  "source": "steam-db-B21",
+  "steam_addr": "0x00884450"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0053f020] Steam batch B21: STR '%s.%s'@00998c10; ':: %s.%s %s\\n'@009a5b3c; ':: Module savegame list: %s.\\n'@009a5b4c; CALLEE 3 (callees: GetServerInfo 0x73f830, Constructor_4 0x733680; callers: HandleMessage 0x781840); SIG 1.00 | AUTO: STR '%s.%s'@00998c10; ':: %s.%s %s\\n'@009a5b3c; ':: Module savegame list: %s.\\n'@009a5b4c; CALLEE 3 (callees: GetServerInfo 0x73f830, Constructor_4 0x733680; ca",
+  "name": "CClientMsgSysAdmin::HandleServerToSysAdminMessage",
+  "source": "steam-db-B21",
+  "steam_addr": "0x00884530"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=12; GOG 0x00620fd0] Steam batch B21: CALLEE 5 (callees: GetColumnIndex 0x71aef0; callers: SetEventDescriptions 0x785df0, LookUpAndPerformRumbleWithCutOff 0x79f010, HandleHPRegeneration 0x56a230); SIG 1.00 | AUTO: CALLEE 5 (callees: GetColumnIndex 0x71aef0; callers: SetEventDescriptions 0x785df0, LookUpAndPerformRumbleWithCutOff 0x79f010, HandleHPRegeneration 0x56a230); S",
+  "name": "C2DA::GetFLOATEntry",
+  "source": "steam-db-B21",
+  "steam_addr": "0x0071b530"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=12; GOG 0x00621110] Steam batch B21: CALLEE 36 (callees: GetColumnIndex 0x71aef0; callers: SetTexturePack 0x78d6a0, EnableVideoEffect 0x79e550, LookUpAndPerformRumbleWithCutOff 0x79f010); SIG 1.00 | AUTO: CALLEE 36 (callees: GetColumnIndex 0x71aef0; callers: SetTexturePack 0x78d6a0, EnableVideoEffect 0x79e550, LookUpAndPerformRumbleWithCutOff 0x79f010); SIG 1.00",
+  "name": "C2DA::GetFLOATEntry_2",
+  "source": "steam-db-B21",
+  "steam_addr": "0x0071b670"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=32; GOG 0x007e2bb0] Steam batch B21: CALLEE 1 (callers: UpdateTime 0x55f520); SIG 1.00 | AUTO: CALLEE 1 (callers: UpdateTime 0x55f520); SIG 1.00",
+  "name": "CSWSMessage::SendServerToPlayerDialogReplyChosen",
+  "source": "steam-db-B21",
+  "steam_addr": "0x0064c490"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0088e580] Steam batch B21: CALLEE 3 (callees: GetRenderPath 0x4a7070, SetBlendingMode 0x4db1f0, HasBumpMap 0x4db420); SIG 1.00 | AUTO: CALLEE 3 (callees: GetRenderPath 0x4a7070, SetBlendingMode 0x4db1f0, HasBumpMap 0x4db420); SIG 1.00",
+  "name": "PartTriMesh::Draw",
+  "source": "steam-db-B21",
+  "steam_addr": "0x004a79c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=8; GOG 0x008f73f0] Steam batch B21: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "Gob::DoEvent",
+  "source": "steam-db-B21",
+  "steam_addr": "0x004dd260"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=16; GOG 0x008f7710] Steam batch B21: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "NewController::ReportKeys",
+  "source": "steam-db-B21",
+  "steam_addr": "0x004dd580"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=16; GOG 0x008f7a60] Steam batch B21: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "NewController::ReportKey",
+  "source": "steam-db-B21",
+  "steam_addr": "0x004dd8d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=16; GOG 0x008f7cf0] Steam batch B21: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "NewController::GetKeyIndexAndAlpha",
+  "source": "steam-db-B21",
+  "steam_addr": "0x004ddb60"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=12; GOG 0x008f7dd0] Steam batch B21: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "NewController::GetFloatValue",
+  "source": "steam-db-B21",
+  "steam_addr": "0x004ddc40"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=12; GOG 0x008f8760] Steam batch B21: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "NewController::GetQuaternionFromIndexLocation",
+  "source": "steam-db-B21",
+  "steam_addr": "0x004de630"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=12; GOG 0x008f89b0] Steam batch B21: CALLEE 1 (callers: Control 0x4dea20); SIG 1.00 | AUTO: CALLEE 1 (callers: Control 0x4dea20); SIG 1.00",
+  "name": "NewController::GetQuaternionValue",
+  "source": "steam-db-B21",
+  "steam_addr": "0x004de880"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=28; GOG 0x0090a790] Steam batch B21: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CAuroraProcessedTexture::ReadProcessedTextureHeader",
+  "source": "steam-db-B21",
+  "steam_addr": "0x00940170"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0090a8f0] Steam batch B21: CALLEE 2 (callers: GetProcessedTextureInternal 0x93e880, ReleaseProcessedTextureInternal 0x93ea10); SIG 1.00 | AUTO: CALLEE 2 (callers: GetProcessedTextureInternal 0x93e880, ReleaseProcessedTextureInternal 0x93ea10); SIG 1.00",
+  "name": "CAuroraProcessedTexture::GetPtrToResHelperInfo",
+  "source": "steam-db-B21",
+  "steam_addr": "0x009402d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0090baf0] Steam batch B21: CALLEE 1 (callees: Demand 0x7111e0); SIG 1.00 | AUTO: CALLEE 1 (callees: Demand 0x7111e0); SIG 1.00",
+  "name": "CAurora16BitTexture::Load",
+  "source": "steam-db-B21",
+  "steam_addr": "0x009414d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00914560] Steam batch B21: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWGuiImageParams::SetBlendMode",
+  "source": "steam-db-B21",
+  "steam_addr": "0x00416190"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=4; GOG 0x009145b0] Steam batch B21: CALLEE 2 (callers: OnPanelAdded 0x894320, Load 0x416720); SIG 1.00 | AUTO: CALLEE 2 (callers: OnPanelAdded 0x894320, Load 0x416720); SIG 1.00",
+  "name": "CSWGuiImageParams::SetActive",
+  "source": "steam-db-B21",
+  "steam_addr": "0x004161e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00914600] Steam batch B21: CALLEE 2 (callees: SetImage 0x416090; callers: Constructor 0x416290); SIG 1.00 | AUTO: CALLEE 2 (callees: SetImage 0x416090; callers: Constructor 0x416290); SIG 1.00",
+  "name": "CSWGuiImageParams::SetDrawStyle",
+  "source": "steam-db-B21",
+  "steam_addr": "0x00416230"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=8; GOG 0x009147a0] Steam batch B21: CALLEE 1 (callers: Constructor 0x895620); SIG 1.00 | AUTO: CALLEE 1 (callers: Constructor 0x895620); SIG 1.00",
+  "name": "CSWGuiImage::Initialize",
+  "source": "steam-db-B21",
+  "steam_addr": "0x004163d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=0; GOG 0x009147e0] Steam batch B21: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWGuiImage::Destructor_2",
+  "source": "steam-db-B21",
+  "steam_addr": "0x00416410"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00914880] Steam batch B21: SIG 1.00 | AUTO: SIG 1.00",
+  "name": "CSWGuiImage::GetImageExtent",
+  "source": "steam-db-B21",
+  "steam_addr": "0x004164b0"
+ }
+]

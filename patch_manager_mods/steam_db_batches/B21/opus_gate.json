@@ -1,0 +1,79 @@
+{
+ "batch": "B21",
+ "chunks_short": [],
+ "chunks_unreviewed": [],
+ "clean": true,
+ "clean_streak_before": 1,
+ "decision": "INSUFFICIENT DECOYS (chunks none reviewed; need >= 10 per chunk)",
+ "decoy_cards": 0,
+ "decoys_accepted": 0,
+ "decoys_per_chunk": {},
+ "full_read": 0,
+ "key_error_cards": [],
+ "key_errors": 0,
+ "rows_auto": [
+  {
+   "class": "CClientMsgSysAdmin",
+   "gog": "0x0053ef40",
+   "name": "SendSysAdminToServerMessage",
+   "route": "sig",
+   "steam_addr": "0x00884450"
+  },
+  {
+   "class": "CSWGuiImage",
+   "gog": "0x009147e0",
+   "name": "Destructor_2",
+   "route": "sig",
+   "steam_addr": "0x00416410"
+  },
+  {
+   "class": "Gob",
+   "gog": "0x008f7380",
+   "name": "DeregisterCallback",
+   "route": "sig",
+   "steam_addr": "0x004dd1f0"
+  },
+  {
+   "class": "CSWCVisualEffectOnObject",
+   "gog": "0x004fd100",
+   "name": "HideVisualEffect",
+   "route": "sig",
+   "steam_addr": "0x00871820"
+  },
+  {
+   "class": "CSWGuiImage",
+   "gog": "0x00914880",
+   "name": "GetImageExtent",
+   "route": "sig",
+   "steam_addr": "0x004164b0"
+  },
+  {
+   "class": "CSWCVisualEffectOnObject",
+   "gog": "0x004fae10",
+   "name": "LoadVisualEffect",
+   "route": "c2",
+   "steam_addr": "0x0086f530"
+  },
+  {
+   "class": "CSWCMessage",
+   "gog": "0x0049af50",
+   "name": "HandleServerToPlayerCreatureUpdate_VisEffect",
+   "route": "c2",
+   "steam_addr": "0x00806960"
+  },
+  {
+   "class": "CSWCVisualEffect",
+   "gog": "0x004f95d0",
+   "name": "LoadEffect",
+   "route": "c2",
+   "steam_addr": "0x0086dc80"
+  }
+ ],
+ "rows_full": [],
+ "rows_sample": [],
+ "sample_errors": 0,
+ "sample_pool": 0,
+ "sample_rate": 0.2,
+ "sample_size": 0,
+ "unanswered_decoys": 0
+}

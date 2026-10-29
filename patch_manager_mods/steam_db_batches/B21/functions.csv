@@ -1,0 +1,62 @@
+class_name,function_name,address,calling_convention,param_size_bytes,notes
+CSWCCreatureAppearance,CreateHead,0x0085A9E0,__thiscall,8,"Steam batch B21: STR 'GoggleHook'@009a43e0; '0_HEAD'@009a43f4; '_HEAD'@009a43fc; CALLEE 5 (callees: GetPausedByCombat 0x740330, ? 0x7679f0, ReplaceTexture 0x7ed890); SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)"
+CSWCCreatureAppearance,GetHeight,0x0085CB40,__thiscall,0,Steam batch B21: STR 'HEAD_G'@009a4420; SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)
+CSWCCreatureAppearance,CreateBTypeBody,0x0085CC00,__thiscall,8,"Steam batch B21: STR 'ENVMAP'@0099aa44; 'AppearanceForceUpdate'@0099edf4; 'HeadHook'@009a4428; CALLEE 6 (callees: IsPlayerCreature 0x73fe80, GetPausedByCombat 0x740330, ReplaceTexture 0x7ed890; callers: CreateBodyAppearance 0x85a1f0); SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)"
+CSWCCreatureAppearance,GetHeadHeightOffset,0x0085D320,__thiscall,0,Steam batch B21: SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)
+CSWCMessage,HandleServerToPlayerCreatureUpdate_Add,0x00804AD0,__thiscall,0,"Steam batch B21: CALLEE 6 (callees: GetClientAIMaster 0x73f790, ? 0x7645f0, UpdateRelativePerception_2 0x76df50); SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)"
+CSWCMessage,HandleServerToPlayerCreatureUpdate_Appearance,0x00804F10,__thiscall,0,"Steam batch B21: STR 'Loading'@0099edec; 'soundapptype'@009a29cc; CALLEE 18 (callees: GetPlayerCreatureId 0x73f470, GetPlayerByGameObjectID 0x73f510, GetPauseState 0x73f680); SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)"
+CSWCMessage,HandleServerToPlayerCreatureUpdate_VisEffect,0x00806960,__thiscall,0,"Steam batch B21: CALLEE 3 (callees: GetClientAIMaster 0x73f790, ? 0x7645f0, SetDesiredFadeState 0x7f1650); SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)"
+CSWCMessage,HandleServerToPlayerCreatureUpdate_ControlObject,0x008074E0,__thiscall,4,"Steam batch B21: CALLEE 4 (callees: GetPlayerByGameObjectID 0x73f510, AttachPlayerGameObjectToArea 0x73f850, SetPlayerCreature 0x73f910); SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)"
+CSWCMessage,HandleServerToPlayerCreatureUpdate_Delete,0x00807730,__thiscall,0,"Steam batch B21: STR 'Corpse'@009946b8; 'Body_Bag'@009958bc; CALLEE 4 (callees: UpdateRollingFootstepSound 0x7682b0, AddCorpse 0x7aaec0, SetDesiredFadeState 0x7f1650); SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)"
+CSWCMessage,HandleServerToPlayerUpdate_Update,0x008162C0,__thiscall,0,Steam batch B21: CALLEE 1 (callees: HandleServerToPlayerCreatureUpdate_Update 0x8079b0); SIG 0.50 (evidence steam_db_batches/B21/evidence.tsv)
+CSWCMessage,HandleServerToPlayerSafeProjectile,0x00828AE0,__thiscall,4,Steam batch B21: CALLEE 2 (callees: HandleServerToPlayerSafeProjectileSpell 0x829850; callers: HandleServerToPlayerMessage 0x810cf0); SIG 0.50 (evidence steam_db_batches/B21/evidence.tsv); GOG param_size_bytes 1
+CSWCMessage,HandleServerToPlayerSafeProjectileProjectile,0x00828B30,__thiscall,0,"Steam batch B21: STR 'bullethook'@0099f0d0; 'ShotSound%d'@009a2c04; 'MuzzleFlash'@009a2c10; CALLEE 2 (callees: GetForceShield 0x77eb60, Constructor 0x8e54e0); SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)"
+CSWCVisualEffect,Destructor,0x0086D930,__thiscall,0,Steam batch B21: SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)
+CSWCVisualEffect,AIUpdate,0x0086DA30,__thiscall,0,Steam batch B21: CALLEE 1 (callees: SubtractWorldTimes 0x51af60); SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)
+CSWCVisualEffect,LoadEffect,0x0086DC80,__thiscall,4,Steam batch B21: CALLEE 1 (callers: ApplyFireAndForgetVisualEffect 0x7a7ac0); SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)
+CSWCVisualEffect,LoadModel,0x0086E1C0,__thiscall,12,Steam batch B21: STR 'CSWCVisualEffect::LoadModel: Failed to l'@009a4e38; CALLEE 1 (callees: GetResRefStr 0x7109b0); SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv); GOG param_size_bytes 4
+CSWCVisualEffect,SetAnimation,0x0086E420,__thiscall,4,"Steam batch B21: STR 'SoundImpact'@0099ab38; 'SoundDuration'@0099ab44; 'SoundCessation'@009a4e80; CALLEE 4 (callers: DoFootstepVisual 0x772900, ApplyFireAndForgetVisualEffect 0x7a7ac0, LoadEffect 0x8eef70); SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv); GOG param_size_bytes 2"
+CSWCVisualEffect,SetPosition,0x0086EA60,__thiscall,4,"Steam batch B21: CALLEE 4 (callees: GetHitCheckMaterialMask 0x73fbb0, SetPosition 0x7eef90, RotationArc 0x5160c0); SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)"
+CSWCVisualEffect,DoVFXRumble,0x0086F0D0,__thiscall,0,Steam batch B21: CALLEE 2 (callees: LookUpAndPerformRumbleWithCutOff 0x740a70; callers: ApplyFireAndForgetVisualEffect 0x7a7ac0); SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)
+CSWCVisualEffectOnObject,LoadVisualEffect,0x0086F530,__thiscall,40,Steam batch B21: STR 'Imp_Root_M_Node'@0099abac; 'Imp_Root_L_Node'@0099abbc; 'Imp_Root_H_Node'@0099abcc; CALLEE 2 (callees: GetINTEntry 0x71b8b0; callers: AddVisualEffect 0x7f0790); SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)
+CSWCVisualEffectOnObject,UnloadVisualEffect,0x00870FF0,__thiscall,0,Steam batch B21: CALLEE 1 (callers: UpdateVisualEffectsList 0x7f0b50); SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)
+CSWCVisualEffectOnObject,ShowVisualEffect,0x008710D0,__thiscall,4,"Steam batch B21: STR 'talkdummy'@009a4f20; CALLEE 2 (callers: AddVisualEffect 0x7f0790, ? 0x7f0ad0); SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)"
+CSWCVisualEffectOnObject,HideVisualEffect,0x00871820,__thiscall,0,Steam batch B21: SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)
+CSWCVisualEffectOnObject,StopVisualEffect,0x00872300,__thiscall,4,"Steam batch B21: STR 'cessation'@0099ef94; 'SoundCessation'@009a4e80; CALLEE 2 (callers: ? 0x7f0920, ? 0x7f0ca0); SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)"
+CSWCVisualEffectOnObject,KillVisualEffect,0x008727F0,__thiscall,0,Steam batch B21: SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)
+CSWCVisualEffectOnObject,ApplyHardCodedVisualEffect,0x00872910,__thiscall,4,"Steam batch B21: CALLEE 2 (callees: ApplyLightsaberThrow 0x873360, ApplyBumpedOutShell 0x878f10); SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv); GOG param_size_bytes 2"
+CSWCVisualEffectOnObject,ApplySpellVisual,0x00873070,__thiscall,4,Steam batch B21: SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv); GOG param_size_bytes 2
+CSWGuiInGameMessages,Destructor_2,0x00758A70,__thiscall,0,Steam batch B21: SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)
+CSWGuiInGameMessages,AddMessages,0x00758E30,__thiscall,8,Steam batch B21: SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)
+CSWGuiInGameMessages,AddDialogMessages,0x007592F0,__thiscall,8,Steam batch B21: SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)
+CSWGuiInGameMessages,AddCombatMessages,0x00759820,__thiscall,8,Steam batch B21: SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)
+CSWGuiInGameMessages,HandleInputEvent,0x00759E20,__thiscall,8,"Steam batch B21: CALLEE 3 (callees: ChangeCharacterToNextLivingPartyMember 0x740b80, AppendToMsgBuffer 0x7be090, UpdateMessageGUI 0x7cd040); SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)"
+CSWGuiInGameMessages,OnPanelAdded,0x0075A1F0,__thiscall,0,"Steam batch B21: CALLEE 4 (callees: ShowTutorialWindow 0x740a20, UpdateMessageGUI 0x7cd040, ShowEffects 0x75a7c0); SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)"
+CSWGuiInGameMessages,ChangeMessageDisplay,0x0075A2B0,__thiscall,4,Steam batch B21: SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)
+CSWGuiMainMenu,OnModulePicked,0x00883560,__thiscall,4,"Steam batch B21: STR '%c%s.%s %s'@009a5adc; CALLEE 16 (callees: GetClientName 0x73f310, ShowLoadScreen 0x73ff20, SetPlayerCharacterName 0x73ffc0); SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)"
+CSWGuiMainMenu,DeleteModuleList,0x00883C40,__thiscall,0,Steam batch B21: SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)
+CSWGuiMainMenu,LaunchDashboard,0x00883CF0,__thiscall,4,Steam batch B21: SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv); GOG param_size_bytes 0
+CSWGuiMainMenu,OnQuitButtonPressed,0x00883D20,__thiscall,4,Steam batch B21: SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv); GOG param_size_bytes 0
+CSWGuiMainMenu,OnModsButtonPressed,0x00883E00,__thiscall,4,Steam batch B21: STR 'You must restart the game to toggle the '@009a5ae8; SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv); GOG param_size_bytes 0
+CClientMsgSysAdmin,SendSysAdminToServerMessage,0x00884450,__thiscall,4,Steam batch B21: SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)
+CClientMsgSysAdmin,HandleServerToSysAdminMessage,0x00884530,__thiscall,8,"Steam batch B21: STR '%s.%s'@00998c10; ':: %s.%s %s\n'@009a5b3c; ':: Module savegame list: %s.\n'@009a5b4c; CALLEE 3 (callees: GetServerInfo 0x73f830, Constructor_4 0x733680; callers: HandleMessage 0x781840); SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)"
+C2DA,GetFLOATEntry,0x0071B530,__thiscall,12,"Steam batch B21: CALLEE 5 (callees: GetColumnIndex 0x71aef0; callers: SetEventDescriptions 0x785df0, LookUpAndPerformRumbleWithCutOff 0x79f010, HandleHPRegeneration 0x56a230); SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)"
+C2DA,GetFLOATEntry_2,0x0071B670,__thiscall,12,"Steam batch B21: CALLEE 36 (callees: GetColumnIndex 0x71aef0; callers: SetTexturePack 0x78d6a0, EnableVideoEffect 0x79e550, LookUpAndPerformRumbleWithCutOff 0x79f010); SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)"
+CSWSMessage,SendServerToPlayerDialogReplyChosen,0x0064C490,__thiscall,32,Steam batch B21: CALLEE 1 (callers: UpdateTime 0x55f520); SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)
+PartTriMesh,Draw,0x004A79C0,__thiscall,4,"Steam batch B21: CALLEE 3 (callees: GetRenderPath 0x4a7070, SetBlendingMode 0x4db1f0, HasBumpMap 0x4db420); SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv); GOG param_size_bytes 0"
+Gob,DoEvent,0x004DD260,__thiscall,8,Steam batch B21: SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)
+NewController,ReportKeys,0x004DD580,__thiscall,16,Steam batch B21: SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)
+NewController,ReportKey,0x004DD8D0,__thiscall,16,Steam batch B21: SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)
+NewController,GetKeyIndexAndAlpha,0x004DDB60,__thiscall,16,Steam batch B21: SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)
+NewController,GetFloatValue,0x004DDC40,__thiscall,12,Steam batch B21: SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)
+NewController,GetQuaternionFromIndexLocation,0x004DE630,__thiscall,12,Steam batch B21: SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)
+NewController,GetQuaternionValue,0x004DE880,__thiscall,12,Steam batch B21: CALLEE 1 (callers: Control 0x4dea20); SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)
+CAuroraProcessedTexture,ReadProcessedTextureHeader,0x00940170,__thiscall,28,Steam batch B21: SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)
+CAuroraProcessedTexture,GetPtrToResHelperInfo,0x009402D0,__thiscall,0,"Steam batch B21: CALLEE 2 (callers: GetProcessedTextureInternal 0x93e880, ReleaseProcessedTextureInternal 0x93ea10); SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)"
+CAurora16BitTexture,Load,0x009414D0,__thiscall,0,Steam batch B21: CALLEE 1 (callees: Demand 0x7111e0); SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)
+CSWGuiImageParams,SetBlendMode,0x00416190,__thiscall,4,Steam batch B21: SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)
+CSWGuiImageParams,SetActive,0x004161E0,__thiscall,4,"Steam batch B21: CALLEE 2 (callers: OnPanelAdded 0x894320, Load 0x416720); SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)"
+CSWGuiImageParams,SetDrawStyle,0x00416230,__thiscall,4,Steam batch B21: CALLEE 2 (callees: SetImage 0x416090; callers: Constructor 0x416290); SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)
+CSWGuiImage,Initialize,0x004163D0,__thiscall,8,Steam batch B21: CALLEE 1 (callers: Constructor 0x895620); SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)
+CSWGuiImage,Destructor_2,0x00416410,__thiscall,0,Steam batch B21: SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)
+CSWGuiImage,GetImageExtent,0x004164B0,__thiscall,4,Steam batch B21: SIG 1.00 (evidence steam_db_batches/B21/evidence.tsv)

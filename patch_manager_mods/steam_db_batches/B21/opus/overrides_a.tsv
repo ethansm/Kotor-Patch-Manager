@@ -1,0 +1,7 @@
+gog_addr	steam_addr	final_verdict	note
+0x0048d460	0x0085d3d0	likely	fp identical 79B, SIG 1.00, in-window, but 0 mapped graph hits
+0x004f9350	0x0086da00	likely	fp identical 47B, SIG 1.00, in-window, but 0 mapped graph hits
+0x004fa9f0	0x0086f110	likely	same size 866B SIG 1.00; 3 graph hits tie rival GOG 0x4fd2f0
+0x004fd290	0x008719b0	likely	fp identical 94B; 1 hit ties rival 0x921321 (shared helper)
+0x0053e460	0x008839c0	likely	fp identical 598B SIG 1.00; 2 hits tie rival 0x5d0bb0
+0x008f7380	0x004dd1f0	likely	fp identical 107B SIG 1.00; 1 hit ties rival 0x8fbf99
