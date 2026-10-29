@@ -135,7 +135,7 @@ struct RowX {
     int artTries = 0;
     int slot = -1;                // visible slot (0..kRowsVisible-1), -1 = not shown
     bool hasFmt = false, hasZero = false;
-    char label[64] = {}, desc[192] = {}, fmt[48] = {}, zero[24] = {}, cap[96] = {};
+    char label[64] = {}, fmt[48] = {}, zero[24] = {}, cap[96] = {};
     const char* const* choices = nullptr;
     int nChoices = 0;
 };
@@ -1164,6 +1164,8 @@ bool sliderTick(bool down, bool haveCur, int x, int y) {
             if (mui::sliderAskHandler(moved, v, e.sdAsked)) {
                 e.sdAsked = v;
                 sliderCommit(k, row, v);
+            } else if (!moved) {
+                e.sdAsked = v;   // the pointer is back on the stored value: a value the handler rejected earlier must be asked again next time
             }
             if (e.sd.active && e.sdSlot == k) mui::sliderSetStored(e.sd, e.rp[k].rows[row].cfg.value);   // a snapped or rejected value is what later moves compare with
         }
@@ -1581,6 +1583,7 @@ void hoverStep(int hit) {
         if (enter) {
             const char* d = descFor(he.ev[i].item);
             if (d && d[0]) writeDesc(d);
+            else if (e.ps.state == mui::ENTRY) writeDesc("");   // an item without a description must not keep the previous row's text
         }
     }
     if (he.n > 0 && e.hov.cur < 0 && e.ps.state == mui::LIST) writeDesc(kListBlurb);
@@ -1932,7 +1935,6 @@ int32_t KPATCH_CALL muiAddRow(uint32_t page, const K2MuiRowSpec* sp) {
     if (!toggle && r.nChoices > 0) { r.cfg.minV = 0; r.cfg.maxV = r.nChoices - 1; }
     r.cfg.value = mui::rowClamp(r.cfg, sp->value);
     copyStr(r.label, sizeof r.label, sp->label);
-    copyStr(r.desc, sizeof r.desc, sp->desc);
     if (sp->fmt && sp->fmt[0]) { copyStr(r.fmt, sizeof r.fmt, sp->fmt); r.hasFmt = true; }
     if (sp->zeroText && sp->zeroText[0]) { copyStr(r.zero, sizeof r.zero, sp->zeroText); r.hasZero = true; }
     // Create every control first so a failed clone leaves no half row on the page.
@@ -2242,9 +2244,11 @@ bool escStepBack() {
 
 void __fastcall escKeyHook(void* self, void* edx, int id, int state) {
     static volatile LONG s_n = 0;
-    const bool held = escHeld();
+    saferead::beginScope();   // a vtable hook entry like any other: engine code between hooks can free what the cache says is readable
+    const bool ours = g_mc.appended && g_mc.panel && reinterpret_cast<uintptr_t>(self) == g_mc.panel;
+    const bool held = ours && escHeld();
     if (InterlockedIncrement(&s_n) <= 120)
-        KP_LOG(chInput, "KEYEV id=%02x state=%d page=%d esc=%d", id, state, g_mc.appended ? curPageId() : -1, held ? 1 : 0);
+        KP_LOG(chInput, "KEYEV id=%02x state=%d page=%d esc=%d", id, state, ours ? curPageId() : -1, held ? 1 : 0);
     if ((id == kEscKeyDownId || id == kEscEventId) && state != 0 && held && escStepBack()) {
         g_escConsumedAt = GetTickCount();
         return;   // swallowed: the GUI stays open
@@ -2252,7 +2256,7 @@ void __fastcall escKeyHook(void* self, void* edx, int id, int state) {
     // Arrow keys (id 0x3d, live 10-29) fall through to the engine's focus navigation (0x40EAA0 -> control 0x4187B0), which walks the panel's child list and
     // read a non-pointer (ecx=0xe, crash at 0x418850) while a mod-config page was up. Our pages have no keyboard navigation, so on a non-MAIN page only Esc
     // (above) and 0xdf (the Esc-release companion, harmless) reach the engine.
-    if (g_mc.appended && g_mc.ps.state != mui::MAIN && id != kEscKeyDownId && id != kEscEventId && id != 0xdf) {
+    if (ours && g_mc.ps.state != mui::MAIN && id != kEscKeyDownId && id != kEscEventId && id != 0xdf) {
         static volatile LONG s_sw = 0;
         if (InterlockedIncrement(&s_sw) <= 20) KP_LOG(chInput, "KEYSWALLOW id=%02x state=%d page=%d", id, state, curPageId());
         return;
@@ -2277,7 +2281,6 @@ void installEscHook() {
 
 // H-O1 8A16FE: Options ctor, layout open, all vanilla InitControl calls done; panel = [ebp-0xAC].
 extern "C" void __cdecl McBind(int panelArg) {
-    installEscHook();
     static bool s_cfgRead = false;
     if (!s_cfgRead) {   // lazily, on the first Options panel (KPatchInit must not do file I/O)
         s_cfgRead = true;
@@ -2306,6 +2309,7 @@ extern "C" void __cdecl McBind(int panelArg) {
         }
     }
     if (!g_enabled || !panelArg) return;
+    installEscHook();   // after the enabled check: enabled=0 leaves the shared Options vtable untouched
     saferead::beginScope();
     const uintptr_t P = static_cast<uintptr_t>(static_cast<unsigned>(panelArg));
     uint32_t vt = 0, slot = 0;
@@ -2441,7 +2445,7 @@ extern "C" void __cdecl McTick(int panelArg) {
     const bool overGear = gearUnder && overCtl(*gearUnder, x, y);   // the gear is not a control of the shown (modal) page: its click is handled apart below
     const int hit = (cur && !overGear) ? hitItem(x, y) : -1;
     const bool overBack = cur && e.ps.state != mui::MAIN && overCtl(e.back, x, y);
-    hoverStep(overBack ? -1 : hit);
+    if (!e.sd.active && !e.dragging) hoverStep(overBack ? -1 : hit);   // a slider or scroll-thumb drag keeps the description of the row it started on
     if (shownSlot() >= 0 && e.rp[shownSlot()].n > 0) rowArrowInput(shownSlot(), down, overBack ? -1 : hit, now);
     (void)scrollTick(down, cur, x, y, now);
     const bool sliderGrab = sliderTick(down, cur, x, y);   // a press edge on a slider track: consumed here, never a click on whatever is under it
@@ -2540,7 +2544,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
     embtex::g_log = embedLog;   // gear + slider art textures (EmbedTex) log through the main channel
     guikit::initGuiInput(api, "mod-config");   // optional: the wheel provider (k2.guiinput); a missing provider only means no wheel
-    KP_LOG(chMain, "mod-config 0.4.8-dev loaded (Mod Configuration button under Gameplay; k2.modconfig@1 + k2.menuui@1; config mod_config.ini is read at the first Options panel: enabled debug button_clone reflow desc free_labels)");
+    KP_LOG(chMain, "mod-config 0.4.9-dev loaded (Mod Configuration button under Gameplay; k2.modconfig@1 + k2.menuui@1; config mod_config.ini is read at the first Options panel: enabled debug button_clone reflow desc free_labels)");
     int rcC = -1, rcM = -1;
     if (api && api->struct_size >= offsetof(KPatchApi, require) + sizeof(api->require) && api->provide) {
         rcC = api->provide(K2MODCONFIG_IFACE, K2MODCONFIG_VERSION, &g_mcApi);
