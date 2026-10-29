@@ -545,6 +545,16 @@ static void testCastQueue() {
     // same-run test: queued on this tick or 15 ms ago = same run (kept); 16 ms+ or never seen = an older run (stale)
     CHECK(f4SameRun(1000, 1000, 16) && f4SameRun(1000, 1015, 16));
     CHECK(!f4SameRun(1000, 1016, 16) && !f4SameRun(0, 5, 16) && !f4SameRun(1000, 1040, 16));
+    // stamp ring (WI-170): f4Lookup returns the newest stamp of an act; f4Forget clears it (a recycled pointer starts unstamped)
+    F4Seen ring[4] = {};
+    ring[0] = F4Seen{7, 1000}; ring[1] = F4Seen{7, 1010}; ring[2] = F4Seen{9, 1020};   // next = 3
+    CHECK(f4Lookup(ring, 4, 3, 7) == 1010 && f4Lookup(ring, 4, 3, 9) == 1020 && f4Lookup(ring, 4, 3, 8) == 0);
+    // wraparound: next = 0, so the last write sits at index 3 (newer) and the older stamp of act 5 at index 0 (a forward scan returns 1000)
+    F4Seen wrap[4] = {};
+    wrap[0] = F4Seen{5, 1000}; wrap[3] = F4Seen{5, 2000};
+    CHECK(f4Lookup(wrap, 4, 0, 5) == 2000);
+    f4Forget(ring, 4, 7);
+    CHECK(f4Lookup(ring, 4, 3, 7) == 0 && f4Lookup(ring, 4, 3, 9) == 1020);
     // empty list: nothing
     const int none_t[1] = {9}, none_a[1] = {5};
     CHECK(staleSpellPick(none_t, none_a, 0, 0, out, 8) == 0);
@@ -632,6 +642,7 @@ static void testDebugLog() {
     CHECK(!strcmp(dbgKeepName(DkUntracked), "untracked-spell") && !strcmp(dbgKeepName(DkFamilyNotActive), "family-not-active"));
     CHECK(!strcmp(dbgKeepName(DkGuardOff), "guard-off") && !strcmp(dbgKeepName(DkBadRead), "bad-read"));
     CHECK(!strcmp(dbgKeepName(DkNoStale), "no-stale-nodes") && !strcmp(dbgKeepName(DkCount), "?") && !strcmp(dbgKeepName(-1), "?"));
+    CHECK(!strcmp(dbgKeepName(DkFreshBlocked), "fresh-family-active"));
     CHECK(dbgKey(0, 0, 0) != 0);                                  // 0 would mean "no dedupe"
     CHECK(dbgKey(0x7F000010, 8, DkLeader) == dbgKey(0x7F000010, 8, DkLeader));
     CHECK(dbgKey(0x7F000010, 8, DkLeader) != dbgKey(0x7F000010, 8, DkNotParty));

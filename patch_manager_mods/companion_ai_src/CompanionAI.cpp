@@ -72,7 +72,7 @@ KP_LOG_PATCH("companion-ai");
 namespace {
 
 using cai::Invalid;
-constexpr const char* Version = "0.3.3-probe";
+constexpr const char* Version = "0.3.4-probe";
 
 // ---- game globals and functions (conventions from the raw .asm)
 constexpr int G_VM = 0x00A1B4A8;            // CVirtualMachine*
@@ -957,6 +957,20 @@ void dbgG1(DWORD now, int actor, int actorId, int spell, int reason) {
     tline(now, cai::dbgKey(actorId, spell, reason), "t=%lu D G1 cr=%08x spell=%d fam=%d -> keep (%s)", now, actorId, spell, cai::castFamily(spell),
           cai::dbgKeepName(reason));
 }
+// active effect spell ids on owner (G1 and F4 share this read): writes up to cap ids (spell > 0) to ids, returns the count.
+// 0 = no effects, or the effect list is unreadable: nothing to be active.
+int activeSpellIds(int owner, int* ids, int cap) {
+    int arr = 0, cnt = 0;
+    if (!k2fx::effectListNonEmpty(static_cast<uintptr_t>(owner), &arr, &cnt)) return 0;
+    int n = 0;
+    for (int i = 0; i < cnt && n < cap; ++i) {
+        int eff = rd<int>(arr, i * 4, 0);
+        if (!eff) continue;
+        int sp = rd<int>(eff, k2fx::Effect_SpellId, -1);
+        if (sp > 0) ids[n++] = sp;
+    }
+    return n;
+}
 }
 extern "C" int __cdecl CompanionAiCastGuard(int ebp) {
     saferead::beginScope();
@@ -980,15 +994,8 @@ extern "C" int __cdecl CompanionAiCastGuard(int ebp) {
         owner = gameObject(targetId);
         if (!owner) { ++g_st.g1Bad; dbgG1(now, actor, actorId, spell, cai::DkBadRead); return 0; }   // no readable target: vanilla
     }
-    int arr = 0, cnt = 0;
-    if (!k2fx::effectListNonEmpty(static_cast<uintptr_t>(owner), &arr, &cnt)) { dbgG1(now, actor, actorId, spell, cai::DkFamilyNotActive); return 0; }   // no effects: nothing to be active
-    int ids[64], n = 0;
-    for (int i = 0; i < cnt && n < 64; ++i) {
-        int eff = rd<int>(arr, i * 4, 0);
-        if (!eff) continue;
-        int sp = rd<int>(eff, k2fx::Effect_SpellId, -1);
-        if (sp > 0) ids[n++] = sp;
-    }
+    int ids[64];
+    const int n = activeSpellIds(owner, ids, 64);   // 0 = no effects (or unreadable): nothing to be active
     if (!cai::castGuardDrops(true, actorIsLeader, spell, ids, n)) { dbgG1(now, actor, actorId, spell, cai::DkFamilyNotActive); return 0; }
     ++g_st.g1Drops;
     if (g_g1Logs < 200) {
@@ -1006,10 +1013,8 @@ extern "C" int __cdecl CompanionAiCastGuard(int ebp) {
 namespace {
 int g_f4Logs = 0;   // session budget of F4 drop lines
 bool g_f4Noted = false;
-struct F4Seen { int act; DWORD t; };
-F4Seen g_f4Seen[64] = {};   // ring: spell action -> tick of its AddSWSpellAction (party members only); a reused pointer reads as same-run = kept
+cai::F4Seen g_f4Seen[64] = {};   // ring: spell action -> tick of its AddSWSpellAction (party members only); a reused pointer reads as same-run = kept (cai::f4Forget on free)
 int g_f4Next = 0;
-DWORD f4AddedAt(int act) { for (auto& e : g_f4Seen) if (e.act == act) return e.t; return 0; }
 // debug_log: one D line for a party member's F4 decision that dropped nothing (same gating as dbgG1)
 void dbgF4(DWORD now, int actorId, int nodes, int cur, int sameRun, int reason) {
     if (!g_cfg.debugLog || !actorId || actorId == Invalid) return;
@@ -1036,6 +1041,16 @@ extern "C" void __cdecl CompanionAiCastQueueNewest(int ebp) {
     ++g_st.f4Checks;
     int fresh = fr<int>(ebp, -0x10);   // the new node (PUSH [EBP-0x10] -> AddAction): not linked yet, stamp it for the same-run test
     if (fresh) { g_f4Seen[g_f4Next].act = fresh; g_f4Seen[g_f4Next].t = now ? now : 1; g_f4Next = (g_f4Next + 1) & 63; }
+    // WI-170: G1 drops the fresh node when its family is already active on the owner (buff: caster; debuff: target). Then this
+    // build keeps the older valid cast instead of freeing it for a node that G1 will drop: the round is not left empty.
+    const int fspell = fresh ? rd<int>(fresh, 0x24, -1) : -1;   // same spell offset the drop loop reads
+    if (g_cfg.castFamilyGuard && cai::castFamily(fspell) > 0) {
+        int owner = cr;
+        if (cai::castFamilyOnTarget(cai::castFamily(fspell))) owner = gameObject(rd<int>(fresh, 0x84, 0));
+        int ids[64];
+        const int nIds = owner ? activeSpellIds(owner, ids, 64) : 0;
+        if (cai::castGuardDrops(true, false, fspell, ids, nIds)) { dbgF4(now, actorId, 0, 0, 0, cai::DkFreshBlocked); return; }
+    }
     int W = rd<int>(round, 0xB00, 0);
     int internal = W ? rd<int>(W, 0, 0) : 0;
     if (!internal) { ++g_st.f4Bad; dbgF4(now, actorId, 0, 0, 0, cai::DkBadRead); return; }
@@ -1055,7 +1070,7 @@ extern "C" void __cdecl CompanionAiCastQueueNewest(int ebp) {
     }
     int sameRun = 0;
     for (int i = 0; i < n; ++i)   // a combo queues several casts in one script run: keep this run's own earlier nodes
-        if (types[i] == 9 && cai::f4SameRun(f4AddedAt(acts[i]), now, 16)) { types[i] = 0; ++sameRun; }
+        if (types[i] == 9 && cai::f4SameRun(cai::f4Lookup(g_f4Seen, 64, g_f4Next, acts[i]), now, 16)) { types[i] = 0; ++sameRun; }
     int picked[8];
     int pn = cai::staleSpellPick(types, acts, n, cur, picked, 8);
     if (!pn) { dbgF4(now, actorId, n, cur, sameRun, cai::DkNoStale); return; }
@@ -1072,6 +1087,7 @@ extern "C" void __cdecl CompanionAiCastQueueNewest(int ebp) {
             ++g_f4Logs;
             eline(now, "t=%lu F4 drop cr=%08x spell=%d left=%d", now, actorId, spell, left);
         } else capNote(now, g_f4Noted, "F4 drop", 200, "counts continue in S");
+        cai::f4Forget(g_f4Seen, 64, a);   // the pointer may be recycled: its stamp goes with it
         reinterpret_cast<Fn0>(FnActionDtor)(a);
         reinterpret_cast<void(__cdecl*)(void*)>(FnOpDelete)(reinterpret_cast<void*>(a));
     }

@@ -701,8 +701,18 @@ inline int staleSpellPick(const int* types, const int* acts, int n, int cur, int
 // same script run as the new one (a combo queues several casts in one run, all on one tick) and is kept. 0 = never seen = stale.
 inline bool f4SameRun(unsigned addedAt, unsigned now, unsigned minAgeMs) { return addedAt != 0 && now - addedAt < minAgeMs; }
 
+// F4 stamp ring (WI-170): spell action -> tick of its AddSWSpellAction. Ring of cap entries, `next` = index of the next write.
+struct F4Seen { int act; unsigned t; };
+// newest stamp of act: scan backwards from the last write (a recycled pointer must not read an older run's stamp). 0 = not found.
+inline unsigned f4Lookup(const F4Seen* r, int cap, int next, int act) {
+    for (int i = 1; i <= cap; ++i) { const F4Seen& e = r[(next - i + cap) % cap]; if (e.act == act) return e.t; }
+    return 0;
+}
+// clears every stamp of act (called when the action is freed, so a recycled pointer starts with no stamp)
+inline void f4Forget(F4Seen* r, int cap, int act) { for (int i = 0; i < cap; ++i) if (r[i].act == act) r[i] = F4Seen{0, 0}; }
+
 // debug_log "D" lines (G1 / F4): why a party member's decision was NOT a drop. The index is the reason in the dedupe key.
-enum DbgKeep { DkLeader = 0, DkNotParty, DkUntracked, DkFamilyNotActive, DkGuardOff, DkBadRead, DkNoStale, DkNoRound, DkCount };
+enum DbgKeep { DkLeader = 0, DkNotParty, DkUntracked, DkFamilyNotActive, DkGuardOff, DkBadRead, DkNoStale, DkNoRound, DkFreshBlocked, DkCount };
 inline const char* dbgKeepName(int r) {
     switch (r) {
     case DkLeader: return "leader";
@@ -713,6 +723,7 @@ inline const char* dbgKeepName(int r) {
     case DkBadRead: return "bad-read";
     case DkNoStale: return "no-stale-nodes";
     case DkNoRound: return "no-round";
+    case DkFreshBlocked: return "fresh-family-active";
     default: return "?";
     }
 }
