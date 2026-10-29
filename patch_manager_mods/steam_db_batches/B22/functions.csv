@@ -1,0 +1,7 @@
+class_name,function_name,address,calling_convention,param_size_bytes,notes
+CSWCModule,Destructor,0x007F2E60,__thiscall,4,Steam batch B22: reviewer match with anchor: callee 0x007F2EB0 CSWCModule::Destructor_2 (trusted GOG 0x0046a0d0 maps here) (evidence steam_db_batches/B22/final_rows.tsv)
+CExoTimersInternal,GetLowResolutionTimer,0x0073B7F0,__thiscall,0,Steam batch B22: reviewer match with anchor: caller 0x00736200 CExoTimers::GetLowResolutionTimer (trusted twin of GOG 0x00608330) calls 0x0073b7f0 (evidence steam_db_batches/B22/final_rows.tsv)
+GLRender,RenderDrawableSquares,0x004356E0,__cdecl,0,"Steam batch B22: Opus: [a] graph 2 hits + fp identical 54B, unique fp twin; gate top 0x00435720 is 1885B GL teardown (Haiku mismatch c5) (evidence steam_db_batches/B22/final_rows.tsv)"
+Global,AurCubeMapAvailable,0x00484970,__cdecl,0,"Steam batch B22: Opus: [a] graph 6 hits + fp identical vs rival 0x00484910 4; gate top 0x009852b0 is a 15B thunk, 0 hits (evidence steam_db_batches/B22/final_rows.tsv)"
+Camera,MapToScreen,0x004809D0,__thiscall,20,Steam batch B22: reviewer match with anchor: member +0x204 float read (cand line 1504) and +0x218 both in disp sets; imm 0xBA2 in both (evidence steam_db_batches/B22/final_rows.tsv); GOG param_size_bytes 17
+Material,GetTextureTID,0x004DAF90,__thiscall,0,"Steam batch B22: Opus: [a] graph 4 hits + fp identical vs rival 0x0047ea60 2; gate top 0x004daef0 1 hit, trusted to GOG 0x8f5080 (evidence steam_db_batches/B22/final_rows.tsv)"

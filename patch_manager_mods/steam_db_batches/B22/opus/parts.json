@@ -1,0 +1,24 @@
+{
+ "batch": "B22",
+ "rows_per_part": 30,
+ "total_rows": 10,
+ "parts": [
+  {
+   "part": "a",
+   "file": "opus/part_a.md",
+   "n_rows": 10,
+   "gog_addrs": [
+    "0x0086ab80",
+    "0x008c1b40",
+    "0x0046a080",
+    "0x0060de70",
+    "0x0048d460",
+    "0x004fa9f0",
+    "0x0053e460",
+    "0x008f7380",
+    "0x004f9350",
+    "0x004fd290"
+   ]
+  }
+ ]
+}

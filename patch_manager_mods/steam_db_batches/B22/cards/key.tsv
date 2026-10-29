@@ -1,0 +1,21 @@
+card_id	chunk	gog	steam_addr	kind	expected
+B22-1-01	1	0x008f5120	0x004daf40	decoy_next	mismatch
+B22-1-02	1	0x0086b700	0x009852a0	decoy_prev	mismatch
+B22-1-03	1	0x008f5120	0x004dae60	decoy_prev	mismatch
+B22-1-04	1	0x00827df0	0x00435e80	decoy_next	mismatch
+B22-1-05	1	0x00827df0	0x00435720	real	
+B22-1-06	1	0x00827df0	0x004356e0	decoy_prev	mismatch
+B22-1-07	1	0x008c1b40	0x004810d0	decoy_next	mismatch
+B22-1-08	1	0x0060de70	0x0073b7f0	real	
+B22-1-09	1	0x0086ab80	0x00984710	decoy_prev	mismatch
+B22-1-10	1	0x0060de70	0x0073b720	decoy_prev	mismatch
+B22-1-11	1	0x0086ab80	0x00984730	real	
+B22-1-12	1	0x0086b700	0x009852b0	real	
+B22-1-13	1	0x0046a080	0x007f2e60	real	
+B22-1-14	1	0x0060de70	0x0073b810	decoy_next	mismatch
+B22-1-15	1	0x008c1b40	0x004809d0	real	
+B22-1-16	1	0x0086b700	0x009852c0	decoy_next	mismatch
+B22-2-01	2	0x0046a080	0x007f3640	decoy_next	mismatch
+B22-2-02	2	0x0086ab80	0x00984760	decoy_next	mismatch
+B22-2-03	2	0x008f5120	0x004daef0	real	
+B22-2-04	2	0x0046a080	0x007f2910	decoy_prev	mismatch

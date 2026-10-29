@@ -1,0 +1,11 @@
+gog_addr	steam_addr	final_verdict	note
+0x00827df0	0x004356e0	verified	graph 2 hits + fp identical 54B, unique fp twin; gate top 0x00435720 is 1885B GL teardown (Haiku mismatch c5)
+0x0086b700	0x00484970	verified	graph 6 hits + fp identical vs rival 0x00484910 4; gate top 0x009852b0 is a 15B thunk, 0 hits
+0x0086ab80	0x00478ca0	likely	graph 1 hit + fp identical, ties rival 0x00478cb0 (1); Haiku corrected_addr points here; gate top 0x00984730 0 hits
+0x008f5120	0x004daf90	verified	graph 4 hits + fp identical vs rival 0x0047ea60 2; gate top 0x004daef0 1 hit, trusted to GOG 0x8f5080
+0x0048d460	0x0085d3d0	likely	fp identical, unique fp twin, 0 mapped graph hits (as B21)
+0x004f9350	0x0086da00	likely	fp identical, unique fp twin, 0 mapped graph hits (as B21)
+0x004fa9f0	0x0086f110	likely	graph 3 hits ties rivals 0x0086f530/0x008710d0, fp differs (as B21)
+0x004fd290	0x008719b0	likely	graph 1 hit + fp ties 2 rivals at 1 (as B21)
+0x0053e460	0x008839c0	likely	graph 2 hits + fp ties rivals 0x00759e20/0x0075b8e0 at 2 (as B21)
+0x008f7380	0x004dd1f0	likely	graph 1 hit + fp ties rivals at 1 (as B21)

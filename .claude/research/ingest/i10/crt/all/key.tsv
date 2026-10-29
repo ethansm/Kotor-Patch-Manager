@@ -1,0 +1,19 @@
+card	addr	kind	name	is_decoy	facts_addr	src
+A1	0x0091c630	function	Global::_memset	0	0x0091c630	fptwin GOG 0x00924260 FLIRT
+A2	0x0091c6b5	function	Global::_free	0	0x0091c6b5	fptwin GOG 0x009242e5 FLIRT
+A3	0x00919671	function	Global::_sprintf	0	0x00919671	fptwin GOG 0x00921295 FLIRT
+A4	0x0068f260	function	Global::ExecuteCommandPrintString	1	0x0091c6b5	kdb name_map
+A5	0x0071b8b0	function	Global::GetINTEntry	1	0x0091c630	kdb name_map
+A6	0x005e8320	function	Global::RemoveStaticBoundingBox	1	0x00919671	kdb name_map
+B1	0x0091c630	function	Global::_memset	0	0x0091c630	fptwin GOG 0x00924260 FLIRT
+B2	0x00919671	function	Global::_sprintf	0	0x00919671	fptwin GOG 0x00921295 FLIRT
+B3	0x006823e0	function	Global::ExecuteCommandGetLastKiller	1	0x00919671	kdb name_map
+B4	0x006710d0	function	Global::ExecuteCommandDoTouchAttack	1	0x0091c6b5	kdb name_map
+B5	0x0091c6b5	function	Global::_free	0	0x0091c6b5	fptwin GOG 0x009242e5 FLIRT
+B6	0x006f79c0	function	Global::ExecuteCommandSWMG_GetGunBankIntInfo	1	0x0091c630	kdb name_map
+C1	0x00697520	function	Global::ExecuteCommandGetGalaxyMapPlanetAvailable	1	0x00919671	kdb name_map
+C2	0x0091c6b5	function	Global::_free	0	0x0091c6b5	fptwin GOG 0x009242e5 FLIRT
+C3	0x0091c630	function	Global::_memset	0	0x0091c630	fptwin GOG 0x00924260 FLIRT
+C4	0x00698070	function	Global::ExecuteCommandSetLockOrientationInDialog	1	0x0091c630	kdb name_map
+C5	0x00919671	function	Global::_sprintf	0	0x00919671	fptwin GOG 0x00921295 FLIRT
+C6	0x0068c9b0	function	Global::ExecuteCommandMoveAwayFromObject	1	0x0091c6b5	kdb name_map

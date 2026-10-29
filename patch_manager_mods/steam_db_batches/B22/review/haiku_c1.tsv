@@ -1,0 +1,17 @@
+gog_addr	steam_addr	verdict	corrected_addr	content_anchor	confidence	reason
+0x008f5120	0x004daf40	unsure			2	Size 80 vs GOG 33; callee 0x004DA750 label unverified vs GOG AurTextureGetTID; no string, confirmed callee or matched offset
+0x0086b700	0x009852a0	mismatch			4	15-byte thunk to 0x00463B20 vs GOG 100-byte body with one callee; size and shape disagree
+0x008f5120	0x004dae60	unsure			2	Size 132 vs GOG 33; callee 0x004DA750 label unverified vs GOG; no string, confirmed callee or matched offset
+0x00827df0	0x00435e80	mismatch			4	113-byte body with 0 direct CALLs (3 vtable calls); GOG 54-byte body calls memset; size and call shape disagree
+0x00827df0	0x00435720	mismatch			5	1885-byte GL context teardown (wglDeleteContext, glDeleteTextures) vs GOG 54 bytes; size and body disagree
+0x00827df0	0x004356e0	unsure			2	Exact size 54 and imm 0x18/0x0c match GOG; sole callee 0x0091C630 is auto-labelled memset, unconfirmed vs GOG 0x00924260
+0x008c1b40	0x004810d0	mismatch			5	80-byte setter with 0 callees; GOG MapToScreen is 1042 bytes with 3 callees (planelineintersection, tan, Vector::operator-)
+0x0060de70	0x0073b7f0	match		caller 0x00736200 CExoTimers::GetLowResolutionTimer (trusted twin of GOG 0x00608330) calls 0x0073b7f0	3	Size 17 and RET 0 exact; sole callee GetTickCount import fits name; GOG callee list empty, so match rests on caller-side credit
+0x0086ab80	0x00984710	mismatch			4	29-byte body stores three 1.0 floats with 0 callers and 0 callees; GOG AurEnableShadows is 15 bytes with 2 callers
+0x0060de70	0x0073b720	mismatch	0x0073b7f0		5	199-byte QueryPerformanceFrequency init vs GOG 17 bytes; caller 0x00736130 is not the mapped twin; decoy 0x0073b7f0 has CALLEE1
+0x0086ab80	0x00984730	mismatch	0x00478ca0		3	37 bytes with 0 callers/callees vs GOG 15; decoy 0x00478ca0 holds CALLEE1 and writes 1 to a global; verify size before use
+0x0086b700	0x009852b0	mismatch			4	15-byte thunk to 0x00452F80 vs GOG 100-byte body with one callee; size and shape disagree
+0x0046a080	0x007f2e60	match		callee 0x007F2EB0 CSWCModule::Destructor_2 (trusted GOG 0x0046a0d0 maps here)	5	Confirmed callee in candidate callees; size 44 and RET 4 exact; operator delete gated on param_2 bit 0 fits scalar deleting dtor
+0x0060de70	0x0073b810	mismatch	0x0073b7f0		4	85-byte QPC/GetTickCount dispatch (Timer::Now shape) vs GOG 17 bytes; caller 0x00736220 is not the mapped twin 0x00736200
+0x008c1b40	0x004809d0	match		member +0x204 float read (cand line 1504) and +0x218 both in disp sets; imm 0xBA2 in both	4	Size 1042 and RET 20 exact; disp and imm sets identical across GOG and candidate; GOG callees not trusted-mapped, so no callee anchor
+0x0086b700	0x009852c0	mismatch			4	15-byte thunk to 0x00463B20 vs GOG 100-byte body with one callee; size and shape disagree

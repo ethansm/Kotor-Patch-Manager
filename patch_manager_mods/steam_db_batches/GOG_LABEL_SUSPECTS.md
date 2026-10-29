@@ -439,3 +439,14 @@ Steam ships its own RET n.
 - 0x645160 `CVirtualMachineInternal::ExecuteCode_5` = Vector::operator/(float) (1/s, then operator*).
 - 0x829060 `GLRender::FrameBufferModificationsATI` = VBO + multitexture array setup; right name unknown.
 - 0x867DC0 `Global::GetResource` removes an array entry (calls CExoArrayList::DelIndex); right name unknown.
+
+**I10c graph check (10-29).** Score = GOG callees/callers whose trusted Steam twin is a callee/caller of the Steam fn
+(scratch `gcheck.py`, `ingest_names.trusted_map`). Every Steam fn pairs with its own GOG fn, not a sibling, so the
+graph cannot rotate any label; it confirms the pairing only. The names stay unshipped:
+- 0x004369a0 / GOG 0x829060 FrameBufferModificationsATI: pair holds (2 + fp, tie 2 with 0x434970/0x434b60 broken by fp); label undecided.
+- 0x0044b210 / GOG 0x645160 ExecuteCode: pair holds (2 + fp, tie 2 with 0x432ee0/0x432f10 broken by fp); label undecided (body = Vector::operator/).
+- 0x00475e50 / GOG 0x867DC0 GetResource: pair holds (2 + fp vs 1); label undecided (body = array DelIndex).
+- 0x0074ac30 / GOG 0x5977A0 ~CSWGuiBlackenedLabel: pair holds (501 + fp vs 16); label undecided (vftable says ~CSWGuiLabel).
+- 0x008d4f60 / GOG 0x5C5330 InitializeStoreType: pair holds (3 + fp vs 2), not a sibling; label undecided (Mac body = OnControlXButton).
+- 0x008d5e20 / GOG 0x5C61F0 UpdateCreateFilters: pair holds (12 + fp vs 9), not a sibling; label undecided (Mac body = BuyItem).
+- 0x008d9d60 / GOG 0x5CA130 DeleteItemEntries: pair holds (4 + fp vs 2), not a sibling; label undecided (Mac body = OnControlXButton).

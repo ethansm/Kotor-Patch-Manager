@@ -1,0 +1,101 @@
+{
+ "batch": "B22",
+ "chunks_short": [
+  "1",
+  "2"
+ ],
+ "chunks_unreviewed": [],
+ "clean": false,
+ "clean_streak_before": 2,
+ "decision": "INSUFFICIENT DECOYS (chunks 1, 2; need >= 10 per chunk)",
+ "decoy_cards": 13,
+ "decoys_accepted": 0,
+ "decoys_per_chunk": {
+  "1": 9,
+  "2": 3
+ },
+ "full_read": 1,
+ "key_error_cards": [],
+ "key_errors": 0,
+ "rows_auto": [
+  {
+   "class": "CSWCCreatureAppearance",
+   "gog": "0x0048d460",
+   "name": "GetCameraOffset",
+   "route": "sig",
+   "steam_addr": "0x0085d3d0"
+  },
+  {
+   "class": "CSWCVisualEffectOnObject",
+   "gog": "0x004fa9f0",
+   "name": "Constructor",
+   "route": "sig",
+   "steam_addr": "0x0086f110"
+  },
+  {
+   "class": "CSWGuiMainMenu",
+   "gog": "0x0053e460",
+   "name": "HandleInputEvent",
+   "route": "sig",
+   "steam_addr": "0x008839c0"
+  },
+  {
+   "class": "Gob",
+   "gog": "0x008f7380",
+   "name": "DeregisterCallback",
+   "route": "sig",
+   "steam_addr": "0x004dd1f0"
+  },
+  {
+   "class": "CSWCVisualEffect",
+   "gog": "0x004f9350",
+   "name": "AttachToScene",
+   "route": "sig",
+   "steam_addr": "0x0086da00"
+  },
+  {
+   "class": "CSWCVisualEffectOnObject",
+   "gog": "0x004fd290",
+   "name": "IsDone",
+   "route": "c2",
+   "steam_addr": "0x008719b0"
+  }
+ ],
+ "rows_full": [
+  {
+   "class": "Global",
+   "gog": "0x0086ab80",
+   "name": "AurEnableShadows",
+   "steam_addr": "0x00478ca0",
+   "why": "reviewer corrected_addr"
+  }
+ ],
+ "rows_sample": [
+  {
+   "class": "Camera",
+   "content_level": "C1",
+   "gog": "0x008c1b40",
+   "name": "MapToScreen",
+   "steam_addr": "0x004809d0"
+  },
+  {
+   "class": "CSWCModule",
+   "content_level": "C1",
+   "gog": "0x0046a080",
+   "name": "Destructor",
+   "steam_addr": "0x007f2e60"
+  },
+  {
+   "class": "CExoTimersInternal",
+   "content_level": "C1",
+   "gog": "0x0060de70",
+   "name": "GetLowResolutionTimer",
+   "steam_addr": "0x0073b7f0"
+  }
+ ],
+ "sample_errors": 0,
+ "sample_pool": 3,
+ "sample_rate": 0.2,
+ "sample_size": 3,
+ "unanswered_decoys": 0
+}

@@ -1,0 +1,7 @@
+card	addr	kind	name	is_decoy	facts_addr	src
+C01	0x00697520	function	Global::ExecuteCommandGetGalaxyMapPlanetAvailable	1	0x00919671	kdb name_map
+C02	0x0091c6b5	function	Global::_free	0	0x0091c6b5	fptwin GOG 0x009242e5 FLIRT
+C03	0x0091c630	function	Global::_memset	0	0x0091c630	fptwin GOG 0x00924260 FLIRT
+C04	0x00698070	function	Global::ExecuteCommandSetLockOrientationInDialog	1	0x0091c630	kdb name_map
+C05	0x00919671	function	Global::_sprintf	0	0x00919671	fptwin GOG 0x00921295 FLIRT
+C06	0x0068c9b0	function	Global::ExecuteCommandMoveAwayFromObject	1	0x0091c6b5	kdb name_map

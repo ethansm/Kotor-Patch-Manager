@@ -1,0 +1,4 @@
+addr	kind	name	confidence	evidence	topic	date
+0x00919671	function	Global::_sprintf	probable	0x00919671: MOV EDI,EDI | src fptwin GOG 0x00921295 FLIRT	ingest-crt	2026-10-29
+0x0091c630	function	Global::_memset	probable	0x0091c630: MOV EDX,dword ptr [ESP + 0xc] | src fptwin GOG 0x00924260 FLIRT	ingest-crt	2026-10-29
+0x0091c6b5	function	Global::_free	probable	0x0091c6b5: PUSH 0xc | src fptwin GOG 0x009242e5 FLIRT	ingest-crt	2026-10-29

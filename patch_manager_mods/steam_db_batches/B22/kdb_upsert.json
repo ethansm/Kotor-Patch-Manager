@@ -1,0 +1,50 @@
+[
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0046a080] Steam batch B22: CALLEE 1 (callees: Destructor_2 0x7f2eb0) | reviewer match with anchor: callee 0x007F2EB0 CSWCModule::Destructor_2 (trusted GOG 0x0046a0d0 maps here)",
+  "name": "CSWCModule::Destructor",
+  "source": "steam-db-B22",
+  "steam_addr": "0x007f2e60"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0060de70] Steam batch B22: CALLEE 1 (callers: GetLowResolutionTimer 0x736200) | reviewer match with anchor: caller 0x00736200 CExoTimers::GetLowResolutionTimer (trusted twin of GOG 0x00608330) calls 0x0073b7f0",
+  "name": "CExoTimersInternal::GetLowResolutionTimer",
+  "source": "steam-db-B22",
+  "steam_addr": "0x0073b7f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; cdecl retn=0; GOG 0x00827df0] Steam batch B22: gate evidence was for a corrected pick | override: [a] graph 2 hits + fp identical 54B, unique fp twin; gate top 0x00435720 is 1885B GL teardown (Haiku mismatch c5)",
+  "name": "GLRender::RenderDrawableSquares",
+  "source": "steam-db-B22",
+  "steam_addr": "0x004356e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; cdecl retn=0; GOG 0x0086b700] Steam batch B22: gate evidence was for a corrected pick | override: [a] graph 6 hits + fp identical vs rival 0x00484910 4; gate top 0x009852b0 is a 15B thunk, 0 hits",
+  "name": "Global::AurCubeMapAvailable",
+  "source": "steam-db-B22",
+  "steam_addr": "0x00484970"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=20; GOG 0x008c1b40] Steam batch B22: SIG 1.00 | reviewer match with anchor: member +0x204 float read (cand line 1504) and +0x218 both in disp sets; imm 0xBA2 in both",
+  "name": "Camera::MapToScreen",
+  "source": "steam-db-B22",
+  "steam_addr": "0x004809d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=0; GOG 0x008f5120] Steam batch B22: gate evidence was for a corrected pick | override: [a] graph 4 hits + fp identical vs rival 0x0047ea60 2; gate top 0x004daef0 1 hit, trusted to GOG 0x8f5080",
+  "name": "Material::GetTextureTID",
+  "source": "steam-db-B22",
+  "steam_addr": "0x004daf90"
+ }
+]

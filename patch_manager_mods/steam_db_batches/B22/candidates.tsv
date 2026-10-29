@@ -1,0 +1,14 @@
+class	name	gog	gog_callconv	gog_param	gog_size	gog_retn	candidates
+CSWCModule	Destructor	0x0046a080		4	44	4	0x007f2e60|i10_graph+mapper:vote+near;0x007f2e90|near;0x007f3040|near
+CSWCCreatureAppearance	GetCameraOffset	0x0048d460		0	79	0	0x0085d3d0|b21_likely+mapper:vote+near;0x0085d2d0|near;0x0085d260|near
+CSWCVisualEffect	AttachToScene	0x004f9350		4	47	4	0x0086da00|b21_likely+mapper:vote+near;0x0086d900|near
+CSWCVisualEffectOnObject	Constructor	0x004fa9f0		0	866	0	0x0086f110|b21_likely+mapper:vote+near;0x0086f480|near;0x0086f070|near
+CSWCVisualEffectOnObject	IsDone	0x004fd290		0	94	0	0x008719b0|b21_likely+mapper:vote+near;0x00871a10|near
+CSWGuiMainMenu	HandleInputEvent	0x0053e460		8	598	8	0x008839c0|b21_likely+mapper:vote+near;0x00883c20|near;0x00883ca0|near
+CExoTimersInternal	GetLowResolutionTimer	0x0060de70		0	17	0	0x0073b7f0|i10_graph
+GLRender	RenderDrawableSquares	0x00827df0		0	54	0	0x004356e0|i10_graph+near;0x00435720|mapper:vote+near;0x004356c0|near
+Global	AurEnableShadows	0x0086ab80		0	15	0	0x00478ca0|i10_graph;0x00984730|mapper:vote+name_map:medium:gog_cluster_delta_map.py
+Global	AurCubeMapAvailable	0x0086b700		0	100	0	0x00484970|i10_graph;0x009852b0|mapper:vote+name_map:medium:gog_cluster_delta_map.py;0x007563b0|near;0x00756380|near
+Camera	MapToScreen	0x008c1b40		17	1042	20	0x004809d0|i10_twin+near;0x00480700|near
+Material	GetTextureTID	0x008f5120	__thiscall	0	33	0	0x004daf90|i10_graph+mapper:vote+near;0x004daf40|near;0x004daef0|near
+Gob	DeregisterCallback	0x008f7380		4	107	4	0x004dd1f0|b21_likely+mapper:vote;0x00504d40|near;0x00504cf0|near;0x00504fc0|near

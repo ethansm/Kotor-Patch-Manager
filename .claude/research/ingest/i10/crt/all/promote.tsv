@@ -1,0 +1,10 @@
+addr	kind	name	src	verdict	quote
+0x0091c630	function	Global::_memset	fptwin GOG 0x00924260 FLIRT	consistent	void * __cdecl _memset(void *_Dst,int _Val,size_t _Size)
+0x0091c6b5	function	Global::_free	fptwin GOG 0x009242e5 FLIRT	consistent	void __cdecl _free(void *_Memory)
+0x00919671	function	Global::_sprintf	fptwin GOG 0x00921295 FLIRT	consistent	int __cdecl _sprintf(char *_Dest,char *_Format,...)
+0x0091c630	function	Global::_memset	fptwin GOG 0x00924260 FLIRT	consistent	void * __cdecl _memset(void *_Dst,int _Val,size_t _Size)
+0x00919671	function	Global::_sprintf	fptwin GOG 0x00921295 FLIRT	consistent	int __cdecl _sprintf(char *_Dest,char *_Format,...)
+0x0091c6b5	function	Global::_free	fptwin GOG 0x009242e5 FLIRT	consistent	void __cdecl _free(void *_Memory)
+0x0091c6b5	function	Global::_free	fptwin GOG 0x009242e5 FLIRT	consistent	void __cdecl _free(void *_Memory)
+0x0091c630	function	Global::_memset	fptwin GOG 0x00924260 FLIRT	consistent	void * __cdecl _memset(void *_Dst,int _Val,size_t _Size)
+0x00919671	function	Global::_sprintf	fptwin GOG 0x00921295 FLIRT	consistent	int __cdecl _sprintf(char *_Dest,char *_Format,...)

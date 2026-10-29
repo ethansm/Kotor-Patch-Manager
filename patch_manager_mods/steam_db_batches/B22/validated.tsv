@@ -1,0 +1,7 @@
+steam_addr	name	verdict	tier	gog_addr	batch	fp_sha	evidence_ref
+0x004356e0	GLRender::RenderDrawableSquares	verified	opus	0x00827df0	B22	d4a34376bd9c7ee7	steam_db_batches/B22/final_rows.tsv
+0x004809d0	Camera::MapToScreen	verified	reviewer	0x008c1b40	B22	e9101287a3b6d981	steam_db_batches/B22/final_rows.tsv
+0x00484970	Global::AurCubeMapAvailable	verified	opus	0x0086b700	B22	c5d754eac4f04e96	steam_db_batches/B22/final_rows.tsv
+0x004daf90	Material::GetTextureTID	verified	opus	0x008f5120	B22	bffff57a9d6bfb1a	steam_db_batches/B22/final_rows.tsv
+0x0073b7f0	CExoTimersInternal::GetLowResolutionTimer	verified	reviewer	0x0060de70	B22	ea2fcc6ab3247e76	steam_db_batches/B22/final_rows.tsv
+0x007f2e60	CSWCModule::Destructor	verified	reviewer	0x0046a080	B22	38e58ae4946bae72	steam_db_batches/B22/final_rows.tsv

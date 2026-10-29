@@ -1,0 +1,4 @@
+addr	kind	name	form	src	fn_start	offset	status	kdb_name
+0x00919671	function	Global::_sprintf	qualified	fptwin GOG 0x00921295 FLIRT	0x00919671	0	new	
+0x0091c630	function	Global::_memset	qualified	fptwin GOG 0x00924260 FLIRT	0x0091c630	0	new	
+0x0091c6b5	function	Global::_free	qualified	fptwin GOG 0x009242e5 FLIRT	0x0091c6b5	0	new	

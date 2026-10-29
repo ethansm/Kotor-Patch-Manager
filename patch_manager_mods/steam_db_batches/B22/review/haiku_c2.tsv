@@ -1,0 +1,5 @@
+gog_addr	steam_addr	verdict	corrected_addr	content_anchor	confidence	reason
+0x0046a080	0x007f3640	mismatch			4	Body is a per-frame update (CSWCArea::Update, GetActivePauseState); no call to GOG Destructor_2 (trusted map 0x007f2eb0); 297 vs 44 B
+0x0086ab80	0x00984760	unsure			2	No callees, strings or trusted-mapped caller; body is three global stores; candidate callers=0; 33 vs 15 B. No anchor either way
+0x008f5120	0x004daef0	mismatch			3	Decompile returns void (no EAX value) though GetTextureTID returns an ID; GOG callee AurTextureGetTID absent; 80 vs 33 B
+0x0046a080	0x007f2910	mismatch			3	Bind/unbind body (writes this+0x68, calls UnRegisterCallbacks); no call to GOG Destructor_2 (0x007f2eb0) or 0x00921321; 235 vs 44 B
