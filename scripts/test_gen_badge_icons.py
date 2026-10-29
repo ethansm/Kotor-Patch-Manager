@@ -57,7 +57,7 @@ class BadgeIconTexTest(unittest.TestCase):
             self.assertEqual(covered, [], f"{ident}: badge covers the icon centre")
             self.assertGreater(sum(1 for y in range(64) for x in range(64) if alpha_at(d, x, y) > 200), 20, f"{ident}: badge is empty")
 
-    def test_tier_pip_count_grows(self):
+    def test_tier_bar_count_grows(self):
         solid = [sum(1 for y in range(64) for x in range(64) if alpha_at(self.arrays[i], x, y) > 200) for _, i in ORDER[1:]]
         self.assertLess(solid[0], solid[1]); self.assertLess(solid[1], solid[2])
 

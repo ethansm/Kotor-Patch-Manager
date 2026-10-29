@@ -8,7 +8,7 @@ only art we ship is our own (no modified game textures in the repo). Which spell
 
 Writes patch_manager_mods/buff_duration_hud_src/BadgeIconTex.inc (uncompressed 32-bit TGA, same format as PoisonIconTex.inc):
   bh_badge_launch   three warm speed lines trailing to the lower left, outside the grenade sphere (launched grenade)
-  bh_badge_t2..t4   2-4 gold pips stacked up the right edge, dark rim (tier II-IV)
+  bh_badge_t2..t4   2-4 upright gold bars side by side in the upper right, dark rim (tier II-IV, reads like the Roman numeral)
   kBadgeTex[] / kBadgeTexCount   embtex::Tex table in that order (index 0 = launch, 1..3 = tier 2..4)
 
   (no args)  write the .inc
@@ -29,7 +29,7 @@ N = 64
 SS = 4   # supersample per axis
 
 STREAK_DARK, STREAK_CORE = (16, 12, 8), (255, 222, 150)
-PIP_RIM, PIP_GOLD, PIP_HI = (18, 14, 8), (196, 150, 60), (255, 236, 170)
+BAR_RIM, BAR_LIGHT, BAR_DEEP = (18, 14, 8), (255, 226, 140), (185, 136, 45)   # gold runs light (left) -> deep (right) across each bar
 
 
 def _seg(px, py, ax, ay, bx, by):
@@ -63,15 +63,22 @@ def launch(x, y):
     return c
 
 
+def _rrect(px, py, x0, y0, x1, y1, r):
+    """Signed distance to a rounded rectangle (negative inside)."""
+    qx = abs(px - (x0 + x1) / 2) - ((x1 - x0) / 2 - r)
+    qy = abs(py - (y0 + y1) / 2) - ((y1 - y0) / 2 - r)
+    return math.hypot(max(qx, 0.0), max(qy, 0.0)) + min(max(qx, qy), 0.0) - r
+
+
 def tier(n):
+    bars = [(57.0 - k * 5.5, 3.0, 60.5 - k * 5.5, 15.0) for k in range(n)]   # rightmost first, growing to the left
     def f(x, y):
         c = [0.0, 0.0, 0.0, 0.0]
-        for k in range(n):
-            cx, cy = 56.0, 56.0 - k * 10
-            d = math.hypot(x - cx, y - cy)
-            c = _over(c, PIP_RIM, 5.2 - d)
-            c = _over(c, PIP_GOLD, 3.8 - d)
-            c = _over(c, PIP_HI, 1.8 - math.hypot(x - cx + 1, y - cy + 1))
+        for x0, y0, x1, y1 in bars:
+            d = _rrect(x, y, x0, y0, x1, y1, 1.0)
+            c = _over(c, BAR_RIM, 1.2 - d)
+            t = max(0.0, min(1.0, (x - x0) / (x1 - x0)))
+            c = _over(c, tuple(BAR_LIGHT[k] + (BAR_DEEP[k] - BAR_LIGHT[k]) * t for k in range(3)), -0.2 - d)
         return c
     return f
 
