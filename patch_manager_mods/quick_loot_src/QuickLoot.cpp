@@ -1,3 +1,4 @@
+// Quick Loot 0.7.1-dev = 0.7.0 + page registered at init (it missed the Options build), four page rows (Item tooltip, Quest items first, Compare with equipped, Panel background), FOOT / EQUIP-MISS logs.
 // Quick Loot 0.7.0-dev (hot-swap, no hook changes) = 0.6.1 + the QL9..QL13 review set: QL9 tooltip redesign (icon, title + category line, rules from the
 //   baseitems row + the engine's own property text 0x00614E10, flavor, foot; layout and rules are pure: QuickLootLogic.h TipDraw / QuickLootRules.h), QL10 stack
 //   column (right-aligned "x2" per row), QL11 sorted rows (plot first, credits second "Credits (N)", then container order; clicks / tooltips address items by
@@ -106,7 +107,7 @@ KP_LOG_PATCH("quick-loot");
 
 namespace {
 
-constexpr const char* Version = "0.7.0-dev";
+constexpr const char* Version = "0.7.1-dev";
 constexpr unsigned Site = 0x7100;   // saferead failure-ring site id
 // Steam addresses (static RE, doc 52 / .claude/research/quick_loot/README.md); AppGlobal and ClientToServerObjectId come from GameAddr.h.
 constexpr uintptr_t GetPlaceableByGameObjectID = 0x0051C160;   // thiscall(serverApp, serverId) RET 4 -> CSWSPlaceable* (0 = none)
@@ -309,6 +310,10 @@ void readItemIcon(uintptr_t item, char* out) {
 }
 
 // Reads the container's item names / stacks / icon resrefs. SafeRead-guarded; an unreadable part just leaves fewer (or "item") entries.
+// 0.7.1-dev page rows (quick_loot.ini TipDetail / SortFirst / EquippedLine / Panel; QuickLootPage.h), set at init and by the page.
+int g_tipDetail = qlpage::TipFull;
+bool g_sortFirst = true, g_equipLine = true, g_panelDark = true;
+
 void captureItems(uintptr_t plc, Captured& c) {
     c.count = 0; c.total = 0;
     uintptr_t repo = 0;
@@ -342,7 +347,7 @@ void captureItems(uintptr_t plc, Captured& c) {
         ++c.count;
     }
     // QL11: plot items first, credits second, then the container's own order. The ids stay the object ids, so clicks and tooltips find the item by id.
-    if (c.count > 1) {
+    if (c.count > 1 && g_sortFirst) {
         static Captured src;
         src = c;
         uint8_t order[qlogic::ListMaxItems];
@@ -561,9 +566,12 @@ uintptr_t leaderRepo(uintptr_t cre) {
 // The item in the creature's inventory slot `mask` (CSWInventory::GetItemInSlot) or 0.
 uintptr_t equippedItem(uintptr_t cre, uint32_t mask) {
     uint32_t inv = 0;
-    if (!rd<uint32_t>(cre, Creature_Inventory, &inv) || !inv || !saferead::probeRead(SiteTake, reinterpret_cast<const void*>(static_cast<uintptr_t>(inv)), 0x20)) return 0;
-    const uintptr_t it = reinterpret_cast<uintptr_t(__thiscall*)(uintptr_t, uint32_t)>(InvGetItemInSlot)(inv, mask);
     static unsigned logs = 0;
+    if (!rd<uint32_t>(cre, Creature_Inventory, &inv) || !inv || !saferead::probeRead(SiteTake, reinterpret_cast<const void*>(static_cast<uintptr_t>(inv)), 0x20)) {
+        if (logs < 10) { ++logs; KP_LOG(chMain, "EQUIP-MISS mask=%x cre=%08x inv=%08x (creature+0x1150 unreadable)", (unsigned)mask, (unsigned)cre, (unsigned)inv); }
+        return 0;
+    }
+    const uintptr_t it = reinterpret_cast<uintptr_t(__thiscall*)(uintptr_t, uint32_t)>(InvGetItemInSlot)(inv, mask);
     if (logs < 10) { ++logs; KP_LOG(chMain, "EQUIP mask=%x item=%08x", (unsigned)mask, (unsigned)it); }
     return (it && saferead::probeRead(SiteTake, reinterpret_cast<const void*>(it), Item_IconProbe)) ? it : 0;
 }
@@ -614,6 +622,7 @@ void buildFoot(uintptr_t item, const BaseStats& bs, int baseId, int stack, const
 
 // QL8 / QL9: the tooltip model of the container item with object id expectId (the UI row `index` is not the slot: sorted list). The item stays where it is.
 bool engineDescribe(uintptr_t plc, unsigned index, uint32_t expectId, qlogic::TipData* out) {
+    if (g_tipDetail == qlpage::TipOff) return false;   // "Item tooltip: Off" (the machine just asks again after the next hover delay; nothing is read)
     saferead::beginScope();
     uintptr_t repo = 0;
     qlogic::TakeWhy why = qlogic::TakeWhy::Ok;
@@ -668,7 +677,11 @@ bool engineDescribe(uintptr_t plc, unsigned index, uint32_t expectId, qlogic::Ti
         }
     }
     qlogic::buildTipModel(in, name, stack, out);
-    buildFoot(item, bs, baseId, stack, name, lang, out->foot, sizeof out->foot);
+    if (g_tipDetail == qlpage::TipStats && out->nRules > 0) out->flavor[0] = 0;   // "Stats only"; an item without rules keeps its description (it IS the rules, e.g. the medpac)
+    if (g_equipLine) buildFoot(item, bs, baseId, stack, name, lang, out->foot, sizeof out->foot);
+    else out->foot[0] = 0;
+    static unsigned footLogs = 0;   // 0.7.1-dev: 0.7.0 play showed no EQUIP line at all; say which branch the foot took
+    if (footLogs < 10) { ++footLogs; KP_LOG(chMain, "FOOT base=%d dice=%d ac=%d stack=%d opener=%08x cre=%08x foot='%s'", baseId, bs.numDice, bs.baseAC, stack, (unsigned)g_m.peek.opener, (unsigned)leaderCreature(g_m.peek.opener), out->foot); }
     return true;
 }
 
@@ -1054,7 +1067,7 @@ void backDraw(const qlogic::Rect& r) {
 
 // 0.7.0-dev: the opacity underlay under the frame (block-relative rect `fill`): a second uibit_fill_2bt, only with the vanilla frame template (the flat backing has its own alpha).
 void backFillDraw(const qlogic::Rect& fill, const qlogic::Rect& blk) {
-    if (!g_backFill.c || !g_backFrame || g_backOff) { lblHideOne(g_backFill); return; }
+    if (!g_backFill.c || !g_backFrame || g_backOff || !g_panelDark) { lblHideOne(g_backFill); return; }
     if (!lblDrawFilled(g_backFill, TexFill2bt, SbInsetTint, 1.0f, { blk.x + fill.x, blk.y + fill.y, fill.w, fill.h }, false)) lblHideOne(g_backFill);
 }
 
@@ -1109,7 +1122,8 @@ bool tipDraw(const qlogic::ListDraw& d, const qlogic::Rect& blk, const qlogic::R
     const char* titleFont = (t.bigTitle && g_font16Ok) ? FontTitle : FontName;
     const int iconRow = static_cast<int>(absRow) - static_cast<int>(d.off);
     // draw order = creation order: underlay, frame, icon, title, category, dividers, columns, flavor, foot
-    if (!lblDrawFilled(g_tipFill, TexFill2bt, SbInsetTint, 1.0f, t.fill, false)) return false;
+    if (!g_panelDark) lblHideOne(g_tipFill);   // "Vanilla" panel: the template fill only
+    else if (!lblDrawFilled(g_tipFill, TexFill2bt, SbInsetTint, 1.0f, t.fill, false)) return false;
     if (!lblDrawFrame(g_tipFrame, t.frame, TealFrame)) return false;
     if (!lblDrawIcon(g_tipIcon, (iconRow >= 0 && iconRow < static_cast<int>(d.vis)) ? d.icons[iconRow] : "", t.icon)) return false;
     if (!lblDrawText(g_tipTitle, t.titleText, t.title, 9, Cream, titleFont)) {
@@ -1495,6 +1509,7 @@ void applyLive() {
     g_openM = g_live.openM; g_closeM = g_live.closeM;
     g_m.cfg.anchor = g_live.anchor; g_m.cfg.proxOn = g_live.prox; g_m.cfg.listRows = g_live.rows;
     g_m.cfg.openM = g_live.openM; g_m.cfg.closeM = g_live.closeM;
+    g_tipDetail = g_live.tip; g_sortFirst = g_live.sort; g_equipLine = g_live.equip; g_panelDark = g_live.panel != 0;
 }
 
 int32_t pageOnChange(void*, int, const char* id, int32_t requested, int) {
@@ -1509,8 +1524,8 @@ int32_t pageOnChange(void*, int, const char* id, int32_t requested, int) {
     }
     if (g_pageLogs < 60) {
         ++g_pageLogs;
-        KP_LOG(chMain, "PAGE row=%s req=%d final=%d anchor=%d prox=%d rows=%u openM=%.1f closeM=%.1f ini=%d", id, static_cast<int>(requested), static_cast<int>(fin), g_live.anchor,
-               g_live.prox ? 1 : 0, g_live.rows, static_cast<double>(g_live.openM), static_cast<double>(g_live.closeM), wrote ? 1 : 0);
+        KP_LOG(chMain, "PAGE row=%s req=%d final=%d anchor=%d prox=%d rows=%u openM=%.1f closeM=%.1f tip=%d sort=%d equip=%d panel=%d ini=%d", id, static_cast<int>(requested), static_cast<int>(fin), g_live.anchor,
+               g_live.prox ? 1 : 0, g_live.rows, static_cast<double>(g_live.openM), static_cast<double>(g_live.closeM), g_live.tip, g_live.sort ? 1 : 0, g_live.equip ? 1 : 0, g_live.panel, wrote ? 1 : 0);
     }
     return fin;
 }
@@ -1581,7 +1596,14 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     g_sounds = GetPrivateProfileIntA("QuickLoot", "Sounds", 1, IniPath) != 0;   // 0.7.0-dev QL12
     g_live.anchor = g_m.cfg.anchor; g_live.prox = g_proxOn; g_live.rows = g_m.cfg.listRows; g_live.openM = g_openM; g_live.closeM = g_closeM;
     g_live.closeExplicit = closeExplicit; g_live.closeExplicitM = closeExplicitM;
+    g_live.tip = GetPrivateProfileIntA("QuickLoot", "TipDetail", qlpage::TipFull, IniPath);   // 0.7.1-dev page rows; applyLive below clamps nothing, so clamp here
+    if (g_live.tip < qlpage::TipFull || g_live.tip > qlpage::TipOff) g_live.tip = qlpage::TipFull;
+    g_live.sort = GetPrivateProfileIntA("QuickLoot", "SortFirst", 1, IniPath) != 0;
+    g_live.equip = GetPrivateProfileIntA("QuickLoot", "EquippedLine", 1, IniPath) != 0;
+    g_live.panel = GetPrivateProfileIntA("QuickLoot", "Panel", 1, IniPath) != 0 ? 1 : 0;
+    g_tipDetail = g_live.tip; g_sortFirst = g_live.sort; g_equipLine = g_live.equip; g_panelDark = g_live.panel != 0;
     pageInit(api);
+    pagePoll();   // 0.7.1-dev: register now: mod-config binds its entry list once, when the Options panel is first built (27.9 s in the 10-29 log); the HUD-frame poll registered at 31.6 s and the page never showed
     g_input.init(api, "quick-loot");
     g_input.connect();   // gui-input may load later: ensureWheel polls
     g_hud.init(api, "quick-loot");

@@ -1,10 +1,14 @@
 // QuickLootPage.h -- the Mod Configuration page of quick-loot (doc 52 QL7, doc 46 declarative layer). Pure text + a few pure helpers, no Win32, so
-// quick_loot_page_test.cpp parses the shipped schema on the host. Four rows:
+// quick_loot_page_test.cpp parses the shipped schema on the host. Eight rows:
 //   anchor  list     quick_loot.ini [QuickLoot] Anchor            0 Under name tag / 1 Below container / 2 Beside name tag   (bound, stores the index)
 //   prox    toggle   ProximityEnabled                              auto-open nearby containers                                  (bound, 0 / 1)
 //   rows    stepper  ListRows                                      visible item rows, 4..12 step 2                              (bound, the value)
 //   dist    list     (unbound) OpenM presets Near 2 m / Normal 3 m / Far 4.5 m; the hook writes OpenM into the ini itself and CloseM follows as OpenM + 2
 //                    (a CloseM key in the ini is an explicit override and wins, clamped to >= OpenM + 1)
+//   tip     list     TipDetail     0.7.1-dev: 0 Full (rules + description) / 1 Stats only (no description unless there are no rules) / 2 Off   (bound)
+//   sort    toggle   SortFirst     quest items and credits first (QL11)                                                                       (bound)
+//   equip   toggle   EquippedLine  the "Equipped: ..." / "In inventory: N" tooltip line (QL13)                                                (bound)
+//   panel   list     Panel         0 Vanilla (the template fill, ~0.78) / 1 Dark (+ the underlay, ~0.95)                                     (bound)
 // Enabled (master switch = install state), ScanMs (timer) and TakeKey stay ini-only: the declarative layer has no key-binding row type, and a VK code
 // is not a taste setting (doc 45 value test). Every row applies live: the hook below sets the mod's own config (g_m.cfg), no restart.
 #pragma once
@@ -21,13 +25,18 @@ constexpr const char* kRowAnchor = "anchor";
 constexpr const char* kRowProx = "prox";
 constexpr const char* kRowRows = "rows";
 constexpr const char* kRowDist = "dist";
+constexpr const char* kRowTip = "tip";
+constexpr const char* kRowSort = "sort";
+constexpr const char* kRowEquip = "equip";
+constexpr const char* kRowPanel = "panel";
+enum TipDetail { TipFull = 0, TipStats = 1, TipOff = 2 };
 
 // Every string is at most 95 bytes (TomlMini rejects longer ones; see selfheal_page_test).
 constexpr const char* kPageSchema = R"TOML(
 [page]
 name = "Quick Loot"
 title = "Quick Loot"
-desc = "How the container list is placed and when it opens. All changes apply at once."
+desc = "How the container list looks, where it shows and when it opens. All changes apply at once."
 
 [[row]]
 id = "anchor"
@@ -71,6 +80,48 @@ label = "Open distance"
 desc = "How close you walk before a container lists its items. The list closes 2 m farther out."
 default = 1
 choices = ["Near (2 m)", "Normal (3 m)", "Far (4.5 m)"]
+
+[[row]]
+id = "tip"
+kind = "list"
+label = "Item tooltip"
+desc = "Hovering a row shows the item: stats and description, stats only, or nothing."
+default = 0
+choices = ["Full", "Stats only", "Off"]
+ini = "quick_loot.ini"
+section = "QuickLoot"
+key = "TipDetail"
+
+[[row]]
+id = "sort"
+kind = "toggle"
+label = "Quest items and credits first"
+desc = "Plot items, then credits, go to the top of the list. Off: the container's own order."
+default = 1
+ini = "quick_loot.ini"
+section = "QuickLoot"
+key = "SortFirst"
+
+[[row]]
+id = "equip"
+kind = "toggle"
+label = "Compare with equipped"
+desc = "The tooltip ends with what you have equipped, or how many you carry."
+default = 1
+ini = "quick_loot.ini"
+section = "QuickLoot"
+key = "EquippedLine"
+
+[[row]]
+id = "panel"
+kind = "list"
+label = "Panel background"
+desc = "Vanilla: the see-through game panel. Dark: nearly opaque, easier to read."
+default = 1
+choices = ["Vanilla", "Dark"]
+ini = "quick_loot.ini"
+section = "QuickLoot"
+key = "Panel"
 )TOML";
 
 // ---- open-distance presets (the unbound "dist" row)
@@ -102,6 +153,9 @@ struct Live {
     float openM = qlogic::DefaultOpenM, closeM = qlogic::DefaultCloseM;
     bool closeExplicit = false;
     float closeExplicitM = qlogic::DefaultCloseM;
+    int tip = TipFull;
+    bool sort = true, equip = true;
+    int panel = 1;              // 1 = Dark
 };
 // One change request from the page: returns the FINAL value (the request, clamped). *persistOpenM = the "dist" row changed OpenM (the hook writes it to the ini).
 inline int32_t applyRow(Live& L, const char* id, int32_t v, bool* persistOpenM) {
@@ -109,6 +163,10 @@ inline int32_t applyRow(Live& L, const char* id, int32_t v, bool* persistOpenM) 
     if (strcmp(id, kRowAnchor) == 0) { L.anchor = qlogic::clampAnchorMode(v); return L.anchor; }
     if (strcmp(id, kRowProx) == 0) { L.prox = v != 0; return L.prox ? 1 : 0; }
     if (strcmp(id, kRowRows) == 0) { L.rows = qlogic::clampListRows(v); return static_cast<int32_t>(L.rows); }
+    if (strcmp(id, kRowTip) == 0) { L.tip = (v >= TipFull && v <= TipOff) ? v : TipFull; return L.tip; }
+    if (strcmp(id, kRowSort) == 0) { L.sort = v != 0; return L.sort ? 1 : 0; }
+    if (strcmp(id, kRowEquip) == 0) { L.equip = v != 0; return L.equip ? 1 : 0; }
+    if (strcmp(id, kRowPanel) == 0) { L.panel = v == 0 ? 0 : 1; return L.panel; }
     if (strcmp(id, kRowDist) == 0) {
         const int i = (v >= 0 && v < kNumDist) ? v : kDistDefault;
         L.openM = distOpenFor(i);

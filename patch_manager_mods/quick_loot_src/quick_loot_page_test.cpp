@@ -16,11 +16,11 @@ int main() {
     const bool ok = mcdecl::parseSchema(kPageSchema, strlen(kPageSchema), g_pd, err, sizeof err);
     if (!ok) printf("schema error: %s\n", err);
     kt::Check("the shipped schema parses", ok);
-    kt::CheckEq("four rows", g_pd.nRows, 4);
+    kt::CheckEq("eight rows (0.7.1-dev: tip, sort, equip, panel)", g_pd.nRows, 8);
     kt::Check("page name", strcmp(g_pd.name, "Quick Loot") == 0 && strcmp(g_pd.title, "Quick Loot") == 0);
-    const char* ids[4] = { kRowAnchor, kRowProx, kRowRows, kRowDist };
-    for (int i = 0; i < 4 && i < g_pd.nRows; ++i) kt::Check(ids[i], strcmp(g_pd.rows[i].id, ids[i]) == 0);
-    if (g_pd.nRows == 4) {
+    const char* ids[8] = { kRowAnchor, kRowProx, kRowRows, kRowDist, kRowTip, kRowSort, kRowEquip, kRowPanel };
+    for (int i = 0; i < 8 && i < g_pd.nRows; ++i) kt::Check(ids[i], strcmp(g_pd.rows[i].id, ids[i]) == 0);
+    if (g_pd.nRows == 8) {
         const mcdecl::RowDecl& a = g_pd.rows[0];
         kt::Check("anchor: list of the three modes, bound to Anchor", a.kind == mcdecl::K_LIST && a.nChoices == qlogic::AnchorModeCount && a.def == 0 &&
                   strcmp(a.ini, "quick_loot.ini") == 0 && strcmp(a.section, "QuickLoot") == 0 && strcmp(a.key, "Anchor") == 0 &&
@@ -33,8 +33,18 @@ int main() {
         kt::Check("rows: every stepper stop is a valid ListRows", qlogic::clampListRows(r.minV) == static_cast<unsigned>(r.minV) && qlogic::clampListRows(r.maxV) == static_cast<unsigned>(r.maxV));
         const mcdecl::RowDecl& d = g_pd.rows[3];
         kt::Check("dist: unbound list of the presets, Normal default", d.kind == mcdecl::K_LIST && d.nChoices == kNumDist && d.def == kDistDefault && d.ini[0] == 0 && d.key[0] == 0);
-        for (int i = 0; i < 4; ++i) kt::Check("row ids are unique and short", strlen(g_pd.rows[i].id) < 31 && g_pd.find(g_pd.rows[i].id) == i);
-        for (int i = 0; i < 4; ++i) kt::Check("desc fits one line of the description pane", strlen(g_pd.rows[i].desc) <= 95);
+        const mcdecl::RowDecl& t = g_pd.rows[4];
+        kt::Check("tip: Full / Stats only / Off, Full default, bound to TipDetail", t.kind == mcdecl::K_LIST && t.nChoices == 3 && t.def == TipFull &&
+                  strcmp(t.choices[0], "Full") == 0 && strcmp(t.choices[1], "Stats only") == 0 && strcmp(t.choices[2], "Off") == 0 && strcmp(t.key, "TipDetail") == 0);
+        const mcdecl::RowDecl& so = g_pd.rows[5];
+        kt::Check("sort: toggle on, bound to SortFirst", so.kind == mcdecl::K_TOGGLE && so.def == 1 && strcmp(so.key, "SortFirst") == 0 && strcmp(so.ini, "quick_loot.ini") == 0);
+        const mcdecl::RowDecl& eq = g_pd.rows[6];
+        kt::Check("equip: toggle on, bound to EquippedLine", eq.kind == mcdecl::K_TOGGLE && eq.def == 1 && strcmp(eq.key, "EquippedLine") == 0);
+        const mcdecl::RowDecl& pa = g_pd.rows[7];
+        kt::Check("panel: Vanilla / Dark, Dark default, bound to Panel", pa.kind == mcdecl::K_LIST && pa.nChoices == 2 && pa.def == 1 &&
+                  strcmp(pa.choices[0], "Vanilla") == 0 && strcmp(pa.choices[1], "Dark") == 0 && strcmp(pa.key, "Panel") == 0);
+        for (int i = 0; i < 8; ++i) kt::Check("row ids are unique and short", strlen(g_pd.rows[i].id) < 31 && g_pd.find(g_pd.rows[i].id) == i);
+        for (int i = 0; i < 8; ++i) kt::Check("desc fits one line of the description pane", strlen(g_pd.rows[i].desc) <= 95);
     }
     // defaults pinned to the mod's own
     kt::Check("Normal preset = the mod default OpenM, CloseM follows to the mod default", kDistOpenM[kDistDefault] == qlogic::DefaultOpenM && closeFor(qlogic::DefaultOpenM, false, 0) == qlogic::DefaultCloseM);
@@ -69,6 +79,15 @@ int main() {
     applyRow(L, "dist", 0, &persist);
     kt::Check("dist Near with an explicit CloseM: CloseM stays 7", L.openM == 2.0f && L.closeM == 7.0f && persist);
     kt::CheckEq("dist out of range -> Normal", applyRow(L, "dist", 7, &persist), kDistDefault);
+    kt::Check("Live defaults match the schema: tip Full, sort on, equip on, panel Dark", L.tip == TipFull && L.sort && L.equip && L.panel == 1);
+    kt::CheckEq("tip Stats only", applyRow(L, "tip", TipStats, &persist), TipStats);
+    kt::CheckEq("tip out of range -> Full", applyRow(L, "tip", 9, &persist), TipFull);
+    kt::CheckEq("sort off", applyRow(L, "sort", 0, &persist), 0);
+    kt::Check("sort applied", !L.sort);
+    kt::CheckEq("equip off", applyRow(L, "equip", 0, &persist), 0);
+    kt::CheckEq("panel Vanilla", applyRow(L, "panel", 0, &persist), 0);
+    kt::CheckEq("panel anything else -> Dark", applyRow(L, "panel", 5, &persist), 1);
+    kt::Check("the bound rows persist nothing through the hook", !persist);
     kt::CheckEq("unknown row: value passes through", applyRow(L, "nope", 5, &persist), 5);
     kt::Check("unknown row persists nothing", !persist);
     return kt::Report("quick_loot_page_test");
