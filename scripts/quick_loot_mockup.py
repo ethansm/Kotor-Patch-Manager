@@ -9,7 +9,7 @@ vanilla inventory_p gui); writes PNGs only to OUTDIR.
 
 What the mod draws (patch_manager_mods/quick_loot_src/QuickLoot.cpp blockDraw + QuickLootLogic.h), all engine px (guikit::setRect writes engine px;
 3840x1600 on the dev box; NOT 800x600 gui units):
-  one BLOCK = frame panel + header row + up to ListRows item rows (default 8, 1..12) + a scrollbar when the list has more rows than that.
+  one BLOCK = frame panel + header row + up to ListRows item rows (default 4, 1..12) + a scrollbar when the list has more rows than that.
   Frame: a label cloned from the HUD template LBL_MOULDING3 (the vanilla tooltip frame: FILL uibit_fill_2bt, EDGE uibit_brdr_16bet, CORNER
   uibit_brdr_16bct, DIMENSION 16 taken as px, tint TEAL_FRAME) -- the engine draws the edges and corners from the .gui, GuiKit only sets tint
   and alpha. The fill is black at alpha 0.78 (texture alpha 199/255), alpha 1.0.
@@ -73,9 +73,39 @@ MENU_ORIGIN = (1700, 520)         # arbitrary target screen position for the moc
 
 
 # ---- formatter ports -------------------------------------------------------------------------------------------
+def strip_tags(s, cap=None):
+    """QuickLootLogic.h stripTags (0.7.0-dev): copies s without every "{...}" of at most 12 inner chars (no nesting: a longer or unclosed brace
+    stays as text), runs of blanks collapsed to one, none at either end. cap (optional) bounds the output like the C++ buffer. None gives ""."""
+    if s is None:
+        return ""
+    out = []
+    space = False
+    i, n_in = 0, len(s)
+    while i < n_in and (cap is None or len(out) + 1 < cap):
+        ch = s[i]
+        if ch == "{":
+            j = i + 1
+            while j < n_in and s[j] not in "}{" and j - i - 1 <= 12:
+                j += 1
+            if j < n_in and s[j] == "}" and j - i - 1 <= 12:
+                i = j + 1
+                continue
+        if ch in " \t":
+            space = len(out) > 0
+            i += 1
+            continue
+        if space and (cap is None or len(out) + 2 < cap):
+            out.append(" ")
+        space = False
+        out.append(ch)
+        i += 1
+    return "".join(out)
+
+
 def sanitize_name(name):
     """QuickLootLogic.h sanitizeName: stop at NUL, cut at NAME_RAW_MAX, non-printable -> '?', trim trailing spaces, empty -> 'item'."""
     out = []
+    name = strip_tags(name)   # {tags} first (QuickLootLogic.h sanitizeName)
     if name is not None:
         for ch in name:
             if ch == "\0" or len(out) >= NAME_RAW_MAX:
@@ -196,7 +226,7 @@ def text_width(s, advances, scale):
 # ---- list layer: ports of QuickLootLogic.h (QL2L 0.4.0-dev, restyled in QL2V 0.5.0-dev) ----------------------------------
 NAME_CAP = 48
 LIST_MAX_ITEMS = 64
-LIST_ROWS_DEFAULT, LIST_ROWS_MIN, LIST_ROWS_MAX = 8, 1, 12
+LIST_ROWS_DEFAULT, LIST_ROWS_MIN, LIST_ROWS_MAX = 4, 1, 12   # 0.7.0-dev QL10: 4 rows (was 8)
 ROW_NAME_MAX = 40
 RESREF_CAP = 17
 ROW_H = 64                       # item row height px (QL2V; 0.4.0 was 32). Alternatives: ROW_H_ALTS
@@ -204,8 +234,11 @@ ROW_H_ALTS = (56, 72)
 ROW_GAP = 4
 HEADER_H = 32                    # header / indicator row (the 0.4.0 ROW_H)
 HEADER_GAP = 6
-ROW_ICON_PAD = 4
+ROW_ICON_PAD = 8                 # 0.7.0-dev QL10: 48 px icon in the 64 px row (C++ RowIconPad; was 4)
 ICON_GAP = 12
+STACK_COL_W = 52                 # 0.7.0-dev QL10: right-aligned stack column, "x2" .. "x999" (C++ StackColW)
+STACK_RECT_W = 112               # the stack RECT grows left to hold "x999" + slack (C++ StackRectW)
+FILL_INSET = 6                   # the underlay sits this far inside the frame (C++ FillInsetPx)
 ROW_TEXT_PAD_R = 16
 TEXT_GLYPH_H = 28
 TEXT_BOX_H = 32
@@ -238,7 +271,7 @@ ARROW_TINT = TEAL_TEXT
 ALPHA_DIM = 0.4
 TEXT_ALIGN = 9                   # top-left
 TEX_FILL_16G, TEX_FILL_2BT, TEX_UP_ARROW, TEX_DOWN_ARROW = "uibit_fill_16g", "uibit_fill_2bt", "uibit_uparrowg", "lbl_mapdown"
-ROW_TEXT_MAX_PX = BLOCK_MAX_W - 2 * BLOCK_PAD_X - (ROW_ICON_PAD + (ROW_H_ALTS[1] - 2 * ROW_ICON_PAD) + ICON_GAP + ROW_TEXT_PAD_R) - SB_RESERVE
+ROW_TEXT_MAX_PX = BLOCK_MAX_W - 2 * BLOCK_PAD_X - (ROW_ICON_PAD + (ROW_H_ALTS[1] - 2 * ROW_ICON_PAD) + ICON_GAP + STACK_COL_W + ROW_TEXT_PAD_R) - SB_RESERVE
 ROW_INNER_MAX_PX = ROW_TEXT_MAX_PX   # old name
 
 _FONT10 = None
@@ -294,6 +327,7 @@ def base_item_idx_ok(idx):
 def row_name(name):
     """rowName: printable bytes (others '?') up to NAME_CAP-1, trailing spaces trimmed, empty -> 'item'; > 40 chars -> first 37 (trailing
     non-alnum trimmed) + '...'."""
+    name = strip_tags(name)   # {tags} first (0.7.0-dev rowName)
     t = []
     if name is not None:
         for ch in name:
@@ -311,31 +345,51 @@ def row_name(name):
     return s
 
 
-def row_text(name, stack, max_px=ROW_TEXT_MAX_PX):
-    """rowText: name + ' xN' (2..999); the name is cut further (+ '...') while the text is wider than max_px."""
+def row_text(name, max_px=ROW_TEXT_MAX_PX):
+    """rowText (0.7.0-dev QL10): the name only, cut further (+ '...') while it is wider than max_px. The stack count has its own column."""
     nm = row_name(name)
-    sfx = " x%d" % stack if 2 <= stack <= 999 else ""
-    buf = nm + sfx
+    buf = nm
     if text_px10(buf) > max_px:
         n = len(nm)
         if n >= 3 and nm.endswith("..."):
             n -= 3
         while n > 1:
             n -= 1
-            t = nm[:n] + "..." + sfx
+            t = nm[:n] + "..."
             if text_px10(t) <= max_px:
                 buf = t
                 break
     return buf
 
 
+def row_stack_text(stack):
+    """rowStackText: "x2" for 2 <= stack <= 999, else an empty string (the column is drawn only for stacks of 2 or more)."""
+    return "x%d" % stack if 2 <= stack <= 999 else ""
+
+
+def sort_order(plot, credits, n):
+    """QuickLootLogic.h sortOrder (0.7.0-dev): source indices in display order, plot items first, credits second, the rest after; original order
+    inside each group. plot / credits may be None (none set)."""
+    order = []
+    for g in range(3):
+        for i in range(n):
+            grp = 0 if (plot and plot[i]) else (1 if (credits and credits[i]) else 2)
+            if grp == g:
+                order.append(i)
+    return order
+
+
 class ListData:
     """ListData: items = captured rows, more = items past the capture (one last '+K more' row); icons = resref per item (QL2V)."""
 
-    def __init__(self, names, stacks, total=None, icons=None):
+    def __init__(self, names, stacks, total=None, icons=None, plot=None, credits=None):
         count = min(len(names), LIST_MAX_ITEMS)
-        self.rows = [row_text(names[i], stacks[i] if stacks else -1) for i in range(count)]
-        self.icons = [sanitize_resref(icons[i]) if icons else "" for i in range(count)]
+        order = list(range(count))
+        if plot is not None or credits is not None:   # 0.7.0-dev: plot items first, credits second (sortOrder)
+            order = sort_order(plot, credits, count)
+        self.rows = [row_text(names[i]) for i in order]
+        self.stacks = [stacks[i] if stacks else -1 for i in order]
+        self.icons = [sanitize_resref(icons[i]) if icons else "" for i in order]
         self.items = count
         t = len(names) if total is None else total
         self.more = t - count if (count and t > count) else 0
@@ -357,6 +411,10 @@ class ListData:
 
     def icon_at(self, i):
         return self.icons[i] if i < self.items else ""
+
+    def stack_text_at(self, i):
+        """The stack column's text for visible row i ('' for the '+K more' row and for stacks below 2)."""
+        return row_stack_text(self.stacks[i]) if i < self.items else ""
 
 
 class ListView:
@@ -411,7 +469,7 @@ def icon_px(row_h=ROW_H):
 
 
 def row_chrome_px(row_h=ROW_H):
-    return ROW_ICON_PAD + icon_px(row_h) + ICON_GAP + ROW_TEXT_PAD_R
+    return ROW_ICON_PAD + icon_px(row_h) + ICON_GAP + STACK_COL_W + ROW_TEXT_PAD_R
 
 
 def rows_top_px():
@@ -469,7 +527,7 @@ def sb_hit_at(sb, rx, ry):
     return SB_THUMB
 
 
-def build_list_draw(d, v, took, key="F", row_h=ROW_H, flash_name=None):
+def build_list_draw(d, v, took, key="F", row_h=ROW_H, flash_name=None, flash_stack=-1):
     """buildListDraw -> dict(header, indicator, rows, icons, vis, off, w, h, scrollable, sb, row_h, ...) or None for an empty list."""
     if d.items == 0:
         return None
@@ -479,24 +537,29 @@ def build_list_draw(d, v, took, key="F", row_h=ROW_H, flash_name=None):
     max_off = total - rows if total > rows else 0
     off = min(v.off, max_off)
     header = "Acquired Items (%u)" % d.total_items() if took else "[%s] Get Items (%u)" % (key, d.total_items())
-    if flash_name is not None and not took:   # 0.6.0-dev: the take flash replaces the header text (the block widens for it, up to BLOCK_MAX_W)
-        header = fmt_flash_header(flash_name, BLOCK_MAX_W - 2 * BLOCK_PAD_X - (INDICATOR_GAP + text_px10("999-999 of 999") if total > rows else 0))
+    flashing = flash_name is not None and not took   # 0.6.0-dev take flash; 0.7.0-dev: "Acquired: <name> (N)" over the whole header, no indicator
     o = dict(took=took, off=off, vis=vis, rows_total=total, items=d.total_items(), scrollable=total > rows, header=header, row_h=row_h,
              header_px=text_px10(header), indicator="", indicator_px=0)
     o["sb"] = o["scrollable"] and sb_fits(vis, row_h)
     need = d.max_row_px + row_chrome_px(row_h) + (SB_RESERVE if o["sb"] else 0)
     if o["scrollable"]:
         last = d.total_items() if off + vis > d.items else off + vis
-        o["indicator"] = "%u-%u of %u" % (off + 1, last, d.total_items())
-        o["indicator_px"] = text_px10(o["indicator"])
         worst = "%u-%u of %u" % (max_off + 1, d.total_items(), d.total_items())
-        need = max(need, o["header_px"] + INDICATOR_GAP + text_px10(worst))
+        need = max(need, o["header_px"] + INDICATOR_GAP + text_px10(worst))   # the plain header's width: a flash never narrows the block
+        if not flashing:
+            o["indicator"] = "%u-%u of %u" % (off + 1, last, d.total_items())
+            o["indicator_px"] = text_px10(o["indicator"])
     else:
+        need = max(need, o["header_px"])
+    if flashing:   # 0.7.0-dev: the flash header takes the whole width (no indicator); " (N)" for a stack of N > 1
+        o["header"] = fmt_flash_header(flash_name, BLOCK_MAX_W - 2 * BLOCK_PAD_X, flash_stack)
+        o["header_px"] = text_px10(o["header"])
         need = max(need, o["header_px"])
     o["w"] = max(BLOCK_MIN_W, min(BLOCK_MAX_W, need + 2 * BLOCK_PAD_X))
     o["h"] = block_height_px(vis, row_h)
     o["rows"] = [d.row_at(off + i) for i in range(vis)]
     o["icons"] = [d.icon_at(off + i) for i in range(vis)]
+    o["stack_texts"] = [d.stack_text_at(off + i) for i in range(vis)]
     return o
 
 
@@ -531,6 +594,11 @@ def block_rect(anchor, w, h, panel):
     return (x, y, w, h)
 
 
+def fill_rect(r):
+    """QuickLootLogic.h fillRect: the underlay rect, FILL_INSET inside the frame on every side."""
+    return (r[0] + FILL_INSET, r[1] + FILL_INSET, r[2] - 2 * FILL_INSET, r[3] - 2 * FILL_INSET)
+
+
 def header_rect(w):
     return (BLOCK_PAD_X, BLOCK_PAD_Y, w - 2 * BLOCK_PAD_X + LABEL_SLACK, HEADER_H)
 
@@ -545,7 +613,12 @@ def row_icon_rect(r, row_h=ROW_H):
 
 def row_text_rect(r, row_h=ROW_H):
     x = r[0] + ROW_ICON_PAD + icon_px(row_h) + ICON_GAP
-    return (x, r[1] + (row_h - TEXT_GLYPH_H) // 2, r[0] + r[2] - ROW_TEXT_PAD_R - x + LABEL_SLACK, TEXT_BOX_H)
+    return (x, r[1] + (row_h - TEXT_GLYPH_H) // 2, r[0] + r[2] - ROW_TEXT_PAD_R - STACK_COL_W - x + LABEL_SLACK, TEXT_BOX_H)
+
+
+def row_stack_rect(r, row_h=ROW_H):
+    """QuickLootLogic.h rowStackRect: STACK_RECT_W wide, ends on the right padding line, vertically centred like the row text."""
+    return (r[0] + r[2] - ROW_TEXT_PAD_R - STACK_RECT_W, r[1] + (row_h - TEXT_GLYPH_H) // 2, STACK_RECT_W, TEXT_BOX_H)
 
 
 def indicator_rect(w, ind_px):
@@ -621,14 +694,14 @@ def samples():
     r25 = ListData(REALISTIC, REALISTIC_STACKS, icons=ics)
     r70 = ListData(numbered(64), None, total=70, icons=[ics[i % len(ics)] for i in range(64)])
     return [
-        (1, "Peek, 4 items (no scrollbar)", False, ListData(REALISTIC[:4], REALISTIC_STACKS[:4], icons=ics[:4]), 0, None, 8),
-        (2, "Peek, 25 items, off 0, row 2 hovered", False, r25, 0, 1, 8),
-        (3, "Peek, 25 items scrolled to off 10, row 3 hovered", False, r25, 10, 2, 8),
-        (4, "Peek, 70 items (64 captured) scrolled to the end", False, r70, 99, None, 8),
-        (5, "Took, 6 items", True, ListData(REALISTIC[:6], REALISTIC_STACKS[:6], icons=ics[:6]), 0, None, 8),
-        (6, "Peek, 1 item", False, ListData(["Medpac"], None, icons=ics[:1]), 0, None, 8),
+        (1, "Peek, 4 items (no scrollbar)", False, ListData(REALISTIC[:4], REALISTIC_STACKS[:4], icons=ics[:4]), 0, None, LIST_ROWS_DEFAULT),
+        (2, "Peek, 25 items, off 0, row 2 hovered", False, r25, 0, 1, LIST_ROWS_DEFAULT),
+        (3, "Peek, 25 items scrolled to off 10, row 3 hovered", False, r25, 10, 2, LIST_ROWS_DEFAULT),
+        (4, "Peek, 70 items (64 captured) scrolled to the end", False, r70, 99, None, LIST_ROWS_DEFAULT),
+        (5, "Took, 6 items", True, ListData(REALISTIC[:6], REALISTIC_STACKS[:6], icons=ics[:6]), 0, None, LIST_ROWS_DEFAULT),
+        (6, "Peek, 1 item", False, ListData(["Medpac"], None, icons=ics[:1]), 0, None, LIST_ROWS_DEFAULT),
         (7, "Peek, 8 items (fills the list, no scrollbar)", False, ListData(REALISTIC[:8], REALISTIC_STACKS[:8], icons=ics[:8]), 0, 1, 8),
-        (8, "Peek, long names (cut at 40 chars, stacks)", False, ListData(LONG_NAMES, LONG_STACKS, icons=ics[:5]), 0, None, 8),
+        (8, "Peek, long names (cut at 40 chars, stacks)", False, ListData(LONG_NAMES, LONG_STACKS, icons=ics[:5]), 0, None, LIST_ROWS_DEFAULT),
         (9, "Peek, 25 items, ListRows 12", False, r25, 0, None, 12),
         (10, "Peek, 25 items, ListRows 4", False, r25, 0, 0, 4),
     ]
@@ -753,17 +826,18 @@ def anchor_block(mode, name_ok, name, panel, proj, w, h):
     return None
 
 
-def fmt_flash_header(name, max_px):
+def fmt_flash_header(name, max_px, stack=-1):
     """fmtFlashHeader: 'Acquired: <name>' cut with '...' to max_px."""
     nm = row_name(name)
-    buf = "Acquired: " + nm
+    sfx = " (%d)" % stack if stack > 1 else ""   # 0.7.0-dev: the stack suffix, kept when the name is cut
+    buf = "Acquired: " + nm + sfx
     if text_px10(buf) > max_px:
         n = len(nm)
         if n >= 3 and nm.endswith("..."):
             n -= 3
         while n > 1:
             n -= 1
-            t = "Acquired: %s..." % nm[:n]
+            t = "Acquired: %s...%s" % (nm[:n], sfx)
             if text_px10(t) <= max_px:
                 buf = t
                 break
@@ -973,6 +1047,8 @@ def draw_block(img, cpm, o, rect, hover_row=None):
     the scrollbar."""
     x, y, w, h = rect
     row_h = o["row_h"]
+    fx, fy, fw, fh = fill_rect((0, 0, w, h))   # 0.7.0-dev underlay: a second uibit_fill_2bt (baked alpha 199) inside the frame, drawn first
+    draw_fill(img, cpm, TEX_FILL_2BT, (x + fx, y + fy, fw, fh), (1.0, 1.0, 1.0))
     draw_frame(img, cpm, rect)
 
     def put(text, r, col):
@@ -990,6 +1066,11 @@ def draw_block(img, cpm, o, rect, hover_row=None):
         draw_icon(img, cpm, o["icons"][i], row_icon_rect(ar, row_h))
         tr = row_text_rect(rr, row_h)
         put(t, tr, CREAM if hov else TEAL_TEXT)
+        st = o["stack_texts"][i]
+        if st:   # the count: its own right-aligned column (C++ rowStackRect), placed so its right edge meets the padding line
+            sr = row_stack_rect(rr, row_h)
+            sw = text_px10(st)
+            put(st, (sr[0] + sr[2] - sw, sr[1], sw + LABEL_SLACK, sr[3]), CREAM if hov else TEAL_TEXT)
     if o["sb"]:
         max_off = o["rows_total"] - o["vis"]
         draw_scrollbar(img, cpm, sb_layout(w, o["vis"], o["rows_total"], o["off"], row_h), rect, o["off"], max_off)
@@ -1345,8 +1426,8 @@ def render_ql06(outdir):
     draw_target_tag(img, cpm, MENU_ORIGIN)
     flash_name = "Adhesive Grenade"
     d24 = ListData(REALISTIC[:1] + REALISTIC[2:], REALISTIC_STACKS[:1] + REALISTIC_STACKS[2:], icons=ics[:1] + ics[2:])
-    of = build_list_draw(d24, ListView(d24.rows_total(), 8), False, flash_name=flash_name)
-    on = build_list_draw(d24, ListView(d24.rows_total(), 8), False)
+    of = build_list_draw(d24, ListView(d24.rows_total(), LIST_ROWS_DEFAULT), False, flash_name=flash_name, flash_stack=3)
+    on = build_list_draw(d24, ListView(d24.rows_total(), LIST_ROWS_DEFAULT), False)
     name = (MENU_ORIGIN[0] + NAME_LOCAL[0], MENU_ORIGIN[1] + NAME_LOCAL[1], NAME_LOCAL[2], NAME_LOCAL[3])
     ra = anchor_block(0, True, name, PANEL, None, of["w"], of["h"])[0]
     rb = anchor_block(0, True, name, PANEL, None, on["w"], on["h"])[0]
@@ -1363,7 +1444,7 @@ def render_ql06(outdir):
     written.append(p)
     fit.append(("flash", f"'{of['header']}' (1.5 s)", of["header_px"], "ok" if of["w"] <= BLOCK_MAX_W else "TOO WIDE", ra, _rect_inside(ra), of["w"] != on["w"]))
     for nm in ("Medpac", "Mandalorian Heavy Armor Plating Mk IV Upgrade", "Ancient Sith Holocron Fragment of the Old Republic Era"):
-        ob = build_list_draw(d25, ListView(d25.rows_total(), 8), False, flash_name=nm)
+        ob = build_list_draw(d25, ListView(d25.rows_total(), LIST_ROWS_DEFAULT), False, flash_name=nm)
         fit.append(("flash", f"'{ob['header']}'", ob["header_px"], "ok" if ob["w"] <= BLOCK_MAX_W else "TOO WIDE", (0, 0, ob["w"], ob["h"]), ob["w"] <= BLOCK_MAX_W, False))
     lines = ["kind     case                                                              detail       reason / lines        rect                          inside  overlap-or-flip"]
     for kind, case, det, why, rect, inside, extra in fit:

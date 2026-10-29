@@ -28,8 +28,8 @@ int main() {
         const mcdecl::RowDecl& p = g_pd.rows[1];
         kt::Check("prox: toggle on by default, bound to ProximityEnabled", p.kind == mcdecl::K_TOGGLE && p.def == 1 && strcmp(p.key, "ProximityEnabled") == 0 && strcmp(p.ini, "quick_loot.ini") == 0);
         const mcdecl::RowDecl& r = g_pd.rows[2];
-        kt::Check("rows: stepper 4..12 step 2, default 8, bound to ListRows", r.kind == mcdecl::K_STEPPER && r.minV == 4 && r.maxV == 12 && r.step == 2 &&
-                  r.def == static_cast<int32_t>(qlogic::ListRowsDefault) && strcmp(r.key, "ListRows") == 0 && strcmp(r.fmt, "List rows: %d") == 0);
+        kt::Check("rows: stepper 4..12 step 2, default 4 (QL10), bound to ListRows", r.kind == mcdecl::K_STEPPER && r.minV == 4 && r.maxV == 12 && r.step == 2 &&
+                  r.def == 4 && r.def == static_cast<int32_t>(qlogic::ListRowsDefault) && strcmp(r.key, "ListRows") == 0 && strcmp(r.fmt, "List rows: %d") == 0);
         kt::Check("rows: every stepper stop is a valid ListRows", qlogic::clampListRows(r.minV) == static_cast<unsigned>(r.minV) && qlogic::clampListRows(r.maxV) == static_cast<unsigned>(r.maxV));
         const mcdecl::RowDecl& d = g_pd.rows[3];
         kt::Check("dist: unbound list of the presets, Normal default", d.kind == mcdecl::K_LIST && d.nChoices == kNumDist && d.def == kDistDefault && d.ini[0] == 0 && d.key[0] == 0);
@@ -51,6 +51,7 @@ int main() {
     kt::Check("explicit CloseM is kept >= OpenM + 1", closeFor(4.5f, true, 5.0f) == 5.5f);
     // applyRow
     Live L;
+    kt::Check("Live::rows defaults to 4 (QL10)", L.rows == 4 && qlogic::ListRowsDefault == 4);
     bool persist = false;
     kt::CheckEq("anchor 2", applyRow(L, "anchor", 2, &persist), 2);
     kt::Check("anchor applied, nothing persisted by the hook", L.anchor == 2 && !persist);

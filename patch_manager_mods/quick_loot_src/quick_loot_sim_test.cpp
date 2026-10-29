@@ -15,7 +15,7 @@ namespace {
 
 enum Kind { A_OPEN, A_SEND, A_SRV, A_LSHOW, A_LHIDE, A_TOAST, A_LOG, A_TAKE1 };
 struct Act { Kind k; uintptr_t plc; uint32_t obj; int flag; std::string text; uint32_t frame; };
-struct Item { std::string name; int stack; std::string icon = ""; std::string desc = ""; };   // icon: the resref the capture reports ("" = none); desc: DescIdentified text
+struct Item { std::string name; int stack; std::string icon = ""; std::string desc = ""; bool plot = false; };   // plot: QL11 sorts it to the top; icon: the resref the capture reports ("" = none); desc: DescIdentified text
 struct Obj {
     uint32_t sid = 0;
     uintptr_t plc = 0;
@@ -37,7 +37,7 @@ constexpr uint32_t ObjBase = 0x7F000000u;
 
 struct Sim : Env {
     Machine m;
-    Sim() { m.cfg.showTook = true; }   // the Took-list scenarios below opt in; scenario "n8" checks the default (off)
+    Sim() { m.cfg.showTook = true; m.cfg.listRows = 8; }   // 0.7.0-dev: ListRowsDefault is 4 now; the scroll scenarios below were written for 8 visible rows (n7 checks the default)   // the Took-list scenarios below opt in; scenario "n8" checks the default (off)
     uint32_t now = 100000, frame = 5000;
     // world
     bool worldOk = true, haveSrv = true, menu = false, dialog = false, paused = false;
@@ -61,7 +61,10 @@ struct Sim : Env {
     TakeWhy takeForce = TakeWhy::Ok;   // anything but Ok: the engine side refuses the take with this reason
     int takeRc = 1;      // InsertOrMerge's return value reported
     unsigned takeCalls = 0;
-    std::vector<unsigned> takeIdx;     // container indices passed to takeOne
+    std::vector<unsigned> takeIdx;     // UI rows passed to takeOne
+    std::vector<unsigned> takeSlot;    // container slots the (sorted-list aware) takeOne actually took
+    std::vector<int> sounds;           // 0.7.0-dev QL12: PlayGuiSound indices requested, in order
+    void sound(int idx) override { sounds.push_back(idx); }
 
     int add(float x, float y, std::vector<Item> items = {}) {
         Obj o;
@@ -178,11 +181,19 @@ struct Sim : Env {
         if (i < 0) return;
         const std::vector<Item>& it = objs[static_cast<size_t>(i)].items;
         c.total = static_cast<unsigned>(it.size());
-        for (size_t k = 0; k < it.size() && k < ListMaxItems; ++k) {
-            c.ids[k] = 0x9000u + static_cast<unsigned>(k);
-            c.stacks[k] = it[k].stack;
-            snprintf(c.names[k], NameCap, "%s", it[k].name.c_str());
-            snprintf(c.icons[k], ResrefCap, "%s", it[k].icon.c_str());
+        // QL11 like the adapter: plot items first, then credits, then the container order; the id carries the CONTAINER slot (0x9000 + slot)
+        const unsigned n = static_cast<unsigned>(it.size() < ListMaxItems ? it.size() : ListMaxItems);
+        uint8_t plot[ListMaxItems];
+        bool cr[ListMaxItems];
+        uint8_t order[ListMaxItems];
+        for (unsigned k = 0; k < n; ++k) { plot[k] = it[k].plot ? 1 : 0; cr[k] = it[k].name == "Credits"; }
+        sortOrder(plot, cr, n, order);
+        for (unsigned r = 0; r < n; ++r) {
+            const unsigned k = order[r];
+            c.ids[r] = 0x9000u + k;
+            c.stacks[r] = it[k].stack;
+            snprintf(c.names[r], NameCap, "%s", it[k].name.c_str());
+            snprintf(c.icons[r], ResrefCap, "%s", it[k].icon.c_str());
             ++c.count;
         }
     }
@@ -261,19 +272,25 @@ struct Sim : Env {
         out->nBefore = static_cast<int>(o.items.size());
         if (takeForce != TakeWhy::Ok) { out->why = takeForce; return false; }
         if (index >= o.items.size()) { out->why = TakeWhy::BadIndex; return false; }
-        if (expectId != 0x9000u + index) { out->why = TakeWhy::Stale; return false; }
-        taken.push_back({o.items[index]});
-        o.items.erase(o.items.begin() + static_cast<long>(index));
+        // like the adapter (QL11): the UI row is not the container slot; find the item by its id (0x9000 + slot)
+        if (expectId < 0x9000u || expectId - 0x9000u >= o.items.size()) { out->why = TakeWhy::Stale; return false; }
+        const size_t slot = expectId - 0x9000u;
+        takeSlot.push_back(static_cast<unsigned>(slot));
+        taken.push_back({o.items[slot]});
+        o.items.erase(o.items.begin() + static_cast<long>(slot));
         out->why = TakeWhy::Ok; out->rc = takeRc; out->nAfter = static_cast<int>(o.items.size()); out->id = expectId;
         return true;
     }
     bool describe(uintptr_t plc, unsigned index, uint32_t expectId, TipData* out) override {
         const int i = byPlc(plc);
-        if (i < 0 || index >= objs[static_cast<size_t>(i)].items.size() || expectId != 0x9000u + index) return false;
-        const Item& it = objs[static_cast<size_t>(i)].items[index];
+        (void)index;   // QL11: the row is not the slot; the id (0x9000 + slot) says which item
+        if (i < 0 || expectId < 0x9000u || expectId - 0x9000u >= objs[static_cast<size_t>(i)].items.size()) return false;
+        const Item& it = objs[static_cast<size_t>(i)].items[expectId - 0x9000u];
+        *out = TipData();
         snprintf(out->title, sizeof out->title, "%s", it.name.c_str());
         out->stack = it.stack;
-        snprintf(out->desc, sizeof out->desc, "%s", it.desc.c_str());
+        snprintf(out->flavor, sizeof out->flavor, "%s", it.desc.c_str());
+        out->full = true;
         return true;
     }
 };
@@ -324,7 +341,7 @@ void scenarioA() {
         CHK_EQ("one SendClose", s.count(A_SEND), 1);
         const Act* c = s.nth(A_SEND, 0);
         CHK("flag 1 (loot present at send time)", c && c->flag == 1);
-        CHK("toast lists the OnOpen loot", s.count(A_TOAST) == 1 && s.nth(A_TOAST, 0)->text == "Acquired (2): Blaster Pistol, Credits");
+        CHK("toast lists the OnOpen loot", s.count(A_TOAST) == 1 && s.nth(A_TOAST, 0)->text == "Acquired (2): Credits, Blaster Pistol");   // QL11: credits sort above the other loot
         s.finishCheck(scn);
     }
     {   // a3: still empty after the OnOpen -> SendClose(0), no toast
@@ -1179,7 +1196,7 @@ void scenarioM() {
         ListDraw d;
         CHK("draws", s.m.listDraw(s.now, &d) && d.vis == 8 && d.scrollable && d.off == 0);
         CHK("header", strcmp(d.header, "[F] Get Items (25)") == 0 && strcmp(d.indicator, "1-8 of 25") == 0);
-        CHK("first row is item 1 (stack 2)", strcmp(d.rows[0], "Item 1 x2") == 0 && strcmp(d.rows[7], "Item 8") == 0);
+        CHK("first row is item 1 (stack 2)", strcmp(d.rows[0], "Item 1") == 0 && strcmp(d.stacks[0], "x2") == 0 && strcmp(d.rows[7], "Item 8") == 0 && d.stacks[7][0] == 0);   // 0.7.0-dev: the stack has its own column
         s.wheel = -120 * 3; s.run(1);
         CHK("3 notches down: off 3, SCROLL logged", s.m.peekView.off == 3 && s.logCount("SCROLL off=3/17") == 1);
         CHK("rows follow", s.m.listDraw(s.now, &d) && strcmp(d.rows[0], "Item 4") == 0 && strcmp(d.indicator, "4-11 of 25") == 0);
@@ -1497,14 +1514,14 @@ void scenarioN() {
     {
         const char* scn = "n5 tooltip: after 300 ms on one row, reset on leave / scroll / take / other row";
         Sim s;
-        peekUp(s, {Item{"Medpac", 5, "i_medpac", "Heals vitality."}, Item{"Pistol", 1, "", "A blaster."}, Item{"Credits", 1}, Item{"Stim", 1}, Item{"Grenade", 1}});
+        peekUp(s, {Item{"Medpac", 5, "i_medpac", "Heals vitality."}, Item{"Pistol", 1, "", "A blaster."}, Item{"Gold", 1}, Item{"Stim", 1}, Item{"Grenade", 1}});
         const TipData* td = nullptr; int row = -1;
         s.hoverV = 1; s.run(1);
         CHK("not yet", !s.m.tipShown(s.now, &td, &row));
         s.run(10);   // 176 ms
         CHK("still not at 176 ms", !s.m.tipShown(s.now, &td, &row));
         s.run(10);   // 336 ms
-        CHK("shown after 300 ms", s.m.tipShown(s.now, &td, &row) && row == 1 && td && strcmp(td->title, "Pistol") == 0 && strcmp(td->desc, "A blaster.") == 0);
+        CHK("shown after 300 ms", s.m.tipShown(s.now, &td, &row) && row == 1 && td && strcmp(td->title, "Pistol") == 0 && strcmp(td->flavor, "A blaster.") == 0);
         CHK("one target counted", s.m.tip.serial == 1);
         s.hoverV = 0; s.run(1);
         CHK("another row: hidden, timer restarts", !s.m.tipShown(s.now, &td, &row));
@@ -1574,6 +1591,86 @@ void scenarioN() {
     }
 }
 
+// ---- o: 0.7.0-dev sorted rows (QL11), sounds (QL12), flash stack (QL10)
+void scenarioO() {
+    {
+        const char* scn = "o1 sorted list: the plot item from container slot 3 is row 0; clicking it takes that item; its tooltip describes it";
+        Sim s;
+        Item plotItem = {"Star Map", 1, "", "A map of the Outer Rim."};
+        plotItem.plot = true;
+        peekUp(s, {Item{"Medpac", 2}, Item{"Pistol", 1}, Item{"Credits", 150}, plotItem, Item{"Stim", 3}});
+        ListDraw d;
+        CHK("draws", s.m.listDraw(s.now, &d) && d.vis == 5);
+        CHK("order: plot, credits, then the container order", strcmp(d.rows[0], "Star Map") == 0 && strcmp(d.rows[1], "Credits") == 0 && strcmp(d.rows[2], "Medpac") == 0 && strcmp(d.rows[3], "Pistol") == 0 && strcmp(d.rows[4], "Stim") == 0);
+        CHK("stack column", strcmp(d.stacks[2], "x2") == 0 && strcmp(d.stacks[4], "x3") == 0 && d.stacks[0][0] == 0);
+        CHK("row 0 id carries the container slot", s.m.peekIds[0] == 0x9003u);
+        const TipData* td = nullptr; int row = -1;
+        s.hoverV = 0; s.run(25);
+        CHK("tooltip of row 0 describes the plot item", s.m.tipShown(s.now, &td, &row) && row == 0 && td && strcmp(td->title, "Star Map") == 0 && strcmp(td->flavor, "A map of the Outer Rim.") == 0);
+        s.hoverV = -1; s.run(1);
+        s.rowClickV = 0; s.run(1);
+        CHK("takeOne got UI row 0", s.takeCalls == 1 && s.takeIdx[0] == 0);
+        CHK("it took the item from slot 3", s.takeSlot.size() == 1 && s.takeSlot[0] == 3 && s.taken.size() == 1 && s.taken[0][0].name == "Star Map");
+        CHK("four items left, first row is the credits", s.objs[0].items.size() == 4 && s.m.peekList.items == 4 && strcmp(s.m.peekList.rows[0], "Credits") == 0);
+        CHK("header flash names it", s.m.flash.visible(s.now) && strcmp(s.m.flash.name, "Star Map") == 0);
+        s.finishCheck(scn);
+    }
+    {
+        const char* scn = "o5 equipped foot: the range always shows, a long name is cut with '...'";
+        char f[64];
+        const int w = TipW - 2 * TipPadX;
+        fmtEquippedFoot(f, sizeof f, "Blaster Rifle", " (1-8)");
+        CHK("short name whole", strcmp(f, "Equipped: Blaster Rifle (1-8)") == 0);
+        fmtEquippedFoot(f, sizeof f, "{08}Carbine", " (2-16)");
+        CHK("tags stripped", strcmp(f, "Equipped: Carbine (2-16)") == 0);
+        fmtEquippedFoot(f, sizeof f, "An Extraordinarily Long Weapon Name That Cannot Possibly Fit In The Tooltip Foot Line", " (10-80)");
+        CHK("long name: ends with the range", strlen(f) < 64 && strcmp(f + strlen(f) - 8, " (10-80)") == 0);
+        CHK("long name: cut with '...' and fits", strstr(f, "...") != nullptr && textPx10(f) <= w);
+        fmtEquippedFoot(f, sizeof f, "Wide Name Wide Name Wide Name", " (Defense +12)", 540);
+        CHK("narrow rect: cut to fit 540 px", textPx10(f) <= 540 && strstr(f, "...") != nullptr && strcmp(f + strlen(f) - 14, " (Defense +12)") == 0);
+        fmtEquippedFoot(f, sizeof f, "", "");
+        CHK("empty name", strcmp(f, "Equipped: item") == 0);
+    }
+    {
+        const char* scn = "o2 flash carries the stack: 'Acquired: Medpac (2)'";
+        Sim s;
+        peekUp(s, {Item{"Medpac", 2}, Item{"Pistol", 1}});
+        s.rowClickV = 0; s.run(1);
+        ListDraw d;
+        CHK("flash header with the stack", s.m.listDraw(s.now, &d) && strcmp(d.header, "Acquired: Medpac (2)") == 0);
+        s.finishCheck(scn);
+    }
+    {
+        const char* scn = "o3 sounds: hover change plays 1 once, take plays 9, scrollbar click 0";
+        Sim s;
+        peekUp(s, {Item{"Medpac", 2}, Item{"Pistol", 1}, Item{"Stim", 1}});
+        s.sounds.clear();
+        s.hoverV = 1; s.run(30);
+        CHK("hover onto a row: one sound 1", s.sounds.size() == 1 && s.sounds[0] == 1);
+        s.hoverV = 2; s.run(1);
+        CHK("another row: another 1", s.sounds.size() == 2 && s.sounds[1] == 1);
+        s.hoverV = -1; s.run(1);
+        CHK("leaving plays nothing", s.sounds.size() == 2);
+        s.hoverV = 0; s.run(1);
+        s.sounds.clear();
+        s.rowClickV = 0; s.run(1);
+        CHK("take plays 9", !s.sounds.empty() && s.sounds[0] == 9 && s.takeCalls == 1);
+        s.sounds.clear();
+        s.key = true; s.run(2); s.key = false;
+        CHK("take all plays 9", s.count(A_SEND) >= 1 && !s.sounds.empty() && s.sounds[0] == 9);
+        s.finishCheck(scn);
+    }
+    {
+        const char* scn = "o4 scrollbar click plays sound 0";
+        Sim s;
+        peekUp(s, manyItems(25));
+        s.sounds.clear();
+        s.sbPart = static_cast<int>(SbPart::Down); s.run(1);
+        CHK("sound 0 once", s.sounds.size() == 1 && s.sounds[0] == 0);
+        s.finishCheck(scn);
+    }
+}
+
 }   // namespace
 
 int main() {
@@ -1592,5 +1689,6 @@ int main() {
     scenarioL();
     scenarioM();
     scenarioN();
+    scenarioO();
     return kt::Report("quick_loot_sim_test");
 }

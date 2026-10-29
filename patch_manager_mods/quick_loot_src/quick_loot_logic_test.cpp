@@ -1,10 +1,17 @@
 // quick_loot_logic_test.cpp -- host test of QuickLootLogic.h (doc 52 QL0/QL1a/QL2p): event filter, wrap-safe ms, item cap, tracker, take-all decisions, formatters.
 #include "QuickLootLogic.h"
 #include "check.h"
+#include <algorithm>
 #include <string.h>
 #include <string>
 
 using namespace qlogic;
+
+static unsigned tipLineCountForTest(const char* t) {   // lines of a multi-line label text
+    unsigned n = 1;
+    for (; *t; ++t) if (*t == '\n') ++n;
+    return n;
+}
 
 int main() {
     // ---- event filter: 0x16 / 0x17 / 0x1B only; heartbeat (0) and neighbours are not watched
@@ -257,6 +264,16 @@ int main() {
             char raw[64];
             sanitizeName(raw, sizeof raw, std::string(100, 'Z').c_str());
             kt::CheckEq("sanitizeName (log lines) still cuts at 40", strlen(raw), 40u);
+            sanitizeName(raw, sizeof raw, "{08}Disruptor Carbine");
+            kt::Check("sanitizeName strips the {tag} prefix", strcmp(raw, "Disruptor Carbine") == 0);
+            sanitizeName(raw, sizeof raw, "{light 04}Mandalorian Combat Suit");
+            kt::Check("sanitizeName strips a tag with a blank in it", strcmp(raw, "Mandalorian Combat Suit") == 0);
+            sanitizeName(raw, sizeof raw, "{08}");
+            kt::Check("sanitizeName: only a tag -> item", strcmp(raw, "item") == 0);
+            fmtTookItem(raw, sizeof raw, 1, 0x7F000011u, "{08}Disruptor Carbine", 1);
+            kt::Check("TOOK log line shows the stripped name", strstr(raw, "name=Disruptor Carbine ") != nullptr);
+            entryName(en, sizeof en, "{08}Medpac");
+            kt::Check("entryName strips tags too", strcmp(en, "Medpac") == 0);
         }
         // overflow and the 56-char boundary: "Acquired (2): " is 14 chars; entry 1 = 20 'A' + " x99" (24)
         std::string a(20, 'A'), b13(13, 'B'), b14(14, 'B');
@@ -620,7 +637,7 @@ int main() {
         kt::CheckEq("ListRows clamp: 8 stays", clampListRows(8), 8u);
         kt::CheckEq("ListRows clamp: 12 stays", clampListRows(12), 12u);
         kt::CheckEq("ListRows clamp: 40 -> 12", clampListRows(40), 12u);
-        kt::Check("ListRows default 8", ListRowsDefault == 8 && ListRowsMin == 1 && ListRowsMax == 12);
+        kt::Check("ListRows default 4 (QL10)", ListRowsDefault == 4 && ListRowsMin == 1 && ListRowsMax == 12);
         rowName(b, sizeof b, "Medpac");
         kt::Check("rowName short", strcmp(b, "Medpac") == 0);
         rowName(b, sizeof b, "Lightsaber Crystal: Opila");
@@ -645,24 +662,28 @@ int main() {
         kt::Check("rowName null -> item", strcmp(b, "item") == 0);
         rowName(b, sizeof b, "Caf\xC3\xA9");
         kt::Check("rowName non-printable -> ?", strcmp(b, "Caf??") == 0);
-        rowText(b, sizeof b, "Medpac", 2);
-        kt::Check("rowText stack 2", strcmp(b, "Medpac x2") == 0);
-        rowText(b, sizeof b, "Medpac", 1);
-        kt::Check("rowText stack 1 has no suffix", strcmp(b, "Medpac") == 0);
-        rowText(b, sizeof b, "Medpac", 999);
-        kt::Check("rowText stack 999", strcmp(b, "Medpac x999") == 0);
-        rowText(b, sizeof b, "Medpac", 1000);
-        kt::Check("rowText stack 1000 has no suffix", strcmp(b, "Medpac") == 0);
-        rowText(b, sizeof b, "Medpac", -1);
-        kt::Check("rowText unknown stack has no suffix", strcmp(b, "Medpac") == 0);
-        rowText(b, sizeof b, n41, 3);   // 37 wide digits + "... x3" is wider than the block: cut further, stack kept
-        kt::Check("rowText cut name + stack", strncmp(b, "0123456789", 10) == 0 && strcmp(b + strlen(b) - 6, "... x3") == 0 && textPx10(b) <= RowTextMaxPx && strlen(b) < 43);
-        rowText(b, sizeof b, "Mandalorian Heavy Armor Plating Mk IV Upgrade Kit", 3);
-        kt::Check("rowText 40-char cut + stack", strcmp(b, "Mandalorian Heavy Armor Plating Mk IV... x3") == 0 || strcmp(b + strlen(b) - 6, "... x3") == 0);
+        rowName(b, sizeof b, "{08}Disruptor Carbine");
+        kt::Check("rowName strips the {tag} prefix", strcmp(b, "Disruptor Carbine") == 0);
+        rowName(b, sizeof b, "{08}{light 04}Disruptor   Carbine {x}");
+        kt::Check("rowName strips several tags and collapses blanks", strcmp(b, "Disruptor Carbine") == 0);
+        rowName(b, sizeof b, "{08}");
+        kt::Check("rowName: only a tag -> item", strcmp(b, "item") == 0);
+        rowName(b, sizeof b, "{unclosed tag text");
+        kt::Check("rowName keeps an unclosed brace as text", strcmp(b, "{unclosed tag text") == 0);
+        rowText(b, sizeof b, "Medpac");
+        kt::Check("rowText: name only, the stack has its own column", strcmp(b, "Medpac") == 0);
+        rowText(b, sizeof b, "{08}Disruptor Carbine");
+        kt::Check("rowText strips tags", strcmp(b, "Disruptor Carbine") == 0);
+        char sk[8];
+        kt::Check("rowStackText 2", rowStackText(sk, sizeof sk, 2) == 2 && strcmp(sk, "x2") == 0);
+        kt::Check("rowStackText 999", rowStackText(sk, sizeof sk, 999) == 4 && strcmp(sk, "x999") == 0);
+        kt::Check("rowStackText 1 / 0 / -1 / 1000 = none", rowStackText(sk, sizeof sk, 1) == 0 && sk[0] == 0 && rowStackText(sk, sizeof sk, 0) == 0 && rowStackText(sk, sizeof sk, -1) == 0 && rowStackText(sk, sizeof sk, 1000) == 0 && sk[0] == 0);
+        rowText(b, sizeof b, n41);   // 37 wide digits + "..." fits the block
+        kt::Check("rowText cut name: 40 wide digits do not fit the budget, cut further", strncmp(b, "0123456789", 10) == 0 && strcmp(b + strlen(b) - 3, "...") == 0 && textPx10(b) <= RowTextMaxPx && strlen(b) < 40);
         // a row never wider than the budget: wide letters cut further
-        rowText(b, sizeof b, "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW", 999);
-        kt::Check("rowText fits RowTextMaxPx", textPx10(b) <= RowTextMaxPx && strstr(b, "... x999") != nullptr);
-        rowText(b, sizeof b, "WWWWWWWWWWWWWWWWWWWW", 1, 200);
+        rowText(b, sizeof b, "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW");
+        kt::Check("rowText fits RowTextMaxPx", textPx10(b) <= RowTextMaxPx && strstr(b, "...") != nullptr);
+        rowText(b, sizeof b, "WWWWWWWWWWWWWWWWWWWW", 200);
         kt::Check("rowText honours a small budget", textPx10(b) <= 200 && strcmp(b + strlen(b) - 3, "...") == 0);
         kt::Check("textPx10 empty = 0, grows with text", textPx10("") == 0 && textPx10("ab") > textPx10("a"));
         kt::Check("textPx10 Medpac x2 = the mockup's 200.5 px", textPx10("Medpac x2") == 201);
@@ -675,13 +696,16 @@ int main() {
         d.set(names, st, 3, 3);
         kt::Check("3 items, no more", d.items == 3 && d.more == 0 && d.rowsTotal() == 3 && d.totalItems() == 3);
         char b[64];
-        d.rowAt(0, b, sizeof b); kt::Check("row 0", strcmp(b, "Medpac x2") == 0);
-        d.rowAt(2, b, sizeof b); kt::Check("row 2", strcmp(b, "Adhesive Grenade x3") == 0);
+        d.rowAt(0, b, sizeof b); kt::Check("row 0 (name only)", strcmp(b, "Medpac") == 0);
+        d.rowAt(2, b, sizeof b); kt::Check("row 2 (name only)", strcmp(b, "Adhesive Grenade") == 0);
+        kt::Check("stacks are stored per item: x2, none, x3", strcmp(d.stackAt(0), "x2") == 0 && d.stackAt(1)[0] == 0 && strcmp(d.stackAt(2), "x3") == 0);
+        kt::Check("stackAt: the more row and past the end have none", d.stackAt(3)[0] == 0 && d.stackAt(99)[0] == 0);
         d.rowAt(3, b, sizeof b); kt::Check("row past the end is empty", b[0] == 0);
         d.set(names, st, 3, 70);
+        kt::Check("stacks survive a set with a more row", strcmp(d.stackAt(0), "x2") == 0 && strcmp(d.stackAt(2), "x3") == 0);
         kt::Check("70 items, 3 captured: +67 more row", d.more == 67 && d.rowsTotal() == 4 && d.totalItems() == 70);
         d.rowAt(3, b, sizeof b); kt::Check("last row is the more row", strcmp(b, "+67 more") == 0);
-        kt::Check("maxRowPx covers the widest row", d.maxRowPx >= textPx10("Adhesive Grenade x3"));
+        kt::Check("maxRowPx covers the widest row", d.maxRowPx >= textPx10("Adhesive Grenade"));
         d.set(names, st, 3, 1);
         kt::Check("total below count is treated as count", d.more == 0 && d.items == 3);
         d.set(names, st, 0, 5);
@@ -883,8 +907,10 @@ int main() {
         // ---- 0.5.0-dev (QL2V): row / icon / text geometry, RowH variants, icon resref, scrollbar
         kt::CheckEq("RowH is 64 (was 32)", RowH, 64);
         kt::Check("alternatives 56 / 72", RowHAlt1 == 56 && RowHAlt2 == 72);
-        kt::CheckEq("icon = RowH - 2 pad", iconPx(), 56);
-        kt::CheckEq("icon at 56 / 72", iconPx(56) * 1000 + iconPx(72), 48 * 1000 + 64);
+        kt::CheckEq("icon = RowH - 2 pad = 48 in the 64 px row (QL10)", iconPx(), 48);
+        kt::CheckEq("icon at 56 / 72", iconPx(56) * 1000 + iconPx(72), 40 * 1000 + 56);
+        kt::Check("QL10 constants: icon pad 8, stack column 52", RowIconPad == 8 && StackColW == 52);
+        kt::CheckEq("rowChromePx = pad + icon + gap + stack column + right pad", rowChromePx(), RowIconPad + 48 + IconGapPx + StackColW + RowTextPadR);
         // rows: the gap, the scrollbar reserve, the icon square, the vertically centred text
         const Rect r0 = rowRect(0, 800), r1 = rowRect(1, 800), r0s = rowRect(0, 800, true);
         kt::Check("row 0 / 1 pitch = RowH + gap", r1.y - r0.y == RowH + RowGapPx && r0.h == RowH && r0.x == BlockPadX);
@@ -892,7 +918,10 @@ int main() {
         kt::CheckEq("row width with the scrollbar", r0s.w, 800 - 2 * BlockPadX - SbReserve);
         const Rect ic = rowIconRect(r0), tx = rowTextRect(r0);
         kt::Check("icon square inside the row", ic.w == ic.h && ic.x == r0.x + RowIconPad && ic.y == r0.y + RowIconPad && ic.y + ic.h == r0.y + r0.h - RowIconPad);
-        kt::Check("text after the icon, centred on the glyph box", tx.x == ic.x + ic.w + IconGapPx && tx.y == r0.y + (RowH - TextGlyphH) / 2 && tx.h == TextBoxH && tx.x + tx.w - LabelSlackPx == r0.x + r0.w - RowTextPadR);
+        kt::Check("text after the icon, centred on the glyph box", tx.x == ic.x + ic.w + IconGapPx && tx.y == r0.y + (RowH - TextGlyphH) / 2 && tx.h == TextBoxH && tx.x + tx.w - LabelSlackPx == r0.x + r0.w - RowTextPadR - StackColW);
+        const Rect sr = rowStackRect(r0);
+        kt::Check("stack rect: right-aligned column on the right padding line, same vertical centring as the text", sr.x + sr.w == r0.x + r0.w - RowTextPadR && sr.w == StackRectW && sr.y == tx.y && sr.h == TextBoxH);
+        kt::Check("stack column fits \"x2\"; the rect holds \"x999\" + slack without wrapping", textPx10("x2") <= StackColW && textPx10("x999") + LabelSlackPx <= StackRectW);
         kt::Check("text box stays inside the row", tx.y >= r0.y && tx.y + tx.h <= r0.y + r0.h);
         // RowH variants fit the panel (ListRows 8 default and 12 max) and the scrollbar
         const int rhs[3] = { RowHAlt1, RowH, RowHAlt2 };
@@ -918,6 +947,19 @@ int main() {
         buildListDraw(d6, v6, false, "F", &o6);
         kt::Check("25 items: scrollbar, RowH, icons follow the offset", o.sb && o.rowH == RowH && strcmp(o.icons[0], "iw_blstrpstl_001") == 0 && strcmp(o.rows[0], "Item 4") == 0);
         kt::Check("6 items: no scrollbar", !o6.sb && !o6.scrollable);
+        {   // stack strings follow the visible rows
+            const char* sn[4] = { "A", "B", "C", "D" };
+            const int ss[4] = { 5, 1, 12, -1 };
+            ListData ds; ds.set(sn, ss, 4, 9);
+            ListView vs; vs.reset(ds.rowsTotal(), 4);
+            ListDraw os;
+            buildListDraw(ds, vs, false, "F", &os);
+            kt::Check("draw stacks: x5, none, x12, none", strcmp(os.stacks[0], "x5") == 0 && os.stacks[1][0] == 0 && strcmp(os.stacks[2], "x12") == 0 && os.stacks[3][0] == 0);
+            vs.reset(ds.rowsTotal(), 3);
+            vs.off = vs.maxOff();
+            buildListDraw(ds, vs, false, "F", &os);
+            kt::Check("scrolled: the stacks scroll with their rows, the more row has none", strcmp(os.stacks[0], "x12") == 0 && strcmp(os.rows[0], "C") == 0 && strcmp(os.rows[2], "+5 more") == 0 && os.stacks[2][0] == 0);
+        }
         ListDraw ow;
         buildListDraw(d, v25, false, "F", &ow, RowHAlt2);
         kt::Check("RowH 72 build: taller block, rowH carried", ow.rowH == 72 && ow.h == blockHeightPx(8, 72) && ow.h > o.h);
@@ -1145,6 +1187,14 @@ int main() {
         kt::Check("flash header cut to fit", textPx10(h) <= 600 && strncmp(h, "Acquired: Mandalorian", 21) == 0 && strstr(h, "...") != nullptr);
         fmtFlashHeader(h, sizeof h, nullptr, 2000);
         kt::Check("flash header, unknown name", strcmp(h, "Acquired: item") == 0);
+        fmtFlashHeader(h, sizeof h, "Medpac", 2000, 5);
+        kt::Check("flash header: stack of 5 appends (5)", strcmp(h, "Acquired: Medpac (5)") == 0);
+        fmtFlashHeader(h, sizeof h, "Medpac", 2000, 1);
+        kt::Check("flash header: stack 1 has no suffix", strcmp(h, "Acquired: Medpac") == 0);
+        fmtFlashHeader(h, sizeof h, "Medpac", 2000, -1);
+        kt::Check("flash header: unknown stack has no suffix", strcmp(h, "Acquired: Medpac") == 0);
+        fmtFlashHeader(h, sizeof h, "{08}Mandalorian Heavy Armor Plating Mk IV Upgrade", 600, 12);
+        kt::Check("flash header cut keeps the (N) and strips the tag", textPx10(h) <= 600 && strncmp(h, "Acquired: Mandalorian", 21) == 0 && strcmp(h + strlen(h) - 7, "... (12)") != 0 && strcmp(h + strlen(h) - 5, " (12)") == 0);
         {   // the block widens for the flash (up to BlockMaxW) and the row layout stays put
             ListData ld;
             const char* nm[2] = { "Medpac", "Pistol" };
@@ -1158,6 +1208,20 @@ int main() {
             kt::Check("flash: wider block, same height and rows", flash.w >= plain.w && flash.w >= textPx10(flash.header) + 2 * BlockPadX && flash.h == plain.h && flash.vis == plain.vis && flash.w <= BlockMaxW);
             buildListDraw(ld, lv, true, "F", &flash, RowH, "ignored on the Took list");
             kt::Check("flash: ignored on the Took list", strncmp(flash.header, "Acquired Items", 14) == 0);
+            {   // a scrollable list: the flash hides the indicator, shows (N), and never narrows the block
+                const char* many[10] = { "A", "B", "C", "D", "E", "F", "G", "H", "I", "J" };
+                ListData lm; lm.set(many, nullptr, 10, 10);
+                ListView lw; lw.reset(lm.rowsTotal(), 4);
+                ListDraw p2, f2, f3;
+                buildListDraw(lm, lw, false, "F", &p2);
+                buildListDraw(lm, lw, false, "F", &f2, RowH, "Medpac", 3);
+                kt::Check("flash on a scrollable list: indicator hidden", p2.indicator[0] != 0 && f2.indicator[0] == 0 && f2.indicatorPx == 0 && f2.scrollable && f2.sb);
+                kt::Check("flash: header carries (3), block not narrower, rows unchanged", strcmp(f2.header, "Acquired: Medpac (3)") == 0 && f2.w >= p2.w && f2.h == p2.h && strcmp(f2.rows[0], "A") == 0);
+                buildListDraw(lm, lw, false, "F", &f3, RowH, "Medpac");
+                kt::Check("flash without a stack: no suffix", strcmp(f3.header, "Acquired: Medpac") == 0 && f3.indicator[0] == 0);
+                buildListDraw(lm, lw, true, "F", &f3, RowH, "Medpac", 3);
+                kt::Check("Took list: flash ignored, indicator stays", f3.indicator[0] != 0 && strncmp(f3.header, "Acquired Items", 14) == 0);
+            }
         }
     }
 
@@ -1188,48 +1252,201 @@ int main() {
         kt::Check("tipWrap: paragraphs and a blank line", n3 >= 4 && !cut && strncmp(body, "Duration: 120 sec\n\nA shot", 25) == 0 && widest <= 900);
         const int n4 = tipWrap(body, sizeof body, "", 400, &widest, &cut);
         kt::Check("tipWrap: empty text", n4 <= 1 && !cut);
-        // buildTip
-        TipData d;
-        snprintf(d.title, sizeof d.title, "Medpac");
-        d.stack = 5;
-        snprintf(d.desc, sizeof d.desc, "Heals a little.");
+        {
+            std::string t3;
+            for (int i = 0; i < 80; ++i) t3 += "word" + std::to_string(i) + " ";
+            char w3[TipBodyCap]; int wd = 0; bool c3 = false;
+            const int n5 = tipWrap(w3, sizeof w3, t3.c_str(), 500, &wd, &c3, 3);
+            kt::Check("tipWrap with maxLines 3: 3 lines, cut, ends in ...", n5 == 3 && c3 && strcmp(w3 + strlen(w3) - 3, "...") == 0 && wd <= 500);
+            const int n6 = tipWrap(w3, sizeof w3, t3.c_str(), 500, &wd, &c3, 99);
+            kt::CheckEq("tipWrap maxLines above the hard cap clamps to 10", n6, 10);
+        }
+
+        // ---- 0.7.0-dev (QL9): tooltip layout of a TipModel
+        auto lineOf = [](const char* text, unsigned idx) {
+            std::string cur; unsigned k = 0;
+            for (const char* p = text; ; ++p) {
+                if (*p == '\n' || *p == 0) { if (k == idx) return cur; cur.clear(); ++k; if (!*p) break; }
+                else cur += *p;
+            }
+            return std::string("<none>");
+        };
+        auto inside = [](const Rect& r, const Rect& f) { return r.x >= f.x && r.y >= f.y && r.x + r.w <= f.x + f.w + LabelSlackPx && r.y + r.h <= f.y + f.h; };
         const Rect blk = { 1000, 500, 640, 400 };
         const Rect row = { 1028, 600, 560, 64 };
         const Rect panel = { 0, 0, 3840, 1600 };
+        const int inner = TipW - 2 * TipPadX;
         TipDraw t;
-        kt::Check("buildTip", buildTip(d, blk, row, panel, &t));
-        kt::Check("tip: right of the list, top aligned with the row", t.frame.x == 1000 + 640 + TipGapPx && t.frame.y == 600 && !t.flipped);
-        kt::Check("tip: title 16x16 when it fits, quantity line, body", t.bigTitle && t.haveQty && strcmp(t.qtyText, "Quantity: 5") == 0 && t.haveBody && t.lines == 1 && strcmp(t.bodyText, "Heals a little.") == 0);
-        kt::Check("tip: child rects inside the frame", t.title.x >= t.frame.x && t.body.y + t.body.h <= t.frame.y + t.frame.h && t.qty.y == t.title.y + TipTitleH && t.body.y > t.qty.y);
-        kt::Check("tip: min width", t.frame.w >= TipMinW && t.frame.w <= TipMaxW);
-        d.stack = 1;
-        buildTip(d, blk, row, panel, &t);
-        kt::Check("tip: no quantity line for a single item", !t.haveQty && t.body.y == t.title.y + TipTitleH + TipBlockGapPx);
-        d.desc[0] = 0;
-        buildTip(d, blk, row, panel, &t);
-        kt::Check("tip: no description, no body", !t.haveBody && t.lines == 0 && t.frame.h == TipPadY + TipTitleH + TipPadY);
-        // flip near the right edge, clamp at the bottom
-        const Rect blkR = { 3000, 500, 640, 400 };
-        buildTip(d, blkR, { 3028, 600, 560, 64 }, panel, &t);
-        kt::Check("tip: flips to the left of the list near the panel edge", t.flipped && t.frame.x == 3000 - TipGapPx - t.frame.w);
-        d.stack = 3;
-        snprintf(d.desc, sizeof d.desc, "%s", longText.c_str());
-        buildTip(d, blk, { 1028, 1500, 560, 64 }, panel, &t);
-        kt::Check("tip: bottom clamp", t.frame.y + t.frame.h == 1600 - ScreenMarginPx && t.frame.y >= ScreenMarginPx);
-        kt::Check("tip: a long description is capped at 10 lines with ...", t.lines == 10 && t.truncated && strcmp(t.bodyText + strlen(t.bodyText) - 3, "...") == 0 && t.frame.w <= TipMaxW);
-        kt::CheckEq("tip: body height = lines x pitch", t.body.h, 10 * TipLineH);
-        buildTip(d, blk, { 1028, 100, 560, 64 }, panel, &t);
-        kt::Check("tip: top clamp", t.frame.y >= ScreenMarginPx);
-        buildTip(d, blk, { 1028, 600, 560, 64 }, { 0, 0, 0, 0 }, &t);
-        kt::Check("tip: unknown panel: no clamp, no flip", t.frame.y == 600 && !t.flipped);
-        // long name: 10x10, then cut
-        snprintf(d.title, sizeof d.title, "Mandalorian Heavy Armor Plating Mk IV Upgrade");
-        buildTip(d, blk, row, panel, &t);
-        kt::Check("tip: a long title falls back to the 10x10 font", !t.bigTitle && textPx10(t.titleText) <= TipMaxW - 2 * TipPadX);
-        kt::Check("tip: no title -> nothing", (d.title[0] = 0, buildTip(d, blk, row, panel, &t)) && strcmp(t.titleText, "item") == 0);
+        kt::Check("TipData is the model", sizeof(TipData) == sizeof(TipModel));
+        {   // carbine: two rules, one flavor line, no foot
+            TipData d = {};
+            snprintf(d.title, sizeof d.title, "{08}Disruptor Carbine");
+            d.stack = -1;
+            snprintf(d.sub, sizeof d.sub, "Blaster Rifle");
+            snprintf(d.rules[0].label, sizeof d.rules[0].label, "Damage"); snprintf(d.rules[0].value, sizeof d.rules[0].value, "3d8");
+            snprintf(d.rules[1].label, sizeof d.rules[1].label, "Critical"); snprintf(d.rules[1].value, sizeof d.rules[1].value, "19-20 / x2");
+            d.nRules = 2;
+            snprintf(d.flavor, sizeof d.flavor, "A compact smuggler carbine.");
+            kt::Check("carbine builds", buildTip(d, blk, row, panel, &t));
+            kt::Check("carbine: right of the list, top = the block's top, fixed width", t.frame.x == 1000 + 640 + TipGapPx && t.frame.y == 500 && t.frame.w == TipW && !t.flipped);
+            kt::Check("carbine: title stripped, 16x16, no stack suffix", t.bigTitle && strcmp(t.titleText, "Disruptor Carbine") == 0 && strcmp(t.subText, "Blaster Rifle") == 0);
+            kt::Check("carbine: icon 72x72 at the top-left padding", t.icon == Rect({ t.frame.x + TipPadX, t.frame.y + TipPadY, 72, 72 }));
+            kt::Check("carbine: title and sub right of the icon", t.title.x == t.icon.x + 72 + TipIconGapPx && t.sub.x == t.title.x && t.sub.y == t.title.y + TipTitleH);
+            kt::Check("carbine: rules + flavor = two dividers, 2 px tall", t.haveRules && t.haveFlavor && !t.haveFoot && t.nDividers == 2 && t.dividers[0].h == 2 && t.dividers[1].h == 2 && t.dividers[0].w == inner);
+            kt::Check("carbine: one multi-line label each", strcmp(t.labelsText, "Damage\nCritical") == 0 && strcmp(t.valuesText, "3d8\n19-20 / x2") == 0);
+            const int col = std::min(230, textPx10("Critical") + 24);
+            kt::Check("carbine: label column = widest label + 24", t.values.x == t.labels.x + col && t.labels.w == col - 8 + LabelSlackPx);
+            kt::Check("carbine: value width = inner - col (+ slack)", t.values.w == inner - col + LabelSlackPx);
+            kt::CheckEq("carbine: label / value height = 2 lines", t.labels.h, 2 * TipLineH);
+            kt::Check("carbine: flavor 1 line, slack width", t.lines == 3 && strcmp(t.flavorText, "A compact smuggler carbine.") == 0 && t.flavor.h == TipLineH && t.flavor.w == inner + LabelSlackPx);
+            kt::CheckEq("carbine: frame height", t.frame.h, TipPadY + 72 + TipBlockGapPx + (2 + TipBlockGapPx + 2 * TipLineH + TipBlockGapPx) + (2 + TipBlockGapPx + TipLineH) + TipPadY);
+            kt::Check("carbine: sections stack top to bottom", t.dividers[0].y < t.labels.y && t.labels.y + t.labels.h < t.dividers[1].y && t.dividers[1].y < t.flavor.y && t.flavor.y + t.flavor.h + TipPadY == t.frame.y + t.frame.h);
+            kt::Check("carbine: every rect inside the frame", inside(t.icon, t.frame) && inside(t.title, t.frame) && inside(t.sub, t.frame) && inside(t.labels, t.frame) && inside(t.values, t.frame) && inside(t.flavor, t.frame));
+            kt::Check("carbine: fill = the frame inset by 6", t.fill == fillRect(t.frame) && t.fill.x == t.frame.x + 6 && t.fill.w == t.frame.w - 12);
+            kt::Check("carbine: no foot rect", t.foot == Rect({ 0, 0, 0, 0 }) && t.footText[0] == 0);
+            kt::Check("carbine: not truncated", !t.truncated);
+            // foot present / absent
+            snprintf(d.foot, sizeof d.foot, "Equipped: Blaster Pistol");
+            const int h0 = t.frame.h;
+            buildTip(d, blk, row, panel, &t);
+            kt::Check("foot: third divider, foot line below it", t.haveFoot && t.nDividers == 3 && strcmp(t.footText, "Equipped: Blaster Pistol") == 0 && t.foot.y == t.dividers[2].y + 2 + TipBlockGapPx && t.foot.h == TipLineH && t.foot.y > t.flavor.y + t.flavor.h);
+            kt::CheckEq("foot: frame grows by gap + divider + gap + line", t.frame.h, h0 + TipBlockGapPx + 2 + TipBlockGapPx + TipLineH);
+            kt::Check("foot: below the last divider and inside the frame", inside(t.foot, t.frame) && t.foot.w == inner + LabelSlackPx);
+            d.foot[0] = 0;
+            buildTip(d, blk, row, panel, &t);
+            kt::Check("foot absent: back to two dividers", !t.haveFoot && t.nDividers == 2 && t.frame.h == h0);
+            // stack suffix
+            d.stack = 7;
+            buildTip(d, blk, row, panel, &t);
+            kt::Check("stack >= 2: title gets \" x7\"", strcmp(t.titleText, "Disruptor Carbine x7") == 0);
+            d.stack = 1;
+            buildTip(d, blk, row, panel, &t);
+            kt::Check("stack 1: no suffix", strcmp(t.titleText, "Disruptor Carbine") == 0);
+        }
+        {   // medpac: no rules, the whole description (up to 7 lines)
+            TipData d = {};
+            snprintf(d.title, sizeof d.title, "Medpac");
+            d.stack = 5;
+            snprintf(d.sub, sizeof d.sub, "Medical Equipment");
+            d.full = true;
+            std::string longDesc;
+            for (int i = 0; i < 60; ++i) longDesc += "restores" + std::to_string(i) + " ";
+            snprintf(d.flavor, sizeof d.flavor, "%s", longDesc.c_str());
+            kt::Check("medpac builds", buildTip(d, blk, row, panel, &t));
+            kt::Check("medpac: title with stack, no rules, one divider", strcmp(t.titleText, "Medpac x5") == 0 && !t.haveRules && t.nDividers == 1 && t.labelsText[0] == 0 && t.valuesText[0] == 0 && t.labels.h == 0);
+            kt::Check("medpac: full flavor is capped at 7 lines with ...", t.haveFlavor && t.lines == 7 && t.truncated && tipLineCountForTest(t.flavorText) == 7 && strcmp(t.flavorText + strlen(t.flavorText) - 3, "...") == 0);
+            kt::CheckEq("medpac: frame height (no rules section)", t.frame.h, TipPadY + 72 + TipBlockGapPx + (2 + TipBlockGapPx + 7 * TipLineH) + TipPadY);
+            d.full = false;
+            buildTip(d, blk, row, panel, &t);
+            kt::Check("not full: flavor capped at 3 lines", t.lines == 3 && t.truncated && t.flavor.h == 3 * TipLineH);
+            snprintf(d.flavor, sizeof d.flavor, "Short.");
+            d.full = true;
+            buildTip(d, blk, row, panel, &t);
+            kt::Check("a short full description is one line, not truncated", t.lines == 1 && !t.truncated);
+            d.flavor[0] = 0;
+            buildTip(d, blk, row, panel, &t);
+            kt::Check("nothing but a header: no dividers", !t.haveFlavor && !t.haveRules && t.nDividers == 0 && t.frame.h == TipPadY + 72 + TipBlockGapPx + TipPadY);
+        }
+        {   // a wrapped value keeps the rows aligned
+            TipData d = {};
+            snprintf(d.title, sizeof d.title, "Stim");
+            snprintf(d.rules[0].label, sizeof d.rules[0].label, "Effect");
+            snprintf(d.rules[0].value, sizeof d.rules[0].value, "Restores vitality over time and cures poison and disease for the whole party");
+            snprintf(d.rules[1].label, sizeof d.rules[1].label, "Duration"); snprintf(d.rules[1].value, sizeof d.rules[1].value, "30 s");
+            d.nRules = 2;
+            buildTip(d, blk, row, panel, &t);
+            const unsigned k = tipLineCountForTest(t.valuesText) - 1;   // value lines of the first rule (the second adds one)
+            kt::Check("wrapped value: 2+ lines", k >= 2);
+            kt::Check("wrapped value: labels and values have the same number of lines", tipLineCountForTest(t.labelsText) == tipLineCountForTest(t.valuesText) && t.lines == static_cast<int>(k + 1));
+            kt::Check("wrapped value: the extra label lines are \" \"", lineOf(t.labelsText, 0) == "Effect" && lineOf(t.labelsText, 1) == " " && lineOf(t.labelsText, k - 1) == " ");
+            kt::Check("wrapped value: the next rule lines up with its value", lineOf(t.labelsText, k) == "Duration" && lineOf(t.valuesText, k) == "30 s");
+            kt::CheckEq("wrapped value: rects span all lines", t.labels.h, static_cast<int>(k + 1) * TipLineH);
+            const int col = t.values.x - t.labels.x;
+            bool fits = true;
+            for (unsigned i = 0; i < k; ++i) if (textPx10(lineOf(t.valuesText, i).c_str()) > inner - col) fits = false;
+            kt::Check("wrapped value: every line fits inner - col", fits);
+            kt::CheckEq("wrapped value: frame height follows the line count", t.frame.h, TipPadY + 72 + TipBlockGapPx + (2 + TipBlockGapPx + static_cast<int>(k + 1) * TipLineH + TipBlockGapPx) + TipPadY);
+            kt::Check("label column capped at 230", col <= TipLabelColMax);
+        }
+        {   // position: flip, clamp
+            TipData d = {};
+            snprintf(d.title, sizeof d.title, "Medpac");
+            const Rect blkR = { 3000, 500, 640, 400 };
+            buildTip(d, blkR, row, panel, &t);
+            kt::Check("flip: left of the list at the right screen edge", t.flipped && t.frame.x == 3000 - TipGapPx - TipW && t.frame.x + t.frame.w + TipGapPx == blkR.x);
+            const Rect blkL = { 1000, 500, 640, 400 };
+            buildTip(d, blkL, row, panel, &t);
+            kt::Check("no flip with room on the right", !t.flipped);
+            snprintf(d.flavor, sizeof d.flavor, "A line of description text.");
+            buildTip(d, { 1000, 1500, 640, 400 }, row, panel, &t);
+            kt::Check("bottom clamp", t.frame.y + t.frame.h == 1600 - ScreenMarginPx && t.frame.y >= ScreenMarginPx);
+            buildTip(d, { 1000, -50, 640, 400 }, row, panel, &t);
+            kt::CheckEq("top clamp", t.frame.y, ScreenMarginPx);
+            buildTip(d, { 1000, 500, 640, 400 }, row, { 0, 0, 0, 0 }, &t);
+            kt::Check("unknown panel: no clamp, no flip", t.frame.y == 500 && !t.flipped && t.frame.x == 1000 + 640 + TipGapPx);
+            buildTip(d, { 100, 500, 100, 400 }, row, { 0, 0, 800, 1600 }, &t);
+            kt::Check("flipped past the left margin: clamped to it", t.frame.x == ScreenMarginPx);
+        }
+        {   // title fitting
+            TipData d = {};
+            snprintf(d.title, sizeof d.title, "Mandalorian Heavy Armor Plating Mk IV Upgrade");
+            d.stack = 3;
+            buildTip(d, blk, row, panel, &t);
+            kt::Check("long title: 10x10 font, cut with ..., the stack suffix kept", !t.bigTitle && textPx10(t.titleText) <= inner - 72 - TipIconGapPx && strstr(t.titleText, "...") != nullptr && strcmp(t.titleText + strlen(t.titleText) - 3, " x3") == 0);
+            d.title[0] = 0; d.stack = -1;
+            kt::Check("no title -> item", buildTip(d, blk, row, panel, &t) && strcmp(t.titleText, "item") == 0);
+        }
         char b[96];
         fmtTip(b, sizeof b, 2, 7, 1100, 640, 520, 238, true);
         kt::Check("TIP line", strcmp(b, "TIP i=2 lines=7 extent=1100,640,520,238 flip=1") == 0);
+    }
+
+    // ---- 0.7.0-dev: panel underlay, list order
+    {
+        kt::Check("frame alpha stays 1.0 (never above: the engine multiplies)", FrameAlpha == 1.0f);
+        const Rect f = fillRect({ 100, 200, 500, 300 });
+        kt::Check("fillRect: inset 6 px each side", f == Rect({ 106, 206, 488, 288 }));
+        const float two = 1.0f - (1.0f - FillBakedAlpha) * (1.0f - FillBakedAlpha);
+        kt::Check("two uibit_fill_2bt layers = 0.95 opacity", two > 0.95f && two < 0.953f);
+        kt::Check("one layer under a frame at alpha 0.94 would be only 0.73 (why we never setAlpha > 1)", 0.94f * FillBakedAlpha > 0.72f && 0.94f * FillBakedAlpha < 0.74f);
+        const char* nm[2] = { "Medpac", "Pistol" };
+        ListData ld; ld.set(nm, nullptr, 2, 2);
+        ListView lv; lv.reset(ld.rowsTotal(), 4);
+        ListDraw o;
+        buildListDraw(ld, lv, false, "F", &o);
+        kt::Check("ListDraw exposes the block-relative fill rect", o.fill == fillRect({ 0, 0, o.w, o.h }) && o.fill.x == 6);
+        TipDraw td;
+        buildTip(TipData(), { 1000, 500, 640, 400 }, { 0, 0, 0, 0 }, { 0, 0, 3840, 1600 }, &td);
+        kt::Check("TipDraw exposes the absolute fill rect", td.fill == fillRect(td.frame));
+        kt::Check("BackAlpha kept for the flat fallback", BackAlpha == 0.55f);
+    }
+    {   // QL11 order
+        uint8_t order[8];
+        sortOrder(nullptr, nullptr, 0, order);
+        kt::Check("sortOrder n=0 writes nothing", true);
+        const uint8_t plotAll[4] = { 1, 1, 1, 1 };
+        sortOrder(plotAll, nullptr, 4, order);
+        kt::Check("all plot: original order", order[0] == 0 && order[1] == 1 && order[2] == 2 && order[3] == 3);
+        const uint8_t plot[6] = { 0, 1, 0, 0, 1, 0 };
+        const bool cr[6] = { false, false, true, false, false, true };
+        sortOrder(plot, cr, 6, order);
+        kt::Check("mixed: plot (1,4), credits (2,5), rest (0,3), each stable", order[0] == 1 && order[1] == 4 && order[2] == 2 && order[3] == 5 && order[4] == 0 && order[5] == 3);
+        const uint8_t plot2[3] = { 1, 0, 0 };
+        const bool cr2[3] = { true, true, false };
+        sortOrder(plot2, cr2, 3, order);
+        kt::Check("a plot credit counts as plot", order[0] == 0 && order[1] == 1 && order[2] == 2);
+        sortOrder(nullptr, cr2, 3, order);
+        kt::Check("no plot array: credits first", order[0] == 0 && order[1] == 1 && order[2] == 2);
+        const bool cr3[3] = { false, false, true };
+        sortOrder(nullptr, cr3, 3, order);
+        kt::Check("credits move up, the rest keep order", order[0] == 2 && order[1] == 0 && order[2] == 1);
+        sortOrder(nullptr, nullptr, 3, order);
+        kt::Check("no flags: identity", order[0] == 0 && order[1] == 1 && order[2] == 2);
+        uint8_t big[ListMaxItems];
+        uint8_t pl[ListMaxItems] = {0};
+        pl[ListMaxItems - 1] = 1;
+        sortOrder(pl, nullptr, ListMaxItems, big);
+        kt::Check("64 items: the last plot item comes first, the rest follow in order", big[0] == ListMaxItems - 1 && big[1] == 0 && big[ListMaxItems - 1] == ListMaxItems - 2);
     }
 
     return kt::Report("quick_loot_logic_test");

@@ -181,17 +181,47 @@ inline Rect backingRect(const Rect& label, unsigned chars) {
     return { label.x + label.w / 2 - w / 2, label.y - BackPadY, w, label.h + 2 * BackPadY };
 }
 
-// Copies an item name into out (cap >= 2): stops at the first NUL, cuts at NameRawMax, replaces every byte outside 0x20..0x7E with '?',
-// trims trailing spaces. A null/empty result becomes "item". Returns the length.
+// 0.7.0-dev (QL9): BioWare TLK names carry {tag} prefixes ("{08}Disruptor Carbine", "{light 04}Mandalorian Combat Suit") the engine hides.
+// Copies in -> out (cap >= 1) without every "{...}" of at most 12 inner chars (no nested braces), runs of blanks collapsed to one, none at
+// either end. A longer or unclosed brace is kept as text. Returns the length.
+inline unsigned stripTags(char* out, unsigned cap, const char* in) {
+    unsigned n = 0;
+    bool space = false;
+    if (in) {
+        for (unsigned i = 0; in[i] && n + 1 < cap; ++i) {
+            if (in[i] == '{') {
+                unsigned j = i + 1;
+                while (in[j] && in[j] != '}' && in[j] != '{' && j - i - 1 <= 12) ++j;
+                if (in[j] == '}' && j - i - 1 <= 12) { i = j; continue; }
+            }
+            if (in[i] == ' ' || in[i] == '\t') { space = n > 0; continue; }
+            if (space && n + 2 < cap) out[n++] = ' ';
+            space = false;
+            out[n++] = in[i];
+        }
+    }
+    out[n] = 0;
+    return n;
+}
+
+// 0.7.0-dev (QL9) shared tooltip contract: QuickLootRules.h buildTipModel fills it, buildTip lays it out. title = stripped name, stack
+// (-1 = not stackable), sub = category line ("Light Armor", "Disruptor Rifle"), rules = label / value rows, flavor = description text
+// (full = no rules: the whole description, up to 7 lines), foot = "Equipped: ..." / "In inventory: N" ("" = none).
+struct TipRule { char label[16]; char value[96]; };
+struct TipModel { char title[48]; int stack; char sub[40]; TipRule rules[10]; unsigned nRules; char flavor[600]; bool full; char foot[64]; };
+
+// Copies an item name into out (cap >= 2): {tags} stripped first (stripTags: log lines show "Disruptor Carbine", not "{08}Disruptor Carbine"), stops
+// at the first NUL, cuts at NameRawMax, replaces every byte outside 0x20..0x7E with '?', trims trailing spaces. A null/empty result becomes "item".
+// Returns the length.
 inline unsigned sanitizeName(char* out, unsigned cap, const char* in) {
+    char st[NameRawMax + 64];   // the stripped name; a longer one is cut here, far past NameRawMax
+    stripTags(st, sizeof st, in);
     unsigned n = 0;
     const unsigned lim = cap - 1 < NameRawMax ? cap - 1 : NameRawMax;
-    if (in) {
-        while (n < lim && in[n]) {
-            const unsigned char c = static_cast<unsigned char>(in[n]);
-            out[n] = (c < 0x20 || c > 0x7E) ? '?' : static_cast<char>(c);
-            ++n;
-        }
+    while (n < lim && st[n]) {
+        const unsigned char c = static_cast<unsigned char>(st[n]);
+        out[n] = (c < 0x20 || c > 0x7E) ? '?' : static_cast<char>(c);
+        ++n;
     }
     while (n > 0 && out[n - 1] == ' ') --n;
     if (n == 0) { const char* d = "item"; while (d[n]) { out[n] = d[n]; ++n; } }
@@ -446,7 +476,7 @@ inline unsigned fmtPeek(char* out, size_t cap, const char* key, int total, const
 //   when the list has more rows than ListRows) sits right of the rows, arrows at both ends, a thumb sized visible/total.
 constexpr int NameCap = 48;                // captured name buffer (rowName reads at most NameCap-1 chars)
 constexpr unsigned ListMaxItems = 64;      // names captured per peek / take; items past this only count towards the "+K more" row
-constexpr unsigned ListRowsDefault = 8, ListRowsMin = 1, ListRowsMax = 12;   // visible item rows (quick_loot.ini ListRows)
+constexpr unsigned ListRowsDefault = 4, ListRowsMin = 1, ListRowsMax = 12;   // visible item rows (quick_loot.ini ListRows)
 constexpr unsigned RowNameMax = 40;        // an item name longer than this is cut: first RowNameMax-3 chars + "..."
 constexpr unsigned RowTextCap = 56;        // one row's text: name (<= 40) + " x999" + NUL fits
 constexpr unsigned ResrefCap = 17;         // icon resref buffer: 16 chars + NUL (the engine CResRef is char[16], NOT NUL-terminated)
@@ -455,7 +485,8 @@ constexpr int RowHAlt1 = 56, RowHAlt2 = 72;
 constexpr int RowGapPx = 4;                // air between item rows (the vanilla list shows the adjacent borders; a small gap reads as separate rows)
 constexpr int HeaderH = 32;                // header / indicator row height (the 0.4.0 RowH)
 constexpr int HeaderGapPx = 6;             // air between the header row and the first item row
-constexpr int RowIconPad = 4;              // icon inset from the row's left / top / bottom edge (the 16 px border's drawn line is only its outer ~3 px; the icon textures carry their own transparent margin)
+constexpr int RowIconPad = 8;              // icon inset from the row's left / top / bottom edge (0.7.0-dev QL10: 48 px icon in the 64 px row; the 16 px border's drawn line is only its outer ~3 px)
+constexpr int StackColW = 52;              // 0.7.0-dev QL10: right-aligned stack column ("x2", up to "x999"), taken from the row text
 constexpr int IconGapPx = 12;              // icon -> text
 constexpr int RowTextPadR = 16;            // text -> row right edge
 constexpr int TextGlyphH = 28;             // glyph box (27.5 px), used to centre the text vertically in the row (align 9 = top-left)
@@ -470,6 +501,12 @@ constexpr int BlockMinW = 300, BlockMaxW = 1000;
 constexpr int LabelSlackPx = 12;           // row / header label rects are this much wider than their text budget (a wrapped label is taller than a row)
 constexpr int IndicatorGapPx = 36;         // min gap between the header text and the "1-8 of 25" indicator
 constexpr float FrameAlpha = 1.0f;         // frame panel alpha: the template fill (uibit_fill_2bt) is already black at alpha 199/255 = 0.78 ("about 0.75"), alpha 1.0 keeps the vanilla look
+// 0.7.0-dev panel opacity: the adapter draws a SECOND uibit_fill_2bt (baked alpha 199/255) at fillRect(frame) UNDER the frame; two layers give
+// 1 - 0.22 x 0.22 = 0.95 opacity. NEVER setAlpha above 1 on the frame itself: 0.94 x 0.78 = 0.73 is MORE transparent (the engine multiplies, it does not add).
+// BackAlpha (above) stays for the flat fallback backing.
+constexpr float FillBakedAlpha = 199.0f / 255.0f;   // uibit_fill_2bt as shipped
+constexpr int FillInsetPx = 6;             // the underlay sits this far inside the frame on every side (inside the border's drawn line)
+inline Rect fillRect(const Rect& frame) { return { frame.x + FillInsetPx, frame.y + FillInsetPx, frame.w - 2 * FillInsetPx, frame.h - 2 * FillInsetPx }; }
 constexpr int WheelStep = 120;             // wheel delta per row
 constexpr uint32_t WheelFreshMs = 250;     // the wheel callback consumes only while the block was drawn within this long
 constexpr uint32_t TookBaseMs = 3000, TookRowMs = 500, TookCapMs = 6000;   // Took list: 3 s + 0.5 s per list row past TookFreeRows, cap 6 s
@@ -477,9 +514,9 @@ constexpr unsigned TookFreeRows = 3;
 
 // Icon geometry for a row height.
 inline int iconPx(int rowH = RowH) { return rowH - 2 * RowIconPad; }
-inline int rowChromePx(int rowH = RowH) { return RowIconPad + iconPx(rowH) + IconGapPx + RowTextPadR; }   // row width that is not text
+inline int rowChromePx(int rowH = RowH) { return RowIconPad + iconPx(rowH) + IconGapPx + StackColW + RowTextPadR; }   // row width that is not text
 // Widest row text the block can hold: BlockMaxW minus the pads, the worst-case chrome (RowHAlt2) and the scrollbar.
-constexpr int RowTextMaxPx = BlockMaxW - 2 * BlockPadX - (RowIconPad + (RowHAlt2 - 2 * RowIconPad) + IconGapPx + RowTextPadR) - SbReserve;
+constexpr int RowTextMaxPx = BlockMaxW - 2 * BlockPadX - (RowIconPad + (RowHAlt2 - 2 * RowIconPad) + IconGapPx + StackColW + RowTextPadR) - SbReserve;
 
 // Copies a 16-byte engine CResRef (not NUL-terminated) into out (>= ResrefCap): stops at the first NUL, bytes outside 0x20..0x7E become '?',
 // trailing spaces are trimmed. Returns the length (0 = no icon). raw may be null.
@@ -516,18 +553,18 @@ inline int textPx10(const char* t) {
     return static_cast<int>(ceilf(textfit::textPx(c, t, static_cast<int>(strlen(t)), textfit::F10)));
 }
 
-// Row name: printable bytes (others '?'), at most NameCap-1 of them, trailing spaces trimmed, empty -> "item". Longer than RowNameMax: the first
+// Row name: {tags} stripped, printable bytes (others '?'), at most NameCap-1 of them, trailing spaces trimmed, empty -> "item". Longer than RowNameMax: the first
 // RowNameMax-3 chars, trailing non-alphanumerics trimmed, "..." appended ("Mandalorian Heavy Armor Plating Mk IV Upgrade" -> "Mandalorian Heavy Armor Plating Mk IV Up...").
 // cap >= RowNameMax + 1. Returns the length.
 inline unsigned rowName(char* out, unsigned cap, const char* in) {
     char tmp[NameCap];
+    char st[NameCap + 64];   // {tags} stripped first (0.7.0-dev): "{08}Disruptor Carbine" lists as "Disruptor Carbine"
+    stripTags(st, sizeof st, in);
     unsigned n = 0;
-    if (in) {
-        while (n < static_cast<unsigned>(NameCap) - 1 && in[n]) {
-            const unsigned char c = static_cast<unsigned char>(in[n]);
-            tmp[n] = (c < 0x20 || c > 0x7E) ? '?' : static_cast<char>(c);
-            ++n;
-        }
+    while (n < static_cast<unsigned>(NameCap) - 1 && st[n]) {
+        const unsigned char c = static_cast<unsigned char>(st[n]);
+        tmp[n] = (c < 0x20 || c > 0x7E) ? '?' : static_cast<char>(c);
+        ++n;
     }
     while (n > 0 && tmp[n - 1] == ' ') --n;
     if (n == 0) { memcpy(tmp, "item", 4); n = 4; }
@@ -546,20 +583,19 @@ inline unsigned rowName(char* out, unsigned cap, const char* in) {
     out[n] = 0;
     return n;
 }
-// One item row: rowName + " xN" for 2 <= N <= 999. When the text is wider than maxPx the name is cut further (+ "...") so it never wraps.
-inline unsigned rowText(char* out, unsigned cap, const char* name, int stack, int maxPx = RowTextMaxPx) {
+// One item row's name text: rowName; when it is wider than maxPx the name is cut further (+ "...") so it never wraps. The stack count is NOT in the
+// text since 0.7.0-dev (QL10): it has its own right-aligned column (rowStackText / rowStackRect).
+inline unsigned rowText(char* out, unsigned cap, const char* name, int maxPx = RowTextMaxPx) {
     char nm[RowNameMax + 8];
     unsigned n = rowName(nm, sizeof nm, name);
-    char sfx[8] = "";
-    if (stack >= 2 && stack <= 999) snprintf(sfx, sizeof sfx, " x%d", stack);
     char buf[RowTextCap + 16];
-    snprintf(buf, sizeof buf, "%s%s", nm, sfx);
+    snprintf(buf, sizeof buf, "%s", nm);
     if (textPx10(buf) > maxPx) {
         if (n >= 3 && memcmp(nm + n - 3, "...", 3) == 0) n -= 3;
         while (n > 1) {
             --n;
             char t[RowTextCap + 16];
-            snprintf(t, sizeof t, "%.*s...%s", static_cast<int>(n), nm, sfx);
+            snprintf(t, sizeof t, "%.*s...", static_cast<int>(n), nm);
             if (textPx10(t) <= maxPx) { memcpy(buf, t, sizeof t); break; }
         }
     }
@@ -570,12 +606,20 @@ inline unsigned rowText(char* out, unsigned cap, const char* name, int stack, in
     return len;
 }
 
+// Stack column text: "x2" for 2 <= N <= 999, else "" (cap >= 6). Returns the length.
+inline unsigned rowStackText(char* out, size_t cap, int stack) {
+    if (stack >= 2 && stack <= 999) return static_cast<unsigned>(snprintf(out, cap, "x%d", stack));
+    if (cap) out[0] = 0;
+    return 0;
+}
+
 // The captured list as rows. items = rows for captured names, more = items past the capture (shown as one last "+K more" row).
 struct ListData {
     unsigned items = 0, more = 0;
     int maxRowPx = 0;                  // widest row text (incl. the "+K more" row)
     char rows[ListMaxItems][RowTextCap];
     char icons[ListMaxItems][ResrefCap];   // 0.5.0-dev: icon resref per item row ("" = none; the "+K more" row has none)
+    char stackTxt[ListMaxItems][8];    // 0.7.0-dev: stack column text per item row ("x2", "" = none; kept per item so scrolling keeps them)
     unsigned rowsTotal() const { return items + (more ? 1u : 0u); }
     unsigned totalItems() const { return items + more; }
     bool empty() const { return items == 0; }
@@ -585,7 +629,8 @@ struct ListData {
         clear();
         if (count > ListMaxItems) count = ListMaxItems;
         for (unsigned i = 0; i < count; ++i) {
-            rowText(rows[i], RowTextCap, names ? names[i] : nullptr, stacks ? stacks[i] : -1);
+            rowText(rows[i], RowTextCap, names ? names[i] : nullptr);
+            rowStackText(stackTxt[i], sizeof stackTxt[i], stacks ? stacks[i] : -1);
             sanitizeResref(icons[i], iconRes ? iconRes[i] : nullptr);
             const int w = textPx10(rows[i]);
             if (w > maxRowPx) maxRowPx = w;
@@ -608,7 +653,21 @@ struct ListData {
         else if (cap) out[0] = 0;
     }
     const char* iconAt(unsigned i) const { return i < items ? icons[i] : ""; }
+    const char* stackAt(unsigned i) const { return i < items ? stackTxt[i] : ""; }
 };
+
+// 0.7.0-dev (QL11) list order: plot items first, credits second, then the rest; stable (the container's own order inside each group). A plot item
+// that is also a credit counts as plot. plot / credits are per captured item (n of them, either may be null = none); order[0..n) receives the
+// source indices in display order (n <= ListMaxItems fits uint8_t).
+inline void sortOrder(const uint8_t* plot, const bool* credits, unsigned n, uint8_t* order) {
+    unsigned k = 0;
+    for (int g = 0; g < 3; ++g) {
+        for (unsigned i = 0; i < n; ++i) {
+            const int grp = (plot && plot[i]) ? 0 : ((credits && credits[i]) ? 1 : 2);
+            if (grp == g) order[k++] = static_cast<uint8_t>(i);
+        }
+    }
+}
 
 // Scroll state of the list on screen: rows = visible item rows, total = list rows, off = first visible row. The wheel adds up to WheelStep per row.
 struct ListView {
@@ -724,19 +783,22 @@ inline SbPart sbHitAt(const Sb& s, float rx, float ry) {
     return SbPart::Thumb;
 }
 
-// Header flash after a per-item take: "Acquired: <name>" for FlashMs, cut so it fits maxPx (the width left of the scroll indicator).
+// Header flash after a per-item take: "Acquired: <name>" (+ " (N)" for a stack of N > 1) for FlashMs, the name cut so it fits maxPx. The scroll
+// indicator is hidden while it shows (0.7.0-dev), so maxPx is the whole header width.
 constexpr uint32_t FlashMs = 1500;
-inline unsigned fmtFlashHeader(char* out, size_t cap, const char* name, int maxPx) {
+inline unsigned fmtFlashHeader(char* out, size_t cap, const char* name, int maxPx, int stack = -1) {
     char nm[RowNameMax + 8];
     unsigned n = rowName(nm, sizeof nm, name);
-    char buf[RowNameMax + 24];
-    snprintf(buf, sizeof buf, "Acquired: %s", nm);
+    char sfx[16] = "";
+    if (stack > 1) snprintf(sfx, sizeof sfx, " (%d)", stack);
+    char buf[RowNameMax + 40];
+    snprintf(buf, sizeof buf, "Acquired: %s%s", nm, sfx);
     if (textPx10(buf) > maxPx) {
         if (n >= 3 && memcmp(nm + n - 3, "...", 3) == 0) n -= 3;
         while (n > 1) {
             --n;
-            char t[RowNameMax + 24];
-            snprintf(t, sizeof t, "Acquired: %.*s...", static_cast<int>(n), nm);
+            char t[RowNameMax + 40];
+            snprintf(t, sizeof t, "Acquired: %.*s...%s", static_cast<int>(n), nm, sfx);
             if (textPx10(t) <= maxPx) { memcpy(buf, t, sizeof t); break; }
         }
     }
@@ -758,12 +820,15 @@ struct ListDraw {
     int headerPx = 0, indicatorPx = 0;
     char rows[ListRowsMax][RowTextCap];
     char icons[ListRowsMax][ResrefCap];   // icon resref per visible row ("" = none)
+    char stacks[ListRowsMax][8];       // 0.7.0-dev: stack column text per visible row ("x2"; "" = none, also on the "+K more" row)
     int w = 0, h = 0;                  // block size (px), constant while scrolling
+    Rect fill = {0, 0, 0, 0};          // 0.7.0-dev: underlay fill rect, BLOCK-relative (the adapter adds the block origin): fillRect({0,0,w,h})
 };
 
 // Builds the block for list d seen through view v. false = nothing to draw (empty list). The width follows the widest of ALL rows (not only the
 // visible ones) so scrolling never resizes the block; h follows the visible row count (min(rows, list rows)).
-inline bool buildListDraw(const ListData& d, const ListView& v, bool took, const char* key, ListDraw* o, int rowH = RowH, const char* flashName = nullptr) {
+// flashName (peek list only): the take flash replaces the header text, flashStack > 1 appends " (N)", and the scroll indicator is hidden meanwhile.
+inline bool buildListDraw(const ListData& d, const ListView& v, bool took, const char* key, ListDraw* o, int rowH = RowH, const char* flashName = nullptr, int flashStack = -1) {
     *o = ListDraw();
     if (d.empty()) return false;
     const unsigned total = d.rowsTotal();
@@ -776,28 +841,35 @@ inline bool buildListDraw(const ListData& d, const ListView& v, bool took, const
     o->scrollable = total > rows;
     o->sb = o->scrollable && sbFits(vis, rowH);
     fmtHeader(o->header, sizeof o->header, took, key, d.totalItems());
-    if (flashName && !took) {   // 0.6.0-dev: the take flash replaces the header text (the block widens for it, up to BlockMaxW)
-        fmtFlashHeader(o->header, sizeof o->header, flashName, BlockMaxW - 2 * BlockPadX - (o->scrollable ? IndicatorGapPx + textPx10("999-999 of 999") : 0));
-    }
+    const bool flashing = flashName && !took;
     o->headerPx = textPx10(o->header);
     int need = d.maxRowPx + rowChromePx(rowH) + (o->sb ? SbReserve : 0);
     if (o->scrollable) {
         const unsigned last = (off + vis > d.items) ? d.totalItems() : off + vis;
-        fmtRange(o->indicator, sizeof o->indicator, off + 1, last, d.totalItems());
-        o->indicatorPx = textPx10(o->indicator);
         char worst[24];   // widest form (digits only grow with off): used for the width so the block stays still
         fmtRange(worst, sizeof worst, maxOff + 1, d.totalItems(), d.totalItems());
-        const int hw = o->headerPx + IndicatorGapPx + textPx10(worst);
+        const int hw = o->headerPx + IndicatorGapPx + textPx10(worst);   // the plain header, also while flashing: the flash never shrinks the block
         if (hw > need) need = hw;
+        if (!flashing) {
+            fmtRange(o->indicator, sizeof o->indicator, off + 1, last, d.totalItems());
+            o->indicatorPx = textPx10(o->indicator);
+        }
     } else if (o->headerPx > need) need = o->headerPx;
+    if (flashing) {   // 0.6.0-dev: the take flash replaces the header text (the block widens for it, up to BlockMaxW); 0.7.0-dev: no indicator, so the whole width
+        fmtFlashHeader(o->header, sizeof o->header, flashName, BlockMaxW - 2 * BlockPadX, flashStack);
+        o->headerPx = textPx10(o->header);
+        if (o->headerPx > need) need = o->headerPx;
+    }
     int w = need + 2 * BlockPadX;
     if (w < BlockMinW) w = BlockMinW;
     if (w > BlockMaxW) w = BlockMaxW;
     o->w = w;
     o->h = blockHeightPx(vis, rowH);
+    o->fill = fillRect({ 0, 0, o->w, o->h });
     for (unsigned i = 0; i < vis; ++i) {
         d.rowAt(off + i, o->rows[i], RowTextCap);
         snprintf(o->icons[i], ResrefCap, "%s", d.iconAt(off + i));
+        snprintf(o->stacks[i], sizeof o->stacks[i], "%s", d.stackAt(off + i));
     }
     return true;
 }
@@ -996,7 +1068,13 @@ inline Rect rowRect(unsigned i, int w, bool sb = false, int rowH = RowH) {
 inline Rect rowIconRect(const Rect& r, int rowH = RowH) { return { r.x + RowIconPad, r.y + RowIconPad, iconPx(rowH), iconPx(rowH) }; }
 inline Rect rowTextRect(const Rect& r, int rowH = RowH) {
     const int x = r.x + RowIconPad + iconPx(rowH) + IconGapPx;
-    return { x, r.y + (rowH - TextGlyphH) / 2, r.x + r.w - RowTextPadR - x + LabelSlackPx, TextBoxH };
+    return { x, r.y + (rowH - TextGlyphH) / 2, r.x + r.w - RowTextPadR - StackColW - x + LabelSlackPx, TextBoxH };
+}
+// Stack column text ("x2", align right, ends on the right padding line). The column reserves StackColW (fits "x2"; "x99" is 72 px, "x999" 97 px), but the
+// RECT grows to the left to StackRectW so a wide count never wraps in its label (the name text may then meet it: only for a name at the full budget).
+constexpr int StackRectW = 112;            // >= "x999" (97 px) + LabelSlackPx
+inline Rect rowStackRect(const Rect& r, int rowH = RowH) {
+    return { r.x + r.w - RowTextPadR - StackRectW, r.y + (rowH - TextGlyphH) / 2, StackRectW, TextBoxH };
 }
 // Indicator: text starts at w - BlockPadX - indPx so it ends on the right padding line.
 inline Rect indicatorRect(int w, int indPx) { return { w - BlockPadX - indPx, BlockPadY, indPx + LabelSlackPx, HeaderH }; }
@@ -1136,25 +1214,40 @@ inline const char* takeRefusal(bool peekUp, int openFlag, bool worldOk, float di
     return nullptr;
 }
 
-// ---- 0.6.0-dev (QL8): item tooltip beside the list after TipDelayMs on one row. Vanilla frame (the list's template), title (item name, cream,
-// dialogfont16x16 when it fits else 10x10), "Quantity: N" for stacks, the description text (DescIdentified, teal, 10x10, word-wrapped here and
-// capped at TipMaxLines with "..."). There is no engine function for the stats / properties lines (u03.md B): they are not shown.
+// ---- 0.6.0-dev (QL8): item tooltip beside the list; 0.7.0-dev (QL9) redesign (approved layout: scripts/quick_loot_tip_mockup.py layout()). A fixed-width
+// vanilla frame: icon 72 px at the left, title (cream, dialogfont16x16 when it fits else 10x10, " xN" for stacks) and the category line right of it, then up
+// to three sections each under a 2 px divider: rules (ONE multi-line label column + ONE multi-line value column), flavor (the description, 3 lines;
+// 7 when there are no rules), foot ("Equipped: ..." / "In inventory: N"). QuickLootRules.h buildTipModel fills the TipModel (QuickLootLogic.h, above).
 constexpr uint32_t TipDelayMs = 300;
-constexpr unsigned TipMaxLines = 10;
-constexpr int TipMinW = 360, TipMaxW = 720, TipPadX = 28, TipPadY = 22, TipTitleH = 36, TipLineH = 34, TipBlockGapPx = 8, TipGapPx = 10;
+constexpr unsigned TipMaxLines = 10;       // tipWrap's hard cap (also the per-value cap)
+constexpr int TipW = 660;                  // frame width (fixed)
+constexpr int TipPadX = 26, TipPadY = 20;  // inside the frame
+constexpr int TipIconPx = 72, TipIconGapPx = 16;   // icon square, icon -> title text
+constexpr int TipTitleH = 34, TipSubH = 28;        // title / category line label heights
+constexpr int TipLineH = 34;               // pitch of the rules / flavor / foot lines: the engine's multi-line dialogfont label pitch (0.6.x body), not the mockup's 30
+constexpr int TipRuleH = 2;                // divider thickness
+constexpr int TipBlockGapPx = 12;          // air around the dividers and between sections
+constexpr int TipGapPx = 10;               // list -> tooltip
+constexpr int TipLabelColMax = 230, TipLabelColPad = 24;   // label column = min(230, widest label + 24)
+constexpr unsigned TipFlavorLines = 3, TipFlavorLinesFull = 7;   // flavor line cap (full = the item has no rules: show the whole description)
 constexpr unsigned TipDescCap = 1536, TipBodyCap = 1200;
-struct TipData {
-    char title[NameCap] = {0};
-    int stack = -1;
-    char desc[TipDescCap] = {0};
-};
+constexpr unsigned TipLabelsCap = 512, TipValuesCap = 1536;
+using TipData = TipModel;                  // the machine keeps this name; a model is {} (stack -1 = not stackable)
+// Everything the adapter draws for the tooltip, absolute px. labels / values are ONE multi-line label each: a value that wrapped to K lines gets K-1
+// extra "\n " lines in labels so the rows stay aligned. Multi-line label rects are LabelSlackPx wider than their wrap width so CGuiLabel never re-wraps.
 struct TipDraw {
-    Rect frame = {0, 0, 0, 0}, title = {0, 0, 0, 0}, qty = {0, 0, 0, 0}, body = {0, 0, 0, 0};   // absolute px
-    bool bigTitle = false, haveQty = false, haveBody = false, flipped = false, truncated = false;
-    int lines = 0;
-    char titleText[NameCap + 8] = {0};
-    char qtyText[24] = {0};
-    char bodyText[TipBodyCap] = {0};
+    Rect frame = {0, 0, 0, 0}, fill = {0, 0, 0, 0}, icon = {0, 0, 0, 0}, title = {0, 0, 0, 0}, sub = {0, 0, 0, 0};
+    Rect dividers[3] = {{0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}};   // 2 px tall; one per section present, top to bottom
+    Rect labels = {0, 0, 0, 0}, values = {0, 0, 0, 0}, flavor = {0, 0, 0, 0}, foot = {0, 0, 0, 0};
+    unsigned nDividers = 0;
+    bool bigTitle = false, haveRules = false, haveFlavor = false, haveFoot = false, flipped = false, truncated = false;
+    int lines = 0;                     // rule lines + flavor lines (the TIP log line)
+    char titleText[NameCap + 16] = {0};
+    char subText[48] = {0};
+    char labelsText[TipLabelsCap] = {0};
+    char valuesText[TipValuesCap] = {0};
+    char flavorText[TipBodyCap] = {0};
+    char footText[64] = {0};
 };
 inline int textPx16(const char* t) {
     const textfit::TextCtx c = { 1600.0f / 600.0f, 1.03f, 1.0f };
@@ -1181,9 +1274,11 @@ inline unsigned sanitizeDesc(char* out, unsigned cap, const char* in) {
     return n;
 }
 // Word wrap of text at innerPx (engine measure = textPx10) into out ('\n' between lines; a '\n' in the text is a paragraph break, an empty paragraph a blank
-// line), at most TipMaxLines lines: the rest is cut and the last line ends in "...". Returns the line count; *widest = the widest line in px; *cut = the text was
+// line), at most maxLines (<= TipMaxLines) lines: the rest is cut and the last line ends in "...". Returns the line count; *widest = the widest line in px; *cut = the text was
 // longer. (Own wrapper: TextFit.h's wrapAppendW trips -Werror=format-truncation in this test build and has no paragraph breaks.)
-inline int tipWrap(char* out, unsigned cap, const char* text, int innerPx, int* widest, bool* cut) {
+inline int tipWrap(char* out, unsigned cap, const char* text, int innerPx, int* widest, bool* cut, unsigned maxLines = TipMaxLines) {
+    if (maxLines < 1) maxLines = 1;
+    if (maxLines > TipMaxLines) maxLines = TipMaxLines;
     constexpr unsigned LineCap = 256;
     static char ln[TipMaxLines + 1][LineCap];
     unsigned nl = 0;   // index of the line being filled
@@ -1193,7 +1288,7 @@ inline int tipWrap(char* out, unsigned cap, const char* text, int innerPx, int* 
     const char* p = text ? text : "";
     bool full = false;
     auto newLine = [&]() -> bool {
-        if (nl + 1 >= TipMaxLines) { *cut = true; full = true; return false; }
+        if (nl + 1 >= maxLines) { *cut = true; full = true; return false; }
         ++nl; ln[nl][0] = 0;
         return true;
     };
@@ -1250,42 +1345,113 @@ inline int tipWrap(char* out, unsigned cap, const char* text, int innerPx, int* 
     *widest = w;
     return static_cast<int>(lines);
 }
-// Builds the tooltip for item d beside block blk, its top aligned with row rect rowAbs (absolute px), inside panel (panel.w <= 0 = unknown).
-// false = nothing to show (no title).
-inline bool buildTip(const TipData& d, const Rect& blk, const Rect& rowAbs, const Rect& panel, TipDraw* o) {
-    *o = TipDraw();
-    char nm[RowNameMax + 8];
-    rowName(nm, sizeof nm, d.title);
-    const int innerMax = TipMaxW - 2 * TipPadX;
-    int titlePx = textPx16(nm);
-    o->bigTitle = titlePx <= innerMax;
-    if (o->bigTitle) snprintf(o->titleText, sizeof o->titleText, "%s", nm);
-    else {
-        titlePx = textPx10(nm);
-        snprintf(o->titleText, sizeof o->titleText, "%s", nm);
-        if (titlePx > innerMax) {   // 10x10 still too wide: cut with "..."
-            unsigned n = static_cast<unsigned>(strlen(nm));
-            while (n > 1) { --n; char t[RowNameMax + 8]; snprintf(t, sizeof t, "%.*s...", static_cast<int>(n), nm); if (textPx10(t) <= innerMax) { snprintf(o->titleText, sizeof o->titleText, "%s", t); titlePx = textPx10(t); break; } }
+// out = text + suffix when its textPx10 fits px, else text cut (trailing blanks trimmed) + "..." + suffix until it does (never below 1 char).
+inline void tipFit10(char* out, size_t cap, const char* text, int px, const char* suffix = "") {
+    char t[256];
+    snprintf(t, sizeof t, "%s%s", text, suffix);
+    if (textPx10(t) > px) {
+        unsigned n = static_cast<unsigned>(strlen(text));
+        while (n > 1) {
+            --n;
+            while (n > 1 && text[n - 1] == ' ') --n;
+            snprintf(t, sizeof t, "%.*s...%s", static_cast<int>(n), text, suffix);
+            if (textPx10(t) <= px) break;
         }
     }
-    o->haveQty = d.stack >= 2;
-    int qtyPx = 0;
-    if (o->haveQty) { snprintf(o->qtyText, sizeof o->qtyText, "Quantity: %d", d.stack); qtyPx = textPx10(o->qtyText); }
-    char clean[TipDescCap];
-    int widest = 0;
-    if (sanitizeDesc(clean, sizeof clean, d.desc) > 0) {
-        o->lines = tipWrap(o->bodyText, sizeof o->bodyText, clean, innerMax, &widest, &o->truncated);
-        o->haveBody = o->lines > 0;
+    snprintf(out, cap, "%s", t);
+}
+// Appends s to buf (cap bytes, *len used, always NUL-terminated); what does not fit is cut.
+inline void tipAppend(char* buf, size_t cap, size_t* len, const char* s) {
+    if (*len + 1 >= cap) return;
+    const size_t room = cap - *len - 1;
+    size_t k = strlen(s);
+    if (k > room) k = room;
+    memcpy(buf + *len, s, k);
+    *len += k;
+    buf[*len] = 0;
+}
+
+// Builds the tooltip for model d beside block blk (top edge = the block's top; rowAbs, the hovered row, is not used by the 0.7.0-dev layout) inside
+// panel (panel.w <= 0 = unknown): right of the list, flipped to its left when it would leave the panel, clamped to the panel margins.
+// false = nothing to show (not reachable now: an empty title becomes "item").
+inline bool buildTip(const TipData& d, const Rect& blk, const Rect& /*rowAbs*/, const Rect& panel, TipDraw* o) {
+    *o = TipDraw();
+    const int inner = TipW - 2 * TipPadX;
+    const int headW = inner - TipIconPx - TipIconGapPx;   // title / category text width
+    // title: the name (+ " xN" for stacks); 16x16 when it fits, else 10x10 cut with "..." (the stack suffix stays)
+    char nm[RowNameMax + 8];
+    rowName(nm, sizeof nm, d.title);
+    char sfx[16] = "";
+    if (d.stack >= 2) snprintf(sfx, sizeof sfx, " x%d", d.stack);
+    snprintf(o->titleText, sizeof o->titleText, "%s%s", nm, sfx);
+    o->bigTitle = textPx16(o->titleText) <= headW;
+    if (!o->bigTitle) tipFit10(o->titleText, sizeof o->titleText, nm, headW, sfx);
+    char sub[sizeof o->subText];
+    stripTags(sub, sizeof sub, d.sub);
+    tipFit10(o->subText, sizeof o->subText, sub, headW);
+    // rules: ONE label column and ONE value column; a value that wraps to K lines adds K-1 "\n " lines to the labels so the rows stay aligned
+    const unsigned nRules = d.nRules < 10 ? d.nRules : 10;
+    unsigned nUsed = 0;
+    int col = 0;
+    for (unsigned i = 0; i < nRules; ++i) {
+        if (!d.rules[i].label[0] && !d.rules[i].value[0]) continue;
+        const int w = textPx10(d.rules[i].label) + TipLabelColPad;
+        if (w > col) col = w;
+        ++nUsed;
     }
-    int w = titlePx;
-    if (qtyPx > w) w = qtyPx;
-    if (widest > w) w = widest;
-    w += 2 * TipPadX;
-    if (w < TipMinW) w = TipMinW;
-    if (w > TipMaxW) w = TipMaxW;
-    int h = TipPadY + TipTitleH + (o->haveQty ? TipLineH : 0) + (o->haveBody ? TipBlockGapPx + o->lines * TipLineH : 0) + TipPadY;
+    if (col > TipLabelColMax) col = TipLabelColMax;
+    int ruleLines = 0;
+    size_t nl = 0, nv = 0;
+    for (unsigned i = 0; i < nRules; ++i) {
+        const TipRule& r = d.rules[i];
+        if (!r.label[0] && !r.value[0]) continue;
+        char wrapped[512];
+        int widest = 0;
+        bool cut = false;
+        const int k = tipWrap(wrapped, sizeof wrapped, r.value, inner - col, &widest, &cut);
+        if (cut) o->truncated = true;
+        if (ruleLines) { tipAppend(o->labelsText, sizeof o->labelsText, &nl, "\n"); tipAppend(o->valuesText, sizeof o->valuesText, &nv, "\n"); }
+        tipAppend(o->labelsText, sizeof o->labelsText, &nl, r.label);
+        for (int j = 1; j < k; ++j) tipAppend(o->labelsText, sizeof o->labelsText, &nl, "\n ");
+        tipAppend(o->valuesText, sizeof o->valuesText, &nv, wrapped);
+        ruleLines += k;
+    }
+    o->haveRules = nUsed > 0;
+    // flavor: the description as one paragraph (the design wraps by words), 3 lines, 7 when the item has no rules
+    char flat[sizeof d.flavor + 8];
+    {
+        char raw[sizeof d.flavor + 8];
+        unsigned n = 0;
+        for (; n < sizeof d.flavor && d.flavor[n]; ++n) raw[n] = (static_cast<unsigned char>(d.flavor[n]) < 0x20) ? ' ' : d.flavor[n];
+        raw[n] = 0;
+        stripTags(flat, sizeof flat, raw);
+    }
+    int flavLines = 0;
+    if (flat[0]) {
+        int widest = 0;
+        bool cut = false;
+        flavLines = tipWrap(o->flavorText, sizeof o->flavorText, flat, inner, &widest, &cut, d.full ? TipFlavorLinesFull : TipFlavorLines);
+        if (cut) o->truncated = true;
+        o->haveFlavor = flavLines > 0;
+    }
+    // foot
+    char foot[sizeof d.foot];
+    stripTags(foot, sizeof foot, d.foot);
+    o->haveFoot = foot[0] != 0;
+    if (o->haveFoot) tipFit10(o->footText, sizeof o->footText, foot, inner);
+    o->lines = ruleLines + flavLines;
+
+    // height: header, then per section [divider][gap][lines]; rules end in a gap always (the mockup), flavor only when a foot follows
+    const int headH = TipIconPx > TipTitleH + TipSubH ? TipIconPx : TipTitleH + TipSubH;
+    int h = TipPadY + headH + TipBlockGapPx;
+    if (o->haveRules) h += TipRuleH + TipBlockGapPx + ruleLines * TipLineH + TipBlockGapPx;
+    if (o->haveFlavor) h += TipRuleH + TipBlockGapPx + flavLines * TipLineH + (o->haveFoot ? TipBlockGapPx : 0);
+    if (o->haveFoot) h += TipRuleH + TipBlockGapPx + TipLineH;
+    h += TipPadY;
+    const int w = TipW;
+    // position: right of the list, top = the block's top; flip left near the panel edge, then clamp (as in 0.6.0-dev)
     int x = blk.x + blk.w + TipGapPx;
-    int y = rowAbs.y;
+    int y = blk.y;
     if (panel.w > 0 && panel.h > 0) {
         if (x + w > panel.x + panel.w - ScreenMarginPx) { x = blk.x - TipGapPx - w; o->flipped = true; }
         if (x < panel.x + ScreenMarginPx) x = panel.x + ScreenMarginPx;
@@ -1294,12 +1460,33 @@ inline bool buildTip(const TipData& d, const Rect& blk, const Rect& rowAbs, cons
         if (y < topLimit) y = topLimit;
     }
     o->frame = { x, y, w, h };
-    const int inner = w - 2 * TipPadX + LabelSlackPx;
+    o->fill = fillRect(o->frame);
+    const int ix = x + TipPadX;
     int cy = y + TipPadY;
-    o->title = { x + TipPadX, cy, inner, TipTitleH };
-    cy += TipTitleH;
-    if (o->haveQty) { o->qty = { x + TipPadX, cy, inner, TipLineH }; cy += TipLineH; }
-    if (o->haveBody) { cy += TipBlockGapPx; o->body = { x + TipPadX, cy, inner, o->lines * TipLineH }; }
+    o->icon = { ix, cy, TipIconPx, TipIconPx };
+    const int tx = ix + TipIconPx + TipIconGapPx;
+    o->title = { tx, cy + 4, headW + LabelSlackPx, TipTitleH };
+    o->sub = { tx, cy + 4 + TipTitleH, headW + LabelSlackPx, TipSubH };
+    cy += headH + TipBlockGapPx;
+    auto divider = [&]() {
+        o->dividers[o->nDividers++] = { ix, cy, inner, TipRuleH };
+        cy += TipRuleH + TipBlockGapPx;
+    };
+    if (o->haveRules) {
+        divider();
+        o->labels = { ix, cy, col - 8 + LabelSlackPx, ruleLines * TipLineH };
+        o->values = { ix + col, cy, inner - col + LabelSlackPx, ruleLines * TipLineH };
+        cy += ruleLines * TipLineH + TipBlockGapPx;
+    }
+    if (o->haveFlavor) {
+        divider();
+        o->flavor = { ix, cy, inner + LabelSlackPx, flavLines * TipLineH };
+        cy += flavLines * TipLineH + (o->haveFoot ? TipBlockGapPx : 0);
+    }
+    if (o->haveFoot) {
+        divider();
+        o->foot = { ix, cy, inner + LabelSlackPx, TipLineH };
+    }
     return o->titleText[0] != 0;
 }
 

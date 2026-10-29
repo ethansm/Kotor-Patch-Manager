@@ -1,3 +1,9 @@
+// Quick Loot 0.7.0-dev (hot-swap, no hook changes) = 0.6.1 + the QL9..QL13 review set: QL9 tooltip redesign (icon, title + category line, rules from the
+//   baseitems row + the engine's own property text 0x00614E10, flavor, foot; layout and rules are pure: QuickLootLogic.h TipDraw / QuickLootRules.h), QL10 stack
+//   column (right-aligned "x2" per row), QL11 sorted rows (plot first, credits second "Credits (N)", then container order; clicks / tooltips address items by
+//   object id, never by UI row), QL12 GUI sounds (hover 1, take 9, scrollbar 0; quick_loot.ini Sounds), QL13 tooltip foot ("Equipped: ..." / "In inventory: N"),
+//   panel underlays (second uibit_fill_2bt under the list and the tooltip: 0.95 opacity). quick_loot.ini: Rules=0 skips the property lines (base rules only),
+//   Sounds=0 mutes. New logs: SORT, PROPTXT, RULES-MISS, EQUIP, SOUND, TLK-EMPTY.
 // Quick Loot 0.6.0-dev = 0.5.1-dev + four user-picked features (doc 52, 10-28):
 //   QL2A anchor: the block position is no longer latched when it first shows (it drifted when the camera turned). K2HUD_TARGET_MENU_POST runs after the engine
 //   positioned the target name tag (0x743850) and before drawing, so onMenuPost re-places the block EVERY frame from the current name rect. quick_loot.ini
@@ -85,6 +91,7 @@
 #include "GuiInput.h"        // k2input::Client: wheel subscription + cursor in engine px (provider gui-input)
 #include "QuickLootLogic.h"
 #include "QuickLootMachine.h"
+#include "QuickLootRules.h"
 #include "SafeRead.h"
 #include "GameAddr.h"
 #include "ActQueue.h"          // actq::playerPaused
@@ -99,7 +106,7 @@ KP_LOG_PATCH("quick-loot");
 
 namespace {
 
-constexpr const char* Version = "0.6.0-dev";
+constexpr const char* Version = "0.7.0-dev";
 constexpr unsigned Site = 0x7100;   // saferead failure-ring site id
 // Steam addresses (static RE, doc 52 / .claude/research/quick_loot/README.md); AppGlobal and ClientToServerObjectId come from GameAddr.h.
 constexpr uintptr_t GetPlaceableByGameObjectID = 0x0051C160;   // thiscall(serverApp, serverId) RET 4 -> CSWSPlaceable* (0 = none)
@@ -159,6 +166,20 @@ constexpr uintptr_t CamMapToScreen = 0x004809D0;
 constexpr int Cam_Pos = 0xA8, Cam_Quat = 0xB4, Cam_Fovy = 0x204, Cam_Vp = 0x218, CamVt_MapToScreen = 0x28;
 constexpr int Gui_W = 0x6C, Gui_H = 0x6E, Inner_Gui = 0x274, Inner_CamHolder = 0x18, CamHolder_Cam = 0x40;
 constexpr int Obj_PosZ = 0x9C;                       // server object z (inferred next to +0x94 / +0x98; the PROJ line logs the world point)
+// ---- 0.7.0-dev (QL9/QL11/QL13). Evidence: .claude/waves/w7-52-QL9/r01.md (Q5 property builder), u01 (baseitems / itempropdef), Steam DB names.
+constexpr int Item_Plot = 0x10C;                     // CSWSItem Plot byte (probable: the item GFF writer stores the "Plot" field from *(item+0x10C) & 0xff)
+constexpr int BaseId_Credits = 57;                   // baseitems row 57 = credits (the stack is the amount)
+constexpr int Item_PropCount = 0x288, Item_PropArray = 0x290, Prop_Stride = 0x1C;   // item property array: u16 name +0, u16 subtype +2, u8 costTable +4, u16 costValue +6, u8 param1 +8, u8 param1Value +9
+constexpr unsigned PropsMax = 16;
+constexpr size_t BaseItem_Rules = 0xB0;              // base item bytes read for the rules: +0 name strref, +0x0C damage flags, +0x1C..0x1F dice / die / crit, +0x8A BaseAC, +0xAD DexBonus
+constexpr int Creature_Inventory = 0x1150;           // CSWSCreature -> CSWInventory*
+constexpr uintptr_t ItemPropBuilder = 0x00614E10;    // CSWSItem::GetPropertyStrings (name_map B0): __thiscall-like, ECX unused, 9 stack args, RET 0x24
+constexpr uintptr_t C2daGetString = 0x0071B1D0;      // C2DA::GetCExoStringEntry_3: thiscall(2DA, int row, CExoString* col, CExoString* out) RET 12, nonzero = found
+constexpr uintptr_t TlkGetString = 0x007408F0;       // CClientExoApp::GetGUIString: thiscall(client, CExoString* out, int strref) RET 8
+constexpr uintptr_t InvGetItemInSlot = 0x006D0620;   // CSWInventory::GetItemInSlot: thiscall(inv, u32 slotMask) RET 4 -> item or 0
+constexpr uintptr_t RulesGlobal = 0x00A1B4D0;        // [[[G]+0x130]+0x3C] = the itempropdef 2DA
+constexpr int Rules_ItemPropDef1 = 0x130, Rules_ItemPropDef2 = 0x3C;
+constexpr uint32_t SlotMainHand = 0x10, SlotBody = 0x2;   // inventory slot masks (0x2 body armor: probable)
 const char* const IniPath = ".\\quick_loot.ini";   // ".\\" prefix: GetPrivateProfile*A with a bare name looks in the Windows dir
 
 KP_CHANNEL(chMain, "main");
@@ -298,27 +319,69 @@ void captureItems(uintptr_t plc, Captured& c) {
     c.total = static_cast<unsigned>(n);
     if (lines > qlogic::ListMaxItems) lines = qlogic::ListMaxItems;
     const int lang = clientLanguage();
+    uint8_t plot[qlogic::ListMaxItems];
+    bool credits[qlogic::ListMaxItems];
     for (unsigned i = 0; i < lines; ++i) {
         uint32_t id = 0; int stack = -1;
         if (!rd<uint32_t>(arr, static_cast<int>(i * 4), &id)) break;
         const uintptr_t item = reinterpret_cast<LookupFn>(ItemListGetItem)(repo, i);
         c.names[i][0] = 0;
         c.icons[i][0] = 0;
-        if (item) { rd<int>(item, Item_Stack, &stack); readItemName(item, lang, c.names[i], NameCap); readItemIcon(item, c.icons[i]); }
+        plot[i] = 0; credits[i] = false;
+        if (item) {
+            int baseId = -1;
+            rd<int>(item, Item_Stack, &stack); readItemName(item, lang, c.names[i], NameCap); readItemIcon(item, c.icons[i]);
+            rd<uint8_t>(item, Item_Plot, &plot[i]);
+            if (rd<int>(item, Item_BaseIdx, &baseId) && baseId == BaseId_Credits) {   // QL11: "Credits (150)", no stack column
+                credits[i] = true;
+                if (stack > 0) snprintf(c.names[i], NameCap, "Credits (%d)", stack); else snprintf(c.names[i], NameCap, "Credits");
+                stack = 1;
+            }
+        }
         c.ids[i] = id; c.stacks[i] = stack;
         ++c.count;
+    }
+    // QL11: plot items first, credits second, then the container's own order. The ids stay the object ids, so clicks and tooltips find the item by id.
+    if (c.count > 1) {
+        static Captured src;
+        src = c;
+        uint8_t order[qlogic::ListMaxItems];
+        qlogic::sortOrder(plot, credits, c.count, order);
+        for (unsigned r = 0; r < c.count; ++r) {
+            const unsigned k = order[r];
+            c.ids[r] = src.ids[k]; c.stacks[r] = src.stacks[k];
+            memcpy(c.names[r], src.names[k], sizeof c.names[r]);
+            memcpy(c.icons[r], src.icons[k], sizeof c.icons[r]);
+        }
+    }
+    unsigned nPlot = 0, nCred = 0;
+    for (unsigned i = 0; i < c.count; ++i) { nPlot += plot[i] ? 1u : 0u; nCred += credits[i] ? 1u : 0u; }
+    static unsigned lastN = ~0u, lastPlot = ~0u, lastCred = ~0u;   // change-only: the peek re-captures every scan
+    if (c.count != lastN || nPlot != lastPlot || nCred != lastCred) {
+        lastN = c.count; lastPlot = nPlot; lastCred = nCred;
+        KP_LOG(chMain, "SORT n=%u plot=%u credits=%u", c.count, nPlot, nCred);
     }
 }
 
 // Checks that the repository slot `index` still holds object id `expectId` and returns the item (0 = no). *repoOut = the repository.
+// 0.7.0-dev (QL11): `index` is the UI row of the SORTED list, not a container slot: the item is found by scanning the repository's id array for expectId
+// (Stale only when the id is gone), then fetched by its slot.
 uintptr_t itemAt(uintptr_t plc, unsigned index, uint32_t expectId, uintptr_t* repoOut, qlogic::TakeWhy* why) {
     uintptr_t repo = 0;
     const int n = itemCount(plc, &repo);
-    uint32_t arr = 0, id = 0;
+    uint32_t arr = 0;
     if (n <= 0 || !repo) { *why = qlogic::TakeWhy::NoRepo; return 0; }
     if (index >= static_cast<unsigned>(n) || index >= qlogic::ListMaxItems) { *why = qlogic::TakeWhy::BadIndex; return 0; }
-    if (!rd<uint32_t>(repo, Repo_Array, &arr) || !arr || !rd<uint32_t>(arr, static_cast<int>(index * 4), &id) || id != expectId) { *why = qlogic::TakeWhy::Stale; return 0; }
-    const uintptr_t item = reinterpret_cast<LookupFn>(ItemListGetItem)(repo, index);
+    if (!rd<uint32_t>(repo, Repo_Array, &arr) || !arr) { *why = qlogic::TakeWhy::Stale; return 0; }
+    unsigned slot = ~0u;
+    const unsigned scan = n > 1024 ? 1024u : static_cast<unsigned>(n);
+    for (unsigned k = 0; k < scan; ++k) {
+        uint32_t id = 0;
+        if (!rd<uint32_t>(arr, static_cast<int>(k * 4), &id)) break;
+        if (id == expectId) { slot = k; break; }
+    }
+    if (slot == ~0u) { *why = qlogic::TakeWhy::Stale; return 0; }
+    const uintptr_t item = reinterpret_cast<LookupFn>(ItemListGetItem)(repo, slot);
     if (!item || !saferead::probeRead(SiteTake, reinterpret_cast<const void*>(item), Item_IconProbe)) { *why = qlogic::TakeWhy::NoItem; return 0; }
     *repoOut = repo;
     return item;
@@ -379,7 +442,177 @@ bool engineTakeOne(uintptr_t plc, uint32_t opener, unsigned index, uint32_t expe
     return true;
 }
 
-// QL8: name, stack and description of the container item at `index` (the item stays where it is).
+// ---- 0.7.0-dev (QL9 / QL13): engine text helpers. An engine CExoString is {char* p; int len} (8 bytes): built with ExoCtor, read with readExo, freed with ExoDtor.
+struct ExoStr { uint32_t p; int len; };
+using ExoCtorFn = void(__thiscall*)(void*, const char*);
+void exoInit(ExoStr& e, const char* text) { e.p = 0; e.len = 0; reinterpret_cast<ExoCtorFn>(gameaddr::ExoCtor)(&e, text); }
+void exoFree(ExoStr& e) { reinterpret_cast<ExoDtorFn>(gameaddr::ExoDtor)(&e); }
+int exoRead(ExoStr& e, char* out, int cap) { return saferead::readExo(Site, reinterpret_cast<uintptr_t>(&e), out, cap, cap - 1, false); }
+
+bool g_rules = true;     // quick_loot.ini Rules: 0 = base rules only (no engine property text)
+bool g_sounds = true;    // quick_loot.ini Sounds
+unsigned g_soundLogs = 0;
+
+// QL12: GUI sound idx through the GUI sound manager (0 = scrollbar click, 1 = hover, 9 = gui_invadd). Skips silently without the manager.
+void playGuiSound(char idx) {
+    if (!g_sounds) return;
+    uint32_t mgr = 0;
+    if (!rd<uint32_t>(gameaddr::GuiSoundMgr, 0, &mgr) || !mgr) return;
+    if (g_soundLogs < 10) { ++g_soundLogs; KP_LOG(chMain, "SOUND idx=%d", static_cast<int>(idx)); }
+    reinterpret_cast<void(__thiscall*)(uintptr_t, char)>(gameaddr::PlayGuiSound)(mgr, idx);
+}
+
+// TLK text of strref (CClientExoApp::GetGUIString). If the temp string stays empty the return value is tried as a CExoString* (logged once). false = no text.
+bool tlkText(int strref, char* out, int cap) {
+    out[0] = 0;
+    uint32_t app = 0, client = 0;
+    if (!rd<uint32_t>(gameaddr::AppGlobal, 0, &app) || !app || !rd<uint32_t>(app, App_Client, &client) || !client) return false;
+    ExoStr t;
+    exoInit(t, "");
+    const uintptr_t ret = reinterpret_cast<uintptr_t(__thiscall*)(uintptr_t, ExoStr*, int)>(TlkGetString)(client, &t, strref);
+    if (exoRead(t, out, cap) <= 0) {
+        static bool logged = false;
+        if (!logged) { logged = true; KP_LOG(chMain, "TLK-EMPTY strref=%d ret=%08x p=%08x len=%d", strref, (unsigned)ret, (unsigned)t.p, t.len); }
+        if (ret && ret != reinterpret_cast<uintptr_t>(&t)) saferead::readExo(Site, ret, out, cap, cap - 1, false);
+    }
+    exoFree(t);
+    return out[0] != 0;
+}
+
+// itempropdef.2da 'label' column of row `row` ("Damage", "DecreaseAC", "CastSpell", ...). false = unresolved.
+bool itemPropLabel(int row, char* out, int cap) {
+    out[0] = 0;
+    uint32_t g = 0, x1 = 0, tda = 0;
+    if (!rd<uint32_t>(RulesGlobal, 0, &g) || !g || !rd<uint32_t>(g, Rules_ItemPropDef1, &x1) || !x1 || !rd<uint32_t>(x1, Rules_ItemPropDef2, &tda) || !tda) return false;
+    ExoStr col, res;
+    exoInit(col, "label");
+    exoInit(res, "");
+    const int ok = reinterpret_cast<int(__thiscall*)(uintptr_t, int, ExoStr*, ExoStr*)>(C2daGetString)(tda, row, &col, &res);
+    if (ok) exoRead(res, out, cap);
+    exoFree(res);
+    exoFree(col);
+    return out[0] != 0;
+}
+
+// The engine's own text for one item property (label / subtype / cost value) through 0x00614E10. Fills p.name / p.sub / p.val (tags stripped, cut to the field).
+void itemPropTexts(uint16_t prop, uint16_t sub, uint16_t costValue, uint8_t p1Value, qlogic::RulesProp* p) {
+    using PropFn = void(__thiscall*)(uintptr_t unusedEcx, uint16_t, uint16_t, uint16_t, uint8_t, ExoStr*, ExoStr*, ExoStr*, ExoStr*, int);
+    ExoStr l, s2, c, p1;
+    exoInit(l, ""); exoInit(s2, ""); exoInit(c, ""); exoInit(p1, "");
+    reinterpret_cast<PropFn>(ItemPropBuilder)(0, prop, sub, costValue, p1Value, &l, &s2, &c, &p1, 0);
+    char tmp[160];
+    if (exoRead(l, tmp, sizeof tmp) > 0) qlogic::stripTags(p->name, sizeof p->name, tmp);
+    if (exoRead(s2, tmp, sizeof tmp) > 0) qlogic::stripTags(p->sub, sizeof p->sub, tmp);
+    if (exoRead(c, tmp, sizeof tmp) > 0) qlogic::stripTags(p->val, sizeof p->val, tmp);
+    exoFree(p1); exoFree(c); exoFree(s2); exoFree(l);
+}
+
+// Damage words (rules_detail dmgWords): [0] TLK 38552 (bits 0-2), [b] TLK 38553 + b - 3 for b = 3..12, [13] TLK 0xA3AF. Resolved at the first describe (a few tries: the TLK may not be up at BUILD).
+char g_dmgBuf[14][48];
+const char* g_dmgWords[14];
+bool g_dmgReady = false;
+unsigned g_dmgTries = 0;
+void resolveDmgWords() {
+    if (g_dmgReady || g_dmgTries >= 3) return;
+    ++g_dmgTries;
+    unsigned got = 0;
+    for (int b = 0; b < 14; ++b) {
+        g_dmgWords[b] = nullptr;
+        if (b == 1 || b == 2) continue;
+        const int ref = b == 0 ? 38552 : (b == 13 ? 0xA3AF : 38553 + b - 3);
+        if (tlkText(ref, g_dmgBuf[b], sizeof g_dmgBuf[b])) { g_dmgWords[b] = g_dmgBuf[b]; ++got; }
+    }
+    g_dmgReady = got > 0;
+    KP_LOG(chMain, "DMGWORDS try=%u got=%u", g_dmgTries, got);
+}
+
+struct BaseStats { uint32_t nameRef = 0, dmgFlags = 0; int numDice = 0, die = 0, critThreat = 0, critMult = 0, baseAC = 0, dexBonus = 0; };
+// baseitems row of `item` (GetBaseItem) -> the columns the rules need. false = unreadable.
+bool readBaseStats(uintptr_t item, BaseStats* b) {
+    int idx = -1;
+    if (!item || !rd<int>(item, Item_BaseIdx, &idx) || !qlogic::baseItemIdxOk(idx)) return false;
+    const uintptr_t base = reinterpret_cast<BaseItemFn>(ItemGetBaseItem)(item);
+    if (!base || !saferead::probeRead(SiteIcon, reinterpret_cast<const void*>(base), BaseItem_Rules)) return false;
+    uint8_t nd = 0, die = 0, ct = 0, cm = 0, ac = 0, dex = 0;
+    rd<uint32_t>(base, 0x00, &b->nameRef); rd<uint32_t>(base, 0x0C, &b->dmgFlags);
+    rd<uint8_t>(base, 0x1C, &nd); rd<uint8_t>(base, 0x1D, &die); rd<uint8_t>(base, 0x1E, &ct); rd<uint8_t>(base, 0x1F, &cm);
+    rd<uint8_t>(base, 0x8A, &ac); rd<uint8_t>(base, 0xAD, &dex);
+    b->numDice = nd; b->die = die; b->critThreat = ct; b->critMult = cm; b->baseAC = ac; b->dexBonus = dex;
+    return true;
+}
+
+// The leader creature (server object of `opener`) or 0.
+uintptr_t leaderCreature(uint32_t opener) {
+    const uintptr_t srv = serverApp();
+    if (!srv || !opener) return 0;
+    const uintptr_t cre = reinterpret_cast<LookupFn>(GetCreatureObj)(srv, opener);
+    return (cre && saferead::probeRead(SiteTake, reinterpret_cast<const void*>(cre), 0x30)) ? cre : 0;
+}
+// The leader's item repository (the drain's destination, GetItemRepository(ctx, 1)) or 0.
+uintptr_t leaderRepo(uintptr_t cre) {
+    const uintptr_t holder = reinterpret_cast<uintptr_t(__fastcall*)(uintptr_t)>(CreatureHolder)(cre);
+    uint32_t vt = 0, slot = 0;
+    if (!holder || !rd<uint32_t>(holder, 0, &vt) || !vt || !rd<uint32_t>(vt, Holder_VtCtx, &slot) || !slot || !saferead::probeRead(SiteTake, reinterpret_cast<const void*>(static_cast<uintptr_t>(slot)), 1)) return 0;
+    const uintptr_t ctx = reinterpret_cast<uintptr_t(__thiscall*)(uintptr_t)>(static_cast<uintptr_t>(slot))(holder);
+    if (!ctx) return 0;
+    const uintptr_t dst = reinterpret_cast<uintptr_t(__thiscall*)(uintptr_t, int)>(GetItemRepository)(ctx, 1);
+    return (dst && saferead::probeRead(SiteTake, reinterpret_cast<const void*>(dst), 0x20)) ? dst : 0;
+}
+// The item in the creature's inventory slot `mask` (CSWInventory::GetItemInSlot) or 0.
+uintptr_t equippedItem(uintptr_t cre, uint32_t mask) {
+    uint32_t inv = 0;
+    if (!rd<uint32_t>(cre, Creature_Inventory, &inv) || !inv || !saferead::probeRead(SiteTake, reinterpret_cast<const void*>(static_cast<uintptr_t>(inv)), 0x20)) return 0;
+    const uintptr_t it = reinterpret_cast<uintptr_t(__thiscall*)(uintptr_t, uint32_t)>(InvGetItemInSlot)(inv, mask);
+    static unsigned logs = 0;
+    if (logs < 10) { ++logs; KP_LOG(chMain, "EQUIP mask=%x item=%08x", (unsigned)mask, (unsigned)it); }
+    return (it && saferead::probeRead(SiteTake, reinterpret_cast<const void*>(it), Item_IconProbe)) ? it : 0;
+}
+
+// QL13 foot. Weapon: "Equipped: <name> (<min>-<max>)" from the main-hand item, armor: "Equipped: <name> (Defense +N)" from the body slot, nothing: "Equipped: none".
+// Anything else stackable: "In inventory: N" (stacks of the same base item and name in the leader's repository); 0 = no foot.
+void buildFoot(uintptr_t item, const BaseStats& bs, int baseId, int stack, const char* ownName, int lang, char* foot, size_t cap) {
+    foot[0] = 0;
+    if (baseId == BaseId_Credits) return;
+    const bool weapon = bs.numDice > 0, armor = !weapon && bs.baseAC > 0;
+    const uintptr_t cre = leaderCreature(g_m.peek.opener);
+    if (!cre) return;
+    if (weapon || armor) {
+        const uintptr_t eq = equippedItem(cre, weapon ? SlotMainHand : SlotBody);
+        if (!eq) { snprintf(foot, cap, "Equipped: none"); return; }
+        static char en[qlogic::NameCap + 16];
+        readItemText(eq, Item_Name, lang, en, sizeof en);
+        BaseStats eb;
+        char suffix[32] = "";
+        if (readBaseStats(eq, &eb)) {
+            if (weapon && eb.numDice > 0) snprintf(suffix, sizeof suffix, " (%d-%d)", eb.numDice, eb.numDice * eb.die);
+            else if (armor && eb.baseAC > 0) snprintf(suffix, sizeof suffix, " (Defense +%d)", eb.baseAC);
+        }
+        qlogic::fmtEquippedFoot(foot, cap, en, suffix);
+        return;
+    }
+    if (stack < 1) return;
+    const uintptr_t dst = leaderRepo(cre);
+    int n = 0;
+    if (!dst || !rd<int>(dst, Repo_Count, &n) || n <= 0) return;
+    if (n > 512) n = 512;
+    char mine[qlogic::NameCap + 16];
+    qlogic::stripTags(mine, sizeof mine, ownName);
+    long total = 0;
+    for (int i = 0; i < n; ++i) {
+        const uintptr_t it = reinterpret_cast<LookupFn>(ItemListGetItem)(dst, static_cast<unsigned>(i));
+        int idx = -1, st = 0;
+        if (!it || !rd<int>(it, Item_BaseIdx, &idx) || idx != baseId) continue;
+        static char nm[qlogic::NameCap + 16], stripped[qlogic::NameCap + 16];
+        readItemText(it, Item_Name, lang, nm, sizeof nm);
+        qlogic::stripTags(stripped, sizeof stripped, nm);
+        if (strcmp(stripped, mine) != 0) continue;
+        total += (rd<int>(it, Item_Stack, &st) && st > 0) ? st : 1;
+    }
+    (void)item;
+    if (total > 0) snprintf(foot, cap, "In inventory: %ld", total);
+}
+
+// QL8 / QL9: the tooltip model of the container item with object id expectId (the UI row `index` is not the slot: sorted list). The item stays where it is.
 bool engineDescribe(uintptr_t plc, unsigned index, uint32_t expectId, qlogic::TipData* out) {
     saferead::beginScope();
     uintptr_t repo = 0;
@@ -387,11 +620,55 @@ bool engineDescribe(uintptr_t plc, unsigned index, uint32_t expectId, qlogic::Ti
     const uintptr_t item = itemAt(plc, index, expectId, &repo, &why);
     if (!item) return false;
     const int lang = clientLanguage();
-    int stack = -1;
+    int stack = -1, baseId = -1;
     rd<int>(item, Item_Stack, &stack);
-    out->stack = stack;
-    readItemText(item, Item_Name, lang, out->title, sizeof out->title);
-    readItemText(item, Item_Desc, lang, out->desc, sizeof out->desc);
+    rd<int>(item, Item_BaseIdx, &baseId);
+    static char name[qlogic::NameCap + 16], desc[qlogic::TipDescCap], baseName[64];
+    readItemText(item, Item_Name, lang, name, sizeof name);
+    if (baseId == BaseId_Credits) {   // QL11: "Credits (N)", no " xN" in the title
+        if (stack > 0) snprintf(name, sizeof name, "Credits (%d)", stack); else snprintf(name, sizeof name, "Credits");
+        stack = 1;
+    }
+    readItemText(item, Item_Desc, lang, desc, sizeof desc);
+    resolveDmgWords();
+    static qlogic::RulesIn in;
+    memset(&in, 0, sizeof in);
+    BaseStats bs;
+    baseName[0] = 0;
+    if (readBaseStats(item, &bs)) {
+        in.baseRow = baseId; in.numDice = bs.numDice; in.die = bs.die; in.critThreat = bs.critThreat; in.critMult = bs.critMult; in.baseAC = bs.baseAC; in.dexBonus = bs.dexBonus;
+        in.dmgFlags = bs.dmgFlags;
+        if (bs.nameRef != 0 && bs.nameRef != 0xFFFFFFFFu) tlkText(static_cast<int>(bs.nameRef), baseName, sizeof baseName);
+    } else {
+        in.baseRow = baseId;
+    }
+    in.desc = desc; in.baseName = baseName;
+    for (int b = 0; b < 14; ++b) in.dmgWords[b] = g_dmgWords[b];
+    if (g_rules) {   // the engine's own property text; an unresolved property is skipped
+        uint32_t cnt = 0, arr = 0;
+        if (rd<uint32_t>(item, Item_PropCount, &cnt) && cnt > 0 && cnt < 256 && rd<uint32_t>(item, Item_PropArray, &arr) && arr) {
+            static unsigned propLogs = 0, missLogs = 0;
+            for (uint32_t i = 0; i < cnt && in.nProps < PropsMax; ++i) {
+                const int o = static_cast<int>(i) * Prop_Stride;
+                uint16_t pn = 0, sub = 0, cv = 0;
+                uint8_t ctab = 0, p1 = 0, p1v = 0;
+                if (!rd<uint16_t>(arr, o, &pn) || !rd<uint16_t>(arr, o + 2, &sub) || !rd<uint8_t>(arr, o + 4, &ctab) || !rd<uint16_t>(arr, o + 6, &cv) ||
+                    !rd<uint8_t>(arr, o + 8, &p1) || !rd<uint8_t>(arr, o + 9, &p1v))
+                    break;
+                qlogic::RulesProp& p = in.props[in.nProps];
+                memset(&p, 0, sizeof p);
+                if (!itemPropLabel(pn, p.label, sizeof p.label)) {
+                    if (missLogs < 20) { ++missLogs; KP_LOG(chMain, "RULES-MISS prop=%u", (unsigned)pn); }
+                    continue;
+                }
+                itemPropTexts(pn, sub, cv, p1 == 0xFF ? static_cast<uint8_t>(0xFF) : p1v, &p);
+                if (propLogs < 20) { ++propLogs; KP_LOG(chMain, "PROPTXT prop=%u sub=%u cv=%u label=%s name=%s sub=%s val=%s", (unsigned)pn, (unsigned)sub, (unsigned)cv, p.label, p.name, p.sub, p.val); }
+                ++in.nProps;
+            }
+        }
+    }
+    qlogic::buildTipModel(in, name, stack, out);
+    buildFoot(item, bs, baseId, stack, name, lang, out->foot, sizeof out->foot);
     return true;
 }
 
@@ -443,7 +720,7 @@ struct Lbl {
     unsigned align = 0;
     qlogic::Rect rect = {0, 0, 0, 0};
     float col[3] = {0, 0, 0};
-    char text[qlogic::RowTextCap + 8] = {0};
+    uint32_t textHash = 0;            // FNV-1a of the text last set (0 = none yet): change-only without a per-label copy (tooltip texts are long)
     // 0.5.0-dev fill / border state (frames, icons, scrollbar parts)
     bool fillSet = false, tintSet = false, alphaSet = false;
     const char* fillName = nullptr;   // fill image resref last applied (static strings only; icons use `icon`)
@@ -454,9 +731,12 @@ struct Lbl {
     bool clickable = false;               // click-eating while shown (the scrollbar column only)
 };
 Lbl g_back, g_head, g_ind, g_row[qlogic::ListRowsMax], g_rowFrame[qlogic::ListRowsMax], g_rowIcon[qlogic::ListRowsMax];
+Lbl g_backFill, g_rowStack[qlogic::ListRowsMax];   // 0.7.0-dev: the list's opacity underlay (made BEFORE the frame) and the per-row stack column (made after the row text)
 Lbl g_sbOuter, g_sbInner, g_sbThumb, g_sbUp, g_sbDown;
-Lbl g_tipFrame, g_tipTitle, g_tipQty, g_tipBody;   // 0.6.0-dev (QL8): the hover tooltip, created last (drawn above the list)
-bool g_tipOk = false;         // the four tooltip labels exist
+// 0.6.0-dev (QL8) hover tooltip, created last (drawn above the list); 0.7.0-dev (QL9) layout: underlay fill, frame, icon, title, category line, three dividers,
+// label / value columns (one multi-line label each), flavor (g_tipBody), foot.
+Lbl g_tipFill, g_tipFrame, g_tipIcon, g_tipTitle, g_tipSub, g_tipDiv[3], g_tipLabels, g_tipValues, g_tipBody, g_tipFoot;
+bool g_tipOk = false;         // every tooltip label exists
 bool g_font16Ok = true;       // dialogfont16x16 could be set on the tooltip title (else the 10x10 font)
 bool g_rowsOk = false;        // header + indicator + every row / scrollbar label exists; false = one-line text in the header label (0.3.1 behaviour)
 bool g_rowFlat = false;       // the row frames are flat fills (no frame template in the HUD layout)
@@ -519,13 +799,17 @@ guikit::ClickEdge g_clickEdge;                // LMB edge state (guikit::clickEd
 
 void listPublishHide() { g_listRect[2] = 0; g_listScroll = 0; g_hover = false; g_hoverRow = -1; g_sbPub.shown = false; g_blockPub.shown = false; }
 
-void tipHide() { lblHideOne(g_tipFrame); lblHideOne(g_tipTitle); lblHideOne(g_tipQty); lblHideOne(g_tipBody); }
+void tipHide() {
+    Lbl* all[] = { &g_tipFill, &g_tipFrame, &g_tipIcon, &g_tipTitle, &g_tipSub, &g_tipDiv[0], &g_tipDiv[1], &g_tipDiv[2], &g_tipLabels, &g_tipValues, &g_tipBody, &g_tipFoot };
+    for (Lbl* l : all) lblHideOne(*l);
+}
 
 void lblHideAll() {
+    lblHideOne(g_backFill);
     lblHideOne(g_back);
     lblHideOne(g_head);
     lblHideOne(g_ind);
-    for (unsigned i = 0; i < qlogic::ListRowsMax; ++i) { lblHideOne(g_rowFrame[i]); lblHideOne(g_rowIcon[i]); lblHideOne(g_row[i]); }
+    for (unsigned i = 0; i < qlogic::ListRowsMax; ++i) { lblHideOne(g_rowFrame[i]); lblHideOne(g_rowIcon[i]); lblHideOne(g_row[i]); lblHideOne(g_rowStack[i]); }
     lblHideOne(g_sbOuter); lblHideOne(g_sbInner); lblHideOne(g_sbThumb); lblHideOne(g_sbUp); lblHideOne(g_sbDown);
     tipHide();
     g_backRectSet = false;
@@ -534,12 +818,15 @@ void lblHideAll() {
 
 // The HUD was rebuilt: the old labels may be freed. Drop every pointer without writing to them.
 void lblDrop() {
-    g_back = Lbl(); g_head = Lbl(); g_ind = Lbl();
+    g_back = Lbl(); g_backFill = Lbl(); g_head = Lbl(); g_ind = Lbl();
     for (Lbl& r : g_row) r = Lbl();
+    for (Lbl& r : g_rowStack) r = Lbl();
     for (Lbl& r : g_rowFrame) r = Lbl();
     for (Lbl& r : g_rowIcon) r = Lbl();
     g_sbOuter = Lbl(); g_sbInner = Lbl(); g_sbThumb = Lbl(); g_sbUp = Lbl(); g_sbDown = Lbl();
-    g_tipFrame = Lbl(); g_tipTitle = Lbl(); g_tipQty = Lbl(); g_tipBody = Lbl(); g_tipOk = false;
+    g_tipFill = Lbl(); g_tipFrame = Lbl(); g_tipIcon = Lbl(); g_tipTitle = Lbl(); g_tipSub = Lbl(); g_tipLabels = Lbl(); g_tipValues = Lbl(); g_tipBody = Lbl(); g_tipFoot = Lbl();
+    for (Lbl& r : g_tipDiv) r = Lbl();
+    g_tipOk = false;
     g_rowFlat = false;
     g_rowsOk = false; g_backFrame = false; g_backStyled = false; g_backOff = false; g_backRectSet = false;
     g_panel = 0;
@@ -573,6 +860,7 @@ void KPATCH_CALL onHudBuild(const K2HudContext* ctx, void*) {
     enter();
     const uintptr_t panel = static_cast<uintptr_t>(static_cast<uint32_t>(ctx->panel));
     const char* frameTag = "LBL_QUEUE1";
+    g_backFill.c = makeLabel(panel, "LBL_QUEUE1", "backing fill", false);   // 0.7.0-dev: underlay first (draw order = creation order); losing it only costs opacity
     for (const char* tag : FrameTemplates) {
         g_back.c = makeLabel(panel, tag, "frame", false);
         if (g_back.c) { g_backFrame = true; frameTag = tag; break; }
@@ -588,7 +876,8 @@ void KPATCH_CALL onHudBuild(const K2HudContext* ctx, void*) {
         g_rowFrame[i].c = makeLabel(panel, frameTag, "row frame");
         g_rowIcon[i].c = g_rowFrame[i].c ? makeLabel(panel, "LBL_QUEUE1", "row icon") : 0;
         g_row[i].c = g_rowIcon[i].c ? makeLabel(panel, "LBL_QUEUE1", "row") : 0;
-        if (!g_row[i].c) rowsOk = false;
+        g_rowStack[i].c = g_row[i].c ? makeLabel(panel, "LBL_QUEUE1", "row stack") : 0;
+        if (!g_rowStack[i].c) rowsOk = false;
     }
     Lbl* sbParts[5] = { &g_sbOuter, &g_sbInner, &g_sbThumb, &g_sbUp, &g_sbDown };
     for (Lbl* l : sbParts) {
@@ -597,20 +886,36 @@ void KPATCH_CALL onHudBuild(const K2HudContext* ctx, void*) {
         if (!l->c) rowsOk = false;
     }
     g_rowsOk = rowsOk;
-    if (rowsOk) {   // 0.6.0-dev: the tooltip (frame, title, quantity, body), last = on top. A failure only costs the tooltip.
-        g_tipFrame.c = makeLabel(panel, frameTag, "tip frame", false);
-        g_tipTitle.c = g_tipFrame.c ? makeLabel(panel, "LBL_QUEUE1", "tip title", false) : 0;
-        g_tipQty.c = g_tipTitle.c ? makeLabel(panel, "LBL_QUEUE1", "tip quantity", false) : 0;
-        g_tipBody.c = g_tipQty.c ? makeLabel(panel, "LBL_QUEUE1", "tip body", false) : 0;
-        g_tipOk = g_tipBody.c != 0;
-        g_tipFrame.vis = g_tipFrame.c ? 0 : -1; g_tipTitle.vis = g_tipTitle.c ? 0 : -1; g_tipQty.vis = g_tipQty.c ? 0 : -1; g_tipBody.vis = g_tipBody.c ? 0 : -1;
+    if (rowsOk) {   // the tooltip, last = on top (0.7.0-dev QL9 set). A failure only costs the tooltip.
+        bool tipOk = true;
+        auto mk = [&](Lbl& l, const char* tag, const char* what) { if (tipOk) { l.c = makeLabel(panel, tag, what, false); if (!l.c) tipOk = false; } };
+        mk(g_tipFill, "LBL_QUEUE1", "tip fill");   // underlay before the frame
+        mk(g_tipFrame, frameTag, "tip frame");
+        mk(g_tipIcon, "LBL_QUEUE1", "tip icon");
+        mk(g_tipTitle, "LBL_QUEUE1", "tip title");
+        mk(g_tipSub, "LBL_QUEUE1", "tip category");
+        for (Lbl& dv : g_tipDiv) mk(dv, "LBL_QUEUE1", "tip divider");
+        mk(g_tipLabels, "LBL_QUEUE1", "tip labels");
+        mk(g_tipValues, "LBL_QUEUE1", "tip values");
+        mk(g_tipBody, "LBL_QUEUE1", "tip flavor");
+        mk(g_tipFoot, "LBL_QUEUE1", "tip foot");
+        g_tipOk = tipOk;
+        Lbl* tl[] = { &g_tipFill, &g_tipFrame, &g_tipIcon, &g_tipTitle, &g_tipSub, &g_tipDiv[0], &g_tipDiv[1], &g_tipDiv[2], &g_tipLabels, &g_tipValues, &g_tipBody, &g_tipFoot };
+        for (Lbl* l : tl) l->vis = l->c ? 0 : -1;
     }
+    g_backFill.vis = g_backFill.c ? 0 : -1;
     g_back.vis = g_back.c ? 0 : -1; g_head.vis = 0; g_ind.vis = g_ind.c ? 0 : -1;
     for (unsigned i = 0; i < qlogic::ListRowsMax; ++i) {
-        g_row[i].vis = g_row[i].c ? 0 : -1; g_rowFrame[i].vis = g_rowFrame[i].c ? 0 : -1; g_rowIcon[i].vis = g_rowIcon[i].c ? 0 : -1;
+        g_row[i].vis = g_row[i].c ? 0 : -1; g_rowStack[i].vis = g_rowStack[i].c ? 0 : -1; g_rowFrame[i].vis = g_rowFrame[i].c ? 0 : -1; g_rowIcon[i].vis = g_rowIcon[i].c ? 0 : -1;
     }
     for (Lbl* l : sbParts) l->vis = l->c ? 0 : -1;
     if (KpLog_HasCore()) KP_LOG(chMain, "BUILD frame=%s%s rows=%s tip=%d", frameTag, g_backFrame ? "" : " (flat)", g_rowsOk ? "pool" : "fallback-oneline", g_tipOk ? 1 : 0);
+}
+
+uint32_t textHash(const char* t) {   // FNV-1a, never 0 (0 = "no text set yet")
+    uint32_t h = 2166136261u;
+    for (; *t; ++t) { h ^= static_cast<unsigned char>(*t); h *= 16777619u; }
+    return h ? h : 1u;
 }
 
 // Style (font once, align / colour on change), then text / rect / visibility change-only. false = a write failed (caller hides everything).
@@ -626,10 +931,10 @@ bool lblDrawText(Lbl& l, const char* text, const qlogic::Rect& r, unsigned align
         memcpy(l.col, col, sizeof l.col);
         l.colSet = true;
     }
-    if (strcmp(l.text, text) != 0) {
+    const uint32_t th = textHash(text);
+    if (l.textHash != th) {
         if (!guikit::setText(l.c, text)) return false;
-        strncpy(l.text, text, sizeof l.text - 1);
-        l.text[sizeof l.text - 1] = 0;
+        l.textHash = th;
     }
     if (!l.rectSet || r != l.rect) { guikit::setRect(l.c, r.x, r.y, r.w, r.h); l.rect = r; l.rectSet = true; }
     if (l.vis != 1) { guikit::setVisible(l.c, true); guikit::setClickable(l.c, false); l.vis = 1; }   // shown labels stay click-through
@@ -747,6 +1052,12 @@ void backDraw(const qlogic::Rect& r) {
     if (g_back.vis != 1) { guikit::setVisible(g_back.c, true); guikit::setClickable(g_back.c, false); g_back.vis = 1; }
 }
 
+// 0.7.0-dev: the opacity underlay under the frame (block-relative rect `fill`): a second uibit_fill_2bt, only with the vanilla frame template (the flat backing has its own alpha).
+void backFillDraw(const qlogic::Rect& fill, const qlogic::Rect& blk) {
+    if (!g_backFill.c || !g_backFrame || g_backOff) { lblHideOne(g_backFill); return; }
+    if (!lblDrawFilled(g_backFill, TexFill2bt, SbInsetTint, 1.0f, { blk.x + fill.x, blk.y + fill.y, fill.w, fill.h }, false)) lblHideOne(g_backFill);
+}
+
 void logExtent(Lbl& l, bool& done, const char* text) {
     if (done || !l.c) return;
     int x = 0, y = 0, w = 0, h = 0;
@@ -796,20 +1107,31 @@ bool tipDraw(const qlogic::ListDraw& d, const qlogic::Rect& blk, const qlogic::R
     qlogic::TipDraw t;
     if (!qlogic::buildTip(*td, blk, rr, panel, &t)) { tipHide(); return true; }
     const char* titleFont = (t.bigTitle && g_font16Ok) ? FontTitle : FontName;
+    const int iconRow = static_cast<int>(absRow) - static_cast<int>(d.off);
+    // draw order = creation order: underlay, frame, icon, title, category, dividers, columns, flavor, foot
+    if (!lblDrawFilled(g_tipFill, TexFill2bt, SbInsetTint, 1.0f, t.fill, false)) return false;
     if (!lblDrawFrame(g_tipFrame, t.frame, TealFrame)) return false;
+    if (!lblDrawIcon(g_tipIcon, (iconRow >= 0 && iconRow < static_cast<int>(d.vis)) ? d.icons[iconRow] : "", t.icon)) return false;
     if (!lblDrawText(g_tipTitle, t.titleText, t.title, 9, Cream, titleFont)) {
         if (titleFont != FontTitle) return false;
         g_font16Ok = false;   // no 16x16 font on this label: the 10x10 one from now on
         logLine("TIP dialogfont16x16 unavailable: title in 10x10");
         if (!lblDrawText(g_tipTitle, t.titleText, t.title, 9, Cream, FontName)) return false;
     }
-    if (t.haveQty) { if (!lblDrawText(g_tipQty, t.qtyText, t.qty, 9, TealText)) return false; } else lblHideOne(g_tipQty);
-    if (t.haveBody) { if (!lblDrawText(g_tipBody, t.bodyText, t.body, 9, TealText)) return false; } else lblHideOne(g_tipBody);
-    if (g_m.tip.serial != g_tipLoggedSerial && g_tipLogged < TipLogMax) {   // once per new hover target: the body label's real extent shows whether the engine re-wrapped
+    if (t.subText[0]) { if (!lblDrawText(g_tipSub, t.subText, t.sub, 9, TealDim)) return false; } else lblHideOne(g_tipSub);
+    for (unsigned k = 0; k < 3; ++k) {
+        if (k < t.nDividers) { if (!lblDrawFilled(g_tipDiv[k], TexFill16g, TealFrame, 1.0f, t.dividers[k], false)) return false; } else lblHideOne(g_tipDiv[k]);
+    }
+    if (t.haveRules) {
+        if (!lblDrawText(g_tipLabels, t.labelsText, t.labels, 9, TealDim) || !lblDrawText(g_tipValues, t.valuesText, t.values, 9, Cream)) return false;
+    } else { lblHideOne(g_tipLabels); lblHideOne(g_tipValues); }
+    if (t.haveFlavor) { if (!lblDrawText(g_tipBody, t.flavorText, t.flavor, 9, TealText)) return false; } else lblHideOne(g_tipBody);
+    if (t.haveFoot) { if (!lblDrawText(g_tipFoot, t.footText, t.foot, 9, TealDim)) return false; } else lblHideOne(g_tipFoot);
+    if (g_m.tip.serial != g_tipLoggedSerial && g_tipLogged < TipLogMax) {   // once per new hover target: the flavor label's real extent shows whether the engine re-wrapped
         g_tipLoggedSerial = g_m.tip.serial;
         ++g_tipLogged;
         int ex = 0, ey = 0, ew = 0, eh = 0;
-        if (t.haveBody) guikit::getExtent(g_tipBody.c, &ex, &ey, &ew, &eh);
+        if (t.haveFlavor) guikit::getExtent(g_tipBody.c, &ex, &ey, &ew, &eh);
         char b[120];
         qlogic::fmtTip(b, sizeof b, g_m.tip.serial, t.lines, ex, ey, ew, eh, t.flipped);
         logLine(b);
@@ -824,6 +1146,7 @@ void blockDraw(const qlogic::ListDraw& d, const qlogic::Rect& blk, const qlogic:
     const bool haveCur = g_input.connected && g_input.cursor_engine(&cx, &cy);
     g_hover = haveCur && qlogic::pointInRect(blk, cx, cy);
     g_hoverRow = g_hover ? qlogic::rowAtPoint(blk, d.vis, cx, cy, d.sb, d.rowH) : -1;
+    backFillDraw(d.fill, blk);
     backDraw(blk);
     const qlogic::Rect hr = qlogic::headerRect(blk.w);
     if (!lblDrawText(g_head, d.header, { blk.x + hr.x, blk.y + hr.y, hr.w, hr.h }, 9, Cream)) { lblHideAll(); return; }
@@ -834,11 +1157,18 @@ void blockDraw(const qlogic::ListDraw& d, const qlogic::Rect& blk, const qlogic:
         lblHideOne(g_ind);
     }
     for (unsigned i = 0; i < qlogic::ListRowsMax; ++i) {
-        if (i >= d.vis) { lblHideOne(g_rowFrame[i]); lblHideOne(g_rowIcon[i]); lblHideOne(g_row[i]); continue; }
+        if (i >= d.vis) { lblHideOne(g_rowFrame[i]); lblHideOne(g_rowIcon[i]); lblHideOne(g_row[i]); lblHideOne(g_rowStack[i]); continue; }
         const bool hov = static_cast<int>(i) == g_hoverRow;
         const qlogic::Rect rr = atBlock(qlogic::rowRect(i, blk.w, d.sb, d.rowH), blk);
         if (!lblDrawFrame(g_rowFrame[i], rr, hov ? RowHilight : TealFrame, qlogic::rowsEatClicks(d.took, true)) || !lblDrawIcon(g_rowIcon[i], d.icons[i], qlogic::rowIconRect(rr, d.rowH)) ||
             !lblDrawText(g_row[i], d.rows[i], qlogic::rowTextRect(rr, d.rowH), 9, hov ? Cream : TealText)) { lblHideAll(); return; }
+        if (d.stacks[i][0]) {   // QL10: the stack column, right-aligned by placement (the engine ignores right alignment): the label ends on the row's right padding line
+            const qlogic::Rect sr = qlogic::rowStackRect(rr, d.rowH);
+            const int tw = qlogic::textPx10(d.stacks[i]);
+            if (!lblDrawText(g_rowStack[i], d.stacks[i], { sr.x + sr.w - tw, sr.y, tw + qlogic::LabelSlackPx, sr.h }, 9, hov ? Cream : TealText)) { lblHideAll(); return; }
+        } else {
+            lblHideOne(g_rowStack[i]);
+        }
     }
     if (!sbDraw(d, blk)) { lblHideAll(); return; }
     g_blockPub.shown = true; g_blockPub.took = d.took; g_blockPub.sb = d.sb; g_blockPub.blk = blk; g_blockPub.vis = d.vis; g_blockPub.tick = GetTickCount();
@@ -853,6 +1183,7 @@ void blockDraw(const qlogic::ListDraw& d, const qlogic::Rect& blk, const qlogic:
 // One-line fallback (row labels unavailable): the old single text line in the header label on the same frame, in the rect blk the anchor gave
 // (width = text + pads, one header row high).
 void lineDraw(const char* text, const qlogic::Rect& blk) {
+    backFillDraw(qlogic::fillRect({ 0, 0, blk.w, blk.h }), blk);
     backDraw(blk);
     if (!lblDrawText(g_head, text, { blk.x + qlogic::BlockPadX, blk.y + qlogic::BlockPadY, blk.w - 2 * qlogic::BlockPadX + qlogic::LabelSlackPx, qlogic::HeaderH }, 9, TealText)) { lblHideAll(); return; }
     logExtent(g_head, g_extentHead, text);
@@ -1085,6 +1416,7 @@ struct EngineEnv : qlogic::Env {
     int hoverRow() override { return g_blockPub.shown && !g_blockPub.took ? g_hoverRow : -1; }
     bool takeOne(uintptr_t plc, uint32_t opener, unsigned index, uint32_t expectId, qlogic::TakeOneOut* out) override { return engineTakeOne(plc, opener, index, expectId, out); }
     bool describe(uintptr_t plc, unsigned index, uint32_t expectId, qlogic::TipData* out) override { return engineDescribe(plc, index, expectId, out); }
+    void sound(int idx) override { playGuiSound(static_cast<char>(idx)); }
 };
 EngineEnv g_env;
 
@@ -1245,6 +1577,8 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     g_m.cfg.listRows = qlogic::clampListRows(GetPrivateProfileIntA("QuickLoot", "ListRows", static_cast<int>(qlogic::ListRowsDefault), IniPath));
     g_m.cfg.anchor = qlogic::clampAnchorMode(GetPrivateProfileIntA("QuickLoot", "Anchor", 0, IniPath));
     g_m.cfg.showTook = GetPrivateProfileIntA("QuickLoot", "ShowAcquired", 0, IniPath) != 0;   // 0.6.1-dev: off by default
+    g_rules = GetPrivateProfileIntA("QuickLoot", "Rules", 1, IniPath) != 0;     // 0.7.0-dev: 0 = tooltip base rules only (kill switch for the engine property text)
+    g_sounds = GetPrivateProfileIntA("QuickLoot", "Sounds", 1, IniPath) != 0;   // 0.7.0-dev QL12
     g_live.anchor = g_m.cfg.anchor; g_live.prox = g_proxOn; g_live.rows = g_m.cfg.listRows; g_live.openM = g_openM; g_live.closeM = g_closeM;
     g_live.closeExplicit = closeExplicit; g_live.closeExplicitM = closeExplicitM;
     pageInit(api);
@@ -1255,8 +1589,8 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     g_hud.add(K2HUD_BUILD, 300, onHudBuild);               // QL1b toast label
     g_hud.add(K2HUD_TARGET_MENU_POST, 300, onMenuPost);
     g_hud.connect();
-    if (KpLog_HasCore()) KP_LOG(chMain, "INIT quick-loot %s enabled=%d hud=%d prox=%d openM=%.2f closeM=%.2f key=%d scanMs=%u rows=%u anchor=%d input=%d", Version, g_enabled ? 1 : 0,
-                                  g_hud.connected ? 1 : 0, g_proxOn ? 1 : 0, static_cast<double>(g_openM), static_cast<double>(g_closeM), g_takeKey, g_scanMs, g_m.cfg.listRows, g_m.cfg.anchor, g_input.connected ? 1 : 0);
+    if (KpLog_HasCore()) KP_LOG(chMain, "INIT quick-loot %s enabled=%d hud=%d prox=%d openM=%.2f closeM=%.2f key=%d scanMs=%u rows=%u anchor=%d input=%d rules=%d sounds=%d", Version, g_enabled ? 1 : 0,
+                                  g_hud.connected ? 1 : 0, g_proxOn ? 1 : 0, static_cast<double>(g_openM), static_cast<double>(g_closeM), g_takeKey, g_scanMs, g_m.cfg.listRows, g_m.cfg.anchor, g_input.connected ? 1 : 0, g_rules ? 1 : 0, g_sounds ? 1 : 0);
 }
 
 // H1. ECX = gui, [esp+4] = container object id (client), [esp+8] = flag. Returns 1 to consume (take-all armed), 0 = the original menu runs.

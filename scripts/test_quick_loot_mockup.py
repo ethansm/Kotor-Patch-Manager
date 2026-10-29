@@ -124,22 +124,20 @@ class ListLayer(unittest.TestCase):
         self.assertNotIn(", ...", q.row_name("Aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, , , , bbb"))
 
     def test_row_text(self):
-        self.assertEqual(q.row_text("Medpac", 2), "Medpac x2")
-        self.assertEqual(q.row_text("Medpac", 1), "Medpac")
-        self.assertEqual(q.row_text("Medpac", 999), "Medpac x999")
-        self.assertEqual(q.row_text("Medpac", 1000), "Medpac")
-        self.assertEqual(q.row_text("Medpac", -1), "Medpac")
-        t = q.row_text("W" * 42, 999)
+        # 0.7.0-dev QL10: the stack count is not part of the row text (rowText / rowStackText)
+        self.assertEqual(q.row_text("Medpac"), "Medpac")
+        self.assertEqual(q.row_text("Lightsaber Crystal: Opila"), "Lightsaber Crystal: Opila")
+        t = q.row_text("W" * 42)
         self.assertLessEqual(q.text_px10(t), q.ROW_TEXT_MAX_PX)
-        self.assertTrue(t.endswith("... x999"))
-        t = q.row_text("W" * 20, 1, 200)
-        self.assertLessEqual(q.text_px10(t), 200)
         self.assertTrue(t.endswith("..."))
+        t = q.row_text("W" * 20, 200)
+        self.assertLessEqual(q.text_px10(t), 200)
 
     def test_list_data(self):
         d = q.ListData(["Medpac", "Blaster Pistol", "Adhesive Grenade"], [2, 1, 3])
         self.assertEqual((d.items, d.more, d.rows_total(), d.total_items()), (3, 0, 3, 3))
-        self.assertEqual((d.row_at(0), d.row_at(2), d.row_at(3)), ("Medpac x2", "Adhesive Grenade x3", ""))
+        self.assertEqual((d.row_at(0), d.row_at(2), d.row_at(3)), ("Medpac", "Adhesive Grenade", ""))
+        self.assertEqual([d.stack_text_at(i) for i in range(4)], ["x2", "", "x3", ""])
         d = q.ListData(["Medpac", "Blaster Pistol", "Adhesive Grenade"], [2, 1, 3], total=70)
         self.assertEqual((d.more, d.rows_total(), d.total_items(), d.row_at(3)), (67, 4, 70, "+67 more"))
         self.assertEqual(q.ListData(["a"], None, total=0).more, 0)
@@ -225,7 +223,7 @@ class RowsAndScrollbar(unittest.TestCase):
 
     def test_row_geometry(self):
         self.assertEqual((q.ROW_H, q.ROW_H_ALTS), (64, (56, 72)))
-        self.assertEqual((q.icon_px(), q.icon_px(56), q.icon_px(72)), (56, 48, 64))
+        self.assertEqual((q.icon_px(), q.icon_px(56), q.icon_px(72)), (48, 40, 56))   # 0.7.0-dev: RowIconPad 8
         r0, r1, r0s = q.row_rect(0, 800), q.row_rect(1, 800), q.row_rect(0, 800, True)
         self.assertEqual((r1[1] - r0[1], r0[3], r0[0]), (q.ROW_H + q.ROW_GAP, q.ROW_H, q.BLOCK_PAD_X))
         self.assertEqual((r0[2], r0s[2]), (800 - 2 * q.BLOCK_PAD_X, 800 - 2 * q.BLOCK_PAD_X - q.SB_RESERVE))
@@ -233,7 +231,7 @@ class RowsAndScrollbar(unittest.TestCase):
         self.assertEqual((ic[2], ic[3]), (ic[2], ic[2]))
         self.assertEqual(ic[1] + ic[3], r0[1] + r0[3] - q.ROW_ICON_PAD)
         self.assertEqual((tx[0], tx[1], tx[3]), (ic[0] + ic[2] + q.ICON_GAP, r0[1] + (q.ROW_H - q.TEXT_GLYPH_H) // 2, q.TEXT_BOX_H))
-        self.assertEqual(tx[0] + tx[2] - q.LABEL_SLACK, r0[0] + r0[2] - q.ROW_TEXT_PAD_R)
+        self.assertEqual(tx[0] + tx[2] - q.LABEL_SLACK, r0[0] + r0[2] - q.ROW_TEXT_PAD_R - q.STACK_COL_W)
 
     def test_row_h_variants_fit(self):
         for rh in (56, 64, 72):
@@ -418,6 +416,69 @@ class RenderSmoke(unittest.TestCase):
             self.assertTrue((Path(d) / "ql2v_fit_table.txt").is_file())
             for n in ("ql2v_rowh_A.png", "ql2v_rowh_B.png", "ql2v_vs_vanilla.png"):
                 self.assertTrue((Path(d) / n).is_file(), n)
+
+
+class QL10Vectors(unittest.TestCase):
+    """0.7.0-dev QL10 vectors (stripTags, rowName, rowStackText, rowStackRect, fillRect, flash, sortOrder) mirroring quick_loot_logic_test.cpp."""
+
+    def test_constants(self):
+        self.assertEqual((q.ROW_H, q.ROW_H - 2 * q.ROW_ICON_PAD, q.ROW_ICON_PAD, q.STACK_COL_W, q.LIST_ROWS_DEFAULT), (64, 48, 8, 52, 4))
+        self.assertEqual((q.STACK_RECT_W, q.FILL_INSET), (112, 6))
+        self.assertEqual(q.row_chrome_px(), q.ROW_ICON_PAD + 48 + q.ICON_GAP + q.STACK_COL_W + q.ROW_TEXT_PAD_R)
+        self.assertLessEqual(q.ROW_TEXT_MAX_PX + q.row_chrome_px(q.ROW_H_ALTS[1]) + q.SB_RESERVE + 2 * q.BLOCK_PAD_X, q.BLOCK_MAX_W)
+
+    def test_strip_tags(self):
+        s = q.strip_tags
+        self.assertEqual(s("{08}{light 04}Disruptor   Carbine {x}"), "Disruptor Carbine")
+        self.assertEqual(s("{08}"), "")
+        self.assertEqual(s("{unclosed tag text"), "{unclosed tag text")
+        self.assertEqual(s("{abcdefghijkl}X"), "X")                       # 12 inner chars: stripped
+        self.assertEqual(s("{abcdefghijklm}X"), "{abcdefghijklm}X")       # 13 inner chars: kept
+        self.assertEqual(s("{a{b}c}"), "{ac}")                            # no nesting: the outer brace stays as text
+        self.assertEqual(s("  a \t b  "), "a b")
+        self.assertEqual(s(None), "")
+        self.assertEqual(s("abcdef", 4), "abc")                           # cap 4 = 3 chars + NUL
+
+    def test_names_strip_tags(self):
+        self.assertEqual(q.row_name("{08}Disruptor Carbine"), "Disruptor Carbine")
+        self.assertEqual(q.row_name("{08}"), "item")
+        self.assertEqual(q.row_name("{unclosed tag text"), "{unclosed tag text")
+        self.assertEqual(q.sanitize_name("{08}Disruptor Carbine"), "Disruptor Carbine")
+        self.assertEqual(q.entry_name("{08}Medpac"), "Medpac")
+        self.assertEqual(q.row_text("{08}Disruptor Carbine"), "Disruptor Carbine")
+        self.assertEqual([q.row_stack_text(n) for n in (2, 999, 1, 0, -1, 1000)], ["x2", "x999", "", "", "", ""])
+
+    def test_stack_column_and_fill(self):
+        self.assertLessEqual(q.text_px10("x2"), q.STACK_COL_W)
+        self.assertLessEqual(q.text_px10("x999") + q.LABEL_SLACK, q.STACK_RECT_W)
+        r = (0, 0, 400, 64)
+        sr = q.row_stack_rect(r)
+        self.assertEqual((sr[0] + sr[2], sr[2], sr[1], sr[3]), (400 - q.ROW_TEXT_PAD_R, q.STACK_RECT_W, q.row_text_rect(r)[1], q.TEXT_BOX_H))
+        tx = q.row_text_rect(r)
+        self.assertEqual(tx[0] + tx[2] - q.LABEL_SLACK, 400 - q.ROW_TEXT_PAD_R - q.STACK_COL_W)
+        self.assertEqual(q.fill_rect((100, 200, 300, 400)), (106, 206, 288, 388))
+
+    def test_flash_stack_and_indicator(self):
+        self.assertEqual(q.fmt_flash_header("Medpac", 2000, 5), "Acquired: Medpac (5)")
+        self.assertEqual(q.fmt_flash_header("Medpac", 2000, 1), "Acquired: Medpac")
+        self.assertEqual(q.fmt_flash_header("Medpac", 2000), "Acquired: Medpac")
+        t = q.fmt_flash_header("{08}Mandalorian Heavy Armor Plating Mk IV Upgrade", 600, 12)
+        self.assertTrue(q.text_px10(t) <= 600 and t.startswith("Acquired: Mandalorian") and t.endswith("... (12)"), t)
+        d = q.ListData(["Item %d" % i for i in range(25)], None)
+        p = q.build_list_draw(d, q.ListView(d.rows_total(), 4), False)
+        f = q.build_list_draw(d, q.ListView(d.rows_total(), 4), False, flash_name="Medpac", flash_stack=3)
+        self.assertTrue(p["indicator"] and f["indicator"] == "" and f["indicator_px"] == 0 and f["scrollable"])
+        self.assertEqual((f["header"], f["rows"][0], f["h"]), ("Acquired: Medpac (3)", p["rows"][0], p["h"]))
+        self.assertGreaterEqual(f["w"], p["w"])
+        t_list = q.build_list_draw(d, q.ListView(d.rows_total(), 4), True, flash_name="x", flash_stack=3)
+        self.assertEqual(t_list["header"], "Acquired Items (25)")
+
+    def test_sort_order(self):
+        self.assertEqual(q.sort_order(None, None, 3), [0, 1, 2])
+        self.assertEqual(q.sort_order([0, 1, 0, 0], [0, 0, 1, 0], 4), [1, 2, 0, 3])
+        self.assertEqual(q.sort_order([0, 0, 1, 1], [1, 0, 0, 0], 4), [2, 3, 0, 1])
+        d = q.ListData(["A", "B", "C", "D"], [1, 2, 3, 4], plot=[False, False, True, False], credits=[False, True, False, False])
+        self.assertEqual((d.rows, d.stacks), (["C", "B", "A", "D"], [3, 2, 1, 4]))
 
 
 if __name__ == "__main__":

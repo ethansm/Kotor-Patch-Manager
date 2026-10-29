@@ -11,7 +11,7 @@ Renders the proposed tooltip next to a hovered list row for real items from the 
            description (up to 7 lines: it usually is the rules, e.g. the medpac heal formula)
 v2 (after the Gemini review, .claude/reviews/quick_loot_ux_agy/REVIEW_gemini.md): damage as min-max + the engine's own damage word (TLK 38552..),
 bonus damage folded into Damage, armor category = weight class, Defense net of Decrease AC, no Range / Use / Human restriction / "Upgrades: None"
-rows, no footer, tooltip top flush with the list block.
+rows, a foot line under a 3rd divider, tooltip top flush with the list block.
 Names and text drop BioWare's {tag} prefixes ("{08}Disruptor Carbine" -> "Disruptor Carbine"), as the engine does.
 Outputs ql09_tip_<n>.png (zoomed) and ql09_sheet.png. Before / after: ql09_before_after.png (0.6.0 tooltip vs the new one, same item).
 """
@@ -27,7 +27,7 @@ ITEMS = ["w_brifle_08", "g_w_stungren01", "a_light_04", "w_melee_10", "g_i_medeq
 TIP_W = 660
 PAD_X, PAD_Y = 26, 20
 ICON = 72
-TITLE_H, SUB_H, LINE_H, GAP = 34, 28, 30, 12
+TITLE_H, SUB_H, LINE_H, GAP = 34, 28, 34, 12   # LINE_H = TipLineH (QuickLootLogic.h; was 30)
 LABEL_COL_MAX = 230        # px cap of the label column (measured from the longest label, + 24)
 FLAVOR_LINES = 3
 FLAVOR_LINES_FULL = 7      # items with no rules lines show the whole description
@@ -233,6 +233,10 @@ def build_rules(base, uti, stats, tag):
     return [(k, dice(v)) for k, v in merged]
 
 
+SAMPLE_FOOT = {"w_brifle_08": "Equipped: Blaster Rifle (1-8)"}   # foot line of the sample carbine tip: range only, damage words overflow the 660 px tip
+SAMPLE_PLOT = {"w_brifle_27"}   # mock quest item: no sample item carries Plot=1 in the install, so one is marked to show the plot-first sort
+
+
 def item(resref):
     from pykotor.resource.formats.gff import read_gff
     from pykotor.resource.type import ResourceType
@@ -252,7 +256,8 @@ def item(resref):
     return dict(resref=resref, name=strip_tags(_C["tlk"].string(g.get_locstring("LocalizedName").stringref)),
                 raw_name=_C["tlk"].string(g.get_locstring("LocalizedName").stringref), raw_desc=raw_desc, sub=cat, rules=rules,
                 flavor=short_flavor(flavor) if rules else flavor, full=not rules, icon=qm.icon_resref(ic, var or 1) if ic else "",
-                stack=g.get_uint16("StackSize") if g.exists("StackSize") else 1)
+                stack=g.get_uint16("StackSize") if g.exists("StackSize") else 1,
+                plot=(resref in SAMPLE_PLOT) or (bool(g.get_uint8("Plot")) if g.exists("Plot") else False), foot=SAMPLE_FOOT.get(resref, ""))
 
 
 # ---- layout + draw
@@ -286,9 +291,11 @@ def layout(it, x, y):
     if rules:
         h += 2 + GAP + n_rule_lines * LINE_H + GAP
     if flav:
-        h += 2 + GAP + len(flav) * LINE_H
+        h += 2 + GAP + len(flav) * LINE_H + (GAP if it["foot"] else 0)
+    if it["foot"]:
+        h += 2 + GAP + LINE_H
     h += PAD_Y
-    return dict(frame=(x, y, TIP_W, h), flav=flav, rules=rules, col=col)
+    return dict(frame=(x, y, TIP_W, h), flav=flav, rules=rules, col=col, foot=it["foot"])
 
 
 def draw(img, cpm, it, L):
@@ -326,11 +333,23 @@ def draw(img, cpm, it, L):
         for ln in L["flav"]:
             text(ln, (ix, cy, w - 2 * PAD_X, LINE_H), qm.TEAL_TEXT)
             cy += LINE_H
+        cy += GAP if L["foot"] else 0
+    if L["foot"]:
+        divider()
+        foot, budget = L["foot"], w - 2 * PAD_X   # one line: cut with "..." to the inner width (tipFit10)
+        if qm.text_px10(foot) > budget:
+            while len(foot) > 4 and qm.text_px10(foot + "...") > budget:
+                foot = foot[:-1]
+            foot = foot.rstrip() + "..."
+        text(foot, (ix, cy, budget, LINE_H), qm.CREAM)
 
 
 def scene(cpm, items, hover, it):
     """Block with the given rows, row `hover` highlighted, the new tooltip beside it."""
     img = qm.background()
+    order = qm.sort_order([i["plot"] for i in items], None, len(items))   # plot (quest) items first, as the list sorts them
+    items = [items[k] for k in order]
+    hover = order.index(hover)
     names = [i["name"] for i in items]
     icons = [i["icon"] for i in items]
     d = qm.ListData(names, [i["stack"] for i in items], icons=icons)
@@ -365,7 +384,7 @@ def main():
     items = [i for i in (item(r) for r in ITEMS) if i]
     shots = []
     for k, it in enumerate(items):
-        print(f"{it['resref']}: {it['raw_name']!r} -> {it['name']!r} | sub={it['sub']!r}")
+        print(f"{it['resref']}: {it['raw_name']!r} -> {it['name']!r} | sub={it['sub']!r} | plot={it['plot']} | foot={it['foot']!r}")
         for r in it["rules"]:
             print("   ", r)
         print("    flavor:", it["flavor"])

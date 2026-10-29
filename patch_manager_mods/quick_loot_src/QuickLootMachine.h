@@ -14,6 +14,26 @@
 
 namespace qlogic {
 
+// 0.7.0-dev (QL13) tooltip foot "Equipped: <name><suffix>" (suffix " (1-8)" for a weapon, " (Defense +3)" for armor, "" for none). Never wider than maxPx
+// (textPx10) or cap-1 chars: when it would be, the NAME is cut and ends in "..." so the suffix (the range / defense) always shows. Returns the length.
+inline unsigned fmtEquippedFoot(char* out, size_t cap, const char* name, const char* suffix, int maxPx = TipW - 2 * TipPadX) {
+    char nm[NameCap + 8];
+    unsigned n = stripTags(nm, sizeof nm, name);
+    if (n == 0) { snprintf(nm, sizeof nm, "item"); n = 4; }
+    char buf[NameCap + 80];
+    snprintf(buf, sizeof buf, "Equipped: %s%s", nm, suffix ? suffix : "");
+    unsigned cut = n;
+    while ((textPx10(buf) > maxPx || strlen(buf) >= cap) && cut > 1) {
+        --cut;
+        snprintf(buf, sizeof buf, "Equipped: %.*s...%s", static_cast<int>(cut), nm, suffix ? suffix : "");
+    }
+    size_t len = strlen(buf);
+    if (len >= cap) len = cap - 1;
+    memcpy(out, buf, len);
+    out[len] = 0;
+    return static_cast<unsigned>(len);
+}
+
 struct Captured {
     unsigned count = 0;   // names captured (<= ListMaxItems)
     unsigned total = 0;   // real repository count
@@ -92,6 +112,8 @@ struct Env {
     virtual bool takeOne(uintptr_t plc, uint32_t opener, unsigned index, uint32_t expectId, TakeOneOut* out) = 0;
     // Tooltip data of the container item at `index` (name, stack, description), false = unreadable / the id no longer matches.
     virtual bool describe(uintptr_t plc, unsigned index, uint32_t expectId, TipData* out) = 0;
+    // 0.7.0-dev (QL12): a GUI sound (engine PlayGuiSound index: 0 = scrollbar click, 1 = hover, 9 = gui_invadd). The adapter honours quick_loot.ini Sounds.
+    virtual void sound(int idx) = 0;
 };
 
 // The hovered-row tooltip state: abs = list row under the cursor (-1 none), shown after cfg.tipDelayMs; serial counts targets shown (TIP log).
@@ -107,7 +129,8 @@ struct Flash {
     bool active = false;
     uint32_t at = 0;
     char name[NameCap] = {0};
-    void start(const char* n, uint32_t now) { snprintf(name, sizeof name, "%s", n ? n : ""); at = now; active = true; }
+    int stack = -1;        // 0.7.0-dev: stack of the item taken (the header reads "Acquired: <name> (N)" for N > 1)
+    void start(const char* n, uint32_t now, int stackN = -1) { snprintf(name, sizeof name, "%s", n ? n : ""); stack = stackN; at = now; active = true; }
     bool visible(uint32_t now) const { return active && msSince(now, at) < FlashMs; }
 };
 
@@ -134,6 +157,7 @@ struct Machine {
     uint32_t peekIds[ListMaxItems];  // object ids of the captured peek rows (a take click checks the row is still the same item)
     unsigned peekIdCount = 0;
     TipState tip;
+    int lastHv = -1;       // 0.7.0-dev: visible row under the cursor last frame (hover sound edge)
     Flash flash;
     unsigned takes = 0;    // per-item takes done this session
     Captured cap;          // scratch (shared: uses never overlap)
@@ -261,6 +285,7 @@ struct Machine {
         const uint32_t obj = peek.obj;
         const uint32_t dt = msSince(now, peek.sinceMs);
         e.sendClose(msg, obj, closeFlagFor(n));
+        e.sound(9);   // 0.7.0-dev QL12: gui_invadd
         fmtPeekTake(b, sizeof b, obj, dt, n);
         e.log(b);
         reportTook(e, cap, now);
@@ -461,6 +486,7 @@ struct Machine {
         if (closeFlag) e.capture(take.plc, cap);
         take.clear();   // before the call: a re-entrant Show must not see a stale pending take
         e.sendClose(msg, obj, closeFlag);
+        if (closeFlag) e.sound(9);   // 0.7.0-dev QL12
         fmtTakeSend(b, sizeof b, obj, dt, openSeen, n);
         e.log(b);
         if (!closeFlag) {   // empty: closed with flag 0, no toast
@@ -491,7 +517,7 @@ struct Machine {
         char key[8];
         keyLabel(cfg.takeKey, key, sizeof key);
         if (toastS.visible(now)) return buildListDraw(tookList, tookView, true, key, out);
-        if (peek.active && peek.text[0]) return buildListDraw(peekList, peekView, false, key, out, RowH, flash.visible(now) ? flash.name : nullptr);
+        if (peek.active && peek.text[0]) return buildListDraw(peekList, peekView, false, key, out, RowH, flash.visible(now) ? flash.name : nullptr, flash.stack);
         return false;
     }
     // 0.6.0-dev (QL2A): the block rect for this frame, re-derived from the CURRENT name tag rect (no latch). The name rect seen last is kept for
@@ -548,8 +574,9 @@ struct Machine {
         fmtTake1(b, sizeof b, absRow, expect, name, stack, out.rc, nBefore, nAfter, out.notice);
         e.log(b);
         ++takes;
+        e.sound(9);   // 0.7.0-dev QL12: gui_invadd
         tip.reset();
-        flash.start(name, now);
+        flash.start(name, now, stack);
         peekRefresh(e, nAfter);
         if (nAfter == 0) {   // that was the last item: show what was taken (the Took list) and close the container the normal way
             cap.count = 1; cap.total = 1;
@@ -563,10 +590,14 @@ struct Machine {
 
     // Tooltip: after cfg.tipDelayMs on one row of the PEEK list the item's data is read once (Env::describe). Any scroll / take / peek end resets it.
     void tipTick(Env& e, uint32_t now, const ListView* v) {
-        int abs = -1;
+        int abs = -1, hvRow = -1;
         if (v == &peekView && !peekList.empty()) {
             const int hv = e.hoverRow();
-            if (hv >= 0 && peekView.off + static_cast<unsigned>(hv) < peekList.items) abs = static_cast<int>(peekView.off) + hv;
+            if (hv >= 0 && peekView.off + static_cast<unsigned>(hv) < peekList.items) { abs = static_cast<int>(peekView.off) + hv; hvRow = hv; }
+        }
+        if (hvRow != lastHv) {   // 0.7.0-dev QL12: the cursor moved onto another visible row (a scroll / take under a still cursor stays quiet)
+            lastHv = hvRow;
+            if (hvRow >= 0) e.sound(1);
         }
         if (abs != tip.abs) { tip.abs = abs; tip.since = now; tip.shown = false; return; }
         if (abs >= 0 && !tip.shown && msSince(now, tip.since) >= cfg.tipDelayMs) {
@@ -602,6 +633,7 @@ struct Machine {
         if (part != 0 && v) {
             const SbPart p = static_cast<SbPart>(part);
             char b[80];
+            e.sound(0);   // 0.7.0-dev QL12: scrollbar click
             const bool ch = v->step(sbStepFor(p, v->rows));
             fmtSbClick(b, sizeof b, p, v->off, v->maxOff());
             e.log(b);
