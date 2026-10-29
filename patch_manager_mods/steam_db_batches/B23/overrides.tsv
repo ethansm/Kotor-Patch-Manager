@@ -1,0 +1,11 @@
+gog_addr	steam_addr	final_verdict	note
+0x0044eeb0	0x007a2510	verified	[a] graph: >10 mapped Steam callers all call AddObject, rival 0; order d=0; Haiku corrected_addr on decoy B23-2-14 points here
+0x0044eee0	0x007a2540	verified	[a] graph: caller UnloadArea 0x7a5fa0->GOG 0x4529a0 calls RemoveObject only; order d=0; Haiku corrected_addr on decoy B23-2-15 points here
+0x00462840	0x0072f540	verified	[a] graph: 4 mapped callers (0x72c7e0/0x72f480/0x7ac470/0x7b5c10) call only Add, peers map to unnamed GOG fns
+0x00909e50	0x0093f830	verified	[a] graph: 2 unique mapped callers + callee hit; order d=0 vs 0x93f340/0x93f3d0
+0x0090a510	0x0093ff30	verified	[a] graph: 4 unique mapped callers + callee hit; order d=0 vs 0x93fed0
+0x0090a550	0x0093ff70	likely	[a] gate top 0x0093feb0 refuted (Haiku mismatch, order says GOG 0x90a490); pick = callee hit + order d=0 vs trusted 0x93fed0<->0x90a4b0; no unique caller
+0x0090a590	0x0093f870	likely	[a] elimination: callers 0x93bc00 + 0x9402d0 (calls LayeredDataPtr + TextureDataSize, LayeredDataPtr taken by 0x93ff30); moved in link order
+0x0090bab0	0x00941490	verified	[a] gate top 0x00941420 refuted (Haiku mismatch; order says GOG 0x90ba40); pick = 5 unique mapped callers + callee hit + order d=0 vs 0x941440<->0x90ba60
+0x0090c8f0	0x0040e360	verified	[a] graph: 10 mapped callers call Intersection only; order d=0; Haiku c2 reads the body as intersection
+0x0090ca10	0x0040e480	verified	[a] graph: caller 0x8690a0->GOG 0x4f49f0 calls Union only; order d=0 between trusted 0x40e2c0/0x40e5a0; Haiku c1 card 11 reads the body as Union

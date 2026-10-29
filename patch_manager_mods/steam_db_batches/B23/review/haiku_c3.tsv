@@ -1,0 +1,7 @@
+gog_addr	steam_addr	verdict	corrected_addr	content_anchor	confidence	reason
+0x0090a590	0x0093f830	unsure			low	Size and RET match GOG; no anchor; callees unmapped; +0x8 check shared with decoy 0x0093f870.
+0x0090bab0	0x009410e0	mismatch		0x007111C0 CRes::CancelRequest	high	Steam body 164 B vs GOG 51 B; ctor-like vtable write; callees CancelRequest/ReleaseResObject, GOG callees GetDemands/GetVISDataPtr.
+0x0090ca10	0x0040e480	unsure			medium	Body is Union-shaped (min left/top, max right/bottom); no string/callee/offset anchor; offsets shared with decoy.
+0x0090c8f0	0x0040e360	unsure			medium	Credit is from GOG callers (SetExtent), not callees, so not an allowed anchor; body is Intersection-shaped.
+0x0090bab0	0x00941490	unsure			low	Size 51 and RET match GOG; callee 0x00711250 and +0x8 check shared with decoy; second callee unnamed; no anchor.
+0x0090a590	0x0093f8b0	mismatch		0x007112B0 CRes::Release	high	Steam body 187 B vs GOG 51 B; writes into a buffer and calls Demand/Release; not a size getter.

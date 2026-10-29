@@ -1,0 +1,20 @@
+gog	steam	source	evidence	verdict
+0x0090ca10	0x0040e480	caller+order	Steam caller 0x8690a0->GOG 0x4f49f0 calls only Union; order d=0 vs 0x40e2c0/0x40e5a0	decided
+0x0090c8f0	0x0040e360	caller+order	10 mapped Steam callers (0x419a80..0x902990) all call Intersection; order d=0	decided
+0x00616990	0x0072fd90	caller+callee+order	caller 0x7ac470->0x459080 calls UpdateMouseDelta; callee hit 1/0; order d=0 (peer 0x73fbf0 already SetTexturePack in name_map)	decided
+0x0044eeb0	0x007a2510	caller+order	>10 mapped callers (0x7fddf0..) call AddObject; order d=0	decided
+0x0044eee0	0x007a2540	caller+callee+order	caller 0x7a5fa0->0x4529a0 calls RemoveObject; order d=0	decided
+0x005a72d0	0x008b3730	order+vtable	no code callers; live dref 0x9a7830 (vtable); OnPanelAdded 0x8b3630<->0x5a71d0 +0x100 and 0x8b3750<->0x5a72f0 -0x20 exact	decided
+0x005d7fe0	0x00858b60	order+vtable	no code callers; live dref 0x9a4310 (vtable); SaveNamePanel::OnPanelAdded 0x858a70<->0x5d7ef0 +0xf0, HandleInputEvent 0x858b80<->0x5d8000 -0x20 exact	decided
+0x005b60c0	0x008c17f0	caller	caller 0x8c0cb0->0x5b54b0 calls LoadModuleDebugMenu::CreateOption only; order d=0 vs 0x8c18e0	decided
+0x005b3a80	0x008bfe30	caller	4 mapped callers (0x8c0010/0x8c01f0/0x8c0460/0x8c0680) call PowersFeatsSkillsDebugMenu::CreateOption only	decided
+0x00909e50	0x0093f830	caller+callee+order	callers 0x93b910->0x905f30, 0x93fab0->0x90a090 call only TextureDataPtr; callee hit; order d=0	decided
+0x0090a590	0x0093f870	elimination	callers 0x93bc00 (all 6) + 0x9402d0->0x90a8f0 (LayeredDataPtr/TextureDataSize); LayeredDataPtr taken by 0x93ff30; moved in link order	decided
+0x0090a510	0x0093ff30	caller+callee+order	4 callers call only LayeredTexture::GetTextureDataPtr; order d=0	decided
+0x0090a550	0x0093ff70	callee+order	callee hit only ProcessedTextureDataSize; order d=0 vs 0x93fed0<->0x90a4b0	decided
+0x0090b220	0x00940800	callee	callee hit only ModelDataSize, but order neighbours point to Steam 0x940c00	tie
+0x0090bab0	0x00941490	caller+callee+order	5 callers call only ModelDataPtr; order d=0	decided
+0x00462840	0x0072f540	caller	4 mapped callers (0x72c7e0/0x72f480/0x7ac470/0x7b5c10) call only Add	decided
+0x00865e20	0x0049b760	caller	0x865e20 claimed by both 0x49b760 and 0x49b6f0 (unnamed GOG); List<T*>::List folded	tie
+0x0091f4f0	0x00421720	caller	callers 0x41fc30/0x41fd90 -> unnamed GOG 0x91f4f0; no name to ship	no_name
+0x00928942	0x0092178f	caller	callers 0x73dc30/0x73dd20 -> unnamed GOG 0x928942; CRT region; no name	no_name

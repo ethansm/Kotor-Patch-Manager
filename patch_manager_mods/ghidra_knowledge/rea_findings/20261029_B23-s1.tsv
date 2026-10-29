@@ -1,0 +1,61 @@
+addr	kind	name	confidence	evidence	topic	date
+0x0040e360	xref	no live run (static only)	probable	rea_facts 0x0040e360: static only	B23-s1	2026-10-29
+0x0040e480	xref	no live run (static only)	probable	rea_facts 0x0040e480: static only	B23-s1	2026-10-29
+0x00421720	xref	no live run (static only)	probable	rea_facts 0x00421720: static only	B23-s1	2026-10-29
+0x00451840	xref	no live run (static only)	probable	rea_facts 0x00451840: static only	B23-s1	2026-10-29
+0x0048e460	xref	no live run (static only)	probable	rea_facts 0x0048e460: static only	B23-s1	2026-10-29
+0x0049b6f0	xref	no live run (static only)	probable	rea_facts 0x0049b6f0: static only	B23-s1	2026-10-29
+0x0049b760	xref	no live run (static only)	probable	rea_facts 0x0049b760: static only	B23-s1	2026-10-29
+0x0051a6f0	xref	no live run (static only)	probable	rea_facts 0x0051a6f0: static only	B23-s1	2026-10-29
+0x0058c1e0	xref	no live run (static only)	probable	rea_facts 0x0058c1e0: static only	B23-s1	2026-10-29
+0x0072f540	xref	no live run (static only)	probable	rea_facts 0x0072f540: static only	B23-s1	2026-10-29
+0x0072fd90	xref	no live run (static only)	probable	rea_facts 0x0072fd90: static only	B23-s1	2026-10-29
+0x0073fbf0	xref	no live run (static only)	probable	rea_facts 0x0073fbf0: static only	B23-s1	2026-10-29
+0x007a2510	xref	no live run (static only)	probable	rea_facts 0x007a2510: static only	B23-s1	2026-10-29
+0x007a2540	xref	no live run (static only)	probable	rea_facts 0x007a2540: static only	B23-s1	2026-10-29
+0x00858b60	xref	no live run (static only)	probable	rea_facts 0x00858b60: static only	B23-s1	2026-10-29
+0x008b3730	xref	no live run (static only)	probable	rea_facts 0x008b3730: static only	B23-s1	2026-10-29
+0x008bfecf	callsite	slot 0x98 candidates: CSWGuiLabel::FUN_00419840@0x00419840, CSWGuiProgressBar::FUN_0041b9a0@0x0041b9a0	probable	static_facts 0x008bfecf: CALL EAX	B23-s1	2026-10-29
+0x008c188f	callsite	slot 0x98 candidates: CSWGuiLabel::FUN_00419840@0x00419840, CSWGuiProgressBar::FUN_0041b9a0@0x0041b9a0	probable	static_facts 0x008c188f: CALL EAX	B23-s1	2026-10-29
+0x009196fd	xref	no live run (static only)	probable	rea_facts 0x009196fd: static only	B23-s1	2026-10-29
+0x0091c6aa	xref	no live run (static only)	probable	rea_facts 0x0091c6aa: static only	B23-s1	2026-10-29
+0x0091cf18	xref	no live run (static only)	probable	rea_facts 0x0091cf18: static only	B23-s1	2026-10-29
+0x0091d288	xref	no live run (static only)	probable	rea_facts 0x0091d288: static only	B23-s1	2026-10-29
+0x0092178f	xref	no live run (static only)	probable	rea_facts 0x0092178f: static only	B23-s1	2026-10-29
+0x00921a83	xref	no live run (static only)	probable	rea_facts 0x00921a83: static only	B23-s1	2026-10-29
+0x0093f830	xref	no live run (static only)	probable	rea_facts 0x0093f830: static only	B23-s1	2026-10-29
+0x0093f870	xref	no live run (static only)	probable	rea_facts 0x0093f870: static only	B23-s1	2026-10-29
+0x0093ff30	xref	no live run (static only)	probable	rea_facts 0x0093ff30: static only	B23-s1	2026-10-29
+0x0093ff70	xref	no live run (static only)	probable	rea_facts 0x0093ff70: static only	B23-s1	2026-10-29
+0x00940800	xref	no live run (static only)	probable	rea_facts 0x00940800: static only	B23-s1	2026-10-29
+0x00941490	xref	no live run (static only)	probable	rea_facts 0x00941490: static only	B23-s1	2026-10-29
+0x0040e360	xref	no live-only facts	probable	rea_facts 0x0040e360: checked	B23-s1	2026-10-29
+0x0040e480	xref	no live-only facts	probable	rea_facts 0x0040e480: checked	B23-s1	2026-10-29
+0x00421720	xref	no live-only facts	probable	rea_facts 0x00421720: checked	B23-s1	2026-10-29
+0x00451840	xref	no live-only facts	probable	rea_facts 0x00451840: checked	B23-s1	2026-10-29
+0x0048e460	xref	no live-only facts	probable	rea_facts 0x0048e460: checked	B23-s1	2026-10-29
+0x0049b6f0	xref	no live-only facts	probable	rea_facts 0x0049b6f0: checked	B23-s1	2026-10-29
+0x0049b760	xref	no live-only facts	probable	rea_facts 0x0049b760: checked	B23-s1	2026-10-29
+0x0051a6f0	xref	no live-only facts	probable	rea_facts 0x0051a6f0: checked	B23-s1	2026-10-29
+0x0058c1e0	xref	no live-only facts	probable	rea_facts 0x0058c1e0: checked	B23-s1	2026-10-29
+0x0072f540	xref	no live-only facts	probable	rea_facts 0x0072f540: checked	B23-s1	2026-10-29
+0x0072fd90	xref	no live-only facts	probable	rea_facts 0x0072fd90: checked	B23-s1	2026-10-29
+0x0073fbf0	xref	no live-only facts	probable	rea_facts 0x0073fbf0: checked	B23-s1	2026-10-29
+0x007a2510	xref	no live-only facts	probable	rea_facts 0x007a2510: checked	B23-s1	2026-10-29
+0x007a2540	xref	no live-only facts	probable	rea_facts 0x007a2540: checked	B23-s1	2026-10-29
+0x00858b60	xref	data refs 1: 0x9a4310 (first 8)	confirmed	xrefs 0x00858b60: 1 sources, 0 code call sites	B23-s1	2026-10-29
+0x008b3730	xref	data refs 1: 0x9a7830 (first 8)	confirmed	xrefs 0x008b3730: 1 sources, 0 code call sites	B23-s1	2026-10-29
+0x008bfe30	xref	no live-only facts	probable	rea_facts 0x008bfe30: checked	B23-s1	2026-10-29
+0x008c17f0	xref	no live-only facts	probable	rea_facts 0x008c17f0: checked	B23-s1	2026-10-29
+0x009196fd	xref	error: {"error":{"code":"resource_constraint","category":"resource_constraint","message	probable	rea_facts 0x009196fd: body failed	B23-s1	2026-10-29
+0x0091c6aa	xref	no live-only facts	probable	rea_facts 0x0091c6aa: checked	B23-s1	2026-10-29
+0x0091cf18	xref	no live-only facts	probable	rea_facts 0x0091cf18: checked	B23-s1	2026-10-29
+0x0091d288	xref	no live-only facts	probable	rea_facts 0x0091d288: checked	B23-s1	2026-10-29
+0x0092178f	xref	no live-only facts	probable	rea_facts 0x0092178f: checked	B23-s1	2026-10-29
+0x00921a83	xref	no live-only facts	probable	rea_facts 0x00921a83: checked	B23-s1	2026-10-29
+0x0093f830	xref	no live-only facts	probable	rea_facts 0x0093f830: checked	B23-s1	2026-10-29
+0x0093f870	xref	no live-only facts	probable	rea_facts 0x0093f870: checked	B23-s1	2026-10-29
+0x0093ff30	xref	no live-only facts	probable	rea_facts 0x0093ff30: checked	B23-s1	2026-10-29
+0x0093ff70	xref	no live-only facts	probable	rea_facts 0x0093ff70: checked	B23-s1	2026-10-29
+0x00940800	xref	no live-only facts	probable	rea_facts 0x00940800: checked	B23-s1	2026-10-29
+0x00941490	xref	no live-only facts	probable	rea_facts 0x00941490: checked	B23-s1	2026-10-29

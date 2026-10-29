@@ -46,6 +46,11 @@ D6 R2 NO-GO root cause was missing names / caller context, so coverage is the le
 | I10b | CRT G1 lane: sprintf/memset/free rejected by G1 (Steam ANALYSIS already says `_sprintf`/`_memset`/`_free`) -> extract rows with the FLIRT name -> ledger `ingest-crt` -> cards `--decoy-pool kdb` -> Haiku -> score | DONE | spec §I10 |
 | I10c | Label suspects (7, B17/B18): graph check each Steam fn vs its GOG label + neighbours; record verdicts in `steam_db_batches/GOG_LABEL_SUSPECTS.md` ($0, no KDB write) | DONE | spec §I10 |
 | I10d | Persist B22 + I10b promote (user OK); user decision on the 13 B20 likely (`finalize B20 --with-likely` = persist at likely); gap re-measure, memory | DONE | spec §I10 |
+| I11a | Plan rows + `.claude/research/ingest/i11/shortlist.tsv` (10 ambiguous rows with <= 6 named GOG candidates + their Steam peers) | TODO | spec §I11 |
+| I11b | `rea_facts.py run --addrs F --topic B23-s1` (static `--no-live` first, then live); lint count unchanged | TODO | spec §I11 |
+| I11c | Decide pairs: map Steam xref sources / vtable callsites / live callers through `trusted_map`; `decide.tsv` verdict decided/tie/no_facts; gate < 3 decided -> I11e or NO-GO | TODO | spec §I11 |
+| I11d | Batch B23 from decided rows: candidates -> gates -> cards `--chunk 16 --decoys 10 --facts --rea` -> Haiku -> finalize -> Opus gate -> persist dry run | TODO | spec §I11 |
+| I11e | rea-recon for `tie` leftovers (only if the I11c gate says so; <= 2 agents x <= 3 addrs) | TODO | spec §I11 |
 
 ## Cost log
 
@@ -60,6 +65,7 @@ D6 R2 NO-GO root cause was missing names / caller context, so coverage is the le
 | I4b | 2026-10-28T00:03 | none (lead) | $0 | user OK "I4b": 56 I3 rows -> `name_map` (source `ingest-notes`, medium, 0 exists/conflicts, integrity ok); `promote_names.py --stage` (evidence names the verify stage, +1 test); class pages `CSWGuiControl.md`, `CSWGuiManager.md` (30 other classes have no Steam-DB functions); name_map ingest total 107 |
 | I5 | 2026-10-28T00:10 | none (lead) | $0 | docs sweep b2d4aa6c: `cards|score` + `promote_names.py` in CLAUDE.md (own hunk via index), AGENTS.md, README, RE_AGENT_GUIDE §2.1 (2 new rows), SUBAGENT_ROLES, kotor2-persist-knowledge skill; check_skills PASS |
 | I6 | 2026-10-28T00:26 | 4 Haiku recon (chunks), 3 tool calls each, peak 50-77k | $0.07 | 26 candidates (24 notes, 2 modcode globals) -> 39 cards (13 decoys, seed 1030, `--decoy-every 2`); one pass, decoys 11/13 = 85% PASS (misses C07 consistent, C13 unsure); 12 consistent -> `rea_findings/20261028_ingest-notes.tsv` (11) + `20261028_ingest-modcode.tsv` (1, EffMasteryDark; EffMasteryLight not promoted); lint 84; user OK all 12 -> `name_map` (stage I6, 0 exists/conflicts, integrity ok; ingest total 119); weak: `CAurGUIStringInternal::GetFontPixelHeight` (getter), `Scene::AddObject` (generic vtable call; decoy on same facts got unsure); only `Scene` has a Steam-DB page (unchanged); gap notes 452 / modcode 52. Text-based extraction is exhausted: remaining gap has no name in notes or mod code, needs a non-text source |
+| I11a-d | 2026-10-29T01:20 | 3 Haiku recon (B23 chunks, 3-4 tool calls, peak 88-139k) | $0.18 | shortlist 10; rea_facts B23-s1 static+live (30 addrs, live gave only 2 vtable drefs; lint 108 -> 108); group-level graph decide (`.claude/research/ingest/i11/decide.py`: mapped callers + link-order deltas) 15 decided / 2 tie / 2 no_name, so I11e skipped; B23 14 cards + 24 decoys, 0 accepted; Opus gate 2 gate tops refuted (pick sat as decoy again) -> 13 verified / 2 likely; persist dry run insert 13, update 0, demote 0 |
 
 ## Spec
 
@@ -170,6 +176,15 @@ D6 R2 NO-GO root cause was missing names / caller context, so coverage is the le
   `--chunk 16 --decoys 10 --facts`; reviewers 4 tool calls; finalize ignores rows whose verdict cell is blank
   (column shift): read them in the Opus gate.
 - Budget: I10a ~2-3 Haiku (~$0.2), I10b 1 Haiku (~$0.05), I10c $0. Total < $0.5.
+
+### I11: live REA on the ambiguous gap (gap 78: named 17 / unnamed 19 / ambiguous 33 / no_twin 9; name_map 5186)
+- 10-29 sizing (`.claude/research/ingest/i11/`): the fp-twin/graph lane is used up; graphpair adds 8 never-batched rows,
+  none with a GOG name. User choice 10-29: live REA on the ambiguous rows. Their bodies cannot decide the pair (identical
+  stubs, folded templates, sibling virtuals); only callers can (vtable slots, data xrefs, live callers).
+- Shortlist = rows with <= 6 GOG candidates and at least one real (non-template) name: 10 rows. Rows with 8-843
+  candidates and folded templates (`List<T>::~List`, `operator=`, `allocate`, `SetSize`) are skipped.
+- Order: static facts -> `rea_facts.py` live -> rea-recon only for leftovers. Budget < $3; past REA pilots R1-R3 were
+  NO-GO, so stop when I11c (+ I11e) decide < 3 rows and record "I11 REA lane NO-GO".
 
 ## Decisions
 - Ledger first, KDB later: ledger rows are agent observations (`[rea]`), promotion needs Haiku+decoys and user OK.

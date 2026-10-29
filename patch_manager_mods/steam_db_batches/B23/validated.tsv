@@ -1,0 +1,14 @@
+steam_addr	name	verdict	tier	gog_addr	batch	fp_sha	evidence_ref
+0x0040e360	CSWGuiExtent::Intersection	verified	opus	0x0090c8f0	B23	f5f495105cd481d4	steam_db_batches/B23/final_rows.tsv
+0x0040e480	CSWGuiExtent::Union	verified	opus	0x0090ca10	B23	f5f495105cd481d4	steam_db_batches/B23/final_rows.tsv
+0x0072f540	CExoArrayList_CExoInputEvent_::Add	verified	opus	0x00462840	B23	cb76c8e99449ff90	steam_db_batches/B23/final_rows.tsv
+0x0072fd90	CExoInput::UpdateMouseDelta	verified	reviewer	0x00616990	B23	b3431b9305e523e0	steam_db_batches/B23/final_rows.tsv
+0x007a2510	CClientAIMaster::AddObject	verified	opus	0x0044eeb0	B23	dbda428e60c924e5	steam_db_batches/B23/final_rows.tsv
+0x007a2540	CClientAIMaster::RemoveObject	verified	opus	0x0044eee0	B23	d742a457826519d6	steam_db_batches/B23/final_rows.tsv
+0x00858b60	CSWGuiSaveNamePanel::OnPanelRemoved	verified	reviewer	0x005d7fe0	B23	f63a21055ae40281	steam_db_batches/B23/final_rows.tsv
+0x008b3730	CSWGuiContainer::OnPanelRemoved	verified	reviewer	0x005a72d0	B23	f63a21055ae40281	steam_db_batches/B23/final_rows.tsv
+0x008bfe30	CSWGuiPowersFeatsSkillsDebugMenu::CreateOption	verified	reviewer	0x005b3a80	B23	808e1991b15b5257	steam_db_batches/B23/final_rows.tsv
+0x008c17f0	CSWGuiLoadModuleDebugMenu::CreateOption	verified	auto:c2	0x005b60c0	B23	808e1991b15b5257	steam_db_batches/B23/final_rows.tsv
+0x0093f830	CAuroraTexture::GetTextureDataPtr	verified	opus	0x00909e50	B23	42068acb9239bc68	steam_db_batches/B23/final_rows.tsv
+0x0093ff30	CAuroraLayeredTexture::GetTextureDataPtr	verified	opus	0x0090a510	B23	7e48b5ce682b66b9	steam_db_batches/B23/final_rows.tsv
+0x00941490	CAuroraModel::GetModelDataPtr	verified	opus	0x0090bab0	B23	16a79bb258a1dbd2	steam_db_batches/B23/final_rows.tsv

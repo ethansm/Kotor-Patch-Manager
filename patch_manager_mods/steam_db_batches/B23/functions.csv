@@ -1,0 +1,14 @@
+class_name,function_name,address,calling_convention,param_size_bytes,notes
+CClientAIMaster,AddObject,0x007A2510,__thiscall,4,"Steam batch B23: Opus: [a] graph: >10 mapped Steam callers all call AddObject, rival 0; order d=0; Haiku corrected_addr on decoy B23-2-14 points here (evidence steam_db_batches/B23/final_rows.tsv)"
+CClientAIMaster,RemoveObject,0x007A2540,__thiscall,4,Steam batch B23: Opus: [a] graph: caller UnloadArea 0x7a5fa0->GOG 0x4529a0 calls RemoveObject only; order d=0; Haiku corrected_addr on decoy B23-2-15 points here (evidence steam_db_batches/B23/final_rows.tsv)
+CExoArrayList_CExoInputEvent_,Add,0x0072F540,__thiscall,16,"Steam batch B23: Opus: [a] graph: 4 mapped callers (0x72c7e0/0x72f480/0x7ac470/0x7b5c10) call only Add, peers map to unnamed GOG fns (evidence steam_db_batches/B23/final_rows.tsv)"
+CSWGuiContainer,OnPanelRemoved,0x008B3730,__thiscall,0,Steam batch B23: reviewer match with anchor: 0x0040F4C0 CSWGuiPanel::OnPanelRemoved (evidence steam_db_batches/B23/final_rows.tsv)
+CSWGuiPowersFeatsSkillsDebugMenu,CreateOption,0x008BFE30,__thiscall,12,Steam batch B23: reviewer match with anchor: 0x00416E30 CSWGuiTextParams::SetText (evidence steam_db_batches/B23/final_rows.tsv)
+CSWGuiLoadModuleDebugMenu,CreateOption,0x008C17F0,__thiscall,12,Steam batch B23: CALLEE 1 (callers: Constructor 0x8c0cb0); SIG 1.00 (evidence steam_db_batches/B23/evidence.tsv)
+CSWGuiSaveNamePanel,OnPanelRemoved,0x00858B60,__thiscall,0,Steam batch B23: reviewer match with anchor: 0x0040F4C0 CSWGuiPanel::OnPanelRemoved (evidence steam_db_batches/B23/final_rows.tsv)
+CExoInput,UpdateMouseDelta,0x0072FD90,__thiscall,4,Steam batch B23: reviewer match with anchor: 0x0072F110 CExoInputInternal::UpdateMouseDelta (evidence steam_db_batches/B23/final_rows.tsv)
+CAuroraTexture,GetTextureDataPtr,0x0093F830,__thiscall,0,Steam batch B23: Opus: [a] graph: 2 unique mapped callers + callee hit; order d=0 vs 0x93f340/0x93f3d0 (evidence steam_db_batches/B23/final_rows.tsv)
+CAuroraLayeredTexture,GetTextureDataPtr,0x0093FF30,__thiscall,0,Steam batch B23: Opus: [a] graph: 4 unique mapped callers + callee hit; order d=0 vs 0x93fed0 (evidence steam_db_batches/B23/final_rows.tsv)
+CAuroraModel,GetModelDataPtr,0x00941490,__thiscall,0,Steam batch B23: Opus: [a] gate top 0x00941420 refuted (Haiku mismatch; order says GOG 0x90ba40); pick = 5 unique mapped callers + callee hit + order d=0 vs 0x941440<->0x90ba60 (evidence steam_db_batches/B23/final_rows.tsv)
+CSWGuiExtent,Intersection,0x0040E360,__cdecl,12,Steam batch B23: Opus: [a] graph: 10 mapped callers call Intersection only; order d=0; Haiku c2 reads the body as intersection (evidence steam_db_batches/B23/final_rows.tsv)
+CSWGuiExtent,Union,0x0040E480,__cdecl,12,Steam batch B23: Opus: [a] graph: caller 0x8690a0->GOG 0x4f49f0 calls Union only; order d=0 between trusted 0x40e2c0/0x40e5a0; Haiku c1 card 11 reads the body as Union (evidence steam_db_batches/B23/final_rows.tsv)

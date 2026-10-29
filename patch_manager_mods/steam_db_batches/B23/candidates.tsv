@@ -1,0 +1,16 @@
+class	name	gog	gog_callconv	gog_param	gog_size	gog_retn	candidates
+CClientAIMaster	AddObject	0x0044eeb0		4	36	4	0x007a2510|i11_rea
+CClientAIMaster	RemoveObject	0x0044eee0		4	36	4	0x007a2540|i11_rea
+CExoArrayList_CExoInputEvent_	Add	0x00462840		16	124	16	0x0072f540|i11_rea
+CSWGuiContainer	OnPanelRemoved	0x005a72d0		0	30	0	0x008b3730|i11_rea+mapper:vote+near;0x008b3750|near;0x008b3850|near
+CSWGuiPowersFeatsSkillsDebugMenu	CreateOption	0x005b3a80		12	235	12	0x008bfe30|i11_rea;0x008bf280|near;0x008bf0e0|near;0x008bf000|near
+CSWGuiLoadModuleDebugMenu	CreateOption	0x005b60c0		12	235	12	0x008c17f0|i11_rea+mapper:vote+near;0x008c18e0|near;0x008c1930|near
+CSWGuiSaveNamePanel	OnPanelRemoved	0x005d7fe0		0	30	0	0x00858b60|i11_rea;0x0073ffe0|mapper:drift-0x10;0x0073fd00|near
+CExoInput	UpdateMouseDelta	0x00616990		4	31	4	0x0072fd90|i11_rea+mapper:vote+near;0x0072fd70|near;0x0072fdb0|near
+CAuroraTexture	GetTextureDataPtr	0x00909e50		0	51	0	0x0093f830|i11_rea
+CAuroraLayeredTexture	GetTextureDataPtr	0x0090a510		0	51	0	0x0093ff30|i11_rea+near;0x0093feb0|mapper:drift-0x40+near;0x0093ff70|near
+CAuroraProcessedTexture	GetProcessedTextureDataSize	0x0090a550		0	51	0	0x0093ff70|i11_rea+near;0x00459870|mapper:vote;0x0093ff30|near;0x0093feb0|near
+CAuroraTexture	GetTextureDataSize	0x0090a590		0	51	0	0x0093f870|i11_rea
+CAuroraModel	GetModelDataPtr	0x0090bab0		0	51	0	0x00941490|i11_rea+near;0x00941420|near;0x009415c0|near
+CSWGuiExtent	Intersection	0x0090c8f0		12	285	0	0x0040e360|i11_rea
+CSWGuiExtent	Union	0x0090ca10		12	285	0	0x0040e480|i11_rea

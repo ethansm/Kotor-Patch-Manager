@@ -1,0 +1,65 @@
+{
+ "batch": "B23",
+ "chunks_short": [
+  "3"
+ ],
+ "chunks_unreviewed": [],
+ "clean": false,
+ "clean_streak_before": 0,
+ "decision": "INSUFFICIENT DECOYS (chunks 3; need >= 10 per chunk)",
+ "decoy_cards": 24,
+ "decoys_accepted": 0,
+ "decoys_per_chunk": {
+  "1": 10,
+  "2": 10,
+  "3": 3
+ },
+ "full_read": 0,
+ "key_error_cards": [],
+ "key_errors": 0,
+ "rows_auto": [
+  {
+   "class": "CSWGuiLoadModuleDebugMenu",
+   "gog": "0x005b60c0",
+   "name": "CreateOption",
+   "route": "c2",
+   "steam_addr": "0x008c17f0"
+  }
+ ],
+ "rows_full": [],
+ "rows_sample": [
+  {
+   "class": "CSWGuiSaveNamePanel",
+   "content_level": "C1",
+   "gog": "0x005d7fe0",
+   "name": "OnPanelRemoved",
+   "steam_addr": "0x00858b60"
+  },
+  {
+   "class": "CSWGuiContainer",
+   "content_level": "C1",
+   "gog": "0x005a72d0",
+   "name": "OnPanelRemoved",
+   "steam_addr": "0x008b3730"
+  },
+  {
+   "class": "CExoInput",
+   "content_level": "C1",
+   "gog": "0x00616990",
+   "name": "UpdateMouseDelta",
+   "steam_addr": "0x0072fd90"
+  },
+  {
+   "class": "CSWGuiPowersFeatsSkillsDebugMenu",
+   "content_level": "C1",
+   "gog": "0x005b3a80",
+   "name": "CreateOption",
+   "steam_addr": "0x008bfe30"
+  }
+ ],
+ "sample_errors": 0,
+ "sample_pool": 4,
+ "sample_rate": 0.2,
+ "sample_size": 4,
+ "unanswered_decoys": 0
+}

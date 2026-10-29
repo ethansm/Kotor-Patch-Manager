@@ -1,0 +1,17 @@
+gog_addr	steam_addr	verdict	corrected_addr	content_anchor	confidence	reason
+0x0090a510	0x0093feb0	mismatch			medium	Candidate writes vftable and calls once, returns void; GOG reads +0x8 and returns a pointer; no Steam +0x8 access.
+0x0090a510	0x0093ff70	unsure			medium	Same +0x8 check and two-call shape as GOG; callees unnamed, no trusted callee, C0.
+0x005b3a80	0x008bfe30	match		0x00416E30 CSWGuiTextParams::SetText	medium	Trusted GOG callees SetText and AddEvent both in candidate; script A-CALLEE reports 0, conflict.
+0x005a72d0	0x008b3730	match		0x0040F4C0 CSWGuiPanel::OnPanelRemoved	high	Trusted GOG callee CSWGuiPanel::OnPanelRemoved maps to candidate call; decoy calls OnPanelAdded instead.
+0x00616990	0x0072fd10	mismatch		0x0072F110 CExoInputInternal::UpdateMouseDelta (absent)	medium	Trusted GOG callee absent from candidate, which makes no calls; candidate returns a bool.
+0x00462840	0x0072f540	unsure			medium	Only caller credit (ProcessInput); callee Allocate unmapped; offsets lack asm lines; no anchor.
+0x00909e50	0x0093f7c0	mismatch			medium	GOG reads +0x8 and returns data; candidate touches no offsets and returns void after vtable store.
+0x0090a550	0x0093fb70	mismatch		0x007111C0 CRes::CancelRequest	medium	Candidate writes vftable and runs teardown calls; GOG callees are GetDemands and GetTPCSize.
+0x0090c8f0	0x0040df30	mismatch			medium	One-arg delete-guard body; GOG reads +0x4/+0x8/+0xc with no Steam match; GOG param record flagged bad.
+0x00909e50	0x0093f870	unsure			medium	Same +0x8 check and two-call shape as GOG; callees unnamed, no trusted callee, C0.
+0x0090c8f0	0x0040e480	mismatch		0x0040E480 CSWGuiExtent::Union (REVIEW neighbour)	high	Body computes min-origin and max-edge bounding union, not intersection; GOG-order neighbour maps this address to Union.
+0x005d7fe0	0x00858b60	match		0x0040F4C0 CSWGuiPanel::OnPanelRemoved	high	Trusted GOG callee CSWGuiPanel::OnPanelRemoved maps to candidate call; decoy calls OnPanelAdded instead.
+0x0044eee0	0x007a2540	unsure			low	Thunk to SetGameOver; GOG callee unmapped; caller credit only; target name fits RemoveObject poorly.
+0x0090a550	0x0093ff30	unsure			low	Unnamed callees, GOG callees unmapped; REVIEW neighbour ties 0x0093ff30 to GetTextureDataPtr 0x0090a510; no anchor.
+0x00616990	0x0072fe30	mismatch		0x0072F110 CExoInputInternal::UpdateMouseDelta (absent)	medium	Trusted GOG callee absent from candidate, which makes no calls; body only stores into +0x410.
+0x0044eeb0	0x007a2510	unsure			low	Thunk to AddMoveToModuleMovie_2; GOG callee unmapped; caller credit only; target name fits AddObject poorly.

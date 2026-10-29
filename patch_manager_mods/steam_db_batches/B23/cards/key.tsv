@@ -1,0 +1,39 @@
+card_id	chunk	gog	steam_addr	kind	expected
+B23-1-01	1	0x0090a510	0x0093feb0	decoy_prev	mismatch
+B23-1-02	1	0x0090a510	0x0093ff70	decoy_next	mismatch
+B23-1-03	1	0x005b3a80	0x008bfe30	real	
+B23-1-04	1	0x005a72d0	0x008b3730	real	
+B23-1-05	1	0x00616990	0x0072fd10	decoy_prev	mismatch
+B23-1-06	1	0x00462840	0x0072f540	real	
+B23-1-07	1	0x00909e50	0x0093f7c0	decoy_prev	mismatch
+B23-1-08	1	0x0090a550	0x0093fb70	decoy_prev	mismatch
+B23-1-09	1	0x0090c8f0	0x0040df30	decoy_prev	mismatch
+B23-1-10	1	0x00909e50	0x0093f870	decoy_next	mismatch
+B23-1-11	1	0x0090c8f0	0x0040e480	decoy_next	mismatch
+B23-1-12	1	0x005d7fe0	0x00858b60	real	
+B23-1-13	1	0x0044eee0	0x007a2540	real	
+B23-1-14	1	0x0090a550	0x0093ff30	decoy_next	mismatch
+B23-1-15	1	0x00616990	0x0072fe30	decoy_next	mismatch
+B23-1-16	1	0x0044eeb0	0x007a2510	real	
+B23-2-01	2	0x00616990	0x0072fd90	real	
+B23-2-02	2	0x0090bab0	0x00941420	real	
+B23-2-03	2	0x0090ca10	0x0040e750	decoy_next	mismatch
+B23-2-04	2	0x0044eeb0	0x007a2380	decoy_prev	mismatch
+B23-2-05	2	0x00909e50	0x0093f830	real	
+B23-2-06	2	0x0090a510	0x0093ff30	real	
+B23-2-07	2	0x0090a550	0x0093feb0	real	
+B23-2-08	2	0x005d7fe0	0x00858a70	decoy_prev	mismatch
+B23-2-09	2	0x005a72d0	0x008b3630	decoy_prev	mismatch
+B23-2-10	2	0x0090a590	0x0093f870	real	
+B23-2-11	2	0x005a72d0	0x008b3750	decoy_next	mismatch
+B23-2-12	2	0x005d7fe0	0x00859250	decoy_next	mismatch
+B23-2-13	2	0x0090ca10	0x0040e360	decoy_prev	mismatch
+B23-2-14	2	0x0044eeb0	0x007a2540	decoy_next	mismatch
+B23-2-15	2	0x0044eee0	0x007a2510	decoy_prev	mismatch
+B23-2-16	2	0x0044eee0	0x007a2c80	decoy_next	mismatch
+B23-3-01	3	0x0090a590	0x0093f830	decoy_prev	mismatch
+B23-3-02	3	0x0090bab0	0x009410e0	decoy_prev	mismatch
+B23-3-03	3	0x0090ca10	0x0040e480	real	
+B23-3-04	3	0x0090c8f0	0x0040e360	real	
+B23-3-05	3	0x0090bab0	0x00941490	decoy_next	mismatch
+B23-3-06	3	0x0090a590	0x0093f8b0	decoy_next	mismatch

@@ -1,0 +1,106 @@
+[
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0044eeb0] Steam batch B23: CALLEE 7 (callers: HandleServerToPlayerCreatureUpdate_Add 0x804ad0, HandleServerToPlayerCreatureUpdate_VisEffect 0x806960, HandleServerToPlayerPlaceableUpdate_Add 0x80d050) | override: [a] graph: >10 mapped Steam callers all call AddObject, rival 0; order d=0; Haiku corrected_addr on decoy B23-2-14 points here",
+  "name": "CClientAIMaster::AddObject",
+  "source": "steam-db-B23",
+  "steam_addr": "0x007a2510"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0044eee0] Steam batch B23: CALLEE 2 (callers: UnloadArea 0x7a5fa0, Destructor_2 0x7ed5f0) | override: [a] graph: caller UnloadArea 0x7a5fa0->GOG 0x4529a0 calls RemoveObject only; order d=0; Haiku corrected_addr on decoy B23-2-15 points here",
+  "name": "CClientAIMaster::RemoveObject",
+  "source": "steam-db-B23",
+  "steam_addr": "0x007a2540"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=16; GOG 0x00462840] Steam batch B23: CALLEE 1 (callers: ProcessInput 0x7ac470); SIG 1.00 | override: [a] graph: 4 mapped callers (0x72c7e0/0x72f480/0x7ac470/0x7b5c10) call only Add, peers map to unnamed GOG fns",
+  "name": "CExoArrayList_CExoInputEvent_::Add",
+  "source": "steam-db-B23",
+  "steam_addr": "0x0072f540"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=0; GOG 0x005a72d0] Steam batch B23: CALLEE 1 (callees: OnPanelRemoved 0x40f4c0) | reviewer match with anchor: 0x0040F4C0 CSWGuiPanel::OnPanelRemoved",
+  "name": "CSWGuiContainer::OnPanelRemoved",
+  "source": "steam-db-B23",
+  "steam_addr": "0x008b3730"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=12; GOG 0x005b3a80] Steam batch B23: SIG 1.00 | reviewer match with anchor: 0x00416E30 CSWGuiTextParams::SetText",
+  "name": "CSWGuiPowersFeatsSkillsDebugMenu::CreateOption",
+  "source": "steam-db-B23",
+  "steam_addr": "0x008bfe30"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=12; GOG 0x005b60c0] Steam batch B23: CALLEE 1 (callers: Constructor 0x8c0cb0); SIG 1.00 | AUTO: CALLEE 1 (callers: Constructor 0x8c0cb0); SIG 1.00",
+  "name": "CSWGuiLoadModuleDebugMenu::CreateOption",
+  "source": "steam-db-B23",
+  "steam_addr": "0x008c17f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=0; GOG 0x005d7fe0] Steam batch B23: CALLEE 1 (callees: OnPanelRemoved 0x40f4c0) | reviewer match with anchor: 0x0040F4C0 CSWGuiPanel::OnPanelRemoved",
+  "name": "CSWGuiSaveNamePanel::OnPanelRemoved",
+  "source": "steam-db-B23",
+  "steam_addr": "0x00858b60"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00616990] Steam batch B23: CALLEE 2 (callees: UpdateMouseDelta 0x72f110; callers: ProcessInput 0x7ac470) | reviewer match with anchor: 0x0072F110 CExoInputInternal::UpdateMouseDelta",
+  "name": "CExoInput::UpdateMouseDelta",
+  "source": "steam-db-B23",
+  "steam_addr": "0x0072fd90"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00909e50] Steam batch B23: no content anchor (C0) | override: [a] graph: 2 unique mapped callers + callee hit; order d=0 vs 0x93f340/0x93f3d0",
+  "name": "CAuroraTexture::GetTextureDataPtr",
+  "source": "steam-db-B23",
+  "steam_addr": "0x0093f830"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0090a510] Steam batch B23: CALLEE 1 (callers: GetPtrToResHelperInfo 0x9402d0) | override: [a] graph: 4 unique mapped callers + callee hit; order d=0 vs 0x93fed0",
+  "name": "CAuroraLayeredTexture::GetTextureDataPtr",
+  "source": "steam-db-B23",
+  "steam_addr": "0x0093ff30"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0090bab0] Steam batch B23: gate evidence was for a corrected pick | override: [a] gate top 0x00941420 refuted (Haiku mismatch; order says GOG 0x90ba40); pick = 5 unique mapped callers + callee hit + order d=0 vs 0x941440<->0x90ba60",
+  "name": "CAuroraModel::GetModelDataPtr",
+  "source": "steam-db-B23",
+  "steam_addr": "0x00941490"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; cdecl retn=0; GOG 0x0090c8f0] Steam batch B23: CALLEE 2 (callers: SetExtent 0x8d0110, SetExtent 0x419ed0) | override: [a] graph: 10 mapped callers call Intersection only; order d=0; Haiku c2 reads the body as intersection",
+  "name": "CSWGuiExtent::Intersection",
+  "source": "steam-db-B23",
+  "steam_addr": "0x0040e360"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; cdecl retn=0; GOG 0x0090ca10] Steam batch B23: no content anchor (C0) | override: [a] graph: caller 0x8690a0->GOG 0x4f49f0 calls Union only; order d=0 between trusted 0x40e2c0/0x40e5a0; Haiku c1 card 11 reads the body as Union",
+  "name": "CSWGuiExtent::Union",
+  "source": "steam-db-B23",
+  "steam_addr": "0x0040e480"
+ }
+]
