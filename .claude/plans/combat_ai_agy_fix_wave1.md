@@ -13,7 +13,7 @@ Enlightenment 180, Force Sight 176, Force Crush 177, Revitalize 173-175, Wookiee
 | CAX.0 | Validate findings (Haiku swarm + Sonnet consolidate) | - | - | DONE | 4d559c24 | validated.tsv |
 | CAX.1 | Ingest: WIs from validated.tsv + play row CA-T10 | CAX.0 | - | DONE | 5321abd2 | WI-169..178 (7 ready, 3 hold) |
 | CAX.2 | Batch 1 (native DLLs): WI-169 ranged-ai controlled gate, WI-170 companion-ai F4, WI-171 Enlightenment 180 | CAX.1 | - | DONE | 84a643bb | plan + build + host tests |
-| CAX.3 | Batch 2 (party scripts): WI-172 Defensive sticky target, WI-173 buff picker, WI-174 O3 series, WI-175 Drain Force droids | CAX.2 | - | TODO | | |
+| CAX.3 | Batch 2 (party scripts): WI-172 Defensive sticky target, WI-173 buff picker, WI-174 O3 series, WI-175 Drain Force droids | CAX.2 | - | DONE | 74c8ac21 | WI-175 a706cdb0, WI-172 0558b663, WI-174 43046437, WI-173 74c8ac21; play rows d2b9b187; not installed |
 | CAX.4 | Hold items: WI-176 (O3 reject fallback), WI-177 (combo 29), WI-178 (intruder-first) | - | owner decisions | TODO | | ask user |
 
 ## fid -> WI map
