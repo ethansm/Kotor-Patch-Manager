@@ -373,9 +373,19 @@ int main() {
         KT_CHECK_EQ((long long)n, 2ll);
         KT_CHECK_EQ(o[0].resref, "iw_stungren_001"); KT_CHECK(o[0].item);
         KT_CHECK_EQ(o[1].resref, "ii_drdutldev_001"); KT_CHECK(o[1].item);
-        // a harmful row with a null resref (56, good 0, not row 0) yields nothing, and does not hide its neighbours
-        n = collectBuffs(makeCreature({ iconFx(56, -1, 1), iconFx(28, -1, 1) }), BuffDay, tNow, true, o, 8, true);
+        // a harmful row with a null resref (105 fire breath, good 0, not row 0) yields nothing, and does not hide its neighbours
+        n = collectBuffs(makeCreature({ iconFx(105, -1, 1), iconFx(28, -1, 1) }), BuffDay, tNow, true, o, 8, true);
         KT_CHECK_EQ((long long)n, 1ll); KT_CHECK_EQ(o[0].resref, "ip_slow"); KT_CHECK(!o[0].item);
+        // generator ROW_ICON fills: 56 (truncated 'ii_drdutldev_') -> spell 117's device on the disc, 107 enemy battle meditation -> ip_battlemed01
+        n = collectBuffs(makeCreature({ iconFx(56, -1, 1), iconFx(107, -1, 1) }), BuffDay, tNow, true, o, 8, true);
+        KT_CHECK_EQ((long long)n, 2ll);
+        KT_CHECK_EQ(o[0].resref, "ii_drdutldev_004"); KT_CHECK(o[0].item);
+        KT_CHECK_EQ(o[1].resref, "ip_battlemed01"); KT_CHECK(!o[1].item);
+        // generator SPELL_ALIAS: launcher grenade 247 = hand stun grenade 88, droid shield disruptor 2 (119) = tier 1 (118); 130 fire breath stays untracked
+        bool it = false;
+        KT_CHECK_EQ(iconForSpell(247, true, &it), iconForSpell(88, true, &it)); KT_CHECK_EQ(iconForSpell(247, true, &it), "iw_stungren_001"); KT_CHECK(it);
+        KT_CHECK_EQ(iconForSpell(119, true, &it), "ii_drdutldev_009"); KT_CHECK(it);
+        KT_CHECK(iconForSpell(130, true, &it) == nullptr);
     }
 
     return kt::Report("effects_test");
