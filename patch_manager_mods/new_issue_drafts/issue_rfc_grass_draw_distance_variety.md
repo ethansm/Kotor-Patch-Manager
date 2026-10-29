@@ -120,7 +120,8 @@ A later session at 150 m with all variety options on (314-492 bins, V-Sync 60) m
 ### Verification Status
 
 * **Played and passed:** banner and patch lines clean; grass to 150 m with a smooth fade; the distance/cost run above; the linked fade start slider.
-* **Running in play, logs clean, side-by-side comparison still to do:** Trim Hidden Grass, Smooth Grass Edges, GPU timing, all four variety options (each hook's counters fire; the on-vs-off look and fps comparison is next).
+* **Variety, played with an on/off comparison:** the grass looked better with the options on, at no measurable cost (grass pass 1.29-1.42 ms CPU with them off vs 1.31-1.32 ms on, at 492 bins). Varied Grass Pattern and Even Grass Spread stayed on in my install; Density Patches I left off.
+* **Running in play, logs clean:** Trim Hidden Grass, Smooth Grass Edges, GPU timing.
 * **Installed, not yet played:** Wind Throttle, Far Grass Thinning.
 * **Not started:** no GOG or native Linux/macOS hooks.
 * **Needs a port before a PR:** my local build uses shared headers that are not upstream yet (`CodePatch.h`, `IniKit.h`, `KpLog.h`, `FileWatch.h`, `SafeRead.h`, `ModConfigDecl.h`). The patch works without `mod-config` (ini only).
