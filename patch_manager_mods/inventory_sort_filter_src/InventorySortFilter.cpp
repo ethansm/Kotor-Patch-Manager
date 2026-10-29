@@ -33,6 +33,8 @@
 #include "SortOrderPage.h"
 #include "HudHost.h"           // K2HUD_PANEL_BUILD: the strip labels are cloned while the inventory layout is open (doc 11 VU4)
 #include "GuiKit.h"
+#include "PreviewCanvas.h"     // options-page preview list (VU7a): labels listed MUI_NOFREE, freed in pvDestroy
+#include "IsfPreview.h"       // pure preview model (isfprev::build / buildPrims)
 
 KP_LOG_PATCH("inventory-sort-filter");
 
@@ -161,12 +163,131 @@ bool mcRead(const char* path, const char* section, const char* key, char* out, i
     return isf::readPageValue(mcdecl::fileRead, path, section, key, out, cap);
 }
 bool mcWrite(const char* path, const char* section, const char* key, const char* val) {
-    return isf::writePageValue(mcdecl::fileWrite, path, section, key, val);
+    return isf::writePageValue(mcdecl::fileWrite, path, section, key, val, mcdecl::fileRead);   // the reader merges a cycle_states bit into the list
 }
 
 int32_t mcOnChange(void*, int, const char* id, int32_t requested, int) {
     logf("PAGE row=%s requested=%d", id, static_cast<int>(requested));
     return requested;
+}
+
+// ---- live preview list on the page (doc 11 VU7a; combat-hotbar CH6 precedent) ----
+// A mock backpack (IsfPreview.h kDemo) drawn from the page's CURRENT row values (g_page.get, not the INI), so a change redraws at once. Needs
+// mod-config with the description split; an older provider shows the rows only. The labels are ours (AddCustom MUI_NOFREE): pvDestroy frees them
+// through pvc::Canvas before the declarative page's own teardown (fills restored per label, PreviewCanvas.h).
+pvc::Canvas g_cv;
+void* g_pagePanel = nullptr;
+bool g_pvOn = false, g_pvLogged = false;
+unsigned g_pvFrame = 0;
+DWORD g_pvStart = 0;
+constexpr int kPvSplitPermille = 650;
+constexpr const char* kPvSolid = "uibit_fill_2wt";   // solid white: the tint is the colour (= CombatHotbar kPvSolid)
+constexpr float kPvBg[3] = {0.04f, 0.07f, 0.09f}, kPvStrip[3] = {0.08f, 0.16f, 0.18f}, kPvRow[3] = {0.07f, 0.12f, 0.14f}, kPvName[3] = {0.05f, 0.09f, 0.11f};
+constexpr float kPvTintText[3] = {1.00f, 0.45f, 0.20f};   // red-orange "cannot use" (the live tint colour family)
+float g_pvText[3] = {1.f, 1.f, 1.f};                      // the cloned label's own text colour, read at build
+bool g_pvTextOk = false;                                  // getTextColor gate (GuiKit.h setTextColor)
+signed char g_pvTinted[isfprev::kPoolSize];               // last text colour set per label: -1 unknown, 0 normal, 1 tinted
+char g_pvTextCache[isfprev::kPoolSize][64];               // last text per label (setText only on change)
+
+void* g_pvSolidImg = nullptr;
+int g_pvSolidTries = 0;
+void* pvSolid() {   // resolved lazily, a miss retried every 30th frame at most 20 times (CombatHotbar pvImage)
+    if (!g_pvSolidImg && g_pvSolidTries < 20 && (g_pvFrame % 30) == 0) { ++g_pvSolidTries; g_pvSolidImg = guikit::imageForRetry(kPvSolid); }
+    return g_pvSolidImg;
+}
+
+void pvText(int label, const char* t, bool tinted) {
+    if (label < 0 || label >= isfprev::kPoolSize) return;
+    if (strncmp(g_pvTextCache[label], t ? t : "", sizeof g_pvTextCache[label] - 1)) {
+        snprintf(g_pvTextCache[label], sizeof g_pvTextCache[label], "%s", t ? t : "");
+        g_cv.text(label, g_pvTextCache[label]);
+    }
+    const signed char want = tinted ? 1 : 0;
+    if (g_pvTextOk && g_pvTinted[label] != want) {
+        const float* c = tinted ? kPvTintText : g_pvText;
+        if (guikit::setTextColor(g_cv.w[label].c, c[0], c[1], c[2])) g_pvTinted[label] = want;
+    }
+}
+
+isfprev::Settings pvSettings() {
+    isfprev::Settings s;
+    const int so = g_page.get("sort_order");
+    s.sortOn = so != isf::SO_Vanilla;
+    s.order = so >= 0 && so <= 3 ? static_cast<isf::SortOrder>(so) : isf::SO_Category;
+    s.tint = g_page.get("tint") != 0;
+    s.cycle = g_page.get("cycle") != 0;
+    s.strip = g_page.get("strip") != 0;
+    s.mask = (g_page.get("cyc_new") ? 1u << isf::S_New : 0u) | (g_page.get("cyc_usable") ? 1u << isf::S_Usable : 0u) |
+             (g_page.get("cyc_upgrade") ? 1u << isf::S_Upgrade : 0u);
+    s.tick = static_cast<int>((GetTickCount() - g_pvStart) / 33);   // ~30 ticks a second: the model's 90-tick step = 3 s
+    return s;
+}
+
+void pvRefresh() {
+    if (!g_mcMenu.ok() || !g_pagePanel) return;
+    if (!g_pvOn) { g_cv.resync(); g_cv.hideAll(); return; }   // listed labels must stay hidden (mod-config shows every page item on entry)
+    ++g_pvFrame;
+    isfprev::Model m;
+    isfprev::build(pvSettings(), &m);
+    if (!g_cv.beginView(g_mcMenu.p, g_pagePanel, 0, 0, isfprev::kScreenW, isfprev::kScreenH)) { g_cv.hideAll(); return; }
+    isfprev::Prim pr[isfprev::kPoolSize];
+    const int n = isfprev::buildPrims(m, pr, isfprev::kPoolSize);
+    void* solid = pvSolid();
+    for (int i = 0; i < n; ++i) {
+        const isfprev::Prim& p = pr[i];
+        const pvc::Rect r = {p.x, p.y, p.w, p.h};
+        switch (p.kind) {
+            case isfprev::PK_BG: g_cv.put(p.label, r, solid, kPvBg, 1.f); break;
+            case isfprev::PK_STRIP: g_cv.put(p.label, r, solid, kPvStrip, 1.f); break;
+            case isfprev::PK_ROW: g_cv.put(p.label, r, solid, kPvRow, 1.f); break;
+            case isfprev::PK_ICON: {
+                float c[3];
+                isfprev::categoryColor(p.row >= 0 ? m.rows[p.row].category : 6, c);
+                g_cv.put(p.label, r, solid, c, 1.f);
+                break;
+            }
+            default:   // text labels carry a fill like the combat-hotbar caption (a label's text sits on its own border)
+                g_cv.put(p.label, r, solid, p.kind == isfprev::PK_NAME ? kPvName : p.kind == isfprev::PK_CAPTION ? kPvBg : kPvStrip, 1.f);
+                pvText(p.label, p.text, p.tinted);
+                break;
+        }
+    }
+    g_cv.end();
+    if (!g_pvLogged && g_pvFrame > 60) {
+        g_pvLogged = true;
+        logf("PREVIEW frame=%u prims=%d solid=%s shown=%d of %d line1=\"%s\"", g_pvFrame, n, solid ? "ok" : "missing", m.shown, m.offered, m.line1);
+    }
+}
+
+// DeclHooks::onBuilt (Options ctor window, after the rows): the preview labels, then the description split.
+void pvOnBuilt(void*, uint32_t page, void* panel) {
+    g_pvOn = false; g_pagePanel = panel; g_pvFrame = 0; g_pvLogged = false; g_pvStart = GetTickCount();
+    if (!g_pvSolidImg) g_pvSolidTries = 0;
+    for (int i = 0; i < isfprev::kPoolSize; ++i) { g_pvTinted[i] = -1; g_pvTextCache[i][0] = 0; }
+    if (!g_mcMenu.hasModal() || !g_mcMenu.hasDescSplit()) { logf("PREVIEW skipped: provider has no description split (older mod-config); the rows work as before"); return; }
+    const K2MenuUiApi* ui = g_mcMenu.p;
+    if (!g_cv.build(ui, panel, page, isfprev::kPoolSize)) { logf("PREVIEW skipped: label pool not complete (%d of %d listed)", g_cv.n, isfprev::kPoolSize); return; }
+    g_pvTextOk = guikit::getTextColor(g_cv.w[isfprev::kLblCaption].c, g_pvText);
+    for (int i : {isfprev::kLblStripText1, isfprev::kLblStripText2}) guikit::setAlign(g_cv.w[i].c, 9);
+    for (int r = 0; r < isfprev::kMaxRows; ++r) guikit::setAlign(g_cv.w[isfprev::kLblRow0 + 3 * r + 2].c, 9);
+    guikit::setAlign(g_cv.w[isfprev::kLblCaption].c, 18);
+    if (!ui->SetDescSplit(page, kPvSplitPermille)) { logf("PREVIEW skipped: SetDescSplit(%u, %d) refused (listed labels stay hidden)", page, kPvSplitPermille); return; }
+    g_pvOn = true;
+    logf("PREVIEW BUILD ok: %d labels, split %d permille, textColor=%s", isfprev::kPoolSize, kPvSplitPermille, g_pvTextOk ? "ok" : "unreadable");
+}
+
+void pvOnTick(void*) { pvRefresh(); }
+
+// Options dtor entry (mod-config has unlinked its controls by now): free the preview labels it listed MUI_NOFREE, then the page's own teardown.
+void KPATCH_CALL pvDestroy(void* panel, void* user) {
+    if (g_mcMenu.ok()) {
+        const int freed = g_cv.destroy(g_mcMenu.p, g_page.page);
+        if (freed) logf("PREVIEW DESTROY freed=%d", freed);
+    } else {
+        g_cv.reset();
+    }
+    g_pvOn = false; g_pagePanel = nullptr;
+    mcdecl::Page::cbDestroy(panel, user);
 }
 
 void mcPageInit(const KPatchApi* api) {
@@ -182,7 +303,10 @@ void mcPageInit(const KPatchApi* api) {
     g_page.io.read = mcRead;
     g_page.io.write = mcWrite;
     g_page.hooks.onChange = mcOnChange;
+    g_page.hooks.onBuilt = pvOnBuilt;
+    g_page.hooks.onTick = pvOnTick;
     g_mcEntry = g_page.entry(isf::kPageId);
+    g_mcEntry.destroy = pvDestroy;   // frees the preview labels before the declarative layer's own teardown
 }
 
 // Connect lazily (each client retries on every 256th call), register once, only when the provider has option rows.
@@ -739,7 +863,7 @@ extern "C" void __cdecl SortFilterRowSelect(int ebp) {
 extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
     if (KpLog_HasCore()) {
-        logf("inventory-sort-filter 0.4.0-dev loaded (KpLog core); pid=%lu", (unsigned long)GetCurrentProcessId());
+        logf("inventory-sort-filter 0.5.0-dev loaded (KpLog core); pid=%lu", (unsigned long)GetCurrentProcessId());
         logf("ini path: %s", IniName);
         loadIni(true);
     }
@@ -775,7 +899,7 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
     if (reason == DLL_PROCESS_ATTACH) {
         char cwd[MAX_PATH] = "?"; GetCurrentDirectoryA(MAX_PATH, cwd);
         rotateFallbackLog(cwd);
-        logf("inventory-sort-filter 0.4.0-dev loaded; cwd=%s pid=%lu", cwd, (unsigned long)GetCurrentProcessId());
+        logf("inventory-sort-filter 0.5.0-dev loaded; cwd=%s pid=%lu", cwd, (unsigned long)GetCurrentProcessId());
         // Bare names go to the Windows directory (Wine: C:\\windows), so anchor the INI to the game folder.
         if (GetCurrentDirectoryA(MAX_PATH, cwd) > 0) snprintf(IniName, sizeof IniName, "%s\\inventory_sort_filter.ini", cwd);
         logf("ini path: %s", IniName);

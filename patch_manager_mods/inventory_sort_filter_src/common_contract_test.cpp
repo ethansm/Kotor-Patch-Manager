@@ -34,6 +34,7 @@ static SIZE_T fakeVQ(LPCVOID a, MEMORY_BASIC_INFORMATION* m, SIZE_T n) {
 #include "SortOrderPage.h"
 #include "HudHost.h"
 #include "GuiKit.h"
+#include <map>
 #include <string>
 #include <sys/mman.h>
 #include <unistd.h>
@@ -72,44 +73,86 @@ static int dumpWords(int addr, int bytes, bool* got) {   // returns words read; 
 }
 
 // ---- Mod Configuration page (WI-155; SortOrderPage.h + InventorySortFilter.cpp mcPageInit / mcPagePoll) ----
-// The shipped INI text the page edits (inventory_sort_filter.ini layout: [Inventory], comment lines, other keys). g_fakeIni stands for the file.
-static std::string g_fakeIni;
-static bool fakeRaw(const char*, const char* section, const char* key, char* out, int cap) {
-    return mcdecl::iniGet(g_fakeIni.data(), g_fakeIni.size(), section, key, out, cap);
+// The INI files the page edits, as an in-memory map keyed by section + key (inventory_sort_filter.ini and kplog.ini). Values are stored as written.
+static std::map<std::string, std::string> g_kv;
+static std::string kvKey(const char* section, const char* key) { return std::string(section) + '\x1f' + key; }
+static void setKv(const char* section, const char* key, const char* value) { g_kv[kvKey(section, key)] = value; }
+static bool fakeRaw(const char*, const char* section, const char* key, char* out, int cap) {   // = mcdecl::fileRead
+    const auto it = g_kv.find(kvKey(section, key));
+    if (it == g_kv.end() || cap < 1) return false;
+    snprintf(out, cap, "%s", it->second.c_str());
+    return true;
 }
 static bool fakeRead(const char* path, const char* section, const char* key, char* out, int cap) {   // = mcRead in InventorySortFilter.cpp
     return isf::readPageValue(fakeRaw, path, section, key, out, cap);
 }
 static std::string g_lastWrite;
-static bool fakeRawWrite(const char*, const char*, const char*, const char* val) { g_lastWrite = val; return true; }
+static bool fakeRawWrite(const char*, const char* section, const char* key, const char* val) {   // = mcdecl::fileWrite: stores the value, remembers it
+    g_kv[kvKey(section, key)] = val; g_lastWrite = val; return true;
+}
+static bool failSortWrite(const char* path, const char* section, const char* key, const char* val) {   // the sort switch write fails, the rest succeeds
+    return strcmp(key, "sort") ? fakeRawWrite(path, section, key, val) : false;
+}
+// readPageValue for an [Inventory] key through the fake file; "<none>" when the read fails.
+static std::string invRead(const char* key) {
+    char o[32] = {};
+    return isf::readPageValue(fakeRaw, "inventory_sort_filter.ini", "Inventory", key, o, sizeof o) ? std::string(o) : std::string("<none>");
+}
+// The stored [Inventory] value as the file has it; "<none>" when absent.
+static std::string invCell(const char* key) {
+    const auto it = g_kv.find(kvKey("Inventory", key));
+    return it == g_kv.end() ? std::string("<none>") : it->second;
+}
+// writePageValue as the mod calls it: the reader is passed so a cycle write merges into the current list.
+static bool invWrite(const char* key, const char* val) {
+    return isf::writePageValue(fakeRawWrite, "inventory_sort_filter.ini", "Inventory", key, val, fakeRaw);
+}
 
 static void moddecl_contract() {
     static mcdecl::Page page;   // ~35 KB: static storage (ModConfigDecl.h)
     char err[96] = {};
     HCHECK("mcdecl::Page::load accepts isf::kPageSchema (mcPageInit; a rejected schema leaves the mod without its page)",
            page.load(isf::kPageSchema, strlen(isf::kPageSchema), err, sizeof err));
-    HEQ("kPageSchema declares two rows (sort_order, log_level)", page.decl.nRows, 2);
+    HEQ("kPageSchema declares eight rows (sort_order, tint, cycle, cyc_new, cyc_usable, cyc_upgrade, strip, log_level)", page.decl.nRows, 8);
+    {   // row order: the page shows the rows in this order
+        static const char* const ids[8] = {"sort_order", "tint", "cycle", "cyc_new", "cyc_usable", "cyc_upgrade", "strip", "log_level"};
+        bool ok = true;
+        for (int k = 0; k < 8; ++k) ok = ok && !strcmp(page.decl.rows[k].id, ids[k]);
+        HCHECK("kPageSchema row ids are in the order sort_order, tint, cycle, cyc_new, cyc_usable, cyc_upgrade, strip, log_level", ok);
+    }
+    {   // toggle rows: 0/1 toggles, default On, bound to inventory_sort_filter.ini [Inventory] with the key the page io maps
+        static const char* const togRows[6][2] = {{"tint", "tint"}, {"cycle", "cycle"}, {"cyc_new", "cycle_states.new"},
+                                                  {"cyc_usable", "cycle_states.usable"}, {"cyc_upgrade", "cycle_states.upgrade"}, {"strip", "strip"}};
+        bool ok = true;
+        for (int k = 0; k < 6; ++k) {
+            const int t = page.decl.find(togRows[k][0]);
+            ok = ok && t >= 0 && page.decl.rows[t].kind == mcdecl::K_TOGGLE && page.decl.rows[t].def == 1 &&
+                 !strcmp(page.decl.rows[t].ini, "inventory_sort_filter.ini") && !strcmp(page.decl.rows[t].section, "Inventory") &&
+                 !strcmp(page.decl.rows[t].key, togRows[k][1]);
+        }
+        HCHECK("tint, cycle, cyc_new / cyc_usable / cyc_upgrade and strip are toggles, default On, bound to [Inventory] with the key the page io maps", ok);
+    }
+    page.io.read = fakeRead;
     {   // Debug logging row: kplog.ini [inventory-sort-filter] level, index <-> the word the KpLog core parses
         const int L = page.decl.find("log_level");
-        HCHECK("kPageSchema has the log_level row", L == 1);
+        HCHECK("kPageSchema has the log_level row (last)", L == 7);
         if (L >= 0) {
             const mcdecl::RowDecl& r = page.decl.rows[L];
             HCHECK("log_level is a list row Off, On, Verbose", r.kind == mcdecl::K_LIST && r.nChoices == 3 && !strcmp(r.choices[0], "Off") &&
                    !strcmp(r.choices[1], "On") && !strcmp(r.choices[2], "Verbose"));
             HCHECK("log_level is bound to kplog.ini [inventory-sort-filter] level (section == patch id)",
                    !strcmp(r.ini, "kplog.ini") && !strcmp(r.section, isf::kPageId) && !strcmp(r.key, "level"));
-            page.io.read = fakeRead;
-            g_fakeIni = "[global]\nenabled=1\n[inventory-sort-filter]\nenabled=1\nlevel=debug\nchannels=*\n";
+            g_kv.clear(); setKv(isf::kPageId, "level", "debug");
             HEQ("level=debug shows On", page.startValue(L), 1);
-            g_fakeIni = "[inventory-sort-filter]\nlevel= TRACE \n";
+            g_kv.clear(); setKv(isf::kPageId, "level", " TRACE ");
             HEQ("level=TRACE (case, spaces) shows Verbose", page.startValue(L), 2);
-            g_fakeIni = "[inventory-sort-filter]\nlevel=info\n";
+            g_kv.clear(); setKv(isf::kPageId, "level", "info");
             HEQ("level=info shows Off", page.startValue(L), 0);
-            g_fakeIni = "[inventory-sort-filter]\nlevel=3\n";
+            g_kv.clear(); setKv(isf::kPageId, "level", "3");
             HEQ("level=3 (digit debug) shows On", page.startValue(L), 1);
-            g_fakeIni = "[inventory-sort-filter]\nlevel=warn\n";
+            g_kv.clear(); setKv(isf::kPageId, "level", "warn");
             HEQ("level=warn shows Off", page.startValue(L), 0);
-            g_fakeIni = "[action-hotbar]\nlevel=debug\n";
+            g_kv.clear(); setKv("action-hotbar", "level", "debug");
             HEQ("another mod's level is ignored (default Off)", page.startValue(L), 0);
             const char* const words[3] = {"info", "debug", "trace"};
             bool ok = true;
@@ -118,8 +161,6 @@ static void moddecl_contract() {
                 ok = ok && isf::writePageValue(fakeRawWrite, "kplog.ini", isf::kPageId, "level", d) && g_lastWrite == words[k];
             }
             HCHECK("writePageValue stores info / debug / trace for 0 / 1 / 2", ok);
-            HCHECK("writePageValue passes sort_order through unchanged",
-                   isf::writePageValue(fakeRawWrite, "inventory_sort_filter.ini", "Inventory", "sort_order", "2") && g_lastWrite == "2");
         }
     }
     const int i = page.decl.find("sort_order");
@@ -139,24 +180,30 @@ static void moddecl_contract() {
            !strcmp(page.entry(isf::kPageId).id, "inventory-sort-filter") && page.entry(isf::kPageId).build && page.entry(isf::kPageId).enter);
 
     // Start value: the row reads the key from the INI when the page is built (Page::startValue through the injected io).
-    page.io.read = fakeRead;
-    g_fakeIni = "[Inventory]\r\n; backpack order\r\nsort=1\r\nsort_order=2\r\ntint=1\r\n";
+    g_kv.clear(); setKv("Inventory", "sort", "1"); setKv("Inventory", "sort_order", "2"); setKv("Inventory", "tint", "1");
     HEQ("start value = the INI's sort_order digit", page.startValue(i), 2);
-    g_fakeIni = "[Inventory]\nsort=1\n";
+    g_kv.clear(); setKv("Inventory", "sort", "1");
     HEQ("start value = default 0 when the INI has no sort_order key", page.startValue(i), 0);
     // The shown value is the order loadIni applies (isf::parseSortOrder), including the word spellings WI-154 accepts.
-    g_fakeIni = "[Inventory]\nsort_order=name\n";
+    g_kv.clear(); setKv("Inventory", "sort_order", "name");
     HEQ("a hand-edited sort_order=name shows Name (index 2)", page.startValue(i), 2);
-    g_fakeIni = "[Inventory]\nsort_order= VANILLA \n";
+    g_kv.clear(); setKv("Inventory", "sort_order", " VANILLA ");
     HEQ("sort_order words are case-insensitive and space-trimmed like loadIni (Vanilla = 3)", page.startValue(i), 3);
-    g_fakeIni = "[Inventory]\nsort_order=base\n";
+    g_kv.clear(); setKv("Inventory", "sort_order", "base");
     HEQ("sort_order=base shows Base item (1)", page.startValue(i), 1);
-    g_fakeIni = "[Inventory]\nsort_order=7\n";
+    g_kv.clear(); setKv("Inventory", "sort_order", "7");
     HEQ("an out-of-range sort_order shows Category (0): loadIni falls back to category, not to the nearest choice", page.startValue(i), 0);
-    g_fakeIni = "[Inventory]\nsort_order=bogus\n";
+    g_kv.clear(); setKv("Inventory", "sort_order", "bogus");
     HEQ("an unknown sort_order word shows Category (0), like loadIni", page.startValue(i), 0);
-    g_fakeIni = "[Other]\nsort_order=2\n[Inventory]\nsort=1\n";
+    g_kv.clear(); setKv("Other", "sort_order", "2"); setKv("Inventory", "sort", "1");
     HEQ("sort_order in another section is ignored", page.startValue(i), 0);
+    // sort = 0 (the sort switch off) shows Vanilla whatever the order digit says; sort = 1 leaves the order alone.
+    g_kv.clear(); setKv("Inventory", "sort", "0"); setKv("Inventory", "sort_order", "1");
+    HEQ("sort=0 with sort_order=1 shows Vanilla (3): the sort switch wins", page.startValue(i), 3);
+    g_kv.clear(); setKv("Inventory", "sort", "0");
+    HEQ("sort=0 with no sort_order key shows Vanilla (3)", page.startValue(i), 3);
+    g_kv.clear(); setKv("Inventory", "sort", "1"); setKv("Inventory", "sort_order", "1");
+    HEQ("sort=1 with sort_order=1 shows Base item (1)", page.startValue(i), 1);
 
     // Index == WI-154's parseSortOrder digit: the stored schema index i is the order parseSortOrder("i") returns, and it is the order of the word.
     {
@@ -167,15 +214,42 @@ static void moddecl_contract() {
             char digit[16];
             snprintf(digit, sizeof digit, "%d", c);
             ok = ok && isf::parseSortOrder(digit) == orders[c] && isf::parseSortOrder(words[c]) == orders[c] && static_cast<int>(orders[c]) == c;
-            // what the page writes (the digit) and what it then shows after the INI is re-read
-            const char one[] = "[Inventory]\nsort_order=0\n";
-            char o[64]; size_t m = 0;
-            ok = ok && iniw::setKey(one, sizeof one - 1, "Inventory", "sort_order", digit, o, sizeof o, &m);
-            g_fakeIni.assign(o, m);
-            ok = ok && page.startValue(i) == c;
+            // what the page writes (the digit, with its sort switch) and what it then shows after the file is read back
+            g_kv.clear(); setKv("Inventory", "sort", "1");
+            ok = ok && isf::writePageValue(fakeRawWrite, "inventory_sort_filter.ini", "Inventory", "sort_order", digit) && page.startValue(i) == c;
         }
         HCHECK("schema choice index i == isf::parseSortOrder(\"i\") == the order of the word (0 category, 1 base, 2 name, 3 vanilla), and the written digit reads back as i", ok);
     }
+
+    // Sort order write: sort_order and the sort switch are one change (sort 0 = Vanilla, 1 = the other orders); a failed sort write fails the change.
+    g_kv.clear();
+    HCHECK("writing sort_order 3 (Vanilla) stores sort_order=3 and sort=0", invWrite("sort_order", "3") && invCell("sort_order") == "3" && invCell("sort") == "0");
+    HCHECK("writing sort_order 2 (Name) stores sort_order=2 and sort=1", invWrite("sort_order", "2") && invCell("sort_order") == "2" && invCell("sort") == "1");
+    HCHECK("the sort_order write reports failure when the sort write fails", !isf::writePageValue(failSortWrite, "inventory_sort_filter.ini", "Inventory", "sort_order", "1"));
+    // Filter cycle states: cycle_states.<name> reads one bit of [Inventory] cycle_states (default new,usable,upgrade); writes merge in canonical order.
+    g_kv.clear(); setKv("Inventory", "cycle_states", "new,upgrade");
+    HCHECK("cycle_states.new reads 1 from \"new,upgrade\"", invRead("cycle_states.new") == "1");
+    HCHECK("cycle_states.usable reads 0 from \"new,upgrade\"", invRead("cycle_states.usable") == "0");
+    HCHECK("cycle_states.upgrade reads 1 from \"new,upgrade\"", invRead("cycle_states.upgrade") == "1");
+    HEQ("the cyc_usable row shows 0 from \"new,upgrade\"", page.startValue(page.decl.find("cyc_usable")), 0);
+    HEQ("the cyc_new row shows 1 from \"new,upgrade\"", page.startValue(page.decl.find("cyc_new")), 1);
+    g_kv.clear();
+    HCHECK("cycle_states.usable reads 1 when the key is absent (default new,usable,upgrade)", invRead("cycle_states.usable") == "1");
+    HEQ("the cyc_usable row shows 1 when cycle_states is absent", page.startValue(page.decl.find("cyc_usable")), 1);
+    g_kv.clear(); setKv("Inventory", "cycle_states", "new,usable,upgrade");
+    HCHECK("writing cycle_states.usable 0 on \"new,usable,upgrade\" stores \"new,upgrade\"", invWrite("cycle_states.usable", "0") && invCell("cycle_states") == "new,upgrade");
+    HCHECK("writing cycle_states.usable 1 on \"new,upgrade\" stores the canonical \"new,usable,upgrade\"", invWrite("cycle_states.usable", "1") && invCell("cycle_states") == "new,usable,upgrade");
+    g_kv.clear(); setKv("Inventory", "cycle_states", "new,usable,upgrade");
+    HCHECK("clearing all three states stores an empty list", invWrite("cycle_states.new", "0") && invWrite("cycle_states.usable", "0") && invWrite("cycle_states.upgrade", "0") && invCell("cycle_states") == "");
+    HCHECK("setting usable on an empty list stores \"usable\"", invWrite("cycle_states.usable", "1") && invCell("cycle_states") == "usable");
+    g_kv.clear();
+    HCHECK("with no cycle_states key, clearing usable merges into the default list and stores \"new,upgrade\"", invWrite("cycle_states.usable", "0") && invCell("cycle_states") == "new,upgrade");
+    HCHECK("a cycle write without the reader is refused (no list to merge into)", !isf::writePageValue(fakeRawWrite, "inventory_sort_filter.ini", "Inventory", "cycle_states.usable", "0"));
+    HCHECK("an unknown cycle state name is refused", !invWrite("cycle_states.bogus", "1"));
+    // Plain toggles pass through raw.
+    g_kv.clear(); setKv("Inventory", "tint", "0");
+    HCHECK("tint passes through raw (0 reads 0)", invRead("tint") == "0");
+    HCHECK("writePageValue passes tint through raw", invWrite("tint", "1") && invCell("tint") == "1");
 
     // Persist: a page change is written by iniw::setKey into [Inventory] only, keeping the other keys and comments.
     const char in[] = "[Inventory]\n; backpack order\nsort=1\nsort_order=0\ntint=1\n";
