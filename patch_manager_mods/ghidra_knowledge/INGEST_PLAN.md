@@ -46,11 +46,11 @@ D6 R2 NO-GO root cause was missing names / caller context, so coverage is the le
 | I10b | CRT G1 lane: sprintf/memset/free rejected by G1 (Steam ANALYSIS already says `_sprintf`/`_memset`/`_free`) -> extract rows with the FLIRT name -> ledger `ingest-crt` -> cards `--decoy-pool kdb` -> Haiku -> score | DONE | spec §I10 |
 | I10c | Label suspects (7, B17/B18): graph check each Steam fn vs its GOG label + neighbours; record verdicts in `steam_db_batches/GOG_LABEL_SUSPECTS.md` ($0, no KDB write) | DONE | spec §I10 |
 | I10d | Persist B22 + I10b promote (user OK); user decision on the 13 B20 likely (`finalize B20 --with-likely` = persist at likely); gap re-measure, memory | DONE | spec §I10 |
-| I11a | Plan rows + `.claude/research/ingest/i11/shortlist.tsv` (10 ambiguous rows with <= 6 named GOG candidates + their Steam peers) | TODO | spec §I11 |
-| I11b | `rea_facts.py run --addrs F --topic B23-s1` (static `--no-live` first, then live); lint count unchanged | TODO | spec §I11 |
-| I11c | Decide pairs: map Steam xref sources / vtable callsites / live callers through `trusted_map`; `decide.tsv` verdict decided/tie/no_facts; gate < 3 decided -> I11e or NO-GO | TODO | spec §I11 |
-| I11d | Batch B23 from decided rows: candidates -> gates -> cards `--chunk 16 --decoys 10 --facts --rea` -> Haiku -> finalize -> Opus gate -> persist dry run | TODO | spec §I11 |
-| I11e | rea-recon for `tie` leftovers (only if the I11c gate says so; <= 2 agents x <= 3 addrs) | TODO | spec §I11 |
+| I11a | Plan rows + `.claude/research/ingest/i11/shortlist.tsv` (10 ambiguous rows with <= 6 named GOG candidates + their Steam peers) | DONE | spec §I11 |
+| I11b | `rea_facts.py run --addrs F --topic B23-s1` (static `--no-live` first, then live); lint count unchanged | DONE | spec §I11 |
+| I11c | Decide pairs: map Steam xref sources / vtable callsites / live callers through `trusted_map`; `decide.tsv` verdict decided/tie/no_facts; gate < 3 decided -> I11e or NO-GO | DONE | spec §I11 |
+| I11d | Batch B23 from decided rows: candidates -> gates -> cards `--chunk 16 --decoys 10 --facts --rea` -> Haiku -> finalize -> Opus gate -> persist dry run | DONE | spec §I11 |
+| I11e | rea-recon for `tie` leftovers (only if the I11c gate says so; <= 2 agents x <= 3 addrs) | SKIPPED | spec §I11 |
 
 ## Cost log
 
