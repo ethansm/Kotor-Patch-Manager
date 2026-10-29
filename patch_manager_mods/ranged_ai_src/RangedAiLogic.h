@@ -89,9 +89,9 @@ inline void suppressedSuffix(char* buf, int size, unsigned n) {
 
 // Why RangedAiHold did not hold a party creature (debug D H1 line); first failing condition in the order of the hold expression.
 enum class NoHold { None, HoldOff, IsPC, StanceNotInMask, NoRanged, ShotNotBlocked, OutOfRange, AreaMismatch, TargetNotCreature };
-inline NoHold noHoldReason(bool holdCfg, bool isPC, bool stanceInMask, bool ranged, bool blocked, bool inRange, bool sameArea, bool targetCreature) {
+inline NoHold noHoldReason(bool holdCfg, bool controlled, bool stanceInMask, bool ranged, bool blocked, bool inRange, bool sameArea, bool targetCreature) {
     if (!holdCfg) return NoHold::HoldOff;
-    if (isPC) return NoHold::IsPC;
+    if (controlled) return NoHold::IsPC;
     if (!stanceInMask) return NoHold::StanceNotInMask;
     if (!ranged) return NoHold::NoRanged;
     if (!blocked) return NoHold::ShotNotBlocked;

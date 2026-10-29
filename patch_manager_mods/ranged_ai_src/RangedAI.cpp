@@ -21,6 +21,7 @@
 // Log (0.4.0): shared KpLog.h (channel main), see the "log" section; behaviour unchanged from 0.3.0.
 // 0.4.1: bounded logging (own WARN budget, throttled H2 / S2 failures, S1/S2 budget marker) and ranged_ai.ini debug_log=1 (default on):
 // D lines for decisions that did not act.
+// 0.4.2: WI-169 hold gate uses the controlled creature (0x51C8F0), not +0x10E8.
 // Behaviour applies only to the stances in hold_stances / retarget_stances (shipped: 16), so the vanilla stances stay
 // vanilla. Everything is re-read from ranged_ai.ini once a second, no restart needed.
 #define WIN32_LEAN_AND_MEAN
@@ -42,8 +43,13 @@ namespace {
 
 constexpr int FnRangeWeaponEquipped = 0x0056E1E0;   // thiscall(creature), no stack args, returns bool
 constexpr int FnGetArea = (int)gameaddr::ServerObjectGetArea;   // thiscall(creature), returns area*
+// 0.4.2: CServerExoApp::GetPlayerCreatureId (KDB B9): thiscall(serverApp), returns the controlled leader id (0x7F000000 if none)
+constexpr int FnPlayerId = 0x0051C8F0;
+// G_App: CAppManager* global; the server app sits at +8. isControlled checks [server+4] before calling FnPlayerId.
+constexpr int G_App = 0x00A1B4A4;
 using RangedFn = int(__thiscall*)(int);
 using AreaFn = int(__thiscall*)(int);
+using Fn0 = int(__thiscall*)(int);
 
 // creature offsets
 constexpr int CrId = 0x04, CrPos = 0x94, CrEndAttack = 0x52C, CrLastBlocked = 0x558, CrIsPC = 0x10E8,
@@ -232,6 +238,14 @@ int stanceOf(int cr) {
 
 bool haveRanged(int cr) { return reinterpret_cast<RangedFn>(FnRangeWeaponEquipped)(cr) != 0; }
 
+// 0.4.2: the creature the player controls now. +0x10E8 stays on the Exile across a leader switch (RE_AGENT_GUIDE 3.8),
+// so it cannot tell "player-driven" from "AI-driven". Unreadable server: fall back to +0x10E8.
+bool isControlled(int cr, int id) {
+    int app = rd<int>(G_App, 0), server = app ? rd<int>(app, 8) : 0;
+    if (!server || !rd<int>(server, 4)) return rd<int>(cr, CrIsPC) != 0;   // 0x51C620 dereferences [server+4]
+    return reinterpret_cast<Fn0>(FnPlayerId)(server) == id;
+}
+
 } // namespace
 
 // E-H1. ECX = attacker, EBP = AIActionPhysicalAttacks frame. Return 1 => hold (end the attack action).
@@ -259,7 +273,8 @@ extern "C" int __cdecl RangedAiHold(int attacker, int ebp) {
 
     float lim = maxR + 0.1f; lim *= lim;
     bool inRange = maxR > 1.0f && dist2 <= lim;   // a zero/garbage weapon range never counts as in range
-    bool hold = g_cfg.hold && party1 && !isPC && stance >= 0 && stance < 32 && ((g_cfg.holdMask >> stance) & 1) &&
+    int ctrl = isControlled(attacker, id) ? 1 : 0;
+    bool hold = g_cfg.hold && party1 && !ctrl && stance >= 0 && stance < 32 && ((g_cfg.holdMask >> stance) & 1) &&
                 ranged && los == 0 && inRange && myArea && myArea == tgtArea && ttype == ObjTypeCreature;
     if (hold) ++t->holds;
 
@@ -269,16 +284,16 @@ extern "C" int __cdecl RangedAiHold(int attacker, int ebp) {
                        ((rd<int>(ebp, F_BackoffFlag) != 0) << 6);
         if (t->logged < 16 || sig != t->sig || now - t->lastLog > 2000) {
             V3 me = pos(attacker, CrPos), tp = target ? pos(target, CrPos) : V3{0, 0, 0}, lb = pos(attacker, CrLastBlocked);
-            logf("H1 t=%lu cr=%08x party=%d pc=%d stance=%d ranged=%d los=%d dist2=%.2f max=%.2f desired=%.2f inRange=%d area=%08x/%08x "
+            logf("H1 t=%lu cr=%08x party=%d pc=%d ctrl=%d stance=%d ranged=%d los=%d dist2=%.2f max=%.2f desired=%.2f inRange=%d area=%08x/%08x "
                  "tgt=%08x ttype=%d backoff=%d rangedLocal=%d end52c=%08x me=(%.2f,%.2f,%.2f) tgtpos=(%.2f,%.2f,%.2f) lastBlocked=(%.2f,%.2f,%.2f) -> hold=%d",
-                 now, id, party, isPC, stance, ranged, los, dist2, maxR, desired, inRange, myArea, tgtArea, target, ttype,
+                 now, id, party, isPC, ctrl, stance, ranged, los, dist2, maxR, desired, inRange, myArea, tgtArea, target, ttype,
                  rd<int>(ebp, F_BackoffFlag), rd<int>(ebp, F_RangedFlag), endFlag, me.x, me.y, me.z, tp.x, tp.y, tp.z, lb.x, lb.y, lb.z, hold);
             t->sig = sig; t->lastLog = now; ++t->logged;
         }
         summary();
     }
     if (!hold && dbgOn()) {   // debug: why a party creature was not held
-        rai::NoHold why = rai::noHoldReason(g_cfg.hold, isPC != 0, stance >= 0 && stance < 32 && ((g_cfg.holdMask >> stance) & 1), ranged != 0, los == 0, inRange,
+        rai::NoHold why = rai::noHoldReason(g_cfg.hold, ctrl != 0, stance >= 0 && stance < 32 && ((g_cfg.holdMask >> stance) & 1), ranged != 0, los == 0, inRange,
                                            myArea && myArea == tgtArea, ttype == ObjTypeCreature);
         DWORD now = GetTickCount();
         DbgSlot* d = rai::slotFor(g_dH1, id);
@@ -297,6 +312,7 @@ extern "C" int __cdecl RangedAiRetarget(int attacker, int ebp) {
     if (!party && !g_cfg.logAll) return 0;
     int stance = stanceOf(attacker);
     int ranged = haveRanged(attacker) ? 1 : 0;
+    // 0.4.2: gate stays on +0x10E8 (not isControlled): returning 1 on a controlled companion acts as IsPC, as the engine does for a controlled Exile.
     bool gate = g_cfg.retarget && party != 0 && !isPC && stance >= 0 && stance < 32 && ((g_cfg.retargetMask >> stance) & 1) && ranged;
     int id = rd<int>(attacker, CrId);
     Track2* t = rai::slotFor(g_tr2, id);
@@ -309,8 +325,9 @@ extern "C" int __cdecl RangedAiRetarget(int attacker, int ebp) {
         // per creature: the first 16 lines, then a changed decision or the time gate (2 s; 250 ms with debug_log)
         if (rai::shouldLogDecision(t->logged, 16, sig, t->sig, now, t->lastLog, rai::retargetGateMs(g_cfg.debugLog))) {
             V3 me = pos(attacker, CrPos), lb = pos(attacker, CrLastBlocked);
-            logf("H2 t=%lu cr=%08x party=%d pc=%d stance=%d ranged=%d los=%d me=(%.2f,%.2f,%.2f) lastBlocked=(%.2f,%.2f,%.2f) -> retarget=%d",
-                 now, id, party, isPC, stance, ranged, los, me.x, me.y, me.z, lb.x, lb.y, lb.z, gate);
+            int ctrl = isControlled(attacker, id) ? 1 : 0;
+            logf("H2 t=%lu cr=%08x party=%d pc=%d ctrl=%d stance=%d ranged=%d los=%d me=(%.2f,%.2f,%.2f) lastBlocked=(%.2f,%.2f,%.2f) -> retarget=%d",
+                 now, id, party, isPC, ctrl, stance, ranged, los, me.x, me.y, me.z, lb.x, lb.y, lb.z, gate);
             t->sig = sig; t->lastLog = now; ++t->logged;
         }
         summary();
@@ -490,7 +507,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
 BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
     if (reason == DLL_PROCESS_ATTACH) {
         char cwd[MAX_PATH] = "?"; GetCurrentDirectoryA(MAX_PATH, cwd);
-        snprintf(g_loadLine, sizeof g_loadLine, "ranged-ai 0.4.1 loaded; cwd=%s pid=%lu tick=%lu", cwd, (unsigned long)GetCurrentProcessId(), GetTickCount());
+        snprintf(g_loadLine, sizeof g_loadLine, "ranged-ai 0.4.2 loaded; cwd=%s pid=%lu tick=%lu", cwd, (unsigned long)GetCurrentProcessId(), GetTickCount());
         if (GetCurrentDirectoryA(MAX_PATH, cwd) > 0) snprintf(IniName, sizeof IniName, "%s\\ranged_ai.ini", cwd);
         snprintf(g_iniLine, sizeof g_iniLine, "ini path: %s", IniName);
         loadIni(true);

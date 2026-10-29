@@ -134,6 +134,8 @@ static void testNoHold() {
     kt::Check("all good -> None", noHoldReason(true, false, true, true, true, true, true, true) == NoHold::None);
     kt::Check("hold=0", noHoldReason(false, false, true, true, true, true, true, true) == NoHold::HoldOff);
     kt::Check("PC", noHoldReason(true, true, true, true, true, true, true, true) == NoHold::IsPC);
+    // AI-driven Exile (+0x10E8=1, not controlled) can hold
+    kt::Check("AI-driven Exile holds", noHoldReason(true, false, true, true, true, true, true, true) == NoHold::None);
     kt::Check("stance", noHoldReason(true, false, false, true, true, true, true, true) == NoHold::StanceNotInMask);
     kt::Check("no ranged", noHoldReason(true, false, true, false, true, true, true, true) == NoHold::NoRanged);
     kt::Check("not blocked", noHoldReason(true, false, true, true, false, true, true, true) == NoHold::ShotNotBlocked);
