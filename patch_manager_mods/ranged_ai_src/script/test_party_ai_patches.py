@@ -368,5 +368,25 @@ class O3Test(unittest.TestCase):
         self.assertGreater(_chain_mismatches(CHAIN_VANILLA), 0)
 
 
+class DR1DrainForceTest(unittest.TestCase):
+    def test_dr1_drain_force_party_only(self):
+        entries = [e for e in P.PATCHES if e[0] == "DR1"]
+        self.assertEqual(len(entries), 1, "DR1")
+        pid, scope, fname, old, new = entries[0]
+        self.assertEqual(scope, "party")
+        self.assertEqual(fname, P.G)
+        self.assertTrue(new.startswith(old), "DR1 new must be old plus the added block")
+        self.assertIn("GetIdFromTalent(tUse) >= 153 && GetIdFromTalent(tUse) <= 155", new)
+        self.assertIn("IsObjectPartyMember(OBJECT_SELF)", new)
+        added = new[len(old):]
+        for nid in (19, 48, 177):
+            with self.subTest(spell=nid):
+                self.assertNotRegex(added, r"\b%d\b" % nid)
+                self.assertNotIn("== %d" % nid, added)
+        for name in ("FORCE_POWER_BREACH", "SUPPRESS"):
+            with self.subTest(power=name):
+                self.assertNotIn(name, added)
+
+
 if __name__ == "__main__":
     unittest.main()

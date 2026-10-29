@@ -412,6 +412,35 @@ PATCHES = [
      "        talent tNone;\n"
      "        return tNone;\n"
      "    }\n"),
+    # DR1 (party only, WI-175): Drain Force 153-155 steals no Force points from droids (k_inc_force.nss Drain Force case),
+    # so it joins the droid list of GN_CheckNonDroidForcePower: against a droid the routine switches to a feat attack.
+    ("DR1", "party", G,
+     "           GetIdFromTalent(tUse) == FORCE_POWER_MASTER_FORCE_SCREAM // DJS-OEI 8/19/2004\n"
+     "           )\n"
+     "        {\n"
+     "            if(GetRacialType(oTarget) == RACIAL_TYPE_DROID)\n"
+     "            {\n"
+     "                bSwitch = TRUE;\n"
+     "            }\n"
+     "        }\n"
+     "    }\n",
+     "           GetIdFromTalent(tUse) == FORCE_POWER_MASTER_FORCE_SCREAM // DJS-OEI 8/19/2004\n"
+     "           )\n"
+     "        {\n"
+     "            if(GetRacialType(oTarget) == RACIAL_TYPE_DROID)\n"
+     "            {\n"
+     "                bSwitch = TRUE;\n"
+     "            }\n"
+     "        }\n"
+     "    }\n"
+     "    //Party AI fix DR1 (party only, WI-175): Drain Force 153-155 steals no FP from droids (k_inc_force.nss Drain Force case),\n"
+     "    //so it joins the powers above: against a droid the routine switches to a feat attack.\n"
+     "    if(IsObjectPartyMember(OBJECT_SELF) && GetTypeFromTalent(tUse) == TALENT_TYPE_FORCE &&\n"
+     "       GetIdFromTalent(tUse) >= 153 && GetIdFromTalent(tUse) <= 155 && GetRacialType(oTarget) == RACIAL_TYPE_DROID)\n"
+     "    {\n"
+     "        GN_MyPrintString(\"GENERIC DEBUG *************** Party D DR1: Drain Force vs droid, switched to a feat\");\n"
+     "        bSwitch = TRUE;\n"
+     "    }\n"),
     # O3 (party only, option B, owner decision 2026-10-25): the AoE centre keeps the vanilla choice; after the power is
     # rolled for it, a lasting area power needs 2 unaffected enemies within 4 m of the centre (helper in party_ai_fixes.nss).
     # Runs after both branches of the droid test, so the Jedi Support centre path gets the same rule either way.
