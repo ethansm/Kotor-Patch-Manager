@@ -85,7 +85,7 @@ addresses = ["0x00743540", "0x00743847"]
 addresses = ["0x008A69AD", "0x008A7350", "0x008A8172", "0x008CD2C0"]
 
 [files."patch_manager_mods/inventory_sort_filter_src/InventorySortFilter.cpp"]
-addresses = ["0x005BD6A0", "0x006076D0", "0x0073F750", "0x0077B670", "0x008A75F0", "0x008A7E22", "0x008A7E76", "0x008A8478", "0x008A8B30", "0x008A8CF0", "0x008B1D00", "0x0099A8B8", "0x0099A8BC"]
+addresses = ["0x005BD6A0", "0x006076D0", "0x0073F750", "0x0077B670", "0x008A75F0", "0x008A7E22", "0x008A7E76", "0x008A8478", "0x008A8B30", "0x008A6170", "0x008A8CF0", "0x008B1D00", "0x0099A8B8", "0x0099A8BC", "0x009A72AC"]   # 0.4.0 (doc 11 VU4): 0x009A72AC CSWGuiInGameInventory vftable, not in DB; ctor 0x008A6170 asm 008a61bd MOV [ECX],0x9a72ac (mods678_research/dump_excerpts/008a6170.asm:22)
 
 [files."patch_manager_mods/k2_fog_distance_src/K2FogDistance.cpp"]
 addresses = ["0x00464C80", "0x00464C8A", "0x0046A980", "0x0046A989", "0x0046AADD"]   # not in DB except 0x00464C80 (Scene::SetFogRange); dump asm evidence doc 49; 0.1.1: 0x00464C8A SetFogRange detour (00464c80.asm FLD [EBP+8]; vtable slot per REA ledger 20261029_scene-fog-range-writers.tsv)

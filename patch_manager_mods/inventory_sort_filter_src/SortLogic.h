@@ -271,6 +271,47 @@ inline unsigned parseCycleStates(const char* s) {
     return m;
 }
 
+// ---- strip above LB_ITEMS (doc 11 VU4) ----------------------------------------------------------------
+// Line 1 lists the cycle states: All first, then the enabled ones in cycle order, the active one in brackets
+// ("[All]  New  Can Equip  Upgradeable"). Line 2 is the sort order plus the count ("Sort: Category    13 of 22 shown",
+// or "22 items" when nothing is hidden). Both truncate at cap, always NUL-terminated. kStripBytes holds the longest line.
+constexpr int kStripBytes = 96;
+inline const char* stripNameOf(State s) {
+    switch (s) {
+    case S_New: return "New";
+    case S_Usable: return "Can Equip";
+    case S_Upgrade: return "Upgradeable";
+    default: return "All";
+    }
+}
+inline void stripLine1(State active, unsigned enabledMask, char* out, int cap) {
+    if (!out || cap <= 0) return;
+    char buf[kStripBytes] = "";
+    int n = 0;
+    auto seg = [&](State s) {
+        if (n > 0) n += snprintf(buf + n, sizeof buf - n, "  ");
+        if (n < (int)sizeof buf) n += snprintf(buf + n, sizeof buf - n, s == active ? "[%s]" : "%s", stripNameOf(s));
+        if (n > (int)sizeof buf - 1) n = (int)sizeof buf - 1;
+    };
+    seg(S_All);
+    for (State c : kCycleOrder) if (enabledMask & (1u << c)) seg(c);
+    snprintf(out, cap, "%s", buf);
+}
+inline const char* sortNameOf(SortOrder o) {
+    switch (o) {
+    case SO_Base: return "Base item";
+    case SO_Name: return "Name";
+    case SO_Vanilla: return "Vanilla";
+    default: return "Category";
+    }
+}
+inline void stripLine2(SortOrder order, bool sortOn, int shown, int offered, char* out, int cap) {
+    if (!out || cap <= 0) return;
+    const char* name = sortOn ? sortNameOf(order) : "Vanilla";
+    if (shown == offered) snprintf(out, cap, "Sort: %s    %d items", name, offered);
+    else snprintf(out, cap, "Sort: %s    %d of %d shown", name, shown, offered);
+}
+
 // ---- open upgrade slot predicate (doc 11 R9) ---------------------------------------------------------
 // type = GetUpgradeType(item): 0 none, 1 melee weapon, 2 ranged, 3 armor, 4 gloves/other.
 // slots[i] = *(int*)(item+0x2F4+4*i); -1 means empty. Type 1 never fills slot index 1 (the upgrade screen skips it).

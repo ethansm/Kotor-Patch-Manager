@@ -32,6 +32,8 @@ static SIZE_T fakeVQ(LPCVOID a, MEMORY_BASIC_INFORMATION* m, SIZE_T n) {
 #include "ModConfigDecl.h"
 #include "ProviderClient.h"
 #include "SortOrderPage.h"
+#include "HudHost.h"
+#include "GuiKit.h"
 #include <string>
 #include <sys/mman.h>
 #include <unistd.h>
@@ -281,5 +283,12 @@ int main() {
         KpLog_SetFallbackFile(nullptr);
         remove(path);
     }
+    // ---- VU4 strip: HudHost.h PANEL_BUILD context + GuiKit panel list (onPanelBuild / stripLive in InventorySortFilter.cpp) ----
+    HEQ("K2HUD_PANEL_BUILD is phase 4 (the phase Register is called with)", (long long)K2HUD_PANEL_BUILD, 4ll);
+    HEQ("K2HudContext.panelVtbl sits right after panel (struct_size gate before the read)", (long long)offsetof(K2HudContext, panelVtbl), (long long)(offsetof(K2HudContext, panel) + 4));
+    HEQ("K2HudContext.panel is an int32 (cast to uintptr_t for GuiKit)", (long long)sizeof(((K2HudContext*)0)->panel), 4ll);
+    HEQ("panel control list array at +0x24 (stripLive re-checks the labels there)", (long long)guikit::Panel_CtlArray, 0x24ll);
+    HEQ("panel control count at +0x28 (stripLabel reads the append index)", (long long)guikit::Panel_CtlCount, 0x28ll);
+    HEQ("CreateFail CF_Template = 3 (optional LBL_MOULDING3 frame may be missing)", (long long)guikit::CF_Template, 3ll);
     return kt::Report("common_contract_test (inventory_sort_filter)");
 }

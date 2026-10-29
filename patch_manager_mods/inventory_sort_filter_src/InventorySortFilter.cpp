@@ -23,7 +23,7 @@
 #define INIW_FILE_API 1   // ModConfigDecl.h ini-bound rows write through IniWrite.h's file API (doc 46); before the first include of it
 #define MCDECL_FILE_API 1
 
-#include "../_shared/SafeRead.h"
+#include "SafeRead.h"   // bare, like GuiKit.h / GameAddr.h: one copy (Common) for every header
 #include "SortLogic.h"
 #include "GameAddr.h"
 #include "KpLog.h"
@@ -31,6 +31,8 @@
 #include "ModConfigDecl.h"     // Options -> Mod Configuration page (isf::kPageSchema)
 #include "ProviderClient.h"
 #include "SortOrderPage.h"
+#include "HudHost.h"           // K2HUD_PANEL_BUILD: the strip labels are cloned while the inventory layout is open (doc 11 VU4)
+#include "GuiKit.h"
 
 KP_LOG_PATCH("inventory-sort-filter");
 
@@ -54,6 +56,8 @@ constexpr int TextVtable = 0x009876B4;
 constexpr int LabelTextOff = 0xD8, TextRendererOff = 0x14, TextStringSubOff = 0x18;
 
 constexpr int PanelFilterLabelOff = 0x16B8;   // LBL_FILTER (static caption "Filter")
+constexpr int PanelItemsListOff = 0x588;      // LB_ITEMS (inline list box)
+constexpr uint32_t InventoryVtable = 0x009A72AC;   // CSWGuiInGameInventory vftable, set by the ctor 0x008A6170 (008a61bd MOV [ECX],0x9a72ac)
 constexpr int PanelRowArrayOff = 0x24B0, PanelRowCountOff = 0x24B4, PanelSelectedIdOff = 0x24C8;
 constexpr int ItemIdOff = 0x14, ItemFlagsOff = 0x2C8, ItemBaseOff = 0x0C, ItemUpgradeSlotsOff = 0x2F4, ItemNameOff = 0x2C0;
 constexpr int BaseSlotMaskOff = 0x04, BaseGenderReqOff = 0xB4, CrStatsOff = 0x1198, StatsGenderOff = 0xE0;
@@ -127,6 +131,7 @@ struct Config {
     bool sort = false, tint = false, cycle = false;
     unsigned mask = 0;
     isf::SortOrder order = isf::SO_Category;   // [Inventory] sort_order (WI-154); vanilla also forces sort off
+    bool strip = true;                         // [Inventory] strip (VU4): own strip above LB_ITEMS; read at PANEL_BUILD, applies at the next open
 };
 Config g_cfg;
 DWORD g_lastIni = 0;
@@ -215,9 +220,11 @@ void loadIni(bool force) {
     char cs[128] = {};
     GetPrivateProfileStringA("Inventory", "cycle_states", "new,usable,upgrade", cs, sizeof cs, IniName);
     c.mask = isf::parseCycleStates(cs);
-    if (c.sort != g_cfg.sort || c.tint != g_cfg.tint || c.cycle != g_cfg.cycle || c.mask != g_cfg.mask || c.order != g_cfg.order || force)
-        logf("config: sort=%d tint=%d cycle=%d cycle_mask=%x sort_order=%d", c.sort, c.tint, c.cycle, c.mask,
-             (int)c.order);
+    c.strip = GetPrivateProfileIntA("Inventory", "strip", 1, IniName) != 0;
+    if (c.sort != g_cfg.sort || c.tint != g_cfg.tint || c.cycle != g_cfg.cycle || c.mask != g_cfg.mask || c.order != g_cfg.order ||
+        c.strip != g_cfg.strip || force)
+        logf("config: sort=%d tint=%d cycle=%d cycle_mask=%x sort_order=%d strip=%d", c.sort, c.tint, c.cycle, c.mask,
+             (int)c.order, c.strip);
     g_cfg = c;
 }
 
@@ -275,7 +282,22 @@ int g_panel = 0;                   // panel instance the state belongs to
 char g_caption[isf::kCaptionBytes] = "Filter";     // caption last written by us
 bool g_labelDumped = false;
 
+// VU4 strip: labels cloned at K2HUD_PANEL_BUILD for one inventory panel instance. No destroy API: the panel list owns them, so a
+// new inventory panel just replaces the handles. idx1/idx2 = their panel-list index; stripLive re-checks the list before every write.
+struct Strip { int panel; uintptr_t line1, line2, frame; int idx1, idx2; bool placed, warned; int replaced, lbX, lbY, lbW, lbH; };
+Strip g_strip = {};
+k2hud::Client g_hud;   // hud-host k2.hud@1; connect() in KPatchInit, poll() from the populate / tab hooks retries
+bool g_stripStaleLogged = false;
+
+bool stripLive(int panel) {
+    if (!panel || g_strip.panel != panel || !g_strip.line1 || !g_strip.line2) return false;
+    const int arr = rd<int>(panel, guikit::Panel_CtlArray), cnt = rd<int>(panel, guikit::Panel_CtlCount);
+    return arr && g_strip.idx2 < cnt && rd<int>(arr, 4 * g_strip.idx1) == static_cast<int>(g_strip.line1) &&
+           rd<int>(arr, 4 * g_strip.idx2) == static_cast<int>(g_strip.line2);
+}
+
 void captionTo(int panel, const char* text) {
+    if (stripLive(panel)) text = "Filter";   // the strip shows the state; the top bar stays vanilla (owner, v4b)
     if (!strcmp(g_caption, text)) return;
     if (KP_ENABLED(chMain, KPLOG_DEBUG) && !g_labelDumped) { g_labelDumped = true; dumpMem("LBL_FILTER", panel + PanelFilterLabelOff, 0x120); }
     setLabelText(panel, text);
@@ -405,6 +427,96 @@ void captionCountTo(int panel) {
     captionTo(panel, text);
 }
 
+// Places LB_ITEMS one strip lower and the strip labels in the freed band. The strip height is the 3840x1600 layout's 133 of 877 px,
+// scaled with the list height. Runs at PANEL_BUILD and again at each refresh until the list has a usable extent; re-applies (logged
+// once) when something else moved the list back.
+void stripPlace(int panel) {
+    const uintptr_t lb = static_cast<uintptr_t>(panel + PanelItemsListOff);
+    int x = 0, y = 0, w = 0, h = 0;
+    if (!guikit::getExtent(lb, &x, &y, &w, &h)) { if (!g_strip.warned) logf("STRIP: WARN LB_ITEMS extent unreadable"); g_strip.warned = true; return; }
+    if (g_strip.placed) {
+        const int sh = g_strip.lbH * 133 / 877;
+        if (x == g_strip.lbX && y == g_strip.lbY + sh && w == g_strip.lbW && h == g_strip.lbH - sh) return;
+        if (++g_strip.replaced > 3) return;   // something keeps resizing the list: stop fighting it (logged 3 times)
+        logf("STRIP: WARN LB_ITEMS moved to %d,%d %dx%d after placement, re-applying (%d/3)", x, y, w, h, g_strip.replaced);
+        g_strip.placed = false;
+    }
+    g_strip.lbX = x; g_strip.lbY = y; g_strip.lbW = w; g_strip.lbH = h;
+    if (w < 200 || h < 300) {   // not laid out yet (retried at each refresh) or an unexpected layout
+        if (!g_strip.warned) logf("STRIP: WARN LB_ITEMS extent %d,%d %dx%d too small, list left as is", x, y, w, h);
+        g_strip.warned = true;
+        return;
+    }
+    const int sh = h * 133 / 877, in = h * 16 / 877, lh = h * 48 / 877;
+    if (!guikit::setRect(lb, x, y + sh, w, h - sh)) { logf("STRIP: WARN LB_ITEMS setRect failed"); return; }
+    int ax = 0, ay = 0, aw = 0, ah = 0;
+    guikit::getExtent(lb, &ax, &ay, &aw, &ah);
+    logf("STRIP: LB_ITEMS %d,%d %dx%d -> %d,%d %dx%d (strip %d px)", x, y, w, h, ax, ay, aw, ah, sh);
+    if (g_strip.frame) { guikit::setRect(g_strip.frame, x, y, w, sh); guikit::setVisible(g_strip.frame, true); guikit::setClickable(g_strip.frame, false); }
+    guikit::setRect(g_strip.line1, x + in, y + h * 14 / 877, w - 2 * in, lh);
+    guikit::setRect(g_strip.line2, x + in, y + h * 70 / 877, w - 2 * in, lh);
+    for (uintptr_t c : {g_strip.line1, g_strip.line2}) { guikit::setVisible(c, true); guikit::setClickable(c, false); }
+    g_strip.placed = true;
+}
+
+// Strip text for this populate: shown = rows that reached the list, offered = backpack rows the engine handed us.
+void stripRefresh(int panel, int shown, int offered) {
+    if (!stripLive(panel)) {
+        if (g_strip.panel && g_strip.panel != panel && !g_stripStaleLogged) {
+            g_stripStaleLogged = true;
+            logf("STRIP: populate on panel %08x, strip belongs to %08x: not touched", panel, g_strip.panel);
+        }
+        return;
+    }
+    stripPlace(panel);
+    isf::State st;
+    if (!isf::stateOf(filterMode(), g_extra, &st)) st = isf::S_Count;   // weapon/armour/... tab: nothing in brackets
+    char l1[isf::kStripBytes], l2[isf::kStripBytes];
+    isf::stripLine1(st, g_cfg.cycle ? g_cfg.mask : 0u, l1, sizeof l1);
+    isf::stripLine2(g_cfg.order, g_cfg.sort, shown, offered, l2, sizeof l2);
+    guikit::setText(g_strip.line1, l1);
+    guikit::setText(g_strip.line2, l2);
+    logd("STRIP: \"%s\" | \"%s\"", l1, l2);
+}
+
+// Hidden, click-through clone of a layout label, appended to the panel list; *idx = its list index. 0 on failure (why logged at WARN).
+uintptr_t stripLabel(uintptr_t panel, const char* tag, const char* what, int* idx, bool required) {
+    int why = guikit::CF_None;
+    uint32_t bv = 0;
+    const uintptr_t c = guikit::createLabelFromTemplate(panel, tag, &why, &bv);
+    if (!c) { logf("STRIP: %s %s label (%s) create failed why=%d vtable=%08x", required ? "WARN" : "no", what, tag, why, (unsigned)bv); return 0; }
+    guikit::setVisible(c, false);
+    guikit::setClickable(c, false);
+    const int before = rd<int>(static_cast<int>(panel), guikit::Panel_CtlCount, -1);
+    if (!guikit::appendToPanel(panel, c)) { logf("STRIP: WARN %s label append failed (control %08x left hidden)", what, (unsigned)c); return 0; }
+    if (idx) *idx = before;
+    return c;
+}
+
+// K2HUD_PANEL_BUILD (hud-host 0.6.0+): every panel's layout load, layout still open. Only the inventory panel gets a strip.
+void KPATCH_CALL onPanelBuild(const K2HudContext* ctx, void*) {
+    if (!ctx || ctx->struct_size < offsetof(K2HudContext, panelVtbl) + sizeof(ctx->panelVtbl) || !ctx->panel) return;
+    if (ctx->panelVtbl != InventoryVtable) return;
+    saferead::beginScope();
+    loadIni(false);
+    g_strip = {};
+    g_stripStaleLogged = false;
+    if (!g_cfg.strip) { logf("STRIP: off (strip=0), panel %08x untouched", (unsigned)ctx->panel); return; }
+    const uintptr_t panel = static_cast<uintptr_t>(static_cast<uint32_t>(ctx->panel));
+    Strip s = {};
+    s.panel = ctx->panel;
+    s.frame = stripLabel(panel, "LBL_MOULDING3", "frame", nullptr, false);   // optional: the strip is readable without it
+    s.line1 = stripLabel(panel, "LBL_FILTER", "line 1", &s.idx1, true);
+    s.line2 = s.line1 ? stripLabel(panel, "LBL_FILTER", "line 2", &s.idx2, true) : 0;
+    if (!s.line1 || !s.line2) {
+        logf("STRIP: WARN not built for panel %08x, old caption behaviour", (unsigned)ctx->panel);
+        return;
+    }
+    g_strip = s;
+    logf("STRIP: built for panel %08x (frame=%d line1 #%d line2 #%d)", (unsigned)ctx->panel, s.frame ? 1 : 0, s.idx1, s.idx2);
+    stripPlace(ctx->panel);
+}
+
 void startPopulate(int panel, int ebp) {
     if (panel != g_panel) {
         logf("panel instance %08x (was %08x): reset extra filter/caption", panel, g_panel);
@@ -452,6 +564,7 @@ extern "C" void __cdecl SortFilterBumperNext(int computedMode, int panel) { bump
 
 // H6a. ECX = panel, [esp+4] = tab control. Returns 1 when the click is consumed.
 extern "C" int __cdecl SortFilterTabClick(int panel, int ctrl) {
+    g_hud.poll();
     saferead::beginScope();
     loadIni(false);
     int clicked = rd<int>(ctrl, TabClickedOff, -1);
@@ -481,6 +594,7 @@ extern "C" int __cdecl SortFilterTabClick(int panel, int ctrl) {
 extern "C" void __cdecl SortFilterBufferRow(int ebp) {
     saferead::beginScope();
     BufTimer bufTimer;
+    g_hud.poll();
     loadIni(false);
     int panel = rd<int>(ebp, F_Panel), item = rd<int>(ebp, F_Item), cobj = rd<int>(ebp, F_Cobj);
     int creature = rd<int>(ebp, F_Creature);
@@ -555,6 +669,7 @@ extern "C" void __cdecl SortFilterFlush(int ebp) {
         g_nTinted = 0;   // the rows at those indices may now be equipped rows
         normaliseState(panel);
         captionCountTo(panel);   // empty filter: g_n is 0 here
+        stripRefresh(panel, 0, 0);
         logd("flush: no backpack rows this populate (mode=%d extra=%d)", filterMode(), g_extra);
         return;
     }
@@ -593,6 +708,7 @@ extern "C" void __cdecl SortFilterFlush(int ebp) {
         }
     }
     captionCountTo(panel);   // g_n is final; emitBuffered below empties the buffer
+    stripRefresh(panel, g_seen - g_dropped, g_seen);
     emitBuffered(panel, cobj, ebp);
     g_inPop = false; g_selSet = false;
 }
@@ -623,12 +739,16 @@ extern "C" void __cdecl SortFilterRowSelect(int ebp) {
 extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
     if (KpLog_HasCore()) {
-        logf("inventory-sort-filter 0.3.1-dev loaded (KpLog core); pid=%lu", (unsigned long)GetCurrentProcessId());
+        logf("inventory-sort-filter 0.4.0-dev loaded (KpLog core); pid=%lu", (unsigned long)GetCurrentProcessId());
         logf("ini path: %s", IniName);
         loadIni(true);
     }
     mcPageInit(api);
     mcPagePoll();
+    g_hud.init(api, "inventory-sort-filter");
+    g_hud.onConnect = [](bool ok, const char* why) { logf("HUD k2.hud %s: %s (PANEL_BUILD needs hud-host 0.6.0+)", ok ? "ok" : "unavailable", why); };
+    g_hud.add(K2HUD_PANEL_BUILD, 300, onPanelBuild);
+    g_hud.connect();
 }
 
 // Keeps the previous session as <log>.1 (one previous, replaced each time), like the other KpLog mods. Runs at attach before the first logf.
@@ -655,7 +775,7 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
     if (reason == DLL_PROCESS_ATTACH) {
         char cwd[MAX_PATH] = "?"; GetCurrentDirectoryA(MAX_PATH, cwd);
         rotateFallbackLog(cwd);
-        logf("inventory-sort-filter 0.3.1-dev loaded; cwd=%s pid=%lu", cwd, (unsigned long)GetCurrentProcessId());
+        logf("inventory-sort-filter 0.4.0-dev loaded; cwd=%s pid=%lu", cwd, (unsigned long)GetCurrentProcessId());
         // Bare names go to the Windows directory (Wine: C:\\windows), so anchor the INI to the game folder.
         if (GetCurrentDirectoryA(MAX_PATH, cwd) > 0) snprintf(IniName, sizeof IniName, "%s\\inventory_sort_filter.ini", cwd);
         logf("ini path: %s", IniName);

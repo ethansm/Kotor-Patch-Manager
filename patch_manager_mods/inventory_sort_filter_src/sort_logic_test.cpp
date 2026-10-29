@@ -378,6 +378,27 @@ int main() {
             int nv = 0; CHECK(fillTiedNames(big.data(), (int)big.size(), [&](Entry&) { ++nv; }, SO_Vanilla) == 0 && nv == 0);
         }
     }
+    {   // VU4 strip lines
+        char b[kStripBytes];
+        const unsigned all3 = (1u << S_New) | (1u << S_Usable) | (1u << S_Upgrade);
+        stripLine1(S_All, all3, b, sizeof b); CHECK(!strcmp(b, "[All]  New  Can Equip  Upgradeable"));
+        stripLine1(S_New, all3, b, sizeof b); CHECK(!strcmp(b, "All  [New]  Can Equip  Upgradeable"));
+        stripLine1(S_Usable, all3, b, sizeof b); CHECK(!strcmp(b, "All  New  [Can Equip]  Upgradeable"));
+        stripLine1(S_Upgrade, all3, b, sizeof b); CHECK(!strcmp(b, "All  New  Can Equip  [Upgradeable]"));
+        stripLine1(S_All, (1u << S_New) | (1u << S_Usable), b, sizeof b); CHECK(!strcmp(b, "[All]  New  Can Equip"));
+        stripLine1(S_All, 0, b, sizeof b); CHECK(!strcmp(b, "[All]"));
+        stripLine1(S_All, all3, b, 8); CHECK(!strcmp(b, "[All]  "));
+        stripLine1(S_All, all3, b, 1); CHECK(b[0] == 0);
+        stripLine2(SO_Category, true, 13, 22, b, sizeof b); CHECK(!strcmp(b, "Sort: Category    13 of 22 shown"));
+        stripLine2(SO_Category, true, 22, 22, b, sizeof b); CHECK(!strcmp(b, "Sort: Category    22 items"));
+        stripLine2(SO_Base, true, 22, 22, b, sizeof b); CHECK(!strcmp(b, "Sort: Base item    22 items"));
+        stripLine2(SO_Name, true, 0, 5, b, sizeof b); CHECK(!strcmp(b, "Sort: Name    0 of 5 shown"));
+        stripLine2(SO_Vanilla, true, 1, 1, b, sizeof b); CHECK(!strcmp(b, "Sort: Vanilla    1 items"));
+        stripLine2(SO_Name, false, 3, 3, b, sizeof b); CHECK(!strcmp(b, "Sort: Vanilla    3 items"));
+        stripLine2(SO_Category, true, 1024, 1024, b, 8); CHECK(!strcmp(b, "Sort: C"));
+        stripLine2(SO_Category, true, 1, 2, b, 1); CHECK(b[0] == 0);
+        stripLine1(S_All, all3, nullptr, 8); stripLine2(SO_Name, true, 1, 2, b, 0);   // no write, no crash
+    }
     printf(g_fail ? "sort_logic_test: %d FAILED\n" : "sort_logic_test: ALL PASS\n", g_fail);
     return g_fail ? 1 : 0;
 }
