@@ -18,6 +18,11 @@
  *                          only for the HUD panel (vtable 0x0099DCC4), once per HUD layout load. The layout is still open while
  *                          the callbacks run, so guikit::createLabelFromTemplate + appendToPanel are valid there. ctx.panel ==
  *                          ctx.hud == the HUD panel; ctx.menu == 0, ctx.targetType == -1. ctx.panel is only valid in this phase.
+ *   K2HUD_PANEL_BUILD      hud-host 0.6.0+: same source (0x0040F5A0, layout still open), but fires for EVERY panel's layout load
+ *                          (inventory, character, options, ... and the HUD, after its K2HUD_BUILD). ctx.panel = that panel,
+ *                          ctx.panelVtbl = its vtable (consumers filter on it), ctx.hud = the last HUD seen (may be 0), ctx.menu == 0,
+ *                          ctx.targetType == -1. Read ctx.panelVtbl only when ctx->struct_size covers it. On an older provider
+ *                          Register(K2HUD_PANEL_BUILD, ...) fails (bad phase), so a consumer can tell the phase is unavailable.
  * ctx.target / ctx.targetType use -1 for "none" (the engine's 0xFF).
  *
  * Register: returns a token > 0, or <= 0 on failure (null fn, bad phase, table full). Callbacks of a phase run in priority order
@@ -37,7 +42,8 @@
 #define K2HUD_TARGET_MENU_PRE  1
 #define K2HUD_TARGET_MENU_POST 2   /* hud-host 0.2.0+: PopulateMenus exit, after a PRE */
 #define K2HUD_BUILD            3   /* hud-host 0.3.0+: 0x0040F5A0, HUD panel only, layout still open */
-#define K2HUD_PHASE_COUNT      4
+#define K2HUD_PANEL_BUILD      4   /* hud-host 0.6.0+: 0x0040F5A0, every panel, layout still open; filter on ctx.panelVtbl */
+#define K2HUD_PHASE_COUNT      5
 
 #ifdef __cplusplus
 extern "C" {
@@ -55,7 +61,8 @@ typedef struct K2HudContext {
     int32_t forceUnusable;   /* engine "force powers unusable" state at this call */
     int32_t target;          /* current target object pointer ([esp+0xC]), 0 = none */
     int32_t targetType;      /* current target type, -1 = none (0xFF) */
-    int32_t panel;           /* K2HUD_BUILD only (0 otherwise) */
+    int32_t panel;           /* K2HUD_BUILD / K2HUD_PANEL_BUILD only (0 otherwise) */
+    uint32_t panelVtbl;      /* hud-host 0.6.0+ (check struct_size): K2HUD_PANEL_BUILD only, the panel's vtable (0 otherwise) */
 } K2HudContext;
 
 typedef void (KPATCH_CALL *K2HudCallback)(const K2HudContext* ctx, void* user);

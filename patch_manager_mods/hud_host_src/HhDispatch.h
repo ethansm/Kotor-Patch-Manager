@@ -97,6 +97,26 @@ inline K2HudContext makeBuildContext(int32_t panel, uint32_t frame) {
     return c;
 }
 
+// PANEL_BUILD context (hud-host 0.6.0+): any panel's layout load. panel + its vtable; hud = the last HUD seen (0 = none yet).
+inline K2HudContext makePanelBuildContext(int32_t panel, uint32_t vtbl, int32_t hud, uint32_t frame) {
+    K2HudContext c = {};
+    c.struct_size = sizeof(c);
+    c.phase = K2HUD_PANEL_BUILD;
+    c.frame = frame;
+    c.panel = panel;
+    c.panelVtbl = vtbl;
+    c.hud = hud;
+    c.menu = 0;
+    c.targetType = -1;
+    return c;
+}
+
+// Dispatches K2HUD_PANEL_BUILD only. Runs for every panel, HUD included (after its K2HUD_BUILD); consumers filter on ctx.panelVtbl.
+inline void runPanelBuild(const Dispatcher& d, K2HudContext& ctx) {
+    ctx.phase = K2HUD_PANEL_BUILD;
+    d.run(ctx);
+}
+
 // Dispatches K2HUD_BUILD only (never FRAME / PRE / POST). ctx comes from makeBuildContext.
 // obs (optional, diagnostics) is called after each BUILD consumer with its owner name.
 inline void runBuild(const Dispatcher& d, K2HudContext& ctx, EntryObserver obs = nullptr, void* obsUser = nullptr) {

@@ -195,13 +195,31 @@ __declspec(dllexport) void __cdecl HH_TargetMenuTail(void* menuPtr, void* leader
 }
 
 // 0x0040F5A0 (layout-closing function, called by every panel ctor): ecx = panel. Only the HUD panel (vtable 0x0099DCC4) dispatches
-// K2HUD_BUILD; the layout is still open here, so consumers may create labels (guikit::createLabelFromTemplate).
+// K2HUD_BUILD; every panel (HUD included, after its BUILD) dispatches K2HUD_PANEL_BUILD (0.6.0+). The layout is still open here, so
+// consumers may create labels (guikit::createLabelFromTemplate).
+void hudBuild(uintptr_t panel);
+namespace {
+void panelBuild(uintptr_t panel, uint32_t vtbl) {
+    if (g_disp.empty(K2HUD_PANEL_BUILD)) return;   // the common case: one flag check per panel ctor
+    K2HudContext ctx = hhd::makePanelBuildContext(int32_t(panel), vtbl, g_hud, g_frame);
+    KP_LOGV(chCore, KPLOG_DEBUG, "PANEL_BUILD dispatch: panel=%08x vtbl=%08x consumers=%d", (unsigned)panel, (unsigned)vtbl,
+            g_disp.n[K2HUD_PANEL_BUILD]);
+    hhd::runPanelBuild(g_disp, ctx);
+}
+}  // namespace
+
 __declspec(dllexport) void __cdecl HH_LayoutClosing(void* panelPtr) {
     saferead::beginScope();
     const uintptr_t panel = reinterpret_cast<uintptr_t>(panelPtr);
     uint32_t vtbl = 0;
     if (!panel || !saferead::readAt(S_PanelVtable, panel, 0, &vtbl)) return;
-    if (!hhd::isHudPanel(vtbl, uint32_t(gameaddr::HudVtable))) return;
+    if (!hhd::isHudPanel(vtbl, uint32_t(gameaddr::HudVtable))) { panelBuild(panel, vtbl); return; }
+    hudBuild(panel);
+    panelBuild(panel, vtbl);
+}
+
+// The HUD panel's K2HUD_BUILD (unchanged since 0.3.0).
+void hudBuild(uintptr_t panel) {
     g_hud = int32_t(panel);
     K2HudContext ctx = hhd::makeBuildContext(int32_t(panel), g_frame);
     static bool first = true;
