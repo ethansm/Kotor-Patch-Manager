@@ -1,35 +1,6 @@
 # Byte patches this mod's DLL writes into the game itself (not KPM hooks), for the static checks
 # (scripts/check_hook_bytes.py, scripts/check_hook_spans.py). Schema: see robustness_fixes_src/code_patches.toml.
-
-[[code_patches]]
-name = "tex_scan_1"
-address = 0x00466033
-# Scene::DoMeshBuckets 0x00465F90: `CALL 0x00427970` (TexMgr::RebuildIdList) -> CALL K2EP_TexScan (DLL)
-original_bytes = [0xE8, 0x38, 0x19, 0xFC, 0xFF]
-kind = "code"
-verifies_original = true
-enabled_by = "always (KPatchInit); tex_scan_cache=0 passes every call through; restored on FreeLibrary"
-source = "K2EnginePerf.cpp installPatches / uninstallPatches (TexScanCache.h, codepatch::writeChecked)"
-
-[[code_patches]]
-name = "tex_scan_2"
-address = 0x0046630E
-# Scene::DoCapBucket 0x004662E0: `CALL 0x00427970` -> CALL K2EP_TexScan
-original_bytes = [0xE8, 0x5D, 0x16, 0xFC, 0xFF]
-kind = "code"
-verifies_original = true
-enabled_by = "always (KPatchInit); tex_scan_cache=0 passes every call through; restored on FreeLibrary"
-source = "K2EnginePerf.cpp installPatches / uninstallPatches (TexScanCache.h, codepatch::writeChecked)"
-
-[[code_patches]]
-name = "tex_scan_3"
-address = 0x0046673F
-# Scene::DoFadeBuckets 0x00466700: `CALL 0x00427970` -> CALL K2EP_TexScan
-original_bytes = [0xE8, 0x2C, 0x12, 0xFC, 0xFF]
-kind = "code"
-verifies_original = true
-enabled_by = "always (KPatchInit); tex_scan_cache=0 passes every call through; restored on FreeLibrary"
-source = "K2EnginePerf.cpp installPatches / uninstallPatches (TexScanCache.h, codepatch::writeChecked)"
+# The three tex_scan_* call-site patches (0.1.0-0.1.1) were removed in 0.1.2: the cache never got a hit.
 
 [[code_patches]]
 name = "mem_status"

@@ -6,8 +6,6 @@
 
 static void test_defaults() {
     k2ep::Config c{};
-    KT_CHECK(c.texScanCache);
-    KT_CHECK(c.texVerifyEvery == 240);
     KT_CHECK(c.memStatusCache);
     KT_CHECK(c.memStatusMs == 250);
     KT_CHECK(c.perfLog);
@@ -15,25 +13,30 @@ static void test_defaults() {
 }
 
 static void test_parse() {
+    // tex_scan_cache / tex_verify_every were removed in 0.1.2: an old ini that still has them reports them as unknown, not bad.
     char text[] = "[EnginePerf]\ntex_scan_cache = 0\ntex_verify_every = 10\nmem_status_cache = off\nmem_status_ms = 1000\n"
                   "perf_log = 0\nverbose = yes\nunknown_key = 3\n";
     k2ep::Config c{};
     inikit::LoadStats st = k2ep::parseIniText(text, c);
-    KT_CHECK(st.ok == 6);
+    KT_CHECK(st.ok == 4);
     KT_CHECK(st.bad == 0);
-    KT_CHECK(!c.texScanCache && c.texVerifyEvery == 10 && !c.memStatusCache && c.memStatusMs == 1000);
+    KT_CHECK(st.unknown == 3);
+    KT_CHECK(!c.memStatusCache && c.memStatusMs == 1000);
     KT_CHECK(!c.perfLog && c.verbose);
 
     // Bad values are rejected and the key keeps its default.
-    char bad[] = "tex_scan_cache = maybe\nmem_status_ms = 12x\n";
+    char bad[] = "mem_status_cache = maybe\nmem_status_ms = 12x\n";
     st = k2ep::parseIniText(bad, c);
     KT_CHECK(st.bad == 2);
-    KT_CHECK(c.texScanCache && c.memStatusMs == 250);
+    KT_CHECK(c.memStatusCache && c.memStatusMs == 250);
 
     // Clamp.
-    char wide[] = "tex_verify_every = -5\nmem_status_ms = 99999\n";
+    char wide[] = "mem_status_ms = 99999\n";
     k2ep::parseIniText(wide, c);
-    KT_CHECK(c.texVerifyEvery == 0 && c.memStatusMs == 5000);
+    KT_CHECK(c.memStatusMs == 5000);
+    char neg[] = "mem_status_ms = -5\n";
+    k2ep::parseIniText(neg, c);
+    KT_CHECK(c.memStatusMs == 0);
 }
 
 static void test_default_ini_roundtrip() {
@@ -43,7 +46,7 @@ static void test_default_ini_roundtrip() {
     KT_CHECK(strstr(buf, "[EnginePerf]") != nullptr);
     k2ep::Config c{};
     inikit::LoadStats st = k2ep::parseIniText(buf, c);
-    KT_CHECK(st.ok == 6 && st.bad == 0);
+    KT_CHECK(st.ok == 4 && st.bad == 0 && st.unknown == 0);
     KT_CHECK(c == k2ep::Config{});
 }
 

@@ -1,5 +1,5 @@
 [metadata]
 target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"]
 
-# k2-engine-perf has no KPM detours: the DLL rewrites 4 call sites at KPatchInit (code_patches.toml) and restores them
-# on FreeLibrary. The ini poll and the PERF line run inside the two replacement functions (both called every frame).
+# k2-engine-perf has no KPM detours: the DLL rewrites 1 call site at KPatchInit (code_patches.toml) and restores it
+# on FreeLibrary. The ini poll and the PERF line run inside the replacement function (called every frame).

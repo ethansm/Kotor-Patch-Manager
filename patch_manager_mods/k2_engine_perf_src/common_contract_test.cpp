@@ -21,7 +21,7 @@ int main() {
     LCHECK("readAt reads a uint32", saferead::readAt<uint32_t>(2, reinterpret_cast<uintptr_t>(&word), 0, &out) && out == word);
 
     // 2. IniKit contract
-    char sample[] = "[EnginePerf]\ntex_scan_cache = 1\nmem_status_ms = 500\n";
+    char sample[] = "[EnginePerf]\nmem_status_cache = 1\nmem_status_ms = 500\n";
     k2ep::Config cfg{};
     inikit::LoadStats st = k2ep::parseIniText(sample, cfg);
     LCHECK("forEachLine parses 2 key-value lines and skips [EnginePerf] as noEquals", st.ok == 2 && st.bad == 0 && st.noEquals == 1);

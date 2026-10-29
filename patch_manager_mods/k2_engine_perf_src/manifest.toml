@@ -1,9 +1,9 @@
 [patch]
 id = "k2-engine-perf"
 name = "K2 Engine Perf"
-version = "0.1.1-dev"
+version = "0.1.2-dev"
 author = "ethansm"
-description = "Small engine CPU savings for KOTOR II: reuses the texture-id list across the 3 render-bucket passes of a scene and caches GlobalMemoryStatus (called twice per frame; slow under Wine). Each switch is in k2_engine_perf.ini (hot-reloaded); logs the measured saving every 5 s."
+description = "Small engine CPU saving for KOTOR II: caches GlobalMemoryStatus (called twice per frame; slow under Wine). The switch is in k2_engine_perf.ini (hot-reloaded); logs the measured saving every 5 s."
 
 requires = []
 conflicts = []

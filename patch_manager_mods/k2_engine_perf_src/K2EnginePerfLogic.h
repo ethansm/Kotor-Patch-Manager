@@ -1,6 +1,7 @@
 // K2EnginePerfLogic.h -- Pure config, ini parsing and perf window for k2-engine-perf.
-// Header-only and host-testable (no engine addresses or Win32 calls). The two optimisations live in
-// TexScanCache.h (texture-id scan reuse) and MemStatusCache.h (GlobalMemoryStatus cache).
+// Header-only and host-testable (no engine addresses or Win32 calls). The optimisation lives in
+// MemStatusCache.h (GlobalMemoryStatus cache). The 0.1.x texture-id scan cache keys (tex_scan_cache, tex_verify_every)
+// were removed in 0.1.2; an old ini that still has them just reports them as unknown keys.
 #pragma once
 
 #include "IniKit.h"
@@ -12,38 +13,29 @@
 namespace k2ep {
 
 constexpr const char* kModId = "k2-engine-perf";
-constexpr const char* kVersion = "0.1.1-dev";
+constexpr const char* kVersion = "0.1.2-dev";
 constexpr const char* kIniFile = "k2_engine_perf.ini";
 constexpr const char* kIniSection = "EnginePerf";
 
-constexpr bool kDefaultTexScanCache = true;
-constexpr int kDefaultTexVerifyEvery = 240;   // one full re-scan compare per 240 cache hits; 0 = never
 constexpr bool kDefaultMemStatusCache = true;
 constexpr int kDefaultMemStatusMs = 250;
 constexpr bool kDefaultPerfLog = true;
 constexpr bool kDefaultVerbose = false;
 
-constexpr int kMaxTexVerifyEvery = 100000;
 constexpr int kMaxMemStatusMs = 5000;
 
 inline int clampi(int v, int lo, int hi) { return v < lo ? lo : (v > hi ? hi : v); }
 
 struct Config {
-    bool texScanCache = kDefaultTexScanCache;
-    int texVerifyEvery = kDefaultTexVerifyEvery;
     bool memStatusCache = kDefaultMemStatusCache;
     int memStatusMs = kDefaultMemStatusMs;
     bool perfLog = kDefaultPerfLog;
     bool verbose = kDefaultVerbose;
 
-    void sanitize() {
-        texVerifyEvery = clampi(texVerifyEvery, 0, kMaxTexVerifyEvery);
-        memStatusMs = clampi(memStatusMs, 0, kMaxMemStatusMs);
-    }
+    void sanitize() { memStatusMs = clampi(memStatusMs, 0, kMaxMemStatusMs); }
 
     bool operator==(const Config& o) const {
-        return texScanCache == o.texScanCache && texVerifyEvery == o.texVerifyEvery &&
-               memStatusCache == o.memStatusCache && memStatusMs == o.memStatusMs && perfLog == o.perfLog &&
+        return memStatusCache == o.memStatusCache && memStatusMs == o.memStatusMs && perfLog == o.perfLog &&
                verbose == o.verbose;
     }
     bool operator!=(const Config& o) const { return !(*this == o); }
@@ -122,8 +114,7 @@ inline inikit::LoadStats parseIniText(char* text, Config& cfg) {
     cfg = Config{};
     inikit::LoadStats st = inikit::forEachLine(text, [&](int /*lineNo*/, const char* key, const char* val) -> inikit::IniVerdict {
         bool* flag = nullptr;
-        if (strcmp(key, "tex_scan_cache") == 0) flag = &cfg.texScanCache;
-        else if (strcmp(key, "mem_status_cache") == 0) flag = &cfg.memStatusCache;
+        if (strcmp(key, "mem_status_cache") == 0) flag = &cfg.memStatusCache;
         else if (strcmp(key, "perf_log") == 0) flag = &cfg.perfLog;
         else if (strcmp(key, "verbose") == 0) flag = &cfg.verbose;
         if (flag) {
@@ -133,8 +124,7 @@ inline inikit::LoadStats parseIniText(char* text, Config& cfg) {
             return inikit::IniVerdictOk;
         }
         int* num = nullptr;
-        if (strcmp(key, "tex_verify_every") == 0) num = &cfg.texVerifyEvery;
-        else if (strcmp(key, "mem_status_ms") == 0) num = &cfg.memStatusMs;
+        if (strcmp(key, "mem_status_ms") == 0) num = &cfg.memStatusMs;
         if (num) {
             int v = 0;
             if (!parseIntVal(val, &v)) return inikit::IniVerdictBad;
@@ -153,10 +143,6 @@ inline int formatDefaultIni(char* buf, size_t cap, const Config& c = Config{}) {
         "; K2 Engine Perf configuration (%s)\n"
         "; Hot-reloaded automatically while the game is running. 0 = vanilla behaviour for each switch.\n"
         "[%s]\n"
-        "; Reuse the texture-id list within one scene render instead of rebuilding it for each of the 3 bucket passes\n"
-        "tex_scan_cache = %d\n"
-        "; Safety check: every Nth reuse also runs the real scan and compares (0 = never)\n"
-        "tex_verify_every = %d\n"
         "; Cache GlobalMemoryStatus (called 2x per frame; Wine reads /proc/meminfo each time)\n"
         "mem_status_cache = %d\n"
         "; Refresh interval of the cached memory status in ms (0..5000)\n"
@@ -164,8 +150,7 @@ inline int formatDefaultIni(char* buf, size_t cap, const Config& c = Config{}) {
         "; Log call counts and the measured saving every 5 s\n"
         "perf_log = %d\n"
         "verbose = %d\n",
-        kModId, kIniSection, c.texScanCache ? 1 : 0, c.texVerifyEvery, c.memStatusCache ? 1 : 0, c.memStatusMs,
-        c.perfLog ? 1 : 0, c.verbose ? 1 : 0);
+        kModId, kIniSection, c.memStatusCache ? 1 : 0, c.memStatusMs, c.perfLog ? 1 : 0, c.verbose ? 1 : 0);
 }
 
 } // namespace k2ep
