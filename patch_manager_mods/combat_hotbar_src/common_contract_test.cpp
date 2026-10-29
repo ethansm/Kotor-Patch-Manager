@@ -90,7 +90,7 @@ int main() {
     HCHECK("connect() without hud-host is false (inert)", !hud.connect());
     HCHECK("client stays unconnected", !hud.connected);
     HEQ("hud() without hud-host = 0", hud.hud(), 0);
-    HEQ("K2HudContext v1 size", int(sizeof(K2HudContext)), 40);
+    HCHECK("K2HudContext v1 prefix is 40 bytes (hud-host 0.6.0 appends after it)", sizeof(K2HudContext) >= 40);
 
     // 5. CH2/CH3b: probeWrite on a writable slot, winForeground host-callable, K2HUD_TARGET_MENU_POST registration, KeyEdge/pickInvokeEntry
     HCHECK("probeWrite accepts a writable selection slot", saferead::probeWrite(0x6F60, arena + 0x24, 4));

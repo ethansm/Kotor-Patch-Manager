@@ -29,8 +29,9 @@ static_assert(offsetof(K2HudContext, forceUnusable) == 24, "ctx.forceUnusable");
 static_assert(offsetof(K2HudContext, target) == 28, "ctx.target");
 static_assert(offsetof(K2HudContext, targetType) == 32, "ctx.targetType");
 static_assert(offsetof(K2HudContext, panel) == 36, "ctx.panel");
-static_assert(sizeof(K2HudContext) == 40, "K2HudContext size");
-static_assert(K2HUD_PHASE_COUNT == 4 && K2HUD_FRAME == 0 && K2HUD_TARGET_MENU_PRE == 1, "phase ids");
+static_assert(offsetof(K2HudContext, panelVtbl) == offsetof(K2HudContext, panel) + 4, "ctx.panelVtbl (appended after panel)");
+static_assert(sizeof(K2HudContext) == 44, "K2HudContext size");
+static_assert(K2HUD_PHASE_COUNT == 5 && K2HUD_FRAME == 0 && K2HUD_TARGET_MENU_PRE == 1 && K2HUD_PANEL_BUILD == 4, "phase ids");
 
 // ---- fake provider whose Register can refuse one phase ----
 static int g_refusePhase = -1;

@@ -82,6 +82,7 @@ static void tLimits() {
     // every phase accepts registrations
     KT_CHECK(e.add(K2HUD_TARGET_MENU_POST, 0, a, nullptr, "x") > 0);
     KT_CHECK(e.add(K2HUD_BUILD, 0, a, nullptr, "x") > 0);
+    KT_CHECK(e.add(K2HUD_PANEL_BUILD, 0, a, nullptr, "x") > 0);
     KT_CHECK(e.add(K2HUD_FRAME, 0, a, nullptr, nullptr) > 0);                    // null owner is tolerated
 }
 
@@ -154,6 +155,38 @@ static void tBuild() {
     g_buildPanel = -1; hhd::runPost(pd, st, pc.menu, 0x2000, 0x3000, 2);
     KT_CHECK_EQ(g_buildPanel, 0);
     KT_CHECK_EQ(g_buildPhase, K2HUD_TARGET_MENU_POST);
+}
+
+static uint32_t g_pbVtbl = 0; static int32_t g_pbPanel = -1, g_pbHud = -1;
+static void KPATCH_CALL panelBuildCb(const K2HudContext* c, void*) {
+    g_pbVtbl = c->panelVtbl; g_pbPanel = c->panel; g_pbHud = c->hud; rec("panelBuildCb", c);
+}
+
+static void tPanelBuild() {
+    // K2HUD_PANEL_BUILD (VU3): every panel's layout load, panel vtable in the context; its own table, never mixed with BUILD/FRAME
+    hhd::Dispatcher d;
+    d.add(K2HUD_BUILD, 0, buildCb, nullptr, "x");
+    d.add(K2HUD_PANEL_BUILD, 0, panelBuildCb, nullptr, "x");
+    d.add(K2HUD_FRAME, 0, frameCb, nullptr, "x");
+    K2HudContext pc = hhd::makePanelBuildContext(0x6000, 0x0099E5EC, 0x5000, 9);
+    KT_CHECK_EQ(pc.struct_size, uint32_t(sizeof(K2HudContext)));
+    KT_CHECK_EQ(pc.phase, K2HUD_PANEL_BUILD); KT_CHECK_EQ(pc.panel, 0x6000); KT_CHECK_EQ(pc.panelVtbl, 0x0099E5ECu);
+    KT_CHECK_EQ(pc.hud, 0x5000); KT_CHECK_EQ(pc.menu, 0); KT_CHECK_EQ(pc.targetType, -1); KT_CHECK_EQ(pc.frame, 9u);
+    g_trace.clear(); hhd::runPanelBuild(d, pc);
+    KT_CHECK_EQ(g_trace.c_str(), "panelBuildCb@p4;");      // PANEL_BUILD only: BUILD and FRAME consumers did not run
+    KT_CHECK_EQ(g_pbVtbl, 0x0099E5ECu); KT_CHECK_EQ(g_pbPanel, 0x6000); KT_CHECK_EQ(g_pbHud, 0x5000);
+    // runBuild / runPopulate never fire PANEL_BUILD
+    K2HudContext bc = hhd::makeBuildContext(0x5000, 9);
+    g_trace.clear(); hhd::runBuild(d, bc);
+    KT_CHECK_EQ(g_trace.c_str(), "buildCb@p3;");
+    K2HudContext fc = hhd::makeContext(0x1000 + 0xCC, 0x2000, 1, 0x3000, 2, 5);
+    g_trace.clear(); hhd::runPopulate(d, fc);
+    KT_CHECK_EQ(g_trace.c_str(), "frameCb@p0;");
+    // the other builders leave panelVtbl 0
+    KT_CHECK_EQ(bc.panelVtbl, 0u); KT_CHECK_EQ(fc.panelVtbl, 0u);
+    // runPanelBuild with no consumers is a no-op
+    hhd::Dispatcher none; g_trace.clear(); hhd::runPanelBuild(none, pc);
+    KT_CHECK_EQ(g_trace.c_str(), "");
 }
 
 // ---- a consumer wired through k2hud::Client against a fake provider ----
@@ -279,6 +312,6 @@ static void tPost() {
 }
 
 int main() {
-    tOrder(); tUnregister(); tLimits(); tPopulate(); tContext(); tClient(); tPost(); tBuild(); tBuildObserver();
+    tOrder(); tUnregister(); tLimits(); tPopulate(); tContext(); tClient(); tPost(); tBuild(); tPanelBuild(); tBuildObserver();
     return kt::Report("hh_dispatch_test");
 }

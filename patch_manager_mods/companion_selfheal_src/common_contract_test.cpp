@@ -166,7 +166,7 @@ int main() {
     // ===== 5b. hud-host client (K2HUD_BUILD, 0.4.2-dev: the HUD labels are built in hud-host's BUILD phase, no hook of ours)
     HEQ("K2HUD_BUILD is phase 3 (onHudBuild registration)", K2HUD_BUILD, 3);
     HCHECK("K2HudContext has a panel field, covered by struct_size, after the older fields", offsetof(K2HudContext, panel) + sizeof(int32_t) <= sizeof(K2HudContext) && offsetof(K2HudContext, panel) > offsetof(K2HudContext, targetType));
-    HCHECK("K2HudContext struct_size gate: offsetof(panel)+sizeof(panel) == sizeof(K2HudContext) on v1 (the onHudBuild guard)", offsetof(K2HudContext, panel) + sizeof(K2HudContext::panel) == sizeof(K2HudContext));
+    HCHECK("K2HudContext struct_size gate: offsetof(panel)+sizeof(panel) == 40 (v1 size; the onHudBuild guard), newer fields appended after it", offsetof(K2HudContext, panel) + sizeof(K2HudContext::panel) == 40 && sizeof(K2HudContext) >= 40);
     {
         k2hud::Client hc;
         hc.init(&g_api, "companion-selfheal");

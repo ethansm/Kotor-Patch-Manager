@@ -135,8 +135,8 @@ int main() {
     EEQ("KpLog_Init without a kpatch.log provider returns 0", KpLog_Init(fakekp::api()), 0);
 
     // 4. HudHost.h: K2HudContext layout EnemyStrip.cpp reads (struct_size, menu, leader, target, targetType) and the POST phase.
-    ECHECK("K2HUD_TARGET_MENU_POST is phase 2; K2HudContext v1 layout: size 40, menu 16, leader 20, target 28, targetType 32",
-           K2HUD_TARGET_MENU_POST == 2 && sizeof(K2HudContext) == 40 && offsetof(K2HudContext, menu) == 16 &&
+    ECHECK("K2HUD_TARGET_MENU_POST is phase 2; K2HudContext v1 layout: size >= 40, menu 16, leader 20, target 28, targetType 32",
+           K2HUD_TARGET_MENU_POST == 2 && sizeof(K2HudContext) >= 40 && offsetof(K2HudContext, menu) == 16 &&
            offsetof(K2HudContext, leader) == 20 && offsetof(K2HudContext, target) == 28 && offsetof(K2HudContext, targetType) == 32);
 
     // 5. HudHost.h: add(TARGET_MENU_POST) is accepted, and connect() without hud-host is inert (the probe still loads).

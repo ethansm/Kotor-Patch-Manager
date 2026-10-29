@@ -225,7 +225,7 @@ int main() {
 
     // ===== 7. 0.3.0 kit + Cancel: hud-host BUILD, EmbedTex, GuiKit label/click API, GuiTip, the Cancel route address
     QEQ("K2HUD_BUILD is phase 3 (onHudBuild registration)", K2HUD_BUILD, 3);
-    QEQ("K2HudContext.panel is the last field (BUILD ctx->panel; struct_size gate offsetof+sizeof)", (long long)offsetof(K2HudContext, panel) + (long long)sizeof(((K2HudContext*)0)->panel), (long long)sizeof(K2HudContext));
+    QEQ("K2HudContext.panel is the last v1 field (BUILD ctx->panel; struct_size gate offsetof+sizeof == v1 size 40)", (long long)offsetof(K2HudContext, panel) + (long long)sizeof(((K2HudContext*)0)->panel), 40LL);
     QCHECK("the hud-host iface id is \"k2.hud\" v1 (manifest requires_interfaces k2.hud@1)", strcmp(K2HUD_IFACE, "k2.hud") == 0 && K2HUD_VERSION == 1);
     { g_hudRegs = 0;
       k2hud::Client hc; hc.init(&g_api, "queue-hud");
