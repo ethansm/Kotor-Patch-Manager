@@ -1,0 +1,87 @@
+addr	kind	name	confidence	evidence	topic	date
+0x006d5240	function	BASEITEMS row loader; table[0]=row count (2DA+0x24), table[1]=row base, rows 200 bytes	confirmed	0x006d5f41: IMUL ECX,ECX,0xc8 ; 0x006d5f4d: ADD ECX,dword ptr [EDX + 0x4] (dump 6d/006d5240.asm)	QL9-u01-Q1	2026-10-29
+0x006d5240	xref	callers 1: 0069dea0; callees 22; size 6993 B RET 0	confirmed	dump 6d/006d5240.c:1 "// FN 006d5240 FUN_006d5240 size=6993 ret=0 callers=0069dea0"	QL9-u01-Q1	2026-10-29
+0x006d6e30	function	GetBaseItem: ECX=item, id=item+0x0C, table=[0x00a1b4d0]+0x34, calls 0x006d5200, RET 0	confirmed	0x006d6e3c: MOV ECX,dword ptr [EAX + 0xc] ; 0x006d6e42: MOV EDX,dword ptr [0x00a1b4d0] ; 0x006d6e55: CALL 0x006d5200	QL9-u01-Q1	2026-10-29
+0x006d5200	function	BASEITEMS row getter: id<0 or id>=count gives 0, else base+id*200; thiscall RET 4	confirmed	0x006d5200: iVar1 = param_2 * 200 + param_1[1] (dump 6d/006d5200.c:12; header ret=4)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0x00 u32 = name-strref column (literal 0x0099353c, text absent from strings.tsv)	probable	0x006d53be: PUSH 0x99353c ; 0x00614e10: pbStack_184 = &DAT_0099353c (dump 61/00614e10.c:96)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0x04 u32 = EquipableSlots	confirmed	0x006d541e: PUSH 0x99a880 (strings.tsv:2687 EquipableSlots)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0x08 u8 = WeaponWield	confirmed	0x006d57ef: PUSH 0x998d98 (strings.tsv:2264 WeaponWield)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0x09 u8 = WeaponType	confirmed	0x006d5859: PUSH 0x99a808 (strings.tsv:2678 WeaponType)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0x0C u32 = DamageFlags	confirmed	0x006d58c3: PUSH 0x99628c (strings.tsv:1769 DamageFlags)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0x10 u32 = MinRange (int)	confirmed	0x006d5b08: PUSH 0x99a7c0 (strings.tsv:2673 MinRange)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0x14 u32 = MaxRange (int)	confirmed	0x006d5b72: PUSH 0x99a7b4 (strings.tsv:2672 MaxRange)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0x18 u8 = ModelType	confirmed	0x006d54e0: PUSH 0x99a864 (strings.tsv:2685 ModelType)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0x19 u8 = ChargesStarting	confirmed	0x006d6110: PUSH 0x99a734 (strings.tsv:2662 ChargesStarting)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0x1A u8 = RangedWeapon, 0 when column absent	confirmed	0x006d5997: PUSH 0x99a7ec (strings.tsv:2676 RangedWeapon)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0x1B u8 = WeaponSize	confirmed	0x006d592d: PUSH 0x99a7fc (strings.tsv:2677 WeaponSize)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0x1C u8 = NumDice	confirmed	0x006d5bdc: PUSH 0x995614 (strings.tsv:1642 NumDice)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0x1D u8 = DieToRoll	confirmed	0x006d5c46: PUSH 0x99a7a8 (strings.tsv:2671 DieToRoll)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0x1E u8 = CritThreat	confirmed	0x006d5cb0: PUSH 0x99a79c (strings.tsv:2670 CritThreat)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0x1F u8 = CritHitMult	confirmed	0x006d5d1a: PUSH 0x99a790 (strings.tsv:2669 CritHitMult)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0x20 float = BaseCost (float getter)	probable	0x006d5d84: PUSH 0x99a784 ; 0x006d5daa: CALL 0x0071b670 (strings.tsv:2668 BaseCost)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0x24 u16 = Stacking; +0xC4 float default 1.0	confirmed	0x006d5dee: PUSH 0x99a778 (strings.tsv:2667 Stacking)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0x28 u32 = Description (strref)	confirmed	0x006d5e82: PUSH 0x996c40 (strings.tsv:1879 Description)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0x2C u8 = MinProps	confirmed	0x006d5fcf: PUSH 0x99a750 (strings.tsv:2664 MinProps)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0x2D u8 = MaxProps	confirmed	0x006d5f65: PUSH 0x99a75c (strings.tsv:2665 MaxProps)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0x2E u8 = PropColumn	confirmed	0x006d6039: PUSH 0x99a744 (strings.tsv:2663 PropColumn)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0x2F u8 = StorePanel	confirmed	0x006d6206: PUSH 0x99a718 (strings.tsv:2660 StorePanel)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0x30 u8 = StorePanelSort	confirmed	0x006d6270: PUSH 0x99a708 (strings.tsv:2659 StorePanelSort)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0x34 float = MaxAttackRange	probable	0x006d5a34: PUSH 0x99a7dc (strings.tsv:2675) ; 0x006d5a5a: CALL 0x0071b670 (float getter)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0x38 float = PrefAttackDist	probable	0x006d5a9e: PUSH 0x99a7cc (strings.tsv:2674) ; 0x006d5ac4: CALL 0x0071b670 (float getter)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0x3C char[11] = ItemClass (CResRef, strncpy 11)	confirmed	0x006d5541: PUSH 0x99a858 ; 0x006d5598: PUSH 0xb (strings.tsv:2684 ItemClass)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0x48 u32 = PartEnvMap	confirmed	0x006d5615: PUSH 0x99a83c (strings.tsv:2682 PartEnvMap)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0x6C u32 = CanRotateIcon	confirmed	0x006d547f: PUSH 0x99a870 (strings.tsv:2686 CanRotateIcon)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0x70 u32 = Container	confirmed	0x006d5785: PUSH 0x99a814 (strings.tsv:2679 Container)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0x74 u8 = GenderSpecific (value & 0xFF)	confirmed	0x006d55b3: PUSH 0x99a848 (strings.tsv:2683 GenderSpecific)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0x78 u8 = InvSoundType (written only when present)	confirmed	0x006d5eec: PUSH 0x99a768 ; 0x006d5f35: MOV AL,byte ptr [EBP + -0x10] (strings.tsv:2666)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0x84 s32 = BaseItemStatRef (default -1)	confirmed	0x006d617a: PUSH 0x99a724 (strings.tsv:2661 BaseItemStatRef)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0x88 u8 = RotateOnGround	confirmed	0x006d62da: PUSH 0x99a6f8 (strings.tsv:2658 RotateOnGround)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0x89 u8 = TenthLBS	confirmed	0x006d6347: PUSH 0x99a6ec (strings.tsv:2657 TenthLBS)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0x8A u8 = BaseAC	confirmed	0x006d63b4: PUSH 0x99a6e4 (strings.tsv:2656 BaseAC)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0x8B u8 = AC_Enchant (default 0xFF)	confirmed	0x006d6421: PUSH 0x99a6d8 (strings.tsv:2655 AC_Enchant)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0x8C u8 = WeaponMatType	confirmed	0x006d64c4: PUSH 0x99a6c8 (strings.tsv:2654 WeaponMatType)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0x8D u8 = ArmorCheckPen (present-guard)	confirmed	0x006d60a3: PUSH 0x998e68 (strings.tsv:2279 ArmorCheckPen)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0x8E u8 = AmmunitionType	confirmed	0x006d6531: PUSH 0x99a6b8 (strings.tsv:2653 AmmunitionType)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0x90 u32 = PoweredItem	confirmed	0x006d659e: PUSH 0x99a6ac (strings.tsv:2652 PoweredItem)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0xAC u8 = ItemType	confirmed	0x006d6740: PUSH 0x99a678 (strings.tsv:2648 ItemType)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0xAD u8 = DEXBONUS value (present-guard)	confirmed	0x006d6ca4: PUSH 0x99a61c ; 0x006d6d1a: MOV byte ptr [ECX + 0xad],DL (strings.tsv:2640 DEXBONUS)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0xAF u8 = BodyVar (1-char A-Z -> 1..26, default 1)	confirmed	0x006d6839: PUSH 0x99a660 (strings.tsv:2646 BodyVar)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0xB0 u16 = SpecFeat	confirmed	0x006d6ab2: PUSH 0x99a648 (strings.tsv:2644 SpecFeat)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0xB2 u16 = FocFeat	confirmed	0x006d6b32: PUSH 0x99a640 (strings.tsv:2643 FocFeat)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0xB4 u8 = DroidOrHuman (default 0)	confirmed	0x006d67ad: PUSH 0x99a668 (strings.tsv:2647 DroidOrHuman)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0xB8 u32 = DenySubrace	confirmed	0x006d6bb2: PUSH 0x99a634 (strings.tsv:2642 DenySubrace)	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem+0xBC sink: ArmorType string read; 0x007337c0 on ECX=+0xBC when present	probable	0x006d6c2e: PUSH 0x99a628 (strings.tsv:2641 ArmorType) ; 0x006d6c99: ADD ECX,0xbc ; 0x006d6c9f: CALL 0x007337c0	QL9-u01-Q1	2026-10-29
+0x006d5240	field	BaseItem list: ReqFeat%d x5 (0x99a654) fed to FUN_006d4ef0/FUN_006d4f80	probable	0x006d6971: PUSH 0x99a654 (strings.tsv:2645 ReqFeat%d)	QL9-u01-Q1	2026-10-29
+0x006d5f35	callsite	refuted: decompile uVar1 reuse (.c:78, .c:227) is not ModelType; asm stores each getter's own out-slot	refuted	0x006d5f35: MOV AL,byte ptr [EBP + -0x10] (InvSoundType own getter result)	QL9-u01-Q1	2026-10-29
+0x006d67ad	callsite	refuted: brief label 'gender' for +0xB4; literal is DroidOrHuman	refuted	0x006d67ad: PUSH 0x99a668 (strings.tsv:2647 DroidOrHuman)	QL9-u01-Q1	2026-10-29
+0x00604260	function	item property list A element getter: count +0x288, base +0x290, stride 0x1C, RET 4	confirmed	0x00604260: iVar1 = param_2 * 0x1c + *(int *)(param_1 + 0x290) (dump 60/00604260.c:12)	QL9-u01-Q2	2026-10-29
+0x006042a0	function	item property list B element getter: count +0x28C, base +0x294, stride 0x1C, RET 4	confirmed	0x006042a0: iVar1 = param_2 * 0x1c + *(int *)(param_1 + 0x294) (dump 60/006042a0.c:12)	QL9-u01-Q2	2026-10-29
+0x00604260	field	CSWSItem+0x288 = list A count (bounds check in element getter)	confirmed	0x00604260: if ((param_2 < 0) || (*(int *)(param_1 + 0x288) <= param_2)) (dump 60/00604260.c:8)	QL9-u01-Q2	2026-10-29
+0x006042a0	field	CSWSItem+0x28C = list B count (bounds check in element getter)	confirmed	0x006042a0: if ((param_2 < 0) || (*(int *)(param_1 + 0x28c) <= param_2)) (dump 60/006042a0.c:8)	QL9-u01-Q2	2026-10-29
+0x00601740	function	item GFF loader: reads PropertiesList into list A (+0x288) and list B (+0x28C)	confirmed	0x00601740: iVar4 = FUN_00718760(local_30,param_3,"PropertiesList") (dump 60/00601740.c:132)	QL9-u01-Q2	2026-10-29
+0x00601740	field	CSWSItem+0x284 = FUN_006046c0() result (object OPEN)	confirmed	0x00601740: *(undefined4 *)(param_1 + 0x284) = uVar2 (dump 60/00601740.c:270)	QL9-u01-Q2	2026-10-29
+0x00603390	function	item GFF writer for PropertiesList (writes list A and B; thiscall RET 8)	confirmed	0x00603390: FUN_00719740(local_1c,param_3,"PropertiesList") (dump 60/00603390.c:13; header ret=8)	QL9-u01-Q2	2026-10-29
+0x00601740	field	property elem +0x00 u16 = PropertyName	confirmed	0x00601740: *puVar5 = local_34 (dump 60/00601740.c:156; name FUN_00718b00 "PropertyName")	QL9-u01-Q2	2026-10-29
+0x00601740	field	property elem +0x02 u16 = Subtype	confirmed	0x00601740: *(undefined2 *)(iVar4 + 2) = local_34 (dump 60/00601740.c:161)	QL9-u01-Q2	2026-10-29
+0x00601740	field	property elem +0x04 u8 = CostTable	confirmed	0x00601740: *(byte *)(iVar4 + 4) = local_49 (dump 60/00601740.c:166)	QL9-u01-Q2	2026-10-29
+0x00601740	field	property elem +0x06 u16 = CostValue	confirmed	0x00601740: *(undefined2 *)(iVar4 + 6) = local_34 (dump 60/00601740.c:171)	QL9-u01-Q2	2026-10-29
+0x00601740	field	property elem +0x08 u8 = Param1	confirmed	0x00601740: *(byte *)(iVar4 + 8) = local_49 (dump 60/00601740.c:176)	QL9-u01-Q2	2026-10-29
+0x00601740	field	property elem +0x09 u8 = Param1Value	confirmed	0x00601740: *(byte *)(iVar4 + 9) = local_49 (dump 60/00601740.c:181)	QL9-u01-Q2	2026-10-29
+0x00601740	field	property elem +0x0A u8 = ChanceAppear	confirmed	0x00601740: *(byte *)(iVar4 + 10) = local_49 (dump 60/00601740.c:186)	QL9-u01-Q2	2026-10-29
+0x00601740	field	property elem +0x0C u32 = Useable (default 1)	confirmed	0x00601740: *(uint *)(iVar4 + 0xc) = (uint)local_49 (dump 60/00601740.c:190)	QL9-u01-Q2	2026-10-29
+0x00601740	field	property elem +0x10 u8 = UsesPerDay (default 0xFF)	confirmed	0x00601740: *(byte *)(iVar4 + 0x10) = local_49 (dump 60/00601740.c:193)	QL9-u01-Q2	2026-10-29
+0x00601740	field	property elem +0x11 u8 = UpgradeType (default 0xFF)	confirmed	0x00601740: *(byte *)(iVar4 + 0x11) = local_49 (dump 60/00601740.c:196)	QL9-u01-Q2	2026-10-29
+0x00601740	field	property elem +0x12 u16 = PropUpgrade (default 0xFF)	confirmed	0x00601740: *(undefined2 *)(iVar4 + 0x12) = local_34 (dump 60/00601740.c:199)	QL9-u01-Q2	2026-10-29
+0x006e9d20	function	ItemPropDef 2DA loader (ECX=holder, RET 0); string literal 0x0099ada4	confirmed	0x006e9d20: FUN_00710840("ItemPropDef") (dump 6e/006e9d20.c:35; strings.tsv:2774 ItemPropDef)	QL9-u01-Q3	2026-10-29
+0x006e9d20	field	holder+0x3c = ItemPropDef 2DA pointer	confirmed	0x006e9d20: *(undefined4 *)(local_20 + 0x3c) = local_24 (dump 6e/006e9d20.c:40)	QL9-u01-Q3	2026-10-29
+0x00a1b4d0	global	game global; +0x34 = BASEITEMS table; +0x130 = ItemPropDef holder	confirmed	0x006d6e42: MOV EDX,dword ptr [0x00a1b4d0] ; 0x00614e10: local_fc = *(int *)(DAT_00a1b4d0 + 0x130) (dump 61/00614e10.c:181)	QL9-u01-Q3	2026-10-29
+0x0071bcf0	function	C2DA int getter, GetINTEntry shape: bool __thiscall(this=2DA, int row, CExoString* col, int* out), RET 12	probable	0x0071bcf0: FID_conflict__sscanf((char *)(...),"%i",param_4) (dump 71/0071bcf0.c:31; header ret=12)	QL9-u01-Q3	2026-10-29
+0x0071b1d0	function	C2DA CExoString getter, GetCExoStringEntry shape: bool __thiscall(this, int row, CExoString* col, CExoString* out), RET 12	probable	0x0071b1d0: FUN_007337c0(*(int *)(*(int *)(param_1 + 0x38) + param_2 * 4) + iVar2 * 8) (dump 71/0071b1d0.c:21; ret=12)	QL9-u01-Q3	2026-10-29
+0x0071b670	function	C2DA float getter, shape: bool __thiscall(this, int row, CExoString* col, float* out), RET 12, uses _atof	probable	0x0071b670: dVar6 = _atof((char *)*piVar1) (dump 71/0071b670.c:35; ret=12)	QL9-u01-Q3	2026-10-29
+0x00614e10	function	item-property display-text builder candidate: (ushort propRow, ushort subtypeRow, ushort costRow, byte param1Row) + stack flag; RET 36; TLK via 0x007408f0	probable	0x00614e10: pbStack_184 = &DAT_0099353c (dump 61/00614e10.c:96) ; 0x00614e10: FUN_007408f0 TLK text (dump 61/00614e10.c:161)	QL9-u01-Q3	2026-10-29
+0x00614e10	xref	callers 6: 0060ea50,00610fc0,0060fee0,0060e0d0,00615ff0,0060b6b0; callees 14; size 2595 B RET 36	confirmed	dump 61/00614e10.c:1 "// FN 00614e10 FUN_00614e10 size=2595 ret=36 callers=0060ea50,00610fc0,0060fee0,0060e0d0,00615ff0,0060b6b0"	QL9-u01-Q3	2026-10-29
+0x009975f8	string	SubTypeResRef column literal (readers FUN_00608420, FUN_00614e10)	confirmed	0x009975f8: SubTypeResRef (strings.tsv:2030; dump 61/00614e10.c:177 pbStack_184 = 0x9975f8)	QL9-u01-Q3	2026-10-29
+0x0099b16c	string	IPRP_COSTTABLE literal (referenced by FUN_006efe20)	confirmed	0x0099b16c: IPRP_COSTTABLE (strings.tsv:2851 FUN_006efe20)	QL9-u01-Q3	2026-10-29
+0x006140c0	function	damage-type text builder candidate: bitmask param_1 -> TLK strref concatenation; RET 8; GOG 0x6778f0 twin by vote map	probable	0x006140c0: dump 61/006140c0.c:62 bits 0-2 test; .c:63 FUN_007408f0(local_1c,0x9698); gog_map_mods678.tsv:758 vote row	QL9-u01-Q4	2026-10-29
+0x006140c0	xref	callers 1: 0060b6b0; callees 5; size 3404 B RET 8	confirmed	dump 61/006140c0.c:1 "// FN 006140c0 FUN_006140c0 size=3404 ret=8 callers=0060b6b0"	QL9-u01-Q4	2026-10-29
+0x006140c0	callsite	bit groups: bit3..bit12 -> TLK 0x9699..0x96a2, bit13 -> 0xa3af; separator DAT_009975c8 (text OPEN)	probable	0x006140c0: dump 61/006140c0.c:82 FUN_007408f0(local_34,0x9699) ; .c:312 FUN_007408f0(local_174,0xa3af)	QL9-u01-Q4	2026-10-29
