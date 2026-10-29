@@ -1,3 +1,4 @@
+// Quick Loot 0.7.2-dev = 0.7.1 + hook H4 on the target-arrow draw 0x0074FB20: skipped while the list is up (QL14; NEW HOOK = KPM reinstall, not a hot-swap).
 // Quick Loot 0.7.1-dev = 0.7.0 + page registered at init (it missed the Options build), four page rows (Item tooltip, Quest items first, Compare with equipped, Panel background), FOOT / EQUIP-MISS logs.
 // Quick Loot 0.7.0-dev (hot-swap, no hook changes) = 0.6.1 + the QL9..QL13 review set: QL9 tooltip redesign (icon, title + category line, rules from the
 //   baseitems row + the engine's own property text 0x00614E10, flavor, foot; layout and rules are pure: QuickLootLogic.h TipDraw / QuickLootRules.h), QL10 stack
@@ -107,7 +108,7 @@ KP_LOG_PATCH("quick-loot");
 
 namespace {
 
-constexpr const char* Version = "0.7.1-dev";
+constexpr const char* Version = "0.7.2-dev";
 constexpr unsigned Site = 0x7100;   // saferead failure-ring site id
 // Steam addresses (static RE, doc 52 / .claude/research/quick_loot/README.md); AppGlobal and ClientToServerObjectId come from GameAddr.h.
 constexpr uintptr_t GetPlaceableByGameObjectID = 0x0051C160;   // thiscall(serverApp, serverId) RET 4 -> CSWSPlaceable* (0 = none)
@@ -456,6 +457,7 @@ int exoRead(ExoStr& e, char* out, int cap) { return saferead::readExo(Site, rein
 
 bool g_rules = true;     // quick_loot.ini Rules: 0 = base rules only (no engine property text)
 bool g_sounds = true;    // quick_loot.ini Sounds
+bool g_hideArrow = true; // quick_loot.ini HideTargetArrow (0.7.2-dev QL14, QlTargetArrow)
 unsigned g_soundLogs = 0;
 
 // QL12: GUI sound idx through the GUI sound manager (0 = scrollbar click, 1 = hover, 9 = gui_invadd). Skips silently without the manager.
@@ -1594,6 +1596,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     g_m.cfg.showTook = GetPrivateProfileIntA("QuickLoot", "ShowAcquired", 0, IniPath) != 0;   // 0.6.1-dev: off by default
     g_rules = GetPrivateProfileIntA("QuickLoot", "Rules", 1, IniPath) != 0;     // 0.7.0-dev: 0 = tooltip base rules only (kill switch for the engine property text)
     g_sounds = GetPrivateProfileIntA("QuickLoot", "Sounds", 1, IniPath) != 0;   // 0.7.0-dev QL12
+    g_hideArrow = GetPrivateProfileIntA("QuickLoot", "HideTargetArrow", 1, IniPath) != 0;   // 0.7.2-dev QL14
     g_live.anchor = g_m.cfg.anchor; g_live.prox = g_proxOn; g_live.rows = g_m.cfg.listRows; g_live.openM = g_openM; g_live.closeM = g_closeM;
     g_live.closeExplicit = closeExplicit; g_live.closeExplicitM = closeExplicitM;
     g_live.tip = GetPrivateProfileIntA("QuickLoot", "TipDetail", qlpage::TipFull, IniPath);   // 0.7.1-dev page rows; applyLive below clamps nothing, so clamp here
@@ -1616,6 +1619,19 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
 }
 
 // H1. ECX = gui, [esp+4] = container object id (client), [esp+8] = flag. Returns 1 to consume (take-all armed), 0 = the original menu runs.
+// 0.7.2-dev (QL14): the engine's target arrow (hostilearrow / friendlyarrow sprite, 0x0074FB20) drew over the list. While the list is up the draw is
+// skipped (return 1 = consumed: epilogue 0x00750764). quick_loot.ini HideTargetArrow=0 (g_hideArrow) turns this off. Hot path (every frame): one bool and one compare.
+extern "C" int __cdecl QlTargetArrow(uintptr_t owner) {
+    (void)owner;
+    if (!g_enabled || !g_hideArrow) return 0;
+    const bool hide = g_m.labelText(nowMs()) != nullptr;
+    static bool last = false;
+    static unsigned logs = 0;
+    if (hide != last && logs < 20) { ++logs; KP_LOG(chMain, "ARROW %s", hide ? "hidden (list up)" : "shown"); }
+    last = hide;
+    return hide ? 1 : 0;
+}
+
 extern "C" int __cdecl QlShowContainer(uintptr_t gui, uint32_t objId, int flag) {
     (void)gui;
     enter();

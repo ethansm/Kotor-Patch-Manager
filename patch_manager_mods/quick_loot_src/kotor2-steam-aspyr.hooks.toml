@@ -74,3 +74,20 @@ type = "int"
 [[hooks.parameters]]
 source = "[esp+8]"
 type = "int"
+
+# H4 (0.7.2-dev, doc 52 QL14): the target-arrow draw 0074fb20 (thiscall ECX = in-game GUI owner, one float frame-dt arg, RET 4; size 3146 B,
+# one caller 0x0074b520; draws the hostilearrow / friendlyarrow sprite, recon .claude/waves/w8-52-QL14/r01.md). The arrow drew over the quick-loot
+# list (user 10-29). Handler returns non-zero while the list is on screen: only the 9 prologue bytes run (PUSH EBP / MOV EBP,ESP / SUB ESP,0x244),
+# then the function's own epilogue MOV ESP,EBP / POP EBP / RET 4 at 00750764 (after the cookie check, which the skipped body never armed).
+# Prologue bytes read from the vanilla_clean exe (6a522e71); no relative branch or CALL among them.
+[[hooks]]
+address = 0x0074FB20
+type = "detour"
+function = "QlTargetArrow"
+original_bytes = [0x55, 0x8B, 0xEC, 0x81, 0xEC, 0x44, 0x02, 0x00, 0x00]
+consumed_exit_address = 0x00750764
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "int"

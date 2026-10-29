@@ -4,3 +4,4 @@ EXPORTS
     QlShowContainer
     QlPlaceableEvent
     QlCloseInventory
+    QlTargetArrow
