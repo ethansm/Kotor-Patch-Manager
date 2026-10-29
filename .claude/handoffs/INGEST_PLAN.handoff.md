@@ -1,47 +1,23 @@
 # Session Handoff & Plan State: patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md
 
 ## 0. Next-Phase Direction
-Execute I8f: Persist B18 (+ B17 likely 3 via `finalize --with-likely`) + I8d names (user OK), gap re-measure, docs sweep, memory
+Execute I9e: Off-gap bonus: B21 = the 51 AUTO rows the wide B19 run found outside the gap; Opus gate AUTO (20% sample + all C1), REVIEW rows parked
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md`
-- **Branch:** `KOTOR-II` (6177ec90 INGEST I9d: batch B20 (graphpair + I9c rows): 36 verified, 13 likely, 8 unresolved; decoys 0/60 accepted, Opus sample_errors 0; persist dry run insert=35)
-- **Generated:** 2026-10-29 00:08:45 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (a6c62d70 INGEST I8f+I9f: persist B17 likely 3 + B18 11 + B19 12 + B20 35, promote 25 CRT names + OnUpgradeSelected (name_map 5029 -> 5116; second persist 0; gap notes 85 / modcode 9))
+- **Generated:** 2026-10-29 00:14:34 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-6177ec90 INGEST I9d: batch B20 (graphpair + I9c rows): 36 verified, 13 likely, 8 unresolved; decoys 0/60 accepted, Opus sample_errors 0; persist dry run insert=35
- .../steam_db_batches/B20/candidates.tsv            |   58 +
- .../steam_db_batches/B20/cards/chunk_1.md          | 2140 ++++++++++++++++++++
- .../steam_db_batches/B20/cards/chunk_2.md          | 1843 +++++++++++++++++
- .../steam_db_batches/B20/cards/chunk_3.md          | 2102 +++++++++++++++++++
- .../steam_db_batches/B20/cards/chunk_4.md          | 1980 ++++++++++++++++++
- .../steam_db_batches/B20/cards/chunk_5.md          | 1823 +++++++++++++++++
- .../steam_db_batches/B20/cards/chunk_6.md          | 1884 +++++++++++++++++
- .../steam_db_batches/B20/cards/key.tsv             |  107 +
- .../steam_db_batches/B20/evidence.tsv              |   58 +
- .../steam_db_batches/B20/final_rows.tsv            |   58 +
- .../steam_db_batches/B20/functions.csv             |   37 +
- .../steam_db_batches/B20/gate_report.md            |  133 ++
- .../steam_db_batches/B20/gog_label_suspects.tsv    |    1 +
- .../steam_db_batches/B20/kdb_upsert.json           |  290 +++
- .../steam_db_batches/B20/opus/overrides_a.md       |    9 +
- .../steam_db_batches/B20/opus/overrides_a.tsv      |   23 +
- .../steam_db_batches/B20/opus/part_a.md            |   15 +
- .../steam_db_batches/B20/opus/parts.json           |   22 +
- .../steam_db_batches/B20/opus_gate.json            |   87 +
- .../steam_db_batches/B20/opus_gate.md              |   34 +
- .../steam_db_batches/B20/overrides.tsv             |   23 +
- .../steam_db_batches/B20/recheck.tsv               |    1 +
- .../steam_db_batches/B20/review/haiku_c1.tsv       |   19 +
- .../steam_db_batches/B20/review/haiku_c2.tsv       |   19 +
- .../steam_db_batches/B20/review/haiku_c3.tsv       |   19 +
- .../steam_db_batches/B20/review/haiku_c4.tsv       |   19 +
- .../steam_db_batches/B20/review/haiku_c5.tsv       |   19 +
- .../steam_db_batches/B20/review/haiku_c6.tsv       |   17 +
- .../steam_db_batches/B20/validated.tsv             |   36 +
- 29 files changed, 12876 insertions(+)
+a6c62d70 INGEST I8f+I9f: persist B17 likely 3 + B18 11 + B19 12 + B20 35, promote 25 CRT names + OnUpgradeSelected (name_map 5029 -> 5116; second persist 0; gap notes 85 / modcode 9)
+ .../ghidra_knowledge/kotor2_ghidra_knowledge.db    | Bin 10055680 -> 10100736 bytes
+ .../rea_findings/20261029_ingest-macnames.tsv      |   2 +
+ .../steam_db_batches/B17/kdb_upsert.json           | 576 ++++++++++-----------
+ .../steam_db_batches/B17/opus_gate.json            |   4 +-
+ .../steam_db_batches/B17/opus_gate.md              |   2 +-
+ 5 files changed, 293 insertions(+), 291 deletions(-)
 ```
-- **Dirty Files (195):**
+- **Dirty Files (194):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/25_pc_levelup_filter.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
@@ -52,24 +28,20 @@ Execute I8f: Persist B18 (+ B17 likely 3 via `finalize --with-likely`) + I8d nam
   - ` M .claude/handoffs/deep_haiku_review_skill.handoff.md`
   - ` M .claude/handoffs/variant_fix_wave_skill.handoff.md`
   - ` M .claude/plans/swarm_library_architecture.md`
-  - ... +185 more (run `git status --short`)
+  - ... +184 more (run `git status --short`)
 
-## 2. Immediate Objective (I8f)
-**Persist B18 (+ B17 likely 3 via `finalize --with-likely`) + I8d names (user OK), gap re-measure, docs sweep, memory**
+## 2. Immediate Objective (I9e)
+**Off-gap bonus: B21 = the 51 AUTO rows the wide B19 run found outside the gap; Opus gate AUTO (20% sample + all C1), REVIEW rows parked**
 
 Status: TODO
-Task: Persist B18 (+ B17 likely 3 via `finalize --with-likely`) + I8d names (user OK), gap re-measure, docs sweep, memory
-
-## 2b. Upcoming Batches in Pipeline
-- **I9e** : Off-gap bonus: B21 = the 51 AUTO rows the wide B19 run found outside the gap; Opus gate AUTO (20% sample + all C1), REVIEW rows parked
-- **I9f** : Persist B20/B21 + I9b promote list (user OK), re-card OnUpgradeSelected with the new decoy pool, gap re-measure, docs, memory
+Task: Off-gap bonus: B21 = the 51 AUTO rows the wide B19 run found outside the gap; Opus gate AUTO (20% sample + all C1), REVIEW rows parked
 
 ## 3. Strict Context Budget & Read Policy
 - **Fresh Session Bootstrap**: Run `python3 scripts/plan_manager.py resume patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md`.
 
 ## 4. Subagent Delegation Direction
 - **Claude Code**: parallel `model: haiku` Agent subagents; brief = `Contract` + `Write Scope` + `python3 scripts/agent_contract.py print worker|recon`.
-- **Other backends** (only when the user asks): `python3 scripts/plan_manager.py delegate I8f` or `oc-subagent <scout|code|ghidra|verify|gate|doc>`.
+- **Other backends** (only when the user asks): `python3 scripts/plan_manager.py delegate I9e` or `oc-subagent <scout|code|ghidra|verify|gate|doc>`.
 
 ## 5. Dead Ends & Verification (manual)
 - Gap prototype (I0 starting point): `.claude/research/ingest/gap_prototype.py` (4368b1e4); `python3 .claude/research/ingest/gap_prototype.py` prints 79 / 515.
@@ -108,3 +80,4 @@ Task: Persist B18 (+ B17 likely 3 via `finalize --with-likely`) + I8d names (use
 - B20: 36 verified / 13 likely / 8 unresolved; persist dry run insert=35. Re-gate later (gate top != graph pick): RenderDrawableSquares 0x004356e0, AurCubeMapAvailable 0x00484970, AurEnableShadows 0x00478ca0, GetTextureTID 0x004daf90. GetAtPos (0x007f3870 -> 0x00561430) skipped: fp namespace splits the template name ("long>").
 - Haiku B20 reviewers peaked 137-149k on 18-card chunks (4 tool calls held); 3 rows had column shift (verdict blank, `match` in corrected_addr) -> finalize ignores them; read them in the Opus gate. CRT cards (13/chunk, 10 KB) peaked ~60k.
 - I9e (B21 off-gap) skipped this session (optional).
+- 10-29 I8f+I9f (a6c62d70): KDB backup in session scratch `kdb_before_I9f.db` (5029 rows); persist B17 (finalize --with-likely --opus-sample-errors 0) 3 + B18 11 + B19 12 + B20 35, promote 25 CRT + OnUpgradeSelected (3 seeded card sets, 3/3 decoys rejected) -> 5116. Second persist 0. Gap notes 85 / modcode 9. Left: I9e (B21 off-gap 51 AUTO rows), B20 8 unresolved incl. 4 graph corrections to re-gate, B20 likely 13 not persisted (no --with-likely).
