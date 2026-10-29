@@ -235,10 +235,45 @@ int GN_PartySpellEffectOn(int nSpell, object oTarget)
     return FALSE;
 }
 
+// WI-174 (party only): TRUE when nOther is in the vanilla series of the lasting area power nSpell
+// (GN_CheckSeriesFear / GN_CheckSeriesHold, k_inc_gensupport.nss): Fear 16, Horror 30, Insanity 31;
+// Hold 29, Sleep 44 (in-game "Mass Stasis"), Stun 46. Not a power family: families 22/23 stay as they are.
+int GN_PartySameSeries(int nSpell, int nOther)
+{
+    if (nSpell == nOther)
+    {
+        return TRUE;
+    }
+    if ((nSpell == 30 || nSpell == 31) && (nOther == 16 || nOther == 30 || nOther == 31))
+    {
+        return TRUE;
+    }
+    if (nSpell == 44 && (nOther == 29 || nOther == 44 || nOther == 46))
+    {
+        return TRUE;
+    }
+    return FALSE;
+}
+
+// WI-174 (party only): TRUE when oTarget carries an effect of nSpell's series.
+int GN_PartySeriesEffectOn(int nSpell, object oTarget)
+{
+    effect eCur = GetFirstEffect(oTarget);
+    while (GetIsEffectValid(eCur))
+    {
+        if (GN_PartySameSeries(nSpell, GetEffectSpellId(eCur)))
+        {
+            return TRUE;
+        }
+        eCur = GetNextEffect(oTarget);
+    }
+    return FALSE;
+}
+
 // O3 (party only): a lasting area power (Horror 30, Insanity 31, Mass Stasis 44) rolled for the AoE centre is dropped
 // when fewer than 2 enemies within 4 m of that centre are free of its effect. The centre counts when it is free.
 // A dropped pick is a null roll: the caller falls through. Force Storm 25 and Scream 159-161 are never filtered.
-// Spec: WI-160 / O3_study.md section 6. The test is a plain spell-id match: a power family here would also make
+// Spec: WI-160 / O3_study.md section 6. The test is a series match (WI-174: Fear/Horror/Insanity, Hold/Sleep/Stun), still not a power family: a power family here would also make
 // GN_CheckNonDroidForcePower (F2b) drop the pick whenever the centre alone is affected, which the >= 2 rule does not ask for.
 talent GN_PartyAOEUnaffectedCheck(talent tUse, object oCentre)
 {
@@ -258,7 +293,7 @@ talent GN_PartyAOEUnaffectedCheck(talent tUse, object oCentre)
     object oNear = GetFirstObjectInShape(SHAPE_SPHERE, 4.0, lCentre);
     while (GetIsObjectValid(oNear))
     {
-        if (GetIsEnemy(oNear) && !GetIsDead(oNear) && !GN_PartySpellEffectOn(nSpell, oNear))
+        if (GetIsEnemy(oNear) && !GetIsDead(oNear) && !GN_PartySeriesEffectOn(nSpell, oNear))
         {
             nFree++;
         }

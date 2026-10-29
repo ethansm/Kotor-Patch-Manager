@@ -326,7 +326,7 @@ class O3Test(unittest.TestCase):
         self.assertIn("nSpell != 30 && nSpell != 31 && nSpell != 44", body)
         self.assertIn("IsObjectPartyMember(OBJECT_SELF)", body)
         self.assertIn("GetFirstObjectInShape(SHAPE_SPHERE, 4.0, lCentre)", body)
-        self.assertIn("!GN_PartySpellEffectOn(nSpell, oNear)", body)
+        self.assertIn("!GN_PartySeriesEffectOn(nSpell, oNear)", body)
         self.assertIn("if (nFree >= 2)", body)
         self.assertIn("return tNone;", body)
 
@@ -341,6 +341,19 @@ class O3Test(unittest.TestCase):
         self.assertIn("GetEffectSpellId(eCur) == nSpell", body)
         self.assertIn("GetFirstEffect(oTarget)", body)
         self.assertIn("GetNextEffect(oTarget)", body)
+
+    def test_h_o3_series_helper(self):
+        same = self._body("int GN_PartySameSeries(int nSpell, int nOther)")
+        self.assertIn("nOther == 16 || nOther == 30 || nOther == 31", same)
+        self.assertIn("nOther == 29 || nOther == 44 || nOther == 46", same)
+        i_same = self.src.find("int GN_PartySameSeries(int nSpell, int nOther)")
+        i_series = self.src.find("int GN_PartySeriesEffectOn(int nSpell, object oTarget)")
+        i_check = self.src.find("talent GN_PartyAOEUnaffectedCheck(talent tUse, object oCentre)")
+        self.assertNotEqual(i_same, -1)
+        self.assertNotEqual(i_series, -1)
+        self.assertNotEqual(i_check, -1)
+        self.assertLess(i_same, i_series)
+        self.assertLess(i_series, i_check)
 
     def test_h_o3_drop_print_uses_the_party_d_prefix_and_tag(self):
         self.assertIn(PARTY_D_PREFIX + "O3: spell ", self.src)
