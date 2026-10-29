@@ -11,7 +11,11 @@
 
 namespace k2fx {
 
-struct Buff { const char* resref; float ratio; bool item; };
+struct Buff { const char* resref; float ratio; bool item; int badge = 0; };
+
+// Badge overlay on an icon another hostile row also uses (generated `badge` column): Badge_Launch = launched grenade, badge & Badge_TierMask
+// = tier 2-4 pips (0 = none). Only the Buff HUD draws them (its own BadgeIconTex.inc); other consumers can ignore the field.
+constexpr int Badge_TierMask = 7, Badge_Launch = 8;
 
 // Buff (or debuff) icon for a spells.2da row; nullptr = not tracked. *item = draw on the round item-ability disc.
 inline const char* iconForSpell(int spell, bool debuff, bool* item) {
@@ -21,6 +25,8 @@ inline const char* iconForSpell(int spell, bool debuff, bool* item) {
     *item = isItemAbility(spell);
     return kEffectIcons[spell];
 }
+// Badge of a hostile spells.2da row (debuff icons only; buffs never carry one).
+inline int debuffBadge(int spell) { return spell >= 0 && spell < kDebuffIconTableSize ? kDebuffIcons[spell].badge : 0; }
 
 constexpr int EffType_Icon = 0x43;   // script SetEffectIcon: ints[0] = effecticon.2da row
 constexpr int EffIconRow_TrapPoison = 110;   // TRAP_EFFECT_POISON: the 2da names the placeholder ip_resistenergy (no texture), so the table holds nullptr
@@ -71,31 +77,34 @@ inline const char* iconForEffectIconEffect(int eff, bool* item) {
     *item = !strncmp(r, "ii_", 3) || !strncmp(r, "iw_", 3);
     return r;
 }
+// Badge of the effecticon row a type-0x43 effect carries (0 for the poison hook, row 0 and out of range).
+inline int effectIconBadge(int eff) { const int row = effectIconRow(eff); return row > 0 && row < kEffectIconRowCount ? kEffectIconRows[row].badge : 0; }
 
 // Distinct tracked spell ids on the creature, in application order, each with its remaining-duration ratio.
 inline int collectBuffs(uintptr_t creature, int day, int ms, bool haveTime, Buff* out, int maxOut, bool debuff = false, float minRatio = 0.0f) {
     int arr = 0, count = 0;
     if (!effectListNonEmpty(creature, &arr, &count)) return 0;
     int seen[MaxEffects]; int nSeen = 0; int n = 0;
-    const char* iconSeen[MaxEffects]; int nIcon = 0;   // icons added from type-0x43 rows (debuff only)
+    const char* iconSeen[MaxEffects]; int iconBadge[MaxEffects]; int nIcon = 0;   // icons (+ badge) added from type-0x43 rows (debuff only)
     for (int i = 0; i < count && n < maxOut; ++i) {
         int eff, spell;
         if (!rd(arr, i * 4, &eff) || !rd(eff, Effect_SpellId, &spell)) continue;
         bool item = false;
         const char* resref = iconForSpell(spell, debuff, &item);
         bool viaIcon = false;
-        if (!resref && debuff) { resref = iconForEffectIconEffect(eff, &item); viaIcon = resref != nullptr; }   // script-applied debuff (Slow): no mappable spell id
+        if (!resref && debuff) { resref = iconForEffectIconEffect(eff, &item); viaIcon = resref != nullptr; }
+        const int badge = !resref || !debuff ? 0 : viaIcon ? effectIconBadge(eff) : debuffBadge(spell);   // script-applied debuff (Slow): no mappable spell id
         if (!resref) continue;
         bool dup = false;
-        if (viaIcon) { for (int k = 0; k < n; ++k) if (!strcmp(out[k].resref, resref)) { dup = true; break; } }   // spell -1 repeats: dedupe by icon
+        if (viaIcon) { for (int k = 0; k < n; ++k) if (!strcmp(out[k].resref, resref) && out[k].badge == badge) { dup = true; break; } }   // spell -1 repeats: dedupe by icon + badge
         else {
             for (int k = 0; k < nSeen; ++k) if (seen[k] == spell) { dup = true; break; }
-            for (int k = 0; !dup && k < nIcon; ++k) if (!strcmp(iconSeen[k], resref)) dup = true;               // same icon already drawn via an EffectIcon row
+            for (int k = 0; !dup && k < nIcon; ++k) if (!strcmp(iconSeen[k], resref) && iconBadge[k] == badge) dup = true;   // same icon + badge already drawn via an EffectIcon row
         }
         if (dup) continue;
-        if (viaIcon) { if (nIcon < MaxEffects) iconSeen[nIcon++] = resref; } else seen[nSeen++] = spell;
+        if (viaIcon) { if (nIcon < MaxEffects) { iconSeen[nIcon] = resref; iconBadge[nIcon++] = badge; } } else seen[nSeen++] = spell;
         const bool poison = viaIcon && effectIconRow(eff) == EffIconRow_TrapPoison;   // the icon effect has no duration: drain by the poison itself
-        out[n++] = { resref, poison ? poisonRatio(arr, count, day, ms, haveTime, minRatio) : effectRatio(eff, day, ms, haveTime, minRatio), item };
+        out[n++] = { resref, poison ? poisonRatio(arr, count, day, ms, haveTime, minRatio) : effectRatio(eff, day, ms, haveTime, minRatio), item, badge };
     }
     return n;
 }

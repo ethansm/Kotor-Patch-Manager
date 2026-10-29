@@ -386,6 +386,20 @@ int main() {
         KT_CHECK_EQ(iconForSpell(247, true, &it), iconForSpell(88, true, &it)); KT_CHECK_EQ(iconForSpell(247, true, &it), "iw_stungren_001"); KT_CHECK(it);
         KT_CHECK_EQ(iconForSpell(119, true, &it), "ii_drdutldev_009"); KT_CHECK(it);
         KT_CHECK(iconForSpell(130, true, &it) == nullptr);
+        // badge column: a launcher grenade keeps the hand grenade's icon but carries Badge_Launch, so both draw as separate entries
+        KT_CHECK_EQ(iconForSpell(246, true, &it), "iw_fraggren_001"); KT_CHECK_EQ((long long)debuffBadge(246), (long long)Badge_Launch);
+        KT_CHECK_EQ(iconForSpell(87, true, &it), "iw_fraggren_001"); KT_CHECK_EQ((long long)debuffBadge(87), 0ll);
+        KT_CHECK_EQ((long long)debuffBadge(256), (long long)(Badge_Launch | 3));          // launched sonic 3: speed lines + 3 pips
+        KT_CHECK_EQ((long long)(debuffBadge(245) & Badge_TierMask), 4ll);                 // carbonite projector 4
+        KT_CHECK_EQ((long long)debuffBadge(144), 0ll);                                    // crush opposition I: own icon, no badge
+        KT_CHECK_EQ((long long)debuffBadge(-1), 0ll); KT_CHECK_EQ((long long)debuffBadge(kDebuffIconTableSize), 0ll);
+        uintptr_t hand = buff(); at<int>(hand, Effect_SpellId) = 87;
+        uintptr_t launched = buff(); at<int>(launched, Effect_SpellId) = 246;
+        n = collectBuffs(makeCreature({ hand, launched }), BuffDay, tNow, true, o, 8, true);
+        KT_CHECK_EQ((long long)n, 2ll); KT_CHECK_EQ((long long)o[0].badge, 0ll); KT_CHECK_EQ((long long)o[1].badge, (long long)Badge_Launch);
+        // effecticon rows carry it too: 56 stun ray 2 = 2 pips; the same row repeated still dedupes to one
+        n = collectBuffs(makeCreature({ iconFx(56, -1, 1), iconFx(56, -1, 1) }), BuffDay, tNow, true, o, 8, true);
+        KT_CHECK_EQ((long long)n, 1ll); KT_CHECK_EQ((long long)o[0].badge, 2ll);
     }
 
     return kt::Report("effects_test");
