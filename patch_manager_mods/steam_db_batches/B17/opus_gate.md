@@ -4,7 +4,7 @@ Decision: **OK: Opus reads the 100% classes plus a 20% sample (min 5) of the oth
 
 - decoy cards: 150 (per chunk {'1': 10, '2': 10, '3': 10, '4': 10, '5': 10, '6': 10, '7': 10, '8': 10, '9': 10, '10': 10, '11': 10, '12': 10, '13': 10, '14': 10, '15': 10}), accepted by the reviewer: 0, unanswered: 0
 - chunks not reviewed: none
-- Opus-found sample errors: pending (pass `finalize --opus-sample-errors N` after the Opus pass)
+- Opus-found sample errors: 0 (pass `finalize --opus-sample-errors N` after the Opus pass)
 - consecutive clean batches before this one: 2 -> sample rate 20%
 
 ## Decoy key errors (decoy = Opus-shipped counterpart)

@@ -1,0 +1,2 @@
+addr	kind	name	confidence	evidence	topic	date
+0x008ddf20	function	CSWGuiSwoopUpgrade::OnUpgradeSelected	probable	0x008ddf20: PUSH EBP | src mac 0x001e1dee fit=0.67 margin=0.20 via GOG 0x005ce2f0	ingest-macnames	2026-10-29
