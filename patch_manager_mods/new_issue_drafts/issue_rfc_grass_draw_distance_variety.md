@@ -113,7 +113,7 @@ A later session at 150 m with all variety options on (314-492 bins, V-Sync 60) m
 
 * **`K2GrassFogFix`:** owns `0x004665D8..0x004665F5` in `Scene::DoBinBucket`. This patch does not touch that range; its bin-loop timing detours are at `0x0046661B` and `0x00466698`.
 * **KPM shader fixes:** own `0x0046AADD`; not touched.
-* **K1 `GrassRenderFix` / `GrassMemorySafety`:** both are K1-only today. KotOR 2's `RenderGrassPolys` also has three draw paths. I have not yet checked whether the K2 non-shader paths pass the wrong vertex pointer (`field_0x40`) the way K1's do, or whether `CreateArrays` has the same double free. This patch logs which path runs live. On my machine (NVIDIA, Proton) only path A runs (the backend-dispatcher path); the two direct-GL paths drew 0 times, so I could not see that bug either way.
+* **K1 `GrassRenderFix` / `GrassMemorySafety`:** both are K1-only today. KotOR 2's `RenderGrassPolys` also has three draw paths. In the Steam K2 exe, path B1 has the same wrong vertex pointer as K1 (`ADD ECX,0x40` at `0x0050E483` pushes the address of field `+0x40`; paths A and B2 push the buffer at `+0x38`). The double free does not carry over: the bin's built flag is set only after the alias at `+0x3C` is cleared. This patch logs which path runs live. On my machine (NVIDIA, Proton) only path A runs (the backend-dispatcher path); B1 and B2 drew 0 times, so the B1 bug is real in the bytes but I have not seen it on screen.
 
 ---
 
@@ -133,5 +133,5 @@ A later session at 150 m with all variety options on (314-492 bins, V-Sync 60) m
 1. **Default distance:** is 150 m too far for older GPUs? Should the default be lower (90 m) with 150 m as an option?
 2. **Variety defaults:** if the play pass shows no artefacts, should Varied Grass Pattern and Even Grass Spread be on by default? They do not change the number of blades.
 3. **Scope:** one grass patch with switches, or split it into "draw distance" and "grass variety"?
-4. **K2 grass bugs:** does anyone with a non-shader GPU path (older hardware, or GOG) see stretched grass in KotOR 2 like the K1 `GrassRenderFix` describes? That would tell us whether a K2 port of that fix is needed.
+4. **K2 grass bugs:** the K1 `GrassRenderFix` vertex-pointer bug is present in K2's path B1 (see Co-Existence). Does anyone with a non-shader GPU path (older hardware) see stretched grass in KotOR 2? Should the one-instruction fix go into this patch or a separate `K2GrassRenderFix`?
 5. **Native slider:** would a slider in the vanilla Graphics options be preferred over the Mod Configuration page? It is possible (`CSWGuiOptionsGraphics` has room under the Force speed checkbox), but not mapped yet.
