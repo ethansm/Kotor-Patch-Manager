@@ -219,3 +219,4 @@ Orchestrator cost per WI: about 1.5k tokens (one spawn prompt and three 5-line r
 | [ ] | 203 | WI-171 | P3 | ready | S | - | Combat AI: Force Enlightenment (180) satisfies buff families 1/2/3 | 0 | 3 | Enlightenment 180 (not 176 = Force Sight) maps to no family, so Speed/ |
 | [ ] | 204 | WI-172 | P3 | ready | S | - | Combat AI DefaultAI: Defensive clears sticky oLastTarget, skip debilitated sticky target | 0 | 2 | k_inc_generic.nss:754 keeps tPR.oLastTarget outside the Defensive 5 m  |
 | [ ] | 205 | WI-173 | P3 | ready | S | - | Combat AI GEN_TALENT_BUFF: pick from known, inactive buff trees | 0 | 3 | GEN_TALENT_BUFF (k_inc_generic.nss:2678-2853) rolls one tree per call  |
+| [ ] | 206 | WI-174 | P3 | ready | S | - | Combat AI O3: count enemies free of the whole AoE series (Horror/Insanity/Sleep) | 0 | 3 | O3 matches exact spell id, so Horror 30 / Insanity 31 / Sleep 44 overl |
