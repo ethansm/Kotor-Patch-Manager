@@ -248,6 +248,85 @@ class VariantLayout(unittest.TestCase):
 
 
 @unittest.skipUnless((Path.home() / ".local/share/Steam/steamapps/common/Knights of the Old Republic II").exists(), "game install not present")
+class V4Layout(unittest.TestCase):
+    """v4a (bottom bar) / v4b (strip above the list): vanilla top strip, own ISF bar, no overlaps, exact list split."""
+
+    @classmethod
+    def setUpClass(cls):
+        try:
+            import PIL  # noqa: F401
+            import pykotor  # noqa: F401
+        except ImportError:
+            raise unittest.SkipTest("PIL / pykotor not importable (use the repo .venv)")
+        cls.cpm = m._cpm()
+        _, cls.ctls = m.load_gui(cls.cpm)
+
+    def test_v4_registered(self):
+        self.assertEqual(m.V4, ("v4a", "v4b"))
+        self.assertTrue(set(m.V4) <= set(m.VARIANTS))
+
+    def test_added_rects_overlap_nothing(self):
+        for v in m.V4:
+            for tag, st, so in m.V4STATES:
+                L = m.variant_layout(self.cpm, v, st, so, self.ctls)
+                self.assertEqual(L["overlaps"], [], "%s %s" % (v, tag))
+                top = [a for a in L["added"] if a["kind"] in ("band", "strip")]
+                for i, a in enumerate(top):
+                    for b in top[i + 1:]:
+                        self.assertFalse(m.rects_overlap(a["rect"], b["rect"]), (v, a["name"], b["name"]))
+                    for t, cr in L["px"].items():
+                        if t == "LBL_BAR2" and a["kind"] == "strip":
+                            continue         # decorative bar rect already overlaps the original LB_ITEMS (drawn only 16 px tall, above it)
+                        self.assertFalse(m.rects_overlap(a["rect"], cr), (v, a["name"], t))
+
+    def test_all_fit_and_no_font_below_10x10(self):
+        small_h = self.cpm.text_size(m.SMALL, "A")[1]
+        for v in m.V4:
+            for tag, st, so in m.V4STATES:
+                L = m.variant_layout(self.cpm, v, st, so, self.ctls)
+                self.assertEqual([f for f in L["fits"] if not f[4]], [], "%s %s" % (v, tag))
+                self.assertEqual(L["fonts"], {m.FILTER_FONT, m.SMALL})
+                for f in L["fonts"]:
+                    self.assertGreaterEqual(self.cpm.text_size(f, "A")[1], small_h)
+
+    def test_v4b_split_fills_original_list_rect(self):
+        lb = next(m.unit_px(self.cpm, c["RECT"]) for c in self.ctls if c["TAG"] == "LB_ITEMS")
+        g = m.list_geometry(self.cpm, lb, "v4b")
+        row_h = int(m.PROTO[3] * self.cpm.SY)
+        self.assertEqual(g["strip"][3], row_h)
+        self.assertEqual(g["strip"], (lb[0], lb[1], lb[2], row_h))
+        self.assertEqual(g["items"], (lb[0], lb[1] + row_h, lb[2], lb[3] - row_h))
+        self.assertEqual(g["strip"][1] + g["strip"][3], g["items"][1])
+        self.assertEqual(g["items"][1] + g["items"][3], lb[1] + lb[3])
+        self.assertEqual(g["strip"][2], g["items"][2])
+        self.assertEqual(m.list_geometry(self.cpm, lb, "v4a")["items"], tuple(lb))
+        self.assertIsNone(m.list_geometry(self.cpm, lb, "v4a")["strip"])
+        self.assertEqual(g["avail"] // row_h, 5)
+        self.assertEqual(m.list_geometry(self.cpm, lb, "v3")["avail"] // row_h, 6)
+        L = m.variant_layout(self.cpm, "v4b", m.S_USABLE, m.SO_CATEGORY, self.ctls)
+        self.assertEqual(L["px"]["LB_ITEMS"], g["items"])
+        self.assertEqual(next(a["rect"] for a in L["added"] if a["kind"] == "strip"), g["strip"])
+
+    def test_top_strip_is_vanilla_in_every_v4_state(self):
+        self.assertEqual(m.VANILLA_CAPTION, "Filter")
+        for v in m.V4:
+            for tag, st, so in m.V4STATES:
+                im, info = m.render(st, so, variant=v)
+                self.assertEqual(info["caption"], "Filter", "%s %s" % (v, tag))
+                self.assertFalse(info["overflow"])
+                L = info["layout"]
+                self.assertEqual([f for f in L["fits"] if f[0] == "LBL_FILTER caption"][0][1], "Filter")
+                self.assertEqual(L["overlaps"], [])
+
+    def test_v4_dividers_and_scroll(self):
+        rows = m.arrange(m.S_ALL, m.SO_CATEGORY)
+        for v in m.V4:
+            self.assertTrue(any(k[0] == "div" for k in m.build_elements(rows, m.SO_CATEGORY, v)))
+            self.assertTrue(all(k[0] == "row" for k in m.build_elements(m.arrange(m.S_NEW, m.SO_NAME), m.SO_NAME, v)))
+            self.assertGreaterEqual(m.v3_scroll(self.cpm, v), 1)
+
+
+@unittest.skipUnless((Path.home() / ".local/share/Steam/steamapps/common/Knights of the Old Republic II").exists(), "game install not present")
 class RenderSmoke(unittest.TestCase):
     def test_render_and_fit(self):
         try:
