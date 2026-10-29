@@ -1,0 +1,87 @@
+{
+ "batch": "B20",
+ "chunks_short": [],
+ "chunks_unreviewed": [],
+ "clean": true,
+ "clean_streak_before": 0,
+ "decision": "OK: Opus reads the 100% classes plus a 20% sample (min 5) of the other reviewer matches",
+ "decoy_cards": 60,
+ "decoys_accepted": 0,
+ "decoys_per_chunk": {
+  "1": 10,
+  "2": 10,
+  "3": 10,
+  "4": 10,
+  "5": 10,
+  "6": 10
+ },
+ "full_read": 0,
+ "key_error_cards": [],
+ "key_errors": 0,
+ "rows_auto": [
+  {
+   "class": "CExoKeyTable",
+   "gog": "0x006304a0",
+   "name": "RebuildTable",
+   "route": "c2",
+   "steam_addr": "0x00726a50"
+  },
+  {
+   "class": "CSWSMessage",
+   "gog": "0x007e2e00",
+   "name": "SendServerToPlayerDebugInfo_Creature",
+   "route": "c2",
+   "steam_addr": "0x0064c6e0"
+  },
+  {
+   "class": "CSWCCreatureAppearance",
+   "gog": "0x0048e3b0",
+   "name": "GetBTypeModelAndTextureResRef",
+   "route": "c2",
+   "steam_addr": "0x0085e320"
+  }
+ ],
+ "rows_full": [],
+ "rows_sample": [
+  {
+   "class": "CSWGuiLegalScreen",
+   "content_level": "C0",
+   "gog": "0x0053a810",
+   "name": "Destructor",
+   "steam_addr": "0x0087fdf0"
+  },
+  {
+   "class": "CExoMoviePlayer",
+   "content_level": "C1",
+   "gog": "0x009211e0",
+   "name": "PlayMoviesAsync",
+   "steam_addr": "0x0093b590"
+  },
+  {
+   "class": "PartLightsaber",
+   "content_level": "C2",
+   "gog": "0x00890b90",
+   "name": "Draw",
+   "steam_addr": "0x004a9ea0"
+  },
+  {
+   "class": "CSWGuiOptionsMouse",
+   "content_level": "C1",
+   "gog": "0x005725e0",
+   "name": "HandleInputEvent",
+   "steam_addr": "0x007dccd0"
+  },
+  {
+   "class": "CSWGuiInGameJournal",
+   "content_level": "C2",
+   "gog": "0x00591bd0",
+   "name": "PopulateItemListBox",
+   "steam_addr": "0x007fc880"
+  }
+ ],
+ "sample_errors": 0,
+ "sample_pool": 16,
+ "sample_rate": 0.2,
+ "sample_size": 5,
+ "unanswered_decoys": 0
+}

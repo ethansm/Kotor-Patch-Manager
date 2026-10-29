@@ -1,0 +1,107 @@
+card_id	chunk	gog	steam_addr	kind	expected
+B20-1-01	1	0x0061a570	0x00710b70	decoy_prev	mismatch
+B20-1-02	1	0x004fec40	0x00873360	real	
+B20-1-03	1	0x004cd090	0x007bce00	real	
+B20-1-04	1	0x00616990	0x0072fd10	decoy_prev	mismatch
+B20-1-05	1	0x0044eeb0	0x007a2510	real	
+B20-1-06	1	0x0053a810	0x0087fdf0	real	
+B20-1-07	1	0x00410e50	0x00765180	real	
+B20-1-08	1	0x00457b00	0x004292d0	real	
+B20-1-09	1	0x0060baa0	0x00739b70	decoy_next	mismatch
+B20-1-10	1	0x0060ba20	0x007397f0	decoy_prev	mismatch
+B20-1-11	1	0x008c5350	0x00484e20	decoy_next	mismatch
+B20-1-12	1	0x0061a570	0x00711170	decoy_next	mismatch
+B20-1-13	1	0x008c5350	0x00484dc0	decoy_prev	mismatch
+B20-1-14	1	0x005725e0	0x007dccd0	real	
+B20-1-15	1	0x0052bec0	0x0075a7c0	real	
+B20-1-16	1	0x0060baa0	0x00739970	decoy_prev	mismatch
+B20-1-17	1	0x0060ba20	0x007399e0	decoy_next	mismatch
+B20-1-18	1	0x00616990	0x0072fe30	decoy_next	mismatch
+B20-2-01	2	0x0090ca10	0x0040e360	decoy_prev	mismatch
+B20-2-02	2	0x0090ca10	0x0040e750	decoy_next	mismatch
+B20-2-03	2	0x00827df0	0x004356e0	decoy_prev	mismatch
+B20-2-04	2	0x00608330	0x00736200	real	
+B20-2-05	2	0x00591bd0	0x007fc880	real	
+B20-2-06	2	0x0061a490	0x00710b70	decoy_next	mismatch
+B20-2-07	2	0x0060ba20	0x00739990	real	
+B20-2-08	2	0x00827df0	0x00435e80	decoy_next	mismatch
+B20-2-09	2	0x005f6ed0	0x00908040	real	
+B20-2-10	2	0x0063cd80	0x0070ded0	decoy_next	mismatch
+B20-2-11	2	0x009080d0	0x0093da90	decoy_prev	mismatch
+B20-2-12	2	0x00608450	0x00736320	real	
+B20-2-13	2	0x0061a490	0x00710ad0	decoy_prev	mismatch
+B20-2-14	2	0x005a6190	0x008b25f0	real	
+B20-2-15	2	0x005c0410	0x0042a470	real	
+B20-2-16	2	0x009080d0	0x0093dad0	decoy_next	mismatch
+B20-2-17	2	0x0063cd80	0x0070dc60	decoy_prev	mismatch
+B20-2-18	2	0x0060baa0	0x00739a10	real	
+B20-3-01	3	0x0052bec0	0x0075a630	decoy_prev	mismatch
+B20-3-02	3	0x009433e6	0x0093b430	decoy_prev	mismatch
+B20-3-03	3	0x0084b050	0x00458980	decoy_prev	mismatch
+B20-3-04	3	0x00591bd0	0x007fcc70	decoy_next	mismatch
+B20-3-05	3	0x0086ba30	0x00484cd0	decoy_next	mismatch
+B20-3-06	3	0x0061a570	0x00710c20	real	
+B20-3-07	3	0x00610130	0x0073dc30	real	
+B20-3-08	3	0x006207c0	0x0064dde0	real	
+B20-3-09	3	0x006134e0	0x0072c7e0	real	
+B20-3-10	3	0x0063cf80	0x0070dfe0	real	
+B20-3-11	3	0x00591bd0	0x007fc350	decoy_prev	mismatch
+B20-3-12	3	0x00616990	0x0072fd90	real	
+B20-3-13	3	0x005725e0	0x007dc360	decoy_prev	mismatch
+B20-3-14	3	0x0063cd80	0x0070dde0	real	
+B20-3-15	3	0x0052bec0	0x0075b260	decoy_next	mismatch
+B20-3-16	3	0x0086ba30	0x00484c80	decoy_prev	mismatch
+B20-3-17	3	0x0061a490	0x00710b40	real	
+B20-3-18	3	0x009433e6	0x0093b43c	decoy_next	mismatch
+B20-4-01	4	0x00890b90	0x004a9ea0	real	
+B20-4-02	4	0x005c0410	0x0042a220	decoy_prev	mismatch
+B20-4-03	4	0x00610130	0x0073d710	decoy_prev	mismatch
+B20-4-04	4	0x008f5120	0x004dae60	decoy_prev	mismatch
+B20-4-05	4	0x00410e50	0x00765940	decoy_next	mismatch
+B20-4-06	4	0x00410e50	0x00765110	decoy_prev	mismatch
+B20-4-07	4	0x00647090	0x006f9420	real	
+B20-4-08	4	0x0086ba30	0x00484ca0	real	
+B20-4-09	4	0x0084b050	0x00458a80	real	
+B20-4-10	4	0x00827df0	0x00435720	real	
+B20-4-11	4	0x00608450	0x00736350	decoy_next	mismatch
+B20-4-12	4	0x008f5120	0x004daf40	decoy_next	mismatch
+B20-4-13	4	0x0086ab80	0x00984730	real	
+B20-4-14	4	0x005c0410	0x0042a6e0	decoy_next	mismatch
+B20-4-15	4	0x00844e00	0x004527f0	real	
+B20-4-16	4	0x0086b700	0x009852b0	real	
+B20-4-17	4	0x00903df0	0x0049baf0	decoy_next	mismatch
+B20-4-18	4	0x00903df0	0x0049b820	decoy_prev	mismatch
+B20-5-01	5	0x008c5350	0x00484e00	real	
+B20-5-02	5	0x00457b00	0x004293b0	decoy_next	mismatch
+B20-5-03	5	0x00903df0	0x0049b840	real	
+B20-5-04	5	0x00457b00	0x004291c0	decoy_prev	mismatch
+B20-5-05	5	0x008f5120	0x004daef0	real	
+B20-5-06	5	0x0086ab80	0x00984710	decoy_prev	mismatch
+B20-5-07	5	0x008f9030	0x004def00	real	
+B20-5-08	5	0x009433e0	0x0093b436	decoy_next	mismatch
+B20-5-09	5	0x0090ca10	0x0040e480	real	
+B20-5-10	5	0x005a6190	0x008b2f70	decoy_next	mismatch
+B20-5-11	5	0x005f6ed0	0x00907360	decoy_prev	mismatch
+B20-5-12	5	0x0086ab80	0x00984760	decoy_next	mismatch
+B20-5-13	5	0x0084b050	0x00458ae0	decoy_next	mismatch
+B20-5-14	5	0x008fe2a0	0x00463b20	real	
+B20-5-15	5	0x009433e0	0x0093b3b0	decoy_prev	mismatch
+B20-5-16	5	0x005f6ed0	0x009084f0	decoy_next	mismatch
+B20-5-17	5	0x00909e50	0x0093f830	real	
+B20-5-18	5	0x009080d0	0x0093dab0	real	
+B20-6-01	6	0x009258bf	0x0091d67e	real	
+B20-6-02	6	0x009211a0	0x0093b550	real	
+B20-6-03	6	0x0053a810	0x0087fe20	decoy_next	mismatch
+B20-6-04	6	0x009211e0	0x0093b590	real	
+B20-6-05	6	0x008fe2a0	0x00463c80	decoy_next	mismatch
+B20-6-06	6	0x0044eeb0	0x007a2540	decoy_next	mismatch
+B20-6-07	6	0x00912f70	0x00414ba0	real	
+B20-6-08	6	0x006134e0	0x0072c6c0	decoy_prev	mismatch
+B20-6-09	6	0x0053a810	0x0087fae0	decoy_prev	mismatch
+B20-6-10	6	0x004fec40	0x00873070	decoy_prev	mismatch
+B20-6-11	6	0x008fe2a0	0x00463a90	decoy_prev	mismatch
+B20-6-12	6	0x004fec40	0x00873b00	decoy_next	mismatch
+B20-6-13	6	0x009433e6	0x0093b436	real	
+B20-6-14	6	0x009433e0	0x0093b430	real	
+B20-6-15	6	0x0044eeb0	0x007a2380	decoy_prev	mismatch
+B20-6-16	6	0x00844e00	0x00452810	decoy_next	mismatch

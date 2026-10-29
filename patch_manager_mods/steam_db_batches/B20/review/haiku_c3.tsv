@@ -1,0 +1,19 @@
+gog_addr	steam_addr	verdict	corrected_addr	content_anchor	confidence	reason
+0x0052bec0	0x0075a630	mismatch	0x0075a7c0		4	Size 397 vs GOG 1659; 1 of 5 visible trusted GOG callees present (GetInGameGui); decoy 0x0075a7c0 has all 5 and 10 GOG disp offsets
+0x009433e6	0x0093b430	unsure			1	Thunk target 0x00000144 has no asm or decompile; body unjudgeable; no anchor
+0x0084b050	0x00458980	mismatch			4	GOG 4B stack param vs cand RET 0 (GOG flag gog_db_param_bad); cand writes PartLight vftable and unlinks list; GOG callees unmatched
+0x00591bd0	0x007fcc70	mismatch	0x007fc880		5	Cand 21B 0 callees vs GOG 1005B 27 callees; no trusted GOG callee present; decoy 0x007fc880 has 4 trusted GOG callees
+0x0086ba30	0x00484cd0	mismatch			4	Cand 51B whitespace/tab skipper; imm 0x9 and 0x20 in cand absent from GOG (GOG imm set empty); GOG 33B
+0x0061a570	0x00710c20	unsure			3	Size 113 and RET 4 exact; 16-char case-insensitive compare fits; A-CALLEE credit is caller overlap only; cand callee unnamed; no anchor
+0x00610130	0x0073dc30	unsure			3	Size 231, RET 8 and 8-callee count exact; callee names match GOG but GOG callees unmapped (Steam ?); only SIG 0.50 credit; no anchor
+0x006207c0	0x0064dde0	unsure			4	Thunk to FnListRemove 0x0073a130; GOG callee Remove unmapped; 4 named caller overlaps are not callee anchors; no string or offset anchor
+0x006134e0	0x0072c7e0		match	str 0x0099c828 'CExoInputInternal::GetEvents() Invalid InputClass parameter'; callee 0x00521060 CSWPlayerList::GetFirstPlayer	4	Same assert string and trusted callee GetFirstPlayer; 14 common disp offsets; size 5830 vs GOG 2768 unexplained
+0x0063cf80	0x0070dfe0	unsure			3	Size 412 and RET 12 exact; helper callee name matches GOG 0x0063d120 but that GOG callee is unmapped; only SIG 0.62 credit; no anchor
+0x00591bd0	0x007fc350	mismatch	0x007fc880		5	Cand 60B 3 callees incl MFC IsCached; GOG 1005B 27 callees; no trusted GOG callee present; same GOG fn as B20-3-04, decoy 0x007fc880
+0x00616990	0x0072fd90		match	callee 0x0072f110 CExoInputInternal::UpdateMouseDelta (thunk target; GOG callee 0x00615ec0 trusted to same)	5	Size 31 and RET 4 exact; thunk target is trusted GOG callee; GOG caller ProcessInput maps to same cand caller
+0x005725e0	0x007dc360	mismatch			5	Cand 163B 1 callee vs GOG 413B; 0 of 3 visible trusted GOG callees present (HandleInputEvent, PopModalPanel, PlayGuiSound); disp sets 0 common
+0x0063cd80	0x0070dde0		match	str 0x0099c35c 'evil_ending'; callee 0x00741070 CClientExoApp::GetCreditSequenceInProgress; callee 0x0070daa0 Update3DStream	5	Same string and two trusted callees; size 237 and RET 0 exact; GOG dump shows '=evil_ending'
+0x0052bec0	0x0075b260	mismatch	0x0075a7c0		5	Cand 263B, 6 GUI ctor/dtor callees and vftable writes; 0 trusted GOG callees present; same GOG fn as B20-3-01 whose decoy 0x0075a7c0 has all 5
+0x0086ba30	0x00484c80	mismatch			3	GOG 33B with 0 callees vs cand 29B calling 0x00484910 and 0x00484970; callee counts cannot match; twin 0x00484c60 unverified
+0x0061a490	0x00710b40	unsure			3	Size 44 and RET 4 exact; 16-byte memcmp body fits; only callee 0x0091ac7c unnamed and GOG callee unmapped; no anchor
+0x009433e6	0x0093b43c	unsure			1	Thunk target 0x00000148 has no asm or decompile; cand G2 align fail; body unjudgeable; no anchor

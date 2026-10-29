@@ -1,0 +1,17 @@
+gog_addr	steam_addr	verdict	corrected_addr	content_anchor	confidence	reason
+0x009258bf	0x0091d67e	unsure			3	Size 77 and stdcall ret 20 agree; 4 trusted GOG callers call it, but callees are unnamed and unmapped; no body anchor. Autolabel ignored.
+0x009211a0	0x0093b550	match		callee 0x0040CC30 CExoMoviePlayerInternal::CancelMovie (asm CALL; GOG callee 0x0091fe20 trusted map)	4	Single call to CancelMovie, which GOG callee 0x0091fe20 maps to via trusted row; ret 8 agrees.
+0x0053a810	0x0087fe20	mismatch	0x0087fdf0	callee 0x0040F390 CSWGuiPanel::SetBackground; Sleep loop; size 812 vs GOG 44	4	Size 812 vs GOG 44; GOG dtor callee CSWGuiPanel::Destructor 0x0040e860 absent. Decoy 0x0087fdf0 calls it (suggested, size unchecked).
+0x009211e0	0x0093b590	match		callee 0x0040DA40 CExoMoviePlayerInternal::PlayMoviesAsync (asm CALL; GOG callee 0x00920c30 trusted map)	4	Single call to PlayMoviesAsync, matching GOG callee 0x00920c30 via trusted row; ret 12 and size 35 agree.
+0x008fe2a0	0x00463c80	mismatch			3	Size 63 vs GOG 41; 4 trusted GOG callers not among candidate callers; sole callee 0x004518C0 unnamed. Weak negative, no anchor.
+0x0044eeb0	0x007a2540	mismatch		callee 0x007A21D0 CClientExoAppInternal::SetGameOver (asm thunk CALL)	4	Sole callee is SetGameOver, not GOG callee CClientAIList::AddObject; 4 trusted GOG callers absent from candidate callers.
+0x00912f70	0x00414ba0	match		member +0x10 read via EAX (return *(param_1+0x10)); GOG disp set also has 0x10	3	Getter reads +0x10 via EAX; GOG disp set also has 0x10 and 2 trusted GOG callers call it. Single offset, so confidence 3.
+0x006134e0	0x0072c6c0	mismatch		string 0x0099C800 '%d %c %d %d' (candidate only; GOG strings absent)	4	Size 217 vs GOG 2768; GOG error string 'CExoInputInternal::GetEvents() Invalid I' absent; trusted GOG callee GetFirstPlayer not called.
+0x0053a810	0x0087fae0	mismatch	0x0087fdf0	string 0x0099EDC4 'lookathook'; callee 0x0073F490 CClientExoApp::GetModuleCamera	4	Size 600 vs GOG 44; camera/lookathook body; GOG dtor callee 0x0040e860 absent. Same GOG fn as B20-6-03; suggest decoy 0x0087fdf0.
+0x004fec40	0x00873070	mismatch	0x00873360	string 0x009914B8 'impact' and 0x009A2C6C 'handconjure' (candidate); GOG 'rhand' absent	4	Strings handconjure/impact, not GOG rhand/impact; GOG callees GetItemByGameObjectID and GetEquippedItemID absent. Decoy 0x00873360 has them.
+0x008fe2a0	0x00463a90	mismatch		4 trusted GOG callers absent from candidate callers	3	Size 136 vs GOG 41; 4 trusted GOG callers not among candidate callers; 3 callees vs GOG 1. Negative evidence only, so confidence 3.
+0x004fec40	0x00873b00	mismatch	0x00873360	string 0x009A4F8C 'vdu_tex_stone' (asm 00873b90); GOG 'rhand'/'impact' absent	4	vdu_tex texture strings, not GOG rhand/impact; shared callees generic. Decoy 0x00873360 has rhand/impact and matching disp set.
+0x009433e6	0x0093b436	unsure			1	Thunk target 0x00000145 is not a code address; no asm or decompile for target; no anchor.
+0x009433e0	0x0093b430	unsure			1	Thunk target 0x00000144 is not a code address; no asm or decompile for target; no anchor. Sibling of B20-6-13.
+0x0044eeb0	0x007a2380	mismatch		4 trusted GOG callers absent from candidate callers; 0 callees vs GOG 1	4	Body is one store (no calls); GOG AddObject makes one call (CClientAIList::AddObject); 4 trusted GOG callers not among candidate callers.
+0x00844e00	0x00452810	unsure			2	Only callee 0x004536B0 unnamed; GOG callee Global::operator_new_uint not seen in candidate; no mapped GOG callers. gog_db_param_bad flag.

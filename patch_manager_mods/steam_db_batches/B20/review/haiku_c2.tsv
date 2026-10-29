@@ -1,0 +1,19 @@
+gog_addr	steam_addr	verdict	corrected_addr	content_anchor	confidence	reason
+0x0090ca10	0x0040e360	mismatch			3	Body = max(left)/min(right) rect intersection, not union. GOG 0x0090c8f0 Intersection unmapped. GOG body not visible.
+0x0090ca10	0x0040e750	mismatch			4	20B body only writes CSWGuiObject vftable to [ecx] (ctor-like). GOG Union touches +0x4/+0x8/+0xC; candidate touches none.
+0x00827df0	0x004356e0	unsure			2	Saves wglGetCurrentContext/DC and memsets globals; no draw calls. Size 54 equals GOG, but memset target unconfirmed (auto label only).
+0x00608330	0x00736200	unsure			3	Thunk to unnamed 0x0073B7F0. GOG callee CExoTimersInternal::GetLowResolutionTimer unmapped. 5/14 caller overlap is not an allowed anchor.
+0x00591bd0	0x007fc880	match		0x0073F070 CClientExoApp::GetQuestJournal	5	Confirmed callee; GOG 0x0040c530 maps to it. Also GetClientLanguage, GetInGameGui, GetSWParty callees. Size 1005 equal.
+0x0061a490	0x00710b70	mismatch			4	Size 164 vs GOG 44. Direct callees 3 (CStr, strlen, unnamed) vs GOG 1. Body compares 16-char resref to a string.
+0x0060ba20	0x00739990	match		0x0073DD20 CExoFileInternal::Read_2	4	Thunk to 0x0073DD20 CExoFileInternal::Read_2 (name = GOG callee 0x00610220, unmapped). Size 35, retn 12 equal; 7 caller overlaps.
+0x00827df0	0x00435e80	mismatch			4	Size 113 vs GOG 54. No direct callees (vtable-indirect alloc and zero) vs GOG memset. Offsets +0x4/+0x8/+0xC absent in GOG.
+0x005f6ed0	0x00908040	unsure			3	Scalar-deleting shape: calls body 0x908070, then conditional delete. Size 44, retn 4 equal GOG. GOG Destructor_2 unmapped, no confirmed callee.
+0x0063cd80	0x0070ded0	mismatch	0x0070dde0	0x0099C35C 'evil_ending' (on 0x0070dde0)	4	Only Update3DStream of 4 trusted GOG callees present; AIL pause(...,0) is resume-like. 0x0070dde0 has all 4 plus the string.
+0x009080d0	0x0093da90	mismatch	0x0093dab0	0x0093E880 CAuroraInterface::GetProcessedTextureInternal (on 0x0093dab0)	4	Thunk calls unnamed 0x0093E7D0. GOG callee GetProcessedTextureInternal maps to 0x0093e880, absent here. 0x0093dab0 calls 0x0093E880.
+0x00608450	0x00736320	unsure			3	Thunk to unnamed 0x0073BA80, retn 16 equal GOG. GOG callee CExoIniInternal::ReadIniEntry unmapped. 7/18 caller overlap is not an allowed anchor.
+0x0061a490	0x00710ad0	mismatch			4	Size 110 vs GOG 44. Returns 0 on equal, 1 on differ (inverse of operator==). 16-char tolower compare loop.
+0x005a6190	0x008b25f0	match		0x008B2620 CSWGuiContainer::Destructor_2	5	Calls confirmed callee Destructor_2 (GOG 0x005a61c0 trusted), then conditional delete. Size 46 and retn 4 equal GOG.
+0x005c0410	0x0042a470	unsure			3	Empty 13B body, retn 8 equal GOG. 12/12 caller overlap only; no callee, string or offset anchor. GOG has 0 callees.
+0x009080d0	0x0093dad0	mismatch	0x0093dab0	0x0093EA10 ReleaseProcessedTextureInternal (candidate callee)	4	Thunk calls 0x0093EA10 ReleaseProcessedTextureInternal. GOG callee GetProcessedTextureInternal (0x0093e880) absent. Likely the Release thunk (GOG 0x9080f0).
+0x0063cd80	0x0070dc60	mismatch	0x0070dde0	G6 dup trusted_holder CExoStreamingSoundSourceInternal::IsDone	4	Body is AIL_stream_status==2 bool, duplicate of trusted IsDone. Size 71 vs GOG 237. Pause likely 0x0070dde0 (see card 10).
+0x0060baa0	0x00739a10	unsure			3	Thunk to unnamed 0x0073DE00. GOG callee CExoFileInternal::ReadAsyncComplete unmapped. 2/2 caller overlap only, not an allowed anchor.

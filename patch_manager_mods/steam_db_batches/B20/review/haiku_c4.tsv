@@ -1,0 +1,19 @@
+gog_addr	steam_addr	verdict	corrected_addr	content_anchor	confidence	reason
+0x00890b90	0x004a9ea0	match		callee 0x005160C0 Global::RotationArc (GOG 0x0080df50 trusted-mapped; cand calls it)	4	Trusted callee RotationArc; disp 14/14 and imm 11/11 GOG sets common; RET 4 agrees with GOG retn; GOG param field flagged bad
+0x005c0410	0x0042a220	mismatch		none	4	GOG 13 B with 0 callees vs cand 428 B with 3 alloc/memcpy callees; 0 disp common; mapped GOG callers shown do not call cand
+0x00610130	0x0073d710	mismatch		none	3	Cand returns ptr after 'saves' check and list walk (+0x10 next); no read or size path; GOG 231 B callees unmapped
+0x008f5120	0x004dae60	unsure		none	2	No trusted callee; cand 132 B has NULL-texture fallback call, vcall +0xb8, cleanup call; GOG AurTextureGetTID unmapped
+0x00410e50	0x00765940	mismatch		none	4	Cand is trusted holder of CSWCCreature::SetSoundSet (dup fail); body is setter with new, no delete path
+0x00410e50	0x00765110	mismatch		none	4	Cand is trusted holder of CSWCCreature::GetName (dup fail); body copies name at +0x310 and returns param_2
+0x00647090	0x006f9420	match		callee 0x006F99F0 CPathfindInformation::Shutdown (name matches GOG callee 0x00647660; not trusted-mapped)	3	Size 19=19 and RET 0 equal; both mapped GOG callers call cand; callee anchor is name-only (GOG callee unmapped)
+0x0086ba30	0x00484ca0	unsure		none	3	Size 33=33, RET 0 match; no callee, string or offset anchor; only caller link RenderSkinnedVP (not an anchor type)
+0x0084b050	0x00458a80	unsure		none	3	Size 90=90, RET 0 match; imm 0x4 0x8 0x64 common; cand calls index helper and _stricmp; no mapped callee or asm-line member access
+0x00827df0	0x00435720	mismatch		none	5	Cand 1885 B is GL context and texture teardown (wglDeleteContext, glDeleteTextures); GOG 54 B calls memset; mac_contra flag
+0x00608450	0x00736350	unsure		none	3	Size 39=39, RET 16=16 thunk; GOG callee CExoIniInternal::ReadIniEntry unmapped; cand target 0x0073C0E0 unnamed; caller link only
+0x008f5120	0x004daf40	unsure		none	2	Cand 80 B: NULL-texture fallback, vcall +0xb8, cleanup call on member; no mapped GOG callee; GOG AurTextureGetTID unmapped
+0x0086ab80	0x00984730	mismatch		none	3	GOG 15 B vs cand 37 B: cand zeroes one global and stores two float consts (reset shape; name says Enable); cand has 0 callers
+0x005c0410	0x0042a6e0	mismatch		none	4	Same GOG 13 B 0-callee fn as card 02; cand 205 B does new[]/memcpy/delete[] on arrays; mapped GOG callers shown do not call cand
+0x00844e00	0x004527f0	unsure		none	3	17=17 B 1-arg thunk to operator new; GOG lone callee operator_new_uint unmapped; CRT callee too generic to anchor
+0x0086b700	0x009852b0	mismatch		none	3	GOG 100 B free fn vs cand 15 B ECX-thunk to 0x452F80 (unnamed) from a twin family; size and shape disagree
+0x00903df0	0x0049baf0	mismatch		none	4	GOG DelIndex 75 B has 0 callees and disp 0x4; cand 29 B thunk calls std::allocator allocate; mapped GOG callers shown do not call cand
+0x00903df0	0x0049b820	mismatch		none	4	GOG DelIndex 75 B has 0 callees; cand 25 B thunk calls 0x449170 (unnamed); mapped GOG callers shown do not call cand

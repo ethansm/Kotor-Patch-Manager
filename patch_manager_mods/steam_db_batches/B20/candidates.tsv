@@ -1,0 +1,58 @@
+class	name	gog	gog_callconv	gog_param	gog_size	gog_retn	candidates
+CSWCCreature	`scalar	0x00410e50		4	44	4	0x00765180|fpgraph+near;0x00764fe0|near
+CClientAIMaster	AddObject	0x0044eeb0		4	36	4	0x007a2510|fpgraph
+CExoArrayList_Vector_	Allocate	0x00457b00		4	90	4	0x004292d0|fpgraph
+CSWCModule	Destructor_2	0x0046a0d0		0	396	0	0x007f2eb0|fpgraph+mapper:vote+near;0x007f2e90|near;0x007f3040|near
+CSWCCreatureAppearance	GetBTypeModelAndTextureResRef	0x0048e3b0		12	813	12	0x0085e320|fpgraph+mapper:vote+near;0x0085e2b0|near;0x0085e650|near
+CSWCMessage	HandleServerToPlayerChat	0x004974f0	__thiscall	1	7054	4	0x00802f00|fpgraph+near;0x00802d30|near
+CSWCMessage	HandleServerToPlayerCreatureUpdate_Update	0x0049bfa0		8	19393	8	0x008079b0|fpgraph+mapper:vote+near;0x00807730|near
+CGuiInGame	Constructor	0x004cd090		0	3333	0	0x007bce00|fpgraph;0x0073f2b0|mapper:vote;0x007bca60|near;0x007bc7f0|near;0x007bc760|near
+CSWCVisualEffectOnObject	ApplyLightsaberThrow	0x004fec40		0	1948	4	0x00873360|fpgraph+near;0x00873070|near
+CSWGuiInGameMessages	ShowEffects	0x0052bec0		0	1659		0x0075a7c0|fpgraph+mapper:vote+near;0x0075a630|near;0x0075a4a0|near
+CSWGuiLegalScreen	Destructor	0x0053a810		4	44	4	0x0087fdf0|fpgraph
+Global	CSWGuiLoadScreen	0x0053fba0	__thiscall	4	1112	4	0x008850b0|fpgraph+mapper:vote;0x0042a5d0|near;0x0042a7b0|near;0x0042a1f0|near
+CSWGuiLoadScreen	Constructor	0x0053fba0	__thiscall	4	1112	4	0x008850b0|fpgraph+mapper:vote+near
+CSWGuiOptionsMouse	HandleInputEvent	0x005725e0		8	413	8	0x007dccd0|fpgraph
+CSWGuiInGameJournal	PopulateItemListBox	0x00591bd0		0	1005	0	0x007fc880|fpgraph
+CSWGuiInGameAbilities	UpdateView	0x005939b0		0	2911	0	0x008a3c60|fpgraph+mapper:vote+near;0x008a3c20|near;0x008a3bc0|near
+CSWGuiContainer	Destructor	0x005a6190		4	46	4	0x008b25f0|fpgraph+mapper:vote+near;0x008b2850|near;0x008b29e0|near
+CSWGuiObject	SetActiveControl	0x005c0410		0	13	8	0x0042a470|i9c_fptwin
+CSWGuiPowersLevelUp	Destructor	0x005f6ed0		4	44	4	0x00908040|fpgraph+mapper:vote+near;0x00908070|near
+CExoTimers	GetLowResolutionTimer	0x00608330		0	21	0	0x00736200|fpgraph
+CExoIni	ReadIniEntry	0x00608450		16	39	16	0x00736320|fpgraph+mapper:vote+near;0x007362c0|near;0x00736240|near
+CExoFile	Read	0x0060ba20		12	35	12	0x00739990|fpgraph+mapper:vote+near;0x007397f0|near;0x00739880|near
+CExoFile	ReadAsyncComplete	0x0060baa0		0	21	0	0x00739a10|fpgraph+mapper:vote+near;0x00739970|near;0x00739950|near
+CExoFileInternal	Read	0x00610130		8	231	8	0x0073dc30|i9c_fptwin+mapper:vote+near;0x0073db70|near;0x0073dd20|near
+CExoInputInternal	GetEvents	0x006134e0		12	2768		0x0072c7e0|fpgraph+mapper:drift+0x0+near;0x0072c6c0|near;0x0072c7a0|near
+CExoInput	UpdateMouseDelta	0x00616990		4	31	4	0x0072fd90|fpgraph+mapper:vote+near;0x0072fd70|near;0x0072fdb0|near
+CResRef	operator==	0x0061a490		4	44	4	0x00710b40|i9c_fptwin+mapper:vote+near;0x00710980|near;0x00710b70|near
+CResRef	operator==_3	0x0061a570		4	113	4	0x00710c20|i9c_fptwin+mapper:vote+near;0x00710930|near;0x00710ca0|near
+CExoLinkedListInternal	Remove_2	0x006207c0		4	27	4	0x0064dde0|fpgraph;0x0074e910|near;0x0074ebc0|near
+Global	GetINTEntry	0x00621350		12	526	12	0x0071b8b0|fpgraph;0x0050bf70|near;0x0050be60|near;0x0050c0e0|near
+CExoKeyTable	RebuildTable	0x006304a0		0	1142	0	0x00726a50|fpgraph+mapper:vote+near;0x00726940|near;0x00726790|near
+CExoStreamingSoundSourceInternal	Pause	0x0063cd80		0	237	0	0x0070dde0|fpgraph+mapper:vote+near;0x0070ded0|near;0x0070dfa0|near
+CExoStreamingSoundSourceInternal	SetVolume	0x0063cf80		12	412	12	0x0070dfe0|fpgraph+mapper:vote+near;0x0070dfa0|near;0x0070ded0|near
+CPathfindInformation	Destructor	0x00647090		0	19	0	0x006f9420|fpgraph+near;0x006f9200|near;0x006f9130|near
+CSWSJournal	SetState	0x00778c60		12	4583	12	0x006d0db0|fpgraph+mapper:vote+near;0x006d0d40|near;0x006d0cd0|near
+CSWSMessage	SendServerToPlayerDebugInfo_Creature	0x007e2e00		8	913	8	0x0064c6e0|fpgraph+mapper:vote+near;0x0064ca80|near;0x0064c320|near
+GLRender	RenderDrawableSquares	0x00827df0		0	54	0	0x004356e0|i9c_fptwin+near;0x00435720|mapper:vote+near;0x004356c0|near
+MaxTree	FreeTheFreeList_2	0x00844e00		4	17	0	0x004527f0|fpgraph+near;0x004528c0|near;0x00452810|near
+Global	FindGob	0x0084b050		4	90	0	0x00458a80|i9c_fptwin;0x00735b70|near;0x00735840|near;0x007358d0|near
+Global	AurEnableShadows	0x0086ab80		0	15	0	0x00478ca0|fpgraph;0x00984730|mapper:vote+name_map:medium:gog_cluster_delta_map.py
+Global	AurCubeMapAvailable	0x0086b700		0	100	0	0x00484970|i9c_fptwin;0x009852b0|mapper:vote+name_map:medium:gog_cluster_delta_map.py;0x007563b0|near;0x00756380|near
+Global	AuroraUseARBShaders	0x0086ba30		0	33	0	0x00484ca0|fpgraph;0x009855e0|mapper:vote+name_map:medium:gog_cluster_delta_map.py;0x007563b0|near;0x00756380|near
+PartLightsaber	Draw	0x00890b90		0	25444	4	0x004a9ea0|fpgraph
+Global	AurMessageParseFloat	0x008c5350		8	32	0	0x00484e00|fpgraph
+Material	GetTextureTID	0x008f5120	__thiscall	0	33	0	0x004daf90|fpgraph+mapper:vote+near;0x004daf40|near;0x004daef0|near
+MdlNode	InternalControl	0x008f9030		16	139		0x004def00|fpgraph;0x00506a20|near;0x00506a80|near;0x005069b0|near
+List_SafePointer_WindManager___	Destructor	0x008fe2a0	__thiscall	0	41	0	0x00463b20|fpgraph
+CExoArrayList	DelIndex	0x00903df0	__thiscall	4	75	4	0x0049b840|fpgraph
+CAuroraInterface	GetProcessedTextureInternal_thunk	0x009080d0		4	17	0	0x0093dab0|fpgraph+near;0x0051c180|mapper:vote;0x0093d980|near;0x0093da90|near
+CAuroraTexture	GetTextureDataPtr	0x00909e50		0	51	0	0x0093f830|fpgraph
+CSWGuiExtent	Union	0x0090ca10		12	285	0	0x0040e480|fpgraph
+CRes	GetData	0x00912f70		0	17	0	0x00414ba0|fpgraph
+CExoMoviePlayer	CancelMovie	0x009211a0		8	31	8	0x0093b550|fpgraph+mapper:vote+near;0x0093b570|near;0x0093b590|near
+CExoMoviePlayer	PlayMoviesAsync	0x009211e0		12	35	12	0x0093b590|fpgraph+mapper:vote+near;0x0093b5c0|near;0x0093b5e0|near
+Global	`eh_vector_constructor_iterator'	0x009258bf	__stdcall	20	77	20	0x0091d67e|i9c_fptwin;0x008103c0|near;0x00810510|near;0x008105e0|near
+GLU32_DLL	gluBuild2DMipmaps	0x009433e0		0	6		0x0093b430|fpgraph
+GLU32_DLL	gluPerspective	0x009433e6		0	6		0x0093b436|fpgraph

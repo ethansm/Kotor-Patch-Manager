@@ -1,0 +1,23 @@
+gog_addr	steam_addr	final_verdict	note
+0x00457b00	0x004292d0	verified	fp identical + 8 mapped graph hits, margin 7 over group rivals
+0x00608330	0x00736200	verified	fp identical + 9 mapped graph hits, margin 9
+0x00608450	0x00736320	verified	fp identical; callee CExoIniInternal::ReadIniEntry -> Steam 0x73ba80 + 14 mapped callers (ReInitAurora, LoadOptions paths); 15 hits margin 10
+0x0086ba30	0x00484ca0	verified	fp identical + 9 mapped graph hits, margin 9
+0x008c5350	0x00484e00	verified	fp identical + 19 mapped graph hits, margin 19
+0x0063cd80	0x0070dde0	verified	7 mapped graph hits margin 4; reviewer (column-shifted) match on trusted callees + string; two decoy cards both corrected to 0x70dde0
+0x006134e0	0x0072c7e0	verified	11 mapped graph hits margin 6; reviewer (column-shifted) match
+0x005c0410	0x0042a470	verified	unique fp twin (key unique in both exes) + 12 mapped graph hits
+0x0061a570	0x00710c20	verified	unique fp twin + 8 mapped graph hits; B18 reviewer: 10/10 mapped callers
+0x009258bf	0x0091d67e	verified	unique fp twin + 108 mapped graph hits
+0x0044eeb0	0x007a2510	likely	fp identical + 13 mapped caller hits margin 13; Steam body is a thunk, reviewers split (B18 mismatch, B20 unsure)
+0x008fe2a0	0x00463b20	likely	address strong (fp identical, 67 mapped callers margin 55) but body is a folded delete(*p): template name is one alias of many
+0x008f9030	0x004def00	likely	7 mapped graph hits margin 6, fp differs
+0x00909e50	0x0093f830	likely	fp identical + 4 graph hits margin 3
+0x009433e0	0x0093b430	likely	fp identical import thunk + 4 graph hits
+0x0063cf80	0x0070dfe0	likely	5 mapped hits (GetSliderType/GetSliderVolume/__ftol callees, SetVolume caller) margin 4, fp differs
+0x00616990	0x0072fd90	likely	fp identical + 2 graph hits; reviewer (column-shifted) match
+0x0060baa0	0x00739a10	likely	fp identical + 3 graph hits margin 2
+0x00844e00	0x004527f0	likely	fp identical + 2 graph hits margin 2
+0x00610130	0x0073dc30	likely	unique fp twin + 4 graph hits
+0x0061a490	0x00710b40	likely	unique fp twin + 4 graph hits
+0x0084b050	0x00458a80	likely	unique fp twin + 5 graph hits

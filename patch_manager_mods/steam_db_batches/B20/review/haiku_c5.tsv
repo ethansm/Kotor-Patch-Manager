@@ -1,0 +1,19 @@
+gog_addr	steam_addr	verdict	corrected_addr	content_anchor	confidence	reason
+0x008c5350	0x00484e00	unsure			3	Size 32 and RET 0 match GOG. Sscanf %f wrapper, but callee 0x0091C7AD is auto-label only; GOG sscanf unmapped; decoy shares callee
+0x00457b00	0x004293b0	mismatch			4	Ptr store plus Target::AddBackRef call; no alloc or loop, so not array Allocate. Allocate-shaped body is 0x004291c0 (card 04)
+0x00903df0	0x0049b840	match		+0x4 count RMW (chunk L255-256); decoy 0x0049b820 touches no offsets	4	Shift-down delete on count at +0x4; size 75 and RET 4 match GOG; 4 trusted GOG callers are candidate callers
+0x00457b00	0x004291c0	unsure			3	Allocate-shaped (new[] count*12, copy, delete[]). New[]/delete[] callees have no trusted GOG map (GOG callees unnamed); needs that map
+0x008f5120	0x004daef0	mismatch			4	NULL-texture GUI fallback then vtbl 0xB8 call, void return; GetTextureTID must return a TID. Size 80 vs GOG 33
+0x0086ab80	0x00984710	mismatch			4	Sets 3 float globals to 1.0, no shadow flag; size 29 vs GOG 15; 0 candidate callers, GOG caller SetShadows not a match
+0x008f9030	0x004def00	unsure			3	Trusted callee NewController::Control and disp 0x2c/0x38/0x3c match; but GOG callees=1 vs Steam 2, and size 139 vs 267
+0x009433e0	0x0093b436	unsure			1	Thunk target 0x00000145 unresolved, no asm; candidate unaligned (G2 fail); no GOG fingerprint. Cannot judge
+0x0090ca10	0x0040e480	unsure			4	Exact size 285, RET 0 fits; min/max union body fits, but offsets equal decoy 0x0040e360 and no callee or string anchor
+0x005a6190	0x008b2f70	mismatch			5	Size 1410 vs GOG 46; 21 callees, item-list build with SEH; held by CSWGuiContainer::SetupGiveMode; not a destructor
+0x005f6ed0	0x00907360	mismatch			5	Trusted holder CSWGuiMainCharGen::Draw (G6 fail); body draws panels via CSWGuiPanel::Draw; size 326 vs GOG 44
+0x0086ab80	0x00984760	mismatch			4	G6 review: held by Global::AurEnableGrass; sets 3 globals; size 33 vs GOG 15; no shadow anchor
+0x0084b050	0x00458ae0	mismatch			3	Binary search by name with stricmp only; GOG callee Gob::SetScene 0x0084b0b0 not called by candidate; size 130 vs GOG 90
+0x008fe2a0	0x00463b20	mismatch			3	Body is delete(*p) only; 0 of 4 shown trusted GOG callers call candidate (241 callers); GOG callee unmapped
+0x009433e0	0x0093b3b0	unsure			1	Thunk target 0x00000143 unresolved, no asm; no GOG fingerprint. Cannot judge
+0x005f6ed0	0x009084f0	mismatch			4	Calls GetInGameGui and AddPanel, a helper called by OnPanelAdded; not a destructor. Size 74 vs GOG 44
+0x00909e50	0x0093f830	unsure			3	Exact size 51; GetDemands>0 then return of 2nd call, shape fits GOG callees; GOG callees unmapped, Steam callees unnamed, offset +0x8 shared with decoy
+0x009080d0	0x0093dab0	match		callee 0x0093E880 CAuroraInterface::GetProcessedTextureInternal = GOG callee 0x00908ea0 (trusted row)	4	Thunk to the callee the GOG thunk calls; size 17 exact; RET 0 = GOG retn 0; other twin thunks lack this call

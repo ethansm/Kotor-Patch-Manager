@@ -1,0 +1,290 @@
+[
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00410e50] Steam batch B20: CALLEE 1 (callees: ? 0x7651b0) | reviewer match with anchor: callee 0x007651B0 = CSWCCreature::Destructor (trusted from GOG 0x00410e80)",
+  "name": "CSWCCreature::`scalar",
+  "source": "steam-db-B20",
+  "steam_addr": "0x00765180"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00457b00] Steam batch B20: SIG 1.00 | override: [a] fp identical + 8 mapped graph hits, margin 7 over group rivals",
+  "name": "CExoArrayList_Vector_::Allocate",
+  "source": "steam-db-B20",
+  "steam_addr": "0x004292d0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0046a0d0] Steam batch B20: CALLEE 1 (callees: UnloadArea 0x7a5fa0); SIG 1.00 | AUTO: CALLEE 1 (callees: UnloadArea 0x7a5fa0); SIG 1.00",
+  "name": "CSWCModule::Destructor_2",
+  "source": "steam-db-B20",
+  "steam_addr": "0x007f2eb0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=12; GOG 0x0048e3b0] Steam batch B20: CALLEE 1 (callees: Exists 0x711ed0); SIG 1.00 | AUTO: CALLEE 1 (callees: Exists 0x711ed0); SIG 1.00",
+  "name": "CSWCCreatureAppearance::GetBTypeModelAndTextureResRef",
+  "source": "steam-db-B20",
+  "steam_addr": "0x0085e320"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004974f0] Steam batch B20: CALLEE 5 (callees: GetObjectName 0x73f0e0, GetPlayerByGameObjectID 0x73f510, NewVocalization 0x7f2060; callers: HandleServerToPlayerMessage 0x810cf0); SIG 1.00 | AUTO: CALLEE 5 (callees: GetObjectName 0x73f0e0, GetPlayerByGameObjectID 0x73f510, NewVocalization 0x7f2060; callers: HandleServerToPlayerMessage 0x810cf0); SIG 1.00",
+  "name": "CSWCMessage::HandleServerToPlayerChat",
+  "source": "steam-db-B20",
+  "steam_addr": "0x00802f00"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=8; GOG 0x0049bfa0] Steam batch B20: STR 'sdr_invisible'@009a29e4; CALLEE 24 (callees: AddFeedbackMessage 0x73f100, GetPlayerCreatureId 0x73f470, GetPlayerByGameObjectID 0x73f510); SIG 1.00 | AUTO: STR 'sdr_invisible'@009a29e4; CALLEE 24 (callees: AddFeedbackMessage 0x73f100, GetPlayerCreatureId 0x73f470, GetPlayerByGameObjectID 0x73f510); SIG 1.00",
+  "name": "CSWCMessage::HandleServerToPlayerCreatureUpdate_Update",
+  "source": "steam-db-B20",
+  "steam_addr": "0x008079b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=0; GOG 0x004cd090] Steam batch B20: STR 'Display Options'@009a04bc; 'Compass'@009a04cc; CALLEE 2 (callees: SetCameraMode 0x7b5e50; callers: StartServices 0x788d90); SIG 1.00 | reviewer match with anchor: str 0x009A04BC 'Display Options'@007bd739; str 0x009A04CC 'Compass'@007bd728",
+  "name": "CGuiInGame::Constructor",
+  "source": "steam-db-B20",
+  "steam_addr": "0x007bce00"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=4; GOG 0x004fec40] Steam batch B20: CALLEE 1 (callees: Constructor 0x8e54e0); SIG 1.00 | reviewer match with anchor: callee 0x0073F530 CClientExoApp::GetItemByGameObjectID; callee 0x0076E610 CSWCCreature::GetEquippedItemID",
+  "name": "CSWCVisualEffectOnObject::ApplyLightsaberThrow",
+  "source": "steam-db-B20",
+  "steam_addr": "0x00873360"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0052bec0] Steam batch B20: CALLEE 3 (callees: Constructor 0x414a50, SetDefaultColor 0x417140, SetSelectedControl 0x41e870); SIG 1.00 | reviewer match with anchor: callee 0x0073F750 CClientExoApp::GetInGameGui; callee 0x00733540 CExoString::Constructor; callee 0x0077D800 CSWCCreature::GetServerCreature",
+  "name": "CSWGuiInGameMessages::ShowEffects",
+  "source": "steam-db-B20",
+  "steam_addr": "0x0075a7c0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0053fba0] Steam batch B20: STR '1024x768'@009874a8; '1280x960'@009874b4; '1280x1024'@009874c0; CALLEE 3 (callers: Initialize 0x7819e0, SetVideoMode 0x78dbf0, ShowLoadScreen 0x798190); SIG 1.00 | AUTO: STR '1024x768'@009874a8; '1280x960'@009874b4; '1280x1024'@009874c0; CALLEE 3 (callers: Initialize 0x7819e0, SetVideoMode 0x78dbf0, ShowLoadScreen 0x798190); SIG",
+  "name": "CSWGuiLoadScreen::Constructor",
+  "source": "steam-db-B20",
+  "steam_addr": "0x008850b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0053fba0] Steam batch B20: STR '1024x768'@009874a8; '1280x960'@009874b4; '1280x1024'@009874c0; CALLEE 3 (callers: Initialize 0x7819e0, SetVideoMode 0x78dbf0, ShowLoadScreen 0x798190); SIG 1.00 | AUTO: STR '1024x768'@009874a8; '1280x960'@009874b4; '1280x1024'@009874c0; CALLEE 3 (callers: Initialize 0x7819e0, SetVideoMode 0x78dbf0, ShowLoadScreen 0x798190); SIG",
+  "name": "CSWGuiLoadScreen::Constructor",
+  "source": "steam-db-B20",
+  "steam_addr": "0x008850b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=8; GOG 0x005725e0] Steam batch B20: SIG 1.00 | reviewer match with anchor: callee 0x0040EAA0 CSWGuiPanel::HandleInputEvent; callee 0x004109C0 CSWGuiManager::PopModalPanel; callee 0x004122A0 CSWGuiManager::PlayGuiSound",
+  "name": "CSWGuiOptionsMouse::HandleInputEvent",
+  "source": "steam-db-B20",
+  "steam_addr": "0x007dccd0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00591bd0] Steam batch B20: CALLEE 3 (callees: GetQuestJournal 0x73f070, GetClientLanguage 0x73f350, SetSelectedControl 0x41e870); SIG 1.00 | reviewer match with anchor: 0x0073F070 CClientExoApp::GetQuestJournal",
+  "name": "CSWGuiInGameJournal::PopulateItemListBox",
+  "source": "steam-db-B20",
+  "steam_addr": "0x007fc880"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=0; GOG 0x005939b0] Steam batch B20: CALLEE 2 (callees: ShowTutorialWindow 0x740a20, SetSelectedControl 0x41e870); SIG 1.00 | AUTO: CALLEE 2 (callees: ShowTutorialWindow 0x740a20, SetSelectedControl 0x41e870); SIG 1.00",
+  "name": "CSWGuiInGameAbilities::UpdateView",
+  "source": "steam-db-B20",
+  "steam_addr": "0x008a3c60"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=4; GOG 0x005a6190] Steam batch B20: CALLEE 1 (callees: Destructor_2 0x8b2620) | reviewer match with anchor: 0x008B2620 CSWGuiContainer::Destructor_2",
+  "name": "CSWGuiContainer::Destructor",
+  "source": "steam-db-B20",
+  "steam_addr": "0x008b25f0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=8; GOG 0x005c0410] Steam batch B20: CALLEE 12 (callers: StartServices 0x788d90, StopServices 0x78ac40, ? 0x74d520) | override: [a] unique fp twin (key unique in both exes) + 12 mapped graph hits",
+  "name": "CSWGuiObject::SetActiveControl",
+  "source": "steam-db-B20",
+  "steam_addr": "0x0042a470"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00608330] Steam batch B20: CALLEE 5 (callers: AIUpdate_2 0x7664b0, ShowLoadScreen 0x798190, UpdateLoadingScreenHint 0x79fa50) | override: [a] fp identical + 9 mapped graph hits, margin 9",
+  "name": "CExoTimers::GetLowResolutionTimer",
+  "source": "steam-db-B20",
+  "steam_addr": "0x00736200"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=16; GOG 0x00608450] Steam batch B20: no content anchor (C0) | override: [a] fp identical; callee CExoIniInternal::ReadIniEntry -> Steam 0x73ba80 + 14 mapped callers (ReInitAurora, LoadOptions paths); 15 hits margin 10",
+  "name": "CExoIni::ReadIniEntry",
+  "source": "steam-db-B20",
+  "steam_addr": "0x00736320"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=12; GOG 0x0060ba20] Steam batch B20: CALLEE 7 (callers: ReadPlayBackInputEvents 0x7b0290, ServiceFromDirectory 0x7133a0, ServiceFromDirectoryRaw 0x714630) | reviewer match with anchor: 0x0073DD20 CExoFileInternal::Read_2",
+  "name": "CExoFile::Read",
+  "source": "steam-db-B20",
+  "steam_addr": "0x00739990"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=12; GOG 0x006134e0] Steam batch B20: STR '.\\\\exoinputinternal.cpp'@0099c810; 'CExoInputInternal::GetEvents() Invalid I'@0099c828 | override: [a] 11 mapped graph hits margin 6; reviewer (column-shifted) match",
+  "name": "CExoInputInternal::GetEvents",
+  "source": "steam-db-B20",
+  "steam_addr": "0x0072c7e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=4; GOG 0x0061a570] Steam batch B20: CALLEE 10 (callers: ? 0x765940, GetEquipmentForcePowers_2 0x778ba0, SetEnvMap 0x7f03f0) | override: [a] unique fp twin + 8 mapped graph hits; B18 reviewer: 10/10 mapped callers",
+  "name": "CResRef::operator==_3",
+  "source": "steam-db-B20",
+  "steam_addr": "0x00710c20"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=12; GOG 0x00621350] Steam batch B20: CALLEE 24 (callers: GetSoundSetStrres 0x765aa0, PlayFootstep 0x765e90, PlayHitSound 0x772020); SIG 1.00 | AUTO: CALLEE 24 (callers: GetSoundSetStrres 0x765aa0, PlayFootstep 0x765e90, PlayHitSound 0x772020); SIG 1.00",
+  "name": "Global::GetINTEntry",
+  "source": "steam-db-B20",
+  "steam_addr": "0x0071b8b0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=0; GOG 0x006304a0] Steam batch B20: STR '#### Rebuild Table: %x %s\\n'@0099c648; CALLEE 4 (callees: Dump 0x711230, GetKeyEntry 0x712360; callers: AddKeyTable 0x711750, UpdateKeyTable 0x7144a0); SIG 1.00 | AUTO: STR '#### Rebuild Table: %x %s\\n'@0099c648; CALLEE 4 (callees: Dump 0x711230, GetKeyEntry 0x712360; callers: AddKeyTable 0x711750, UpdateKeyTable 0x7144a0); SIG",
+  "name": "CExoKeyTable::RebuildTable",
+  "source": "steam-db-B20",
+  "steam_addr": "0x00726a50"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0063cd80] Steam batch B20: CALLEE 2 (callees: GetCreditSequenceInProgress 0x741070, Update3DStream 0x70daa0); SIG 0.80 | override: [a] 7 mapped graph hits margin 4; reviewer (column-shifted) match on trusted callees + string; two decoy cards both corrected to 0x70dde0",
+  "name": "CExoStreamingSoundSourceInternal::Pause",
+  "source": "steam-db-B20",
+  "steam_addr": "0x0070dde0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00647090] Steam batch B20: CALLEE 2 (callers: Destructor_2 0x5634c0, Destructor_2 0x5219d0) | reviewer match with anchor: callee 0x006F99F0 CPathfindInformation::Shutdown (name matches GOG callee 0x00647660; not trusted-mapped)",
+  "name": "CPathfindInformation::Destructor",
+  "source": "steam-db-B20",
+  "steam_addr": "0x006f9420"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=12; GOG 0x00778c60] Steam batch B20: STR 'Priority'@009963bc; 'Categories'@00998cb0; 'Global'@00998cc4; CALLEE 8 (callees: Constructor_2 0x716fd0, GetTopLevelStruct 0x7189d0, ReadFieldWORD 0x718b00; callers: LoadJournal 0x5753f0, LoadJournal 0x5f7cc0, ExecuteCommandAddJournalQuestEntry 0x66c160); SIG 1.00 | AUTO: STR 'Priority'@009963bc; 'Categories'@00998cb0; 'Global'@00998cc4; CALLEE 8 (callees: Constructor_2 0x716fd0, GetTopLevelStruct 0x7189d0, ReadFieldWORD 0x718b00",
+  "name": "CSWSJournal::SetState",
+  "source": "steam-db-B20",
+  "steam_addr": "0x006d0db0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=8; GOG 0x007e2e00] Steam batch B20: CALLEE 2 (callees: GetArmorClass 0x57e530, GetFaction 0x5d0cb0); SIG 1.00 | AUTO: CALLEE 2 (callees: GetArmorClass 0x57e530, GetFaction 0x5d0cb0); SIG 1.00",
+  "name": "CSWSMessage::SendServerToPlayerDebugInfo_Creature",
+  "source": "steam-db-B20",
+  "steam_addr": "0x0064c6e0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=0; GOG 0x0086ba30] Steam batch B20: CALLEE 1 (callers: RenderSkinnedVP 0x4c3430) | override: [a] fp identical + 9 mapped graph hits, margin 9",
+  "name": "Global::AuroraUseARBShaders",
+  "source": "steam-db-B20",
+  "steam_addr": "0x00484ca0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00890b90] Steam batch B20: CALLEE 1 (callees: RotationArc 0x5160c0); SIG 0.96 | reviewer match with anchor: callee 0x005160C0 Global::RotationArc (GOG 0x0080df50 trusted-mapped; cand calls it)",
+  "name": "PartLightsaber::Draw",
+  "source": "steam-db-B20",
+  "steam_addr": "0x004a9ea0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=0; GOG 0x008c5350] Steam batch B20: no content anchor (C0) | override: [a] fp identical + 19 mapped graph hits, margin 19",
+  "name": "Global::AurMessageParseFloat",
+  "source": "steam-db-B20",
+  "steam_addr": "0x00484e00"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=4; GOG 0x00903df0] Steam batch B20: CALLEE 25 (callers: SetSpecialWalkAnimation_2 0x773970, UnloadArea 0x7a5fa0, Update 0x7a6760) | reviewer match with anchor: +0x4 count RMW (chunk L255-256); decoy 0x0049b820 touches no offsets",
+  "name": "CExoArrayList::DelIndex",
+  "source": "steam-db-B20",
+  "steam_addr": "0x0049b840"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; cdecl retn=0; GOG 0x009080d0] Steam batch B20: CALLEE 1 (callees: GetProcessedTextureInternal 0x93e880) | reviewer match with anchor: callee 0x0093E880 CAuroraInterface::GetProcessedTextureInternal = GOG callee 0x00908ea0 (trusted row)",
+  "name": "CAuroraInterface::GetProcessedTextureInternal_thunk",
+  "source": "steam-db-B20",
+  "steam_addr": "0x0093dab0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=0; GOG 0x00912f70] Steam batch B20: CALLEE 2 (callers: WriteResource_2 0x721bb0, CreateParty 0x5f9220) | reviewer match with anchor: member +0x10 read via EAX (return *(param_1+0x10)); GOG disp set also has 0x10",
+  "name": "CRes::GetData",
+  "source": "steam-db-B20",
+  "steam_addr": "0x00414ba0"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=8; GOG 0x009211a0] Steam batch B20: CALLEE 3 (callees: CancelMovie 0x40cc30; callers: WaitForMovie 0x798820, CancelMovie 0x7a0500) | reviewer match with anchor: callee 0x0040CC30 CExoMoviePlayerInternal::CancelMovie (asm CALL; GOG callee 0x0091fe20 trusted map)",
+  "name": "CExoMoviePlayer::CancelMovie",
+  "source": "steam-db-B20",
+  "steam_addr": "0x0093b550"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; thiscall retn=12; GOG 0x009211e0] Steam batch B20: CALLEE 3 (callees: PlayMoviesAsync 0x40da40; callers: PlayLoadModuleMovies 0x7986a0, PlayMoviesInExoArrayList 0x7a0fb0) | reviewer match with anchor: callee 0x0040DA40 CExoMoviePlayerInternal::PlayMoviesAsync (asm CALL; GOG callee 0x00920c30 trusted map)",
+  "name": "CExoMoviePlayer::PlayMoviesAsync",
+  "source": "steam-db-B20",
+  "steam_addr": "0x0093b590"
+ },
+ {
+  "confidence": "high",
+  "date": "2026-10-29",
+  "evidence": "[verified; stdcall retn=20; GOG 0x009258bf] Steam batch B20: CALLEE 50 (callers: Constructor 0x780460, LoadArea 0x7a2fb0, InitializeRepliesData 0x7c06f0); SIG 0.50 | override: [a] unique fp twin + 108 mapped graph hits",
+  "name": "Global::`eh_vector_constructor_iterator'",
+  "source": "steam-db-B20",
+  "steam_addr": "0x0091d67e"
+ }
+]

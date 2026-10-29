@@ -1,0 +1,19 @@
+gog_addr	steam_addr	verdict	corrected_addr	content_anchor	confidence	reason
+0x0061a570	0x00710b70	unsure			2	Strlen, min-16 length and memcmp after CStr fit a ResRef compare, but GOG has 1 callee vs 3 here; no trusted callee or string anchor.
+0x004fec40	0x00873360	match		callee 0x0073F530 CClientExoApp::GetItemByGameObjectID; callee 0x0076E610 CSWCCreature::GetEquippedItemID	4	Trusted callees GetItemByGameObjectID, GetEquippedItemID found; rhand/impact strings match; size 1948 exact; param flag bad, retn 4 agrees.
+0x004cd090	0x007bce00	match		str 0x009A04BC 'Display Options'@007bd739; str 0x009A04CC 'Compass'@007bd728	5	All 3 GOG strings match Steam literals; SetCameraMode callee trusted; size 3333 and RET 0 match exactly.
+0x00616990	0x0072fd10	mismatch		callee 0x0072f110 (trusted GOG callee) not called; candidate has 0 callees	4	Size 31 vs 81. Candidate is a bounds-checked array read (+0x188/+0x18c), not a mouse-delta update; GOG callee absent.
+0x0044eeb0	0x007a2510	unsure			2	Size 36 and RET 4 match, but thunk target 0x007A2110 has no trusted GOG callee mapping; caller overlap is not an allowed anchor.
+0x0053a810	0x0087fdf0	match		callee 0x0040E860 CSWGuiPanel::Destructor (trusted from GOG 0x0090cce0)	4	Destructor shape: base dtor call then conditional operator delete; size 44 and RET 4 match. Sibling dtors share this shape.
+0x00410e50	0x00765180	match		callee 0x007651B0 = CSWCCreature::Destructor (trusted from GOG 0x00410e80)	5	Scalar-deleting wrapper: calls trusted dtor 0x007651B0, then conditional delete; size 44 and RET 4 match.
+0x00457b00	0x004292d0	unsure			2	Free-if-zero else alloc wrapper fits Allocate, but both GOG callees are unmapped; candidate callee 0x004291C0 is the decoy neighbour.
+0x0060baa0	0x00739b70	mismatch		body: null check then seek(f,0,0) returning bool	4	Size 69 vs GOG 21. Body is a null check then a bool-returning seek, not an async-complete thunk.
+0x0060ba20	0x007397f0	mismatch		body: operator new(0xC) then Global::operator/ (no file-read call)	4	Size 140 vs GOG 35. Allocates 12 bytes and calls Global::operator/; GOG Read has 1 callee, CExoFileInternal::Read_2.
+0x008c5350	0x00484e20	mismatch		decompile: sscanf %d into int, then TRUE/FALSE stricmp; no float parse	4	Size 159 vs GOG 32. Parses int then TRUE/FALSE, which fits IntOrBool rather than Float.
+0x0061a570	0x00711170	mismatch		G6 dup: trusted_holder=CRes::Destructor; body is dtor wrapper calling 0x007111a0	5	Address already trusted as CRes::Destructor (dup fail); body is a scalar-deleting wrapper, not operator==. Size 44 vs 113.
+0x008c5350	0x00484dc0	mismatch		decompile: sscanf %s into string buffer, fail path calls 0x0091cff0; no float conversion	3	Size 52 vs GOG 32. Parses a %s token with no float conversion; not AurMessageParseFloat.
+0x005725e0	0x007dccd0	match		callee 0x0040EAA0 CSWGuiPanel::HandleInputEvent; callee 0x004109C0 CSWGuiManager::PopModalPanel; callee 0x004122A0 CSWGuiManager::PlayGuiSound	5	Three trusted GOG callees found by name; size 413 exact; RET 8 matches; disp and imm sets identical.
+0x0052bec0	0x0075a7c0	match		callee 0x0073F750 CClientExoApp::GetInGameGui; callee 0x00733540 CExoString::Constructor; callee 0x0077D800 CSWCCreature::GetServerCreature	4	Five trusted GOG callees found by name; RET 0 matches; size 1660 vs GOG 1659 (1 byte off); GOG retn None.
+0x0060baa0	0x00739970	mismatch		thunk to 0x0073DBA0 CExoFileInternal::GetSize	3	Size 21 and RET 0 match, but thunk target is GetSize; GOG thunk target is CExoFileInternal::ReadAsyncComplete. Names differ.
+0x0060ba20	0x007399e0	unsure			3	Size 35 and RET 12 match; thunk to unnamed 0x0073DDD0. GOG callee Read_2 is unmapped; twin 0x00739990 shares the callee.
+0x00616990	0x0072fe30	mismatch		disp +0x410 (EDX) not in GOG disp set {0x4}; candidate has 0 callees	4	Size 31 vs 36. Writes +0x410 absent from GOG access set; candidate makes no calls while GOG calls CExoInputInternal::UpdateMouseDelta.
