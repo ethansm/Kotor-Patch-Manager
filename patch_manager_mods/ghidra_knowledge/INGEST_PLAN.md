@@ -42,6 +42,10 @@ D6 R2 NO-GO root cause was missing names / caller context, so coverage is the le
 | I9d | Batch B20: graphpair rows (ambiguous + no_twin + I9c corrections) -> gates -> cards `--chunk 16 --decoys 10` -> Haiku -> finalize -> Opus gate | DONE | spec §I9 |
 | I9e | Off-gap bonus: B21 = the 51 AUTO rows the wide B19 run found outside the gap; Opus gate AUTO (20% sample + all C1), REVIEW rows parked | DONE | spec §I9 |
 | I9f | Persist B20/B21 + I9b promote list (user OK), re-card OnUpgradeSelected with the new decoy pool, gap re-measure, docs, memory | DONE | spec §I9 |
+| I10a | Batch B22 re-gate: 4 B20 graph corrections (RenderDrawableSquares 0x004356e0, AurCubeMapAvailable 0x00484970, AurEnableShadows 0x00478ca0, GetTextureTID 0x004daf90) + Camera::MapToScreen (never batched) + 2 fresh graph rows + 6 B21 likely -> gates -> cards -> Haiku -> Opus gate | TODO | spec §I10 |
+| I10b | CRT G1 lane: sprintf/memset/free rejected by G1 (Steam ANALYSIS already says `_sprintf`/`_memset`/`_free`) -> extract rows with the FLIRT name -> ledger `ingest-crt` -> cards `--decoy-pool kdb` -> Haiku -> score | TODO | spec §I10 |
+| I10c | Label suspects (7, B17/B18): graph check each Steam fn vs its GOG label + neighbours; record verdicts in `steam_db_batches/GOG_LABEL_SUSPECTS.md` ($0, no KDB write) | TODO | spec §I10 |
+| I10d | Persist B22 + I10b promote (user OK); user decision on the 13 B20 likely (`finalize B20 --with-likely` = persist at likely); gap re-measure, memory | TODO | spec §I10 |
 
 ## Cost log
 
@@ -155,6 +159,17 @@ D6 R2 NO-GO root cause was missing names / caller context, so coverage is the le
 - Cards: keep `--chunk 16 --decoys 10` (`--chunk 12` = only 2 real). B18 16-card chunks (~16k tokens each) still peaked
   Haiku at 130-160k: the peak is re-reads, not card count; cap reviewer tool calls at 4.
 - Budget: I9a/I9c $0 (code + inline), I9b ~2 Haiku (~$0.2), I9d ~4 Haiku chunks (~$0.4), I9e Opus inline. Total < $2.
+
+### I10: after I9 (gap 87 fns: named 23, unnamed 19, ambiguous 36, no_twin 9; name_map 5177)
+- Re-run 10-29 (`.claude/research/ingest/i10/`): `twins --buckets` + `graphpair` with the grown trusted map adds only
+  3 fresh rows (GetAtPos has a broken fp namespace `long>`; skip it). It confirms 2 of the 4 B20 corrections; the
+  RenderDrawableSquares pair is itself a unique fp twin (GOG 0x00827df0 <-> Steam 0x004356e0).
+- Named-bucket leftovers: label_suspect 7, rejected 6 (3 G6 known-wrong, 3 G1 library), unresolved 4, likely 4,
+  never batched 1 (Camera::MapToScreen GOG 0x008c1b40 <-> Steam 0x004809d0), FID_conflict 1 (skip).
+- B22 input = `gog steam source` TSV fed to `candidates --gog-list F --extra-candidates F`; cards
+  `--chunk 16 --decoys 10 --facts`; reviewers 4 tool calls; finalize ignores rows whose verdict cell is blank
+  (column shift): read them in the Opus gate.
+- Budget: I10a ~2-3 Haiku (~$0.2), I10b 1 Haiku (~$0.05), I10c $0. Total < $0.5.
 
 ## Decisions
 - Ledger first, KDB later: ledger rows are agent observations (`[rea]`), promotion needs Haiku+decoys and user OK.
