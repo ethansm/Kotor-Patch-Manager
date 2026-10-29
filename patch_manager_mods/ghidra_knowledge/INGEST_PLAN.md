@@ -36,6 +36,12 @@ D6 R2 NO-GO root cause was missing names / caller context, so coverage is the le
 | I8d | Mac-name verify: I8b hypotheses through `ingest_names.py cards --decomp-lines 10` (decoy names), Haiku verify, ledger rows topic `ingest-macnames` | DONE | spec §I8 |
 | I8e | no_twin 38: `batch.py candidates` (mapper + near only) + `gates` for B19, $0; report AUTO/REVIEW counts; review only if REVIEW <= 24 | DONE | spec §I8 |
 | I8f | Persist B18 (+ B17 likely 3 via `finalize --with-likely`) + I8d names (user OK), gap re-measure, docs sweep, memory | TODO | spec §I8 |
+| I9a | `ingest_names.py graphpair`: score GOG candidates for ambiguous + no_twin gap fns by callers/callees mapped through trusted pairs (+ fp equality); emit unique winners as `fpgraph` rows; + `bdlib` tolerate non-hex `corrected_addr` | TODO | spec §I9 |
+| I9b | CRT lane: the 23 named twins absent from `gog_functions.tsv` (21 MSVC CRT by FID) -> `twins --extract-out` -> ledger topic `ingest-crt` + blind cards (decoy pool from name_map), Haiku verify | TODO | spec §I9 |
+| I9c | `graphpair` re-check of the 13 B18 unresolved (incl. fp-group peers as alt candidates); corrections go into B20 | TODO | spec §I9 |
+| I9d | Batch B20: graphpair rows (ambiguous + no_twin + I9c corrections) -> gates -> cards `--chunk 16 --decoys 10` -> Haiku -> finalize -> Opus gate | TODO | spec §I9 |
+| I9e | Off-gap bonus: B21 = the 51 AUTO rows the wide B19 run found outside the gap; Opus gate AUTO (20% sample + all C1), REVIEW rows parked | TODO | spec §I9 |
+| I9f | Persist B20/B21 + I9b promote list (user OK), re-card OnUpgradeSelected with the new decoy pool, gap re-measure, docs, memory | TODO | spec §I9 |
 
 ## Cost log
 
@@ -127,6 +133,28 @@ D6 R2 NO-GO root cause was missing names / caller context, so coverage is the le
   chunks cost Haiku 186-265k tokens each (2x the 100k ceiling).
 - Budget: I8a/I8b/I8e $0 (code: one Sonnet worker each, Haiku checks); I8c ~6 Haiku chunks + 1-2 Opus parts (~$3);
   I8d ~3 Haiku chunks (~$1).
+
+### I9: after I8 (gap left after I8f ~ notes 150 / modcode 15; ambiguous 49, no_twin 25, B18 unresolved 13, CRT 23)
+- Lesson from the I8c/I8e Opus gate: the decisive check was not the cards but `fp equal + callers/callees mapped through
+  trusted name_map pairs (GOG ... in evidence)`. I8 example: StopAllOneShots 0x70bb00 callee+caller 1/1 hit, while the
+  mapper pick 0x70b8f0 had 0; AurEnableForceFury 0x478f50 callers 2/2 vs sibling 0x478ee0 1/2.
+- I9a `graphpair --buckets F --out G [--no-twin-window 60]`: for each ambiguous gap fn, candidates = its GOG key group;
+  for each no_twin gap fn, candidates = GOG fns that are callees of the GOG twins of its trusted Steam callers (and
+  callers of the twins of its trusted callees), not already in name_map. score = callee hits + caller hits (mapped via
+  `load_kdb_pairs` + unique fp twins); emit `gog steam source=fpgraph name score margin fp_equal` when best >= 2 hits and
+  beats the 2nd by >= 2 (or fp_equal and 2nd has 0). Reuse `twins_full`, `_load_fp`, `load_kdb_pairs`, `_gname`.
+  Ambiguous 39 equal-size groups are the main target; 18 rows sit in groups >= 20 (thunks / tiny stubs, expect 0).
+- bdlib fix: `finalize` crashed on reviewer `corrected_addr = none` (bdlib.parse_addr ValueError); treat non-hex as blank.
+- I9b: the 23 are exact fp twins whose GOG fn was FID-named (Ghidra Function ID) but are absent from gog_functions.tsv,
+  so `batch.py` cannot see them and G1 would reject library fns anyway. Ledger lane (probable) instead: extract rows ->
+  `ledger --topic ingest-crt` -> `cards --decomp-lines 10` with decoys drawn from name_map (I8d showed 3 rows give only
+  1-3 decoys: add `cards --decoy-pool kdb`).
+- I9e: wide B19 run (169 GOG rows, anchor spans <= 25) gave AUTO 63 (12 on gap) / REVIEW 43 / REJECT 14 / NOCAND 49;
+  the 51 off-gap AUTO rows are names for Steam fns nobody cites yet (value: fewer future gaps). Rebuild via
+  `.claude/research/ingest/i8/` inputs (`buckets.tsv`; rerun the I8e span script, see handoff §5).
+- Cards: keep `--chunk 16 --decoys 10` (`--chunk 12` = only 2 real). B18 16-card chunks (~16k tokens each) still peaked
+  Haiku at 130-160k: the peak is re-reads, not card count; cap reviewer tool calls at 4.
+- Budget: I9a/I9c $0 (code + inline), I9b ~2 Haiku (~$0.2), I9d ~4 Haiku chunks (~$0.4), I9e Opus inline. Total < $2.
 
 ## Decisions
 - Ledger first, KDB later: ledger rows are agent observations (`[rea]`), promotion needs Haiku+decoys and user OK.
