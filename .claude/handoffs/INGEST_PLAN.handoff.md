@@ -1,19 +1,20 @@
 # Session Handoff & Plan State: patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md
 
 ## 0. Next-Phase Direction
-All phases complete. Run master tests and prepare PR.
+Plan I11: live REA on the 33 ambiguous gap fns (user choice 10-29): shortlist <=6-candidate rows, rea_facts static+live facts first, rea-recon only for leftovers, B23 gate
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md`
-- **Branch:** `KOTOR-II` (5321abd2 PLAY_TEST_QUEUE: CA-T10 (agy review #10 lower-tier power picks))
-- **Generated:** 2026-10-29 01:05:27 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (3e939a78 doc 11: VU4 INSTALLED (ISF 0.4.0-dev LIVE 10-29 01:24, reinstall rollback inventory-sort-filter_reinstall_20261029_012436); ISF-T13 live)
+- **Generated:** 2026-10-29 01:25:32 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-5321abd2 PLAY_TEST_QUEUE: CA-T10 (agy review #10 lower-tier power picks)
- patch_manager_mods/PLAY_TEST_QUEUE.md | 1 +
- 1 file changed, 1 insertion(+)
+3e939a78 doc 11: VU4 INSTALLED (ISF 0.4.0-dev LIVE 10-29 01:24, reinstall rollback inventory-sort-filter_reinstall_20261029_012436); ISF-T13 live
+ patch_manager_mods/11_inventory_sort_filter.md | 2 +-
+ patch_manager_mods/PLAY_TEST_QUEUE.md          | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 ```
-- **Dirty Files (211):**
+- **Dirty Files (202):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/25_pc_levelup_filter.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
@@ -24,7 +25,7 @@ All phases complete. Run master tests and prepare PR.
   - ` M .claude/handoffs/PHASE7_COMMON_MASTER.handoff.md`
   - ` M .claude/handoffs/deep_haiku_review_skill.handoff.md`
   - ` M .claude/handoffs/variant_fix_wave_skill.handoff.md`
-  - ... +201 more (run `git status --short`)
+  - ... +192 more (run `git status --short`)
 
 ## 3. Strict Context Budget & Read Policy
 - **Fresh Session Bootstrap**: Run `python3 scripts/plan_manager.py resume patch_manager_mods/ghidra_knowledge/INGEST_PLAN.md`.
@@ -72,3 +73,4 @@ All phases complete. Run master tests and prepare PR.
 - 10-29 I10 sizing: `.claude/research/ingest/i10/` holds fresh `twins.tsv`, `buckets.tsv` (gap 87), `graphpair.tsv` (26 rows, 19 named; only 3 never batched). Graph check script for AUTO rows = scratch b21check.py (session scratch, recreate from §I10 spec: hits vs best rival neighbour via `trusted_map` + `_caller_index`).
 - B21 likely 6 (never carded): GOG 0x0048d460, 0x004f9350, 0x004fa9f0, 0x004fd290, 0x0053e460, 0x008f7380 (steam in `B21/opus/overrides_a.tsv`).
 - 10-29 I10a-d DONE (033a4b1d, ccec926c, 03a0c88f): B22 6 verified / 7 likely (graph helper = session scratch gcheck.py: score(g,s) mapped callee+caller hits, rivals from mapped neighbours). In B22 cards the graph pick sat as a *decoy* (gate top was the "real" card): a decoy match there would have been right; read the gate, not just "decoys accepted". CRT G1: ledger topic ingest-crt-g1 (existing 20261029_ingest-crt.tsv blocks --apply). KDB backup scratch kdb_before_I10d.db (5177) -> 5186. Gap notes 76 / modcode 9. Lint baseline now 108. B20 likely 13: user said no. All 26 plan rows done.
+- 10-29 I11 sizing ($0, `.claude/research/ingest/i11/`): twins gap=78 (named 17, unnamed 19, ambiguous 33, no_twin 9); graphpair 23 rows, only 8 never batched and all 8 lack a GOG name (GetAtPos skipped) -> twin/graph lane exhausted. Ambiguous candidate counts: 17 rows have <= 6 GOG cands; rest 8-843 (identical stubs, skip). Named shortlist: 0x0040e480 Intersection/Union, 0x0072fd90 SetTexturePack/UpdateMouseDelta, 0x007a2510 AddObject/RemoveObject, 0x008b3730 OnPanelRemoved x2, 0x008c17f0 CreateOption x2, 0x0093f830/0x0093f870 Aurora data getters, 0x0049b760, 0x00421720, 0x0092178f. Several overlap B20 likely rows.

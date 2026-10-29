@@ -1,0 +1,24 @@
+gog	steam	source	name	score	margin	fp_equal	bucket
+0x0090ca10	0x0040e480	fpgraph	CSWGuiExtent::Union	1	1	yes	ambiguous
+0x0091f4f0	0x00421720	fpgraph		3	3	yes	ambiguous
+0x00866290	0x00428fc0	fpgraph		3	2	yes	ambiguous
+0x00844e00	0x004527f0	fpgraph	MaxTree::FreeTheFreeList	2	2	yes	ambiguous
+0x008fe2a0	0x00463b20	fpgraph	List<SafePointer<WindManager>*>::~List	67	55	yes	ambiguous
+0x008567b0	0x004643a0	fpgraph		1	1	yes	ambiguous
+0x0086ab80	0x00478ca0	fpgraph	Global::AurEnableShadows	1	1	yes	ambiguous
+0x008ceaa0	0x0048e550	fpgraph		2	2	yes	ambiguous
+0x008ceb10	0x0048e5c0	fpgraph		4	4	yes	ambiguous
+0x00865e20	0x0049b760	fpgraph		6	5	yes	ambiguous
+0x008f9030	0x004def00	fpgraph	MdlNode::InternalControl	7	6	no	no_twin
+0x007f3870	0x00561430	fpgraph	long>::GetAtPos	138	10	yes	ambiguous
+0x006207c0	0x0064dde0	fpgraph	CExoLinkedListInternal::Remove	36	2	yes	ambiguous
+0x0063cf80	0x0070dfe0	fpgraph	CExoStreamingSoundSourceInternal::SetVolume	5	4	no	no_twin
+0x00616990	0x0072fd90	fpgraph	CExoInput::UpdateMouseDelta	2	2	yes	ambiguous
+0x0060baa0	0x00739a10	fpgraph	CExoFile::ReadAsyncComplete	3	2	yes	ambiguous
+0x0044eeb0	0x007a2510	fpgraph	CClientAIMaster::AddObject	14	14	yes	ambiguous
+0x0053a810	0x0087fdf0	fpgraph	CSWGuiLegalScreen::~CSWGuiLegalScreen	1	1	yes	ambiguous
+0x005f6ed0	0x00908040	fpgraph	CSWGuiPowersLevelUp::~CSWGuiPowersLevelUp	1	1	yes	ambiguous
+0x00928942	0x0092178f	fpgraph		3	2	yes	ambiguous
+0x009433e0	0x0093b430	fpgraph	GLU32.DLL::gluBuild2DMipmaps	4	4	yes	ambiguous
+0x009433e6	0x0093b436	fpgraph	GLU32.DLL::gluPerspective	1	1	yes	ambiguous
+0x00909e50	0x0093f830	fpgraph	CAuroraTexture::GetTextureDataPtr	4	3	yes	ambiguous
