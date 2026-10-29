@@ -37,6 +37,7 @@ constexpr uint32_t ObjBase = 0x7F000000u;
 
 struct Sim : Env {
     Machine m;
+    Sim() { m.cfg.showTook = true; }   // the Took-list scenarios below opt in; scenario "n8" checks the default (off)
     uint32_t now = 100000, frame = 5000;
     // world
     bool worldOk = true, haveSrv = true, menu = false, dialog = false, paused = false;
@@ -1557,6 +1558,18 @@ void scenarioN() {
         CHK("items stay", s.objs[0].items.size() == 12);
         s.run(120);
         CHK("and no re-open while off", s.count(A_OPEN) == 1 && s.count(A_SEND) == 1);
+        s.finishCheck(scn);
+    }
+    {
+        const char* scn = "n8 default ShowAcquired=0: take-all takes and logs TOOK, but no Acquired list / toast follows";
+        Sim s; s.m.cfg.showTook = false;
+        peekUp(s, {Item{"Medpac", 2}, Item{"Blaster Pistol", 1}});
+        s.key = true; s.run(2); s.key = false;
+        CHK("take-all sent (flag 1)", s.count(A_SEND) == 1 && s.nth(A_SEND, 0)->flag == 1);
+        CHK("TOOK lines still logged", s.logged("TOOK"));
+        CHK("no toast, no Took list", s.count(A_TOAST) == 0 && !s.m.toastS.active);
+        ListDraw d;
+        CHK("nothing drawn after the take", !s.m.listDraw(s.now, &d) && s.m.labelText(s.now) == nullptr);
         s.finishCheck(scn);
     }
 }

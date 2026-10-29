@@ -41,6 +41,7 @@ struct Config {
     unsigned listRows = ListRowsDefault;   // visible item rows of the list block (quick_loot.ini ListRows, 1..12)
     int anchor = 0;                        // 0.6.0-dev: AnchorMode (quick_loot.ini Anchor)
     uint32_t tipDelayMs = TipDelayMs;      // hover time on one row before the tooltip shows
+    bool showTook = false;                 // 0.6.1-dev: show the "Acquired Items" list after a take-all (quick_loot.ini ShowAcquired); off = the peek list already showed them
 };
 
 // Result of one per-item take (Env::takeOne).
@@ -150,6 +151,7 @@ struct Machine {
             np[i] = c.names[i];
             ip[i] = c.icons[i];
         }
+        if (!cfg.showTook) return;   // the TOOK lines above still log what was taken
         char text[96];
         ListInfo li;
         if (fmtTook(text, sizeof text, np, c.stacks, c.count, c.total > c.count ? c.total - c.count : 0, &li)) {

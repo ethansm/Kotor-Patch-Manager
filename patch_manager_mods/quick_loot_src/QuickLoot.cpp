@@ -1244,6 +1244,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     g_m.cfg.enabled = g_enabled; g_m.cfg.proxOn = g_proxOn; g_m.cfg.openM = g_openM; g_m.cfg.closeM = g_closeM; g_m.cfg.takeKey = g_takeKey; g_m.cfg.scanMs = g_scanMs;
     g_m.cfg.listRows = qlogic::clampListRows(GetPrivateProfileIntA("QuickLoot", "ListRows", static_cast<int>(qlogic::ListRowsDefault), IniPath));
     g_m.cfg.anchor = qlogic::clampAnchorMode(GetPrivateProfileIntA("QuickLoot", "Anchor", 0, IniPath));
+    g_m.cfg.showTook = GetPrivateProfileIntA("QuickLoot", "ShowAcquired", 0, IniPath) != 0;   // 0.6.1-dev: off by default
     g_live.anchor = g_m.cfg.anchor; g_live.prox = g_proxOn; g_live.rows = g_m.cfg.listRows; g_live.openM = g_openM; g_live.closeM = g_closeM;
     g_live.closeExplicit = closeExplicit; g_live.closeExplicitM = closeExplicitM;
     pageInit(api);
