@@ -112,7 +112,11 @@ bool g_debug = false;
 mui::Registry g_reg;
 K2ModConfigEntry g_ent[mui::kMaxEntries];   // indexed by slot = token - 1; live when g_reg.slots[slot].live
 
-bool entLive(int slot) { return slot >= 0 && slot < mui::kMaxEntries && g_reg.slots[slot].live; }
+// A slot unregistered while the Options panel is open is stale until the next bind: its list button and built page still point at the old owner,
+// so a mod registering into the same slot must not inherit them (and the old owner's callbacks must not run).
+bool g_entStale[mui::kMaxEntries] = {};
+
+bool entLive(int slot) { return slot >= 0 && slot < mui::kMaxEntries && g_reg.slots[slot].live && !g_entStale[slot]; }
 
 // ---------------------------------------------------------------------------------------------------- state
 struct Target {
@@ -809,14 +813,14 @@ bool entryShown(int k) { return g_mc.appended && k >= 0 && shownSlot() == k; }
 
 void sliderPlaceParts(int k, RowX& r);   // slider rows (below): wedge + mark rects for the current value
 
-// Rewrites the caption control of a row (override text, else mui::rowFormat). A disabled toggle gets " (locked)" (it has no arrows to hide).
+// Rewrites the caption control of a row (override text, else mui::rowFormat). A disabled toggle or slider gets " (locked)" (steppers hide their arrows).
 // A slider row also moves its wedge and mark to the new value (every value path ends here: SetValue, a handler result, SetRowRange, a drag).
 void rowCaption(int k, RowX& r) {
     if (r.item[0] < 0) return;
     char buf[sizeof(ItemX::text)];
     if (r.cap[0]) copyStr(buf, sizeof buf, r.cap);
     else (void)mui::rowFormat(buf, sizeof buf, r.label, r.cfg, r.hasFmt ? r.fmt : nullptr, r.choices, r.nChoices, r.hasZero ? r.zero : nullptr);
-    if (r.cfg.kind == mui::RK_TOGGLE && (r.cfg.flags & mui::RF_DISABLED)) {
+    if ((r.cfg.kind == mui::RK_TOGGLE || r.cfg.kind == mui::RK_SLIDER) && (r.cfg.flags & mui::RF_DISABLED)) {   // no arrows to hide on these
         const size_t n = strlen(buf);
         if (n + 10 < sizeof buf) strcat(buf, " (locked)");
     }
@@ -1283,6 +1287,7 @@ bool scrollTick(bool down, bool haveCur, int x, int y, DWORD now) {
         sliderEndDrag("scroll");   // a scroll that moves the page ends a slider drag
         if (k >= 0) rowsRelayout(k);
         else { rebindList(); layoutBar(e.lsb, e.lsw, col); }
+        e.repItem = -1;                // a held row arrow stops: the row under it just changed
         e.hov = mui::HoverTracker();   // the hover description follows what is under the cursor now
         e.clk.pressItem = -1;          // (down is kept, so the release clicks nothing) a press that began before the scroll (wheel under a held LMB) must not click whatever slid under it
         if (++e.scrollLogs <= 100) KP_LOG(chMain, "SCROLL page=%d off=%d total=%d src=%s", curPageId(), sw->offset, sw->total, src);
@@ -1587,6 +1592,7 @@ void hoverStep(int hit) {
         }
     }
     if (he.n > 0 && e.hov.cur < 0 && e.ps.state == mui::LIST) writeDesc(kListBlurb);
+    else if (he.n > 0 && e.hov.cur < 0 && e.ps.state == mui::ENTRY && shownSlot() == e.ps.entry && entLive(e.ps.entry)) writeDesc(g_ent[e.ps.entry].desc);   // off every item: the mod's own blurb, not the last row's
 }
 
 void entryClicked(int listIndex) {
@@ -1596,6 +1602,7 @@ void entryClicked(int listIndex) {
     const char* id = entLive(slot) ? g_ent[slot].id : "?";
     if (!entLive(slot) || !e.pageMade[slot] || e.pt.itemCount(2 + slot) == 0) {
         KP_LOG(chMain, "ENTRY %s empty", id);
+        if (entLive(slot)) writeDesc("This mod has no options to show.");
         return;
     }
     const int from = curPageId();
@@ -1706,6 +1713,7 @@ int32_t KPATCH_CALL mcRegister(const K2ModConfigEntry* e) {
         KP_LOG(chMain, "REGISTER %s refused (all %d slots used)", e->id, mui::kMaxEntries);
         return 0;
     }
+    if (!g_mc.panel) g_entStale[token - 1] = false;
     K2ModConfigEntry& d = g_ent[token - 1];
     d = *e;
     if (!d.name || !d.name[0]) d.name = d.id;
@@ -1719,6 +1727,7 @@ void KPATCH_CALL mcUnregister(int32_t token) {
     KP_LOG(chMain, "UNREGISTER %s token=%d", g_ent[token - 1].id, static_cast<int>(token));
     g_reg.unregister(token);
     g_ent[token - 1] = K2ModConfigEntry();
+    if (g_mc.panel) g_entStale[token - 1] = true;   // Options is open: McTick leaves the page if it is showing this entry
 }
 
 const K2ModConfigApi g_mcApi = {sizeof(K2ModConfigApi), &mcRegister, &mcUnregister};
@@ -2215,7 +2224,6 @@ constexpr int kEscKeyDownId = 0x28;     // what Esc actually delivers (KEYEV log
 using KeyFn = void(__fastcall*)(void* self, void* edx, int id, int state);
 KeyFn g_keyOrig = nullptr;
 bool g_escHooked = false;
-DWORD g_escConsumedAt = 0;
 
 bool escHeld() { return guikit::g_gk.gameForeground && guikit::g_gk.gameForeground() && (GetAsyncKeyState(VK_ESCAPE) & 0x8000) != 0; }
 
@@ -2250,7 +2258,6 @@ void __fastcall escKeyHook(void* self, void* edx, int id, int state) {
     if (InterlockedIncrement(&s_n) <= 120)
         KP_LOG(chInput, "KEYEV id=%02x state=%d page=%d esc=%d", id, state, ours ? curPageId() : -1, held ? 1 : 0);
     if ((id == kEscKeyDownId || id == kEscEventId) && state != 0 && held && escStepBack()) {
-        g_escConsumedAt = GetTickCount();
         return;   // swallowed: the GUI stays open
     }
     // Arrow keys (id 0x3d, live 10-29) fall through to the engine's focus navigation (0x40EAA0 -> control 0x4187B0), which walks the panel's child list and
@@ -2324,6 +2331,7 @@ extern "C" void __cdecl McBind(int panelArg) {
     g_inBuild = false;
     g_buildSlot = -1;
     resetState();
+    memset(g_entStale, 0, sizeof g_entStale);   // a fresh bind lists and builds what is registered now
     if (vt != kOptionsVtable || !(flags48 & 2) || !slot) { KP_LOG(chMain, "CTOR refused: not the open Options layout"); return; }
     McState& e = g_mc;
     e.panel = P;
@@ -2420,6 +2428,7 @@ extern "C" void __cdecl McTick(int panelArg) {
         return;
     }
     if (!e.appended) firstTick();
+    if (e.appended && e.ps.state == mui::ENTRY && e.ps.entry >= 0 && !entLive(e.ps.entry)) resetPages("entry unregistered");
     applyTargets(e, false);
     syncDescSplit("tick");   // no-op unless a split page is shown (or was just left)
     if (e.gearMade || e.sliderMade) embtex::heal();   // refill the gear textures after a GL reset (idempotent, cheap)

@@ -834,7 +834,22 @@ static void test_on_built() {
     KT_CHECK(g_pg.built);
 }
 
+// get() answers the declared default before any build, and a reopen (second build) keeps a no-ini row's runtime value.
+static void test_reopen_keeps_runtime_values() {
+    setupPage(kHealSchema);
+    KT_CHECK_EQ(g_pg.get("pct"), g_pg.decl.rows[g_pg.index("pct")].def);   // before the first build
+    K2ModConfigEntry e = g_pg.entry("companion-selfheal");
+    e.build(reinterpret_cast<void*>(1), e.user);
+    KT_CHECK_EQ(g_fn(g_page, 2, 40, 1, g_fnUser), 40);
+    KT_CHECK_EQ(g_pg.get("pct"), 40);
+    e.build(reinterpret_cast<void*>(1), e.user);                            // Options reopened: the rows are added again
+    KT_CHECK_EQ(g_pg.get("pct"), 40);
+    KT_CHECK_EQ(g_nRows, 8);                                                // the fake appends a second set of 4 rows
+    KT_CHECK_EQ(g_rows[6].value, 40);                                       // the provider starts from the kept value, not the default
+}
+
 int main() {
+    test_reopen_keeps_runtime_values();
     test_on_built();
     test_parse_strip_golden();
     test_parse_errors();

@@ -239,7 +239,9 @@ struct Canvas {
         Ops& o = ops();
         for (int i = 0; i < n; ++i) {
             Wid& x = w[i];
-            if (x.c && x.vis >= 0 && o.isVisible(x.c) != (x.vis == 1)) x.vis = -1;
+            if (!x.c || x.vis < 0) continue;
+            if (o.isVisible(x.c) != (x.vis == 1)) x.vis = -1;
+            else if (x.vis == 1) o.setClickable(x.c, false);   // mod-config's show-all setVisible(true) cleared click-through on a label that stayed visible
         }
     }
 

@@ -424,9 +424,17 @@ struct Page {
     uint32_t page = 0;
     bool built = false;
     bool loaded = false;
+    bool everBuilt = false;   // a first build ran: values of rows without an ini binding are the consumer's runtime state and survive a reopen
 
     bool load(const char* text, size_t n, char* err, int errCap) {
         loaded = parseSchema(text, n, decl, err, errCap);
+        if (loaded) {   // get() answers the declared default before Options was ever opened
+            for (int i = 0; i < decl.nRows; ++i) {
+                values[i] = decl.rows[i].def;
+                lo[i] = decl.rows[i].minV;
+                hi[i] = decl.rows[i].maxV;
+            }
+        }
         return loaded;
     }
 
@@ -501,6 +509,7 @@ struct Page {
     int32_t startValue(int i) {
         const RowDecl& r = decl.rows[i];
         int32_t v = r.def;
+        if (!r.ini[0] && everBuilt) return values[i];   // no ini to re-read: the mirror is the only copy of what the handler stored
         if (r.ini[0]) {
             char b[48];
             if (io.read && io.read(r.ini, r.section[0] ? r.section : nullptr, r.key, b, sizeof b)) {
@@ -551,6 +560,9 @@ struct Page {
         if (!any) return;
         ui->SetChangeHandler(page, &Page::cbChange, this);
         built = true;
+        everBuilt = true;
+        for (int i = 0; i < decl.nRows; ++i)
+            if (rowId[i] >= 0) values[i] = menu->p->GetValue(page, rowId[i]);   // the provider clamped the start value
         for (int i = 0; i < decl.nRows; ++i) refreshCaption(i);
         if (hooks.onBuilt) hooks.onBuilt(hooks.user, page, panel);
     }
