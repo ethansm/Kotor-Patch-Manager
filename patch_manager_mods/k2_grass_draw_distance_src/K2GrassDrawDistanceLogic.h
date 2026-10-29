@@ -1,4 +1,4 @@
-// K2GrassDrawDistanceLogic.h (0.1.8-dev) -- Pure config, math, and ModConfig schema for k2-grass-draw-distance.
+// K2GrassDrawDistanceLogic.h (0.1.9-dev) -- Pure config, math, and ModConfig schema for k2-grass-draw-distance.
 // Header-only and host-testable (no engine addresses or Win32 calls).
 #pragma once
 
@@ -12,7 +12,7 @@
 namespace k2grass {
 
 constexpr const char* kModId = "k2-grass-draw-distance";
-constexpr const char* kVersion = "0.1.8-dev";
+constexpr const char* kVersion = "0.1.9-dev";
 constexpr const char* kIniFile = "k2_grass_draw_distance.ini";
 constexpr const char* kIniSection = "Grass";
 
@@ -60,13 +60,13 @@ constexpr float kMinLodStart = 10.0f;
 constexpr float kMaxLodStart = 150.0f;
 constexpr float kMinLodMinKeep = 0.1f;
 constexpr float kMaxLodMinKeep = 1.0f;
-// 0.1.6 variety (doc 50 PV1-PV4), all off / vanilla by default. Generation tweaks apply to bins built after the change.
+// 0.1.6 variety (doc 50 PV1-PV4); 0.1.9: vary_seed + even_spread default on (GR7 PASS), density_noise off, size_var vanilla. Generation tweaks apply to bins built after the change.
 //   vary_seed      PV1: per-face srand seed hashed from the face vertices (vanilla seeds from a rounded coordinate sum)
 //   even_spread    PV2: uniform barycentric weights per blade (vanilla clusters toward the face centre)
 //   density_noise  PV3: smooth value-noise density patches (density_amount 0..0.9, density_cell metres 2..30)
 //   size_var       PV4: blade size span (vanilla 0.4 = the double the size FMUL reads; 0.4..1.2)
-constexpr bool kDefaultVarySeed = false;
-constexpr bool kDefaultEvenSpread = false;
+constexpr bool kDefaultVarySeed = true;
+constexpr bool kDefaultEvenSpread = true;
 constexpr bool kDefaultDensityNoise = false;
 constexpr float kDefaultDensityAmount = 0.5f;
 constexpr float kDefaultDensityCell = 6.0f;
@@ -868,7 +868,7 @@ id = "vary_seed"
 kind = "toggle"
 label = "Varied Grass Pattern"
 desc = "Each patch of grass gets its own random layout (applies to grass built after the change)."
-default = 0
+default = 1
 ini = "k2_grass_draw_distance.ini"
 section = "Grass"
 key = "vary_seed"
@@ -878,7 +878,7 @@ id = "even_spread"
 kind = "toggle"
 label = "Even Grass Spread"
 desc = "Spread blades evenly over the ground instead of clustering (applies to new grass)."
-default = 0
+default = 1
 ini = "k2_grass_draw_distance.ini"
 section = "Grass"
 key = "even_spread"

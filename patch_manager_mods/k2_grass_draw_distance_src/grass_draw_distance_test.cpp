@@ -415,8 +415,8 @@ static void test_ini_roundtrip_and_direct_float_alpha() {
     KT_CHECK_EQ(dst.unknown, 0);
     KT_CHECK(dparsed == k2grass::Config{});
     KT_CHECK(dparsed.trimHidden && !dparsed.smoothEdges);
-    // 0.1.6 defaults: every variety toggle off, vanilla size span.
-    KT_CHECK(!dparsed.varySeed && !dparsed.evenSpread && !dparsed.densityNoise);
+    // 0.1.9 defaults: vary_seed + even_spread on, density_noise off, vanilla size span.
+    KT_CHECK(dparsed.varySeed && dparsed.evenSpread && !dparsed.densityNoise);
     KT_CHECK(std::fabs(dparsed.densityAmount - 0.5f) < 1e-4f && std::fabs(dparsed.densityCell - 6.0f) < 1e-4f);
     KT_CHECK(std::fabs(dparsed.sizeVar - 0.4f) < 1e-4f);
     // 0.1.5 defaults: GPU timer on, both experiments off.

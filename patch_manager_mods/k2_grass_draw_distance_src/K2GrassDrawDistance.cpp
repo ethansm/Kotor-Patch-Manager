@@ -1,4 +1,4 @@
-// K2GrassDrawDistance.cpp -- K2 Grass Draw Distance (0.1.8-dev)
+// K2GrassDrawDistance.cpp -- K2 Grass Draw Distance (0.1.9-dev)
 // Extends grass octree build/collect radius, fade-start/fade-end distances, alpha-test threshold,
 // and decouples CPU wind animation radius (one operand rewrite at KPatchInit, code_patches.toml).
 // 0.1.4: a second operand rewrite trims the octree collect radius to the visible clip distance (trim_hidden), two
@@ -11,11 +11,12 @@
 //                      the grass draw helper get a smaller count (nothing else is touched: the helper's offset argument
 //                      is also the normals/UV offset)
 //   PF2a path probe    decodes which grass draw setup branch the engine globals select (log + per-window bin counts)
-// 0.1.6 variety (doc 50 PV1-PV4), all off by default; with the toggles off and size_var 0.4 the picture equals 0.1.5:
+// 0.1.6 variety (doc 50 PV1-PV4), all off by default (0.1.9: PV1/PV2 on); with the toggles off and size_var 0.4 the picture equals 0.1.5:
 //   PV1 vary_seed      hook in the blade generator FUN_0050EBC0 rewrites the per-face srand seed slot [EBP-0x9C]
 //   PV2 even_spread    hook before the blade weight sum rewrites the three barycentric weight slots [EBP-0xC..-0x4]
 //   PV3 density_noise  hook before the face count FRNDINT rewrites the float slot [EBP-0x224]
 //   PV4 size_var       the size FMUL's double operand is redirected to the DLL's g_sizeSpan (code_patches.toml)
+// 0.1.9: Varied Grass Pattern + Even Grass Spread default on (GR7: looks better, no measured cost).
 // 0.1.8: PERF2 seeds=; variety counters survive the PERF gap reset (load-time hook calls were wiped).
 // 0.1.7: long log lines split under the core's 232-byte cut (PERF/PERF2, loaded or INI reload + CFG + VARIETY).
 // The hooks only rewrite the game's own stack slots; the DLL never calls rand/srand or any game function.

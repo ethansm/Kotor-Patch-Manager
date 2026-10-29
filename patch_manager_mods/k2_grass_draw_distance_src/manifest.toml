@@ -1,7 +1,7 @@
 [patch]
 id = "k2-grass-draw-distance"
 name = "K2 Grass Draw Distance"
-version = "0.1.8-dev"
+version = "0.1.9-dev"
 author = "ethansm"
 description = "Extends KOTOR II grass render and octree build distance (vanilla 15m-30m fade, hard-clipped at 25.1m by 0.40 alpha test) to configurable distances (default 120m-150m with the vanilla 0.40 alpha cutoff, max 150m, decoupled 20m CPU wind radius; trims collection of fully hidden grass, optional grass variety (varied pattern, even spread, density patches, size range), optional alpha-to-coverage edge smoothing, logs PERF bin counts and grass-pass CPU time every 5 s). Configured via k2_grass_draw_distance.ini or in-game Options -> Mod Configuration when mod-config is installed."
 
