@@ -5,18 +5,16 @@ Execute **RMT1**: Engine inline multi-color hook in `CAurGUIStringInternal::Draw
 
 ## 1. Active State & Provenance
 - **Master Plan:** `patch_manager_mods/53_rich_menu_typography.md`
-- **Branch:** `KOTOR-II` (27739f97 doc 53 (RMT0): add shared ItemProps.h, RichTextClassifier.h, and unit tests)
-- **Generated:** 2026-11-01 12:41:19 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
+- **Branch:** `KOTOR-II` (cec2a5bf doc 53 (RMT0): address Flash review findings in RichTextClassifier.h)
+- **Generated:** 2026-11-01 12:57:06 in `/home/ethansm/orca/workspaces/local-setup/KOTOR-II`
 - **Last Landed Commit:**
 ```
-27739f97 doc 53 (RMT0): add shared ItemProps.h, RichTextClassifier.h, and unit tests
- patch_manager_mods/_shared_src/ItemProps.h         | 537 +++++++++++++++++++++
- .../_shared_src/RichTextClassifier.h               | 438 +++++++++++++++++
- .../tests/rich_text_classifier_test.cpp            | 285 +++++++++++
- .../rich_menu_typography_src/tests/test.toml       |   4 +
- 4 files changed, 1264 insertions(+)
+cec2a5bf doc 53 (RMT0): address Flash review findings in RichTextClassifier.h
+ patch_manager_mods/_shared_src/RichTextClassifier.h               | 8 +++++---
+ .../rich_menu_typography_src/tests/rich_text_classifier_test.cpp  | 7 +++++++
+ 2 files changed, 12 insertions(+), 3 deletions(-)
 ```
-- **Dirty Files (198):**
+- **Dirty Files (196):**
   - ` M .claude/handoffs/19e_phase2_plan.handoff.md`
   - ` M .claude/handoffs/25_pc_levelup_filter.handoff.md`
   - ` M .claude/handoffs/34_npc_diversity_dispatcher.handoff.md`
@@ -27,7 +25,7 @@ Execute **RMT1**: Engine inline multi-color hook in `CAurGUIStringInternal::Draw
   - ` M .claude/handoffs/PHASE7_COMMON_MASTER.handoff.md`
   - ` M .claude/handoffs/deep_haiku_review_skill.handoff.md`
   - ` M .claude/handoffs/variant_fix_wave_skill.handoff.md`
-  - ... +188 more (run `git status --short`)
+  - ... +186 more (run `git status --short`)
 
 ## 2. Immediate Objective (**RMT1**)
 **Engine inline multi-color hook in `CAurGUIStringInternal::Draw_2` (`0x0047C06F`, 6-byte call-site detour) with per-line span cache and INI gate `InlineColoring=1` + contract test `rich_menu_typography_contract_test.cpp`**
