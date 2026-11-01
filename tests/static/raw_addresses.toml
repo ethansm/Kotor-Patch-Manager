@@ -27,25 +27,25 @@ addresses = ["0x00743540"]
 addresses = ["0x0040D070", "0x00410020", "0x00429780", "0x004789B0", "0x004789D0", "0x004792C0", "0x004793F0", "0x00479460", "0x004799C0", "0x00479AB0", "0x0047EA60", "0x00534170", "0x0057ECA0", "0x00605680", "0x00605890", "0x00606380", "0x006977D0", "0x00734270", "0x0080B200", "0x008CFBD0", "0x008CFD00", "0x008CFD70", "0x008D02D0", "0x008D03C0", "0x008D5370", "0x008D5470", "0x0090DA20", "0x0090DAA0", "0x0090E4A0", "0x00910720", "0x009151B0", "0x00915200", "0x00915370", "0x00915510", "0x009179E0", "0x00921347", "0x0098998C", "0x009A994C", "0x009A9A28", "0x009F22A4", "0x009F22A8", "0x009F5F60", "0x009F7144", "0x00A0FFE8", "0x00A0FFEC", "0x00A11BFC", "0x00A11C04", "0x00A14CD4", "0x00A1BA3C", "0x00A309C0", "0x00A32B90", "0x00A76858", "0x00A768A4"]
 
 [files."patch_manager_mods/action_hotbar_src/ActionHotbar.cpp"]
-addresses = ["0x0040EC90", "0x00414840", "0x00414C60", "0x00418D20", "0x00421C40", "0x00427D90", "0x00427DE0", "0x0052FD1E", "0x00534527", "0x00534600", "0x0053C5AA", "0x0072CB63", "0x00748502", "0x0074850D", "0x0074B3F0", "0x008529E0", "0x008FACA0", "0x00907340"]
-
-[files."patch_manager_mods/activation_fix_src/ActivationFix.cpp"]
-addresses = ["0x0040D69E", "0x0098646C"]
-
-[files."patch_manager_mods/active_effects_panel_src/CombatStatsAddr.h"]
-addresses = ["0x005763E0", "0x0057E530", "0x005E4E60", "0x006A4E00", "0x006A6F80", "0x006A7170", "0x006AD2F0", "0x006B5DB0", "0x006B83F0", "0x006BAD10", "0x006BD9C0", "0x006E1C60", "0x006E2351", "0x00996088", "0x0099608C"]   # Opus-reviewed 10-27: 12 fns = query_ghidra names + dump fn start/RET match the comments (0x006A7170 GetAttacksPerRound comment only); 0x006E2351 insn boundary after rec+0x168 store, ECX=rec (dump 006e1c60.asm); 0x00996088/C effect-type globals CMP'd at 006e22df/006e230e
+addresses = ["0x0040EC90", "0x00414840", "0x00414C60", "0x00418D20", "0x00421C40", "0x00427D90", "0x00427DE0", "0x0072CB63", "0x00748502", "0x0074850D", "0x0074B3F0"]
 
 [files."patch_manager_mods/active_effects_panel_src/CharEffectsPanel.cpp"]
 addresses = ["0x0084D871", "0x0084DEF0", "0x0084FBB0"]
+
+[files."patch_manager_mods/active_effects_panel_src/CombatStatsAddr.h"]
+addresses = ["0x0051C8D0", "0x0056AE40", "0x0056B470", "0x0056B4A6", "0x005763E0", "0x0057E530", "0x00582010", "0x0058B880", "0x0058B990", "0x005E4E60", "0x005FA9C0", "0x005FDBF0", "0x006A4E00", "0x006A6F80", "0x006A7170", "0x006A7190", "0x006AD2F0", "0x006B5DB0", "0x006B73A0", "0x006B75C0", "0x006B77E0", "0x006B83F0", "0x006BA620", "0x006BA6B0", "0x006BA740", "0x006BAD10", "0x006BD9C0", "0x006E1C60", "0x006E2351", "0x00996088", "0x0099608C", "0x009960C8", "0x009960CC"]
+
+[files."patch_manager_mods/active_effects_panel_src/StatsRows.h"]
+addresses = ["0x0056AE40"]
+
+[files."patch_manager_mods/active_effects_panel_src/VanillaTips.h"]
+addresses = ["0x0084E6F0"]
 
 [files."patch_manager_mods/area_hook_probe_src/AreaHookProbe.cpp"]
 addresses = ["0x00522BF0", "0x00533830", "0x005582F0", "0x0055A460"]
 
 [files."patch_manager_mods/asset_vfs_src/AssetVfsCore.h"]
 addresses = ["0x00A10768"]
-
-[files."patch_manager_mods/asset_vfs_src/AssetVfsProvider.cpp"]
-addresses = []
 
 [files."patch_manager_mods/buff_duration_hud_src/BuffDurationHUD.cpp"]
 addresses = ["0x00745A84", "0x00745A97", "0x00745AEC"]
@@ -66,12 +66,11 @@ addresses = ["0x009A7000", "0x009A7CBC", "0x009A7D30", "0x00A20000", "0x00A20400
 addresses = ["0x00414840", "0x008ABA8C", "0x008AD930", "0x008ADA08", "0x008ADA81", "0x008ADFA2", "0x008AE02D", "0x008AE19A", "0x008AE1CD", "0x008AE793"]
 
 [files."patch_manager_mods/equipment_3d_character_src/EquipCharPreview.cpp"]
-addresses = ["0x00462320", "0x0073F530", "0x007645F0", "0x0076D200", "0x0077EC20", "0x0085D430", "0x008AA16A", "0x008AA6F0", "0x008ABA50", "0x009A4AB0"]
+addresses = ["0x008AA16A", "0x008AA6F0", "0x008ABA50"]
 
 [files."patch_manager_mods/holster_editor_src/HolsterEditor.cpp"]
 addresses = ["0x00A309C0", "0x00A309C8", "0x00A309CE", "0x00A32A30", "0x00A32A54"]
 
-# 0x0057C990 = CSWSCreature::GetNearestEnemy (query_ghidra.py address; Steam verified batch B12a), holster toggle-key hostile check
 [files."patch_manager_mods/holster_src/Holster.cpp"]
 addresses = ["0x0057C990"]
 
@@ -85,37 +84,31 @@ addresses = ["0x00743540", "0x00743847"]
 addresses = ["0x008A69AD", "0x008A7350", "0x008A8172", "0x008CD2C0"]
 
 [files."patch_manager_mods/inventory_sort_filter_src/InventorySortFilter.cpp"]
-addresses = ["0x005BD6A0", "0x006076D0", "0x0073F750", "0x0077B670", "0x008A75F0", "0x008A7E22", "0x008A7E76", "0x008A8478", "0x008A8B30", "0x008A6170", "0x008A8CF0", "0x008B1D00", "0x0099A8B8", "0x0099A8BC", "0x009A72AC"]   # 0.4.0 (doc 11 VU4): 0x009A72AC CSWGuiInGameInventory vftable, not in DB; ctor 0x008A6170 asm 008a61bd MOV [ECX],0x9a72ac (mods678_research/dump_excerpts/008a6170.asm:22)
-
-[files."patch_manager_mods/k2_fog_distance_src/K2FogDistance.cpp"]
-addresses = ["0x00464C80", "0x00464C8A", "0x0046A980", "0x0046A989", "0x0046AADD"]   # not in DB except 0x00464C80 (Scene::SetFogRange); dump asm evidence doc 49; 0.1.1: 0x00464C8A SetFogRange detour (00464c80.asm FLD [EBP+8]; vtable slot per REA ledger 20261029_scene-fog-range-writers.tsv)
-
-[files."patch_manager_mods/k2_fog_distance_src/K2FogDistanceLogic.h"]
-addresses = ["0x00464C80", "0x00466700", "0x0046A980", "0x0046AADD", "0x004B3D80"]   # not in DB except 0x00464C80 (Scene::SetFogRange); dump asm evidence doc 49
-
-[files."patch_manager_mods/k2_grass_draw_distance_src/K2GrassDrawDistance.cpp"]
-addresses = ["0x00436A95", "0x00436B86", "0x004664E0", "0x0046661B", "0x00466636", "0x0046664B", "0x00466698", "0x00498829", "0x00499ABC", "0x00499ADC", "0x0050D35C", "0x0050DA00", "0x0050DAC0", "0x0050DB4C", "0x0050DCC8", "0x0050E16B", "0x0050E47D", "0x0050E483", "0x0050E487", "0x0050E695", "0x0050EF89", "0x0050F177", "0x0050FEE7", "0x00986268", "0x009862A0", "0x009862CC", "0x009921C8", "0x009F5D38", "0x009F60EC", "0x009F60F0", "0x009F60FC", "0x009F6118", "0x009F62DC", "0x00A0F070", "0x00A0F074", "0x00A0F07C", "0x00A32DF8", "0x00A73300", "0x00A73304", "0x00A7330C", "0x00A73310", "0x00A7BAC4", "0x00A7D6A4", "0x00A7D6B0", "0x00A7D6BC", "0x00A7D6D4", "0x00A7D6E0", "0x00A7D6EC"]   # not in DB, dump asm evidence: 0x0050DCC8 wind FLD (operand rewrite), 0x00A73304 prev-frame grass bin count (PERF log only); 0.1.4 (doc 50 PF1a): 0x0046661B/0x00466698 DoBinBucket bin-loop begin/exit detours, 0x00499ADC collect FLD rewrite, 0x00986268/0x009862A0/0x009862CC glEnable/glDisable/glGetIntegerv import slots; 0.1.5 (doc 50 W2-1): 0x0050DAC0 RenderGrassPolys entry detour, 0x00436A95/0x00436B86 glDrawArrays CALLs in grass helper 0x004369A0 (callers 0x0050E16B/E487/E695), 0x0046664B inner bin loop, 0x00A32DF8/0x009F60xx/0x009F62DC/0x009F6118/0x00A0F07C/0x00A7BAC4 path-probe globals (read only); 0.1.6 (doc 50 PV1-PV4): 0x0050EF89 seed / 0x0050F177 blade detours in FUN_0050EBC0 (0050ebc0.asm), 0x0050D35C face-count detour in AddTriangle (0050c8a0.asm:637), 0x0050FEE7 size FMUL operand rewrite of 0x009921C8, 0x00A7D6A4..0x00A7D6F4 face vertex globals (read only); 0.1.10 (R12 review fixes): 0x00498829 bin-diff detour in FUN_004987E0 (004987e0.asm), 0x0050DA00 DestroyGrassPolys (name_map) called by it, 0x00A73300/0x00A7330C/0x00A73310 prev/cur grass bin lists (read only), 0x0050E483 B1 vertex-pointer code patch (0050dac0.asm:632, ADD ECX,0x40 -> MOV ECX,[ECX+0x38]; 0x0050E47D the MOV before it)
-
-[files."patch_manager_mods/k2_grass_draw_distance_src/K2GrassDrawDistanceLogic.h"]
-addresses = ["0x00499ADC", "0x009921C8", "0x009F60F0", "0x00A0F07C", "0x00A32DF8"]   # collect FLD operand (doc 50 PF1a), dump asm 00499610.asm; 0.1.5 path-probe globals (comments, read only); 0.1.6 size span double (comment)
+addresses = ["0x005BD6A0", "0x006076D0", "0x0073F750", "0x0077B670", "0x008A6170", "0x008A75F0", "0x008A7E22", "0x008A7E76", "0x008A8478", "0x008A8B30", "0x008A8CF0", "0x008B1D00", "0x0099A8B8", "0x0099A8BC", "0x009A72AC"]
 
 [files."patch_manager_mods/k2_engine_perf_src/K2EnginePerf.cpp"]
-addresses = ["0x00478A20", "0x00478A57", "0x00986128"]   # Opus-reviewed 10-25 (R11 lever 7): GMS CALL site/IAT from dump 00478a20.asm; 0.1.2 dropped the 0x00427970 texture-scan cache
+addresses = ["0x00478A20", "0x00478A57", "0x00986128"]
 
 [files."patch_manager_mods/k2_engine_perf_src/MemStatusCache.h"]
-addresses = ["0x00478A20", "0x00478A57", "0x00986128", "0x0098BFE0", "0x00A309AC"]   # comments + kOrigCall bytes; dump 00478a20.asm (0x0098BFE0/0x00A309AC comment only)
+addresses = ["0x00478A20", "0x00478A57", "0x00986128", "0x0098BFE0", "0x00A309AC"]
+
+[files."patch_manager_mods/k2_fog_distance_src/K2FogDistance.cpp"]
+addresses = ["0x00464C80", "0x00464C8A", "0x0046A980", "0x0046A989", "0x0046AADD"]
+
+[files."patch_manager_mods/k2_fog_distance_src/K2FogDistanceLogic.h"]
+addresses = ["0x00464C80", "0x00466700", "0x0046A980", "0x0046AADD", "0x004B3D80"]
 
 [files."patch_manager_mods/k2_frame_pacing_src/K2FramePacing.cpp"]
-addresses = ["0x00407920", "0x0040840E", "0x0040846E", "0x00408AF0", "0x00408C02", "0x00A1B484"]   # Opus-reviewed 10-26: 0x00407920 = WinMain (DB, trusted); main HWND [0x00A1B484] passed to GetDC at 0x0040840E; others comments; dump 00407920/00408af0.asm
+addresses = ["0x00407920", "0x0040840E", "0x0040846E", "0x00408AF0", "0x00408C02", "0x00A1B484"]
+
+[files."patch_manager_mods/k2_grass_draw_distance_src/K2GrassDrawDistance.cpp"]
+addresses = ["0x00436A95", "0x00436B86", "0x004664E0", "0x0046661B", "0x00466636", "0x0046664B", "0x00466698", "0x00498829", "0x00499ABC", "0x00499ADC", "0x0050D35C", "0x0050DA00", "0x0050DAC0", "0x0050DB4C", "0x0050DCC8", "0x0050E16B", "0x0050E47D", "0x0050E483", "0x0050E487", "0x0050E695", "0x0050EF89", "0x0050F177", "0x0050FEE7", "0x00986268", "0x009862A0", "0x009862CC", "0x009921C8", "0x009F5D38", "0x009F60EC", "0x009F60F0", "0x009F60FC", "0x009F6118", "0x009F62DC", "0x00A0F070", "0x00A0F074", "0x00A0F07C", "0x00A32DF8", "0x00A73300", "0x00A73304", "0x00A7330C", "0x00A73310", "0x00A7BAC4", "0x00A7D6A4", "0x00A7D6B0", "0x00A7D6BC", "0x00A7D6D4", "0x00A7D6E0", "0x00A7D6EC"]
+
+[files."patch_manager_mods/k2_grass_draw_distance_src/K2GrassDrawDistanceLogic.h"]
+addresses = ["0x00499ADC", "0x009921C8", "0x009F60F0", "0x00A0F07C", "0x00A32DF8"]
 
 [files."patch_manager_mods/k2_shadow_distance_src/K2ShadowDistance.cpp"]
-addresses = ["0x00468984", "0x00468B50", "0x00468CDB", "0x00468D76", "0x0098BA98", "0x009F5D30", "0x009F5D50", "0x009F5D54", "0x009F5DA8", "0x00A0F040"]   # not in DB, dump asm evidence doc 50 PF1b (00468b50.asm); 0x00A0F040/0x009F5D54/0x009F5D30/0x009F5DA8 read-only log
-
-[files."patch_manager_mods/npc_diversity_src/DiversityAnimEngine.h"]
-addresses = ["0x0051C0A0", "0x0054A840", "0x0073F4D0", "0x007ED9A0"]   # 0x007ED9A0 CSWCCreature::PlayAnimationById (query_ghidra confirmed, nb2-anim-driver 10-18)
-
-[files."patch_manager_mods/npc_world_src/NpcWorldProvider.cpp"]
-addresses = ["0x00533830", "0x00543F10", "0x0055A460", "0x00561F30", "0x00568BD0", "0x00572A70", "0x00710840"]
+addresses = ["0x00468984", "0x00468B50", "0x00468CDB", "0x00468D76", "0x0098BA98", "0x009F5D30", "0x009F5D50", "0x009F5D54", "0x009F5DA8", "0x00A0F040"]
 
 [files."patch_manager_mods/level_up_override_src/LevelUpOverride.cpp"]
 addresses = ["0x0051C450", "0x005FD480", "0x005FE0C0", "0x005FEDD0", "0x00654430", "0x006545B0", "0x00654740", "0x00654BB0", "0x00661C30", "0x0066C7A0", "0x006B6BD0", "0x006B9640", "0x006B9790", "0x006B9870", "0x006BEDF0", "0x006F5B00", "0x006F5B40", "0x0072FB00", "0x0073F450", "0x00740FC0", "0x0074EE90", "0x007BE090", "0x0084D82C", "0x0084FE20", "0x00850010", "0x008F8070", "0x00A1B4D0"]
@@ -126,8 +119,11 @@ addresses = ["0x00909360", "0x009098D0", "0x0090BD50", "0x0090C230"]
 [files."patch_manager_mods/load_hang_probe_src/LoadHangProbe.cpp"]
 addresses = ["0x00400000", "0x0040A750", "0x0040BC40", "0x0040BCF0", "0x0073F926", "0x00781BE0", "0x0078237C", "0x00785453", "0x00798660", "0x0079EE47", "0x007B3107", "0x009A5C84", "0x009F42A0", "0x00A1B484", "0x00A1B48C", "0x00A1B4BC", "0x00A1B4C0", "0x00A1B4D4", "0x00A1B6F4", "0x00A1B764", "0x00A1B768"]
 
-[files."patch_manager_mods/mouse_probe_src/MouseProbe.cpp"]
-addresses = []
+[files."patch_manager_mods/npc_diversity_src/DiversityAnimEngine.h"]
+addresses = ["0x0051C0A0", "0x0054A840", "0x0073F4D0", "0x007ED9A0"]
+
+[files."patch_manager_mods/npc_world_src/NpcWorldProvider.cpp"]
+addresses = ["0x00533830", "0x00543F10", "0x0055A460", "0x00561F30", "0x00568BD0", "0x00572A70", "0x00710840"]
 
 [files."patch_manager_mods/perf_lab_src/harness/smoke_activationfix.cpp"]
 addresses = ["0x0040D692", "0x0040D69E"]
@@ -156,38 +152,35 @@ addresses = ["0x0074E0B0"]
 [files."patch_manager_mods/perf_lab_src/harness/smoke_robustness.cpp"]
 addresses = ["0x00428AE5", "0x00428B2A", "0x00669012", "0x00669A27", "0x0066DACC", "0x00712F55", "0x0071C2F0", "0x00726C9C", "0x00798A47"]
 
+[files."patch_manager_mods/perf_lab_src/harness/smoke_saveevents.cpp"]
+addresses = ["0x00A20000", "0x00A20100", "0x00A20200", "0x00A20400", "0x00A20600"]
+
 [files."patch_manager_mods/perf_lab_src/harness/smoke_texmem.cpp"]
 addresses = ["0x004261C2", "0x004261CF"]
 
 [files."patch_manager_mods/perf_lab_src/perflab/PerfLab.cpp"]
-addresses = ["0x00400000", "0x004261CF", "0x004261D6", "0x004261E6", "0x004265F3", "0x00478A20", "0x0058C406", "0x0058C412", "0x0058C540", "0x00712245", "0x007ECFA0", "0x00919000", "0x0093A000", "0x009A5C84", "0x009F6100", "0x00A1B490", "0x00A1B704", "0x00A1B710", "0x00A1BBA0", "0x00A1BBE0", "0x00A1BC4C", "0x00A1BC70", "0x00A1BB84", "0x00A1DEE0", "0x00A1FF60", "0x00A1FF68", "0x00A1FFAC", "0x00A20030", "0x00A200F4", "0x00A7BD28", "0x00A7EB9C", "0x00A806C8"]
+addresses = ["0x00400000", "0x004261CF", "0x004261D6", "0x004261E6", "0x004265F3", "0x00478A20", "0x0058C406", "0x0058C412", "0x0058C540", "0x00712245", "0x007ECFA0", "0x00919000", "0x0093A000", "0x009A5C84", "0x009F6100", "0x00A1B704", "0x00A1B710", "0x00A1BB84", "0x00A1BBA0", "0x00A1BBE0", "0x00A1BC4C", "0x00A1BC70", "0x00A1DEE0", "0x00A1FF60", "0x00A1FF68", "0x00A1FFAC", "0x00A20030", "0x00A200F4", "0x00A7BD28", "0x00A7EB9C", "0x00A806C8"]
 
 [files."patch_manager_mods/portrait_slots_src/PortraitSlotsProvider.cpp"]
 addresses = ["0x00745774", "0x0074F25A", "0x0074F8AB"]
 
-[files."patch_manager_mods/quick_loot_src/QuickLoot.cpp"]
-addresses = ["0x004809D0", "0x0051C0A0", "0x0051C160", "0x0051C600", "0x0058A2C0", "0x005E9210", "0x005E9260", "0x005F5590", "0x005F5770", "0x00600380", "0x00605090", "0x00605E80", "0x00606100", "0x00614E10", "0x00615CC0", "0x00632A20", "0x006D0620", "0x0071B1D0", "0x007408F0", "0x0074FB20", "0x00750764", "0x0087A550", "0x0099244C", "0x00A1B4D0", "0x00A309BC"]   # 0.7.2-dev QL14: 0x74FB20 target-arrow draw (KDB rea row), 0x750764 its epilogue MOV ESP,EBP/POP EBP/RET 4 (exe bytes 8b e5 5d c2 04 00); 0.7.0-dev QL9/QL13: 0x614E10 GetPropertyStrings, 0x6D0620 GetItemInSlot, 0x71B1D0 C2DA getter, 0x7408F0 GetGUIString, 0xA1B4D0 rules holder (all query_ghidra checked); 0.6.0-dev QL4 drain calls (asm 0x5F5770..0x5F5A5A; query_ghidra: 0x51C600 0x58A2C0 0x605090 0x600380 0x605E80 0x5E9210 0x5E9260 named; static_facts: 0x632A20 101 B RET 0, 0x4809D0 MapToScreen 1042 B RET 20) + QL2A projection
-
 [files."patch_manager_mods/queue_hud_src/QueueHud.cpp"]
 addresses = ["0x0074C168", "0x0074E0B0", "0x00A1B4D0"]
 
+[files."patch_manager_mods/quick_loot_src/QuickLoot.cpp"]
+addresses = ["0x004809D0", "0x0051C0A0", "0x0051C160", "0x0051C600", "0x0058A2C0", "0x005E9210", "0x005E9260", "0x005F5590", "0x005F5770", "0x00600380", "0x00605090", "0x00605E80", "0x00606100", "0x00614E10", "0x00615CC0", "0x00632A20", "0x006D0620", "0x0071B1D0", "0x007408F0", "0x0074FB20", "0x00750764", "0x0087A550", "0x0099244C", "0x00A1B4D0", "0x00A309BC"]
+
 [files."patch_manager_mods/ranged_ai_src/RangedAI.cpp"]
-addresses = ["0x0051C8F0", "0x0056E1E0", "0x006D7C79", "0x006D83EA", "0x006D850F", "0x0074DBDD", "0x0077AA5E", "0x0077ACBC", "0x0077D8D4"]   # 0.4.2 (WI-169): 0x0051C8F0 CServerExoApp::GetPlayerCreatureId (KDB verified B9, same as companion-ai)
+addresses = ["0x0051C8F0", "0x0056E1E0", "0x006D7C79", "0x006D83EA", "0x006D850F", "0x0074DBDD", "0x0077AA5E", "0x0077ACBC", "0x0077D8D4"]
 
 [files."patch_manager_mods/robustness_fixes_src/RobustnessFixes.cpp"]
-addresses = ["0x0040F972", "0x0040F978", "0x0040F9E4", "0x00428AE5", "0x00428AEA", "0x00428B2A", "0x00428B33", "0x00428B88", "0x0058C61A", "0x0058C622", "0x0058C63E", "0x00668FE0", "0x00669012", "0x00669017", "0x00669A27", "0x00669A32", "0x00669A3E", "0x0066DACC", "0x0067046D", "0x0067048E", "0x007037C0", "0x007040EF", "0x00704406", "0x0070446D", "0x007054CE", "0x007054DA", "0x007120C0", "0x00712F55", "0x00712F5B", "0x0071C243", "0x0071C2C9", "0x0071C2F0", "0x0071C2F6", "0x00726527", "0x00726531", "0x00726C9C", "0x00726CDD", "0x00798A47", "0x00798A50", "0x009196FD", "0x009860D4", "0x0098657C", "0x0099447F"]
+addresses = ["0x0040F972", "0x0040F978", "0x0040F9E4", "0x00428AE5", "0x00428AEA", "0x00428B2A", "0x00428B33", "0x00428B88", "0x0058C61A", "0x0058C622", "0x0058C63E", "0x00668FE0", "0x00669012", "0x00669017", "0x00669A27", "0x00669A32", "0x00669A3E", "0x0066DACC", "0x0067046D", "0x0067048E", "0x007037C0", "0x007040EF", "0x00704406", "0x0070446D", "0x007054CE", "0x007054DA", "0x00712F55", "0x00712F5B", "0x0071C243", "0x0071C2C9", "0x0071C2F0", "0x0071C2F6", "0x00726527", "0x00726531", "0x00726C9C", "0x00726CDD", "0x00798A47", "0x00798A50", "0x009196FD", "0x009860D4", "0x0098657C", "0x0099447F"]
 
 [files."patch_manager_mods/save_events_src/SaveEventsProvider.cpp"]
-addresses = ["0x0052FD1E", "0x00534527", "0x0053C5AA", "0x008529E0", "0x008FACA0", "0x00907340", "0x00A7EA88", "0x00A7EABC"]
-
-[files."patch_manager_mods/script_events_src/ScriptEventsProvider.cpp"]
-addresses = []
+addresses = ["0x0052FD1E", "0x00534527", "0x0053C5AA", "0x008529E0", "0x008FACA0", "0x00907340"]
 
 [files."patch_manager_mods/shield_bar_src/ShieldBar.cpp"]
 addresses = ["0x00744EEC"]
 
 [files."patch_manager_mods/voice_probe_src/VoiceProbe.cpp"]
 addresses = ["0x006FD8D0", "0x00A1B4A8"]
-[files."patch_manager_mods/perf_lab_src/harness/smoke_saveevents.cpp"]
-addresses = ["0x00A7EA88", "0x00A7EABC", "0x00A20000", "0x00A20100", "0x00A20200", "0x00A20400", "0x00A20600"]
-
