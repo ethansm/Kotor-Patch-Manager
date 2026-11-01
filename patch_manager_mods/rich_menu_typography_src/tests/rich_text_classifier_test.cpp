@@ -93,6 +93,13 @@ void testTV3_KeyValueBonusPenalty() {
               rmt::resolveGlyphColor(gs.raw, paren + 2, 0, kDefaultBase) == (kAlphaE0 | rmt::kRgbPenaltyRed));
     kt::Check("TV3: ' Offhand)' is kRgbCream",
               paren && rmt::resolveGlyphColor(gs.raw, paren + 4, 0, kDefaultBase) == (kAlphaE0 | rmt::kRgbCream));
+
+    // Comma-separated penalty without space ("+2 Str,-1 Dex")
+    const char* commaPen = "Modifiers: +2 Str,-1 Dex\n";
+    MockGuiString gsComma(commaPen);
+    const char* minus1 = strstr(commaPen, "-1");
+    kt::Check("TV3b: comma-preceded '-1' is kRgbPenaltyRed",
+              minus1 && rmt::resolveGlyphColor(gsComma.raw, minus1, 0, kDefaultBase) == (kAlphaE0 | rmt::kRgbPenaltyRed));
 }
 
 void testTV4_WrappedContinuation() {

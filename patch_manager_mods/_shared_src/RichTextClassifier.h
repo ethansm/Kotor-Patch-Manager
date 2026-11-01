@@ -129,9 +129,9 @@ inline void classifyValueTokens(const char* paraStart, uint16_t valStart, uint16
             cur = i = j;
             continue;
         }
-        // Penalty: '-' followed by a digit ONLY when preceded by whitespace, '(', or ':' (never inside "4-16" or "Light-Scan")
+        // Penalty: '-' followed by a digit ONLY when preceded by whitespace, '(', ':', ',', or '/' (never inside "4-16" or "Light-Scan")
         if (c == '-' && i + 1 < len && itemprops::isDigit(paraStart[i + 1]) &&
-            (i == valStart || isSpaceChar(prev) || prev == '(' || prev == ':')) {
+            (i == valStart || isSpaceChar(prev) || prev == '(' || prev == ':' || prev == ',' || prev == '/')) {
             if (cur < i) pushSpan(out, cur, i, SpanKind::Value, kRgbCream);
             uint16_t j = i + 1;
             while (j < len && itemprops::isDigit(paraStart[j])) ++j;
@@ -243,7 +243,9 @@ inline uint32_t hashParagraph(const char* s, const char* e) noexcept {
 // Preserves the caller's alpha byte (`baseCol & 0xFF000000u`).
 inline uint32_t resolveGlyphColorInString(const char* fullStr, const char* curChar, uint32_t baseCol) noexcept {
     if (!curChar || !*curChar) return baseCol;
-    const char* strStart = (fullStr && fullStr <= curChar) ? fullStr : curChar;
+    const char* strStart = (fullStr && reinterpret_cast<uintptr_t>(fullStr) <= reinterpret_cast<uintptr_t>(curChar))
+                               ? fullStr
+                               : curChar;
 
     // Scan backward from curChar to nearest '\n' or strStart
     const char* paraStart = curChar;
