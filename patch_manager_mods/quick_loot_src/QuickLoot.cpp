@@ -217,6 +217,13 @@ bool g_pvOn = false;
 char g_targetName[80] = {0};
 bool g_actionBtnClicked = false;
 
+inline void ensureBezelTextures() {
+    static bool s_done = false;
+    if (!s_done) {
+        s_done = embtex::ensure(kBezelTex, kBezelTexCount);
+    }
+}
+
 template <typename T> bool rd(uintptr_t base, int off, T* out) { return saferead::readAt(Site, base, off, out); }
 
 uint32_t nowMs() {
@@ -897,6 +904,7 @@ void KPATCH_CALL onHudBuild(const K2HudContext* ctx, void*) {
     lblDrop();
     if (!ctx || ctx->struct_size < offsetof(K2HudContext, panel) + sizeof(ctx->panel) || !ctx->panel) return;
     enter();
+    ensureBezelTextures();
     const uintptr_t panel = static_cast<uintptr_t>(static_cast<uint32_t>(ctx->panel));
     const char* frameTag = "LBL_QUEUE1";
     g_bezel.c = makeLabel(panel, "LBL_QUEUE1", "bezel", false);             // 0.8.0-dev (QL14): Hardware bezel underneath
@@ -1825,6 +1833,7 @@ void pvRefreshPreview() {
 }
 
 void pvOnBuilt(void*, uint32_t page, void* panel) {
+    ensureBezelTextures();
     g_pvOn = false; g_modalPage = 0; g_gearItem = -1; g_pagePanel = panel;
     if (!g_mcMenu.hasModal() || !g_mcMenu.hasDescSplit()) return;
     const K2MenuUiApi* ui = g_mcMenu.p;
@@ -1913,6 +1922,7 @@ void pagePoll() {
 // K2HUD_FRAME: the pending click-take Close, then the proximity peek. Runs on the game thread, outside any EventHandler.
 void KPATCH_CALL onHudFrame(const K2HudContext* ctx, void*) {
     pagePoll();
+    ensureBezelTextures();
     embtex::heal();
     g_env.ctx = ctx;
     const uint32_t now = nowMs();
@@ -1971,7 +1981,6 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
         }
         g_live.catStyles[c] = g_catStyles[c];
     }
-    embtex::ensure(kBezelTex, kBezelTexCount);
     g_live.anchor = g_m.cfg.anchor; g_live.prox = g_proxOn; g_live.rows = g_m.cfg.listRows; g_live.openM = g_openM; g_live.closeM = g_closeM;
     g_live.closeExplicit = closeExplicit; g_live.closeExplicitM = closeExplicitM;
     g_live.tip = GetPrivateProfileIntA("QuickLoot", "TipDetail", qlpage::TipFull, IniPath);   // 0.7.1-dev page rows; applyLive below clamps nothing, so clamp here
