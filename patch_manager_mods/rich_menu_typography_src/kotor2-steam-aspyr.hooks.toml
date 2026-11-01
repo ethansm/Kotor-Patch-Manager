@@ -1,0 +1,22 @@
+[metadata]
+target_versions = [
+    "6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"
+]
+
+# Hook Site 1: Per-Glyph Inline Color Override in CAurGUIStringInternal::Draw_2
+# Target Address (Steam): 0x0047C06F (CALL dword ptr [0x009862E0] = glColor4ubv)
+# Stolen Bytes (6 bytes): FF 15 E0 62 98 00
+# Passes ebp frame pointer to RmtOverrideGlyphColor to resolve glyph color and write into *[ebp - 0xF4]
+[[hooks]]
+address = 0x0047C06F
+type = "detour"
+function = "RmtOverrideGlyphColor"
+original_bytes = [
+    0xFF, 0x15, 0xE0, 0x62, 0x98, 0x00
+]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ebp"
+type = "pointer"
