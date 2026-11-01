@@ -20,3 +20,48 @@ exclude_from_restore = []
 [[hooks.parameters]]
 source = "ebp"
 type = "pointer"
+
+# Hook Site 2: Central Multi-Font Description Builder in CSWGuiListBox::AddControls_2
+# Target Address (Steam): 0x0041FD90 (push ebp; mov ebp, esp; sub esp, 0x14)
+# Stolen Bytes (6 bytes): 55 8B EC 83 EC 14
+# When RmtAddControls2 intercepts a single-label description call, it populates the listbox
+# via origAddControls2 with bAutoDelete=0, bVariableItemHeights=1 and returns 1 (jumping to
+# consumed_exit_address 0x0041FED0: mov esp, ebp; pop ebp; ret 0x14). Returns 0 otherwise.
+[[hooks]]
+address = 0x0041FD90
+type = "detour"
+function = "RmtAddControls2"
+original_bytes = [
+    0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x14
+]
+skip_original_bytes = false
+exclude_from_restore = ["eax"]
+consumed_exit_address = 0x0041FED0
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[esp+4]"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[esp+8]"
+type = "int"
+
+[[hooks.parameters]]
+source = "[esp+12]"
+type = "int"
+
+[[hooks.parameters]]
+source = "[esp+16]"
+type = "int"
+
+[[hooks.parameters]]
+source = "[esp+20]"
+type = "int"
+
+[[hooks.parameters]]
+source = "const:0x0041FD90"
+type = "pointer"

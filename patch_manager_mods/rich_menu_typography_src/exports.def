@@ -2,3 +2,4 @@ LIBRARY RichMenuTypography
 EXPORTS
     KPatchInit
     RmtOverrideGlyphColor
+    RmtAddControls2

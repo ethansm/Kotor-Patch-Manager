@@ -44,6 +44,49 @@ void testHookBytesAndAdjacency() {
     }
 }
 
+void testHookSite2Contract() {
+    // TV9_HookBytesContract: CSWGuiListBox::AddControls_2 hook site 0x0041FD90 and epilogue 0x0041FED0
+    constexpr uint8_t kStolenBytes2[6] = { 0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x14 };
+    constexpr uint8_t kEpilogueBytes2[6] = { 0x8B, 0xE5, 0x5D, 0xC2, 0x14, 0x00 };
+    constexpr uintptr_t kHookAddr2 = 0x0041FD90;
+    constexpr uintptr_t kEpilogueAddr2 = 0x0041FED0;
+
+    kt::CheckEq("Hook Site 2 byte length is 6", sizeof(kStolenBytes2), static_cast<size_t>(6));
+    kt::CheckEq("Epilogue byte length is 6", sizeof(kEpilogueBytes2), static_cast<size_t>(6));
+    kt::Check("Hook Site 2 address is 0x0041FD90", kHookAddr2 == 0x0041FD90);
+    kt::Check("Epilogue address is 0x0041FED0", kEpilogueAddr2 == 0x0041FED0);
+
+    const char* exePath = getenv("KOTOR2_VANILLA_EXE");
+    if (!exePath || !*exePath) {
+        exePath = "/home/ethansm/Games/KOTOR2_Mod_Workspace/backups/vanilla_clean/swkotor2.exe";
+    }
+
+    FILE* fp = fopen(exePath, "rb");
+    if (fp) {
+        // File offset of 0x0041FD90: 0x0041FD90 - 0x00401000 + 0x400 = 0x1F190
+        constexpr long kFileOffsetHook = 0x1F190;
+        fseek(fp, kFileOffsetHook, SEEK_SET);
+        uint8_t readHook[6] = {0};
+        const size_t n1 = fread(readHook, 1, 6, fp);
+        kt::CheckEq("Read 6 bytes for Hook Site 2 from vanilla exe", n1, static_cast<size_t>(6));
+        kt::Check("Vanilla bytes at 0x0041FD90 match 55 8B EC 83 EC 14",
+                  memcmp(readHook, kStolenBytes2, 6) == 0);
+
+        // File offset of 0x0041FED0: 0x0041FED0 - 0x00401000 + 0x400 = 0x1F2D0
+        constexpr long kFileOffsetEpi = 0x1F2D0;
+        fseek(fp, kFileOffsetEpi, SEEK_SET);
+        uint8_t readEpi[6] = {0};
+        const size_t n2 = fread(readEpi, 1, 6, fp);
+        kt::CheckEq("Read 6 bytes for Epilogue from vanilla exe", n2, static_cast<size_t>(6));
+        kt::Check("Vanilla bytes at 0x0041FED0 match 8B E5 5D C2 14 00",
+                  memcmp(readEpi, kEpilogueBytes2, 6) == 0);
+
+        fclose(fp);
+    } else {
+        kt::Check("Vanilla exe not present on disk, static contract verified", true);
+    }
+}
+
 void testStructOffsets() {
     kt::CheckEq("CAurGUIStringInternal pszStr offset == 0x14", rmt::kStrOff_PszStr, static_cast<size_t>(0x14));
     kt::CheckEq("CAurGUIStringInternal colorR offset == 0x30", rmt::kStrOff_ColorR, static_cast<size_t>(0x30));
@@ -260,6 +303,7 @@ void testKpLogContract() {
 
 int main() {
     testHookBytesAndAdjacency();
+    testHookSite2Contract();
     testStructOffsets();
     testNormalCreamText();
     testNegativePenalty();

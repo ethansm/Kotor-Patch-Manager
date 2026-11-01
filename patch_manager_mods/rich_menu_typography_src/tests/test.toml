@@ -12,3 +12,13 @@ cxxflags = [
     "-I$REPO/research/companion_levelup/tools/parity/stub",
     "-Werror"
 ]
+
+[rich_desc_box_test]
+cxxflags = [
+    "../RichMenuTypography.cpp",
+    "-I..",
+    "-I../../_shared_src",
+    "-I$KPM_DIR/Patches/Common",
+    "-I$REPO/research/companion_levelup/tools/parity/stub",
+    "-Werror"
+]
