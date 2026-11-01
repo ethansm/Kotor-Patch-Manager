@@ -1,0 +1,4 @@
+cxxflags = ["-I../../_shared_src", "-Werror"]
+
+[rich_text_classifier_test]
+cxxflags = ["-I../../_shared_src", "-Werror"]
