@@ -16,11 +16,11 @@ int main() {
     const bool ok = mcdecl::parseSchema(kPageSchema, strlen(kPageSchema), g_pd, err, sizeof err);
     if (!ok) printf("schema error: %s\n", err);
     kt::Check("the shipped schema parses", ok);
-    kt::CheckEq("eight rows (0.7.1-dev: tip, sort, equip, panel)", g_pd.nRows, 8);
+    kt::CheckEq("nine rows (0.8.0-dev: bezels)", g_pd.nRows, 9);
     kt::Check("page name", strcmp(g_pd.name, "Quick Loot") == 0 && strcmp(g_pd.title, "Quick Loot") == 0);
-    const char* ids[8] = { kRowAnchor, kRowProx, kRowRows, kRowDist, kRowTip, kRowSort, kRowEquip, kRowPanel };
-    for (int i = 0; i < 8 && i < g_pd.nRows; ++i) kt::Check(ids[i], strcmp(g_pd.rows[i].id, ids[i]) == 0);
-    if (g_pd.nRows == 8) {
+    const char* ids[9] = { kRowAnchor, kRowProx, kRowRows, kRowDist, kRowTip, kRowSort, kRowEquip, kRowPanel, kRowBezels };
+    for (int i = 0; i < 9 && i < g_pd.nRows; ++i) kt::Check(ids[i], strcmp(g_pd.rows[i].id, ids[i]) == 0);
+    if (g_pd.nRows == 9) {
         const mcdecl::RowDecl& a = g_pd.rows[0];
         kt::Check("anchor: list of the three modes, bound to Anchor", a.kind == mcdecl::K_LIST && a.nChoices == qlogic::AnchorModeCount && a.def == 0 &&
                   strcmp(a.ini, "quick_loot.ini") == 0 && strcmp(a.section, "QuickLoot") == 0 && strcmp(a.key, "Anchor") == 0 &&
@@ -43,8 +43,11 @@ int main() {
         const mcdecl::RowDecl& pa = g_pd.rows[7];
         kt::Check("panel: Vanilla / Dark, Dark default, bound to Panel", pa.kind == mcdecl::K_LIST && pa.nChoices == 2 && pa.def == 1 &&
                   strcmp(pa.choices[0], "Vanilla") == 0 && strcmp(pa.choices[1], "Dark") == 0 && strcmp(pa.key, "Panel") == 0);
-        for (int i = 0; i < 8; ++i) kt::Check("row ids are unique and short", strlen(g_pd.rows[i].id) < 31 && g_pd.find(g_pd.rows[i].id) == i);
-        for (int i = 0; i < 8; ++i) kt::Check("desc fits one line of the description pane", strlen(g_pd.rows[i].desc) <= 95);
+        const mcdecl::RowDecl& bz = g_pd.rows[8];
+        kt::Check("bezels: toggle on, bound to HardwareBezels", bz.kind == mcdecl::K_TOGGLE && bz.def == 1 &&
+                  strcmp(bz.key, "HardwareBezels") == 0 && strcmp(bz.ini, "quick_loot.ini") == 0);
+        for (int i = 0; i < 9; ++i) kt::Check("row ids are unique and short", strlen(g_pd.rows[i].id) < 31 && g_pd.find(g_pd.rows[i].id) == i);
+        for (int i = 0; i < 9; ++i) kt::Check("desc fits one line of the description pane", strlen(g_pd.rows[i].desc) <= 95);
     }
     // defaults pinned to the mod's own
     kt::Check("Normal preset = the mod default OpenM, CloseM follows to the mod default", kDistOpenM[kDistDefault] == qlogic::DefaultOpenM && closeFor(qlogic::DefaultOpenM, false, 0) == qlogic::DefaultCloseM);
@@ -87,8 +90,38 @@ int main() {
     kt::CheckEq("equip off", applyRow(L, "equip", 0, &persist), 0);
     kt::CheckEq("panel Vanilla", applyRow(L, "panel", 0, &persist), 0);
     kt::CheckEq("panel anything else -> Dark", applyRow(L, "panel", 5, &persist), 1);
+    kt::CheckEq("bezels off", applyRow(L, "bezels", 0, &persist), 0);
+    kt::Check("bezels applied", !L.bezels);
+    applyRow(L, "bezels", 1, &persist);
+    kt::Check("bezels on again", L.bezels);
     kt::Check("the bound rows persist nothing through the hook", !persist);
     kt::CheckEq("unknown row: value passes through", applyRow(L, "nope", 5, &persist), 5);
     kt::Check("unknown row persists nothing", !persist);
+
+    // QL14: classifyPlaceable across 7 categories
+    using namespace qlbezel;
+    kt::Check("Droid appearance 63 -> CatDroidTech", classifyPlaceable(0, 0, 63, "Unknown") == CatDroidTech);
+    kt::Check("Droid tag 't3m4_junk' -> CatDroidTech", classifyPlaceable(0, 0, 0, "Container", "t3m4_junk") == CatDroidTech);
+    kt::Check("Corpse flag -> CatRemainsCorpse", classifyPlaceable(0, 1, 0, "Sith Soldier") == CatRemainsCorpse);
+    kt::Check("BodyBag flag -> CatRemainsCorpse", classifyPlaceable(1, 0, 0, "Remains") == CatRemainsCorpse);
+    kt::Check("Medical appearance 65 -> CatMedicalLab", classifyPlaceable(0, 0, 65, "Container") == CatMedicalLab);
+    kt::Check("Medical tag 'kolto_tank' -> CatMedicalLab", classifyPlaceable(0, 0, 0, "Tank", "kolto_tank") == CatMedicalLab);
+    kt::Check("Weapon appearance 59 -> CatWeaponArmory", classifyPlaceable(0, 0, 59, "Container") == CatWeaponArmory);
+    kt::Check("Weapon tag 'blaster_rack' -> CatWeaponArmory", classifyPlaceable(0, 0, 0, "Rack", "blaster_rack") == CatWeaponArmory);
+    kt::Check("Strongbox appearance 7 -> CatStrongboxCache", classifyPlaceable(0, 0, 7, "Container") == CatStrongboxCache);
+    kt::Check("Strongbox name 'Safe' -> CatStrongboxCache", classifyPlaceable(0, 0, 0, "Heavy Safe") == CatStrongboxCache);
+    kt::Check("Footlocker appearance 1 -> CatFootlockerGen", classifyPlaceable(0, 0, 1, "Container") == CatFootlockerGen);
+    kt::Check("Footlocker name 'Footlocker' -> CatFootlockerGen", classifyPlaceable(0, 0, 0, "Metal Footlocker") == CatFootlockerGen);
+    kt::Check("Unclassified -> CatDefaultFallback", classifyPlaceable(0, 0, 999, "Random Thing") == CatDefaultFallback);
+
+    // Default styles & frames
+    kt::Check("Droid default frame is Computer Console", defaultStyle(CatDroidTech).frame == FrameComputer);
+    kt::Check("Armory default frame is Upgrade Workbench", defaultStyle(CatWeaponArmory).frame == FrameUpgrade);
+    kt::Check("Medical default frame is Lab Station", defaultStyle(CatMedicalLab).frame == FrameWorkbench);
+    kt::Check("Strongbox default frame is Store", defaultStyle(CatStrongboxCache).frame == FrameStore);
+    kt::Check("Remains default frame is None", defaultStyle(CatRemainsCorpse).frame == FrameNone);
+    kt::Check("Footlocker default frame is Datapad", defaultStyle(CatFootlockerGen).frame == FrameDatapad);
+    kt::Check("Frame resrefs", strcmp(frameResref(FrameDatapad), "ql_bzl_dpad") == 0 && strcmp(frameResref(FrameComputer), "ql_bzl_comp") == 0);
+
     return kt::Report("quick_loot_page_test");
 }

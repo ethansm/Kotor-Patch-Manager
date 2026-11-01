@@ -497,7 +497,8 @@ constexpr int SbReserve = SbW + SbGapPx;   // width taken from the rows when the
 constexpr int SbInset = 2;                 // track outline thickness (the outline is a teal label under a dark inset label)
 constexpr int SbThumbMin = 24;
 constexpr int BlockPadX = 28, BlockPadY = 20;   // inside the frame; the vanilla template frame (LBL_MOULDING3, DIMENSION 16) eats 16 px of each edge
-constexpr int BlockMinW = 300, BlockMaxW = 1000;
+constexpr int BlockMinW = 400, BlockMaxW = 1000;
+constexpr int BezelInsetPx = 38;           // 0.8.0-dev (QL14): hardware bezel rail inset on all 4 sides
 constexpr int LabelSlackPx = 12;           // row / header label rects are this much wider than their text budget (a wrapped label is taller than a row)
 constexpr int IndicatorGapPx = 36;         // min gap between the header text and the "1-8 of 25" indicator
 constexpr float FrameAlpha = 1.0f;         // frame panel alpha: the template fill (uibit_fill_2bt) is already black at alpha 199/255 = 0.78 ("about 0.75"), alpha 1.0 keeps the vanilla look
@@ -741,10 +742,41 @@ inline int fmtHeader(char* out, size_t cap, bool took, const char* key, unsigned
 
 // ---- 0.5.0-dev: block / row / scrollbar geometry (block-relative px; add the block origin). rowH is a parameter only so the tests and the
 // mockup can check the 56 / 72 alternatives; the mod always uses RowH.
-inline int rowsTopPx() { return BlockPadY + HeaderH + HeaderGapPx; }
+// 0.8.0-dev (QL14): Unified Header geometry and hardware bezel padding
+inline Rect bezelOuterRect(const Rect& blk, bool hasBezel) {
+    return hasBezel ? Rect{ blk.x - BezelInsetPx, blk.y - BezelInsetPx, blk.w + 2 * BezelInsetPx, blk.h + 2 * BezelInsetPx } : blk;
+}
+
+inline Rect titleRect(int w, int padX = BlockPadX, int padY = BlockPadY) {
+    return { padX, padY, w - 2 * padX, 32 };
+}
+
+inline Rect titleDivRect(int w, int padX = BlockPadX, int padY = BlockPadY) {
+    return { padX, padY + 32 + 6, w - 2 * padX, 2 };
+}
+
+inline Rect actionBtnRect(int w, int padX = BlockPadX, int padY = BlockPadY) {
+    return { padX, padY + 32 + 6 + 2 + 8, w - 2 * padX, 38 };
+}
+
+inline Rect actionLedRect(const Rect& btnRect) {
+    return { btnRect.x + 12, btnRect.y + 11, 16, 16 };
+}
+
+inline Rect actionTextRect(const Rect& btnRect, bool hasLed) {
+    const int tx = btnRect.x + (hasLed ? 36 : 12);
+    return { tx, btnRect.y + 5, btnRect.w - (hasLed ? 48 : 24), 28 };
+}
+
+inline int rowsTopPx(bool hasUnified = false) {
+    return hasUnified ? (BlockPadY + 96) : (BlockPadY + HeaderH + HeaderGapPx);
+}
+
 // Height of the list area for vis rows: rows + the gaps between them.
 inline int listHeightPx(unsigned vis, int rowH = RowH) { return vis ? static_cast<int>(vis) * rowH + (static_cast<int>(vis) - 1) * RowGapPx : 0; }
-inline int blockHeightPx(unsigned vis, int rowH = RowH) { return 2 * BlockPadY + HeaderH + HeaderGapPx + listHeightPx(vis, rowH); }
+inline int blockHeightPx(unsigned vis, int rowH = RowH, bool hasUnified = false) {
+    return 2 * BlockPadY + (hasUnified ? 96 : HeaderH + HeaderGapPx) + listHeightPx(vis, rowH);
+}
 // The scrollbar needs room for both arrows and a minimum thumb; a list this short (ListRows 1) scrolls with the wheel only.
 inline bool sbFits(unsigned vis, int rowH = RowH) { return listHeightPx(vis, rowH) >= 2 * SbW + SbThumbMin; }
 
@@ -753,12 +785,12 @@ struct Sb {
     Rect col = {0, 0, 0, 0}, up = {0, 0, 0, 0}, down = {0, 0, 0, 0}, track = {0, 0, 0, 0}, thumb = {0, 0, 0, 0};   // block-relative
 };
 // Scrollbar layout for a block of width w showing vis rows of `total` list rows at first row `off`. shown only when total > vis and it fits.
-inline Sb sbLayout(int w, unsigned vis, unsigned total, unsigned off, int rowH = RowH) {
+inline Sb sbLayout(int w, unsigned vis, unsigned total, unsigned off, int rowH = RowH, bool hasUnified = false) {
     Sb o;
     if (vis == 0 || total <= vis || !sbFits(vis, rowH)) return o;
     o.shown = true;
     const int listH = listHeightPx(vis, rowH);
-    o.col = { w - BlockPadX - SbW, rowsTopPx(), SbW, listH };
+    o.col = { w - BlockPadX - SbW, rowsTopPx(hasUnified), SbW, listH };
     o.up = { o.col.x, o.col.y, SbW, SbW };
     o.down = { o.col.x, o.col.y + listH - SbW, SbW, SbW };
     o.track = { o.col.x, o.col.y + SbW, SbW, listH - 2 * SbW };
@@ -813,6 +845,7 @@ inline unsigned fmtFlashHeader(char* out, size_t cap, const char* name, int maxP
 struct ListDraw {
     bool took = false, scrollable = false;
     bool sb = false;                   // the scrollbar shows (scrollable and it fits): the rows are SbReserve narrower
+    bool unified = false;              // 0.8.0-dev (QL14): Unified Header Card (Proposal A+B Hybrid)
     int rowH = RowH;
     unsigned off = 0, vis = 0, rowsTotal = 0, items = 0;
     char header[72] = {0};             // "[F] Get Items (25)", or the 0.6.0-dev "Acquired: <name>" flash
@@ -828,7 +861,7 @@ struct ListDraw {
 // Builds the block for list d seen through view v. false = nothing to draw (empty list). The width follows the widest of ALL rows (not only the
 // visible ones) so scrolling never resizes the block; h follows the visible row count (min(rows, list rows)).
 // flashName (peek list only): the take flash replaces the header text, flashStack > 1 appends " (N)", and the scroll indicator is hidden meanwhile.
-inline bool buildListDraw(const ListData& d, const ListView& v, bool took, const char* key, ListDraw* o, int rowH = RowH, const char* flashName = nullptr, int flashStack = -1) {
+inline bool buildListDraw(const ListData& d, const ListView& v, bool took, const char* key, ListDraw* o, int rowH = RowH, const char* flashName = nullptr, int flashStack = -1, bool hasUnified = false) {
     *o = ListDraw();
     if (d.empty()) return false;
     const unsigned total = d.rowsTotal();
@@ -838,6 +871,7 @@ inline bool buildListDraw(const ListData& d, const ListView& v, bool took, const
     const unsigned maxOff = total > rows ? total - rows : 0u;
     if (off > maxOff) off = maxOff;
     o->took = took; o->off = off; o->vis = vis; o->rowsTotal = total; o->items = d.totalItems(); o->rowH = rowH;
+    o->unified = hasUnified;
     o->scrollable = total > rows;
     o->sb = o->scrollable && sbFits(vis, rowH);
     fmtHeader(o->header, sizeof o->header, took, key, d.totalItems());
@@ -864,7 +898,7 @@ inline bool buildListDraw(const ListData& d, const ListView& v, bool took, const
     if (w < BlockMinW) w = BlockMinW;
     if (w > BlockMaxW) w = BlockMaxW;
     o->w = w;
-    o->h = blockHeightPx(vis, rowH);
+    o->h = blockHeightPx(vis, rowH, hasUnified);
     o->fill = fillRect({ 0, 0, o->w, o->h });
     for (unsigned i = 0; i < vis; ++i) {
         d.rowAt(off + i, o->rows[i], RowTextCap);
@@ -1061,8 +1095,8 @@ inline bool anchorBlock(int mode, bool nameOk, const Rect& name, const Geometry&
 // Block-relative rects (add the block origin).
 inline Rect headerRect(int w) { return { BlockPadX, BlockPadY, w - 2 * BlockPadX + LabelSlackPx, HeaderH }; }
 // Item row i (the bordered protoitem frame): width w minus the pads, minus the scrollbar column when it shows.
-inline Rect rowRect(unsigned i, int w, bool sb = false, int rowH = RowH) {
-    return { BlockPadX, rowsTopPx() + static_cast<int>(i) * (rowH + RowGapPx), w - 2 * BlockPadX - (sb ? SbReserve : 0), rowH };
+inline Rect rowRect(unsigned i, int w, bool sb = false, int rowH = RowH, bool hasUnified = false) {
+    return { BlockPadX, rowsTopPx(hasUnified) + static_cast<int>(i) * (rowH + RowGapPx), w - 2 * BlockPadX - (sb ? SbReserve : 0), rowH };
 }
 // Icon square inside a row frame, and the text label rect (vertically centred on the glyph box; align 9 = top-left).
 inline Rect rowIconRect(const Rect& r, int rowH = RowH) { return { r.x + RowIconPad, r.y + RowIconPad, iconPx(rowH), iconPx(rowH) }; }
@@ -1079,9 +1113,9 @@ inline Rect rowStackRect(const Rect& r, int rowH = RowH) {
 // Indicator: text starts at w - BlockPadX - indPx so it ends on the right padding line.
 inline Rect indicatorRect(int w, int indPx) { return { w - BlockPadX - indPx, BlockPadY, indPx + LabelSlackPx, HeaderH }; }
 // Row index under the screen point (px, py) for the block at blk with vis visible rows, -1 = none (header, padding, a gap between rows, the scrollbar, outside).
-inline int rowAtPoint(const Rect& blk, unsigned vis, float px, float py, bool sb = false, int rowH = RowH) {
+inline int rowAtPoint(const Rect& blk, unsigned vis, float px, float py, bool sb = false, int rowH = RowH, bool hasUnified = false) {
     const float x0 = static_cast<float>(blk.x + BlockPadX), x1 = static_cast<float>(blk.x + blk.w - BlockPadX - (sb ? SbReserve : 0));
-    const float y0 = static_cast<float>(blk.y + rowsTopPx());
+    const float y0 = static_cast<float>(blk.y + rowsTopPx(hasUnified));
     if (px < x0 || px >= x1 || py < y0) return -1;
     const int pitch = rowH + RowGapPx;
     const int i = static_cast<int>((py - y0) / static_cast<float>(pitch));
@@ -1092,11 +1126,17 @@ inline int rowAtPoint(const Rect& blk, unsigned vis, float px, float py, bool sb
 // 0.6.0-dev (QL4): the item row a left click at (px, py) lands on: only the PEEK list's rows take clicks (a Took list is read-only); -1 = none.
 // The adapter makes the row frame labels click-eating under the same rule (rowsEatClicks), so a click on a row never walks the character.
 inline bool rowsEatClicks(bool took, bool peekUp) { return !took && peekUp; }
-inline int rowClickAt(const Rect& blk, unsigned vis, bool sb, bool took, float px, float py, int rowH = RowH) {
-    return took ? -1 : rowAtPoint(blk, vis, px, py, sb, rowH);
+inline int rowClickAt(const Rect& blk, unsigned vis, bool sb, bool took, float px, float py, int rowH = RowH, bool hasUnified = false) {
+    return took ? -1 : rowAtPoint(blk, vis, px, py, sb, rowH, hasUnified);
 }
 inline bool pointInRect(const Rect& r, float px, float py) {
     return px >= static_cast<float>(r.x) && px < static_cast<float>(r.x + r.w) && py >= static_cast<float>(r.y) && py < static_cast<float>(r.y + r.h);
+}
+inline bool actionBtnHitAt(const Rect& blk, float px, float py, bool hasUnified = true) {
+    if (!hasUnified) return false;
+    const Rect br = actionBtnRect(blk.w);
+    const Rect btn = { blk.x + br.x, blk.y + br.y, br.w, br.h };
+    return pointInRect(btn, px, py);
 }
 
 // The Took line: text + how long it stays up.
@@ -1374,7 +1414,7 @@ inline void tipAppend(char* buf, size_t cap, size_t* len, const char* s) {
 // Builds the tooltip for model d beside block blk (top edge = the block's top; rowAbs, the hovered row, is not used by the 0.7.0-dev layout) inside
 // panel (panel.w <= 0 = unknown): right of the list, flipped to its left when it would leave the panel, clamped to the panel margins.
 // false = nothing to show (not reachable now: an empty title becomes "item").
-inline bool buildTip(const TipData& d, const Rect& blk, const Rect& /*rowAbs*/, const Rect& panel, TipDraw* o) {
+inline bool buildTip(const TipData& d, const Rect& blk, const Rect& /*rowAbs*/, const Rect& panel, TipDraw* o, int extraPadX = 0) {
     *o = TipDraw();
     const int inner = TipW - 2 * TipPadX;
     const int headW = inner - TipIconPx - TipIconGapPx;   // title / category text width
@@ -1450,10 +1490,10 @@ inline bool buildTip(const TipData& d, const Rect& blk, const Rect& /*rowAbs*/, 
     h += TipPadY;
     const int w = TipW;
     // position: right of the list, top = the block's top; flip left near the panel edge, then clamp (as in 0.6.0-dev)
-    int x = blk.x + blk.w + TipGapPx;
+    int x = blk.x + blk.w + TipGapPx + extraPadX;
     int y = blk.y;
     if (panel.w > 0 && panel.h > 0) {
-        if (x + w > panel.x + panel.w - ScreenMarginPx) { x = blk.x - TipGapPx - w; o->flipped = true; }
+        if (x + w > panel.x + panel.w - ScreenMarginPx) { x = blk.x - TipGapPx - extraPadX - w; o->flipped = true; }
         if (x < panel.x + ScreenMarginPx) x = panel.x + ScreenMarginPx;
         const int bottom = panel.y + panel.h - ScreenMarginPx, topLimit = panel.y + ScreenMarginPx;
         if (y + h > bottom) y = bottom - h;

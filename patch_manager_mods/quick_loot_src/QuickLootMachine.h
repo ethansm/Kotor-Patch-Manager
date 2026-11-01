@@ -513,11 +513,11 @@ struct Machine {
     }
     // The block to draw now. false = nothing up (or an empty list). took tells which list it is. 0.6.0-dev: while the take flash is up the header
     // reads "Acquired: <name>" (cut left of the scroll indicator; the block width does not change).
-    bool listDraw(uint32_t now, ListDraw* out) const {
+    bool listDraw(uint32_t now, ListDraw* out, bool hasUnified = false) const {
         char key[8];
         keyLabel(cfg.takeKey, key, sizeof key);
-        if (toastS.visible(now)) return buildListDraw(tookList, tookView, true, key, out);
-        if (peek.active && peek.text[0]) return buildListDraw(peekList, peekView, false, key, out, RowH, flash.visible(now) ? flash.name : nullptr, flash.stack);
+        if (toastS.visible(now)) return buildListDraw(tookList, tookView, true, key, out, RowH, nullptr, -1, hasUnified);
+        if (peek.active && peek.text[0]) return buildListDraw(peekList, peekView, false, key, out, RowH, flash.visible(now) ? flash.name : nullptr, flash.stack, hasUnified);
         return false;
     }
     // 0.6.0-dev (QL2A): the block rect for this frame, re-derived from the CURRENT name tag rect (no latch). The name rect seen last is kept for

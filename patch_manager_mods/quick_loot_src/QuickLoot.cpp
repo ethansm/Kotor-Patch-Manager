@@ -101,6 +101,11 @@
 #include "ProviderClient.h"    // k2pc::RegisterOnce (Mod Configuration page)
 #include "ModConfigDecl.h"
 #include "QuickLootPage.h"
+#include "QuickLootBezel.h"
+#include "EmbedTex.h"
+#include "QuickLootBezelTex.inc"
+#include "PreviewCanvas.h"
+#include "IniWrite.h"
 #include <math.h>
 #include <stdlib.h>
 
@@ -108,7 +113,7 @@ KP_LOG_PATCH("quick-loot");
 
 namespace {
 
-constexpr const char* Version = "0.7.2-dev";
+constexpr const char* Version = "0.8.0-dev";
 constexpr unsigned Site = 0x7100;   // saferead failure-ring site id
 // Steam addresses (static RE, doc 52 / .claude/research/quick_loot/README.md); AppGlobal and ClientToServerObjectId come from GameAddr.h.
 constexpr uintptr_t GetPlaceableByGameObjectID = 0x0051C160;   // thiscall(serverApp, serverId) RET 4 -> CSWSPlaceable* (0 = none)
@@ -199,6 +204,18 @@ bool g_enabled = true;
 bool g_started = false;
 LARGE_INTEGER g_freq;
 bool g_timeInit = false;
+
+// 0.8.0-dev (QL14): Hardware Bezels & Unified Header globals
+bool g_hardwareBezels = true;
+qlbezel::CategoryStyle g_catStyles[qlbezel::CatCount];
+int g_selectedCat = 0;
+uint32_t g_modalPage = 0;
+int g_gearItem = -1;
+void* g_pagePanel = nullptr;
+pvc::Canvas g_cv;
+bool g_pvOn = false;
+char g_targetName[80] = {0};
+bool g_actionBtnClicked = false;
 
 template <typename T> bool rd(uintptr_t base, int off, T* out) { return saferead::readAt(Site, base, off, out); }
 
@@ -748,6 +765,8 @@ struct Lbl {
 Lbl g_back, g_head, g_ind, g_row[qlogic::ListRowsMax], g_rowFrame[qlogic::ListRowsMax], g_rowIcon[qlogic::ListRowsMax];
 Lbl g_backFill, g_rowStack[qlogic::ListRowsMax];   // 0.7.0-dev: the list's opacity underlay (made BEFORE the frame) and the per-row stack column (made after the row text)
 Lbl g_sbOuter, g_sbInner, g_sbThumb, g_sbUp, g_sbDown;
+Lbl g_bezel;                                       // 0.8.0-dev (QL14): Hardware bezel label
+Lbl g_title, g_headDiv, g_headFrame, g_headLed;    // 0.8.0-dev (QL14): Unified header controls
 // 0.6.0-dev (QL8) hover tooltip, created last (drawn above the list); 0.7.0-dev (QL9) layout: underlay fill, frame, icon, title, category line, three dividers,
 // label / value columns (one multi-line label each), flavor (g_tipBody), foot.
 Lbl g_tipFill, g_tipFrame, g_tipIcon, g_tipTitle, g_tipSub, g_tipDiv[3], g_tipLabels, g_tipValues, g_tipBody, g_tipFoot;
@@ -820,8 +839,13 @@ void tipHide() {
 }
 
 void lblHideAll() {
+    lblHideOne(g_bezel);
     lblHideOne(g_backFill);
     lblHideOne(g_back);
+    lblHideOne(g_title);
+    lblHideOne(g_headDiv);
+    lblHideOne(g_headFrame);
+    lblHideOne(g_headLed);
     lblHideOne(g_head);
     lblHideOne(g_ind);
     for (unsigned i = 0; i < qlogic::ListRowsMax; ++i) { lblHideOne(g_rowFrame[i]); lblHideOne(g_rowIcon[i]); lblHideOne(g_row[i]); lblHideOne(g_rowStack[i]); }
@@ -833,7 +857,7 @@ void lblHideAll() {
 
 // The HUD was rebuilt: the old labels may be freed. Drop every pointer without writing to them.
 void lblDrop() {
-    g_back = Lbl(); g_backFill = Lbl(); g_head = Lbl(); g_ind = Lbl();
+    g_bezel = Lbl(); g_back = Lbl(); g_backFill = Lbl(); g_title = Lbl(); g_headDiv = Lbl(); g_headFrame = Lbl(); g_headLed = Lbl(); g_head = Lbl(); g_ind = Lbl();
     for (Lbl& r : g_row) r = Lbl();
     for (Lbl& r : g_rowStack) r = Lbl();
     for (Lbl& r : g_rowFrame) r = Lbl();
@@ -875,17 +899,22 @@ void KPATCH_CALL onHudBuild(const K2HudContext* ctx, void*) {
     enter();
     const uintptr_t panel = static_cast<uintptr_t>(static_cast<uint32_t>(ctx->panel));
     const char* frameTag = "LBL_QUEUE1";
+    g_bezel.c = makeLabel(panel, "LBL_QUEUE1", "bezel", false);             // 0.8.0-dev (QL14): Hardware bezel underneath
     g_backFill.c = makeLabel(panel, "LBL_QUEUE1", "backing fill", false);   // 0.7.0-dev: underlay first (draw order = creation order); losing it only costs opacity
     for (const char* tag : FrameTemplates) {
         g_back.c = makeLabel(panel, tag, "frame", false);
         if (g_back.c) { g_backFrame = true; frameTag = tag; break; }
     }
     if (!g_back.c) g_back.c = makeLabel(panel, "LBL_QUEUE1", "backing");   // flat fill; losing the backing only costs the dark panel
+    g_panel = ctx->panel;
+    g_title.c = makeLabel(panel, "LBL_QUEUE1", "title");
+    g_ind.c = makeLabel(panel, "LBL_QUEUE1", "indicator");
+    g_headDiv.c = makeLabel(panel, "LBL_QUEUE1", "header divider");
+    g_headFrame.c = makeLabel(panel, frameTag, "action button frame");
+    g_headLed.c = makeLabel(panel, "LBL_QUEUE1", "action button led");
     g_head.c = makeLabel(panel, "LBL_QUEUE1", "header");
     if (!g_head.c) return;
-    g_panel = ctx->panel;
-    g_ind.c = makeLabel(panel, "LBL_QUEUE1", "indicator");
-    bool rowsOk = g_ind.c != 0;
+    bool rowsOk = g_ind.c != 0 && g_title.c != 0 && g_headDiv.c != 0 && g_headFrame.c != 0;
     g_rowFlat = !g_backFrame;   // the row frames come from the same template as the backing; flat fills when the layout has none
     for (unsigned i = 0; i < qlogic::ListRowsMax && rowsOk; ++i) {
         g_rowFrame[i].c = makeLabel(panel, frameTag, "row frame");
@@ -918,8 +947,11 @@ void KPATCH_CALL onHudBuild(const K2HudContext* ctx, void*) {
         Lbl* tl[] = { &g_tipFill, &g_tipFrame, &g_tipIcon, &g_tipTitle, &g_tipSub, &g_tipDiv[0], &g_tipDiv[1], &g_tipDiv[2], &g_tipLabels, &g_tipValues, &g_tipBody, &g_tipFoot };
         for (Lbl* l : tl) l->vis = l->c ? 0 : -1;
     }
+    g_bezel.vis = g_bezel.c ? 0 : -1;
     g_backFill.vis = g_backFill.c ? 0 : -1;
     g_back.vis = g_back.c ? 0 : -1; g_head.vis = 0; g_ind.vis = g_ind.c ? 0 : -1;
+    g_title.vis = g_title.c ? 0 : -1; g_headDiv.vis = g_headDiv.c ? 0 : -1;
+    g_headFrame.vis = g_headFrame.c ? 0 : -1; g_headLed.vis = g_headLed.c ? 0 : -1;
     for (unsigned i = 0; i < qlogic::ListRowsMax; ++i) {
         g_row[i].vis = g_row[i].c ? 0 : -1; g_rowStack[i].vis = g_rowStack[i].c ? 0 : -1; g_rowFrame[i].vis = g_rowFrame[i].c ? 0 : -1; g_rowIcon[i].vis = g_rowIcon[i].c ? 0 : -1;
     }
@@ -1042,14 +1074,16 @@ bool lblDrawIcon(Lbl& l, const char* res, const qlogic::Rect& r) {
     return true;
 }
 
-// The backing panel under the text. Frame template: keeps the .gui's fill / edge / corner images, sets the tint (TealFrame) and FrameAlpha.
+// The backing panel under the text. Frame template: keeps the .gui's fill / edge / corner images, sets the tint (TealFrame or custom) and FrameAlpha.
 // Flat fallback (no frame template in the HUD layout): the pill image tinted black at BackAlpha, the 0.3.1 look.
-void backDraw(const qlogic::Rect& r) {
+void backDraw(const qlogic::Rect& r, const float* frameTint = nullptr) {
     if (!g_back.c || g_backOff) return;
-    if (!g_backStyled) {
+    const float* tint = frameTint ? frameTint : TealFrame;
+    if (!g_backStyled || (frameTint && memcmp(g_back.tint, tint, sizeof g_back.tint) != 0)) {
         bool ok;
         if (g_backFrame) {
-            ok = guikit::setBorderTint(g_back.c, TealFrame) && guikit::setAlpha(g_back.c, qlogic::FrameAlpha);
+            ok = guikit::setBorderTint(g_back.c, tint) && guikit::setAlpha(g_back.c, qlogic::FrameAlpha);
+            if (ok) { memcpy(g_back.tint, tint, sizeof g_back.tint); g_back.tintSet = true; }
         } else {
             static const float black[3] = { 0.0f, 0.0f, 0.0f };
             void* img = guikit::imageFor(TexBacking);
@@ -1091,17 +1125,18 @@ qlogic::Rect inset(const qlogic::Rect& r, int d) { return { r.x + d, r.y + d, r.
 
 // The scrollbar of the block (absolute rects): a teal outline label (the click-eating column) under a dark inset, the thumb, the two arrows (dimmed
 // while the list cannot move that way). Hidden when the list fits. Published for the click test (sbClickPoll).
-bool sbDraw(const qlogic::ListDraw& d, const qlogic::Rect& blk) {
+bool sbDraw(const qlogic::ListDraw& d, const qlogic::Rect& blk, const float* frameTint = nullptr) {
     if (!d.sb) {
         lblHideOne(g_sbOuter); lblHideOne(g_sbInner); lblHideOne(g_sbThumb); lblHideOne(g_sbUp); lblHideOne(g_sbDown);
         g_sbPub.shown = false;
         return true;
     }
-    const qlogic::Sb sb = qlogic::sbLayout(blk.w, d.vis, d.rowsTotal, d.off, d.rowH);
+    const qlogic::Sb sb = qlogic::sbLayout(blk.w, d.vis, d.rowsTotal, d.off, d.rowH, true);
     const unsigned maxOff = d.rowsTotal > d.vis ? d.rowsTotal - d.vis : 0u;
     const qlogic::Rect col = atBlock(sb.col, blk);
     const qlogic::Rect up = inset(atBlock(sb.up, blk), 4), dn = inset(atBlock(sb.down, blk), 4);
-    if (!lblDrawFilled(g_sbOuter, TexFill16g, SbOutlineTint, 1.0f, col, true) ||            // the one click-eating label: arrows, track and thumb all sit on it
+    const float* outlineTint = frameTint ? frameTint : SbOutlineTint;
+    if (!lblDrawFilled(g_sbOuter, TexFill16g, outlineTint, 1.0f, col, true) ||            // the one click-eating label: arrows, track and thumb all sit on it
         !lblDrawFilled(g_sbInner, TexFill2bt, SbInsetTint, 1.0f, inset(col, qlogic::SbInset), false) ||
         !lblDrawFilled(g_sbThumb, TexFill16g, SbThumbTint, 1.0f, atBlock(sb.thumb, blk), false) ||
         !lblDrawFilled(g_sbUp, TexUpArrow, White, d.off == 0 ? AlphaDim : 1.0f, up, false) ||
@@ -1114,13 +1149,13 @@ bool sbDraw(const qlogic::ListDraw& d, const qlogic::Rect& blk) {
 // QL8: the tooltip for the hovered peek row (Machine::tipShown), beside the block. false = a label write failed (the caller hides everything).
 unsigned g_tipLogged = 0, g_tipLoggedSerial = 0;
 constexpr unsigned TipLogMax = 20;
-bool tipDraw(const qlogic::ListDraw& d, const qlogic::Rect& blk, const qlogic::Rect& panel, uint32_t now) {
+bool tipDraw(const qlogic::ListDraw& d, const qlogic::Rect& blk, const qlogic::Rect& panel, uint32_t now, int extraPadX = 0) {
     const qlogic::TipData* td = nullptr;
     int absRow = -1;
     if (!g_tipOk || d.took || !g_m.tipShown(now, &td, &absRow) || absRow < static_cast<int>(d.off) || absRow >= static_cast<int>(d.off + d.vis)) { tipHide(); return true; }
-    const qlogic::Rect rr = atBlock(qlogic::rowRect(static_cast<unsigned>(absRow) - d.off, blk.w, d.sb, d.rowH), blk);
+    const qlogic::Rect rr = atBlock(qlogic::rowRect(static_cast<unsigned>(absRow) - d.off, blk.w, d.sb, d.rowH, true), blk);
     qlogic::TipDraw t;
-    if (!qlogic::buildTip(*td, blk, rr, panel, &t)) { tipHide(); return true; }
+    if (!qlogic::buildTip(*td, blk, rr, panel, &t, extraPadX)) { tipHide(); return true; }
     const char* titleFont = (t.bigTitle && g_font16Ok) ? FontTitle : FontName;
     const int iconRow = static_cast<int>(absRow) - static_cast<int>(d.off);
     // draw order = creation order: underlay, frame, icon, title, category, dividers, columns, flavor, foot
@@ -1155,40 +1190,77 @@ bool tipDraw(const qlogic::ListDraw& d, const qlogic::Rect& blk, const qlogic::R
     return true;
 }
 
-// The multi-row block at blk: frame, header, indicator (dim teal, right end of the header row), d.vis bordered rows (frame, icon, text; the row under
-// the cursor gets the HILIGHT tint and cream text), the scrollbar when the list overflows.
-void blockDraw(const qlogic::ListDraw& d, const qlogic::Rect& blk, const qlogic::Rect& panel, uint32_t now) {
+// The multi-row block at blk: hardware bezel, frame, container title, divider, action button,
+// d.vis bordered rows (frame, icon, text; the row under the cursor gets the HILIGHT tint and cream text),
+// and the scrollbar when the list overflows.
+void blockDraw(const qlogic::ListDraw& d, const qlogic::Rect& blk, const qlogic::Rect& panel, uint32_t now, const qlbezel::CategoryStyle& style, qlbezel::Category cat) {
     float cx = 0, cy = 0;
     const bool haveCur = g_input.connected && g_input.cursor_engine(&cx, &cy);
     g_hover = haveCur && qlogic::pointInRect(blk, cx, cy);
-    g_hoverRow = g_hover ? qlogic::rowAtPoint(blk, d.vis, cx, cy, d.sb, d.rowH) : -1;
+    g_hoverRow = g_hover ? qlogic::rowAtPoint(blk, d.vis, cx, cy, d.sb, d.rowH, true) : -1;
+
+    // Hardware bezel (outermost layer)
+    const bool showBezel = g_hardwareBezels && (style.frame != qlbezel::FrameNone);
+    if (showBezel) {
+        const qlogic::Rect bzl = qlogic::bezelOuterRect(blk, true);
+        const char* bzlRes = qlbezel::frameResref(static_cast<qlbezel::BezelFrame>(style.frame));
+        lblDrawFilled(g_bezel, bzlRes, nullptr, 1.0f, bzl, false);
+    } else {
+        lblHideOne(g_bezel);
+    }
+
     backFillDraw(d.fill, blk);
-    backDraw(blk);
-    const qlogic::Rect hr = qlogic::headerRect(blk.w);
-    if (!lblDrawText(g_head, d.header, { blk.x + hr.x, blk.y + hr.y, hr.w, hr.h }, 9, Cream)) { lblHideAll(); return; }
+    backDraw(blk, style.frameRgb);
+
+    // Container title & scroll indicator
+    const qlogic::Rect tr = atBlock(qlogic::titleRect(blk.w), blk);
+    const char* title = g_targetName[0] ? g_targetName : qlbezel::categoryName(cat);
+    lblDrawText(g_title, title, tr, 9, Cream, (g_font16Ok ? FontTitle : FontName));
+
     if (d.indicator[0]) {
-        const qlogic::Rect ir = qlogic::indicatorRect(blk.w, d.indicatorPx);
-        if (!lblDrawText(g_ind, d.indicator, { blk.x + ir.x, blk.y + ir.y, ir.w, ir.h }, 9, TealDim)) { lblHideAll(); return; }
+        const qlogic::Rect ir = { tr.x + tr.w - d.indicatorPx, tr.y + 4, d.indicatorPx + qlogic::LabelSlackPx, tr.h };
+        if (!lblDrawText(g_ind, d.indicator, ir, 9, TealDim)) { lblHideAll(); return; }
     } else {
         lblHideOne(g_ind);
     }
+
+    // 2px horizontal divider
+    const qlogic::Rect dr = atBlock(qlogic::titleDivRect(blk.w), blk);
+    lblDrawFilled(g_headDiv, TexFill16g, style.frameRgb, 1.0f, dr, false);
+
+    // Proposal B framed Action Button
+    const qlogic::Rect ar = atBlock(qlogic::actionBtnRect(blk.w), blk);
+    const bool hovBtn = haveCur && qlogic::pointInRect(ar, cx, cy);
+    lblDrawFrame(g_headFrame, ar, hovBtn ? RowHilight : style.btnRgb, true);
+
+    if (style.led) {
+        const qlogic::Rect lr = qlogic::actionLedRect(ar);
+        lblDrawFilled(g_headLed, "uibit_fill_circ", style.ledRgb, 1.0f, lr, false);
+    } else {
+        lblHideOne(g_headLed);
+    }
+
+    const qlogic::Rect atr = qlogic::actionTextRect(ar, style.led);
+    if (!lblDrawText(g_head, d.header, atr, 9, hovBtn ? Cream : style.textRgb)) { lblHideAll(); return; }
+
     for (unsigned i = 0; i < qlogic::ListRowsMax; ++i) {
         if (i >= d.vis) { lblHideOne(g_rowFrame[i]); lblHideOne(g_rowIcon[i]); lblHideOne(g_row[i]); lblHideOne(g_rowStack[i]); continue; }
         const bool hov = static_cast<int>(i) == g_hoverRow;
-        const qlogic::Rect rr = atBlock(qlogic::rowRect(i, blk.w, d.sb, d.rowH), blk);
-        if (!lblDrawFrame(g_rowFrame[i], rr, hov ? RowHilight : TealFrame, qlogic::rowsEatClicks(d.took, true)) || !lblDrawIcon(g_rowIcon[i], d.icons[i], qlogic::rowIconRect(rr, d.rowH)) ||
-            !lblDrawText(g_row[i], d.rows[i], qlogic::rowTextRect(rr, d.rowH), 9, hov ? Cream : TealText)) { lblHideAll(); return; }
-        if (d.stacks[i][0]) {   // QL10: the stack column, right-aligned by placement (the engine ignores right alignment): the label ends on the row's right padding line
+        const qlogic::Rect rr = atBlock(qlogic::rowRect(i, blk.w, d.sb, d.rowH, true), blk);
+        if (!lblDrawFrame(g_rowFrame[i], rr, hov ? RowHilight : style.frameRgb, qlogic::rowsEatClicks(d.took, true)) || !lblDrawIcon(g_rowIcon[i], d.icons[i], qlogic::rowIconRect(rr, d.rowH)) ||
+            !lblDrawText(g_row[i], d.rows[i], qlogic::rowTextRect(rr, d.rowH), 9, hov ? Cream : style.textRgb)) { lblHideAll(); return; }
+        if (d.stacks[i][0]) {   // QL10: the stack column, right-aligned by placement
             const qlogic::Rect sr = qlogic::rowStackRect(rr, d.rowH);
             const int tw = qlogic::textPx10(d.stacks[i]);
-            if (!lblDrawText(g_rowStack[i], d.stacks[i], { sr.x + sr.w - tw, sr.y, tw + qlogic::LabelSlackPx, sr.h }, 9, hov ? Cream : TealText)) { lblHideAll(); return; }
+            if (!lblDrawText(g_rowStack[i], d.stacks[i], { sr.x + sr.w - tw, sr.y, tw + qlogic::LabelSlackPx, sr.h }, 9, hov ? Cream : style.textRgb)) { lblHideAll(); return; }
         } else {
             lblHideOne(g_rowStack[i]);
         }
     }
-    if (!sbDraw(d, blk)) { lblHideAll(); return; }
+    if (!sbDraw(d, blk, style.frameRgb)) { lblHideAll(); return; }
     g_blockPub.shown = true; g_blockPub.took = d.took; g_blockPub.sb = d.sb; g_blockPub.blk = blk; g_blockPub.vis = d.vis; g_blockPub.tick = GetTickCount();
-    if (!tipDraw(d, blk, panel, now)) { lblHideAll(); return; }
+    const int extraPadX = showBezel ? qlogic::BezelInsetPx : 0;
+    if (!tipDraw(d, blk, panel, now, extraPadX)) { lblHideAll(); return; }
     g_listRect[0] = blk.x; g_listRect[1] = blk.y; g_listRect[2] = blk.w; g_listRect[3] = blk.h;
     g_listScroll = d.scrollable ? 1 : 0;
     g_listTick = GetTickCount();
@@ -1220,7 +1292,11 @@ int sbClickPoll() {
         const int part = static_cast<int>(qlogic::sbHitAt(g_sbPub.sb, cx - static_cast<float>(g_sbPub.blk.x), cy - static_cast<float>(g_sbPub.blk.y)));
         if (part != 0) return part;
     }
-    g_rowClickPending = qlogic::rowClickAt(g_blockPub.blk, g_blockPub.vis, g_blockPub.sb, g_blockPub.took, cx, cy);
+    if (qlogic::actionBtnHitAt(g_blockPub.blk, cx, cy, true)) {
+        g_actionBtnClicked = true;
+        return 0;
+    }
+    g_rowClickPending = qlogic::rowClickAt(g_blockPub.blk, g_blockPub.vis, g_blockPub.sb, g_blockPub.took, cx, cy, qlogic::RowH, true);
     return 0;
 }
 
@@ -1383,7 +1459,7 @@ struct EngineEnv : qlogic::Env {
     void enter() override { ::enter(); }
     bool readWorld(qlogic::World& w) override { return ::readWorld(w); }
     qlogic::Sup suppress(bool worldOk) override { return currentSuppress(ctx, worldOk); }
-    bool keyDown() override { return takeKeyDown(); }
+    bool keyDown() override { const bool k = takeKeyDown() || g_actionBtnClicked; g_actionBtnClicked = false; return k; }
     bool hudOk() override { g_hud.poll(); return g_hud.connected; }
     bool shiftDown() override { return (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0; }
     uintptr_t resolvePlc(uint32_t sid) override {
@@ -1461,12 +1537,18 @@ void KPATCH_CALL onMenuPost(const K2HudContext* ctx, void*) {
     const uintptr_t menu = static_cast<uintptr_t>(static_cast<uint32_t>(ctx->menu));
     uint8_t flags = 0;
     qlogic::Geometry g;
-    if (menu && rd<uint8_t>(menu, Menu_Flags, &flags) && (flags & 1)) {
-        int32_t mx = 0, my = 0, nx = 0, ny = 0, nw = 0, nh = 0;
-        if (rd<int32_t>(menu, Menu_OriginX, &mx) && rd<int32_t>(menu, Menu_OriginY, &my) && rd<int32_t>(menu, Menu_NameX, &nx) &&
-            rd<int32_t>(menu, Menu_NameY, &ny) && rd<int32_t>(menu, Menu_NameW, &nw) && rd<int32_t>(menu, Menu_NameH, &nh)) {
-            g.name = { mx + nx, my + ny, nw, nh };   // screen rect of the name label, as the engine just positioned it
-            g.menuShown = true;
+    if (menu) {
+        saferead::readExo(Site, menu + 0x1758, g_targetName, sizeof g_targetName, 79, false);
+        if (saferead::probeWrite(Site, reinterpret_cast<void*>(menu + 0x1BAC), sizeof(uint32_t))) {
+            *(uint32_t*)(menu + 0x1BAC) &= ~1u;   // 0.8.0-dev (QL14): suppress vanilla 533px name and vitality bar
+        }
+        if (rd<uint8_t>(menu, Menu_Flags, &flags) && (flags & 1)) {
+            int32_t mx = 0, my = 0, nx = 0, ny = 0, nw = 0, nh = 0;
+            if (rd<int32_t>(menu, Menu_OriginX, &mx) && rd<int32_t>(menu, Menu_OriginY, &my) && rd<int32_t>(menu, Menu_NameX, &nx) &&
+                rd<int32_t>(menu, Menu_NameY, &ny) && rd<int32_t>(menu, Menu_NameW, &nw) && rd<int32_t>(menu, Menu_NameH, &nh)) {
+                g.name = { mx + nx, my + ny, nw, nh };   // screen rect of the name label, as the engine just positioned it
+                g.menuShown = true;
+            }
         }
     }
     int px = 0, py = 0, pw = 0, ph = 0;
@@ -1481,9 +1563,23 @@ void KPATCH_CALL onMenuPost(const K2HudContext* ctx, void*) {
     const qlogic::Rect panel = g.havePanel ? g.panel : qlogic::Rect{ 0, 0, 0, 0 };
     qlogic::ListDraw d;
     qlogic::Rect blk = { 0, 0, 0, 0 };
-    if (g_rowsOk && g_m.listDraw(now, &d)) {   // the multi-row block
+    if (g_rowsOk && g_m.listDraw(now, &d, true)) {   // the multi-row block with unified header
         if (!g_m.placeBlock(g_env, g, d.w, d.h, now, &blk)) { lblHideAll(); return; }
-        blockDraw(d, blk, panel, now);
+        uint32_t isBodyBag = 0, isCorpse = 0;
+        uint16_t app = 0;
+        char tag[64] = {0}, resref[17] = {0};
+        const uintptr_t plc = g_peek.plc;
+        if (plc) {
+            rd<uint32_t>(plc, 0x498, &isBodyBag);
+            rd<uint32_t>(plc, 0x4A4, &isCorpse);
+            rd<uint16_t>(plc, 0x270, &app);
+            saferead::readExo(Site, plc + 0x18, tag, sizeof tag, 63, false);
+            saferead::readResRef16(Site, plc + 0x3D0, resref, 0);
+        }
+        const qlbezel::Category cat = qlbezel::classifyPlaceable(isBodyBag, isCorpse, app, g_targetName, tag, resref);
+        qlbezel::CategoryStyle style = g_catStyles[cat];
+        if (!g_hardwareBezels) style.frame = qlbezel::FrameNone;
+        blockDraw(d, blk, panel, now, style, cat);
         return;
     }
     // fallback: the one-line text (row labels missing)
@@ -1512,6 +1608,256 @@ void applyLive() {
     g_m.cfg.anchor = g_live.anchor; g_m.cfg.proxOn = g_live.prox; g_m.cfg.listRows = g_live.rows;
     g_m.cfg.openM = g_live.openM; g_m.cfg.closeM = g_live.closeM;
     g_tipDetail = g_live.tip; g_sortFirst = g_live.sort; g_equipLine = g_live.equip; g_panelDark = g_live.panel != 0;
+    g_hardwareBezels = g_live.bezels;
+}
+
+const char* const kCatChoices[qlbezel::CatCount] = {
+    "Droids & Wreckage",
+    "Weapon Racks & Armory",
+    "Medical & Lab",
+    "Strongboxes & Vaults",
+    "Remains / Corpses",
+    "Footlockers & Lockers",
+    "Standard Containers"
+};
+
+const char* const kFrameChoices[qlbezel::FrameCount] = {
+    "None (Plain Border)",
+    "Datapad",
+    "Computer Console",
+    "Upgrade Workbench",
+    "Lab Station",
+    "Merchant Store",
+    "Gold Pause Bezel"
+};
+
+const char* const kPalChoices[qlbezel::PalCount] = {
+    "Datapad Teal",
+    "Terminal Blue",
+    "Workbench Cobalt",
+    "Lab Emerald",
+    "Store Bronze",
+    "Classic Gold",
+    "Custom RGB"
+};
+
+int32_t KPATCH_CALL pvModalChange(uint32_t page, int32_t item, int32_t requested, int32_t oldVal, void* user) {
+    (void)page; (void)oldVal; (void)user;
+    if (item == 0) { // cat_sel
+        g_selectedCat = (requested >= 0 && requested < qlbezel::CatCount) ? requested : 0;
+        const qlbezel::CategoryStyle& s = g_catStyles[g_selectedCat];
+        if (g_mcMenu.ok() && g_modalPage) {
+            g_mcMenu.p->SetValue(g_modalPage, 1, s.frame);
+            g_mcMenu.p->SetValue(g_modalPage, 2, s.palette);
+            g_mcMenu.p->SetValue(g_modalPage, 3, s.led ? 1 : 0);
+            g_mcMenu.p->SetValue(g_modalPage, 4, static_cast<int>(lroundf(s.frameRgb[0] * 100.0f)));
+            g_mcMenu.p->SetValue(g_modalPage, 5, static_cast<int>(lroundf(s.frameRgb[1] * 100.0f)));
+            g_mcMenu.p->SetValue(g_modalPage, 6, static_cast<int>(lroundf(s.frameRgb[2] * 100.0f)));
+        }
+        return g_selectedCat;
+    }
+    qlbezel::CategoryStyle& s = g_catStyles[g_selectedCat];
+    if (item == 1) { // cat_frame
+        s.frame = (requested >= 0 && requested < qlbezel::FrameCount) ? requested : 0;
+        char k[32], v[16]; snprintf(k, sizeof k, "Cat_%d_Frame", g_selectedCat); snprintf(v, sizeof v, "%d", s.frame);
+        iniw::updateFile(qlpage::kIniFile, qlpage::kSection, k, v);
+        return s.frame;
+    }
+    if (item == 2) { // cat_pal
+        s.palette = (requested >= 0 && requested < qlbezel::PalCount) ? requested : 0;
+        if (s.palette < qlbezel::PalCustom) {
+            qlbezel::getPaletteColors(static_cast<qlbezel::Palette>(s.palette), s.frameRgb, s.btnRgb, s.textRgb, s.ledRgb);
+            if (g_mcMenu.ok() && g_modalPage) {
+                g_mcMenu.p->SetValue(g_modalPage, 4, static_cast<int>(lroundf(s.frameRgb[0] * 100.0f)));
+                g_mcMenu.p->SetValue(g_modalPage, 5, static_cast<int>(lroundf(s.frameRgb[1] * 100.0f)));
+                g_mcMenu.p->SetValue(g_modalPage, 6, static_cast<int>(lroundf(s.frameRgb[2] * 100.0f)));
+            }
+        }
+        char k[32], v[16]; snprintf(k, sizeof k, "Cat_%d_Palette", g_selectedCat); snprintf(v, sizeof v, "%d", s.palette);
+        iniw::updateFile(qlpage::kIniFile, qlpage::kSection, k, v);
+        return s.palette;
+    }
+    if (item == 3) { // cat_led
+        s.led = requested != 0;
+        char k[32], v[16]; snprintf(k, sizeof k, "Cat_%d_Led", g_selectedCat); snprintf(v, sizeof v, "%d", s.led ? 1 : 0);
+        iniw::updateFile(qlpage::kIniFile, qlpage::kSection, k, v);
+        return s.led ? 1 : 0;
+    }
+    if (item >= 4 && item <= 6) { // RGB steppers
+        s.palette = qlbezel::PalCustom;
+        if (g_mcMenu.ok() && g_modalPage) g_mcMenu.p->SetValue(g_modalPage, 2, qlbezel::PalCustom);
+        const float val = (requested < 0 ? 0 : (requested > 100 ? 100 : requested)) / 100.0f;
+        s.frameRgb[item - 4] = s.btnRgb[item - 4] = val;
+        char k[32], v[32];
+        snprintf(k, sizeof k, "Cat_%d_RGB", g_selectedCat);
+        snprintf(v, sizeof v, "%.2f,%.2f,%.2f", (double)s.frameRgb[0], (double)s.frameRgb[1], (double)s.frameRgb[2]);
+        iniw::updateFile(qlpage::kIniFile, qlpage::kSection, k, v);
+        return requested;
+    }
+    return requested;
+}
+
+void pvBuildModal(const K2MenuUiApi* ui, uint32_t page) {
+    K2MuiRect col = {0, 0, 0, 0}, box = {0, 0, 0, 0};
+    const bool haveCol = ui->PaneRect(g_pagePanel, MUI_PANE_COLUMN, &col) && col.w > 0 && col.h > 0;
+    if (haveCol) box = col;
+    g_modalPage = ui->NewModal(page, haveCol ? &box : nullptr, "CATEGORY BEZEL & COLOR MAPPING");
+    if (!g_modalPage) return;
+
+    const qlbezel::CategoryStyle& s = g_catStyles[g_selectedCat];
+
+    K2MuiRowSpec r0 = {}; r0.struct_size = sizeof r0; r0.kind = MUI_ROW_STEPPER;
+    r0.flags = MUI_RF_WRAP;
+    r0.label = "Category"; r0.desc = "Select loot container category to configure.";
+    r0.choices = kCatChoices; r0.nChoices = qlbezel::CatCount; r0.value = g_selectedCat;
+    r0.min = 0; r0.max = qlbezel::CatCount - 1; r0.step = 1;
+    ui->AddRow(g_modalPage, &r0);
+
+    K2MuiRowSpec r1 = {}; r1.struct_size = sizeof r1; r1.kind = MUI_ROW_STEPPER;
+    r1.flags = MUI_RF_WRAP;
+    r1.label = "Bezel frame"; r1.desc = "Hardware bezel frame for this category.";
+    r1.choices = kFrameChoices; r1.nChoices = qlbezel::FrameCount; r1.value = s.frame;
+    r1.min = 0; r1.max = qlbezel::FrameCount - 1; r1.step = 1;
+    ui->AddRow(g_modalPage, &r1);
+
+    K2MuiRowSpec r2 = {}; r2.struct_size = sizeof r2; r2.kind = MUI_ROW_STEPPER;
+    r2.flags = MUI_RF_WRAP;
+    r2.label = "Color palette"; r2.desc = "Color palette preset or custom RGB.";
+    r2.choices = kPalChoices; r2.nChoices = qlbezel::PalCount; r2.value = s.palette;
+    r2.min = 0; r2.max = qlbezel::PalCount - 1; r2.step = 1;
+    ui->AddRow(g_modalPage, &r2);
+
+    K2MuiRowSpec r3 = {}; r3.struct_size = sizeof r3; r3.kind = MUI_ROW_TOGGLE;
+    r3.label = "Action button LED"; r3.desc = "Show circular LED status light on action button.";
+    r3.value = s.led ? 1 : 0;
+    ui->AddRow(g_modalPage, &r3);
+
+    K2MuiRowSpec r4 = {}; r4.struct_size = sizeof r4; r4.kind = MUI_ROW_STEPPER;
+    r4.label = "Custom Red %"; r4.desc = "Red component (0..100%). Sets palette to Custom RGB.";
+    r4.min = 0; r4.max = 100; r4.step = 5; r4.fmt = "Red: %d%%";
+    r4.value = static_cast<int>(lroundf(s.frameRgb[0] * 100.0f));
+    ui->AddRow(g_modalPage, &r4);
+
+    K2MuiRowSpec r5 = {}; r5.struct_size = sizeof r5; r5.kind = MUI_ROW_STEPPER;
+    r5.label = "Custom Green %"; r5.desc = "Green component (0..100%). Sets palette to Custom RGB.";
+    r5.min = 0; r5.max = 100; r5.step = 5; r5.fmt = "Green: %d%%";
+    r5.value = static_cast<int>(lroundf(s.frameRgb[1] * 100.0f));
+    ui->AddRow(g_modalPage, &r5);
+
+    K2MuiRowSpec r6 = {}; r6.struct_size = sizeof r6; r6.kind = MUI_ROW_STEPPER;
+    r6.label = "Custom Blue %"; r6.desc = "Blue component (0..100%). Sets palette to Custom RGB.";
+    r6.min = 0; r6.max = 100; r6.step = 5; r6.fmt = "Blue: %d%%";
+    r6.value = static_cast<int>(lroundf(s.frameRgb[2] * 100.0f));
+    ui->AddRow(g_modalPage, &r6);
+
+    ui->SetChangeHandler(g_modalPage, pvModalChange, nullptr);
+    g_gearItem = ui->AddGear(page, "Customize category bezels and colors");
+}
+
+void pvRefreshPreview() {
+    if (!g_pvOn || !g_mcMenu.ok() || !g_pagePanel) return;
+    const K2MenuUiApi* ui = g_mcMenu.p;
+    if (!g_cv.begin(ui, g_pagePanel, 850, 480)) {
+        g_cv.hideAll();
+        return;
+    }
+    const qlbezel::Category cat = static_cast<qlbezel::Category>(g_selectedCat);
+    const qlbezel::CategoryStyle& style = g_catStyles[cat];
+    const bool showBezel = g_hardwareBezels && (style.frame != qlbezel::FrameNone);
+    const char* bzlResref = qlbezel::frameResref(static_cast<qlbezel::BezelFrame>(style.frame));
+    void* bzlImg = (showBezel && bzlResref[0]) ? guikit::imageFor(bzlResref) : nullptr;
+    void* fillImg = guikit::imageFor(TexFill2bt);
+    void* solidImg = guikit::imageFor(TexFill16g);
+    void* ledImg = guikit::imageFor("uibit_fill_circ");
+
+    pvc::Rect blk = { 40, 40, 400, 360 };
+    if (showBezel && bzlImg) {
+        pvc::Rect bzlRect = { blk.x - 38, blk.y - 38, blk.w + 76, blk.h + 76 };
+        g_cv.put(0, bzlRect, bzlImg, nullptr, 1.0f);
+    }
+    float darkFill[3] = { 0.02f, 0.05f, 0.06f };
+    g_cv.put(1, blk, fillImg ? fillImg : solidImg, darkFill, 0.95f);
+    g_cv.put(2, blk, solidImg, style.frameRgb, 0.8f);
+
+    pvc::Rect tr = { blk.x + 20, blk.y + 16, blk.w - 40, 24 };
+    g_cv.put(3, tr, nullptr, nullptr, 1.0f);
+    g_cv.text(3, qlbezel::categoryName(cat));
+
+    pvc::Rect div = { blk.x + 20, blk.y + 44, blk.w - 40, 2 };
+    g_cv.put(4, div, solidImg, style.frameRgb, 1.0f);
+
+    pvc::Rect btn = { blk.x + 20, blk.y + 54, blk.w - 40, 34 };
+    g_cv.put(5, btn, solidImg, style.btnRgb, 0.8f);
+
+    if (style.led) {
+        pvc::Rect led = { btn.x + 10, btn.y + 9, 16, 16 };
+        g_cv.put(6, led, ledImg ? ledImg : solidImg, style.ledRgb, 1.0f);
+    }
+
+    pvc::Rect btnTxt = { btn.x + (style.led ? 32 : 12), btn.y + 5, btn.w - 40, 24 };
+    g_cv.put(7, btnTxt, nullptr, nullptr, 1.0f);
+    g_cv.text(7, "[F] GET ITEMS (3)");
+
+    const char* sampleItems[3] = { "Disruptor Carbine", "Parts x5", "Combat Suit" };
+    for (int r = 0; r < 3; ++r) {
+        pvc::Rect rr = { blk.x + 20, blk.y + 100 + r * 44, blk.w - 40, 38 };
+        g_cv.put(8 + r * 2, rr, solidImg, style.frameRgb, 0.5f);
+        pvc::Rect rt = { rr.x + 12, rr.y + 7, rr.w - 24, 24 };
+        g_cv.put(9 + r * 2, rt, nullptr, nullptr, 1.0f);
+        g_cv.text(9 + r * 2, sampleItems[r]);
+    }
+
+    pvc::Rect tip = { blk.x + blk.w + (showBezel ? 38 : 0) + 20, 40, 320, 360 };
+    g_cv.put(14, tip, fillImg ? fillImg : solidImg, darkFill, 0.95f);
+    g_cv.put(15, tip, solidImg, style.frameRgb, 0.7f);
+    pvc::Rect tipTitle = { tip.x + 16, tip.y + 16, tip.w - 32, 24 };
+    g_cv.put(16, tipTitle, nullptr, nullptr, 1.0f);
+    g_cv.text(16, "Disruptor Carbine");
+    pvc::Rect tipSub = { tip.x + 16, tip.y + 44, tip.w - 32, 20 };
+    g_cv.put(17, tipSub, nullptr, nullptr, 1.0f);
+    g_cv.text(17, "Ranged Weapon (Blaster)");
+
+    pvc::Rect tipBody = { tip.x + 16, tip.y + 74, tip.w - 32, 100 };
+    g_cv.put(18, tipBody, nullptr, nullptr, 1.0f);
+    g_cv.text(18, "Damage: Energy 2d8\nCritical: 19-20, x2\nRange: 28m");
+
+    g_cv.end();
+}
+
+void pvOnBuilt(void*, uint32_t page, void* panel) {
+    g_pvOn = false; g_modalPage = 0; g_gearItem = -1; g_pagePanel = panel;
+    if (!g_mcMenu.hasModal() || !g_mcMenu.hasDescSplit()) return;
+    const K2MenuUiApi* ui = g_mcMenu.p;
+    if (!g_cv.build(ui, panel, page, 24)) return;
+    guikit::setAlign(g_cv.w[3].c, 9);
+    guikit::setAlign(g_cv.w[7].c, 18);
+    for (int i = 0; i < 3; ++i) guikit::setAlign(g_cv.w[9 + i * 2].c, 9);
+    guikit::setAlign(g_cv.w[16].c, 9);
+    guikit::setAlign(g_cv.w[17].c, 9);
+    guikit::setAlign(g_cv.w[18].c, 9);
+
+    if (!ui->SetDescSplit(page, 700)) return;
+    pvBuildModal(ui, page);
+    g_pvOn = true;
+    if (KpLog_HasCore()) KP_LOGV(chMain, KPLOG_INFO, "PREVIEW BUILD ok: 24 labels, split 700 permille");
+}
+
+void pvOnTick(void*) {
+    if (g_pvOn && g_gearItem >= 0 && g_modalPage && g_mcMenu.ok() && g_mcMenu.p->Clicked(g_page.page, g_gearItem)) {
+        g_mcMenu.p->SetModalOpen(g_modalPage, 1);
+    }
+    embtex::heal();
+    pvRefreshPreview();
+}
+
+void KPATCH_CALL pvDestroy(void* panel, void* user) {
+    if (g_mcMenu.ok()) {
+        g_cv.destroy(g_mcMenu.p, g_page.page);
+    } else {
+        g_cv.reset();
+    }
+    g_pvOn = false; g_modalPage = 0; g_gearItem = -1; g_pagePanel = nullptr;
+    mcdecl::Page::cbDestroy(panel, user);
 }
 
 int32_t pageOnChange(void*, int, const char* id, int32_t requested, int) {
@@ -1546,7 +1892,10 @@ void pageInit(const KPatchApi* api) {
     g_page.io = mcdecl::fileIo();
     g_page.hooks.onChange = pageOnChange;
     g_page.hooks.onEnter = pageOnEnter;
+    g_page.hooks.onBuilt = pvOnBuilt;
+    g_page.hooks.onTick = pvOnTick;
     g_mcEntry = g_page.entry(qlpage::kEntryId);
+    g_mcEntry.destroy = pvDestroy;
 }
 
 // Every frame (cheap): connect lazily, register once, only when the provider has option rows.
@@ -1564,6 +1913,7 @@ void pagePoll() {
 // K2HUD_FRAME: the pending click-take Close, then the proximity peek. Runs on the game thread, outside any EventHandler.
 void KPATCH_CALL onHudFrame(const K2HudContext* ctx, void*) {
     pagePoll();
+    embtex::heal();
     g_env.ctx = ctx;
     const uint32_t now = nowMs();
     ensureWheel(static_cast<long>(ctx ? ctx->frame : g_m.frame));
@@ -1597,6 +1947,31 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     g_rules = GetPrivateProfileIntA("QuickLoot", "Rules", 1, IniPath) != 0;     // 0.7.0-dev: 0 = tooltip base rules only (kill switch for the engine property text)
     g_sounds = GetPrivateProfileIntA("QuickLoot", "Sounds", 1, IniPath) != 0;   // 0.7.0-dev QL12
     g_hideArrow = GetPrivateProfileIntA("QuickLoot", "HideTargetArrow", 1, IniPath) != 0;   // 0.7.2-dev QL14
+    g_hardwareBezels = GetPrivateProfileIntA("QuickLoot", "HardwareBezels", 1, IniPath) != 0; // 0.8.0-dev QL14
+    g_live.bezels = g_hardwareBezels;
+    for (int c = 0; c < qlbezel::CatCount; ++c) {
+        g_catStyles[c] = qlbezel::defaultStyle(static_cast<qlbezel::Category>(c));
+        char key[32];
+        snprintf(key, sizeof key, "Cat_%d_Frame", c);
+        g_catStyles[c].frame = static_cast<uint8_t>(GetPrivateProfileIntA("QuickLoot", key, g_catStyles[c].frame, IniPath));
+        snprintf(key, sizeof key, "Cat_%d_Palette", c);
+        g_catStyles[c].palette = static_cast<uint8_t>(GetPrivateProfileIntA("QuickLoot", key, g_catStyles[c].palette, IniPath));
+        snprintf(key, sizeof key, "Cat_%d_Led", c);
+        g_catStyles[c].led = GetPrivateProfileIntA("QuickLoot", key, g_catStyles[c].led ? 1 : 0, IniPath) != 0;
+        snprintf(key, sizeof key, "Cat_%d_RGB", c);
+        char rgbBuf[32] = "";
+        GetPrivateProfileStringA("QuickLoot", key, "", rgbBuf, sizeof rgbBuf, IniPath);
+        if (rgbBuf[0]) {
+            float r = 0, g = 0, b = 0;
+            if (sscanf(rgbBuf, "%f,%f,%f", &r, &g, &b) == 3) {
+                g_catStyles[c].frameRgb[0] = g_catStyles[c].btnRgb[0] = r;
+                g_catStyles[c].frameRgb[1] = g_catStyles[c].btnRgb[1] = g;
+                g_catStyles[c].frameRgb[2] = g_catStyles[c].btnRgb[2] = b;
+            }
+        }
+        g_live.catStyles[c] = g_catStyles[c];
+    }
+    embtex::ensure(kBezelTex, kBezelTexCount);
     g_live.anchor = g_m.cfg.anchor; g_live.prox = g_proxOn; g_live.rows = g_m.cfg.listRows; g_live.openM = g_openM; g_live.closeM = g_closeM;
     g_live.closeExplicit = closeExplicit; g_live.closeExplicitM = closeExplicitM;
     g_live.tip = GetPrivateProfileIntA("QuickLoot", "TipDetail", qlpage::TipFull, IniPath);   // 0.7.1-dev page rows; applyLive below clamps nothing, so clamp here

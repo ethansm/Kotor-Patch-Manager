@@ -779,14 +779,14 @@ int main() {
         buildListDraw(d4, v4, true, "F", &o4);
         kt::Check("4 items: 4 rows, no indicator", o4.vis == 4 && !o4.scrollable && o4.indicator[0] == 0 && strcmp(o4.header, "Acquired Items (4)") == 0);
         kt::CheckEq("4 rows height", o4.h, blockHeightPx(4));
-        // the Took header "Acquired Items (4)" is wider than the 300 px floor: the block grows to header + pads (headers are never cut)
+        // the Took header "Acquired Items (4)" is wider than the 400 px floor: the block grows to header + pads (headers are never cut)
         kt::CheckEq("Took header wider than the floor widens the block", o4.w, o4.headerPx + 2 * BlockPadX);
-        {   // single short item: the narrowest real header ("[F] Get Items (1)", 303 px) already exceeds the 300 px floor, so the floor never binds now
+        {   // single short item: narrowest real header clamped to BlockMinW
             ListData d1; d1.set(names, nullptr, 1, 1);
             ListView v1b; v1b.reset(1, 8);
             ListDraw o1;
             buildListDraw(d1, v1b, false, "F", &o1);
-            kt::CheckEq("single item: width = header + pads", o1.w, o1.headerPx + 2 * BlockPadX);
+            kt::CheckEq("single item: width binds to BlockMinW", o1.w, BlockMinW);
             kt::Check("single item: never below the floor", o1.w >= BlockMinW && o4.w >= BlockMinW);
         }
         // the more row
@@ -1447,6 +1447,34 @@ int main() {
         pl[ListMaxItems - 1] = 1;
         sortOrder(pl, nullptr, ListMaxItems, big);
         kt::Check("64 items: the last plot item comes first, the rest follow in order", big[0] == ListMaxItems - 1 && big[1] == 0 && big[ListMaxItems - 1] == ListMaxItems - 2);
+    }
+    {
+        // QL14: Unified Header & Bezel layout math
+        Rect blk = { 100, 100, 400, 300 };
+        Rect outerNoBzl = bezelOuterRect(blk, false);
+        kt::Check("bezelOuterRect false is identity", outerNoBzl.x == blk.x && outerNoBzl.w == blk.w);
+        Rect outerBzl = bezelOuterRect(blk, true);
+        kt::Check("bezelOuterRect true pads 38 px each side", outerBzl.x == blk.x - 38 && outerBzl.w == blk.w + 76);
+        // Tooltip offset: blk.x + blk.w + (hasBezel ? 38 : 0) + 10
+        int tipX = blk.x + blk.w + 38 + 10;
+        kt::Check("0% overlap between outer bezel and tooltip", tipX >= outerBzl.x + outerBzl.w + 10);
+
+        Rect tr = titleRect(400);
+        kt::Check("titleRect height is 32", tr.h == 32 && tr.y == BlockPadY);
+        Rect dr = titleDivRect(400);
+        kt::Check("titleDivRect height is 2, 6 px below title", dr.h == 2 && dr.y == BlockPadY + 32 + 6);
+        Rect br = actionBtnRect(400);
+        kt::Check("actionBtnRect height is 38, 8 px below divider", br.h == 38 && br.y == BlockPadY + 32 + 6 + 2 + 8);
+        Rect lr = actionLedRect(br);
+        kt::Check("actionLedRect is 16x16 centred in btn", lr.w == 16 && lr.h == 16 && lr.x == br.x + 12);
+        Rect ar = actionTextRect(br, true);
+        kt::Check("actionTextRect with LED starts after LED", ar.x == br.x + 36);
+
+        kt::Check("rowsTopPx(false) legacy is 68", rowsTopPx(false) == BlockPadY + HeaderH + HeaderGapPx);
+        kt::Check("rowsTopPx(true) unified is 116 (20 + 96)", rowsTopPx(true) == BlockPadY + 96);
+        kt::CheckEq("blockHeightPx(4, RowH, true) has 96 px header", blockHeightPx(4, RowH, true), 2 * BlockPadY + 96 + listHeightPx(4, RowH));
+        kt::Check("actionBtnHitAt inside button", actionBtnHitAt(blk, static_cast<float>(blk.x + br.x + 5), static_cast<float>(blk.y + br.y + 5), true));
+        kt::Check("actionBtnHitAt outside button", !actionBtnHitAt(blk, static_cast<float>(blk.x + 5), static_cast<float>(blk.y + 5), true));
     }
 
     return kt::Report("quick_loot_logic_test");

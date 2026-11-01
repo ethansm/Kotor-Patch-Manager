@@ -13,6 +13,7 @@
 // is not a taste setting (doc 45 value test). Every row applies live: the hook below sets the mod's own config (g_m.cfg), no restart.
 #pragma once
 #include "QuickLootLogic.h"
+#include "QuickLootBezel.h"
 #include <stdint.h>
 #include <string.h>
 
@@ -29,6 +30,7 @@ constexpr const char* kRowTip = "tip";
 constexpr const char* kRowSort = "sort";
 constexpr const char* kRowEquip = "equip";
 constexpr const char* kRowPanel = "panel";
+constexpr const char* kRowBezels = "bezels";
 enum TipDetail { TipFull = 0, TipStats = 1, TipOff = 2 };
 
 // Every string is at most 95 bytes (TomlMini rejects longer ones; see selfheal_page_test).
@@ -122,6 +124,16 @@ choices = ["Vanilla", "Dark"]
 ini = "quick_loot.ini"
 section = "QuickLoot"
 key = "Panel"
+
+[[row]]
+id = "bezels"
+kind = "toggle"
+label = "Hardware bezels"
+desc = "Authentic console and datapad hardware frames around the loot window."
+default = 1
+ini = "quick_loot.ini"
+section = "QuickLoot"
+key = "HardwareBezels"
 )TOML";
 
 // ---- open-distance presets (the unbound "dist" row)
@@ -156,6 +168,15 @@ struct Live {
     int tip = TipFull;
     bool sort = true, equip = true;
     int panel = 1;              // 1 = Dark
+    bool bezels = true;         // 0.8.0-dev (QL14): Hardware bezels master switch
+    int selectedCat = 0;
+    qlbezel::CategoryStyle catStyles[qlbezel::CatCount];
+
+    Live() {
+        for (int i = 0; i < qlbezel::CatCount; ++i) {
+            catStyles[i] = qlbezel::defaultStyle(static_cast<qlbezel::Category>(i));
+        }
+    }
 };
 // One change request from the page: returns the FINAL value (the request, clamped). *persistOpenM = the "dist" row changed OpenM (the hook writes it to the ini).
 inline int32_t applyRow(Live& L, const char* id, int32_t v, bool* persistOpenM) {
@@ -167,6 +188,7 @@ inline int32_t applyRow(Live& L, const char* id, int32_t v, bool* persistOpenM) 
     if (strcmp(id, kRowSort) == 0) { L.sort = v != 0; return L.sort ? 1 : 0; }
     if (strcmp(id, kRowEquip) == 0) { L.equip = v != 0; return L.equip ? 1 : 0; }
     if (strcmp(id, kRowPanel) == 0) { L.panel = v == 0 ? 0 : 1; return L.panel; }
+    if (strcmp(id, kRowBezels) == 0) { L.bezels = v != 0; return L.bezels ? 1 : 0; }
     if (strcmp(id, kRowDist) == 0) {
         const int i = (v >= 0 && v < kNumDist) ? v : kDistDefault;
         L.openM = distOpenFor(i);
