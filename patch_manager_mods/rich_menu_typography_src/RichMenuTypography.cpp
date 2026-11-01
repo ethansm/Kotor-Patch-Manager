@@ -1,4 +1,4 @@
-// RichMenuTypography.cpp -- KPM DLL entry and per-glyph inline color & description listbox hooks (Doc 53 RMT1, RMT2).
+// RichMenuTypography.cpp -- KPM DLL entry and per-glyph inline color, description listbox & static menu hierarchy hooks (Doc 53 RMT1..RMT3).
 #include "RichMenuTypography.h"
 #include "RichDescBox.h"
 #include "RichTextClassifier.h"
@@ -30,23 +30,178 @@ inline unsigned long GetPrivateProfileStringA(const char* /*section*/, const cha
 namespace {
 bool g_inlineColoring = true;
 bool g_richDescBox = true;
+bool g_statHierarchy = true;
 bool g_verbose = false;
 uint32_t g_overrideCount = 0;
 uint32_t g_descPopulateCount = 0;
+uint32_t g_statStyleCount = 0;
 constexpr uint32_t kMaxStartupOverrides = 40;
+
+constexpr size_t kCharCreamOffsets[] = {
+    rmt::kCharOff_LblTitle,
+    rmt::kCharOff_LblDefenseStat,
+    rmt::kCharOff_LblExperienceStat,
+    rmt::kCharOff_LblNeededXp,
+    rmt::kCharOff_LblForceMastery,
+};
+
+constexpr size_t kCharTealDimOffsets[] = {
+    rmt::kCharOff_LblStrength,
+    rmt::kCharOff_LblDexterity,
+    rmt::kCharOff_LblConstitution,
+    rmt::kCharOff_LblIntelligence,
+    rmt::kCharOff_LblWisdom,
+    rmt::kCharOff_LblCharisma,
+    rmt::kCharOff_LblVitality,
+    rmt::kCharOff_LblForce,
+    rmt::kCharOff_LblDefense,
+    rmt::kCharOff_LblFortitude,
+    rmt::kCharOff_LblReflex,
+    rmt::kCharOff_LblWill,
+    rmt::kCharOff_LblExperience,
+    rmt::kCharOff_LblNextLevel,
+    rmt::kCharOff_LblMore,
+    rmt::kCharOff_LblLight,
+    rmt::kCharOff_LblDark,
+};
+
+constexpr const char* kTitleOrValueTags[] = {
+    // Primary menu panel headers / titles
+    "LBL_TITLE",
+    "LBL_INV",
+    "LBL_ABILITIES",
+    "LBL_MESSAGES",
+    "LBL_Map",
+    "LBL_Area",
+    "LBL_BUYSELL",
+    "LBL_MESSAGE",
+    "LBL_NPC_NAME",
+    // Inventory / Store / Container / Abilities / Party primary values
+    "LBL_CREDITS_VALUE",
+    "LBL_COST_VALUE",
+    "LBL_STOCK_VALUE",
+    "LBL_ONHAND_VALUE",
+    "LBL_RANKVAL",
+    "LBL_BONUSVAL",
+    "LBL_TOTALVAL",
+    "LBL_COUNT",
+    // Character sheet primary stat values
+    "LBL_DEFENSE_STAT",
+    "LBL_VITALITY_STAT",
+    "LBL_FORCE_STAT",
+    "LBL_FORTITUDE_STAT",
+    "LBL_REFLEX_STAT",
+    "LBL_WILL_STAT",
+    "LBL_EXPERIENCE_STAT",
+    "LBL_NEEDED_XP",
+    "LBL_FORCEMASTERY",
+    "LBL_STR",
+    "LBL_DEX",
+    "LBL_CON",
+    "LBL_INT",
+    "LBL_WIS",
+    "LBL_CHA",
+    "LBL_STR_MOD",
+    "LBL_DEX_MOD",
+    "LBL_CON_MOD",
+    "LBL_INT_MOD",
+    "LBL_WIS_MOD",
+    "LBL_CHA_MOD",
+    // Equipment combat summary values
+    "LBL_DAMTEXT",
+    "LBL_DEF",
+    "LBL_ATKL",
+    "LBL_ATKR",
+    "LBL_TOHITL",
+    "LBL_TOHITR",
+    "LBL_ATKL2",
+    "LBL_ATKR2",
+    "LBL_TOHITL2",
+    "LBL_TOHITR2",
+};
+
+constexpr const char* kCaptionKeyTags[] = {
+    // Character sheet static attribute / save / XP / alignment captions
+    "LBL_STRENGTH",
+    "LBL_DEXTERITY",
+    "LBL_CONSTITUTION",
+    "LBL_INTELLIGENCE",
+    "LBL_WISDOM",
+    "LBL_CHARISMA",
+    "LBL_VITALITY",
+    "LBL_FORCE",
+    "LBL_DEFENSE",
+    "LBL_FORTITUDE",
+    "LBL_REFLEX",
+    "LBL_WILL",
+    "LBL_EXPERIENCE",
+    "LBL_NEXT_LEVEL",
+    "LBL_MORE",
+    "LBL_LIGHT",
+    "LBL_DARK",
+    // Inventory / Store / Container static captions
+    "LBL_CREDITS",
+    "LBL_COST",
+    "LBL_STOCK",
+    "LBL_ONHAND",
+    "LBL_FILTER",
+    // Equipment static section & column headers
+    "LBL_ATTACK_INFO",
+    "LBL_DEF_INFO",
+    "LBL_DEF_TEXT",
+    "LBL_TOHIT",
+    "LBL_DAMAGE",
+    "LBL_SLOTNAME",
+    "LBL_ATTACKMOD",
+    // Abilities / Party / Journal static captions
+    "LBL_SKILLRANK",
+    "LBL_BONUS",
+    "LBL_TOTAL",
+    "LBL_NAME",
+    "LBL_AVAILABLE",
+    "LBL_NPC_LEVEL",
+    "LBL_ITEM_DESCRIPTION",
+};
+
+inline bool styleLabelColor(uintptr_t ctl, const float rgb[3]) noexcept {
+    if (!ctl || !rgb) return false;
+    uint32_t vt = 0;
+    const uint32_t wantLabelVt = guikit::detail::vtab(&K2AddrTable::LabelVtable);
+    if (!wantLabelVt || !guikit::detail::rd32(ctl, 0, &vt) || vt != wantLabelVt) {
+        return false;
+    }
+    return guikit::setTextColor(ctl, rgb[0], rgb[1], rgb[2]);
+}
+
 } // namespace
 
 namespace rmt {
+
+MenuLabelRole classifyMenuLabelTag(const char* tag) noexcept {
+    if (!tag || !*tag) return MenuLabelRole::None;
+    for (const char* t : kTitleOrValueTags) {
+        if (strcmp(tag, t) == 0) return MenuLabelRole::TitleOrValue;
+    }
+    for (const char* t : kCaptionKeyTags) {
+        if (strcmp(tag, t) == 0) return MenuLabelRole::CaptionKey;
+    }
+    return MenuLabelRole::None;
+}
+
 void setInlineColoring(bool enabled) noexcept { g_inlineColoring = enabled; }
 bool isInlineColoring() noexcept { return g_inlineColoring; }
 void setRichDescBox(bool enabled) noexcept { g_richDescBox = enabled; }
 bool isRichDescBox() noexcept { return g_richDescBox; }
+void setStatHierarchy(bool enabled) noexcept { g_statHierarchy = enabled; }
+bool isStatHierarchy() noexcept { return g_statHierarchy; }
 void setVerbose(bool verbose) noexcept { g_verbose = verbose; }
 bool isVerbose() noexcept { return g_verbose; }
 void resetOverrideCount() noexcept { g_overrideCount = 0; }
 uint32_t getOverrideCount() noexcept { return g_overrideCount; }
 void resetDescPopulateCount() noexcept { g_descPopulateCount = 0; }
 uint32_t getDescPopulateCount() noexcept { return g_descPopulateCount; }
+void resetStatStyleCount() noexcept { g_statStyleCount = 0; }
+uint32_t getStatStyleCount() noexcept { return g_statStyleCount; }
 } // namespace rmt
 
 extern "C" void __cdecl RmtOverrideGlyphColor(uintptr_t ebp) {
@@ -102,11 +257,75 @@ extern "C" int __cdecl RmtAddControls2(void* listbox, void** pControls, int coun
     return 0;
 }
 
+extern "C" int __cdecl RmtSetLabelBonusPenaltyColour(void* pLabel, int delta) {
+    if (!g_statHierarchy || !pLabel) {
+        return 0;
+    }
+
+    const float* const col = (delta > 0) ? rmt::kBonusAmber
+                           : (delta < 0) ? rmt::kPenaltyRed
+                                         : rmt::kCream;
+    if (styleLabelColor(reinterpret_cast<uintptr_t>(pLabel), col)) {
+        ++g_statStyleCount;
+        return 1;
+    }
+    return 0;
+}
+
+extern "C" void __cdecl RmtSetStats(void* panel) {
+    if (!g_statHierarchy || !panel) {
+        return;
+    }
+
+    const uintptr_t base = reinterpret_cast<uintptr_t>(panel);
+    uint32_t styled = 0;
+
+    for (size_t off : kCharCreamOffsets) {
+        if (styleLabelColor(base + off, rmt::kCream)) {
+            ++styled;
+        }
+    }
+    for (size_t off : kCharTealDimOffsets) {
+        if (styleLabelColor(base + off, rmt::kTealDim)) {
+            ++styled;
+        }
+    }
+
+    if (styled > 0) {
+        g_statStyleCount += styled;
+        if (KpLog_HasCore() && (g_verbose || g_statStyleCount <= 60)) {
+            KP_LOGV(chMain, KPLOG_DEBUG, "RmtSetStats styled %u labels on character panel=%p",
+                    styled, panel);
+        }
+    }
+}
+
+extern "C" void __cdecl RmtStyleInitControl(void* pControl, const char* tagStr) {
+    if (!g_statHierarchy || !pControl || !tagStr || !*tagStr) {
+        return;
+    }
+
+    const rmt::MenuLabelRole role = rmt::classifyMenuLabelTag(tagStr);
+    if (role == rmt::MenuLabelRole::None) {
+        return;
+    }
+
+    const float* const col = (role == rmt::MenuLabelRole::TitleOrValue) ? rmt::kCream : rmt::kTealDim;
+    if (styleLabelColor(reinterpret_cast<uintptr_t>(pControl), col)) {
+        ++g_statStyleCount;
+        if (KpLog_HasCore() && g_verbose) {
+            KP_LOGV(chMain, KPLOG_DEBUG, "RmtStyleInitControl tag=%s role=%u ctl=%p",
+                    tagStr, static_cast<unsigned>(role), pControl);
+        }
+    }
+}
+
 extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
     const char* const iniPath = ".\\rich_menu_typography.ini";
     g_inlineColoring = GetPrivateProfileIntA("General", "InlineColoring", 1, iniPath) != 0;
     g_richDescBox = GetPrivateProfileIntA("General", "RichDescBox", 1, iniPath) != 0;
+    g_statHierarchy = GetPrivateProfileIntA("General", "StatHierarchy", 1, iniPath) != 0;
     g_verbose = GetPrivateProfileIntA("General", "Verbose", 0, iniPath) != 0;
 
     static char s_bodyFontBuf[32] = {0};
@@ -114,8 +333,8 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     rmt::setBodyFont(s_bodyFontBuf);
 
     if (KpLog_HasCore()) {
-        KP_LOG(chMain, "INIT rich-menu-typography inlineColoring=%d richDescBox=%d bodyFont=%s verbose=%d",
-               g_inlineColoring ? 1 : 0, g_richDescBox ? 1 : 0, rmt::getBodyFont(), g_verbose ? 1 : 0);
+        KP_LOG(chMain, "INIT rich-menu-typography inlineColoring=%d richDescBox=%d statHierarchy=%d bodyFont=%s verbose=%d",
+               g_inlineColoring ? 1 : 0, g_richDescBox ? 1 : 0, g_statHierarchy ? 1 : 0, rmt::getBodyFont(), g_verbose ? 1 : 0);
     }
 }
 

@@ -154,6 +154,17 @@ namespace rmt {
   - **Row 4 (Bottom Divider Bar, when both rules and prose exist):** 2px tall `CSWGuiLabel` (`extent.h = 2`), fill `"uibit_fill_16g"`, tint `kTealFrame`.
   - **Row 5 (Lore / Flavor Prose Body):** `kFontDesc` (`"fnt_d16x16"`) or `kFontSub` (`"dialogfont10x10"`, configurable via `BodyFont` INI), `kTealText`, `align = 9`, `extent.h = formattedHeight + 8`.
 
+### 3.6 Hook Sites 3..5: Static Menu Header & Stat Label Hierarchy Pass (RMT3)
+- **Hook Site 3 (`0x00850090` — `CSWGuiInGameCharacter::SetLabelBonusPenaltyColour`):**
+  - Stolen Bytes (7 bytes): `55 8B EC 51 89 4D FC` (`push ebp; mov ebp, esp; push ecx; mov [ebp-4], ecx`), `consumed_exit_address = 0x008500E0` (`8B E5 5D C2 08 00` = `mov esp, ebp; pop ebp; ret 8`).
+  - `RmtSetLabelBonusPenaltyColour(void* pLabel, int delta)` colors `delta > 0` as `kBonusAmber`, `delta < 0` as `kPenaltyRed`, and `delta == 0` as `kCream` (replacing vanilla flat teal `0x00A7FE24` across all 18 character stat & modifier labels).
+- **Hook Site 4 (`0x0084F702` — `CSWGuiInGameCharacter::SetStats` `0x0084E6F0` exit block):**
+  - Stolen Bytes (7 bytes): `C7 45 FC FF FF FF FF` (`mov dword ptr [ebp-4], -1`), `panel = [ebp - 0x288]`.
+  - `RmtSetStats(void* panel)` styles the 5 non-delta header/value labels (`LBL_TITLE` `+0x48D8`, `LBL_DEFENSE_STAT` `+0x0E80` which vanilla overwrites with flat teal at `0x0084E89E`, `LBL_EXPERIENCE_STAT` `+0x0AA8`, `LBL_NEEDED_XP` `+0x0D38`, `LBL_FORCEMASTERY` `+0x0068`) with `kCream`, and styles all 17 static key/caption labels (`LBL_STRENGTH` `+0x1778`, `LBL_DEXTERITY` `+0x2AB0`, `LBL_CONSTITUTION` `+0x26D8`, `LBL_INTELLIGENCE` `+0x2300`, `LBL_WISDOM` `+0x1B50`, `LBL_CHARISMA` `+0x1F28`, `LBL_VITALITY` `+0x14E8`, `LBL_FORCE` `+0x13A0`, `LBL_DEFENSE` `+0x1258`, `LBL_FORTITUDE` `+0x01B0`, `LBL_REFLEX` `+0x02F8`, `LBL_WILL` `+0x0440`, `LBL_EXPERIENCE` `+0x0960`, `LBL_NEXT_LEVEL` `+0x0BF0`, `LBL_MORE` `+0x2FE0`, `LBL_LIGHT` `+0x3128`, `LBL_DARK` `+0x3270`) with `kTealDim`.
+- **Hook Site 5 (`0x0040F90A` — `CSWGuiPanel::InitControl` `0x0040F620`):**
+  - Stolen Bytes (8 bytes): `89 45 84 68 80 74 98 00` (`mov [ebp-0x7c], eax; push 0x00987480`, immediately after `Load_2` and `SetExtent`).
+  - `RmtStyleInitControl(void* pControl, const char* tagStr)` classifies `tagStr` via `rmt::classifyMenuLabelTag` across all primary menus (`Character`, `Inventory`, `Equip`, `Abilities`, `Journal`, `Messages`, `Map`, `Options`, `PartyTable`, `Store`, `Container`), coloring panel titles and primary stat/numeric values `kCream` and static section/column captions `kTealDim` without changing font height on fixed-height `.gui` labels.
+
 ---
 
 ## 4. Pillar 2: Edge Cases, Invariants & Unit Test Matrix

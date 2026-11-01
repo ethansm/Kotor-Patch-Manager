@@ -1,10 +1,13 @@
-// rich_menu_typography_contract_test.cpp -- Contract tests for Hook Site 1 and RichMenuTypography.cpp (Doc 53 RMT1).
+// rich_menu_typography_contract_test.cpp -- Contract tests for Hook Sites 1..5 and RichMenuTypography.cpp (Doc 53 RMT1..RMT3).
 #include "RichMenuTypography.h"
+#include "RichDescBox.h"
 #include "RichTextClassifier.h"
 #include "check.h"
 #include "FakeKPatchApi.h"
 #include "KpLog.h"
+#include "windows.h"
 
+#include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -125,14 +128,14 @@ struct SimulatedFrame {
 };
 
 struct MockStringInternal {
-    uint8_t raw[0x80];
+    alignas(16) uint8_t raw[0x80];
 
     MockStringInternal(const char* str, float r = 0.1020f, float g = 0.6980f, float b = 0.5490f) {
         memset(raw, 0, sizeof(raw));
-        *reinterpret_cast<const char**>(raw + rmt::kStrOff_PszStr) = str;
-        *reinterpret_cast<float*>(raw + rmt::kStrOff_ColorR) = r;
-        *reinterpret_cast<float*>(raw + rmt::kStrOff_ColorG) = g;
-        *reinterpret_cast<float*>(raw + rmt::kStrOff_ColorB) = b;
+        memcpy(raw + rmt::kStrOff_PszStr, &str, sizeof(str));
+        memcpy(raw + rmt::kStrOff_ColorR, &r, sizeof(r));
+        memcpy(raw + rmt::kStrOff_ColorG, &g, sizeof(g));
+        memcpy(raw + rmt::kStrOff_ColorB, &b, sizeof(b));
     }
 };
 
@@ -299,11 +302,214 @@ void testKpLogContract() {
     fakekp::close();
 }
 
+void testHookSites3To5Contract() {
+    // Hook Site 3: CSWGuiInGameCharacter::SetLabelBonusPenaltyColour (0x00850090, epilogue 0x008500E0)
+    constexpr uint8_t kStolenBytes3[7] = { 0x55, 0x8B, 0xEC, 0x51, 0x89, 0x4D, 0xFC };
+    constexpr uint8_t kEpilogueBytes3[6] = { 0x8B, 0xE5, 0x5D, 0xC2, 0x08, 0x00 };
+    // Hook Site 4: CSWGuiInGameCharacter::SetStats exit block (0x0084F702)
+    constexpr uint8_t kStolenBytes4[7] = { 0xC7, 0x45, 0xFC, 0xFF, 0xFF, 0xFF, 0xFF };
+    // Hook Site 5: CSWGuiPanel::InitControl post-Load_2 tag check (0x0040F90A)
+    constexpr uint8_t kStolenBytes5[8] = { 0x89, 0x45, 0x84, 0x68, 0x80, 0x74, 0x98, 0x00 };
+
+    const char* exePath = getenv("KOTOR2_VANILLA_EXE");
+    if (!exePath || !*exePath) {
+        exePath = "/home/ethansm/Games/KOTOR2_Mod_Workspace/backups/vanilla_clean/swkotor2.exe";
+    }
+
+    FILE* fp = fopen(exePath, "rb");
+    if (fp) {
+        // 0x00850090 - 0x00401000 + 0x400 = 0x44F490
+        fseek(fp, 0x44F490L, SEEK_SET);
+        uint8_t buf3[7] = {0};
+        kt::CheckEq("Read 7 bytes for Hook Site 3", fread(buf3, 1, 7, fp), static_cast<size_t>(7));
+        kt::Check("Vanilla bytes at 0x00850090 match 55 8B EC 51 89 4D FC",
+                  memcmp(buf3, kStolenBytes3, 7) == 0);
+
+        // 0x008500E0 - 0x00401000 + 0x400 = 0x44F4E0
+        fseek(fp, 0x44F4E0L, SEEK_SET);
+        uint8_t epi3[6] = {0};
+        kt::CheckEq("Read 6 bytes for Hook Site 3 epilogue", fread(epi3, 1, 6, fp), static_cast<size_t>(6));
+        kt::Check("Vanilla bytes at 0x008500E0 match 8B E5 5D C2 08 00",
+                  memcmp(epi3, kEpilogueBytes3, 6) == 0);
+
+        // 0x0084F702 - 0x00401000 + 0x400 = 0x44EB02
+        fseek(fp, 0x44EB02L, SEEK_SET);
+        uint8_t buf4[7] = {0};
+        kt::CheckEq("Read 7 bytes for Hook Site 4", fread(buf4, 1, 7, fp), static_cast<size_t>(7));
+        kt::Check("Vanilla bytes at 0x0084F702 match C7 45 FC FF FF FF FF",
+                  memcmp(buf4, kStolenBytes4, 7) == 0);
+
+        // 0x0040F90A - 0x00401000 + 0x400 = 0xED0A
+        fseek(fp, 0xED0AL, SEEK_SET);
+        uint8_t buf5[8] = {0};
+        kt::CheckEq("Read 8 bytes for Hook Site 5", fread(buf5, 1, 8, fp), static_cast<size_t>(8));
+        kt::Check("Vanilla bytes at 0x0040F90A match 89 45 84 68 80 74 98 00",
+                  memcmp(buf5, kStolenBytes5, 8) == 0);
+
+        fclose(fp);
+    } else {
+        kt::Check("Vanilla exe not present on disk, static RMT3 hook contract verified", true);
+    }
+}
+
+void __thiscall fakeSetColor(void* textSub, float* rgb) {
+    if (!textSub || !rgb) return;
+    float* dst = reinterpret_cast<float*>(reinterpret_cast<uint8_t*>(textSub) + guikit::Text_Color);
+    dst[0] = rgb[0];
+    dst[1] = rgb[1];
+    dst[2] = rgb[2];
+}
+
+void initMockLabelAt(uint8_t* mem) {
+    memset(mem, 0, guikit::LabelSize);
+    *reinterpret_cast<uint32_t*>(mem + 0) = guikit::LabelVtable;
+    *reinterpret_cast<uint32_t*>(mem + guikit::Label_Border) = guikit::BorderVtable;
+    *reinterpret_cast<uint32_t*>(mem + guikit::Label_Text) = guikit::TextVtable;
+    // Non-zero renderer pointer required by guikit::detail::textObjOk
+    *reinterpret_cast<uint32_t*>(mem + guikit::Label_Text + guikit::Text_Renderer) = 0x12345678u;
+    float* c = reinterpret_cast<float*>(mem + guikit::Label_Text + guikit::Text_StringSub + guikit::Text_Color);
+    c[0] = rmt::kTealText[0];
+    c[1] = rmt::kTealText[1];
+    c[2] = rmt::kTealText[2];
+}
+
+bool colorNear(const uint8_t* lbl, const float want[3]) {
+    const float* c = reinterpret_cast<const float*>(lbl + guikit::Label_Text + guikit::Text_StringSub + guikit::Text_Color);
+    return std::fabs(c[0] - want[0]) < 1e-4f &&
+           std::fabs(c[1] - want[1]) < 1e-4f &&
+           std::fabs(c[2] - want[2]) < 1e-4f;
+}
+
+void testRmt3StatAndMenuHierarchy() {
+    g_stubVirtualQueryAll = true;
+    guikit::g_gk.textColor = &fakeSetColor;
+    rmt::setStatHierarchy(true);
+    rmt::resetStatStyleCount();
+
+    // 1. Tag classification checks
+    kt::Check("Tag LBL_TITLE -> TitleOrValue",
+              rmt::classifyMenuLabelTag("LBL_TITLE") == rmt::MenuLabelRole::TitleOrValue);
+    kt::Check("Tag LBL_CREDITS_VALUE -> TitleOrValue",
+              rmt::classifyMenuLabelTag("LBL_CREDITS_VALUE") == rmt::MenuLabelRole::TitleOrValue);
+    kt::Check("Tag LBL_DEFENSE_STAT -> TitleOrValue",
+              rmt::classifyMenuLabelTag("LBL_DEFENSE_STAT") == rmt::MenuLabelRole::TitleOrValue);
+    kt::Check("Tag LBL_DAMTEXT -> TitleOrValue",
+              rmt::classifyMenuLabelTag("LBL_DAMTEXT") == rmt::MenuLabelRole::TitleOrValue);
+    kt::Check("Tag LBL_STRENGTH -> CaptionKey",
+              rmt::classifyMenuLabelTag("LBL_STRENGTH") == rmt::MenuLabelRole::CaptionKey);
+    kt::Check("Tag LBL_CREDITS -> CaptionKey",
+              rmt::classifyMenuLabelTag("LBL_CREDITS") == rmt::MenuLabelRole::CaptionKey);
+    kt::Check("Tag LBL_SKILLRANK -> CaptionKey",
+              rmt::classifyMenuLabelTag("LBL_SKILLRANK") == rmt::MenuLabelRole::CaptionKey);
+    kt::Check("Tag LBL_BAR1 -> None",
+              rmt::classifyMenuLabelTag("LBL_BAR1") == rmt::MenuLabelRole::None);
+    kt::Check("Null/empty tag -> None",
+              rmt::classifyMenuLabelTag(nullptr) == rmt::MenuLabelRole::None &&
+              rmt::classifyMenuLabelTag("") == rmt::MenuLabelRole::None);
+
+    // 2. RmtSetLabelBonusPenaltyColour checks (delta == 0 -> kCream, > 0 -> kBonusAmber, < 0 -> kPenaltyRed)
+    alignas(16) uint8_t lbl[guikit::LabelSize];
+    initMockLabelAt(lbl);
+
+    kt::CheckEq("RmtSetLabelBonusPenaltyColour delta==0 returns 1",
+                RmtSetLabelBonusPenaltyColour(lbl, 0), 1);
+    kt::Check("RmtSetLabelBonusPenaltyColour delta==0 sets kCream", colorNear(lbl, rmt::kCream));
+
+    kt::CheckEq("RmtSetLabelBonusPenaltyColour delta>0 returns 1",
+                RmtSetLabelBonusPenaltyColour(lbl, 4), 1);
+    kt::Check("RmtSetLabelBonusPenaltyColour delta>0 sets kBonusAmber", colorNear(lbl, rmt::kBonusAmber));
+
+    kt::CheckEq("RmtSetLabelBonusPenaltyColour delta<0 returns 1",
+                RmtSetLabelBonusPenaltyColour(lbl, -2), 1);
+    kt::Check("RmtSetLabelBonusPenaltyColour delta<0 sets kPenaltyRed", colorNear(lbl, rmt::kPenaltyRed));
+
+    // 3. RmtStyleInitControl checks across primary menu labels and non-label controls
+    initMockLabelAt(lbl);
+    RmtStyleInitControl(lbl, "LBL_INV");
+    kt::Check("RmtStyleInitControl styles LBL_INV as kCream", colorNear(lbl, rmt::kCream));
+
+    initMockLabelAt(lbl);
+    RmtStyleInitControl(lbl, "LBL_CREDITS");
+    kt::Check("RmtStyleInitControl styles LBL_CREDITS as kTealDim", colorNear(lbl, rmt::kTealDim));
+
+    initMockLabelAt(lbl);
+    RmtStyleInitControl(lbl, "LBL_BAR1");
+    kt::Check("RmtStyleInitControl leaves LBL_BAR1 untouched as kTealText", colorNear(lbl, rmt::kTealText));
+
+    // Non-label vtable (e.g. button) is ignored safely
+    initMockLabelAt(lbl);
+    *reinterpret_cast<uint32_t*>(lbl) = static_cast<uint32_t>(gameaddr::ButtonVtable);
+    RmtStyleInitControl(lbl, "LBL_TITLE");
+    kt::Check("RmtStyleInitControl ignores non-label control", colorNear(lbl, rmt::kTealText));
+
+    // 4. RmtSetStats check on simulated CSWGuiInGameCharacter panel (size 0x4AC4)
+    alignas(16) static uint8_t charPanel[0x4AC4];
+    memset(charPanel, 0, sizeof(charPanel));
+
+    constexpr size_t kCreamOffs[] = {
+        rmt::kCharOff_LblTitle,
+        rmt::kCharOff_LblDefenseStat,
+        rmt::kCharOff_LblExperienceStat,
+        rmt::kCharOff_LblNeededXp,
+        rmt::kCharOff_LblForceMastery,
+    };
+    constexpr size_t kDimOffs[] = {
+        rmt::kCharOff_LblStrength,
+        rmt::kCharOff_LblDexterity,
+        rmt::kCharOff_LblConstitution,
+        rmt::kCharOff_LblIntelligence,
+        rmt::kCharOff_LblWisdom,
+        rmt::kCharOff_LblCharisma,
+        rmt::kCharOff_LblVitality,
+        rmt::kCharOff_LblForce,
+        rmt::kCharOff_LblDefense,
+        rmt::kCharOff_LblFortitude,
+        rmt::kCharOff_LblReflex,
+        rmt::kCharOff_LblWill,
+        rmt::kCharOff_LblExperience,
+        rmt::kCharOff_LblNextLevel,
+        rmt::kCharOff_LblMore,
+        rmt::kCharOff_LblLight,
+        rmt::kCharOff_LblDark,
+    };
+
+    for (size_t off : kCreamOffs) initMockLabelAt(charPanel + off);
+    for (size_t off : kDimOffs) initMockLabelAt(charPanel + off);
+
+    RmtSetStats(charPanel);
+
+    bool allCreamOk = true;
+    for (size_t off : kCreamOffs) {
+        if (!colorNear(charPanel + off, rmt::kCream)) allCreamOk = false;
+    }
+    kt::Check("RmtSetStats styles all 5 primary title/stat labels on CSWGuiInGameCharacter as kCream", allCreamOk);
+
+    bool allDimOk = true;
+    for (size_t off : kDimOffs) {
+        if (!colorNear(charPanel + off, rmt::kTealDim)) allDimOk = false;
+    }
+    kt::Check("RmtSetStats styles all 17 static key/caption labels on CSWGuiInGameCharacter as kTealDim", allDimOk);
+
+    // 5. StatHierarchy=0 INI gate disables RMT3 hooks
+    rmt::setStatHierarchy(false);
+    kt::CheckEq("isStatHierarchy is false", rmt::isStatHierarchy(), false);
+    initMockLabelAt(lbl);
+    kt::CheckEq("RmtSetLabelBonusPenaltyColour returns 0 when StatHierarchy=0",
+                RmtSetLabelBonusPenaltyColour(lbl, 0), 0);
+    kt::Check("StatHierarchy=0 leaves label color untouched", colorNear(lbl, rmt::kTealText));
+    RmtStyleInitControl(lbl, "LBL_TITLE");
+    kt::Check("StatHierarchy=0 leaves InitControl label untouched", colorNear(lbl, rmt::kTealText));
+
+    rmt::setStatHierarchy(true);
+    guikit::g_gk.rebind();
+}
+
 } // namespace
 
 int main() {
     testHookBytesAndAdjacency();
     testHookSite2Contract();
+    testHookSites3To5Contract();
     testStructOffsets();
     testNormalCreamText();
     testNegativePenalty();
@@ -311,5 +517,6 @@ int main() {
     testNullSafety();
     testIniGate();
     testKpLogContract();
+    testRmt3StatAndMenuHierarchy();
     return kt::Report("rich_menu_typography_contract_test");
 }

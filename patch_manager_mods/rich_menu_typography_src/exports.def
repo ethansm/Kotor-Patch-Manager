@@ -3,3 +3,6 @@ EXPORTS
     KPatchInit
     RmtOverrideGlyphColor
     RmtAddControls2
+    RmtSetLabelBonusPenaltyColour
+    RmtSetStats
+    RmtStyleInitControl
