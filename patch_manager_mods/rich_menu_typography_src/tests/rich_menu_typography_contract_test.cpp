@@ -505,6 +505,104 @@ void testRmt3StatAndMenuHierarchy() {
     guikit::g_gk.rebind();
 }
 
+void testKpLogTighteningContract() {
+    fakekp::reset();
+    fakekp::withLog();
+    rmt::resetLogStateForTest();
+    rmt::setVerbose(false);
+    g_stubVirtualQueryAll = true;
+    guikit::g_gk.textColor = &fakeSetColor;
+    KPatchInit(fakekp::api());
+
+    auto hasSub = [](const char* sub) {
+        for (const auto& l : fakekp::state().logLines) {
+            if (l.find(sub) != std::string::npos) return true;
+        }
+        return false;
+    };
+    auto countSub = [](const char* sub) {
+        size_t c = 0;
+        for (const auto& l : fakekp::state().logLines) {
+            if (l.find(sub) != std::string::npos) ++c;
+        }
+        return c;
+    };
+
+    // 1. RMTR Verbose=0 tightening: per-line/per-item diagnostics are silent
+    const char* const str = "Item: +5 Force\n";
+    MockStringInternal mock(str);
+    constexpr uint32_t kSentinel = 0xCAFEBABEu;
+    SimulatedFrame frame;
+    frame.setSelf(mock.raw);
+    frame.setCurChar(str + 7); // '+'
+    frame.setLineIdx(0);
+    frame.setBaseCol(0xFF8CB21Au);
+    frame.setActiveCol(kSentinel);
+
+    RmtOverrideGlyphColor(frame.ebp);
+    kt::CheckEq("Glyph color is overridden", frame.getActiveCol(), 0xFF000000u | rmt::kRgbBonusAmber);
+    kt::Check("Verbose=0 gates glyph override logs (0 lines)", !hasSub("override '"));
+
+    void* dummyCtls[4] = {};
+    kt::CheckEq("RmtAddControls2 without real listbox returns 0 safely",
+                RmtAddControls2(nullptr, dummyCtls, 0, 0, 0, 0, 0), 0);
+    kt::Check("Verbose=0 gates RichDescBox populate logs (0 lines)", !hasSub("RichDescBox populated"));
+
+    alignas(16) static uint8_t mockCtl[0x1D0];
+    initMockLabelAt(mockCtl);
+    RmtStyleInitControl(mockCtl, "LBL_TITLE");
+    kt::Check("Verbose=0 gates RmtStyleInitControl logs (0 lines)", !hasSub("RmtStyleInitControl tag="));
+
+    // 2. RMTR State deduplication: RmtSetStats logs once, not on repeated calls
+    alignas(16) static uint8_t charPanel[0x4AC4];
+    memset(charPanel, 0, sizeof(charPanel));
+    constexpr size_t kCreamOffs[] = { rmt::kCharOff_LblTitle, rmt::kCharOff_LblDefenseStat };
+    for (size_t off : kCreamOffs) initMockLabelAt(charPanel + off);
+
+    RmtSetStats(charPanel);
+    const size_t statsCount1 = countSub("RmtSetStats styled");
+    kt::CheckEq("RmtSetStats logs once on first panel style", statsCount1, static_cast<size_t>(1));
+
+    RmtSetStats(charPanel);
+    RmtSetStats(charPanel);
+    const size_t statsCount2 = countSub("RmtSetStats styled");
+    kt::CheckEq("RmtSetStats deduplicates repeated calls (0 additional lines)", statsCount2, static_cast<size_t>(1));
+
+    // 3. RMTR Startup line budget: verify total lines is < 50
+    kt::Check("Total startup lines < 50 (budget)", fakekp::state().logLines.size() < 50);
+
+    // 4. RMTR Verbose=1 enables diagnostics
+    fakekp::state().logLines.clear();
+    rmt::resetLogStateForTest();
+    rmt::setVerbose(true);
+
+    frame.setActiveCol(kSentinel);
+    RmtOverrideGlyphColor(frame.ebp);
+    kt::Check("Verbose=1 logs glyph override diagnostics", hasSub("override '"));
+
+    initMockLabelAt(mockCtl);
+    RmtStyleInitControl(mockCtl, "LBL_TITLE");
+    kt::Check("Verbose=1 logs RmtStyleInitControl diagnostics", hasSub("RmtStyleInitControl tag="));
+
+    RmtSetStats(charPanel);
+    kt::CheckEq("Verbose=1 logs initial RmtSetStats", countSub("RmtSetStats styled"), static_cast<size_t>(1));
+    RmtSetStats(charPanel);
+    kt::CheckEq("Verbose=1 still deduplicates unchanged panel/styled state", countSub("RmtSetStats styled"), static_cast<size_t>(1));
+
+    // Switching panel in Verbose=1 logs the state change
+    alignas(16) static uint8_t charPanel2[0x4AC4];
+    memset(charPanel2, 0, sizeof(charPanel2));
+    for (size_t off : kCreamOffs) initMockLabelAt(charPanel2 + off);
+    RmtSetStats(charPanel2);
+    kt::CheckEq("Verbose=1 logs panel change", countSub("RmtSetStats styled"), static_cast<size_t>(2));
+
+    // Cleanup
+    guikit::g_gk.rebind();
+    rmt::setVerbose(false);
+    rmt::resetLogStateForTest();
+    fakekp::close();
+}
+
 void testModConfigPageContract() {
     // 1. Without provider (clients not ok) pagePoll registers nothing and does not crash
     kt::Check("pageRegistered initially false", !rmt::pageRegistered());
@@ -631,6 +729,7 @@ int main() {
     testNullSafety();
     testIniGate();
     testKpLogContract();
+    testKpLogTighteningContract();
     testRmt3StatAndMenuHierarchy();
     testModConfigPageContract();
     return kt::Report("rich_menu_typography_contract_test");

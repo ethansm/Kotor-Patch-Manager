@@ -40,10 +40,12 @@ bool g_richDescBox = true;
 bool g_statHierarchy = true;
 bool g_verbose = false;
 bool g_statsLogged = false;
+uintptr_t g_lastStatsPanel = 0;
+uint32_t g_lastStatsStyled = 0;
 uint32_t g_overrideCount = 0;
 uint32_t g_descPopulateCount = 0;
 uint32_t g_statStyleCount = 0;
-constexpr uint32_t kMaxStartupOverrides = 5;
+uint32_t g_initControlLogs = 0;
 
 mcdecl::Page g_page;
 k2mc::ConfigClient g_mcCfg;
@@ -297,6 +299,16 @@ void resetDescPopulateCount() noexcept { g_descPopulateCount = 0; }
 uint32_t getDescPopulateCount() noexcept { return g_descPopulateCount; }
 void resetStatStyleCount() noexcept { g_statStyleCount = 0; }
 uint32_t getStatStyleCount() noexcept { return g_statStyleCount; }
+void resetLogStateForTest() noexcept {
+    g_overrideCount = 0;
+    g_descPopulateCount = 0;
+    g_statStyleCount = 0;
+    g_initControlLogs = 0;
+    g_pageLogs = 0;
+    g_statsLogged = false;
+    g_lastStatsPanel = 0;
+    g_lastStatsStyled = 0;
+}
 bool pageRegistered() noexcept { return g_mcReg.registered; }
 void pagePollForTest() noexcept { pagePoll(); }
 int32_t applyPageRowForTest(const char* id, int32_t requested) noexcept {
@@ -324,8 +336,8 @@ extern "C" void __cdecl RmtOverrideGlyphColor(uintptr_t ebp) {
     const uint32_t newCol = rmt::resolveGlyphColor(self, curChar, lineIdx, baseCol);
     *pActiveCol = newCol;
 
-    if (newCol != baseCol) {
-        if (g_verbose || g_overrideCount < kMaxStartupOverrides) {
+    if (newCol != baseCol && g_verbose) {
+        if (g_overrideCount < 50) {
             ++g_overrideCount;
             if (KpLog_HasCore()) {
                 KP_LOGV(chMain, KPLOG_DEBUG, "override '%c' line=%d 0x%08X -> 0x%08X",
@@ -348,8 +360,8 @@ extern "C" int __cdecl RmtAddControls2(void* listbox, void** pControls, int coun
                                                origFn);
     if (ok) {
         ++g_descPopulateCount;
-        if (KpLog_HasCore()) {
-            if (g_verbose || g_descPopulateCount <= 3) {
+        if (KpLog_HasCore() && g_verbose) {
+            if (g_descPopulateCount <= 20) {
                 KP_LOGV(chMain, KPLOG_DEBUG, "RichDescBox populated listbox=%p popCount=%u",
                         listbox, g_descPopulateCount);
             }
@@ -395,10 +407,21 @@ extern "C" void __cdecl RmtSetStats(void* panel) {
 
     if (styled > 0) {
         g_statStyleCount += styled;
-        if (KpLog_HasCore() && (g_verbose || !g_statsLogged)) {
-            g_statsLogged = true;
-            KP_LOGV(chMain, KPLOG_DEBUG, "RmtSetStats styled %u labels on character panel=%p",
-                    styled, panel);
+        if (KpLog_HasCore()) {
+            if (g_verbose) {
+                if (g_lastStatsPanel != base || g_lastStatsStyled != styled) {
+                    g_lastStatsPanel = base;
+                    g_lastStatsStyled = styled;
+                    KP_LOGV(chMain, KPLOG_DEBUG, "RmtSetStats styled %u labels on character panel=%p",
+                            styled, panel);
+                }
+            } else if (!g_statsLogged) {
+                g_statsLogged = true;
+                g_lastStatsPanel = base;
+                g_lastStatsStyled = styled;
+                KP_LOGV(chMain, KPLOG_DEBUG, "RmtSetStats styled %u labels on character panel=%p",
+                        styled, panel);
+            }
         }
     }
 }
@@ -419,8 +442,11 @@ extern "C" void __cdecl RmtStyleInitControl(void* pControl, const char* tagStr) 
     if (styleLabelColor(reinterpret_cast<uintptr_t>(pControl), col)) {
         ++g_statStyleCount;
         if (KpLog_HasCore() && g_verbose) {
-            KP_LOGV(chMain, KPLOG_DEBUG, "RmtStyleInitControl tag=%s role=%u ctl=%p",
-                    tagStr, static_cast<unsigned>(role), pControl);
+            if (g_initControlLogs < 30) {
+                ++g_initControlLogs;
+                KP_LOGV(chMain, KPLOG_DEBUG, "RmtStyleInitControl tag=%s role=%u ctl=%p",
+                        tagStr, static_cast<unsigned>(role), pControl);
+            }
         }
     }
 }

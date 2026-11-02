@@ -95,6 +95,7 @@ void resetDescPopulateCount() noexcept;
 uint32_t getDescPopulateCount() noexcept;
 void resetStatStyleCount() noexcept;
 uint32_t getStatStyleCount() noexcept;
+void resetLogStateForTest() noexcept;
 
 bool pageRegistered() noexcept;
 void pagePollForTest() noexcept;
