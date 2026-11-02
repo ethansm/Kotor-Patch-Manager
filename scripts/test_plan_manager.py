@@ -103,6 +103,30 @@ class TestPlanManager(unittest.TestCase):
         finally:
             tmp_path.unlink()
 
+    def test_skipped_and_superseded_status_parsing(self):
+        """Verify SKIPPED and SUPERSEDED are treated as done."""
+        table_plan = """# Master Test Plan
+| Id | Batch | Status |
+|---|---|---|
+| M1 | Init | SKIPPED |
+| M2 | Old | SUPERSEDED |
+| M3 | Build | TODO |
+"""
+        with tempfile.NamedTemporaryFile("w", suffix="_plan.md", delete=False) as fp:
+            fp.write(table_plan)
+            tmp_path = Path(fp.name)
+
+        try:
+            from scripts.plan_manager import parse_plan
+            res = parse_plan(tmp_path)
+            self.assertEqual(len(res["phases"]), 3)
+            self.assertTrue(res["phases"][0]["done"])
+            self.assertTrue(res["phases"][1]["done"])
+            self.assertFalse(res["phases"][2]["done"])
+            self.assertEqual(res["phases"][2]["ident"], "M3")
+        finally:
+            tmp_path.unlink()
+
     def test_next_contract(self):
         """Verify next --contract appends the agent_contract.py template; default output has none."""
         table_plan = "# P\n| Id | Batch | Status |\n|---|---|---|\n| M1 | Init | TODO |\n"

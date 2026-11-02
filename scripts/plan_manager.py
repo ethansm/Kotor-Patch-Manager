@@ -49,8 +49,9 @@ PHASE_HEADER_RE = re.compile(r'^#{2,3}[ \t]+(Phase[ \t]+\d+|Chunk[ \t]+[A-Za-z0-
 CHECKBOX_RE = re.compile(r'^\s*-\s*\[([ xX/])\]\s*(.*)$', re.MULTILINE)
 EXEC_LOG_RE = re.compile(r'^\s*-\s*(Phase\s+\d+|Chunk\s+[A-Za-z0-9]+|Step\s+\d+)[^:\n]*:\s*(.*)$', re.MULTILINE)
 
-# Status cells are upper-cased before matching. INSTALLED counts as done: the remaining play test is a human task, not an agent one.
-DONE_STATUS_RE = re.compile(r'(?<!NOT )\b(DONE|COMPLETED?|MERGED|PASS(?:ED)?|INSTALLED)\b')
+# Status cells are upper-cased before matching. INSTALLED/SKIPPED/SUPERSEDED count as done:
+# the remaining play test is a human task, and skipped/superseded tasks are terminal.
+DONE_STATUS_RE = re.compile(r'(?<!NOT )\b(DONE|COMPLETED?|MERGED|PASS(?:ED)?|INSTALLED|SKIPPED|SUPERSEDED)\b')
 NOT_DONE_LEAD_RE = re.compile(r'^[\W_]*(PARTIAL|PARTLY|PENDING|TODO|NOT)\b')
 EXEC_DONE_TEXT_RE = re.compile(r'(?<!not )\b(done|complete[d]?|merged|passed?|landed|verified|installed|committed|shipped|finished)\b', re.IGNORECASE)
 SEPARATOR_CELL_RE = re.compile(r':?-+:?')
