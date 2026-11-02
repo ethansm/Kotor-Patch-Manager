@@ -95,6 +95,38 @@ static void test_string_budgets() {
     }
 }
 
+static bool isWordHeader(const char* s) {
+    if (!s || !*s) return false;
+    const char* colon = strchr(s, ':');
+    if (!colon || colon == s) return false;
+    for (const char* p = s; p < colon; ++p) {
+        if (!((*p >= 'A' && *p <= 'Z') || (*p >= 'a' && *p <= 'z'))) {
+            return false;
+        }
+    }
+    return colon[1] == ' ' || colon[1] == '\0';
+}
+
+static void test_desc_headers() {
+    kt::Check("page desc starts with Word: header", isWordHeader(g_page.decl.desc));
+    kt::Check("page desc <= 95 bytes", strlen(g_page.decl.desc) <= 95);
+
+    // Schema still loads with all entries (1 page + 5 rows = 6 schema entries)
+    kt::CheckEq("schema still loads with 5 rows", g_page.decl.nRows, 5);
+    kt::CheckEq("schema still loads with 6 entries (page + rows)", 1 + g_page.decl.nRows, 6);
+
+    for (int i = 0; i < g_page.decl.nRows; ++i) {
+        const mcdecl::RowDecl& r = g_page.decl.rows[i];
+        char msgHeader[64];
+        snprintf(msgHeader, sizeof(msgHeader), "row %d (%s) desc starts with Word: header", i, r.id);
+        kt::Check(msgHeader, isWordHeader(r.desc));
+
+        char msgLen[64];
+        snprintf(msgLen, sizeof(msgLen), "row %d (%s) desc <= 95 bytes", i, r.id);
+        kt::Check(msgLen, strlen(r.desc) <= 95);
+    }
+}
+
 static void test_apply_row() {
     Live live;
     // initial state
@@ -252,6 +284,7 @@ static void test_ini_write_bodyfont() {
 int main() {
     test_schema_load();
     test_string_budgets();
+    test_desc_headers();
     test_apply_row();
     test_font_helpers();
     test_defaults_match_ini();

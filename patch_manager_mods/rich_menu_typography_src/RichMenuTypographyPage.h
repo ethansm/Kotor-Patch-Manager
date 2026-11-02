@@ -26,13 +26,13 @@ constexpr const char* kPageSchema = R"TOML(
 [page]
 name = "Rich Menu Typography"
 title = "Rich Menu Typography"
-desc = "Multi-font headers, colored stat keywords, and description hierarchy in menus."
+desc = "Effect: Multi-font headers, +colored keywords, and stat label hierarchy."
 
 [[row]]
 id = "inline"
 kind = "toggle"
 label = "Coloured keywords"
-desc = "Colorize damage, attributes, and special keywords in item and power descriptions."
+desc = "Effect: On: +Keywords coloured in descriptions. Off: -Plain text."
 default = 1
 ini = "rich_menu_typography.ini"
 section = "General"
@@ -42,7 +42,7 @@ key = "InlineColoring"
 id = "richdesc"
 kind = "toggle"
 label = "Multi-font descriptions"
-desc = "Use larger header fonts and structured styling in description boxes."
+desc = "Effect: On: +Multi-font titles and rules layout. Off: -Uniform body text."
 default = 1
 ini = "rich_menu_typography.ini"
 section = "General"
@@ -52,7 +52,7 @@ key = "RichDescBox"
 id = "stats"
 kind = "toggle"
 label = "Stat label hierarchy"
-desc = "Dim secondary attribute labels and highlight key combat statistics."
+desc = "Effect: On: +Key combat stats highlighted. Off: -Uniform stat labels."
 default = 1
 ini = "rich_menu_typography.ini"
 section = "General"
@@ -62,7 +62,7 @@ key = "StatHierarchy"
 id = "font"
 kind = "list"
 label = "Body font"
-desc = "Body font face used for item, feat, and power descriptions."
+desc = "Effect: Body font face used for item, feat, and power descriptions."
 default = 0
 choices = ["fnt_d16x16", "dialogfont10x10", "dialogfont16x16"]
 
@@ -70,7 +70,7 @@ choices = ["fnt_d16x16", "dialogfont10x10", "dialogfont16x16"]
 id = "rulesfont"
 kind = "list"
 label = "Rules font"
-desc = "Font face used for stats, requirements, and rules in description boxes."
+desc = "Effect: Font face used for stats, requirements, and rules blocks."
 default = 0
 choices = ["fnt_d16x16", "dialogfont10x10", "dialogfont16x16"]
 )TOML";
