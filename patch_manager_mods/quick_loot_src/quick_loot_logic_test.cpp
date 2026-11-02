@@ -1486,6 +1486,32 @@ int main() {
         kt::Check("actionBtnHitAt inside button", actionBtnHitAt(blk, static_cast<float>(blk.x + br.x + 5), static_cast<float>(blk.y + br.y + 5), true));
         kt::Check("actionBtnHitAt outside button", !actionBtnHitAt(blk, static_cast<float>(blk.x + 5), static_cast<float>(blk.y + 5), true));
     }
+    {
+        // QL3: Hover Peek state machine & formatters & doc 12 empty cursor
+        Peek p;
+        p.beginHover(0x1000, 0x50, 0x2000, 0x1, 1000);
+        kt::Check("beginHover: busy, expecting, isHover, not active yet", p.busy() && !p.active && p.isHover && !p.isSelect && p.expect == 0x1000 && p.expectMs == 1000 && p.opener == 1);
+        
+        bool showRet = p.onShow(0x7F000001u, 0x1000, 1050, 10);
+        kt::Check("onShow: consumed, active, preserves isHover", showRet && p.active && p.isHover && !p.isSelect && p.expect == 0 && p.obj == 0x7F000001u && p.sinceMs == 1050);
+
+        p.clear();
+        kt::Check("clear: resets isHover and isSelect", !p.active && !p.busy() && !p.isHover && !p.isSelect);
+
+        p.beginSelect(0x1000, 0x50, 0x7F000002u, 0x2000, 0x1, 2000, 20);
+        kt::Check("beginSelect sets isSelect and clears isHover", p.active && p.isSelect && !p.isHover);
+
+        kt::CheckEq("Leave::MouseLeave name is mouseleave", strcmp(leaveName(Leave::MouseLeave), "mouseleave"), 0);
+
+        char b[160];
+        fmtHoverOpen(b, sizeof b, 0x7F000005u, 0x1234u, 2.75f, 3);
+        kt::Check("fmtHoverOpen line", strcmp(b, "HOVER-OPEN obj=7f000005 plc=00001234 dist=2.75 n=3") == 0);
+
+        fmtEmptyCursor(b, sizeof b, 0x7F000005u, true);
+        kt::Check("fmtEmptyCursor true", strcmp(b, "EMPTY-CURSOR obj=7f000005 empty=1") == 0);
+        fmtEmptyCursor(b, sizeof b, 0x7F000005u, false);
+        kt::Check("fmtEmptyCursor false", strcmp(b, "EMPTY-CURSOR obj=7f000005 empty=0") == 0);
+    }
 
     return kt::Report("quick_loot_logic_test");
 }

@@ -399,7 +399,7 @@ struct Cooldown {
 inline bool areaChanged(uintptr_t prev, uintptr_t cur) { return prev != 0 && cur != 0 && prev != cur; }
 
 // Why the peek ends. Priority: gone > suppress > area > far.
-enum class Leave { None = 0, Gone, Suppress, Area, Far, Off, Timeout };   // Off (0.6.0-dev): ProximityEnabled was switched off while a peek was up; Timeout (QL2): auto-close
+enum class Leave { None = 0, Gone, Suppress, Area, Far, Off, Timeout, MouseLeave };   // Off (0.6.0-dev): ProximityEnabled was switched off while a peek was up; Timeout (QL2): auto-close; MouseLeave (QL3): mouse unhover
 inline Leave leaveReason(bool plcResolves, bool suppressed, bool areaChangedNow, float dist, float closeM) {
     if (!plcResolves) return Leave::Gone;
     if (suppressed) return Leave::Suppress;
@@ -416,6 +416,7 @@ inline const char* leaveName(Leave l) {
         case Leave::Far: return "far";
         case Leave::Off: return "off";
         case Leave::Timeout: return "timeout";
+        case Leave::MouseLeave: return "mouseleave";
     }
     return "?";
 }
@@ -1192,6 +1193,7 @@ struct Peek {
     // active
     bool active = false;
     bool isSelect = false;       // QL2: true when peek was triggered by select/click, false for proximity
+    bool isHover = false;        // QL3: true when peek was triggered by cursor hover (app+0x4B0)
     uint32_t obj = 0;            // client object id from ShowContainerGui (the Close message takes it)
     uint32_t sinceMs = 0, sinceFrame = 0;
     uint32_t closeStartMs = 0;   // first Close attempt
@@ -1206,7 +1208,8 @@ struct Peek {
     // ShowContainerGui for plc: consumed as the peek when it is the expected container. Returns true when it was.
     bool onShow(uint32_t o, uintptr_t p, uint32_t now, uint32_t frame) {
         if (expect == 0 || p != expect) return false;
-        expect = 0; active = true; isSelect = false; obj = o; sinceMs = now; sinceFrame = frame; closeStartMs = 0; closeTried = false; text[0] = 0;
+        const bool wasHover = isHover;
+        expect = 0; active = true; isSelect = false; isHover = wasHover; obj = o; sinceMs = now; sinceFrame = frame; closeStartMs = 0; closeTried = false; text[0] = 0;
         return true;
     }
     // QL2: start active select peek directly from ShowContainerGui
@@ -1214,6 +1217,7 @@ struct Peek {
         clear();
         active = true;
         isSelect = true;
+        isHover = false;
         plc = p;
         serverId = sid;
         obj = o;
@@ -1221,6 +1225,12 @@ struct Peek {
         opener = op;
         sinceMs = now;
         sinceFrame = frame;
+    }
+    // QL3: begin hover peek (waiting for ShowContainerGui)
+    void beginHover(uintptr_t p, uint32_t sid, uintptr_t a, uint32_t op, uint32_t now) {
+        clear();
+        expect = p; plc = p; serverId = sid; area = a; opener = op; expectMs = now;
+        isHover = true;
     }
     // Placeable event: the first OnOpen of the peeked container (expecting or active).
     bool onEvent(uintptr_t p, int id, uint32_t frame) {
@@ -1233,7 +1243,7 @@ struct Peek {
         return active && itemCount == 0 && readyToSend(openSeen, frame, openFrame, now, sinceMs);
     }
     void clear() {
-        expect = 0; expectMs = 0; serverId = 0; opener = 0; plc = 0; area = 0; openSeen = false; openFrame = 0; active = false; isSelect = false; obj = 0;
+        expect = 0; expectMs = 0; serverId = 0; opener = 0; plc = 0; area = 0; openSeen = false; openFrame = 0; active = false; isSelect = false; isHover = false; obj = 0;
         sinceMs = sinceFrame = 0; closeStartMs = 0; closeTried = false; text[0] = 0;
     }
 };
@@ -1582,6 +1592,12 @@ inline int fmtTakeEmpty(char* b, size_t n, uint32_t obj, uint32_t dtMs, int open
 }
 inline int fmtPeekOpen(char* b, size_t n, uint32_t sid, uintptr_t plc, float dist, int count) {
     return snprintf(b, n, "PEEK-OPEN obj=%08x plc=%08x dist=%.2f n=%d", sid, static_cast<unsigned>(plc), static_cast<double>(dist), count);
+}
+inline int fmtHoverOpen(char* b, size_t n, uint32_t sid, uintptr_t plc, float dist, int count) {
+    return snprintf(b, n, "HOVER-OPEN obj=%08x plc=%08x dist=%.2f n=%d", sid, static_cast<unsigned>(plc), static_cast<double>(dist), count);
+}
+inline int fmtEmptyCursor(char* b, size_t n, uint32_t sid, bool empty) {
+    return snprintf(b, n, "EMPTY-CURSOR obj=%08x empty=%d", sid, empty ? 1 : 0);
 }
 inline int fmtPeekShow(char* b, size_t n, uint32_t obj, uintptr_t plc, int flag, int count) {
     return snprintf(b, n, "PEEK-SHOW obj=%08x plc=%08x flag=%d n=%d", obj, static_cast<unsigned>(plc), flag, count);

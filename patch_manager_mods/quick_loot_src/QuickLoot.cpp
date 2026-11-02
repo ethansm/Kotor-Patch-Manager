@@ -140,6 +140,9 @@ const char* const TexBacking = "lbl_miscroll_f";               // backing panel 
 // QL1a: vanilla OK button path (0x8B2850): msgObj = *(*(*(*AppGlobal + 4) + 4) + 0x150); thiscall(msgObj, clientObjId, closeFlag) RET 8.
 constexpr uintptr_t SendContainerClose = 0x0087A550;
 constexpr int App_Client = 4, Client_Inner = 4, Inner_MsgObj = 0x150;
+constexpr uintptr_t SetMouseCursor = 0x007B3870; // CClientExoAppInternal::SetMouseCursor thiscall(app, id, a, b) RET 0xC (doc 12 M7-R1)
+constexpr int Inner_HoverObj = 0x4B0;            // CClientExoAppInternal + 0x4B0: hovered object id (doc 12 / doc 18)
+constexpr int Plc_LocName = 0x268;               // CSWSPlaceable::GetFirstName -> CExoLocString at plc+0x268
 // ---- QL2p. Evidence files: .claude/waves/w3-52-R2/u01.md (placeable fields), u02.md (leader / area list), u03.md (suppress helpers).
 constexpr uintptr_t GetGameObject = 0x0051C0A0;     // thiscall(serverApp, objId) RET 4 -> object* or 0 (u02 recipe A step 6; companion_ai CompanionAI.cpp:81)
 constexpr uintptr_t OpenInventory = 0x005F5590;     // CSWSPlaceable::OpenInventory thiscall(plc, openerServerObjId, playAnim) RET 8 (Opus 5f/005f5590.c; u01 "OpenInventory checks")
@@ -209,6 +212,9 @@ bool g_timeInit = false;
 bool g_hardwareBezels = true;
 bool g_peekOnSelect = false;      // QL2: peek on select (quick_loot.ini peek_on_select)
 uint32_t g_clickTimeoutMs = 0;    // QL2: auto-close timeout in ms (quick_loot.ini click_peek_timeout, 0 = off)
+bool g_hoverPeek = true;          // QL3: hover peek (quick_loot.ini HoverPeek)
+bool g_emptyCursor = true;        // QL3: empty container cursor indicator (quick_loot.ini EmptyCursor)
+uint32_t g_hoverDwellMs = 150;    // QL3: hover dwell before open (ms)
 qlbezel::CategoryStyle g_catStyles[qlbezel::CatCount];
 int g_selectedCat = 0;
 uint32_t g_modalPage = 0;
@@ -317,6 +323,7 @@ void readItemText(uintptr_t item, int off, int lang, char* out, int cap) {
     if (exo[0]) reinterpret_cast<ExoDtorFn>(gameaddr::ExoDtor)(exo);
 }
 void readItemName(uintptr_t item, int lang, char* out, int cap) { readItemText(item, Item_Name, lang, out, cap); }
+void readPlaceableName(uintptr_t plc, int lang, char* out, int cap) { readItemText(plc, Plc_LocName, lang, out, cap); }
 
 using Captured = qlogic::Captured;
 
@@ -1521,6 +1528,15 @@ inline bool readCandFlags(qlogic::CandFlags* f, uintptr_t plc) {
     return f ? readCandFlags(plc, *f) : false;
 }
 
+uint32_t readHoverId() {
+    uint32_t app = 0, client = 0, inner = 0, hoverId = 0x7F000000u;
+    if (!rd<uint32_t>(gameaddr::AppGlobal, 0, &app) || !app) return 0x7F000000u;
+    if (!rd<uint32_t>(app, App_Client, &client) || !client) return 0x7F000000u;
+    if (!rd<uint32_t>(client, Client_Inner, &inner) || !inner) return 0x7F000000u;
+    if (!rd<uint32_t>(inner, Inner_HoverObj, &hoverId)) return 0x7F000000u;
+    return hoverId;
+}
+
 // The engine side of qlogic::Env (QuickLootMachine.h): every read goes through SafeRead, every action is the same engine call as before.
 struct EngineEnv : qlogic::Env {
     const K2HudContext* ctx = nullptr;
@@ -1539,6 +1555,16 @@ struct EngineEnv : qlogic::Env {
     uint32_t serverIdForObj(uint32_t clientObj) override {
         const uintptr_t s = serverApp();
         return s ? reinterpret_cast<LookupFn>(gameaddr::ClientToServerObjectId)(s, clientObj) : 0;
+    }
+    uint32_t hoverObjectId() override { return readHoverId(); }
+    void setEmptyCursor(bool empty) override {
+        if (!empty) return;
+        uint32_t app = 0, client = 0, inner = 0;
+        if (!rd<uint32_t>(gameaddr::AppGlobal, 0, &app) || !app) return;
+        if (!rd<uint32_t>(app, App_Client, &client) || !client) return;
+        if (!rd<uint32_t>(client, Client_Inner, &inner) || !inner) return;
+        using SetMouseCursorFn = void(__thiscall*)(uintptr_t app, int id, int a, int b);
+        reinterpret_cast<SetMouseCursorFn>(SetMouseCursor)(inner, 1, 0, 0);
     }
     bool plcPos(uintptr_t plc, float* x, float* y) override { return rd<float>(plc, Obj_PosX, x) && rd<float>(plc, Obj_PosY, y); }
     int itemCount(uintptr_t plc) override { return ::itemCount(plc); }
@@ -1623,6 +1649,9 @@ void KPATCH_CALL onMenuPost(const K2HudContext* ctx, void*) {
                 g.menuShown = true;
             }
         }
+    }
+    if (g_targetName[0] == '\0' && g_m.peek.active && g_m.peek.plc) {
+        readPlaceableName(g_m.peek.plc, clientLanguage(), g_targetName, sizeof g_targetName);
     }
     int px = 0, py = 0, pw = 0, ph = 0;
     if (guikit::getExtent(static_cast<uintptr_t>(static_cast<uint32_t>(g_panel)), &px, &py, &pw, &ph) && pw > 0 && ph > 0) {
@@ -2035,6 +2064,15 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     g_clickTimeoutMs = timeout > 0 ? static_cast<uint32_t>(timeout) : 0;
     g_m.cfg.peekOnSelect = g_peekOnSelect;
     g_m.cfg.clickTimeoutMs = g_clickTimeoutMs;
+    g_hoverPeek = GetPrivateProfileIntA("QuickLoot", "hover_peek", 1, IniPath) != 0;
+    if (!g_hoverPeek) g_hoverPeek = GetPrivateProfileIntA("QuickLoot", "HoverPeek", 1, IniPath) != 0;
+    g_m.cfg.hoverPeek = g_hoverPeek;
+    g_emptyCursor = GetPrivateProfileIntA("QuickLoot", "empty_cursor", 1, IniPath) != 0;
+    if (!g_emptyCursor) g_emptyCursor = GetPrivateProfileIntA("QuickLoot", "EmptyCursor", 1, IniPath) != 0;
+    g_m.cfg.emptyCursor = g_emptyCursor;
+    int dwell = GetPrivateProfileIntA("QuickLoot", "hover_dwell_ms", 150, IniPath);
+    if (dwell <= 0) dwell = GetPrivateProfileIntA("QuickLoot", "HoverDwellMs", 150, IniPath);
+    if (dwell > 0) g_m.cfg.hoverDwellMs = static_cast<uint32_t>(dwell);
     g_m.cfg.listRows = qlogic::clampListRows(GetPrivateProfileIntA("QuickLoot", "ListRows", static_cast<int>(qlogic::ListRowsDefault), IniPath));
     g_m.cfg.anchor = qlogic::clampAnchorMode(GetPrivateProfileIntA("QuickLoot", "Anchor", 0, IniPath));
     g_m.cfg.showTook = GetPrivateProfileIntA("QuickLoot", "ShowAcquired", 0, IniPath) != 0;   // 0.6.1-dev: off by default

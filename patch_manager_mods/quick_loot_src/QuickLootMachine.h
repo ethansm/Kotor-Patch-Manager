@@ -56,6 +56,10 @@ struct Config {
     bool enabled = true, proxOn = true;
     bool peekOnSelect = false;             // QL2: peek on select (quick_loot.ini peek_on_select)
     uint32_t clickTimeoutMs = 0;           // QL2: auto-close timeout for select peek in ms (0 = off)
+    bool hoverPeek = false;                // QL3: true hover peek (quick_loot.ini HoverPeek)
+    bool emptyCursor = true;               // QL3: empty container cursor indicator (quick_loot.ini EmptyCursor)
+    uint32_t hoverDwellMs = 150;           // QL3: hover dwell before open (ms)
+    float hoverRangeM = DefaultCloseM;     // QL3: hover peek range (default CloseM)
     float openM = DefaultOpenM, closeM = DefaultCloseM;
     int takeKey = DefaultTakeKey;
     uint32_t scanMs = DefaultScanMs;
@@ -89,6 +93,8 @@ struct Env {
     virtual uintptr_t resolveClientPlc(uint32_t clientObj) = 0;                // placeable for a client container object id (ShowContainerGui), 0 = gone
     virtual uint32_t serverIdForObj(uint32_t clientObj) { (void)clientObj; return 0; } // QL2: server object id for client id
     virtual uint32_t serverIdForPlc(uintptr_t plc) { (void)plc; return 0; }    // QL2: server object id for placeable
+    virtual uint32_t hoverObjectId() { return 0x7F000000u; }                   // QL3: hovered client object id (app+0x4B0)
+    virtual void setEmptyCursor(bool empty) { (void)empty; }                   // QL3: empty container cursor indicator
     virtual bool plcPos(uintptr_t plc, float* x, float* y) = 0;
     virtual int itemCount(uintptr_t plc) = 0;                                  // -1 unreadable
     virtual int openFlag(uintptr_t plc) = 0;                                   // -1 unreadable
@@ -152,6 +158,8 @@ struct Machine {
     int nearOk = -1;
     uint32_t frame = 0;    // last HUD frame counter seen by onFrame
     Dwell dwell;           // auto-open debounce (DwellMs)
+    Dwell hoverDwell;      // QL3: auto-open hover debounce
+    bool lastEmptyCursor = false; // QL3: empty cursor state tracking
     ToastState toastS;     // the Took line
     NameHold nameHold;     // 0.6.0-dev: the last target name rect (kept NameHoldMs after the target menu goes away)
     AnchorTrack anchTrack; // change-only ANCHOR log
@@ -208,7 +216,7 @@ struct Machine {
     void peekEnd(Env& e, bool addCooldown = true) {
         char b[160];
         const uint32_t sid = peek.serverId;
-        if (addCooldown) {
+        if (addCooldown && !peek.isHover) {
             cool.add(sid);
             fmtCooldown(b, sizeof b, "add", sid, -1.0f, cool.n);
             e.log(b);
@@ -368,6 +376,21 @@ struct Machine {
         }
     }
 
+    // QL3: Opens the hovered container with the engine's OpenInventory
+    void hoverOpen(Env& e, const World& w, uint32_t sid, uintptr_t plc, float dist, uint32_t now) {
+        char b[160];
+        peek.beginHover(plc, sid, w.area, w.ctrl, now);
+        fmtHoverOpen(b, sizeof b, sid, plc, dist, e.itemCount(plc));
+        e.log(b);
+        e.openInventory(plc, w.ctrl);
+        const int open = e.openFlag(plc);
+        if (open == 0 && !peek.active) {   // refused (OpenInventory gates failed)
+            fmtPeekRefused(b, sizeof b, sid, open);
+            e.log(b);
+            peekEnd(e, false);
+        }
+    }
+
     // Scan the leader's area for the nearest openable placeable; open it. Cooldown ids are released here once the leader is > CloseM away.
     void proxScan(Env& e, const World& w, uint32_t now) {
         char b[200];
@@ -438,7 +461,7 @@ struct Machine {
             World w;
             const bool wok = e.readWorld(w);
             const Sup s = e.suppress(wok);
-            if (peek.active) peekPoll(e, w, s, now, !peek.isSelect);
+            if (peek.active) peekPoll(e, w, s, now, !peek.isSelect && !peek.isHover);
             else peekExpectCheck(e, now);
             return;
         }
@@ -476,6 +499,119 @@ struct Machine {
         if (peek.expect) { dwell.reset(); peekExpectCheck(e, now); return; }
         if (take.active || s != Sup::None || !wok) { dwell.reset(); return; }
         proxScan(e, w, now);
+    }
+
+    // QL3: Hover peek tick (app+0x4B0 and empty-container cursor indicator)
+    void hoverTick(Env& e, uint32_t now) {
+        if (!cfg.enabled) {
+            if (lastEmptyCursor) { e.setEmptyCursor(false); lastEmptyCursor = false; }
+            return;
+        }
+
+        // If an active peek is NOT a hover peek (i.e. select or proximity peek is active),
+        // hover peek cannot override it.
+        if (peek.active && !peek.isHover) {
+            if (lastEmptyCursor) { e.setEmptyCursor(false); lastEmptyCursor = false; }
+            return;
+        }
+
+        World w;
+        const bool wok = e.readWorld(w);
+        const Sup s = e.suppress(wok);
+
+        // When hover peek is active:
+        if (peek.active && peek.isHover) {
+            const uint32_t hovId = e.hoverObjectId();
+            const uintptr_t hovPlc = (hovId != 0x7F000000u && hovId != 0) ? e.resolveClientPlc(hovId) : 0;
+            const bool hoveringPlc = (hovPlc != 0 && hovPlc == peek.plc);
+            const bool overList = e.overList();
+
+            if (!hoveringPlc && !overList) {
+                // Mouse has left the container and is not over the list: close cleanly
+                int sent = 0;
+                char b[200];
+                const bool resolves = (w.haveSrv && e.resolvePlc(peek.serverId) == peek.plc);
+                float dist = 1.0e9f;
+                float px = 0, py = 0;
+                if (resolves && wok && e.plcPos(peek.plc, &px, &py)) dist = dist2d(w.x, w.y, px, py);
+                const int n = resolves ? e.itemCount(peek.plc) : -1;
+                peekSendClose(e, 0, resolves, now, &sent);
+                fmtPeekClose(b, sizeof b, peek.obj, leaveName(Leave::MouseLeave), sent, dist, n);
+                e.log(b);
+                peekEnd(e, false);
+                if (lastEmptyCursor) { e.setEmptyCursor(false); lastEmptyCursor = false; }
+                hoverDwell.reset();
+                return;
+            }
+            return;
+        }
+
+        // No active peek (or waiting for Show)
+        if (peek.expect != 0 || take.active || s != Sup::None || !wok) {
+            hoverDwell.reset();
+            if (lastEmptyCursor) { e.setEmptyCursor(false); lastEmptyCursor = false; }
+            return;
+        }
+
+        const uint32_t hovId = e.hoverObjectId();
+        if (hovId == 0x7F000000u || hovId == 0) {
+            hoverDwell.reset();
+            if (lastEmptyCursor) { e.setEmptyCursor(false); lastEmptyCursor = false; }
+            return;
+        }
+
+        uintptr_t plc = e.resolveClientPlc(hovId);
+        if (!plc) {
+            hoverDwell.reset();
+            if (lastEmptyCursor) { e.setEmptyCursor(false); lastEmptyCursor = false; }
+            return;
+        }
+
+        uint32_t sid = e.serverIdForPlc(plc);
+        if (!sid) sid = e.serverIdForObj(hovId);
+
+        CandFlags f;
+        if (!e.candFlags(sid, &plc, &f) || !f.hasInv || f.locked || f.trap || !f.useable || f.isGive) {
+            hoverDwell.reset();
+            if (lastEmptyCursor) { e.setEmptyCursor(false); lastEmptyCursor = false; }
+            return;
+        }
+
+        float px = 0, py = 0;
+        float dist = 1.0e9f;
+        if (e.plcPos(plc, &px, &py)) dist = dist2d(w.x, w.y, px, py);
+
+        const int n = e.itemCount(plc);
+        if (n == 0) {
+            // Empty container: doc 12 empty cursor indicator
+            if (cfg.emptyCursor) {
+                if (!lastEmptyCursor) {
+                    char b[96];
+                    fmtEmptyCursor(b, sizeof b, sid, true);
+                    e.log(b);
+                    e.setEmptyCursor(true);
+                    lastEmptyCursor = true;
+                }
+            }
+            hoverDwell.reset();
+            return;
+        }
+
+        // Non-empty container: clear empty cursor
+        if (lastEmptyCursor) {
+            e.setEmptyCursor(false);
+            lastEmptyCursor = false;
+        }
+
+        // Check if hover peek is enabled and container is in range
+        if (!cfg.hoverPeek || dist > cfg.hoverRangeM) {
+            hoverDwell.reset();
+            return;
+        }
+
+        if (hoverDwell.update(sid, now, cfg.hoverDwellMs)) {
+            hoverOpen(e, w, sid, plc, dist, now);
+        }
     }
 
     // Sends the pending take-all Close (click take).
@@ -676,6 +812,7 @@ struct Machine {
         frame = fr;
         if (take.active) takeTick(e, now);
         proxTick(e, now);
+        hoverTick(e, now);
         listTick(e, now);
         anchorTick(now);
     }
@@ -693,7 +830,7 @@ struct Machine {
             e.log(b);
             return 0;
         }
-        if (plc && peek.onShow(objId, plc, now, frame)) {   // QL2p: the ShowContainerGui of our OpenInventory = a peek, not a take (any flag)
+        if (plc && peek.onShow(objId, plc, now, frame)) {   // QL2p/QL3: the ShowContainerGui of our OpenInventory = a peek, not a take (any flag)
             peekList.clear();
             peekView.reset(0, cfg.listRows);   // a new peek starts at the top of the list
             fmtPeekShow(b, sizeof b, objId, plc, flag, n);
@@ -711,6 +848,10 @@ struct Machine {
         // QL2: peek on select (first click shows peek under name tag)
         if (cfg.peekOnSelect) {
             if (peek.active && plc == peek.plc) {
+                if (peek.isHover) {
+                    peek.isHover = false;
+                    peek.isSelect = true;
+                }
                 peekRefresh(e, n);
                 return 1;
             }

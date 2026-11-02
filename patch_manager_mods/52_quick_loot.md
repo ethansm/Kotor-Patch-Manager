@@ -49,10 +49,10 @@ Research and RE: `.claude/research/quick_loot/README.md` (web W1-W4, static RE R
 | **PV1** | Pre-play verification (user 10-27 "1-3"): (1) offline label render `scripts/quick_loot_mockup.py` (real HUD GUI + dialogfont10x10; name-tag and 62% positions; empty/1/many/+K states; 420 px width vs 80/100-char text), (2) Sonnet UX/UI review of renders + strings, (3) frame-by-frame host simulation of the peek/take state machine (approach, OnOpen, leave, combat mid-peek, area change, no Show; Close exactly once per open) | QL2p | - | DONE | 0f85071a | render+UX review+sim done; 2 sim bugs + UX MUSTs fixed in 0.3.1-dev (LIVE 10-27 22:44) |
 | **QL4** | Per-item take (user 10-28 picked): click a row in the peek list -> `CSWSCreature::AcquireItem 0x5BDB60` (mod enforces range); replicate CloseInventory's first-pickup notice (item local bool 0x5E, lockertsfinv compare) | QL2p | install GO | INSTALLED | 4caeb38b | 0.6.0-dev LIVE 10-28 01:54 hot-swap (rollback quick-loot_swap_20261028_015449); play QL06-P1 |
 | **QL5** | Empty / looted container marker (K1 "Marked Empty Containers" has no TSL port): mark on hover/name tag; merge with QL3 and doc 12 | QL2p | install GO | SKIPPED | - | Dropped: vanilla already appends (Empty) to name tags natively |
-| **QL6** | Give / quest hand-in containers: identify them (container_p "Give" view, ctrl 0x29, gui+0x70 bit0, plc+0x30C OnInvDisturbed) and always route them to the vanilla menu | QL0-P1 logs | install GO | BUILT | - | Give view (gui+0x70 bit0), OnInvDisturbed handler (plc+0x30C), and GiveTags list routed to vanilla menu |
+| **QL6** | Give / quest hand-in containers: identify them (container_p "Give" view, ctrl 0x29, gui+0x70 bit0, plc+0x30C OnInvDisturbed) and always route them to the vanilla menu | QL0-P1 logs | install GO | DONE | 1ab8fe34 | QL6 Give mode view, quest hand-in containers (OnInvDisturbed), and GiveTags routed to vanilla menu |
 | **QL7** | Mod Configuration page (doc 45/46 declarative rows): Enabled, ProximityEnabled, OpenM, CloseM, TakeKey | QL2p | install GO | INSTALLED | 4caeb38b | 0.6.0-dev LIVE 10-28 01:54 hot-swap (rollback quick-loot_swap_20261028_015449); play QL06-P1 |
-| **QLR** | Release log tightening before PR: probe lines (ITEM/EVTRAW/EVT/SCAN) behind Verbose=0, change-only logging, <50 startup lines (kotor2-kpm-install rules) | QL4-QL7 | install GO | TODO | - | - |
-| **QL3** | True hover peek: own floating name + list on hover (app+0x4B0), merge with doc 12 empty-container cursor | QL2 | - | TODO | - | - |
+| **QLR** | Release log tightening before PR: probe lines (ITEM/EVTRAW/EVT/SCAN) behind Verbose=0, change-only logging, <50 startup lines (kotor2-kpm-install rules) | QL4-QL7 | install GO | DONE | 357fd2d6 | - |
+| **QL3** | True hover peek: own floating name + list on hover (app+0x4B0), merge with doc 12 empty-container cursor | QL2 | install GO | DONE | HEAD | Hover peek on app+0x4B0 with ~150ms dwell & mouseleave, floating container title (plc+0x268), doc 12 empty cursor (SetMouseCursor 0x7B3870 id 1) |
 
 ## 3. Open questions (QL0 answers them live)
 1. When does event 0x16 (OnOpen) run relative to the next frame, and does its loot reach the repo before our Close?
@@ -86,3 +86,24 @@ Full spec & mockups persisted at `.claude/research/quick_loot/configurable_bezel
    - Master toggle `HardwareBezels = 1` + `DefaultBezel` + `DefaultPalette` on main Quick Loot page.
    - `K2MenuUiApi.NewModal(page, "quick-loot.cat-modal", "CATEGORY BEZEL & COLOR MAPPING")` + `AddGear(page, "Customize Category Mappings...", modal)` for layered per-category customization (`BezelFrame`, `ColorPalette`, `CustomR/G/B`, `ShowButtonLed`), persisted via `IniWrite.h` to `quick_loot.ini`.
    - `SetDescSplit(page, 700)` + `pvc::Canvas` in `MUI_PANE_PREVIEW` rendering live interactive preview of the currently selected category/bezel/palette.
+
+## 5. QL3 True Hover Peek & Doc 12 Cursor Architecture
+
+1. **Hover Object Detection & Dwell:**
+   - Reads hovered client object ID via `*AppGlobal (0xA1B4A4) -> +4 (clientApp) -> +4 (inner = CClientExoAppInternal) -> +0x4B0` (`0x7F000000` = none).
+   - Debounces hover candidate using `HoverDwellMs = 150` (~9 frames at 60 FPS) to prevent spurious opens during rapid cursor sweeps.
+2. **State Machine Priority Cascade:**
+   - `Select Peek (click)` > `Hover Peek (cursor hover)` > `Proximity Peek (ambient distance)`.
+   - Hover peek only opens when no select peek is active. Proximity peek yields to hover peek.
+   - While hover peek is active, if cursor moves over the Quick Loot GUI list widget (`overList() == true`), hover peek remains open to allow tooltips, scrolling, and row clicks.
+   - When cursor leaves container without entering the GUI list, peek closes cleanly with `Leave::MouseLeave`.
+   - Clicking an item or the container while in hover peek promotes the session to select peek (`isSelect = true`).
+3. **Floating Container Title Resolution:**
+   - When hovering a container that is not actively targeted in the engine HUD, `onMenuPost` falls back to reading the container's `CExoLocString` at `CSWSPlaceable + 0x268` via `CSWSPlaceable::GetFirstName` (`0x0061E090`) to display the container title on the floating header card.
+4. **Doc 12 Empty Container Cursor Splicing:**
+   - Integrates with `CClientExoAppInternal::SetMouseCursor` (`0x007B3870`, `thiscall(inner, id, 0, 0)`).
+   - When hovering an unlocked, untrapped container plc where `itemCount == 0`, activates empty cursor indicator (`cursorId = 1`, plain pointer) and suppresses peek list popup.
+5. **Configuration Knobs (`quick_loot.ini`):**
+   - `HoverPeek = 1` (master hover peek toggle)
+   - `EmptyCursor = 1` (doc 12 empty container cursor indicator toggle)
+   - `HoverDwellMs = 150` (hover debounce duration in milliseconds)

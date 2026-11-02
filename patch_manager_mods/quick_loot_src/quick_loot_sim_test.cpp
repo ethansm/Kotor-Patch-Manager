@@ -65,6 +65,12 @@ struct Sim : Env {
     std::vector<unsigned> takeSlot;    // container slots the (sorted-list aware) takeOne actually took
     std::vector<int> sounds;           // 0.7.0-dev QL12: PlayGuiSound indices requested, in order
     void sound(int idx) override { sounds.push_back(idx); }
+    uint32_t hoverObj = 0x7F000000u;
+    bool emptyCursorActive = false;
+    uint32_t hoverObjectId() override { return hoverObj; }
+    void setEmptyCursor(bool empty) override { emptyCursorActive = empty; }
+    void hoverPlc(int idx) { hoverObj = (idx >= 0) ? objId(idx) : 0x7F000000u; }
+    void unhover() { hoverObj = 0x7F000000u; }
 
     int add(float x, float y, std::vector<Item> items = {}) {
         Obj o;
@@ -1844,6 +1850,153 @@ void scenarioQL6() {
     }
 }
 
+void scenarioQL3() {
+    {
+        const char* scn = "ql3-1 hover peek basic: hovering container triggers hover peek";
+        Sim s;
+        s.m.cfg.proxOn = false;
+        s.m.cfg.hoverPeek = true;
+        s.m.cfg.hoverDwellMs = 100;
+        const int A = s.add(1.0f, 0, {Medpac2, Pistol});
+        s.run(5);
+        s.hoverPlc(A);
+        s.run(4);   // 64 ms < 100 ms dwell
+        CHK("peek not yet active during dwell", !s.m.peek.active);
+        s.run(10);   // dwell elapses + showDelay (3 frames) -> hover peek activates
+        CHK("hover peek active", s.m.peek.active && s.m.peek.isHover && !s.m.peek.isSelect);
+        CHK("HOVER-OPEN logged", s.logged("HOVER-OPEN"));
+        CHK("empty cursor not active", !s.emptyCursorActive);
+        s.finishCheck(scn);
+    }
+    {
+        const char* scn = "ql3-2 hover peek mouse leave: moving mouse away closes peek cleanly";
+        Sim s;
+        s.m.cfg.proxOn = false;
+        s.m.cfg.hoverPeek = true;
+        s.m.cfg.hoverDwellMs = 50;
+        const int A = s.add(1.0f, 0, {Medpac2});
+        s.run(5);
+        s.hoverPlc(A);
+        s.run(10);
+        CHK("hover peek active", s.m.peek.active && s.m.peek.isHover);
+        s.unhover();   // mouse leaves container
+        s.run(2);
+        CHK("hover peek closed", !s.m.peek.active);
+        CHK("sent Close flag 0 (items stay)", s.count(A_SEND) == 1 && s.nth(A_SEND, 0)->flag == 0);
+        CHK("PEEK-CLOSE mouseleave logged", s.logged("mouseleave"));
+        CHK("not added to cooldown set on hover leave", !s.m.cool.contains(s.objs[static_cast<size_t>(A)].sid));
+        s.finishCheck(scn);
+    }
+    {
+        const char* scn = "ql3-3 hover peek over list hold: moving mouse onto list keeps peek open";
+        Sim s;
+        s.m.cfg.proxOn = false;
+        s.m.cfg.hoverPeek = true;
+        s.m.cfg.hoverDwellMs = 50;
+        const int A = s.add(1.0f, 0, {Medpac2});
+        s.run(5);
+        s.hoverPlc(A);
+        s.run(10);
+        CHK("hover peek active", s.m.peek.active && s.m.peek.isHover);
+        // Player moves mouse from 3D object onto the Quick Loot list
+        s.unhover();
+        s.hover = true;   // overList is true
+        s.run(20);
+        CHK("peek remains active while over list", s.m.peek.active && s.m.peek.isHover);
+        // Mouse leaves the list into empty space
+        s.hover = false;
+        s.run(2);
+        CHK("peek closes after leaving list", !s.m.peek.active);
+        s.finishCheck(scn);
+    }
+    {
+        const char* scn = "ql3-4 empty container cursor (doc 12): hovering empty container shows empty cursor";
+        Sim s;
+        s.m.cfg.proxOn = false;
+        s.m.cfg.hoverPeek = true;
+        s.m.cfg.emptyCursor = true;
+        const int A = s.add(1.0f, 0, {});   // empty container (0 items)
+        s.run(5);
+        s.hoverPlc(A);
+        s.run(5);
+        CHK("empty cursor active", s.emptyCursorActive);
+        CHK("peek did not open for empty container", !s.m.peek.active);
+        CHK("EMPTY-CURSOR logged", s.logged("EMPTY-CURSOR"));
+        s.unhover();
+        s.run(2);
+        CHK("empty cursor deactivated on unhover", !s.emptyCursorActive);
+        s.finishCheck(scn);
+    }
+    {
+        const char* scn = "ql3-5 hover peek take: take all via TakeKey F";
+        Sim s;
+        s.m.cfg.proxOn = false;
+        s.m.cfg.hoverPeek = true;
+        s.m.cfg.hoverDwellMs = 50;
+        const int A = s.add(1.0f, 0, {Medpac2, Pistol});
+        s.run(5);
+        s.hoverPlc(A);
+        s.run(10);
+        CHK("hover peek active", s.m.peek.active && s.m.peek.isHover);
+        s.key = true; s.run(2); s.key = false;
+        CHK("take-all closes peek", !s.m.peek.active);
+        CHK("sent Close flag 1 (take all)", s.count(A_SEND) == 1 && s.nth(A_SEND, 0)->flag == 1);
+        CHK("PEEK-TAKE logged", s.logged("PEEK-TAKE"));
+        s.finishCheck(scn);
+    }
+    {
+        const char* scn = "ql3-6 non-override: active proximity peek not interrupted by hover";
+        Sim s;
+        s.m.cfg.proxOn = true;
+        s.m.cfg.hoverPeek = true;
+        s.m.cfg.hoverDwellMs = 50;
+        const int A = s.add(1.0f, 0, {Medpac2});
+        const int B = s.add(2.0f, 0, {Pistol});
+        s.run(35);   // proximity scan opens A
+        CHK("proximity peek active on A", s.m.peek.active && !s.m.peek.isHover && s.m.peek.plc == s.objs[static_cast<size_t>(A)].plc);
+        // Player hovers container B
+        s.hoverPlc(B);
+        s.run(20);
+        CHK("proximity peek on A still active, B did not override", s.m.peek.active && s.m.peek.plc == s.objs[static_cast<size_t>(A)].plc);
+        s.finishCheck(scn);
+    }
+    {
+        const char* scn = "ql3-7 locked/trapped/give containers ignored by hover peek";
+        Sim s;
+        s.m.cfg.proxOn = false;
+        s.m.cfg.hoverPeek = true;
+        s.m.cfg.hoverDwellMs = 50;
+        const int A = s.add(1.0f, 0, {Medpac2});
+        s.objs[static_cast<size_t>(A)].locked = 1;
+        s.run(5);
+        s.hoverPlc(A);
+        s.run(20);
+        CHK("locked container did not open", !s.m.peek.active);
+        s.finishCheck(scn);
+    }
+    {
+        const char* scn = "ql3-8 click promotion: clicking hover-peeked container promotes to select peek";
+        Sim s;
+        s.m.cfg.proxOn = false;
+        s.m.cfg.peekOnSelect = true;
+        s.m.cfg.hoverPeek = true;
+        s.m.cfg.hoverDwellMs = 50;
+        const int A = s.add(1.0f, 0, {Medpac2});
+        s.run(5);
+        s.hoverPlc(A);
+        s.run(10);
+        CHK("hover peek active", s.m.peek.active && s.m.peek.isHover);
+        // Player clicks container A
+        s.click(A);
+        CHK("promoted to select peek", s.m.peek.active && s.m.peek.isSelect && !s.m.peek.isHover);
+        // Unhovering does NOT close select peek
+        s.unhover();
+        s.run(20);
+        CHK("select peek remains active after unhover", s.m.peek.active && s.m.peek.isSelect);
+        s.finishCheck(scn);
+    }
+}
+
 }   // namespace
 
 int main() {
@@ -1865,5 +2018,6 @@ int main() {
     scenarioO();
     scenarioQL2();
     scenarioQL6();
+    scenarioQL3();
     return kt::Report("quick_loot_sim_test");
 }
