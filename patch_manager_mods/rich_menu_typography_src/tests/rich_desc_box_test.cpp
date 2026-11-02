@@ -47,33 +47,6 @@ static void fakeOrigAddControls2(void* listbox, void** pControls, int count,
     }
 }
 
-static int mockMeasureTextHeight(uintptr_t /*ctl*/, const char* text, int width, const char* font = nullptr) {
-    if (!text || !*text) return 0;
-    int lineHeight = 14;
-    if (font) {
-        if (strcmp(font, rmt::kFontSub) == 0 || strstr(font, "10x10") != nullptr) {
-            lineHeight = 12;
-        } else if (strcmp(font, rmt::kFontTitle) == 0 || (strstr(font, "16x16") != nullptr && strstr(font, "dialog") != nullptr)) {
-            lineHeight = 16;
-        } else if (strcmp(font, rmt::kFontDesc) == 0 || strstr(font, "fnt_d") != nullptr || strstr(font, "fnt_") != nullptr) {
-            lineHeight = 14;
-        }
-    }
-    const int charsPerLine = (width > 35) ? (width / 7) : 28;
-    const int halfLine = lineHeight / 2;
-    int total = 0;
-    const char* p = text;
-    while (*p) {
-        const char* start = p;
-        while (*p && *p != '\n') ++p;
-        const int plen = static_cast<int>(p - start);
-        if (plen == 0) total += halfLine;
-        else total += ((plen + charsPerLine - 1) / charsPerLine) * lineHeight;
-        if (*p == '\n') ++p;
-    }
-    if (total < lineHeight) total = lineHeight;
-    return total;
-}
 
 struct MockListBox {
     alignas(16) uint8_t raw[0x300];
@@ -147,7 +120,7 @@ static void* testArenaAlloc(unsigned n) {
 
 void setupEnvironment() {
     g_stubVirtualQueryAll = true;
-    rmt::g_measureTextHeight = mockMeasureTextHeight;
+    rmt::g_measureTextHeight = nullptr; // native calibrated logic (no container inflation)
 
     void* vp = mmap(reinterpret_cast<void*>(0x00987000), 0x10000,
                     PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
@@ -473,7 +446,50 @@ void testCalibratedMeasureTextHeight() {
     int hWrap = rmt::measureTextHeight(0, "1234567890123456789012345", 70, rmt::kFontDesc);
     kt::CheckEq("Calib: wrap with charsPerLine=width/7 is 3 lines (42px)", hWrap, 42);
 
-    rmt::g_measureTextHeight = mockMeasureTextHeight; // restore mock
+    // Short subtitle and rules calibrated metrics (Phase 2 RMTC5)
+    int hSub = rmt::measureTextHeight(0, "Fully Upgradeable", 240, rmt::kFontSub);
+    kt::CheckEq("Calib: short subtitle is 12px", hSub, 12);
+
+    int hRules = rmt::measureTextHeight(0, "Damage: Energy, 4-16\nAttack Modifier: +3", 240, rmt::getRulesFont());
+    kt::CheckEq("Calib: 2-line rules is 28px", hRules, 28);
+}
+
+void testNoInflationWithUnreflowedControl() {
+    rmt::g_measureTextHeight = nullptr; // Ensure native logic is active
+
+    // Simulate an unreflowed label whose textObj has a vtable with an inflated GetFormattedHeight
+    alignas(16) static uint8_t mockInflatedLabel[guikit::LabelSize];
+    memset(mockInflatedLabel, 0, sizeof(mockInflatedLabel));
+    *reinterpret_cast<uint32_t*>(mockInflatedLabel + 0) = guikit::LabelVtable;
+
+    // Fake vtable with GetFormattedHeight at offset 0x08 (slot 2) returning 180 (container height)
+    static uintptr_t s_fakeVt[4] = {
+        0,
+        0,
+        reinterpret_cast<uintptr_t>(+[](void*) -> int { return 180; }),
+        0
+    };
+    const uintptr_t textSubObj = reinterpret_cast<uintptr_t>(mockInflatedLabel + guikit::Label_Text);
+    *reinterpret_cast<uintptr_t*>(textSubObj) = reinterpret_cast<uintptr_t>(s_fakeVt);
+    *reinterpret_cast<uint32_t*>(textSubObj + guikit::Text_Renderer) = 0x1234;
+
+    const uintptr_t ctl = reinterpret_cast<uintptr_t>(mockInflatedLabel);
+
+    // Short subtitle: 1 line in dialogfont10x10 must be 12px, NOT container height (180px)
+    const int hSub = rmt::measureTextHeight(ctl, "Fully Upgradeable", 240, rmt::kFontSub);
+    kt::CheckEq("NoInflate: short subtitle is calibrated 12px, not container height (180)", hSub, 12);
+
+    // Short rules (2 lines in fnt_d16x16) must be 28px, NOT container height (180px)
+    const int hRules = rmt::measureTextHeight(ctl, "Damage: Energy, 4-16\nAttack Modifier: +3", 240, rmt::getRulesFont());
+    kt::CheckEq("NoInflate: short rules is calibrated 28px, not container height (180)", hRules, 28);
+
+    // Single rule line in fnt_d16x16 must be 14px, NOT container height (180px)
+    const int hSingleRule = rmt::measureTextHeight(ctl, "Defense Bonus: 12", 240, rmt::getRulesFont());
+    kt::CheckEq("NoInflate: single rule line is calibrated 14px, not container height (180)", hSingleRule, 14);
+
+    // Short title: 1 line in dialogfont16x16 must be 16px, NOT container height (180px)
+    const int hTitle = rmt::measureTextHeight(ctl, "Blaster Pistol", 240, rmt::kFontTitle);
+    kt::CheckEq("NoInflate: short title is calibrated 16px, not container height (180)", hTitle, 16);
 }
 
 } // namespace
@@ -485,6 +501,7 @@ int main() {
     testArmorCompactLayout();
     testHeightClampingAgainstListBox();
     testCalibratedMeasureTextHeight();
+    testNoInflationWithUnreflowedControl();
     testInterceptionFilterGuards();
     testPoolReuseAndResolutionChange();
     return kt::Report("rich_desc_box_test");

@@ -1,5 +1,5 @@
 // rmt_page_test.cpp -- Host test of the Rich Menu Typography Mod Configuration page (RichMenuTypographyPage.h, Doc 53 Section 6):
-// Shipped schema loads via mcdecl::Page::load, 4 rows, string budgets <= 95 bytes, row ids <= 31 bytes,
+// Shipped schema loads via mcdecl::Page::load, 6 rows, string budgets <= 95 bytes, row ids <= 31 bytes,
 // pure applyRow clamping, fontIndexFor case-insensitivity, defaults match rich_menu_typography.ini,
 // and iniw::setKey preserves comments and Verbose=0 when writing BodyFont.
 
@@ -21,13 +21,13 @@ static void test_schema_load() {
         printf("Schema load error: %s\n", err);
     }
     kt::Check("schema loads via mcdecl::Page::load", loaded);
-    kt::CheckEq("schema declares 5 rows", g_page.decl.nRows, 5);
+    kt::CheckEq("schema declares 6 rows", g_page.decl.nRows, 6);
     kt::Check("page name is Rich Menu Typography", strcmp(g_page.decl.name, "Rich Menu Typography") == 0);
     kt::Check("page title is Rich Menu Typography", strcmp(g_page.decl.title, "Rich Menu Typography") == 0);
 
     // Row id constants and order
-    const char* expectedIds[5] = { kRowInline, kRowRichDesc, kRowStats, kRowFont, kRowRulesFont };
-    for (int i = 0; i < 5 && i < g_page.decl.nRows; ++i) {
+    const char* expectedIds[6] = { kRowInline, kRowRichDesc, kRowStats, kRowFont, kRowRulesFont, kRowReset };
+    for (int i = 0; i < 6 && i < g_page.decl.nRows; ++i) {
         kt::Check("row id matches constant", strcmp(g_page.decl.rows[i].id, expectedIds[i]) == 0);
     }
 
@@ -74,6 +74,13 @@ static void test_schema_load() {
               strcmp(r4.choices[0], "fnt_d16x16") == 0 &&
               strcmp(r4.choices[1], "dialogfont10x10") == 0 &&
               strcmp(r4.choices[2], "dialogfont16x16") == 0);
+
+    // Toggle 6: reset (unbound)
+    const mcdecl::RowDecl& r5 = g_page.decl.rows[5];
+    kt::Check("row 5 is unbound toggle with def=0",
+              r5.kind == mcdecl::K_TOGGLE && r5.def == 0 &&
+              r5.ini[0] == '\0' && r5.section[0] == '\0' && r5.key[0] == '\0' &&
+              strcmp(r5.id, kRowReset) == 0);
 }
 
 static void test_string_budgets() {
@@ -111,9 +118,9 @@ static void test_desc_headers() {
     kt::Check("page desc starts with Word: header", isWordHeader(g_page.decl.desc));
     kt::Check("page desc <= 95 bytes", strlen(g_page.decl.desc) <= 95);
 
-    // Schema still loads with all entries (1 page + 5 rows = 6 schema entries)
-    kt::CheckEq("schema still loads with 5 rows", g_page.decl.nRows, 5);
-    kt::CheckEq("schema still loads with 6 entries (page + rows)", 1 + g_page.decl.nRows, 6);
+    // Schema still loads with all entries (1 page + 6 rows = 7 schema entries)
+    kt::CheckEq("schema still loads with 6 rows", g_page.decl.nRows, 6);
+    kt::CheckEq("schema still loads with 7 entries (page + rows)", 1 + g_page.decl.nRows, 7);
 
     for (int i = 0; i < g_page.decl.nRows; ++i) {
         const mcdecl::RowDecl& r = g_page.decl.rows[i];
@@ -188,6 +195,13 @@ static void test_apply_row() {
     kt::CheckEq("rulesfont 99 clamps to 2", applyRow(live, kRowRulesFont, 99), kFontCount - 1);
     kt::CheckEq("live rulesFontIdx is 2 after 99 clamp", live.rulesFontIdx, kFontCount - 1);
 
+    // reset toggle in applyRow (neutral state: returns 1 if != 0 else 0, live untouched)
+    kt::CheckEq("reset toggle off", applyRow(live, kRowReset, 0), 0);
+    kt::CheckEq("reset toggle on", applyRow(live, kRowReset, 1), 1);
+    kt::CheckEq("reset toggle 2", applyRow(live, kRowReset, 2), 1);
+    kt::CheckEq("reset toggle -1", applyRow(live, kRowReset, -1), 1);
+    kt::Check("live state untouched by reset toggle in applyRow", live.fontIdx == 2 && !live.stats);
+
     // unknown id passthrough
     kt::CheckEq("unknown id passthrough", applyRow(live, "some_unknown_row", 42), 42);
     kt::Check("live state untouched by unknown id", live.fontIdx == 2 && !live.stats);
@@ -233,6 +247,8 @@ static void test_defaults_match_ini() {
     kt::CheckEq("schema RichDescBox def=1", g_page.decl.rows[1].def, 1);
     kt::CheckEq("schema StatHierarchy def=1", g_page.decl.rows[2].def, 1);
     kt::CheckEq("schema BodyFont choice def=0", g_page.decl.rows[3].def, 0);
+    kt::CheckEq("schema RulesFont choice def=0", g_page.decl.rows[4].def, 0);
+    kt::CheckEq("schema Reset def=0", g_page.decl.rows[5].def, 0);
 
     kt::CheckEq("BodyFont default fnt_d16x16 maps to index 0", fontIndexFor("fnt_d16x16"), 0);
 

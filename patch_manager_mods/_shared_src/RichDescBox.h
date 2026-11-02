@@ -110,17 +110,9 @@ inline int measureTextHeight(uintptr_t ctl, const char* text, int width, const c
     if (g_measureTextHeight) {
         return g_measureTextHeight(ctl, text, width, font);
     }
-    if (ctl && guikit::detail::textObjOk(ctl)) {
-        const uintptr_t textObj = ctl + guikit::Label_Text;
-        uint32_t vt = 0;
-        if (guikit::detail::rd32(textObj, 0, &vt) && vt) {
-            uint32_t fn = 0;
-            if (guikit::detail::rd32(vt, kTextVtOff_GetFormattedHeight, &fn) && fn) {
-                int h = reinterpret_cast<int(__thiscall*)(void*)>(static_cast<uintptr_t>(fn))(reinterpret_cast<void*>(textObj));
-                if (h > 0) return h;
-            }
-        }
-    }
+    // Pooled labels in inventory screen have unreflowed textObj returning inflated parent
+    // container height (150-200px). Rely directly on calibrated character metrics below.
+    (void)ctl;
     if (!text || !*text) return 0;
 
     int lineHeight = 14;
@@ -450,6 +442,8 @@ struct RichDescBox {
         s_inPopulate = true;
         origAddControls2(listbox, outControls, outCount, /*bAutoDelete=*/0, /*bRestoreExtents=*/0, /*bVariableItemHeights=*/1);
         s_inPopulate = false;
+
+        (void)guikit::detail::wr<uint16_t>(reinterpret_cast<uintptr_t>(listbox), kListBoxOff_TopItem, 0);
 
         return true;
     }

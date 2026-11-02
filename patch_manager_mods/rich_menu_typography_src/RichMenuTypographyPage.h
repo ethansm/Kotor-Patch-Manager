@@ -13,6 +13,7 @@ constexpr const char* kRowRichDesc  = "richdesc";
 constexpr const char* kRowStats     = "stats";
 constexpr const char* kRowFont      = "font";
 constexpr const char* kRowRulesFont = "rulesfont";
+constexpr const char* kRowReset     = "reset";
 
 constexpr int kFontCount = 3;
 constexpr const char* const kFonts[kFontCount] = {
@@ -32,7 +33,7 @@ desc = "Effect: Multi-font headers, +colored keywords, and stat label hierarchy.
 id = "inline"
 kind = "toggle"
 label = "Coloured keywords"
-desc = "Effect: On: +Keywords coloured in descriptions. Off: -Plain text."
+desc = "Effect: ON: Damage: 3-13 (+1-6 Energy). OFF: Plain monochrome text."
 default = 1
 ini = "rich_menu_typography.ini"
 section = "General"
@@ -42,7 +43,7 @@ key = "InlineColoring"
 id = "richdesc"
 kind = "toggle"
 label = "Multi-font descriptions"
-desc = "Effect: On: +Multi-font titles and rules layout. Off: -Uniform body text."
+desc = "Effect: ON: Large title, compact rules. OFF: Uniform unstyled body."
 default = 1
 ini = "rich_menu_typography.ini"
 section = "General"
@@ -52,7 +53,7 @@ key = "RichDescBox"
 id = "stats"
 kind = "toggle"
 label = "Stat label hierarchy"
-desc = "Effect: On: +Key combat stats highlighted. Off: -Uniform stat labels."
+desc = "Effect: ON: Highlighted combat stats (+2 Str, -1 Def). OFF: Uniform teal."
 default = 1
 ini = "rich_menu_typography.ini"
 section = "General"
@@ -62,7 +63,7 @@ key = "StatHierarchy"
 id = "font"
 kind = "list"
 label = "Body font"
-desc = "Effect: Body font face used for item, feat, and power descriptions."
+desc = "Effect: Sample: The quick brown fox jumps over the lazy dog (0123456789)."
 default = 0
 choices = ["fnt_d16x16", "dialogfont10x10", "dialogfont16x16"]
 
@@ -70,9 +71,16 @@ choices = ["fnt_d16x16", "dialogfont10x10", "dialogfont16x16"]
 id = "rulesfont"
 kind = "list"
 label = "Rules font"
-desc = "Effect: Font face used for stats, requirements, and rules blocks."
+desc = "Effect: Sample: Feats Required: Jedi Defense. Damage: Physical, 3-13."
 default = 0
 choices = ["fnt_d16x16", "dialogfont10x10", "dialogfont16x16"]
+
+[[row]]
+id = "reset"
+kind = "toggle"
+label = "Reset to Defaults"
+desc = "Action: Toggle to restore factory default typography and font choices."
+default = 0
 )TOML";
 
 struct Live {
@@ -113,6 +121,9 @@ inline const char* fontName(int idx) {
 
 inline int32_t applyRow(Live& live, const char* id, int32_t requested) {
     if (!id) return requested;
+    if (strcmp(id, kRowReset) == 0) {
+        return (requested != 0) ? 1 : 0;
+    }
     if (strcmp(id, kRowInline) == 0) {
         const int32_t v = (requested < 0) ? 0 : ((requested > 1) ? 1 : requested);
         live.inlineColoring = (v != 0);

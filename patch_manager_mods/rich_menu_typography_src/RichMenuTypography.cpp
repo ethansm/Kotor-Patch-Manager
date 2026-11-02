@@ -65,6 +65,31 @@ void mcLog(int level, const char* msg) {
 }
 
 int32_t pageOnChange(void* /*user*/, int /*row*/, const char* id, int32_t requested, int /*dir*/) {
+    if (id && strcmp(id, rmtpage::kRowReset) == 0 && requested != 0) {
+        g_live.inlineColoring = true;
+        g_live.richDesc = true;
+        g_live.stats = true;
+        g_live.fontIdx = 0;
+        g_live.rulesFontIdx = 0;
+        g_inlineColoring = true;
+        g_richDescBox = true;
+        g_statHierarchy = true;
+        rmt::setBodyFont(rmtpage::fontName(0));
+        rmt::setRulesFont(rmtpage::fontName(0));
+        iniw::updateFile(rmtpage::kIniFile, rmtpage::kSection, "InlineColoring", "1");
+        iniw::updateFile(rmtpage::kIniFile, rmtpage::kSection, "RichDescBox", "1");
+        iniw::updateFile(rmtpage::kIniFile, rmtpage::kSection, "StatHierarchy", "1");
+        iniw::updateFile(rmtpage::kIniFile, rmtpage::kSection, "BodyFont", rmtpage::fontName(0));
+        iniw::updateFile(rmtpage::kIniFile, rmtpage::kSection, "RulesFont", rmtpage::fontName(0));
+        g_page.setValue(rmtpage::kRowInline, 1);
+        g_page.setValue(rmtpage::kRowRichDesc, 1);
+        g_page.setValue(rmtpage::kRowStats, 1);
+        g_page.setValue(rmtpage::kRowFont, 0);
+        g_page.setValue(rmtpage::kRowRulesFont, 0);
+        g_page.setValue(rmtpage::kRowReset, 0);
+        if (KpLog_HasCore()) KP_LOG(chMain, "PAGE reset to factory defaults");
+        return 0;
+    }
     const int32_t fin = rmtpage::applyRow(g_live, id, requested);
     g_inlineColoring = g_live.inlineColoring;
     g_richDescBox = g_live.richDesc;
@@ -72,10 +97,16 @@ int32_t pageOnChange(void* /*user*/, int /*row*/, const char* id, int32_t reques
     if (id && strcmp(id, rmtpage::kRowFont) == 0) {
         rmt::setBodyFont(rmtpage::fontName(g_live.fontIdx));
         iniw::updateFile(rmtpage::kIniFile, rmtpage::kSection, "BodyFont", rmtpage::fontName(g_live.fontIdx));
+        if (g_mcMenu.ok() && g_mcMenu.p && g_mcMenu.p->SetDesc) {
+            g_mcMenu.p->SetDesc(g_page.page, "Body Font Preview:\nThe quick brown fox jumps over the lazy dog.\nDamage: 3-13 (+1-6 Energy)");
+        }
     }
     if (id && strcmp(id, rmtpage::kRowRulesFont) == 0) {
         rmt::setRulesFont(rmtpage::fontName(g_live.rulesFontIdx));
         iniw::updateFile(rmtpage::kIniFile, rmtpage::kSection, "RulesFont", rmtpage::fontName(g_live.rulesFontIdx));
+        if (g_mcMenu.ok() && g_mcMenu.p && g_mcMenu.p->SetDesc) {
+            g_mcMenu.p->SetDesc(g_page.page, "Rules Font Preview:\nFeats Required: Weapon Proficiency\nDefense Bonus: +2\nDamage: 3-13");
+        }
     }
     if (g_pageLogs < 20) {
         ++g_pageLogs;
