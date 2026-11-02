@@ -71,6 +71,10 @@ int32_t pageOnChange(void* /*user*/, int /*row*/, const char* id, int32_t reques
         rmt::setBodyFont(rmtpage::fontName(g_live.fontIdx));
         iniw::updateFile(rmtpage::kIniFile, rmtpage::kSection, "BodyFont", rmtpage::fontName(g_live.fontIdx));
     }
+    if (id && strcmp(id, rmtpage::kRowRulesFont) == 0) {
+        rmt::setRulesFont(rmtpage::fontName(g_live.rulesFontIdx));
+        iniw::updateFile(rmtpage::kIniFile, rmtpage::kSection, "RulesFont", rmtpage::fontName(g_live.rulesFontIdx));
+    }
     if (g_pageLogs < 20) {
         ++g_pageLogs;
         if (KpLog_HasCore()) {
@@ -82,6 +86,7 @@ int32_t pageOnChange(void* /*user*/, int /*row*/, const char* id, int32_t reques
 
 void pageOnEnter(void* /*user*/) {
     g_page.setValue(rmtpage::kRowFont, rmtpage::fontIndexFor(rmt::getBodyFont()));
+    g_page.setValue(rmtpage::kRowRulesFont, rmtpage::fontIndexFor(rmt::getRulesFont()));
 }
 
 void pageInit(const KPatchApi* api) {
@@ -109,6 +114,7 @@ void pageInit(const KPatchApi* api) {
     g_live.richDesc = g_richDescBox;
     g_live.stats = g_statHierarchy;
     g_live.fontIdx = rmtpage::fontIndexFor(rmt::getBodyFont());
+    g_live.rulesFontIdx = rmtpage::fontIndexFor(rmt::getRulesFont());
 }
 
 void pagePoll() {
@@ -431,9 +437,13 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     GetPrivateProfileStringA("General", "BodyFont", rmt::kFontDesc, s_bodyFontBuf, sizeof(s_bodyFontBuf), iniPath);
     rmt::setBodyFont(s_bodyFontBuf);
 
+    static char s_rulesFontBuf[32] = {0};
+    GetPrivateProfileStringA("General", "RulesFont", rmt::kFontDesc, s_rulesFontBuf, sizeof(s_rulesFontBuf), iniPath);
+    rmt::setRulesFont(s_rulesFontBuf);
+
     if (KpLog_HasCore()) {
-        KP_LOG(chMain, "INIT rich-menu-typography inlineColoring=%d richDescBox=%d statHierarchy=%d bodyFont=%s verbose=%d",
-               g_inlineColoring ? 1 : 0, g_richDescBox ? 1 : 0, g_statHierarchy ? 1 : 0, rmt::getBodyFont(), g_verbose ? 1 : 0);
+        KP_LOG(chMain, "INIT rich-menu-typography inlineColoring=%d richDescBox=%d statHierarchy=%d bodyFont=%s rulesFont=%s verbose=%d",
+               g_inlineColoring ? 1 : 0, g_richDescBox ? 1 : 0, g_statHierarchy ? 1 : 0, rmt::getBodyFont(), rmt::getRulesFont(), g_verbose ? 1 : 0);
     }
 
     pageInit(api);

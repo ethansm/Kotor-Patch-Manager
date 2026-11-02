@@ -21,13 +21,13 @@ static void test_schema_load() {
         printf("Schema load error: %s\n", err);
     }
     kt::Check("schema loads via mcdecl::Page::load", loaded);
-    kt::CheckEq("schema declares 4 rows", g_page.decl.nRows, 4);
+    kt::CheckEq("schema declares 5 rows", g_page.decl.nRows, 5);
     kt::Check("page name is Rich Menu Typography", strcmp(g_page.decl.name, "Rich Menu Typography") == 0);
     kt::Check("page title is Rich Menu Typography", strcmp(g_page.decl.title, "Rich Menu Typography") == 0);
 
     // Row id constants and order
-    const char* expectedIds[4] = { kRowInline, kRowRichDesc, kRowStats, kRowFont };
-    for (int i = 0; i < 4 && i < g_page.decl.nRows; ++i) {
+    const char* expectedIds[5] = { kRowInline, kRowRichDesc, kRowStats, kRowFont, kRowRulesFont };
+    for (int i = 0; i < 5 && i < g_page.decl.nRows; ++i) {
         kt::Check("row id matches constant", strcmp(g_page.decl.rows[i].id, expectedIds[i]) == 0);
     }
 
@@ -64,6 +64,16 @@ static void test_schema_load() {
               strcmp(r3.choices[0], "fnt_d16x16") == 0 &&
               strcmp(r3.choices[1], "dialogfont10x10") == 0 &&
               strcmp(r3.choices[2], "dialogfont16x16") == 0);
+
+    // List 5: rulesfont (unbound)
+    const mcdecl::RowDecl& r4 = g_page.decl.rows[4];
+    kt::Check("row 4 is unbound list with 3 choices and def=0",
+              r4.kind == mcdecl::K_LIST && r4.def == 0 &&
+              r4.nChoices == kFontCount &&
+              r4.ini[0] == '\0' && r4.section[0] == '\0' && r4.key[0] == '\0' &&
+              strcmp(r4.choices[0], "fnt_d16x16") == 0 &&
+              strcmp(r4.choices[1], "dialogfont10x10") == 0 &&
+              strcmp(r4.choices[2], "dialogfont16x16") == 0);
 }
 
 static void test_string_budgets() {
@@ -88,7 +98,7 @@ static void test_string_budgets() {
 static void test_apply_row() {
     Live live;
     // initial state
-    kt::Check("initial live defaults", live.inlineColoring && live.richDesc && live.stats && live.fontIdx == 0);
+    kt::Check("initial live defaults", live.inlineColoring && live.richDesc && live.stats && live.fontIdx == 0 && live.rulesFontIdx == 0);
 
     // toggle 0/1 round-trip
     kt::CheckEq("inline toggle off", applyRow(live, kRowInline, 0), 0);
@@ -133,6 +143,18 @@ static void test_apply_row() {
     kt::CheckEq("live fontIdx is 2 after kFontCount clamp", live.fontIdx, kFontCount - 1);
     kt::CheckEq("font 99 clamps to 2", applyRow(live, kRowFont, 99), kFontCount - 1);
     kt::CheckEq("live fontIdx is 2 after 99 clamp", live.fontIdx, kFontCount - 1);
+
+    // rulesfont -1 and kFontCount clamp
+    kt::CheckEq("rulesfont -1 clamps to 0", applyRow(live, kRowRulesFont, -1), 0);
+    kt::CheckEq("live rulesFontIdx is 0", live.rulesFontIdx, 0);
+    kt::CheckEq("rulesfont 1 valid", applyRow(live, kRowRulesFont, 1), 1);
+    kt::CheckEq("live rulesFontIdx is 1", live.rulesFontIdx, 1);
+    kt::CheckEq("rulesfont 2 valid", applyRow(live, kRowRulesFont, 2), 2);
+    kt::CheckEq("live rulesFontIdx is 2", live.rulesFontIdx, 2);
+    kt::CheckEq("rulesfont kFontCount (3) clamps to 2", applyRow(live, kRowRulesFont, kFontCount), kFontCount - 1);
+    kt::CheckEq("live rulesFontIdx is 2 after kFontCount clamp", live.rulesFontIdx, kFontCount - 1);
+    kt::CheckEq("rulesfont 99 clamps to 2", applyRow(live, kRowRulesFont, 99), kFontCount - 1);
+    kt::CheckEq("live rulesFontIdx is 2 after 99 clamp", live.rulesFontIdx, kFontCount - 1);
 
     // unknown id passthrough
     kt::CheckEq("unknown id passthrough", applyRow(live, "some_unknown_row", 42), 42);

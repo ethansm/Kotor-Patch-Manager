@@ -118,12 +118,18 @@ inline bool isRuleHeaderPrefix(const char* s, size_t len) noexcept {
     while (len > 0 && (s[len - 1] == ':' || isSpaceChar(s[len - 1]))) { --len; }
     if (len == 0) return false;
 
-    if (eqNoCaseN(s, "FEATS REQUIRED", len) || eqNoCaseN(s, "FEAT REQUIRED", len)) return true;
-    if (eqNoCaseN(s, "REQUIREMENTS", len) || eqNoCaseN(s, "REQUIREMENT", len)) return true;
-    if (eqNoCaseN(s, "ATTRIBUTES REQUIRED", len) || eqNoCaseN(s, "ATTRIBUTE REQUIRED", len)) return true;
-    if (eqNoCaseN(s, "CANNOT EQUIP", len)) return true;
-    if (eqNoCaseN(s, "RESTRICTED", len)) return true;
-    if (eqNoCaseN(s, "USER LIMITATION", len)) return true;
+    auto matchPrefix = [](const char* str, size_t l, const char* target, size_t tlen) {
+        if (l < tlen) return false;
+        if (!eqNoCaseN(str, target, tlen)) return false;
+        return l == tlen || isSpaceChar(str[tlen]) || str[tlen] == ':';
+    };
+
+    if (matchPrefix(s, len, "FEATS REQUIRED", 14) || matchPrefix(s, len, "FEAT REQUIRED", 13)) return true;
+    if (matchPrefix(s, len, "REQUIREMENTS", 12) || matchPrefix(s, len, "REQUIREMENT", 11)) return true;
+    if (matchPrefix(s, len, "ATTRIBUTES REQUIRED", 19) || matchPrefix(s, len, "ATTRIBUTE REQUIRED", 18)) return true;
+    if (matchPrefix(s, len, "CANNOT EQUIP", 12)) return true;
+    if (matchPrefix(s, len, "RESTRICTED", 10)) return true;
+    if (matchPrefix(s, len, "USER LIMITATION", 15)) return true;
     return false;
 }
 
@@ -429,14 +435,8 @@ inline bool splitDescSections(const char* rawText, DescSections* out) noexcept {
         const size_t tlen = static_cast<size_t>(te - ts);
 
         if (first.span.kind == LineKind::Header && (nLines == 1 || lines[1].span.kind == LineKind::Prose)) {
-            const bool isLimitation = (tlen >= 12 && eqNoCaseN(ts, "CANNOT EQUIP", 12)) ||
-                                      (tlen >= 10 && eqNoCaseN(ts, "RESTRICTED", 10)) ||
-                                      (tlen >= 15 && eqNoCaseN(ts, "USER LIMITATION", 15)) ||
-                                      eqNoCaseN(ts, "CANNOT EQUIP", tlen) ||
-                                      eqNoCaseN(ts, "RESTRICTED", tlen) ||
-                                      eqNoCaseN(ts, "USER LIMITATION", tlen);
-
-            if (!isLimitation) {
+            const bool isRuleHdr = isRuleHeaderPrefix(ts, tlen);
+            if (!isRuleHdr) {
                 const size_t copyLen = (tlen > 0 && te[-1] == ':') ? tlen - 1 : tlen;
                 const size_t cap = sizeof(out->title) - 1;
                 const size_t n = copyLen < cap ? copyLen : cap;
@@ -467,6 +467,7 @@ inline bool splitDescSections(const char* rawText, DescSections* out) noexcept {
                 }
             }
         } else if (first.span.kind == LineKind::Prose && tlen <= 36 && te[-1] != '.' && te[-1] != '!' && te[-1] != '?' &&
+                   !isRuleHeaderPrefix(ts, tlen) &&
                    nLines > 1 && (lines[1].span.kind == LineKind::KeyValue || lines[1].span.kind == LineKind::Header)) {
             const size_t cap = sizeof(out->subtitle) - 1;
             const size_t n = tlen < cap ? tlen : cap;
@@ -496,7 +497,7 @@ inline bool splitDescSections(const char* rawText, DescSections* out) noexcept {
         bool isRule = false;
         if (rl.span.kind == LineKind::KeyValue) {
             isRule = true;
-            inHeaderBlock = false;
+            // keep inHeaderBlock if already set so following proficiencies stay in rules block
         } else if (rl.span.kind == LineKind::Header) {
             if (isRuleHeaderPrefix(ts, tlen)) {
                 isRule = true;
@@ -552,9 +553,9 @@ inline bool splitDescSections(const char* rawText, DescSections* out) noexcept {
         ++idx;
     }
 
-    out->hasTopDivider    = (out->title[0] != 0 || out->subtitle[0] != 0) && (out->rules[0] != 0 || out->body[0] != 0);
-    out->hasBottomDivider = (out->rules[0] != 0 && out->body[0] != 0);
-    out->nDividers        = (out->hasTopDivider ? 1u : 0u) + (out->hasBottomDivider ? 1u : 0u);
+    out->hasTopDivider    = false;
+    out->hasBottomDivider = false;
+    out->nDividers        = 0;
     return true;
 }
 

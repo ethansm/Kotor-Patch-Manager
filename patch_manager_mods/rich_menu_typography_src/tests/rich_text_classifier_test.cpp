@@ -167,7 +167,7 @@ void testTV7_SectionSplitItem() {
               strstr(sec.rules, "Attack Modifier: +3") != nullptr);
     kt::Check("TV7: lore body separated from rules",
               strcmp(sec.body, "This blaster pistol was common during the Mandalorian Wars.") == 0);
-    kt::Check("TV7: has top and bottom 2px dividers", sec.hasTopDivider && sec.hasBottomDivider && sec.nDividers == 2u);
+    kt::Check("TV7: dividers are removed entirely", !sec.hasTopDivider && !sec.hasBottomDivider && sec.nDividers == 0u);
 }
 
 void testTV8_SectionSplitJournal() {
@@ -182,8 +182,8 @@ void testTV8_SectionSplitJournal() {
     kt::Check("TV8: rules block is empty for pure journal entry", sec.rules[0] == 0);
     kt::Check("TV8: body holds journal prose",
               strstr(sec.body, "Refugee Sector troubles") != nullptr);
-    kt::Check("TV8: has 1 divider (top divider between header and body)",
-              sec.hasTopDivider && !sec.hasBottomDivider && sec.nDividers == 1u);
+    kt::Check("TV8: dividers are removed entirely",
+              !sec.hasTopDivider && !sec.hasBottomDivider && sec.nDividers == 0u);
 }
 
 void testItemPropsParser() {
@@ -311,12 +311,14 @@ void testArmorAndRobeSectionSplits() {
     rmt::DescSections sec1;
     const bool ok1 = rmt::splitDescSections(armor1, &sec1);
     kt::Check("ArmorSplit: splitDescSections succeeds for armor1", ok1);
-    kt::Check("ArmorSplit: title is 'FEATS REQUIRED'", strcmp(sec1.title, "FEATS REQUIRED") == 0);
-    kt::Check("ArmorSplit: subtitle is 'Armor Proficiency - Heavy'", strcmp(sec1.subtitle, "Armor Proficiency - Heavy") == 0);
+    kt::Check("ArmorSplit: title is empty (FEATS REQUIRED is not a title)", sec1.title[0] == '\0');
+    kt::Check("ArmorSplit: subtitle is empty", sec1.subtitle[0] == '\0');
+    kt::Check("ArmorSplit: rules contains FEATS REQUIRED", strstr(sec1.rules, "FEATS REQUIRED") != nullptr);
+    kt::Check("ArmorSplit: rules contains Armor Proficiency - Heavy", strstr(sec1.rules, "Armor Proficiency - Heavy") != nullptr);
     kt::Check("ArmorSplit: rules contains Defense Bonus", strstr(sec1.rules, "Defense Bonus: 12") != nullptr);
     kt::Check("ArmorSplit: rules contains Max Dexterity Bonus", strstr(sec1.rules, "Max Dexterity Bonus: +0") != nullptr);
     kt::Check("ArmorSplit: body contains lore text", strcmp(sec1.body, "Mandalorian heavy battle armor.") == 0);
-    kt::Check("ArmorSplit: has top and bottom dividers", sec1.hasTopDivider && sec1.hasBottomDivider && sec1.nDividers == 2u);
+    kt::Check("ArmorSplit: dividers are removed entirely", !sec1.hasTopDivider && !sec1.hasBottomDivider && sec1.nDividers == 0u);
 
     // 2. Robe with Cannot Equip, Restricted, and User Limitation in the middle of rules
     const char* robe =

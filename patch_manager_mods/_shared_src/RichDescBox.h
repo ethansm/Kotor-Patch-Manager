@@ -67,6 +67,7 @@ inline LastPopulateInfo s_lastPopulateInfo = {};
 inline PoolEntry s_listBoxPools[kMaxListBoxPools] = {};
 inline uint32_t s_useCounter = 0;
 inline const char* s_bodyFont = kFontDesc;
+inline const char* s_rulesFont = kFontDesc;
 inline int (*g_measureTextHeight)(uintptr_t ctl, const char* text, int width, const char* font) = nullptr;
 
 inline const char* getBodyFont() noexcept {
@@ -78,6 +79,18 @@ inline void setBodyFont(const char* fontResRef) noexcept {
         s_bodyFont = fontResRef;
     } else {
         s_bodyFont = kFontDesc;
+    }
+}
+
+inline const char* getRulesFont() noexcept {
+    return s_rulesFont ? s_rulesFont : kFontDesc;
+}
+
+inline void setRulesFont(const char* fontResRef) noexcept {
+    if (fontResRef && *fontResRef) {
+        s_rulesFont = fontResRef;
+    } else {
+        s_rulesFont = kFontDesc;
     }
 }
 
@@ -109,30 +122,36 @@ inline int measureTextHeight(uintptr_t ctl, const char* text, int width, const c
         }
     }
     if (!text || !*text) return 0;
-    const int charsPerLine = (width > 40) ? (width / 8) : 28;
-    int lines = 0;
+
+    int lineHeight = 14;
+    if (font) {
+        if (strcmp(font, kFontSub) == 0 || strstr(font, "10x10") != nullptr) {
+            lineHeight = 12;
+        } else if (strcmp(font, kFontTitle) == 0 || (strstr(font, "16x16") != nullptr && strstr(font, "dialog") != nullptr)) {
+            lineHeight = 16;
+        } else if (strcmp(font, kFontDesc) == 0 || strstr(font, "fnt_d") != nullptr || strstr(font, "fnt_") != nullptr) {
+            lineHeight = 14;
+        }
+    }
+
+    const int charsPerLine = (width > 35) ? (width / 7) : 28;
+    const int halfLine = lineHeight / 2;
+    int totalHeight = 0;
     const char* p = text;
     while (*p) {
         const char* start = p;
         while (*p && *p != '\n') ++p;
         const int plen = static_cast<int>(p - start);
         if (plen == 0) {
-            lines += 1;
+            totalHeight += halfLine;
         } else {
-            lines += (plen + charsPerLine - 1) / charsPerLine;
+            const int lineCount = (plen + charsPerLine - 1) / charsPerLine;
+            totalHeight += lineCount * lineHeight;
         }
         if (*p == '\n') ++p;
     }
-    if (lines <= 0) lines = 1;
-    int lineHeight = 18;
-    if (font) {
-        if (strcmp(font, kFontSub) == 0 || strstr(font, "10x10") != nullptr) {
-            lineHeight = 12;
-        } else if (strcmp(font, kFontDesc) == 0 || (s_bodyFont && strcmp(font, s_bodyFont) == 0) || strstr(font, "fnt_d") != nullptr) {
-            lineHeight = 15;
-        }
-    }
-    return lines * lineHeight;
+    if (totalHeight < lineHeight) totalHeight = lineHeight;
+    return totalHeight;
 }
 
 inline PoolEntry* findOrAllocPool(uintptr_t listbox) noexcept {
@@ -378,27 +397,50 @@ struct RichDescBox {
             setupTextRow(sec.subtitle, kFontSub, kTealDim, 0);
         }
 
-        // Row 2: Top Divider
-        if (sec.hasTopDivider) {
-            setupDividerRow();
-        }
+        // Divider rows removed per directive 2
+        (void)setupDividerRow;
 
-        // Row 3: Rules
+        // Row 2: Rules (uses getRulesFont() per directive 3)
         if (sec.rules[0] != '\0') {
-            setupTextRow(sec.rules, kFontSub, kTealText, 2);
+            setupTextRow(sec.rules, getRulesFont(), kTealText, 2);
         }
 
-        // Row 4: Bottom Divider
-        if (sec.hasBottomDivider) {
-            setupDividerRow();
-        }
-
-        // Row 5: Body
+        // Row 3: Body
         if (sec.body[0] != '\0') {
             setupTextRow(sec.body, getBodyFont(), kTealText, 2);
         }
 
         if (outCount == 0) return false;
+
+        // Height clamping against physical listbox extent (directive 4)
+        int lbX = 0, lbY = 0, lbW = 0, lbH = 0;
+        (void)guikit::getExtent(reinterpret_cast<uintptr_t>(listbox), &lbX, &lbY, &lbW, &lbH);
+
+        int sumHeights = 0;
+        for (int i = 0; i < outCount; ++i) {
+            sumHeights += s_lastPopulateInfo.rowHeights[i];
+        }
+
+        if (lbH > 0) {
+            const int maxVisible = lbH - 10;
+            if (sumHeights <= lbH && sumHeights > maxVisible && outCount > 0) {
+                int excess = sumHeights - maxVisible;
+                for (int i = outCount - 1; i >= 0 && excess > 0; --i) {
+                    uintptr_t lbl = reinterpret_cast<uintptr_t>(outControls[i]);
+                    int curH = s_lastPopulateInfo.rowHeights[i];
+                    int reduce = (curH - 10 > excess) ? excess : (curH > 10 ? curH - 10 : 0);
+                    if (reduce > 0) {
+                        curH -= reduce;
+                        excess -= reduce;
+                        s_lastPopulateInfo.rowHeights[i] = curH;
+                        (void)guikit::detail::wr<int>(lbl, guikit::Ctl_H, curH);
+                        int rX = 0, rY = 0, rW = 0, rH = 0;
+                        (void)guikit::getExtent(lbl, &rX, &rY, &rW, &rH);
+                        (void)guikit::setRect(lbl, rX, rY, rW, curH);
+                    }
+                }
+            }
+        }
 
         s_lastPopulateInfo.listbox = reinterpret_cast<uintptr_t>(listbox);
         s_lastPopulateInfo.rowCount = outCount;

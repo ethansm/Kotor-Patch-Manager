@@ -575,19 +575,44 @@ void testModConfigPageContract() {
     kt::CheckEq("applyPageRow font 99 clamps to 2", rmt::applyPageRowForTest(rmtpage::kRowFont, 99), 2);
     kt::Check("font 99 body font matches kFonts[2]", strcmp(rmt::getBodyFont(), rmtpage::kFonts[2]) == 0);
 
+    // 4. rulesFontIdx -> getRulesFont() returns matching kFonts literal, and clamps
+    kt::CheckEq("applyPageRow rulesfont 0 returns 0", rmt::applyPageRowForTest(rmtpage::kRowRulesFont, 0), 0);
+    kt::Check("rulesfont 0 matches kFonts[0]", strcmp(rmt::getRulesFont(), rmtpage::kFonts[0]) == 0);
+
+    kt::CheckEq("applyPageRow rulesfont 1 returns 1", rmt::applyPageRowForTest(rmtpage::kRowRulesFont, 1), 1);
+    kt::Check("rulesfont 1 matches kFonts[1]", strcmp(rmt::getRulesFont(), rmtpage::kFonts[1]) == 0);
+
+    kt::CheckEq("applyPageRow rulesfont 2 returns 2", rmt::applyPageRowForTest(rmtpage::kRowRulesFont, 2), 2);
+    kt::Check("rulesfont 2 matches kFonts[2]", strcmp(rmt::getRulesFont(), rmtpage::kFonts[2]) == 0);
+
+    // rulesfont out-of-range clamps
+    kt::CheckEq("applyPageRow rulesfont -1 clamps to 0", rmt::applyPageRowForTest(rmtpage::kRowRulesFont, -1), 0);
+    kt::Check("rulesfont -1 matches kFonts[0]", strcmp(rmt::getRulesFont(), rmtpage::kFonts[0]) == 0);
+
+    kt::CheckEq("applyPageRow rulesfont 3 clamps to 2", rmt::applyPageRowForTest(rmtpage::kRowRulesFont, 3), 2);
+    kt::Check("rulesfont 3 matches kFonts[2]", strcmp(rmt::getRulesFont(), rmtpage::kFonts[2]) == 0);
+
+    kt::CheckEq("applyPageRow rulesfont 99 clamps to 2", rmt::applyPageRowForTest(rmtpage::kRowRulesFont, 99), 2);
+    kt::Check("rulesfont 99 matches kFonts[2]", strcmp(rmt::getRulesFont(), rmtpage::kFonts[2]) == 0);
+
     // Unknown id / null passthrough
     kt::CheckEq("applyPageRow unknown id passthrough", rmt::applyPageRowForTest("unknown_id", 42), 42);
     kt::CheckEq("applyPageRow null id passthrough", rmt::applyPageRowForTest(nullptr, 77), 77);
 
-    // pageOnEnter synchronizes font value to page
+    // pageOnEnter synchronizes font and rulesfont values to page
     rmt::applyPageRowForTest(rmtpage::kRowFont, 1);
+    rmt::applyPageRowForTest(rmtpage::kRowRulesFont, 2);
     rmt::pageOnEnterForTest();
     kt::CheckEq("pageOnEnter updates font row to 1", rmt::getPageRowValueForTest(rmtpage::kRowFont), 1);
+    kt::CheckEq("pageOnEnter updates rulesfont row to 2", rmt::getPageRowValueForTest(rmtpage::kRowRulesFont), 2);
 
     rmt::applyPageRowForTest(rmtpage::kRowFont, 0);
+    rmt::applyPageRowForTest(rmtpage::kRowRulesFont, 0);
     rmt::pageOnEnterForTest();
     kt::CheckEq("pageOnEnter updates font row to 0", rmt::getPageRowValueForTest(rmtpage::kRowFont), 0);
+    kt::CheckEq("pageOnEnter updates rulesfont row to 0", rmt::getPageRowValueForTest(rmtpage::kRowRulesFont), 0);
     kt::Check("font reset to kFonts[0]", strcmp(rmt::getBodyFont(), rmtpage::kFonts[0]) == 0);
+    kt::Check("rulesfont reset to kFonts[0]", strcmp(rmt::getRulesFont(), rmtpage::kFonts[0]) == 0);
 
     // Clean up any test ini created in cwd
     remove(rmtpage::kIniFile);

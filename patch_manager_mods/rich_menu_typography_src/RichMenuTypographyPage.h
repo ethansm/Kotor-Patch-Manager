@@ -8,10 +8,11 @@ constexpr const char* kEntryId = "rich-menu-typography";
 constexpr const char* kIniFile = "rich_menu_typography.ini";
 constexpr const char* kSection = "General";
 
-constexpr const char* kRowInline   = "inline";
-constexpr const char* kRowRichDesc = "richdesc";
-constexpr const char* kRowStats    = "stats";
-constexpr const char* kRowFont     = "font";
+constexpr const char* kRowInline    = "inline";
+constexpr const char* kRowRichDesc  = "richdesc";
+constexpr const char* kRowStats     = "stats";
+constexpr const char* kRowFont      = "font";
+constexpr const char* kRowRulesFont = "rulesfont";
 
 constexpr int kFontCount = 3;
 constexpr const char* const kFonts[kFontCount] = {
@@ -64,6 +65,14 @@ label = "Body font"
 desc = "Body font face used for item, feat, and power descriptions."
 default = 0
 choices = ["fnt_d16x16", "dialogfont10x10", "dialogfont16x16"]
+
+[[row]]
+id = "rulesfont"
+kind = "list"
+label = "Rules font"
+desc = "Font face used for stats, requirements, and rules in description boxes."
+default = 0
+choices = ["fnt_d16x16", "dialogfont10x10", "dialogfont16x16"]
 )TOML";
 
 struct Live {
@@ -71,6 +80,7 @@ struct Live {
     bool richDesc = true;
     bool stats = true;
     int fontIdx = 0;
+    int rulesFontIdx = 0;
 };
 
 inline bool iequals(const char* a, const char* b) {
@@ -121,6 +131,11 @@ inline int32_t applyRow(Live& live, const char* id, int32_t requested) {
     if (strcmp(id, kRowFont) == 0) {
         const int32_t v = (requested < 0) ? 0 : ((requested >= kFontCount) ? (kFontCount - 1) : requested);
         live.fontIdx = v;
+        return v;
+    }
+    if (strcmp(id, kRowRulesFont) == 0) {
+        const int32_t v = (requested < 0) ? 0 : ((requested >= kFontCount) ? (kFontCount - 1) : requested);
+        live.rulesFontIdx = v;
         return v;
     }
     return requested;
