@@ -392,7 +392,7 @@ struct Cooldown {
 inline bool areaChanged(uintptr_t prev, uintptr_t cur) { return prev != 0 && cur != 0 && prev != cur; }
 
 // Why the peek ends. Priority: gone > suppress > area > far.
-enum class Leave { None = 0, Gone, Suppress, Area, Far, Off };   // Off (0.6.0-dev): ProximityEnabled was switched off while a peek was up
+enum class Leave { None = 0, Gone, Suppress, Area, Far, Off, Timeout };   // Off (0.6.0-dev): ProximityEnabled was switched off while a peek was up; Timeout (QL2): auto-close
 inline Leave leaveReason(bool plcResolves, bool suppressed, bool areaChangedNow, float dist, float closeM) {
     if (!plcResolves) return Leave::Gone;
     if (suppressed) return Leave::Suppress;
@@ -408,6 +408,7 @@ inline const char* leaveName(Leave l) {
         case Leave::Area: return "area";
         case Leave::Far: return "far";
         case Leave::Off: return "off";
+        case Leave::Timeout: return "timeout";
     }
     return "?";
 }
@@ -1183,6 +1184,7 @@ struct Peek {
     uint32_t openFrame = 0;
     // active
     bool active = false;
+    bool isSelect = false;       // QL2: true when peek was triggered by select/click, false for proximity
     uint32_t obj = 0;            // client object id from ShowContainerGui (the Close message takes it)
     uint32_t sinceMs = 0, sinceFrame = 0;
     uint32_t closeStartMs = 0;   // first Close attempt
@@ -1197,8 +1199,21 @@ struct Peek {
     // ShowContainerGui for plc: consumed as the peek when it is the expected container. Returns true when it was.
     bool onShow(uint32_t o, uintptr_t p, uint32_t now, uint32_t frame) {
         if (expect == 0 || p != expect) return false;
-        expect = 0; active = true; obj = o; sinceMs = now; sinceFrame = frame; closeStartMs = 0; closeTried = false; text[0] = 0;
+        expect = 0; active = true; isSelect = false; obj = o; sinceMs = now; sinceFrame = frame; closeStartMs = 0; closeTried = false; text[0] = 0;
         return true;
+    }
+    // QL2: start active select peek directly from ShowContainerGui
+    void beginSelect(uintptr_t p, uint32_t sid, uint32_t o, uintptr_t a, uint32_t op, uint32_t now, uint32_t frame) {
+        clear();
+        active = true;
+        isSelect = true;
+        plc = p;
+        serverId = sid;
+        obj = o;
+        area = a;
+        opener = op;
+        sinceMs = now;
+        sinceFrame = frame;
     }
     // Placeable event: the first OnOpen of the peeked container (expecting or active).
     bool onEvent(uintptr_t p, int id, uint32_t frame) {
@@ -1211,7 +1226,7 @@ struct Peek {
         return active && itemCount == 0 && readyToSend(openSeen, frame, openFrame, now, sinceMs);
     }
     void clear() {
-        expect = 0; expectMs = 0; serverId = 0; opener = 0; plc = 0; area = 0; openSeen = false; openFrame = 0; active = false; obj = 0;
+        expect = 0; expectMs = 0; serverId = 0; opener = 0; plc = 0; area = 0; openSeen = false; openFrame = 0; active = false; isSelect = false; obj = 0;
         sinceMs = sinceFrame = 0; closeStartMs = 0; closeTried = false; text[0] = 0;
     }
 };

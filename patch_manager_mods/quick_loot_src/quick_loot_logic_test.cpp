@@ -429,7 +429,8 @@ int main() {
         kt::Check("priority gone > suppress > area > far", leaveReason(false, true, true, 9, 5) == Leave::Gone && leaveReason(true, true, true, 9, 5) == Leave::Suppress &&
                   leaveReason(true, false, true, 9, 5) == Leave::Area);
         kt::Check("leave names", strcmp(leaveName(Leave::Far), "far") == 0 && strcmp(leaveName(Leave::Gone), "gone") == 0 &&
-                  strcmp(leaveName(Leave::Area), "area") == 0 && strcmp(leaveName(Leave::Suppress), "suppress") == 0);
+                  strcmp(leaveName(Leave::Area), "area") == 0 && strcmp(leaveName(Leave::Suppress), "suppress") == 0 &&
+                  strcmp(leaveName(Leave::Timeout), "timeout") == 0);
     }
 
     // ---- QL2p: suppress transitions
@@ -548,6 +549,8 @@ int main() {
         p.begin(0x3000, 5, 0xB0, 10);
         p.onShow(0x7F000003u, 0x3000, 20, 1);
         kt::Check("no OnOpen: empty only after the 1000 ms timeout", !p.emptyNow(0, 2, 500) && p.emptyNow(0, 2, 1020));
+        p.beginSelect(0x4000, 0x7F000010u, 0x7F0000BBu, 0xC0, 0x123u, 3000, 50);
+        kt::Check("beginSelect: active, isSelect, no expect", p.busy() && p.active && p.isSelect && p.expect == 0 && p.plc == 0x4000 && p.obj == 0x7F0000BBu && p.sinceMs == 3000 && p.sinceFrame == 50);
         kt::Check("events before begin are ignored", [] { Peek q; return !q.onEvent(0x1000, EvtOpen, 1); }());
     }
 

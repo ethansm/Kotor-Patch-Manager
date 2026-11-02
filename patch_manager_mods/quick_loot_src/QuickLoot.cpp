@@ -207,6 +207,8 @@ bool g_timeInit = false;
 
 // 0.8.0-dev (QL14): Hardware Bezels & Unified Header globals
 bool g_hardwareBezels = true;
+bool g_peekOnSelect = false;      // QL2: peek on select (quick_loot.ini peek_on_select)
+uint32_t g_clickTimeoutMs = 0;    // QL2: auto-close timeout in ms (quick_loot.ini click_peek_timeout, 0 = off)
 qlbezel::CategoryStyle g_catStyles[qlbezel::CatCount];
 int g_selectedCat = 0;
 uint32_t g_modalPage = 0;
@@ -1475,6 +1477,10 @@ struct EngineEnv : qlogic::Env {
         return s ? reinterpret_cast<LookupFn>(GetPlaceableByGameObjectID)(s, sid) : 0;
     }
     uintptr_t resolveClientPlc(uint32_t clientObj) override { return placeableFor(clientObj); }
+    uint32_t serverIdForObj(uint32_t clientObj) override {
+        const uintptr_t s = serverApp();
+        return s ? reinterpret_cast<LookupFn>(gameaddr::ClientToServerObjectId)(s, clientObj) : 0;
+    }
     bool plcPos(uintptr_t plc, float* x, float* y) override { return rd<float>(plc, Obj_PosX, x) && rd<float>(plc, Obj_PosY, y); }
     int itemCount(uintptr_t plc) override { return ::itemCount(plc); }
     int openFlag(uintptr_t plc) override { return ::openFlag(plc); }
@@ -1780,16 +1786,20 @@ void pvRefreshPreview() {
 
     pvc::Rect blk = { 40, 40, 400, 360 };
     if (showBezel && bzlImg) {
-        pvc::Rect bzlRect = { blk.x - 38, blk.y - 38, blk.w + 76, blk.h + 76 };
+        pvc::Rect bzlRect = { blk.x - 40, blk.y - 36, 480, 432 };
         g_cv.put(0, bzlRect, bzlImg, nullptr, 1.0f);
     }
     float darkFill[3] = { 0.02f, 0.05f, 0.06f };
     g_cv.put(1, blk, fillImg ? fillImg : solidImg, darkFill, 0.95f);
     g_cv.put(2, blk, solidImg, style.frameRgb, 0.8f);
 
-    pvc::Rect tr = { blk.x + 20, blk.y + 16, blk.w - 40, 24 };
+    pvc::Rect tr = { blk.x + 20, blk.y + 16, blk.w - 120, 24 };
     g_cv.put(3, tr, nullptr, nullptr, 1.0f);
     g_cv.text(3, qlbezel::categoryName(cat));
+
+    pvc::Rect cntRect = { blk.x + blk.w - 90, blk.y + 16, 70, 24 };
+    g_cv.put(8, cntRect, nullptr, nullptr, 1.0f);
+    g_cv.text(8, "3 ITEMS");
 
     pvc::Rect div = { blk.x + 20, blk.y + 44, blk.w - 40, 2 };
     g_cv.put(4, div, solidImg, style.frameRgb, 1.0f);
@@ -1802,32 +1812,36 @@ void pvRefreshPreview() {
         g_cv.put(6, led, ledImg ? ledImg : solidImg, style.ledRgb, 1.0f);
     }
 
-    pvc::Rect btnTxt = { btn.x + (style.led ? 32 : 12), btn.y + 5, btn.w - 40, 24 };
+    pvc::Rect btnTxt = { btn.x + (style.led ? 34 : 14), btn.y + 7, btn.w - 40, 22 };
     g_cv.put(7, btnTxt, nullptr, nullptr, 1.0f);
     g_cv.text(7, "[F] GET ITEMS (3)");
 
     const char* sampleItems[3] = { "Disruptor Carbine", "Parts x5", "Combat Suit" };
+    const char* sampleIcons[3] = { "iw_dsrptrfl_001", "ii_progspike_002", "ia_class4_001" };
     for (int r = 0; r < 3; ++r) {
         pvc::Rect rr = { blk.x + 20, blk.y + 100 + r * 44, blk.w - 40, 38 };
-        g_cv.put(8 + r * 2, rr, solidImg, style.frameRgb, 0.5f);
-        pvc::Rect rt = { rr.x + 12, rr.y + 7, rr.w - 24, 24 };
-        g_cv.put(9 + r * 2, rt, nullptr, nullptr, 1.0f);
-        g_cv.text(9 + r * 2, sampleItems[r]);
+        g_cv.put(9 + r * 3, rr, solidImg, style.frameRgb, 0.5f);
+        pvc::Rect ir = { rr.x + 6, rr.y + 4, 30, 30 };
+        void* iconImg = guikit::imageFor(sampleIcons[r]);
+        g_cv.put(10 + r * 3, ir, iconImg, nullptr, 1.0f);
+        pvc::Rect rt = { rr.x + 42, rr.y + 7, rr.w - 50, 24 };
+        g_cv.put(11 + r * 3, rt, nullptr, nullptr, 1.0f);
+        g_cv.text(11 + r * 3, sampleItems[r]);
     }
 
-    pvc::Rect tip = { blk.x + blk.w + (showBezel ? 38 : 0) + 20, 40, 320, 360 };
-    g_cv.put(14, tip, fillImg ? fillImg : solidImg, darkFill, 0.95f);
-    g_cv.put(15, tip, solidImg, style.frameRgb, 0.7f);
+    pvc::Rect tip = { blk.x + blk.w + (showBezel ? 40 : 0) + 20, 40, 320, 360 };
+    g_cv.put(18, tip, fillImg ? fillImg : solidImg, darkFill, 0.95f);
+    g_cv.put(19, tip, solidImg, style.frameRgb, 0.7f);
     pvc::Rect tipTitle = { tip.x + 16, tip.y + 16, tip.w - 32, 24 };
-    g_cv.put(16, tipTitle, nullptr, nullptr, 1.0f);
-    g_cv.text(16, "Disruptor Carbine");
+    g_cv.put(20, tipTitle, nullptr, nullptr, 1.0f);
+    g_cv.text(20, "Disruptor Carbine");
     pvc::Rect tipSub = { tip.x + 16, tip.y + 44, tip.w - 32, 20 };
-    g_cv.put(17, tipSub, nullptr, nullptr, 1.0f);
-    g_cv.text(17, "Ranged Weapon (Blaster)");
+    g_cv.put(21, tipSub, nullptr, nullptr, 1.0f);
+    g_cv.text(21, "Ranged Weapon (Blaster)");
 
     pvc::Rect tipBody = { tip.x + 16, tip.y + 74, tip.w - 32, 100 };
-    g_cv.put(18, tipBody, nullptr, nullptr, 1.0f);
-    g_cv.text(18, "Damage: Energy 2d8\nCritical: 19-20, x2\nRange: 28m");
+    g_cv.put(22, tipBody, nullptr, nullptr, 1.0f);
+    g_cv.text(22, "Damage: Energy 2d8\nCritical: 19-20, x2\nRange: 28m");
 
     g_cv.end();
 }
@@ -1837,18 +1851,19 @@ void pvOnBuilt(void*, uint32_t page, void* panel) {
     g_pvOn = false; g_modalPage = 0; g_gearItem = -1; g_pagePanel = panel;
     if (!g_mcMenu.hasModal() || !g_mcMenu.hasDescSplit()) return;
     const K2MenuUiApi* ui = g_mcMenu.p;
-    if (!g_cv.build(ui, panel, page, 24)) return;
+    if (!g_cv.build(ui, panel, page, 28)) return;
     guikit::setAlign(g_cv.w[3].c, 9);
-    guikit::setAlign(g_cv.w[7].c, 18);
-    for (int i = 0; i < 3; ++i) guikit::setAlign(g_cv.w[9 + i * 2].c, 9);
-    guikit::setAlign(g_cv.w[16].c, 9);
-    guikit::setAlign(g_cv.w[17].c, 9);
-    guikit::setAlign(g_cv.w[18].c, 9);
+    guikit::setAlign(g_cv.w[7].c, 9);
+    guikit::setAlign(g_cv.w[8].c, 9);
+    for (int i = 0; i < 3; ++i) guikit::setAlign(g_cv.w[11 + i * 3].c, 9);
+    guikit::setAlign(g_cv.w[20].c, 9);
+    guikit::setAlign(g_cv.w[21].c, 9);
+    guikit::setAlign(g_cv.w[22].c, 9);
 
     if (!ui->SetDescSplit(page, 700)) return;
     pvBuildModal(ui, page);
     g_pvOn = true;
-    if (KpLog_HasCore()) KP_LOGV(chMain, KPLOG_INFO, "PREVIEW BUILD ok: 24 labels, split 700 permille");
+    if (KpLog_HasCore()) KP_LOGV(chMain, KPLOG_INFO, "PREVIEW BUILD ok: 28 labels, split 700 permille");
 }
 
 void pvOnTick(void*) {
@@ -1951,6 +1966,15 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     const float closeExplicitM = closeExplicit ? static_cast<float>(atof(fb)) : qlogic::DefaultCloseM;
     g_closeM = qlpage::closeFor(g_openM, closeExplicit, closeExplicitM);
     g_m.cfg.enabled = g_enabled; g_m.cfg.proxOn = g_proxOn; g_m.cfg.openM = g_openM; g_m.cfg.closeM = g_closeM; g_m.cfg.takeKey = g_takeKey; g_m.cfg.scanMs = g_scanMs;
+    g_peekOnSelect = GetPrivateProfileIntA("QuickLoot", "peek_on_select", 0, IniPath) != 0;
+    if (!g_peekOnSelect) g_peekOnSelect = GetPrivateProfileIntA("QuickLoot", "PeekOnSelect", 0, IniPath) != 0;
+    int timeout = GetPrivateProfileIntA("QuickLoot", "click_peek_timeout", 0, IniPath);
+    if (!timeout) timeout = GetPrivateProfileIntA("QuickLoot", "ClickPeekTimeout", 0, IniPath);
+    if (!timeout) timeout = GetPrivateProfileIntA("QuickLoot", "click_peek_timeout_ms", 0, IniPath);
+    if (timeout > 0 && timeout <= 60) timeout *= 1000;
+    g_clickTimeoutMs = timeout > 0 ? static_cast<uint32_t>(timeout) : 0;
+    g_m.cfg.peekOnSelect = g_peekOnSelect;
+    g_m.cfg.clickTimeoutMs = g_clickTimeoutMs;
     g_m.cfg.listRows = qlogic::clampListRows(GetPrivateProfileIntA("QuickLoot", "ListRows", static_cast<int>(qlogic::ListRowsDefault), IniPath));
     g_m.cfg.anchor = qlogic::clampAnchorMode(GetPrivateProfileIntA("QuickLoot", "Anchor", 0, IniPath));
     g_m.cfg.showTook = GetPrivateProfileIntA("QuickLoot", "ShowAcquired", 0, IniPath) != 0;   // 0.6.1-dev: off by default

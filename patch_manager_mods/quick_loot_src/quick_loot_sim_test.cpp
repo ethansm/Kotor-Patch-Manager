@@ -166,6 +166,8 @@ struct Sim : Env {
     bool shiftDown() override { return shift; }
     uintptr_t resolvePlc(uint32_t sid) override { const int i = bySid(sid); return i < 0 ? 0 : objs[static_cast<size_t>(i)].plc; }
     uintptr_t resolveClientPlc(uint32_t o) override { const int i = byObj(o); return i < 0 ? 0 : objs[static_cast<size_t>(i)].plc; }
+    uint32_t serverIdForObj(uint32_t o) override { const int i = byObj(o); return i < 0 ? 0 : objs[static_cast<size_t>(i)].sid; }
+    uint32_t serverIdForPlc(uintptr_t plc) override { const int i = byPlc(plc); return i < 0 ? 0 : objs[static_cast<size_t>(i)].sid; }
     bool plcPos(uintptr_t plc, float* x, float* y) override {
         const int i = byPlc(plc);
         if (i < 0) return false;
@@ -1671,6 +1673,149 @@ void scenarioO() {
     }
 }
 
+// ---- QL2: peek on select (doc 52 row QL2)
+void scenarioQL2() {
+    {   // ql2-1: click on container triggers peek (not take), TakeKey takes all, container added to cooldown
+        const char* scn = "ql2-1 select peek: click opens peek, TakeKey takes all, cooldown added";
+        Sim s;
+        s.m.cfg.proxOn = false;
+        s.m.cfg.peekOnSelect = true;
+        const int A = s.add(1, 0, {Medpac2, Pistol});
+        s.run(3);
+        s.click(A);
+        CHK("peek active after click", s.m.peek.active && s.m.peek.isSelect && !s.m.take.active);
+        CHK("vanilla not shown", s.vanilla == 0);
+        CHK("PEEK-SHOW logged", s.logged("PEEK-SHOW"));
+        ListDraw d;
+        CHK("peek list draws", s.m.listDraw(s.now, &d) && d.vis == 2);
+        // Press TakeKey (F): take-all
+        s.key = true; s.run(2); s.key = false;
+        CHK("take-all sent", s.count(A_SEND) == 1 && s.nth(A_SEND, 0)->flag == 1);
+        CHK("items taken", s.taken.size() == 1 && s.taken[0].size() == 2);
+        CHK("peek closed", !s.m.peek.active);
+        CHK("added to cooldown set", s.m.cool.contains(s.objs[static_cast<size_t>(A)].sid));
+        s.finishCheck(scn);
+    }
+    {   // ql2-2: select peek row click takes single item (QL4 per-item take)
+        const char* scn = "ql2-2 select peek row click: takes one item, emptied container closes to cooldown";
+        Sim s;
+        s.m.cfg.proxOn = false;
+        s.m.cfg.peekOnSelect = true;
+        const int A = s.add(1, 0, {Medpac2, Pistol});
+        s.run(3);
+        s.click(A);
+        CHK("peek active", s.m.peek.active && s.m.peek.isSelect);
+        // Click row 0 (Medpac)
+        s.rowClickV = 0; s.run(1);
+        CHK("takeOne called once", s.takeCalls == 1 && s.takeIdx[0] == 0);
+        CHK("took Medpac", s.taken.size() == 1 && s.taken[0][0].name == "Medpac");
+        CHK("Pistol remains", s.objs[static_cast<size_t>(A)].items.size() == 1);
+        CHK("peek still active", s.m.peek.active);
+        // Click row 0 (Pistol - now only item)
+        s.rowClickV = 0; s.run(1);
+        CHK("takeOne called second time", s.takeCalls == 2);
+        CHK("container now empty", s.objs[static_cast<size_t>(A)].items.empty());
+        CHK("emptied container closed", !s.m.peek.active && s.count(A_SEND) >= 1 && s.nth(A_SEND, 0)->flag == 0);
+        CHK("added to cooldown set", s.m.cool.contains(s.objs[static_cast<size_t>(A)].sid));
+        s.finishCheck(scn);
+    }
+    {   // ql2-3: click-peek auto-close timeout
+        const char* scn = "ql2-3 select peek timeout: closes after configured clickTimeoutMs";
+        Sim s;
+        s.m.cfg.proxOn = false;
+        s.m.cfg.peekOnSelect = true;
+        s.m.cfg.clickTimeoutMs = 1000;   // 1 second timeout
+        const int A = s.add(1, 0, {Medpac2});
+        s.run(3);
+        s.click(A);
+        CHK("peek active", s.m.peek.active && s.m.peek.isSelect);
+        s.run(50);   // ~800 ms (16ms * 50 = 800ms)
+        CHK("peek still active before timeout", s.m.peek.active);
+        s.run(20);   // +320 ms -> total ~1120 ms > 1000 ms
+        CHK("peek closed after timeout", !s.m.peek.active);
+        CHK("sent Close flag 0 (items stay)", s.count(A_SEND) == 1 && s.nth(A_SEND, 0)->flag == 0);
+        CHK("PEEK-CLOSE timeout logged", s.logged("timeout"));
+        CHK("added to cooldown set", s.m.cool.contains(s.objs[static_cast<size_t>(A)].sid));
+        s.finishCheck(scn);
+    }
+    {   // ql2-4: click-peek auto-close timeout default OFF (0)
+        const char* scn = "ql2-4 select peek timeout default 0: stays open until player acts";
+        Sim s;
+        s.m.cfg.proxOn = false;
+        s.m.cfg.peekOnSelect = true;
+        s.m.cfg.clickTimeoutMs = 0;   // default 0 = OFF
+        const int A = s.add(1, 0, {Medpac2});
+        s.run(3);
+        s.click(A);
+        s.run(200);   // 3200 ms
+        CHK("peek remains active indefinitely", s.m.peek.active);
+        s.key = true; s.run(2); s.key = false;
+        CHK("take-all closes it", !s.m.peek.active && s.count(A_SEND) == 1);
+        s.finishCheck(scn);
+    }
+    {   // ql2-5: shift + click bypasses select peek to vanilla menu
+        const char* scn = "ql2-5 select peek shift bypass: opens vanilla menu";
+        Sim s;
+        s.m.cfg.proxOn = false;
+        s.m.cfg.peekOnSelect = true;
+        s.shift = true;
+        const int A = s.add(1, 0, {Medpac2});
+        s.run(3);
+        s.click(A);
+        CHK("vanilla menu opened", s.vanilla == 1);
+        CHK("no peek active", !s.m.peek.active && !s.m.take.active);
+        s.objs[static_cast<size_t>(A)].outstanding = false;   // the vanilla menu owns this open
+        s.finishCheck(scn);
+    }
+    {   // ql2-6: walking away (> CloseM) closes select peek
+        const char* scn = "ql2-6 select peek leave: walking away closes peek to cooldown";
+        Sim s;
+        s.m.cfg.proxOn = false;
+        s.m.cfg.peekOnSelect = true;
+        const int A = s.add(1, 0, {Medpac2});
+        s.run(3);
+        s.click(A);
+        CHK("peek active", s.m.peek.active && s.m.peek.isSelect);
+        s.lx = 10.0f;   // move far away (> closeM 5.0m)
+        s.run(20);
+        CHK("peek closed due to distance", !s.m.peek.active);
+        CHK("sent Close flag 0", s.count(A_SEND) == 1 && s.nth(A_SEND, 0)->flag == 0);
+        CHK("added to cooldown set", s.m.cool.contains(s.objs[static_cast<size_t>(A)].sid));
+        s.finishCheck(scn);
+    }
+    {   // ql2-7: supersede vs proximity peek: click on container B closes proximity peek on A and opens select peek on B
+        const char* scn = "ql2-7 supersede: click on B closes active proximity peek on A";
+        Sim s;
+        s.m.cfg.proxOn = true;
+        s.m.cfg.peekOnSelect = true;
+        const int A = s.add(1.0f, 0, {Medpac2});
+        const int B = s.add(2.0f, 0, {Pistol});
+        s.run(35);   // proximity scan opens nearest container A
+        CHK("proximity peek active on A", s.m.peek.active && !s.m.peek.isSelect && s.m.peek.plc == s.objs[static_cast<size_t>(A)].plc);
+        // Player clicks container B
+        s.click(B);
+        CHK("select peek active on B", s.m.peek.active && s.m.peek.isSelect && s.m.peek.plc == s.objs[static_cast<size_t>(B)].plc);
+        CHK("A was closed with flag 0", s.count(A_SEND) >= 1 && s.nth(A_SEND, 0)->flag == 0 && s.nth(A_SEND, 0)->obj == s.objId(A));
+        CHK("A was added to cooldown", s.m.cool.contains(s.objs[static_cast<size_t>(A)].sid));
+        s.finishCheck(scn);
+    }
+    {   // ql2-8: area change during select peek closes peek and clears cooldown
+        const char* scn = "ql2-8 area change during select peek";
+        Sim s;
+        s.m.cfg.proxOn = false;
+        s.m.cfg.peekOnSelect = true;
+        const int A = s.add(1, 0, {Medpac2});
+        s.run(3);
+        s.click(A);
+        CHK("select peek active", s.m.peek.active && s.m.peek.isSelect);
+        s.area = 0xDEADBEEFu;   // area transition
+        s.run(20);
+        CHK("peek closed after area transition", !s.m.peek.active);
+        CHK("cooldown set cleared on area change", !s.m.cool.contains(s.objs[static_cast<size_t>(A)].sid));
+        s.finishCheck(scn);
+    }
+}
+
 }   // namespace
 
 int main() {
@@ -1690,5 +1835,6 @@ int main() {
     scenarioM();
     scenarioN();
     scenarioO();
+    scenarioQL2();
     return kt::Report("quick_loot_sim_test");
 }

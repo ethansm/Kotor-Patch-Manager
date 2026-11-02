@@ -54,6 +54,8 @@ struct World {
 
 struct Config {
     bool enabled = true, proxOn = true;
+    bool peekOnSelect = false;             // QL2: peek on select (quick_loot.ini peek_on_select)
+    uint32_t clickTimeoutMs = 0;           // QL2: auto-close timeout for select peek in ms (0 = off)
     float openM = DefaultOpenM, closeM = DefaultCloseM;
     int takeKey = DefaultTakeKey;
     uint32_t scanMs = DefaultScanMs;
@@ -85,6 +87,8 @@ struct Env {
     virtual bool shiftDown() = 0;
     virtual uintptr_t resolvePlc(uint32_t sid) = 0;                            // placeable for an area-list object id, 0 = gone (only with World::haveSrv)
     virtual uintptr_t resolveClientPlc(uint32_t clientObj) = 0;                // placeable for a client container object id (ShowContainerGui), 0 = gone
+    virtual uint32_t serverIdForObj(uint32_t clientObj) { (void)clientObj; return 0; } // QL2: server object id for client id
+    virtual uint32_t serverIdForPlc(uintptr_t plc) { (void)plc; return 0; }    // QL2: server object id for placeable
     virtual bool plcPos(uintptr_t plc, float* x, float* y) = 0;
     virtual int itemCount(uintptr_t plc) = 0;                                  // -1 unreadable
     virtual int openFlag(uintptr_t plc) = 0;                                   // -1 unreadable
@@ -302,7 +306,8 @@ struct Machine {
         float px = 0, py = 0;
         if (resolves && w.ok && e.plcPos(cur, &px, &py)) dist = dist2d(w.x, w.y, px, py);
         const bool newArea = areaChanged(peek.area, w.area);
-        const Leave lv = off ? Leave::Off : leaveReason(resolves, s != Sup::None, newArea, dist, cfg.closeM);
+        const bool timeout = (peek.isSelect && cfg.clickTimeoutMs > 0 && msSince(now, peek.sinceMs) >= cfg.clickTimeoutMs);
+        const Leave lv = off ? Leave::Off : (timeout ? Leave::Timeout : leaveReason(resolves, s != Sup::None, newArea, dist, cfg.closeM));
         if (lv != Leave::None) {
             const int n = resolves ? e.itemCount(cur) : -1;
             int sent = 0;
@@ -416,21 +421,37 @@ struct Machine {
     // Proximity peek tick (K2HUD_FRAME). Key edge every frame; the scan / poll every ScanMs.
     void proxTick(Env& e, uint32_t now) {
         if (!cfg.enabled) return;
+        const bool edge = risingEdge(keyPrev, e.keyDown());   // updated every frame: a key held while the peek opens never fires
+        if (peek.active && edge) { e.enter(); peekTake(e, now); return; }
         if (!cfg.proxOn) {   // 0.6.0-dev: switched off from the Mod Configuration page while a peek is up: close it (items stay), once
             if (!peek.busy() || msSince(now, lastScan) < scanGap) return;
             lastScan = now;
+            scanGap = cfg.scanMs;
+            if (peek.isSelect && cfg.clickTimeoutMs > 0) {
+                const uint32_t elapsed = msSince(now, peek.sinceMs);
+                if (elapsed < cfg.clickTimeoutMs) {
+                    const uint32_t rem = cfg.clickTimeoutMs - elapsed;
+                    if (rem < scanGap) scanGap = rem ? rem : 1;
+                }
+            }
             e.enter();
             World w;
-            e.readWorld(w);
-            if (peek.active) peekPoll(e, w, Sup::None, now, true);
+            const bool wok = e.readWorld(w);
+            const Sup s = e.suppress(wok);
+            if (peek.active) peekPoll(e, w, s, now, !peek.isSelect);
             else peekExpectCheck(e, now);
             return;
         }
-        const bool edge = risingEdge(keyPrev, e.keyDown());   // updated every frame: a key held while the peek opens never fires
-        if (peek.active && edge) { e.enter(); peekTake(e, now); return; }
         if (msSince(now, lastScan) < scanGap) return;
         lastScan = now;
         scanGap = cfg.scanMs;
+        if (peek.isSelect && cfg.clickTimeoutMs > 0) {
+            const uint32_t elapsed = msSince(now, peek.sinceMs);
+            if (elapsed < cfg.clickTimeoutMs) {
+                const uint32_t rem = cfg.clickTimeoutMs - elapsed;
+                if (rem < scanGap) scanGap = rem ? rem : 1;
+            }
+        }
         e.enter();
         World w;
         const bool wok = e.readWorld(w);
@@ -577,6 +598,7 @@ struct Machine {
         e.sound(9);   // 0.7.0-dev QL12: gui_invadd
         tip.reset();
         flash.start(name, now, stack);
+        if (peek.isSelect) peek.sinceMs = now;   // reset auto-close timeout clock on item take
         peekRefresh(e, nAfter);
         if (nAfter == 0) {   // that was the last item: show what was taken (the Took list) and close the container the normal way
             cap.count = 1; cap.total = 1;
@@ -675,6 +697,29 @@ struct Machine {
             fmtVanilla(b, sizeof b, why);
             e.log(b);
             return 0;
+        }
+        // QL2: peek on select (first click shows peek under name tag)
+        if (cfg.peekOnSelect) {
+            if (peek.active && plc == peek.plc) {
+                peekRefresh(e, n);
+                return 1;
+            }
+            if (peek.busy()) {
+                int sent = 0;
+                peekSendClose(e, 0, peek.plc != 0, now, &sent);
+                peekEnd(e);
+            }
+            World w;
+            const bool wok = e.readWorld(w);
+            uint32_t sid = e.serverIdForPlc(plc);
+            if (!sid) sid = e.serverIdForObj(objId);
+            peek.beginSelect(plc, sid, objId, wok ? w.area : 0, wok ? w.ctrl : 0, now, frame);
+            peekList.clear();
+            peekView.reset(0, cfg.listRows);
+            fmtPeekShow(b, sizeof b, objId, plc, flag, n);
+            e.log(b);
+            peekRefresh(e, n);
+            return 1;
         }
         if (peek.active && plc == peek.plc) {   // a click Show for the container this peek already holds open: the take-all wins, one Close in total
             e.log("PEEK-SUPERSEDED by click take");

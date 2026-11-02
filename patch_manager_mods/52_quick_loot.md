@@ -44,7 +44,8 @@ Research and RE: `.claude/research/quick_loot/README.md` (web W1-W4, static RE R
 | **QL11** | Sort quest (Plot) items and credits first; credit rows show the amount | QL10 | install GO | INSTALLED | 40198d3c | 0.7.0-dev LIVE 10-29 01:08 (b2c9d82f, rollback quick-loot_swap_20261029_010838); play QL07-P1 |
 | **QL12** | Vanilla UI sounds: hover tick, take one, take all (engine 2D GUI sound) | QL10 | install GO | INSTALLED | 40198d3c | 0.7.0-dev LIVE 10-29 01:08 (b2c9d82f, rollback quick-loot_swap_20261029_010838); play QL07-P1 |
 | **QL13** | Tooltip footer: 'Equipped: <item> (<stat>)' for weapons/armor vs the leader's slot, 'In inventory: N' for stackables | QL9 | install GO | INSTALLED | 40198d3c | 0.7.0-dev LIVE 10-29 01:08 (b2c9d82f, rollback quick-loot_swap_20261029_010838); play QL07-P1 |
-| **QL2** | Peek on select: list under the name tag after the first click; row click = walk + take one item | QL1 | - | TODO | - | - |
+| **QL14** | Unified Header Card (Proposal A+B Hybrid) + Configurable Hardware Bezels (`QuickLootBezel.h`, `QuickLootBezelTex.inc`) + Layered Mod Config Category Editor (`NewModal` + `AddGear`) + Live Preview (`PreviewCanvas.h`) | QL10, QL7 | install GO | DONE | 1dcc407d | Unified Header Card, configurable hardware bezels, mod config modal, live preview installed |
+| **QL2** | Peek on select: list under the name tag after the first click; row click = walk + take one item (reuse existing peekTakeOne / QL4 logic); auto-close timeout configurable (default 0); TakeKey F = take-all | QL1 | install GO | BUILT | pending | peek_on_select knob (default 0), click_peek_timeout knob (default 0), 8 sim scenarios |
 | **PV1** | Pre-play verification (user 10-27 "1-3"): (1) offline label render `scripts/quick_loot_mockup.py` (real HUD GUI + dialogfont10x10; name-tag and 62% positions; empty/1/many/+K states; 420 px width vs 80/100-char text), (2) Sonnet UX/UI review of renders + strings, (3) frame-by-frame host simulation of the peek/take state machine (approach, OnOpen, leave, combat mid-peek, area change, no Show; Close exactly once per open) | QL2p | - | DONE | 0f85071a | render+UX review+sim done; 2 sim bugs + UX MUSTs fixed in 0.3.1-dev (LIVE 10-27 22:44) |
 | **QL4** | Per-item take (user 10-28 picked): click a row in the peek list -> `CSWSCreature::AcquireItem 0x5BDB60` (mod enforces range); replicate CloseInventory's first-pickup notice (item local bool 0x5E, lockertsfinv compare) | QL2p | install GO | INSTALLED | 4caeb38b | 0.6.0-dev LIVE 10-28 01:54 hot-swap (rollback quick-loot_swap_20261028_015449); play QL06-P1 |
 | **QL5** | Empty / looted container marker (K1 "Marked Empty Containers" has no TSL port): mark on hover/name tag; merge with QL3 and doc 12 | QL2p | install GO | TODO | - | - |
@@ -57,3 +58,31 @@ Research and RE: `.claude/research/quick_loot/README.md` (web W1-W4, static RE R
 1. When does event 0x16 (OnOpen) run relative to the next frame, and does its loot reach the repo before our Close?
 2. `container_p.gui` control-id map (ids 0x27 OK / 0x28 Cancel / 0x29 Give are inferred, MED).
 3. Which containers need the give view (quest hand-ins)?
+
+## 4. QL14 Self-Contained Spec: Unified Header + Configurable Hardware Bezels + Mod Config Live Preview
+Full spec & mockups persisted at `.claude/research/quick_loot/configurable_bezels_plan.md` and `.claude/research/quick_loot/bezels/`.
+
+### 4.1 UX & Architecture Summary (User Approved)
+1. **Proposal A+B Hybrid Unified Card (`QuickLootLogic.h`, `QuickLoot.cpp`):**
+   - Suppresses vanilla `533 px` target name (`LBL_NAME` at `menu + 0x1668`, text `CExoString` at `menu + 0x1758`) and teal health bar (`PB_HEALTH` at `menu + 0x1A40`) during active Quick Loot peek/acquired states by clearing visibility bit 0 (`*(uint32_t*)(menu + 0x1BAC) &= ~1u`) in `onMenuPost` (`K2HUD_TARGET_MENU_POST` `0x00743847`).
+   - Enforces `BlockMinW = 400 px`, `BlockMaxW = 540 px`.
+   - Top header row inside card: left-aligned Container Title (`dialogfont16x16`, `Cream` `{1.0f, 1.0f, 0.8f}`) + right-aligned item count / scroll indicator (`dialogfont10x10`, `dimTint`), followed by a `2 px` horizontal divider (`uibit_fill_16g`, `frameTint`).
+   - Proposal B Action Button directly below divider: full-width framed `[F] Get Items (N)` button (`h = 34 px`, `uibit_brdr_16we` / `uibit_brdr_16wc` + `uibit_fill_2bt`), with optional circular LED (`uibit_fill_circ`, `16x16`) at left. Clicking `[F] Get Items (N)` triggers take-all (`g_pendingClickTakeObj = g_peekObj`).
+2. **6 Synthesized Hardware Bezels + Plain Teal Fallback (`QuickLootBezel.h`, `QuickLootBezelTex.inc`):**
+   - 7 `BezelFrame` options: `FrameNone (0)` (Plain Wireframe Border), `FrameDatapad (1)`, `FrameComputer (2)` (4-sided 45° mitered steel + electric blue ribbed vents + cyan inner rim), `FrameUpgrade (3)` (45° mitered industrial circuit), `FrameWorkbench (4)` (45° mitered bio-emerald circuit), `FrameStore (5)` (Art-Deco bronze), `FramePauseGold (6)` (Classic Gold with 1:1 circular bosses).
+   - Embedded via `EmbedTex.h` (`embtex::Tex` 32-bit BGRA TGA in `QuickLootBezelTex.inc`) for single-DLL `.kpatch` hot-swap.
+   - Note on bezel inset polish before generating `QuickLootBezelTex.inc`: when extracting `crt_f` from `pnl_datapad`, crop center `(64, 64, 512-64, 512-64)` (NOT `(28, 28)`) so `pnl_datapad`'s baked-in inner wireframe line at `~34 px` is excluded from the scanline pattern; and for `bezel_datapad`, synthesize its outer metal frame (`t_rail = 32 px`) with clean CRT interior so the inner wireframe box (`inset = 42 px`) has 0% overlap on top/bottom/corners across all 6 bezels.
+3. **7 Loot Object Categories (`classifyPlaceable` in `QuickLootBezel.h`):**
+   - `CatDroidTech (0)`, `CatWeaponArmory (1)`, `CatMedicalLab (2)`, `CatStrongboxCache (3)`, `CatRemainsCorpse (4)`, `CatFootlockerGen (5)`, `CatDefaultFallback (6)`.
+   - Priority cascade using `CSWSPlaceable` offsets (`m_sTag` `+0x18`, `m_nAppearance` `+0x270`, `m_cTemplateResRef` `+0x3D0`, `m_nBodyBag` `+0x3EC`, `m_bIsBodyBag` `+0x498`, `m_bIsCorpse` `+0x4A4`):
+     1. Droid/Tech tags (`droid`, `t3m4`, `hk47`, `g0t0`, `remote`, `console`, `comp`, `term`, `sec_pnl`, `slicer`) or appearances `63, 73-77, 152-154, 195-199, 208`.
+     2. Corpse/Remains (`m_bIsCorpse != 0`, `m_bIsBodyBag != 0`, appearances `8-10, 56, 71, 203, 211`, or tags `corpse`, `remains`, `bones`, `skeleton`, `dead`, `body`).
+     3. Medical/Lab (appearances `65, 191, 238, 377-379` or tags `med`, `kolto`, `bacta`, `lab`, `chem`, `bio`, `serum`, `heal`, `surg`).
+     4. Weapon/Armory (appearances `59, 60, 72` or tags `weap`, `rack`, `armor`, `armory`, `ammo`, `blaster`, `saber`, `turret`, `ordnance`, `workbench`).
+     5. Strongbox/Cache (appearances `7, 159` or tags `strongbox`, `safe`, `vault`, `cache`, `sec_box`, `merch`, `credits`, `lockbox`, `treasure`).
+     6. Footlocker/Standard (appearances `1-5, 58, 61, 62, 160` or tags `flocker`, `footlocker`, `pl_locker`, `locker`, `crate`, `box`, `barrel`, `cant`, `desk`).
+     7. Fallback (`CatDefaultFallback`).
+4. **Layered Mod Config Menu + Live Preview (`QuickLootPage.h`, `PreviewCanvas.h`, `QuickLoot.cpp`):**
+   - Master toggle `HardwareBezels = 1` + `DefaultBezel` + `DefaultPalette` on main Quick Loot page.
+   - `K2MenuUiApi.NewModal(page, "quick-loot.cat-modal", "CATEGORY BEZEL & COLOR MAPPING")` + `AddGear(page, "Customize Category Mappings...", modal)` for layered per-category customization (`BezelFrame`, `ColorPalette`, `CustomR/G/B`, `ShowButtonLed`), persisted via `IniWrite.h` to `quick_loot.ini`.
+   - `SetDescSplit(page, 700)` + `pvc::Canvas` in `MUI_PANE_PREVIEW` rendering live interactive preview of the currently selected category/bezel/palette.
