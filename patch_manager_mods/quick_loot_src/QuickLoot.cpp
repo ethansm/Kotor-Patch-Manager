@@ -993,9 +993,10 @@ bool lblDrawText(Lbl& l, const char* text, const qlogic::Rect& r, unsigned align
         l.font = font;
     }
     if (l.align != align) { if (!guikit::setAlign(l.c, align)) return false; l.align = align; }
-    if (!l.colSet || memcmp(l.col, col, sizeof l.col) != 0) {
-        if (!guikit::setTextColor(l.c, col[0], col[1], col[2])) return false;
-        memcpy(l.col, col, sizeof l.col);
+    const float* useCol = col ? col : Cream;
+    if (!l.colSet || memcmp(l.col, useCol, sizeof l.col) != 0) {
+        if (!guikit::setTextColor(l.c, useCol[0], useCol[1], useCol[2])) return false;
+        memcpy(l.col, useCol, sizeof l.col);
         l.colSet = true;
     }
     const uint32_t th = textHash(text);
@@ -1019,9 +1020,10 @@ void lblPlace(Lbl& l, const qlogic::Rect& r) {
     if (!l.rectSet || r != l.rect) { guikit::setRect(l.c, r.x, r.y, r.w, r.h); l.rect = r; l.rectSet = true; }
 }
 bool lblTint(Lbl& l, const float* tint) {
-    if (l.tintSet && memcmp(l.tint, tint, sizeof l.tint) == 0) return true;
-    if (!guikit::setBorderTint(l.c, tint)) return false;
-    memcpy(l.tint, tint, sizeof l.tint);
+    const float* useTint = tint ? tint : White;
+    if (l.tintSet && memcmp(l.tint, useTint, sizeof l.tint) == 0) return true;
+    if (!guikit::setBorderTint(l.c, useTint)) return false;
+    memcpy(l.tint, useTint, sizeof l.tint);
     l.tintSet = true;
     return true;
 }
@@ -1036,12 +1038,13 @@ bool lblAlpha(Lbl& l, float a) {
 // is the same textures in another colour). Flat fallback (no frame template): the 2bt fill tinted the same. false = a write failed.
 bool lblDrawFrame(Lbl& l, const qlogic::Rect& r, const float* tint, bool clickable = false) {
     if (!l.c) return false;
+    const float* useTint = tint ? tint : TealFrame;
     if (g_rowFlat && !l.fillSet) {
         void* img = guikit::imageFor(TexFill2bt);
-        if (!img || !guikit::setFill(l.c, img) || !guikit::setFillStyle(l.c, 2)) return false;
+        if (!img || !guikit::setFill(l.c, img, useTint) || !guikit::setFillStyle(l.c, 2)) return false;
         l.fillSet = true;
     }
-    if (!lblTint(l, tint) || !lblAlpha(l, qlogic::FrameAlpha)) return false;
+    if (!lblTint(l, useTint) || !lblAlpha(l, qlogic::FrameAlpha)) return false;
     lblPlace(l, r);
     lblShow(l, clickable);   // 0.6.0-dev: the peek list's row frames eat the click (take that item) instead of walking the character
     return true;
@@ -1051,14 +1054,15 @@ bool lblDrawFrame(Lbl& l, const qlogic::Rect& r, const float* tint, bool clickab
 // label (soft: true); false = a write failed.
 bool lblDrawFilled(Lbl& l, const char* resref, const float* tint, float alpha, const qlogic::Rect& r, bool clickable) {
     if (!l.c) return false;
+    const float* useTint = tint ? tint : White;
     if (!l.fillSet || l.fillName != resref) {
         void* img = guikit::imageFor(resref);
         if (!img) { lblHideOne(l); return true; }
-        if (!guikit::setFill(l.c, img, tint) || !guikit::setFillStyle(l.c, 2)) return false;
-        memcpy(l.tint, tint, sizeof l.tint); l.tintSet = true;
+        if (!guikit::setFill(l.c, img, useTint) || !guikit::setFillStyle(l.c, 2)) return false;
+        memcpy(l.tint, useTint, sizeof l.tint); l.tintSet = true;
         l.fillName = resref; l.fillSet = true;
     }
-    if (!lblTint(l, tint) || !lblAlpha(l, alpha)) return false;
+    if (!lblTint(l, useTint) || !lblAlpha(l, alpha)) return false;
     lblPlace(l, r);
     lblShow(l, clickable);
     return true;
@@ -1224,7 +1228,7 @@ void blockDraw(const qlogic::ListDraw& d, const qlogic::Rect& blk, const qlogic:
     if (showBezel) {
         const qlogic::Rect bzl = qlogic::bezelOuterRect(blk, true);
         const char* bzlRes = qlbezel::frameResref(static_cast<qlbezel::BezelFrame>(style.frame));
-        lblDrawFilled(g_bezel, bzlRes, nullptr, 1.0f, bzl, false);
+        lblDrawFilled(g_bezel, bzlRes, White, 1.0f, bzl, false);
     } else {
         lblHideOne(g_bezel);
     }
