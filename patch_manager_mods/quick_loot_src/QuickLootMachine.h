@@ -681,8 +681,18 @@ struct Machine {
     }
 
     // ShowContainerGui(objId, flag) for plc (0 = unresolved). n = item count read by the caller. Returns 1 = consumed (peek or armed take), 0 = vanilla.
-    int onShow(Env& e, uint32_t objId, uintptr_t plc, int flag, int n, uint32_t now) {
+    int onShow(Env& e, uint32_t objId, uintptr_t plc, int flag, int n, uint32_t now, bool isGive = false) {
         char b[160];
+        if (isGive) {
+            if (peek.busy()) {
+                int sent = 0;
+                peekSendClose(e, 0, peek.plc != 0, now, &sent);
+                peekEnd(e);
+            }
+            fmtVanilla(b, sizeof b, Reason::Give);
+            e.log(b);
+            return 0;
+        }
         if (plc && peek.onShow(objId, plc, now, frame)) {   // QL2p: the ShowContainerGui of our OpenInventory = a peek, not a take (any flag)
             peekList.clear();
             peekView.reset(0, cfg.listRows);   // a new peek starts at the top of the list

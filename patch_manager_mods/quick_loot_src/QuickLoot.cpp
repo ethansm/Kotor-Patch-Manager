@@ -218,6 +218,7 @@ pvc::Canvas g_cv;
 bool g_pvOn = false;
 char g_targetName[80] = {0};
 bool g_actionBtnClicked = false;
+char g_giveTags[512] = {0};   // QL6: comma-/semicolon-separated tags to route to vanilla menu
 
 inline void ensureBezelTextures() {
     static bool s_done = false;
@@ -1452,6 +1453,58 @@ bool takeKeyDown() {
     return pid == GetCurrentProcessId();   // a press in another window never counts
 }
 
+bool tagInList(const char* tag, const char* list) {
+    if (!tag || !tag[0] || !list || !list[0]) return false;
+    const char* p = list;
+    while (*p) {
+        while (*p == ' ' || *p == '\t' || *p == ',' || *p == ';') ++p;
+        if (!*p) break;
+        const char* start = p;
+        while (*p && *p != ' ' && *p != '\t' && *p != ',' && *p != ';') ++p;
+        const size_t len = static_cast<size_t>(p - start);
+        const size_t tlen = strlen(tag);
+        if (len == tlen) {
+            bool match = true;
+            for (size_t i = 0; i < len; ++i) {
+                const char a = (start[i] >= 'A' && start[i] <= 'Z') ? static_cast<char>(start[i] + 32) : start[i];
+                const char b = (tag[i] >= 'A' && tag[i] <= 'Z') ? static_cast<char>(tag[i] + 32) : tag[i];
+                if (a != b) { match = false; break; }
+            }
+            if (match) return true;
+        }
+    }
+    return false;
+}
+
+// QL6 Give / quest hand-in container detection:
+// (a) if gui != 0, read container_p at gui + 0x54; if read succeeds and (flags & 1) == 0, return true (Give mode active).
+// (b) if plc != 0, read CExoString at plc + Plc_OnInvDisturbed (0x30C); if non-empty string, return true (quest hand-in container).
+// (c) if plc != 0, check placeable tag at plc + Plc_Tag against g_giveTags list read from quick_loot.ini.
+bool isGiveContainer(uintptr_t gui, uintptr_t plc) {
+    if (gui != 0) {
+        uint32_t cont = 0;
+        if (rd<uint32_t>(gui, qlogic::Gui_ContainerOffset, &cont) && cont != 0) {
+            uint32_t flags = 0;
+            if (rd<uint32_t>(cont, qlogic::Container_ModeFlags, &flags)) {
+                if ((flags & 1) == 0) return true;
+            }
+        }
+    }
+    if (plc != 0) {
+        char onDist[64];
+        if (saferead::readExo(Site, plc + qlogic::Plc_OnInvDisturbed, onDist, sizeof onDist, 63, false) > 0 && onDist[0] != '\0') {
+            return true;
+        }
+        if (g_giveTags[0] != '\0') {
+            char tag[64];
+            if (saferead::readExo(Site, plc + Plc_Tag, tag, sizeof tag, 63, false) > 0 && tag[0] != '\0') {
+                if (tagInList(tag, g_giveTags)) return true;
+            }
+        }
+    }
+    return false;
+}
+
 bool readCandFlags(uintptr_t plc, qlogic::CandFlags& f) {
     uint8_t locked = 0, open = 0;
     uint32_t inv = 0, trap = 0, use = 0;
@@ -1459,7 +1512,11 @@ bool readCandFlags(uintptr_t plc, qlogic::CandFlags& f) {
         !rd<uint32_t>(plc, Plc_Useable, &use) || !rd<uint8_t>(plc, Plc_Open, &open))
         return false;
     f.hasInv = inv != 0; f.locked = locked != 0; f.trap = trap != 0; f.useable = use != 0; f.open = open != 0;
+    f.isGive = isGiveContainer(0, plc);
     return true;
+}
+inline bool readCandFlags(qlogic::CandFlags* f, uintptr_t plc) {
+    return f ? readCandFlags(plc, *f) : false;
 }
 
 // The engine side of qlogic::Env (QuickLootMachine.h): every read goes through SafeRead, every action is the same engine call as before.
@@ -1982,6 +2039,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     g_sounds = GetPrivateProfileIntA("QuickLoot", "Sounds", 1, IniPath) != 0;   // 0.7.0-dev QL12
     g_hideArrow = GetPrivateProfileIntA("QuickLoot", "HideTargetArrow", 1, IniPath) != 0;   // 0.7.2-dev QL14
     g_hardwareBezels = GetPrivateProfileIntA("QuickLoot", "HardwareBezels", 1, IniPath) != 0; // 0.8.0-dev QL14
+    GetPrivateProfileStringA("QuickLoot", "GiveTags", "", g_giveTags, sizeof g_giveTags, IniPath); // QL6
     g_live.bezels = g_hardwareBezels;
     for (int c = 0; c < qlbezel::CatCount; ++c) {
         g_catStyles[c] = qlbezel::defaultStyle(static_cast<qlbezel::Category>(c));
@@ -2041,7 +2099,6 @@ extern "C" int __cdecl QlTargetArrow(uintptr_t owner) {
 }
 
 extern "C" int __cdecl QlShowContainer(uintptr_t gui, uint32_t objId, int flag) {
-    (void)gui;
     enter();
     uintptr_t plc = placeableFor(objId);
     uintptr_t repo = 0;
@@ -2062,7 +2119,7 @@ extern "C" int __cdecl QlShowContainer(uintptr_t gui, uint32_t objId, int flag) 
         qlogic::fmtItem(b, sizeof b, i, id, stack);
         logLine(b);
     }
-    return g_m.onShow(g_env, objId, plc, flag, n, now);   // QL2p peek (any flag) or QL1a take-all armed (1), else the vanilla menu (0)
+    return g_m.onShow(g_env, objId, plc, flag, n, now, isGiveContainer(gui, plc));   // QL2p peek (any flag) or QL1a take-all armed (1), else the vanilla menu (0)
 }
 
 // H2. ECX = placeable, [esp+4] = a1, [esp+8] = a2, [esp+0xC] = a3 (event record pointer). Runs on every placeable heartbeat: filter first.

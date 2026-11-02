@@ -68,7 +68,12 @@ constexpr unsigned OpenSettleFrames = 2;               // HUD frames to wait aft
 constexpr uint32_t SendTimeoutMs = 1000;               // send anyway this long after Show when no OnOpen was seen
 constexpr uint32_t GiveUpMs = 5000;                    // stop retrying an unresolvable message object after this long
 
-enum class Reason { Consume = 0, Disabled, NoHud, Shift, NoPlc, Busy };
+// QL6 Give / quest hand-in container offsets
+constexpr int Gui_ContainerOffset = 0x54;   // CGuiInGame + 0x54 -> CSWGuiContainer*
+constexpr int Container_ModeFlags = 0x70;   // CSWGuiContainer + 0x70, bit 0: 1=Take, 0=Give
+constexpr int Plc_OnInvDisturbed = 0x30C;   // CSWSPlaceable + 0x30C, CExoString
+
+enum class Reason { Consume = 0, Disabled, NoHud, Shift, NoPlc, Busy, Give };
 
 // Consume (skip the vanilla container menu) only when every condition holds. First failing condition wins, in this order.
 // QL1a fix: the Show flag means "the container had items at Show", NOT "loot mode" -- containers that make their loot in OnOpen arrive with
@@ -89,6 +94,7 @@ inline const char* reasonName(Reason r) {
         case Reason::Shift: return "shift";
         case Reason::NoPlc: return "noplc";
         case Reason::Busy: return "busy";
+        case Reason::Give: return "give";
     }
     return "?";
 }
@@ -345,9 +351,9 @@ inline float dist2d(float ax, float ay, float bx, float by) {
 
 // Candidate flags of one placeable (read from the server object; see QuickLoot.cpp offsets).
 struct CandFlags {
-    bool hasInv = false, locked = false, trap = false, useable = false, open = false, cooldown = false;
+    bool hasInv = false, locked = false, trap = false, useable = false, open = false, cooldown = false, isGive = false;
 };
-// First failing candidate condition ("ok" when none). Order: inventory, locked, trap, useable, open, cooldown, range.
+// First failing candidate condition ("ok" when none). Order: inventory, locked, trap, useable, open, cooldown, give, range.
 inline const char* candidateWhy(const CandFlags& f, float dist, float openM) {
     if (!f.hasInv) return "noinv";
     if (f.locked) return "locked";
@@ -355,6 +361,7 @@ inline const char* candidateWhy(const CandFlags& f, float dist, float openM) {
     if (!f.useable) return "unuse";
     if (f.open) return "open";
     if (f.cooldown) return "cooldown";
+    if (f.isGive) return "give";
     if (!(dist <= openM)) return "far";
     return "ok";
 }

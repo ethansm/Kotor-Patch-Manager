@@ -83,7 +83,12 @@ int main() {
         kt::CheckEq("exactly one input combination consumes", consumes, 1);
         kt::Check("reason names", strcmp(reasonName(Reason::Shift), "shift") == 0 && strcmp(reasonName(Reason::NoHud), "nohud") == 0 &&
                   strcmp(reasonName(Reason::Busy), "busy") == 0 && strcmp(reasonName(Reason::Disabled), "disabled") == 0 &&
-                  strcmp(reasonName(Reason::NoPlc), "noplc") == 0 && strcmp(reasonName(Reason::Consume), "consume") == 0);
+                  strcmp(reasonName(Reason::NoPlc), "noplc") == 0 && strcmp(reasonName(Reason::Consume), "consume") == 0 &&
+                  strcmp(reasonName(Reason::Give), "give") == 0);
+        // QL6 Give / quest hand-in container offsets
+        kt::CheckEq("Gui_ContainerOffset is 0x54", Gui_ContainerOffset, 0x54);
+        kt::CheckEq("Container_ModeFlags is 0x70", Container_ModeFlags, 0x70);
+        kt::CheckEq("Plc_OnInvDisturbed is 0x30C", Plc_OnInvDisturbed, 0x30C);
         // QL1a fix: close flag follows the items present at send time
         kt::CheckEq("close flag: 3 items -> 1", closeFlagFor(3), 1);
         kt::CheckEq("close flag: 1 item -> 1", closeFlagFor(1), 1);
@@ -362,6 +367,8 @@ int main() {
         kt::Check("already open", !candidateOk(f, 1, 3) && strcmp(candidateWhy(f, 1, 3), "open") == 0);
         f = ok; f.cooldown = true;
         kt::Check("in cooldown", !candidateOk(f, 1, 3) && strcmp(candidateWhy(f, 1, 3), "cooldown") == 0);
+        f = ok; f.isGive = true;
+        kt::Check("is give / quest container", !candidateOk(f, 1, 3) && strcmp(candidateWhy(f, 1, 3), "give") == 0);
         f = CandFlags();
         kt::Check("all-false flags: first reason is noinv", strcmp(candidateWhy(f, 1, 3), "noinv") == 0);
         // exhaustive: only hasInv && useable && !locked && !trap && !open && !cooldown passes

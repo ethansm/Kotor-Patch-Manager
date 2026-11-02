@@ -1816,6 +1816,34 @@ void scenarioQL2() {
     }
 }
 
+// ---- QL6: Give / quest hand-in containers routed to vanilla menu
+void scenarioQL6() {
+    {
+        const char* scn = "ql6-1 give container onShow returns 0 and logs VANILLA reason=give";
+        Sim s; s.m.cfg.proxOn = false;
+        const int A = s.add(1, 0, {Medpac2});
+        s.run(3);
+        int rc = s.m.onShow(s, s.objId(A), s.objs[static_cast<size_t>(A)].plc, 1, 1, s.now, /*isGive=*/true);
+        CHK_EQ("onShow isGive=true returns 0", rc, 0);
+        CHK("logged VANILLA reason=give", s.logged("VANILLA reason=give"));
+        s.finishCheck(scn);
+    }
+    {
+        const char* scn = "ql6-2 give container closes busy peek and routes to vanilla";
+        Sim s;
+        const int A = s.add(1.5f, 0, {Medpac2});
+        s.setLeader(0, 0);
+        s.run(50);
+        CHK("peek active before give show", s.m.peek.active && s.m.peek.plc == s.objs[static_cast<size_t>(A)].plc);
+        const int B = s.add(10, 0, {Pistol});
+        int rc = s.m.onShow(s, s.objId(B), s.objs[static_cast<size_t>(B)].plc, 1, 1, s.now, /*isGive=*/true);
+        CHK_EQ("onShow isGive=true returns 0", rc, 0);
+        CHK("logged VANILLA reason=give", s.logged("VANILLA reason=give"));
+        CHK("peek closed by give onShow", !s.m.peek.active);
+        s.finishCheck(scn);
+    }
+}
+
 }   // namespace
 
 int main() {
@@ -1836,5 +1864,6 @@ int main() {
     scenarioN();
     scenarioO();
     scenarioQL2();
+    scenarioQL6();
     return kt::Report("quick_loot_sim_test");
 }
