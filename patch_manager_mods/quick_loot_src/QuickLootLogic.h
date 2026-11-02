@@ -765,16 +765,16 @@ inline Rect titleDivRect(int w, int padX = BlockPadX, int padY = BlockPadY) {
 }
 
 inline Rect actionBtnRect(int w, int padX = BlockPadX, int padY = BlockPadY) {
-    return { padX, padY + 32 + 6 + 2 + 8, w - 2 * padX, 38 };
+    return { padX, padY + 32 + 6 + 2 + 8, w - 2 * padX, 40 };
 }
 
 inline Rect actionLedRect(const Rect& btnRect) {
-    return { btnRect.x + 12, btnRect.y + 11, 16, 16 };
+    return { btnRect.x + 12, btnRect.y + 12, 16, 16 };
 }
 
 inline Rect actionTextRect(const Rect& btnRect, bool hasLed) {
     const int tx = btnRect.x + (hasLed ? 36 : 12);
-    return { tx, btnRect.y + 5, btnRect.w - (hasLed ? 48 : 24), 28 };
+    return { tx, btnRect.y + 2, btnRect.w - (hasLed ? 48 : 24), 32 };
 }
 
 inline int rowsTopPx(bool hasUnified = false) {

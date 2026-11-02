@@ -1980,15 +1980,15 @@ void pvRefreshPreview() {
     pvc::Rect div = { blk.x + 20, blk.y + 44, blk.w - 40, 2 };
     g_cv.put(4, div, solidImg, style.frameRgb, 1.0f);
 
-    pvc::Rect btn = { blk.x + 20, blk.y + 54, blk.w - 40, 34 };
+    pvc::Rect btn = { blk.x + 20, blk.y + 54, blk.w - 40, 36 };
     g_cv.put(5, btn, solidImg, style.btnRgb, 0.8f);
 
     if (style.led) {
-        pvc::Rect led = { btn.x + 10, btn.y + 9, 16, 16 };
+        pvc::Rect led = { btn.x + 10, btn.y + 10, 16, 16 };
         g_cv.put(6, led, ledImg ? ledImg : solidImg, style.ledRgb, 1.0f);
     }
 
-    pvc::Rect btnTxt = { btn.x + (style.led ? 34 : 14), btn.y + 7, btn.w - 40, 22 };
+    pvc::Rect btnTxt = { btn.x + (style.led ? 34 : 14), btn.y + 4, btn.w - 40, 24 };
     g_cv.put(7, btnTxt, nullptr, nullptr, 1.0f);
     g_cv.text(7, "[F] GET ITEMS (3)");
     guikit::setTextColor(g_cv.w[7].c, Cream[0], Cream[1], Cream[2]);

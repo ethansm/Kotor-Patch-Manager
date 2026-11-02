@@ -1474,11 +1474,11 @@ int main() {
         Rect dr = titleDivRect(400);
         kt::Check("titleDivRect height is 2, 6 px below title", dr.h == 2 && dr.y == BlockPadY + 32 + 6);
         Rect br = actionBtnRect(400);
-        kt::Check("actionBtnRect height is 38, 8 px below divider", br.h == 38 && br.y == BlockPadY + 32 + 6 + 2 + 8);
+        kt::Check("actionBtnRect height is 40, 8 px below divider", br.h == 40 && br.y == BlockPadY + 32 + 6 + 2 + 8);
         Rect lr = actionLedRect(br);
-        kt::Check("actionLedRect is 16x16 centred in btn", lr.w == 16 && lr.h == 16 && lr.x == br.x + 12);
+        kt::Check("actionLedRect is 16x16 centred in btn", lr.w == 16 && lr.h == 16 && lr.x == br.x + 12 && lr.y == br.y + 12);
         Rect ar = actionTextRect(br, true);
-        kt::Check("actionTextRect with LED starts after LED", ar.x == br.x + 36);
+        kt::Check("actionTextRect with LED starts after LED and centred", ar.x == br.x + 36 && ar.y == br.y + 2);
 
         kt::Check("rowsTopPx(false) legacy is 68", rowsTopPx(false) == BlockPadY + HeaderH + HeaderGapPx);
         kt::Check("rowsTopPx(true) unified is 116 (20 + 96)", rowsTopPx(true) == BlockPadY + 96);
