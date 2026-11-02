@@ -71,6 +71,19 @@ inline const char* categoryName(Category c) {
     }
 }
 
+inline const char* categoryContainers(Category c) {
+    switch (c) {
+        case CatDroidTech:        return "droids, wreckage, computer consoles, terminals";
+        case CatWeaponArmory:     return "weapon racks, armor lockers, ammo boxes";
+        case CatMedicalLab:       return "med units, kolto tanks, lab stations, chemical containers";
+        case CatStrongboxCache:   return "strongboxes, safes, high-value caches, vaults";
+        case CatRemainsCorpse:    return "corpses, skeletal remains, body bags, fallen victims";
+        case CatFootlockerGen:    return "footlockers, lockers, metal crates, barrels";
+        case CatDefaultFallback:  return "standard containers, desks, miscellaneous bins";
+        default:                  return "all containers";
+    }
+}
+
 inline const char* frameName(BezelFrame f) {
     switch (f) {
         case FrameNone:      return "None (Plain Border)";
@@ -112,42 +125,42 @@ inline const char* paletteName(Palette p) {
 inline void getPaletteColors(Palette p, float frameRgb[3], float btnRgb[3], float textRgb[3], float ledRgb[3]) {
     switch (p) {
         case PalBlue:
-            frameRgb[0] = 0.15f; frameRgb[1] = 0.45f; frameRgb[2] = 0.85f;
-            btnRgb[0]   = 0.15f; btnRgb[1]   = 0.45f; btnRgb[2]   = 0.85f;
-            textRgb[0]  = 0.35f; textRgb[1]  = 0.70f; textRgb[2]  = 1.00f;
+            frameRgb[0] = 0.12f; frameRgb[1] = 0.38f; frameRgb[2] = 0.72f;
+            btnRgb[0]   = 0.12f; btnRgb[1]   = 0.38f; btnRgb[2]   = 0.72f;
+            textRgb[0]  = 0.35f; textRgb[1]  = 0.70f; textRgb[2]  = 0.95f;
             ledRgb[0]   = 0.20f; ledRgb[1]   = 0.60f; ledRgb[2]   = 1.00f;
             break;
         case PalCobalt:
-            frameRgb[0] = 0.40f; frameRgb[1] = 0.50f; frameRgb[2] = 0.65f;
-            btnRgb[0]   = 0.40f; btnRgb[1]   = 0.50f; btnRgb[2]   = 0.65f;
-            textRgb[0]  = 0.70f; textRgb[1]  = 0.80f; textRgb[2]  = 0.95f;
-            ledRgb[0]   = 0.50f; ledRgb[1]   = 0.70f; ledRgb[2]   = 0.95f;
+            frameRgb[0] = 0.32f; frameRgb[1] = 0.42f; frameRgb[2] = 0.58f;
+            btnRgb[0]   = 0.32f; btnRgb[1]   = 0.42f; btnRgb[2]   = 0.58f;
+            textRgb[0]  = 0.65f; textRgb[1]  = 0.78f; textRgb[2]  = 0.92f;
+            ledRgb[0]   = 0.45f; ledRgb[1]   = 0.65f; ledRgb[2]   = 0.90f;
             break;
         case PalEmerald:
-            frameRgb[0] = 0.10f; frameRgb[1] = 0.65f; frameRgb[2] = 0.35f;
-            btnRgb[0]   = 0.10f; btnRgb[1]   = 0.65f; btnRgb[2]   = 0.35f;
-            textRgb[0]  = 0.30f; textRgb[1]  = 0.85f; textRgb[2]  = 0.50f;
-            ledRgb[0]   = 0.20f; ledRgb[1]   = 0.95f; ledRgb[2]   = 0.45f;
+            frameRgb[0] = 0.08f; frameRgb[1] = 0.35f; frameRgb[2] = 0.28f;
+            btnRgb[0]   = 0.08f; btnRgb[1]   = 0.35f; btnRgb[2]   = 0.28f;
+            textRgb[0]  = 0.40f; textRgb[1]  = 0.78f; textRgb[2]  = 0.65f;
+            ledRgb[0]   = 0.15f; ledRgb[1]   = 0.65f; ledRgb[2]   = 0.45f;
             break;
         case PalBronze:
-            frameRgb[0] = 0.75f; frameRgb[1] = 0.55f; frameRgb[2] = 0.20f;
-            btnRgb[0]   = 0.75f; btnRgb[1]   = 0.55f; btnRgb[2]   = 0.20f;
-            textRgb[0]  = 0.95f; textRgb[1]  = 0.75f; textRgb[2]  = 0.35f;
-            ledRgb[0]   = 1.00f; ledRgb[1]   = 0.75f; ledRgb[2]   = 0.20f;
+            frameRgb[0] = 0.65f; frameRgb[1] = 0.46f; frameRgb[2] = 0.18f;
+            btnRgb[0]   = 0.65f; btnRgb[1]   = 0.46f; btnRgb[2]   = 0.18f;
+            textRgb[0]  = 0.92f; textRgb[1]  = 0.72f; textRgb[2]  = 0.35f;
+            ledRgb[0]   = 0.95f; ledRgb[1]   = 0.70f; ledRgb[2]   = 0.20f;
             break;
         case PalGold:
-            frameRgb[0] = 0.85f; frameRgb[1] = 0.72f; frameRgb[2] = 0.25f;
-            btnRgb[0]   = 0.85f; btnRgb[1]   = 0.72f; btnRgb[2]   = 0.25f;
-            textRgb[0]  = 1.00f; textRgb[1]  = 0.90f; textRgb[2]  = 0.45f;
-            ledRgb[0]   = 1.00f; ledRgb[1]   = 0.85f; ledRgb[2]   = 0.20f;
+            frameRgb[0] = 0.75f; frameRgb[1] = 0.62f; frameRgb[2] = 0.22f;
+            btnRgb[0]   = 0.75f; btnRgb[1]   = 0.62f; btnRgb[2]   = 0.22f;
+            textRgb[0]  = 0.95f; textRgb[1]  = 0.85f; textRgb[2]  = 0.45f;
+            ledRgb[0]   = 0.95f; ledRgb[1]   = 0.80f; ledRgb[2]   = 0.20f;
             break;
         case PalTeal:
         case PalCustom:
         default:
-            frameRgb[0] = 0.10f; frameRgb[1] = 0.58f; frameRgb[2] = 0.62f;
-            btnRgb[0]   = 0.10f; btnRgb[1]   = 0.58f; btnRgb[2]   = 0.62f;
-            textRgb[0]  = 0.20f; textRgb[1]  = 0.80f; textRgb[2]  = 0.85f;
-            ledRgb[0]   = 0.10f; ledRgb[1]   = 0.85f; ledRgb[2]   = 0.90f;
+            frameRgb[0] = 0.08f; frameRgb[1] = 0.48f; frameRgb[2] = 0.52f;
+            btnRgb[0]   = 0.08f; btnRgb[1]   = 0.48f; btnRgb[2]   = 0.52f;
+            textRgb[0]  = 0.25f; textRgb[1]  = 0.78f; textRgb[2]  = 0.82f;
+            ledRgb[0]   = 0.15f; ledRgb[1]   = 0.80f; ledRgb[2]   = 0.85f;
             break;
     }
 }

@@ -1747,7 +1747,9 @@ int32_t KPATCH_CALL pvModalChange(uint32_t page, int32_t item, int32_t requested
     (void)page; (void)oldVal; (void)user;
     if (item == 0) { // cat_sel
         g_selectedCat = (requested >= 0 && requested < qlbezel::CatCount) ? requested : 0;
+        const qlbezel::Category cat = static_cast<qlbezel::Category>(g_selectedCat);
         const qlbezel::CategoryStyle& s = g_catStyles[g_selectedCat];
+        const qlbezel::CategoryStyle def = qlbezel::defaultStyle(cat);
         if (g_mcMenu.ok() && g_modalPage) {
             g_mcMenu.p->SetValue(g_modalPage, 1, s.frame);
             g_mcMenu.p->SetValue(g_modalPage, 2, s.palette);
@@ -1755,14 +1757,32 @@ int32_t KPATCH_CALL pvModalChange(uint32_t page, int32_t item, int32_t requested
             g_mcMenu.p->SetValue(g_modalPage, 4, static_cast<int>(lroundf(s.frameRgb[0] * 100.0f)));
             g_mcMenu.p->SetValue(g_modalPage, 5, static_cast<int>(lroundf(s.frameRgb[1] * 100.0f)));
             g_mcMenu.p->SetValue(g_modalPage, 6, static_cast<int>(lroundf(s.frameRgb[2] * 100.0f)));
+            char desc[256];
+            snprintf(desc, sizeof desc, "%s: %s.\nDefault: %s frame, %s palette%s",
+                     qlbezel::categoryName(cat),
+                     qlbezel::categoryContainers(cat),
+                     qlbezel::frameName(static_cast<qlbezel::BezelFrame>(def.frame)),
+                     qlbezel::paletteName(static_cast<qlbezel::Palette>(def.palette)),
+                     def.led ? ", LED On" : "");
+            g_mcMenu.p->SetDesc(g_modalPage, desc);
         }
         return g_selectedCat;
     }
     qlbezel::CategoryStyle& s = g_catStyles[g_selectedCat];
+    const qlbezel::Category cat = static_cast<qlbezel::Category>(g_selectedCat);
+    const qlbezel::CategoryStyle def = qlbezel::defaultStyle(cat);
     if (item == 1) { // cat_frame
         s.frame = (requested >= 0 && requested < qlbezel::FrameCount) ? requested : 0;
         char k[32], v[16]; snprintf(k, sizeof k, "Cat_%d_Frame", g_selectedCat); snprintf(v, sizeof v, "%d", s.frame);
         iniw::updateFile(qlpage::kIniFile, qlpage::kSection, k, v);
+        if (g_mcMenu.ok() && g_modalPage) {
+            char desc[256];
+            snprintf(desc, sizeof desc, "Bezel: %s. (Default: %s for %s)",
+                     qlbezel::frameName(static_cast<qlbezel::BezelFrame>(s.frame)),
+                     qlbezel::frameName(static_cast<qlbezel::BezelFrame>(def.frame)),
+                     qlbezel::categoryName(cat));
+            g_mcMenu.p->SetDesc(g_modalPage, desc);
+        }
         return s.frame;
     }
     if (item == 2) { // cat_pal
@@ -1777,12 +1797,28 @@ int32_t KPATCH_CALL pvModalChange(uint32_t page, int32_t item, int32_t requested
         }
         char k[32], v[16]; snprintf(k, sizeof k, "Cat_%d_Palette", g_selectedCat); snprintf(v, sizeof v, "%d", s.palette);
         iniw::updateFile(qlpage::kIniFile, qlpage::kSection, k, v);
+        if (g_mcMenu.ok() && g_modalPage) {
+            char desc[256];
+            snprintf(desc, sizeof desc, "Palette: %s. (Default: %s for %s)",
+                     qlbezel::paletteName(static_cast<qlbezel::Palette>(s.palette)),
+                     qlbezel::paletteName(static_cast<qlbezel::Palette>(def.palette)),
+                     qlbezel::categoryName(cat));
+            g_mcMenu.p->SetDesc(g_modalPage, desc);
+        }
         return s.palette;
     }
     if (item == 3) { // cat_led
         s.led = requested != 0;
         char k[32], v[16]; snprintf(k, sizeof k, "Cat_%d_Led", g_selectedCat); snprintf(v, sizeof v, "%d", s.led ? 1 : 0);
         iniw::updateFile(qlpage::kIniFile, qlpage::kSection, k, v);
+        if (g_mcMenu.ok() && g_modalPage) {
+            char desc[256];
+            snprintf(desc, sizeof desc, "Action LED: %s. (Default: %s for %s)",
+                     s.led ? "Enabled" : "Disabled",
+                     def.led ? "Enabled" : "Disabled",
+                     qlbezel::categoryName(cat));
+            g_mcMenu.p->SetDesc(g_modalPage, desc);
+        }
         return s.led ? 1 : 0;
     }
     if (item >= 4 && item <= 6) { // RGB steppers
@@ -1796,6 +1832,36 @@ int32_t KPATCH_CALL pvModalChange(uint32_t page, int32_t item, int32_t requested
         iniw::updateFile(qlpage::kIniFile, qlpage::kSection, k, v);
         return requested;
     }
+    if (item == 7) { // Reset to category defaults
+        g_catStyles[g_selectedCat] = qlbezel::defaultStyle(cat);
+        const qlbezel::CategoryStyle& r = g_catStyles[g_selectedCat];
+        if (g_mcMenu.ok() && g_modalPage) {
+            g_mcMenu.p->SetValue(g_modalPage, 1, r.frame);
+            g_mcMenu.p->SetValue(g_modalPage, 2, r.palette);
+            g_mcMenu.p->SetValue(g_modalPage, 3, r.led ? 1 : 0);
+            g_mcMenu.p->SetValue(g_modalPage, 4, static_cast<int>(lroundf(r.frameRgb[0] * 100.0f)));
+            g_mcMenu.p->SetValue(g_modalPage, 5, static_cast<int>(lroundf(r.frameRgb[1] * 100.0f)));
+            g_mcMenu.p->SetValue(g_modalPage, 6, static_cast<int>(lroundf(r.frameRgb[2] * 100.0f)));
+            g_mcMenu.p->SetRowText(g_modalPage, 7, "Reset to category defaults");
+            char desc[256];
+            snprintf(desc, sizeof desc, "Reset %s to defaults:\nFrame: %s, Palette: %s",
+                     qlbezel::categoryName(cat),
+                     qlbezel::frameName(static_cast<qlbezel::BezelFrame>(r.frame)),
+                     qlbezel::paletteName(static_cast<qlbezel::Palette>(r.palette)));
+            g_mcMenu.p->SetDesc(g_modalPage, desc);
+        }
+        char k[32], v[32];
+        snprintf(k, sizeof k, "Cat_%d_Frame", g_selectedCat); snprintf(v, sizeof v, "%d", r.frame);
+        iniw::updateFile(qlpage::kIniFile, qlpage::kSection, k, v);
+        snprintf(k, sizeof k, "Cat_%d_Palette", g_selectedCat); snprintf(v, sizeof v, "%d", r.palette);
+        iniw::updateFile(qlpage::kIniFile, qlpage::kSection, k, v);
+        snprintf(k, sizeof k, "Cat_%d_Led", g_selectedCat); snprintf(v, sizeof v, "%d", r.led ? 1 : 0);
+        iniw::updateFile(qlpage::kIniFile, qlpage::kSection, k, v);
+        snprintf(k, sizeof k, "Cat_%d_RGB", g_selectedCat);
+        snprintf(v, sizeof v, "%.2f,%.2f,%.2f", (double)r.frameRgb[0], (double)r.frameRgb[1], (double)r.frameRgb[2]);
+        iniw::updateFile(qlpage::kIniFile, qlpage::kSection, k, v);
+        return 0; // snap toggle back to 0
+    }
     return requested;
 }
 
@@ -1806,31 +1872,40 @@ void pvBuildModal(const K2MenuUiApi* ui, uint32_t page) {
     g_modalPage = ui->NewModal(page, haveCol ? &box : nullptr, "CATEGORY BEZEL & COLOR MAPPING");
     if (!g_modalPage) return;
 
+    const qlbezel::Category cat = static_cast<qlbezel::Category>(g_selectedCat);
     const qlbezel::CategoryStyle& s = g_catStyles[g_selectedCat];
+    const qlbezel::CategoryStyle def = qlbezel::defaultStyle(cat);
 
     K2MuiRowSpec r0 = {}; r0.struct_size = sizeof r0; r0.kind = MUI_ROW_STEPPER;
     r0.flags = MUI_RF_WRAP;
-    r0.label = "Category"; r0.desc = "Select loot container category to configure.";
+    r0.label = "Category";
+    r0.desc = "Select container category: Droids, Armory, Medical, Strongboxes, Remains, Lockers, Standard.";
     r0.choices = kCatChoices; r0.nChoices = qlbezel::CatCount; r0.value = g_selectedCat;
     r0.min = 0; r0.max = qlbezel::CatCount - 1; r0.step = 1;
     ui->AddRow(g_modalPage, &r0);
 
+    char descFrame[128];
+    snprintf(descFrame, sizeof descFrame, "Hardware bezel frame for this category. (Default: %s)", qlbezel::frameName(static_cast<qlbezel::BezelFrame>(def.frame)));
     K2MuiRowSpec r1 = {}; r1.struct_size = sizeof r1; r1.kind = MUI_ROW_STEPPER;
     r1.flags = MUI_RF_WRAP;
-    r1.label = "Bezel frame"; r1.desc = "Hardware bezel frame for this category.";
+    r1.label = "Bezel frame"; r1.desc = descFrame;
     r1.choices = kFrameChoices; r1.nChoices = qlbezel::FrameCount; r1.value = s.frame;
     r1.min = 0; r1.max = qlbezel::FrameCount - 1; r1.step = 1;
     ui->AddRow(g_modalPage, &r1);
 
+    char descPal[128];
+    snprintf(descPal, sizeof descPal, "Color palette preset or custom RGB. (Default: %s)", qlbezel::paletteName(static_cast<qlbezel::Palette>(def.palette)));
     K2MuiRowSpec r2 = {}; r2.struct_size = sizeof r2; r2.kind = MUI_ROW_STEPPER;
     r2.flags = MUI_RF_WRAP;
-    r2.label = "Color palette"; r2.desc = "Color palette preset or custom RGB.";
+    r2.label = "Color palette"; r2.desc = descPal;
     r2.choices = kPalChoices; r2.nChoices = qlbezel::PalCount; r2.value = s.palette;
     r2.min = 0; r2.max = qlbezel::PalCount - 1; r2.step = 1;
     ui->AddRow(g_modalPage, &r2);
 
+    char descLed[128];
+    snprintf(descLed, sizeof descLed, "Show circular LED status light on action button. (Default: %s)", def.led ? "On" : "Off");
     K2MuiRowSpec r3 = {}; r3.struct_size = sizeof r3; r3.kind = MUI_ROW_TOGGLE;
-    r3.label = "Action button LED"; r3.desc = "Show circular LED status light on action button.";
+    r3.label = "Action button LED"; r3.desc = descLed;
     r3.value = s.led ? 1 : 0;
     ui->AddRow(g_modalPage, &r3);
 
@@ -1852,8 +1927,15 @@ void pvBuildModal(const K2MenuUiApi* ui, uint32_t page) {
     r6.value = static_cast<int>(lroundf(s.frameRgb[2] * 100.0f));
     ui->AddRow(g_modalPage, &r6);
 
+    K2MuiRowSpec r7 = {}; r7.struct_size = sizeof r7; r7.kind = MUI_ROW_TOGGLE;
+    r7.label = "Reset defaults";
+    r7.desc = "Reset selected category to its factory default hardware bezel and color palette.";
+    r7.value = 0;
+    ui->AddRow(g_modalPage, &r7);
+
     ui->SetChangeHandler(g_modalPage, pvModalChange, nullptr);
-    g_gearItem = ui->AddGear(page, "Customize category bezels and colors");
+    ui->SetRowText(g_modalPage, 7, "Reset to category defaults");
+    g_gearItem = ui->AddGear(page, "Configure hardware bezels, color palettes & defaults per container category");
 }
 
 void pvRefreshPreview() {
@@ -1872,6 +1954,7 @@ void pvRefreshPreview() {
     void* solidImg = guikit::imageFor(TexFill16g);
     void* ledImg = guikit::imageFor("uibit_fill_circ");
 
+    // List backing: sleek darkFill background matching inner border (no solid green flood)
     pvc::Rect blk = { 40, 40, 400, 360 };
     if (showBezel && bzlImg) {
         pvc::Rect bzlRect = { blk.x - 40, blk.y - 36, 480, 432 };
@@ -1879,15 +1962,16 @@ void pvRefreshPreview() {
     }
     float darkFill[3] = { 0.02f, 0.05f, 0.06f };
     g_cv.put(1, blk, fillImg ? fillImg : solidImg, darkFill, 0.95f);
-    g_cv.put(2, blk, solidImg, style.frameRgb, 0.8f);
 
     pvc::Rect tr = { blk.x + 20, blk.y + 16, blk.w - 120, 24 };
-    g_cv.put(3, tr, nullptr, nullptr, 1.0f);
-    g_cv.text(3, qlbezel::categoryName(cat));
+    g_cv.put(2, tr, nullptr, nullptr, 1.0f);
+    g_cv.text(2, qlbezel::categoryName(cat));
+    guikit::setTextColor(g_cv.w[2].c, Cream[0], Cream[1], Cream[2]);
 
     pvc::Rect cntRect = { blk.x + blk.w - 90, blk.y + 16, 70, 24 };
-    g_cv.put(8, cntRect, nullptr, nullptr, 1.0f);
-    g_cv.text(8, "3 ITEMS");
+    g_cv.put(3, cntRect, nullptr, nullptr, 1.0f);
+    g_cv.text(3, "3 ITEMS");
+    guikit::setTextColor(g_cv.w[3].c, TealDim[0], TealDim[1], TealDim[2]);
 
     pvc::Rect div = { blk.x + 20, blk.y + 44, blk.w - 40, 2 };
     g_cv.put(4, div, solidImg, style.frameRgb, 1.0f);
@@ -1903,33 +1987,80 @@ void pvRefreshPreview() {
     pvc::Rect btnTxt = { btn.x + (style.led ? 34 : 14), btn.y + 7, btn.w - 40, 22 };
     g_cv.put(7, btnTxt, nullptr, nullptr, 1.0f);
     g_cv.text(7, "[F] GET ITEMS (3)");
+    guikit::setTextColor(g_cv.w[7].c, Cream[0], Cream[1], Cream[2]);
 
     const char* sampleItems[3] = { "Disruptor Carbine", "Parts x5", "Combat Suit" };
     const char* sampleIcons[3] = { "iw_dsrptrfl_001", "ii_progspike_002", "ia_class4_001" };
     for (int r = 0; r < 3; ++r) {
         pvc::Rect rr = { blk.x + 20, blk.y + 100 + r * 44, blk.w - 40, 38 };
-        g_cv.put(9 + r * 3, rr, solidImg, style.frameRgb, 0.5f);
+        const bool hov = (r == 0);
+        g_cv.put(8 + r * 3, rr, solidImg, hov ? RowHilight : style.frameRgb, hov ? 0.35f : 0.15f);
         pvc::Rect ir = { rr.x + 6, rr.y + 4, 30, 30 };
         void* iconImg = guikit::imageFor(sampleIcons[r]);
-        g_cv.put(10 + r * 3, ir, iconImg, nullptr, 1.0f);
+        g_cv.put(9 + r * 3, ir, iconImg, nullptr, 1.0f);
         pvc::Rect rt = { rr.x + 42, rr.y + 7, rr.w - 50, 24 };
-        g_cv.put(11 + r * 3, rt, nullptr, nullptr, 1.0f);
-        g_cv.text(11 + r * 3, sampleItems[r]);
+        g_cv.put(10 + r * 3, rt, nullptr, nullptr, 1.0f);
+        g_cv.text(10 + r * 3, sampleItems[r]);
+        const float* col = hov ? Cream : style.textRgb;
+        guikit::setTextColor(g_cv.w[10 + r * 3].c, col[0], col[1], col[2]);
     }
 
+    // Rich Tooltip: sleek dark backing with complete rich layout (QL9/QL13)
     pvc::Rect tip = { blk.x + blk.w + (showBezel ? 40 : 0) + 20, 40, 320, 360 };
-    g_cv.put(18, tip, fillImg ? fillImg : solidImg, darkFill, 0.95f);
-    g_cv.put(19, tip, solidImg, style.frameRgb, 0.7f);
-    pvc::Rect tipTitle = { tip.x + 16, tip.y + 16, tip.w - 32, 24 };
-    g_cv.put(20, tipTitle, nullptr, nullptr, 1.0f);
-    g_cv.text(20, "Disruptor Carbine");
-    pvc::Rect tipSub = { tip.x + 16, tip.y + 44, tip.w - 32, 20 };
-    g_cv.put(21, tipSub, nullptr, nullptr, 1.0f);
-    g_cv.text(21, "Ranged Weapon (Blaster)");
+    g_cv.put(17, tip, fillImg ? fillImg : solidImg, darkFill, 0.95f);
 
-    pvc::Rect tipBody = { tip.x + 16, tip.y + 74, tip.w - 32, 100 };
-    g_cv.put(22, tipBody, nullptr, nullptr, 1.0f);
-    g_cv.text(22, "Damage: Energy 2d8\nCritical: 19-20, x2\nRange: 28m");
+    const int inner = tip.w - 32;
+
+    // Item icon at top-left
+    pvc::Rect tipIcon = { tip.x + 16, tip.y + 14, 48, 48 };
+    void* carbineIcon = guikit::imageFor("iw_dsrptrfl_001");
+    g_cv.put(18, tipIcon, carbineIcon, nullptr, 1.0f);
+
+    // Title and Category next to icon
+    pvc::Rect tipTitle = { tip.x + 16 + 54, tip.y + 16, inner - 54, 22 };
+    g_cv.put(19, tipTitle, nullptr, nullptr, 1.0f);
+    g_cv.text(19, "Disruptor Carbine");
+    guikit::setTextColor(g_cv.w[19].c, Cream[0], Cream[1], Cream[2]);
+
+    pvc::Rect tipSub = { tip.x + 16 + 54, tip.y + 38, inner - 54, 20 };
+    g_cv.put(20, tipSub, nullptr, nullptr, 1.0f);
+    g_cv.text(20, "Ranged Weapon (Blaster)");
+    guikit::setTextColor(g_cv.w[20].c, TealDim[0], TealDim[1], TealDim[2]);
+
+    // Horizontal divider 1
+    pvc::Rect div1 = { tip.x + 16, tip.y + 68, inner, 2 };
+    g_cv.put(21, div1, solidImg, style.frameRgb, 1.0f);
+
+    // Two-column stat rules
+    pvc::Rect tipLabels = { tip.x + 16, tip.y + 76, 75, 54 };
+    g_cv.put(22, tipLabels, nullptr, nullptr, 1.0f);
+    g_cv.text(22, "Damage:\nCritical:\nRange:");
+    guikit::setTextColor(g_cv.w[22].c, TealDim[0], TealDim[1], TealDim[2]);
+
+    pvc::Rect tipValues = { tip.x + 16 + 80, tip.y + 76, inner - 80, 54 };
+    g_cv.put(23, tipValues, nullptr, nullptr, 1.0f);
+    g_cv.text(23, "2-16 Energy\n19-20 / x2\n28m");
+    guikit::setTextColor(g_cv.w[23].c, Cream[0], Cream[1], Cream[2]);
+
+    // Horizontal divider 2
+    pvc::Rect div2 = { tip.x + 16, tip.y + 138, inner, 2 };
+    g_cv.put(24, div2, solidImg, style.frameRgb, 1.0f);
+
+    // Flavor description text
+    pvc::Rect tipFlavor = { tip.x + 16, tip.y + 146, inner, 120 };
+    g_cv.put(25, tipFlavor, nullptr, nullptr, 1.0f);
+    g_cv.text(25, "A heavy blaster carbine configured to bypass shields and standard armor plating.");
+    guikit::setTextColor(g_cv.w[25].c, TealText[0], TealText[1], TealText[2]);
+
+    // Horizontal divider 3
+    pvc::Rect div3 = { tip.x + 16, tip.y + 276, inner, 2 };
+    g_cv.put(26, div3, solidImg, style.frameRgb, 1.0f);
+
+    // Equipped footer
+    pvc::Rect tipFoot = { tip.x + 16, tip.y + 284, inner, 22 };
+    g_cv.put(27, tipFoot, nullptr, nullptr, 1.0f);
+    g_cv.text(27, "Equipped: Blaster Pistol (1-8)");
+    guikit::setTextColor(g_cv.w[27].c, TealDim[0], TealDim[1], TealDim[2]);
 
     g_cv.end();
 }
@@ -1940,13 +2071,16 @@ void pvOnBuilt(void*, uint32_t page, void* panel) {
     if (!g_mcMenu.hasModal() || !g_mcMenu.hasDescSplit()) return;
     const K2MenuUiApi* ui = g_mcMenu.p;
     if (!g_cv.build(ui, panel, page, 28)) return;
+    guikit::setAlign(g_cv.w[2].c, 9);
     guikit::setAlign(g_cv.w[3].c, 9);
     guikit::setAlign(g_cv.w[7].c, 9);
-    guikit::setAlign(g_cv.w[8].c, 9);
-    for (int i = 0; i < 3; ++i) guikit::setAlign(g_cv.w[11 + i * 3].c, 9);
+    for (int i = 0; i < 3; ++i) guikit::setAlign(g_cv.w[10 + i * 3].c, 9);
+    guikit::setAlign(g_cv.w[19].c, 9);
     guikit::setAlign(g_cv.w[20].c, 9);
-    guikit::setAlign(g_cv.w[21].c, 9);
     guikit::setAlign(g_cv.w[22].c, 9);
+    guikit::setAlign(g_cv.w[23].c, 9);
+    guikit::setAlign(g_cv.w[25].c, 9);
+    guikit::setAlign(g_cv.w[27].c, 9);
 
     if (!ui->SetDescSplit(page, 700)) return;
     pvBuildModal(ui, page);
@@ -1957,6 +2091,16 @@ void pvOnBuilt(void*, uint32_t page, void* panel) {
 void pvOnTick(void*) {
     if (g_pvOn && g_gearItem >= 0 && g_modalPage && g_mcMenu.ok() && g_mcMenu.p->Clicked(g_page.page, g_gearItem)) {
         g_mcMenu.p->SetModalOpen(g_modalPage, 1);
+        const qlbezel::Category cat = static_cast<qlbezel::Category>(g_selectedCat);
+        const qlbezel::CategoryStyle def = qlbezel::defaultStyle(cat);
+        char desc[256];
+        snprintf(desc, sizeof desc, "%s: %s.\nDefault: %s frame, %s palette%s",
+                 qlbezel::categoryName(cat),
+                 qlbezel::categoryContainers(cat),
+                 qlbezel::frameName(static_cast<qlbezel::BezelFrame>(def.frame)),
+                 qlbezel::paletteName(static_cast<qlbezel::Palette>(def.palette)),
+                 def.led ? ", LED On" : "");
+        g_mcMenu.p->SetDesc(g_modalPage, desc);
     }
     embtex::heal();
     pvRefreshPreview();

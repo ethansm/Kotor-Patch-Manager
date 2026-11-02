@@ -123,5 +123,13 @@ int main() {
     kt::Check("Footlocker default frame is Datapad", defaultStyle(CatFootlockerGen).frame == FrameDatapad);
     kt::Check("Frame resrefs", strcmp(frameResref(FrameDatapad), "ql_bzl_dpad") == 0 && strcmp(frameResref(FrameComputer), "ql_bzl_comp") == 0);
 
+    // Category container descriptions & palette tuning
+    kt::Check("Medical containers described", strstr(categoryContainers(CatMedicalLab), "med units") != nullptr);
+    kt::Check("Corpse containers described", strstr(categoryContainers(CatRemainsCorpse), "corpses") != nullptr);
+    float fr[3] = {}, br[3] = {}, tr[3] = {}, lr[3] = {};
+    getPaletteColors(PalEmerald, fr, br, tr, lr);
+    kt::Check("PalEmerald frame is dark sage ({0.08, 0.35, 0.28})", fr[0] == 0.08f && fr[1] == 0.35f && fr[2] == 0.28f);
+    kt::Check("PalEmerald text is soft mint ({0.40, 0.78, 0.65})", tr[0] == 0.40f && tr[1] == 0.78f && tr[2] == 0.65f);
+
     return kt::Report("quick_loot_page_test");
 }
