@@ -134,4 +134,7 @@ constexpr uintptr_t ExoStringAssign = 0x007337C0;        // CExoString::operator
 constexpr uintptr_t GuiTextObjRefresh = 0x00417800;      // fastcall(ECX = text holder): when holder+0x14/+0x10/+0xC are all set, calls [holder+0x14]->vt[0x4C](-1); tail of 416EA0 (dump decomp/41/00416ea0.asm 416f68, 41/00417800.c)
 constexpr uintptr_t SceneCamRotFlag = 0x00A0F190;         // int (file value 1, no direct store): MapToScreen / render skip the camera rotation when set and quat.w is 0 or 1 exactly. READ-ONLY, log-only CAMENG probe (dump decomp/48/004809d0.c, 047f320.c:288)
 
+// ---- mouse cursor (doc 12 empty-container indicators, doc 52 QL3 hover peek) ----
+constexpr uintptr_t SetMouseCursor = 0x007B3870;          // CClientExoAppInternal::SetMouseCursor (verified B11a) thiscall(app, id, a, b) RET 0xC
+
 } // namespace gameaddr

@@ -140,7 +140,7 @@ const char* const TexBacking = "lbl_miscroll_f";               // backing panel 
 // QL1a: vanilla OK button path (0x8B2850): msgObj = *(*(*(*AppGlobal + 4) + 4) + 0x150); thiscall(msgObj, clientObjId, closeFlag) RET 8.
 constexpr uintptr_t SendContainerClose = 0x0087A550;
 constexpr int App_Client = 4, Client_Inner = 4, Inner_MsgObj = 0x150;
-constexpr uintptr_t SetMouseCursor = 0x007B3870; // CClientExoAppInternal::SetMouseCursor thiscall(app, id, a, b) RET 0xC (doc 12 M7-R1)
+constexpr uintptr_t SetMouseCursor = gameaddr::SetMouseCursor; // CClientExoAppInternal::SetMouseCursor thiscall(app, id, a, b) RET 0xC (doc 12 M7-R1)
 constexpr int Inner_HoverObj = 0x4B0;            // CClientExoAppInternal + 0x4B0: hovered object id (doc 12 / doc 18)
 constexpr int Plc_LocName = 0x268;               // CSWSPlaceable::GetFirstName -> CExoLocString at plc+0x268
 // ---- QL2p. Evidence files: .claude/waves/w3-52-R2/u01.md (placeable fields), u02.md (leader / area list), u03.md (suppress helpers).
