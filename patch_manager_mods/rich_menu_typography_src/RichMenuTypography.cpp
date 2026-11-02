@@ -27,15 +27,104 @@ inline unsigned long GetPrivateProfileStringA(const char* /*section*/, const cha
 #endif
 #endif
 
+#define INIW_FILE_API 1
+#define MCDECL_FILE_API 1
+#include "ModConfigApi.h"
+#include "ProviderClient.h"
+#include "ModConfigDecl.h"
+#include "RichMenuTypographyPage.h"
+
 namespace {
 bool g_inlineColoring = true;
 bool g_richDescBox = true;
 bool g_statHierarchy = true;
 bool g_verbose = false;
+bool g_statsLogged = false;
 uint32_t g_overrideCount = 0;
 uint32_t g_descPopulateCount = 0;
 uint32_t g_statStyleCount = 0;
-constexpr uint32_t kMaxStartupOverrides = 40;
+constexpr uint32_t kMaxStartupOverrides = 5;
+
+mcdecl::Page g_page;
+k2mc::ConfigClient g_mcCfg;
+k2mc::MenuClient g_mcMenu;
+k2pc::RegisterOnce g_mcReg;
+K2ModConfigEntry g_mcEntry;
+bool g_pageLoaded = false;
+rmtpage::Live g_live;
+unsigned g_pageLogs = 0;
+
+void mcLog(int level, const char* msg) {
+    if (level == KPLOG_INFO) {
+        if (KpLog_HasCore()) KP_LOG(chMain, "PAGE registered");
+    } else {
+        if (KpLog_HasCore()) KP_LOGV(chMain, level, "%s", msg);
+    }
+}
+
+int32_t pageOnChange(void* /*user*/, int /*row*/, const char* id, int32_t requested, int /*dir*/) {
+    const int32_t fin = rmtpage::applyRow(g_live, id, requested);
+    g_inlineColoring = g_live.inlineColoring;
+    g_richDescBox = g_live.richDesc;
+    g_statHierarchy = g_live.stats;
+    if (id && strcmp(id, rmtpage::kRowFont) == 0) {
+        rmt::setBodyFont(rmtpage::fontName(g_live.fontIdx));
+        iniw::updateFile(rmtpage::kIniFile, rmtpage::kSection, "BodyFont", rmtpage::fontName(g_live.fontIdx));
+    }
+    if (g_pageLogs < 20) {
+        ++g_pageLogs;
+        if (KpLog_HasCore()) {
+            KP_LOG(chMain, "PAGE row=%s req=%d final=%d", id ? id : "", static_cast<int>(requested), static_cast<int>(fin));
+        }
+    }
+    return fin;
+}
+
+void pageOnEnter(void* /*user*/) {
+    g_page.setValue(rmtpage::kRowFont, rmtpage::fontIndexFor(rmt::getBodyFont()));
+}
+
+void pageInit(const KPatchApi* api) {
+    g_mcCfg.init(api);
+    g_mcMenu.init(api);
+    g_mcCfg.onConnect = [](bool ok, const char* why) {
+        if (KpLog_HasCore()) KP_LOGV(chMain, ok ? KPLOG_INFO : KPLOG_WARN, "PAGE k2.modconfig %s: %s", ok ? "ok" : "unavailable", why);
+    };
+    g_mcMenu.onConnect = [](bool ok, const char* why) {
+        if (KpLog_HasCore()) KP_LOGV(chMain, ok ? KPLOG_INFO : KPLOG_WARN, "PAGE k2.menuui %s: %s", ok ? "ok" : "unavailable", why);
+    };
+    char err[96] = {};
+    g_pageLoaded = g_page.load(rmtpage::kPageSchema, strlen(rmtpage::kPageSchema), err, sizeof(err));
+    if (!g_pageLoaded) {
+        if (KpLog_HasCore()) KP_LOGV(chMain, KPLOG_WARN, "PAGE schema rejected: %s", err);
+        return;
+    }
+    g_page.menu = &g_mcMenu;
+    g_page.io = mcdecl::fileIo();
+    g_page.hooks.onChange = pageOnChange;
+    g_page.hooks.onEnter = pageOnEnter;
+    g_mcEntry = g_page.entry(rmtpage::kEntryId);
+
+    g_live.inlineColoring = g_inlineColoring;
+    g_live.richDesc = g_richDescBox;
+    g_live.stats = g_statHierarchy;
+    g_live.fontIdx = rmtpage::fontIndexFor(rmt::getBodyFont());
+}
+
+void pagePoll() {
+    if (!g_pageLoaded || g_mcReg.registered) return;
+    g_mcCfg.poll();
+    g_mcMenu.poll();
+    static unsigned s_polls = 0;
+    if (++s_polls == 600 && !(g_mcCfg.ok() && g_mcMenu.ok() && g_mcMenu.hasRows())) {
+        if (KpLog_HasCore()) {
+            KP_LOGV(chMain, KPLOG_WARN, "PAGE not registered after %u polls: modconfig=%d menuui=%d hasRows=%d",
+                    s_polls, (int)g_mcCfg.ok(), (int)g_mcMenu.ok(), (int)g_mcMenu.hasRows());
+        }
+    }
+    if (!g_mcCfg.ok() || !g_mcMenu.ok() || !g_mcMenu.hasRows()) return;
+    k2pc::registerOnce(g_mcReg, g_mcCfg, g_mcEntry, mcLog);
+}
 
 constexpr size_t kCharCreamOffsets[] = {
     rmt::kCharOff_LblTitle,
@@ -202,6 +291,13 @@ void resetDescPopulateCount() noexcept { g_descPopulateCount = 0; }
 uint32_t getDescPopulateCount() noexcept { return g_descPopulateCount; }
 void resetStatStyleCount() noexcept { g_statStyleCount = 0; }
 uint32_t getStatStyleCount() noexcept { return g_statStyleCount; }
+bool pageRegistered() noexcept { return g_mcReg.registered; }
+void pagePollForTest() noexcept { pagePoll(); }
+int32_t applyPageRowForTest(const char* id, int32_t requested) noexcept {
+    return pageOnChange(nullptr, 0, id, requested, 0);
+}
+void pageOnEnterForTest() noexcept { pageOnEnter(nullptr); }
+int32_t getPageRowValueForTest(const char* id) noexcept { return g_page.get(id); }
 } // namespace rmt
 
 extern "C" void __cdecl RmtOverrideGlyphColor(uintptr_t ebp) {
@@ -247,7 +343,7 @@ extern "C" int __cdecl RmtAddControls2(void* listbox, void** pControls, int coun
     if (ok) {
         ++g_descPopulateCount;
         if (KpLog_HasCore()) {
-            if (g_verbose || g_descPopulateCount <= 20) {
+            if (g_verbose || g_descPopulateCount <= 3) {
                 KP_LOGV(chMain, KPLOG_DEBUG, "RichDescBox populated listbox=%p popCount=%u",
                         listbox, g_descPopulateCount);
             }
@@ -293,7 +389,8 @@ extern "C" void __cdecl RmtSetStats(void* panel) {
 
     if (styled > 0) {
         g_statStyleCount += styled;
-        if (KpLog_HasCore() && (g_verbose || g_statStyleCount <= 60)) {
+        if (KpLog_HasCore() && (g_verbose || !g_statsLogged)) {
+            g_statsLogged = true;
             KP_LOGV(chMain, KPLOG_DEBUG, "RmtSetStats styled %u labels on character panel=%p",
                     styled, panel);
         }
@@ -301,6 +398,8 @@ extern "C" void __cdecl RmtSetStats(void* panel) {
 }
 
 extern "C" void __cdecl RmtStyleInitControl(void* pControl, const char* tagStr) {
+    if (!g_mcReg.registered) pagePoll();
+
     if (!g_statHierarchy || !pControl || !tagStr || !*tagStr) {
         return;
     }
@@ -336,6 +435,8 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
         KP_LOG(chMain, "INIT rich-menu-typography inlineColoring=%d richDescBox=%d statHierarchy=%d bodyFont=%s verbose=%d",
                g_inlineColoring ? 1 : 0, g_richDescBox ? 1 : 0, g_statHierarchy ? 1 : 0, rmt::getBodyFont(), g_verbose ? 1 : 0);
     }
+
+    pageInit(api);
 }
 
 #ifdef _WIN32

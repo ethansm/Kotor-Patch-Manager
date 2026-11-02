@@ -2,6 +2,7 @@
 #include "RichMenuTypography.h"
 #include "RichDescBox.h"
 #include "RichTextClassifier.h"
+#include "RichMenuTypographyPage.h"
 #include "check.h"
 #include "FakeKPatchApi.h"
 #include "KpLog.h"
@@ -504,6 +505,94 @@ void testRmt3StatAndMenuHierarchy() {
     guikit::g_gk.rebind();
 }
 
+void testModConfigPageContract() {
+    // 1. Without provider (clients not ok) pagePoll registers nothing and does not crash
+    kt::Check("pageRegistered initially false", !rmt::pageRegistered());
+    rmt::pagePollForTest();
+    kt::Check("pageRegistered remains false after poll without provider", !rmt::pageRegistered());
+
+    // 650 polls triggers 600-poll warning safely without crashing
+    for (int i = 0; i < 650; ++i) {
+        rmt::pagePollForTest();
+    }
+    kt::Check("pageRegistered remains false after 650 polls without provider", !rmt::pageRegistered());
+
+    // RmtStyleInitControl calls pagePoll if !g_mcReg.registered before early return
+    RmtStyleInitControl(nullptr, nullptr);
+    kt::Check("RmtStyleInitControl polls safely without crash", !rmt::pageRegistered());
+
+    // 2. pageOnChange semantic via applyPageRowForTest flips globals
+    // inline
+    kt::CheckEq("applyPageRow inline 0 returns 0", rmt::applyPageRowForTest(rmtpage::kRowInline, 0), 0);
+    kt::Check("inlineColoring flipped to false", !rmt::isInlineColoring());
+    kt::CheckEq("applyPageRow inline 1 returns 1", rmt::applyPageRowForTest(rmtpage::kRowInline, 1), 1);
+    kt::Check("inlineColoring flipped to true", rmt::isInlineColoring());
+    kt::CheckEq("applyPageRow inline 2 clamps to 1", rmt::applyPageRowForTest(rmtpage::kRowInline, 2), 1);
+    kt::Check("inlineColoring is true after 2 clamp", rmt::isInlineColoring());
+    kt::CheckEq("applyPageRow inline -1 clamps to 0", rmt::applyPageRowForTest(rmtpage::kRowInline, -1), 0);
+    kt::Check("inlineColoring is false after -1 clamp", !rmt::isInlineColoring());
+    rmt::applyPageRowForTest(rmtpage::kRowInline, 1);
+
+    // richdesc
+    kt::CheckEq("applyPageRow richdesc 0 returns 0", rmt::applyPageRowForTest(rmtpage::kRowRichDesc, 0), 0);
+    kt::Check("richDescBox flipped to false", !rmt::isRichDescBox());
+    kt::CheckEq("applyPageRow richdesc 1 returns 1", rmt::applyPageRowForTest(rmtpage::kRowRichDesc, 1), 1);
+    kt::Check("richDescBox flipped to true", rmt::isRichDescBox());
+    kt::CheckEq("applyPageRow richdesc 2 clamps to 1", rmt::applyPageRowForTest(rmtpage::kRowRichDesc, 2), 1);
+    kt::Check("richDescBox is true after 2 clamp", rmt::isRichDescBox());
+    kt::CheckEq("applyPageRow richdesc -1 clamps to 0", rmt::applyPageRowForTest(rmtpage::kRowRichDesc, -1), 0);
+    kt::Check("richDescBox is false after -1 clamp", !rmt::isRichDescBox());
+    rmt::applyPageRowForTest(rmtpage::kRowRichDesc, 1);
+
+    // stats
+    kt::CheckEq("applyPageRow stats 0 returns 0", rmt::applyPageRowForTest(rmtpage::kRowStats, 0), 0);
+    kt::Check("statHierarchy flipped to false", !rmt::isStatHierarchy());
+    kt::CheckEq("applyPageRow stats 1 returns 1", rmt::applyPageRowForTest(rmtpage::kRowStats, 1), 1);
+    kt::Check("statHierarchy flipped to true", rmt::isStatHierarchy());
+    kt::CheckEq("applyPageRow stats 2 clamps to 1", rmt::applyPageRowForTest(rmtpage::kRowStats, 2), 1);
+    kt::Check("statHierarchy is true after 2 clamp", rmt::isStatHierarchy());
+    kt::CheckEq("applyPageRow stats -1 clamps to 0", rmt::applyPageRowForTest(rmtpage::kRowStats, -1), 0);
+    kt::Check("statHierarchy is false after -1 clamp", !rmt::isStatHierarchy());
+    rmt::applyPageRowForTest(rmtpage::kRowStats, 1);
+
+    // 3. fontIdx -> getBodyFont() returns matching kFonts literal, and clamps
+    kt::CheckEq("applyPageRow font 0 returns 0", rmt::applyPageRowForTest(rmtpage::kRowFont, 0), 0);
+    kt::Check("font 0 body font matches kFonts[0]", strcmp(rmt::getBodyFont(), rmtpage::kFonts[0]) == 0);
+
+    kt::CheckEq("applyPageRow font 1 returns 1", rmt::applyPageRowForTest(rmtpage::kRowFont, 1), 1);
+    kt::Check("font 1 body font matches kFonts[1]", strcmp(rmt::getBodyFont(), rmtpage::kFonts[1]) == 0);
+
+    kt::CheckEq("applyPageRow font 2 returns 2", rmt::applyPageRowForTest(rmtpage::kRowFont, 2), 2);
+    kt::Check("font 2 body font matches kFonts[2]", strcmp(rmt::getBodyFont(), rmtpage::kFonts[2]) == 0);
+
+    // font out-of-range clamps
+    kt::CheckEq("applyPageRow font -1 clamps to 0", rmt::applyPageRowForTest(rmtpage::kRowFont, -1), 0);
+    kt::Check("font -1 body font matches kFonts[0]", strcmp(rmt::getBodyFont(), rmtpage::kFonts[0]) == 0);
+
+    kt::CheckEq("applyPageRow font 3 clamps to 2", rmt::applyPageRowForTest(rmtpage::kRowFont, 3), 2);
+    kt::Check("font 3 body font matches kFonts[2]", strcmp(rmt::getBodyFont(), rmtpage::kFonts[2]) == 0);
+
+    kt::CheckEq("applyPageRow font 99 clamps to 2", rmt::applyPageRowForTest(rmtpage::kRowFont, 99), 2);
+    kt::Check("font 99 body font matches kFonts[2]", strcmp(rmt::getBodyFont(), rmtpage::kFonts[2]) == 0);
+
+    // Unknown id / null passthrough
+    kt::CheckEq("applyPageRow unknown id passthrough", rmt::applyPageRowForTest("unknown_id", 42), 42);
+    kt::CheckEq("applyPageRow null id passthrough", rmt::applyPageRowForTest(nullptr, 77), 77);
+
+    // pageOnEnter synchronizes font value to page
+    rmt::applyPageRowForTest(rmtpage::kRowFont, 1);
+    rmt::pageOnEnterForTest();
+    kt::CheckEq("pageOnEnter updates font row to 1", rmt::getPageRowValueForTest(rmtpage::kRowFont), 1);
+
+    rmt::applyPageRowForTest(rmtpage::kRowFont, 0);
+    rmt::pageOnEnterForTest();
+    kt::CheckEq("pageOnEnter updates font row to 0", rmt::getPageRowValueForTest(rmtpage::kRowFont), 0);
+    kt::Check("font reset to kFonts[0]", strcmp(rmt::getBodyFont(), rmtpage::kFonts[0]) == 0);
+
+    // Clean up any test ini created in cwd
+    remove(rmtpage::kIniFile);
+}
+
 } // namespace
 
 int main() {
@@ -518,5 +607,6 @@ int main() {
     testIniGate();
     testKpLogContract();
     testRmt3StatAndMenuHierarchy();
+    testModConfigPageContract();
     return kt::Report("rich_menu_typography_contract_test");
 }

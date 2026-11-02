@@ -90,6 +90,43 @@ inline bool isSpaceChar(char c) noexcept {
     return c == ' ' || c == '\t' || c == '\r';
 }
 
+inline bool hasSentencePunctInRange(const char* s, const char* e) noexcept {
+    if (!s || !e || s >= e) return false;
+    for (const char* p = s; p < e; ++p) {
+        if (*p == '!' || *p == '?') return true;
+        if (*p == '.') {
+            if (p >= s + 2 && (p[-2] == 'v' || p[-2] == 'V') && (p[-1] == 's' || p[-1] == 'S')) {
+                continue;
+            }
+            return true;
+        }
+    }
+    return false;
+}
+
+inline bool eqNoCaseN(const char* a, const char* b, size_t n) noexcept {
+    if (!a || !b) return false;
+    for (size_t i = 0; i < n; ++i) {
+        if (!a[i] || !b[i] || itemprops::lower(a[i]) != itemprops::lower(b[i])) return false;
+    }
+    return b[n] == '\0';
+}
+
+inline bool isRuleHeaderPrefix(const char* s, size_t len) noexcept {
+    if (!s || len == 0) return false;
+    while (len > 0 && isSpaceChar(*s)) { ++s; --len; }
+    while (len > 0 && (s[len - 1] == ':' || isSpaceChar(s[len - 1]))) { --len; }
+    if (len == 0) return false;
+
+    if (eqNoCaseN(s, "FEATS REQUIRED", len) || eqNoCaseN(s, "FEAT REQUIRED", len)) return true;
+    if (eqNoCaseN(s, "REQUIREMENTS", len) || eqNoCaseN(s, "REQUIREMENT", len)) return true;
+    if (eqNoCaseN(s, "ATTRIBUTES REQUIRED", len) || eqNoCaseN(s, "ATTRIBUTE REQUIRED", len)) return true;
+    if (eqNoCaseN(s, "CANNOT EQUIP", len)) return true;
+    if (eqNoCaseN(s, "RESTRICTED", len)) return true;
+    if (eqNoCaseN(s, "USER LIMITATION", len)) return true;
+    return false;
+}
+
 // Appends or coalesces a span into LineSpan::spans.
 inline void pushSpan(LineSpan* out, uint16_t s, uint16_t e, SpanKind kind, uint32_t rgb) noexcept {
     if (!out || s >= e) return;
@@ -185,6 +222,15 @@ inline void classifyParagraph(const char* strStart, const char* paraStart, const
         (trimEnd - trimStart) > 1 && (trimEnd - trimStart) <= 48) {
         out->kind     = LineKind::Header;
         out->colonPos = static_cast<uint16_t>(colonIdx);
+        pushSpan(out, 0, len, SpanKind::Header, kRgbCream);
+        return;
+    }
+
+    // Rule 1b (Requirement / Rule Header Line without colon): e.g. "FEATS REQUIRED", "FEAT REQUIRED"
+    if (colonIdx < 0 && !punctBeforeColon && (trimEnd - trimStart) <= 48 &&
+        isRuleHeaderPrefix(paraStart + trimStart, static_cast<size_t>(trimEnd - trimStart))) {
+        out->kind     = LineKind::Header;
+        out->colonPos = trimEnd;
         pushSpan(out, 0, len, SpanKind::Header, kRgbCream);
         return;
     }
@@ -383,14 +429,43 @@ inline bool splitDescSections(const char* rawText, DescSections* out) noexcept {
         const size_t tlen = static_cast<size_t>(te - ts);
 
         if (first.span.kind == LineKind::Header && (nLines == 1 || lines[1].span.kind == LineKind::Prose)) {
-            // Strip trailing ':' for the dedicated title/subtitle row (e.g. "Nar Shaddaa:" -> "Nar Shaddaa")
-            const size_t copyLen = (tlen > 0 && te[-1] == ':') ? tlen - 1 : tlen;
-            const size_t cap = sizeof(out->title) - 1;
-            const size_t n = copyLen < cap ? copyLen : cap;
-            memcpy(out->title, ts, n);
-            out->title[n] = 0;
-            memcpy(out->subtitle, out->title, n + 1);
-            idx = 1;
+            const bool isLimitation = (tlen >= 12 && eqNoCaseN(ts, "CANNOT EQUIP", 12)) ||
+                                      (tlen >= 10 && eqNoCaseN(ts, "RESTRICTED", 10)) ||
+                                      (tlen >= 15 && eqNoCaseN(ts, "USER LIMITATION", 15)) ||
+                                      eqNoCaseN(ts, "CANNOT EQUIP", tlen) ||
+                                      eqNoCaseN(ts, "RESTRICTED", tlen) ||
+                                      eqNoCaseN(ts, "USER LIMITATION", tlen);
+
+            if (!isLimitation) {
+                const size_t copyLen = (tlen > 0 && te[-1] == ':') ? tlen - 1 : tlen;
+                const size_t cap = sizeof(out->title) - 1;
+                const size_t n = copyLen < cap ? copyLen : cap;
+                memcpy(out->title, ts, n);
+                out->title[n] = 0;
+
+                bool hasSubCat = false;
+                if (nLines > 1) {
+                    const char* ts2 = lines[1].b;
+                    while (ts2 < lines[1].e && isSpaceChar(*ts2)) ++ts2;
+                    const char* te2 = lines[1].e;
+                    while (te2 > ts2 && isSpaceChar(te2[-1])) --te2;
+                    const size_t tlen2 = static_cast<size_t>(te2 - ts2);
+                    const bool sent2 = hasSentencePunctInRange(ts2, te2);
+                    if (lines[1].span.kind == LineKind::Prose && tlen2 > 0 && tlen2 <= 48 && !sent2) {
+                        const size_t subCap = sizeof(out->subtitle) - 1;
+                        const size_t n2 = tlen2 < subCap ? tlen2 : subCap;
+                        memcpy(out->subtitle, ts2, n2);
+                        out->subtitle[n2] = 0;
+                        hasSubCat = true;
+                        idx = 2;
+                    }
+                }
+
+                if (!hasSubCat) {
+                    memcpy(out->subtitle, out->title, n + 1);
+                    idx = 1;
+                }
+            }
         } else if (first.span.kind == LineKind::Prose && tlen <= 36 && te[-1] != '.' && te[-1] != '!' && te[-1] != '?' &&
                    nLines > 1 && (lines[1].span.kind == LineKind::KeyValue || lines[1].span.kind == LineKind::Header)) {
             const size_t cap = sizeof(out->subtitle) - 1;
@@ -401,11 +476,57 @@ inline bool splitDescSections(const char* rawText, DescSections* out) noexcept {
         }
     }
 
-    // Consume consecutive Rules lines (KeyValue, or Header followed by KeyValue / indented value line)
+    // Consume consecutive Rules lines (KeyValue, Header, or rule continuation values)
+    bool inHeaderBlock = false;
     while (idx < nLines) {
         const RawLine& rl = lines[idx];
-        const bool isRule = (rl.span.kind == LineKind::KeyValue) ||
-                            (rl.span.kind == LineKind::Header && (!rl.blankBefore || out->rules[0] == 0));
+
+        if (rl.blankBefore) {
+            inHeaderBlock = false;
+        }
+
+        const char* ts = rl.b;
+        while (ts < rl.e && isSpaceChar(*ts)) ++ts;
+        const char* te = rl.e;
+        while (te > ts && isSpaceChar(te[-1])) --te;
+        const size_t tlen = static_cast<size_t>(te - ts);
+
+        const bool hasSentPunct = hasSentencePunctInRange(ts, te);
+
+        bool isRule = false;
+        if (rl.span.kind == LineKind::KeyValue) {
+            isRule = true;
+            inHeaderBlock = false;
+        } else if (rl.span.kind == LineKind::Header) {
+            if (isRuleHeaderPrefix(ts, tlen)) {
+                isRule = true;
+                inHeaderBlock = true;
+            } else if (idx + 1 < nLines) {
+                const RawLine& next = lines[idx + 1];
+                if (next.span.kind == LineKind::KeyValue) {
+                    isRule = true;
+                    inHeaderBlock = false;
+                } else {
+                    const char* nts = next.b;
+                    while (nts < next.e && isSpaceChar(*nts)) ++nts;
+                    const char* nte = next.e;
+                    while (nte > nts && isSpaceChar(nte[-1])) --nte;
+                    const size_t ntlen = static_cast<size_t>(nte - nts);
+                    const bool nextSent = hasSentencePunctInRange(nts, nte);
+                    if (ntlen > 0 && ntlen <= 48 && !nextSent) {
+                        isRule = true;
+                        inHeaderBlock = true;
+                    }
+                }
+            }
+        } else if (inHeaderBlock) {
+            if (tlen > 0 && tlen <= 48 && !hasSentPunct) {
+                isRule = true;
+            } else {
+                inHeaderBlock = false;
+            }
+        }
+
         if (!isRule) break;
 
         char lineBuf[itemprops::LineCap];

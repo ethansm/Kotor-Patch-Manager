@@ -67,7 +67,7 @@ inline LastPopulateInfo s_lastPopulateInfo = {};
 inline PoolEntry s_listBoxPools[kMaxListBoxPools] = {};
 inline uint32_t s_useCounter = 0;
 inline const char* s_bodyFont = kFontDesc;
-inline int (*g_measureTextHeight)(uintptr_t ctl, const char* text, int width) = nullptr;
+inline int (*g_measureTextHeight)(uintptr_t ctl, const char* text, int width, const char* font) = nullptr;
 
 inline const char* getBodyFont() noexcept {
     return s_bodyFont ? s_bodyFont : kFontDesc;
@@ -93,9 +93,9 @@ inline void resetPool() noexcept {
     s_useCounter = 0;
 }
 
-inline int measureTextHeight(uintptr_t ctl, const char* text, int width) noexcept {
+inline int measureTextHeight(uintptr_t ctl, const char* text, int width, const char* font = nullptr) noexcept {
     if (g_measureTextHeight) {
-        return g_measureTextHeight(ctl, text, width);
+        return g_measureTextHeight(ctl, text, width, font);
     }
     if (ctl && guikit::detail::textObjOk(ctl)) {
         const uintptr_t textObj = ctl + guikit::Label_Text;
@@ -124,7 +124,15 @@ inline int measureTextHeight(uintptr_t ctl, const char* text, int width) noexcep
         if (*p == '\n') ++p;
     }
     if (lines <= 0) lines = 1;
-    return lines * 18;
+    int lineHeight = 18;
+    if (font) {
+        if (strcmp(font, kFontSub) == 0 || strstr(font, "10x10") != nullptr) {
+            lineHeight = 12;
+        } else if (strcmp(font, kFontDesc) == 0 || (s_bodyFont && strcmp(font, s_bodyFont) == 0) || strstr(font, "fnt_d") != nullptr) {
+            lineHeight = 15;
+        }
+    }
+    return lines * lineHeight;
 }
 
 inline PoolEntry* findOrAllocPool(uintptr_t listbox) noexcept {
@@ -302,7 +310,7 @@ struct RichDescBox {
             (void)guikit::setTextColor(lbl, col[0], col[1], col[2]);
             (void)guikit::setText(lbl, text);
 
-            const int fh = measureTextHeight(lbl, text, w);
+            const int fh = measureTextHeight(lbl, text, w, font);
             const int finalH = fh + extraPad;
             (void)guikit::setRect(lbl, srcX, srcY, w, finalH);
             (void)guikit::detail::wr<int>(lbl, guikit::Ctl_X, srcX);
@@ -362,12 +370,12 @@ struct RichDescBox {
 
         // Row 0: Title
         if (sec.title[0] != '\0') {
-            setupTextRow(sec.title, kFontTitle, kCream, 4);
+            setupTextRow(sec.title, kFontTitle, kCream, 0);
         }
 
         // Row 1: Subtitle
         if (sec.subtitle[0] != '\0' && strcmp(sec.subtitle, sec.title) != 0) {
-            setupTextRow(sec.subtitle, kFontSub, kTealDim, 4);
+            setupTextRow(sec.subtitle, kFontSub, kTealDim, 0);
         }
 
         // Row 2: Top Divider
@@ -377,7 +385,7 @@ struct RichDescBox {
 
         // Row 3: Rules
         if (sec.rules[0] != '\0') {
-            setupTextRow(sec.rules, kFontSub, kTealText, 6);
+            setupTextRow(sec.rules, kFontSub, kTealText, 2);
         }
 
         // Row 4: Bottom Divider
@@ -387,7 +395,7 @@ struct RichDescBox {
 
         // Row 5: Body
         if (sec.body[0] != '\0') {
-            setupTextRow(sec.body, getBodyFont(), kTealText, 8);
+            setupTextRow(sec.body, getBodyFont(), kTealText, 2);
         }
 
         if (outCount == 0) return false;

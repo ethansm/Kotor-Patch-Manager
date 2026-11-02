@@ -29,10 +29,15 @@ Goal: Replace vanilla KotOR II's monotone, single-font, single-color menu text w
 | **RMT1** | Engine inline multi-color hook in `CAurGUIStringInternal::Draw_2` (`0x0047C06F`, 6-byte call-site detour) with per-line span cache and INI gate `InlineColoring=1` + contract test `rich_menu_typography_contract_test.cpp` | RMT0 | - | DONE | 71c72ce5 | Draw_2 0x0047C06F 6B call-site detour + INI gate InlineColoring=1 + contract test PASS |
 | **RMT2** | Central multi-font description builder (`RichDescBox.h`) hooking `CSWGuiListBox::AddControls_2` (`0x0041FD90`, 6B `55 8B EC 83 EC 14`) with `bAutoDelete=0, bVariableItemHeights=1` across all 28 description listboxes (Inventory, Equip, Store, Upgrade, Crafting, Abilities, Journal, Options) | RMT1 | - | DONE | d0cd3423 | RichDescBox.h + AddControls_2 0x0041FD90 6B hook + rich_desc_box_test.cpp (PASS, Flash review APPROVE) |
 | **RMT3** | Static menu header & stat label hierarchy pass (`CSWGuiInGameCharacter::SetStats` `0x0084E6F0` and panel title/caption styling across primary menus) | RMT2 | - | DONE | d43cd4aa | RMT3 static menu header & stat label hierarchy hooks (0x00850090, 0x0084F702, 0x0040F90A) + 66/66 contract tests + GATE PASS |
-| **RMT4** | Offline pixel mockup & frame-by-frame simulation (`scripts/rich_menu_mockup.py`) rendering Inventory, Abilities, Journal, and Character panes with `FontWidths.inc` metrics | RMT3 | user review | TODO | - | user visual review of generated PNGs |
-| **RMT5** | Shared floating hover card (`_shared_src/ItemHoverCard.h`) ported from `quick_loot_src` to `CSWGuiInGameInventory`, `CSWGuiInGameEquip`, `CSWGuiStore`, and `CSWGuiContainer` | RMT0, RMT2 | - | TODO | - | `python3 scripts/run_tests.py item_hover_card` |
-| **RMT6** | Stage & live calibration (`0.1.0-dev`): two-stage gate, `--prepare`, full gate, user GO for `--apply`, live log verification via `kotor2_logs.py check` | RMT4, RMT5 | user GO install | TODO | - | `python3 scripts/kpm_status.py` |
+| **RMT4** | Offline pixel mockup & frame-by-frame simulation (`scripts/rich_menu_mockup.py`) rendering Inventory, Abilities, Journal, and Character panes with `FontWidths.inc` metrics | RMT3 | user review | DONE | (new file) | mockup generated; description and equip hierarchy verified |
+| **RMT5** | Shared floating hover card (`_shared_src/ItemHoverCard.h`) ported from `quick_loot_src` to `CSWGuiInGameInventory`, `CSWGuiInGameEquip`, `CSWGuiStore`, and `CSWGuiContainer` | RMT0, RMT2 | - | DONE (DROPPED) | - | Dropped: scope limited to description box & menu hierarchy overhaul, no floating hover cards |
+| **RMT6** | Stage & live calibration (`0.1.0-dev`): two-stage gate, `--prepare`, full gate, user GO for `--apply`, live log verification via `kotor2_logs.py check` | RMT4, RMT5 | user GO install | DONE | f3a209e1 | Full hook install via kpm_reinstall (59 patches live); KPM commit b553f2b; rich-menu-typography LIVE |
 | **RMTR** | Release log tightening (`0.2.0`): gate per-line/per-item diagnostics behind `Verbose=0`, deduplicate state logs, verify `<50` startup lines | RMT6 | user GO install | TODO | - | `python3 scripts/kotor2_logs.py check` |
+| **RMTC0** | Recon (Flash): confirm optional-provider connect pattern (`ConfigClient::init/poll`, no hard `requires_interfaces`), `mcdecl::Page` row/ini binding, and that `rmt::getBodyFont` is read per populate (not cached) | RMTR | - | DONE | (uncommitted) | Findings folded into Section 6.2/6.3 (unbound font row, 3 verified fonts, poll site, setBodyFont pointer) |
+| **RMTC1** | Pure `RichMenuTypographyPage.h` (`rmtpage::kPageSchema` TOML, row ids, `applyRow(Live&, id, requested)` pure logic) + host test `rmt_page_test.cpp` | RMTC0 | - | DONE | - | RichMenuTypographyPage.h + rmt_page_test (114 checks), rich_menu suite green, build_check PASS |
+| **RMTC2** | Wire page into `RichMenuTypography.cpp`: `pageInit` in `KPatchInit`, `pagePoll` from a per-frame hook, `onChange` -> live globals + `iniw::updateFile`; add `ModConfigApi.h` consumer, manifest `0.3.0`, test.toml entry | RMTC1 | - | DONE | - | Exposed rich-menu-typography settings under Mod Configuration (4 rows: inline, richdesc, stats, font), passed OpenCode review APPROVE |
+| **RMTC3** | Mod Configuration page for mod-config itself: render its desc panes through rich markup (separate follow-up, see Section 6.5) | RMTC2 | user GO | TODO | - | design note only until RMTC2 plays |
+| **RMTC4** | Stage + live check: two-stage gate, `--prepare`, full gate, user GO `--apply`, play-check page rows, `kotor2_logs.py check` | RMTC2 | user GO install | TODO | - | `PLAY_TEST_QUEUE.md` entry |
 
 ---
 
@@ -238,3 +243,67 @@ namespace rmt {
   python3 scripts/plan_manager.py handoff 53
   python3 scripts/plan_manager.py resume 53
   ```
+
+
+---
+
+## 6. Mod Configuration Page for `rich-menu-typography` (RMTC0..RMTC4)
+
+### 6.1 Design (decided from `45_mod_config_onboarding_audit.md`, `46_mod_config_declarative_layer.md`, `_shared_src/ModConfigDecl.h`)
+- **Declarative TOML page**, no layout code: one `[page]` + `[[row]]`s, exactly like `quick_loot_src/QuickLootPage.h` (`mcdecl::Page`, `g_page.load/entry`, `k2pc::registerOnce`).
+- **Optional provider**: do NOT add `k2.modconfig@1` to `requires_interfaces`. Page registers only when `g_mcCfg.ok() && g_mcMenu.ok() && g_mcMenu.hasRows()`; otherwise the mod is INI-only exactly as today.
+- Entry id `rich-menu-typography`, ini `rich_menu_typography.ini`, section `General`. Rows bind to the ini (`ini/section/key`), so read at build and write on every accepted change.
+
+### 6.2 Rows (each passes the doc 45 rubric: taste, visible in <1 min, cannot corrupt a save)
+| id | kind | label | key | default | notes |
+|---|---|---|---|---|---|
+| `inline` | toggle | Coloured keywords | `InlineColoring` | 1 | live: flips `g_inlineColoring` |
+| `richdesc` | toggle | Multi-font descriptions | `RichDescBox` | 1 | live: applies the next time a description is populated (reopen the menu tab) |
+| `stats` | toggle | Stat label hierarchy | `StatHierarchy` | 1 | live for labels created after the change (reopen the screen) |
+| `font` | list, UNBOUND (no ini/section/key) | Body font | `BodyFont` (string, written by consumer) | 0 | choices = `fnt_d16x16`, `dialogfont10x10`, `dialogfont16x16` (the only 3 verified live, RMTC0). Bound list rows `strtol` the ini and would overwrite `BodyFont=fnt_d16x16` with `0`; so map name<->index in the consumer (`setValue` on enter, `iniw::updateFile` on change) |
+`Verbose` is a probe flag and fails rubric rule 2: **no row**.
+
+### 6.3 Exact code changes
+1. NEW `rich_menu_typography_src/RichMenuTypographyPage.h` (namespace `rmtpage`): `kEntryId`, `kIniFile`, row id constants, `kPageSchema` (every string <= 95 bytes, TomlMini limit), `struct Live { bool inline_, richDesc, stats; int fontIdx; }`, `constexpr const char* kFonts[]`, pure `int32_t applyRow(Live&, const char* id, int32_t requested)` returning the final value (clamps list index to `[0, nFonts-1]`, toggles to 0/1, unknown id returns `requested` unchanged).
+2. `RichMenuTypography.cpp`: `#include "ModConfigApi.h"`, `"ModConfigDecl.h"` (with `MCDECL_FILE_API`), `"ProviderClient.h"`; statics `mcdecl::Page g_page` (~35 KB static), `k2mc::ConfigClient g_mcCfg`, `k2mc::MenuClient g_mcMenu`, `k2pc::RegisterOnce g_mcReg`, `K2ModConfigEntry g_mcEntry`.
+   - `pageOnChange(user,row,id,requested,dir)`: `fin = rmtpage::applyRow(live,id,requested)`; copy live to `g_inlineColoring/g_richDescBox/g_statHierarchy`; `rmt::setBodyFont(rmtpage::kFonts[idx])` (kFonts must be static literals: `setBodyFont` stores the POINTER, RichDescBox.h:76); write `BodyFont` with `iniw::updateFile("rich_menu_typography.ini","General","BodyFont",kFonts[idx])`; return `fin`. The 3 toggle rows are ini-bound, so `mcdecl` writes them.
+   - `pageOnEnter`: map the current body-font name to an index and call `g_page.setValue("font", idx)` (name not in list -> 0).
+   - `pageInit(api)` called at the end of `KPatchInit`; `pagePoll()` called each frame. If no per-frame hook exists in this mod, add a hookless poll via `k2.hud@1` frame callback as `quick_loot_src` does (`K2HUD_FRAME`, optional) or poll from `RmtSetStats`/first `RmtAddControls2` calls (cheap: guarded by `g_mcReg.registered`). RMTC0 decided: call `pageInit(api)` at the end of `KPatchInit`, and `if (!g_mcReg.registered) pagePoll();` at the top of `RmtStyleInitControl` (hook 5, runs before Options binds its entries; polling only in `RmtSetStats` would miss Options opened before the Character sheet). Live-verify in RMTC4 that registration happens before first Options open; if not, fall back to adding a `k2.hud@1` frame callback.
+   - Log: one `PAGE registered` line, one `PAGE row=%s final=%d` line per accepted change, capped at 20 (keeps RMTR's <50 startup line budget).
+3. `setBodyFont` stores the pointer, it does not copy (RMTC0): pass only static literals or the existing `s_bodyFontBuf`.
+4. `manifest.toml`: version `0.3.0`; leave `requires_interfaces` empty. `tests/test.toml`: add `[rmt_page_test]` with `-I../../_shared_src` and `-Werror`.
+
+### 6.4 Edge cases & test matrix (`tests/rmt_page_test.cpp`)
+- Schema parses: `mcdecl::Page::load` returns true, 4 rows, no string > 95 B.
+- `applyRow`: toggle 0/1 round-trip; toggle requested 2 or -1 clamps; font index -1 and `nFonts` clamp; unknown id passthrough.
+- Defaults equal the shipped `rich_menu_typography.ini` values (guards drift).
+- INI write keeps comments and the `Verbose` line (`iniw::setKey` behaviour; one case with a commented default).
+- Page absent provider: `pagePoll` with `ok()==false` registers nothing, no crash, no log spam.
+- Provider present but no rows API (`hasRows()==false`): not registered, one warning at ~600 polls.
+- Live toggle off then on while a description is on screen: no crash; descriptions revert at next populate (play check).
+- Save/load and area transition with page open: entry `destroy` runs with `mcdecl::Page::cbDestroy`.
+
+### 6.5 Rich markup in mod-config's own pages (RMTC3, design only)
+`mod-config` descriptions go through `SetDesc` into `LB_DESC` (a `CSWGuiListBox`), which RMT2 already hooks, so `{tag}`/`Key: Value` styling reaches them for free when `rich-menu-typography` is installed. Work: (a) play-check that existing page descs already render styled; (b) author descs with `Header:` first lines and `+Bonus`/`-Penalty` markers; (c) only if (a) fails, add an opt-in `style` flag to `K2MuiRowSpec` (struct growth, provider change, own phase). No code until RMTC2 is played.
+
+### 6.6 Tooling & verification
+- `python3 scripts/run_tests.py rmt_page` then `run_tests.py rich_menu` (existing 2 suites must stay green).
+- `python3 scripts/build_check.py --mod rich_menu_typography_src`
+- `python3 scripts/agent_diff_check.py` after each Flash worker.
+- Compat: `python3 scripts/compat_check.py patch_manager_mods/_shared_src/ModConfigDecl.h` only if shared headers change (they should not).
+- Install: two-stage gate flow from AGENTS.md; ask user GO before `--apply`.
+
+### 6.7 Agent plan (per user request)
+- Flash worker (`Contract: worker`, `Write Scope: rich_menu_typography_src/**`): RMTC1, then RMTC2.
+- Flash recon: RMTC0 (read-only).
+- OpenCode in parallel between phases (`oc-subagent review|test`, only because the user asked): review each Flash diff against 6.3/6.4, and write extra edge tests. Gate each phase on `build_check` + `run_tests` PASS before the next starts.
+
+### 6.7b RMTC0 recon findings (Flash, CONFIRMED; verify L-numbers before relying on them)
+- Optional provider works with empty `requires_interfaces` (`api->require` direct; checker WARN only).
+- `getBodyFont` is read on every `RichDescBox::populate`; `g_inlineColoring` is live per glyph; `g_richDescBox` applies at the next description populate; `g_statHierarchy` applies to labels styled after the change (reopen screen).
+- Font inventory: only `fnt_d16x16`, `dialogfont10x10`, `dialogfont16x16` are verified. Engine resolver `0x00413CE0` appends `b` to every name except `fnt_console`; `fnt_dialog16x16`, `fnt_galahad14`, `dialogfont12x16`, `fnt_d10x10`, `fnt_credits`, `dialogfont32x32` lack metrics or a `b` texture (excluded). Adding more later needs a width table + a live render check first.
+- Limits: 32 rows, 12 choices, strings <= 95 B, ids <= 31 chars; page struct ~35 KB static.
+
+### 6.8 Dead-end guards
+- Do not edit `mod_config_src` or shared headers in RMTC1..2.
+- Do not add rows for `Verbose`, per-feature master switch semantics beyond the three taste toggles, or unverified fonts.

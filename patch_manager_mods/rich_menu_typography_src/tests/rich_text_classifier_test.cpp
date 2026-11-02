@@ -276,6 +276,98 @@ void testItemPropsParser() {
               rmt::resolveGlyphColor(nullptr, nullptr, 0, kDefaultBase) == kDefaultBase);
 }
 
+void testRequirementHeadersWithoutColons() {
+    const char* s1 = "FEATS REQUIRED\n";
+    MockGuiString gs1(s1);
+    const rmt::LineSpan ls1 = rmt::classifyLine(s1);
+    kt::Check("ReqHeader: 'FEATS REQUIRED' classified as Header", ls1.kind == rmt::LineKind::Header);
+
+    bool allCream1 = true;
+    for (size_t i = 0; s1[i] && s1[i] != '\n'; ++i) {
+        if (rmt::resolveGlyphColor(gs1.raw, s1 + i, 0, kDefaultBase) != (kAlphaE0 | rmt::kRgbCream)) allCream1 = false;
+    }
+    kt::Check("ReqHeader: 'FEATS REQUIRED' colored kRgbCream", allCream1);
+
+    const char* s2 = "FEAT REQUIRED\n";
+    MockGuiString gs2(s2);
+    const rmt::LineSpan ls2 = rmt::classifyLine(s2);
+    kt::Check("ReqHeader: 'FEAT REQUIRED' classified as Header", ls2.kind == rmt::LineKind::Header);
+
+    bool allCream2 = true;
+    for (size_t i = 0; s2[i] && s2[i] != '\n'; ++i) {
+        if (rmt::resolveGlyphColor(gs2.raw, s2 + i, 0, kDefaultBase) != (kAlphaE0 | rmt::kRgbCream)) allCream2 = false;
+    }
+    kt::Check("ReqHeader: 'FEAT REQUIRED' colored kRgbCream", allCream2);
+}
+
+void testArmorAndRobeSectionSplits() {
+    // 1. Item with Title & Category at the top
+    const char* armor1 =
+        "FEATS REQUIRED\n"
+        "Armor Proficiency - Heavy\n\n"
+        "Defense Bonus: 12\n"
+        "Max Dexterity Bonus: +0\n\n"
+        "Mandalorian heavy battle armor.";
+    rmt::DescSections sec1;
+    const bool ok1 = rmt::splitDescSections(armor1, &sec1);
+    kt::Check("ArmorSplit: splitDescSections succeeds for armor1", ok1);
+    kt::Check("ArmorSplit: title is 'FEATS REQUIRED'", strcmp(sec1.title, "FEATS REQUIRED") == 0);
+    kt::Check("ArmorSplit: subtitle is 'Armor Proficiency - Heavy'", strcmp(sec1.subtitle, "Armor Proficiency - Heavy") == 0);
+    kt::Check("ArmorSplit: rules contains Defense Bonus", strstr(sec1.rules, "Defense Bonus: 12") != nullptr);
+    kt::Check("ArmorSplit: rules contains Max Dexterity Bonus", strstr(sec1.rules, "Max Dexterity Bonus: +0") != nullptr);
+    kt::Check("ArmorSplit: body contains lore text", strcmp(sec1.body, "Mandalorian heavy battle armor.") == 0);
+    kt::Check("ArmorSplit: has top and bottom dividers", sec1.hasTopDivider && sec1.hasBottomDivider && sec1.nDividers == 2u);
+
+    // 2. Robe with Cannot Equip, Restricted, and User Limitation in the middle of rules
+    const char* robe =
+        "Defense Bonus: 2\n"
+        "Max Dexterity Bonus: +8\n\n"
+        "Cannot Equip:\n"
+        "Droid\n\n"
+        "Restricted:\n"
+        "Jedi Only\n\n"
+        "User Limitation:\n"
+        "Light Side\n\n"
+        "Defense Bonus: +1 vs. Dark Side\n\n"
+        "Ancient Jedi Master robes imbued with the Force.";
+    rmt::DescSections secRobe;
+    const bool okRobe = rmt::splitDescSections(robe, &secRobe);
+    kt::Check("RobeSplit: splitDescSections succeeds for robe", okRobe);
+    kt::Check("RobeSplit: title is empty", secRobe.title[0] == 0);
+    kt::Check("RobeSplit: subtitle is empty", secRobe.subtitle[0] == 0);
+    kt::Check("RobeSplit: rules has Defense Bonus: 2", strstr(secRobe.rules, "Defense Bonus: 2") != nullptr);
+    kt::Check("RobeSplit: rules has Max Dexterity Bonus", strstr(secRobe.rules, "Max Dexterity Bonus: +8") != nullptr);
+    kt::Check("RobeSplit: rules has Cannot Equip: Droid",
+              strstr(secRobe.rules, "Cannot Equip:\nDroid") != nullptr);
+    kt::Check("RobeSplit: rules has Restricted: Jedi Only",
+              strstr(secRobe.rules, "Restricted:\nJedi Only") != nullptr);
+    kt::Check("RobeSplit: rules has User Limitation: Light Side",
+              strstr(secRobe.rules, "User Limitation:\nLight Side") != nullptr);
+    kt::Check("RobeSplit: rules has Defense Bonus: +1 vs. Dark Side (not in body)",
+              strstr(secRobe.rules, "Defense Bonus: +1 vs. Dark Side") != nullptr &&
+              strstr(secRobe.body, "Defense Bonus: +1 vs. Dark Side") == nullptr);
+    kt::Check("RobeSplit: body contains only lore prose",
+              strcmp(secRobe.body, "Ancient Jedi Master robes imbued with the Force.") == 0);
+
+    // 3. Armor with requirements inside rules
+    const char* armor2 =
+        "Defense Bonus: 12\n"
+        "Max Dexterity Bonus: +0\n\n"
+        "FEATS REQUIRED\n"
+        "Armor Proficiency - Heavy\n\n"
+        "Heavy battle suit.";
+    rmt::DescSections sec2;
+    const bool ok2 = rmt::splitDescSections(armor2, &sec2);
+    kt::Check("ArmorSplit2: splitDescSections succeeds", ok2);
+    kt::Check("ArmorSplit2: rules has Defense Bonus", strstr(sec2.rules, "Defense Bonus: 12") != nullptr);
+    kt::Check("ArmorSplit2: rules has FEATS REQUIRED", strstr(sec2.rules, "FEATS REQUIRED\nArmor Proficiency - Heavy") != nullptr);
+    kt::Check("ArmorSplit2: body is lore only", strcmp(sec2.body, "Heavy battle suit.") == 0);
+
+    // 4. Verify no unnecessary blank lines in rules
+    kt::Check("NoBlankLinesInRules: rules does not have consecutive newlines",
+              strstr(secRobe.rules, "\n\n") == nullptr && strstr(sec1.rules, "\n\n") == nullptr);
+}
+
 } // namespace
 
 int main() {
@@ -288,5 +380,7 @@ int main() {
     testTV7_SectionSplitItem();
     testTV8_SectionSplitJournal();
     testItemPropsParser();
+    testRequirementHeadersWithoutColons();
+    testArmorAndRobeSectionSplits();
     return kt::Report("rich_text_classifier_test");
 }

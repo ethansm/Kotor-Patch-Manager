@@ -47,13 +47,21 @@ static void fakeOrigAddControls2(void* listbox, void** pControls, int count,
     }
 }
 
-static int mockMeasureTextHeight(uintptr_t /*ctl*/, const char* text, int /*width*/) {
+static int mockMeasureTextHeight(uintptr_t /*ctl*/, const char* text, int /*width*/, const char* font = nullptr) {
     if (!text || !*text) return 0;
     int lines = 1;
     for (const char* p = text; *p; ++p) {
         if (*p == '\n') ++lines;
     }
-    return lines * 18;
+    int lineHeight = 18;
+    if (font) {
+        if (strcmp(font, rmt::kFontSub) == 0 || strstr(font, "10x10") != nullptr) {
+            lineHeight = 12;
+        } else if (strcmp(font, rmt::kFontDesc) == 0 || (rmt::getBodyFont() && strcmp(font, rmt::getBodyFont()) == 0) || strstr(font, "fnt_d") != nullptr) {
+            lineHeight = 15;
+        }
+    }
+    return lines * lineHeight;
 }
 
 struct MockListBox {
@@ -174,11 +182,11 @@ void testTV7_SectionSplitItem() {
     const rmt::LastPopulateInfo& info = rmt::getLastPopulateInfo();
     kt::CheckEq("TV7: Snapshot rowCount is 5", info.rowCount, 5);
 
-    // Row 0: Subtitle ("Fully Upgradeable", dialogfont10x10, kTealDim, align 9, height fh + 4 = 18 + 4 = 22)
+    // Row 0: Subtitle ("Fully Upgradeable", dialogfont10x10, kTealDim, align 9, height fh + 0 = 12 + 0 = 12)
     kt::CheckEq("TV7: Row 0 is not divider", info.rowIsDivider[0], false);
     kt::Check("TV7: Row 0 font is dialogfont10x10", strcmp(info.rowFonts[0], rmt::kFontSub) == 0);
     kt::CheckEq("TV7: Row 0 align is TopLeft (9)", info.rowAligns[0], rmt::kAlignTopLeft);
-    kt::CheckEq("TV7: Row 0 height is fh + 4 = 22", info.rowHeights[0], 22);
+    kt::CheckEq("TV7: Row 0 height is fh + 0 = 12", info.rowHeights[0], 12);
     kt::Check("TV7: Row 0 text is Fully Upgradeable", strcmp(info.rowTexts[0], "Fully Upgradeable") == 0);
     kt::Check("TV7: Row 0 color is kTealDim", info.rowColors[0][0] == rmt::kTealDim[0]);
 
@@ -188,11 +196,11 @@ void testTV7_SectionSplitItem() {
     kt::CheckEq("TV7: Row 1 align is TopLeft (9)", info.rowAligns[1], rmt::kAlignTopLeft);
     kt::Check("TV7: Row 1 color is kTealFrame", info.rowColors[1][0] == rmt::kTealFrame[0]);
 
-    // Row 2: Rules (Damage: Energy, 4-16\nAttack Modifier: +3, dialogfont10x10, kTealText, align 9, height fh + 6 = 36 + 6 = 42)
+    // Row 2: Rules (Damage: Energy, 4-16\nAttack Modifier: +3, dialogfont10x10, kTealText, align 9, height fh + 2 = 24 + 2 = 26)
     kt::CheckEq("TV7: Row 2 is not divider", info.rowIsDivider[2], false);
     kt::Check("TV7: Row 2 font is dialogfont10x10", strcmp(info.rowFonts[2], rmt::kFontSub) == 0);
     kt::CheckEq("TV7: Row 2 align is TopLeft (9)", info.rowAligns[2], rmt::kAlignTopLeft);
-    kt::CheckEq("TV7: Row 2 height is fh + 6 = 42", info.rowHeights[2], 42);
+    kt::CheckEq("TV7: Row 2 height is fh + 2 = 26", info.rowHeights[2], 26);
     kt::Check("TV7: Row 2 color is kTealText", info.rowColors[2][0] == rmt::kTealText[0]);
 
     // Row 3: Bottom Divider (2px, isDivider true, kTealFrame)
@@ -200,11 +208,11 @@ void testTV7_SectionSplitItem() {
     kt::CheckEq("TV7: Row 3 height is kDividerHeight (2)", info.rowHeights[3], rmt::kDividerHeight);
     kt::CheckEq("TV7: Row 3 align is TopLeft (9)", info.rowAligns[3], rmt::kAlignTopLeft);
 
-    // Row 4: Body (lore prose with {tag} stripped, fnt_d16x16, kTealText, align 9, height fh + 8 = 18 + 8 = 26)
+    // Row 4: Body (lore prose with {tag} stripped, fnt_d16x16, kTealText, align 9, height fh + 2 = 15 + 2 = 17)
     kt::CheckEq("TV7: Row 4 is not divider", info.rowIsDivider[4], false);
     kt::Check("TV7: Row 4 font is fnt_d16x16", strcmp(info.rowFonts[4], rmt::kFontDesc) == 0);
     kt::CheckEq("TV7: Row 4 align is TopLeft (9)", info.rowAligns[4], rmt::kAlignTopLeft);
-    kt::CheckEq("TV7: Row 4 height is fh + 8 = 26", info.rowHeights[4], 26);
+    kt::CheckEq("TV7: Row 4 height is fh + 2 = 17", info.rowHeights[4], 17);
     kt::Check("TV7: Row 4 text has {tag} stripped",
               strcmp(info.rowTexts[4], "This blaster pistol was common during the Mandalorian Wars.") == 0);
     kt::Check("TV7: Row 4 color is kTealText", info.rowColors[4][0] == rmt::kTealText[0]);
@@ -228,11 +236,11 @@ void testTV8_SectionSplitJournal() {
     const rmt::LastPopulateInfo& info = rmt::getLastPopulateInfo();
     kt::CheckEq("TV8: Snapshot rowCount is 3", info.rowCount, 3);
 
-    // Row 0: Title ("Nar Shaddaa", dialogfont16x16, kCream, align 9, height 18 + 4 = 22)
+    // Row 0: Title ("Nar Shaddaa", dialogfont16x16, kCream, align 9, height 18 + 0 = 18)
     kt::CheckEq("TV8: Row 0 is not divider", info.rowIsDivider[0], false);
     kt::Check("TV8: Row 0 font is dialogfont16x16", strcmp(info.rowFonts[0], rmt::kFontTitle) == 0);
     kt::CheckEq("TV8: Row 0 align is TopLeft (9)", info.rowAligns[0], rmt::kAlignTopLeft);
-    kt::CheckEq("TV8: Row 0 height is fh + 4 = 22", info.rowHeights[0], 22);
+    kt::CheckEq("TV8: Row 0 height is fh + 0 = 18", info.rowHeights[0], 18);
     kt::Check("TV8: Row 0 text is Nar Shaddaa (trailing colon stripped)",
               strcmp(info.rowTexts[0], "Nar Shaddaa") == 0);
     kt::Check("TV8: Row 0 color is kCream", info.rowColors[0][0] == rmt::kCream[0]);
@@ -242,11 +250,11 @@ void testTV8_SectionSplitJournal() {
     kt::CheckEq("TV8: Row 1 height is 2", info.rowHeights[1], rmt::kDividerHeight);
     kt::CheckEq("TV8: Row 1 align is TopLeft (9)", info.rowAligns[1], rmt::kAlignTopLeft);
 
-    // Row 2: Body (Refugee Sector troubles have escalated., fnt_d16x16, kTealText, align 9, height 18 + 8 = 26)
+    // Row 2: Body (Refugee Sector troubles have escalated., fnt_d16x16, kTealText, align 9, height 15 + 2 = 17)
     kt::CheckEq("TV8: Row 2 is not divider", info.rowIsDivider[2], false);
     kt::Check("TV8: Row 2 font is fnt_d16x16", strcmp(info.rowFonts[2], rmt::kFontDesc) == 0);
     kt::CheckEq("TV8: Row 2 align is TopLeft (9)", info.rowAligns[2], rmt::kAlignTopLeft);
-    kt::CheckEq("TV8: Row 2 height is fh + 8 = 26", info.rowHeights[2], 26);
+    kt::CheckEq("TV8: Row 2 height is fh + 2 = 17", info.rowHeights[2], 17);
     kt::Check("TV8: Row 2 text is Refugee Sector troubles...",
               strcmp(info.rowTexts[2], "Refugee Sector troubles have escalated.") == 0);
     kt::Check("TV8: Row 2 color is kTealText", info.rowColors[2][0] == rmt::kTealText[0]);
@@ -359,12 +367,62 @@ void testPoolReuseAndResolutionChange() {
     kt::CheckEq("Pool: Call 4 reuses fresh control", g_rec.controls[0], freshControl0);
 }
 
+void testArmorCompactLayout() {
+    rmt::resetPool();
+    g_rec.reset();
+    rmt::setRichDescBox(true);
+
+    MockListBox listbox(0x1000, 260, 10);
+    const char* armorDesc =
+        "FEATS REQUIRED\n"
+        "Armor Proficiency - Heavy\n\n"
+        "Defense Bonus: 12\n"
+        "Max Dexterity Bonus: +0\n\n"
+        "Mandalorian heavy battle armor.";
+    MockLabel srcLabel(armorDesc, 0, 0, 240, 30);
+    void* controls[1] = { srcLabel.voidPtr() };
+
+    const int res = RmtAddControls2(listbox.voidPtr(), controls, 1, 0, 0, 0,
+                                    reinterpret_cast<uintptr_t>(fakeOrigAddControls2));
+    kt::CheckEq("Armor: RmtAddControls2 succeeds", res, 1);
+    kt::CheckEq("Armor: Row count is 6", g_rec.count, 6);
+
+    const rmt::LastPopulateInfo& info = rmt::getLastPopulateInfo();
+    kt::CheckEq("Armor: Row 0 is Title", info.rowIsDivider[0], false);
+    kt::Check("Armor: Row 0 font is dialogfont16x16", strcmp(info.rowFonts[0], rmt::kFontTitle) == 0);
+    kt::CheckEq("Armor: Row 0 height is 18 (extraPad 0)", info.rowHeights[0], 18);
+    kt::Check("Armor: Row 0 text is FEATS REQUIRED", strcmp(info.rowTexts[0], "FEATS REQUIRED") == 0);
+
+    kt::CheckEq("Armor: Row 1 is Subtitle/Category", info.rowIsDivider[1], false);
+    kt::Check("Armor: Row 1 font is dialogfont10x10", strcmp(info.rowFonts[1], rmt::kFontSub) == 0);
+    kt::CheckEq("Armor: Row 1 height is 12 (extraPad 0, 12px line)", info.rowHeights[1], 12);
+    kt::Check("Armor: Row 1 text is Armor Proficiency - Heavy", strcmp(info.rowTexts[1], "Armor Proficiency - Heavy") == 0);
+
+    kt::CheckEq("Armor: Row 2 is Top Divider", info.rowIsDivider[2], true);
+    kt::CheckEq("Armor: Row 2 height is 2", info.rowHeights[2], 2);
+
+    kt::CheckEq("Armor: Row 3 is Rules block", info.rowIsDivider[3], false);
+    kt::Check("Armor: Row 3 font is dialogfont10x10", strcmp(info.rowFonts[3], rmt::kFontSub) == 0);
+    kt::CheckEq("Armor: Row 3 height is 26 (2 lines * 12 + 2)", info.rowHeights[3], 26);
+    kt::Check("Armor: Row 3 text contains Defense Bonus", strstr(info.rowTexts[3], "Defense Bonus: 12") != nullptr);
+    kt::Check("Armor: Row 3 text contains Max Dexterity Bonus", strstr(info.rowTexts[3], "Max Dexterity Bonus: +0") != nullptr);
+
+    kt::CheckEq("Armor: Row 4 is Bottom Divider", info.rowIsDivider[4], true);
+    kt::CheckEq("Armor: Row 4 height is 2", info.rowHeights[4], 2);
+
+    kt::CheckEq("Armor: Row 5 is Body lore", info.rowIsDivider[5], false);
+    kt::Check("Armor: Row 5 font is fnt_d16x16", strcmp(info.rowFonts[5], rmt::kFontDesc) == 0);
+    kt::CheckEq("Armor: Row 5 height is 17 (1 line * 15 + 2)", info.rowHeights[5], 17);
+    kt::Check("Armor: Row 5 text is body prose", strcmp(info.rowTexts[5], "Mandalorian heavy battle armor.") == 0);
+}
+
 } // namespace
 
 int main() {
     setupEnvironment();
     testTV7_SectionSplitItem();
     testTV8_SectionSplitJournal();
+    testArmorCompactLayout();
     testInterceptionFilterGuards();
     testPoolReuseAndResolutionChange();
     return kt::Report("rich_desc_box_test");

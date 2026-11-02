@@ -95,4 +95,10 @@ void resetDescPopulateCount() noexcept;
 uint32_t getDescPopulateCount() noexcept;
 void resetStatStyleCount() noexcept;
 uint32_t getStatStyleCount() noexcept;
+
+bool pageRegistered() noexcept;
+void pagePollForTest() noexcept;
+int32_t applyPageRowForTest(const char* id, int32_t requested) noexcept;
+void pageOnEnterForTest() noexcept;
+int32_t getPageRowValueForTest(const char* id) noexcept;
 } // namespace rmt
