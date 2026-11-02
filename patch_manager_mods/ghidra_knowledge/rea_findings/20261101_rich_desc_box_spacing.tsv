@@ -1,0 +1,3 @@
+addr	kind	name	confidence	evidence	topic	date
+0x0041f170	function	CSWGuiListBox::OrganizeUnequal	confirmed	0x0041f3b5: movzx ecx, byte ptr [esi+0x2d0] reads m_nPadding for row placement	rich_desc_box_spacing	2026-11-01
+0x0041f649	callsite	CSWGuiListBox::OrganizeUnequal scrollbar trigger	confirmed	0x0041f638: cmp edx, [esi+0x2a8] checks row bottom against clientH and triggers scrollbar	rich_desc_box_spacing	2026-11-01

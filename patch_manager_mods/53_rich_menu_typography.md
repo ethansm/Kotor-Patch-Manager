@@ -307,3 +307,26 @@ namespace rmt {
 ### 6.8 Dead-end guards
 - Do not edit `mod_config_src` or shared headers in RMTC1..2.
 - Do not add rows for `Verbose`, per-feature master switch semantics beyond the three taste toggles, or unverified fonts.
+
+---
+
+## 7. Spacing & Height Calibration Findings (Tight Baseline & Strategic Re-expansion)
+Detailed research note: [`.claude/research/rich_menu_typography_spacing/README.md`](../.claude/research/rich_menu_typography_spacing/README.md).
+
+### 7.1 Identified Root Causes of Empty Space Inflation
+1. **Engine Listbox Padding (`CSWGuiListBox::OrganizeUnequal` at `0x0041F170`)**: The engine stacks rows with `m_nPadding` (`listbox + 0x2D0`) between every item.
+2. **Double-Newline Injections (`\n\n`)**: `RichTextClassifier.h:551` previously added `\n\n` for body paragraph breaks, adding 28-42px across 2-3 paragraphs.
+3. **Untrimmed Lines**: Trailing whitespace/newlines caused `measureTextHeight` integer ceiling division `(plen + charsPerLine - 1) / charsPerLine` to inflate line count by an entire line.
+4. **Hardcoded Extra Padding**: `extraPad = 2` on rules and body added +4px unconditionally.
+5. **Inverted Clamping Gate**: `RichDescBox.h:426` failed to clamp when `sumHeights > lbH`.
+
+### 7.2 Tight Spacing Implementation (0.3.0 Baseline)
+- Body paragraphs collapse to single `\n`.
+- Trimmed text `[ts, te)` copied into buffer.
+- `extraPad` set to 0.
+- Clamping activates on all `sumHeights > maxVisible && outCount > 0`.
+
+### 7.3 Strategic Future Spacing Guidelines
+Future iterations seeking extra breathing room should:
+- Modulate per-row `extraPad` rather than raw text `\n\n` newlines.
+- Account for `m_nPadding` (`listbox + 0x2D0`) in `sumHeights` calculations.
