@@ -531,9 +531,9 @@ inline bool splitDescSections(const char* rawText, DescSections* out) noexcept {
         if (!isRule) break;
 
         char lineBuf[itemprops::LineCap];
-        const size_t l = static_cast<size_t>(rl.e - rl.b);
+        const size_t l = static_cast<size_t>(te - ts);
         const size_t n = l < sizeof(lineBuf) - 1 ? l : sizeof(lineBuf) - 1;
-        memcpy(lineBuf, rl.b, n);
+        memcpy(lineBuf, ts, n);
         lineBuf[n] = 0;
         if (out->rules[0]) itemprops::appendTrunc(out->rules, sizeof(out->rules), "\n");
         itemprops::appendTrunc(out->rules, sizeof(out->rules), lineBuf);
@@ -543,12 +543,16 @@ inline bool splitDescSections(const char* rawText, DescSections* out) noexcept {
     // Remaining lines form the Lore / Flavor Prose Body
     while (idx < nLines) {
         const RawLine& rl = lines[idx];
+        const char* ts = rl.b;
+        while (ts < rl.e && isSpaceChar(*ts)) ++ts;
+        const char* te = rl.e;
+        while (te > ts && isSpaceChar(te[-1])) --te;
         char lineBuf[itemprops::LineCap];
-        const size_t l = static_cast<size_t>(rl.e - rl.b);
+        const size_t l = static_cast<size_t>(te - ts);
         const size_t n = l < sizeof(lineBuf) - 1 ? l : sizeof(lineBuf) - 1;
-        memcpy(lineBuf, rl.b, n);
+        memcpy(lineBuf, ts, n);
         lineBuf[n] = 0;
-        if (out->body[0]) itemprops::appendTrunc(out->body, sizeof(out->body), rl.blankBefore ? "\n\n" : "\n");
+        if (out->body[0]) itemprops::appendTrunc(out->body, sizeof(out->body), "\n");
         itemprops::appendTrunc(out->body, sizeof(out->body), lineBuf);
         ++idx;
     }

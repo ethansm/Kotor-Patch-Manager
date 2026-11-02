@@ -370,6 +370,28 @@ void testArmorAndRobeSectionSplits() {
               strstr(secRobe.rules, "\n\n") == nullptr && strstr(sec1.rules, "\n\n") == nullptr);
 }
 
+void testTightSpacingAndTrimmedLines() {
+    // Multi-paragraph body with blank line separation and trailing whitespace / \r
+    const char* raw =
+        "Damage: Energy, 4-16   \r\n"
+        "Attack Modifier: +3 \t \r\n\n"
+        "First lore paragraph.   \r\n\n"
+        "Second lore paragraph after blank line.  \r\n";
+    rmt::DescSections sec;
+    const bool ok = rmt::splitDescSections(raw, &sec);
+    kt::Check("TightSpacing: splitDescSections succeeds", ok);
+
+    // Rules lines are trimmed of trailing spaces and \r
+    kt::Check("TightSpacing: rules has trimmed lines without carriage returns",
+              strcmp(sec.rules, "Damage: Energy, 4-16\nAttack Modifier: +3") == 0);
+
+    // Body lines are separated by single newline and trimmed
+    kt::Check("TightSpacing: body separates paragraphs with single newline, not double",
+              strcmp(sec.body, "First lore paragraph.\nSecond lore paragraph after blank line.") == 0);
+    kt::Check("TightSpacing: body contains no double newlines",
+              strstr(sec.body, "\n\n") == nullptr);
+}
+
 } // namespace
 
 int main() {
@@ -384,5 +406,6 @@ int main() {
     testItemPropsParser();
     testRequirementHeadersWithoutColons();
     testArmorAndRobeSectionSplits();
+    testTightSpacingAndTrimmedLines();
     return kt::Report("rich_text_classifier_test");
 }

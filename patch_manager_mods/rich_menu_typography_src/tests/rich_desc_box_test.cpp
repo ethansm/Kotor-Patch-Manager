@@ -208,18 +208,18 @@ void testTV7_SectionSplitItem() {
     kt::Check("TV7: Row 0 text is Fully Upgradeable", strcmp(info.rowTexts[0], "Fully Upgradeable") == 0);
     kt::Check("TV7: Row 0 color is kTealDim", info.rowColors[0][0] == rmt::kTealDim[0]);
 
-    // Row 1: Rules (Damage: Energy, 4-16\nAttack Modifier: +3, getRulesFont() fnt_d16x16, kTealText, align 9, height 2*14 + 2 = 30)
+    // Row 1: Rules (Damage: Energy, 4-16\nAttack Modifier: +3, getRulesFont() fnt_d16x16, kTealText, align 9, height 2*14 + 0 = 28)
     kt::CheckEq("TV7: Row 1 is not divider", info.rowIsDivider[1], false);
     kt::Check("TV7: Row 1 font is rulesFont", strcmp(info.rowFonts[1], rmt::getRulesFont()) == 0);
     kt::CheckEq("TV7: Row 1 align is TopLeft (9)", info.rowAligns[1], rmt::kAlignTopLeft);
-    kt::CheckEq("TV7: Row 1 height is fh + 2 = 30", info.rowHeights[1], 30);
+    kt::CheckEq("TV7: Row 1 height is fh + 0 = 28", info.rowHeights[1], 28);
     kt::Check("TV7: Row 1 color is kTealText", info.rowColors[1][0] == rmt::kTealText[0]);
 
-    // Row 2: Body (lore prose with {tag} stripped, fnt_d16x16, kTealText, align 9, 2 lines * 14 + 2 = 30)
+    // Row 2: Body (lore prose with {tag} stripped, fnt_d16x16, kTealText, align 9, 2 lines * 14 + 0 = 28)
     kt::CheckEq("TV7: Row 2 is not divider", info.rowIsDivider[2], false);
     kt::Check("TV7: Row 2 font is fnt_d16x16", strcmp(info.rowFonts[2], rmt::kFontDesc) == 0);
     kt::CheckEq("TV7: Row 2 align is TopLeft (9)", info.rowAligns[2], rmt::kAlignTopLeft);
-    kt::CheckEq("TV7: Row 2 height is fh + 2 = 30", info.rowHeights[2], 30);
+    kt::CheckEq("TV7: Row 2 height is fh + 0 = 28", info.rowHeights[2], 28);
     kt::Check("TV7: Row 2 text has {tag} stripped",
               strcmp(info.rowTexts[2], "This blaster pistol was common during the Mandalorian Wars.") == 0);
     kt::Check("TV7: Row 2 color is kTealText", info.rowColors[2][0] == rmt::kTealText[0]);
@@ -252,11 +252,11 @@ void testTV8_SectionSplitJournal() {
               strcmp(info.rowTexts[0], "Nar Shaddaa") == 0);
     kt::Check("TV8: Row 0 color is kCream", info.rowColors[0][0] == rmt::kCream[0]);
 
-    // Row 1: Body (Refugee Sector troubles have escalated., fnt_d16x16, kTealText, align 9, 2 lines * 14 + 2 = 30)
+    // Row 1: Body (Refugee Sector troubles have escalated., fnt_d16x16, kTealText, align 9, 2 lines * 14 + 0 = 28)
     kt::CheckEq("TV8: Row 1 is not divider", info.rowIsDivider[1], false);
     kt::Check("TV8: Row 1 font is fnt_d16x16", strcmp(info.rowFonts[1], rmt::kFontDesc) == 0);
     kt::CheckEq("TV8: Row 1 align is TopLeft (9)", info.rowAligns[1], rmt::kAlignTopLeft);
-    kt::CheckEq("TV8: Row 1 height is fh + 2 = 30", info.rowHeights[1], 30);
+    kt::CheckEq("TV8: Row 1 height is fh + 0 = 28", info.rowHeights[1], 28);
     kt::Check("TV8: Row 1 text is Refugee Sector troubles...",
               strcmp(info.rowTexts[1], "Refugee Sector troubles have escalated.") == 0);
     kt::Check("TV8: Row 1 color is kTealText", info.rowColors[1][0] == rmt::kTealText[0]);
@@ -393,7 +393,7 @@ void testArmorCompactLayout() {
     // Row 0 is Rules block (containing FEATS REQUIRED and Armor Proficiency)
     kt::CheckEq("Armor: Row 0 is not divider", info.rowIsDivider[0], false);
     kt::Check("Armor: Row 0 font is rulesFont", strcmp(info.rowFonts[0], rmt::getRulesFont()) == 0);
-    kt::CheckEq("Armor: Row 0 height is 58 (4 lines * 14 + 2)", info.rowHeights[0], 58);
+    kt::CheckEq("Armor: Row 0 height is 56 (4 lines * 14 + 0)", info.rowHeights[0], 56);
     kt::Check("Armor: Row 0 text contains FEATS REQUIRED", strstr(info.rowTexts[0], "FEATS REQUIRED") != nullptr);
     kt::Check("Armor: Row 0 text contains Armor Proficiency", strstr(info.rowTexts[0], "Armor Proficiency - Heavy") != nullptr);
     kt::Check("Armor: Row 0 text contains Defense Bonus", strstr(info.rowTexts[0], "Defense Bonus: 12") != nullptr);
@@ -402,7 +402,7 @@ void testArmorCompactLayout() {
     // Row 1 is Body lore
     kt::CheckEq("Armor: Row 1 is not divider", info.rowIsDivider[1], false);
     kt::Check("Armor: Row 1 font is fnt_d16x16", strcmp(info.rowFonts[1], rmt::kFontDesc) == 0);
-    kt::CheckEq("Armor: Row 1 height is 16 (1 line * 14 + 2)", info.rowHeights[1], 16);
+    kt::CheckEq("Armor: Row 1 height is 14 (1 line * 14 + 0)", info.rowHeights[1], 14);
     kt::Check("Armor: Row 1 text is body prose", strcmp(info.rowTexts[1], "Mandalorian heavy battle armor.") == 0);
 }
 
@@ -416,10 +416,10 @@ void testHeightClampingAgainstListBox() {
     MockListBox listbox(0x1000, 260, 10);
     listbox.setExtent(0, 0, 240, 60);
 
-    // A description whose natural sum is 58 (<= 60, but > 50).
-    // Row 0: 3 lines * 14 + 2 = 44.
-    // Row 1: 1 line * 14 + 2 = 16.
-    // Sum = 60. targetMax = 50. Excess = 10.
+    // Case 1: natural sum is 56 (<= 60, but > 50).
+    // Row 0: 3 lines * 14 + 0 = 42.
+    // Row 1: 1 line * 14 + 0 = 14.
+    // Sum = 56. targetMax = 50. Excess = 6.
     const char* desc = "Damage: 5\nAttack: 2\nRange: 20\n\nShort lore.";
     MockLabel srcLabel(desc, 0, 0, 240, 30);
     void* controls[1] = { srcLabel.voidPtr() };
@@ -430,6 +430,23 @@ void testHeightClampingAgainstListBox() {
     const int clampedSum = info.rowHeights[0] + info.rowHeights[1];
     kt::Check("Clamp: sumHeights clamped to <= lbH - 10 (50)", clampedSum <= 50);
     kt::Check("Clamp: sumHeights <= lbH (60)", clampedSum <= 60);
+
+    // Case 2: natural sum exceeds lbH (sumHeights > lbH, e.g. 70 > 60).
+    // Row 0: 4 lines * 14 = 56.
+    // Row 1: 1 line * 14 = 14.
+    // Sum = 70 > 60. targetMax = 50. Excess = 20.
+    rmt::resetPool();
+    g_rec.reset();
+    const char* descOver = "Damage: 5\nAttack: 2\nRange: 20\nCritical: 20\n\nShort lore.";
+    MockLabel srcLabelOver(descOver, 0, 0, 240, 30);
+    void* controlsOver[1] = { srcLabelOver.voidPtr() };
+    r = RmtAddControls2(listbox.voidPtr(), controlsOver, 1, 0, 0, 0,
+                        reinterpret_cast<uintptr_t>(fakeOrigAddControls2));
+    kt::CheckEq("ClampOver: RmtAddControls2 succeeds when sumHeights > lbH", r, 1);
+    const rmt::LastPopulateInfo& infoOver = rmt::getLastPopulateInfo();
+    const int clampedSumOver = infoOver.rowHeights[0] + infoOver.rowHeights[1];
+    kt::Check("ClampOver: sumHeights clamped to <= lbH - 10 (50) even when sum > lbH", clampedSumOver <= 50);
+    kt::Check("ClampOver: sumHeights <= lbH (60)", clampedSumOver <= 60);
 }
 
 void testCalibratedMeasureTextHeight() {

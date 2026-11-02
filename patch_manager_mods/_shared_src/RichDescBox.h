@@ -402,12 +402,12 @@ struct RichDescBox {
 
         // Row 2: Rules (uses getRulesFont() per directive 3)
         if (sec.rules[0] != '\0') {
-            setupTextRow(sec.rules, getRulesFont(), kTealText, 2);
+            setupTextRow(sec.rules, getRulesFont(), kTealText, 0);
         }
 
         // Row 3: Body
         if (sec.body[0] != '\0') {
-            setupTextRow(sec.body, getBodyFont(), kTealText, 2);
+            setupTextRow(sec.body, getBodyFont(), kTealText, 0);
         }
 
         if (outCount == 0) return false;
@@ -423,7 +423,7 @@ struct RichDescBox {
 
         if (lbH > 0) {
             const int maxVisible = lbH - 10;
-            if (sumHeights <= lbH && sumHeights > maxVisible && outCount > 0) {
+            if (sumHeights > maxVisible && outCount > 0) {
                 int excess = sumHeights - maxVisible;
                 for (int i = outCount - 1; i >= 0 && excess > 0; --i) {
                     uintptr_t lbl = reinterpret_cast<uintptr_t>(outControls[i]);
