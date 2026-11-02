@@ -268,6 +268,8 @@ int itemCount(uintptr_t plc, uintptr_t* repoOut = nullptr) {
 int openFlag(uintptr_t plc) { uint8_t o = 0; return rd<uint8_t>(plc, Plc_Open, &o) ? static_cast<int>(o) : -1; }
 
 void logLine(const char* s) { KP_LOG(chMain, "%s", s); }
+bool g_verbose = false;   // quick_loot.ini Verbose=1: QL0 probe lines (ITEM/EVTRAW/EVT/SCAN); default 0 keeps the log short (doc 52 QLR)
+void probeLine(const char* s) { if (g_verbose) logLine(s); }
 
 using SendCloseFn = void(__thiscall*)(uintptr_t msgObj, uint32_t objId, int closeFlag);
 
@@ -1571,7 +1573,7 @@ struct EngineEnv : qlogic::Env {
     void labelShow(const char*) override {}   // the label is drawn from g_m.labelText() in onMenuPost
     void labelHide() override {}
     void toast(const char*) override {}       // the Took line lives in g_m.toastS (text + duration); drawn in onMenuPost
-    void log(const char* line) override { logLine(line); }
+    void log(const char* line) override { if (!strncmp(line, "SCAN", 4)) probeLine(line); else logLine(line); }
     int wheelDelta() override { return static_cast<int>(InterlockedExchange(&g_wheelAccum, 0)); }
     bool overList() override { return g_hover; }
     int sbClick() override { return sbClickPoll(); }
@@ -2012,6 +2014,7 @@ void KPATCH_CALL onHudFrame(const K2HudContext* ctx, void*) {
 extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
     g_enabled = GetPrivateProfileIntA("QuickLoot", "Enabled", 1, IniPath) != 0;
+    g_verbose = GetPrivateProfileIntA("QuickLoot", "Verbose", 0, IniPath) != 0;
     g_proxOn = GetPrivateProfileIntA("QuickLoot", "ProximityEnabled", 1, IniPath) != 0;
     g_takeKey = qlogic::clampTakeKey(GetPrivateProfileIntA("QuickLoot", "TakeKey", qlogic::DefaultTakeKey, IniPath));
     g_scanMs = qlogic::clampScanMs(GetPrivateProfileIntA("QuickLoot", "ScanMs", static_cast<int>(qlogic::DefaultScanMs), IniPath));
@@ -2117,7 +2120,7 @@ extern "C" int __cdecl QlShowContainer(uintptr_t gui, uint32_t objId, int flag) 
         uintptr_t item = reinterpret_cast<LookupFn>(ItemListGetItem)(repo, i);
         if (item) rd<int>(item, Item_Stack, &stack);
         qlogic::fmtItem(b, sizeof b, i, id, stack);
-        logLine(b);
+        probeLine(b);
     }
     return g_m.onShow(g_env, objId, plc, flag, n, now, isGiveContainer(gui, plc));   // QL2p peek (any flag) or QL1a take-all armed (1), else the vanilla menu (0)
 }
@@ -2141,11 +2144,11 @@ extern "C" void __cdecl QlPlaceableEvent(uintptr_t plc, int a1, int a2, int a3) 
     char b[160];
     if (g_t.wantRaw()) {
         qlogic::fmtEvtRaw(b, sizeof b, static_cast<unsigned>(plc), a1, a2, static_cast<unsigned>(a3), haveId ? id16 : -1, ref);
-        logLine(b);
+        probeLine(b);
     }
     if (haveId && qlogic::isWatchedEvent(static_cast<short>(id16))) {
         qlogic::fmtEvt(b, sizeof b, static_cast<short>(id16), qlogic::msSince(now, g_t.showMs), itemCount(plc));
-        logLine(b);
+        probeLine(b);
     }
 }
 
