@@ -493,6 +493,71 @@ bool isTinted(int row) {
     return false;
 }
 
+// ---- equip-compare probe (EQ-P1; .claude/research/equip_compare/PLAN.md sec 9). READ-ONLY, DEBUG level only. ----
+// Answers: is row+0x1D0 the item id, does the equip screen reach H6d, which panel dword holds the selection / shown creature,
+// and what do GetItemInSlot(0x10) / (0x20) return. Never passes a multi-bit mask; never writes; capped at MaxLines.
+namespace eqprobe {
+constexpr int MapCap = 512, MaxLines = 150, MaxOther = 50, ItemIdAt = 0x14, RowItemIdOff = 0x1D0, InvOff = 0x1150, ScanEnd = 0x2000;
+constexpr uintptr_t FnInvGetItemInSlot = gameaddr::InvGetItemInSlot;   // thiscall(inv, u32 oneSlotBit) RET 4 -> item or 0
+struct RowItem { int row, item; };
+RowItem g_map[MapCap];
+int g_nMap = 0, g_cre = 0, g_lines = 0, g_linesOther = 0, g_checked = 0, g_mismatch = 0;   // separate budgets so inventory use cannot starve equip-screen lines
+
+// createRow: remember row -> item and compare row+0x1D0 with the creation-path id (item+0x14). Pass signal: mismatch 0.
+void note(int row, int item) {
+    if (!KP_ENABLED(chMain, KPLOG_DEBUG) || !row || !item) return;
+    if (g_nMap < MapCap) g_map[g_nMap++] = {row, item};
+    int rid = rd<int>(row, RowItemIdOff), cid = rd<int>(item, ItemIdAt);
+    ++g_checked;
+    if (rid != cid && ++g_mismatch <= 3) logd("equip-probe createRow MISMATCH row=%08x row+1D0=%08x item=%08x item+14=%08x", row, rid, item, cid);
+}
+int itemOf(int row) { for (int i = 0; i < g_nMap; ++i) if (g_map[i].row == row) return g_map[i].item; return 0; }
+
+// -1 = unreadable (creature/inventory), 0 = empty, else the item pointer.
+int equippedIn(int cre, unsigned oneBit) {
+    if (!cre) return -1;
+    int inv = rd<int>(cre, InvOff);
+    if (!inv || !saferead::probeRead(6, reinterpret_cast<const void*>(inv), 0x20)) return -1;
+    return (int)reinterpret_cast<uintptr_t(__thiscall*)(int, unsigned)>(FnInvGetItemInSlot)(inv, oneBit);
+}
+void fmtSlot(int v, char* out, int cap) { if (v == -1) snprintf(out, cap, "unr"); else snprintf(out, cap, "%08x", v); }
+
+void onSelect(int ebp) {
+    if (!KP_ENABLED(chMain, KPLOG_DEBUG)) return;
+    int row = rd<int>(ebp, F_SelectRowArg), panel = rd<int>(ebp, F_SelectPanel);
+    if (!row || !panel) return;
+    int rowid = rd<int>(row, RowItemIdOff);
+    if (!rowid || rowid == NoSelection) return;
+    const bool isf = rd<unsigned>(panel, 0) == InventoryVtable;
+    if (isf ? g_lines >= MaxLines : g_linesOther >= MaxOther) return;
+    ++(isf ? g_lines : g_linesOther);
+    // g_map / g_cre belong to the last inventory populate; on the equip screen they may be stale (freed items), so only compare values there.
+    int item = isf ? itemOf(row) : 0, createid = item ? rd<int>(item, ItemIdAt) : 0;
+    char name[96] = "-"; unsigned slotmask = 0; int base = 0;
+    if (item && saferead::probeRead(6, reinterpret_cast<const void*>(item), 0x300)) {
+        char nm[96]; readItemName(item, clientLanguage(), nm, sizeof nm);
+        if (nm[0]) snprintf(name, sizeof name, "%s", nm);
+        base = reinterpret_cast<GetBaseItemFn>(FnGetBaseItem)(item);
+        slotmask = base ? rd<unsigned>(base, BaseSlotMaskOff) : 0;
+    }
+    char r10[16], r20[16];
+    if (isf) { fmtSlot(equippedIn(g_cre, 0x10), r10, sizeof r10); fmtSlot(equippedIn(g_cre, 0x20), r20, sizeof r20); }
+    else { snprintf(r10, sizeof r10, "skip"); snprintf(r20, sizeof r20, "skip"); }
+    // Panel dword scan (equip screen: where is the selection id / the shown creature). Bounded, read-only.
+    char scan[96] = "none", credoff[48] = "-"; int ns = 0, sp = 0, nc = 0, cp = 0;
+    scan[0] = 0; credoff[0] = 0;
+    for (int off = 0; off < ScanEnd; off += 4) {
+        int v = 0;
+        if (!saferead::readAt<int>(5, static_cast<uintptr_t>(panel), off, &v)) continue;
+        if (v == rowid && ns < 8) { sp += snprintf(scan + sp, sizeof scan - sp, "%s%x", ns ? ":" : "", off); ++ns; }
+        if (g_cre && v == g_cre && nc < 8) { cp += snprintf(credoff + cp, sizeof credoff - cp, "%s%x", nc ? ":" : "", off); ++nc; }
+    }
+    logd("equip-probe ctx=%s panel=%08x sel=%08x rowid=%08x createid=%08x name=\"%s\" base=%d slotmask=%x equippedCre=%08x r10=%s r20=%s scan=%s credoff=%s mm=%d/%d",
+         isf ? "isf" : "other", panel, rd<int>(panel, PanelSelectedIdOff), rowid, createid, name, base ? rd<int>(base, 0) : -1, slotmask,
+         g_cre, r10, r20, ns ? scan : "none", nc ? credoff : "none", g_mismatch, g_checked);
+}
+}  // namespace eqprobe
+
 // Creates one backpack row exactly like the vanilla call site, then tints it when the shown character cannot equip it.
 void createRow(int panel, int cobj, int ebp, int item, bool tint) {
     int* counter = reinterpret_cast<int*>(ebp + F_Counter);
@@ -500,6 +565,10 @@ void createRow(int panel, int cobj, int ebp, int item, bool tint) {
     reinterpret_cast<CreateEntryFn>(FnCreateItemEntry)(panel, cobj, counter, reinterpret_cast<void*>(ebp + F_List), item, 0, 0);
     int after = *counter;
     if (after != before + 1) logf("row: counter %d -> %d (expected +1) for item %08x", before, after, item);
+    if (after == before + 1 && KP_ENABLED(chMain, KPLOG_DEBUG)) {   // equip-compare probe: row -> item map + row+0x1D0 self-check
+        int a2 = rd<int>(panel, PanelRowArrayOff), c2 = rd<int>(panel, PanelRowCountOff);
+        eqprobe::note((a2 && before >= 0 && before < c2) ? rd<int>(a2, 4 * before) : 0, item);
+    }
     if (tint && g_cfg.tint && after == before + 1) {
         int arr = rd<int>(panel, PanelRowArrayOff), cnt = rd<int>(panel, PanelRowCountOff);
         int row = (arr && before >= 0 && before < cnt) ? rd<int>(arr, 4 * before) : 0;
@@ -650,6 +719,7 @@ void startPopulate(int panel, int ebp) {
     g_inPop = true; g_n = 0; g_lastIdx = -1; g_selSet = false; g_seen = g_dropped = g_direct = 0; g_nTinted = 0;
     g_bufTicks = g_nameTicks = 0;
     g_popEbp = ebp; g_popCounter0 = rd<int>(ebp, F_Counter);
+    eqprobe::g_nMap = 0; eqprobe::g_cre = rd<int>(ebp, F_Creature);   // probe: rows are rebuilt; remember the shown creature
     logd("populate: panel=%08x mode=%d extra=%d creature=%08x ebp=%08x rows-so-far=%d", panel, filterMode(), g_extra,
                         rd<int>(ebp, F_Creature), ebp, g_popCounter0);
 }
@@ -841,6 +911,7 @@ extern "C" void __cdecl SortFilterFlush(int ebp) {
 // clears the New bit and re-runs SetItem (0x8b1cc0), which rewrites the row colours; put our tint back.
 extern "C" void __cdecl SortFilterRowSelect(int ebp) {
     saferead::beginScope();
+    eqprobe::onSelect(ebp);   // EQ-P1 probe: logs before the early returns so usable rows and the equip screen are seen
     if (!g_cfg.tint || !g_nTinted) return;
     int row = rd<int>(ebp, F_SelectRowArg);
     if (!row || !isTinted(row)) return;
@@ -863,7 +934,7 @@ extern "C" void __cdecl SortFilterRowSelect(int ebp) {
 extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
     if (KpLog_HasCore()) {
-        logf("inventory-sort-filter 0.5.0-dev loaded (KpLog core); pid=%lu", (unsigned long)GetCurrentProcessId());
+        logf("inventory-sort-filter 0.5.1-dev loaded (KpLog core); pid=%lu", (unsigned long)GetCurrentProcessId());
         logf("ini path: %s", IniName);
         loadIni(true);
     }
@@ -899,7 +970,7 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
     if (reason == DLL_PROCESS_ATTACH) {
         char cwd[MAX_PATH] = "?"; GetCurrentDirectoryA(MAX_PATH, cwd);
         rotateFallbackLog(cwd);
-        logf("inventory-sort-filter 0.5.0-dev loaded; cwd=%s pid=%lu", cwd, (unsigned long)GetCurrentProcessId());
+        logf("inventory-sort-filter 0.5.1-dev loaded; cwd=%s pid=%lu", cwd, (unsigned long)GetCurrentProcessId());
         // Bare names go to the Windows directory (Wine: C:\\windows), so anchor the INI to the game folder.
         if (GetCurrentDirectoryA(MAX_PATH, cwd) > 0) snprintf(IniName, sizeof IniName, "%s\\inventory_sort_filter.ini", cwd);
         logf("ini path: %s", IniName);

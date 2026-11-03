@@ -1,7 +1,7 @@
 [patch]
 id = "inventory-sort-filter"
 name = "Inventory Sort & Filter"
-version = "0.5.0-dev"
+version = "0.5.1-dev"
 author = "local"
 description = "Sorts the inventory backpack (new, usable, base item), tints items the shown character cannot equip, and adds New / Usable / Upgradeable filters by re-clicking the active All tab. 0.2.1: no longer truncates inventory_sort_filter_log.txt at attach (sessions split on the loaded line). 0.4.0: own strip above the item list (filter, sort, N of M). 0.5.0: config page controls tint, filter cycle states and the strip, with a live preview list."
 
