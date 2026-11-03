@@ -1091,17 +1091,35 @@ void showRefusal(int slot) {
     KP_LOGV(chTip, KPLOG_DEBUG, "tip: refusal shown slot %d", slot);
 }
 
+// Slot whose visible frame contains the client-pixel point, or -1.
+int slotUnderCursor(const POINT& pt) {
+    for (int s = 0; s < ButtonCount; ++s) {
+        const Widget& w = g_bar.b[s].bg; if (!w.ctl || !w.visible) continue;
+        uintptr_t c = reinterpret_cast<uintptr_t>(w.ctl); int x = 0, y = 0, ww = 0, hh = 0; guikit::getExtent(c, &x, &y, &ww, &hh);
+        if (pt.x >= x && pt.x < x + ww && pt.y >= y && pt.y < y + hh) return s;
+    }
+    return -1;
+}
+
+// Set on the closed->open gate edge (dialogue or a menu ends). The bar reappears under wherever the cursor was left,
+// which is often a bar button after a reply click, so the bar would show that slot as already hovered.
+bool g_recentreOnReopen = false;
+void recentreCursorOnReopen() {
+    if (!g_recentreOnReopen) return;
+    g_recentreOnReopen = false;   // one attempt per reopen, whatever the outcome
+    POINT pt = {0, 0}; if (!cursorInGame(&pt)) return;
+    const int s = slotUnderCursor(pt); if (s < 0) return;
+    RECT rc = {0, 0, 0, 0}; if (!GetClientRect(g_gameWnd, &rc)) return;
+    POINT centre = {(rc.right - rc.left) / 2, (rc.bottom - rc.top) / 2};
+    if (!ClientToScreen(g_gameWnd, &centre) || !SetCursorPos(centre.x, centre.y)) { KP_LOGV(chInput, KPLOG_WARN, "cursor: recentre after reopen failed (err=%lu)", (unsigned long)GetLastError()); return; }
+    KP_LOG(chInput, "cursor: reopened over slot %d at (%ld,%ld), moved to centre (%ld,%ld)", s, (long)pt.x, (long)pt.y, (long)centre.x, (long)centre.y);
+}
+
 // Per frame: which slot (if any) the cursor is over. Only available slots highlight (frame -> "fph_slot_hi").
 void updateHover(bool gate) {
     POINT& lastPt = g_bar.hoverLastPt; long& lastLog = g_bar.hoverLastLog;
     int over = -1; POINT pt = {0, 0};
-    if (gate && cursorInGame(&pt)) {
-        for (int s = 0; s < ButtonCount && over < 0; ++s) {
-            const Widget& w = g_bar.b[s].bg; if (!w.ctl || !w.visible) continue;
-            uintptr_t c = reinterpret_cast<uintptr_t>(w.ctl); int x = 0, y = 0, ww = 0, hh = 0; guikit::getExtent(c, &x, &y, &ww, &hh);
-            if (pt.x >= x && pt.x < x + ww && pt.y >= y && pt.y < y + hh) over = s;
-        }
-    }
+    if (gate && cursorInGame(&pt)) over = slotUnderCursor(pt);
     if (over != g_bar.hoverLast) { KP_LOGV(chInput, KPLOG_DEBUG, "hover: slot %d -> %d cursor=(%ld,%ld)", g_bar.hoverLast, over, (long)pt.x, (long)pt.y); g_bar.hoverLast = over; g_bar.hoverStart = GetTickCount(); hideTip("hover changed"); if (over >= 0 && (g_bar.b[over].avail || g_bar.ed.mode != M_Normal)) playHoverSound("slot"); }
     else if (KP_ENABLED(chInput, KPLOG_DEBUG) && (pt.x != lastPt.x || pt.y != lastPt.y) && pt.y > HoverLogMinY && g_frame - lastLog > RetryFrames) { lastLog = g_frame; KP_LOGV(chInput, KPLOG_DEBUG, "hover: cursor=(%ld,%ld) over=%d", (long)pt.x, (long)pt.y, over); }
     lastPt = pt;
@@ -2323,6 +2341,7 @@ extern "C" void __cdecl HotbarHudTick(void* hudPtr) {
         if (nowT - flapStart > FlapWindowMs) { flapStart = nowT; flapEdges = 0; }
         ++flapEdges; ++g_gateFlaps;
         bool wasGate = lastGate;
+        if (gate && !wasGate) g_recentreOnReopen = true;   // closed -> open: see recentreCursorOnReopen
         lastGate = gate; lastWhy = g_gateDetail;
         if (flapEdges > FlapMaxEdges) KP_LOG_EVERY(chGate, 1000, "gate: flapping (%u edges so far) now %s (%s)", g_gateFlaps, gate ? "ACTIVE" : "inactive", g_gateDetail);
         else KP_LOG(chGate, "gate: %s (%s)", gate ? "ACTIVE" : "inactive", g_gateDetail);
@@ -2351,6 +2370,7 @@ extern "C" void __cdecl HotbarHudTick(void* hudPtr) {
     }
     if (charChanged || g_frame % ButtonRefreshFrames == 1 || g_frame == 2) refreshEffective(hud);
     updateButtons(hud, gate);
+    if (gate) recentreCursorOnReopen();   // before the hover pass, so the reopened frame never shows a slot hovered
     updateHover(gate);
     updateEditor(hud, gate);
     if (gate) drainRing(hud);

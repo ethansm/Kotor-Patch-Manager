@@ -4,6 +4,8 @@ Action Hotbar (id `action-hotbar`), formerly Force Power Hotbar.
 
 ## Unreleased (0.1.11-dev)
 
+- When the bar reappears after a dialogue or menu, and the cursor is over one of its slots, the cursor moves to the centre of the game window. Before, the reopened bar showed that slot as already hovered (hover sound and highlight with no mouse movement). One move per reopen; logs `cursor: reopened over slot N`.
+
 Fixes from the Gemini review of TP1-TP3:
 
 - Mode button: cycling a slot's target skips a mode another slot already holds for that item. Before, stepping through Lowest HP on the way to Self cleared the slot that held Medpac Lowest HP.
