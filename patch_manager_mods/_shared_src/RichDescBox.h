@@ -66,6 +66,7 @@ struct PoolEntry {
 inline LastPopulateInfo s_lastPopulateInfo = {};
 inline PoolEntry s_listBoxPools[kMaxListBoxPools] = {};
 inline uint32_t s_useCounter = 0;
+inline uint8_t s_dummyRenderer[0x80] = {0};
 inline const char* s_bodyFont = kFontDesc;
 inline const char* s_rulesFont = kFontDesc;
 inline int (*g_measureTextHeight)(uintptr_t ctl, const char* text, int width, const char* font) = nullptr;
@@ -112,6 +113,38 @@ inline int measureTextHeight(uintptr_t ctl, const char* text, int width, const c
     }
     if (ctl && guikit::detail::textObjOk(ctl)) {
         const uintptr_t textObj = ctl + guikit::Label_Text;
+#ifndef GUIKIT_HOST
+        uint32_t rend32 = 0;
+        if (guikit::detail::rd32(textObj, guikit::Text_Renderer, &rend32) && rend32) {
+            const uintptr_t rend = static_cast<uintptr_t>(rend32);
+            if (rend != static_cast<uint32_t>(reinterpret_cast<uintptr_t>(s_dummyRenderer)) &&
+                saferead::probeRead(guikit::detail::SiteBase, reinterpret_cast<const void*>(rend), 0x50)) {
+                int lineCount = 0;
+                if (guikit::detail::rdInt(rend, 0x4C, &lineCount) && lineCount > 0) {
+                    int explicitLines = 1;
+                    if (text) {
+                        for (const char* p = text; *p; ++p) {
+                            if (*p == '\n') ++explicitLines;
+                        }
+                    }
+                    if (lineCount < explicitLines) {
+                        lineCount = explicitLines;
+                    }
+                    int lineHeight = 14;
+                    if (font) {
+                        if (strcmp(font, kFontSub) == 0 || strstr(font, "10x10") != nullptr) {
+                            lineHeight = 12;
+                        } else if (strcmp(font, kFontTitle) == 0 || (strstr(font, "16x16") != nullptr && strstr(font, "dialog") != nullptr)) {
+                            lineHeight = 16;
+                        } else if (strcmp(font, kFontDesc) == 0 || strstr(font, "fnt_d") != nullptr || strstr(font, "fnt_") != nullptr) {
+                            lineHeight = 14;
+                        }
+                    }
+                    return lineCount * lineHeight;
+                }
+            }
+        }
+#endif
         uint32_t vt = 0;
         if (guikit::detail::rd32(textObj, 0, &vt) && vt) {
             uint32_t fn = 0;
@@ -244,7 +277,6 @@ inline uintptr_t ensurePooledLabel(PoolEntry& slot, size_t idx) noexcept {
         *reinterpret_cast<uint32_t*>(c + guikit::Label_Text) = guikit::TextVtable;
     }
 
-    static uint8_t s_dummyRenderer[0x40] = {0};
     uint32_t rend = 0;
     if (!guikit::detail::rd32(c, kLabelOff_Renderer, &rend) || rend == 0) {
         const uint32_t dummy = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(s_dummyRenderer));
