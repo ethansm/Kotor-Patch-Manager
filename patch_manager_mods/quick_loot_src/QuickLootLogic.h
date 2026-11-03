@@ -506,7 +506,7 @@ constexpr int SbReserve = SbW + SbGapPx;   // width taken from the rows when the
 constexpr int SbInset = 2;                 // track outline thickness (the outline is a teal label under a dark inset label)
 constexpr int SbThumbMin = 24;
 constexpr int BlockPadX = 28, BlockPadY = 20;   // inside the frame; the vanilla template frame (LBL_MOULDING3, DIMENSION 16) eats 16 px of each edge
-constexpr int BlockMinW = 400, BlockMaxW = 1000;
+constexpr int BlockMinW = 460, BlockMaxW = 1000;
 constexpr int BezelInsetPx = 38;           // 0.8.0-dev (QL14): hardware bezel rail inset on all 4 sides
 constexpr int LabelSlackPx = 12;           // row / header label rects are this much wider than their text budget (a wrapped label is taller than a row)
 constexpr int IndicatorGapPx = 36;         // min gap between the header text and the "1-8 of 25" indicator
@@ -897,11 +897,15 @@ inline bool buildListDraw(const ListData& d, const ListView& v, bool took, const
             fmtRange(o->indicator, sizeof o->indicator, off + 1, last, d.totalItems());
             o->indicatorPx = textPx10(o->indicator);
         }
-    } else if (o->headerPx > need) need = o->headerPx;
+    } else {
+        const int hn = o->headerPx + (hasUnified ? (48 + LabelSlackPx) : 0);
+        if (hn > need) need = hn;
+    }
     if (flashing) {   // 0.6.0-dev: the take flash replaces the header text (the block widens for it, up to BlockMaxW); 0.7.0-dev: no indicator, so the whole width
         fmtFlashHeader(o->header, sizeof o->header, flashName, BlockMaxW - 2 * BlockPadX, flashStack);
         o->headerPx = textPx10(o->header);
-        if (o->headerPx > need) need = o->headerPx;
+        const int hn = o->headerPx + (hasUnified ? (48 + LabelSlackPx) : 0);
+        if (hn > need) need = hn;
     }
     int w = need + 2 * BlockPadX;
     if (w < BlockMinW) w = BlockMinW;

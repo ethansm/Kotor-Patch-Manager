@@ -789,8 +789,12 @@ int main() {
         buildListDraw(d4, v4, true, "F", &o4);
         kt::Check("4 items: 4 rows, no indicator", o4.vis == 4 && !o4.scrollable && o4.indicator[0] == 0 && strcmp(o4.header, "Acquired Items (4)") == 0);
         kt::CheckEq("4 rows height", o4.h, blockHeightPx(4));
-        // the Took header "Acquired Items (4)" is wider than the 400 px floor: the block grows to header + pads (headers are never cut)
-        kt::CheckEq("Took header wider than the floor widens the block", o4.w, o4.headerPx + 2 * BlockPadX);
+        kt::CheckEq("Took header below the floor binds to BlockMinW", o4.w, BlockMinW);
+        {
+            ListDraw oWide;
+            buildListDraw(d4, v4, false, "VeryLongKeyName", &oWide);
+            kt::CheckEq("header wider than the floor widens the block", oWide.w, oWide.headerPx + 2 * BlockPadX);
+        }
         {   // single short item: narrowest real header clamped to BlockMinW
             ListData d1; d1.set(names, nullptr, 1, 1);
             ListView v1b; v1b.reset(1, 8);

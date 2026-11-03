@@ -1685,6 +1685,16 @@ void KPATCH_CALL onMenuPost(const K2HudContext* ctx, void*) {
         const qlbezel::Category cat = qlbezel::classifyPlaceable(isBodyBag, isCorpse, app, g_targetName, tag, resref);
         qlbezel::CategoryStyle style = g_catStyles[cat];
         if (!g_hardwareBezels) style.frame = qlbezel::FrameNone;
+
+        // Clear target selector circle and account for hardware bezel outer expansion:
+        const bool hasBzl = (style.frame != qlbezel::FrameNone);
+        const int clearY = (g_m.cfg.anchor == 1 || !g.menuShown) ? 64 : (hasBzl ? (qlogic::BezelInsetPx + 16) : 20);
+        blk.y += clearY;
+        if (panel.h > 0) {
+            const int maxBlkY = panel.y + panel.h - qlogic::ScreenMarginPx - blk.h - (hasBzl ? qlogic::BezelInsetPx : 0);
+            if (blk.y > maxBlkY) blk.y = maxBlkY;
+        }
+
         blockDraw(d, blk, panel, now, style, cat);
         return;
     }
