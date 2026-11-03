@@ -64,6 +64,12 @@ void mcLog(int level, const char* msg) {
     }
 }
 
+void probeLogForwarder(const char* msg) {
+    if (KpLog_HasCore() && g_verbose && msg) {
+        KP_LOGV(chMain, KPLOG_DEBUG, "%s", msg);
+    }
+}
+
 int32_t pageOnChange(void* /*user*/, int /*row*/, const char* id, int32_t requested, int /*dir*/) {
     if (id && strcmp(id, rmtpage::kRowReset) == 0 && requested != 0) {
         g_live.inlineColoring = true;
@@ -322,7 +328,10 @@ void setRichDescBox(bool enabled) noexcept { g_richDescBox = enabled; }
 bool isRichDescBox() noexcept { return g_richDescBox; }
 void setStatHierarchy(bool enabled) noexcept { g_statHierarchy = enabled; }
 bool isStatHierarchy() noexcept { return g_statHierarchy; }
-void setVerbose(bool verbose) noexcept { g_verbose = verbose; }
+void setVerbose(bool verbose) noexcept {
+    g_verbose = verbose;
+    rmt::g_probeLog = verbose ? probeLogForwarder : nullptr;
+}
 bool isVerbose() noexcept { return g_verbose; }
 void resetOverrideCount() noexcept { g_overrideCount = 0; }
 uint32_t getOverrideCount() noexcept { return g_overrideCount; }
@@ -489,6 +498,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     g_richDescBox = GetPrivateProfileIntA("General", "RichDescBox", 1, iniPath) != 0;
     g_statHierarchy = GetPrivateProfileIntA("General", "StatHierarchy", 1, iniPath) != 0;
     g_verbose = GetPrivateProfileIntA("General", "Verbose", 0, iniPath) != 0;
+    rmt::g_probeLog = probeLogForwarder;
 
     static char s_bodyFontBuf[32] = {0};
     GetPrivateProfileStringA("General", "BodyFont", rmt::kFontDesc, s_bodyFontBuf, sizeof(s_bodyFontBuf), iniPath);

@@ -9,8 +9,10 @@
 #include "GameAddr.h"
 #include "GuiKit.h"
 #include "RichTextClassifier.h"
+#include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -41,6 +43,8 @@ constexpr int kCtlOff_ParentPanel = 0x38;
 constexpr int kLabelOff_TextParams = 0xF0;
 constexpr int kLabelOff_Renderer = 0xEC;
 constexpr int kTextVtOff_GetFormattedHeight = 0x08; // slot 2 of CSWGuiText vtable at label + Label_Text
+constexpr int kTextObjOff_W = 0x0C;
+constexpr int kTextObjOff_H = 0x10;
 constexpr int kListBoxOff_ClientW = 0x2A4;
 constexpr int kListBoxOff_ClientH = 0x2A8;
 constexpr int kListBoxOff_Flags = 0x2CC;
@@ -72,6 +76,26 @@ inline uint8_t s_dummyRenderer[0x80] = {0};
 inline const char* s_bodyFont = kFontDesc;
 inline const char* s_rulesFont = kFontDesc;
 inline int (*g_measureTextHeight)(uintptr_t ctl, const char* text, int width, const char* font) = nullptr;
+inline void (*g_probeLog)(const char*) = nullptr;
+
+inline void probeLogf(const char* fmt, ...) {
+    if (!g_probeLog) return;
+    char buf[512];
+    va_list args;
+    va_start(args, fmt);
+    vsnprintf(buf, sizeof(buf), fmt, args);
+    va_end(args);
+    buf[sizeof(buf) - 1] = '\0';
+    g_probeLog(buf);
+}
+
+struct ProbeDedupeState {
+    uintptr_t listbox = 0;
+    size_t totalTextLen = 0;
+    int clientH = 0;
+    bool hasPrevious = false;
+};
+inline ProbeDedupeState s_lastProbeState = {};
 
 inline const char* getBodyFont() noexcept {
     return s_bodyFont ? s_bodyFont : kFontDesc;
@@ -107,6 +131,7 @@ inline void resetPool() noexcept {
         s_listBoxPools[i] = PoolEntry{};
     }
     s_useCounter = 0;
+    s_lastProbeState = ProbeDedupeState{};
 }
 
 inline float getEngineTextScalar() noexcept {
@@ -341,8 +366,26 @@ struct RichDescBox {
         }
         if (clientH <= 0) clientH = 140;
 
+        int screenW = 0;
+#ifndef GUIKIT_HOST
+        (void)saferead::readAt<int>(guikit::detail::SiteBase, gameaddr::ScreenW, 0, &screenW);
+#endif
+
         const float textScalar = getEngineTextScalar();
         (void)textScalar;
+
+        const size_t totalTextLen = strlen(sec.title) + strlen(sec.subtitle) + strlen(sec.rules) + strlen(sec.body);
+        const uintptr_t lbPtr = reinterpret_cast<uintptr_t>(listbox);
+        const bool logProbe = (!s_lastProbeState.hasPrevious ||
+                               s_lastProbeState.listbox != lbPtr ||
+                               s_lastProbeState.totalTextLen != totalTextLen ||
+                               s_lastProbeState.clientH != clientH);
+        if (logProbe) {
+            s_lastProbeState.listbox = lbPtr;
+            s_lastProbeState.totalTextLen = totalTextLen;
+            s_lastProbeState.clientH = clientH;
+            s_lastProbeState.hasPrevious = true;
+        }
 
         PoolEntry* pool = findOrAllocPool(reinterpret_cast<uintptr_t>(listbox));
         if (!pool) return false;
@@ -351,31 +394,61 @@ struct RichDescBox {
         void* outControls[kMaxPooledRows] = {nullptr};
         int outCount = 0;
 
-        auto measureRowH = [&](uintptr_t lbl, const char* text, const char* font) -> int {
+        auto measureRowH = [&](const char* kind, uintptr_t lbl, const char* text, const char* font) -> int {
             (void)guikit::setRect(lbl, srcX, srcY, w, 32);
             (void)guikit::setFont(lbl, font);
             (void)guikit::setAlign(lbl, kAlignTopLeft);
             (void)guikit::setText(lbl, text);
 
-            int finalH = 0;
+            int engH = 0;
+            int txtW = 0;
+            int txtH = 0;
 #ifndef GUIKIT_HOST
             if (guikit::detail::textObjOk(lbl)) {
                 const uintptr_t textObj = lbl + guikit::Label_Text;
+                (void)guikit::detail::rdInt(textObj, kTextObjOff_W, &txtW);
+                (void)guikit::detail::rdInt(textObj, kTextObjOff_H, &txtH);
                 uint32_t vt = 0;
                 if (guikit::detail::rd32(textObj, 0, &vt) && vt) {
                     uint32_t fn = 0;
                     if (guikit::detail::rd32(vt, kTextVtOff_GetFormattedHeight, &fn) && fn) {
                         int physicalH = reinterpret_cast<int(__thiscall*)(void*)>(static_cast<uintptr_t>(fn))(reinterpret_cast<void*>(textObj));
                         if (physicalH > 0 && textScalar > 0.01f) {
-                            finalH = static_cast<int>(static_cast<float>(physicalH) / textScalar + 0.99f);
+                            engH = static_cast<int>(static_cast<float>(physicalH) / textScalar + 0.99f);
                         }
                     }
                 }
             }
 #endif
-            if (finalH <= 0) {
-                finalH = measureTextHeight(lbl, text, w, font);
+            const int fbH = measureTextHeight(lbl, text, w, font);
+            const int finalH = (engH > 0) ? engH : fbH;
+            const char* const src = (engH > 0) ? "engine" : "fallback";
+
+            if (logProbe) {
+                char head[21] = {0};
+                const size_t textLen = text ? strlen(text) : 0;
+                const size_t copyLen = (textLen < 20) ? textLen : 20;
+                for (size_t i = 0; i < copyLen; ++i) {
+                    const char c = text[i];
+                    head[i] = (c == '\n' || c == '\r') ? '|' : c;
+                }
+                head[copyLen] = '\0';
+                probeLogf("RMTPROBE row kind=%s w=%d clientH=%d pad=%u src=%s engH=%d fbH=%d txtW=%d txtH=%d scalar=%d screenW=%d len=%zu head=%s",
+                          kind ? kind : "unknown",
+                          w,
+                          clientH,
+                          static_cast<unsigned>(pad),
+                          src,
+                          engH,
+                          fbH,
+                          txtW,
+                          txtH,
+                          static_cast<int>(textScalar * 100.0f),
+                          screenW,
+                          textLen,
+                          head);
             }
+
             return finalH;
         };
 
@@ -400,28 +473,28 @@ struct RichDescBox {
         if (hasTitle) {
             lbls[activeCount] = ensurePooledLabel(*pool, static_cast<size_t>(activeCount));
             if (lbls[activeCount]) {
-                titleH = measureRowH(lbls[activeCount], sec.title, kFontTitle);
+                titleH = measureRowH("title", lbls[activeCount], sec.title, kFontTitle);
                 ++activeCount;
             }
         }
         if (hasSubtitle) {
             lbls[activeCount] = ensurePooledLabel(*pool, static_cast<size_t>(activeCount));
             if (lbls[activeCount]) {
-                subH = measureRowH(lbls[activeCount], sec.subtitle, kFontSub);
+                subH = measureRowH("sub", lbls[activeCount], sec.subtitle, kFontSub);
                 ++activeCount;
             }
         }
         if (hasRules) {
             lbls[activeCount] = ensurePooledLabel(*pool, static_cast<size_t>(activeCount));
             if (lbls[activeCount]) {
-                rulesH = measureRowH(lbls[activeCount], sec.rules, getRulesFont());
+                rulesH = measureRowH("rules", lbls[activeCount], sec.rules, getRulesFont());
                 ++activeCount;
             }
         }
         if (hasBody) {
             lbls[activeCount] = ensurePooledLabel(*pool, static_cast<size_t>(activeCount));
             if (lbls[activeCount]) {
-                bodyH = measureRowH(lbls[activeCount], sec.body, getBodyFont());
+                bodyH = measureRowH("body", lbls[activeCount], sec.body, getBodyFont());
                 ++activeCount;
             }
         }
@@ -475,6 +548,14 @@ struct RichDescBox {
                 subGap   = desSubGap;
                 rulesGap = desRulesGap;
             }
+        }
+
+        if (logProbe) {
+            const int gaps = titleGap + subGap + rulesGap;
+            const int total = naturalSum + gaps + padTotal;
+            const int overflow = total - clientH;
+            probeLogf("RMTPROBE sum titleH=%d subH=%d rulesH=%d bodyH=%d naturalSum=%d padTotal=%d clientH=%d titleGap=%d subGap=%d rulesGap=%d total=%d overflow=%d",
+                      titleH, subH, rulesH, bodyH, naturalSum, padTotal, clientH, titleGap, subGap, rulesGap, total, overflow);
         }
 
         auto applyTextRow = [&](uintptr_t lbl, const char* text, const char* font, const float* col, int rowH, int gap) {

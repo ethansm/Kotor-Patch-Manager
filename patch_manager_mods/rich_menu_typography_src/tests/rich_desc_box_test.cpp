@@ -8,6 +8,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <cstdint>
+#include <string>
+#include <vector>
 #include <sys/mman.h>
 
 namespace {
@@ -554,6 +556,51 @@ void testVibroswordUpgradeTagParsing() {
     kt::Check("Vibro: Row 1 contains lore prose", strstr(info.rowTexts[1], "Ultrasonic generators power") != nullptr);
 }
 
+void testTV11_MeasurementProbeLogging() {
+    rmt::resetPool();
+    g_rec.reset();
+    rmt::setRichDescBox(true);
+
+    static std::vector<std::string> capturedLogs;
+    capturedLogs.clear();
+    rmt::g_probeLog = [](const char* msg) {
+        if (msg) capturedLogs.push_back(msg);
+    };
+
+    MockListBox listbox(0x1000, 260, 10);
+    const char* itemDesc = "Fully Upgradeable\n\nDamage: Energy, 4-16\nAttack Modifier: +3\n\n{30}This blaster pistol was common during the Mandalorian Wars.";
+    MockLabel srcLabel(itemDesc, 0, 0, 240, 30);
+    void* controls[1] = { srcLabel.voidPtr() };
+
+    const int res = RmtAddControls2(listbox.voidPtr(), controls, 1, 0, 0, 0,
+                                    reinterpret_cast<uintptr_t>(fakeOrigAddControls2));
+    kt::CheckEq("TV11: RmtAddControls2 intercepts item description and returns 1", res, 1);
+    kt::CheckEq("TV11: origAddControls2 count == 3", g_rec.count, 3);
+
+    const rmt::LastPopulateInfo& info = rmt::getLastPopulateInfo();
+    kt::CheckEq("TV11: Snapshot rowCount is 3", info.rowCount, 3);
+    kt::CheckEq("TV11: Row 0 height is fh = 11", info.rowHeights[0], 11);
+    kt::CheckEq("TV11: Row 1 height is fh = 32", info.rowHeights[1], 32);
+    kt::CheckEq("TV11: Row 2 height is fh = 28", info.rowHeights[2], 28);
+
+    bool hasRowProbe = false;
+    bool hasSumProbe = false;
+    for (const auto& line : capturedLogs) {
+        if (line.rfind("RMTPROBE row", 0) == 0) hasRowProbe = true;
+        if (line.rfind("RMTPROBE sum", 0) == 0) hasSumProbe = true;
+    }
+    kt::Check("TV11: Captured at least one RMTPROBE row line", hasRowProbe);
+    kt::Check("TV11: Captured at least one RMTPROBE sum line", hasSumProbe);
+
+    // Verify dedupe: second populate call with identical parameters emits no new probe lines
+    const size_t prevCount = capturedLogs.size();
+    RmtAddControls2(listbox.voidPtr(), controls, 1, 0, 0, 0,
+                    reinterpret_cast<uintptr_t>(fakeOrigAddControls2));
+    kt::CheckEq("TV11: Dedupe prevents duplicate logs on identical populate", static_cast<int>(capturedLogs.size()), static_cast<int>(prevCount));
+
+    rmt::g_probeLog = nullptr;
+}
+
 } // namespace
 
 int main() {
@@ -568,5 +615,6 @@ int main() {
     testVibroswordUpgradeTagParsing();
     testInterceptionFilterGuards();
     testPoolReuseAndResolutionChange();
+    testTV11_MeasurementProbeLogging();
     return kt::Report("rich_desc_box_test");
 }
