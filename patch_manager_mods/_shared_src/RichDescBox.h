@@ -130,14 +130,14 @@ inline int measureTextHeight(uintptr_t ctl, const char* text, int width, const c
                     if (lineCount < explicitLines) {
                         lineCount = explicitLines;
                     }
-                    int lineHeight = 14;
+                    int lineHeight = 19;
                     if (font) {
                         if (strcmp(font, kFontSub) == 0 || strstr(font, "10x10") != nullptr) {
-                            lineHeight = 12;
+                            lineHeight = 13;
                         } else if (strcmp(font, kFontTitle) == 0 || (strstr(font, "16x16") != nullptr && strstr(font, "dialog") != nullptr)) {
-                            lineHeight = 16;
+                            lineHeight = 18;
                         } else if (strcmp(font, kFontDesc) == 0 || strstr(font, "fnt_d") != nullptr || strstr(font, "fnt_") != nullptr) {
-                            lineHeight = 14;
+                            lineHeight = 19;
                         }
                     }
                     return lineCount * lineHeight;
@@ -156,19 +156,20 @@ inline int measureTextHeight(uintptr_t ctl, const char* text, int width, const c
     }
     if (!text || !*text) return 0;
 
-    int lineHeight = 14;
+    int lineHeight = 19;
     if (font) {
         if (strcmp(font, kFontSub) == 0 || strstr(font, "10x10") != nullptr) {
-            lineHeight = 12;
+            lineHeight = 13;
         } else if (strcmp(font, kFontTitle) == 0 || (strstr(font, "16x16") != nullptr && strstr(font, "dialog") != nullptr)) {
-            lineHeight = 16;
+            lineHeight = 18;
         } else if (strcmp(font, kFontDesc) == 0 || strstr(font, "fnt_d") != nullptr || strstr(font, "fnt_") != nullptr) {
-            lineHeight = 14;
+            lineHeight = 19;
         }
     }
 
-    const int charsPerLine = (width > 35) ? (width / 7) : 28;
-    const int halfLine = lineHeight / 2;
+    const int charW = (lineHeight >= 18) ? 8 : (lineHeight >= 14 ? 7 : 6);
+    const int charsPerLine = (width > 35) ? (width / charW) : 28;
+    const int halfLine = (lineHeight + 1) / 2;
     int totalHeight = 0;
     const char* p = text;
     while (*p) {
@@ -419,14 +420,23 @@ struct RichDescBox {
             outControls[outCount++] = reinterpret_cast<void*>(lbl);
         };
 
+        float origCol[3] = { kTealText[0], kTealText[1], kTealText[2] };
+        (void)guikit::getTextColor(srcCtl, origCol);
+        const bool isTeal = isDefaultTeal(origCol[0], origCol[1], origCol[2]);
+
+        const float* titleCol = isTeal ? kCream : ((origCol[0] > 0.5f && origCol[1] > 0.4f) ? kCream : origCol);
+        const float subCol[3] = { origCol[0] * 0.75f, origCol[1] * 0.75f, origCol[2] * 0.75f };
+        const float* rulesCol = isTeal ? kTealText : origCol;
+        const float* bodyCol  = isTeal ? kTealText : origCol;
+
         // Row 0: Title
         if (sec.title[0] != '\0') {
-            setupTextRow(sec.title, kFontTitle, kCream, 0);
+            setupTextRow(sec.title, kFontTitle, titleCol, 4);
         }
 
         // Row 1: Subtitle
         if (sec.subtitle[0] != '\0' && strcmp(sec.subtitle, sec.title) != 0) {
-            setupTextRow(sec.subtitle, kFontSub, kTealDim, 0);
+            setupTextRow(sec.subtitle, kFontSub, isTeal ? kTealDim : subCol, 4);
         }
 
         // Divider rows removed per directive 2
@@ -434,12 +444,12 @@ struct RichDescBox {
 
         // Row 2: Rules (uses getRulesFont() per directive 3)
         if (sec.rules[0] != '\0') {
-            setupTextRow(sec.rules, getRulesFont(), kTealText, 0);
+            setupTextRow(sec.rules, getRulesFont(), rulesCol, 4);
         }
 
         // Row 3: Body
         if (sec.body[0] != '\0') {
-            setupTextRow(sec.body, getBodyFont(), kTealText, 0);
+            setupTextRow(sec.body, getBodyFont(), bodyCol, 0);
         }
 
         if (outCount == 0) return false;
