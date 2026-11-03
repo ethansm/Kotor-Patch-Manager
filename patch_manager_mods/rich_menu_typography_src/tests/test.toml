@@ -1,7 +1,7 @@
 cxxflags = ["-I../../_shared_src", "-Werror"]
 
 [rich_text_classifier_test]
-cxxflags = ["-I../../_shared_src", "-Werror"]
+cxxflags = ["-I..", "-I../../_shared_src", "-Werror"]
 
 [rich_menu_typography_contract_test]
 cxxflags = [

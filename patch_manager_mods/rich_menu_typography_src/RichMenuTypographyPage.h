@@ -27,13 +27,13 @@ constexpr const char* kPageSchema = R"TOML(
 [page]
 name = "Rich Menu Typography"
 title = "Rich Menu Typography"
-desc = "Effect: Multi-font headers, +colored keywords, and stat label hierarchy."
+desc = "Effect: Styled item text, coloured stats and fonts. Change a row to preview."
 
 [[row]]
 id = "inline"
 kind = "toggle"
 label = "Coloured keywords"
-desc = "Effect: ON: Damage: 3-13 (+1-6 Energy). OFF: Plain monochrome text."
+desc = "Effect: Bonuses amber, penalties red, keywords tinted. OFF: one colour."
 default = 1
 ini = "rich_menu_typography.ini"
 section = "General"
@@ -43,7 +43,7 @@ key = "InlineColoring"
 id = "richdesc"
 kind = "toggle"
 label = "Multi-font descriptions"
-desc = "Effect: ON: Large title, compact rules. OFF: Uniform unstyled body."
+desc = "Effect: Title, subtitle, rules and body get own fonts and tight spacing."
 default = 1
 ini = "rich_menu_typography.ini"
 section = "General"
@@ -53,7 +53,7 @@ key = "RichDescBox"
 id = "stats"
 kind = "toggle"
 label = "Stat label hierarchy"
-desc = "Effect: ON: Highlighted combat stats (+2 Str, -1 Def). OFF: Uniform teal."
+desc = "Effect: Stat labels get a bright name and dim value. OFF: flat teal."
 default = 1
 ini = "rich_menu_typography.ini"
 section = "General"
@@ -63,25 +63,58 @@ key = "StatHierarchy"
 id = "font"
 kind = "list"
 label = "Body font"
-desc = "Effect: Sample: The quick brown fox jumps over the lazy dog (0123456789)."
+desc = "Effect: Font for item and lore paragraphs. Click to cycle; preview shows it."
 default = 0
-choices = ["fnt_d16x16", "dialogfont10x10", "dialogfont16x16"]
+choices = ["Default (fnt_d16x16)", "Small (dialogfont10x10)", "Large (dialogfont16x16)"]
 
 [[row]]
 id = "rulesfont"
 kind = "list"
 label = "Rules font"
-desc = "Effect: Sample: Feats Required: Jedi Defense. Damage: Physical, 3-13."
+desc = "Effect: Font for stat and requirement lines. Click to cycle; preview shows it."
 default = 0
-choices = ["fnt_d16x16", "dialogfont10x10", "dialogfont16x16"]
+choices = ["Default (fnt_d16x16)", "Small (dialogfont10x10)", "Large (dialogfont16x16)"]
 
 [[row]]
 id = "reset"
 kind = "toggle"
 label = "Reset to Defaults"
-desc = "Action: Toggle to restore factory default typography and font choices."
+desc = "Action: Switch on to restore all toggles and both fonts to defaults."
 default = 0
 )TOML";
+
+// Sample item texts shown in the description box (item-description format so the
+// mod's own section styling applies). Picked by the row that last changed.
+constexpr const char* kPreviewWeapon =
+    "Useable By:\nJedi Guardian, Jedi Sentinel\nDamage: 3-13 (+1-6 Energy)\nCritical Threat: 19-20,x2\n"
+    "Attack Modifier: +3 (-2 Offhand)\n\nA blade of Mandalorian steel, rewarded to the Jedi who finish "
+    "their trials. Its hilt is warm to the touch, and the crystal hums when the Force is near.";
+constexpr const char* kPreviewArmor =
+    "Fully Upgradeable\nFEATS REQUIRED\nArmor Proficiency - Heavy\nDefense Bonus: 12\n"
+    "Max Dexterity Bonus: +0\n\nMandalorian heavy battle armor, reforged with Force-resistant plating.";
+constexpr const char* kPreviewRobe =
+    "Defense Bonus: 2\nMax Dexterity Bonus: +8\n\nCannot Equip:\nDroid\n\nRestricted:\nJedi Only\n\n"
+    "Defense Bonus: +1 vs. Dark Side\n\nAncient Jedi Master robes imbued with the Force.";
+constexpr const char* kPreviewPower =
+    "Force Power:\nForce Lightning\nForce Cost: 4 FP\nRange: 10m Cone\nDamage: 2-8 (+1-4 Dark Side)\n\n"
+    "Calls a crackling arc of lightning to strike every foe in a cone. Mastery of this power is a rite "
+    "of passage for the Sith.";
+constexpr const char* kPreviewLore =
+    "Nar Shaddaa:\nRefugee Sector troubles have escalated since the Exchange tightened its grip on the "
+    "landing pad. Smugglers now pay a toll to every dock foreman.\nBounty hunters from three systems "
+    "have arrived, each claiming a share of the reward for the missing shipment.\nKeep your blaster "
+    "holstered and your credits hidden. The Exchange does not forgive debts.";
+
+// Which sample showcases the row that just changed (nullptr/unknown = weapon).
+inline const char* previewFor(const char* rowId) {
+    if (!rowId) return kPreviewWeapon;
+    if (strcmp(rowId, kRowInline) == 0) return kPreviewRobe;
+    if (strcmp(rowId, kRowRichDesc) == 0) return kPreviewPower;
+    if (strcmp(rowId, kRowStats) == 0) return kPreviewArmor;
+    if (strcmp(rowId, kRowFont) == 0) return kPreviewLore;
+    if (strcmp(rowId, kRowRulesFont) == 0) return kPreviewWeapon;
+    return kPreviewWeapon;
+}
 
 struct Live {
     bool inlineColoring = true;

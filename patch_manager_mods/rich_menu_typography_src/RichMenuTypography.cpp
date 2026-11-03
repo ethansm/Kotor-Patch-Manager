@@ -70,6 +70,30 @@ void probeLogForwarder(const char* msg) {
     }
 }
 
+// Show a sample item description matching the row that changed (goes through RichDescBox).
+void showPreview(const char* rowId) {
+    if (g_mcMenu.ok() && g_mcMenu.p && g_mcMenu.p->SetDesc) {
+        g_mcMenu.p->SetDesc(g_page.page, rmtpage::previewFor(rowId));
+    }
+}
+
+// Make the font rows, the live mirror and the engine fonts agree. An unknown name in the
+// ini (bad spelling, old build) maps to index 0 AND the engine font is reset to match.
+void syncFontRows(const char* why) {
+    const char* bodyIn = rmt::getBodyFont();
+    const char* rulesIn = rmt::getRulesFont();
+    g_live.fontIdx = rmtpage::fontIndexFor(bodyIn);
+    g_live.rulesFontIdx = rmtpage::fontIndexFor(rulesIn);
+    rmt::setBodyFont(rmtpage::fontName(g_live.fontIdx));
+    rmt::setRulesFont(rmtpage::fontName(g_live.rulesFontIdx));
+    g_page.setValue(rmtpage::kRowFont, g_live.fontIdx);
+    g_page.setValue(rmtpage::kRowRulesFont, g_live.rulesFontIdx);
+    if (KpLog_HasCore() && g_verbose) {
+        KP_LOGV(chMain, KPLOG_DEBUG, "PAGE sync(%s) body=%s->%d rules=%s->%d", why,
+                bodyIn ? bodyIn : "", g_live.fontIdx, rulesIn ? rulesIn : "", g_live.rulesFontIdx);
+    }
+}
+
 int32_t pageOnChange(void* /*user*/, int /*row*/, const char* id, int32_t requested, int /*dir*/) {
     if (id && strcmp(id, rmtpage::kRowReset) == 0 && requested != 0) {
         g_live.inlineColoring = true;
@@ -94,6 +118,7 @@ int32_t pageOnChange(void* /*user*/, int /*row*/, const char* id, int32_t reques
         g_page.setValue(rmtpage::kRowRulesFont, 0);
         g_page.setValue(rmtpage::kRowReset, 0);
         if (KpLog_HasCore()) KP_LOG(chMain, "PAGE reset to factory defaults");
+        showPreview(nullptr);
         return 0;
     }
     const int32_t fin = rmtpage::applyRow(g_live, id, requested);
@@ -103,17 +128,12 @@ int32_t pageOnChange(void* /*user*/, int /*row*/, const char* id, int32_t reques
     if (id && strcmp(id, rmtpage::kRowFont) == 0) {
         rmt::setBodyFont(rmtpage::fontName(g_live.fontIdx));
         iniw::updateFile(rmtpage::kIniFile, rmtpage::kSection, "BodyFont", rmtpage::fontName(g_live.fontIdx));
-        if (g_mcMenu.ok() && g_mcMenu.p && g_mcMenu.p->SetDesc) {
-            g_mcMenu.p->SetDesc(g_page.page, "Body Font Preview:\nThe quick brown fox jumps over the lazy dog.\nDamage: 3-13 (+1-6 Energy)");
-        }
     }
     if (id && strcmp(id, rmtpage::kRowRulesFont) == 0) {
         rmt::setRulesFont(rmtpage::fontName(g_live.rulesFontIdx));
         iniw::updateFile(rmtpage::kIniFile, rmtpage::kSection, "RulesFont", rmtpage::fontName(g_live.rulesFontIdx));
-        if (g_mcMenu.ok() && g_mcMenu.p && g_mcMenu.p->SetDesc) {
-            g_mcMenu.p->SetDesc(g_page.page, "Rules Font Preview:\nFeats Required: Weapon Proficiency\nDefense Bonus: +2\nDamage: 3-13");
-        }
     }
+    showPreview(id);
     if (g_pageLogs < 20) {
         ++g_pageLogs;
         if (KpLog_HasCore()) {
@@ -124,8 +144,12 @@ int32_t pageOnChange(void* /*user*/, int /*row*/, const char* id, int32_t reques
 }
 
 void pageOnEnter(void* /*user*/) {
-    g_page.setValue(rmtpage::kRowFont, rmtpage::fontIndexFor(rmt::getBodyFont()));
-    g_page.setValue(rmtpage::kRowRulesFont, rmtpage::fontIndexFor(rmt::getRulesFont()));
+    syncFontRows("enter");
+    showPreview(nullptr);
+}
+
+void pageOnBuilt(void* /*user*/, uint32_t /*page*/, void* /*panel*/) {
+    syncFontRows("built");
 }
 
 void pageInit(const KPatchApi* api) {
@@ -147,6 +171,7 @@ void pageInit(const KPatchApi* api) {
     g_page.io = mcdecl::fileIo();
     g_page.hooks.onChange = pageOnChange;
     g_page.hooks.onEnter = pageOnEnter;
+    g_page.hooks.onBuilt = pageOnBuilt;
     g_mcEntry = g_page.entry(rmtpage::kEntryId);
 
     g_live.inlineColoring = g_inlineColoring;

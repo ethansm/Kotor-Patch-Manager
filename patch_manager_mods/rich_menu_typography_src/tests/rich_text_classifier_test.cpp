@@ -3,6 +3,7 @@
 
 #include "RichTextClassifier.h"
 #include "ItemProps.h"
+#include "RichMenuTypographyPage.h"
 #include "check.h"
 #include <stdint.h>
 #include <stdio.h>
@@ -403,7 +404,29 @@ void TestEngineTokenStrip() {
 
 } // namespace
 
+void TestConfigPreviewsSplit() {
+    rmt::DescSections w{};
+    (void)rmt::splitDescSections(rmtpage::kPreviewWeapon, &w);
+    kt::Check("Preview weapon: title Useable By", strcmp(w.title, "Useable By") == 0);
+    kt::Check("Preview weapon: subtitle present", w.subtitle[0] != '\0');
+    kt::Check("Preview weapon: rules and body present", w.rules[0] != '\0' && w.body[0] != '\0');
+    rmt::DescSections p{};
+    (void)rmt::splitDescSections(rmtpage::kPreviewPower, &p);
+    kt::Check("Preview power: title Force Power", strcmp(p.title, "Force Power") == 0);
+    kt::Check("Preview power: rules and body present", p.rules[0] != '\0' && p.body[0] != '\0');
+    rmt::DescSections a{};
+    (void)rmt::splitDescSections(rmtpage::kPreviewArmor, &a);
+    kt::Check("Preview armor: subtitle and rules, no title", a.title[0] == '\0' && a.subtitle[0] != '\0' && a.rules[0] != '\0');
+    rmt::DescSections r{};
+    (void)rmt::splitDescSections(rmtpage::kPreviewRobe, &r);
+    kt::Check("Preview robe: rules present, body present", r.rules[0] != '\0' && r.body[0] != '\0');
+    rmt::DescSections l{};
+    (void)rmt::splitDescSections(rmtpage::kPreviewLore, &l);
+    kt::Check("Preview lore: long body", strlen(l.body) > 200);
+}
+
 int main() {
+    TestConfigPreviewsSplit();
     testTV1_HeaderLine();
     testTV2_KeyValueBasic();
     testTV3_KeyValueBonusPenalty();

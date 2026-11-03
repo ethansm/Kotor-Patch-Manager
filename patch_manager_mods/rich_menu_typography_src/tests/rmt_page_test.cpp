@@ -61,9 +61,9 @@ static void test_schema_load() {
               r3.kind == mcdecl::K_LIST && r3.def == 0 &&
               r3.nChoices == kFontCount &&
               r3.ini[0] == '\0' && r3.section[0] == '\0' && r3.key[0] == '\0' &&
-              strcmp(r3.choices[0], "fnt_d16x16") == 0 &&
-              strcmp(r3.choices[1], "dialogfont10x10") == 0 &&
-              strcmp(r3.choices[2], "dialogfont16x16") == 0);
+              strcmp(r3.choices[0], "Default (fnt_d16x16)") == 0 &&
+              strcmp(r3.choices[1], "Small (dialogfont10x10)") == 0 &&
+              strcmp(r3.choices[2], "Large (dialogfont16x16)") == 0);
 
     // List 5: rulesfont (unbound)
     const mcdecl::RowDecl& r4 = g_page.decl.rows[4];
@@ -71,9 +71,9 @@ static void test_schema_load() {
               r4.kind == mcdecl::K_LIST && r4.def == 0 &&
               r4.nChoices == kFontCount &&
               r4.ini[0] == '\0' && r4.section[0] == '\0' && r4.key[0] == '\0' &&
-              strcmp(r4.choices[0], "fnt_d16x16") == 0 &&
-              strcmp(r4.choices[1], "dialogfont10x10") == 0 &&
-              strcmp(r4.choices[2], "dialogfont16x16") == 0);
+              strcmp(r4.choices[0], "Default (fnt_d16x16)") == 0 &&
+              strcmp(r4.choices[1], "Small (dialogfont10x10)") == 0 &&
+              strcmp(r4.choices[2], "Large (dialogfont16x16)") == 0);
 
     // Toggle 6: reset (unbound)
     const mcdecl::RowDecl& r5 = g_page.decl.rows[5];
@@ -297,7 +297,23 @@ static void test_ini_write_bodyfont() {
     kt::Check("BodyFont=dialogfont16x16 written", strstr(outBuf2, "BodyFont=dialogfont16x16\n") != nullptr);
 }
 
+static void test_previews() {
+    kt::Check("previewFor font row = lore", previewFor(kRowFont) == kPreviewLore);
+    kt::Check("previewFor rulesfont row = weapon", previewFor(kRowRulesFont) == kPreviewWeapon);
+    kt::Check("previewFor null = weapon", previewFor(nullptr) == kPreviewWeapon);
+    const char* all[] = {kPreviewWeapon, kPreviewArmor, kPreviewRobe, kPreviewPower, kPreviewLore};
+    for (const char* p : all) {
+        kt::Check("preview non-empty and < 700 bytes", p && strlen(p) > 40 && strlen(p) < 700);
+    }
+    // Font round trip: every font maps back to its own index; unknown maps to 0.
+    for (int i = 0; i < kFontCount; ++i) {
+        kt::CheckEq("fontIndexFor(fontName(i)) == i", fontIndexFor(fontName(i)), i);
+    }
+    kt::CheckEq("unknown font name maps to 0", fontIndexFor("not_a_font"), 0);
+}
+
 int main() {
+    test_previews();
     test_schema_load();
     test_string_budgets();
     test_desc_headers();
