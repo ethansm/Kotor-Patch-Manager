@@ -33,6 +33,7 @@ inline unsigned long GetPrivateProfileStringA(const char* /*section*/, const cha
 #include "ProviderClient.h"
 #include "ModConfigDecl.h"
 #include "RichMenuTypographyPage.h"
+#include "RichMenuTypographyPreview.h"
 
 namespace {
 bool g_inlineColoring = true;
@@ -70,10 +71,127 @@ void probeLogForwarder(const char* msg) {
     }
 }
 
-// Show a sample item description matching the row that changed (goes through RichDescBox).
+// ---- the page's own preview area (top of the right half; the bottom stays mod-config's description pane for the hovered row) ----
+// Four labels (title, subtitle, rules, body) drawn with the same fonts and colours the description box uses, stacked by rmtprev::stackRows.
+// Without SetDescSplit (older mod-config) there is no preview area and showPreview falls back to writing the sample into the description pane.
+struct PagePreview {
+    void* panel = nullptr;
+    uint32_t page = 0;
+    bool on = false;
+    uintptr_t lbl[rmtprev::kRows] = {};
+    const char* text = nullptr;   // the sample being shown (static string from previewFor)
+    uint32_t sig = 0;             // hash of text + pane + fonts: layout reruns only when it changes
+    unsigned logs = 0;
+};
+PagePreview g_pv;
+
+uint32_t pvHash(uint32_t h, const void* p, size_t n) {
+    const unsigned char* b = static_cast<const unsigned char*>(p);
+    for (size_t i = 0; i < n; ++i) { h ^= b[i]; h *= 16777619u; }
+    return h;
+}
+
+// Runs inside onBuilt (Options ctor window: labels can still be created from the layout template).
+void pvBuild(uint32_t page, void* panel) {
+    g_pv = PagePreview();
+    if (!panel || !g_mcMenu.ok() || !g_mcMenu.p) return;
+    if (!g_mcMenu.hasDescSplit()) {
+        if (KpLog_HasCore()) KP_LOGV(chMain, KPLOG_INFO, "PAGE preview: provider has no SetDescSplit; sample goes to the description pane");
+        return;
+    }
+    const uintptr_t pn = reinterpret_cast<uintptr_t>(panel);
+    uintptr_t made[rmtprev::kRows] = {};
+    int n = 0;
+    for (; n < rmtprev::kRows; ++n) {
+        int why = guikit::CF_None;
+        uint32_t bv = 0;
+        made[n] = guikit::createLabelFromTemplate(pn, "LBL_TITLE", &why, &bv);
+        if (!made[n]) {
+            if (KpLog_HasCore()) KP_LOGV(chMain, KPLOG_WARN, "PAGE preview: label %d create failed (why=%d vtable=%08x)", n, why, (unsigned)bv);
+            break;
+        }
+        (void)guikit::setVisible(made[n], false);
+        (void)guikit::setClickable(made[n], false);
+        (void)guikit::setFill(made[n], nullptr);
+        (void)guikit::detail::wr<uint32_t>(made[n] + guikit::Label_Border, guikit::Border_FillStyle, 0);
+        (void)guikit::setText(made[n], "");   // the clone carries the Options title text
+    }
+    int listed = 0;
+    if (n == rmtprev::kRows) {
+        for (; listed < rmtprev::kRows; ++listed)
+            if (g_mcMenu.p->AddCustom(page, reinterpret_cast<void*>(made[listed]), MUI_NOFREE) < 0) break;
+    }
+    for (int j = listed; j < n; ++j) guikit::releaseUnlinkedLabel(made[j], guikit::LabelVtable);   // created, never listed
+    if (n != rmtprev::kRows || listed != rmtprev::kRows) {
+        if (KpLog_HasCore()) KP_LOGV(chMain, KPLOG_WARN, "PAGE preview skipped: created %d listed %d of %d", n, listed, rmtprev::kRows);
+        return;
+    }
+    if (!g_mcMenu.p->SetDescSplit(page, rmtprev::kSplitPermille)) {
+        if (KpLog_HasCore()) KP_LOGV(chMain, KPLOG_WARN, "PAGE preview skipped: SetDescSplit(%u, %d) refused", page, rmtprev::kSplitPermille);
+        return;
+    }
+    g_pv.panel = panel;
+    g_pv.page = page;
+    for (int i = 0; i < rmtprev::kRows; ++i) g_pv.lbl[i] = made[i];
+    g_pv.on = true;
+    if (KpLog_HasCore()) KP_LOGV(chMain, KPLOG_INFO, "PAGE preview BUILD ok: %d labels, split %d permille", rmtprev::kRows, rmtprev::kSplitPermille);
+}
+
+void pvRefresh() {
+    if (!g_pv.on || !g_mcMenu.p) return;
+    K2MuiRect pr = {};
+    if (!g_mcMenu.p->PaneRect(g_pv.panel, MUI_PANE_PREVIEW, &pr) || pr.w <= 0 || pr.h <= 0) return;
+    const char* text = g_pv.text ? g_pv.text : rmtpage::previewFor(nullptr);
+    const char* fonts[rmtprev::kRows] = { rmt::kFontTitle, rmt::kFontSub, rmt::getRulesFont(), rmt::getBodyFont() };
+    uint32_t sig = pvHash(2166136261u, text, strlen(text));
+    sig = pvHash(sig, &pr, sizeof(pr));
+    for (int i = 2; i < rmtprev::kRows; ++i) sig = pvHash(sig, fonts[i], strlen(fonts[i]));
+    if (sig == g_pv.sig) return;
+    g_pv.sig = sig;
+
+    static rmt::DescSections sec;
+    sec = rmt::DescSections();
+    if (!rmt::splitDescSections(text, &sec)) return;
+    const bool hasSub = sec.subtitle[0] && strcmp(sec.subtitle, sec.title) != 0;
+    const char* texts[rmtprev::kRows] = { sec.title, hasSub ? sec.subtitle : "", sec.rules, sec.body };
+    const float* cols[rmtprev::kRows] = { rmt::kCream, rmt::kTealDim, rmt::kTealText, rmt::kTealText };
+
+    const int w = pr.w - 2 * rmtprev::kPad;
+    int h[rmtprev::kRows] = {};
+    for (int i = 0; i < rmtprev::kRows; ++i) {
+        if (!texts[i][0] || w <= 0) continue;
+        (void)guikit::setFont(g_pv.lbl[i], fonts[i]);
+        (void)guikit::setAlign(g_pv.lbl[i], rmt::kAlignTopLeft);
+        (void)guikit::setText(g_pv.lbl[i], texts[i]);
+        h[i] = rmt::measureTextHeight(g_pv.lbl[i], texts[i], w, fonts[i]);
+    }
+    const rmtprev::Stack st = rmtprev::stackRows(rmtprev::Rect{ pr.x, pr.y, pr.w, pr.h }, h);
+    for (int i = 0; i < rmtprev::kRows; ++i) {
+        const uintptr_t l = g_pv.lbl[i];
+        if (!st.show[i]) {
+            (void)guikit::setText(l, "");
+            (void)guikit::setVisible(l, false);
+            continue;
+        }
+        (void)guikit::setRect(l, st.r[i].x, st.r[i].y, st.r[i].w, st.r[i].h);
+        (void)guikit::setTextColor(l, cols[i][0], cols[i][1], cols[i][2]);
+        (void)guikit::setVisible(l, true);
+        (void)guikit::setClickable(l, false);
+    }
+    if (g_pv.logs < 16) {
+        ++g_pv.logs;
+        if (KpLog_HasCore()) KP_LOGV(chMain, KPLOG_INFO, "PAGE preview pane=%d,%d %dx%d h=%d/%d/%d/%d shown=%d dropped=%d",
+                                      pr.x, pr.y, pr.w, pr.h, h[0], h[1], h[2], h[3], st.shown, st.dropped);
+    }
+}
+
+// Show the sample item description matching the row that changed. With a preview area it is drawn there and the description pane keeps the
+// hovered row's help; without one it falls back to the description pane (through RichDescBox).
 void showPreview(const char* rowId) {
+    g_pv.text = rmtpage::previewFor(rowId);
+    if (g_pv.on) { pvRefresh(); return; }
     if (g_mcMenu.ok() && g_mcMenu.p && g_mcMenu.p->SetDesc) {
-        g_mcMenu.p->SetDesc(g_page.page, rmtpage::previewFor(rowId));
+        g_mcMenu.p->SetDesc(g_page.page, g_pv.text);
     }
 }
 
@@ -145,11 +263,17 @@ int32_t pageOnChange(void* /*user*/, int /*row*/, const char* id, int32_t reques
 
 void pageOnEnter(void* /*user*/) {
     syncFontRows("enter");
+    g_pv.sig = 0;   // mod-config shows every page item on entry: lay the preview out again
     showPreview(nullptr);
 }
 
-void pageOnBuilt(void* /*user*/, uint32_t /*page*/, void* /*panel*/) {
+void pageOnTick(void* /*user*/) {
+    pvRefresh();
+}
+
+void pageOnBuilt(void* /*user*/, uint32_t page, void* panel) {
     syncFontRows("built");
+    pvBuild(page, panel);
 }
 
 void pageInit(const KPatchApi* api) {
@@ -172,6 +296,7 @@ void pageInit(const KPatchApi* api) {
     g_page.hooks.onChange = pageOnChange;
     g_page.hooks.onEnter = pageOnEnter;
     g_page.hooks.onBuilt = pageOnBuilt;
+    g_page.hooks.onTick = pageOnTick;
     g_mcEntry = g_page.entry(rmtpage::kEntryId);
 
     g_live.inlineColoring = g_inlineColoring;

@@ -23,6 +23,9 @@ cxxflags = [
     "-Werror"
 ]
 
+[rmt_preview_test]
+cxxflags = ["-I..", "-I../../_shared_src", "-Werror"]
+
 [rmt_page_test]
 cxxflags = [
     "-I..",
