@@ -6,6 +6,7 @@
 #endif
 #endif
 
+#include "GameAddr.h"
 #include "GuiKit.h"
 #include "RichTextClassifier.h"
 #include <stddef.h>
@@ -112,62 +113,39 @@ inline int measureTextHeight(uintptr_t ctl, const char* text, int width, const c
         return g_measureTextHeight(ctl, text, width, font);
     }
     if (ctl && guikit::detail::textObjOk(ctl)) {
-        const uintptr_t textObj = ctl + guikit::Label_Text;
 #ifndef GUIKIT_HOST
-        uint32_t rend32 = 0;
-        if (guikit::detail::rd32(textObj, guikit::Text_Renderer, &rend32) && rend32) {
-            const uintptr_t rend = static_cast<uintptr_t>(rend32);
-            if (rend != static_cast<uint32_t>(reinterpret_cast<uintptr_t>(s_dummyRenderer)) &&
-                saferead::probeRead(guikit::detail::SiteBase, reinterpret_cast<const void*>(rend), 0x50)) {
-                int lineCount = 0;
-                if (guikit::detail::rdInt(rend, 0x4C, &lineCount) && lineCount > 0) {
-                    int explicitLines = 1;
-                    if (text) {
-                        for (const char* p = text; *p; ++p) {
-                            if (*p == '\n') ++explicitLines;
-                        }
-                    }
-                    if (lineCount < explicitLines) {
-                        lineCount = explicitLines;
-                    }
-                    int lineHeight = 19;
-                    if (font) {
-                        if (strcmp(font, kFontSub) == 0 || strstr(font, "10x10") != nullptr) {
-                            lineHeight = 13;
-                        } else if (strcmp(font, kFontTitle) == 0 || (strstr(font, "16x16") != nullptr && strstr(font, "dialog") != nullptr)) {
-                            lineHeight = 18;
-                        } else if (strcmp(font, kFontDesc) == 0 || strstr(font, "fnt_d") != nullptr || strstr(font, "fnt_") != nullptr) {
-                            lineHeight = 19;
-                        }
-                    }
-                    return lineCount * lineHeight;
-                }
-            }
+        const uintptr_t textObj = ctl + guikit::Label_Text;
+        float scaleY = 1.0f;
+        int screenH = 0;
+        if (saferead::readAt<int>(guikit::detail::SiteBase, gameaddr::ScreenH, 0, &screenH) && screenH > 0) {
+            scaleY = static_cast<float>(screenH) / 600.0f;
         }
-#endif
         uint32_t vt = 0;
         if (guikit::detail::rd32(textObj, 0, &vt) && vt) {
             uint32_t fn = 0;
             if (guikit::detail::rd32(vt, kTextVtOff_GetFormattedHeight, &fn) && fn) {
-                int h = reinterpret_cast<int(__thiscall*)(void*)>(static_cast<uintptr_t>(fn))(reinterpret_cast<void*>(textObj));
-                if (h > 0) return h;
+                int physicalH = reinterpret_cast<int(__thiscall*)(void*)>(static_cast<uintptr_t>(fn))(reinterpret_cast<void*>(textObj));
+                if (physicalH > 0 && scaleY > 0.01f) {
+                    return static_cast<int>(static_cast<float>(physicalH) / scaleY + 0.99f);
+                }
             }
         }
+#endif
     }
     if (!text || !*text) return 0;
 
-    int lineHeight = 19;
+    int lineHeight = 14;
     if (font) {
         if (strcmp(font, kFontSub) == 0 || strstr(font, "10x10") != nullptr) {
-            lineHeight = 13;
+            lineHeight = 8;
         } else if (strcmp(font, kFontTitle) == 0 || (strstr(font, "16x16") != nullptr && strstr(font, "dialog") != nullptr)) {
-            lineHeight = 18;
+            lineHeight = 12;
         } else if (strcmp(font, kFontDesc) == 0 || strstr(font, "fnt_d") != nullptr || strstr(font, "fnt_") != nullptr) {
-            lineHeight = 19;
+            lineHeight = 14;
         }
     }
 
-    const int charW = (lineHeight >= 18) ? 8 : (lineHeight >= 14 ? 7 : 6);
+    const int charW = (lineHeight >= 14) ? 7 : (lineHeight >= 12 ? 6 : 5);
     const int charsPerLine = (width > 35) ? (width / charW) : 28;
     const int halfLine = (lineHeight + 1) / 2;
     int totalHeight = 0;
@@ -328,17 +306,24 @@ struct RichDescBox {
             return false;
         }
 
+        int clientW = 0;
+        uint8_t pad = 0;
+        (void)guikit::detail::rdInt(reinterpret_cast<uintptr_t>(listbox), kListBoxOff_ClientW, &clientW);
+        (void)guikit::detail::rd<uint8_t>(reinterpret_cast<uintptr_t>(listbox), kListBoxOff_Padding, &pad);
+        int w = clientW - 2 * static_cast<int>(pad);
         int srcX = 0, srcY = 0, srcW = 0, srcH = 0;
         (void)guikit::getExtent(srcCtl, &srcX, &srcY, &srcW, &srcH);
-        int w = srcW;
         if (w <= 0) {
-            int clientW = 0;
-            uint8_t pad = 0;
-            (void)guikit::detail::rdInt(reinterpret_cast<uintptr_t>(listbox), kListBoxOff_ClientW, &clientW);
-            (void)guikit::detail::rd<uint8_t>(reinterpret_cast<uintptr_t>(listbox), kListBoxOff_Padding, &pad);
-            w = clientW - 2 * static_cast<int>(pad);
-            if (w <= 0) w = 240;
+            w = (srcW > 0) ? srcW : 240;
         }
+
+#ifndef GUIKIT_HOST
+        float scaleY = 1.0f;
+        int screenH = 0;
+        if (saferead::readAt<int>(guikit::detail::SiteBase, gameaddr::ScreenH, 0, &screenH) && screenH > 0) {
+            scaleY = static_cast<float>(screenH) / 600.0f;
+        }
+#endif
 
         PoolEntry* pool = findOrAllocPool(reinterpret_cast<uintptr_t>(listbox));
         if (!pool) return false;
@@ -347,7 +332,7 @@ struct RichDescBox {
         void* outControls[kMaxPooledRows] = {nullptr};
         int outCount = 0;
 
-        auto setupTextRow = [&](const char* text, const char* font, const float* col, int extraPad) {
+        auto setupTextRow = [&](const char* text, const char* font, const float* col) {
             if (outCount >= static_cast<int>(kMaxPooledRows)) return;
             const size_t rowIdx = static_cast<size_t>(outCount);
             uintptr_t lbl = ensurePooledLabel(*pool, rowIdx);
@@ -362,8 +347,26 @@ struct RichDescBox {
             (void)guikit::setTextColor(lbl, col[0], col[1], col[2]);
             (void)guikit::setText(lbl, text);
 
-            const int fh = measureTextHeight(lbl, text, w, font);
-            const int finalH = fh + extraPad;
+            int finalH = 0;
+#ifndef GUIKIT_HOST
+            if (guikit::detail::textObjOk(lbl)) {
+                const uintptr_t textObj = lbl + guikit::Label_Text;
+                uint32_t vt = 0;
+                if (guikit::detail::rd32(textObj, 0, &vt) && vt) {
+                    uint32_t fn = 0;
+                    if (guikit::detail::rd32(vt, kTextVtOff_GetFormattedHeight, &fn) && fn) {
+                        int physicalH = reinterpret_cast<int(__thiscall*)(void*)>(static_cast<uintptr_t>(fn))(reinterpret_cast<void*>(textObj));
+                        if (physicalH > 0 && scaleY > 0.01f) {
+                            finalH = static_cast<int>(static_cast<float>(physicalH) / scaleY + 0.99f);
+                        }
+                    }
+                }
+            }
+#endif
+            if (finalH <= 0) {
+                finalH = measureTextHeight(lbl, text, w, font);
+            }
+
             (void)guikit::setRect(lbl, srcX, srcY, w, finalH);
             (void)guikit::detail::wr<int>(lbl, guikit::Ctl_X, srcX);
             (void)guikit::detail::wr<int>(lbl, guikit::Ctl_Y, srcY);
@@ -431,12 +434,12 @@ struct RichDescBox {
 
         // Row 0: Title
         if (sec.title[0] != '\0') {
-            setupTextRow(sec.title, kFontTitle, titleCol, 4);
+            setupTextRow(sec.title, kFontTitle, titleCol);
         }
 
         // Row 1: Subtitle
         if (sec.subtitle[0] != '\0' && strcmp(sec.subtitle, sec.title) != 0) {
-            setupTextRow(sec.subtitle, kFontSub, isTeal ? kTealDim : subCol, 4);
+            setupTextRow(sec.subtitle, kFontSub, isTeal ? kTealDim : subCol);
         }
 
         // Divider rows removed per directive 2
@@ -444,45 +447,15 @@ struct RichDescBox {
 
         // Row 2: Rules (uses getRulesFont() per directive 3)
         if (sec.rules[0] != '\0') {
-            setupTextRow(sec.rules, getRulesFont(), rulesCol, 4);
+            setupTextRow(sec.rules, getRulesFont(), rulesCol);
         }
 
         // Row 3: Body
         if (sec.body[0] != '\0') {
-            setupTextRow(sec.body, getBodyFont(), bodyCol, 0);
+            setupTextRow(sec.body, getBodyFont(), bodyCol);
         }
 
         if (outCount == 0) return false;
-
-        // Height clamping against physical listbox extent (directive 4)
-        int lbX = 0, lbY = 0, lbW = 0, lbH = 0;
-        (void)guikit::getExtent(reinterpret_cast<uintptr_t>(listbox), &lbX, &lbY, &lbW, &lbH);
-
-        int sumHeights = 0;
-        for (int i = 0; i < outCount; ++i) {
-            sumHeights += s_lastPopulateInfo.rowHeights[i];
-        }
-
-        if (lbH > 0) {
-            const int maxVisible = lbH - 10;
-            if (sumHeights <= lbH && sumHeights > maxVisible && outCount > 0) {
-                int excess = sumHeights - maxVisible;
-                for (int i = outCount - 1; i >= 0 && excess > 0; --i) {
-                    uintptr_t lbl = reinterpret_cast<uintptr_t>(outControls[i]);
-                    int curH = s_lastPopulateInfo.rowHeights[i];
-                    int reduce = (curH - 10 > excess) ? excess : (curH > 10 ? curH - 10 : 0);
-                    if (reduce > 0) {
-                        curH -= reduce;
-                        excess -= reduce;
-                        s_lastPopulateInfo.rowHeights[i] = curH;
-                        (void)guikit::detail::wr<int>(lbl, guikit::Ctl_H, curH);
-                        int rX = 0, rY = 0, rW = 0, rH = 0;
-                        (void)guikit::getExtent(lbl, &rX, &rY, &rW, &rH);
-                        (void)guikit::setRect(lbl, rX, rY, rW, curH);
-                    }
-                }
-            }
-        }
 
         s_lastPopulateInfo.listbox = reinterpret_cast<uintptr_t>(listbox);
         s_lastPopulateInfo.rowCount = outCount;
