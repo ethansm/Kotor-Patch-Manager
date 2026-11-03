@@ -604,7 +604,7 @@ extern "C" void __cdecl RmtOverrideGlyphColor(uintptr_t ebp) {
 // hover description is set by OnControlEntered, so the 8 words around it are logged too to find a hovered-row id. Logs only on a change,
 // at most kProbeMaxLines lines. Ini [General] ProbeItemName (default 1 in this probe build).
 bool g_probeItemName = true;
-constexpr uint32_t kInventoryVtable = 0x009A72AC;   // CSWGuiInGameInventory (ISF InventoryVtable)
+constexpr uint32_t kInventoryVtable = static_cast<uint32_t>(gameaddr::InventoryPanelVtable);
 constexpr int kPanelSelIdOff = 0x24C8, kPanelWinOff = 0x24C0, kProbeWinWords = 8, kProbeMaxLines = 120;
 
 void probeItemName(void* listbox) {

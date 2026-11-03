@@ -116,6 +116,7 @@ constexpr uintptr_t ResGffOnServiced = 0x00717300;       // CResGFF::OnResourceS
 constexpr uintptr_t ResManFreeData = 0x007120C0;         // CExoResMan::FreeResourceData (verified B0) thiscall(resman; CRes*)
 constexpr uintptr_t ResRelease = 0x007112B0;             // CRes::Release (R1-static, high) fastcall(obj)
 
+constexpr uintptr_t InventoryPanelVtable = 0x009A72AC;     // CSWGuiInGameInventory vftable (ctor 0x008A6170 writes it at 0x8A61BD; ISF InventoryVtable); rich-menu-typography item-name probe gates on it
 constexpr uintptr_t OptionsInGameVtable = 0x009A701C;    // in-game Options panel vtable: ctor 0x8A1170 writes it at 0x8A11BA (static asm); holster-editor filters CSWGuiPanel::Draw on it
 constexpr uintptr_t OptionsInGameKeyHandler = 0x008A2070; // CSWGuiInGameOptions vtable slot 14: thiscall(this, eventId, state) RET 8; case 0x2a closes the GUI (REA ledger options-esc, confirmed)
 
