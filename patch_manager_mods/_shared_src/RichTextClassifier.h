@@ -547,7 +547,9 @@ inline bool splitDescSections(const char* rawText, DescSections* out) noexcept {
             const bool startsOrAnd = ((tlen >= 3 && (ts[0] == 'o' || ts[0] == 'O') && (ts[1] == 'r' || ts[1] == 'R') && isSpaceChar(ts[2])) ||
                                       (tlen >= 4 && (ts[0] == 'a' || ts[0] == 'A') && (ts[1] == 'n' || ts[1] == 'N') && (ts[2] == 'd' || ts[2] == 'D') && isSpaceChar(ts[3])));
             const bool isUpgrade = isUpgradeTagPrefix(ts, tlen);
-            if (prevComma || startsLower || startsOrAnd || isUpgrade) {
+            const bool prevColon = (pe > prev.b && pe[-1] == ':');
+            const bool startsDigit = (ts < te && *ts >= '0' && *ts <= '9');
+            if (prevComma || startsLower || startsOrAnd || isUpgrade || (prevColon && startsDigit)) {
                 isRule = true;
             }
         }
