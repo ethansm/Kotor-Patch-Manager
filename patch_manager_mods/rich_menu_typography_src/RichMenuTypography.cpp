@@ -499,6 +499,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     g_statHierarchy = GetPrivateProfileIntA("General", "StatHierarchy", 1, iniPath) != 0;
     g_verbose = GetPrivateProfileIntA("General", "Verbose", 0, iniPath) != 0;
     rmt::g_probeLog = probeLogForwarder;
+    rmt::g_probeEveryPopulate = true;  // probe build: log every populate (doc 53)
 
     static char s_bodyFontBuf[32] = {0};
     GetPrivateProfileStringA("General", "BodyFont", rmt::kFontDesc, s_bodyFontBuf, sizeof(s_bodyFontBuf), iniPath);

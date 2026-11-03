@@ -96,6 +96,20 @@ struct ProbeDedupeState {
     bool hasPrevious = false;
 };
 inline ProbeDedupeState s_lastProbeState = {};
+// Probe builds set this so every populate logs (pairs log lines with screenshots).
+inline bool g_probeEveryPopulate = false;
+inline uint32_t s_probeSeq = 0;
+
+// Printable copy of up to n bytes of s for probe lines: control bytes become '.', '|' for newline.
+inline void probeEscape(const char* s, size_t n, char* out, size_t outCap) noexcept {
+    if (!out || outCap == 0) return;
+    size_t o = 0;
+    for (size_t i = 0; s && i < n && s[i] && o + 1 < outCap; ++i) {
+        const unsigned char c = static_cast<unsigned char>(s[i]);
+        out[o++] = (c == '\n' || c == '\r') ? '|' : ((c < 0x20 || c > 0x7E) ? '.' : static_cast<char>(c));
+    }
+    out[o] = '\0';
+}
 
 inline const char* getBodyFont() noexcept {
     return s_bodyFont ? s_bodyFont : kFontDesc;
@@ -375,7 +389,8 @@ struct RichDescBox {
 
         const size_t totalTextLen = strlen(sec.title) + strlen(sec.subtitle) + strlen(sec.rules) + strlen(sec.body);
         const uintptr_t lbPtr = reinterpret_cast<uintptr_t>(listbox);
-        const bool logProbe = (!s_lastProbeState.hasPrevious ||
+        const bool logProbe = (g_probeEveryPopulate ||
+                               !s_lastProbeState.hasPrevious ||
                                s_lastProbeState.listbox != lbPtr ||
                                s_lastProbeState.totalTextLen != totalTextLen ||
                                s_lastProbeState.clientH != clientH);
@@ -384,6 +399,34 @@ struct RichDescBox {
             s_lastProbeState.totalTextLen = totalTextLen;
             s_lastProbeState.clientH = clientH;
             s_lastProbeState.hasPrevious = true;
+        }
+
+        uint32_t probeSeq = 0;
+        if (logProbe) {
+            probeSeq = ++s_probeSeq;
+            const size_t rawLen = strlen(rawText);
+            int nLt = 0, nCtl = 0;
+            for (size_t i = 0; i < rawLen; ++i) {
+                const unsigned char c = static_cast<unsigned char>(rawText[i]);
+                if (c == '<') ++nLt;
+                if ((c < 0x20 && c != '\n' && c != '\r') || c > 0x7E) ++nCtl;
+            }
+            char head[41] = {0}, tail[41] = {0};
+            probeEscape(rawText, 40, head, sizeof(head));
+            probeEscape(rawText + (rawLen > 40 ? rawLen - 40 : 0), 40, tail, sizeof(tail));
+            probeLogf("RMTPROBE id seq=%u lb=%p src=%p rawLen=%zu secT=%zu secS=%zu secR=%zu secB=%zu lt=%d ctl=%d head=%s tail=%s",
+                      probeSeq, listbox, pControls[0], rawLen,
+                      strlen(sec.title), strlen(sec.subtitle), strlen(sec.rules), strlen(sec.body),
+                      nLt, nCtl, head, tail);
+            int shown = 0;
+            for (size_t i = 0; i < rawLen && shown < 3; ++i) {
+                if (rawText[i] == '<') {
+                    char ctx[41] = {0};
+                    probeEscape(rawText + i, 32, ctx, sizeof(ctx));
+                    probeLogf("RMTPROBE lt seq=%u at=%zu ctx=%s", probeSeq, i, ctx);
+                    ++shown;
+                }
+            }
         }
 
         PoolEntry* pool = findOrAllocPool(reinterpret_cast<uintptr_t>(listbox));
@@ -402,6 +445,7 @@ struct RichDescBox {
             int engH = 0;
             int txtW = 0;
             int txtH = 0;
+            int rawH = 0;
 #ifndef GUIKIT_HOST
             if (guikit::detail::textObjOk(lbl)) {
                 const uintptr_t textObj = lbl + guikit::Label_Text;
@@ -412,6 +456,7 @@ struct RichDescBox {
                     uint32_t fn = 0;
                     if (guikit::detail::rd32(vt, kTextVtOff_GetFormattedHeight, &fn) && fn) {
                         int physicalH = reinterpret_cast<int(__thiscall*)(void*)>(static_cast<uintptr_t>(fn))(reinterpret_cast<void*>(textObj));
+                        rawH = physicalH;
                         if (physicalH > 0 && textScalar > 0.01f) {
                             engH = static_cast<int>(static_cast<float>(physicalH) / textScalar + 0.99f);
                         }
@@ -432,6 +477,11 @@ struct RichDescBox {
                     head[i] = (c == '\n' || c == '\r') ? '|' : c;
                 }
                 head[copyLen] = '\0';
+                char tailBuf[25] = {0};
+                probeEscape(text + (textLen > 24 ? textLen - 24 : 0), 24, tailBuf, sizeof(tailBuf));
+                probeLogf("RMTPROBE raw seq=%u kind=%s rawH=%d engH=%d fbH=%d scalar=%d w=%d len=%zu tail=%s",
+                          probeSeq, kind ? kind : "unknown", rawH, engH, fbH,
+                          static_cast<int>(textScalar * 100.0f), w, textLen, tailBuf);
                 probeLogf("RMTPROBE row kind=%s w=%d clientH=%d pad=%u src=%s engH=%d fbH=%d txtW=%d txtH=%d scalar=%d screenW=%d len=%zu head=%s",
                           kind ? kind : "unknown",
                           w,
@@ -555,8 +605,8 @@ struct RichDescBox {
             const int gaps = titleGap + subGap + rulesGap;
             const int total = naturalSum + gaps + padTotal;
             const int overflow = total - clientH;
-            probeLogf("RMTPROBE sum titleH=%d subH=%d rulesH=%d bodyH=%d naturalSum=%d padTotal=%d clientH=%d titleGap=%d subGap=%d rulesGap=%d total=%d overflow=%d",
-                      titleH, subH, rulesH, bodyH, naturalSum, padTotal, clientH, titleGap, subGap, rulesGap, total, overflow);
+            probeLogf("RMTPROBE sum seq=%u titleH=%d subH=%d rulesH=%d bodyH=%d naturalSum=%d padTotal=%d clientH=%d titleGap=%d subGap=%d rulesGap=%d total=%d overflow=%d",
+                      probeSeq, titleH, subH, rulesH, bodyH, naturalSum, padTotal, clientH, titleGap, subGap, rulesGap, total, overflow);
         }
 
         auto applyTextRow = [&](uintptr_t lbl, const char* text, const char* font, const float* col, int rowH, int gap) {
@@ -620,6 +670,50 @@ struct RichDescBox {
         s_inPopulate = false;
 
         (void)guikit::detail::wr<uint16_t>(reinterpret_cast<uintptr_t>(listbox), kListBoxOff_TopItem, 0);
+
+#ifndef GUIKIT_HOST
+        if (logProbe) {
+            // Readback after the engine stacked the rows: real Y/H vs what we reserved,
+            // and the engine's own formatted height of the text actually set on each label.
+            const uintptr_t lb = reinterpret_cast<uintptr_t>(listbox);
+            uint32_t arr = 0;
+            int n = 0;
+            int visible = 0;
+            uint16_t topItem = 0xFFFF;
+            (void)guikit::detail::rd32(lb, 0x2AC, &arr);
+            (void)guikit::detail::rdInt(lb, 0x2B0, &n);
+            (void)guikit::detail::rdInt(lb, 0x2D4, &visible);
+            (void)guikit::detail::rd<uint16_t>(lb, kListBoxOff_TopItem, &topItem);
+            int prevY = 0, prevH = 0, overlaps = 0, lastBottom = 0;
+            for (int i = 0; arr && i < n && i < 8; ++i) {
+                uint32_t cp = 0;
+                if (!guikit::detail::rd32(static_cast<uintptr_t>(arr), static_cast<int>(i * 4), &cp) || !cp) continue;
+                int y = -1, h = -1, cw = -1, chk = -1;
+                (void)guikit::detail::rdInt(cp, guikit::Ctl_Y, &y);
+                (void)guikit::detail::rdInt(cp, guikit::Ctl_H, &h);
+                (void)guikit::detail::rdInt(cp, guikit::Ctl_W, &cw);
+                int fmtRaw = -1;
+                const uintptr_t textObj = static_cast<uintptr_t>(cp) + guikit::Label_Text;
+                uint32_t tvt = 0, tfn = 0;
+                if (guikit::detail::textObjOk(static_cast<uintptr_t>(cp)) &&
+                    guikit::detail::rd32(textObj, 0, &tvt) && tvt &&
+                    guikit::detail::rd32(tvt, kTextVtOff_GetFormattedHeight, &tfn) && tfn) {
+                    fmtRaw = reinterpret_cast<int(__thiscall*)(void*)>(static_cast<uintptr_t>(tfn))(reinterpret_cast<void*>(textObj));
+                }
+                const bool ov = (i > 0) && (y < prevY + prevH);
+                if (ov) ++overlaps;
+                const bool clipRaw = (fmtRaw > h);
+                const bool clipDiv = (textScalar > 0.01f) && (fmtRaw > 0) && (static_cast<int>(fmtRaw / textScalar + 0.99f) > h);
+                (void)chk;
+                probeLogf("RMTPROBE stack seq=%u i=%d y=%d h=%d w=%d fmtRaw=%d overlap=%d clipIfRaw=%d clipIfDiv=%d",
+                          probeSeq, i, y, h, cw, fmtRaw, ov ? 1 : 0, clipRaw ? 1 : 0, clipDiv ? 1 : 0);
+                prevY = y; prevH = h;
+                lastBottom = y + h;
+            }
+            probeLogf("RMTPROBE stacksum seq=%u rows=%d visible=%d top=%u clientH=%d lastBottom=%d overlaps=%d",
+                      probeSeq, n, visible, static_cast<unsigned>(topItem), clientH, lastBottom, overlaps);
+        }
+#endif
 
         return true;
     }
