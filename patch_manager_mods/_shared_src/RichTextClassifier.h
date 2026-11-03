@@ -133,6 +133,17 @@ inline bool isRuleHeaderPrefix(const char* s, size_t len) noexcept {
     return false;
 }
 
+inline bool isUpgradeTagPrefix(const char* s, size_t len) noexcept {
+    if (!s || len == 0) return false;
+    while (len > 0 && isSpaceChar(*s)) { ++s; --len; }
+    while (len > 0 && isSpaceChar(s[len - 1])) { --len; }
+    if (len == 0) return false;
+    if (eqNoCaseN(s, "FULLY UPGRADEABLE", 17)) return true;
+    if (eqNoCaseN(s, "UPGRADEABLE", 11)) return true;
+    if (eqNoCaseN(s, "NOT UPGRADEABLE", 15)) return true;
+    return false;
+}
+
 // Appends or coalesces a span into LineSpan::spans.
 inline void pushSpan(LineSpan* out, uint16_t s, uint16_t e, SpanKind kind, uint32_t rgb) noexcept {
     if (!out || s >= e) return;
@@ -525,6 +536,19 @@ inline bool splitDescSections(const char* rawText, DescSections* out) noexcept {
                 isRule = true;
             } else {
                 inHeaderBlock = false;
+            }
+        } else if (idx > 0 && !rl.blankBefore) {
+            // Continuation line for a previous KeyValue or rule without an intervening blank line
+            const RawLine& prev = lines[idx - 1];
+            const char* pe = prev.e;
+            while (pe > prev.b && isSpaceChar(pe[-1])) --pe;
+            const bool prevComma = (pe > prev.b && (pe[-1] == ',' || pe[-1] == '-' || pe[-1] == '/'));
+            const bool startsLower = (ts < te && (*ts >= 'a' && *ts <= 'z'));
+            const bool startsOrAnd = ((tlen >= 3 && (ts[0] == 'o' || ts[0] == 'O') && (ts[1] == 'r' || ts[1] == 'R') && isSpaceChar(ts[2])) ||
+                                      (tlen >= 4 && (ts[0] == 'a' || ts[0] == 'A') && (ts[1] == 'n' || ts[1] == 'N') && (ts[2] == 'd' || ts[2] == 'D') && isSpaceChar(ts[3])));
+            const bool isUpgrade = isUpgradeTagPrefix(ts, tlen);
+            if (prevComma || startsLower || startsOrAnd || isUpgrade) {
+                isRule = true;
             }
         }
 

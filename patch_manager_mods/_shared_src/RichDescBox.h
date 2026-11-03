@@ -42,6 +42,7 @@ constexpr int kLabelOff_TextParams = 0xF0;
 constexpr int kLabelOff_Renderer = 0xEC;
 constexpr int kTextVtOff_GetFormattedHeight = 0x08; // slot 2 of CSWGuiText vtable at label + Label_Text
 constexpr int kListBoxOff_ClientW = 0x2A4;
+constexpr int kListBoxOff_ClientH = 0x2A8;
 constexpr int kListBoxOff_Flags = 0x2CC;
 constexpr int kListBoxOff_Padding = 0x2D0;
 constexpr int kListBoxOff_TopItem = 0x2D8;
@@ -108,6 +109,22 @@ inline void resetPool() noexcept {
     s_useCounter = 0;
 }
 
+inline float getEngineTextScalar() noexcept {
+#ifndef GUIKIT_HOST
+    float liveScalar = 0.0f;
+    if (saferead::readAt<float>(guikit::detail::SiteBase, 0x009F5F64, 0, &liveScalar) &&
+        liveScalar >= 0.5f && liveScalar <= 8.0f) {
+        return liveScalar;
+    }
+    int screenW = 0;
+    if (saferead::readAt<int>(guikit::detail::SiteBase, gameaddr::ScreenW, 0, &screenW) && screenW > 0) {
+        if (screenW <= 1022) return 1.0f;
+        return 1.0f + 0.5f * static_cast<float>((screenW - 1022) >> 10);
+    }
+#endif
+    return 1.0f;
+}
+
 inline int measureTextHeight(uintptr_t ctl, const char* text, int width, const char* font = nullptr) noexcept {
     if (g_measureTextHeight) {
         return g_measureTextHeight(ctl, text, width, font);
@@ -115,18 +132,14 @@ inline int measureTextHeight(uintptr_t ctl, const char* text, int width, const c
     if (ctl && guikit::detail::textObjOk(ctl)) {
 #ifndef GUIKIT_HOST
         const uintptr_t textObj = ctl + guikit::Label_Text;
-        float scaleY = 1.0f;
-        int screenH = 0;
-        if (saferead::readAt<int>(guikit::detail::SiteBase, gameaddr::ScreenH, 0, &screenH) && screenH > 0) {
-            scaleY = static_cast<float>(screenH) / 600.0f;
-        }
+        const float scalar = getEngineTextScalar();
         uint32_t vt = 0;
         if (guikit::detail::rd32(textObj, 0, &vt) && vt) {
             uint32_t fn = 0;
             if (guikit::detail::rd32(vt, kTextVtOff_GetFormattedHeight, &fn) && fn) {
                 int physicalH = reinterpret_cast<int(__thiscall*)(void*)>(static_cast<uintptr_t>(fn))(reinterpret_cast<void*>(textObj));
-                if (physicalH > 0 && scaleY > 0.01f) {
-                    return static_cast<int>(static_cast<float>(physicalH) / scaleY + 0.99f);
+                if (physicalH > 0 && scalar > 0.01f) {
+                    return static_cast<int>(static_cast<float>(physicalH) / scalar + 0.99f);
                 }
             }
         }
@@ -321,13 +334,15 @@ struct RichDescBox {
             w = (srcW > 0) ? srcW : 240;
         }
 
-#ifndef GUIKIT_HOST
-        float scaleY = 1.0f;
-        int screenH = 0;
-        if (saferead::readAt<int>(guikit::detail::SiteBase, gameaddr::ScreenH, 0, &screenH) && screenH > 0) {
-            scaleY = static_cast<float>(screenH) / 600.0f;
+        int clientH = 0;
+        (void)guikit::detail::rdInt(reinterpret_cast<uintptr_t>(listbox), kListBoxOff_ClientH, &clientH);
+        if (clientH <= 0) {
+            (void)guikit::getExtent(reinterpret_cast<uintptr_t>(listbox), nullptr, nullptr, nullptr, &clientH);
         }
-#endif
+        if (clientH <= 0) clientH = 140;
+
+        const float textScalar = getEngineTextScalar();
+        (void)textScalar;
 
         PoolEntry* pool = findOrAllocPool(reinterpret_cast<uintptr_t>(listbox));
         if (!pool) return false;
@@ -336,19 +351,10 @@ struct RichDescBox {
         void* outControls[kMaxPooledRows] = {nullptr};
         int outCount = 0;
 
-        auto setupTextRow = [&](const char* text, const char* font, const float* col, int gap = 0) {
-            if (outCount >= static_cast<int>(kMaxPooledRows)) return;
-            const size_t rowIdx = static_cast<size_t>(outCount);
-            uintptr_t lbl = ensurePooledLabel(*pool, rowIdx);
-            if (!lbl) return;
-
-            (void)guikit::setFill(lbl, nullptr);
-            (void)guikit::detail::wr<uint32_t>(lbl + guikit::Label_Border, guikit::Border_FillStyle, 0);
-
+        auto measureRowH = [&](uintptr_t lbl, const char* text, const char* font) -> int {
             (void)guikit::setRect(lbl, srcX, srcY, w, 32);
             (void)guikit::setFont(lbl, font);
             (void)guikit::setAlign(lbl, kAlignTopLeft);
-            (void)guikit::setTextColor(lbl, col[0], col[1], col[2]);
             (void)guikit::setText(lbl, text);
 
             int finalH = 0;
@@ -360,20 +366,132 @@ struct RichDescBox {
                     uint32_t fn = 0;
                     if (guikit::detail::rd32(vt, kTextVtOff_GetFormattedHeight, &fn) && fn) {
                         int physicalH = reinterpret_cast<int(__thiscall*)(void*)>(static_cast<uintptr_t>(fn))(reinterpret_cast<void*>(textObj));
-                        if (physicalH > 0 && scaleY > 0.01f) {
-                            finalH = static_cast<int>(static_cast<float>(physicalH) / scaleY + 0.99f) + 1;
+                        if (physicalH > 0 && textScalar > 0.01f) {
+                            finalH = static_cast<int>(static_cast<float>(physicalH) / textScalar + 0.99f);
                         }
                     }
                 }
             }
 #endif
             if (finalH <= 0) {
-                finalH = measureTextHeight(lbl, text, w, font) + 1;
+                finalH = measureTextHeight(lbl, text, w, font);
             }
+            return finalH;
+        };
 
-            finalH += gap;
+        float origCol[3] = { kTealText[0], kTealText[1], kTealText[2] };
+        (void)guikit::getTextColor(srcCtl, origCol);
+        const bool isTeal = isDefaultTeal(origCol[0], origCol[1], origCol[2]);
+
+        const float* titleCol = isTeal ? kCream : ((origCol[0] > 0.5f && origCol[1] > 0.4f) ? kCream : origCol);
+        const float subCol[3] = { origCol[0] * 0.75f, origCol[1] * 0.75f, origCol[2] * 0.75f };
+        const float* rulesCol = isTeal ? kTealText : origCol;
+        const float* bodyCol  = isTeal ? kTealText : origCol;
+
+        const bool hasTitle    = (sec.title[0] != '\0');
+        const bool hasSubtitle = (sec.subtitle[0] != '\0' && strcmp(sec.subtitle, sec.title) != 0);
+        const bool hasRules    = (sec.rules[0] != '\0');
+        const bool hasBody     = (sec.body[0] != '\0');
+
+        uintptr_t lbls[4] = {0};
+        int titleH = 0, subH = 0, rulesH = 0, bodyH = 0;
+        int activeCount = 0;
+
+        if (hasTitle) {
+            lbls[activeCount] = ensurePooledLabel(*pool, static_cast<size_t>(activeCount));
+            if (lbls[activeCount]) {
+                titleH = measureRowH(lbls[activeCount], sec.title, kFontTitle);
+                ++activeCount;
+            }
+        }
+        if (hasSubtitle) {
+            lbls[activeCount] = ensurePooledLabel(*pool, static_cast<size_t>(activeCount));
+            if (lbls[activeCount]) {
+                subH = measureRowH(lbls[activeCount], sec.subtitle, kFontSub);
+                ++activeCount;
+            }
+        }
+        if (hasRules) {
+            lbls[activeCount] = ensurePooledLabel(*pool, static_cast<size_t>(activeCount));
+            if (lbls[activeCount]) {
+                rulesH = measureRowH(lbls[activeCount], sec.rules, getRulesFont());
+                ++activeCount;
+            }
+        }
+        if (hasBody) {
+            lbls[activeCount] = ensurePooledLabel(*pool, static_cast<size_t>(activeCount));
+            if (lbls[activeCount]) {
+                bodyH = measureRowH(lbls[activeCount], sec.body, getBodyFont());
+                ++activeCount;
+            }
+        }
+
+        const int naturalSum = titleH + subH + rulesH + bodyH;
+
+        int titleGap = 0, subGap = 0, rulesGap = 0;
+        const int desTitleGap = (hasTitle && (hasSubtitle || hasRules || hasBody)) ? 4 : 0;
+        const int desSubGap   = (hasSubtitle && (hasRules || hasBody)) ? 3 : 0;
+        const int desRulesGap = (hasRules && hasBody) ? 4 : 0;
+        const int numGaps = (desTitleGap > 0 ? 1 : 0) + (desSubGap > 0 ? 1 : 0) + (desRulesGap > 0 ? 1 : 0);
+
+        const int padTotal = (activeCount > 1) ? (activeCount - 1) * static_cast<int>(pad) : 0;
+        const int effectiveLimit = (clientH > padTotal) ? (clientH - padTotal) : clientH;
+
+        if (numGaps > 0) {
+            const int totalDesiredGaps = desTitleGap + desSubGap + desRulesGap;
+            const int remainingSpace = effectiveLimit - naturalSum;
+
+            if (remainingSpace >= totalDesiredGaps) {
+                // Ample headroom: fit comfortably on one page with full gaps
+                titleGap = desTitleGap;
+                subGap   = desSubGap;
+                rulesGap = desRulesGap;
+            } else if (remainingSpace > 0) {
+                // Natural text fits on one page, but full gaps would trigger a scrollbar!
+                // Compact gaps to keep total height <= effectiveLimit so no scrollbar appears.
+                int budget = remainingSpace;
+                if (desRulesGap > 0 && budget > 0) {
+                    rulesGap = std::min(desRulesGap, std::max(1, budget / numGaps));
+                    budget -= rulesGap;
+                }
+                if (desTitleGap > 0 && budget > 0) {
+                    titleGap = std::min(desTitleGap, std::max(1, budget / numGaps));
+                    budget -= titleGap;
+                }
+                if (desSubGap > 0 && budget > 0) {
+                    subGap = std::min(desSubGap, std::max(1, budget));
+                    budget -= subGap;
+                }
+                while (naturalSum + titleGap + subGap + rulesGap > effectiveLimit) {
+                    if (rulesGap > 0) --rulesGap;
+                    else if (titleGap > 0) --titleGap;
+                    else if (subGap > 0) --subGap;
+                    else break;
+                }
+            } else {
+                // Natural text genuinely exceeds effectiveLimit (multi-page item)
+                // Use standard comfortable gaps for scrolling
+                titleGap = desTitleGap;
+                subGap   = desSubGap;
+                rulesGap = desRulesGap;
+            }
+        }
+
+        auto applyTextRow = [&](uintptr_t lbl, const char* text, const char* font, const float* col, int rowH, int gap) {
+            if (!lbl || outCount >= static_cast<int>(kMaxPooledRows)) return;
+            const size_t rowIdx = static_cast<size_t>(outCount);
+
+            (void)guikit::setFill(lbl, nullptr);
+            (void)guikit::detail::wr<uint32_t>(lbl + guikit::Label_Border, guikit::Border_FillStyle, 0);
+
+            const int finalH = rowH + gap;
 
             (void)guikit::setRect(lbl, srcX, srcY, w, finalH);
+            (void)guikit::setFont(lbl, font);
+            (void)guikit::setAlign(lbl, kAlignTopLeft);
+            (void)guikit::setTextColor(lbl, col[0], col[1], col[2]);
+            (void)guikit::setText(lbl, text);
+
             (void)guikit::detail::wr<int>(lbl, guikit::Ctl_X, srcX);
             (void)guikit::detail::wr<int>(lbl, guikit::Ctl_Y, srcY);
             (void)guikit::detail::wr<int>(lbl, guikit::Ctl_W, w);
@@ -394,78 +512,18 @@ struct RichDescBox {
             outControls[outCount++] = reinterpret_cast<void*>(lbl);
         };
 
-        auto setupDividerRow = [&]() {
-            if (outCount >= static_cast<int>(kMaxPooledRows)) return;
-            const size_t rowIdx = static_cast<size_t>(outCount);
-            uintptr_t lbl = ensurePooledLabel(*pool, rowIdx);
-            if (!lbl) return;
-
-            (void)guikit::setText(lbl, "");
-            (void)guikit::setAlign(lbl, kAlignTopLeft);
-
-            void* img = guikit::imageFor(kDividerFillResRef);
-            (void)guikit::setFill(lbl, img, kTealFrame);
-            (void)guikit::setAlpha(lbl, 1.0f);
-            (void)guikit::detail::wr<uint32_t>(lbl + guikit::Label_Border, guikit::Border_FillStyle, 2);
-
-            (void)guikit::setRect(lbl, srcX, srcY, w, kDividerHeight);
-            (void)guikit::detail::wr<int>(lbl, guikit::Ctl_X, srcX);
-            (void)guikit::detail::wr<int>(lbl, guikit::Ctl_Y, srcY);
-            (void)guikit::detail::wr<int>(lbl, guikit::Ctl_W, w);
-            (void)guikit::detail::wr<int>(lbl, guikit::Ctl_H, kDividerHeight);
-
-            (void)guikit::setVisible(lbl, true);
-            (void)guikit::setClickable(lbl, false);
-
-            s_lastPopulateInfo.rowHeights[rowIdx] = kDividerHeight;
-            s_lastPopulateInfo.rowAligns[rowIdx] = kAlignTopLeft;
-            s_lastPopulateInfo.rowFonts[rowIdx][0] = '\0';
-            s_lastPopulateInfo.rowTexts[rowIdx][0] = '\0';
-            s_lastPopulateInfo.rowIsDivider[rowIdx] = true;
-            s_lastPopulateInfo.rowColors[rowIdx][0] = kTealFrame[0];
-            s_lastPopulateInfo.rowColors[rowIdx][1] = kTealFrame[1];
-            s_lastPopulateInfo.rowColors[rowIdx][2] = kTealFrame[2];
-
-            outControls[outCount++] = reinterpret_cast<void*>(lbl);
-        };
-
-        float origCol[3] = { kTealText[0], kTealText[1], kTealText[2] };
-        (void)guikit::getTextColor(srcCtl, origCol);
-        const bool isTeal = isDefaultTeal(origCol[0], origCol[1], origCol[2]);
-
-        const float* titleCol = isTeal ? kCream : ((origCol[0] > 0.5f && origCol[1] > 0.4f) ? kCream : origCol);
-        const float subCol[3] = { origCol[0] * 0.75f, origCol[1] * 0.75f, origCol[2] * 0.75f };
-        const float* rulesCol = isTeal ? kTealText : origCol;
-        const float* bodyCol  = isTeal ? kTealText : origCol;
-
-        const bool hasSubtitle = (sec.subtitle[0] != '\0' && strcmp(sec.subtitle, sec.title) != 0);
-        const bool hasRules    = (sec.rules[0] != '\0');
-        const bool hasBody     = (sec.body[0] != '\0');
-
-        // Row 0: Title
-        if (sec.title[0] != '\0') {
-            const int gap = (hasSubtitle || hasRules || hasBody) ? 4 : 0;
-            setupTextRow(sec.title, kFontTitle, titleCol, gap);
+        int emitIdx = 0;
+        if (hasTitle && lbls[emitIdx]) {
+            applyTextRow(lbls[emitIdx++], sec.title, kFontTitle, titleCol, titleH, titleGap);
         }
-
-        // Row 1: Subtitle
-        if (hasSubtitle) {
-            const int gap = (hasRules || hasBody) ? 3 : 0;
-            setupTextRow(sec.subtitle, kFontSub, isTeal ? kTealDim : subCol, gap);
+        if (hasSubtitle && lbls[emitIdx]) {
+            applyTextRow(lbls[emitIdx++], sec.subtitle, kFontSub, isTeal ? kTealDim : subCol, subH, subGap);
         }
-
-        // Divider rows removed per directive 2
-        (void)setupDividerRow;
-
-        // Row 2: Rules (uses getRulesFont() per directive 3)
-        if (hasRules) {
-            const int gap = hasBody ? 4 : 0;
-            setupTextRow(sec.rules, getRulesFont(), rulesCol, gap);
+        if (hasRules && lbls[emitIdx]) {
+            applyTextRow(lbls[emitIdx++], sec.rules, getRulesFont(), rulesCol, rulesH, rulesGap);
         }
-
-        // Row 3: Body (always 0 gap since it is the last section)
-        if (hasBody) {
-            setupTextRow(sec.body, getBodyFont(), bodyCol, 0);
+        if (hasBody && lbls[emitIdx]) {
+            applyTextRow(lbls[emitIdx++], sec.body, getBodyFont(), bodyCol, bodyH, 0);
         }
 
         if (outCount == 0) return false;

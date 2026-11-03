@@ -183,26 +183,26 @@ void testTV7_SectionSplitItem() {
     const rmt::LastPopulateInfo& info = rmt::getLastPopulateInfo();
     kt::CheckEq("TV7: Snapshot rowCount is 3", info.rowCount, 3);
 
-    // Row 0: Subtitle ("Fully Upgradeable", dialogfont10x10, kTealDim, align 9, height fh + 1 (descent) + 3 (gap) = 12)
+    // Row 0: Subtitle ("Fully Upgradeable", dialogfont10x10, kTealDim, align 9, height fh + 3 (gap) = 11)
     kt::CheckEq("TV7: Row 0 is not divider", info.rowIsDivider[0], false);
     kt::Check("TV7: Row 0 font is dialogfont10x10", strcmp(info.rowFonts[0], rmt::kFontSub) == 0);
     kt::CheckEq("TV7: Row 0 align is TopLeft (9)", info.rowAligns[0], rmt::kAlignTopLeft);
-    kt::CheckEq("TV7: Row 0 height is fh = 12", info.rowHeights[0], 12);
+    kt::CheckEq("TV7: Row 0 height is fh = 11", info.rowHeights[0], 11);
     kt::Check("TV7: Row 0 text is Fully Upgradeable", strcmp(info.rowTexts[0], "Fully Upgradeable") == 0);
     kt::Check("TV7: Row 0 color is kTealDim", info.rowColors[0][0] == rmt::kTealDim[0]);
 
-    // Row 1: Rules (Damage: Energy, 4-16\nAttack Modifier: +3, getRulesFont() fnt_d16x16, kTealText, align 9, height 2*14 + 1 + 4 (gap) = 33)
+    // Row 1: Rules (Damage: Energy, 4-16\nAttack Modifier: +3, getRulesFont() fnt_d16x16, kTealText, align 9, height 2*14 + 4 (gap) = 32)
     kt::CheckEq("TV7: Row 1 is not divider", info.rowIsDivider[1], false);
     kt::Check("TV7: Row 1 font is rulesFont", strcmp(info.rowFonts[1], rmt::getRulesFont()) == 0);
     kt::CheckEq("TV7: Row 1 align is TopLeft (9)", info.rowAligns[1], rmt::kAlignTopLeft);
-    kt::CheckEq("TV7: Row 1 height is fh = 33", info.rowHeights[1], 33);
+    kt::CheckEq("TV7: Row 1 height is fh = 32", info.rowHeights[1], 32);
     kt::Check("TV7: Row 1 color is kTealText", info.rowColors[1][0] == rmt::kTealText[0]);
 
-    // Row 2: Body (lore prose with {tag} stripped, fnt_d16x16, kTealText, align 9, 2 lines * 14 + 1 (descent) = 29)
+    // Row 2: Body (lore prose with {tag} stripped, fnt_d16x16, kTealText, align 9, 2 lines * 14 = 28)
     kt::CheckEq("TV7: Row 2 is not divider", info.rowIsDivider[2], false);
     kt::Check("TV7: Row 2 font is fnt_d16x16", strcmp(info.rowFonts[2], rmt::kFontDesc) == 0);
     kt::CheckEq("TV7: Row 2 align is TopLeft (9)", info.rowAligns[2], rmt::kAlignTopLeft);
-    kt::CheckEq("TV7: Row 2 height is fh = 29", info.rowHeights[2], 29);
+    kt::CheckEq("TV7: Row 2 height is fh = 28", info.rowHeights[2], 28);
     kt::Check("TV7: Row 2 text has {tag} stripped",
               strcmp(info.rowTexts[2], "This blaster pistol was common during the Mandalorian Wars.") == 0);
     kt::Check("TV7: Row 2 color is kTealText", info.rowColors[2][0] == rmt::kTealText[0]);
@@ -226,20 +226,20 @@ void testTV8_SectionSplitJournal() {
     const rmt::LastPopulateInfo& info = rmt::getLastPopulateInfo();
     kt::CheckEq("TV8: Snapshot rowCount is 2", info.rowCount, 2);
 
-    // Row 0: Title ("Nar Shaddaa", dialogfont16x16, kCream, align 9, height 12 + 1 (descent) + 4 (gap) = 17)
+    // Row 0: Title ("Nar Shaddaa", dialogfont16x16, kCream, align 9, height 12 + 4 (gap) = 16)
     kt::CheckEq("TV8: Row 0 is not divider", info.rowIsDivider[0], false);
     kt::Check("TV8: Row 0 font is dialogfont16x16", strcmp(info.rowFonts[0], rmt::kFontTitle) == 0);
     kt::CheckEq("TV8: Row 0 align is TopLeft (9)", info.rowAligns[0], rmt::kAlignTopLeft);
-    kt::CheckEq("TV8: Row 0 height is fh = 17", info.rowHeights[0], 17);
+    kt::CheckEq("TV8: Row 0 height is fh = 16", info.rowHeights[0], 16);
     kt::Check("TV8: Row 0 text is Nar Shaddaa (trailing colon stripped)",
               strcmp(info.rowTexts[0], "Nar Shaddaa") == 0);
     kt::Check("TV8: Row 0 color is kCream", info.rowColors[0][0] == rmt::kCream[0]);
 
-    // Row 1: Body (Refugee Sector troubles have escalated., fnt_d16x16, kTealText, align 9, 2 lines * 14 + 1 = 29)
+    // Row 1: Body (Refugee Sector troubles have escalated., fnt_d16x16, kTealText, align 9, 2 lines * 14 = 28)
     kt::CheckEq("TV8: Row 1 is not divider", info.rowIsDivider[1], false);
     kt::Check("TV8: Row 1 font is fnt_d16x16", strcmp(info.rowFonts[1], rmt::kFontDesc) == 0);
     kt::CheckEq("TV8: Row 1 align is TopLeft (9)", info.rowAligns[1], rmt::kAlignTopLeft);
-    kt::CheckEq("TV8: Row 1 height is fh = 29", info.rowHeights[1], 29);
+    kt::CheckEq("TV8: Row 1 height is fh = 28", info.rowHeights[1], 28);
     kt::Check("TV8: Row 1 text is Refugee Sector troubles...",
               strcmp(info.rowTexts[1], "Refugee Sector troubles have escalated.") == 0);
     kt::Check("TV8: Row 1 color is kTealText", info.rowColors[1][0] == rmt::kTealText[0]);
@@ -376,16 +376,16 @@ void testArmorCompactLayout() {
     // Row 0 is Rules block (containing FEATS REQUIRED and Armor Proficiency)
     kt::CheckEq("Armor: Row 0 is not divider", info.rowIsDivider[0], false);
     kt::Check("Armor: Row 0 font is rulesFont", strcmp(info.rowFonts[0], rmt::getRulesFont()) == 0);
-    kt::CheckEq("Armor: Row 0 height is 61 (4 lines * 14 + 1 + 4 gap)", info.rowHeights[0], 61);
+    kt::CheckEq("Armor: Row 0 height is 60 (4 lines * 14 + 4 gap)", info.rowHeights[0], 60);
     kt::Check("Armor: Row 0 text contains FEATS REQUIRED", strstr(info.rowTexts[0], "FEATS REQUIRED") != nullptr);
     kt::Check("Armor: Row 0 text contains Armor Proficiency", strstr(info.rowTexts[0], "Armor Proficiency - Heavy") != nullptr);
     kt::Check("Armor: Row 0 text contains Defense Bonus", strstr(info.rowTexts[0], "Defense Bonus: 12") != nullptr);
     kt::Check("Armor: Row 0 text contains Max Dexterity Bonus", strstr(info.rowTexts[0], "Max Dexterity Bonus: +0") != nullptr);
 
-    // Row 1 is Body lore (31 chars is 1 line at charW=7: 1 * 14 + 1 = 15)
+    // Row 1 is Body lore (31 chars is 1 line at charW=7: 1 * 14 = 14)
     kt::CheckEq("Armor: Row 1 is not divider", info.rowIsDivider[1], false);
     kt::Check("Armor: Row 1 font is fnt_d16x16", strcmp(info.rowFonts[1], rmt::kFontDesc) == 0);
-    kt::CheckEq("Armor: Row 1 height is 15 (1 line * 14 + 1)", info.rowHeights[1], 15);
+    kt::CheckEq("Armor: Row 1 height is 14 (1 line * 14)", info.rowHeights[1], 14);
     kt::Check("Armor: Row 1 text is body prose", strcmp(info.rowTexts[1], "Mandalorian heavy battle armor.") == 0);
 }
 
@@ -398,9 +398,9 @@ void testHeightClampingAgainstListBox() {
     listbox.setExtent(0, 0, 240, 85);
 
     // Case 1: Natural heights without artificial clamping
-    // Row 0: 3 lines * 14 + 1 + 4 gap = 47.
-    // Row 1: 1 line * 14 + 1 = 15.
-    // Sum = 62.
+    // Row 0: 3 lines * 14 + 4 gap = 46.
+    // Row 1: 1 line * 14 = 14.
+    // Sum = 60 <= 85.
     const char* desc = "Damage: 5\nAttack: 2\nRange: 20\n\nShort lore.";
     MockLabel srcLabel(desc, 0, 0, 240, 30);
     void* controls[1] = { srcLabel.voidPtr() };
@@ -409,17 +409,17 @@ void testHeightClampingAgainstListBox() {
     kt::CheckEq("Clamp: RmtAddControls2 succeeds", r, 1);
     const rmt::LastPopulateInfo& info = rmt::getLastPopulateInfo();
     const int naturalSum = info.rowHeights[0] + info.rowHeights[1];
-    kt::CheckEq("Natural: Row 0 height is 47", info.rowHeights[0], 47);
-    kt::CheckEq("Natural: Row 1 height is 15", info.rowHeights[1], 15);
-    kt::CheckEq("Natural: sumHeights is 62", naturalSum, 62);
+    kt::CheckEq("Natural: Row 0 height is 46", info.rowHeights[0], 46);
+    kt::CheckEq("Natural: Row 1 height is 14", info.rowHeights[1], 14);
+    kt::CheckEq("Natural: sumHeights is 60", naturalSum, 60);
 
     // Case 2: Natural sum when more lines present
-    // Row 0: 4 lines * 14 + 1 + 4 gap = 61.
-    // Row 1: 1 line * 14 + 1 = 15.
-    // Sum = 76.
+    // Row 0: 4 lines * 14 = 56.
+    // Row 1: 1 line * 14 = 14.
+    // Sum = 70. Available clientH = 60 < 70 -> needs scrolling, uses standard 4 gap -> 56 + 4 + 14 = 74.
     rmt::resetPool();
     g_rec.reset();
-    listbox.setExtent(0, 0, 240, 70);
+    listbox.setExtent(0, 0, 240, 60);
     const char* descOver = "Damage: 5\nAttack: 2\nRange: 20\nCritical: 20\n\nShort lore.";
     MockLabel srcLabelOver(descOver, 0, 0, 240, 30);
     void* controlsOver[1] = { srcLabelOver.voidPtr() };
@@ -428,7 +428,7 @@ void testHeightClampingAgainstListBox() {
     kt::CheckEq("ClampOver: RmtAddControls2 succeeds", r, 1);
     const rmt::LastPopulateInfo& infoOver = rmt::getLastPopulateInfo();
     const int sumOver = infoOver.rowHeights[0] + infoOver.rowHeights[1];
-    kt::CheckEq("NaturalOver: sumHeights is 76", sumOver, 76);
+    kt::CheckEq("NaturalOver: sumHeights is 74", sumOver, 74);
 }
 
 void testCalibratedMeasureTextHeight() {
@@ -489,6 +489,71 @@ void testThemePaletteAdaptation() {
     kt::Check("Theme: Row 2 color R matches amber 0.70f", std::abs(info.rowColors[2][0] - 0.70f) < 0.01f);
 }
 
+void testShieldContinuationParsing() {
+    rmt::resetPool();
+    g_rec.reset();
+    rmt::setRichDescBox(true);
+
+    MockListBox listbox(0x1000, 260, 10);
+    const char* shieldDesc =
+        "Deflection: Bludgeoning, Piercing, Slashing, 20pts total\n"
+        "Duration: 200 seconds,\n"
+        "or max damage taken\n\n"
+        "Charges: Using this item consumes one charge.\n\n"
+        "Mandalorians don't fear melee combat, but they don't fight it unprotected either.";
+    MockLabel srcLabel(shieldDesc, 0, 0, 240, 30);
+    void* controls[1] = { srcLabel.voidPtr() };
+
+    const int res = RmtAddControls2(listbox.voidPtr(), controls, 1, 0, 0, 0,
+                                    reinterpret_cast<uintptr_t>(fakeOrigAddControls2));
+    kt::CheckEq("Shield: RmtAddControls2 succeeds", res, 1);
+    kt::CheckEq("Shield: Row count is 2 (Rules + Body)", g_rec.count, 2);
+
+    const rmt::LastPopulateInfo& info = rmt::getLastPopulateInfo();
+    // Verify Row 0 has all rules including continuation and Charges:
+    kt::Check("Shield: Row 0 contains Deflection", strstr(info.rowTexts[0], "Deflection:") != nullptr);
+    kt::Check("Shield: Row 0 contains Duration", strstr(info.rowTexts[0], "Duration: 200 seconds,") != nullptr);
+    kt::Check("Shield: Row 0 contains continuation line", strstr(info.rowTexts[0], "or max damage taken") != nullptr);
+    kt::Check("Shield: Row 0 contains Charges", strstr(info.rowTexts[0], "Charges: Using this item") != nullptr);
+
+    // Verify Row 1 has lore prose only
+    kt::Check("Shield: Row 1 contains lore prose", strstr(info.rowTexts[1], "Mandalorians don't fear melee combat") != nullptr);
+    kt::Check("Shield: Row 1 does not contain Charges", strstr(info.rowTexts[1], "Charges:") == nullptr);
+}
+
+void testVibroswordUpgradeTagParsing() {
+    rmt::resetPool();
+    g_rec.reset();
+    rmt::setRichDescBox(true);
+
+    MockListBox listbox(0x1000, 260, 2);
+    const char* vibroDesc =
+        "Feats Required:\n"
+        "Weapon Proficiency - Melee Weapons\n"
+        "Damage: Physical, 3-13\n"
+        "Ion: +1-6 vs. Droid\n"
+        "Damage Bonus: +1 Energy, +1-4 Ion\n"
+        "Critical Threat:\n"
+        "19-20,x2\n"
+        "Attack Modifier: +1\n"
+        "Fully Upgradeable\n\n"
+        "Ultrasonic generators power this Echani-developed weapon design.\n"
+        "A cortosis weave ensures traditional swordplay will endure.";
+    MockLabel srcLabel(vibroDesc, 0, 0, 240, 30);
+    void* controls[1] = { srcLabel.voidPtr() };
+
+    const int res = RmtAddControls2(listbox.voidPtr(), controls, 1, 0, 0, 0,
+                                    reinterpret_cast<uintptr_t>(fakeOrigAddControls2));
+    kt::CheckEq("Vibro: RmtAddControls2 succeeds", res, 1);
+    kt::CheckEq("Vibro: Row count is 2 (Rules + Body)", g_rec.count, 2);
+
+    const rmt::LastPopulateInfo& info = rmt::getLastPopulateInfo();
+    kt::Check("Vibro: Row 0 contains Attack Modifier", strstr(info.rowTexts[0], "Attack Modifier: +1") != nullptr);
+    kt::Check("Vibro: Row 0 contains Fully Upgradeable", strstr(info.rowTexts[0], "Fully Upgradeable") != nullptr);
+    kt::Check("Vibro: Row 1 does NOT contain Fully Upgradeable", strstr(info.rowTexts[1], "Fully Upgradeable") == nullptr);
+    kt::Check("Vibro: Row 1 contains lore prose", strstr(info.rowTexts[1], "Ultrasonic generators power") != nullptr);
+}
+
 } // namespace
 
 int main() {
@@ -499,6 +564,8 @@ int main() {
     testHeightClampingAgainstListBox();
     testCalibratedMeasureTextHeight();
     testThemePaletteAdaptation();
+    testShieldContinuationParsing();
+    testVibroswordUpgradeTagParsing();
     testInterceptionFilterGuards();
     testPoolReuseAndResolutionChange();
     return kt::Report("rich_desc_box_test");
