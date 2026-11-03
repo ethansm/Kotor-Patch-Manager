@@ -112,7 +112,7 @@ inline void resetPool() noexcept {
 inline float getEngineTextScalar() noexcept {
 #ifndef GUIKIT_HOST
     float liveScalar = 0.0f;
-    if (saferead::readAt<float>(guikit::detail::SiteBase, 0x009F5F64, 0, &liveScalar) &&
+    if (saferead::readAt<float>(guikit::detail::SiteBase, gameaddr::TextScalar, 0, &liveScalar) &&
         liveScalar >= 0.5f && liveScalar <= 8.0f) {
         return liveScalar;
     }

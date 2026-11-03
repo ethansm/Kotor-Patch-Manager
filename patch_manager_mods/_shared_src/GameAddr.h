@@ -15,6 +15,7 @@ constexpr uintptr_t GuiSoundMgr = 0x00A1B49C;           // global GUI sound mana
 constexpr uintptr_t PlayGuiSound = 0x004122A0;          // thiscall(mgr, char idx), idx 1 = hover          Mod3 78
 constexpr uintptr_t ScreenW = 0x009F42A4;               // engine framebuffer width (int)                  Mod14 syncScreen 218
 constexpr uintptr_t ScreenH = 0x009F42A8;               // engine framebuffer height (int)                 Mod14 syncScreen 218
+constexpr uintptr_t TextScalar = 0x009F5F64;            // engine resolution text scalar (float)           0x00479ab0 GetResolutionTextScalar
 constexpr uintptr_t GuiRefW = 0x009F4390;               // int (800): GUI layout reference space width
 constexpr uintptr_t GuiRefH = 0x009F4394;               // int (600): GUI layout reference space height
 constexpr uintptr_t ProjectionFlag = 0x00A1B9F0;        // GUI projection mode flag
