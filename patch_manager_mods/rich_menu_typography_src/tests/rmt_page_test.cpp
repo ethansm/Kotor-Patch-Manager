@@ -21,18 +21,24 @@ static void test_schema_load() {
         printf("Schema load error: %s\n", err);
     }
     kt::Check("schema loads via mcdecl::Page::load", loaded);
-    kt::CheckEq("schema declares 8 rows", g_page.decl.nRows, 8);
+    kt::CheckEq("schema declares 9 rows", g_page.decl.nRows, 9);
     kt::Check("page name is Rich Menu Typography", strcmp(g_page.decl.name, "Rich Menu Typography") == 0);
     kt::Check("page title is Rich Menu Typography", strcmp(g_page.decl.title, "Rich Menu Typography") == 0);
 
     // Row id constants and order
-    const char* expectedIds[8] = { kRowInline, kRowRichDesc, kRowStats, kRowSemantic, kRowDividers, kRowFont, kRowRulesFont, kRowReset };
-    for (int i = 0; i < 8 && i < g_page.decl.nRows; ++i) {
+    const char* expectedIds[9] = { kRowSample, kRowInline, kRowRichDesc, kRowStats, kRowSemantic, kRowDividers, kRowFont, kRowRulesFont, kRowReset };
+    for (int i = 0; i < 9 && i < g_page.decl.nRows; ++i) {
         kt::Check("row id matches constant", strcmp(g_page.decl.rows[i].id, expectedIds[i]) == 0);
     }
 
+    // List 0: preview sample (unbound, 5 choices, default Showcase)
+    const mcdecl::RowDecl& rs = g_page.decl.rows[0];
+    kt::Check("sample row is an unbound list with kSampleCount choices and def=0",
+              rs.kind == mcdecl::K_LIST && rs.def == 0 && rs.nChoices == kSampleCount &&
+              rs.ini[0] == '\0' && rs.section[0] == '\0' && rs.key[0] == '\0' && strcmp(rs.id, kRowSample) == 0);
+
     // Toggle 1: inline
-    const mcdecl::RowDecl& r0 = g_page.decl.rows[0];
+    const mcdecl::RowDecl& r0 = g_page.decl.rows[1];
     kt::Check("row 0 is toggle bound to InlineColoring",
               r0.kind == mcdecl::K_TOGGLE && r0.def == 1 &&
               strcmp(r0.ini, kIniFile) == 0 &&
@@ -40,7 +46,7 @@ static void test_schema_load() {
               strcmp(r0.key, "InlineColoring") == 0);
 
     // Toggle 2: richdesc
-    const mcdecl::RowDecl& r1 = g_page.decl.rows[1];
+    const mcdecl::RowDecl& r1 = g_page.decl.rows[2];
     kt::Check("row 1 is toggle bound to RichDescBox",
               r1.kind == mcdecl::K_TOGGLE && r1.def == 1 &&
               strcmp(r1.ini, kIniFile) == 0 &&
@@ -48,7 +54,7 @@ static void test_schema_load() {
               strcmp(r1.key, "RichDescBox") == 0);
 
     // Toggle 3: stats
-    const mcdecl::RowDecl& r2 = g_page.decl.rows[2];
+    const mcdecl::RowDecl& r2 = g_page.decl.rows[3];
     kt::Check("row 2 is toggle bound to StatHierarchy",
               r2.kind == mcdecl::K_TOGGLE && r2.def == 1 &&
               strcmp(r2.ini, kIniFile) == 0 &&
@@ -56,7 +62,7 @@ static void test_schema_load() {
               strcmp(r2.key, "StatHierarchy") == 0);
 
     // List 4: font (unbound)
-    const mcdecl::RowDecl& r3 = g_page.decl.rows[5];
+    const mcdecl::RowDecl& r3 = g_page.decl.rows[6];
     kt::Check("row 3 is unbound list with 3 choices and def=0",
               r3.kind == mcdecl::K_LIST && r3.def == 0 &&
               r3.nChoices == kFontCount &&
@@ -66,7 +72,7 @@ static void test_schema_load() {
               strcmp(r3.choices[2], "Large (dialogfont16x16)") == 0);
 
     // List 5: rulesfont (unbound)
-    const mcdecl::RowDecl& r4 = g_page.decl.rows[6];
+    const mcdecl::RowDecl& r4 = g_page.decl.rows[7];
     kt::Check("row 4 is unbound list with 3 choices and def=0",
               r4.kind == mcdecl::K_LIST && r4.def == 0 &&
               r4.nChoices == kFontCount &&
@@ -76,7 +82,7 @@ static void test_schema_load() {
               strcmp(r4.choices[2], "Large (dialogfont16x16)") == 0);
 
     // Toggle 6: reset (unbound)
-    const mcdecl::RowDecl& r5 = g_page.decl.rows[7];
+    const mcdecl::RowDecl& r5 = g_page.decl.rows[8];
     kt::Check("row 5 is unbound toggle with def=0",
               r5.kind == mcdecl::K_TOGGLE && r5.def == 0 &&
               r5.ini[0] == '\0' && r5.section[0] == '\0' && r5.key[0] == '\0' &&
@@ -119,8 +125,8 @@ static void test_desc_headers() {
     kt::Check("page desc <= 95 bytes", strlen(g_page.decl.desc) <= 95);
 
     // Schema still loads with all entries (1 page + 8 rows = 7 schema entries)
-    kt::CheckEq("schema still loads with 8 rows", g_page.decl.nRows, 8);
-    kt::CheckEq("schema still loads with 9 entries (page + rows)", 1 + g_page.decl.nRows, 9);
+    kt::CheckEq("schema still loads with 9 rows", g_page.decl.nRows, 9);
+    kt::CheckEq("schema still loads with 9 entries (page + rows)", 1 + g_page.decl.nRows, 10);
 
     for (int i = 0; i < g_page.decl.nRows; ++i) {
         const mcdecl::RowDecl& r = g_page.decl.rows[i];
@@ -243,14 +249,14 @@ static void test_font_helpers() {
 static void test_defaults_match_ini() {
     // Assert schema defaults match shipped rich_menu_typography.ini:
     // InlineColoring=1, RichDescBox=1, StatHierarchy=1, BodyFont=fnt_d16x16 (index 0)
-    kt::CheckEq("schema InlineColoring def=1", g_page.decl.rows[0].def, 1);
-    kt::CheckEq("schema RichDescBox def=1", g_page.decl.rows[1].def, 1);
-    kt::CheckEq("schema StatHierarchy def=1", g_page.decl.rows[2].def, 1);
-    kt::CheckEq("schema BodyFont choice def=0", g_page.decl.rows[5].def, 0);
-    kt::CheckEq("schema RulesFont choice def=0", g_page.decl.rows[6].def, 0);
-    kt::CheckEq("schema Semantic def=1", g_page.decl.rows[3].def, 1);
-    kt::CheckEq("schema Dividers def=1", g_page.decl.rows[4].def, 1);
-    kt::CheckEq("schema Reset def=0", g_page.decl.rows[7].def, 0);
+    kt::CheckEq("schema InlineColoring def=1", g_page.decl.rows[1].def, 1);
+    kt::CheckEq("schema RichDescBox def=1", g_page.decl.rows[2].def, 1);
+    kt::CheckEq("schema StatHierarchy def=1", g_page.decl.rows[3].def, 1);
+    kt::CheckEq("schema BodyFont choice def=0", g_page.decl.rows[6].def, 0);
+    kt::CheckEq("schema RulesFont choice def=0", g_page.decl.rows[7].def, 0);
+    kt::CheckEq("schema Semantic def=1", g_page.decl.rows[4].def, 1);
+    kt::CheckEq("schema Dividers def=1", g_page.decl.rows[5].def, 1);
+    kt::CheckEq("schema Reset def=0", g_page.decl.rows[8].def, 0);
 
     kt::CheckEq("BodyFont default fnt_d16x16 maps to index 0", fontIndexFor("fnt_d16x16"), 0);
 
@@ -309,19 +315,25 @@ static void test_new_rows() {
     kt::CheckEq("semantic off", applyRow(live, kRowSemantic, 0), 0);
     kt::Check("live mirrors semantic", !live.semantic);
     kt::CheckEq("semantic 5 clamps to 1", applyRow(live, kRowSemantic, 5), 1);
-    kt::Check("new samples split into sections", strstr(kPreviewDividers, "Fully Upgradeable") && strstr(kPreviewSemantic, "Jedi Only"));
+    kt::CheckEq("sample 3 valid", applyRow(live, kRowSample, 3), 3);
+    kt::CheckEq("live mirrors sample", live.sampleIdx, 3);
+    kt::CheckEq("sample -1 clamps to 0", applyRow(live, kRowSample, -1), 0);
+    kt::CheckEq("sample 99 clamps to last", applyRow(live, kRowSample, 99), kSampleCount - 1);
 }
 
 static void test_previews() {
-    kt::Check("previewFor font row = lore", previewFor(kRowFont) == kPreviewLore);
-    kt::Check("previewFor rulesfont row = weapon", previewFor(kRowRulesFont) == kPreviewWeapon);
-    kt::Check("previewFor null = weapon", previewFor(nullptr) == kPreviewWeapon);
-    kt::Check("previewFor semantic row = semantic sample", previewFor(kRowSemantic) == kPreviewSemantic);
-    kt::Check("previewFor dividers row = four-section sample", previewFor(kRowDividers) == kPreviewDividers);
-    const char* all[] = {kPreviewWeapon, kPreviewArmor, kPreviewRobe, kPreviewPower, kPreviewLore, kPreviewSemantic, kPreviewDividers};
-    for (const char* p : all) {
-        kt::Check("preview non-empty and < 700 bytes", p && strlen(p) > 40 && strlen(p) < 700);
+    kt::Check("previewFor(0) = showcase", previewFor(0) == kPreviewShowcase);
+    kt::Check("previewFor out of range = showcase", previewFor(-1) == kPreviewShowcase && previewFor(kSampleCount) == kPreviewShowcase);
+    for (int i = 0; i < kSampleCount; ++i) {
+        const char* p = previewFor(i);
+        kt::Check("sample non-empty and <= 600 bytes", p && strlen(p) > 100 && strlen(p) <= 600);
+        kt::Check("sample is distinct", i == 0 || p != previewFor(i - 1));
+        kt::Check("sample has a Damage/Defense/Force rules line", strstr(p, "Bonus") || strstr(p, "Damage") || strstr(p, "Force Cost"));
+        kt::Check("sample has a vs. line", strstr(p, " vs. ") != nullptr);
     }
+    kt::Check("showcase carries every styled feature",
+              strstr(kPreviewShowcase, "Energy") && strstr(kPreviewShowcase, "Jedi Only") && strstr(kPreviewShowcase, "+3 (-2") &&
+              strstr(kPreviewShowcase, "Fully Upgradeable") && strstr(kPreviewShowcase, " vs. Droids"));
     // Font round trip: every font maps back to its own index; unknown maps to 0.
     for (int i = 0; i < kFontCount; ++i) {
         kt::CheckEq("fontIndexFor(fontName(i)) == i", fontIndexFor(fontName(i)), i);

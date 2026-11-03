@@ -164,7 +164,7 @@ void pvRefresh() {
     if (!g_pv.on || !g_mcMenu.p) return;
     K2MuiRect pr = {};
     if (!g_mcMenu.p->PaneRect(g_pv.panel, MUI_PANE_PREVIEW, &pr) || pr.w <= 0 || pr.h <= 0) return;
-    const char* text = g_pv.text ? g_pv.text : rmtpage::previewFor(nullptr);
+    const char* text = g_pv.text ? g_pv.text : rmtpage::kPreviewShowcase;
     const char* fonts[rmtprev::kRows] = { rmt::kFontTitle, rmt::kFontSub, rmt::getRulesFont(), rmt::getBodyFont() };
     uint32_t sig = pvHash(2166136261u, text, strlen(text));
     sig = pvHash(sig, &pr, sizeof(pr));
@@ -173,14 +173,19 @@ void pvRefresh() {
     sig = pvHash(sig, &dmode, sizeof(dmode));
     const int sem = rmt::semanticColors() ? 1 : 0;
     sig = pvHash(sig, &sem, sizeof(sem));
+    const int rich = g_richDescBox ? 1 : 0;
+    sig = pvHash(sig, &rich, sizeof(rich));
     if (sig == g_pv.sig) return;
-    g_pv.sig = sig;
 
     static rmt::DescSections sec;
     sec = rmt::DescSections();
-    if (!rmt::splitDescSections(text, &sec)) return;
-    const bool hasSub = sec.subtitle[0] && strcmp(sec.subtitle, sec.title) != 0;
-    const char* texts[rmtprev::kRows] = { sec.title, hasSub ? sec.subtitle : "", sec.rules, sec.body };
+    // Rich description box OFF: the game draws the vanilla single block (default font, body colour), so the preview does the same.
+    const bool split = g_richDescBox && rmt::splitDescSections(text, &sec);
+    if (g_richDescBox && !split) return;   // the in-game box would fall back to vanilla here; keep the previous labels and retry on the next change
+    g_pv.sig = sig;
+    const bool hasSub = split && sec.subtitle[0] && strcmp(sec.subtitle, sec.title) != 0;
+    const char* texts[rmtprev::kRows] = { split ? sec.title : "", hasSub ? sec.subtitle : "", split ? sec.rules : "", split ? sec.body : text };
+    if (!split) fonts[3] = rmt::kFontDesc;
     const float* cols[rmtprev::kRows] = { rmt::kCream, rmt::kTealDim, rmt::kTealText, rmt::kTealText };
 
     const int w = pr.w - 2 * rmtprev::kPad;
@@ -231,7 +236,8 @@ void pvRefresh() {
 // Show the sample item description matching the row that changed. With a preview area it is drawn there and the description pane keeps the
 // hovered row's help; without one it falls back to the description pane (through RichDescBox).
 void showPreview(const char* rowId) {
-    g_pv.text = rmtpage::previewFor(rowId);
+    (void)rowId;   // one sample for every row (the Preview sample row picks it) so all options act on the same text
+    g_pv.text = rmtpage::previewFor(g_live.sampleIdx);
     if (g_pv.on) { pvRefresh(); return; }
     if (g_mcMenu.ok() && g_mcMenu.p && g_mcMenu.p->SetDesc) {
         g_mcMenu.p->SetDesc(g_page.page, g_pv.text);
@@ -247,6 +253,7 @@ void syncFontRows(const char* why) {
     g_live.rulesFontIdx = rmtpage::fontIndexFor(rulesIn);
     rmt::setBodyFont(rmtpage::fontName(g_live.fontIdx));
     rmt::setRulesFont(rmtpage::fontName(g_live.rulesFontIdx));
+    g_page.setValue(rmtpage::kRowSample, g_live.sampleIdx);
     g_page.setValue(rmtpage::kRowFont, g_live.fontIdx);
     g_page.setValue(rmtpage::kRowRulesFont, g_live.rulesFontIdx);
     g_live.dividers = rmt::dividerMode();

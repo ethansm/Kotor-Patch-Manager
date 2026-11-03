@@ -405,24 +405,28 @@ void TestEngineTokenStrip() {
 } // namespace
 
 void TestConfigPreviewsSplit() {
-    rmt::DescSections w{};
-    (void)rmt::splitDescSections(rmtpage::kPreviewWeapon, &w);
-    kt::Check("Preview weapon: no Useable By title (name comes from the item list)", w.title[0] == '\0');
-    kt::Check("Preview weapon: Useable By is a rule line", strstr(w.rules, "Useable By") != nullptr);
-    kt::Check("Preview weapon: rules and body present", w.rules[0] != '\0' && w.body[0] != '\0');
-    rmt::DescSections p{};
-    (void)rmt::splitDescSections(rmtpage::kPreviewPower, &p);
-    kt::Check("Preview power: title Force Power", strcmp(p.title, "Force Power") == 0);
-    kt::Check("Preview power: rules and body present", p.rules[0] != '\0' && p.body[0] != '\0');
-    rmt::DescSections a{};
-    (void)rmt::splitDescSections(rmtpage::kPreviewArmor, &a);
-    kt::Check("Preview armor: subtitle and rules, no title", a.title[0] == '\0' && a.subtitle[0] != '\0' && a.rules[0] != '\0');
+    // Every preview sample must split into the sections the options act on (title, subtitle, rules, body).
+    static const char* const kTitle[rmtpage::kSampleCount] = { "Dawnfang Vibroblade", "Mandalorian Blade", "Heavy Battle Armor", "Ancient Jedi Robes", "Force Power" };
+    static const char* const kSub[rmtpage::kSampleCount] = { "Fully Upgradeable", "Two-handed", "Fully Upgradeable", "Light Armor", "Force Lightning" };
+    for (int i = 0; i < rmtpage::kSampleCount; ++i) {
+        rmt::DescSections d{};
+        const bool ok = rmt::splitDescSections(rmtpage::previewFor(i), &d);
+        kt::Check("sample splits", ok);
+        kt::Check("sample title", strcmp(d.title, kTitle[i]) == 0);
+        kt::Check("sample subtitle", strcmp(d.subtitle, kSub[i]) == 0);
+        kt::Check("sample rules and body present", d.rules[0] != '\0' && strlen(d.body) > 80);
+        kt::Check("sample title is not the Useable By rule", strstr(d.title, "Useable") == nullptr);
+    }
+    rmt::DescSections m{};
+    (void)rmt::splitDescSections(rmtpage::kPreviewMelee, &m);
+    kt::Check("Melee: Useable By stays a rule line", strstr(m.rules, "Useable By") != nullptr);
+    rmt::DescSections s{};
+    (void)rmt::splitDescSections(rmtpage::kPreviewShowcase, &s);
+    kt::Check("Showcase rules carry damage type, bonus/penalty, vs. line and restriction",
+              strstr(s.rules, "Energy") && strstr(s.rules, "+3 (-2 Offhand)") && strstr(s.rules, "vs. Droids") && strstr(s.rules, "Jedi Only"));
     rmt::DescSections r{};
-    (void)rmt::splitDescSections(rmtpage::kPreviewRobe, &r);
-    kt::Check("Preview robe: rules present, body present", r.rules[0] != '\0' && r.body[0] != '\0');
-    rmt::DescSections l{};
-    (void)rmt::splitDescSections(rmtpage::kPreviewLore, &l);
-    kt::Check("Preview lore: long body", strlen(l.body) > 200);
+    (void)rmt::splitDescSections(rmtpage::kPreviewRobeBlocks, &r);
+    kt::Check("Robe: Cannot Equip and Restricted blocks stay in the rules", strstr(r.rules, "Cannot Equip") && strstr(r.rules, "Restricted") && strstr(r.rules, "Resistance"));
 }
 
 void testVsAbbreviationGuard() {
