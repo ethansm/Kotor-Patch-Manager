@@ -43,6 +43,36 @@ inline Stack stackRows(const Rect& pane, const int h[kRows]) {
     return s;
 }
 
+// Section dividers inside the stack gaps (same modes as RichDescBox::dividerMode): 0 off, 1 header|rules and rules|body,
+// 2 also title|subtitle. A divider is kDivH px tall, centred in the gap below the row above it, and only drawn when both neighbours are shown
+// and the gap can hold it.
+constexpr int kDivs = 3;     // 0 title|sub, 1 header group|next, 2 rules|body
+constexpr int kDivH = 2;
+
+struct Divs {
+    bool on[kDivs] = { false, false, false };
+    int y[kDivs] = { 0, 0, 0 };
+    int count = 0;
+};
+
+inline Divs placeDividers(const Stack& s, int mode) {
+    Divs d;
+    if (mode <= 0) return d;
+    auto put = [&](int slot, int above) {
+        const int gap = kGapAfter[above];
+        if (gap < kDivH) return;
+        d.on[slot] = true;
+        d.y[slot] = s.r[above].y + s.r[above].h + (gap - kDivH) / 2;
+        ++d.count;
+    };
+    if (mode >= 2 && s.show[0] && s.show[1]) put(0, 0);
+    const int header = s.show[1] ? 1 : (s.show[0] ? 0 : -1);
+    const int next = s.show[2] ? 2 : (s.show[3] ? 3 : -1);
+    if (header >= 0 && next >= 0) put(1, header);
+    if (s.show[2] && s.show[3]) put(2, 2);
+    return d;
+}
+
 }   // namespace rmtprev
 
 #endif

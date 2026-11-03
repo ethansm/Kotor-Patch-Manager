@@ -1,5 +1,5 @@
 // rmt_page_test.cpp -- Host test of the Rich Menu Typography Mod Configuration page (RichMenuTypographyPage.h, Doc 53 Section 6):
-// Shipped schema loads via mcdecl::Page::load, 6 rows, string budgets <= 95 bytes, row ids <= 31 bytes,
+// Shipped schema loads via mcdecl::Page::load, 8 rows, string budgets <= 95 bytes, row ids <= 31 bytes,
 // pure applyRow clamping, fontIndexFor case-insensitivity, defaults match rich_menu_typography.ini,
 // and iniw::setKey preserves comments and Verbose=0 when writing BodyFont.
 
@@ -21,13 +21,13 @@ static void test_schema_load() {
         printf("Schema load error: %s\n", err);
     }
     kt::Check("schema loads via mcdecl::Page::load", loaded);
-    kt::CheckEq("schema declares 6 rows", g_page.decl.nRows, 6);
+    kt::CheckEq("schema declares 8 rows", g_page.decl.nRows, 8);
     kt::Check("page name is Rich Menu Typography", strcmp(g_page.decl.name, "Rich Menu Typography") == 0);
     kt::Check("page title is Rich Menu Typography", strcmp(g_page.decl.title, "Rich Menu Typography") == 0);
 
     // Row id constants and order
-    const char* expectedIds[6] = { kRowInline, kRowRichDesc, kRowStats, kRowFont, kRowRulesFont, kRowReset };
-    for (int i = 0; i < 6 && i < g_page.decl.nRows; ++i) {
+    const char* expectedIds[8] = { kRowInline, kRowRichDesc, kRowStats, kRowSemantic, kRowDividers, kRowFont, kRowRulesFont, kRowReset };
+    for (int i = 0; i < 8 && i < g_page.decl.nRows; ++i) {
         kt::Check("row id matches constant", strcmp(g_page.decl.rows[i].id, expectedIds[i]) == 0);
     }
 
@@ -56,7 +56,7 @@ static void test_schema_load() {
               strcmp(r2.key, "StatHierarchy") == 0);
 
     // List 4: font (unbound)
-    const mcdecl::RowDecl& r3 = g_page.decl.rows[3];
+    const mcdecl::RowDecl& r3 = g_page.decl.rows[5];
     kt::Check("row 3 is unbound list with 3 choices and def=0",
               r3.kind == mcdecl::K_LIST && r3.def == 0 &&
               r3.nChoices == kFontCount &&
@@ -66,7 +66,7 @@ static void test_schema_load() {
               strcmp(r3.choices[2], "Large (dialogfont16x16)") == 0);
 
     // List 5: rulesfont (unbound)
-    const mcdecl::RowDecl& r4 = g_page.decl.rows[4];
+    const mcdecl::RowDecl& r4 = g_page.decl.rows[6];
     kt::Check("row 4 is unbound list with 3 choices and def=0",
               r4.kind == mcdecl::K_LIST && r4.def == 0 &&
               r4.nChoices == kFontCount &&
@@ -76,7 +76,7 @@ static void test_schema_load() {
               strcmp(r4.choices[2], "Large (dialogfont16x16)") == 0);
 
     // Toggle 6: reset (unbound)
-    const mcdecl::RowDecl& r5 = g_page.decl.rows[5];
+    const mcdecl::RowDecl& r5 = g_page.decl.rows[7];
     kt::Check("row 5 is unbound toggle with def=0",
               r5.kind == mcdecl::K_TOGGLE && r5.def == 0 &&
               r5.ini[0] == '\0' && r5.section[0] == '\0' && r5.key[0] == '\0' &&
@@ -118,9 +118,9 @@ static void test_desc_headers() {
     kt::Check("page desc starts with Word: header", isWordHeader(g_page.decl.desc));
     kt::Check("page desc <= 95 bytes", strlen(g_page.decl.desc) <= 95);
 
-    // Schema still loads with all entries (1 page + 6 rows = 7 schema entries)
-    kt::CheckEq("schema still loads with 6 rows", g_page.decl.nRows, 6);
-    kt::CheckEq("schema still loads with 7 entries (page + rows)", 1 + g_page.decl.nRows, 7);
+    // Schema still loads with all entries (1 page + 8 rows = 7 schema entries)
+    kt::CheckEq("schema still loads with 8 rows", g_page.decl.nRows, 8);
+    kt::CheckEq("schema still loads with 9 entries (page + rows)", 1 + g_page.decl.nRows, 9);
 
     for (int i = 0; i < g_page.decl.nRows; ++i) {
         const mcdecl::RowDecl& r = g_page.decl.rows[i];
@@ -246,9 +246,11 @@ static void test_defaults_match_ini() {
     kt::CheckEq("schema InlineColoring def=1", g_page.decl.rows[0].def, 1);
     kt::CheckEq("schema RichDescBox def=1", g_page.decl.rows[1].def, 1);
     kt::CheckEq("schema StatHierarchy def=1", g_page.decl.rows[2].def, 1);
-    kt::CheckEq("schema BodyFont choice def=0", g_page.decl.rows[3].def, 0);
-    kt::CheckEq("schema RulesFont choice def=0", g_page.decl.rows[4].def, 0);
-    kt::CheckEq("schema Reset def=0", g_page.decl.rows[5].def, 0);
+    kt::CheckEq("schema BodyFont choice def=0", g_page.decl.rows[5].def, 0);
+    kt::CheckEq("schema RulesFont choice def=0", g_page.decl.rows[6].def, 0);
+    kt::CheckEq("schema Semantic def=1", g_page.decl.rows[3].def, 1);
+    kt::CheckEq("schema Dividers def=1", g_page.decl.rows[4].def, 1);
+    kt::CheckEq("schema Reset def=0", g_page.decl.rows[7].def, 0);
 
     kt::CheckEq("BodyFont default fnt_d16x16 maps to index 0", fontIndexFor("fnt_d16x16"), 0);
 
@@ -297,11 +299,26 @@ static void test_ini_write_bodyfont() {
     kt::Check("BodyFont=dialogfont16x16 written", strstr(outBuf2, "BodyFont=dialogfont16x16\n") != nullptr);
 }
 
+static void test_new_rows() {
+    Live live;
+    kt::CheckEq("dividers clamps -1 to 0", applyRow(live, kRowDividers, -1), 0);
+    kt::CheckEq("dividers 1 valid", applyRow(live, kRowDividers, 1), 1);
+    kt::CheckEq("dividers 2 valid", applyRow(live, kRowDividers, 2), 2);
+    kt::CheckEq("dividers 9 clamps to 2", applyRow(live, kRowDividers, 9), 2);
+    kt::CheckEq("live mirrors dividers", live.dividers, 2);
+    kt::CheckEq("semantic off", applyRow(live, kRowSemantic, 0), 0);
+    kt::Check("live mirrors semantic", !live.semantic);
+    kt::CheckEq("semantic 5 clamps to 1", applyRow(live, kRowSemantic, 5), 1);
+    kt::Check("new samples split into sections", strstr(kPreviewDividers, "Fully Upgradeable") && strstr(kPreviewSemantic, "Jedi Only"));
+}
+
 static void test_previews() {
     kt::Check("previewFor font row = lore", previewFor(kRowFont) == kPreviewLore);
     kt::Check("previewFor rulesfont row = weapon", previewFor(kRowRulesFont) == kPreviewWeapon);
     kt::Check("previewFor null = weapon", previewFor(nullptr) == kPreviewWeapon);
-    const char* all[] = {kPreviewWeapon, kPreviewArmor, kPreviewRobe, kPreviewPower, kPreviewLore};
+    kt::Check("previewFor semantic row = semantic sample", previewFor(kRowSemantic) == kPreviewSemantic);
+    kt::Check("previewFor dividers row = four-section sample", previewFor(kRowDividers) == kPreviewDividers);
+    const char* all[] = {kPreviewWeapon, kPreviewArmor, kPreviewRobe, kPreviewPower, kPreviewLore, kPreviewSemantic, kPreviewDividers};
     for (const char* p : all) {
         kt::Check("preview non-empty and < 700 bytes", p && strlen(p) > 40 && strlen(p) < 700);
     }
@@ -314,6 +331,7 @@ static void test_previews() {
 
 int main() {
     test_previews();
+    test_new_rows();
     test_schema_load();
     test_string_budgets();
     test_desc_headers();

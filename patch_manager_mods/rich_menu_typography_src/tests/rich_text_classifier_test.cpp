@@ -407,8 +407,8 @@ void TestEngineTokenStrip() {
 void TestConfigPreviewsSplit() {
     rmt::DescSections w{};
     (void)rmt::splitDescSections(rmtpage::kPreviewWeapon, &w);
-    kt::Check("Preview weapon: title Useable By", strcmp(w.title, "Useable By") == 0);
-    kt::Check("Preview weapon: subtitle present", w.subtitle[0] != '\0');
+    kt::Check("Preview weapon: no Useable By title (name comes from the item list)", w.title[0] == '\0');
+    kt::Check("Preview weapon: Useable By is a rule line", strstr(w.rules, "Useable By") != nullptr);
     kt::Check("Preview weapon: rules and body present", w.rules[0] != '\0' && w.body[0] != '\0');
     rmt::DescSections p{};
     (void)rmt::splitDescSections(rmtpage::kPreviewPower, &p);
@@ -425,10 +425,52 @@ void TestConfigPreviewsSplit() {
     kt::Check("Preview lore: long body", strlen(l.body) > 200);
 }
 
+void testVsAbbreviationGuard() {
+    kt::Check("X1: 'vs.' before the colon stays a key/value row", rmt::classifyLine("Bonus vs. Droids: +2\n").kind == rmt::LineKind::KeyValue);
+    kt::Check("X2: 'Vs.' capital too", rmt::classifyLine("Damage Vs. Undead: +1d6\n").kind == rmt::LineKind::KeyValue);
+    kt::Check("X3: 'Revs.' is a sentence end, not an abbreviation", rmt::classifyLine("Revs. Mode: fast\n").kind != rmt::LineKind::KeyValue);
+    kt::Check("X4: 'Cousins.' likewise", rmt::classifyLine("Cousins. Mode: fast\n").kind != rmt::LineKind::KeyValue);
+    kt::Check("X5: header with vs.", rmt::classifyLine("Armor vs. Blasters:\n").kind == rmt::LineKind::Header);
+    kt::Check("X6: USEABLE BY is a rule header", rmt::isRuleHeaderPrefix("Useable By:", 11));
+    kt::Check("X7: USABLE BY too", rmt::isRuleHeaderPrefix("Usable By", 9));
+}
+
+static int countKind(const rmt::LineSpan& ls, rmt::SpanKind k) {
+    int n = 0;
+    for (uint16_t i = 0; i < ls.nSpans; ++i) if (ls.spans[i].kind == k) ++n;
+    return n;
+}
+
+void testSemanticColors() {
+    const char* dmg = "Damage: 3-13 (+1-6 Energy)\n";
+    rmt::semanticColors() = true;
+    rmt::LineSpan a = rmt::classifyLine(dmg);
+    kt::CheckEq("S1: Energy tinted when on", countKind(a, rmt::SpanKind::Semantic), 1);
+    kt::CheckEq("S2: bonus amber still there", countKind(a, rmt::SpanKind::Bonus), 1);
+    bool tint = false;
+    for (uint16_t i = 0; i < a.nSpans; ++i) if (a.spans[i].kind == rmt::SpanKind::Semantic) tint = (a.spans[i].rgb == rmt::kRgbDamageType);
+    kt::Check("S3: damage tint colour", tint);
+    kt::CheckEq("S4: whole word only (Energized)", countKind(rmt::classifyLine("Note: Energized core\n"), rmt::SpanKind::Semantic), 0);
+    kt::CheckEq("S5: restriction keyword", countKind(rmt::classifyLine("Equip: Jedi Only\n"), rmt::SpanKind::Semantic), 1);
+    kt::CheckEq("S6: not in the key", countKind(rmt::classifyLine("Fire Rate: 2\n"), rmt::SpanKind::Semantic), 0);
+    rmt::semanticColors() = false;
+    kt::CheckEq("S7: off = no tint spans", countKind(rmt::classifyLine(dmg), rmt::SpanKind::Semantic), 0);
+    const char* s = "Damage: 3-13 (+1-6 Energy)\n";
+    MockGuiString gs(s);
+    bool plain = true;
+    for (int i = 20; i < 24; ++i) if (rmt::resolveGlyphColor(gs.raw, s + i, 0, kDefaultBase) != (kAlphaE0 | rmt::kRgbCream)) plain = false;
+    kt::Check("S8: cache honours the flag (Energy cream when off)", plain);
+    rmt::semanticColors() = true;
+}
+
 int main() {
+    testSemanticColors();
+    testVsAbbreviationGuard();
     TestConfigPreviewsSplit();
     testTV1_HeaderLine();
+    rmt::semanticColors() = false;   // TV2 pins the plain value colour; the tint has its own vectors (testSemanticColors)
     testTV2_KeyValueBasic();
+    rmt::semanticColors() = true;
     testTV3_KeyValueBonusPenalty();
     testTV4_WrappedContinuation();
     testTV5_ProseParagraph();

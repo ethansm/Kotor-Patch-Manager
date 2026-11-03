@@ -11,6 +11,8 @@ constexpr const char* kSection = "General";
 constexpr const char* kRowInline    = "inline";
 constexpr const char* kRowRichDesc  = "richdesc";
 constexpr const char* kRowStats     = "stats";
+constexpr const char* kRowSemantic  = "semantic";
+constexpr const char* kRowDividers  = "dividers";
 constexpr const char* kRowFont      = "font";
 constexpr const char* kRowRulesFont = "rulesfont";
 constexpr const char* kRowReset     = "reset";
@@ -60,6 +62,24 @@ section = "General"
 key = "StatHierarchy"
 
 [[row]]
+id = "semantic"
+kind = "toggle"
+label = "Semantic colours"
+desc = "Effect: Damage types blue, Jedi/Sith/Droid Only red inside stat values. OFF: cream."
+default = 1
+ini = "rich_menu_typography.ini"
+section = "General"
+key = "SemanticColors"
+
+[[row]]
+id = "dividers"
+kind = "list"
+label = "Section dividers"
+desc = "Effect: Thin rule lines between description sections. Click to cycle; preview shows it."
+default = 1
+choices = ["Off", "Between sections", "All boundaries"]
+
+[[row]]
 id = "font"
 kind = "list"
 label = "Body font"
@@ -99,6 +119,14 @@ constexpr const char* kPreviewPower =
     "Force Power:\nForce Lightning\nForce Cost: 4 FP\nRange: 10m Cone\nDamage: 2-8 (+1-4 Dark Side)\n\n"
     "Calls a crackling arc of lightning to strike every foe in a cone. Mastery of this power is a rite "
     "of passage for the Sith.";
+// Four sections (title, subtitle, rules, body) so every divider position is visible.
+constexpr const char* kPreviewDividers =
+    "Echani Vibroblade:\nFully Upgradeable\nDamage: 2-12 (+1-6 Energy)\nCritical Threat: 19-20,x2\n\n"
+    "A duelling blade of the Echani, balanced for the fastest strike. Its edge hums at a pitch only a master can hear.";
+// Showcases the semantic tints: damage types (Energy, Fire, Ion), restriction keywords (Jedi Only) next to plain amber/red numbers.
+constexpr const char* kPreviewSemantic =
+    "Damage: 2-12 (+1-6 Energy)\nDamage: 4-9 Fire, 2-5 Ion\nEquip: Jedi Only\nAttack Modifier: +2 (-1 Offhand)\n\n"
+    "Damage types and restrictions read at a glance. Turn this row off to compare.";
 constexpr const char* kPreviewLore =
     "Nar Shaddaa:\nRefugee Sector troubles have escalated since the Exchange tightened its grip on the "
     "landing pad. Smugglers now pay a toll to every dock foreman.\nBounty hunters from three systems "
@@ -111,6 +139,8 @@ inline const char* previewFor(const char* rowId) {
     if (strcmp(rowId, kRowInline) == 0) return kPreviewRobe;
     if (strcmp(rowId, kRowRichDesc) == 0) return kPreviewPower;
     if (strcmp(rowId, kRowStats) == 0) return kPreviewArmor;
+    if (strcmp(rowId, kRowSemantic) == 0) return kPreviewSemantic;
+    if (strcmp(rowId, kRowDividers) == 0) return kPreviewDividers;
     if (strcmp(rowId, kRowFont) == 0) return kPreviewLore;
     if (strcmp(rowId, kRowRulesFont) == 0) return kPreviewWeapon;
     return kPreviewWeapon;
@@ -120,6 +150,8 @@ struct Live {
     bool inlineColoring = true;
     bool richDesc = true;
     bool stats = true;
+    bool semantic = true;
+    int dividers = 1;   // 0 off, 1 between title|rules and rules|body, 2 also between rule groups
     int fontIdx = 0;
     int rulesFontIdx = 0;
 };
@@ -170,6 +202,16 @@ inline int32_t applyRow(Live& live, const char* id, int32_t requested) {
     if (strcmp(id, kRowStats) == 0) {
         const int32_t v = (requested < 0) ? 0 : ((requested > 1) ? 1 : requested);
         live.stats = (v != 0);
+        return v;
+    }
+    if (strcmp(id, kRowDividers) == 0) {
+        const int32_t v = (requested < 0) ? 0 : ((requested > 2) ? 2 : requested);
+        live.dividers = v;
+        return v;
+    }
+    if (strcmp(id, kRowSemantic) == 0) {
+        const int32_t v = (requested < 0) ? 0 : ((requested > 1) ? 1 : requested);
+        live.semantic = (v != 0);
         return v;
     }
     if (strcmp(id, kRowFont) == 0) {

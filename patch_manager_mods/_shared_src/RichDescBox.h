@@ -34,8 +34,11 @@ using FnAddControls2 = void(__thiscall*)(void* listbox, void** pControls, int co
 // K5 vertical-centering vanishing prevention: NEVER use 17 or 18
 constexpr unsigned kAlignTopLeft = 9u;
 constexpr int kDividerHeight = 2;
+constexpr float kDividerTint[3] = { 0.0510f, 0.3490f, 0.2710f };   // ItemHoverCard kTealFrame
+// Section dividers (config page "DividerMode"): 0 off, 1 between header group|rules and rules|body, 2 also between title and subtitle.
+inline int& dividerMode() noexcept { static int v = 1; return v; }
 constexpr const char* kDividerFillResRef = "uibit_fill_16g";
-constexpr size_t kMaxPooledRows = 6;
+constexpr size_t kMaxPooledRows = 8;   // 4 text rows + up to 3 dividers
 constexpr size_t kMaxListBoxPools = 32;
 
 // ListBox & Label offsets
@@ -524,40 +527,48 @@ struct RichDescBox {
         const bool hasRules    = (sec.rules[0] != '\0');
         const bool hasBody     = (sec.body[0] != '\0');
 
-        uintptr_t lbls[4] = {0};
+        // Row plan: text rows in order, with a thin divider row where dmode asks for one and both neighbours exist.
+        enum : int { kRowTitle, kRowSub, kRowRules, kRowBody, kRowDiv };
+        struct PlanRow { int kind; uintptr_t lbl; };
+        PlanRow plan[kMaxPooledRows] = {};
+        int nPlan = 0;
         int titleH = 0, subH = 0, rulesH = 0, bodyH = 0;
         int activeCount = 0;
+        int nDiv = 0;
+        const int dmode = dividerMode();
+        void* const divImg = (dmode > 0) ? guikit::imageFor(kDividerFillResRef) : nullptr;
+        auto addDivider = [&]() {
+            if (!divImg || nPlan >= static_cast<int>(kMaxPooledRows)) return;
+            const uintptr_t l = ensurePooledLabel(*pool, static_cast<size_t>(nPlan));
+            if (!l) return;
+            plan[nPlan++] = { kRowDiv, l };
+            ++activeCount;
+            ++nDiv;
+        };
+        auto addText = [&](int kind, const char* text, const char* font, const char* what, int* hOut) {
+            const uintptr_t l = ensurePooledLabel(*pool, static_cast<size_t>(nPlan));
+            if (!l) return;
+            *hOut = measureRowH(what, l, text, font);
+            plan[nPlan++] = { kind, l };
+            ++activeCount;
+        };
 
-        if (hasTitle) {
-            lbls[activeCount] = ensurePooledLabel(*pool, static_cast<size_t>(activeCount));
-            if (lbls[activeCount]) {
-                titleH = measureRowH("title", lbls[activeCount], sec.title, kFontTitle);
-                ++activeCount;
-            }
-        }
+        if (hasTitle) addText(kRowTitle, sec.title, kFontTitle, "title", &titleH);
         if (hasSubtitle) {
-            lbls[activeCount] = ensurePooledLabel(*pool, static_cast<size_t>(activeCount));
-            if (lbls[activeCount]) {
-                subH = measureRowH("sub", lbls[activeCount], sec.subtitle, kFontSub);
-                ++activeCount;
-            }
+            if (hasTitle && dmode >= 2) addDivider();
+            addText(kRowSub, sec.subtitle, kFontSub, "sub", &subH);
         }
         if (hasRules) {
-            lbls[activeCount] = ensurePooledLabel(*pool, static_cast<size_t>(activeCount));
-            if (lbls[activeCount]) {
-                rulesH = measureRowH("rules", lbls[activeCount], sec.rules, getRulesFont());
-                ++activeCount;
-            }
+            if ((hasTitle || hasSubtitle) && dmode >= 1) addDivider();
+            addText(kRowRules, sec.rules, getRulesFont(), "rules", &rulesH);
         }
         if (hasBody) {
-            lbls[activeCount] = ensurePooledLabel(*pool, static_cast<size_t>(activeCount));
-            if (lbls[activeCount]) {
-                bodyH = measureRowH("body", lbls[activeCount], sec.body, getBodyFont());
-                ++activeCount;
-            }
+            if (hasRules && dmode >= 1) addDivider();
+            else if (!hasRules && (hasTitle || hasSubtitle) && dmode >= 1) addDivider();
+            addText(kRowBody, sec.body, getBodyFont(), "body", &bodyH);
         }
 
-        const int naturalSum = titleH + subH + rulesH + bodyH;
+        const int naturalSum = titleH + subH + rulesH + bodyH + nDiv * kDividerHeight;
 
         int titleGap = 0, subGap = 0, rulesGap = 0;
         const int desTitleGap = (hasTitle && (hasSubtitle || hasRules || hasBody)) ? 4 : 0;
@@ -653,18 +664,37 @@ struct RichDescBox {
             outControls[outCount++] = reinterpret_cast<void*>(lbl);
         };
 
-        int emitIdx = 0;
-        if (hasTitle && lbls[emitIdx]) {
-            applyTextRow(lbls[emitIdx++], sec.title, kFontTitle, titleCol, titleH, titleGap);
-        }
-        if (hasSubtitle && lbls[emitIdx]) {
-            applyTextRow(lbls[emitIdx++], sec.subtitle, kFontSub, isTeal ? kTealDim : subCol, subH, subGap);
-        }
-        if (hasRules && lbls[emitIdx]) {
-            applyTextRow(lbls[emitIdx++], sec.rules, getRulesFont(), rulesCol, rulesH, rulesGap);
-        }
-        if (hasBody && lbls[emitIdx]) {
-            applyTextRow(lbls[emitIdx++], sec.body, getBodyFont(), bodyCol, bodyH, 0);
+        auto applyDividerRow = [&](uintptr_t lbl) {
+            if (!lbl || outCount >= static_cast<int>(kMaxPooledRows)) return;
+            const size_t rowIdx = static_cast<size_t>(outCount);
+            (void)guikit::setText(lbl, "");
+            (void)guikit::setFill(lbl, divImg, kDividerTint);
+            (void)guikit::setFillStyle(lbl, 2);
+            (void)guikit::setBorderTint(lbl, kDividerTint);
+            (void)guikit::setAlpha(lbl, 1.0f);
+            (void)guikit::setRect(lbl, srcX, srcY, w, kDividerHeight);
+            (void)guikit::detail::wr<int>(lbl, guikit::Ctl_X, srcX);
+            (void)guikit::detail::wr<int>(lbl, guikit::Ctl_Y, srcY);
+            (void)guikit::detail::wr<int>(lbl, guikit::Ctl_W, w);
+            (void)guikit::detail::wr<int>(lbl, guikit::Ctl_H, kDividerHeight);
+            (void)guikit::setVisible(lbl, true);
+            (void)guikit::setClickable(lbl, false);
+            s_lastPopulateInfo.rowHeights[rowIdx] = kDividerHeight;
+            s_lastPopulateInfo.rowAligns[rowIdx] = kAlignTopLeft;
+            s_lastPopulateInfo.rowFonts[rowIdx][0] = '\0';
+            s_lastPopulateInfo.rowTexts[rowIdx][0] = '\0';
+            s_lastPopulateInfo.rowIsDivider[rowIdx] = true;
+            outControls[outCount++] = reinterpret_cast<void*>(lbl);
+        };
+
+        for (int i = 0; i < nPlan; ++i) {
+            switch (plan[i].kind) {
+                case kRowTitle: applyTextRow(plan[i].lbl, sec.title, kFontTitle, titleCol, titleH, titleGap); break;
+                case kRowSub:   applyTextRow(plan[i].lbl, sec.subtitle, kFontSub, isTeal ? kTealDim : subCol, subH, subGap); break;
+                case kRowRules: applyTextRow(plan[i].lbl, sec.rules, getRulesFont(), rulesCol, rulesH, rulesGap); break;
+                case kRowBody:  applyTextRow(plan[i].lbl, sec.body, getBodyFont(), bodyCol, bodyH, 0); break;
+                default:        applyDividerRow(plan[i].lbl); break;
+            }
         }
 
         if (outCount == 0) return false;

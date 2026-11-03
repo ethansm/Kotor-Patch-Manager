@@ -1,7 +1,7 @@
 [patch]
 id = "rich-menu-typography"
 name = "Rich Menu Typography"
-version = "0.3.0"
+version = "0.4.0"
 author = "ethansm"
 description = "Multi-color and multi-font typography overhaul for KotOR II menus and description boxes."
 

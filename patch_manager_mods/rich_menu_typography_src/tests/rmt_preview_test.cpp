@@ -76,7 +76,37 @@ static void test_degenerate_pane() {
     kt::Check("split permille inside mod-config's clamp", kSplitPermille >= 600 && kSplitPermille <= 850);
 }
 
+static void test_dividers() {
+    const Rect pane{ 0, 0, 400, 600 };
+    const int all[kRows] = { 30, 20, 100, 200 };
+    const Stack s = stackRows(pane, all);
+    kt::CheckEq("mode 0 draws nothing", placeDividers(s, 0).count, 0);
+    const Divs d1 = placeDividers(s, 1);
+    kt::CheckEq("mode 1: header|rules and rules|body", d1.count, 2);
+    kt::Check("mode 1 skips title|sub", !d1.on[0] && d1.on[1] && d1.on[2]);
+    kt::CheckEq("header|rules divider sits in the sub gap", d1.y[1], s.r[1].y + 20 + (kGapAfter[1] - kDivH) / 2);
+    kt::CheckEq("rules|body divider sits in the rules gap", d1.y[2], s.r[2].y + 100 + (kGapAfter[2] - kDivH) / 2);
+    const Divs d2 = placeDividers(s, 2);
+    kt::CheckEq("mode 2 adds title|sub", d2.count, 3);
+    kt::CheckEq("title|sub divider in the title gap", d2.y[0], s.r[0].y + 30 + (kGapAfter[0] - kDivH) / 2);
+    for (int i = 0; i < kDivs; ++i) {
+        if (!d2.on[i]) continue;
+        kt::Check("divider lies between two rows (no overlap)", d2.y[i] >= s.r[i == 0 ? 0 : (i == 1 ? 1 : 2)].y + 1 && d2.y[i] + kDivH <= s.r[i == 0 ? 1 : (i == 1 ? 2 : 3)].y);
+    }
+    const int noRules[kRows] = { 0, 20, 0, 200 };
+    const Stack n = stackRows(pane, noRules);
+    const Divs dn = placeDividers(n, 1);
+    kt::Check("no rules: one divider header|body", dn.count == 1 && dn.on[1]);
+    const int onlyBody[kRows] = { 0, 0, 0, 90 };
+    kt::CheckEq("single row has no divider", placeDividers(stackRows(pane, onlyBody), 2).count, 0);
+    const Rect small{ 0, 0, 300, 200 };
+    const int h[kRows] = { 30, 20, 90, 80 };
+    const Divs dd = placeDividers(stackRows(small, h), 2);
+    kt::Check("dropped body drops the rules|body divider", !dd.on[2]);
+}
+
 int main() {
+    test_dividers();
     test_full_stack();
     test_absent_rows();
     test_overflow_drops_tail();

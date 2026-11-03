@@ -603,8 +603,44 @@ void testTV11_MeasurementProbeLogging() {
 
 } // namespace
 
+static void runDividerCase(const char* tag, int mode, const char* desc, int wantRows, int wantDividers) {
+    rmt::resetPool();
+    g_rec.reset();
+    rmt::setRichDescBox(true);
+    rmt::dividerMode() = mode;
+    MockListBox listbox(0x1000, 260, 10);
+    MockLabel srcLabel(desc, 0, 0, 240, 30);
+    void* controls[1] = { srcLabel.voidPtr() };
+    (void)RmtAddControls2(listbox.voidPtr(), controls, 1, 0, 0, 0, reinterpret_cast<uintptr_t>(fakeOrigAddControls2));
+    const rmt::LastPopulateInfo& info = rmt::getLastPopulateInfo();
+    int div = 0;
+    for (int i = 0; i < info.rowCount; ++i) if (info.rowIsDivider[i]) ++div;
+    char msg[96];
+    snprintf(msg, sizeof msg, "%s: row count", tag);
+    kt::CheckEq(msg, info.rowCount, wantRows);
+    snprintf(msg, sizeof msg, "%s: divider count", tag);
+    kt::CheckEq(msg, div, wantDividers);
+    for (int i = 0; i < info.rowCount; ++i) {
+        if (!info.rowIsDivider[i]) continue;
+        snprintf(msg, sizeof msg, "%s: divider %d is %d px and never first/last", tag, i, rmt::kDividerHeight);
+        kt::Check(msg, info.rowHeights[i] == rmt::kDividerHeight && i > 0 && i < info.rowCount - 1);
+    }
+}
+
+void testDividers() {
+    const char* item = "Fully Upgradeable\n\nDamage: Energy, 4-16\nAttack Modifier: +3\n\n{30}This blaster pistol was common during the Mandalorian Wars.";
+    runDividerCase("DV0 off", 0, item, 3, 0);
+    runDividerCase("DV1 sections", 1, item, 5, 2);
+    runDividerCase("DV2 all", 2, item, 5, 2);      // no title in this sample: title|subtitle divider needs both
+    const char* withTitle = "Sniper Rifle:\nFully Upgradeable\nDamage: 4-16\n\nLong barrel.";
+    runDividerCase("DV3 title+sub, mode 1", 1, withTitle, 6, 2);
+    runDividerCase("DV4 title+sub, mode 2", 2, withTitle, 7, 3);
+    rmt::dividerMode() = 0;
+}
+
 int main() {
     setupEnvironment();
+    rmt::dividerMode() = 0;   // the layout tests below pin the divider-free stack; testDividers covers the rest
     testTV7_SectionSplitItem();
     testTV8_SectionSplitJournal();
     testArmorCompactLayout();
@@ -616,5 +652,6 @@ int main() {
     testInterceptionFilterGuards();
     testPoolReuseAndResolutionChange();
     testTV11_MeasurementProbeLogging();
+    testDividers();
     return kt::Report("rich_desc_box_test");
 }

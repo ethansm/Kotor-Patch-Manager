@@ -79,6 +79,8 @@ struct PagePreview {
     uint32_t page = 0;
     bool on = false;
     uintptr_t lbl[rmtprev::kRows] = {};
+    uintptr_t div[rmtprev::kDivs] = {};   // optional divider labels (best effort: the engine may cap how many custom items a pane lists)
+    int nDiv = 0;
     const char* text = nullptr;   // the sample being shown (static string from previewFor)
     uint32_t sig = 0;             // hash of text + pane + fonts: layout reruns only when it changes
     unsigned logs = 0;
@@ -126,6 +128,25 @@ void pvBuild(uint32_t page, void* panel) {
         if (KpLog_HasCore()) KP_LOGV(chMain, KPLOG_WARN, "PAGE preview skipped: created %d listed %d of %d", n, listed, rmtprev::kRows);
         return;
     }
+    // Divider labels: best effort. A failure only means the preview shows no dividers.
+    uintptr_t divMade[rmtprev::kDivs] = {};
+    int nDivMade = 0;
+    for (; nDivMade < rmtprev::kDivs; ++nDivMade) {
+        int why = guikit::CF_None;
+        uint32_t bv = 0;
+        const uintptr_t l = guikit::createLabelFromTemplate(pn, "LBL_TITLE", &why, &bv);
+        if (!l) break;
+        (void)guikit::setVisible(l, false);
+        (void)guikit::setClickable(l, false);
+        (void)guikit::setText(l, "");
+        if (g_mcMenu.p->AddCustom(page, reinterpret_cast<void*>(l), MUI_NOFREE) < 0) {
+            guikit::releaseUnlinkedLabel(l, guikit::LabelVtable);
+            break;
+        }
+        divMade[nDivMade] = l;
+    }
+    if (nDivMade < rmtprev::kDivs && KpLog_HasCore())
+        KP_LOGV(chMain, KPLOG_WARN, "PAGE preview: only %d of %d divider labels listed; the preview draws fewer dividers", nDivMade, rmtprev::kDivs);
     if (!g_mcMenu.p->SetDescSplit(page, rmtprev::kSplitPermille)) {
         if (KpLog_HasCore()) KP_LOGV(chMain, KPLOG_WARN, "PAGE preview skipped: SetDescSplit(%u, %d) refused", page, rmtprev::kSplitPermille);
         return;
@@ -133,8 +154,10 @@ void pvBuild(uint32_t page, void* panel) {
     g_pv.panel = panel;
     g_pv.page = page;
     for (int i = 0; i < rmtprev::kRows; ++i) g_pv.lbl[i] = made[i];
+    for (int i = 0; i < nDivMade; ++i) g_pv.div[i] = divMade[i];
+    g_pv.nDiv = nDivMade;
     g_pv.on = true;
-    if (KpLog_HasCore()) KP_LOGV(chMain, KPLOG_INFO, "PAGE preview BUILD ok: %d labels, split %d permille", rmtprev::kRows, rmtprev::kSplitPermille);
+    if (KpLog_HasCore()) KP_LOGV(chMain, KPLOG_INFO, "PAGE preview BUILD ok: %d labels + %d dividers, split %d permille", rmtprev::kRows, nDivMade, rmtprev::kSplitPermille);
 }
 
 void pvRefresh() {
@@ -146,6 +169,10 @@ void pvRefresh() {
     uint32_t sig = pvHash(2166136261u, text, strlen(text));
     sig = pvHash(sig, &pr, sizeof(pr));
     for (int i = 2; i < rmtprev::kRows; ++i) sig = pvHash(sig, fonts[i], strlen(fonts[i]));
+    const int dmode = rmt::dividerMode();
+    sig = pvHash(sig, &dmode, sizeof(dmode));
+    const int sem = rmt::semanticColors() ? 1 : 0;
+    sig = pvHash(sig, &sem, sizeof(sem));
     if (sig == g_pv.sig) return;
     g_pv.sig = sig;
 
@@ -178,10 +205,26 @@ void pvRefresh() {
         (void)guikit::setVisible(l, true);
         (void)guikit::setClickable(l, false);
     }
+    // Dividers sit in the gaps between shown rows (same modes as the in-game description box).
+    const rmtprev::Divs dv = rmtprev::placeDividers(st, dmode);
+    void* const divImg = (dv.count > 0) ? guikit::imageFor(rmt::kDividerFillResRef) : nullptr;
+    for (int k = 0; k < g_pv.nDiv; ++k) {
+        const uintptr_t l = g_pv.div[k];
+        if (!l) continue;
+        if (!dv.on[k] || !divImg) { (void)guikit::setVisible(l, false); continue; }
+        (void)guikit::setText(l, "");
+        (void)guikit::setFill(l, divImg, rmt::kDividerTint);
+        (void)guikit::setFillStyle(l, 2);
+        (void)guikit::setBorderTint(l, rmt::kDividerTint);
+        (void)guikit::setAlpha(l, 1.0f);
+        (void)guikit::setRect(l, pr.x + rmtprev::kPad, dv.y[k], pr.w - 2 * rmtprev::kPad, rmtprev::kDivH);
+        (void)guikit::setVisible(l, true);
+        (void)guikit::setClickable(l, false);
+    }
     if (g_pv.logs < 16) {
         ++g_pv.logs;
-        if (KpLog_HasCore()) KP_LOGV(chMain, KPLOG_INFO, "PAGE preview pane=%d,%d %dx%d h=%d/%d/%d/%d shown=%d dropped=%d",
-                                      pr.x, pr.y, pr.w, pr.h, h[0], h[1], h[2], h[3], st.shown, st.dropped);
+        if (KpLog_HasCore()) KP_LOGV(chMain, KPLOG_INFO, "PAGE preview pane=%d,%d %dx%d h=%d/%d/%d/%d shown=%d dropped=%d dividers=%d/%d mode=%d sem=%d",
+                                      pr.x, pr.y, pr.w, pr.h, h[0], h[1], h[2], h[3], st.shown, st.dropped, dv.count, g_pv.nDiv, dmode, sem);
     }
 }
 
@@ -206,6 +249,8 @@ void syncFontRows(const char* why) {
     rmt::setRulesFont(rmtpage::fontName(g_live.rulesFontIdx));
     g_page.setValue(rmtpage::kRowFont, g_live.fontIdx);
     g_page.setValue(rmtpage::kRowRulesFont, g_live.rulesFontIdx);
+    g_live.dividers = rmt::dividerMode();
+    g_page.setValue(rmtpage::kRowDividers, g_live.dividers);
     if (KpLog_HasCore() && g_verbose) {
         KP_LOGV(chMain, KPLOG_DEBUG, "PAGE sync(%s) body=%s->%d rules=%s->%d", why,
                 bodyIn ? bodyIn : "", g_live.fontIdx, rulesIn ? rulesIn : "", g_live.rulesFontIdx);
@@ -217,6 +262,10 @@ int32_t pageOnChange(void* /*user*/, int /*row*/, const char* id, int32_t reques
         g_live.inlineColoring = true;
         g_live.richDesc = true;
         g_live.stats = true;
+        g_live.semantic = true;
+        rmt::semanticColors() = true;
+        g_live.dividers = 1;
+        rmt::dividerMode() = 1;
         g_live.fontIdx = 0;
         g_live.rulesFontIdx = 0;
         g_inlineColoring = true;
@@ -227,11 +276,15 @@ int32_t pageOnChange(void* /*user*/, int /*row*/, const char* id, int32_t reques
         iniw::updateFile(rmtpage::kIniFile, rmtpage::kSection, "InlineColoring", "1");
         iniw::updateFile(rmtpage::kIniFile, rmtpage::kSection, "RichDescBox", "1");
         iniw::updateFile(rmtpage::kIniFile, rmtpage::kSection, "StatHierarchy", "1");
+        iniw::updateFile(rmtpage::kIniFile, rmtpage::kSection, "SemanticColors", "1");
+        iniw::updateFile(rmtpage::kIniFile, rmtpage::kSection, "DividerMode", "1");
         iniw::updateFile(rmtpage::kIniFile, rmtpage::kSection, "BodyFont", rmtpage::fontName(0));
         iniw::updateFile(rmtpage::kIniFile, rmtpage::kSection, "RulesFont", rmtpage::fontName(0));
         g_page.setValue(rmtpage::kRowInline, 1);
         g_page.setValue(rmtpage::kRowRichDesc, 1);
         g_page.setValue(rmtpage::kRowStats, 1);
+        g_page.setValue(rmtpage::kRowSemantic, 1);
+        g_page.setValue(rmtpage::kRowDividers, 1);
         g_page.setValue(rmtpage::kRowFont, 0);
         g_page.setValue(rmtpage::kRowRulesFont, 0);
         g_page.setValue(rmtpage::kRowReset, 0);
@@ -243,6 +296,12 @@ int32_t pageOnChange(void* /*user*/, int /*row*/, const char* id, int32_t reques
     g_inlineColoring = g_live.inlineColoring;
     g_richDescBox = g_live.richDesc;
     g_statHierarchy = g_live.stats;
+    rmt::semanticColors() = g_live.semantic;
+    rmt::dividerMode() = g_live.dividers;
+    if (id && strcmp(id, rmtpage::kRowDividers) == 0) {
+        char dv[4] = { static_cast<char>('0' + g_live.dividers), 0, 0, 0 };
+        iniw::updateFile(rmtpage::kIniFile, rmtpage::kSection, "DividerMode", dv);
+    }
     if (id && strcmp(id, rmtpage::kRowFont) == 0) {
         rmt::setBodyFont(rmtpage::fontName(g_live.fontIdx));
         iniw::updateFile(rmtpage::kIniFile, rmtpage::kSection, "BodyFont", rmtpage::fontName(g_live.fontIdx));
@@ -302,6 +361,8 @@ void pageInit(const KPatchApi* api) {
     g_live.inlineColoring = g_inlineColoring;
     g_live.richDesc = g_richDescBox;
     g_live.stats = g_statHierarchy;
+    g_live.semantic = rmt::semanticColors();
+    g_live.dividers = rmt::dividerMode();
     g_live.fontIdx = rmtpage::fontIndexFor(rmt::getBodyFont());
     g_live.rulesFontIdx = rmtpage::fontIndexFor(rmt::getRulesFont());
 }
@@ -648,6 +709,9 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     g_richDescBox = GetPrivateProfileIntA("General", "RichDescBox", 1, iniPath) != 0;
     g_statHierarchy = GetPrivateProfileIntA("General", "StatHierarchy", 1, iniPath) != 0;
     g_verbose = GetPrivateProfileIntA("General", "Verbose", 0, iniPath) != 0;
+    rmt::semanticColors() = GetPrivateProfileIntA("General", "SemanticColors", 1, iniPath) != 0;
+    rmt::dividerMode() = static_cast<int>(GetPrivateProfileIntA("General", "DividerMode", 1, iniPath));
+    if (rmt::dividerMode() < 0) rmt::dividerMode() = 0; else if (rmt::dividerMode() > 2) rmt::dividerMode() = 2;
     rmt::g_probeLog = probeLogForwarder;
     rmt::g_probeEveryPopulate = true;  // probe build: log every populate (doc 53)
 

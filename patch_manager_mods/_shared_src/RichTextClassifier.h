@@ -28,6 +28,11 @@ constexpr uint32_t kRgbTealDim    = 0x005B7411u; // R=17,  G=116, B=91
 constexpr uint32_t kRgbTealText   = 0x008CB21Au; // R=26,  G=178, B=140
 constexpr uint32_t kRgbBonusAmber = 0x004CA8F2u; // R=242, G=168, B=76
 constexpr uint32_t kRgbPenaltyRed = 0x00001CBDu; // R=189, G=28,  B=0
+constexpr uint32_t kRgbRestriction = packRGB(250, 96, 80, 0);  // restriction keywords (brighter than the penalty red: readable on the dark panel)
+constexpr uint32_t kRgbDamageType  = packRGB(96, 176, 255, 0); // damage-type keywords
+
+// Value-keyword tinting switch (config page toggle "SemanticColors"); default on.
+inline bool& semanticColors() noexcept { static bool v = true; return v; }
 
 // Font ResRefs (NEVER pass trailing 'b'; CSWGuiManager::ResolveFontName appends 'b' automatically)
 constexpr const char* kFontTitle = "dialogfont16x16"; // Resolves to dialogfont16x16b -> d2xfont16x16b
@@ -53,6 +58,7 @@ enum class SpanKind : uint8_t {
     Value   = 3, // kRgbCream
     Bonus   = 4, // kRgbBonusAmber (+N)
     Penalty = 5, // kRgbPenaltyRed (-N)
+    Semantic = 6, // keyword tint inside a Value (damage type, restriction); only when semanticColors() is on
 };
 
 struct TokenSpan {
@@ -90,14 +96,22 @@ inline bool isSpaceChar(char c) noexcept {
     return c == ' ' || c == '\t' || c == '\r';
 }
 
+// '.' at p closing a whole-word "vs" ("Vibroblade vs. Droids"); "Revs." / "Cousins." are not exempt (word-boundary guard).
+inline bool isVsAbbrevDot(const char* base, const char* p) noexcept {
+    if (!base || !p || *p != '.' || p < base + 2) return false;
+    if (!((p[-2] == 'v' || p[-2] == 'V') && (p[-1] == 's' || p[-1] == 'S'))) return false;
+    if (p - 2 == base) return true;
+    const char b = p[-3];
+    const bool alnum = (b >= '0' && b <= '9') || (b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z');
+    return !alnum;
+}
+
 inline bool hasSentencePunctInRange(const char* s, const char* e) noexcept {
     if (!s || !e || s >= e) return false;
     for (const char* p = s; p < e; ++p) {
         if (*p == '!' || *p == '?') return true;
         if (*p == '.') {
-            if (p >= s + 2 && (p[-2] == 'v' || p[-2] == 'V') && (p[-1] == 's' || p[-1] == 'S')) {
-                continue;
-            }
+            if (isVsAbbrevDot(s, p)) continue;
             return true;
         }
     }
@@ -130,6 +144,7 @@ inline bool isRuleHeaderPrefix(const char* s, size_t len) noexcept {
     if (matchPrefix(s, len, "CANNOT EQUIP", 12)) return true;
     if (matchPrefix(s, len, "RESTRICTED", 10)) return true;
     if (matchPrefix(s, len, "USER LIMITATION", 15)) return true;
+    if (matchPrefix(s, len, "USEABLE BY", 10) || matchPrefix(s, len, "USABLE BY", 9)) return true;
     return false;
 }
 
@@ -159,6 +174,43 @@ inline void pushSpan(LineSpan* out, uint16_t s, uint16_t e, SpanKind kind, uint3
     }
 }
 
+struct SemWord { const char* w; uint32_t rgb; };
+constexpr SemWord kSemWords[] = {
+    { "Energy", kRgbDamageType }, { "Fire", kRgbDamageType }, { "Cold", kRgbDamageType }, { "Ion", kRgbDamageType },
+    { "Sonic", kRgbDamageType }, { "Electrical", kRgbDamageType }, { "Acid", kRgbDamageType },
+    { "Jedi Only", kRgbRestriction }, { "Sith Only", kRgbRestriction }, { "Droid Only", kRgbRestriction },
+};
+
+inline bool isWordChar(char c) noexcept {
+    return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+}
+
+// Emits [s, e) as Value spans, splitting out whole-word keywords as Semantic spans when semanticColors() is on.
+inline void pushValue(const char* paraStart, uint16_t s, uint16_t e, LineSpan* out) noexcept {
+    if (s >= e) return;
+    if (!semanticColors()) { pushSpan(out, s, e, SpanKind::Value, kRgbCream); return; }
+    uint16_t cur = s;
+    uint16_t i = s;
+    while (i < e) {
+        if (isWordChar(paraStart[i]) && (i == s || !isWordChar(paraStart[i - 1]))) {
+            bool hit = false;
+            for (const SemWord& sw : kSemWords) {
+                const size_t n = strlen(sw.w);
+                if (i + n <= e && eqNoCaseN(paraStart + i, sw.w, n) && (i + n == e || !isWordChar(paraStart[i + n]))) {
+                    if (cur < i) pushSpan(out, cur, i, SpanKind::Value, kRgbCream);
+                    pushSpan(out, i, static_cast<uint16_t>(i + n), SpanKind::Semantic, sw.rgb);
+                    i = cur = static_cast<uint16_t>(i + n);
+                    hit = true;
+                    break;
+                }
+            }
+            if (hit) continue;
+        }
+        ++i;
+    }
+    if (cur < e) pushSpan(out, cur, e, SpanKind::Value, kRgbCream);
+}
+
 // Tokenizes a value range [valStart, len) inside [paraStart, paraEnd) into Value (kRgbCream),
 // Bonus (kRgbBonusAmber), and Penalty (kRgbPenaltyRed) spans.
 inline void classifyValueTokens(const char* paraStart, uint16_t valStart, uint16_t len, LineSpan* out) noexcept {
@@ -170,7 +222,7 @@ inline void classifyValueTokens(const char* paraStart, uint16_t valStart, uint16
         // Bonus: '+' followed by a digit when preceded by whitespace, '(', ':', ',', '/', or start of value
         if (c == '+' && i + 1 < len && itemprops::isDigit(paraStart[i + 1]) &&
             (i == valStart || isSpaceChar(prev) || prev == '(' || prev == ':' || prev == ',' || prev == '/')) {
-            if (cur < i) pushSpan(out, cur, i, SpanKind::Value, kRgbCream);
+            if (cur < i) pushValue(paraStart, cur, i, out);
             uint16_t j = i + 1;
             while (j < len && itemprops::isDigit(paraStart[j])) ++j;
             if (j + 1 < len && (paraStart[j] == '-' || paraStart[j] == 'd' || paraStart[j] == 'D') &&
@@ -186,7 +238,7 @@ inline void classifyValueTokens(const char* paraStart, uint16_t valStart, uint16
         // Penalty: '-' followed by a digit ONLY when preceded by whitespace, '(', ':', ',', or '/' (never inside "4-16" or "Light-Scan")
         if (c == '-' && i + 1 < len && itemprops::isDigit(paraStart[i + 1]) &&
             (i == valStart || isSpaceChar(prev) || prev == '(' || prev == ':' || prev == ',' || prev == '/')) {
-            if (cur < i) pushSpan(out, cur, i, SpanKind::Value, kRgbCream);
+            if (cur < i) pushValue(paraStart, cur, i, out);
             uint16_t j = i + 1;
             while (j < len && itemprops::isDigit(paraStart[j])) ++j;
             if (j < len && paraStart[j] == '%') ++j;
@@ -196,7 +248,7 @@ inline void classifyValueTokens(const char* paraStart, uint16_t valStart, uint16
         }
         ++i;
     }
-    if (cur < len) pushSpan(out, cur, len, SpanKind::Value, kRgbCream);
+    if (cur < len) pushValue(paraStart, cur, len, out);
 }
 
 // Classifies a single paragraph [paraStart, paraEnd) (bounded by '\n' or string bounds).
@@ -231,7 +283,7 @@ inline void classifyParagraph(const char* strStart, const char* paraStart, const
             colonIdx = static_cast<int>(i);
             break;
         }
-        if (isSentencePunct(paraStart[i])) punctBeforeColon = true;
+        if (isSentencePunct(paraStart[i]) && !isVsAbbrevDot(paraStart + trimStart, paraStart + i)) punctBeforeColon = true;
     }
 
     // Rule 1 (Header: Line): trimmed content ends with ':' and has no sentence punctuation before ':'
@@ -327,7 +379,7 @@ inline uint32_t resolveGlyphColorInString(const char* fullStr, const char* curCh
         LineSpan    span      = {};
     };
     static thread_local CacheSlot s_cache;
-    const uint32_t h = hashParagraph(paraStart, paraEnd);
+    const uint32_t h = hashParagraph(paraStart, paraEnd) ^ (semanticColors() ? 0x9E3779B9u : 0u);
     if (s_cache.strStart != strStart || s_cache.paraStart != paraStart ||
         s_cache.paraEnd != paraEnd || s_cache.hash != h) {
         s_cache.strStart  = strStart;
