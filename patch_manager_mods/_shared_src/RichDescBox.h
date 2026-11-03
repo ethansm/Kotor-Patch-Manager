@@ -310,9 +310,13 @@ struct RichDescBox {
         uint8_t pad = 0;
         (void)guikit::detail::rdInt(reinterpret_cast<uintptr_t>(listbox), kListBoxOff_ClientW, &clientW);
         (void)guikit::detail::rd<uint8_t>(reinterpret_cast<uintptr_t>(listbox), kListBoxOff_Padding, &pad);
-        int w = clientW - 2 * static_cast<int>(pad);
+        int lbItemW = clientW - 2 * static_cast<int>(pad);
         int srcX = 0, srcY = 0, srcW = 0, srcH = 0;
         (void)guikit::getExtent(srcCtl, &srcX, &srcY, &srcW, &srcH);
+        int w = lbItemW;
+        if (srcW > 0 && srcW < w) {
+            w = srcW;
+        }
         if (w <= 0) {
             w = (srcW > 0) ? srcW : 240;
         }
@@ -332,7 +336,7 @@ struct RichDescBox {
         void* outControls[kMaxPooledRows] = {nullptr};
         int outCount = 0;
 
-        auto setupTextRow = [&](const char* text, const char* font, const float* col) {
+        auto setupTextRow = [&](const char* text, const char* font, const float* col, int gap = 0) {
             if (outCount >= static_cast<int>(kMaxPooledRows)) return;
             const size_t rowIdx = static_cast<size_t>(outCount);
             uintptr_t lbl = ensurePooledLabel(*pool, rowIdx);
@@ -357,15 +361,17 @@ struct RichDescBox {
                     if (guikit::detail::rd32(vt, kTextVtOff_GetFormattedHeight, &fn) && fn) {
                         int physicalH = reinterpret_cast<int(__thiscall*)(void*)>(static_cast<uintptr_t>(fn))(reinterpret_cast<void*>(textObj));
                         if (physicalH > 0 && scaleY > 0.01f) {
-                            finalH = static_cast<int>(static_cast<float>(physicalH) / scaleY + 0.99f);
+                            finalH = static_cast<int>(static_cast<float>(physicalH) / scaleY + 0.99f) + 1;
                         }
                     }
                 }
             }
 #endif
             if (finalH <= 0) {
-                finalH = measureTextHeight(lbl, text, w, font);
+                finalH = measureTextHeight(lbl, text, w, font) + 1;
             }
+
+            finalH += gap;
 
             (void)guikit::setRect(lbl, srcX, srcY, w, finalH);
             (void)guikit::detail::wr<int>(lbl, guikit::Ctl_X, srcX);
@@ -432,27 +438,34 @@ struct RichDescBox {
         const float* rulesCol = isTeal ? kTealText : origCol;
         const float* bodyCol  = isTeal ? kTealText : origCol;
 
+        const bool hasSubtitle = (sec.subtitle[0] != '\0' && strcmp(sec.subtitle, sec.title) != 0);
+        const bool hasRules    = (sec.rules[0] != '\0');
+        const bool hasBody     = (sec.body[0] != '\0');
+
         // Row 0: Title
         if (sec.title[0] != '\0') {
-            setupTextRow(sec.title, kFontTitle, titleCol);
+            const int gap = (hasSubtitle || hasRules || hasBody) ? 4 : 0;
+            setupTextRow(sec.title, kFontTitle, titleCol, gap);
         }
 
         // Row 1: Subtitle
-        if (sec.subtitle[0] != '\0' && strcmp(sec.subtitle, sec.title) != 0) {
-            setupTextRow(sec.subtitle, kFontSub, isTeal ? kTealDim : subCol);
+        if (hasSubtitle) {
+            const int gap = (hasRules || hasBody) ? 3 : 0;
+            setupTextRow(sec.subtitle, kFontSub, isTeal ? kTealDim : subCol, gap);
         }
 
         // Divider rows removed per directive 2
         (void)setupDividerRow;
 
         // Row 2: Rules (uses getRulesFont() per directive 3)
-        if (sec.rules[0] != '\0') {
-            setupTextRow(sec.rules, getRulesFont(), rulesCol);
+        if (hasRules) {
+            const int gap = hasBody ? 4 : 0;
+            setupTextRow(sec.rules, getRulesFont(), rulesCol, gap);
         }
 
-        // Row 3: Body
-        if (sec.body[0] != '\0') {
-            setupTextRow(sec.body, getBodyFont(), bodyCol);
+        // Row 3: Body (always 0 gap since it is the last section)
+        if (hasBody) {
+            setupTextRow(sec.body, getBodyFont(), bodyCol, 0);
         }
 
         if (outCount == 0) return false;
