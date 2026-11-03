@@ -177,8 +177,11 @@ inline int measureTextHeight(uintptr_t ctl, const char* text, int width, const c
             uint32_t fn = 0;
             if (guikit::detail::rd32(vt, kTextVtOff_GetFormattedHeight, &fn) && fn) {
                 int physicalH = reinterpret_cast<int(__thiscall*)(void*)>(static_cast<uintptr_t>(fn))(reinterpret_cast<void*>(textObj));
-                if (physicalH > 0 && scalar > 0.01f) {
-                    return static_cast<int>(static_cast<float>(physicalH) / scalar + 0.99f);
+                // Ctl rects, listbox client size and GetFormattedHeight are all physical px
+                // (probe 2026-11-03: reserved = raw/2 + gap on 178/178 rows caused overlap + cut-off).
+                if (physicalH > 0) {
+                    (void)scalar;
+                    return physicalH;
                 }
             }
         }
@@ -187,6 +190,12 @@ inline int measureTextHeight(uintptr_t ctl, const char* text, int width, const c
     if (!text || !*text) return 0;
 
     int lineHeight = 14;
+    int heurScale = 1;
+#ifndef GUIKIT_HOST
+    // Heuristic below is in 1x px; engine rects are physical px.
+    heurScale = static_cast<int>(getEngineTextScalar() + 0.5f);
+    if (heurScale < 1) heurScale = 1;
+#endif
     if (font) {
         if (strcmp(font, kFontSub) == 0 || strstr(font, "10x10") != nullptr) {
             lineHeight = 8;
@@ -197,7 +206,7 @@ inline int measureTextHeight(uintptr_t ctl, const char* text, int width, const c
         }
     }
 
-    const int charW = (lineHeight >= 14) ? 7 : (lineHeight >= 12 ? 6 : 5);
+    const int charW = ((lineHeight >= 14) ? 7 : (lineHeight >= 12 ? 6 : 5)) * heurScale;
     const int charsPerLine = (width > 35) ? (width / charW) : 28;
     const int halfLine = (lineHeight + 1) / 2;
     int totalHeight = 0;
@@ -215,7 +224,7 @@ inline int measureTextHeight(uintptr_t ctl, const char* text, int width, const c
         if (*p == '\n') ++p;
     }
     if (totalHeight < lineHeight) totalHeight = lineHeight;
-    return totalHeight;
+    return totalHeight * heurScale;
 }
 
 inline PoolEntry* findOrAllocPool(uintptr_t listbox) noexcept {
@@ -457,8 +466,8 @@ struct RichDescBox {
                     if (guikit::detail::rd32(vt, kTextVtOff_GetFormattedHeight, &fn) && fn) {
                         int physicalH = reinterpret_cast<int(__thiscall*)(void*)>(static_cast<uintptr_t>(fn))(reinterpret_cast<void*>(textObj));
                         rawH = physicalH;
-                        if (physicalH > 0 && textScalar > 0.01f) {
-                            engH = static_cast<int>(static_cast<float>(physicalH) / textScalar + 0.99f);
+                        if (physicalH > 0) {
+                            engH = physicalH;  // physical px, same space as Ctl_H and clientH
                         }
                     }
                 }

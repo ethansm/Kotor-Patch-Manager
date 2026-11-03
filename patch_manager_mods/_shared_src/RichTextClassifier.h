@@ -395,6 +395,17 @@ inline bool splitDescSections(const char* rawText, DescSections* out) noexcept {
 
     static thread_local char cleaned[6144];
     itemprops::stripTagsMultiline(cleaned, sizeof(cleaned), rawText);
+    {
+        // Engine ParseStr leaves "<UNRECOGNIZED TOKEN>" for unset <CUSTOMn> slots; drop the literal.
+        static const char kTok[] = "<UNRECOGNIZED TOKEN>";
+        const size_t tokLen = sizeof(kTok) - 1;
+        char* w = cleaned;
+        for (const char* r = cleaned; *r;) {
+            if (strncmp(r, kTok, tokLen) == 0) { r += tokLen; continue; }
+            *w++ = *r++;
+        }
+        *w = '\0';
+    }
 
     // Collect non-empty lines and track blank-line boundaries
     struct RawLine {

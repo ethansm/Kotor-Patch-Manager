@@ -392,6 +392,15 @@ void testTightSpacingAndTrimmedLines() {
               strstr(sec.body, "\n\n") == nullptr);
 }
 
+void TestEngineTokenStrip() {
+    rmt::DescSections sec{};
+    const char* desc = "Useable By:\nAtton\n\nDefense Bonus: 4\n\nLight armor.<UNRECOGNIZED TOKEN><UNRECOGNIZED TOKEN>This jacket can be upgraded.";
+    (void)rmt::splitDescSections(desc, &sec);
+    kt::Check("TokenStrip: no engine token literal in body", strstr(sec.body, "UNRECOGNIZED") == nullptr);
+    kt::Check("TokenStrip: no engine token literal in rules", strstr(sec.rules, "UNRECOGNIZED") == nullptr);
+    kt::Check("TokenStrip: surrounding text kept", strstr(sec.body, "This jacket can be upgraded.") != nullptr);
+}
+
 } // namespace
 
 int main() {
@@ -407,5 +416,6 @@ int main() {
     testRequirementHeadersWithoutColons();
     testArmorAndRobeSectionSplits();
     testTightSpacingAndTrimmedLines();
+    TestEngineTokenStrip();
     return kt::Report("rich_text_classifier_test");
 }
