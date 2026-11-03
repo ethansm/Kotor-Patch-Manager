@@ -4,7 +4,7 @@ Action Hotbar (id `action-hotbar`), formerly Force Power Hotbar.
 
 ## Unreleased (0.1.11-dev)
 
-- When the bar reappears after a dialogue or menu, and the cursor is over one of its slots, the cursor moves to the centre of the game window. Before, the reopened bar showed that slot as already hovered (hover sound and highlight with no mouse movement). One move per reopen; logs `cursor: reopened over slot N`.
+- When the bar reappears after a dialogue or menu, and the cursor is at or below the top of the bar (over a slot or on the vanilla quickbar under it), the cursor moves to the centre of the game window. Before, the cursor stayed where the dialogue left it. One move per reopen; logs `cursor: reopened at (x,y) below bar top y=N`.
 
 Fixes from the Gemini review of TP1-TP3:
 

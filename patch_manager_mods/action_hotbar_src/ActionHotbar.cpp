@@ -1108,11 +1108,18 @@ void recentreCursorOnReopen() {
     if (!g_recentreOnReopen) return;
     g_recentreOnReopen = false;   // one attempt per reopen, whatever the outcome
     POINT pt = {0, 0}; if (!cursorInGame(&pt)) return;
-    const int s = slotUnderCursor(pt); if (s < 0) return;
+    // Anywhere at or below the top of the slot row counts (the vanilla quickbar sits under the bar), not only over a slot.
+    bool haveRow = false; int rowTop = 0;
+    for (int s = 0; s < ButtonCount; ++s) {
+        const Widget& w = g_bar.b[s].bg; if (!w.ctl) continue;
+        uintptr_t c = reinterpret_cast<uintptr_t>(w.ctl); int x = 0, y = 0, ww = 0, hh = 0; guikit::getExtent(c, &x, &y, &ww, &hh);
+        if (!haveRow || y < rowTop) { rowTop = y; haveRow = true; }
+    }
+    if (!haveRow || pt.y < rowTop) return;   // above the bar: leave the cursor alone
     RECT rc = {0, 0, 0, 0}; if (!GetClientRect(g_gameWnd, &rc)) return;
     POINT centre = {(rc.right - rc.left) / 2, (rc.bottom - rc.top) / 2};
     if (!ClientToScreen(g_gameWnd, &centre) || !SetCursorPos(centre.x, centre.y)) { KP_LOGV(chInput, KPLOG_WARN, "cursor: recentre after reopen failed (err=%lu)", (unsigned long)GetLastError()); return; }
-    KP_LOG(chInput, "cursor: reopened over slot %d at (%ld,%ld), moved to centre (%ld,%ld)", s, (long)pt.x, (long)pt.y, (long)centre.x, (long)centre.y);
+    KP_LOG(chInput, "cursor: reopened at (%ld,%ld) below bar top y=%d, moved to centre (%ld,%ld)", (long)pt.x, (long)pt.y, rowTop, (long)centre.x, (long)centre.y);
 }
 
 // Per frame: which slot (if any) the cursor is over. Only available slots highlight (frame -> "fph_slot_hi").
