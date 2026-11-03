@@ -1,4 +1,4 @@
-// RichMenuTypography.cpp -- KPM DLL entry and per-glyph inline color, description listbox & static menu hierarchy hooks (Doc 53 RMT1..RMT3, theme adaptation + textScalar resolution scaling + dynamic gap budgeting + rule continuation fix + full listbox item width).
+// RichMenuTypography.cpp -- KPM DLL entry and per-glyph inline color, description listbox & static menu hierarchy hooks (Doc 53 RMT1..RMT3, theme adaptation + textScalar resolution scaling + dynamic gap budgeting + rule continuation fix + full listbox item width + physical-px row heights).
 #include "RichMenuTypography.h"
 #include "RichDescBox.h"
 #include "RichTextClassifier.h"
