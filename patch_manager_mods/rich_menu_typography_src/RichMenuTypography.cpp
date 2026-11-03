@@ -598,12 +598,82 @@ extern "C" void __cdecl RmtOverrideGlyphColor(uintptr_t ebp) {
     }
 }
 
+// P2a probe (doc 53 phase 2, log only): which panel owns the listbox being populated, what its selected-item id is, and the engine's name for
+// that item. Recipe from holster-editor ITEMNAME: client item = ClientGetItemById([[AppGlobal]+4], id), name = CSWCItem::GetName(identified=0)
+// (returns "{NN}Name"). The inventory panel keeps the selected id at +0x24C8 (ISF zeroes it to 0x7F000000 during its populate), and the
+// hover description is set by OnControlEntered, so the 8 words around it are logged too to find a hovered-row id. Logs only on a change,
+// at most kProbeMaxLines lines. Ini [General] ProbeItemName (default 1 in this probe build).
+bool g_probeItemName = true;
+constexpr uint32_t kInventoryVtable = 0x009A72AC;   // CSWGuiInGameInventory (ISF InventoryVtable)
+constexpr int kPanelSelIdOff = 0x24C8, kPanelWinOff = 0x24C0, kProbeWinWords = 8, kProbeMaxLines = 120;
+
+void probeItemName(void* listbox) {
+    static int s_lines = 0;
+    static uint32_t s_lastPanel = 0, s_lastWin[kProbeWinWords] = {};
+    if (!g_probeItemName || !listbox || s_lines >= kProbeMaxLines || !KpLog_HasCore()) return;
+    saferead::beginScope();
+    const uintptr_t lb = reinterpret_cast<uintptr_t>(listbox);
+    uint32_t panel = 0, vt = 0;
+    if (!guikit::detail::rd32(lb, rmt::kCtlOff_ParentPanel, &panel) || !panel ||
+        !saferead::probeRead(guikit::detail::SiteBase, reinterpret_cast<const void*>(panel), 4) ||
+        !guikit::detail::rd32(panel, 0, &vt)) {
+        if (s_lastPanel != 0xFFFFFFFFu) { KP_LOG(chMain, "ITEMNAME probe: listbox=%p has no readable parent panel", listbox); ++s_lines; }
+        s_lastPanel = 0xFFFFFFFFu;
+        return;
+    }
+    const bool inv = (vt == kInventoryVtable);
+    uint32_t win[kProbeWinWords] = {};
+    if (inv) for (int i = 0; i < kProbeWinWords; ++i) (void)guikit::detail::rd32(panel, kPanelWinOff + 4 * i, &win[i]);
+    bool changed = (panel != s_lastPanel);
+    for (int i = 0; i < kProbeWinWords && !changed; ++i) changed = (win[i] != s_lastWin[i]);
+    if (!changed) return;
+    s_lastPanel = panel;
+    for (int i = 0; i < kProbeWinWords; ++i) s_lastWin[i] = win[i];
+    ++s_lines;
+    if (!inv) {
+        KP_LOG(chMain, "ITEMNAME probe: listbox=%p panel=%08x vtable=%08x (not the inventory panel)", listbox, panel, vt);
+        return;
+    }
+    uint32_t sel = 0;
+    (void)guikit::detail::rd32(panel, kPanelSelIdOff, &sel);
+    char name[96] = {0};
+    const char* why = "";
+    uintptr_t item = 0;
+    uint32_t gApp = 0, tbl = 0;
+    if (sel == 0 || sel == 0x7F000000u) why = "no selection (0 or NoSelection)";
+    else if (!guikit::detail::rd32(gameaddr::AppGlobal, 0, &gApp) || !gApp || !guikit::detail::rd32(gApp, 4, &tbl) || !tbl) why = "client item table unavailable";
+    else {
+        item = reinterpret_cast<uintptr_t(__thiscall*)(void*, uint32_t)>(gameaddr::ClientGetItemById)(reinterpret_cast<void*>(static_cast<uintptr_t>(tbl)), sel);
+        uint32_t ivt = 0;
+        if (!item || !guikit::detail::rd32(item, 0, &ivt) || !ivt) { why = "id not found in the client item table"; item = 0; }
+        else {
+            int exo[2] = {0, 0};   // CExoString {char* p; int len}
+            reinterpret_cast<uintptr_t(__thiscall*)(void*, void*, int)>(gameaddr::ClientItemGetName)(reinterpret_cast<void*>(item), exo, 0);
+            if (exo[0]) {
+                char tmp[256];
+                if (saferead::readExo(0xE70118u, reinterpret_cast<uintptr_t>(exo), tmp, sizeof tmp, 255, false)) {
+                    const char* s = tmp;
+                    if (s[0] == '{') { const char* c = strchr(s, '}'); if (c) s = c + 1; }   // drop the engine's "{NN}" tag
+                    int k = 0;
+                    for (; s[k] && k < static_cast<int>(sizeof name) - 1; ++k) name[k] = (static_cast<unsigned char>(s[k]) >= 0x20 && static_cast<unsigned char>(s[k]) < 0x7F && s[k] != '"') ? s[k] : '.';
+                    name[k] = 0;
+                    if (!name[0]) why = "name empty";
+                } else why = "readExo failed";
+                reinterpret_cast<void(__thiscall*)(void*)>(gameaddr::ExoDtor)(exo);
+            } else why = "GetName returned no text";
+        }
+    }
+    KP_LOG(chMain, "ITEMNAME probe: inv panel=%08x sel=%08x item=%08x name=\"%s\" %s | win[24C0..24DC]=%08x %08x %08x %08x %08x %08x %08x %08x",
+           panel, sel, static_cast<unsigned>(item), name, why, win[0], win[1], win[2], win[3], win[4], win[5], win[6], win[7]);
+}
+
 extern "C" int __cdecl RmtAddControls2(void* listbox, void** pControls, int count,
                                       int bAutoDelete, int bRestoreExtents, int bVariableItemHeights,
                                       uintptr_t origFnAddr) {
     if (!g_richDescBox || !listbox || !origFnAddr) {
         return 0;
     }
+    probeItemName(listbox);
 
     auto origFn = reinterpret_cast<rmt::FnAddControls2>(origFnAddr);
     const bool ok = rmt::RichDescBox::populate(listbox, pControls, count,
@@ -709,6 +779,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     g_richDescBox = GetPrivateProfileIntA("General", "RichDescBox", 1, iniPath) != 0;
     g_statHierarchy = GetPrivateProfileIntA("General", "StatHierarchy", 1, iniPath) != 0;
     g_verbose = GetPrivateProfileIntA("General", "Verbose", 0, iniPath) != 0;
+    g_probeItemName = GetPrivateProfileIntA("General", "ProbeItemName", 1, iniPath) != 0;
     rmt::semanticColors() = GetPrivateProfileIntA("General", "SemanticColors", 1, iniPath) != 0;
     rmt::dividerMode() = static_cast<int>(GetPrivateProfileIntA("General", "DividerMode", 1, iniPath));
     if (rmt::dividerMode() < 0) rmt::dividerMode() = 0; else if (rmt::dividerMode() > 2) rmt::dividerMode() = 2;
