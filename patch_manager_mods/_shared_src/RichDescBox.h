@@ -351,10 +351,9 @@ struct RichDescBox {
         int lbItemW = clientW - 2 * static_cast<int>(pad);
         int srcX = 0, srcY = 0, srcW = 0, srcH = 0;
         (void)guikit::getExtent(srcCtl, &srcX, &srcY, &srcW, &srcH);
+        // Lay out at the listbox item width the engine draws at. Capping to the
+        // source label width (srcW) made heights measure at ~1/4 of the drawn wrap.
         int w = lbItemW;
-        if (srcW > 0 && srcW < w) {
-            w = srcW;
-        }
         if (w <= 0) {
             w = (srcW > 0) ? srcW : 240;
         }
@@ -507,7 +506,9 @@ struct RichDescBox {
         const int desRulesGap = (hasRules && hasBody) ? 4 : 0;
         const int numGaps = (desTitleGap > 0 ? 1 : 0) + (desSubGap > 0 ? 1 : 0) + (desRulesGap > 0 ? 1 : 0);
 
-        const int padTotal = (activeCount > 1) ? (activeCount - 1) * static_cast<int>(pad) : 0;
+        // Engine places item 0 at +pad and adds pad after every item (no trailing pad counted by
+        // the listbox itself, but the leading pad is real), so content = sum(h) + n*pad.
+        const int padTotal = activeCount * static_cast<int>(pad);
         const int effectiveLimit = (clientH > padTotal) ? (clientH - padTotal) : clientH;
 
         if (numGaps > 0) {
@@ -519,7 +520,7 @@ struct RichDescBox {
                 titleGap = desTitleGap;
                 subGap   = desSubGap;
                 rulesGap = desRulesGap;
-            } else if (remainingSpace > 0) {
+            } else if (remainingSpace >= 0) {
                 // Natural text fits on one page, but full gaps would trigger a scrollbar!
                 // Compact gaps to keep total height <= effectiveLimit so no scrollbar appears.
                 int budget = remainingSpace;
