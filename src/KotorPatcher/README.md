@@ -30,6 +30,14 @@ Headers live under `include/`, the shared engine under `src/core/`, and the entr
 
 **trampoline.h / src/core/trampoline.cpp**: Low-level memory patching utilities for writing JMP/CALL instructions, verifying bytes, managing memory protection, and writing NOP instructions.
 
+**kpatch_api.h**: The plain-C ABI between the patcher and the patch modules: `KPatchApi`, the optional `KPatchInit` export, and the `kpatch.log` interface table. The canonical copy is `Patches/Common/kpatch_api.h`, which the patches include; `include/kpatch_api.h` is a one-line forwarder to it. See [Patch registry and KPatchInit](#patch-registry-and-kpatchinit-rfc-180).
+
+**registry.h / src/core/registry.cpp**: The patch registry. Holds the named, versioned interfaces that the core and the patch modules provide to each other, and runs each module's `KPatchInit` once.
+
+**log_service.h / src/core/log_service.cpp**: The `kpatch.log` service. A fixed ring, a flush thread and the `kplog.ini` reader behind the `KPatchLogApi` table the core provides through the registry. See [kpatch.log logging service](#kpatchlog-logging-service).
+
+**tests/**: Host tests for the engine, the registry and the log service, with plain-C stand-in patch modules under `tests/fixtures/`. See `tests/README.md`.
+
 ### Wrapper System
 
 The wrapper system generates runtime x86 assembly code to intercept game functions, preserve CPU state, extract parameters, and call patch functions.
@@ -190,9 +198,9 @@ Defines supported parameter types (INT, UINT, POINTER, FLOAT, BYTE, SHORT).
 
 ### Initialization
 
-**InitializePatcher()**: Called on DLL_PROCESS_ATTACH. Initializes wrapper generator, loads patch_config.toml, sets KOTOR_VERSION_SHA environment variable, and applies all patches.
+**InitializePatcher()**: Called on DLL_PROCESS_ATTACH. Initializes wrapper generator, starts the log service and the registry (providing `kpatch.log`), loads patch_config.toml, sets KOTOR_VERSION_SHA environment variable, and applies all patches. Each patch module's `KPatchInit` runs as the module is loaded.
 
-**CleanupPatcher()**: Called on DLL_PROCESS_DETACH. Frees wrapper stubs, deallocates REPLACE hook memory, and unloads patch DLLs.
+**CleanupPatcher()**: Called on DLL_PROCESS_DETACH. Closes the registry, frees wrapper stubs, deallocates REPLACE hook memory, unloads patch DLLs, then does the final log flush and resets the registry. The order is spelled out under [Lifetime and cleanup order](#lifetime-and-cleanup-order).
 
 ### Patch Application
 
@@ -209,12 +217,13 @@ Defines supported parameter types (INT, UINT, POINTER, FLOAT, BYTE, SHORT).
 For DETOUR hooks, `ApplyPatch()`:
 
 1. Loads patch DLL via LoadLibraryA
-2. Gets function address via GetProcAddress
-3. Detects and skips hot-patch stub (0xCC byte) if present
-4. Verifies original bytes
-5. Generates wrapper via wrapper generator
-6. Writes JMP to wrapper at hook address
-7. NOPs remaining bytes
+2. Runs the module's `KPatchInit` export, if it has one (once per module)
+3. Gets function address via GetProcAddress
+4. Detects and skips hot-patch stub (0xCC byte) if present
+5. Verifies original bytes
+6. Generates wrapper via wrapper generator
+7. Writes JMP to wrapper at hook address
+8. NOPs remaining bytes
 
 ### Config Parsing
 
@@ -261,6 +270,180 @@ For DETOUR hooks, `ApplyPatch()`:
 
 **CalculateRelativeOffset()**: Calculates 32-bit relative offset for JMP/CALL instructions.
 
+## Patch registry and KPatchInit (RFC #180)
+
+Patch modules are separate binaries, possibly built by different compilers, and they share one process with the patcher. They cannot share a C++ ABI, and on Linux and macOS they cannot see each other's symbols (see [No symbol lookup between patches](#no-symbol-lookup-between-patches)). The registry is the supported way for one patch to use another patch's code, and the way every patch reaches the core's own services. It implements the proposal in LaneDibello/Kotor-Patch-Manager#180.
+
+The mechanism has two parts:
+
+- A patch may export a function named `KPatchInit`. The patcher calls it once, right after loading the module, and passes a `KPatchApi` with two calls: `provide(name, version, iface)` publishes a table of function pointers under a name, and `require(name, version)` returns the table another provider published, or `NULL`.
+- The core is a provider like any patch. Before any patch is loaded it provides `kpatch.log` v1, the logging service described [below](#kpatchlog-logging-service).
+
+A patch with no `KPatchInit` export is unaffected. No existing patch needs to change. For how a patch author uses this, see `docs/PatchRegistry.md`.
+
+### The header
+
+`Patches/Common/kpatch_api.h` is the contract. It is pure C: it compiles as C11 and as C++17, needs only `<stddef.h>` and `<stdint.h>`, and does not include `windows.h`. The patcher includes it through `include/kpatch_api.h` instead of adding `Patches/Common` to its include path, because that directory also holds a `Platform.h` that collides case-insensitively with this directory's `platform.h`.
+
+### When KPatchInit runs
+
+`ApplyPatch()` loads patch modules through `LoadPatchModule()`, which calls `Platform::LoadModule`, records the handle for cleanup, and then calls `Registry::OnModuleLoaded(handle, id)`. That function looks the export up with `Platform::GetSymbol(handle, "KPatchInit")` and calls it.
+
+- **Right after the load, before the hook symbol lookup.** For a DETOUR patch `KPatchInit` has run by the time `functionName` is resolved, so a module can set itself up before its first hook is applied.
+- **Once per distinct module handle.** A config that lists one DLL for twenty hooks loads it twenty times and initialises it once. The handle is remembered whether or not the module has the export, so a module without one is looked up once.
+- **Even if a later step fails.** If the hook function is missing, the original bytes do not match, or the wrapper cannot be generated, `KPatchInit` has already run and anything it provided stays registered until cleanup. When `ApplyPatches()` aborts it logs one `[KotorPatcher] Apply aborted: N module(s) initialised` line, and submits the same text as a WARN from patch `patcher` (see [patcher_log.txt](#files-rotation-and-limits)).
+- **Only for modules that are loaded.** DETOUR and DLL_ONLY patches load a module. SIMPLE and REPLACE patches load nothing, so there is nothing to initialise.
+- **A missing export is normal.** It is not logged and is not an error.
+- **Attribution.** The registry records which patch provided each interface, using the `id` from `patch_config.toml`, or the DLL's file name without directory or extension if the entry has no `id`. The id appears in registry log lines and in the `kpatch.log` session header. It is unrelated to the patch id a module passes to `KPatchLogApi::Register`.
+- **Order.** Modules are initialised in config order. That order is not a contract.
+
+### What KPatchInit may do
+
+`KPatchInit` is DllMain-class code. Where it runs depends on the platform and on how the game starts:
+
+- Windows, normal start: inside the patcher's `DllMain` (`DLL_PROCESS_ATTACH`), so under the loader lock.
+- Windows, SteamStub: when the hook sites are still encrypted, the apply is deferred to a worker thread that waits for the stub to decrypt `.text`. `KPatchInit` then runs on that worker, which does not hold the loader lock but runs concurrently with the game's own startup.
+- Linux and macOS: inside the library constructor, before the game's `main()`.
+
+A patch must therefore treat it as if the loader lock is held:
+
+- It may store the `KPatchApi` pointer, call `provide` and `require`, and make cheap registration calls on an interface it gets (for `kpatch.log`: `Register`, `Channel`, and `Submit`, which is non-blocking and does no I/O).
+- It must not load libraries (`LoadLibrary`, `dlopen`), wait on other threads or events, start a thread and wait for it, or do file or network I/O.
+- It must not assume another patch has been initialised. A patch that needs another patch's interface should call `require` lazily at first use, not in `KPatchInit`, and must handle `NULL` because the provider may not be installed.
+
+The registry's mutex is not held while `KPatchInit` runs, so the function may call `provide` and `require` freely (they re-enter the registry).
+
+### Threading
+
+Every registry call is safe from any thread. `provide` and `require` take one mutex for a map lookup or insert, and `require` is cheap enough to call on a first-use path, but callers are expected to cache the result. The `kpatch.log` calls are described under [Threading and cost](#threading-and-cost).
+
+### Lifetime and cleanup order
+
+The `KPatchApi` pointer and every interface pointer `require` returns stay valid until `CleanupPatcher()` begins. `CleanupPatcher()` then runs in this order:
+
+1. `Registry::Close()`. From here `require` returns `NULL` and `provide` is rejected, so no patch can fetch an interface whose provider is about to be unloaded.
+2. Free the wrapper stubs and REPLACE code buffers, and unload the patch modules. The log service is still running, so a patch's own detach code can still `Submit` through a pointer it cached earlier.
+3. `LogService::Shutdown()`: the final flush and closing the files.
+4. `Registry::Reset()`: forget every provided interface and every module handle seen. This comes last because the OS may hand the same handle value to a different module later, and that module has to get its own `KPatchInit`.
+
+A patch must never call **another** patch's interface from its DLL detach path (or a static destructor): the provider may already be unloaded. Submitting to the core's `kpatch.log` from detach, through a pointer cached earlier, is fine: the log service outlives the module unloads.
+
+The registry and the log service are heap-allocated and intentionally never deleted. A function-local static would be destroyed at process exit, while a patch thread may still be calling in: on Linux `exit()` runs static destructors with other threads alive, and on Windows `ExitProcess` kills threads that may hold the mutex. After `Close()`/`Shutdown()` the calls become harmless no-ops (`require` returns `NULL`, `Submit` does nothing).
+
+### ABI rules
+
+- **Pure C, fixed-width types.** Interface structs hold only `uint32_t`, `int32_t`, `uint64_t`, `const char*` and function pointers. No `bool`, enums, `double`, `std::string`, exceptions or C++ objects cross the boundary. Levels are `#define`s (`KPLOG_ERR` 0, `KPLOG_WARN` 1, `KPLOG_INFO` 2, `KPLOG_DEBUG` 3, `KPLOG_TRACE` 4).
+- **`struct_size` first.** The first field of every interface struct is `uint32_t struct_size`, set by the provider to `sizeof` its struct.
+- **Append-only within a major version.** Fields are added at the end and never removed, reordered or resized. A consumer that wants a field newer than its oldest supported provider checks `struct_size` before reading it.
+- **The version is the major version.** `require("x", 1)` matches only an interface provided as `("x", 1)`. A breaking change is a new major, and a provider may provide `("x", 1)` and `("x", 2)` side by side.
+- **First provider wins.** A second `provide` of the same name and major is rejected (a non-zero return, plus a log line naming both providers). The first pointer keeps being served. `provide` also rejects a null or empty name and a null interface.
+- **`pack(8)`.** The structs sit inside `#pragma pack(push, 8)`, because `Common.h` opens `pack(push, 4)` and every compiler has to agree on the layout. The header carries `static_assert` checks of the sizes and offsets.
+- **`KPATCH_CALL`.** Every function pointer in the ABI uses `KPATCH_CALL`: `__cdecl` for MSVC and MinGW, `__attribute__((cdecl))` for GCC on i386, and empty elsewhere (x86_64 has one convention). On x86-32 Windows compilers disagree about the default convention, so it is pinned.
+- **Lifetime of an interface.** A provider's interface table must stay valid until the patcher cleans up (static storage is the usual choice).
+
+### No symbol lookup between patches
+
+Patch modules are opened with `dlopen(path, RTLD_NOW | RTLD_LOCAL)` on Linux and macOS. `RTLD_LOCAL` keeps a module's exported symbols out of the global scope, so one patch cannot find another patch's functions with `dlsym(RTLD_DEFAULT, ...)`, and an undefined symbol in one patch is not satisfied by another that happens to be loaded. Linking one patch against another's `.so` through `DT_NEEDED` would make the dynamic loader own the dependency, with its own load and unload order, and is not supported. The registry is the supported way to share code between patches. The patcher itself offers no symbol API to patches: everything a patch needs from the core comes through `KPatchApi` and the interfaces it provides.
+
+## kpatch.log logging service
+
+`kpatch.log` is a shared, cheap, non-blocking log sink that the core provides through the registry (interface `"kpatch.log"`, version 1, table `KPatchLogApi` in `kpatch_api.h`). It exists so patches can log compatibly without each carrying its own file handle, flush thread, clock and config reader. Logging is off by default except WARN and ERR.
+
+The service is a separate channel from the core's own `Platform::Log`; see [Debug Logging](#debug-logging).
+
+### Interface
+
+| Call | Meaning |
+| --- | --- |
+| `Register(patchId)` | Returns a patch handle, or -1 for bad input. Idempotent. |
+| `Channel(patch, name)` | Returns a channel handle for the pair, or -1 for bad input or the channel limit. Idempotent. |
+| `Enabled(channel, level)` | Non-zero if a line at that level would be recorded. Call it before formatting. |
+| `Submit(channel, level, line, len)` | Queues one line. Non-blocking, copies the text. |
+| `Mark(label)` | Writes a marker line to every open log file. |
+| `FrameTick(patch)` | Advances the frame counter. The first patch to call it owns the counter; calls from other patches are ignored. |
+| `Frame()` | The current frame number. |
+| `NowUs()` | Monotonic microseconds since the service started. |
+
+Limits: a patch id is 1 to 63 characters from `[A-Za-z0-9_.-]` (it becomes a file name) and at most 64 patches register. A channel name is 1 to 31 characters from the same set, and at most 256 channels exist across all patches. A line longer than 232 bytes is cut and ends in `[...]`. Trailing `\r` and `\n` are stripped, and an empty line or a null pointer is ignored.
+
+### Architecture
+
+- **Ring.** `Submit` stamps the time and frame, copies the line into a fixed record of about 256 bytes in a ring of 4096 records, and returns. The ring lock covers a count check and one `memcpy`; nothing on the submit path allocates, formats, does I/O or waits on a file. The ring is two buffers that the flusher swaps under the lock, so draining is constant time under the lock and the formatting and file writes happen after it is released. Both buffers are allocated once, at the first `Init`.
+- **Flush thread.** Started unconditionally by `LogService::Init`, which `InitializePatcher` calls right after `SelfModuleDir()` succeeds and before the config is parsed. It is detached and never joined, with no start handshake: `Init` can run under the loader lock, where waiting for a new thread deadlocks, and at process exit `ExitProcess` may already have killed it. It sleeps on a condition variable for `flush_ms` (default 500 ms), is woken at once by a WARN, an ERR or a `Mark`, and re-reads `kplog.ini` about once a second. It creates no file until a line arrives, so a clean run with no `kplog.ini` writes nothing.
+- **Final flush.** `CleanupPatcher()` calls `LogService::Shutdown()`, which takes its locks with `try_lock` retried for about 200 ms in total. If it cannot get them (a thread was killed or is stuck holding one) it logs `[KotorPatcher] kplog: final flush skipped (lock busy)` through `Platform::Log` and gives up rather than hang the game's exit.
+- **Level table.** `Enabled` reads one `std::atomic<uint8_t>` per channel and does no locking. The stored level is the effective level: the level from `kplog.ini` when the patch and channel are enabled there, otherwise WARN.
+- **Platform seam.** The service uses only the C++ standard library (`std::thread`, `std::mutex`, `std::condition_variable`, `std::chrono`) and `FILE*`, so `src/core` still has no `#ifdef`s and the platform seam gained no functions.
+
+### Threading and cost
+
+Every call is safe from any thread. `Enabled`, `Frame` and `NowUs` are lock-free reads. `Submit` takes the ring lock for one `memcpy`. `Register` and `Channel` take a plain mutex and are meant to run once, at load. After `Shutdown()` every call is a no-op (`Register` and `Channel` return -1, `Enabled` returns 0, `Submit` does nothing).
+
+### Configuration: kplog.ini
+
+The service reads `kplog.ini` from the directory the patcher was loaded from, beside `patch_config.toml`. The installer does not create it. With no file everything is off except WARN and ERR.
+
+The flush thread compares the file's content (not its modification time, which is unreliable under Wine and on filesystems with 1 s timestamps) every second, and applies a change without a restart. Deleting the file returns everything to the defaults. A channel registered after a reload gets the level the current config gives it. Lines that cannot be understood are skipped, and one `[KotorPatcher] kplog: ignored N malformed line(s) in kplog.ini` line is logged per reload, so a typo cannot take logging down. A file larger than 1 MiB is read only up to that size.
+
+```ini
+[global]
+enabled=1              ; default 0: master switch for everything except WARN/ERR
+sink=perpatch          ; perpatch (default) | merged | both
+flush_ms=500           ; default 500, minimum 1
+max_bytes=8000000      ; default 8000000, per file, minimum 1
+max_lines_per_sec=2000 ; default 2000, per patch, 0 = unlimited
+
+[mypatch]              ; the id the patch passes to Register(), case-sensitive
+enabled=1              ; default 0
+level=info             ; err | warn | info | debug | trace, or 0-4; default info
+channels=*,-spam       ; default (absent) = all channels
+```
+
+- Section and key names other than the patch id are case-insensitive. `;` and `#` start a comment anywhere on a line. Booleans accept `1/0`, `true/false`, `on/off`, `yes/no`.
+- A patch is logged above WARN only if both `[global] enabled` and its own `enabled` are on. Otherwise its channels stay at WARN.
+- `level` never goes below WARN: `level=err` still records WARN, because WARN and ERR are always on.
+- `channels` is a comma-separated list. `*` means all, a name selects that channel, and `-name` excludes it. A list of only exclusions (`channels=-spam`) means every channel except those. An empty value selects nothing.
+- `sink` chooses where lines go: `perpatch` writes one file per patch, `merged` writes one `kp_log.txt` with every patch, `both` writes both.
+
+### Line format
+
+```
+T=1234.567 f=- alpha/draw hello
+T=2000.001 f=1 alpha/draw WARN careful
+T=2000.001 f=1 alpha/draw ERR broken
+T=2100.000 f=1 MARK before the cutscene
+T=3000.250 f=1 alpha/kplog DROPPED 96928 (ring 96928, rate 0)
+```
+
+- `T=` is milliseconds since the service started, with three decimals (microsecond resolution), taken at `Submit`.
+- `f=` is the frame number, or `-` until some patch has called `FrameTick`.
+- Then `<patch>/<channel>` and the message. WARN and ERR lines carry `WARN ` or `ERR ` before the message. INFO, DEBUG and TRACE lines carry no marker.
+- A `Mark` line has no patch or channel and starts its message with `MARK `.
+- A `DROPPED` line (below) is attributed to channel `kplog` of the affected patch.
+
+### Files, rotation and limits
+
+- **Where.** The files are written beside the patcher: `<patchId>_log.txt` for `sink=perpatch` or `both`, and `kp_log.txt` for `merged` or `both`. A file is created when the first line for it is written, not when a patch registers.
+- **Session header.** Every file starts with lines that begin `# `, so a parser can skip them:
+
+  ```
+  # kplog session 2026-10-02 14:03:11 | kpatch.log v1 | patcher ABI 1
+  # KOTOR_VERSION_SHA=<target_version_sha from patch_config.toml>
+  # interfaces:
+  #   kpatch.log v1 by patcher
+  #   test.counter v1 by provider-patch
+  ```
+
+  The first line gives the local wall-clock time. The interface list is every registered interface and its provider, sorted by name. The patcher hands this list over once the patches have been applied. A file opened before that point carries `# KOTOR_VERSION_SHA=unknown` and `# interfaces: (not yet applied)`, and gets a `# session info:` block with the real values at the next flush.
+- **Launch rotation.** The first time a file is opened in a session, an existing file of that name is moved to `<name>.1`, replacing any older `.1`. The previous session's log therefore survives a crash, one generation deep.
+- **Byte cap.** When a write would take a file past `max_bytes`, the file is closed and moved to `.1` (the old `.1` is removed first, because Windows `rename` does not overwrite), and a fresh file is opened with a new header. Each log therefore occupies at most two files.
+- **Rate limit.** Per patch, over a one-second window of the service clock, at most `max_lines_per_sec` lines at INFO, DEBUG or TRACE are accepted. The excess is dropped and counted. WARN, ERR and `Mark` are exempt.
+- **Ring overflow.** When the ring is full the new line is dropped and counted. INFO, DEBUG and TRACE lines can use only the first 75% of the ring (3072 records); the last 25% is reserved for WARN, ERR and `Mark`.
+- **`DROPPED` lines.** At each flush, a patch with drops since the last flush gets one line `<patch>/kplog DROPPED <n> (ring <r>, rate <q>)`, so a reader can see the log has a hole and why.
+- **WARN and ERR are always on.** They need no `kplog.ini`, are not subject to the rate limit, and wake the flush thread so they reach the disk without waiting for `flush_ms`.
+- **Unwritable files.** If a file cannot be opened, the service logs one `[KotorPatcher] kplog: cannot open <path>, dropping its lines` line through `Platform::Log` and drops that file's lines for the rest of the session.
+- **`patcher_log.txt`.** The core registers itself as patch `patcher`, channel `core`, and submits a WARN when the apply aborts (`Apply aborted: N module(s) initialised`) or `patch_config.toml` fails to parse. Because WARN is always on, those failures leave `patcher_log.txt` behind with no setup, while a clean run creates no file.
+- **`Mark`.** A `Mark` goes to every file that is open when it is flushed, and also to `kp_log.txt` when the sink is `merged` or `both`. With `sink=perpatch` and no file open yet, a marker has nowhere to go.
+
 ## Wrapper Code Generation Details
 
 The generated DETOUR wrapper follows this structure:
@@ -283,7 +466,9 @@ Register exclusion allows patches to modify specific registers (e.g., changing E
 
 ## Debug Logging
 
-KotorPatcher logs initialization, patch application, and errors through the platform seam's log operation: `OutputDebugStringA()` on Windows, stderr on Linux. Neither writes to disk by default. All log messages are prefixed with component names:
+KotorPatcher logs initialization, patch application, and errors through the platform seam's log operation (`Platform::Log`): `OutputDebugStringA()` on Windows, stderr on Linux. Neither writes to disk by default. This is the core's own diagnostic channel and its behaviour is unchanged by the `kpatch.log` service: the same messages go to the same places, and the service does not capture them. The service is a separate channel for patch modules, with files of its own; see [kpatch.log logging service](#kpatchlog-logging-service). The two meet in a few places: a few core failures (apply abort, config parse failure) also submit a WARN to the service, and the service reports its own problems (an unwritable file, a skipped final flush, malformed `kplog.ini` lines) through `Platform::Log`.
+
+All log messages are prefixed with component names:
 
 - `[KotorPatcher]`: Main patcher operations
 - `[Config]`: Configuration parsing
