@@ -1,6 +1,6 @@
 # K2TextureMemoryRelease
 
-Frees the CPU-side copy of every TPC texture once it has been uploaded to OpenGL, as the engine already does for TGA textures. This gives back roughly 195 MB of memory in a 32-bit process that is usually close to its limit on long sessions and heavy texture packs.
+Frees the CPU-side copy of every TPC texture once it has been uploaded to OpenGL, as the engine already does for TGA textures. This gives back memory in a 32-bit process that is usually close to its limit on long sessions and heavy texture packs. See Testing for a measurement.
 
 Supported build: Steam (Aspyr), `kotor2_steam_aspyr`. Developed and played under Proton on Linux.
 
@@ -51,9 +51,9 @@ I checked the code paths statically in the Steam exe:
 ## Testing
 
 * Steam (Aspyr) `6A522E71...`, Proton on Linux. GOG, Windows native and Linux native are not covered.
-* The same change, written as a DllMain code cave instead of a hook, has been on in my full install since 2026-10-15 across many play sessions. One session logged 2038 TPC textures freed and 17 kept because they had a controller, with no warnings and no visual problems (black or missing textures) seen.
-* The hook version in this patch is a different mechanism for the same bytes. I have played it over several long sessions on top of my full install. The longest one I have logs for ran about 90 minutes, with roughly 49 area loads and transitions and 34 combats, and had no crash, hang or load stall. I saw no black or missing textures.
-* I have not measured the end-to-end change in process memory with this exact build; the 195 MB figure is the size of the pinned TPC data measured without the patch.
+* The same change, written as a DllMain code cave instead of a hook, has been on in my full install since 2026-10-15 across many play sessions. One session logged 2038 TPC textures freed and 17 kept because they had a controller, with no warnings in the log.
+* The hook version in this patch is a different mechanism for the same bytes. I have played it over several long sessions on top of my full install. The longest one I have logs for ran about 90 minutes, with roughly 49 area loads and transitions and 34 combats, and had no crash, hang or load stall. I have one report of a room in Nar Shaddaa (Dock apartments) whose walls lost their textures. It also happens with the patch disabled, so I do not attribute it to this patch.
+* Process memory (MangoHud PMEM), measured once each on the same save and spot after a fresh game load: 1.0 GiB with the patch disabled, 435 MiB with it enabled. That is about 0.6 GiB less, which is larger than the roughly 195 MB of pinned TPC pixel data. I have not explained the difference yet, and one reading per state is not a benchmark.
 
 ## Configuration
 

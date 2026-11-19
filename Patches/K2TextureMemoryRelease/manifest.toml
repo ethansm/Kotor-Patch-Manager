@@ -3,7 +3,7 @@ id = "k2-texture-memory-release"
 name = "K2 Texture Memory Release"
 version = "1.0.0"
 author = "ethansm"
-description = "Frees the CPU-side copy of TPC textures after they are uploaded to OpenGL, as the engine already does for TGA textures, which saves roughly 195 MB of memory in a 32-bit process"
+description = "Frees the CPU-side copy of TPC textures after they are uploaded to OpenGL, as the engine already does for TGA textures, which saves memory in a 32-bit process"
 
 requires = []
 conflicts = []
