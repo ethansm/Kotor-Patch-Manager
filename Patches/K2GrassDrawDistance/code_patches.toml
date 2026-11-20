@@ -1,0 +1,76 @@
+# Byte patches this mod's DLL writes into the game itself (not KPM hooks), for the static checks
+# (scripts/check_hook_bytes.py, scripts/check_hook_spans.py). Schema: see robustness_fixes_src/code_patches.toml.
+# 0.1.1: the wind operand rewrite replaces the 0.1.0 per-bin detour at 0x0050DB55.
+# 0.1.10: b1_vertex_ptr fixes path B1's vertex pointer (the K1 GrassRenderFix bug).
+# 0.1.4: collect_fld redirects the octree query radius to g_collectSq (trim_hidden); the engine global 0x00A0F074 keeps the fade end.
+
+[[code_patches]]
+name = "wind_fld"
+address = 0x0050DCC8
+# RenderGrassPolys wind gate `FLD float ptr [0x00A0F070]`; the imm32 becomes &g_windDistSq (DLL .data)
+original_bytes = [0xD9, 0x05, 0x70, 0xF0, 0xA0, 0x00]
+kind = "code"
+verifies_original = true
+enabled_by = "always (KPatchInit); restored on FreeLibrary"
+source = "K2GrassDrawDistance.cpp patchWindOperand / unpatchOperands (codepatch::writeChecked)"
+
+[[code_patches]]
+name = "b1_vertex_ptr"
+address = 0x0050E483
+# 0.1.10: RenderGrassPolys path B1 pushes `MOV ECX,[EBP-0x114]; ADD ECX,0x40` (the address of bin field +0x40) as the vertex pointer base
+# for FUN_004369A0; paths A and B2 push the heap vertex buffer [bin+0x38]. ADD ECX,0x40 becomes MOV ECX,[ECX+0x38] (8B 49 38).
+original_bytes = [0x83, 0xC1, 0x40]
+kind = "code"
+verifies_original = true
+enabled_by = "fix_b1_pointer ini key (default 1), applied in KPatchInit; restored on FreeLibrary"
+source = "K2GrassDrawDistance.cpp patchB1Pointer / unpatchOperands (codepatch::writeChecked)"
+
+[[code_patches]]
+name = "size_span_fmul"
+address = 0x0050FEE7
+# 0.1.6 PV4: FUN_0050EBC0 blade size `FMUL double ptr [0x009921C8]` (vanilla 0.4); the imm32 becomes &g_sizeSpan (DLL .data)
+original_bytes = [0xDC, 0x0D, 0xC8, 0x21, 0x99, 0x00]
+kind = "code"
+verifies_original = true
+enabled_by = "always (KPatchInit); restored on FreeLibrary; value = size_var (0.4 = vanilla)"
+source = "K2GrassDrawDistance.cpp patchSizeOperand / unpatchOperands (codepatch::writeChecked)"
+
+[[code_patches]]
+name = "collect_fld"
+address = 0x00499ADC
+# Scene::CollectAndTraverse octree sphere query radius `FLD float ptr [0x00A0F074]`; the imm32 becomes &g_collectSq (DLL .data)
+original_bytes = [0xD9, 0x05, 0x74, 0xF0, 0xA0, 0x00]
+kind = "code"
+verifies_original = true
+enabled_by = "always (KPatchInit); restored on FreeLibrary; value = trim_hidden ? min(fade_end, clip + 2 m)^2 : fade_end^2"
+source = "K2GrassDrawDistance.cpp patchCollectOperand / unpatchOperands (codepatch::writeChecked)"
+
+[[code_patches]]
+name = "fade_start_sq"
+address = 0x00A0F070
+# float 225.0 (15 m squared): RenderGrassPolys fade start
+original_bytes = [0x00, 0x00, 0x61, 0x43]
+kind = "data"
+verifies_original = false
+enabled_by = "always; vanilla value written back when enabled=0"
+source = "K2GrassDrawDistance.cpp writeEngineGlobals (every grass frame)"
+
+[[code_patches]]
+name = "fade_end_sq"
+address = 0x00A0F074
+# float 900.0 (30 m squared): octree build radius and fade end
+original_bytes = [0x00, 0x00, 0x61, 0x44]
+kind = "data"
+verifies_original = false
+enabled_by = "always; vanilla value written back when enabled=0"
+source = "K2GrassDrawDistance.cpp writeEngineGlobals (every grass frame)"
+
+[[code_patches]]
+name = "alpha_cutoff"
+address = 0x009F5D38
+# float 0.40: Scene::DoBinBucket glAlphaFunc(GL_GREATER) threshold for grass
+original_bytes = [0xCD, 0xCC, 0xCC, 0x3E]
+kind = "data"
+verifies_original = false
+enabled_by = "always; vanilla value written back when enabled=0"
+source = "K2GrassDrawDistance.cpp writeEngineGlobals (every grass frame)"

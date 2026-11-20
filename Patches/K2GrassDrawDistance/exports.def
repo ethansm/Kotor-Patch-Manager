@@ -1,0 +1,13 @@
+LIBRARY K2GrassDrawDistance
+EXPORTS
+    KPatchInit
+    K2GrassOnSceneCollect
+    K2GrassBinLoopBegin
+    K2GrassBinLoopEnd
+    K2GrassOnBin
+    K2GrassDrawArraysA
+    K2GrassDrawArraysB
+    K2GrassOnFaceSeed
+    K2GrassOnBlade
+    K2GrassOnFaceCount
+    K2GrassBinDiff

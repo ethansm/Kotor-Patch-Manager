@@ -1,0 +1,153 @@
+[metadata]
+target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"]
+
+# Hook 1: Scene::CollectAndTraverse (0x00499610) at 0x00499ABC (MOV dword ptr [EBP-0x10], 0; 7 bytes),
+# immediately before the room octree grass sphere query loop (0x00499ADC: FLD dword ptr [0x00A0F074]).
+# Polls k2_grass_draw_distance.ini (1s throttle), registers the Mod Configuration page if mod-config is loaded,
+# and updates the engine globals:
+#   [0x00A0F070] = fade_start_dist^2 (read at 0x0050DB43 for fade start; the wind gate at 0x0050DCC8 reads the
+#                                     DLL's own float after the KPatchInit operand rewrite, see code_patches.toml)
+#   [0x00A0F074] = fade_end_dist^2   (read at 0x00499ADC for octree build/collect and 0x0050DB4C for fade end)
+#   [0x009F5D38] = alpha_cutoff      (read at 0x004665F6 for glAlphaFunc threshold)
+# 0.1.5: also sets the wind operand target once per frame (wind_throttle) and polls finished GPU timer queries.
+[[hooks]]
+address = 0x00499ABC
+type = "detour"
+function = "K2GrassOnSceneCollect"
+original_bytes = [0xC7, 0x45, 0xF0, 0x00, 0x00, 0x00, 0x00]
+exclude_from_restore = []
+
+
+# Hook 2: Scene::DoBinBucket (0x004664E0) at 0x0046661B (MOV dword ptr [EBP-0x4], 0; 7 bytes), the bucket loop counter
+# init (outer loop; bins are the inner loop at 0x0046664B) right after glAlphaFunc. Starts the grass-pass CPU timer
+# (the timing covers the whole pass), the optional GL_TIME_ELAPSED query (0.1.5) and (smooth_edges, multisampled context
+# only) glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE). Also runs the 0.1.5 path probe. Not a branch target; the loop is entered
+# only by falling through here.
+[[hooks]]
+address = 0x0046661B
+type = "detour"
+function = "K2GrassBinLoopBegin"
+original_bytes = [0xC7, 0x45, 0xFC, 0x00, 0x00, 0x00, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+# Hook 3: Scene::DoBinBucket at 0x00466698 (FLD dword ptr [0x00A20040]; 6 bytes), the bucket loop's only exit (JGE at
+# 0x00466636; reached by nothing else). Stops the timer, ends the GPU query and undoes the alpha-to-coverage enable.
+[[hooks]]
+address = 0x00466698
+type = "detour"
+function = "K2GrassBinLoopEnd"
+original_bytes = [0xD9, 0x05, 0x40, 0x00, 0xA2, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+# Hook 4 (0.1.5): CAurTriangleBin::RenderGrassPolys entry at 0x0050DAC0 (PUSH EBP; MOV EBP,ESP; PUSH -1; 5 bytes), the bin
+# object in ECX (float dist^2 at +0x04, byte flags at +0x02). Computes the far-LOD keep fraction for this bin (far_lod)
+# and counts bins per draw path for the PERF line. Reads the bin only; writes only the DLL's own globals.
+[[hooks]]
+address = 0x0050DAC0
+type = "detour"
+function = "K2GrassOnBin"
+original_bytes = [0x55, 0x8B, 0xEC, 0x6A, 0xFF]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+# Hook 5 / 6 (0.1.5): the two CALL dword ptr [0x00986304] (glDrawArrays) in FUN_004369A0, the grass-only draw helper
+# (callers 0x0050E16B, 0x0050E487, 0x0050E695). The hook receives a pointer to the three pushed args (mode, first, count);
+# with far_lod on and mode == GL_QUADS it draws an evenly spaced subset of the bin's quads itself (0.1.10: glDrawElements on the
+# bound client arrays) and sets `count` to 0 so the game's call draws nothing; with an element buffer bound it lowers `count` to a
+# prefix of quads instead (the 0.1.5 behaviour). The helper's own offset argument (count * 0x30, also the normals/UV offset) is never touched.
+[[hooks]]
+address = 0x00436A95
+type = "detour"
+function = "K2GrassDrawArraysA"
+original_bytes = [0xFF, 0x15, 0x04, 0x63, 0x98, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "esp+0"
+type = "pointer"
+
+[[hooks]]
+address = 0x00436B86
+type = "detour"
+function = "K2GrassDrawArraysB"
+original_bytes = [0xFF, 0x15, 0x04, 0x63, 0x98, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "esp+0"
+type = "pointer"
+
+# Hook 7 (0.1.6, PV1 vary_seed): blade generator FUN_0050EBC0 at 0x0050EF89, MOV ECX,[EBP-0x9C] (6 bytes; followed
+# by PUSH ECX; CALL srand). The handler gets the game's EBP and, when vary_seed is on, overwrites the seed slot [EBP-0x9C] with
+# a hash of the face's nine vertex floats (globals 0x00A7D6D4..0x00A7D6F4) before the game loads it. Not a branch target.
+[[hooks]]
+address = 0x0050EF89
+type = "detour"
+function = "K2GrassOnFaceSeed"
+original_bytes = [0x8B, 0x8D, 0x64, 0xFF, 0xFF, 0xFF]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ebp"
+type = "pointer"
+
+# Hook 8 (0.1.6, PV2 even_spread): per-blade weight sum in FUN_0050EBC0 at 0x0050F177, FLD [EBP-0xC]; FADD [EBP-0x8] (6 bytes,
+# two instructions), before the sum and the normalise call 0x0044B210 at 0x0050F19B. When even_spread is on the handler replaces
+# the three barycentric weight slots [EBP-0xC], [EBP-0x8], [EBP-0x4] with uniform weights (sum 1, each in [0,1]).
+[[hooks]]
+address = 0x0050F177
+type = "detour"
+function = "K2GrassOnBlade"
+original_bytes = [0xD9, 0x45, 0xF4, 0xD8, 0x45, 0xF8]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ebp"
+type = "pointer"
+
+# Hook 9 (0.1.6, PV3 density_noise): AddTriangle at 0x0050D35C, FLD [EBP-0x224] (6 bytes; followed by FRNDINT / FISTP into
+# [EBP-0x14]). The float slot is the face's blade count before rounding; when density_noise is on the handler scales it by
+# value noise at the face centroid (globals 0x00A7D6A4..0x00A7D6C4) with stochastic rounding.
+[[hooks]]
+address = 0x0050D35C
+type = "detour"
+function = "K2GrassOnFaceCount"
+original_bytes = [0xD9, 0x85, 0xDC, 0xFD, 0xFF, 0xFF]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ebp"
+type = "pointer"
+
+# Hook 10 (0.1.10, fast_bin_diff): FUN_004987E0 (called once per frame from Scene::CollectAndTraverse) at 0x00498829,
+# MOV dword ptr [EBP-4], 0 (7 bytes): the loop-2 counter init, reached from the loop-1 exit JGE at 0x0049880F (so the address is a
+# jump target, which is fine: the patch starts at it, and the next instruction JMP 0x0049883B at 0x00498830 is not touched).
+# Loop 1 builds the current bins (FUN_0050D960); loop 2 destroys (FUN_0050DA00) each previous bin that a linear scan of the current
+# list does not find, which is O(N^2) (~405k iterations at 900 bins). The handler hashes the current list and destroys the missing
+# previous bins in the same order, then sets the counter to the previous count so loop 2 exits at once; or, when fast_bin_diff is
+# off or anything is unusual, writes the counter 0 and returns (the vanilla loop).
+# skip_original_bytes = true: the KPM wrapper runs the stolen bytes AFTER the handler, which would reset the counter the handler set
+# to the previous count and run the whole O(N^2) loop again (same precedent: asset_vfs_src/kotor2-steam-aspyr.hooks.toml H1).
+# K2GrassBinDiff therefore writes [EBP-4] itself on every path.
+[[hooks]]
+address = 0x00498829
+type = "detour"
+function = "K2GrassBinDiff"
+original_bytes = [0xC7, 0x45, 0xFC, 0x00, 0x00, 0x00, 0x00]
+skip_original_bytes = true
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ebp"
+type = "pointer"
