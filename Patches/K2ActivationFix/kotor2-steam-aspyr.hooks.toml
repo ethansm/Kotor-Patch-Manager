@@ -23,3 +23,20 @@ exclude_from_restore = []
 [[hooks.parameters]]
 source = "esp+0"
 type = "pointer"
+
+# 0.3.0: mid-game movies (e.g. Ebon Hawk -> Telos). Wine sends WM_ACTIVATEAPP(wParam=0, lParam=<movie thread id>, e.g. 0x1ac) from the
+# movie thread to the main window while focus stays inside this process. WndProc case 0x1c (wParam==0) then latches DAT_00a1b4bc/c0 = 1,
+# calls AppDeactivated (DAT_00a1b4e0 = 0) and later minimizes the window; no WM_ACTIVATEAPP(1) follows, so the load screen is never
+# dismissed (11-14 freeze). The hook sits on the WndProc prologue (55 8B EC 81 EC 34 02 00 00, 9 whole instructions, stdcall
+# hwnd,msg,wParam,lParam at esp+4). It receives a pointer to esp+0 (return address, then those four values); for WM_ACTIVATEAPP with wParam==0 and a foreground window of
+# this process it rewrites msg to WM_NULL. A real alt-tab (foreground = another process, or none) goes through untouched.
+[[hooks]]
+address = 0x0040A750
+type = "detour"
+function = "dropForeignDeactivate"
+original_bytes = [0x55, 0x8B, 0xEC, 0x81, 0xEC, 0x34, 0x02, 0x00, 0x00]
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "esp+0"
+type = "pointer"

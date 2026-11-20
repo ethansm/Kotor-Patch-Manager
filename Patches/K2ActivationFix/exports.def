@@ -1,3 +1,4 @@
 LIBRARY K2ActivationFix
 EXPORTS
     dropSyntheticDeactivate
+    dropForeignDeactivate

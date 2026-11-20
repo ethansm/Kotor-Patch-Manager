@@ -1,11 +1,12 @@
 [patch]
 id = "k2-activation-fix"
 name = "K2 Activation Fix"
-version = "1.0.0"
+version = "1.1.0"
 author = "ethansm"
-description = "Fixes the intermittent hang when loading into the game, where the load screen never goes away"
+description = "Fixes the hang where the load screen never goes away after a movie: ignores false app-deactivate messages while the game window owns the foreground"
 
 requires = []
+requires_interfaces = []
 conflicts = []
 
 [patch.supported_versions]

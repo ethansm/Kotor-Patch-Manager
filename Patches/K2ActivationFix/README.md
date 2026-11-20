@@ -1,44 +1,30 @@
-# K2ActivationFix
+# K2 Activation Fix
 
-Fixes an intermittent hang when loading into KOTOR II, where the load screen stays up forever.
+> **STATUS** Track: SHIPPABLE. Version 0.3.0 (matches manifest.toml).
+> **What it does / explores:** Stops false app-deactivate messages from leaving the load screen stuck after a movie. Under Proton the movie thread posts a synthetic `WM_ACTIVATEAPP(0, 0)` while the game window owns the foreground; this patch neutralises it.
+> **Requires:** Steam/Aspyr KOTOR II (hooks file `kotor2-steam-aspyr.hooks.toml` only), Patch Manager. No other patches (`requires = []`).
+> **Known limits:** Steam/Aspyr only; GOG and other builds have no hooks file. Hook sites are byte-checked at install. **Play-test status:** AF-MV1..3 pending in `PLAY_TEST_QUEUE.md`.
+> **Install:** Install through Patch Manager like any patch. Safe for normal play.
 
-Supported build: Steam (Aspyr), `kotor2_steam_aspyr`. Seen under Proton on Linux.
-
-## Cause
-
-At the end of a movie (observed after the intro movie) the movie thread posts a synthetic
-`WM_ACTIVATEAPP(wParam 0, lParam 0)` to the main window:
-
-```
-0x0040D692  push 0
-0x0040D694  push 0
-0x0040D696  push 0x1C                  ; WM_ACTIVATEAPP
-0x0040D698  mov  eax, [0x00A1B484]     ; main window
-0x0040D69D  push eax
-0x0040D69E  call dword ptr [0x0098646C] ; PostMessageA
-```
-
-Under Wine the movie window only saw activation move to the game's own main window, so this "the
-game was deactivated" is false. The window procedure marks the engine inactive and minimizes it.
-When the window stays in front, no `WM_ACTIVATEAPP(TRUE)` ever arrives, so the main loop never
-hides the load screen and the game stays stuck there. The process is alive, the UI thread still
-pumps messages, and the load never finishes.
-
-The load screen the game stays on during the hang (captured under Proton before the fix):
-
-<img width="2087" height="1259" alt="Load screen the game stays on during the hang" src="https://github.com/user-attachments/assets/9cfaf5ce-a6d2-4276-b05f-eeef46c5a0f1" />
-
-## Fix
-
-One detour at `0x0040D69E`, run just before that `CALL [PostMessageA]`. It receives a pointer to the
-four values the game pushed (`hwnd`, `msg`, `wParam`, `lParam`). When the message is
-`WM_ACTIVATEAPP(0, 0)` and the foreground window belongs to this process, it rewrites the call to
-`PostMessageA(NULL, WM_NULL, 0, 0)`, which does nothing, and the stolen `CALL` then runs as usual.
-Anything else passes through unchanged, so a real alt-tab during the movie still works. The window
-procedure and Alt+Enter handling are not changed.
-
-Hook parameter: `esp+0`, the address of the pushed argument block.
+## Features
+- Detour at `0x0040D69E` (before `CALL [PostMessageA]` in the movie thread). If the post is `WM_ACTIVATEAPP` with `wParam == 0` and `lParam == 0`, and the foreground window belongs to this process, the call becomes `PostMessageA(NULL, WM_NULL, 0, 0)`. Real alt-tabs are left alone.
+- Second hook at the WndProc entry `0x0040A750` (`dropForeignDeactivate`, version 0.3.0). It drops `WM_ACTIVATEAPP(wParam == 0, any lParam)` while the foreground is ours and `IsMoviePlaying() == 1`. This covers the `lParam = 0x1ac` case the post-site gate cannot see.
 
 ## Configuration
+- None. No ini keys.
 
-None. Uninstall the patch to turn it off. It writes no log.
+## Logging
+- Each dropped message is appended to `k2-activation-fix_drops.txt` in the game folder, capped at 50 lines.
+
+## Hooks
+- `0x0040D69E` (post site) and `0x0040A750` (WndProc entry), both in `kotor2-steam-aspyr.hooks.toml`. Not DB-backed.
+
+## Build/test
+- `python3 scripts/run_tests.py activation_fix`
+- Host tests: `common_contract_test.cpp` (contract with `_shared_src`) and `activation_logic_test.cpp` (drop decision logic).
+
+## What was learned
+- The hang is intermittent (about 1 launch in 8 before the fix). The false deactivate leaves the window minimised, so no `WM_ACTIVATEAPP(TRUE)` ever arrives and the load screen never hides.
+
+## Changelog pointer
+- Version history is in the git log for this directory (0.2.0 detour port, 0.3.0 WndProc second hook).
