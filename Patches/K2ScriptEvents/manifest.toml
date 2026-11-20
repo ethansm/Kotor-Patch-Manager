@@ -1,0 +1,17 @@
+[patch]
+id = "script-events"
+name = "Script Events (shared NWScript RunScript & ExecuteCommand hooks)"
+version = "0.1.1-dev"
+kind = "provider"
+provides = ["k2.scriptevents@1"]
+author = "local"
+description = "Owns non-colliding NWScript VM interception points in CVirtualMachineInternal::RunScript (0x007022E0 pre, 0x007023E6 post) and CSWVirtualMachineCommands::ExecuteCommand (0x00668FE8) that coexist cleanly with perf-lab (0x007022A0, 0x00668FD0) and robustness-fixes (0x00668FE0, 0x00669012). Provides k2.scriptevents@1 (ScriptEvents.h) for script event observation, native C++ script overrides, and custom VM command handlers. Opt-out: script_events.ini [script_events] enabled=0."
+
+requires = []
+conflicts = []
+
+[patch.supported_versions]
+kotor2_steam_aspyr = "6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"
+
+[metadata]
+target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"]

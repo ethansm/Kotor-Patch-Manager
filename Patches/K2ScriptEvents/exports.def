@@ -1,0 +1,6 @@
+LIBRARY ScriptEvents
+EXPORTS
+    KPatchInit
+    SE_OnRunScriptPre
+    SE_OnRunScriptPost
+    SE_OnExecuteCommand
