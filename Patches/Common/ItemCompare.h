@@ -1,5 +1,5 @@
 // ItemCompare.h -- pure (engine-free, heap-free, STL-free) equip-compare formatter: stat deltas, band A (2 x 30 chars) and the equip block.
-// Single shared header in _shared_src.
+// Single shared header in Common.
 // Row templates: .claude/waves/ISF-EQBOX-2/u09.md. Spec background: .claude/research/equip_compare/phase2/SPEC.md.
 // Sides: PropDiff A = EQUIPPED item, B = VIEWED item. Numeric deltas read "(+N)"/"(-N)" (since 783d3698); whether the engine recolors the +/- in game is unverified.
 // Contract: every band and block row is <= 30 chars. Names are read bounded. PropRow::text must be NUL-terminated (ItemPropDiff.h strcmp).
