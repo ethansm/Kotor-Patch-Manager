@@ -1,0 +1,22 @@
+# Byte patches this mod's DLL writes into the game itself (flag-file bone experiment, holster.ini bone_test=1; default off).
+# Schema: see activation_fix_src/code_patches.toml.
+
+[[code_patches]]
+name = "bone_test_rhand"
+address = 0x00763AF9
+# `push 0x0099EDD8` ("rhand") in FUN_007637E0; only the imm32 changes
+original_bytes = [0x68, 0xD8, 0xED, 0x99, 0x00]
+kind = "code"
+verifies_original = true
+enabled_by = "holster.ini probe=1 AND bone_test=1 AND place_mode=repoint (default off)"
+source = "Holster.cpp applyBoneTest, HolsterBonePatch.h patchNodeLiteral (writeChecked)"
+
+[[code_patches]]
+name = "bone_test_lhand"
+address = 0x00763E2B
+# `push 0x0099EDD0` ("lhand") in FUN_007637E0; only the imm32 changes
+original_bytes = [0x68, 0xD0, 0xED, 0x99, 0x00]
+kind = "code"
+verifies_original = true
+enabled_by = "holster.ini probe=1 AND bone_test=1 AND bone_test_left=1 AND place_mode=repoint (default off)"
+source = "Holster.cpp applyBoneTest, HolsterBonePatch.h patchNodeLiteral (writeChecked)"

@@ -1,0 +1,181 @@
+[metadata]
+target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"]
+
+# Holster P0 probe. Every entry: plain detour (no consumed exit), whole stolen instructions, skip_original_bytes = false (handler runs first,
+# then the stolen bytes). H1/H2/H4/H6 sit at a function entry; H3 and H7 are mid-function. No stolen bytes contain relative branches.
+# Handlers only read, except H7 (HolsterPlace), which rewrites the weapon Gob pose only with probe=1 bone_test=1 place=1.
+# H5 (0x5644B0) was removed: A3 showed it is an action enqueue, not an anim sender.
+
+# H1: client combat flag setter 0x007682B0 (thiscall: ECX = client creature, [esp+4] = new state; stores this+0x138, returns old).
+# PUSH EBP / MOV EBP,ESP / SUB ESP,0x20 (6 bytes).
+[[hooks]]
+address = 0x007682B0
+type = "detour"
+function = "HolsterCombat"
+original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x20]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[esp+4]"
+type = "int"
+
+# H2: in-world weapon attach 0x007637E0 (cdecl: obj u32, char* tag "rhand"/"lhand", int* creature). PUSH EBP / MOV EBP,ESP / PUSH -1 (5 bytes).
+[[hooks]]
+address = 0x007637E0
+type = "detour"
+function = "HolsterAttach"
+original_bytes = [0x55, 0x8B, 0xEC, 0x6A, 0xFF]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[esp+4]"
+type = "uint"
+
+[[hooks.parameters]]
+source = "[esp+8]"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[esp+0xC]"
+type = "pointer"
+
+# H3: weapon-set swap executor 0x005DF920 (thiscall: ECX = executor). The entry (0x5DF920-0x5DF925) belongs to cmdq-probe's CmdqProbeReequip, so this
+# hook sits right after the prologue at 0x005DF926: MOV [EBP-0x6C],ECX / MOV EAX,[EBP-0x6C] (6 bytes, no relative branches; ECX is still `this`).
+[[hooks]]
+address = 0x005DF926
+type = "detour"
+function = "HolsterSwap"
+original_bytes = [0x89, 0x4D, 0x94, 0x8B, 0x45, 0x94]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+# H4: anim-id resolver 0x00863650 (thiscall: ECX = object, [esp+4] = u16 anim id). PUSH EBP / MOV EBP,ESP / SUB ESP,0x60 (6 bytes).
+[[hooks]]
+address = 0x00863650
+type = "detour"
+function = "HolsterAnimResolve"
+original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x60]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[esp+4]"
+type = "uint"
+
+# H4b (0.12.0-dev, HW16, REINSTALL: new hook + export): unarmed locomotion style override, mid-function in the same resolver (static dump decomp/86/00863650.asm).
+# H4 (entry, above) stays: move-hold tracking and ANIMRES need it. This site is 44 bytes after H4 (spans do not overlap; 6 + 38 bytes apart).
+# Frame facts from the dump: ECX is spilled to [ebp-0x34] (the client creature), the u16 anim id is [ebp+8], the gate byte (+0xC6) is [ebp-0xD], and the weapon style
+# byte (+0xC5) was just stored to [ebp-1]; every style switch below reads [ebp-1] and nothing reads CL after this point. Stolen: MOV EAX,[EDX+0xD4]
+# (8B 82 D4 00 00 00, 6 bytes, instruction-boundary clean, no relative branch; EDX = [ebp-0x34] is live and KPM's stub preserves integer registers).
+# The handler runs BEFORE the stolen bytes and may overwrite [ebp-1] with 8 (unarmed) for a holstered creature's locomotion ids. The second style read near the end of the
+# function (static dump, MOV CL,[EAX+0xC5]) is not touched.
+[[hooks]]
+address = 0x0086367C
+type = "detour"
+function = "HolsterAnimStyle"
+original_bytes = [0x8B, 0x82, 0xD4, 0x00, 0x00, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ebp"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[ebp-0x34]"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[ebp+8]"
+type = "uint"
+
+# H6: CAurBehaviorAttach UpdateDependentPosition handler 0x005047B0 (thiscall: ECX = behavior object, NOT the Gob; C1). PUSH EBP / MOV EBP,ESP / SUB ESP,0xC (6 bytes). Per Gob per frame.
+[[hooks]]
+address = 0x005047B0
+type = "detour"
+function = "HolsterGobUpdate"
+original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x0C]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+# H7: per-frame post-copy point inside the attach behaviors' refresh (vtbl+0x08 = 0x00504D40) at 0x00504EF5, right after
+# N->vtbl[+0xC](P+0xA4, P+0xB0) at 0x504EF3 rewrote the child Gob's WORLD pose from node N (C4 .claude/research/holster_c4_weapon_attach.md).
+# The old site 0x005047F4 (event-only handler 0x5047B0) never saw a weapon, only OmenRef01 (run 10-16).
+# Stolen: MOV [EBP-0x3C],1 (C7 45 C4 01 00 00 00, 7 bytes, no relative branch), resume 0x504EFC. [ebp-0x1C] = child Gob P, [ebp-0x44] = behavior
+# (node N = [behavior+0x18], read in the handler). EAX/ECX/EDX are dead here. Translate/Rotate subtypes write pos/quat AFTER this base refresh.
+[[hooks]]
+address = 0x00504EF5
+type = "detour"
+function = "HolsterPlace"
+original_bytes = [0xC7, 0x45, 0xC4, 0x01, 0x00, 0x00, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[ebp-0x1C]"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[ebp-0x44]"
+type = "pointer"
+
+# H8/H9 (0.1.1-dev, r6 recon .claude/research/holster_edit/r6*.md): hand sites inside FUN_007637E0, right 0x00763B49 and left 0x00763E7B.
+# Stolen: MOV EAX,[EDX+0x7C] / CALL EAX (8B 42 7C FF D0, 5 bytes, indirect call so no rel32 to fix), resume +5. The handlers run BEFORE the stolen bytes
+# and only record. At the site: ECX = body anim object, weapon Gob = [EBP-0x2C], item = [EBP-0x40] (R) / [EBP-0x30] (L), W = [item+0x14].
+[[hooks]]
+address = 0x00763B49
+type = "detour"
+function = "OnHandAttachR"
+original_bytes = [0x8B, 0x42, 0x7C, 0xFF, 0xD0]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[ebp-0x2c]"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[ebp-0x40]"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks]]
+address = 0x00763E7B
+type = "detour"
+function = "OnHandAttachL"
+original_bytes = [0x8B, 0x42, 0x7C, 0xFF, 0xD0]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[ebp-0x2c]"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[ebp-0x30]"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
