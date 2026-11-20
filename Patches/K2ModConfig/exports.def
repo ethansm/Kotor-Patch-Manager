@@ -1,0 +1,6 @@
+LIBRARY ModConfig
+EXPORTS
+    KPatchInit
+    McBind
+    McTick
+    McDestroy
