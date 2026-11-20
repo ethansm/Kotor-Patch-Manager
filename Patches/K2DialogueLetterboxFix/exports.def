@@ -1,0 +1,6 @@
+LIBRARY K2DialogueLetterboxFix
+EXPORTS
+    KPatchInit
+    dlbOnScreenSize
+    dlbLogSetTop
+    dlbLogSetBottom

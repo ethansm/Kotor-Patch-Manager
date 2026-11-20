@@ -1,0 +1,19 @@
+# Byte patches this mod's DLL writes into the game itself (not KPM hooks), for the static checks
+# (scripts/check_hook_bytes.py, scripts/check_hook_spans.py). Schema, one [[code_patches]] table per site:
+#   name              group/site name used in the C++ source
+#   address           absolute VA of the first patched byte
+#   original_bytes    the vanilla bytes at address (length = span); check_hook_bytes compares them to the vanilla exe
+#   kind              "code" (default) or "data" (a constant, not an instruction: boundary check skipped)
+#   verifies_original true if the writer memcmp's the site and refuses on a mismatch (cite the line in `source`)
+#   enabled_by        config gate, free text
+#   source            file:line in this mod's C++ (original bytes, verify and write)
+
+[[code_patches]]
+name = "aspect_double"
+address = 0x009A7D30
+# 8-byte double 2.3333330154418945 (7/3); read by 7 FDIV; writer accepts the vanilla value or its own last write, else refuses (FOREIGN)
+original_bytes = [0x00, 0x00, 0x00, 0x80, 0xAA, 0xAA, 0x02, 0x40]
+kind = "data"
+verifies_original = true
+enabled_by = "dialogue_letterbox_fix.ini enabled=1 (default); mode=vanilla/h6/clamp, first write on the first GUI-manager size change"
+source = "K2DialogueLetterboxFix.cpp:60-61,171-180"
