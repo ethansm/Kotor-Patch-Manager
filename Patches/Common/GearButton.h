@@ -1,5 +1,5 @@
 // GearButton.h -- the shared settings-gear button: geometry + art, one look on every page (MCF8, doc 46).
-// Origin: level_up_override_src/LevelUpUi.h (uiIconRect / uiGearRect / kGearInset / kHiTint); the pixels are _shared_src/GearIconTex.inc
+// Origin: level_up_override_src/LevelUpUi.h (uiIconRect / uiGearRect / kGearInset / kHiTint); the pixels are Common/GearIconTex.inc
 // (e3d_gear, e3d_gear_hi, e3d_fill + two slider textures), byte-identical to LuoTextures.inc's luo_gear / luo_gear_hi / luo_fill.
 //
 // Usage: set embtex::g_log, call gearbtn::registerArt() once while building (idempotent, Steam only), embtex::heal() every UI tick, then give the
