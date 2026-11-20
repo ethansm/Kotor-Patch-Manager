@@ -1,0 +1,40 @@
+# Byte patches this mod's DLL writes into the game itself (not KPM hooks), for the static checks
+# (scripts/check_hook_bytes.py, scripts/check_hook_spans.py). Schema, one [[code_patches]] table per site:
+#   name              group/site name used in the C++ source
+#   address           absolute VA of the first patched byte
+#   original_bytes    the vanilla bytes at address (length = span); check_hook_bytes compares them to the vanilla exe
+#   kind              "code" (default) or "data" (a constant, not an instruction: boundary check skipped)
+#   verifies_original true if the writer memcmp's the site and refuses on a mismatch (cite the line in `source`)
+#   enabled_by        config gate, free text
+#   source            file:line in this mod's C++ (original bytes, verify and write)
+
+[[code_patches]]
+name = "tx"
+address = 0x004261CF
+# same site as k2-texture-memory-release; whichever writer runs second sees E9 and refuses
+original_bytes = [0x0F, 0xB6, 0xC8, 0x85, 0xC9, 0x75, 0x10]
+kind = "code"
+verifies_original = true
+enabled_by = "perflab_debug.txt tx=1 (default 0; inert without perflab_debug.txt)"
+source = "PerfLab.cpp:267,446-456,463-474,480"
+
+[[code_patches]]
+name = "g1skip"
+address = 0x004265F3
+# JZ -> JMP short (skip glFinish per texture upload)
+original_bytes = [0x74, 0x06]
+kind = "code"
+verifies_original = true
+enabled_by = "perflab_debug.txt g1skip=1 (default 0; inert without perflab_debug.txt)"
+source = "PerfLab.cpp:267,446-456,477,481"
+
+[[code_patches]]
+name = "abreserve"
+address = 0x0058C406
+# CExoArray<ActionEntry>::SetSize capacity reuse cave (doc 10 / W9 item 3)
+original_bytes = [0x8B, 0x45, 0x08, 0x50, 0x8B, 0x4D, 0xF4, 0xE8, 0x2E, 0x01, 0x00, 0x00]
+kind = "code"
+verifies_original = true
+enabled_by = "perflab_debug.txt abreserve=1 (default 0; inert without perflab_debug.txt)"
+source = "PerfLab.cpp"
+
