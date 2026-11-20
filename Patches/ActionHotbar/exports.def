@@ -1,0 +1,6 @@
+LIBRARY ActionHotbar
+EXPORTS
+    KPatchInit
+    CaptureHotbarKey
+    HotbarHudTick
+    HotbarBuildButtons
