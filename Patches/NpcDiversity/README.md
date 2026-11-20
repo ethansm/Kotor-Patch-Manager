@@ -6,6 +6,8 @@
 > **Known limits:** Hook 1 is log-only. The `anim_*` keys are probe code and default off. Commoner textures are large (Prerequisites 4). Named, merchant and uniformed NPCs keep their default look. **Play-test status:** NB2-A3, NB2-B and WI-119 are pending (not yet played).
 > **Install:** Do not install for normal play. This is a probe build that logs layout facts and runs the ambient-animation experiment. Install only to run the pending play checks.
 
+> **Assets not included:** the `override/` textures, models and 2DAs and the `rejected_pool/` named in this README are game-derived or third-party and are not in this repository. Without them the DLL only logs (Hook 1 is log-only); generate them locally with the author's scripts before using the remap.
+
 ## What it does
 
 1. **Hash.** Each remap call hashes the creature object id and the final appearance row (see Hashes). The result is the same look every visit unless `visit_variety=1`.
