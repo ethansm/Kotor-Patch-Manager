@@ -1,0 +1,93 @@
+[metadata]
+target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"]
+
+# Quick Loot hooks (doc 52): all four are detours: H1 0x7CACB0 ShowContainerGui (consumed, menu suppressed), H2 0x5F2FE0 placeable EventHandler, H3 0x5F5770 CloseInventory; H4 0x74FB20 target-arrow draw is skipped while the list is up. Logic changes are a DLL hot-swap; a new hook needs a KPM reinstall.
+# Prologue bytes verified against ghidra_dumps/steam_6a522e71/decomp/{7c/007cacb0,5f/005f2fe0,5f/005f5770}.asm.
+# None of the stolen bytes holds a relative branch or CALL.
+
+# H1: CGuiInGame::ShowContainerGui 007cacb0 (thiscall, RET 8). ECX = gui, [esp+4] = container object id (client), [esp+8] = flag.
+# Handler returns non-zero to consume (QL1): the prologue bytes run, then control jumps to the function's own epilogue
+# (MOV ESP,EBP / POP EBP / RET 8 at 007cad1f). EAX carries the return value. The probe always returns 0 (run the original).
+[[hooks]]
+address = 0x007CACB0
+type = "detour"
+function = "QlShowContainer"
+original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x0C, 0x89, 0x4D, 0xF4]
+consumed_exit_address = 0x007CAD1F
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "int"
+
+[[hooks.parameters]]
+source = "[esp+4]"
+type = "int"
+
+[[hooks.parameters]]
+source = "[esp+8]"
+type = "int"
+
+# H2: CSWSPlaceable::EventHandler 005f2fe0 (thiscall, RET 20). ECX = placeable, [esp+4] = a1 (compared with DAT_0099244c),
+# [esp+8] = a2, [esp+0xC] = a3 (pointer to the event record; id = *(short*)a3 for the matching a1). Hot path: heartbeats.
+[[hooks]]
+address = 0x005F2FE0
+type = "detour"
+function = "QlPlaceableEvent"
+original_bytes = [0x55, 0x8B, 0xEC, 0x6A, 0xFF]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "int"
+
+[[hooks.parameters]]
+source = "[esp+4]"
+type = "int"
+
+[[hooks.parameters]]
+source = "[esp+8]"
+type = "int"
+
+[[hooks.parameters]]
+source = "[esp+0xC]"
+type = "int"
+
+# H3: CSWSPlaceable::CloseInventory 005f5770 (thiscall, RET 8). ECX = placeable, [esp+4] = player object id, [esp+8] = flag (1 = take all).
+[[hooks]]
+address = 0x005F5770
+type = "detour"
+function = "QlCloseInventory"
+original_bytes = [0x55, 0x8B, 0xEC, 0x6A, 0xFF]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "int"
+
+[[hooks.parameters]]
+source = "[esp+4]"
+type = "int"
+
+[[hooks.parameters]]
+source = "[esp+8]"
+type = "int"
+
+# H4 (0.7.2-dev, doc 52 QL14): the target-arrow draw 0074fb20 (thiscall ECX = in-game GUI owner, one float frame-dt arg, RET 4; size 3146 B,
+# one caller 0x0074b520; draws the hostilearrow / friendlyarrow sprite, recon .claude/waves/w8-52-QL14/r01.md). The arrow drew over the quick-loot
+# list (user 10-29). Handler returns non-zero while the list is on screen: only the 9 prologue bytes run (PUSH EBP / MOV EBP,ESP / SUB ESP,0x244),
+# then the function's own epilogue MOV ESP,EBP / POP EBP / RET 4 at 00750764 (after the cookie check, which the skipped body never armed).
+# Prologue bytes read from the vanilla_clean exe (6a522e71); no relative branch or CALL among them.
+[[hooks]]
+address = 0x0074FB20
+type = "detour"
+function = "QlTargetArrow"
+original_bytes = [0x55, 0x8B, 0xEC, 0x81, 0xEC, 0x44, 0x02, 0x00, 0x00]
+consumed_exit_address = 0x00750764
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "int"
