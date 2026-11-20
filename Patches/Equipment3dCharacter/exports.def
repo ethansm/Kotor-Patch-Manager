@@ -1,0 +1,6 @@
+LIBRARY EquipCharPreview
+EXPORTS
+    KPatchInit
+    BindEquipView
+    EquipTick
+    EquipDestroy

@@ -1,0 +1,1070 @@
+// Equipment 3D Character 0.3.0-probe (Steam Aspyr build 6A522E71...). Shows a live 3D render of the character whose gear
+// is being edited on the equipment screen (CSWGuiInGameEquip), with an occasional flourish animation.
+// Research trail: patch_manager_mods/10_equipment_3d_character.md and equipment_3d_character_src/research/R* (worktree
+// local-setup/KOTOR-II). Technique: Mod 1 (inventory_3d_viewport_src) for the view; the preview creature is built the way
+// the character page does it (SetStats 0084e6f0, raw disasm 0084f2c6..0084f482).
+//
+// Hooks (cdecl detours, original bytes still run afterwards):
+//   H-E1 0x008aa16a BindEquipView  panel ctor 008a92d0, before StopLoadFromLayout ([ebp-0x1d8] = panel)
+//   H-E3 0x008aba50 EquipTick      panel Update (vtable slot 0x34) prologue, ECX = panel
+//   H-E4 0x008aa6f0 EquipDestroy   panel scalar deleting dtor prologue, ECX = panel: frees the preview creature
+//
+// Stages (equip3d.ini `stage=N`, each includes the ones below; lets a crash be bisected without a rebuild):
+//   1 view + rig + covers only          2 preview creature built when the shown character changes (no refresh)
+//   3 polled refresh when the real creature's appearance changes    4 idle + flourish scheduler    5 drag / wheel / reset
+// 0.2.0-probe (doc 32 MG4): KpLog (core file equipment-3d-character_log.txt, old core fallback equip3d_log.txt), IniKit primitives, PanelSlots, GuiKit wheel/screen/cursor/bindByTag/setRect/getExtent/setText/imageFor/setFill; lazy init from KPatchInit/first hook.
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include <ctype.h>
+#include <math.h>
+#include "../Common/KpLog.h"
+#include "../Common/GameAddr.h"
+#include "../Common/SafeRead.h"   // VirtualQuery probing: the Win32 bad-pointer probes fault-storm under Wine (DB lesson 234)
+#include "../Common/SceneView.h"   // shared CSWGui3DSceneView block / scene / camera helpers (K2Addr.h table; Mods 1 + 5)
+#include "../Common/GuiInput.h"
+#include "../Common/GuiKit.h"     // Common: screen sync, float cursor, wheel subclass (kp::WindowHook inside), bindByTag, setRect/getExtent/setText/imageFor/setFill
+#include "../Common/PanelSlots.h"  // Common: panel -> slot table
+#include "Equip3dLogic.h"   // host-tested pure logic (equip3d_logic_test.cpp); includes EquipWeaponTable.inc (scripts/gen_equip3d_weapon_table.py)
+#include "../Common/HolsterApi.h"   // k2.holster@1 (optional; connected lazily, not in requires_interfaces)
+
+KP_LOG_PATCH("equipment-3d-character");
+
+namespace {
+
+// ---- engine addresses (Steam Aspyr) ----
+constexpr int FnNew = 0x00919723;           // cdecl(size)
+// weapons (research: 0086a430 attaches model instances with Gob vt[0x50](parentGob, "rhand"/"lhand", 0); detach = vt[0x50](0,0,0)+vt[0x4c](0)+delete)
+constexpr int FnGetItemObj = 0x0073f530, ItemMgrGlobal = 0x00a1b4a4, FnCreateModel = 0x00462320;   // thiscall(mgr=[[a1b4a4]+4], id) -> client item*; cdecl(name, inst, 0, 0) -> Gob*
+constexpr int CrRightItemOff = 0x238, CrLeftItemOff = 0x23c, ItemBaseIdxOff = 0xc, ItemVariationOff = 0x11c, NoItemId = 0x7f000000;
+constexpr int ItemModelResOff = 0x128;   // client item ctor 00801fa0 stores the model ResRef it chose (name formula 006d5000 + defaultmodel fallback), char[16]
+constexpr int GobAttachSlot = 0x50, GobDetachSlot = 0x4c;
+constexpr int NumButtons = 5;   // LBL_E3D_ANIM / SPIN / WEAP / RESET / EMOTE (ids ExpectedControlId+3..+7)
+constexpr int MaxMenu = 20;     // LBL_E3D_M00..M19 (ids +8..+27): Emotes pop-up items; then LBL_E3D_TIPBG / LBL_E3D_TIP (+28,+29)
+constexpr int CtlFlagsOff = 0x48;           // bit1 visible, bit5 0x20 click-through
+constexpr int CtlIdOff = 0x54;
+constexpr int SceneObjOffset = 0x74;        // view+0x74 = Scene*
+constexpr int ExpectedControlId = 49;       // equip_p.gui has 49 controls (ids 0..48); 3D_MODEL=49, LBL_BEVEL=50, LBL_BEVEL2=51
+constexpr int TipBgId = ExpectedControlId + 3 + NumButtons + MaxMenu, TipId = TipBgId + 1;
+constexpr int HolsBtn = NumButtons, NumToolbar = NumButtons + 1, HolsId = TipId + 1;   // EQ10 LBL_E3D_HOLS (id 79) = btn[HolsBtn]
+constexpr int ExpectedCamVtable = 0x0098c45c;
+constexpr int ExpectedGobVtable = 0x0098b5cc;
+
+constexpr int PanelCharOff = 0x68;          // panel+0x68 = client creature POINTER of the shown character (SetCharacter arg)
+constexpr int FnCreatureCtor = 0x007645f0;  // CSWCCreature ctor, fastcall ECX = block (0x470 bytes)
+constexpr int CreatureSize = 0x470;
+constexpr int CreatureVftable = static_cast<int>(gameaddr::ClientCreatureVtable);
+constexpr int CreatureAppOff = 0x224;       // creature[0x89] = appearance object pointer (0x6c bytes, first 0x3c copied)
+constexpr int CreatureStatsOff = 0x310;     // creature[0xc4] = stats; +0x80 short = alignment
+constexpr int CreatureHolderOff = 0x68;     // creature[0x1a] = part holder: holder->vt[8](0xff) body Gob, (0xfe) head Gob
+constexpr int FnBuildApp = 0x0076d200;      // thiscall(preview, copy60, flags, 1, 0) RET 0x10
+constexpr int FnSetAlign = 0x0085d430;      // thiscall(preview[0x89], int align) RET 4
+constexpr int FnSetupScene = 0x0077ec20;    // thiscall(preview, view, real, 0, 1) RET 0x10
+constexpr int CrSetScene = 0x94, CrSetPos = 0x8c, CrSetFacing = 0x88;
+constexpr int PartPlaySlot = 0x18, PartLenSlot = 0x1c;
+constexpr int AppCopyBytes = 0x3c;
+
+using Fast1 = void(__fastcall*)(void*);
+using NewFn = void*(__cdecl*)(unsigned);
+using BuildAppFn = int(__thiscall*)(void*, void*, int, int, int);
+using SetAlignFn = void(__thiscall*)(void*, int);
+using SetupSceneFn = void(__thiscall*)(void*, void*, void*, int, int);
+using CrPtrFn = void(__thiscall*)(void*, void*);
+using CrDtorFn = void(__thiscall*)(void*, int);
+using PartGetFn = void*(__thiscall*)(void*, int);
+using PartPlayFn = void(__thiscall*)(void*, const char*, float, unsigned, float);
+using PartLenFn = void*(__thiscall*)(void*, const char*, int, float*);
+
+// ---- diagnostics: KpLog (core file equipment-3d-character_log.txt; old core: fallback equip3d_log.txt at INFO), capped; equip3d_debug.txt enables per-tick detail ----
+KP_CHANNEL(chMain, "main");
+KP_CHANNEL(chDbg, "debug");
+// Only stores the path and the level (no I/O): safe from a static initialiser.
+const bool g_fallbackSet = (KpLog_SetFallbackFile("equip3d_log.txt"), KpLog_SetFallbackLevel(KPLOG_INFO), true);
+int g_logLines = 0;
+constexpr int MaxLogLines = 15000;
+bool g_debug = false;
+int g_dbgLines = 0;
+constexpr int MaxDebugLines = 8000;
+char g_loadLine[160];   // formatted by DllMain, emitted by ensureInit (the logger is only known after KPatchInit)
+void logf(const char* fmt, ...) {
+    if (g_logLines >= MaxLogLines) return;
+    ++g_logLines;
+    char buf[2048]; va_list ap; va_start(ap, fmt); vsnprintf(buf, sizeof buf, fmt, ap); va_end(ap);
+    KP_LOGV(chMain, KPLOG_INFO, "%s", buf);
+}
+void logw(const char* fmt, ...) {
+    char buf[2048]; va_list ap; va_start(ap, fmt); vsnprintf(buf, sizeof buf, fmt, ap); va_end(ap);
+    KP_LOGV(chMain, KPLOG_WARN, "%s", buf);
+}
+void loge(const char* fmt, ...) {
+    char buf[2048]; va_list ap; va_start(ap, fmt); vsnprintf(buf, sizeof buf, fmt, ap); va_end(ap);
+    KP_LOGV(chMain, KPLOG_ERR, "%s", buf);
+}
+void dlogf(const char* fmt, ...) {
+    if (!g_debug || g_dbgLines >= MaxDebugLines) return;
+    ++g_dbgLines;
+    char buf[2048]; va_list ap; va_start(ap, fmt); vsnprintf(buf, sizeof buf, fmt, ap); va_end(ap);
+    KP_LOGV(chDbg, KPLOG_INFO, "%s", buf);
+}
+constexpr unsigned SiteEquip = 0x0500;   // saferead site id for this DLL's own probes
+void dumpMem(const char* tag, int addr, int words) {
+    if (addr == 0) { logf("  dump %s @0: null", tag); return; }
+    for (int i = 0; i < words; i += 8) {
+        char line[200]; int p = 0;
+        for (int j = i; j < i + 8 && j < words; ++j) {
+            if (!saferead::probeRead(SiteEquip, reinterpret_cast<const void*>(addr + j * 4), 4)) p += snprintf(line + p, sizeof(line) - p, " ????????");
+            else p += snprintf(line + p, sizeof(line) - p, " %08x", *reinterpret_cast<const int*>(addr + j * 4));
+        }
+        logf("  dump %s +%03x:%s", tag, i * 4, line);
+    }
+}
+template <typename T>
+bool readAt(int base, int off, T* out) {
+    return saferead::readAt<T>(SiteEquip, static_cast<uintptr_t>(static_cast<unsigned>(base)), off, out);
+}
+
+// ---- configuration: $GAME/equip3d.ini (missing/garbage = defaults; every key and rejected line logged) ----
+using eq3d::Cfg;
+Cfg g_cfg;
+unsigned g_cfgGen = 0;
+ULONGLONG g_iniStamp = 0; DWORD g_iniLastCheck = 0;
+
+using eq3d::trim;
+void syncScreen();
+void syncWheelCfg() { guikit::g_wheel.enabled = g_cfg.wheelZoom != 0; guikit::g_wheel.iniW = (int)g_cfg.screenW; guikit::g_wheel.iniH = (int)g_cfg.screenH; }   // after every loadIni and each tick
+void loadIni() {
+    Cfg c;
+    g_debug = GetFileAttributesA("equip3d_debug.txt") != INVALID_FILE_ATTRIBUTES;
+    WIN32_FILE_ATTRIBUTE_DATA fa;
+    if (GetFileAttributesExA("equip3d.ini", GetFileExInfoStandard, &fa))
+        g_iniStamp = ((ULONGLONG)fa.ftLastWriteTime.dwHighDateTime << 32) | fa.ftLastWriteTime.dwLowDateTime;
+    else g_iniStamp = 0;
+    FILE* f = fopen("equip3d.ini", "r");
+    if (!f) { logf("INI: equip3d.ini not found, using defaults (stage=%d debug=%d)", c.stage, g_debug); g_cfg = c; ++g_cfgGen; syncWheelCfg(); syncScreen(); return; }
+    char line[600]; int ln = 0, ok = 0, bad = 0;
+    while (fgets(line, sizeof(line), f)) {
+        ++ln;
+        if (eq3d::drainLongLine(line, sizeof(line), f)) { logf("INI line %d rejected (longer than 599 chars)", ln); ++bad; continue; }
+        trim(line);
+        char* k = nullptr; char* v = nullptr;
+        inikit::IniLine sp = inikit::splitIniLine(line, &k, &v);
+        if (sp == inikit::IniLineSkip) continue;
+        if (sp == inikit::IniLineNoEquals) { logf("INI line %d rejected (no '='): %s", ln, line); ++bad; continue; }
+        eq3d::IniResult pr = eq3d::parseIniLine(c, k, v);
+        if (pr == eq3d::IniUnknown) { logf("INI line %d rejected (unknown key '%s')", ln, k); ++bad; continue; }
+        if (pr == eq3d::IniOkKeepObj10) logf("WARNING: keep_obj10=1 is DEPRECATED and IGNORED (it reparented the REAL helmet Gob onto the preview: 0085a9e0, doc 10); use helmet=1");
+        if (pr == eq3d::IniBad) { logf("INI line %d rejected (bad value for '%s': '%s')", ln, k, v); ++bad; }
+        else { logf("INI %s = %s", k, v); ++ok; }
+    }
+    fclose(f);
+    int clamped = eq3d::clampCfg(c);
+    if (clamped & eq3d::ClampFov) logf("INI fov_deg out of range, reset 22.726");
+    if (clamped & eq3d::ClampWheelStep) logf("INI wheel_step out of range, reset 0.9");
+    g_cfg = c; ++g_cfgGen; syncWheelCfg();
+    syncScreen();
+    logf("INI loaded: %d keys ok, %d rejected, debug=%d gen=%u enabled=%d stage=%d rig=%s", ok, bad, g_debug, g_cfgGen, c.enabled, c.stage, c.rig);
+}
+void maybeReloadIni() {
+    DWORD now = GetTickCount();
+    if (now - g_iniLastCheck < 1000) return;
+    g_iniLastCheck = now;
+    WIN32_FILE_ATTRIBUTE_DATA fa; ULONGLONG st = 0;
+    if (GetFileAttributesExA("equip3d.ini", GetFileExInfoStandard, &fa))
+        st = ((ULONGLONG)fa.ftLastWriteTime.dwHighDateTime << 32) | fa.ftLastWriteTime.dwLowDateTime;
+    bool dbg = GetFileAttributesA("equip3d_debug.txt") != INVALID_FILE_ATTRIBUTES;
+    if (st != g_iniStamp || dbg != g_debug) { logf("INI changed on disk, reloading"); loadIni(); }
+}
+
+// ---- per-panel slot ----
+struct Slot {
+    int panel = 0;
+    unsigned char* block = nullptr;   // the CSWGui3DSceneView block (= view)
+    bool usable = false;
+    unsigned seq = 0;
+    DWORD bindTick = 0, lastBeat = 0;
+    // preview creature
+    unsigned char* creature = nullptr;
+    bool creatureBad = false;         // construction failed: never retry this panel
+    int real = 0;                     // the client creature the preview was built from
+    unsigned char app[AppCopyBytes] = {};
+    short align = -1;
+    DWORD lastPoll = 0, lastBuild = 0;
+    int builds = 0; int baseModels = -1;   // scene model count after the first build (growth check)
+    bool built = false;
+    // input
+    float yaw = 0, zoom = 1;
+    bool dragging = false; float lastX = 0, lastY = 0;
+    float panZ = 0, appliedPanZ = 0, startX = 0, startY = 0; int axis = 0;   // vertical pan (CrSetPos z) + drag axis lock (0 undecided, 1 yaw, 2 pan)
+    // flourish scheduler
+    DWORD nextFlourish = 0, flourishEnd = 0, lastEquipMs = 0;
+    bool flourishActive = false;
+    char idleName[16] = "";      // the CURRENT looping idle (stance while stanceOn, else the alignment idle)
+    char baseIdle[16] = "";      // alignment idle
+    char activeName[32] = "";
+    // weapons
+    void* wpn[2] = {}; int wpnIds[2] = {0, 0}; bool wpnApplied = false, stanceOn = false; char stanceName[12] = "", wpnNames[2][28] = {};
+    bool wpnReg[2] = {}, regFail = false, regTried = false; int wpnWield[2] = {0, 0}; bool wpnHas[2] = {}; int drawnApplied = -1, toolLaid = -1; eq3d::Box cell[5] = {}; bool cellOk = false;   // EQ10 holster registration + original toolbar cells
+    // own-model helmet (never the real item's Gob: DB lesson 149, 0085a9e0)
+    void* helm = nullptr; int helmId = 0; bool helmApplied = false; char helmName[20] = "";
+    // toolbar
+    unsigned char* btn[NumToolbar] = {}; char btnText[NumToolbar][20] = {}; int btnHover[NumToolbar] = {-1, -1, -1, -1, -1, -1}; bool btnWasL = false;
+    // Emotes pop-up (items are engine labels; itemState = fill state + 1, 0 = not yet set)
+    unsigned char* item[MaxMenu] = {}; char itemText[MaxMenu][20] = {}; int itemState[MaxMenu] = {};
+    float rowRect[4] = {0, 0, 0, 0}; int spinLaid = -1;
+    int menuPhase = 0; DWORD menuPhaseAt = 0; char pendAnim[12] = ""; bool pendAtk = false;   // phase: 0 shown, 1 hidden (pre-buffer), 2 playing, 3 hidden (post-buffer)
+    bool menuOpen = false; int menuPage = 0; int menuCount = 0, menuLaid = -1, menuReal = 0; char menuAnim[MaxMenu][12] = {}; char menuLabel[MaxMenu][16] = {}; bool menuAttack[MaxMenu] = {};
+    unsigned char* tipBg = nullptr; unsigned char* tip = nullptr; char tipText[200] = ""; int tipFor = -1, overBtn = -1; DWORD overSince = 0;
+};
+panelslots::PanelSlots<Slot, 4> g_slots;
+unsigned g_seq = 0;
+uintptr_t slotKey(int panel) { return static_cast<uintptr_t>(static_cast<unsigned>(panel)); }
+Slot* findSlot(int panel) { return g_slots.find(slotKey(panel)); }
+void destroyCreature(Slot* s, const char* why);
+// Array position of a slot in forEach order (used only for the "slot %d ready" log).
+int slotIndex(const Slot* s) {
+    int idx = -1, i = 0;
+    g_slots.forEach([&](Slot& e) { if (&e == s) idx = i; ++i; });
+    return idx;
+}
+
+using sceneview::modelCount;
+
+// ---- game window / wheel (copied from Mod 1) ----
+HWND g_hwnd = nullptr;
+struct EnumCtx { DWORD pid; HWND best; long area; };
+BOOL CALLBACK enumProc(HWND h, LPARAM lp) {
+    EnumCtx* c = reinterpret_cast<EnumCtx*>(lp);
+    DWORD pid = 0; GetWindowThreadProcessId(h, &pid);
+    if (pid != c->pid || !IsWindowVisible(h)) return TRUE;
+    RECT r; if (!GetClientRect(h, &r)) return TRUE;
+    long a = (r.right - r.left) * (r.bottom - r.top);
+    if (a > c->area) { c->area = a; c->best = h; }
+    return TRUE;
+}
+// Engine framebuffer size (GuiKit reads the K2Addr ScreenW/ScreenH globals) unless the INI sets screen_w/screen_h explicitly.
+void syncScreen() {
+    int w = (int)g_cfg.screenW, h = (int)g_cfg.screenH;
+    if (guikit::syncScreen(g_cfg.screenExplicit ? w : 0, g_cfg.screenExplicit ? h : 0, &w, &h)) { g_cfg.screenW = (float)w; g_cfg.screenH = (float)h; }
+}
+void wheelEvent(int delta, int px, int py, bool inside) { logf("WHEEL: delta=%d cursor=(%d,%d) inside=%d", delta, px, py, inside); }
+bool g_wheelCfgSet = false;
+HWND gameWindow() {
+    if (g_hwnd && IsWindow(g_hwnd)) return g_hwnd;
+    static DWORD lastTry = 0; DWORD nowT = GetTickCount();
+    if (lastTry && nowT - lastTry < 2000) return nullptr;
+    lastTry = nowT;
+    EnumCtx c = {GetCurrentProcessId(), nullptr, 0};
+    EnumWindows(enumProc, reinterpret_cast<LPARAM>(&c));
+    g_hwnd = c.best;
+    RECT r = {0, 0, 0, 0}; if (g_hwnd) GetClientRect(g_hwnd, &r);
+    logf("INPUT: hwnd=%p client=%ldx%ld (engine %.0fx%.0f)", g_hwnd, r.right, r.bottom, g_cfg.screenW, g_cfg.screenH);
+    if (g_hwnd && g_cfg.wheelZoom && !guikit::g_wheelHwnd) {
+        if (!g_wheelCfgSet) { g_wheelCfgSet = true; guikit::g_wheel.scoped = false; guikit::g_wheel.onEvent = wheelEvent; }
+        bool ok = guikit::wheelInstall();
+        logf("WHEEL: subclassed window %p, old proc %p (err=%lu)", (void*)guikit::g_wheelHwnd, (void*)guikit::detail::WheelWin::old, ok ? 0UL : GetLastError());
+    }
+    return g_hwnd;
+}
+bool cursorEngine(float* x, float* y) {
+    if (!gameWindow()) return false;
+    syncScreen();
+    return guikit::cursorEngineF(x, y, (int)g_cfg.screenW, (int)g_cfg.screenH);
+}
+LARGE_INTEGER g_qpcFreq, g_qpcLast;
+
+// ---- cover labels (character-page arcs); built here because only constructor-bound controls get created ----
+unsigned char* bindCover(int panel, const char* tagName, int expectId) {
+    guikit::BindInfo bi;
+    guikit::bindByTag(static_cast<uintptr_t>(static_cast<unsigned>(panel)), tagName, expectId, 0, &bi);
+    saferead::beginScope();   // engine alloc+ctor ran: cached readable regions may be stale
+    if (bi.why == guikit::CF_Alloc) { logw("H1 cover %s: allocation failed", tagName); return nullptr; }
+    if (bi.why == guikit::CF_Vtable) { logw("H1 cover %s: ctor left vtable %08x (expected %08x), not binding", tagName, bi.badVtable, (unsigned)gameaddr::LabelVtable); return nullptr; }
+    logf("H1 cover %s: ctl=%p id=%d (expect %d) extent=[%d,%d,%d,%d] flags=%08x -> %08x", tagName, (void*)bi.ctl, bi.id, expectId, bi.ext[0], bi.ext[1], bi.ext[2], bi.ext[3], bi.flagsBefore, bi.flagsAfter);
+    return bi.id == expectId ? reinterpret_cast<unsigned char*>(bi.ctl) : nullptr;
+}
+
+// ---- toolbar (Anim / Spin / Reset): labels bound by tag; state text + hover fill set at runtime, clicks polled (labels are click-through) ----
+bool g_animOn = true, g_spinOn = false, g_weaponsOn = false, g_spinUi = false;   // g_spinUi: the spin row shows play/pause + Reset instead of the single Spin button
+   // session toggles (initialised from the INI at load / first bind)
+bool g_drawn = true, g_weaponsInit = false; k2holster::Client g_hol;   // EQ10: weapons in hand (drawn) vs holstered (k2.holster preview); client connected lazily
+void* btnImage(const char* resref) {   // pool + lowercase = guikit::imageFor; the load is logged once per resref as before
+    bool loaded = false;
+    void* im = guikit::imageFor(resref, &loaded);
+    if (loaded) logf("btn: image '%s' -> %p", resref, im);
+    return im;
+}
+void setLabelText(unsigned char* c, char* cache, size_t cacheN, const char* text, const char* nm) {
+    if (!c || !strcmp(cache, text)) return;
+    if (!guikit::setText(reinterpret_cast<uintptr_t>(c), text)) {
+        int tvt = 0, rend = 0; uintptr_t tx = reinterpret_cast<uintptr_t>(c) + 0xD8;   // label+0xD8 text object, renderer at +0x14
+        readAt<int>(static_cast<int>(tx), 0, &tvt); readAt<int>(static_cast<int>(tx), 0x14, &rend);
+        logf("%s: text object bad (vt=%08x renderer=%08x), cannot set \"%s\"", nm, tvt, rend, text); return;
+    }
+    dlogf("%s: text \"%s\" -> \"%s\"", nm, cache, text);
+    strncpy(cache, text, cacheN - 1); cache[cacheN - 1] = 0;
+}
+void btnSetText(Slot* s, int i, const char* text) { char nm[12]; snprintf(nm, sizeof nm, "btn[%d]", i); setLabelText(s->btn[i], s->btnText[i], sizeof(s->btnText[i]), text, nm); }
+void setFillImage(unsigned char* c, int i, const char* resref) {   // i < 0: menu item (no log on a bad border, as before)
+    if (!c) return;
+    uintptr_t cu = reinterpret_cast<uintptr_t>(c);
+    if (!guikit::detail::borderOk(cu)) {
+        if (i >= 0) { int bvt = 0; readAt<int>(static_cast<int>(cu + 0x60), 0, &bvt); logf("btn[%d]: border vtable %08x != %08x, no fill change", i, bvt, (unsigned)gameaddr::BorderVtable); }
+        return;
+    }
+    if (void* im = btnImage(resref)) guikit::setFill(cu, im);
+}
+void btnSetFill(Slot* s, int i, const char* resref) { setFillImage(s->btn[i], i, resref); }
+bool ctlRect(unsigned char* c, float* r) {   // engine-space rect from a label's extent (guikit::getExtent; +4..+0x10, top-left origin); false for an empty rect
+    int e[4];
+    if (!guikit::getExtent(reinterpret_cast<uintptr_t>(c), &e[0], &e[1], &e[2], &e[3])) return false;
+    for (int k = 0; k < 4; ++k) r[k] = (float)e[k];
+    return e[2] > 0 && e[3] > 0;
+}
+bool btnRect(Slot* s, int i, float* r) { return ctlRect(s->btn[i], r); }
+bool overAnyButton(Slot* s, float cx, float cy) {
+    for (int i = 0; i < NumToolbar; ++i) { float r[4]; if (btnRect(s, i, r) && eq3d::rectContains(cx, cy, r[0], r[1], r[2], r[3])) return true; }
+    if (s->menuOpen && s->menuPhase == 0) for (int i = 0; i < s->menuCount; ++i) { float r[4]; if (ctlRect(s->item[i], r) && eq3d::rectContains(cx, cy, r[0], r[1], r[2], r[3])) return true; }
+    return false;
+}
+void applyView(Slot* s);
+void endFlourish(Slot* s);
+void setCtlVisible(unsigned char* c, bool vis) {
+    int fl = 0; if (!c || !readAt<int>(reinterpret_cast<int>(c), CtlFlagsOff, &fl)) return;
+    int nf = vis ? (fl | 2) : (fl & ~2);
+    if (nf != fl) *reinterpret_cast<int*>(c + CtlFlagsOff) = nf;
+}
+void setCtlRect(unsigned char* c, int x, int y, int w, int h) { guikit::setRect(reinterpret_cast<uintptr_t>(c), x, y, w, h); }
+bool playFlourish(Slot* s, const char* name, const char* why, float forceLen = 0.0f);
+void menuBuild(Slot* s);
+const char* const kTips[9] = {
+    "Animate\nPlays a gesture every few\nseconds. Click to turn on/off.",
+    "Play / Pause\nSlowly turns; click to pause.\nDrag sideways to rotate,\nup/down to move; wheel zooms.",
+    "Hide weapons\nRemoves the weapons from the\npreview.",
+    "Reset\nCentres the view again and goes\nback to the Spin button.",
+    "Emotes\nPick a gesture (or, with\nWeapons on, an attack) to play.",
+    "Spin\nSlowly turns the character.\nClick for play/pause and reset.",
+    "Show weapons\nShows the equipped weapons\nin the hand.",
+    "Holster\nPuts the weapons on the hip or\nback (holster mod).",
+    "Draw\nTakes the weapons back into\nthe hand."};
+constexpr int TipCharW = 21, TipLineH = 32, TipPad = 22, TipDelayMs = 350;   // px estimates (same font/metrics as Mod 3's tooltip)
+void hideTip(Slot* s) { if (s->tipFor < 0) return; setCtlVisible(s->tipBg, false); setCtlVisible(s->tip, false); s->tipFor = -1; }
+void showTip(Slot* s, int i, const float* br) {
+    if (!s->tip || !s->tipBg) return;
+    int ti = (i == 1 && !g_spinUi) ? 5 : i == 2 ? (g_weaponsOn ? 2 : 6) : i == HolsBtn ? (g_drawn ? 7 : 8) : i;   // kTips index
+    const char* text = kTips[ti];
+    setLabelText(s->tip, s->tipText, sizeof s->tipText, text, "tip");
+    int lines = 1, maxLen = 0, cur = 0;
+    for (const char* q = text; *q; ++q) { if (*q == '\n') { ++lines; cur = 0; } else if (++cur > maxLen) maxLen = cur; }
+    int w = maxLen * TipCharW + 2 * TipPad, h = lines * TipLineH + 2 * TipPad;
+    int x = (int)br[0] - w - 12, y = (int)br[1]; if (x < 8) x = 8;
+    if (y + h > (int)g_cfg.screenH - 8) y = (int)g_cfg.screenH - 8 - h;
+    setCtlRect(s->tipBg, x, y, w, h); setCtlRect(s->tip, x + TipPad / 2, y + TipPad / 2, w - TipPad, h - TipPad);
+    setCtlVisible(s->tipBg, true); setCtlVisible(s->tip, true);
+    if (s->tipFor != ti) logf("tip: show %d rect=[%d,%d,%d,%d] lines=%d maxLen=%d", ti, x, y, w, h, lines, maxLen);
+    s->tipFor = ti;
+}
+constexpr DWORD MenuPreMs = 180, MenuPostMs = 300;   // buffers around an emote: menu hidden -> (pre) -> play -> finished -> (post) -> menu shown
+void spinLayout(Slot* s) {   // single Spin button, or (after the first click) play/pause 30 % + Reset on the same row
+    if (!s->rowRect[2] || !s->btn[1]) return;
+    eq3d::Box sp, rs;
+    bool showReset = eq3d::layoutSpin(eq3d::Box{(int)s->rowRect[0], (int)s->rowRect[1], (int)s->rowRect[2], (int)s->rowRect[3]}, g_spinUi, &sp, &rs);
+    setCtlRect(s->btn[1], sp.x, sp.y, sp.w, sp.h);
+    if (showReset) { setCtlRect(s->btn[3], rs.x, rs.y, rs.w, rs.h); setCtlVisible(s->btn[3], true); } else setCtlVisible(s->btn[3], false);
+    s->btnHover[1] = s->btnHover[3] = -1; s->spinLaid = g_spinUi ? 1 : 0;
+    logf("spin row: %s", g_spinUi ? "play/pause + Reset" : "Spin");
+}
+// EQ10 toolbar column: the 5 GUI cells top..bottom become Animate / Spin / Emotes / Hide|Show / Holster|Draw. The Spin row (cell 1) stays spinLayout's.
+bool holsOk(Slot* s) { return g_hol.canDraw() && s->btn[HolsBtn] && !s->regFail; }
+bool holsReg(Slot* s) { return holsOk(s) && (s->wpnReg[0] || s->wpnReg[1]); }   // a weapon of this slot is actually registered with the holster mod
+bool holsShown(Slot* s) { return g_weaponsOn && holsReg(s); }   // Holster/Draw row shown
+int toolKey(Slot* s) { return (g_weaponsOn ? 1 : 0) | (holsReg(s) ? 2 : 0); }
+void toolLayout(Slot* s) {
+    if (!s->cellOk) return;
+    eq3d::ToolbarRects t = eq3d::layoutToolbar(s->cell, g_weaponsOn, holsReg(s));
+    setCtlRect(s->btn[0], t.anim.x, t.anim.y, t.anim.w, t.anim.h);
+    setCtlRect(s->btn[4], t.emote.x, t.emote.y, t.emote.w, t.emote.h);
+    setCtlRect(s->btn[2], t.weap.x, t.weap.y, t.weap.w, t.weap.h);
+    if (s->btn[HolsBtn]) { setCtlRect(s->btn[HolsBtn], t.hols.x, t.hols.y, t.hols.w, t.hols.h); setCtlVisible(s->btn[HolsBtn], t.holsShown); }
+    s->btnHover[0] = s->btnHover[2] = s->btnHover[4] = s->btnHover[HolsBtn] = -1;
+    s->toolLaid = toolKey(s);
+    logf("EQ10: layout weaponsOn=%d holsShown=%d", g_weaponsOn ? 1 : 0, t.holsShown ? 1 : 0);
+}
+void menuClose(Slot* s, const char* why) {
+    if (!s->menuOpen) return;
+    s->menuOpen = false; s->menuLaid = -1; s->menuPhase = 0;
+    for (int i = 0; i < MaxMenu; ++i) setCtlVisible(s->item[i], false);
+    logf("menu: closed (%s)", why);
+}
+void menuHideItems(Slot* s) { for (int i = 0; i < MaxMenu; ++i) setCtlVisible(s->item[i], false); s->menuLaid = -1; }
+void menuLayout(Slot* s) {   // anchored at the view's LEFT edge, below the top arc; column 0 ends with the page toggle at the bottom row
+    float e[4], r0[4] = {}, r1[4] = {};
+    if (!btnRect(s, 4, e)) return;
+    bool haveBoth = s->cellOk || (btnRect(s, 0, r0) && btnRect(s, 2, r1));   // EQ10: pitch from the original cells (Weapons/Emotes move within the column)
+    if (s->cellOk) { r0[1] = (float)s->cell[0].y; r1[1] = (float)s->cell[2].y; }
+    float w = e[2], h = e[3], pitch = eq3d::menuPitch(haveBoth, r0[1], r1[1], h);
+    int vx = 0, vy = 0, vh = 0; readAt<int>(reinterpret_cast<int>(s->block), 4, &vx); readAt<int>(reinterpret_cast<int>(s->block), 8, &vy); readAt<int>(reinterpret_cast<int>(s->block), 16, &vh);
+    eq3d::MenuPos pos[MaxMenu];
+    eq3d::MenuGeom geo = eq3d::layoutMenu(w, pitch, vx, vy, vh, s->menuCount, s->menuAnim, MaxMenu, pos);
+    float left = geo.left, top = geo.top;
+    for (int i = 0; i < MaxMenu; ++i) {
+        if (i >= s->menuCount) { setCtlVisible(s->item[i], false); continue; }
+        setCtlRect(s->item[i], pos[i].x, pos[i].y, (int)w, (int)h);
+        setCtlVisible(s->item[i], true);
+        char nm[12]; snprintf(nm, sizeof nm, "item[%d]", i); setLabelText(s->item[i], s->itemText[i], sizeof s->itemText[i], s->menuLabel[i], nm);
+        s->itemState[i] = 0;
+    }
+    s->menuLaid = s->menuCount;
+    logf("menu: layout %d items left=%.0f top=%.0f w=%.0f pitch=%.0f", s->menuCount, left, top, w, pitch);
+}
+void tickButtons(Slot* s) {
+    bool any = false; for (int i = 0; i < NumToolbar; ++i) any = any || s->btn[i];
+    if (!any || !g_cfg.buttons) return;
+    if (s->spinLaid != (g_spinUi ? 1 : 0)) spinLayout(s);
+    if (s->toolLaid != toolKey(s)) toolLayout(s);
+    btnSetText(s, 0, "Animate"); btnSetText(s, 1, !g_spinUi ? "Spin" : (g_spinOn ? "II" : ">")); btnSetText(s, 2, eq3d::weapLabel(g_weaponsOn)); btnSetText(s, 3, "Reset"); btnSetText(s, 4, "Emotes"); btnSetText(s, HolsBtn, eq3d::holsLabel(g_drawn));   // state = fill colour (teal on, grey off, beige hover)
+    float cx = 0, cy = 0; bool haveCur = cursorEngine(&cx, &cy);
+    bool l = (GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0, fg = gameWindow() && GetForegroundWindow() == g_hwnd;
+    bool edge = l && !s->btnWasL;
+    DWORD t = GetTickCount();
+    if (s->menuOpen && s->menuReal != s->real) menuClose(s, "character changed");
+    menuBuild(s);
+    if (s->menuOpen && s->menuPhase == 0 && s->menuCount != s->menuLaid) { if (s->menuCount) menuLayout(s); else menuClose(s, "no items"); }
+    if (s->menuOpen && s->menuPhase) {   // hide -> pre buffer -> play -> (finished) -> post buffer -> show again
+        if (s->menuPhase == 1 && t >= s->menuPhaseAt) {
+            if (playFlourish(s, s->pendAnim, "menu", s->pendAtk ? 1.5f : 0.0f)) { s->menuPhase = 2; s->menuPhaseAt = t; }
+            else { logf("menu: '%s' could not be played", s->pendAnim); s->menuPhase = 3; s->menuPhaseAt = t + MenuPostMs; }
+        } else if (s->menuPhase == 2 && (!s->flourishActive || t - s->menuPhaseAt > 15000)) { s->menuPhase = 3; s->menuPhaseAt = t + MenuPostMs; }
+        else if (s->menuPhase == 3 && t >= s->menuPhaseAt) { s->menuPhase = 0; menuLayout(s); logf("menu: shown again"); }
+    }
+    bool menuAvail = s->menuCount > 0;
+    int overIdx = -1; float overRect[4] = {0, 0, 0, 0}; bool overEmote = false;
+    for (int i = 0; i < NumToolbar; ++i) {
+        if (i == 3 && !g_spinUi) continue;   // Reset exists only after Spin was clicked
+        if (i == HolsBtn && !holsShown(s)) continue;   // EQ10 Holster/Draw row: only while the weapons are shown, the holster mod can draw and a weapon is registered
+        float r[4]; int over = haveCur && fg && btnRect(s, i, r) && eq3d::rectContains(cx, cy, r[0], r[1], r[2], r[3]);
+        bool on = i == 0 ? g_animOn : (i == 1 ? g_spinUi : (i == 2 ? g_weaponsOn : ((i == 3 || i == HolsBtn) ? true : menuAvail)));   // play/pause, Reset and Holster never go grey
+        bool inert = i == 4 && !on;   // greyed: no hover, no click
+        if (over) { overIdx = i; memcpy(overRect, r, sizeof r); }
+        if (i == 4 && over) overEmote = true;
+        int st = (over && !inert) ? 2 : (on ? 1 : 0);   // hover / on / off
+        if (st != s->btnHover[i]) { s->btnHover[i] = st; btnSetFill(s, i, st == 2 ? "e3d_btn_hi" : (st ? "e3d_btn" : "e3d_btn_off")); dlogf("btn[%d]: state=%d", i, st); }
+        if (over && edge) {
+            logf("btn[%d]: click at (%.0f,%.0f)%s", i, cx, cy, inert ? " (inert, ignored)" : "");
+            if (inert) continue;
+            s->btnHover[i] = -1;
+            if (i == 0) { g_animOn = !g_animOn; if (!g_animOn && s->flourishActive) endFlourish(s); logf("btn: animation flourishes %s", g_animOn ? "ON" : "OFF"); }
+            else if (i == 1) { if (!g_spinUi) { g_spinUi = true; g_spinOn = true; logf("btn: spin started (row split)"); } else { g_spinOn = !g_spinOn; logf("btn: auto-spin %s at yaw=%.1f", g_spinOn ? "ON" : "paused", s->yaw); } }
+            else if (i == 3) { logf("btn: view reset (yaw=%.1f zoom=%.2f panZ=%.3f spin=%d)", s->yaw, s->zoom, s->panZ, g_spinOn); s->yaw = 0; s->zoom = 1; s->panZ = 0; g_spinOn = false; g_spinUi = false; applyView(s); }
+            else if (i == 2) { g_weaponsOn = !g_weaponsOn; if (g_weaponsOn) g_drawn = true; logf("btn: weapons %s", g_weaponsOn ? "ON" : "OFF"); }
+            else if (i == HolsBtn && holsShown(s)) { g_drawn = !g_drawn; int rc = g_hol.h->SetPreviewDraw(g_drawn ? 1 : 0); logf("EQ10: previewdraw %d (click)", rc); }   // no Gob churn: EquipTick re-applies the stance
+            else if (i == 4) { if (s->menuOpen) menuClose(s, "Emotes again"); else { s->menuOpen = true; s->menuPage = 0; s->menuPhase = 0; s->menuReal = s->real; menuBuild(s); menuLayout(s); logf("menu: opened (%d items)", s->menuCount); } }
+        }
+    }
+    bool overItem = false;
+    if (s->menuOpen && s->menuPhase == 0) {
+        for (int i = 0; i < s->menuCount; ++i) {
+            float r[4]; int over = haveCur && fg && ctlRect(s->item[i], r) && eq3d::rectContains(cx, cy, r[0], r[1], r[2], r[3]);
+            int st = over ? 2 : 1; overItem = overItem || over;
+            if (s->itemState[i] != st + 1) { s->itemState[i] = st + 1; setFillImage(s->item[i], -1, st == 2 ? "e3d_btn_hi" : "e3d_btn"); }
+            if (over && edge) {
+                logf("menu: item[%d] '%s' (%s) click", i, s->menuAnim[i], s->menuAttack[i] ? "attack" : "emote");
+                if (!strcmp(s->menuAnim[i], "@page")) { s->menuPage ^= 1; menuBuild(s); menuLayout(s); logf("menu: page %d", s->menuPage); break; }
+                strncpy(s->pendAnim, s->menuAnim[i], sizeof s->pendAnim - 1); s->pendAnim[sizeof s->pendAnim - 1] = 0; s->pendAtk = s->menuAttack[i];
+                menuHideItems(s); s->menuPhase = 1; s->menuPhaseAt = t + MenuPreMs; logf("menu: hidden, '%s' plays in %u ms", s->pendAnim, (unsigned)MenuPreMs);
+                break;
+            }
+        }
+        if (edge && !overItem && !overEmote) { bool onBtn = overIdx >= 0; menuClose(s, onBtn ? "other button" : "click outside"); }
+    }
+    if (overItem || (s->menuOpen && overEmote)) { overIdx = -1; }
+    if (overIdx != s->overBtn) { s->overBtn = overIdx; s->overSince = t; hideTip(s); }
+    else if (overIdx >= 0 && t - s->overSince >= (DWORD)TipDelayMs) showTip(s, overIdx, overRect);
+    s->btnWasL = l;
+}
+
+// ---- preview creature ----
+void** vtOf(void* obj) { void** vt = nullptr; readAt<void**>(reinterpret_cast<int>(obj), 0, &vt); return vt; }
+
+// ---- weapons ----
+using AttachFn = void(__thiscall*)(void*, void*, const char*, int);
+void detachWeapons(Slot* s, const char* why) {
+    for (int i = 0; i < 2; ++i) {
+        void* g = s->wpn[i]; if (!g) continue;
+        s->wpn[i] = nullptr;
+        if (s->wpnReg[i]) { if (g_hol.ok()) g_hol.h->UnregisterPreview(g); s->wpnReg[i] = false; }   // EQ10: unregister before ANY free path below (incl. the vtable early continue)
+        void** vt = vtOf(g); int vt0 = 0; readAt<int>(reinterpret_cast<int>(g), 0, &vt0);
+        if (!vt || vt0 != ExpectedGobVtable || !saferead::probeRead(SiteEquip, vt + 0x50 / 4, 4)) { logf("weapon[%d]: detach %p (%s): vtable %08x unexpected, NOT freeing (leak instead of crash)", i, g, why, vt0); continue; }
+        reinterpret_cast<AttachFn>(vt[GobAttachSlot / 4])(g, nullptr, nullptr, 0);
+        reinterpret_cast<void(__thiscall*)(void*, int)>(vt[GobDetachSlot / 4])(g, 0);
+        reinterpret_cast<void(__thiscall*)(void*, int)>(vt[0])(g, 1);
+        saferead::beginScope();
+        logf("weapon[%d]: detached+freed %p '%s' (%s)", i, g, s->wpnNames[i], why);
+    }
+    s->wpnNames[0][0] = s->wpnNames[1][0] = 0;
+}
+int getItemObj(int id) {
+    int mgr = 0, tbl = 0; if (!readAt<int>(ItemMgrGlobal, 0, &mgr) || !mgr || !readAt<int>(mgr, 4, &tbl) || !tbl) return 0;
+    return reinterpret_cast<int(__thiscall*)(int, int)>(FnGetItemObj)(tbl, id);
+}
+void detachHelmet(Slot* s, const char* why) {
+    void* g = s->helm; if (!g) return;
+    s->helm = nullptr;
+    void** vt = vtOf(g); int vt0 = 0; readAt<int>(reinterpret_cast<int>(g), 0, &vt0);
+    if (!vt || vt0 != ExpectedGobVtable || !saferead::probeRead(SiteEquip, vt + GobAttachSlot / 4, 4)) { logf("helmet: WARNING detach %p (%s): vtable %08x unexpected, NOT freeing (leak instead of crash)", g, why, vt0); s->helmName[0] = 0; return; }
+    reinterpret_cast<AttachFn>(vt[GobAttachSlot / 4])(g, nullptr, nullptr, 0);
+    reinterpret_cast<void(__thiscall*)(void*, int)>(vt[GobDetachSlot / 4])(g, 0);
+    reinterpret_cast<void(__thiscall*)(void*, int)>(vt[0])(g, 1);
+    saferead::beginScope();
+    logf("helmet: detached+freed %p '%s' (%s)", g, s->helmName, why);
+    s->helmName[0] = 0;
+}
+void* partGob(Slot* s, int id);
+// Head item on the preview from OUR OWN model instance. The engine path (0085a9e0, R9) reparents the REAL item's Gob onto the
+// preview head ("GoggleHook") and the preview dtor then frees it with the helmet attached: the real helmet vanishes / dangles.
+void attachHelmet(Slot* s, int id, const char* why) {
+    s->helmApplied = true; s->helmId = id;
+    if (id == NoItemId || id == 0) { dlogf("helmet: none (id=%08x, %s)", id, why); return; }
+    int item = getItemObj(id);
+    if (!item) { logf("helmet: WARNING id=%08x -> no client item object (%s), skipped", id, why); return; }
+    char name[17] = {};
+    if (!saferead::probeRead(SiteEquip, reinterpret_cast<void*>(item + ItemModelResOff), 16)) { logw("helmet: WARNING item %08x model ResRef unreadable, skipped", item); return; }
+    memcpy(name, reinterpret_cast<void*>(item + ItemModelResOff), 16); name[16] = 0;
+    bool okName = name[0] != 0;
+    for (char* p = name; *p; ++p) if (!isalnum((unsigned char)*p) && *p != '_') okName = false;
+    int base = -1; readAt<int>(item, ItemBaseIdxOff, &base); unsigned char var = 0; readAt<unsigned char>(item, ItemVariationOff, &var);
+    if (!okName || !_stricmp(name, "i_null")) { logf("helmet: id=%08x item=%08x base=%d var=%d model='%s': no visible model, skipped", id, item, base, var, okName ? name : "?"); return; }
+    void* head = partGob(s, 0xfe);
+    if (!head) { logw("helmet: WARNING no head part on the preview (%s), skipped", why); return; }
+    void* g = reinterpret_cast<void*(__cdecl*)(const char*, const char*, int, int)>(FnCreateModel)(name, reinterpret_cast<const char*>(0x009a4ab0), 0, 0);
+    saferead::beginScope();
+    int gvt = 0; if (g) readAt<int>(reinterpret_cast<int>(g), 0, &gvt);
+    if (!g) { logw("helmet: WARNING model '%s' failed to load (id=%08x), skipped", name, id); return; }
+    if (gvt != ExpectedGobVtable) { logw("helmet: WARNING model '%s' gob=%p vtable %08x (expect %08x), not attaching (leak instead of crash)", name, g, gvt, ExpectedGobVtable); return; }
+    void** vt = vtOf(g);
+    reinterpret_cast<AttachFn>(vt[GobAttachSlot / 4])(g, head, "GoggleHook", 0);   // same node + call as 0085a9e0; missing node = silently unattached (00461670)
+    reinterpret_cast<PartPlayFn>(vt[PartPlaySlot / 4])(g, "default", 1.0f, 0, 0.0f);   // as 0085a9e0 does (animated visors)
+    saferead::beginScope();
+    s->helm = g; strncpy(s->helmName, name, sizeof(s->helmName) - 1);
+    logf("helmet: item id=%08x obj=%08x base=%d var=%d model='%s' gob=%p head=%p attach ok (%s)", id, item, base, var, name, g, head, why);
+}
+void destroyCreature(Slot* s, const char* why) {
+    detachWeapons(s, why);
+    detachHelmet(s, why);
+    if (!s->creature) return;
+    void** vt = vtOf(s->creature);
+    int vt0 = 0; readAt<int>(reinterpret_cast<int>(s->creature), 0, &vt0);
+    logf("creature: destroy %p (%s) vtable=%08x", s->creature, why, vt0);
+    if (vt0 == CreatureVftable && vt && saferead::probeRead(SiteEquip, vt, 4)) reinterpret_cast<CrDtorFn>(vt[0])(s->creature, 1);
+    else logw("creature: vtable mismatch, NOT calling dtor (leak instead of crash)");
+    saferead::beginScope();
+    s->creature = nullptr; s->built = false; s->real = 0; s->flourishActive = false; s->baseModels = -1;
+}
+
+bool allocCreature(Slot* s) {
+    if (s->creature) return true;
+    if (s->creatureBad) return false;
+    unsigned char* c = static_cast<unsigned char*>(reinterpret_cast<NewFn>(FnNew)(CreatureSize));
+    if (!c) { logw("creature: allocation failed"); s->creatureBad = true; return false; }
+    memset(c, 0, CreatureSize);
+    reinterpret_cast<Fast1>(FnCreatureCtor)(c);
+    saferead::beginScope();
+    int vt = 0; readAt<int>(reinterpret_cast<int>(c), 0, &vt);
+    logf("creature: allocated %p vtable=%08x (expect %08x)", c, vt, CreatureVftable);
+    if (vt != CreatureVftable) { logw("creature: ctor left wrong vtable, abandoning this panel"); dumpMem("creature", reinterpret_cast<int>(c), 24); s->creatureBad = true; return false; }
+    int app = 0, holder = 0, stats = 0;
+    readAt<int>(reinterpret_cast<int>(c), CreatureAppOff, &app); readAt<int>(reinterpret_cast<int>(c), CreatureHolderOff, &holder); readAt<int>(reinterpret_cast<int>(c), CreatureStatsOff, &stats);
+    logf("creature: app=%08x holder=%08x stats=%08x", app, holder, stats);
+    s->creature = c;
+    return true;
+}
+
+int realValid(int real) {
+    int vt = 0;
+    if (!readAt<int>(real, 0, &vt) || vt != CreatureVftable) return 0;
+    return 1;
+}
+bool readApp(int real, unsigned char* out, short* align) {
+    int app = 0, stats = 0;
+    if (!readAt<int>(real, CreatureAppOff, &app) || !app || !saferead::probeRead(SiteEquip, reinterpret_cast<void*>(app), AppCopyBytes)) return false;
+    memcpy(out, reinterpret_cast<void*>(app), AppCopyBytes);
+    *align = eq3d::kNeutralAlign;   // unreadable stats -> neutral idle, not evil
+    if (readAt<int>(real, CreatureStatsOff, &stats) && stats) readAt<short>(stats, 0x80, align);
+    return true;
+}
+
+void* partGob(Slot* s, int id) {
+    int holder = 0;
+    if (!s->creature || !readAt<int>(reinterpret_cast<int>(s->creature), CreatureHolderOff, &holder) || !holder) return nullptr;
+    void** hv = vtOf(reinterpret_cast<void*>(holder));
+    if (!hv || !saferead::probeRead(SiteEquip, hv + 2, 4)) return nullptr;
+    return reinterpret_cast<PartGetFn>(hv[2])(reinterpret_cast<void*>(holder), id);
+}
+void playPart(void* part, const char* name, float speed, unsigned flags) {
+    void** pv = vtOf(part);
+    if (!pv || !saferead::probeRead(SiteEquip, pv + PartPlaySlot / 4, 4)) return;
+    reinterpret_cast<PartPlayFn>(pv[PartPlaySlot / 4])(part, name, speed, flags, 0.0f);
+}
+// Static animation knowledge (R5 inventory): the vt[0x1c] length probe cannot see supermodel-inherited anims, so it is NOT used.
+struct FlLen { const char* name; float len; };
+const FlLen kHumanoid[] = {{"pausesh",2.0f},{"scanning",5.1f},{"salute",1.7f},{"victory",1.3f},{"bow",2.5f},{"greeting",1.5f},
+    {"taunt",1.4f},{"touchheart",2.8f},{"rolleyes",2.3f},{"shrug",1.6f},{"nodyes",1.5f},{"point",2.0f},{"itemequip",1.3f},{"equip",1.0f}};
+const FlLen kDroidT3[] = {{"victory",1.0f},{"greeting",1.0f},{"taunt",1.0f},{"equip",1.3f}};
+const FlLen kDroidG0[] = {{"victory",2.0f},{"greeting",1.3f},{"taunt",1.3f},{"equip",1.3f}};
+int appRow(Slot* s) { return (int)*reinterpret_cast<unsigned short*>(s->app + 0x18); }
+using eq3d::isDroidRow;
+const FlLen* animTable(int row, int* n) {
+    if (row == 2 || row == 57 || row == 231 || row == 232) { *n = 4; return kDroidT3; }
+    if (row == 453) { *n = 4; return kDroidG0; }
+    if (row == 3 || row == 538 || row == 539) { *n = 0; return nullptr; }
+    *n = (int)(sizeof(kHumanoid) / sizeof(kHumanoid[0])); return kHumanoid;
+}
+bool animLen(Slot* s, const char* name, float* len) {
+    int n = 0; const FlLen* t = animTable(appRow(s), &n);
+    if (t) {
+        for (int i = 0; i < n; ++i) if (!strcmp(t[i].name, name)) { *len = t[i].len; return true; }
+    }
+    *len = 2.0f; // Safe 2.0s fallback for unmapped supermodels/animations
+    return true;
+}
+const char* labelFor(const char* n) {
+    static const char* const m[][2] = {{"pausesh","Pause"},{"scanning","Scan"},{"salute","Salute"},{"victory","Victory"},{"bow","Bow"},{"greeting","Greet"},
+        {"taunt","Taunt"},{"touchheart","Touch heart"},{"rolleyes","Roll eyes"},{"shrug","Shrug"},{"nodyes","Nod"},{"point","Point"},{"itemequip","Equip item"},{"equip","Equip"}};
+    for (auto& e : m) if (!strcmp(n, e[0])) return e[1];
+    return n;
+}
+// Attack clips per wield style (R5 chains: melee g<N>a<k>, ranged b<N>a<k>; all ~1.5 s). Shown only while Weapons is on and a stance exists.
+void menuBuild(Slot* s) {   // page 0 = gestures (+ "Attacks >" when a weapon stance exists), page 1 = attacks (+ "< Emotes")
+    int n = 0, en = 0; const FlLen* t = animTable(appRow(s), &en);
+    auto add = [&](const char* a, const char* label, bool atk) { if (n < MaxMenu) { strncpy(s->menuAnim[n], a, 11); s->menuAnim[n][11] = 0; strncpy(s->menuLabel[n], label, 15); s->menuLabel[n][15] = 0; s->menuAttack[n] = atk; ++n; } };
+    int N = (g_weaponsOn && s->stanceOn && s->stanceName[0] == 'g' && s->stanceName[1] >= '1' && s->stanceName[1] <= '8') ? s->stanceName[1] - '0' : 0;
+    bool droid = isDroidRow(appRow(s));
+    int cnt = 0;
+    if (N && !(droid && !(N == 5 || N == 6 || N == 8))) cnt = N == 1 || N == 8 ? 2 : (N <= 4 ? 5 : 4);
+    if (!cnt) s->menuPage = 0;
+    if (s->menuPage == 0) {
+        for (int i = 0; i < en; ++i) add(t[i].name, labelFor(t[i].name), false);
+        if (cnt) add("@page", "Attacks >", false);
+    } else {
+        char nm[12], lb[16];
+        for (int k = 1; k <= cnt; ++k) { snprintf(nm, sizeof nm, "%c%da%d", (N >= 5 && N <= 7) ? 'b' : 'g', N, k); snprintf(lb, sizeof lb, "Attack %d", k); add(nm, lb, true); }
+        add("@page", "< Emotes", false);
+    }
+    s->menuCount = n;
+}
+void chooseIdle(Slot* s) {
+    void* body = partGob(s, 0xff);
+    short al = s->align; int row = appRow(s);
+    const char* want = eq3d::idleFor(row, al);
+    strcpy(s->baseIdle, want); strcpy(s->idleName, want);
+    logf("anim: idle for align=%d row=%d -> '%s' body=%p", al, row, s->idleName, body);
+}
+// Engine wield-style rule (R7f 0076d590 / R7h 00863650). Only the weapons we actually attached count.
+using eq3d::kStyleAnim; using eq3d::styleFor;
+// EQ10: register the attached weapon Gobs with k2.holster (left = left hand), once per build. Called from attachWeapons and, when the holster mod connects later, from EquipTick.
+void registerWeapons(Slot* s) {
+    if (g_hol.canDraw() && s->btn[HolsBtn]) {
+        s->regTried = true;
+        for (int i = 0; i < 2; ++i) {
+            if (!s->wpn[i] || s->wpnReg[i]) continue;
+            int rc = g_hol.h->RegisterPreview(s->wpn[i], nullptr, i == 1); s->wpnReg[i] = rc == 1; if (rc != 1) s->regFail = true;
+        }
+        if (s->regFail) {   // registry full / holster editor on: drop the registrations made so far, hide the Holster row
+            for (int i = 0; i < 2; ++i) if (s->wpnReg[i]) { if (g_hol.ok()) g_hol.h->UnregisterPreview(s->wpn[i]); s->wpnReg[i] = false; }
+            logw("EQ10: RegisterPreview failed (registry full or holster editor=0), Holster row hidden");
+        } else if (s->wpnReg[0] || s->wpnReg[1]) { int rc = g_hol.h->SetPreviewDraw(g_drawn ? 1 : 0); logf("EQ10: previewdraw %d (build)", rc); }
+    }
+    logf("EQ10: register r=%d l=%d avail=%d", s->wpnReg[0] ? 1 : 0, s->wpnReg[1] ? 1 : 0, g_hol.canDraw() ? 1 : 0);
+}
+void attachWeapons(Slot* s, int real, const char* why) {
+    s->regTried = false;
+    s->stanceName[0] = 0; s->wpnWield[0] = s->wpnWield[1] = 0; s->wpnHas[0] = s->wpnHas[1] = false; s->wpnReg[0] = s->wpnReg[1] = false; s->regFail = false;
+    void* body = partGob(s, 0xff);
+    if (!body) { logf("weapons: no body part, cannot attach (%s)", why); return; }
+    int wield[2] = {0, 0}, baseOf[2] = {-1, -1}; bool has[2] = {false, false};
+    for (int i = 0; i < 2; ++i) {
+        int id = NoItemId; readAt<int>(real, i ? CrLeftItemOff : CrRightItemOff, &id); s->wpnIds[i] = id;
+        const char* hook = i ? "lhand" : "rhand";
+        if (id == NoItemId || id == 0) { logf("weapons: %s empty (id=%08x)", hook, id); continue; }
+        int item = getItemObj(id);
+        if (!item) { logf("weapons: %s id=%08x -> no client item object", hook, id); continue; }
+        int base = -1, var = 0; readAt<int>(item, ItemBaseIdxOff, &base); { unsigned char vb = 0; readAt<unsigned char>(item, ItemVariationOff, &vb); var = vb; }
+        char name[28]; int ww = 0;
+        if (!eq3d::weaponModelName(base, var, name, sizeof name, &ww)) { logf("weapons: %s id=%08x item=%08x base=%d var=%d: not a wieldable weapon (rows=%d), skipped", hook, id, item, base, var, eq3d::kWeaponRows); continue; }
+        void* g = reinterpret_cast<void*(__cdecl*)(const char*, const char*, int, int)>(FnCreateModel)(name, reinterpret_cast<const char*>(0x009a4ab0), 0, 0);
+        saferead::beginScope();
+        int gvt = 0; if (g) readAt<int>(reinterpret_cast<int>(g), 0, &gvt);
+        logf("weapons: %s id=%08x item=%08x base=%d var=%d wield=%d model='%s' -> gob=%p vtable=%08x (expect %08x)", hook, id, item, base, var, ww, name, g, gvt, ExpectedGobVtable);
+        if (!g) continue;
+        if (gvt != ExpectedGobVtable) { logf("weapons: model gob vtable mismatch, not attaching (leak instead of crash)"); continue; }
+        void** vt = vtOf(g);
+        reinterpret_cast<AttachFn>(vt[GobAttachSlot / 4])(g, body, hook, 0);
+        saferead::beginScope();
+        s->wpn[i] = g; strncpy(s->wpnNames[i], name, sizeof(s->wpnNames[i]) - 1);
+        has[i] = true; wield[i] = ww; baseOf[i] = base; s->wpnWield[i] = ww; s->wpnHas[i] = true;
+        logf("weapons: attached %p to body %p node %s", g, body, hook);
+    }
+    registerWeapons(s);   // EQ10: holster preview registration (unregistered in detachWeapons before any free)
+    int style = styleFor(wield[0], wield[1], has[0], has[1]);   // log only: applyStance() derives the stance (0 while holstered)
+    logf("weapons: style=%d anim=%s R(w=%d,base=%d) L(w=%d,base=%d)", style, style > 0 ? kStyleAnim[style] : "-", wield[0], baseOf[0], wield[1], baseOf[1]);
+    logf("weapons: (%s) stance='%s' L/R ids %08x/%08x", why, style > 0 ? kStyleAnim[style] : "", s->wpnIds[1], s->wpnIds[0]);
+}
+// EQ10: stance from weapons + holster state. Holstered = Draw is off and the holster mod holds the weapons (no Gob churn).
+void applyStance(Slot* s, bool wasStance) {
+    void* body = partGob(s, 0xff); void* head = partGob(s, 0xfe);
+    bool holstered = !g_drawn && holsOk(s) && (s->wpnReg[0] || s->wpnReg[1]);
+    int style = eq3d::stanceFor(g_weaponsOn, holstered, s->wpnWield[0], s->wpnWield[1], s->wpnHas[0], s->wpnHas[1]);
+    s->stanceName[0] = 0;
+    if (style > 0) snprintf(s->stanceName, sizeof s->stanceName, "%s", kStyleAnim[style]);
+    s->stanceOn = style > 0;
+    strcpy(s->idleName, s->stanceOn ? s->stanceName : s->baseIdle);
+    s->drawnApplied = g_drawn ? 1 : 0;
+    const char* anim = (s->stanceOn || wasStance) ? s->idleName : nullptr;
+    if (anim && anim[0]) {
+        s->flourishActive = false;
+        if (body) playPart(body, anim, 1.0f, 0);   // flags 0 = cross-fade in over the anim header transition (flags&2 would snap: R8a/R8b)
+        if (head) playPart(head, anim, 1.0f, 0);
+        logf("weapons: idle -> '%s' (stance=%d) body=%p head=%p", anim, s->stanceOn, body, head);
+    }
+}
+void refreshWeapons(Slot* s, int real, const char* why) {
+    bool wasStance = s->stanceOn;
+    detachWeapons(s, why);
+    s->stanceName[0] = 0;
+    if (g_weaponsOn) attachWeapons(s, real, why);
+    s->wpnApplied = g_weaponsOn;
+    readAt<int>(real, CrRightItemOff, &s->wpnIds[0]); readAt<int>(real, CrLeftItemOff, &s->wpnIds[1]);
+    applyStance(s, wasStance);
+}
+void applyView(Slot* s) {
+    // zoom = FOV scale on the scene camera; the facing yaw is re-applied after every rebuild
+    sceneview::cameraFov(s->block, eq3d::fovForZoom(g_cfg.fov, s->zoom));
+    if (s->creature) {
+        float v[3]; eq3d::yawVec(s->yaw, v);
+        void** cv = vtOf(s->creature);
+        if (cv) {
+            reinterpret_cast<CrPtrFn>(cv[CrSetFacing / 4])(s->creature, v);
+            if (s->panZ != s->appliedPanZ) {   // CrSetPos only on change (spin calls applyView every tick)
+                float pos[3] = {0, 0, s->panZ};
+                reinterpret_cast<CrPtrFn>(cv[CrSetPos / 4])(s->creature, pos);
+                s->appliedPanZ = s->panZ;
+                dlogf("VIEW: panZ=%.3f", s->panZ);
+            }
+        }
+    }
+}
+
+// Builds/rebuilds the preview from `real` exactly like SetStats (0084f2c6..0084f482).
+bool buildPreview(Slot* s, int real, const char* why) {
+    detachWeapons(s, "before rebuild");   // our weapon models hang off the old body Gob: free them first
+    detachHelmet(s, "before rebuild");    // likewise the helmet on the old head Gob
+    s->helmApplied = false;               // a failed rebuild below leaves the old head: the tick toggle block re-attaches to it
+    s->stanceOn = false; s->wpnApplied = false;
+    if (s->creature && s->real != real) {
+        destroyCreature(s, "character change");
+    }
+    if (!allocCreature(s)) return false;
+    unsigned char copy[AppCopyBytes]; short al = 0;
+    if (!readApp(real, copy, &al)) { logf("build: real %08x appearance unreadable", real); return false; }
+    unsigned char raw[AppCopyBytes]; memcpy(raw, copy, AppCopyBytes);  // snapshot BEFORE the +0x10 override (else compare never matches)
+    logf("build: raw +0x10=%08x", *reinterpret_cast<int*>(copy + 0x10));
+    // ALWAYS blank the head item, as SetStats does: with a real id 0085a9e0 reparents the REAL item's Gob onto our head and our dtor
+    // then takes it down (headgear-loss bug, doc 10). keep_obj10 is ignored; attachHelmet shows the helmet from our own model.
+    int headId = *reinterpret_cast<int*>(copy + 0x10);
+    *reinterpret_cast<int*>(copy + 0x10) = NoItemId;
+    int gate = 0; sceneview::gateOpen(&gate);
+    if (!gate) { logf("build: gate 009f42b4 is zero, skipping"); return false; }
+    void* pv = s->creature; void** vt = vtOf(pv);
+    int scene = 0; readAt<int>(reinterpret_cast<int>(s->block), SceneObjOffset, &scene);
+    if (!vt || !scene) { logf("build: bad vtable %p / scene %08x", vt, scene); return false; }
+    logf("build #%d (%s): real=%08x align=%d creature=%p scene=%08x panZ=%.3f", s->builds + 1, why, real, al, pv, scene, s->panZ);
+    dumpMem("appcopy", reinterpret_cast<int>(copy), 15);
+    int ok = reinterpret_cast<BuildAppFn>(FnBuildApp)(pv, copy, 3, 1, 0);
+    logf("build: 0076d200 returned %d", ok);
+    int pApp = 0; readAt<int>(reinterpret_cast<int>(pv), CreatureAppOff, &pApp);
+    if (pApp) reinterpret_cast<SetAlignFn>(FnSetAlign)(reinterpret_cast<void*>(pApp), (int)(unsigned short)al);
+    reinterpret_cast<CrPtrFn>(vt[CrSetScene / 4])(pv, reinterpret_cast<void*>(scene));
+    float pos[3] = {0, 0, 0}, face[3] = {1, 0, 0};
+    reinterpret_cast<CrPtrFn>(vt[CrSetPos / 4])(pv, pos);
+    s->appliedPanZ = 0;   // creature is back at the origin; applyView below restores panZ
+    reinterpret_cast<CrPtrFn>(vt[CrSetFacing / 4])(pv, face);
+    reinterpret_cast<SetupSceneFn>(FnSetupScene)(pv, s->block, reinterpret_cast<void*>(real), 0, 1);
+    { int mc = modelCount(s->block); if (s->baseModels < 0) s->baseModels = mc;
+      logf("build: scene models=%d (baseline %d)%s body=%p head=%p", mc, s->baseModels, mc > s->baseModels ? " WARNING: scene models GREW across rebuilds" : "", partGob(s, 0xff), partGob(s, 0xfe)); }
+    memcpy(s->app, raw, AppCopyBytes); s->align = al; s->real = real; s->built = true; ++s->builds; s->lastBuild = GetTickCount();
+    s->flourishActive = false;
+    chooseIdle(s);
+    applyView(s);
+    if (g_weaponsOn) refreshWeapons(s, real, "after build");
+    s->helmApplied = false;
+    if (g_cfg.helmet) attachHelmet(s, headId, "after build");
+    return true;
+}
+
+// ---- flourish scheduler ----
+unsigned g_rng = 0x1234567;
+unsigned rnd() { g_rng = g_rng * 1664525u + 1013904223u; return g_rng >> 8; }
+float rndRange(float a, float b) { return a + (b - a) * ((rnd() & 0xffff) / 65535.0f); }
+
+bool playFlourish(Slot* s, const char* name, const char* why, float forceLen) {
+    void* body = partGob(s, 0xff); void* head = partGob(s, 0xfe);
+    float len = 0;
+    if (!body) { logf("flourish: no body part"); return false; }
+    if (forceLen > 0) len = forceLen;
+    else if (!animLen(s, name, &len)) { dlogf("flourish: '%s' not in table for row %d", name, appRow(s)); return false; }
+    if (len > 12.0f) { logf("flourish: '%s' length %.2f too long, skipped", name, len); return false; }
+    logf("flourish: play '%s' (%s) len=%.2fs body=%p head=%p idle='%s'", name, why, len, body, head, s->idleName);
+    // R8a/R8b: speed<0 starts at the END and plays BACKWARDS (Gob update: time += dt*speed); the engine's "once" is flag bit 1, and a
+    // one-shot fades to nothing. So play forward with flags 0 (weight ramps 0->1 over the header transition, blending from the current pose)
+    // and hand back to the idle ourselves just before the loop would wrap.
+    playPart(body, name, 1.0f, 0);
+    if (head) playPart(head, name, 1.0f, 0);
+    s->flourishActive = true; s->flourishEnd = GetTickCount() + (DWORD)((len > 0.4f ? len - 0.06f : len) * 1000.0f);
+    strncpy(s->activeName, name, sizeof(s->activeName) - 1);
+    return true;
+}
+void endFlourish(Slot* s) {
+    void* body = partGob(s, 0xff); void* head = partGob(s, 0xfe);
+    if (s->idleName[0]) {
+        if (body) playPart(body, s->idleName, 1.0f, 0);   // blend back from the flourish pose
+        if (head) playPart(head, s->idleName, 1.0f, 0);
+    }
+    logf("flourish: '%s' ended, idle '%s' re-issued (body=%p head=%p)", s->activeName, s->idleName, body, head);
+    s->flourishActive = false;
+    s->nextFlourish = GetTickCount() + (DWORD)(rndRange(g_cfg.flMin, g_cfg.flMax) * 1000.0f);
+}
+void pickFlourish(Slot* s) {
+    char list[512]; strncpy(list, (s->stanceOn && g_cfg.flStance[0]) ? g_cfg.flStance : g_cfg.flList, sizeof(list) - 1); list[sizeof(list) - 1] = 0;
+    char* names[32]; int n = 0;
+    for (char* p = strtok(list, ","); p && n < 32; p = strtok(nullptr, ",")) { trim(p); if (p[0]) names[n++] = p; }
+    if (!n) { s->nextFlourish = GetTickCount() + 10000; return; }
+    int start = rnd() % n;
+    for (int i = 0; i < n; ++i) if (playFlourish(s, names[(start + i) % n], "scheduled")) return;
+    logf("flourish: none of %d listed names apply to this appearance, retry in 30 s", n);
+    s->nextFlourish = GetTickCount() + 30000;
+}
+
+void tickInput(Slot* s) {
+    static bool wasL = false, wasM = false;
+    bool l = (GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0, mb = (GetAsyncKeyState(VK_MBUTTON) & 0x8000) != 0;
+    float cx = 0, cy = 0; bool haveCur = cursorEngine(&cx, &cy);
+    int ext[4] = {0}; for (int i = 0; i < 4; ++i) readAt<int>(reinterpret_cast<int>(s->block), 4 + 4 * i, &ext[i]);
+    float top = eq3d::hitTop(g_cfg.hitFlipY, g_cfg.screenH, ext[1], ext[3]);
+    guikit::g_wheel.setRect(0, ext[0], (int)top, ext[2], ext[3]);
+    bool inside = haveCur && eq3d::rectContains(cx, cy, (float)ext[0], top, (float)ext[2], (float)ext[3]);
+    bool fg = gameWindow() && GetForegroundWindow() == g_hwnd;
+    static int presses = 0;
+    if (((l && !wasL) || (mb && !wasM)) && presses < 30) { ++presses; logf("INPUT: press #%d L=%d M=%d cursor=(%.0f,%.0f) rect=[%d,%d,%d,%d] top=%.0f inside=%d fg=%d", presses, l, mb, cx, cy, ext[0], ext[1], ext[2], ext[3], top, inside, fg); }
+    bool changed = false;
+    if (inside && fg && mb && !wasM) { logf("INPUT: view reset (MMB) yaw=%.1f zoom=%.2f panZ=%.3f", s->yaw, s->zoom, s->panZ); s->yaw = 0; s->zoom = 1; s->panZ = 0; changed = true; }
+    if (inside && fg && l && !wasL && !overAnyButton(s, cx, cy)) { s->dragging = true; s->lastX = s->startX = cx; s->lastY = s->startY = cy; s->axis = 0; logf("INPUT: drag start at (%.0f,%.0f) yaw=%.1f panZ=%.3f", cx, cy, s->yaw, s->panZ); }
+    if (s->dragging) {
+        if (!l) { s->dragging = false; logf("INPUT: drag end axis=%d yaw=%.1f panZ=%.3f", s->axis, s->yaw, s->panZ); }
+        else if (haveCur) {
+            if (!s->axis) { s->axis = eq3d::dragAxis(cx - s->startX, cy - s->startY, g_cfg.lockPx); if (s->axis) logf("INPUT: drag axis %s", s->axis == 1 ? "yaw" : "pan"); }
+            if (s->axis == 1 && cx != s->lastX) { s->yaw = eq3d::yawDrag(s->yaw, cx, s->lastX, g_cfg.dragDegPx); changed = true; dlogf("INPUT: yaw=%.1f", s->yaw); }
+            else if (s->axis == 2 && cy != s->lastY) { s->panZ = eq3d::panDrag(s->panZ, cy, s->lastY, g_cfg.panPerPx, s->zoom, g_cfg.panMin, g_cfg.panMax); changed = true; dlogf("INPUT: panZ=%.3f", s->panZ); }
+            s->lastX = cx; s->lastY = cy;
+        }
+    }
+    LONG wheel = guikit::g_wheel.take();
+    if (wheel) {
+        s->zoom = eq3d::zoomStep(s->zoom, wheel, g_cfg.wheelStep, g_cfg.zoomMin, g_cfg.zoomMax); changed = true;   // wheel up (+120) = zoom in (fov smaller)
+        logf("WHEEL: applied %ld -> zoom=%.2f", wheel, s->zoom);
+    }
+    if (changed && s->built) applyView(s);
+    wasL = l; wasM = mb;
+}
+
+// Lazy init: load line + first loadIni() + rng seed. Runs from KPatchInit, else from the first hook (old core without KPatchInit).
+volatile LONG g_inited = 0;
+void ensureInit() {
+    if (g_inited) return;                                 // cheap fast path
+    if (InterlockedExchange(&g_inited, 1)) return;
+    logf("%s", g_loadLine);
+    loadIni();
+    g_rng ^= GetTickCount();
+}
+
+} // namespace
+
+extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
+    KpLog_Init(api);
+    guikit::initGuiInput(api, "equipment-3d-character");
+    g_hol.init(api);   // EQ10: k2.holster client; connect/poll retry is lazy
+    ensureInit();
+}
+
+extern "C" void __cdecl BindEquipView(int panel) {
+    ensureInit();
+    saferead::beginScope();
+    int ctlCount = -1; readAt<int>(panel, 0x28, &ctlCount);
+    int gate = 0; sceneview::gateOpen(&gate);
+    logf("H1 BindEquipView panel=%08x controls=%d gate=%d enabled=%d stage=%d", panel, ctlCount, gate, g_cfg.enabled, g_cfg.stage);
+    if (!panel) { logf("H1: null panel, abort"); return; }
+    if (!g_cfg.enabled || g_cfg.stage < 1) { logf("H1: disabled by INI (enabled=%d stage=%d)", g_cfg.enabled, g_cfg.stage); return; }
+    if (!g_weaponsInit) { g_weaponsInit = true; g_weaponsOn = g_cfg.weapons != 0; g_drawn = true; }   // EQ10: first bind only (weapons= INI default, drawn)
+
+    unsigned char* block = sceneview::createView(static_cast<uintptr_t>(static_cast<unsigned>(panel)), "3D_MODEL");
+    if (!block) { loge("H1: operator new failed"); return; }
+    saferead::beginScope();
+    unsigned char* view = block;
+
+    int id = -999, newCount = -1; int ext[4] = {0};
+    readAt<int>(reinterpret_cast<int>(view), CtlIdOff, &id);
+    for (int i = 0; i < 4; ++i) readAt<int>(reinterpret_cast<int>(view), 4 + i * 4, &ext[i]);
+    readAt<int>(panel, 0x28, &newCount);
+    logf("H1: block=%p control id=%d (expect %d) extent=[%d,%d,%d,%d] aspect=%.3f controls now %d (expect %d)",
+         block, id, ExpectedControlId, ext[0], ext[1], ext[2], ext[3], ext[3] ? (float)ext[2] / ext[3] : 0.f, newCount, ctlCount + 1);
+    dumpMem("view", reinterpret_cast<int>(view), 38);
+
+    g_slots.onEvict = [](Slot& old, uintptr_t panelKey, unsigned seq) { logf("slot: evicting panel=%08x seq=%u", (unsigned)panelKey, seq); destroyCreature(&old, "evict"); };
+    bool fresh = false;
+    Slot* s = g_slots.claim(slotKey(panel), ++g_seq, &fresh);
+    if (!fresh) destroyCreature(s, "re-bind");
+    *s = Slot();
+    s->panel = panel; s->block = block; s->seq = g_seq; s->bindTick = GetTickCount(); s->zoom = 1;
+
+    if (id != ExpectedControlId) { logw("H1: GUI control missing/mismatched (id=%d), slot unusable (is equip_p.gui patched? scripts/add_equip_3dview_control.py)", id); return; }
+    if (!gate) { logw("H1: gate global 009f42b4 is zero, slot unusable"); return; }
+    uintptr_t scene = 0;
+    int sf = sceneview::initScene(view, "gui3D_room", &scene);
+    if (sf == sceneview::SF_VtableBad) { logw("H1: scene vtable bad, slot unusable"); return; }
+    if (sf != sceneview::SF_None) { logw("H1: scene pointer bad (%08x), slot unusable", static_cast<unsigned>(scene)); return; }
+    saferead::beginScope();
+    logf("H1: scene %08x initialised (gui3D_room)", scene);
+
+    void* rig = sceneview::addModel(view, g_cfg.rig, -1);
+    saferead::beginScope();
+    int n = modelCount(view);
+    logf("H1: rig '%s' model=%p, scene model count=%d", g_cfg.rig, rig, n);
+    if (!rig || n < 1) { logw("H1: rig missing, slot unusable"); return; }
+    uint32_t cam = 0, camv = 0; bool camOk = sceneview::camera(view, &cam, &camv);
+    logf("H1: camera=%08x vtable=%08x (expect %08x)", static_cast<int>(cam), static_cast<int>(camv), ExpectedCamVtable);
+    if (camOk) {
+        sceneview::cameraAttach(view, rig, "camerahook", 1);
+        sceneview::cameraFov(view, g_cfg.fov);
+        logf("H1: camera attached to 'camerahook', fov=%.3f", g_cfg.fov);
+    } else logf("H1: camera vtable mismatch, camera left as is");
+    if (g_cfg.bevels) { bindCover(panel, "LBL_BEVEL", ExpectedControlId + 1); bindCover(panel, "LBL_BEVEL2", ExpectedControlId + 2); }
+    if (g_cfg.buttons) {
+        g_hol.connect();   // EQ10: k2.holster client (optional; holster row stays hidden without it)
+        static const char* const tags[NumButtons] = {"LBL_E3D_ANIM", "LBL_E3D_SPIN", "LBL_E3D_WEAP", "LBL_E3D_RESET", "LBL_E3D_EMOTE"};
+        for (int i = 0; i < NumButtons; ++i) { s->btn[i] = bindCover(panel, tags[i], ExpectedControlId + 3 + i); if (!s->btn[i]) logf("H1: toolbar button %s not bound (GUI not patched?)", tags[i]); }
+        s->btn[HolsBtn] = bindCover(panel, "LBL_E3D_HOLS", HolsId); if (!s->btn[HolsBtn]) logf("H1: LBL_E3D_HOLS not bound (GUI not re-patched)");
+        for (int i = 0; i < MaxMenu; ++i) {
+            char tg[16]; snprintf(tg, sizeof tg, "LBL_E3D_M%02d", i);
+            s->item[i] = bindCover(panel, tg, ExpectedControlId + 3 + NumButtons + i); if (!s->item[i]) logf("H1: menu label %s not bound (GUI not patched?)", tg);
+            setCtlVisible(s->item[i], false);
+        }
+        { bool okCells = true; for (int i = 0; i < NumButtons; ++i) { float r[4] = {}; okCells = (s->btn[i] && ctlRect(s->btn[i], r)) && okCells; s->cell[i] = eq3d::Box{(int)r[0], (int)r[1], (int)r[2], (int)r[3]}; } s->cellOk = okCells; }   // original GUI cells, captured before any layout
+        toolLayout(s);
+        if (ctlRect(s->btn[1], s->rowRect)) logf("H1: spin row rect [%.0f,%.0f,%.0f,%.0f]", s->rowRect[0], s->rowRect[1], s->rowRect[2], s->rowRect[3]);
+        setCtlVisible(s->btn[3], false);   // Reset appears only once Spin was clicked (spinLayout)
+        s->tipBg = bindCover(panel, "LBL_E3D_TIPBG", TipBgId); s->tip = bindCover(panel, "LBL_E3D_TIP", TipId);
+        setCtlVisible(s->tipBg, false); setCtlVisible(s->tip, false);   // shown only while a button is hovered
+    }
+    s->usable = true;
+    logf("H1: slot %d ready (panel=%08x seq=%u)", slotIndex(s), panel, s->seq);
+}
+
+extern "C" void __cdecl EquipTick(int panel) {
+    ensureInit();
+    saferead::beginScope();
+    static int calls = 0;
+    if (!g_qpcFreq.QuadPart) { QueryPerformanceFrequency(&g_qpcFreq); QueryPerformanceCounter(&g_qpcLast); }
+    LARGE_INTEGER now; QueryPerformanceCounter(&now);
+    float dt = (float)((double)(now.QuadPart - g_qpcLast.QuadPart) / (double)g_qpcFreq.QuadPart);
+    g_qpcLast = now;
+    syncScreen();
+    syncWheelCfg();
+    guikit::g_wheel.touch(GetTickCount());
+    g_hol.poll();   // EQ10: k2.holster connect retry (cheap once connected)
+    if (dt > 0.5f) logf("H3: tick gap %.2fs (panel reopened or stalled)", dt);
+    Slot* s = findSlot(panel);
+    if (calls < 5) { ++calls; logf("H3 tick #%d panel=%08x slot=%s", calls, panel, s ? (s->usable ? "usable" : "unusable") : "none"); }
+    if (!s || !s->usable) return;
+    maybeReloadIni();
+    if (!g_cfg.enabled || g_cfg.stage < 2) return;
+    DWORD t = GetTickCount();
+    if (modelCount(s->block) < 1) { static int w = 0; if (w++ < 5) logf("H3: rig gone (model count %d)", modelCount(s->block)); return; }
+
+    int real = 0; readAt<int>(panel, PanelCharOff, &real);
+    if (!real) { dlogf("H3: panel+0x68 is null"); return; }
+    if (!realValid(real)) { static int w = 0; if (w++ < 10) { int vt = 0; readAt<int>(real, 0, &vt); logf("H3: real %08x has vtable %08x, expected %08x: skipping", real, vt, CreatureVftable); } return; }
+
+    bool needBuild = false; const char* why = "";
+    if (!s->built || real != s->real) { needBuild = true; why = s->built ? "character changed" : "first build"; }
+    else if (g_cfg.stage >= 3 && t - s->lastPoll >= (DWORD)g_cfg.pollMs) {
+        s->lastPoll = t;
+        unsigned char cur[AppCopyBytes]; short al = 0;
+        if (readApp(real, cur, &al) && (memcmp(cur, s->app, AppCopyBytes) != 0 || al != s->align)) {
+            if (t - s->lastBuild >= (DWORD)g_cfg.rebuildMinMs) { needBuild = true; why = "appearance changed"; }
+        }
+    }
+    if (needBuild && !s->creatureBad) {
+        bool wasBuilt = s->built;
+        if (buildPreview(s, real, why) && wasBuilt && !strcmp(why, "appearance changed")) {
+            s->lastEquipMs = t;
+            if (g_cfg.stage >= 4 && g_cfg.flourish && g_animOn && g_cfg.flOnEquip) {  // short "item equipped" gesture shortly after the swap
+                if (!playFlourish(s, g_cfg.equipAnim, "after equip")) dlogf("flourish: equip anim '%s' unavailable", g_cfg.equipAnim);
+            }
+        }
+        if (!s->nextFlourish) s->nextFlourish = t + (DWORD)(g_cfg.flFirst * 1000.0f);
+    }
+    if (!s->built) return;
+
+    if (g_cfg.stage >= 4) tickButtons(s);
+    {   // weapons: toggle or the real creature's hand items changed
+        int ids[2] = {NoItemId, NoItemId}; readAt<int>(real, CrRightItemOff, &ids[0]); readAt<int>(real, CrLeftItemOff, &ids[1]);
+        if (s->wpnApplied != g_weaponsOn || (g_weaponsOn && (ids[0] != s->wpnIds[0] || ids[1] != s->wpnIds[1]))) {
+            logf("weapons: refresh (toggle=%d applied=%d ids %08x/%08x -> %08x/%08x)", g_weaponsOn, s->wpnApplied, s->wpnIds[1], s->wpnIds[0], ids[1], ids[0]);
+            refreshWeapons(s, real, "toggle/items");
+        }
+    }
+    if (g_weaponsOn && s->wpnApplied && g_hol.canDraw() && s->btn[HolsBtn] && !s->regFail && (s->wpn[0] || s->wpn[1]) && !s->wpnReg[0] && !s->wpnReg[1] && !s->regTried) {   // EQ10: holster connected after the attach -> register the existing Gobs once
+        registerWeapons(s);
+        if (!g_drawn && holsReg(s)) applyStance(s, s->stanceOn);
+    }
+    if (s->wpnApplied && g_weaponsOn && s->drawnApplied != (int)g_drawn) applyStance(s, s->stanceOn);   // EQ10 Holster/Draw click: stance only, the weapon Gobs stay
+    if (s->helmApplied != (g_cfg.helmet != 0)) {   // helmet= toggled by INI hot reload (an item change rebuilds via the appearance compare)
+        detachHelmet(s, "ini toggle");
+        int hid = NoItemId; readAt<int>(reinterpret_cast<int>(s->app), 0x10, &hid);
+        if (g_cfg.helmet) attachHelmet(s, hid, "ini toggle"); else s->helmApplied = false;
+    }
+    if (g_cfg.stage >= 4 && s->flourishActive && t >= s->flourishEnd) endFlourish(s);   // also for menu-triggered gestures while Animate is off
+    if (g_cfg.stage >= 4 && g_cfg.flourish && g_animOn) {
+        if (!s->nextFlourish) s->nextFlourish = t + (DWORD)(g_cfg.flFirst * 1000.0f);
+        if (s->flourishActive && t >= s->flourishEnd) endFlourish(s);
+        else if (!s->flourishActive && t >= s->nextFlourish) {
+            if (s->dragging || s->menuOpen || t - s->lastEquipMs < (DWORD)(g_cfg.flQuiet * 1000.0f)) s->nextFlourish = t + 1000;
+            else pickFlourish(s);
+        }
+    }
+    if (g_cfg.stage >= 5) tickInput(s);
+    float spin = g_spinOn ? (g_cfg.spinDegS != 0 ? g_cfg.spinDegS : g_cfg.spinToggleDegS) : g_cfg.spinDegS;
+    if (spin != 0 && !s->dragging) { s->yaw += spin * (dt > 0.1f ? 0.1f : dt); applyView(s); }
+    if (t - s->bindTick < 90000 && t - s->lastBeat >= 2000) {
+        s->lastBeat = t;
+        logf("H3 beat: builds=%d built=%d real=%08x yaw=%.1f zoom=%.2f flourish=%d idle='%s' models=%d", s->builds, s->built, s->real, s->yaw, s->zoom, s->flourishActive, s->idleName, modelCount(s->block));
+    }
+}
+
+extern "C" void __cdecl EquipDestroy(int panel) {
+    ensureInit();
+    saferead::beginScope();
+    Slot* s = findSlot(panel);
+    logf("H4 EquipDestroy panel=%08x slot=%s creature=%p", panel, s ? "found" : "none", s ? s->creature : nullptr);
+    if (!s) return;
+    destroyCreature(s, "panel destroyed");
+    s->usable = false; s->block = nullptr; s->panel = 0;
+    g_slots.release(slotKey(panel));
+}
+
+BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID) {
+    if (reason == DLL_PROCESS_DETACH) guikit::wheelUninstall();   // restore if still on top, else stay chained but inert
+    if (reason == DLL_PROCESS_ATTACH) { snprintf(g_loadLine, sizeof g_loadLine, "equip3d 0.3.0-probe loaded (KpLog + IniKit + PanelSlots + GuiKit) tick=%lu", (unsigned long)GetTickCount()); }
+    return TRUE;
+}
