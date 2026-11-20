@@ -1,0 +1,5 @@
+[metadata]
+target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"]
+
+# npc-world-probe is a DLL-only client of npc-world (k2.npcworld@1): it has no detours. The area / creature / tick hooks
+# (0x0055A460, 0x00568BD0, 0x00533830) belong to npc-world, and KPM rejects a second owner of the same address.

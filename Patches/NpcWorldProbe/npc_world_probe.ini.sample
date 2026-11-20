@@ -1,0 +1,24 @@
+; npc_world_probe.ini -- copy to the game folder as npc_world_probe.ini (all keys optional). Without the file: stages=t26,persist.
+; Doc 40 section 13. One run = one set of stages; change the file between runs, not during one.
+[probe]
+; stages: t26 (old k1-spawn-probe roster, NB0 live check) | pool (row1..row16) | capacity | persist | frame | all | none
+stages=t26,persist
+
+; ---- Run B: capacity 1 / 6 / 18 (set npc_world.ini [world] spawn_cap=N+2, k1_spawn_probe.ini [spawn] enabled=0; capacity_n is REQUIRED, stages=capacity spawns nothing without it) ----
+;stages=capacity,persist,frame
+;capacity_n=6
+;capacity_resref=c_drdmouse01
+;capacity_realtag=MouseDroid
+;capacity_area=204tel
+;capacity_x=-39.0
+;capacity_y=-63.1
+;capacity_z=0.0
+;capacity_step=0.9
+;capacity_cols=6
+;frame_window=120
+;frame_pre_windows=4
+;frame_post_windows=12
+
+; ---- Run C: pool rows for P1 / P2 / P3 / P12 / P14: resref,tag,area,x,y,z[,facing]; tag = the template's own tag ----
+;stages=pool,persist
+;row1=c_ithorian,<utc tag>,204tel,-39.0,-63.1,0.0,0.0
