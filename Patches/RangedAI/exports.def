@@ -1,0 +1,10 @@
+LIBRARY RangedAI
+EXPORTS
+    RangedAiHold
+    RangedAiRetarget
+    RangedAiStanceClamp
+    RangedAiStanceRow
+    RangedAiStanceClick
+    RangedAiHudStance
+    RangedAiStanceRules
+    KPatchInit
