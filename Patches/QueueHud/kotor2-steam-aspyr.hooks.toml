@@ -1,0 +1,42 @@
+[metadata]
+target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"]
+
+# H8 (0x0074C168) migrated to hud-host K2HUD_FRAME (HL4 hook consolidation).
+
+# H9: PerformUseItem (0x00775603): intercept out-of-combat item use for multi-item buffering (doc 33 WS4).
+# 6 bytes (2 instructions): SUB ESP,0x14 / MOV [EBP-0x14],ECX.
+# ECX = client creature, EBP = stack frame. Non-zero return jumps to 0x77565D (MOV ESP,EBP / POP EBP / RET 0x10).
+[[hooks]]
+address = 0x00775603
+type = "detour"
+function = "QueueHudPerformUseItem"
+original_bytes = [0x83, 0xEC, 0x14, 0x89, 0x4D, 0xEC]
+consumed_exit_address = 0x0077565D
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "int"
+
+[[hooks.parameters]]
+source = "ebp"
+type = "int"
+
+# H10: PerformCastSpell (0x00775703): intercept out-of-combat spell use for unified buffering (doc 33 QH4).
+# 6 bytes (2 instructions): SUB ESP,0x0C / MOV [EBP-0x0C],ECX.
+# ECX = client creature, EBP = stack frame. Non-zero return jumps to 0x77574C (MOV ESP,EBP / POP EBP / RET 0x1C).
+[[hooks]]
+address = 0x00775703
+type = "detour"
+function = "QueueHudPerformCastSpell"
+original_bytes = [0x83, 0xEC, 0x0C, 0x89, 0x4D, 0xF4]
+consumed_exit_address = 0x0077574C
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "int"
+
+[[hooks.parameters]]
+source = "ebp"
+type = "int"

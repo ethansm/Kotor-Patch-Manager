@@ -1,0 +1,6 @@
+LIBRARY QueueHud
+EXPORTS
+    KPatchInit
+    QueueHudCapture
+    QueueHudPerformUseItem
+    QueueHudPerformCastSpell
