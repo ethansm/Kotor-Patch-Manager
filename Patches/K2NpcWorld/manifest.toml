@@ -1,0 +1,16 @@
+[patch]
+id = "npc-world"
+name = "NPC World (shared area / creature / tick hooks + native spawn)"
+version = "0.1.2-dev"
+kind = "provider"
+provides = ["k2.npcworld@1"]
+author = "local"
+description = "Owns the three world detours the NPC mods share (0x0055A460 LoadModuleInProgress, 0x00568BD0 creature AddToArea, 0x00533830 MainLoop), tracks one area visit (per-visit salt, 30-tick POP-STABLE latch, seen creature tags) and provides the k2.npcworld v1 registry interface: area-load / creature-added / area-stable / tick events plus a native Spawn() service (engine CreateObject path) with a per-visit spawn cap. Replaces k1-spawn-probe's hooks. Needs a KotorPatcher with the patch registry (KPatchInit). Opt-out: npc_world.ini [world] enabled=0."
+
+requires = []
+conflicts = ["area-hook-probe"]
+
+# Steam/LAA only. Design: patch_manager_mods/40_npc_behaviour_variety.md section 12.
+# Never install alongside area-hook-probe or k1-spawn-probe 0.2.x: they own the same three addresses and KPM rejects the duplicate hooks (k1-spawn-probe 0.3.0+ is a DLL-only client of this library and is fine).
+[patch.supported_versions]
+kotor2_steam_aspyr = "6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"
