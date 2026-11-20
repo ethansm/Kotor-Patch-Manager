@@ -1,0 +1,13 @@
+[patch]
+id = "character-effects-panel"
+name = "Character Active Effects Panel"
+version = "0.6.0-dev"
+author = "ethansm"
+description = "Character page right third: Effects tab lists the shown character's active effects (icon, name, remaining time; Harmful first, then Beneficial, scrollable); Stats tab shows combat stats; hover tooltips on Effects rows and vanilla character sheet rows."
+
+requires = ["gui-input"]
+requires_interfaces = ["k2.guiinput@1"]
+conflicts = []
+
+[patch.supported_versions]
+kotor2_steam_aspyr = "6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"

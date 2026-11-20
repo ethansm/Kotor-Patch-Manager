@@ -1,0 +1,7 @@
+LIBRARY CharEffectsPanel
+EXPORTS
+    BindCharEffects
+    CharEffectsTick
+    CharEffectsDestroy
+    CharEffectsDeflectCheck
+    KPatchInit
