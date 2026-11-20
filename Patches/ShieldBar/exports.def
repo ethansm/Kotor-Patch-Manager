@@ -1,0 +1,4 @@
+LIBRARY ShieldBar
+EXPORTS
+    KPatchInit
+    AppendShieldToTooltip
