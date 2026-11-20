@@ -1,0 +1,8 @@
+LIBRARY SaveEvents
+EXPORTS
+    KPatchInit
+    SE_OnSaved
+    SE_OnAutosaved
+    SE_OnLoadRequest
+    SE_OnAutosaveSlotLoad
+    SE_OnNewGame

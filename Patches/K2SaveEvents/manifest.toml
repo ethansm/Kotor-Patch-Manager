@@ -1,0 +1,16 @@
+[patch]
+id = "save-events"
+name = "Save Events (shared save / load / new-game hooks)"
+version = "0.1.1-dev"
+kind = "provider"
+provides = ["k2.saveevents@1"]
+author = "local"
+description = "Owns the five save / autosave / load / new-game detours (0x00534527, 0x0053C5AA, 0x0052FD1E, 0x008529E0, 0x008FACA0), parses the save folder (local or Steam Cloud root) and provides the k2.saveevents v1 registry interface, so several mods (action hotbar per-save INI, level-up GUID binding, ...) can share them. It writes nothing to the engine, does no file I/O except the kpatch log and one read-only listing of the save root when a save's folder name is unreadable (PS2), and never blocks. Needs a KotorPatcher with the patch registry (KPatchInit)."
+
+requires = []
+conflicts = []
+
+# Steam only. Design: patch_manager_mods/22_hotbar_shared_services.md sections 4.1 / 4.1a (local-setup/KOTOR-II worktree).
+# Never install alongside Action Hotbar 1.2.2-dev or older: those builds own the same five addresses and KPM rejects the duplicate hooks. Action Hotbar 1.3.0-dev and the 0.x line consume this provider instead.
+[patch.supported_versions]
+kotor2_steam_aspyr = "6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"
