@@ -1,0 +1,59 @@
+# GOG Aspyr build. Hook addresses from patch_manager_mods/21b_gog_address_map.md section 1 (static-verified only: the hook
+# windows are byte-identical to the Steam original_bytes below; untested live, GOG contributor testing required). Steam address -> GOG address
+# is noted per hook. Function names, parameters and original_bytes are the same as kotor2-steam-aspyr.hooks.toml.
+[metadata]
+target_versions = ["777BEE235A9E8BDD9863F6741BC3AC54BB6A113B62B1D2E4D12BBE6DB963A914"]
+
+# UpdatePortraits, normal slot: EAX = slotPtr, [ebp-0x38] = creature
+[[hooks]]
+address = 0x005209DA   # Steam 0x0074F25A
+type = "detour"
+function = "PS_SnapshotPortraitSlot"
+original_bytes = [0x89, 0x85, 0x44, 0xFF, 0xFF, 0xFF]
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "eax"
+type = "int"
+
+[[hooks.parameters]]
+source = "[ebp-0x38]"
+type = "int"
+
+# UpdatePortraits, extra/mirror slot: EDX = slotPtr, [ebp-0x38] = creature
+[[hooks]]
+address = 0x0052102B   # Steam 0x0074F8AB
+type = "detour"
+function = "PS_SnapshotPortraitSlot"
+original_bytes = [0x89, 0x95, 0xA4, 0xFE, 0xFF, 0xFF]
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "edx"
+type = "int"
+
+[[hooks.parameters]]
+source = "[ebp-0x38]"
+type = "int"
+
+# FUN_00745770 per-slot icon-row gate, after prologue (55 8b ec 51 done). ECX = slotPtr (this), [ebp+0xc] = isFirst (leader;
+# RET 8 = dt + isFirst), [ebp] = caller frame. Runs every frame per slot, before the arrow-count test. Window 89 4d fc / 8b 45 fc
+# (2 whole instructions, 6 bytes, no jumps).
+[[hooks]]
+address = 0x00516D74   # Steam 0x00745774
+type = "detour"
+function = "PS_PortraitSlotDraw"
+original_bytes = [0x89, 0x4D, 0xFC, 0x8B, 0x45, 0xFC]
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "int"
+
+[[hooks.parameters]]
+source = "[ebp+0xc]"
+type = "int"
+
+[[hooks.parameters]]
+source = "[ebp]"
+type = "int"
