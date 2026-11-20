@@ -241,4 +241,62 @@ public class DependencyValidatorTests
         Assert.True(result.Success, result.Error);
         Assert.Equal(new[] { "lib" }.Concat(old.Data!), result.Data!.InstallOrder);
     }
+
+    // FM1a regression: PatchApplicator re-sorts the resolved install set with CalculateInstallOrder.
+    // That must keep providers first and list nothing twice.
+    [Fact]
+    public void ResortingTheResolvedSetIsStableAndHasNoDuplicates()
+    {
+        var catalog = Catalog(
+            Make("base", true),
+            Make("mid", true, "base"),
+            Make("hud", false, "mid", "base"),
+            Make("bar", false, "mid"));
+
+        var resolved = DependencyValidator.ResolveWithProviders(catalog, new[] { "hud", "bar" });
+        Assert.True(resolved.Success, resolved.Error);
+
+        var resorted = DependencyValidator.CalculateInstallOrder(catalog, resolved.Data!.InstallOrder);
+        Assert.True(resorted.Success, resorted.Error);
+        Assert.Equal(resolved.Data.InstallOrder, resorted.Data);
+        Assert.Equal(resorted.Data!.Count, resorted.Data.Distinct().Count());
+    }
+
+    // FM1a regression: option handling in PatchApplicator now walks the resolved install set, not the
+    // requested IDs. An auto-added provider is in that set and not in the request; a requested provider
+    // nothing needs is in the request and not in the set (indexing the set's entries by it threw
+    // KeyNotFoundException).
+    [Fact]
+    public void AutoAddedProviderIsInTheInstallSetButNotTheRequest_AndSkippedOneIsNot()
+    {
+        var catalog = Catalog(Make("lib", true), Make("idle", true), Make("hud", false, "lib"));
+        var requested = new[] { "hud", "idle" };
+
+        var result = DependencyValidator.ResolveWithProviders(catalog, requested);
+
+        Assert.True(result.Success, result.Error);
+        Assert.Contains("lib", result.Data!.InstallOrder);
+        Assert.DoesNotContain("lib", requested);
+        Assert.DoesNotContain("idle", result.Data.InstallOrder);
+        Assert.Equal(new[] { "idle" }, result.Data.SkippedProviders);
+    }
+
+    // requires_interfaces is informational by design (PatchManifest doc; local-mods adds no later
+    // enforcement): only Requires drives resolution.
+    [Fact]
+    public void RequiresInterfacesDoesNotAffectResolution()
+    {
+        var hud = Make("hud");
+        hud = new PatchManifest
+        {
+            Id = hud.Id, Name = hud.Name, Version = hud.Version, Author = hud.Author,
+            Description = hud.Description, Kind = hud.Kind,
+            RequiresInterfaces = new List<string> { "k2.missing@1" },
+        };
+
+        var result = DependencyValidator.ResolveWithProviders(Catalog(hud), new[] { "hud" });
+
+        Assert.True(result.Success, result.Error);
+        Assert.Equal(new[] { "hud" }, result.Data!.InstallOrder);
+    }
 }

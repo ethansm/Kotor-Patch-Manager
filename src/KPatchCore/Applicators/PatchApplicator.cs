@@ -340,7 +340,7 @@ public class PatchApplicator
                 };
             }
 
-            foreach (var patchId in options.PatchIds)
+            foreach (var patchId in installIds)
             {
                 var manifest = patchEntries[patchId].Manifest;
                 var conditionResult = OptionValidator.ValidateHookConditions(manifest, hooksByPatch[patchId]);
