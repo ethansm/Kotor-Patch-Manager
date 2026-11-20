@@ -1,0 +1,247 @@
+[metadata]
+target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"]
+
+# Command-queue probe: CmdqProbePause, entry of the pause/unpause routine at 0x00538ED0. Cdecl args [esp+4], [esp+8].
+[[hooks]]
+address = 0x00538ED0
+type = "detour"
+function = "CmdqProbePause"
+original_bytes = [0x55, 0x8B, 0xEC, 0x81, 0xEC, 0xC4, 0x00, 0x00, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[esp+4]"
+type = "int"
+
+[[hooks.parameters]]
+source = "[esp+8]"
+type = "int"
+
+# Command-queue probe: CmdqProbeCast, entry of the spell-cast routine at 0x00565310 (thiscall). ECX = this, args [esp+4], [esp+0x28], [esp+0x48].
+[[hooks]]
+address = 0x00565310
+type = "detour"
+function = "CmdqProbeCast"
+original_bytes = [0x55, 0x8B, 0xEC, 0x81, 0xEC, 0x20, 0x01, 0x00, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[esp+4]"
+type = "uint"
+
+[[hooks.parameters]]
+source = "[esp+0x28]"
+type = "int"
+
+[[hooks.parameters]]
+source = "[esp+0x48]"
+type = "int"
+
+# Command-queue probe: CmdqProbeItemCast, entry of the item-cast routine at 0x005648D0 (thiscall). ECX = this, args [esp+4], [esp+0x1C], [esp+0x2C].
+[[hooks]]
+address = 0x005648D0
+type = "detour"
+function = "CmdqProbeItemCast"
+original_bytes = [0x55, 0x8B, 0xEC, 0x81, 0xEC, 0x10, 0x01, 0x00, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[esp+4]"
+type = "uint"
+
+[[hooks.parameters]]
+source = "[esp+0x1C]"
+type = "int"
+
+[[hooks.parameters]]
+source = "[esp+0x2C]"
+type = "int"
+
+# Command-queue probe: CmdqProbeFireCast, MOV EAX,[ebp-0x2B8] at 0x005BB07C in the cast fire path. Logs the uint local.
+[[hooks]]
+address = 0x005BB07C
+type = "detour"
+function = "CmdqProbeFireCast"
+original_bytes = [0x8B, 0x85, 0x7C, 0xFF, 0xFF, 0xFF]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[ebp-0x2B8]"
+type = "uint"
+
+# Command-queue probe: CmdqProbeFireItem, MOV EAX,[ebp-0x260] at 0x005B9414 in the item fire path. Logs the uint local.
+[[hooks]]
+address = 0x005B9414
+type = "detour"
+function = "CmdqProbeFireItem"
+original_bytes = [0x8B, 0x85, 0xA0, 0xFD, 0xFF, 0xFF]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[ebp-0x260]"
+type = "uint"
+
+# Command-queue probe: CmdqProbeRoundStart, entry of the combat round start at 0x0058E730. ECX = this.
+[[hooks]]
+address = 0x0058E730
+type = "detour"
+function = "CmdqProbeRoundStart"
+original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x40]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+# Command-queue probe: CmdqProbeRoundEnd, MOV dword ptr [ECX+0xAB8],0 at 0x0058EA53 (one 10-byte instruction). ECX = this.
+[[hooks]]
+address = 0x0058EA53
+type = "detour"
+function = "CmdqProbeRoundEnd"
+original_bytes = [0xC7, 0x81, 0xB8, 0x0A, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+# Command-queue probe: CmdqProbeClear, entry of the queue clear routine at 0x00541080. ECX = this, arg [esp+0].
+[[hooks]]
+address = 0x00541080
+type = "detour"
+function = "CmdqProbeClear"
+original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x7C]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[esp+0]"
+type = "uint"
+
+# Command-queue probe: CmdqProbeReequip, entry of the re-equip routine at 0x005DF920. ECX = this.
+[[hooks]]
+address = 0x005DF920
+type = "detour"
+function = "CmdqProbeReequip"
+original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x6C]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+# Command-queue probe: CmdqProbeMedEntry, entry of the medical-item routine at 0x0077C780 (thiscall). ECX = this, args [esp+4], [esp+8].
+[[hooks]]
+address = 0x0077C780
+type = "detour"
+function = "CmdqProbeMedEntry"
+original_bytes = [0x55, 0x8B, 0xEC, 0x81, 0xEC, 0xE4, 0x00, 0x00, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[esp+4]"
+type = "uint"
+
+[[hooks.parameters]]
+source = "[esp+8]"
+type = "uint"
+
+# Command-queue probe: CmdqProbeMedCanUse, epilogue at 0x005D32AE (POP ESI; MOV ESP,EBP; POP EBP; RET 0xC). EAX = int result, arg [ebp+8].
+[[hooks]]
+address = 0x005D32AE
+type = "detour"
+function = "CmdqProbeMedCanUse"
+original_bytes = [0x5E, 0x8B, 0xE5, 0x5D, 0xC2, 0x0C, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "eax"
+type = "int"
+
+[[hooks.parameters]]
+source = "[ebp+8]"
+type = "uint"
+
+# Command-queue probe: CmdqProbeAttack, entry of CSWSCreature::AddAttackActions at 0x00568540 (thiscall).
+[[hooks]]
+address = 0x00568540
+type = "detour"
+function = "CmdqProbeAttack"
+original_bytes = [0x55, 0x8B, 0xEC, 0x6A, 0xFF]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[esp+4]"
+type = "uint"
+
+[[hooks.parameters]]
+source = "[esp+0x14]"
+type = "int"
+
+[[hooks.parameters]]
+source = "[esp+0x18]"
+type = "int"
+
+[[hooks.parameters]]
+source = "[esp+0x1C]"
+type = "int"
+
+[[hooks.parameters]]
+source = "[esp+0]"
+type = "uint"
+
+# Command-queue probe: CmdqProbeAddFront, entry of CSWSObject::AddActionToFront at 0x00540CA0 (thiscall).
+[[hooks]]
+address = 0x00540CA0
+type = "detour"
+function = "CmdqProbeAddFront"
+original_bytes = [0x55, 0x8B, 0xEC, 0x6A, 0xFF]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[esp+4]"
+type = "uint"
+
+[[hooks.parameters]]
+source = "[esp+8]"
+type = "uint"
+
+[[hooks.parameters]]
+source = "[esp+0]"
+type = "uint"
