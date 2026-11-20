@@ -1,0 +1,83 @@
+# Byte patches this mod's DLL writes into the game itself (not KPM hooks), for the static checks
+# (scripts/check_hook_bytes.py, scripts/check_hook_spans.py). Schema: see robustness_fixes_src/code_patches.toml.
+# The three tex_scan_* call-site patches (0.1.0-0.1.1) were removed in 0.1.2: the cache never got a hit.
+
+[[code_patches]]
+name = "mem_status"
+address = 0x00478A57
+# 0x00478A20 (per-frame stats tick): `CALL dword ptr [0x00986128]` (GlobalMemoryStatus IAT) -> imm32 = &g_pfnGms (DLL)
+original_bytes = [0xFF, 0x15, 0x28, 0x61, 0x98, 0x00]
+kind = "code"
+verifies_original = true
+enabled_by = "always (KPatchInit); mem_status_cache=0 calls the real API every time; restored on FreeLibrary"
+source = "K2EnginePerf.cpp installPatches / uninstallPatches (MemStatusCache.h, codepatch::writeChecked)"
+
+[[code_patches]]
+name = "emit_sim"
+address = 0x00469A88
+# 0x00469950 (Scene::DoEmitterBucket): `CALL 0x004EC080` (PartEmitter::AnimateParticles) -> K2EP_EmitSim
+original_bytes = [0xE8, 0xF3, 0x25, 0x08, 0x00]
+kind = "code"
+verifies_original = true
+enabled_by = "always (KPatchInit); pass_profile=0 forwards without QPC timing; restored on FreeLibrary"
+source = "K2EnginePerf.cpp installPatches / uninstallPatches (PassProfiler.h, codepatch::writeChecked)"
+
+[[code_patches]]
+name = "emit_draw"
+address = 0x00469A99
+# 0x00469950 (Scene::DoEmitterBucket): `CALL 0x004E92A0` (PartEmitter::RenderFunc) -> K2EP_EmitDraw
+original_bytes = [0xE8, 0x02, 0xF8, 0x07, 0x00]
+kind = "code"
+verifies_original = true
+enabled_by = "always (KPatchInit); pass_profile=0 forwards without QPC timing; restored on FreeLibrary"
+source = "K2EnginePerf.cpp installPatches / uninstallPatches (PassProfiler.h, codepatch::writeChecked)"
+
+[[code_patches]]
+name = "blend_mode"
+address = 0x004660CA
+# 0x00465F90 (Scene::DoMeshBuckets): `CALL 0x004DB1F0` (Material::SetBlendingMode) -> K2EP_BlendMode
+original_bytes = [0xE8, 0x21, 0x51, 0x07, 0x00]
+kind = "code"
+verifies_original = true
+enabled_by = "always (KPatchInit); pass_profile=0 forwards without QPC timing; restored on FreeLibrary"
+source = "K2EnginePerf.cpp installPatches / uninstallPatches (PassProfiler.h, codepatch::writeChecked)"
+
+[[code_patches]]
+name = "mesh_dedupe"
+address = 0x00466161
+# 0x00465F90 (Scene::DoMeshBuckets): `CALL 0x00476620` (PtrVec::CountOf) -> K2EP_MeshDedupe
+original_bytes = [0xE8, 0xBA, 0x04, 0x01, 0x00]
+kind = "code"
+verifies_original = true
+enabled_by = "always (KPatchInit); pass_profile=0 forwards without QPC timing; restored on FreeLibrary"
+source = "K2EnginePerf.cpp installPatches / uninstallPatches (PassProfiler.h, codepatch::writeChecked)"
+
+[[code_patches]]
+name = "skin_draw"
+address = 0x004CD3ED
+# 0x004CD380 (PartSkin::Draw): `CALL 0x004C9640` (Global::RenderSkinnedVPBlur) -> K2EP_SkinDraw
+original_bytes = [0xE8, 0x4E, 0xC2, 0xFF, 0xFF]
+kind = "code"
+verifies_original = true
+enabled_by = "always (KPatchInit); pass_profile=0 forwards without QPC timing; restored on FreeLibrary"
+source = "K2EnginePerf.cpp installPatches / uninstallPatches (PassProfiler.h, codepatch::writeChecked)"
+
+[[code_patches]]
+name = "gob_anim"
+address = 0x004E2ED1
+# 0x004E1D40 (Gob::Animate): `CALL 0x004DFED0` (Global::AnimateHierarchy) -> K2EP_GobAnim
+original_bytes = [0xE8, 0xFA, 0xCF, 0xFF, 0xFF]
+kind = "code"
+verifies_original = true
+enabled_by = "always (KPatchInit); pass_profile=0 forwards without QPC timing; restored on FreeLibrary"
+source = "K2EnginePerf.cpp installPatches / uninstallPatches (PassProfiler.h, codepatch::writeChecked)"
+
+[[code_patches]]
+name = "shdw_proj"
+address = 0x00468DC1
+# 0x00468B50 (Scene::DoGobShadowsForThisLight): `CALL 0x00465C90` (Global::ProjectDynamicShadow) -> K2EP_ShdwProj
+original_bytes = [0xE8, 0xCA, 0xCE, 0xFF, 0xFF]
+kind = "code"
+verifies_original = true
+enabled_by = "always (KPatchInit); pass_profile=0 forwards without QPC timing; restored on FreeLibrary"
+source = "K2EnginePerf.cpp installPatches / uninstallPatches (PassProfiler.h, codepatch::writeChecked)"
