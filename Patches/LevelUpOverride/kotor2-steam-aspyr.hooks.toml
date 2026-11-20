@@ -1,0 +1,520 @@
+[metadata]
+target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"]
+
+# CSWSCreatureStats::LevelUp entry (doc 08 hook shortlist 1). thiscall(stats, pending*, addToList), ret 8.
+# Prologue 55 8B EC 81 EC 80 00 00 00 = PUSH EBP / MOV EBP,ESP / SUB ESP,0x80 (9 bytes, whole instructions; 5 would cut the SUB).
+# skip_original_bytes=false: our code runs BEFORE the original bytes, so EBP is still the caller's frame (used for the caller chain).
+# Parameters: ECX = stats, [esp+0] = return address (flow id), [esp+4] = pending*, [esp+8] = addToList, EBP = caller frame.
+[[hooks]]
+address = 0x006B9870
+type = "detour"
+function = "LevelUpOverrideEntry"
+original_bytes = [0x55, 0x8B, 0xEC, 0x81, 0xEC, 0x80, 0x00, 0x00, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[esp+0]"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[esp+4]"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "[esp+8]"
+type = "int"
+
+[[hooks.parameters]]
+source = "ebp"
+type = "pointer"
+
+# ---- 0.3.0-a gates: 5-byte `E8 rel32` call sites, the call is replaced (skip_original_bytes) and the handler calls the real function itself;
+# its return value is EAX (excluded from restore). All sites: live == vanilla bytes, only EAX used after the call (doc 08 "Phase 4 M0 facts").
+
+# Hold gate: CanLevelUp 0x6B9790 (int __thiscall(stats), plain RET). ecx = stats. Result forced to 0 while the creature is held.
+[[hooks]]
+address = 0x0074F3C7
+type = "detour"
+function = "LuoHold_74F3C7"
+original_bytes = [0xE8, 0xC4, 0xA3, 0xF6, 0xFF]
+skip_original_bytes = true
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+# SetStats site (CSWGuiInGameCharacter::SetStats 0x84E6F0, every frame via Update 0x84FBB0): hold gate + the M4 UI tick. Params ecx = leader stats,
+# ebp = SetStats' frame (panel = [ebp-0x288], read inside the handler). Original bytes verified with pebytes.py (e8 6a a5 e6 ff).
+[[hooks]]
+address = 0x0084F221
+type = "detour"
+function = "LuoHold_84F221"
+original_bytes = [0xE8, 0x6A, 0xA5, 0xE6, 0xFF]
+skip_original_bytes = true
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "ebp"
+type = "pointer"
+
+[[hooks]]
+address = 0x005FD7CE
+type = "detour"
+function = "LuoHold_5FD7CE"
+original_bytes = [0xE8, 0xBD, 0xBF, 0x0B, 0x00]
+skip_original_bytes = true
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks]]
+address = 0x005FE2A3
+type = "detour"
+function = "LuoHold_5FE2A3"
+original_bytes = [0xE8, 0xE8, 0xB4, 0x0B, 0x00]
+skip_original_bytes = true
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks]]
+address = 0x0066C95C
+type = "detour"
+function = "LuoHold_66C95C"
+original_bytes = [0xE8, 0x2F, 0xCE, 0x04, 0x00]
+skip_original_bytes = true
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks]]
+address = 0x005FEE32
+type = "detour"
+function = "LuoHold_5FEE32"
+original_bytes = [0xE8, 0x59, 0xA9, 0x0B, 0x00]
+skip_original_bytes = true
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks]]
+address = 0x00756DD4
+type = "detour"
+function = "LuoHold_756DD4"
+original_bytes = [0xE8, 0xB7, 0x29, 0xF6, 0xFF]
+skip_original_bytes = true
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks]]
+address = 0x007575B5
+type = "detour"
+function = "LuoHold_7575B5"
+original_bytes = [0xE8, 0xD6, 0x21, 0xF6, 0xFF]
+skip_original_bytes = true
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks]]
+address = 0x00757808
+type = "detour"
+function = "LuoHold_757808"
+original_bytes = [0xE8, 0x83, 0x1F, 0xF6, 0xFF]
+skip_original_bytes = true
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks]]
+address = 0x0075798C
+type = "detour"
+function = "LuoHold_75798C"
+original_bytes = [0xE8, 0xFF, 0x1D, 0xF6, 0xFF]
+skip_original_bytes = true
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks]]
+address = 0x0075218B
+type = "detour"
+function = "LuoHold_75218B"
+original_bytes = [0xE8, 0x00, 0x76, 0xF6, 0xFF]
+skip_original_bytes = true
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks]]
+address = 0x007C9F3B
+type = "detour"
+function = "LuoHold_7C9F3B"
+original_bytes = [0xE8, 0x50, 0xF8, 0xEE, 0xFF]
+skip_original_bytes = true
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks]]
+address = 0x0075FCB8
+type = "detour"
+function = "LuoHold_75FCB8"
+original_bytes = [0xE8, 0xD3, 0x9A, 0xF5, 0xFF]
+skip_original_bytes = true
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+# Instant gate: options accessor 0x72FB00 (void* __fastcall(ECX)); only [ret+8]&1 is read afterwards. ecx + ebp (creature = [ebp+off], off per site).
+[[hooks]]
+address = 0x0074F3E9
+type = "detour"
+function = "LuoInstant_74F3E9"
+original_bytes = [0xE8, 0x12, 0x07, 0xFE, 0xFF]
+skip_original_bytes = true
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "ebp"
+type = "pointer"
+
+[[hooks]]
+address = 0x005FD7A0
+type = "detour"
+function = "LuoInstant_5FD7A0"
+original_bytes = [0xE8, 0x5B, 0x23, 0x13, 0x00]
+skip_original_bytes = true
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "ebp"
+type = "pointer"
+
+[[hooks]]
+address = 0x005FE281
+type = "detour"
+function = "LuoInstant_5FE281"
+original_bytes = [0xE8, 0x7A, 0x18, 0x13, 0x00]
+skip_original_bytes = true
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "ebp"
+type = "pointer"
+
+[[hooks]]
+address = 0x0066C93A
+type = "detour"
+function = "LuoInstant_66C93A"
+original_bytes = [0xE8, 0xC1, 0x31, 0x0C, 0x00]
+skip_original_bytes = true
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "ebp"
+type = "pointer"
+
+# GUI guards: GetCharacterChangeInProgress 0x740FC0 (int __thiscall(ecx), plain RET). 0x84FD2F = ShowLevelUpGUI (button/hotkey/script),
+# 0x84F9FE = HandleInputEvent case 0x29 (Auto confirm box). Nonzero = the engine's vanilla early-out.
+[[hooks]]
+address = 0x0084FD2F
+type = "detour"
+function = "LuoGuardGui_84FD2F"
+original_bytes = [0xE8, 0x8C, 0x12, 0xEF, 0xFF]
+skip_original_bytes = true
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks]]
+address = 0x0084F9FE
+type = "detour"
+function = "LuoGuardAuto_84F9FE"
+original_bytes = [0xE8, 0xBD, 0x15, 0xEF, 0xFF]
+skip_original_bytes = true
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+# Auto OK backstop: DoAutoLevelup 0x77D800 call at 0x850062 (void* __thiscall(ecx), creature). Returning 0 makes the engine's `jz` skip AutoLevelup.
+[[hooks]]
+address = 0x00850062
+type = "detour"
+function = "LuoAutoOk_850062"
+original_bytes = [0xE8, 0x99, 0xD7, 0xF2, 0xFF]
+skip_original_bytes = true
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+# ---- 0.3.0-b M3 save binding (doc 08 Item 7 / "Phase 5 U facts" U3; live == vanilla bytes, +-16 clean) ----
+# Pre-save: globals saver 0x656640 (thiscall(table, CExoString* saveFolder), RET 4). 5 bytes = push ebp / mov ebp,esp / push -1 (whole instructions).
+# skip_original_bytes=false: our code runs first, then the original bytes. ecx = the globals table. Writes LUO_G00..G31 so the save carries the GUID.
+[[hooks]]
+address = 0x00656640
+type = "detour"
+function = "LuoGuidSave"
+original_bytes = [0x55, 0x8B, 0xEC, 0x6A, 0xFF]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+# Post-load: inside LoadFromSave 0x656710, after `call 0x6564C0` and `mov [ebp-0x10],eax` (0x656758): one 7-byte instruction `mov dword [ebp-4],-1`.
+# [ebp-0x1c] = the table, eax = the load result. Original runs after the handler.
+[[hooks]]
+address = 0x0065675B
+type = "detour"
+function = "LuoGuidLoad"
+original_bytes = [0xC7, 0x45, 0xFC, 0xFF, 0xFF, 0xFF, 0xFF]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[ebp-0x1c]"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "eax"
+type = "int"
+
+# New server: `call 0x51C450` inside 0x401BC0 (thiscall, ecx = the NEW CServerExoApp, no args, plain RET). The call is replaced; the handler calls
+# 0x51C450 itself and returns its EAX (nothing after the site reads EAX; ecx is reloaded from [ebp-0xC]). Every new game / load passes here.
+[[hooks]]
+address = 0x00401C52
+type = "detour"
+function = "LuoGuidNewServer"
+original_bytes = [0xE8, 0xF9, 0xA7, 0x11, 0x00]
+skip_original_bytes = true
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+# ---- 0.3.0 M4 UI: character panel ctor 0x84C3A0, creation site (doc 08 "Phase 5 U facts" U1) ----
+# 0x84D82C = `push 0x9A39DC` (push imm32 of "LBL_STATSBORDER" for the last InitControl 0x84D85D): one plain relocatable 5-byte instruction, statement boundary,
+# nothing pending on the stack. The layout GFF is still open (StopLoadFromLayout is at 0x84D877), panel = [ebp-0x254]. skip_original_bytes=false: the
+# framework relocates the push. 69 bytes before Mod 14's 0x84D871 hook; we only create (addToList=0) here, the append happens on the first SetStats tick.
+[[hooks]]
+address = 0x0084D82C
+type = "detour"
+function = "LuoUiPanelCtor"
+original_bytes = [0x68, 0xDC, 0x39, 0x9A, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[ebp-0x254]"
+type = "int"
+
+# ---- 0.3.0 leader instant (doc 08 "U5"): GetControlledObject 0x73F450 call in portrait refresh 0x74EE90; the engine compares the result's +4 with
+# the slot's object id (0x74F449) and shows the indicator for the controlled leader instead of AutoLevelup(1). The handler calls 0x73F450 itself and
+# returns a dummy object (id 0x7F000000) for a configured instant, not-held creature ([ebp-0x38]) -> the leader auto-levels like any companion.
+[[hooks]]
+address = 0x0074F423
+type = "detour"
+function = "LuoLeaderInstant_74F423"
+original_bytes = [0xE8, 0x28, 0x00, 0xFF, 0xFF]
+skip_original_bytes = true
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks.parameters]]
+source = "ebp"
+type = "pointer"
+
+# R10 probe (doc 25 section 8): LOG-ONLY consumed-exit detour, handler always returns 0 (run stolen bytes, continue). Consumed exit 0x89BE96 is never taken.
+[[hooks]]
+address = 0x0089B6E4
+type = "detour"
+function = "LuoR10_89B6E4"
+original_bytes = [0x89, 0x8D, 0x3C, 0xFF, 0xFF, 0xFF]
+consumed_exit_address = 0x0089BE96
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+# R10 probe (doc 25 section 8): LOG-ONLY consumed-exit detour, handler always returns 0 (run stolen bytes, continue). Consumed exit 0x90C365 is never taken.
+[[hooks]]
+address = 0x0090C2BE
+type = "detour"
+function = "LuoR10_90C2BE"
+original_bytes = [0x0F, 0xB7, 0x55, 0xE4, 0x52]
+consumed_exit_address = 0x0090C365
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ebp"
+type = "pointer"
+
+# R10 probe (doc 25 section 8): LOG-ONLY consumed-exit detour, handler always returns 0 (run stolen bytes, continue). Consumed exit 0x89AEB8 is never taken.
+[[hooks]]
+address = 0x0089AB29
+type = "detour"
+function = "LuoR10_89AB29"
+original_bytes = [0x89, 0x4D, 0xB8, 0x8B, 0x15, 0xD0, 0xB4, 0xA1, 0x00]
+consumed_exit_address = 0x0089AEB8
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ecx"
+type = "int"
+
+# R10 probe (doc 25 section 8): LOG-ONLY consumed-exit detour, handler always returns 0 (run stolen bytes, continue). Consumed exit 0x909B51 is never taken.
+[[hooks]]
+address = 0x009099A2
+type = "detour"
+function = "LuoR10_9099A2"
+original_bytes = [0x0F, 0xB7, 0x4D, 0xE4, 0x51]
+consumed_exit_address = 0x00909B51
+exclude_from_restore = ["eax"]
+
+[[hooks.parameters]]
+source = "ebp"
+type = "pointer"
+
+# R10 dim (batch 2a, r10=1; doc 25 section 13, evidence research/companion_levelup/phase6_evidence/R10b_sites.md): PLAIN detours on
+# `mov dword [ebp-4],-1` right after the choosable-vector build loop (single loop exit, no inbound branch into the 7 bytes, flag/EAX-free).
+# The handler compacts the PC's choosable vector in place (shrink only) before the panel's RefreshGridStates greys the dropped ids.
+[[hooks]]
+address = 0x0090C36A
+type = "detour"
+function = "LuoR10Dim_90C36A"
+original_bytes = [0xC7, 0x45, 0xFC, 0xFF, 0xFF, 0xFF, 0xFF]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ebp"
+type = "pointer"
+
+[[hooks]]
+address = 0x00909B56
+type = "detour"
+function = "LuoR10Dim_909B56"
+original_bytes = [0xC7, 0x45, 0xFC, 0xFF, 0xFF, 0xFF, 0xFF]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ebp"
+type = "pointer"
+
+# ---- WI-164 / WI-36b: in-panel Filter button on the PC's feats / powers level-up panels (facts: .claude/research/wi36_rescue/WI-163/165/166_facts.md) ----
+# Ctor creation sites, same pattern as Hook 9 (0x84D82C): a plain relocatable 5-byte `push imm32` of the button template tag, NOT skipped, the layout GFF is
+# still open, so the handler can create a label from the template (addToList=0). feats ctor 0x909E00 site 0x90A327 pushes "BTN_RECOMMENDED" (0x9AA3C8),
+# panel = [ebp-0x104]; powers ctor 0x9074E0 site 0x9079F9 pushes "RECOMMENDED_BTN" (0x9AA2B8), panel = [ebp-0x108].
+[[hooks]]
+address = 0x0090A327
+type = "detour"
+function = "LuoFeatsCtor"
+original_bytes = [0x68, 0xC8, 0xA3, 0x9A, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[ebp-0x104]"
+type = "int"
+
+[[hooks]]
+address = 0x009079F9
+type = "detour"
+function = "LuoPowersCtor"
+original_bytes = [0x68, 0xB8, 0xA2, 0x9A, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "[ebp-0x108]"
+type = "int"
+
+# Per-frame tick = the panels' own Draw overrides (vftable slot 0x34, thiscall, ECX = panel, RET 4, one float arg). Prologue 55 8B EC 83 EC 08 =
+# PUSH EBP / MOV EBP,ESP / SUB ESP,8 (6 bytes, whole instructions; a 5-byte cut would split the SUB). skip_original_bytes=false: our code runs BEFORE the
+# original bytes, so ECX/EBP are still the caller's. feats CSWGuiFeatsCharGen 0x90BBB0, powers CSWGuiPowersLevelUp 0x9091E0.
+[[hooks]]
+address = 0x0090BBB0
+type = "detour"
+function = "LuoFeatsDraw"
+original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x08]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
+
+[[hooks]]
+address = 0x009091E0
+type = "detour"
+function = "LuoPowersDraw"
+original_bytes = [0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x08]
+skip_original_bytes = false
+exclude_from_restore = []
+
+[[hooks.parameters]]
+source = "ecx"
+type = "pointer"
