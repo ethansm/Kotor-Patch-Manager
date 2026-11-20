@@ -1,0 +1,9 @@
+LIBRARY InventorySortFilter
+EXPORTS
+    KPatchInit
+    SortFilterTabClick
+    SortFilterBufferRow
+    SortFilterFlush
+    SortFilterRowSelect
+    SortFilterBumperPrev
+    SortFilterBumperNext

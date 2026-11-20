@@ -1,0 +1,13 @@
+[patch]
+id = "inventory-sort-filter"
+name = "Inventory Sort & Filter"
+version = "0.9.0-dev"
+author = "local"
+description = "Sorts the inventory backpack (new, usable, base item), tints items the shown character cannot equip, and adds New / Can Equip / Upgradeable filters by re-clicking the active All tab. 0.2.1: no longer truncates inventory_sort_filter_log.txt at attach (sessions split on the loaded line). 0.4.0: own strip above the item list (filter, sort, N of M). 0.5.0: config page controls tint, filter cycle states and the strip, with a live preview list. 0.6.0: equip compare band under the item description (compare=1 in the ini, default off). 0.6.2: the top Filter line names the active filter (banner_shows_filter=1, page row). 0.7.0: clickable strip (four state slots, sort text, hover sound). 0.7.1: category tabs keep the filter under the bumpers, sub-filters grey out where they do not apply, re-clicking a selected slot cycles. 0.7.2: bumper log shows pass-through. 0.7.3: New stacks on the category tab (the tab stays put); changing the tab resets the filter to All; kept session logs are timestamped (newest 5). 0.7.4: equip compare on by default, configurable on the mod config page."
+
+requires = ["hud-host"]
+requires_interfaces = ["k2.hud@1"]
+conflicts = []
+
+[patch.supported_versions]
+kotor2_steam_aspyr = "6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"
