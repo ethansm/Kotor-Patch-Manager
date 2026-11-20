@@ -1,0 +1,16 @@
+[metadata]
+target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"]
+
+# Hook 1: WinMain game loop 0x00407920, end of every iteration, at 0x0040846E: CMP dword ptr [0x00A1B704],0x0 (7 bytes,
+# absolute operand, no relative branch). Both the present path (SwapBuffers 0x00408434) and the skip path (minimized /
+# movie) converge at 0x00408455, then CALL 0x00741090, then this CMP. Handler first, then the stolen CMP, so the
+# following JZ (dormant engine Sleep(0)) sees its own flags. The handler waits: fixed Sleep while minimized, FPS cap
+# in the background / when the user sets one (Sleep + short QPC spin). The engine limiter after it (0x0040847F,
+# [0x00A1B710] = 0.0) stays dormant and untouched.
+[[hooks]]
+address = 0x0040846E
+type = "detour"
+function = "K2FramePacingOnLoopEnd"
+original_bytes = [0x83, 0x3D, 0x04, 0xB7, 0xA1, 0x00, 0x00]
+skip_original_bytes = false
+exclude_from_restore = []
