@@ -1,0 +1,17 @@
+[patch]
+id = "k1-spawn-probe"
+name = "K1 Spawn Probe"
+version = "0.3.9-probe"
+author = "local"
+description = "Client of the npc-world library (k2.npcworld@1), no hooks of its own (doc 38 stage 2 on the shared library). Once per visit of the target area, when npc-world reports the population stable, spawns a roster of creatures through the library's Spawn() (engine CreateObject path), skipping rows whose tag is already present. Also logs every creature AddToArea (id, area, position, tag, origin) and dumps creature memory for the K1 probe NPC tags. Opt-out for the client's own spawns: k1_spawn_probe.ini [spawn] enabled=0. 0.3.9: drops the k1p_juhanv twin roster row (juhani-char uninstalled 10-20). 0.3.8: drops the k1p_native_npc roster row. 0.3.7: Mission, Zaalbar and Bastilla spawn points moved onto the 204tele walkmesh. 0.3.6: roster adds k1p_mission, k1p_zaalbaru and k1p_bastilla (importer packs, rows 823-825). 0.3.4: roster adds k1p_carth (VFS bundle). 0.3.3: logs through KpLog.h (channel main); long ADDTOAREA lines are split into `+ ` pieces under the 232-byte core cut."
+
+requires = ["npc-world"]
+requires_interfaces = ["k2.npcworld@1"]
+conflicts = []
+
+# Steam/LAA only. DLL-only patch: it owns no detour, so the three world hooks come from npc-world (which loads first via requires).
+[patch.supported_versions]
+kotor2_steam_aspyr = "6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"
+
+[metadata]
+target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"]
