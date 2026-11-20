@@ -1,0 +1,90 @@
+# Byte patches this mod's DLL writes into the game itself (not KPM hooks), for the static checks
+# (scripts/check_hook_bytes.py, scripts/check_hook_spans.py). Schema, one [[code_patches]] table per site:
+#   name              group/site name used in the C++ source
+#   address           absolute VA of the first patched byte
+#   original_bytes    the vanilla bytes at address (length = span); check_hook_bytes compares them to the vanilla exe
+#   kind              "code" (default) or "data" (a constant, not an instruction: boundary check skipped)
+#   verifies_original true if the writer memcmp's the site and refuses on a mismatch (cite the line in `source`)
+#   enabled_by        config gate, free text
+#   source            file:line in this mod's C++ (original bytes, verify and write)
+# EquipIconFix: eight 5-byte CALL rel32 sites; the expected bytes are E8 + (target - (site + 5)), as callBytes() computes them.
+
+[[code_patches]]
+name = "pass_008ABA8C"
+address = 0x008ABA8C
+# CALL 0x008AD930
+original_bytes = [0xE8, 0x9F, 0x1E, 0x00, 0x00]
+kind = "code"
+verifies_original = true
+enabled_by = "equipiconfix.txt enabled=0 disables all 8 (default on)"
+source = "EquipIconFix.cpp:38-43,92-94,181-189"
+
+[[code_patches]]
+name = "defer_008ADA08"
+address = 0x008ADA08
+# CALL 0x00414840
+original_bytes = [0xE8, 0x33, 0x6E, 0xB6, 0xFF]
+kind = "code"
+verifies_original = true
+enabled_by = "equipiconfix.txt enabled=0 disables all 8 (default on)"
+source = "EquipIconFix.cpp:38-43,92-94,181-189"
+
+[[code_patches]]
+name = "defer_008ADA81"
+address = 0x008ADA81
+# CALL 0x00414840
+original_bytes = [0xE8, 0xBA, 0x6D, 0xB6, 0xFF]
+kind = "code"
+verifies_original = true
+enabled_by = "equipiconfix.txt enabled=0 disables all 8 (default on)"
+source = "EquipIconFix.cpp:38-43,92-94,181-189"
+
+[[code_patches]]
+name = "defer_008AE793"
+address = 0x008AE793
+# CALL 0x00414840
+original_bytes = [0xE8, 0xA8, 0x60, 0xB6, 0xFF]
+kind = "code"
+verifies_original = true
+enabled_by = "equipiconfix.txt enabled=0 disables all 8 (default on)"
+source = "EquipIconFix.cpp:38-43,92-94,181-189"
+
+[[code_patches]]
+name = "set_008ADFA2"
+address = 0x008ADFA2
+# CALL 0x00414840
+original_bytes = [0xE8, 0x99, 0x68, 0xB6, 0xFF]
+kind = "code"
+verifies_original = true
+enabled_by = "equipiconfix.txt enabled=0 disables all 8 (default on)"
+source = "EquipIconFix.cpp:38-43,92-94,181-189"
+
+[[code_patches]]
+name = "set_008AE02D"
+address = 0x008AE02D
+# CALL 0x00414840
+original_bytes = [0xE8, 0x0E, 0x68, 0xB6, 0xFF]
+kind = "code"
+verifies_original = true
+enabled_by = "equipiconfix.txt enabled=0 disables all 8 (default on)"
+source = "EquipIconFix.cpp:38-43,92-94,181-189"
+
+[[code_patches]]
+name = "set_008AE19A"
+address = 0x008AE19A
+# CALL 0x00414840
+original_bytes = [0xE8, 0xA1, 0x66, 0xB6, 0xFF]
+kind = "code"
+verifies_original = true
+enabled_by = "equipiconfix.txt enabled=0 disables all 8 (default on)"
+source = "EquipIconFix.cpp:38-43,92-94,181-189"
+
+[[code_patches]]
+name = "set_008AE1CD"
+address = 0x008AE1CD
+# CALL 0x00414840
+original_bytes = [0xE8, 0x6E, 0x66, 0xB6, 0xFF]
+kind = "code"
+verifies_original = true
+enabled_by = "equipiconfix.txt enabled=0 disables all 8 (default on)"
+source = "EquipIconFix.cpp:38-43,92-94,181-189"

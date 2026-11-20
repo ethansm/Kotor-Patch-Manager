@@ -1,0 +1,5 @@
+LIBRARY EquipIconFix
+EXPORTS
+    KPatchInit
+    EquipFixTestState
+    EquipFixTestCounters
