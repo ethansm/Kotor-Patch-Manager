@@ -1,0 +1,14 @@
+[patch]
+id = "voice-probe"
+name = "Voice Probe"
+version = "0.2.0"
+author = "local"
+description = "Diagnostics only (default off). Logs one line per Global::ExecuteCommandPlaySound call (call number, tick, this) to voice_probe_log.txt. The sound resref is not read here; the script side logs it via SendMessageToPC. Switch: voice_probe.ini [probe] probe=0. 0.1.1: logs through KpLog.h (channel main; needs a [voice-probe] kplog.ini section); new KPatchInit export. 0.2.0: opt-in hotkey trigger (voice_probe.ini [trigger] key/script, default off) runs a script you name with the PC as OBJECT_SELF by calling the engine RunScript from the npc-world tick. The named script can start dialogs or spawn objects. Developer probe scripts under nss/ are not part of the install."
+
+requires = ["npc-world"]
+requires_interfaces = ["k2.npcworld@1"]
+conflicts = []
+
+# Steam/LAA only. Hook address is the verified Steam Aspyr entry listed in kotor2-steam-aspyr.hooks.toml.
+[patch.supported_versions]
+kotor2_steam_aspyr = "6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"
