@@ -11,6 +11,7 @@ conflicts = [
     "k2-aspyr-brightness-fix",
     "k2-aspyr-saber-hilt-texture-fix",
     "k2-aspyr-normal-map-fix",
+    "fog_reflection_fix_k2",
 ]
 
 [patch.supported_versions]
