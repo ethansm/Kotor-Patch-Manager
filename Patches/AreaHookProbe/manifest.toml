@@ -1,0 +1,13 @@
+[patch]
+id = "area-hook-probe"
+name = "Area Hook Probe"
+version = "0.2.1"
+author = "local"
+description = "Diagnostics only (no gameplay change, spawns nothing). Logs which engine paths run when a SAVED game loads into an already-visited area: H3 CSWSModule::LoadModuleStart (saved branch) vs H2 CSWSModule::LoadModuleInProgress (fresh area load), the area-ready latch CServerExoAppInternal+0x14 (logged on change only, with a 0x40-dword dump of the server object on each 0 -> nonzero transition), a population-stable marker (H1 POP-STABLE after 30 ticks with no AddObjectToArea call, with one more dump; POP-TIMEOUT after 1800 ticks), and CSWSArea::AddObjectToArea area pointer, object id (+0x124) and resref (+0x110) when the area changes. Writes area_hook_probe_log.txt. 0.2.1: logs through KpLog.h (channel main), long lines split under the 232-byte core cut; new KPatchInit export."
+
+requires = []
+conflicts = ["npc-world", "npc-world-probe"]
+
+# Steam/LAA only. Hook addresses are the verified Steam Aspyr entries listed in kotor2-steam-aspyr.hooks.toml.
+[patch.supported_versions]
+kotor2_steam_aspyr = "6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"

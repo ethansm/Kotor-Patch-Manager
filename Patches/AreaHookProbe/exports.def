@@ -1,0 +1,7 @@
+LIBRARY AreaHookProbe
+EXPORTS
+    AreaHookProbeMainLoop
+    AreaHookProbeFreshLoad
+    AreaHookProbeSavedLoad
+    AreaHookProbeAddObject
+    KPatchInit
