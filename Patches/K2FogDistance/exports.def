@@ -1,0 +1,5 @@
+LIBRARY K2FogDistance
+EXPORTS
+    KPatchInit
+    K2FogOnDoFog
+    K2FogOnSetFogRange
