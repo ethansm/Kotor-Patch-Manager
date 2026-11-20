@@ -1,0 +1,5 @@
+# gui-input: DLL-only library patch (no engine hooks; owns game window subclass).
+[metadata]
+target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"]
+
+hooks = []
