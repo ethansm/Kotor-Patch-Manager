@@ -1,0 +1,118 @@
+// Preview3dLogic.h -- pure logic of the k2.preview3d provider (equipment-3d-character preview): the viewer token table and the
+// idle-name choice. The camera maths and drag state come from the shared ViewDrag.h (also used by holster-editor); equip3d keeps its
+// own eq3d copy in Equip3dLogic.h, which is NOT included here. No engine calls, no Win32 types, no KpLog: the provider .cpp keeps all
+// engine access and logging.
+#pragma once
+#include <math.h>
+#include <stdint.h>
+#include "../Common/ViewDrag.h"   // camera maths and drag state (p3d::fovForZoom, yawVec, zoomStep, Drag, dragMove ...), shared with holster-editor
+
+namespace p3d {
+
+// ---------------------------------------------------------------- viewer tokens
+// A fixed table of live viewers. A token is never 0 and is never handed out while another live viewer holds it. Tokens are not
+// reused right after a removal: the counter runs on, so a stale token from a destroyed view cannot alias a new one.
+constexpr int kMaxViewers = 4;
+
+struct Viewers {
+    uint32_t ids[kMaxViewers];   // live tokens; 0 = free slot
+    uint32_t nextId;             // next counter value to try (never 0 after init)
+};
+
+inline void viewersInit(Viewers* v) {
+    for (int i = 0; i < kMaxViewers; ++i) v->ids[i] = 0;
+    v->nextId = 1;
+}
+
+// Index of the live slot holding `token`, or -1 (token 0 is never live).
+inline int viewersIndex(const Viewers* v, uint32_t token) {
+    if (token == 0) return -1;
+    for (int i = 0; i < kMaxViewers; ++i)
+        if (v->ids[i] == token) return i;
+    return -1;
+}
+
+inline int viewersCount(const Viewers* v) {
+    int n = 0;
+    for (int i = 0; i < kMaxViewers; ++i)
+        if (v->ids[i] != 0) ++n;
+    return n;
+}
+
+// New token, or 0 when every slot is in use. The counter skips 0 on wrap and skips any value still held by a live viewer.
+inline uint32_t viewersAdd(Viewers* v) {
+    int slot = -1;
+    for (int i = 0; i < kMaxViewers && slot < 0; ++i)
+        if (v->ids[i] == 0) slot = i;
+    if (slot < 0) return 0;
+    for (int tries = 0; tries <= kMaxViewers; ++tries) {   // at most kMaxViewers live ids, so one extra try always finds a free value
+        uint32_t t = v->nextId;
+        v->nextId = (t == 0xFFFFFFFFu) ? 1u : t + 1u;
+        if (t != 0 && viewersIndex(v, t) < 0) {
+            v->ids[slot] = t;
+            return t;
+        }
+    }
+    return 0;
+}
+
+// True when `token` was live and is now removed.
+inline bool viewersRemove(Viewers* v, uint32_t token) {
+    int i = viewersIndex(v, token);
+    if (i < 0) return false;
+    v->ids[i] = 0;
+    return true;
+}
+
+// ---------------------------------------------------------------- idle
+// Appearance rows that are droids: they idle on "pause1" whatever the alignment.
+inline bool isDroidRow(int r) { return r == 2 || r == 57 || r == 231 || r == 232 || r == 453 || r == 3 || r == 538 || r == 539; }
+
+// Idle animation name: droids "pause1", else by alignment: < 40 "evil", < 60 "neutral", otherwise "good".
+inline const char* idleFor(int appearanceRow, short align) {
+    return isDroidRow(appearanceRow) ? "pause1" : (align < 40 ? "evil" : (align < 60 ? "neutral" : "good"));
+}
+
+// ---------------------------------------------------------------- animation clock
+// Wall-clock bookkeeping of the clip a viewer is playing, so SetAnimPaused can log how far into the clip the freeze happened. The ticks
+// are GetTickCount-style uint32 milliseconds that wrap every ~49.7 days, so every difference is taken in unsigned arithmetic
+// (tickDiff). The engine, not this clock, decides the frozen pose: the provider re-issues the same clip with speed 0 and the engine keeps
+// the entry's own playback position (Preview3dProvider.cpp, setAnimPaused); this clock is diagnostic only. It does not model the
+// clip length, so elapsedMs is the raw time since the clip started and may exceed the clip length (the engine wraps loops itself).
+struct AnimClock {
+    uint32_t startTick = 0;   // tick when the clip started (shifted forward by every paused interval, so now - startTick = time played)
+    uint32_t pauseTick = 0;   // tick of the pause while paused
+    bool     started = false;     // a clip was played
+    bool     paused = false;
+};
+
+inline void clockReset(AnimClock* c) { c->startTick = 0; c->pauseTick = 0; c->started = false; c->paused = false; }
+
+// Wrap-safe elapsed milliseconds from `then` to `now` (now taken after then, modulo 2^32).
+inline uint32_t tickDiff(uint32_t now, uint32_t then) { return static_cast<uint32_t>(now - then); }
+
+// A new clip started running at `now` (clears any pause).
+inline void clockStart(AnimClock* c, uint32_t now) { c->startTick = now; c->pauseTick = 0; c->started = true; c->paused = false; }
+
+// Milliseconds the clip has played at `now` (frozen at the pause instant while paused). 0 when no clip started.
+inline uint32_t clockElapsed(const AnimClock* c, uint32_t now) {
+    if (!c->started) return 0;
+    return tickDiff(c->paused ? c->pauseTick : now, c->startTick);
+}
+
+// Freeze at `now`. Returns false (no change) when no clip started or already paused.
+inline bool clockPause(AnimClock* c, uint32_t now) {
+    if (!c->started || c->paused) return false;
+    c->pauseTick = now; c->paused = true;
+    return true;
+}
+
+// Resume at `now`: the paused interval is cut out of the played time. Returns false (no change) when not paused.
+inline bool clockResume(AnimClock* c, uint32_t now) {
+    if (!c->started || !c->paused) return false;
+    c->startTick = static_cast<uint32_t>(c->startTick + tickDiff(now, c->pauseTick));
+    c->paused = false;
+    return true;
+}
+
+}  // namespace p3d

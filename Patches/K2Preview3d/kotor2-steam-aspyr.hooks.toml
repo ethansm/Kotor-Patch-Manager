@@ -1,0 +1,5 @@
+# preview-3d: DLL-only provider (no engine hooks; k2.preview3d@1 viewers are created by the clients that require it).
+[metadata]
+target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"]
+
+hooks = []
