@@ -77,10 +77,10 @@ public static partial class ManifestParser
             if (patchTable.TryGetValue("kind", out var kindObj))
             {
                 if (kindObj is not string kindText ||
-                    (kindText != PatchManifest.KindPatch && kindText != PatchManifest.KindLibrary))
+                    (kindText != PatchManifest.KindPatch && kindText != PatchManifest.KindProvider))
                 {
                     return PatchResult<PatchManifest>.Fail(
-                        $"Manifest field patch.kind must be \"patch\" or \"library\", got: {kindObj}");
+                        $"Manifest field patch.kind must be \"patch\" or \"provider\", got: {kindObj}");
                 }
 
                 kind = kindText;

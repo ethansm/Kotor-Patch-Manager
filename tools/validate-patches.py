@@ -38,7 +38,7 @@ DATABASES = ROOT / "AddressDatabases"
 SHA256 = re.compile(r"[0-9A-Fa-f]{64}")
 PATCH_ID = re.compile(r"[A-Za-z0-9_-]+")
 INTERFACE_ID = re.compile(r"[a-z0-9_.-]+@[0-9]+")
-PATCH_KINDS = ("patch", "library")
+PATCH_KINDS = ("patch", "provider")
 MAJOR_MINOR_PATCH = re.compile(r"[0-9]+\.[0-9]+\.[0-9]+")
 
 MANIFEST_FIELDS = ("id", "name", "version", "author", "description")

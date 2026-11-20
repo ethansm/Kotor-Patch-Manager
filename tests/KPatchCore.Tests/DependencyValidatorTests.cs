@@ -6,18 +6,18 @@ using KPatchCore.Validators;
 namespace KPatchCore.Tests;
 
 /// <summary>
-/// Install-set resolution for libraries: derived from what needs them, installed first.
+/// Install-set resolution for providers: derived from what needs them, installed first.
 /// </summary>
 public class DependencyValidatorTests
 {
-    private static PatchManifest Make(string id, bool library = false, params string[] requires) => new()
+    private static PatchManifest Make(string id, bool provider = false, params string[] requires) => new()
     {
         Id = id,
         Name = id,
         Version = "1.0.0",
         Author = "Tester",
         Description = id,
-        Kind = library ? PatchManifest.KindLibrary : PatchManifest.KindPatch,
+        Kind = provider ? PatchManifest.KindProvider : PatchManifest.KindPatch,
         Requires = requires.ToList(),
     };
 
@@ -25,19 +25,19 @@ public class DependencyValidatorTests
         manifests.ToDictionary(m => m.Id);
 
     [Fact]
-    public void RequiredLibraryIsAutoAdded()
+    public void RequiredProviderIsAutoAdded()
     {
         var catalog = Catalog(Make("lib", true), Make("hud", false, "lib"));
 
-        var result = DependencyValidator.ResolveWithLibraries(catalog, new[] { "hud" });
+        var result = DependencyValidator.ResolveWithProviders(catalog, new[] { "hud" });
 
         Assert.True(result.Success, result.Error);
         Assert.Equal(new[] { "lib", "hud" }, result.Data!.InstallOrder);
         var added = Assert.Single(result.Data.AutoAdded);
-        Assert.Equal("lib", added.LibraryId);
+        Assert.Equal("lib", added.ProviderId);
         Assert.Equal(new[] { "hud" }, added.RequiredBy);
-        Assert.Empty(result.Data.SkippedLibraries);
-        Assert.Contains(result.Messages, m => m.Contains("Auto-added library 'lib'") && m.Contains("hud"));
+        Assert.Empty(result.Data.SkippedProviders);
+        Assert.Contains(result.Messages, m => m.Contains("Auto-added provider 'lib'") && m.Contains("hud"));
     }
 
     [Fact]
@@ -45,30 +45,30 @@ public class DependencyValidatorTests
     {
         var catalog = Catalog(Make("lib", true), Make("hud", false, "lib"), Make("bar", false, "lib"));
 
-        var result = DependencyValidator.ResolveWithLibraries(catalog, new[] { "hud", "bar" });
+        var result = DependencyValidator.ResolveWithProviders(catalog, new[] { "hud", "bar" });
 
         Assert.True(result.Success, result.Error);
         Assert.Equal(new[] { "hud", "bar" }, Assert.Single(result.Data!.AutoAdded).RequiredBy);
     }
 
     [Fact]
-    public void LibraryRequiringLibraryIsAddedTransitivelyAndOrderedByDependency()
+    public void ProviderRequiringProviderIsAddedTransitivelyAndOrderedByDependency()
     {
         var catalog = Catalog(
             Make("base", true),
             Make("mid", true, "base"),
             Make("hud", false, "mid"));
 
-        var result = DependencyValidator.ResolveWithLibraries(catalog, new[] { "hud" });
+        var result = DependencyValidator.ResolveWithProviders(catalog, new[] { "hud" });
 
         Assert.True(result.Success, result.Error);
         Assert.Equal(new[] { "base", "mid", "hud" }, result.Data!.InstallOrder);
-        Assert.Equal(new[] { "base", "mid" }, result.Data.AutoAdded.Select(a => a.LibraryId));
+        Assert.Equal(new[] { "base", "mid" }, result.Data.AutoAdded.Select(a => a.ProviderId));
         Assert.Equal(new[] { "mid" }, result.Data.AutoAdded[0].RequiredBy);
     }
 
     [Fact]
-    public void LibrariesInstallBeforeEveryNonLibraryPatch()
+    public void ProvidersInstallBeforeEveryNonProviderPatch()
     {
         var catalog = Catalog(
             Make("plain"),
@@ -76,59 +76,59 @@ public class DependencyValidatorTests
             Make("hud", false, "lib"),
             Make("other"));
 
-        // The user's own order puts the library consumer in the middle.
-        var result = DependencyValidator.ResolveWithLibraries(catalog, new[] { "plain", "hud", "other" });
+        // The user's own order puts the provider consumer in the middle.
+        var result = DependencyValidator.ResolveWithProviders(catalog, new[] { "plain", "hud", "other" });
 
         Assert.True(result.Success, result.Error);
         Assert.Equal(new[] { "lib", "plain", "hud", "other" }, result.Data!.InstallOrder);
     }
 
     [Fact]
-    public void RequestedLibraryNobodyNeedsIsDroppedAndReported()
+    public void RequestedProviderNobodyNeedsIsDroppedAndReported()
     {
         var catalog = Catalog(Make("lib", true), Make("plain"));
 
-        var result = DependencyValidator.ResolveWithLibraries(catalog, new[] { "lib", "plain" });
+        var result = DependencyValidator.ResolveWithProviders(catalog, new[] { "lib", "plain" });
 
         Assert.True(result.Success, result.Error);
         Assert.Equal(new[] { "plain" }, result.Data!.InstallOrder);
-        Assert.Equal(new[] { "lib" }, result.Data.SkippedLibraries);
+        Assert.Equal(new[] { "lib" }, result.Data.SkippedProviders);
         Assert.Empty(result.Data.AutoAdded);
-        Assert.Contains(result.Messages, m => m == "Skipped library 'lib': no installed mod requires it");
+        Assert.Contains(result.Messages, m => m == "Skipped provider 'lib': no installed mod requires it");
     }
 
     [Fact]
-    public void RequestedLibraryThatIsNeededIsKeptAndNotReportedAsAutoAdded()
+    public void RequestedProviderThatIsNeededIsKeptAndNotReportedAsAutoAdded()
     {
         var catalog = Catalog(Make("lib", true), Make("hud", false, "lib"));
 
-        var result = DependencyValidator.ResolveWithLibraries(catalog, new[] { "lib", "hud" });
+        var result = DependencyValidator.ResolveWithProviders(catalog, new[] { "lib", "hud" });
 
         Assert.True(result.Success, result.Error);
         Assert.Equal(new[] { "lib", "hud" }, result.Data!.InstallOrder);
         Assert.Empty(result.Data.AutoAdded);
-        Assert.Empty(result.Data.SkippedLibraries);
+        Assert.Empty(result.Data.SkippedProviders);
     }
 
     [Fact]
-    public void LibraryNeededOnlyByAnotherUnneededLibraryIsDropped()
+    public void ProviderNeededOnlyByAnotherUnneededProviderIsDropped()
     {
         var catalog = Catalog(Make("base", true), Make("mid", true, "base"), Make("plain"));
 
-        var result = DependencyValidator.ResolveWithLibraries(catalog, new[] { "mid", "base", "plain" });
+        var result = DependencyValidator.ResolveWithProviders(catalog, new[] { "mid", "base", "plain" });
 
         Assert.True(result.Success, result.Error);
         Assert.Equal(new[] { "plain" }, result.Data!.InstallOrder);
-        Assert.Equal(new[] { "mid", "base" }, result.Data.SkippedLibraries);
+        Assert.Equal(new[] { "mid", "base" }, result.Data.SkippedProviders);
     }
 
     [Fact]
-    public void MissingNonLibraryRequirementFails()
+    public void MissingNonProviderRequirementFails()
     {
         var catalog = Catalog(Make("dep"), Make("child", false, "dep"));
 
         // dep is available but was not requested, which fails exactly as ValidateDependencies does.
-        var result = DependencyValidator.ResolveWithLibraries(catalog, new[] { "child" });
+        var result = DependencyValidator.ResolveWithProviders(catalog, new[] { "child" });
 
         Assert.False(result.Success);
         Assert.Contains("Patch 'child' requires: dep", result.Error);
@@ -139,71 +139,71 @@ public class DependencyValidatorTests
     {
         var catalog = Catalog(Make("child", false, "ghost"));
 
-        var result = DependencyValidator.ResolveWithLibraries(catalog, new[] { "child" });
+        var result = DependencyValidator.ResolveWithProviders(catalog, new[] { "child" });
 
         Assert.False(result.Success);
         Assert.Contains("ghost", result.Error);
     }
 
     [Fact]
-    public void MissingLibraryRequirementFails()
+    public void MissingProviderRequirementFails()
     {
         var catalog = Catalog(Make("hud", false, "no-such-lib"));
 
-        var result = DependencyValidator.ResolveWithLibraries(catalog, new[] { "hud" });
+        var result = DependencyValidator.ResolveWithProviders(catalog, new[] { "hud" });
 
         Assert.False(result.Success);
         Assert.Contains("no-such-lib (not available)", result.Error);
     }
 
     [Fact]
-    public void LibraryWithMissingLibraryRequirementFails()
+    public void ProviderWithMissingProviderRequirementFails()
     {
         var catalog = Catalog(Make("lib", true, "gone"), Make("hud", false, "lib"));
 
-        var result = DependencyValidator.ResolveWithLibraries(catalog, new[] { "hud" });
+        var result = DependencyValidator.ResolveWithProviders(catalog, new[] { "hud" });
 
         Assert.False(result.Success);
-        Assert.Contains("Library 'lib' requires 'gone'", result.Error);
+        Assert.Contains("Provider 'lib' requires 'gone'", result.Error);
     }
 
     [Fact]
-    public void LibraryRequiringNonLibraryFails()
+    public void ProviderRequiringNonProviderFails()
     {
         var catalog = Catalog(Make("plain"), Make("lib", true, "plain"), Make("hud", false, "lib"));
 
-        var result = DependencyValidator.ResolveWithLibraries(catalog, new[] { "hud", "plain" });
+        var result = DependencyValidator.ResolveWithProviders(catalog, new[] { "hud", "plain" });
 
         Assert.False(result.Success);
-        Assert.Contains("not a library", result.Error);
+        Assert.Contains("not a provider", result.Error);
     }
 
     [Fact]
     public void UnknownRequestedPatchFails()
     {
-        var result = DependencyValidator.ResolveWithLibraries(Catalog(Make("a")), new[] { "nope" });
+        var result = DependencyValidator.ResolveWithProviders(Catalog(Make("a")), new[] { "nope" });
 
         Assert.False(result.Success);
         Assert.Contains("'nope' not found", result.Error);
     }
 
     [Fact]
-    public void LibraryCycleIsDetected()
+    public void ProviderCycleIsDetected()
     {
         var catalog = Catalog(
             Make("a", true, "b"),
             Make("b", true, "a"),
             Make("hud", false, "a"));
 
-        var result = DependencyValidator.ResolveWithLibraries(catalog, new[] { "hud" });
+        var result = DependencyValidator.ResolveWithProviders(catalog, new[] { "hud" });
 
         Assert.False(result.Success);
-        Assert.Contains("Circular dependency among libraries", result.Error);
+        Assert.Contains("Circular dependency among providers", result.Error);
         Assert.Contains("a -> b -> a", result.Error);
     }
 
     [Fact]
-    public void LibraryFreeOrderMatchesCalculateInstallOrder()
+    public void ProviderFreeOrderMatchesCalculateInstallOrder()
     {
         var catalog = Catalog(
             Make("c"),
@@ -214,18 +214,18 @@ public class DependencyValidatorTests
         var request = new[] { "e", "d", "b", "c", "a" };
 
         var old = DependencyValidator.CalculateInstallOrder(catalog, request);
-        var result = DependencyValidator.ResolveWithLibraries(catalog, request);
+        var result = DependencyValidator.ResolveWithProviders(catalog, request);
 
         Assert.True(old.Success);
         Assert.True(result.Success, result.Error);
         Assert.Equal(old.Data, result.Data!.InstallOrder);
         Assert.Empty(result.Data.AutoAdded);
-        Assert.Empty(result.Data.SkippedLibraries);
+        Assert.Empty(result.Data.SkippedProviders);
         Assert.Empty(result.Messages);
     }
 
     [Fact]
-    public void NonLibraryOrderIsUnchangedByLibrariesBeingPresent()
+    public void NonProviderOrderIsUnchangedByProvidersBeingPresent()
     {
         var catalog = Catalog(
             Make("lib", true),
@@ -236,7 +236,7 @@ public class DependencyValidatorTests
 
         var old = DependencyValidator.CalculateInstallOrder(
             Catalog(Make("child", false, "parent"), Make("parent"), Make("solo")), request);
-        var result = DependencyValidator.ResolveWithLibraries(catalog, request);
+        var result = DependencyValidator.ResolveWithProviders(catalog, request);
 
         Assert.True(result.Success, result.Error);
         Assert.Equal(new[] { "lib" }.Concat(old.Data!), result.Data!.InstallOrder);

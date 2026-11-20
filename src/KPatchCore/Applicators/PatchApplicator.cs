@@ -213,12 +213,12 @@ public class PatchApplicator
                 }
             }
 
-            // Libraries are derived from what the requested patches require, never selected: add
+            // Providers are derived from what the requested patches require, never selected: add
             // the ones they need, drop requested ones nothing needs, and put them ahead of
-            // everything else. A request with no library in it comes back unchanged.
+            // everything else. A request with no provider in it comes back unchanged.
             var available = _repository.GetAllPatches()
                 .ToDictionary(kv => kv.Key, kv => kv.Value.Manifest);
-            var resolution = DependencyValidator.ResolveWithLibraries(available, options.PatchIds);
+            var resolution = DependencyValidator.ResolveWithProviders(available, options.PatchIds);
             if (!resolution.Success || resolution.Data == null)
             {
                 return new InstallResult

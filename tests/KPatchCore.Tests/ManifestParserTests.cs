@@ -39,19 +39,27 @@ public class ManifestParserTests
 
         Assert.True(result.Success, result.Error);
         Assert.Equal("patch", result.Data!.Kind);
-        Assert.False(result.Data.IsLibrary);
+        Assert.False(result.Data.IsProvider);
         Assert.Empty(result.Data.Provides);
         Assert.Empty(result.Data.RequiresInterfaces);
     }
 
     [Fact]
-    public void LibraryKindIsRecognised()
+    public void ProviderKindIsRecognised()
+    {
+        var result = ManifestParser.ParseString(Manifest("kind = \"provider\""));
+
+        Assert.True(result.Success, result.Error);
+        Assert.Equal("provider", result.Data!.Kind);
+        Assert.True(result.Data.IsProvider);
+    }
+
+    [Fact]
+    public void LibraryKindIsRejected()
     {
         var result = ManifestParser.ParseString(Manifest("kind = \"library\""));
 
-        Assert.True(result.Success, result.Error);
-        Assert.Equal("library", result.Data!.Kind);
-        Assert.True(result.Data.IsLibrary);
+        Assert.False(result.Success);
     }
 
     [Fact]
@@ -60,7 +68,7 @@ public class ManifestParserTests
         var result = ManifestParser.ParseString(Manifest("kind = \"patch\""));
 
         Assert.True(result.Success, result.Error);
-        Assert.False(result.Data!.IsLibrary);
+        Assert.False(result.Data!.IsProvider);
     }
 
     [Theory]

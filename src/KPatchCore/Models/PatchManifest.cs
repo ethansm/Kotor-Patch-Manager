@@ -42,16 +42,16 @@ public sealed class PatchManifest
 
     /// <summary>
     /// What this manifest describes: <see cref="KindPatch"/> (the default) or
-    /// <see cref="KindLibrary"/>. A library owns shared engine hooks and provides an
-    /// interface to other mods; it is derived from what is installed and never selected
-    /// directly.
+    /// <see cref="KindProvider"/>. A provider owns
+    /// shared engine hooks and provides an interface to other mods; it is derived from what
+    /// is installed and never selected directly.
     /// </summary>
     public string Kind { get; init; } = KindPatch;
 
     /// <summary>
-    /// True when <see cref="Kind"/> is <see cref="KindLibrary"/>
+    /// True when <see cref="Kind"/> is <see cref="KindProvider"/>
     /// </summary>
-    public bool IsLibrary => Kind == KindLibrary;
+    public bool IsProvider => Kind == KindProvider;
 
     /// <summary>
     /// Interfaces this patch provides, as <c>name@major</c> (e.g., "k2.portraitslots@1")
@@ -67,8 +67,8 @@ public sealed class PatchManifest
     /// <summary>The ordinary kind of patch</summary>
     public const string KindPatch = "patch";
 
-    /// <summary>The library kind of patch</summary>
-    public const string KindLibrary = "library";
+    /// <summary>The shared service provider kind of patch</summary>
+    public const string KindProvider = "provider";
 
     /// <summary>
     /// Game versions this patch supports (key = GameVersion.Id, value = expected hash)
