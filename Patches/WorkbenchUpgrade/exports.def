@@ -1,0 +1,24 @@
+EXPORTS
+    KPatchInit
+    WbuMgrPush
+    WbuShowUpgrade
+    WbuAddUpgrade
+    WbuRemoveUpgrade
+    WbuUpgradeSelected
+    WbuCreateClick
+    WbuUpgradeClick
+    WbuHub7440
+    WbuHubCtor
+    WbuCreateCtor
+    WbuItemListCtor
+    WbuStoreType
+    WbuCreateCancel
+    WbuStopLoadFromLayout
+    WbuUpgradeSelectInput
+    WbuHideUpgrade
+    WbuPreviewRefresh
+    WbuSlotSelected
+    WbuUpgradeDraw
+    WbuControlEntered
+    WbuCloseItems
+    WbuStartConvBypass
