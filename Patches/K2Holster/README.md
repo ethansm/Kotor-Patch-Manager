@@ -4,7 +4,7 @@
 > **What it does / explores:** Moves party weapons to hip and back mounts out of combat, with timed draw and stow slides, hand-reach arm IK, an F8 toggle, a shorter combat-exit and unarmed locomotion clips. Provides `k2.holster@1`, used by the holster editor and equipment_3d_character.
 > **Requires:** Steam/Aspyr KOTOR II (target hash in manifest.toml) and KPM. No other patch is required (`requires = []`). A `[holster]` section with `level=info` in the game-dir `kplog.ini` is needed, or every holster log line is dropped.
 > **Known limits:** Damage-reaction clip is not covered by `unarmed_anim`. Reach IK (`reach_test`) and qstaff placement have pending play rows. The shipped `holster.ini` defaults show no placement until `probe=1` and `bone_test=1` are set.
-> **Play-test status:** Pending rows are in `patch_manager_mods/PLAY_TEST_QUEUE.md` (holster rows, e.g. SM-L3..SM-L15, SC-H1, HK1, HD1-3). Treat them as unverified.
+> **Play-test status:** Pending rows are in the project play-test queue (holster rows, e.g. SM-L3..SM-L15, SC-H1, HK1, HD1-3). Treat them as unverified.
 > **Install:** Install through KPM. Then set `probe=1` and `bone_test=1` in `holster.ini` to see placement.
 
 ## Features

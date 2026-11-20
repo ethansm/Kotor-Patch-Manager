@@ -3,8 +3,8 @@
 > **STATUS** Track: SHIPPABLE. Version 0.4.2 (matches manifest.toml).
 > **What it does / explores:** Party ranged companions hold position instead of walking into melee when the line of fire is blocked, and retarget like the player does. Adds party stance 16 "Ranged (Kiting)" to the stance menu.
 > **Requires:** Steam/Aspyr KOTOR II (manifest `supported_versions`), Kotor Patch Manager with the KpLog core. Stance 16 also needs the TLK strings and party AI scripts below. The DLL alone gives hold and retarget only.
-> **Known limits:** Stance 16 menu name and message need the TLK append. The party AI scripts and the stance-16 2da are built from tools that live in the workspace repo (`scripts/`, `patch_manager_mods/mods678_research/`), not in this directory. Hook addresses are author RE, not yet DB-backed (see PR_READINESS.md item 9). Distance thresholds are not configurable (only the kite_approach flag).
-> **Play-test status:** rows CA-DL1 and CA-RH1 in `patch_manager_mods/PLAY_TEST_QUEUE.md` (pending).
+> **Known limits:** Stance 16 menu name and message need the TLK append. The party AI scripts and the stance-16 2da are built from tools that live in the workspace repo (`scripts/`, the project workspace), not in this directory. Hook addresses are author RE, not yet DB-backed (see PR_READINESS.md item 9). Distance thresholds are not configurable (only the kite_approach flag).
+> **Play-test status:** rows CA-DL1 and CA-RH1 in the project play-test queue (pending).
 > **Install:** Install through KPM (provider `k2.rangedai@1`). Then the stance-16 data steps below. Safe for normal play once installed.
 
 ## Features
@@ -46,4 +46,4 @@ KpLog core: `ranged-ai_log.txt` in the game folder, one session per file. Older 
 - The drift guard against `companion_ai_src/CompanionAiLogic.h` compiles only when that directory is present. Without it the test prints a skip line and runs the rest.
 
 ## Changelog pointer
-Design notes: `patch_manager_mods/13_ranged_ai_spacing_feedback.md` (workspace, not in this fork). Upstream PR text: `PULL_REQUEST.DRAFT.md`.
+Design notes: project design doc 13 (workspace, not in this fork). Upstream PR text: `PULL_REQUEST.DRAFT.md`.

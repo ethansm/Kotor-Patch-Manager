@@ -1,7 +1,7 @@
 // Character Active Effects Panel 0.6.0-dev (Steam Aspyr build 6A522E71...). Fills the right third of the character page
 // (CSWGuiInGameCharacter) with the shown character's active effects: icon, name, remaining time; Harmful section first,
 // then Beneficial; expiring first, permanent last; whole-entry scrolling with a scrollbar only when the list overflows.
-// Research trail: patch_manager_mods/14_character_active_effects_panel.md and active_effects_panel_src/research/R* (worktree
+// Research trail: project design doc 14 and active_effects_panel_src/research/R* (worktree
 // local-setup/KOTOR-II). Layout numbers = scripts/character_page_mockup.py; controls = scripts/mirror_character_page.py.
 //
 // Hooks (cdecl detours, original bytes still run afterwards):

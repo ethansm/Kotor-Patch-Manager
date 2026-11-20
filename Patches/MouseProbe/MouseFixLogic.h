@@ -1,5 +1,5 @@
 // MouseFixLogic.h -- Pure logic for mouse delta sanitization, edge warping, and double click synthesis.
-// Part of the Mouse Camera Fix (patch_manager_mods/18_mouse_camera_investigation.md).
+// Part of the Mouse Camera Fix (project design doc 18).
 // Host-testable without Win32 or engine dependencies.
 #pragma once
 #include <stdint.h>

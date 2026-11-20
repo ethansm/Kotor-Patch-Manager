@@ -4,7 +4,7 @@
 > **What it does / explores:** Switch between the workbench Create/Breakdown and Upgrade screens without closing the workbench (BTN_SWITCH). Adds a crafting compare box, red unmet-skill rows, a crystal colour preview and a direct-open option that skips the bench dialog.
 > **Requires:** KPM patch provider `hud-host` (interface `k2.hud@1`), Steam/Aspyr KOTOR II (hash pinned in manifest.toml `[patch.supported_versions]`), Patch Manager.
 > **Known limits:** Live play rows are still pending. Debug `initTrace` file output is present (see PR_READINESS.md, upstream item). Version stays 0.x.y until the upstream PR.
-> **Play-test status:** rows WB-1..WB-5, WB-P2, WB-CMP1, WB-UX2, WB-CS1..WB-CS3 in `patch_manager_mods/PLAY_TEST_QUEUE.md` (pending as of PR_READINESS.md).
+> **Play-test status:** rows WB-1..WB-5, WB-P2, WB-CMP1, WB-UX2, WB-CS1..WB-CS3 in the project play-test queue (pending as of PR_READINESS.md).
 > **Install:** Install `hud-host` first, then install `workbench-upgrade` through Patch Manager. It applies the hooks in `kotor2-steam-aspyr.hooks.toml`.
 
 ## Features
@@ -26,7 +26,7 @@
 Uses the shared `KpLog.h` logger, configured through the `kplog.ini` section for this mod.
 
 ## Hooks
-Hooks are in `kotor2-steam-aspyr.hooks.toml`. Addresses are listed in `raw_addresses.toml` and the hooks file. Design notes and engine map: `patch_manager_mods/55_workbench_upgrade.md`.
+Hooks are in `kotor2-steam-aspyr.hooks.toml`. Addresses are listed in `raw_addresses.toml` and the hooks file. Design notes and engine map: project design doc 55.
 
 ## Build and test
 ```

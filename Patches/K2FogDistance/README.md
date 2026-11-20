@@ -3,7 +3,7 @@
 > **STATUS** Track: SHIPPABLE. Version 0.1.1-dev (matches manifest.toml).
 > **What it does / explores:** Scales each KOTOR II area's distance fog start and end (default 200%, up to 400%, or 0% = No Fog) so distant scenery stays visible. Each area keeps its own fog colour and shape.
 > **Requires:** Steam/Aspyr build 6A522E71 (see `manifest.toml` `[patch.supported_versions]`); Patch Manager (KPM). No other mod required. Optional: mod-config (k2.modconfig@1) and menuui (k2.menuui@1) for the in-game page.
-> **Known limits:** Only scales the scene fog fields; shadow distance is not touched. Fog-less areas are left to KPM Shader Fixes (see Notes). **Play-test status:** FG1 and FOG2 in `patch_manager_mods/PLAY_TEST_QUEUE.md` are pending (live-only, not a blocker).
+> **Known limits:** Only scales the scene fog fields; shadow distance is not touched. Fog-less areas are left to KPM Shader Fixes (see Notes). **Play-test status:** FG1 and FOG2 in the project play-test queue are pending (live-only, not a blocker).
 > **Install:** Install through KPM like any other patch. Keep the mod enabled for normal play.
 
 ## Features
@@ -42,7 +42,7 @@ The tests build with `${KPM_COMMON_DIR}` (set to the KPM tree's Common headers) 
 
 ## Notes
 - Fog-less areas: the engine path for them is owned by KPM Shader Fixes (`0x0046AADD`). If meshes in fog-less areas look fogged, that interaction is tracked as FOG2, not as a fault in this mod.
-- Design background: `patch_manager_mods/49_k2_render_distance.md`.
+- Design background: project design doc 49.
 
 ## Changelog
 - 0.1.1-dev: `Scene::SetFogRange` hook records engine-set area fog as the origin (fixes a collision with the R12 1.5a range).

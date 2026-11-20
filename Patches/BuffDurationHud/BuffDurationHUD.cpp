@@ -2,7 +2,7 @@
 // buff/debuff arrow glyphs over each party portrait with the effect's own icons: buffs in a
 // column down the card's left edge, debuffs down the right edge, item abilities on a round
 // teal disc, each draining top-down (dim = elapsed, full = remaining) as the effect runs out. Research trail and every address below:
-// patch_manager_mods/02_buff_duration_hud.md (local-setup/KOTOR-II worktree).
+// project design doc 02 (local-setup/KOTOR-II worktree).
 //
 // v2.0.0 (doc 21 W4): the shield bar is its own patch (shield-bar) and the shared portrait hooks (UpdatePortraits slot table, the
 // per-slot draw gate 0x745774) belong to portrait-slots ("k2.portraitslots" v1, PortraitSlots.h). This DLL registers there:

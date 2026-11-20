@@ -13,7 +13,7 @@
 // Steam-only: the control offsets and the manager layout below come from the Steam decomp (spike sections 1-2). Every engine-touching function
 // returns false on any other exe table (k2addr::get() != &kSteam) so a GOG build does nothing rather than write guessed offsets. The manager
 // pointer cell is the table's GuiSoundMgr (GameAddr.h names the same object): guikit::g_gk.guiSoundMgrAddr, never a raw address here.
-// Host tests substitute g_gk (see _shared_src/guitip_test.cpp).
+// Host tests substitute g_gk (see Patches/Common/guitip_test.cpp).
 #pragma once
 #include "GuiKit.h"
 #include <stdint.h>

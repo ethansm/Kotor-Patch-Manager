@@ -14,7 +14,7 @@
 //
 // Steam-only (same gate as GuiTip.h): every engine-touching path returns false / no-ops unless k2addr::get() == &kSteam. The object layout
 // below is decoded for the Steam exe; engine function addresses are gameaddr:: names only. Host tests (-DEMBTEX_HOST) inject fakes into g_et;
-// the Steam gate is steered with k2addr::setForTest (see _shared_src/embtex_test.cpp).
+// the Steam gate is steered with k2addr::setForTest (see Patches/Common/embtex_test.cpp).
 #pragma once
 #include "K2Addr.h"
 #include <stdint.h>

@@ -6,7 +6,7 @@
 // `*param_1 = CSWGuiButton::vftable`, so the ctor takes this in ECX and no stack args):
 //   CSWGuiButton: vftable 0x987A1C, object size 0x1D0, normal border +0x70, highlight border +0xE8, text sub-object +0x160
 //   (vtable TextVtable, string sub-object at +0x160+0x18). Control flags +0x48 and id +0x54 are shared with CSWGuiLabel (GuiKit.h).
-//   Reference: patch_manager_mods/08_shield_bar.md:500 (vftable, size, border and text offsets).
+//   Reference: project design doc 08:500 (vftable, size, border and text offsets).
 //
 // Steam only: every entry point returns false / 0 / no-op unless k2addr::get() == &kSteam, so a GOG or unknown exe does nothing.
 // Host tests: define GUIKIT_HOST before including (the ctor seam defaults to nullptr; a test substitutes a fake).

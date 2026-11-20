@@ -47,7 +47,7 @@ Defined in `kotor2-steam-aspyr.hooks.toml` (4 hooks, Steam/Aspyr hash):
 Scoped host tests (run from repo root):
 
 ```
-python3 scripts/run_tests.py --id chareff_decode_test --id combat_stats_test --id stats_rows_test --id tab_model_test --id vanilla_tips_test --id cpp:patch_manager_mods/active_effects_panel_src/common_contract_test.cpp
+python3 scripts/run_tests.py --id chareff_decode_test --id combat_stats_test --id stats_rows_test --id tab_model_test --id vanilla_tips_test --id cpp:the project workspace
 ```
 
 Known gap: no test compiles `CharEffectsPanel.cpp` (about 1450 lines). Logic is split into testable headers (`ChareffDecode.h`, `StatsRows.h`, `TabModel.h`, `VanillaTips.h`, `CombatStats.h`).

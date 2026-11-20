@@ -3,7 +3,7 @@
 > **STATUS** Track: SHIPPABLE. Version 0.1.3 (matches manifest.toml).
 > **What it does / explores:** Draws an energy-shield absorb bar beside each party portrait's health bar, adds health, force and shield gauges to the companion portraits on the menu screens, and shows "Shield: cur/max" in the portrait hover tooltip.
 > **Requires:** portrait-slots (`k2.portraitslots@1`, hard dependency), `Common/KpLog.h`, Steam/Aspyr LAA build (live-tested). GOG build is static-verified only.
-> **Known limits:** GOG untested live. The corner texture `uibit_bar_sc_p` is not shipped (see Art). The `lfw == 0` fallback path (ShieldBar.cpp:418-443) is live-only. Draws beside buff-duration-hud. **Play-test status:** no shield-bar rows pending in `patch_manager_mods/PLAY_TEST_QUEUE.md`; the PRV row (10-20) covers the bar on load.
+> **Known limits:** GOG untested live. The corner texture `uibit_bar_sc_p` is not shipped (see Art). The `lfw == 0` fallback path (ShieldBar.cpp:418-443) is live-only. Draws beside buff-duration-hud. **Play-test status:** no shield-bar rows pending in the project play-test queue; the PRV row (10-20) covers the bar on load.
 > **Install:** install through Patch Manager after portrait-slots. Not standalone (`requires = ["portrait-slots"]` in manifest.toml).
 
 ## Features

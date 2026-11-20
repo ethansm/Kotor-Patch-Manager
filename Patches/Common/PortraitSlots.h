@@ -3,7 +3,7 @@
  * Why: the party-portrait hooks (UpdatePortraits 0x74F25A / 0x74F8AB and the per-slot draw gate 0x745774) are needed by more than
  * one mod (Buff Duration HUD, Shield Bar, ...), but the KPM installer rejects two patches hooking one address. portrait-slots owns
  * those three hooks, keeps the slot -> creature table, and calls registered consumers at fixed points ("phases") of each hook, in
- * priority order. Design + install rules: patch_manager_mods/21_portrait_slots_and_split.md.
+ * priority order. Design + install rules: project design doc 21.
  *
  * Plain C ABI (kpatch_api.h rules): fixed-width ints and function pointers only, KPATCH_CALL (cdecl), structs only grow,
  * check struct_size before reading a field newer than your oldest supported provider.

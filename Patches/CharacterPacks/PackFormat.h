@@ -1,4 +1,4 @@
-// PackFormat.h: reader for the .k2pack format, version 1 (spec: patch_manager_mods/k1_port/K2PACK_FORMAT.md).
+// PackFormat.h: reader for the .k2pack format, version 1 (spec: the project workspace).
 // Header-only, pure (no Windows includes, no I/O, no allocation beyond the output vectors), host-testable.
 // parse() checks EVERY reader rule of the spec and never reads past `len` for any input. On any failure it
 // returns the first failed rule and leaves `assets` and `cells` empty. All integers are read byte-wise

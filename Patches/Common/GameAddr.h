@@ -4,7 +4,7 @@
 // names from the per-version table instead: K2Addr.h defines struct K2AddrTable (one field per name here, same spelling, plus the
 // Effects.h / Gui2D.h / GuiKit.h addresses and struct offsets), kSteam (built from these constants), kGog (unfilled, all zero)
 // and k2addr::get() (selected at runtime from KOTOR_VERSION_SHA; zero field = unknown = do nothing).
-// See patch_manager_mods/19b_cross_patch_sharing_survey.md section D.
+// See project design doc 19b section D.
 #pragma once
 #include <stdint.h>
 

@@ -1,6 +1,6 @@
 // portrait-slots (Steam Aspyr build 6A522E71...): neutral owner of the party-portrait hooks, provider of "k2.portraitslots" v1.
 // It draws nothing and changes no engine state by itself; consumers (buff-duration-hud, shield-bar, ...) register phase callbacks
-// through the registry (PortraitSlots.h). Design, phases, priorities and install rules: patch_manager_mods/21_portrait_slots_and_split.md.
+// through the registry (PortraitSlots.h). Design, phases, priorities and install rules: project design doc 21.
 // The hook bodies below are the shared part of BuffDurationHUD.cpp v1.1.0 (commit 17b508d), in the same order.
 //
 // Hooks (cdecl detours, original bytes still run):

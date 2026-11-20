@@ -1,6 +1,6 @@
 // Queue HUD 0.4.11-dev (CS10 strip slot, CS11 kit art, slim strip) (Steam Aspyr build 6A522E71...). A GREEN copy of the vanilla combat action-queue panel (up to 4 icons), drawn
 // OUT of combat so a command given while paused (a use-item / cast-spell that waits for unpause) is visible.
-// Research: patch_manager_mods/30_queue_hud_evidence/RE.md (0x74DC80 panel filler, 0x74E0B0 icon resolver); logic: QueueHudLogic.h.
+// Research: the project workspace (0x74DC80 panel filler, 0x74E0B0 icon resolver); logic: QueueHudLogic.h.
 //
 //   hook H9 PerformUseItem / H10 PerformCastSpell (gameaddr names + 3, hooks.toml): out-of-combat use/cast on a party member: buffer (return 1) or track (dispatch_now)
 //   HUD capture (hud pointer + combat bit): hud-host K2HUD_FRAME (old hook H8 0x74C168 migrated, HL4)

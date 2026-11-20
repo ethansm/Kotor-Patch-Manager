@@ -12,7 +12,7 @@
 // 0.3.1 per-companion "Pause at level N" (pause.<tag>= / |pause=N; levelNow pauseAt: bank every level above N for the hold class; Bank button cycles N).
 // carry-over (table format v3, [featrules]/[powerrules]): an early-converted (REBASE) creature gets LEGAL picks, see computeCarry; powers need the known-power read (St_ClassSpells).
 // 1.0.0 cleanup: mode=rewrite is the default, verbose=0 default, dev probes removed, legacy tags= / per-tag dev keys only with dev=1, banner logs the DLL crc32.
-// Investigation/design: patch_manager_mods/08_level_up_override.md (local-setup/KOTOR-II worktree), plan research/companion_levelup/PHASE4_PLAN.md.
+// Investigation/design: project design doc 08 (local-setup/KOTOR-II worktree), plan research/companion_levelup/PHASE4_PLAN.md.
 //
 // Hook 1: detour at CSWSCreatureStats::LevelUp 0x006B9870 entry (thiscall: ECX = stats, [esp+4] = pending*, [esp+8] = addToList,
 // [esp+0] = return address; EBP = the caller's frame because our code runs BEFORE the original `push ebp`). Every level-up path ends

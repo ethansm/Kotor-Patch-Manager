@@ -1,6 +1,6 @@
 // Equipment 3D Character 0.3.0-probe (Steam Aspyr build 6A522E71...). Shows a live 3D render of the character whose gear
 // is being edited on the equipment screen (CSWGuiInGameEquip), with an occasional flourish animation.
-// Research trail: patch_manager_mods/10_equipment_3d_character.md and equipment_3d_character_src/research/R* (worktree
+// Research trail: project design doc 10 and equipment_3d_character_src/research/R* (worktree
 // local-setup/KOTOR-II). Technique: Mod 1 (inventory_3d_viewport_src) for the view; the preview creature is built the way
 // the character page does it (SetStats 0084e6f0, raw disasm 0084f2c6..0084f482).
 //

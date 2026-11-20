@@ -1,6 +1,6 @@
 // hud-host (Steam Aspyr build 6A522E71...): neutral owner of the CSWGuiTargetActionMenu::PopulateMenus hook (0x00743540) and provider
 // of "k2.hud" v1 (HudHost.h). It draws nothing and writes nothing to the engine; consumers (combat-hotbar, ...) register phase
-// callbacks through the registry. Design: patch_manager_mods/31_combat_action_hotbar.md section 5.
+// callbacks through the registry. Design: project design doc 31 section 5.
 //
 // Hook (cdecl detour at the prologue, original bytes still run, so parameters are esp-relative):
 //   0x00743540  PopulateMenus: ecx = menu (hud + 0xCC), [esp+4] = leader, [esp+8] = forceUnusable, [esp+0xC] = target.

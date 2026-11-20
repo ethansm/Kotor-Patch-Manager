@@ -33,7 +33,7 @@ exes"; it mirrors the KPM copy byte-for-byte, so it is left as is.)
 
     cd <KPM>/Patches/K2WrapMeasureFix && python3 ../create-patch.py
 
-`<KPM>` = `~/Games/KOTOR2_Mod_Workspace/tools/kotor-patch-manager`.
+`<KPM>` = `the Patch Manager checkout`.
 The `.toml` files here are byte-identical mirrors of the ones in that folder.
 
 ## Status

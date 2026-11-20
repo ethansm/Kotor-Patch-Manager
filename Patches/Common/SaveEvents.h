@@ -3,7 +3,7 @@
  * Why: the engine's save / load / new-game paths are interesting to several mods (the action hotbar's per-save INI snapshot, level-up
  * GUID binding, any future per-save config), but the KPM installer rejects two patches hooking one address. save-events owns the five
  * detours (doc 22 section 4.1), parses the save folder, and calls registered consumers with one K2SaveEvent per occurrence.
- * Design + install rules: patch_manager_mods/22_hotbar_shared_services.md sections 4.1 / 4.1a.
+ * Design + install rules: project design doc 22 sections 4.1 / 4.1a.
  *
  * Plain C ABI (kpatch_api.h rules): fixed-width ints and function pointers only, KPATCH_CALL (cdecl), structs only grow,
  * check struct_size before reading a field newer than your oldest supported provider.

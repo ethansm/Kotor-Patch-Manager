@@ -3,7 +3,7 @@
 > **STATUS** Track: SHIPPABLE. Version 0.2.7 (matches manifest.toml).
 > **What it does / explores:** Draws party buff/debuff icon columns with draining duration wipes on HUD portrait cards and menu companion portraits (hooks PortraitIconRowDraw).
 > **Requires:** portrait-slots (provider `k2.portraitslots@1`, `Common/PortraitSlots.h`); KOTOR II Steam/Aspyr LAA (live-tested) and GOG/Aspyr (static-verified only); KPM.
-> **Known limits:** Standalone: NO. The shield bar is a separate patch (shield-bar). GOG addresses are static-verified only and untested live. **Play-test status:** Steam live through BH-BG1 (LIVE 10-26..10-29, no pending BH rows in `patch_manager_mods/PLAY_TEST_QUEUE.md`, lines 233-235).
+> **Known limits:** Standalone: NO. The shield bar is a separate patch (shield-bar). GOG addresses are static-verified only and untested live. **Play-test status:** Steam live through BH-BG1 (LIVE 10-26..10-29, no pending BH rows in the project play-test queue, lines 233-235).
 > **Install:** Install through KPM after portrait-slots.
 
 ## Features
@@ -24,4 +24,4 @@
 - Lint: `python3 scripts/fork_lint.py buff_duration_hud`.
 
 ## Changelog pointer
-- See `patch_manager_mods/02_buff_duration_hud.md` (research trail) and `PR_READINESS.md` (fork-prep status).
+- See project design doc 02 (research trail) and `PR_READINESS.md` (fork-prep status).

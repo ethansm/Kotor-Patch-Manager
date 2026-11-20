@@ -35,7 +35,7 @@ Kill switch: delete or rename the flag file `mouseprobe.txt` (old core only) to 
 
 ## Hooks
 
-Nine detours, all in `kotor2-steam-aspyr.hooks.toml`: ProbeMouseRaw `0x0072F14E`, ProbeMouseNorm `0x0072F2EC`, ProbeCameraFrame `0x0078C452`, ProbeMouseMsg `0x0072E039`, ProbeLButtonDown `0x007B3560`, ProbeClickInWorld `0x007B3CA0`, ProbeDefaultAction `0x007B3E3C`, ProbeMoveToPoint `0x00564770`, ProbeWalkToWaypoint `0x0065B4F0`. Engine-side findings: `patch_manager_mods/18_mouse_camera_investigation.md`.
+Nine detours, all in `kotor2-steam-aspyr.hooks.toml`: ProbeMouseRaw `0x0072F14E`, ProbeMouseNorm `0x0072F2EC`, ProbeCameraFrame `0x0078C452`, ProbeMouseMsg `0x0072E039`, ProbeLButtonDown `0x007B3560`, ProbeClickInWorld `0x007B3CA0`, ProbeDefaultAction `0x007B3E3C`, ProbeMoveToPoint `0x00564770`, ProbeWalkToWaypoint `0x0065B4F0`. Engine-side findings: project design doc 18.
 
 ## Build/test
 
@@ -43,4 +43,4 @@ Nine detours, all in `kotor2-steam-aspyr.hooks.toml`: ProbeMouseRaw `0x0072F14E`
 
 ## Changelog pointer
 
-Version history is in the commit log for `patch_manager_mods/mouse_probe_src`.
+Version history is in the commit log for the project workspace.

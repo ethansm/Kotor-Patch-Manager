@@ -1,4 +1,4 @@
-// Holster.cpp -- holster 0.17.0-dev (Steam build; 0.13.0-dev added hook H4b HolsterAnimStyle = REINSTALL, so this stays a REINSTALL): P0 probe for the holstered-weapons mod (patch_manager_mods/42_holstered_weapons.md).
+// Holster.cpp -- holster 0.17.0-dev (Steam build; 0.13.0-dev added hook H4b HolsterAnimStyle = REINSTALL, so this stays a REINSTALL): P0 probe for the holstered-weapons mod (project design doc 42).
 // Plan: .claude/plans/holstered_weapons.md. Handlers are plain extern "C" void __cdecl functions; the detour wrappers in
 // kotor2-steam-aspyr.hooks.toml call them at function entry with the game arguments BEFORE the stolen bytes run.
 // Hard rules for P0 (exceptions: the bone_test code patch, and HolsterPlace's 28-byte pose write with probe=1 bone_test=1 place=1, both default off; and the 0.13.0-dev unarmed_anim

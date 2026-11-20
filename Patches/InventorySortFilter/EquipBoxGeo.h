@@ -1,7 +1,7 @@
 // EquipBoxGeo.h - pure placement of the equip-screen compare box (ISF-EQBOX-3, W2, variant B: defensive).
 // Engine px only. No engine calls, no globals, no UB: every intermediate is int64_t.
 // Geometry: .claude/waves/ISF-EQBOX-2/u01.md section 3 (A5, A6 above LBL_BAR1; B6 fallback).
-// Formulas copied from patch_manager_mods/inventory_sort_filter_src/BoxGeometry.h (pad, row pitch, gap;
+// Formulas copied from the project workspace (pad, row pitch, gap;
 // its 35%-band row cap is dropped). BoxGeometry::compute() is not called because it only places boxes inside LB_DESC.
 // Host test: EquipBoxGeo_test.cpp next to this file.
 #pragma once

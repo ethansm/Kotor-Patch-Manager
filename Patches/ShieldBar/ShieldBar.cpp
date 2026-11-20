@@ -3,7 +3,7 @@
 // portraits on the in-game menu screens, and "Shield: cur/max" in the native portrait hover tooltip.
 // Split out of buff-duration-hud v1.1.0 (commit 17b508d) in doc 21 W4: the shared portrait hooks now belong to the portrait-slots
 // patch ("k2.portraitslots" v1, PortraitSlots.h); this DLL registers phase callbacks there and owns only hook 7.
-// Research trail: patch_manager_mods/08_shield_bar.md; split design: 21_portrait_slots_and_split.md (local-setup/KOTOR-II worktree).
+// Research trail: project design doc 08; split design: 21_portrait_slots_and_split.md (local-setup/KOTOR-II worktree).
 //
 //   hook 7  0x00744EEC  portrait tooltip builder RET path: append the shield line
 //   phases  SNAPSHOT (probe), FRAME_BEGIN (kill switch, F9 mark, scene probe), SLOT (leader force-bar slide FORCEMOVE + SLOT log),

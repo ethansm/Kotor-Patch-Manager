@@ -17,7 +17,7 @@
 // optional guarded fix: if the load screen has been up >= fixdelay ms with a1b4e0==0, area ready and the OS foreground window
 // IS the game window, call the engine's own AppActivated once (max 5x per load, >= 2 s apart). hangprobe_debug.txt keys:
 //   fix=auto (default: ON since 0.1.11; fix=off disables)   fixdelay=6000 (ms)   io=0. Manual causality test: touch hangprobe_activate.txt in the game dir.
-// Investigation: patch_manager_mods/09_load_hang_investigation.md sections 9-10 (local-setup/KOTOR-II worktree).
+// Investigation: project design doc 09 sections 9-10 (local-setup/KOTOR-II worktree).
 //
 // 0.1.11: no SuspendThread sampling while DR0 is armed; fix=auto default on (fix=off disables), gate uses "foreground is ours" and skips an iconic window;
 // the 0x40A750 WndProc hook moved to k2-activation-fix 0.3.0 (hook set changed: REINSTALL).

@@ -1,7 +1,7 @@
 // Inventory Sort & Filter (Steam Aspyr build 6A522E71...).
 // Sorts the backpack rows of the inventory screen, tints items the shown character cannot equip and adds
 // New / Usable / Upgradeable filters by re-clicking the active All tab. Research trail and every address:
-// patch_manager_mods/11_inventory_sort_filter.md (local-setup/KOTOR-II worktree).
+// project design doc 11 (local-setup/KOTOR-II worktree).
 // Build marker: title row "Equipped vs Viewed" on top of the compare box, hide on hidden description list.
 //
 // Hooks (cdecl detours):

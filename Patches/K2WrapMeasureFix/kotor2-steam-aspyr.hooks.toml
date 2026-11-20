@@ -16,7 +16,7 @@ target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBB
 #     DC 05 D8 C1 98 00  ->  DC 05 08 7F 98 00
 # The bytes are identical in both the Steam Aspyr and Steam Aspyr LAA exes.
 #
-# Source: patch_manager_mods/engine_research_findings/V3.md, doc 16 lead L4.
+# Source: the project workspace, doc 16 lead L4.
 [[hooks]]
 address = 0x0047B232
 type = "simple"

@@ -10,6 +10,6 @@ requires_interfaces = ["k2.saveevents@1", "k2.hud@1", "k2.guiinput@1"]
 conflicts = []
 
 # Steam/LAA only. Input/gating/invoke design follows ExpandedKeyboardControl's K2 path (GOG);
-# see patch_manager_mods/07_force_power_hotbar.md (local-setup/KOTOR-II worktree).
+# see project design doc 07 (local-setup/KOTOR-II worktree).
 [patch.supported_versions]
 kotor2_steam_aspyr = "6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"

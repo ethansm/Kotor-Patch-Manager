@@ -1,5 +1,5 @@
 // Mouse Probe 0.4.1 -- Wine mouse/camera fix + diagnostics
-// (patch_manager_mods/18_mouse_camera_investigation.md). Hooks read engine memory through SafeRead and
+// (project design doc 18). Hooks read engine memory through SafeRead and
 // log through KpLog.h. There are two engine writes, both gated by [mouse_fix] enabled in mouse_probe.ini and
 // on by default: (1) sanitizeNorm (sanitize_norm=1) in ProbeMouseNorm, which overwrites the normalised
 // delta at this+0x408/+0x40C; (2) SYNTHDBL (synth_dblclk=1) at OnMouseMessage, which rewrites the message id

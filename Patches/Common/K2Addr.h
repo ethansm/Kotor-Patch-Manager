@@ -410,7 +410,7 @@ constexpr K2AddrTable makeSteam() {
 
 inline constexpr K2AddrTable kSteam = k2addr::detail::makeSteam();
 // GOG Aspyr exe (777BEE23..., target_versions of every kotor2-gog-aspyr.hooks.toml, GameDetector, address DB game_version).
-// Source: patch_manager_mods/21b_gog_address_map.md section 4 (static-verified only: every function pair instruction-aligned to
+// Source: project design doc 21b section 4 (static-verified only: every function pair instruction-aligned to
 // the Steam body, every struct offset byte-identical; nothing here has run on a live GOG process). A ZERO FIELD MEANS UNKNOWN:
 // KeyboardDeviceGlobal (hotbar only, no GOG pair found) and the inventory-3D Scene/Gob/View/GuiGate fields (out of scope for
 // portrait-slots / buff-duration-hud / shield-bar) stay 0, so those helpers are inert on GOG. The whole Action Hotbar block (16 fields) is all-zero on GOG. ClipNoFillColor and TexPendingList

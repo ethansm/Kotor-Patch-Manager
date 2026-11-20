@@ -3,7 +3,7 @@
  * Why: several HUD mods (combat hotbar, force-power hotbar, buff/shield HUD, ...) need the same engine hook points around the in-game
  * menu/HUD (PopulateMenus 0x00743540), but the KPM installer rejects two patches hooking one address. hud-host owns those hooks,
  * remembers the last seen HUD object, and calls registered consumers at fixed points ("phases"), in priority order.
- * Design: patch_manager_mods/31_combat_action_hotbar.md section 5 (also doc 22 section 4.3).
+ * Design: project design doc 31 section 5 (also doc 22 section 4.3).
  *
  * Plain C ABI (kpatch_api.h rules): fixed-width ints and function pointers only, KPATCH_CALL (cdecl), structs only grow,
  * check struct_size before reading a field newer than your oldest supported provider. Consumers MUST check ctx->struct_size

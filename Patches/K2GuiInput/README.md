@@ -3,12 +3,12 @@
 > **STATUS** Track: SHIPPABLE. Version 0.1.0-dev (matches manifest.toml).
 > **What it does / explores:** Infrastructure provider (`k2.guiinput@1`) that owns the single subclass of the game window and exposes the game HWND, the cursor in engine coordinates, foreground state, and mouse-wheel subscriptions to other patches.
 > **Requires:** A KotorPatcher build with the patch registry (`KPatchInit`, see manifest.toml description). Steam/Aspyr and GOG/Aspyr targets are both listed in manifest.toml `[patch.supported_versions]`. No other patch is required.
-> **Known limits:** The Win32 layer (`GuiInputProvider.cpp`: game-window discovery, wheel hook, cursor-to-engine mapping, screen-size reads) has no host test. The host tests cover only `GiDispatch.h` and the registry/common contract. Consumers still keep some legacy per-mod window subclassers (tracked in `tests/static/subclassers.toml`). **Play-test status:** PRV row PASS 10-20 in `patch_manager_mods/PLAY_TEST_QUEUE.md`; MCR2 (mod-config wheel through gui-input) is still pending there.
+> **Known limits:** The Win32 layer (`GuiInputProvider.cpp`: game-window discovery, wheel hook, cursor-to-engine mapping, screen-size reads) has no host test. The host tests cover only `GiDispatch.h` and the registry/common contract. Consumers still keep some legacy per-mod window subclassers (tracked in `tests/static/subclassers.toml`). **Play-test status:** PRV row PASS 10-20 in the project play-test queue; MCR2 (mod-config wheel through gui-input) is still pending there.
 > **Install:** Install gui-input before every consumer (see Install order). It has no engine hooks (`hooks = []` in both `kotor2-*.hooks.toml`), so it is DLL-only.
 
 ## Interface: `k2.guiinput@1`
 
-Declared in `patch_manager_mods/_shared_src/GuiInput.h` (`K2GUIINPUT_IFACE "k2.guiinput"`, `K2GUIINPUT_VERSION 1`). The C ABI is `K2GuiInputApi`; every field is a function pointer and `struct_size` gates newer fields.
+Declared in Patches/Common/GuiInput.h` (`K2GUIINPUT_IFACE "k2.guiinput"`, `K2GUIINPUT_VERSION 1`). The C ABI is `K2GuiInputApi`; every field is a function pointer and `struct_size` gates newer fields.
 
 | Member | Purpose |
 | --- | --- |
@@ -54,4 +54,4 @@ None. The provider has no ini keys or Mod Configuration page.
 
 ## Changelog pointer
 
-Versions and history: `manifest.toml` `[patch] version` and the repo commit log for `patch_manager_mods/gui_input_src/`.
+Versions and history: `manifest.toml` `[patch] version` and the repo commit log for the project workspace.

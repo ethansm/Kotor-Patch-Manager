@@ -76,7 +76,7 @@
 //   flag 1 = take all) 2 frames after OnOpen, or 1000 ms after Show when no OnOpen came. Close is never called from inside the EventHandler hook.
 //   Anything else returns 0 (vanilla menu). Shift held = vanilla menu. Config: quick_loot.ini [QuickLoot] (read once at init):
 //   Enabled=1, ProximityEnabled=1, OpenM=3.0, CloseM=5.0 (>= OpenM+1), TakeKey=70 (VK, 'F'), ScanMs=250, ListRows=8 (1..12), Anchor=0 (0 under the name tag / 1 below the container / 2 beside the name tag; 0.6.0-dev).
-// Below: the QL0 probe description (all its log lines are kept). Questions it answered (patch_manager_mods/52_quick_loot.md):
+// Below: the QL0 probe description (all its log lines are kept). Questions it answered (project design doc 52):
 //   1. does loot that OnOpen generates (queued event 0x16) reach the container before the player's Close?   (SHOW n vs CLOSE n, EVT 0x16 dt)
 //   2. timing: ms between Show, event 0x16 and Close.                                                        (dt= on EVT / CLOSE lines)
 //   3. does take-all (Close flag 1) fire OnInvDisturbed (event 0x1B)?                                         (EVT id=1b after CLOSE flag=1)

@@ -1,5 +1,5 @@
 // SafeRead.h -- exception-free pointer probing + a failure ring buffer for KOTOR2 patch DLLs.
-// Load-hang follow-up: patch_manager_mods/09_load_hang_investigation.md section 10 (local-setup/KOTOR-II).
+// Load-hang follow-up: project design doc 09 section 10 (local-setup/KOTOR-II).
 //
 // probeRead() never raises an exception: it asks VirtualQuery instead of IsBadReadPtr's try-read, so a
 // bad pointer no longer goes through Wine's fault path and every DLL's vectored handler, and guard

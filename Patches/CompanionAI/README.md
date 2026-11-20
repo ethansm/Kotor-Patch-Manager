@@ -4,7 +4,7 @@
 > **What it does / explores:** Writes a party-AI trace log and applies INI-gated engine AI fixes for companion attack loops, follow-queue bumps, a NULL spell-row crash, and cast-queue handling.
 > **Requires:** kotor2_steam_aspyr (Steam/Aspyr build, hash pinned in manifest.toml); Patch Manager with mod-config; `Common` headers (SafeRead.h, Effects.h, GameAddr.h). No other mod required or conflicting.
 > **Known limits:** Perception throttle is off by default. Flurry bonus attacks are not addressed. Log-only probes add log volume. Unit tests and the upstream validator have not been run as part of this patch's PR cut.
-> **Play-test status:** pending rows CAI-PT1/PT2, WI-120, WI-125, CA-FG1/FG2/FG5, CA-RS1, CA-MC1 in `patch_manager_mods/PLAY_TEST_QUEUE.md`.
+> **Play-test status:** pending rows CAI-PT1/PT2, WI-120, WI-125, CA-FG1/FG2/FG5, CA-RS1, CA-MC1 in the project play-test queue.
 > **Install:** Experimental. Do not install for normal play. Install only to test the INI flags, because the fixes are not yet verified in game.
 
 ## Features

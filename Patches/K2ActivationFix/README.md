@@ -1,6 +1,6 @@
 # K2 Activation Fix
 
-> **STATUS** Track: SHIPPABLE. Version 0.3.0 (matches manifest.toml).
+> **STATUS** Track: SHIPPABLE. Version 1.1.0 (matches manifest.toml).
 > **What it does / explores:** Stops false app-deactivate messages from leaving the load screen stuck after a movie. Under Proton the movie thread posts a synthetic `WM_ACTIVATEAPP(0, 0)` while the game window owns the foreground; this patch neutralises it.
 > **Requires:** Steam/Aspyr KOTOR II (hooks file `kotor2-steam-aspyr.hooks.toml` only), Patch Manager. No other patches (`requires = []`).
 > **Known limits:** Steam/Aspyr only; GOG and other builds have no hooks file. Hook sites are byte-checked at install. **Play-test status:** AF-MV1..3 pending in `PLAY_TEST_QUEUE.md`.
@@ -21,7 +21,7 @@
 
 ## Build/test
 - `python3 scripts/run_tests.py activation_fix`
-- Host tests: `common_contract_test.cpp` (contract with `_shared_src`) and `activation_logic_test.cpp` (drop decision logic).
+- Host tests: `common_contract_test.cpp` (contract with `Patches/Common`) and `activation_logic_test.cpp` (drop decision logic).
 
 ## What was learned
 - The hang is intermittent (about 1 launch in 8 before the fix). The false deactivate leaves the window minimised, so no `WM_ACTIVATEAPP(TRUE)` ever arrives and the load screen never hides.

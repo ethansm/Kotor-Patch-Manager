@@ -3,7 +3,7 @@
 > **STATUS** Track: SHIPPABLE. Version 0.4.5 (dev, not play-verified; matches manifest.toml).
 > **What it does / explores:** Multi-colour and multi-font typography for KotOR II item descriptions and character stat menus, plus a Mod Config page with live preview.
 > **Requires:** Steam/Aspyr KOTOR II exe (SHA `6A522E71...`, see manifest.toml). No hard dependencies. Mod Config (k2.modconfig@1, k2.menuui@1) is optional and connected lazily at runtime. Install through Patch Manager (KPM).
-> **Known limits:** The core RichDescBox path is live since 0.3.0. The ItemNameTitle row depends on the P2a/P2a2 name probes (RMT8/RMT9). Preview build-failure paths and the 600-poll timeout have no unit test. **Play-test status:** RMT1-RMT9 and RMTC2 are `pending` in `patch_manager_mods/PLAY_TEST_QUEUE.md`.
+> **Known limits:** The core RichDescBox path is live since 0.3.0. The ItemNameTitle row depends on the P2a/P2a2 name probes (RMT8/RMT9). Preview build-failure paths and the 600-poll timeout have no unit test. **Play-test status:** RMT1-RMT9 and RMTC2 are `pending` in the project play-test queue.
 > **Install:** Install through KPM. Every ini key is optional; copy `rich_menu_typography.ini` next to `swkotor2.exe` only to edit defaults by hand.
 
 ## Features
@@ -40,4 +40,4 @@ Hook addresses are listed in `kotor2-steam-aspyr.hooks.toml`. No other `*_src` m
 - The vanilla-exe byte checks in `tests/rich_menu_typography_contract_test.cpp` run only when `KOTOR2_VANILLA_EXE` points at a vanilla `swkotor2.exe`. Unset, those checks are skipped.
 
 ## Changelog
-No CHANGELOG.md yet. Design history is in `patch_manager_mods/53_rich_menu_typography.md` (doc 53 is partly stale; see `PR_READINESS.md`).
+No CHANGELOG.md yet. Design history is in project design doc 53 (doc 53 is partly stale; see `PR_READINESS.md`).

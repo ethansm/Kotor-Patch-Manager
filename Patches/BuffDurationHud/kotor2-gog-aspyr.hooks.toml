@@ -1,4 +1,4 @@
-# GOG Aspyr build. Hook addresses from patch_manager_mods/21b_gog_address_map.md section 1 (static-verified only: the hook
+# GOG Aspyr build. Hook addresses from project design doc 21b section 1 (static-verified only: the hook
 # windows are byte-identical to the Steam original_bytes below; untested live, GOG contributor testing required). Steam address -> GOG address
 # is noted per hook. Function names, parameters and original_bytes are the same as kotor2-steam-aspyr.hooks.toml.
 [metadata]

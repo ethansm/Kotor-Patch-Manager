@@ -5,7 +5,7 @@
  * on top" guard), leaving dangling pointers if unloaded out of sequence.
  * gui-input consolidates the 4 stacked subclasses into a single provider that owns the window hook, tracks foreground state,
  * transforms cursor coordinates to engine virtual pixels, and dispatches wheel events to registered subscribers.
- * Design: patch_manager_mods/18_mouse_camera_investigation.md:358, 24_master_plan_status.md:68.
+ * Design: project design doc 18:358, 24_master_plan_status.md:68.
  *
  * Plain C ABI (kpatch_api.h rules): fixed-width ints and function pointers only, KPATCH_CALL (cdecl), structs only grow,
  * check struct_size before reading a field newer than your oldest supported provider.

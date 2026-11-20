@@ -2,7 +2,7 @@
 
 > **STATUS** Track: DIAGNOSTIC. Version 0.2.1 (matches manifest.toml). Retired from live use, kept for research.
 > **What it does / explores:** Log-only probe of which engine paths run when a saved game loads into an already-visited area (H3 `CSWSModule::LoadModuleStart`) versus a fresh area load (H2 `CSWSModule::LoadModuleInProgress`). It also logs the area-ready latch at `CServerExoAppInternal+0x14`, a population-stable marker (POP-STABLE / POP-TIMEOUT), and the area pointer, object id and resref seen by `CSWSArea::AddObjectToArea` (H4).
-> **Requires:** Steam/Aspyr exe with LAA (supported_versions `kotor2_steam_aspyr`, sha 6A522E71...BBFFEF), KotorPatcher with the patch registry (KPatchInit export), and Kotor Patch Manager (KPM). Logs through `KpLog.h` (`_shared_src`).
+> **Requires:** Steam/Aspyr exe with LAA (supported_versions `kotor2_steam_aspyr`, sha 6A522E71...BBFFEF), KotorPatcher with the patch registry (KPatchInit export), and Kotor Patch Manager (KPM). Logs through `KpLog.h` (`Patches/Common`).
 > **Known limits:** Steam/Aspyr only. No test suite exists (see Future iterations). The latch meaning is INFERRED, not a verified ready marker. Shares `0x00533830` (MainLoop) and `0x0055A460` (LoadModuleInProgress) with `npc-world`; the two conflict with each other in both manifests. **Play-test status:** none pending. The probe was removed from the live set in T26 (see `../40_npc_behaviour_variety.md`, section 11).
 > **Install:** Do not install for normal play. It is a research diagnostic with detours that clash with `npc-world`, and only one owner per address may be live. Install only to reproduce the saved-vs-fresh load study, and never alongside `npc-world`.
 

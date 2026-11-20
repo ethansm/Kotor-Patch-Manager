@@ -1,6 +1,6 @@
 // CombatStats.h - pure KOTOR II stat math for the combat-stats page (doc 51 ST2).
 // No engine access: the DLL fills the input structs in ST4 from creature/game state.
-// Formulas come from patch_manager_mods/51_combat_stats_page.md "Verified stat catalog".
+// Formulas come from project design doc 51 "Verified stat catalog".
 // Header-only, C++17, <stdint.h> only (no windows.h, no STL).
 #pragma once
 

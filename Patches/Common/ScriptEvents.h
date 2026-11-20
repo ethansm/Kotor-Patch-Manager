@@ -3,7 +3,7 @@
  * Plain C ABI (kpatch_api.h rules): fixed-width types, function pointers only,
  * KPATCH_CALL (__cdecl), structs packed to 8, structs only grow.
  *
- * Provider: script-events (patch_manager_mods/script_events_src/)
+ * Provider: script-events (the project workspace)
  * Owns non-colliding NWScript VM interception points:
  *   - CVirtualMachineInternal::RunScript (0x7022E0 pre, 0x7023E6 post)
  *   - CSWVirtualMachineCommands::ExecuteCommand (0x668FE8 pre-dispatch, before the command table lookup)

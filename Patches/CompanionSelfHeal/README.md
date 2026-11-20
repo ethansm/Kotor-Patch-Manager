@@ -3,7 +3,7 @@
 > **STATUS** Track: SHIPPABLE. Version 0.9.4-dev (matches manifest.toml).
 > **What it does / explores:** Adds a heal button beside each companion's vitality bar. Left click uses the best healing item now. Right click opens a popover for Auto heal, the use-below % and the Keep reserve.
 > **Requires:** `portrait-slots` and `hud-host` (interfaces `k2.portraitslots@1`, `k2.hud@1`); KOTOR II Steam (Aspyr) build, sha256 `6A522E71...`; Kotor Patch Manager. Optional: `mod-config` 0.2.0+ for the options page.
-> **Known limits:** Mouse Look inversion is not handled (TODO CS8, `CompanionSelfHeal.cpp`). Settings are global, not per save. **Play-test status:** SH-RQ13a/b and SH-PG1 pending in `patch_manager_mods/PLAY_TEST_QUEUE.md`.
+> **Known limits:** Mouse Look inversion is not handled (TODO CS8, `CompanionSelfHeal.cpp`). Settings are global, not per save. **Play-test status:** SH-RQ13a/b and SH-PG1 pending in the project play-test queue.
 > **Install:** Install `portrait-slots` and `hud-host` with KPM, then the `companion-selfheal` patch.
 
 ## What it does

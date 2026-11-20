@@ -4,7 +4,7 @@
 > **What it does / explores:** Thirteen small, independently switchable fixes for crashes and leaks in the Steam/Aspyr KOTOR II engine (resource teardown, script dispatch, network send ring, GUI parsing, save thumbnails, movie loop, script situations).
 > **Requires:** Steam/Aspyr KOTOR II build (`supported_versions` hash in manifest.toml), Patch Manager (KPM). No other patch required (`requires = []`, `conflicts = []`).
 > **Known limits:** `fs=2` and `dclk=2` (free mode) are not the default until real drop volume is logged (doc 10 P10). `movspin=1` may shift the load-hang H1 race. Every site is byte-verified, so a different build refuses the affected group instead of writing.
-> **Play-test status:** No pending rows in `patch_manager_mods/PLAY_TEST_QUEUE.md` for this mod. Live since 10-02/10-03; `fs` and `dclk` run count-only.
+> **Play-test status:** No pending rows in the project play-test queue for this mod. Live since 10-02/10-03; `fs` and `dclk` run count-only.
 > **Install:** Install through KPM like any other patch. Defaults are safe for normal play. `movspin`, `fs=2` and `dclk=2` are opt-in toggles: leave them off unless you are testing them.
 
 ## Features

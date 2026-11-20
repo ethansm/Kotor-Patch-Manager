@@ -2,7 +2,7 @@
 // The block recipe and scene-model access that Mod 1 (Inventory3DViewport.cpp 0.2.0-dev 290-317, 597-650) and Mod 5
 // (KPM Patches/EquipCharPreview/EquipCharPreview.cpp 308-312, 942-985; repo mirror 241-245, 874-917) carried as identical copies: allocate a view block, construct it as a
 // CSWGui3DSceneView, bind it to a layout tag, initialise its scene room, add / get / remove models, read the camera, and
-// guard + pose a scene model (Gob) through its vtable. Migration plan: patch_manager_mods/23_menu_3d_shared_migration.md.
+// guard + pose a scene model (Gob) through its vtable. Migration plan: project design doc 23.
 //
 // Engine facts (Steam Aspyr, verified in Mods 1/5): view +0x60 CSWGuiScene sub-object (the `this` of AddModel / GetModel /
 // RemoveModel), +0x74 Scene*, +0x78 camera object (vtable 0x98C45C), +0x80 model count; Scene* vtable +0x70 = init(room, pos, quat).

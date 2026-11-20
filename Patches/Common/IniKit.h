@@ -1,5 +1,5 @@
 // IniKit.h -- tiny INI helpers shared by KOTOR2 patch DLLs (header-only, no hooks, no engine access, no logging).
-// Survey: patch_manager_mods/19b_cross_patch_sharing_survey.md section D (the trim/split/parse trio and configEnabled() were copied per mod).
+// Survey: project design doc 19b section D (the trim/split/parse trio and configEnabled() were copied per mod).
 //
 // What is shared:
 //   - trim / parseFloats / splitIniLine: the line-level primitives (moved verbatim from Equip3dLogic.h; behaviour unchanged).

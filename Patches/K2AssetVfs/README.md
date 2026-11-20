@@ -3,7 +3,7 @@
 > **STATUS** Track: EXPERIMENTAL. Version 0.1.4-dev (matches manifest.toml).
 > **What it does / explores:** Resolves game resources from memory instead of Override files: a GetKeyEntry-miss and ServiceFromImage hook serve assets from an in-memory pool, load-time 2DA row splicing adds rows to existing tables, and memory-backed Miles audio streams play assets with no file on disk. Exposes `k2.assetvfs@1` and `k2.characterlib@1`. Explores whether one DLL can fan out character assets with no Override files.
 > **Requires:** Steam/Aspyr KOTOR II (target hash in manifest.toml `[patch.supported_versions]`). A consumer is required: `character_packs_src` (and `juhani_char_src`, which also depends on `k2.assetvfs@1`). Installed through KPM.
-> **Known limits:** 2DA splice cap is 1024 cells (`kMax2DaCells`, AssetVfsCore.h); static asset pool is 448 (Registry `kMaxAssets` 512, 64 dynamic reserve). Doc 44 does not yet record these caps. Engine hook call sites are verified in game only; host tests cover the pure helpers. `k2.npcworld@1` is optional. **Play-test status:** rows VFS-T0a, VFS-CT2, VFS-B5, VFS-T0, VFS-T1 are pending in `patch_manager_mods/PLAY_TEST_QUEUE.md`.
+> **Known limits:** 2DA splice cap is 1024 cells (`kMax2DaCells`, AssetVfsCore.h); static asset pool is 448 (Registry `kMaxAssets` 512, 64 dynamic reserve). Doc 44 does not yet record these caps. Engine hook call sites are verified in game only; host tests cover the pure helpers. `k2.npcworld@1` is optional. **Play-test status:** rows VFS-T0a, VFS-CT2, VFS-B5, VFS-T0, VFS-T1 are pending in the project play-test queue.
 > **Install:** Do not install for normal play. It does nothing alone (no consumer); install only with `character-packs` for the experiment. Config defaults to `mode=observe`, which logs what it would do and changes nothing.
 
 ## Features
@@ -31,7 +31,7 @@
 
 ## Build/test
 
-`python3 scripts/run_tests.py asset_vfs`. Shared headers come from `_shared_src` and `${KPM_COMMON_DIR}`. `common_contract_test` also uses a parity stub under `research/companion_levelup/tools/parity/stub` (tracked in this repo).
+`python3 scripts/run_tests.py asset_vfs`. Shared headers come from `Patches/Common` and `${KPM_COMMON_DIR}`. `common_contract_test` also uses a parity stub under `research/companion_levelup/tools/parity/stub` (tracked in this repo).
 
 ## What was learned (EXPERIMENTAL)
 
@@ -41,4 +41,4 @@
 
 ## Changelog pointer
 
-Version history is in the commit log (`git log -- patch_manager_mods/asset_vfs_src`). Research notes: `patch_manager_mods/44_in_memory_asset_vfs_and_character_library.md` (doc 44).
+Version history is in the commit log (`git log -- the project workspace). Research notes: project design doc 44 (doc 44).

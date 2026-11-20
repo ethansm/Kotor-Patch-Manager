@@ -1,6 +1,6 @@
 // Action Hotbar (Steam Aspyr build 6A522E71...): ten on-screen slots bound to keys 1-0 that invoke a vanilla HUD
 // quick-action, plus an in-game editor. Self-contained: controls, art and the INI template are all created by this DLL.
-// Research trail and every address: patch_manager_mods/07_force_power_hotbar.md (local-setup/KOTOR-II worktree).
+// Research trail and every address: project design doc 07 (local-setup/KOTOR-II worktree).
 //
 // Hooks (cdecl detours, original bytes still run; see kotor2-steam-aspyr.hooks.toml; Draw and HUD ctor go through hud-host, save detours through save-events):
 //   (hooks.toml)  CExoInputInternal::GetEvents+0x3A4 CaptureHotbarKey(record*, device)  -- swallow bound digits (moved from 0x0072CB63 for EKC coexistence)
@@ -139,7 +139,7 @@ constexpr int FlapMaxEdges = 20; constexpr DWORD FlapWindowMs = 10000;   // gate
 using hb::DimAlpha;
 using hb::QtyOutOfStockRgb;   // "0" on an out-of-stock slot is drawn gray (user request U1)
 
-// ---- logging: shared KpLog.h logger (map: patch_manager_mods/07b_hotbar_logging_map.md) -------------------------------
+// ---- logging: shared KpLog.h logger (map: project design doc 07b) -------------------------------
 // New core: <patch-id>_log.txt + kplog.ini decide what is recorded. Old core (no KPatchInit): everything goes to the fallback file
 // action_hotbar_log.txt (LoadHangProbe still tails the old force_power_hotbar_log.txt name), at INFO, or DEBUG when the INI has Verbose=1.
 // Every tag (`target:`, `H3`, `cfg:` ...) stays the first word of its message, so old greps keep working.

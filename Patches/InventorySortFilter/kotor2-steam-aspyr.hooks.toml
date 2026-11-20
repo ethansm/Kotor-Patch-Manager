@@ -1,8 +1,8 @@
 [metadata]
 target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"]
 
-# All six windows (H6a-H6f) validated by patch_manager_mods/mods678_research/check_windows.py (both executables byte-identical).
-# Doc: patch_manager_mods/11_inventory_sort_filter.md
+# All six windows (H6a-H6f) validated by the project workspace (both executables byte-identical).
+# Doc: project design doc 11
 
 # H6a: CSWGuiInGameInventory tab-click handler 008a8cf0 prologue. ECX = panel, [esp+4] = tab control.
 # Handler returns non-zero to consume the click: the prologue bytes run, then control jumps to the

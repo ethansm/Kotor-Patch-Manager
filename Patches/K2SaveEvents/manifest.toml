@@ -10,7 +10,7 @@ description = "Owns the five save / autosave / load / new-game detours (0x005345
 requires = []
 conflicts = []
 
-# Steam only. Design: patch_manager_mods/22_hotbar_shared_services.md sections 4.1 / 4.1a (local-setup/KOTOR-II worktree).
+# Steam only. Design: project design doc 22 sections 4.1 / 4.1a (local-setup/KOTOR-II worktree).
 # Never install alongside Action Hotbar 1.2.2-dev or older: those builds own the same five addresses and KPM rejects the duplicate hooks. Action Hotbar 1.3.0-dev and the 0.x line consume this provider instead.
 [patch.supported_versions]
 kotor2_steam_aspyr = "6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"

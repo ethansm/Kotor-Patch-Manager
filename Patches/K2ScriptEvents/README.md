@@ -9,7 +9,7 @@
 ## Features
 - Pre and post hooks on `RunScript` (pre at 0x007022E0, post at 0x007023E6).
 - Hook on `ExecuteCommand` (0x00668FE8) for custom VM command handlers.
-- Registry interface `k2.scriptevents@1`, declared in `_shared_src/ScriptEvents.h`.
+- Registry interface `k2.scriptevents@1`, declared in `Patches/Common/ScriptEvents.h`.
 
 ## Configuration
 - `script_events.ini`, section `[script_events]`, key `enabled` (default 1). Set `enabled=0` to opt out (`ScriptEventsProvider.cpp:82-84`).

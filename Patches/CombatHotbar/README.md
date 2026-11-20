@@ -3,7 +3,7 @@
 > **STATUS** Track: SHIPPABLE. Version 0.11.5-dev (matches manifest.toml).
 > **What it does / explores:** Replaces the vanilla target-menu action groups with clickable icon buttons in vanilla-style pills, adds Ctrl+Shift+F9..F12 invoke keys, and per-group pin/hide/sort set in `combat_hotbar.ini`.
 > **Requires:** `hud-host` (k2.hud@1, listed before this mod), Steam/Aspyr KOTOR II (manifest `kotor2_steam_aspyr` hash). Optional: `mod-config` + `menuui` for the Mod Configuration options page (the mod runs without them; only the page is missing).
-> **Known limits:** A group of 10 items shows 8 buttons at the default `Cols=2`, `MaxRows=4` (the other 2 are cut, not scrolled; see `combat_page_test.cpp`). No paging or scrolling yet. Standalone: no, needs hud-host. **Play-test status:** MC-TT1, CH-PG1, CH-PV1 and MC-PF1 are pending in `patch_manager_mods/PLAY_TEST_QUEUE.md`.
+> **Known limits:** A group of 10 items shows 8 buttons at the default `Cols=2`, `MaxRows=4` (the other 2 are cut, not scrolled; see `combat_page_test.cpp`). No paging or scrolling yet. Standalone: no, needs hud-host. **Play-test status:** MC-TT1, CH-PG1, CH-PV1 and MC-PF1 are pending in the project play-test queue.
 > **Install:** Install through Kotor Patch Manager as `combat-hotbar`, with `hud-host` enabled.
 
 ## Features
@@ -50,4 +50,4 @@ Test suites: `common_contract_test`, `combat_page_test`, `combat_preview_test`, 
 
 ## Changelog
 
-No CHANGELOG file (same as `quick_loot_src`). History is in the `git log` for `patch_manager_mods/combat_hotbar_src` and the header comments in `CombatHotbar.cpp`.
+No CHANGELOG file (same as `quick_loot_src`). History is in the `git log` for the project workspace and the header comments in `CombatHotbar.cpp`.

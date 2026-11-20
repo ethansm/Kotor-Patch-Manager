@@ -3,7 +3,7 @@
 > **STATUS** Track: SHIPPABLE. Version 0.1.10-dev (matches manifest.toml).
 > **What it does / explores:** Extends KOTOR II grass render and octree build distance from the vanilla 15-30 m fade (hard-clipped at 25.1 m by the 0.40 alpha test) to a configurable 120-150 m, and trims grass that is fully hidden.
 > **Requires:** Steam/Aspyr KOTOR II build matching the hash in manifest.toml `[patch.supported_versions]`; KPM. Optional: mod-config (adds the in-game Options page).
-> **Known limits:** Max draw distance 150 m; wind radius capped at 90 m. R12 review fixes (far-LOD thinning, B1 vertex pointer, fast bin diff) are not yet play-verified. **Play-test status:** GR8 (0.1.10-dev) pending; GR4/GR5/GR6 pending in `patch_manager_mods/PLAY_TEST_QUEUE.md`.
+> **Known limits:** Max draw distance 150 m; wind radius capped at 90 m. R12 review fixes (far-LOD thinning, B1 vertex pointer, fast bin diff) are not yet play-verified. **Play-test status:** GR8 (0.1.10-dev) pending; GR4/GR5/GR6 pending in the project play-test queue.
 > **Install:** Install through KPM (see `kotor2-kpm-install` skill). Normal play: install as usual; the mod is standalone (`requires = []`, `conflicts = []`).
 
 ## Features
@@ -34,4 +34,4 @@
 - Test config: `test.toml` (uses `${KPM_COMMON_DIR}` for the KPM Common headers).
 
 ## Changelog
-- Git history for `patch_manager_mods/k2_grass_draw_distance_src`.
+- Git history for the project workspace.

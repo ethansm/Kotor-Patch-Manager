@@ -1,7 +1,7 @@
 // CombatStatsAddr.h - engine read paths for the combat-stats page (doc 51 ST1).
 // Mod-local copy: do not edit Common/GameAddr.h; promote later.
 // Column: Steam (Aspyr swkotor2.exe). All 8 functions verified in the Steam DB
-// (doc 51 ST1, patch_manager_mods/51_combat_stats_page.md).
+// (doc 51 ST1, project design doc 51).
 // Do NOT use GetAttacksPerRound 0x006A7170: stub returning 1.
 // Constants and function-pointer typedefs only: no calls, no hooks, no windows.h.
 #pragma once

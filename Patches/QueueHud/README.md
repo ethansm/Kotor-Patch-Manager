@@ -22,7 +22,7 @@ Shared kit art (`qh_frame`, `kit_frame`) comes from `Common/HudKit.h`. Shared he
 3. Optional: copy `queue_hud.ini` next to `swkotor2.exe`. Every key is optional; without the file the built-in defaults apply.
 
 ## Configuration (`queue_hud.ini`)
-Key summary. The full key table is in `patch_manager_mods/30_queue_hud.md`.
+Key summary. The full key table is in project design doc 30.
 
 | Key | Built-in default | Purpose |
 |---|---|---|
@@ -59,7 +59,7 @@ Both addresses are used only by this mod. Their DB backing is not yet confirmed:
 - `test.toml` builds the Common contract test against the KPM checkout's `Patches/Common` via `${KPM_COMMON_DIR}` (default `<KPM_DIR>/Patches/Common`).
 
 ## Play-test status
-Rows are in `patch_manager_mods/PLAY_TEST_QUEUE.md`.
+Rows are in the project play-test queue.
 - PASS: QH21 (queued Force powers replay correctly, 10-25).
 - Pending: MODE1, QH17, QH18, QH20, QH22, QH23 (partial), QH24, QH25, QH26, QH-RL15/16, QV-OR1, QV-CE1, QV-EX1 (partial), QV-KG1, RV3-1, RV3-1b, RV3-2, RV3-3, RV3-4, RV3-5, RV3-6, WI-115, WI-116, WI-117.
 

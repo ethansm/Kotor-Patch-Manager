@@ -3,7 +3,7 @@
 > **STATUS** Track: SHIPPABLE. Version 0.3.0-probe (matches manifest.toml).
 > **What it does / explores:** Shows a live 3D render of the party member with the currently equipped gear on the Equipment screen, with flourish idles, Animate/Spin/Emotes rows, and Hide/Show + Holster/Draw rows (weapons drawn by default).
 > **Requires:** `gui-input` provider (`k2.guiinput@1`, from `gui_input_src`). Optional `k2.holster@1` (holster mod) for the Holster/Draw row; absent-safe. Steam/Aspyr KOTOR II (see `manifest.toml` `supported_versions`), Kotor Patch Manager.
-> **Known limits:** Hide/Show and Holster/Draw are unverified in game (see Known issues). Glue code (INI reload throttle, long-line reject, CF_Alloc) is live-only. **Play-test status:** EQ10-P1 pending in `patch_manager_mods/PLAY_TEST_QUEUE.md`.
+> **Known limits:** Hide/Show and Holster/Draw are unverified in game (see Known issues). Glue code (INI reload throttle, long-line reject, CF_Alloc) is live-only. **Play-test status:** EQ10-P1 pending in the project play-test queue.
 > **Install:** install `equipment-3d-character` through KPM (it pulls in `gui-input`). Optional: copy an `equip3d.ini` into the game folder (see Configuration). Do not install for normal play until EQ10-P1 passes.
 
 ## Features
@@ -53,4 +53,4 @@ The `common_contract_test` include path is repo-relative (`../../research/compan
 Research notes and Ghidra disassembly logs are in `research/` (paths scrubbed to `~/`). The `FindImm.java` and `FindStrRefs.java` files there are Ghidra scratch scripts.
 
 ## Changelog
-No separate changelog file. History is in `git log -- patch_manager_mods/equipment_3d_character_src`.
+No separate changelog file. History is in `git log -- the project workspace.

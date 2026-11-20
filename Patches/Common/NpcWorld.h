@@ -3,7 +3,7 @@
  * Why: area load, creature AddToArea and the per-frame server tick are interesting to several NPC mods (appearance diversity, extra
  * walkers, animation, scripted encounters), but KPM rejects two patches that detour one address. npc-world owns the three detours
  * (CSWSModule::LoadModuleInProgress, creature AddToArea, CServerExoAppInternal::MainLoop; addresses in npc_world_src's hooks toml),
- * tracks one area visit, and exposes events plus a few services. Design: patch_manager_mods/40_npc_behaviour_variety.md section 12.
+ * tracks one area visit, and exposes events plus a few services. Design: project design doc 40 section 12.
  *
  * Plain C ABI (kpatch_api.h rules): fixed-width ints and function pointers only, KPATCH_CALL (cdecl), structs only grow,
  * check struct_size before reading a field newer than your oldest supported provider.

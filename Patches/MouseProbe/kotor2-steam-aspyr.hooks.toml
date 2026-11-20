@@ -1,4 +1,4 @@
-# Mouse Probe 0.4.1: most hooks only read engine memory (SafeRead). Two engine-memory writes are on by default: sanitize_norm (ProbeMouseNorm, this+0x408/+0x40C) and synth_dblclk (ProbeMouseMsg, msg+4). edge_warp also moves the OS cursor (SetCursorPos) during a camera drag. All three are switchable in mouse_probe.ini [mouse_fix] (see MouseProbe.cpp:3-6). Details: patch_manager_mods/18_mouse_camera_investigation.md "Engine-side findings".
+# Mouse Probe 0.4.1: most hooks only read engine memory (SafeRead). Two engine-memory writes are on by default: sanitize_norm (ProbeMouseNorm, this+0x408/+0x40C) and synth_dblclk (ProbeMouseMsg, msg+4). edge_warp also moves the OS cursor (SetCursorPos) during a camera drag. All three are switchable in mouse_probe.ini [mouse_fix] (see MouseProbe.cpp:3-6). Details: project design doc 18 "Engine-side findings".
 
 # raw DIMOUSESTATE after GetDeviceState success: [ebp-0x14]=lX [ebp-0x10]=lY [ebp-0xC]=lZ [ebp-8]=buttons[4], this=[ebp-0x28]
 [[hooks]]

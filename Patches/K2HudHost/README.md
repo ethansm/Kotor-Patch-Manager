@@ -3,7 +3,7 @@
 > **STATUS** Track: SHIPPABLE. Version 0.6.0-dev (matches manifest.toml).
 > **What it does / explores:** Owns three shared HUD hooks and fans them out to consumer mods through the `k2.hud` v1 registry. It draws and writes nothing by itself.
 > **Requires:** KotorPatcher with the patch registry (`KPatchInit`); Steam/Aspyr (kotor2_steam_aspyr) for live play; KPM with provider support. No other patch is required (`requires = []`).
-> **Known limits:** GOG hooks are static-verified only (contributor testing needed). The 0.6.0 BUILD48 probe is diagnostic. No consumer of `K2HUD_PANEL_BUILD` ships yet. **Play-test status:** HH-PB1 pending and ISF-T13 pending in `patch_manager_mods/PLAY_TEST_QUEUE.md`.
+> **Known limits:** GOG hooks are static-verified only (contributor testing needed). The 0.6.0 BUILD48 probe is diagnostic. No consumer of `K2HUD_PANEL_BUILD` ships yet. **Play-test status:** HH-PB1 pending and ISF-T13 pending in the project play-test queue.
 > **Install:** Install through KPM as a provider, then install the consumer mods that list it in `requires`. Not a user-facing patch on its own (no visible feature).
 
 ## Features
@@ -16,7 +16,7 @@ Three hooks, each fired into the `k2.hud` phases:
 | PopulateMenus tail `0x00743847` (hud-host 0.4.0) | `K2HUD_TARGET_MENU_POST` | After the menu origin is final, before any draw |
 | HUD layout-closing `0x0040F5A0` (prologue) | `K2HUD_BUILD` (HUD panel only), `K2HUD_PANEL_BUILD` (every panel, hud-host 0.6.0) | While the layout is still open, so labels can be created |
 
-Phase ids: `K2HUD_FRAME` 0, `K2HUD_TARGET_MENU_PRE` 1, `K2HUD_TARGET_MENU_POST` 2, `K2HUD_BUILD` 3, `K2HUD_PANEL_BUILD` 4. Defined in `_shared_src/HudHost.h`.
+Phase ids: `K2HUD_FRAME` 0, `K2HUD_TARGET_MENU_PRE` 1, `K2HUD_TARGET_MENU_POST` 2, `K2HUD_BUILD` 3, `K2HUD_PANEL_BUILD` 4. Defined in `Patches/Common/HudHost.h`.
 
 API: consumers call `g_hud.init(api, "my-patch-id")`, `g_hud.add(phase, priority, callback)`, then `g_hud.connect()` from their `KPatchInit`. If `k2.hud` is missing (hud-host not loaded, or loaded later), `connect()` reports it through the `onConnect` callback.
 

@@ -3,7 +3,7 @@
 // with a private CSWGui3DSceneView block ("fake this" = block-0x3a30).
 // v2: our own neutral light rig (inv3d_light), and the DLL owns the item transform (orientation per item
 // class, centring, fit by distance/scale, auto-spin and mouse-drag rotation).
-// Research trail: patch_manager_mods/01_inventory_3d_viewport.md (local-setup/KOTOR-II worktree).
+// Research trail: project design doc 01 (local-setup/KOTOR-II worktree).
 //
 // Hooks (cdecl detours, original bytes still run afterwards):
 //   H1 0x008a69ad BindInventoryView  panel ctor 008a6170, before StopLoadFromLayout

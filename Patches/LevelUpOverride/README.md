@@ -220,7 +220,7 @@ The patch writes `levelup_override_log.txt` in the game folder (the previous log
 - To check a session automatically, run from the repository:
   `python3 scripts/luo_log_check.py --from N`, where N is the log line count before you started plus one.
   It reports PASS / FAIL / PARTIAL / NOT-EXERCISED for each check. `--scenario ID` checks a named scenario and
-  `--expect-crc` compares the banner crc32 with a DLL. See `patch_manager_mods/26_FORCED_STATE_TESTING.md`.
+  `--expect-crc` compares the banner crc32 with a DLL. See project design doc 26.
 - No Configure button: the character has no presets in `levelup_paths.ini`, it is the PC, or the table failed to load.
 - A companion shows the level-up icon even though you configured a path: the icon is hidden only when the NEXT level
   is held. Levels before the conversion point follow the path and are not held.

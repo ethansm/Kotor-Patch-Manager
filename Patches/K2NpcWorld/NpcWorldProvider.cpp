@@ -1,5 +1,5 @@
 // npc-world (Steam Aspyr build 6A522E71...): neutral owner of the three world detours that the NPC mods share, and provider of
-// "k2.npcworld" v1 (NpcWorld.h). Design: patch_manager_mods/40_npc_behaviour_variety.md section 12. Registry, one-visit state,
+// "k2.npcworld" v1 (NpcWorld.h). Design: project design doc 40 section 12. Registry, one-visit state,
 // POP-STABLE latch, tag list and spawn gating live in NwCore.h (host-tested); this file only reads the engine and calls the native
 // CreateObject sequence that k1-spawn-probe 0.2.0 introduced (doc 38 sections 13/14).
 //

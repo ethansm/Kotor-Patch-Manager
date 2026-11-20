@@ -4,7 +4,7 @@
  * Ranged (11) under weapon/range conditions (E-H3 hook). Companion AI's A1 hook
  * reads [ebp-0x174] and needs to know whether the attacker's stance is the kite stance and whether it maps to
  * ranged, avoiding silent misses when ranged-ai is absent or ranged_rules=0.
- * Design: patch_manager_mods/13_ranged_ai_spacing.md:235, 19b_cross_patch_sharing_survey.md:20 (candidate A5).
+ * Design: project design doc 13:235, 19b_cross_patch_sharing_survey.md:20 (candidate A5).
  *
  * Plain C ABI (kpatch_api.h rules): fixed-width ints and function pointers only, KPATCH_CALL (cdecl), structs only grow,
  * check struct_size before reading a field newer than your oldest supported provider.

@@ -3,7 +3,7 @@
 > **STATUS** Track: SHIPPABLE. Version 0.1.2-dev (matches manifest.toml).
 > **What it does / explores:** Infrastructure provider. It owns the three engine detours that the NPC mods share, tracks one area visit, and exposes the `k2.npcworld@1` interface (area-load, creature-added, area-stable and tick events, plus a native Spawn() with a per-visit cap). It has no gameplay feature of its own.
 > **Requires:** Steam/Aspyr exe with LAA (supported_versions `kotor2_steam_aspyr`, sha 6A522E71...BBFFEF), KotorPatcher with the patch registry (KPatchInit export), and Kotor Patch Manager (KPM).
-> **Known limits:** Only useful with a client mod (k1-spawn-probe, npc-world-probe, voice-probe). Do not install alongside area-hook-probe, or k1-spawn-probe 0.2.x (both own the same addresses). Conflict list is one-sided until area-hook-probe lists npc-world. **Play-test status:** PRV row passed 10-20; VFS-CT2 is still pending (it relies on game-dir `npc_world.ini` `spawn_cap=6`). Both rows are in `patch_manager_mods/PLAY_TEST_QUEUE.md`.
+> **Known limits:** Only useful with a client mod (k1-spawn-probe, npc-world-probe, voice-probe). Do not install alongside area-hook-probe, or k1-spawn-probe 0.2.x (both own the same addresses). Conflict list is one-sided until area-hook-probe lists npc-world. **Play-test status:** PRV row passed 10-20; VFS-CT2 is still pending (it relies on game-dir `npc_world.ini` `spawn_cap=6`). Both rows are in the project play-test queue.
 > **Install:** Install `npc-world` through KPM as a provider (no feature toggle). Opt out per install with `enabled=0` in `npc_world.ini` (see Configuration).
 
 ## Features
@@ -33,7 +33,7 @@ verbose=0
 Log file: `npc-world_log.txt` in the game directory (KpLog fallback file, NpcWorldProvider.cpp:40). The mod logs through `KpLog.h`.
 
 ## Interface and dependencies
-- `requires = []` (no provider dependency). Uses `KpLog.h` from `_shared_src`.
+- `requires = []` (no provider dependency). Uses `KpLog.h` from `Patches/Common`.
 - Clients: `k1-spawn-probe` 0.3.x (DLL-only client; 0.3.0+ is fine), `npc-world-probe` 0.1.0-probe (requires npc-world), `voice-probe` (requires `k2.npcworld@1`).
 
 ## Conflicts

@@ -10,7 +10,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
-// Needs gameaddr::InventoryPanelVtable / EquipPanelVtable: include GameAddr.h before this header (the .cpp already does; the host test includes ../_shared_src/GameAddr.h first).
+// Needs gameaddr::InventoryPanelVtable / EquipPanelVtable: include GameAddr.h before this header (the .cpp already does; the host test includes ../Patches/Common/GameAddr.h first).
 
 namespace eqpanel {
 

@@ -3,7 +3,7 @@
 > **STATUS** Track: SHIPPABLE. Version 0.4.11-dev (matches manifest.toml).
 > **What it does / explores:** Draws the current target's status-effect icons as one row above the target menu name label. Icons are gated by the party leader's Awareness tiers.
 > **Requires:** hud-host (k2.hud@1) installed first or in the same set. Steam/Aspyr KOTOR II exe (SHA `6A522E71...`, see manifest.toml). Optional: mod-config (k2.modconfig@1, k2.menuui@1) for the settings page; connected at runtime, never required.
-> **Known limits:** The MaxEffects and MaxIconCount reject paths have no unit test (defensive bounds only). Tier thresholds are not tested with zero values. **Play-test status:** ES-UX2, ES-UX3, ES-CFG1, ES-CFG2 are pending in `patch_manager_mods/PLAY_TEST_QUEUE.md`.
+> **Known limits:** The MaxEffects and MaxIconCount reject paths have no unit test (defensive bounds only). Tier thresholds are not tested with zero values. **Play-test status:** ES-UX2, ES-UX3, ES-CFG1, ES-CFG2 are pending in the project play-test queue.
 > **Install:** Install through Patch Manager (KPM) with hud-host. Copy `enemy_strip.ini` next to `swkotor2.exe` only if you want to edit defaults by hand; every key is optional.
 
 ## Features
@@ -46,4 +46,4 @@
 - The settings page's preview labels must restore their own fill before any free. Freeing them at Options teardown crashed in the label destructor (fixed in 0.4.9 and 0.4.10).
 
 ## Changelog pointer
-- Version history: `git log -- patch_manager_mods/enemy_effects_strip_src`.
+- Version history: `git log -- the project workspace.

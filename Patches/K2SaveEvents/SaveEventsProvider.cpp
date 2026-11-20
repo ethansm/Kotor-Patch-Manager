@@ -1,7 +1,7 @@
 // save-events (Steam Aspyr build 6A522E71...): neutral owner of the five save / autosave / load / new-game detours that Action Hotbar
 // 1.2.2-dev and older used for its per-save INI, and provider of "k2.saveevents" v1 (SaveEvents.h). It writes nothing to the engine, does no file
 // I/O except the kpatch log and one read-only listing of the save root when a save's folder name is unreadable (PS2), and never blocks; consumers register a kind mask + callback through the registry.
-// Design, API and migration: patch_manager_mods/22_hotbar_shared_services.md sections 4.1 / 4.1a. Registry, folder parsing and the
+// Design, API and migration: project design doc 22 sections 4.1 / 4.1a. Registry, folder parsing and the
 // slow-consumer guard live in SeDispatch.h (host-tested, se_registry_test.cpp).
 //
 // Hooks (cdecl detours, original bytes still run; the sites, stolen bytes and parameter are copied from the hotbar's hooks toml):

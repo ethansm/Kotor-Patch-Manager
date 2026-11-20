@@ -1,6 +1,6 @@
 // Ranged AI (Steam Aspyr build 6A522E71...). Engine half of Mod 8: makes ranged party members
 // hold position instead of walking into melee when their line of fire is blocked (E-H1), and lets them retarget
-// like the player does (E-H2). Research trail and every address: patch_manager_mods/13_ranged_ai_spacing.md.
+// like the player does (E-H2). Research trail and every address: project design doc 13.
 //
 // Hooks (cdecl detours; the stolen bytes run after the handler; a non-zero return jumps to consumed_exit_address):
 //   E-H1 0x006d83ea RangedAiHold(attacker=ECX, ebp)   inside CSWSCreature::AIActionPhysicalAttacks 0x6d7390,

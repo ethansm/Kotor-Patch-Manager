@@ -1,5 +1,5 @@
 // Inventory Sort & Filter -- pure logic (no Win32, no engine access) so it can be unit-tested on the host.
-// Doc: patch_manager_mods/11_inventory_sort_filter.md
+// Doc: project design doc 11
 #pragma once
 #include <algorithm>
 #include <stdio.h>

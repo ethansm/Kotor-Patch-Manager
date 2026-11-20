@@ -1,5 +1,5 @@
 // PanelSlots.h -- fixed-size per-panel slot table for KOTOR2 patch DLLs (header-only, no hooks, no engine access, no STL).
-// Survey: patch_manager_mods/19b_cross_patch_sharing_survey.md section D (the findSlot/claimSlot pair was copy-pasted into
+// Survey: project design doc 19b section D (the findSlot/claimSlot pair was copy-pasted into
 // CharEffectsPanel, Inventory3DViewport and EquipCharPreview, each with its own idea of "this slot is in use").
 //
 // What is shared: WHICH slot a panel owns (find), picking one for a new panel (claim: existing, else free, else evict the oldest),

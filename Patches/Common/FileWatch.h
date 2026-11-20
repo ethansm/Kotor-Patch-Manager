@@ -1,5 +1,5 @@
 // FileWatch.h -- config-file change detection and atomic save for KOTOR2 patch DLLs (header-only, no hooks, no engine access).
-// Survey: patch_manager_mods/19b_cross_patch_sharing_survey.md section D item #4 (INI reload / save code was copied per mod).
+// Survey: project design doc 19b section D item #4 (INI reload / save code was copied per mod).
 //
 // What is shared: WHEN a file changed (stamp + throttled poll) and HOW to replace it safely (atomicWrite). Parsing stays per mod.
 //   - stamp():  {exists, size, mtime}. mtime is FILETIME (100 ns) on Win32 and st_mtim (ns) on POSIX, so two edits inside one second

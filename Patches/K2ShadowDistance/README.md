@@ -3,8 +3,8 @@
 > **STATUS** Track: SHIPPABLE. Version 0.1.0-dev (matches manifest.toml).
 > **What it does / explores:** Raises the distance at which KOTOR II objects cast stencil shadows, from the vanilla 35 m up to 100 m, with 35 m as the default so vanilla behaviour is kept until changed.
 > **Requires:** Steam/Aspyr KOTOR II build (supported_versions hash in manifest.toml), Kotor Patch Manager (KPM). No required providers. Optional: `k2.modconfig@1` and `k2.menuui@1` for the in-game page.
-> **Known limits:** Play test SH1 not yet run, so the visual result and frame cost are unverified. Shadow cost per distance is unmeasured. A light-cap setting is not implemented (0x00A0F040 is read only). **Play-test status:** SH1 pending in `patch_manager_mods/PLAY_TEST_QUEUE.md`.
-> **Install:** Install through KPM like other `patch_manager_mods` entries, then start the game once so the default ini is written.
+> **Known limits:** Play test SH1 not yet run, so the visual result and frame cost are unverified. Shadow cost per distance is unmeasured. A light-cap setting is not implemented (0x00A0F040 is read only). **Play-test status:** SH1 pending in the project play-test queue.
+> **Install:** Install through KPM like other patches, then start the game once so the default ini is written.
 
 ## Features
 - Object shadow distance gate raised from 35 m (vanilla) to a value chosen by the user, 10-100 m.

@@ -31,7 +31,7 @@ type = "pointer"
 # nothing branches into it. 0x743850 (called just before) has written the menu origin (+0x1648/+0x164C), so the origin is final
 # here and nothing has been drawn yet. The hook runs first, then the stolen bytes (incl. the RET). Frame is still up:
 # [ebp-0x30] = menu, [ebp+8] = leader, [ebp+0x10] = target (may be null). The old 0x00743850 entry hook read last frame's origin
-# (one-frame lag, doc 31 CH4c). Design/RE: patch_manager_mods/31a_target_menu_post_re.md, doc 31 CH4c.
+# (one-frame lag, doc 31 CH4c). Design/RE: project design doc 31a, doc 31 CH4c.
 [[hooks]]
 address = 0x00743847
 type = "detour"

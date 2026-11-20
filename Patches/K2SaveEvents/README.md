@@ -27,7 +27,7 @@
 - Host test files: `se_registry_test.cpp` (registry, folder parsing, slow-consumer guard), `saveevents_client_test.cpp` (client side), `common_contract_test.cpp` (pins the Common APIs).
 
 ## API
-- `k2.saveevents` v1 is defined in `_shared_src/SaveEvents.h`, not in this directory. Design and migration: `patch_manager_mods/22_hotbar_shared_services.md` sections 4.1 and 4.1a.
+- `k2.saveevents` v1 is defined in `Patches/Common/SaveEvents.h`, not in this directory. Design and migration: project design doc 22 sections 4.1 and 4.1a.
 
 ## What was learned
 - Not an experimental mod. Its design notes are in doc 22.

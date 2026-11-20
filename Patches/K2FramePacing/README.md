@@ -4,7 +4,7 @@
 > **What it does / explores:** Stops KOTOR II from spinning a full CPU core while the window is minimized, caps the frame rate while the game is in the background, and offers an optional FPS cap that sleeps instead of busy-waiting.
 > **Requires:** Kotor Patch Manager (KPM) and the Steam/Aspyr KOTOR II build (hash in manifest.toml). Optional: k2.modconfig for the in-game Options page; without it the ini file is the only config.
 > **Known limits:** Background and FPS-cap behaviour are only partly play-tested (see below). Fullscreen alt-tab may minimize the window instead of backgrounding it, so the background cap may not trigger there. The engine's own limiter at 0x0040847F is left dormant and untouched.
-> **Play-test status:** FP1 in `patch_manager_mods/PLAY_TEST_QUEUE.md`: minimized PASS and active PASS; background and FPS-cap 45 NOT SEEN (pending).
+> **Play-test status:** FP1 in the project play-test queue: minimized PASS and active PASS; background and FPS-cap 45 NOT SEEN (pending).
 > **Install:** Install through KPM like any other patch. Normal play is fine; it only changes idle behaviour.
 
 ## Features

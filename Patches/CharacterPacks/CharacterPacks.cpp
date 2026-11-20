@@ -1,7 +1,7 @@
 // Character Packs 0.1.0-dev (Steam Aspyr build 6A522E71...): an asset-free, DLL-only client of asset-vfs.
-// Loads every <game dir>\k1_imports\*.k2pack (format: patch_manager_mods/k1_port/K2PACK_FORMAT.md, parser: PackFormat.h)
+// Loads every <game dir>\k1_imports\*.k2pack (format: the project workspace, parser: PackFormat.h)
 // and registers its assets, 2DA cells and character with k2.assetvfs@1 and k2.characterlib@1. The DLL carries no game
-// assets; packs are made on the user's machine by patch_manager_mods/k1_port/k1_port_import.py build/install.
+// assets; packs are made on the user's machine by the project workspace build/install.
 // KPatchInit connects to the two interfaces and runs runLoader() synchronously: asset-vfs drops 2DA cells registered
 // after the table was serviced and its character catalog has no lock, so a worker thread would race both. The load
 // uses only kernel32 file calls (no library loads) under the loader lock and never waits on a thread.

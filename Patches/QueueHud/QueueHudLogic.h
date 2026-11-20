@@ -1,7 +1,7 @@
 // QueueHudLogic.h -- pure logic for the queue-hud mod (a GREEN copy of the vanilla combat action-queue panel, drawn out of combat).
 // No engine calls, no Windows headers, no allocation: host-testable (queue_hud_logic_test.cpp). Header-only, C++17.
 //
-// Source of truth: patch_manager_mods/30_queue_hud_evidence/RE.md (vanilla 0x74DC80 panel filler, 0x74E0B0 icon resolver).
+// Source of truth: the project workspace (vanilla 0x74DC80 panel filler, 0x74E0B0 icon resolver).
 // The DLL reads the SERVER creature of party member 0: queue list (+0x100) -> QEntry[], round (+0x10DC): current node (+0xB18),
 // pending node list (+0xB00) -> RNode[]. This header decides WHICH (entry, node) pairs fill the 4 slots; the DLL resolves icons
 // by calling 0x74E0B0(round, action, node, ...) for each pair and caches them by Slot::key.
