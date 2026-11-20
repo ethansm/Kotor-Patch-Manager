@@ -1,0 +1,6 @@
+LIBRARY BuffDurationHUD
+EXPORTS
+    KPatchInit
+    RetargetBuffIcon
+    RestoreBuffIcon
+    DrawBuffColumn
