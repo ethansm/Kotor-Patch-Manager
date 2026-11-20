@@ -1,0 +1,5 @@
+[metadata]
+target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"]
+
+# No hooks: DLL-only consumer of hud-host (k2.hud@1). The CSWGuiTargetActionMenu::PopulateMenus detour (0x00743540) belongs to
+# hud-host; this probe registers onTargetMenuPost for K2HUD_TARGET_MENU_POST in KPatchInit and writes nothing.
