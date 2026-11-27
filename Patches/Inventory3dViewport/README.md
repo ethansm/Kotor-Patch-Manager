@@ -3,7 +3,7 @@
 > **STATUS** Track: SHIPPABLE. Version 0.3.0-dev (matches manifest.toml).
 > **What it does / explores:** Shows a live 3D model of the inventory item under the cursor in the ultrawide margin of the in-game inventory screen, with orbit, roll and zoom controls.
 > **Requires:** Steam/Aspyr KOTOR II (hash in manifest.toml `supported_versions`); the `gui-input` provider (`k2.guiinput@1`); the ultrawide GUI layout (the viewport lives in the margin); Patch Manager (KPM).
-> **Known limits:** Needs free screen space to the right of the inventory list (the ultrawide margin). Model framing is per base-item category (`ItemFitTable.inc`); unlisted items use the generic fit. Per-tick detail is off by default. **Play-test status:** no rows in the project play-test queue; live-accepted 2026-09-29/30 (doc 01).
+> **Known limits:** Needs free screen space to the right of the inventory list (the ultrawide margin). Model framing is per base-item category (`ItemFitTable.inc`); unlisted items use the generic fit. Per-tick detail is off by default. **Testing:** live-accepted 2026-09-29/30.
 > **Install:** Install through KPM together with the `gui-input` provider (required by manifest.toml). Do not install on other builds; the hook addresses only match the Steam/Aspyr hash above.
 
 ## Features
@@ -43,13 +43,12 @@ Other keys (`rig`, `fov_deg`, `fov_axis`, `dist_min`, `dist_max`, `armor_spin`, 
 ## Hooks
 Steam/Aspyr addresses in `kotor2-steam-aspyr.hooks.toml`: `0x008A69AD` (BindInventoryView), `0x008A8172` (ShowItem), `0x008A7350` (InventoryTick).
 
-## Build and test
-- `python3 scripts/fork_lint.py inventory_3d_viewport`
-- `python3 scripts/run_tests.py inv3d_logic_test inventory_3d_viewport_src`
+## Build
+- From this folder run `python3 ../create-patch.py`. Host unit tests live in the author's development workspace and are not shipped here.
 
 ## Known issues
 - The `research/` folder holds raw Ghidra logs with local paths. Keep it out of the pushed tree.
-- Test gaps (PR_READINESS "Future iterations"): `fitScale` with `d0 <= 0`, lone-CR and CR-then-EOF line reads in `drainLongLine`.
+- Test gaps: `fitScale` with `d0 <= 0`, lone-CR and CR-then-EOF line reads in `drainLongLine`.
 
 ## Changelog
-See `git log -- the project workspace.
+No CHANGELOG.md.

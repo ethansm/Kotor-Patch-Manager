@@ -3,8 +3,8 @@
 > **STATUS** Track: SHIPPABLE. Version 0.1.3 (matches manifest.toml).
 > **What it does / explores:** Thirteen small, independently switchable fixes for crashes and leaks in the Steam/Aspyr KOTOR II engine (resource teardown, script dispatch, network send ring, GUI parsing, save thumbnails, movie loop, script situations).
 > **Requires:** Steam/Aspyr KOTOR II build (`supported_versions` hash in manifest.toml), Patch Manager (KPM). No other patch required (`requires = []`, `conflicts = []`).
-> **Known limits:** `fs=2` and `dclk=2` (free mode) are not the default until real drop volume is logged (doc 10 P10). `movspin=1` may shift the load-hang H1 race. Every site is byte-verified, so a different build refuses the affected group instead of writing.
-> **Play-test status:** No pending rows in the project play-test queue for this mod. Live since 10-02/10-03; `fs` and `dclk` run count-only.
+> **Known limits:** `fs=2` and `dclk=2` (free mode) are not the default until real drop volume is logged. `movspin=1` may shift the load-hang H1 race. Every site is byte-verified, so a different build refuses the affected group instead of writing.
+> **Testing:** live-tested on Steam since 10-02/10-03; `fs` and `dclk` run count-only.
 > **Install:** Install through KPM like any other patch. Defaults are safe for normal play. `movspin`, `fs=2` and `dclk=2` are opt-in toggles: leave them off unless you are testing them.
 
 ## Features
@@ -72,10 +72,9 @@ Log file: `k2-robustness-fixes_log.txt` in the game folder (shared KpLog, channe
 - The DLL writes byte patches into the game (not KPM hooks). Every site is listed with its original bytes in `code_patches.toml`, and `RobustnessFixes.cpp` memcmps each group before writing.
 - `kotor2-steam-aspyr.hooks.toml` lists the sites and the adjacency notes (perf-lab detour and script_events sites do not collide).
 
-## Build and test
+## Build
 
-- Scoped tests: `python3 scripts/run_tests.py robustness_fixes`
-- Mod lint: `python3 scripts/fork_lint.py robustness_fixes`
+- From this folder run `python3 ../create-patch.py`.
 
 ## What was learned
 
@@ -83,4 +82,4 @@ Log file: `k2-robustness-fixes_log.txt` in the game folder (shared KpLog, channe
 
 ## Changelog
 
-No CHANGELOG yet. See `PR_READINESS.md` for open upstream items.
+No CHANGELOG.md.

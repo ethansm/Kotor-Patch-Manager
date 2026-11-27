@@ -2,8 +2,8 @@
 
 > **STATUS** Track: SHIPPABLE. Version 0.3.0-probe (matches manifest.toml).
 > **What it does / explores:** Shows a live 3D render of the party member with the currently equipped gear on the Equipment screen, with flourish idles, Animate/Spin/Emotes rows, and Hide/Show + Holster/Draw rows (weapons drawn by default).
-> **Requires:** `gui-input` provider (`k2.guiinput@1`, from `gui_input_src`). Optional `k2.holster@1` (holster mod) for the Holster/Draw row; absent-safe. Steam/Aspyr KOTOR II (see `manifest.toml` `supported_versions`), Kotor Patch Manager.
-> **Known limits:** Hide/Show and Holster/Draw are unverified in game (see Known issues). Glue code (INI reload throttle, long-line reject, CF_Alloc) is live-only. **Play-test status:** EQ10-P1 pending in the project play-test queue.
+> **Requires:** `gui-input` provider (`k2.guiinput@1`, from `Patches/K2GuiInput`). Optional `k2.holster@1` (holster mod) for the Holster/Draw row; absent-safe. Steam/Aspyr KOTOR II (see `manifest.toml` `supported_versions`), Kotor Patch Manager.
+> **Known limits:** Hide/Show and Holster/Draw are unverified in game (see Known issues). Glue code (INI reload throttle, long-line reject, CF_Alloc) is live-only. **Testing:** live-tested on Steam; Hide/Show and Holster/Draw still need an in-game check.
 > **Install:** install `equipment-3d-character` through KPM (it pulls in `gui-input`). Optional: copy an `equip3d.ini` into the game folder (see Configuration). Do not install for normal play until EQ10-P1 passes.
 
 ## Features
@@ -37,20 +37,16 @@ Address hooks are in `kotor2-steam-aspyr.hooks.toml` (target `6A522E71...`). Mai
 - `0x008ABA50` EquipTick (equip panel Update, vtable slot 0x34).
 - `0x008AA6F0` panel scalar deleting dtor (frees the preview creature).
 
-## Build and test
-```
-python3 scripts/run_tests.py equipment_3d   # common contract test
-python3 scripts/run_tests.py equip3d        # logic tests
-```
-The `common_contract_test` include path is repo-relative (`../../research/companion_levelup/tools/parity/stub`) and resolves inside this repo. `${KPM_COMMON_DIR}` defaults to `<KPM_DIR>/Patches/Common`.
+## Build
+From this folder run `python3 ../create-patch.py`. Host unit tests for the logic live in the author's development workspace and are not shipped here.
 
 ## Known issues
-- EQ10-P1 (in-game check of Hide/Show, Holster/Draw, reopen, companion switch) is still pending.
+- The in-game check of Hide/Show, Holster/Draw, reopen, companion switch) is still pending.
 - If Holster does not move the weapons, the holster H7 hook may not fire for this mod's own attach. Follow-up: attach through `k2.preview3d` or add a holster API.
 - Untested logic arms: screen_w-only and screen_h-only masks, idle align boundaries, pan zoom fallback, drag-axis tie, poll/lock clamps, `keep_obj10=0`.
 
 ## What was learned
-Research notes and Ghidra disassembly logs are in `research/` (paths scrubbed to `~/`). The `FindImm.java` and `FindStrRefs.java` files there are Ghidra scratch scripts.
+Research notes and Ghidra disassembly logs are kept in the author's development workspace and are not shipped here.
 
 ## Changelog
-No separate changelog file. History is in `git log -- the project workspace.
+No separate changelog file. History is in the git log of this directory.

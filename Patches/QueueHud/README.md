@@ -3,7 +3,7 @@
 > **STATUS** Track: SHIPPABLE. Version 0.4.11-dev (matches manifest.toml).
 > **What it does / explores:** Shows the vanilla combat action-queue panel out of combat, so a use-item or cast-spell command given while paused stays visible while it waits. Buffers those commands, draws per-member queue strips and a Cancel control.
 > **Requires:** Steam/Aspyr KOTOR II only (target hash in manifest.toml `[patch.supported_versions]`); KPM with the `portrait-slots` (`k2.portraitslots@1`) and `hud-host` (`k2.hud@1`) providers.
-> **Known limits:** Steam/Aspyr only, no GOG address map. Cancel controls and the leader panel are out of combat only; left-click on a companion strip icon also works in combat. Items (medpacs) queued for a companion still wait. Per-node cancel address (RQ12) unverified, see play row RV3-4. Hook DB backing unconfirmed (see Hooks). **Play-test status:** pending rows listed under Play-test status below.
+> **Known limits:** Steam/Aspyr only, no GOG address map. Cancel controls and the leader panel are out of combat only; left-click on a companion strip icon also works in combat. Items (medpacs) queued for a companion still wait. Per-node cancel address (RQ12) unverified. Hook DB backing unconfirmed (see Hooks). **Testing:** see Testing below.
 > **Install:** normal play via KPM install, together with `portrait-slots` and `hud-host`. `queue_hud.ini` is optional.
 
 Shared kit art (`qh_frame`, `kit_frame`) comes from `Common/HudKit.h`. Shared headers used: `KpLog.h`, `SafeRead.h`, `ActQueue.h`, `K2Addr.h`, `Party.h`, `HudKit.h`.
@@ -22,7 +22,7 @@ Shared kit art (`qh_frame`, `kit_frame`) comes from `Common/HudKit.h`. Shared he
 3. Optional: copy `queue_hud.ini` next to `swkotor2.exe`. Every key is optional; without the file the built-in defaults apply.
 
 ## Configuration (`queue_hud.ini`)
-Key summary. The full key table is in project design doc 30.
+Key summary.
 
 | Key | Built-in default | Purpose |
 |---|---|---|
@@ -45,30 +45,27 @@ Colours are `r,g,b` floats 0..1. A bad value or unknown key is skipped and count
 ## Logging
 - Log file: `queue-hud_log.txt` in the game folder (KpLog fallback file, INFO level).
 - `kplog.ini` section `[queue-hud]` has channels `main`, `cap`, `icon`, `draw`, `cancel`, `trace`.
-- Check a play session with `python3 scripts/kotor2_logs.py check queue-hud --new` (skill `kotor2-log-analysis`).
 
 ## Hooks
 Steam/Aspyr only, from `kotor2-steam-aspyr.hooks.toml`:
 - H9 `PerformUseItem` at `0x00775603` (detour, 6 bytes).
 - H10 `PerformCastSpell` at `0x00775703` (detour, 6 bytes).
 
-Both addresses are used only by this mod. Their DB backing is not yet confirmed: `query_ghidra.py address` returned no result in the static RE pass (see PR_READINESS.md item 6). No GOG map exists.
+Both addresses are used only by this mod. Their DB backing is not yet confirmed: the address lookup returned no result in the static RE pass. No GOG map exists.
 
-## Build and test
-- Scoped run: `python3 scripts/run_tests.py queue_hud` (3 items: the Common contract test, `queue_hud_logic_test`, and `test_queue_hud_log_check.py`).
-- `test.toml` builds the Common contract test against the KPM checkout's `Patches/Common` via `${KPM_COMMON_DIR}` (default `<KPM_DIR>/Patches/Common`).
+## Build
+From this folder run `python3 ../create-patch.py`. Host unit tests (Common contract and queue logic) live in the author's development workspace and are not shipped here.
 
-## Play-test status
-Rows are in the project play-test queue.
-- PASS: QH21 (queued Force powers replay correctly, 10-25).
-- Pending: MODE1, QH17, QH18, QH20, QH22, QH23 (partial), QH24, QH25, QH26, QH-RL15/16, QV-OR1, QV-CE1, QV-EX1 (partial), QV-KG1, RV3-1, RV3-1b, RV3-2, RV3-3, RV3-4, RV3-5, RV3-6, WI-115, WI-116, WI-117.
+## Testing
+- Live-tested on Steam: queued Force powers replay correctly.
+- Still needs an in-game check: the mode banner, per-icon strip cancel, companion strip cancel, out-of-combat leader panel and the combat handoff.
 
 Treat these as untested in any upstream PR text.
 
 ## Known issues
 - Medpacs and other items queued for a companion are held (QL20 covers Force powers only).
-- Cancel on a companion's strip: whether the engine drops the late 3D follow action is open (RV3-4).
-- Hook addresses need DB backing before an upstream PR (PR_READINESS.md item 6).
+- Cancel on a companion's strip: whether the engine drops the late 3D follow action is open.
+- Hook addresses need DB backing before an upstream PR.
 
 ## Changelog
-See `CHANGELOG.md`.
+- No CHANGELOG.md.

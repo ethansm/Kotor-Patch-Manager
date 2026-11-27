@@ -3,7 +3,7 @@
 > **STATUS** Track: EXPERIMENTAL. Version 0.1.1-dev (matches manifest.toml).
 > **What it does / explores:** Asset-free, DLL-only loader that reads user-built `.k2pack` files from `<game dir>/k1_imports/` at KPatchInit and registers them with asset-vfs (`k2.assetvfs@1`) and the character library (`k2.characterlib@1`), so a Knights of the Old Republic (K1) character can be served in KOTOR II without Override files.
 > **Requires:** asset-vfs (manifest `requires`), the Steam/Aspyr exe with LAA (supported_versions `kotor2_steam_aspyr`, sha 6A522E71...BBFFEF), KotorPatcher with the patch registry (KPatchInit export), and Kotor Patch Manager (KPM). Packs come from the local importer, which needs the user's own K1 install.
-> **Known limits:** Win32-only loader, not yet exercised on a clean machine. Play rows VFS-B5 and MD-RB1 are pending in the project play-test queue, so the packs are unverified in play. Overlaps `juhani_char_src`: both register the `k1p_carth*` / `k1p_juhani*` keys, `conflicts` is empty, and the later registrant wins. Pools are shared with every asset-vfs client (448 assets, 1024 2DA cells, 64 characters).
+> **Known limits:** Win32-only loader, not yet exercised on a clean machine. The packs are unverified in play. Overlaps another character pack mod: both register the `k1p_carth*` / `k1p_juhani*` keys, `conflicts` is empty, and the later registrant wins. Pools are shared with every asset-vfs client (448 assets, 1024 2DA cells, 64 characters).
 > **Install:** Experimental. Do not install for normal play. Install only if you are developing the K1 character import. Build packs with the importer, then install through KPM.
 
 ## Features
@@ -29,9 +29,8 @@ Log file: `character-packs_log.txt` (KpLog.h, channel main). Lines to look for:
 ## Hooks
 None. The DLL owns no detour and has no addresses to verify.
 
-## Build and test
-- Host tests: `python3 scripts/run_tests.py character_packs` (scope the filter; a bare `run_tests.py` runs all suites).
-- `test.toml` uses `-I${KPM_COMMON_DIR}` (default `<KPM_DIR>/Patches/Common`).
+## Build
+From this folder run `python3 ../create-patch.py`. Host unit tests live in the author's development workspace and are not shipped here.
 
 ## What was learned (EXPERIMENTAL)
 - Pool limits: the shared static asset pool was 192 entries until asset-vfs 0.1.3-dev; it is now 448 (`kMaxAssets` in `PackFormat.h`). Pool sizes are shared with all asset-vfs clients, so limits belong in the shared headers.
@@ -39,13 +38,11 @@ None. The DLL owns no detour and has no addresses to verify.
 - Duplicate (flags, res_type, resref) entries and blob overlap are rejected by the parser.
 
 ## Research links
-- the project workspace (format spec)
-- the project workspace (builder and installer)
-- the project workspace (serving layer, asset-vfs)
-- the project workspace (overlapping character provider)
+- `../K2AssetVfs` (serving layer, asset-vfs)
+- `PackFormat.h` (pack format)
 
 ## Licensing hygiene
 This repository contains no game assets and no `.k2pack` files. Packs are built locally from the user's own K1 install and stay out of the repo.
 
 ## Changelog
-See `PR_READINESS.md` for review status and open items. A CHANGELOG is not kept for this experimental track.
+- No CHANGELOG.md.

@@ -3,7 +3,7 @@
 > **STATUS** Track: SHIPPABLE. Version 0.4.11-dev (matches manifest.toml).
 > **What it does / explores:** Draws the current target's status-effect icons as one row above the target menu name label. Icons are gated by the party leader's Awareness tiers.
 > **Requires:** hud-host (k2.hud@1) installed first or in the same set. Steam/Aspyr KOTOR II exe (SHA `6A522E71...`, see manifest.toml). Optional: mod-config (k2.modconfig@1, k2.menuui@1) for the settings page; connected at runtime, never required.
-> **Known limits:** The MaxEffects and MaxIconCount reject paths have no unit test (defensive bounds only). Tier thresholds are not tested with zero values. **Play-test status:** ES-UX2, ES-UX3, ES-CFG1, ES-CFG2 are pending in the project play-test queue.
+> **Known limits:** The MaxEffects and MaxIconCount reject paths have no unit test (defensive bounds only). Tier thresholds are not tested with zero values. **Testing:** the UX and config-option checks still need an in-game pass.
 > **Install:** Install through Patch Manager (KPM) with hud-host. Copy `enemy_strip.ini` next to `swkotor2.exe` only if you want to edit defaults by hand; every key is optional.
 
 ## Features
@@ -30,20 +30,19 @@
 ## Logging
 - Log file: `enemy-effects-strip_log.txt` in the game folder.
 - `Verbose=1` adds the probe blocks (menu geometry, effect list, icon cache, Awareness). `Verbose=0` writes only `strip:` change lines.
-- Analyze with `python3 scripts/kotor2_logs.py check enemy-effects-strip_log.txt [--new]`.
 
 ## Hooks
 - No hooks of its own. `kotor2-steam-aspyr.hooks.toml` is comment-only.
 - The `CSWGuiTargetActionMenu::PopulateMenus` detour (0x00743540) belongs to hud-host. This mod registers `onTargetMenuPost` for `K2HUD_TARGET_MENU_POST` in `KPatchInit`.
 
-## Build and test
-- Scoped host tests: `python3 scripts/run_tests.py enemy_strip`
-- Suites: `enemy_strip_logic_test`, `enemy_strip_draw_test` (fake-engine draw checks), `common_contract_test` (pins the Common APIs this mod uses).
-- Host builds use `${KPM_COMMON_DIR}` (default `<KPM_DIR>/Patches/Common`) and `stubs/windows.h`.
+## Build
+From this folder run `python3 ../create-patch.py`.
+
+Host unit tests (logic, fake-engine draw checks, Common contract) live in the author's development workspace and are not shipped here.
 
 ## What was learned
 - The strip's draw position depends on the target menu label height, so `IconSize=0` tracks the label rather than a fixed pixel size.
 - The settings page's preview labels must restore their own fill before any free. Freeing them at Options teardown crashed in the label destructor (fixed in 0.4.9 and 0.4.10).
 
 ## Changelog pointer
-- Version history: `git log -- the project workspace.
+- No CHANGELOG.md.

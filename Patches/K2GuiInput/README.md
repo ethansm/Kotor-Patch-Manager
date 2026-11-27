@@ -3,7 +3,7 @@
 > **STATUS** Track: SHIPPABLE. Version 0.1.0-dev (matches manifest.toml).
 > **What it does / explores:** Infrastructure provider (`k2.guiinput@1`) that owns the single subclass of the game window and exposes the game HWND, the cursor in engine coordinates, foreground state, and mouse-wheel subscriptions to other patches.
 > **Requires:** A KotorPatcher build with the patch registry (`KPatchInit`, see manifest.toml description). Steam/Aspyr and GOG/Aspyr targets are both listed in manifest.toml `[patch.supported_versions]`. No other patch is required.
-> **Known limits:** The Win32 layer (`GuiInputProvider.cpp`: game-window discovery, wheel hook, cursor-to-engine mapping, screen-size reads) has no host test. The host tests cover only `GiDispatch.h` and the registry/common contract. Consumers still keep some legacy per-mod window subclassers (tracked in `tests/static/subclassers.toml`). **Play-test status:** PRV row PASS 10-20 in the project play-test queue; MCR2 (mod-config wheel through gui-input) is still pending there.
+> **Known limits:** The Win32 layer (`GuiInputProvider.cpp`: game-window discovery, wheel hook, cursor-to-engine mapping, screen-size reads) has no host test. The host tests cover only `GiDispatch.h` and the registry/common contract. Consumers still keep some legacy per-mod window subclassers (tracked in the author's development workspace). **Testing:** live-tested on Steam; the mod-config wheel through gui-input still needs an in-game check.
 > **Install:** Install gui-input before every consumer (see Install order). It has no engine hooks (`hooks = []` in both `kotor2-*.hooks.toml`), so it is DLL-only.
 
 ## Interface: `k2.guiinput@1`
@@ -41,10 +41,9 @@ A consumer installed without gui-input falls back to its own behaviour (no share
 
 None. The provider has no ini keys or Mod Configuration page.
 
-## Build and test
+## Build
 
-- Host tests: `python3 scripts/run_tests.py gui_input` (colocated `test.toml` uses `-I${KPM_COMMON_DIR}`; the default is `<KPM_DIR>/Patches/Common`, so set `KPM_COMMON_DIR` to a KPM Common checkout when building outside the author's tree).
-- Test files: `gi_dispatch_test.cpp`, `gi_registry_test.cpp`, `common_contract_test.cpp`.
+From this folder run `python3 ../create-patch.py`. Host unit tests (dispatch, registry, common contract) live in the author's development workspace and are not shipped here.
 
 ## Known issues
 

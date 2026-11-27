@@ -3,7 +3,7 @@
 > **STATUS** Track: DIAGNOSTIC. Version 0.1.0-probe (matches manifest.toml).
 > **What it does / explores:** Hookless diagnostics client of npc-world (k2.npcworld@1). It spawns test NPCs through the library's Spawn() and logs evidence on hook-spawn save/load survival, capacity 1/6/18 and frame-tick windows around the spawns.
 > **Requires:** npc-world loaded first (manifest.toml:8-9, requires = ["npc-world"]); interface k2.npcworld@1; Steam/Aspyr exe with LAA (manifest.toml:12); KPM with the DLL-only patch loader.
-> **Known limits:** Steam/LAA only. Owns no detour: the three world hooks come from npc-world. Conflicts with area-hook-probe (manifest.toml:10; both use address 0x00533830). Play-test status: no PLAY_TEST_QUEUE.md row yet; doc 40 section 13.4 lists the open live items.
+> **Known limits:** Steam/LAA only. Owns no detour: the three world hooks come from npc-world. Conflicts with area-hook-probe (manifest.toml:10; both use address 0x00533830). Testing: no live checks recorded yet.
 > **Install:** Do not install for normal play. Install only when testing npc-world, with npc-world installed and loaded first, and never together with area-hook-probe.
 
 ## Features
@@ -23,13 +23,13 @@ Copy `npc_world_probe.ini.sample` to the game folder as `npc_world_probe.ini`. A
 - Fallback file: `npc-world-probe_log.txt` in the game folder.
 
 ## Hooks
-- None owned. hooks.toml only comments the addresses 0x0055A460, 0x00568BD0 and 0x00533830. The sole detour owner is npc_world_src (hooks.toml:41).
+- None owned. hooks.toml only comments the addresses 0x0055A460, 0x00568BD0 and 0x00533830. The sole detour owner is K2NpcWorld (hooks.toml:41).
 
-## Build/test
-- Scoped host tests: `python3 scripts/run_tests.py nwprobe`.
+## Build
+- From this folder run `python3 ../create-patch.py`. Host unit tests live in the author's development workspace and are not shipped here.
 
 ## What was learned
-- Recorded in the project design notes (V2a results, 2026-10-13, host-only).
+- V2a results (2026-10-13) were host-only.
 
 ## Changelog pointer
 - No CHANGELOG.md yet; version history is in manifest.toml.

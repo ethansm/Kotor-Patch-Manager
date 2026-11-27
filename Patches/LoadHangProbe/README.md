@@ -3,8 +3,8 @@
 > **STATUS** Track: DIAGNOSTIC. Version 0.1.13 (matches manifest.toml).
 > **What it does / explores:** Logs why the post-movie load screen hangs (frame heartbeat, load-screen watchdog, stack sampler, file-I/O ring, window/activation events). A DR0 guard also stops the engine step loop at +aa949 when it would run forever (the combat-unpause freeze).
 > **Requires:** Steam/Aspyr LAA build only, exe SHA-256 `6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF`; Patch Manager (KPM) with the Common SafeRead.h and CodePatch.h headers.
-> **Known limits:** Steam hash above only. The guard changes engine behaviour (it stores +inf and resumes at +aa980) and is armed even without `hangprobe_debug.txt`. `fix=auto` is ON by default when `hangprobe_debug.txt` exists, and it calls engine AppActivated 0x40BCF0 (acts only when the foreground window is the game). **Play-test status:** LHP-PT1 pending in the project play-test queue.
-> **Install:** DIAGNOSTIC: do not install for normal play. Install only when debugging a load hang (see `../09_load_hang_investigation.md`), because the guard runs without any debug file. Set `fix=off` in `hangprobe_debug.txt` to keep the activation call disabled.
+> **Known limits:** Steam hash above only. The guard changes engine behaviour (it stores +inf and resumes at +aa980) and is armed even without `hangprobe_debug.txt`. `fix=auto` is ON by default when `hangprobe_debug.txt` exists, and it calls engine AppActivated 0x40BCF0 (acts only when the foreground window is the game). **Testing:** the load-hang guard still needs an in-game check.
+> **Install:** DIAGNOSTIC: do not install for normal play. Install only when debugging a load hang, because the guard runs without any debug file. Set `fix=off` in `hangprobe_debug.txt` to keep the activation call disabled.
 
 ## Features
 - Frame heartbeat on `CClientExoAppInternal::MainLoop` (hook 0x00781BE0).
@@ -34,14 +34,13 @@ Marker files in the game dir:
 - Guard-only mode (no debug file) writes `freeze_guard_history.txt` (not rotated by kplog).
 
 ## Hooks
-Addresses are in `kotor2-steam-aspyr.hooks.toml`. The hook addresses are not all backed by a `query_ghidra.py` lookup on record; see `PR_READINESS.md` item 7.
+Addresses are in `kotor2-steam-aspyr.hooks.toml`. Not all hook addresses are backed by a Ghidra lookup on record.
 
-## Build and test
-- `python3 scripts/run_tests.py load_hang` (Common contract test, `common_contract_test.cpp`).
-- `python3 scripts/fork_lint.py load_hang_probe`.
+## Build
+- From this folder run `python3 ../create-patch.py`. The Common contract test lives in the author's development workspace and is not shipped here.
 
 ## What was learned
-See `../09_load_hang_investigation.md` (sections 9-11). The hang is a `CSWGuiLoadScreen` that is never dismissed while the main thread keeps rendering.
+The hang is a `CSWGuiLoadScreen` that is never dismissed while the main thread keeps rendering.
 
 ## Changelog pointer
-Version history is in `manifest.toml` (`description`). Older labels 1.2.0 to 1.4.1 in the source comments are internal phase labels from docs 09 and 10, not patch versions. Patch versions stay 0.x.y.
+Version history is in `manifest.toml` (`description`). Older labels 1.2.0 to 1.4.1 in the source comments are internal phase labels, not patch versions. Patch versions stay 0.x.y.

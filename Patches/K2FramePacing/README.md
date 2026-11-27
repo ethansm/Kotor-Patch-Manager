@@ -4,7 +4,7 @@
 > **What it does / explores:** Stops KOTOR II from spinning a full CPU core while the window is minimized, caps the frame rate while the game is in the background, and offers an optional FPS cap that sleeps instead of busy-waiting.
 > **Requires:** Kotor Patch Manager (KPM) and the Steam/Aspyr KOTOR II build (hash in manifest.toml). Optional: k2.modconfig for the in-game Options page; without it the ini file is the only config.
 > **Known limits:** Background and FPS-cap behaviour are only partly play-tested (see below). Fullscreen alt-tab may minimize the window instead of backgrounding it, so the background cap may not trigger there. The engine's own limiter at 0x0040847F is left dormant and untouched.
-> **Play-test status:** FP1 in the project play-test queue: minimized PASS and active PASS; background and FPS-cap 45 NOT SEEN (pending).
+> **Testing:** live-tested on Steam: minimized and active modes pass; background mode and the 45 FPS cap were not seen yet and still need an in-game check.
 > **Install:** Install through KPM like any other patch. Normal play is fine; it only changes idle behaviour.
 
 ## Features
@@ -34,13 +34,10 @@ Log file: `k2-frame-pacing_log.txt` in the game folder (KpLog, fallback file). L
 
 ## Hooks
 - Hook 1: WinMain loop end, address 0x0040846E (detour, 7 bytes `CMP dword ptr [0x00A1B704],0`). Defined in `kotor2-steam-aspyr.hooks.toml`.
-- The WinMain parent 0x00407920 resolves in the address DB. The 0x0040846E site and the data addresses 0x00A1B704 / 0x00A1B710 are not yet backed by address-DB rows (see PR_READINESS.md, UPSTREAM item 2).
+- The WinMain parent 0x00407920 resolves in the address DB. The 0x0040846E site and the data addresses 0x00A1B704 / 0x00A1B710 are not yet backed by address-DB rows.
 
-## Build and test
-```
-python3 scripts/fork_lint.py k2_frame_pacing
-python3 scripts/run_tests.py k2_frame_pacing
-```
+## Build
+- From this folder run `python3 ../create-patch.py`.
 
 ## What was learned
 - The vanilla main loop has no sleep, so a minimized window burns a full core. Sleeping at the loop end fixes that without touching rendering.

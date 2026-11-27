@@ -1,10 +1,10 @@
 # Voice Probe
 
 > **STATUS** Track: DIAGNOSTIC. Version 0.2.0 (matches manifest.toml).
-> **What it does / explores:** Logs one line per `Global::ExecuteCommandPlaySound` call (voice/PlaySound test ladder, doc 41 V-C2). Since 0.2.0, an opt-in hotkey runs one named script with the PC as OBJECT_SELF.
-> **Requires:** npc-world provider (`k2.npcworld@1`, `npc_world_src`); KOTOR II Steam (Aspyr) LAA build, sha256 `6A522E71...`; Kotor Patch Manager.
+> **What it does / explores:** Logs one line per `Global::ExecuteCommandPlaySound` call (voice/PlaySound test ladder). Since 0.2.0, an opt-in hotkey runs one named script with the PC as OBJECT_SELF.
+> **Requires:** npc-world provider (`k2.npcworld@1`, `Patches/K2NpcWorld`); KOTOR II Steam (Aspyr) LAA build, sha256 `6A522E71...`; Kotor Patch Manager.
 > **Known limits:** Steam/Aspyr only. Not standalone. Engine glue in `VoiceProbe.cpp` (tick handler) has no host test. VM global `0x00A1B4A8` has no DB row yet. Both the probe and the trigger default off.
-> **Play-test status:** VC2-T1 (pending, not yet played).
+> **Testing:** not yet played in game.
 > **Install:** do not install unless testing voice scripts. Not for normal play.
 
 ## Features
@@ -25,18 +25,19 @@
 ## Hooks
 - `0x0068EA70` `Global::ExecuteCommandPlaySound`: hooked by this mod (Steam Aspyr entry in `kotor2-steam-aspyr.hooks.toml`). DB-verified.
 - `0x006FD8D0` `CVirtualMachine::RunScript`: called only, not hooked. DB-verified.
-- `0x00A1B4A8` VM global (`CVirtualMachine*`): used as a constant. No DB row yet; the same value is used in `companion_ai_src`.
+- `0x00A1B4A8` VM global (`CVirtualMachine*`): used as a constant. No DB row yet; the same value is used in `Patches/CompanionAI`.
 
-## Build / test
-- Host tests: `trigger_core_test` (pure `TriggerCore.h` logic) and `common_contract_test` (shared headers, host Win32 stub).
-- Run: `python3 scripts/run_tests.py <filter>` (scope the filter to the mod's test names).
+## Build
+From this folder run `python3 ../create-patch.py`.
+
+Host unit tests for the trigger logic and shared headers live in the author's development workspace and are not shipped here.
 
 ## Scripts
 - `nss/`: developer probe scripts for the voice test ladder. Compiled outputs in `nss/build/`. Not part of the install. See `nss/README.md`.
 - `nss/hb/k_hen_heartbt01.nss`: retired TEST override of the henchman heartbeat. Do not stage it.
 
 ## What was learned
-- Voice ladder findings and the test plan: `.claude/research/voice_audio/w3/b8.md`.
+- See `nss/README.md` for the voice test ladder scripts.
 
 ## Changelog
 - None yet. Version history is in `manifest.toml` `description`.

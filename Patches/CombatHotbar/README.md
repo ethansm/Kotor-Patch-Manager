@@ -3,7 +3,7 @@
 > **STATUS** Track: SHIPPABLE. Version 0.11.5-dev (matches manifest.toml).
 > **What it does / explores:** Replaces the vanilla target-menu action groups with clickable icon buttons in vanilla-style pills, adds Ctrl+Shift+F9..F12 invoke keys, and per-group pin/hide/sort set in `combat_hotbar.ini`.
 > **Requires:** `hud-host` (k2.hud@1, listed before this mod), Steam/Aspyr KOTOR II (manifest `kotor2_steam_aspyr` hash). Optional: `mod-config` + `menuui` for the Mod Configuration options page (the mod runs without them; only the page is missing).
-> **Known limits:** A group of 10 items shows 8 buttons at the default `Cols=2`, `MaxRows=4` (the other 2 are cut, not scrolled; see `combat_page_test.cpp`). No paging or scrolling yet. Standalone: no, needs hud-host. **Play-test status:** MC-TT1, CH-PG1, CH-PV1 and MC-PF1 are pending in the project play-test queue.
+> **Known limits:** A group of 10 items shows 8 buttons at the default `Cols=2`, `MaxRows=4` (the other 2 are cut, not scrolled). No paging or scrolling yet. Standalone: no, needs hud-host. **Testing:** tooltips, the options page, preview and pooled-fill behaviour still need an in-game check.
 > **Install:** Install through Kotor Patch Manager as `combat-hotbar`, with `hud-host` enabled.
 
 ## Features
@@ -34,14 +34,11 @@ Uses the shared KpLog (`KpLog.h`). Set `[General] Verbose=1` for the per-frame a
 
 No hooks of its own. `hud-host` owns the target-menu `PopulateMenus` hook (0x00743540) and calls this mod through `k2.hud@1` (`K2HUD_TARGET_MENU_PRE`, `K2HUD_TARGET_MENU_POST`, `K2HUD_BUILD`). The engine invoke wrapper is 0x00751710 (`steam_functions.tsv`).
 
-## Build / test
+## Build
 
-```
-python3 scripts/fork_lint.py combat_hotbar
-python3 scripts/run_tests.py combat_hotbar
-```
+From this folder run `python3 ../create-patch.py`. `KPM_COMMON_DIR` defaults to `<KPM_DIR>/Patches/Common`.
 
-Test suites: `common_contract_test`, `combat_page_test`, `combat_preview_test`, `combat_logic_test` (see `test.toml`). `KPM_COMMON_DIR` defaults to `<KPM_DIR>/Patches/Common`.
+Host unit tests live in the author's development workspace and are not shipped here.
 
 ## What was learned
 
@@ -50,4 +47,4 @@ Test suites: `common_contract_test`, `combat_page_test`, `combat_preview_test`, 
 
 ## Changelog
 
-No CHANGELOG file (same as `quick_loot_src`). History is in the `git log` for the project workspace and the header comments in `CombatHotbar.cpp`.
+No CHANGELOG file. History is in the header comments in `CombatHotbar.cpp`.

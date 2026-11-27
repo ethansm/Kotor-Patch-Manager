@@ -3,7 +3,7 @@
 > **STATUS** Track: EXPERIMENTAL. Version 0.2.0-dev (matches manifest.toml).
 > **What it does / explores:** Caches the per-frame `GlobalMemoryStatus` call (250 ms TTL) to cut Wine/Proton CPU overhead, plus an optional per-pass QPC profiler (`pass_profile`, default off).
 > **Requires:** KOTOR II Steam/Aspyr exe (SHA-256 `6A522E71...`), Kotor Patch Manager with the KpLog core.
-> **Known limits:** the profiler wrappers add QPC overhead and are diagnostic only; metrics undercount if another mod hooks the same IAT slot first (perf_lab). **Play-test status:** see PLAY_TEST_QUEUE.md.
+> **Known limits:** the profiler wrappers add QPC overhead and are diagnostic only; metrics undercount if another mod hooks the same IAT slot first (perf_lab). **Testing:** live-tested on Steam.
 > **Install:** the cache is safe for normal play; leave `pass_profile` at 0 unless profiling.
 
 
@@ -66,4 +66,4 @@ Logs are written to `k2-engine-perf_log.txt` via `KpLog.h`:
 ## Installation & Rollback
 
 - **Install:** Hot-swappable DLL via KPM (`patches/k2-engine-perf.dll`).
-- **Rollback:** `python3 scripts/kpm_hotswap.py --rollback <backup_dir>` or set `mem_status_cache = 0` in `k2_engine_perf.ini`.
+- **Rollback:** reinstall the previous DLL through KPM, or set `mem_status_cache = 0` in `k2_engine_perf.ini`.

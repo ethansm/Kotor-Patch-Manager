@@ -3,7 +3,7 @@
 > **STATUS** Track: SHIPPABLE. Version 0.6.0-dev (matches manifest.toml).
 > **What it does / explores:** Owns three shared HUD hooks and fans them out to consumer mods through the `k2.hud` v1 registry. It draws and writes nothing by itself.
 > **Requires:** KotorPatcher with the patch registry (`KPatchInit`); Steam/Aspyr (kotor2_steam_aspyr) for live play; KPM with provider support. No other patch is required (`requires = []`).
-> **Known limits:** GOG hooks are static-verified only (contributor testing needed). The 0.6.0 BUILD48 probe is diagnostic. No consumer of `K2HUD_PANEL_BUILD` ships yet. **Play-test status:** HH-PB1 pending and ISF-T13 pending in the project play-test queue.
+> **Known limits:** GOG hooks are static-verified only (contributor testing needed). The 0.6.0 BUILD48 probe is diagnostic. No consumer of `K2HUD_PANEL_BUILD` ships yet. **Testing:** the panel-build hook and the inventory sort/filter consumer still need an in-game check.
 > **Install:** Install through KPM as a provider, then install the consumer mods that list it in `requires`. Not a user-facing patch on its own (no visible feature).
 
 ## Features
@@ -36,13 +36,9 @@ Addresses are for the Steam/Aspyr build (`kotor2-steam-aspyr.hooks.toml`, suppor
 
 The BUILD48 probe (`probeRead48`, `probeDumpPanel`, and the build probe in `hudBuild`) and the per-frame HUD `+0x40..+0x4F` change-watch are research aids for the `K2HUD_PANEL_BUILD` phase. Do not rely on them for features.
 
-## Build/test
+## Build
 
-```
-python3 scripts/run_tests.py hud_host
-```
-
-`test.toml` uses `-I${KPM_COMMON_DIR}` (default `<KPM_DIR>/Patches/Common`) and a vendored Win32 host stub in `host/windows.h` for the Common contract test.
+From this folder run `python3 ../create-patch.py`. Host unit tests live in the author's development workspace and are not shipped here. `test.toml` uses `-I${KPM_COMMON_DIR}` (default `<KPM_DIR>/Patches/Common`) and a vendored Win32 host stub in `host/windows.h` for the Common contract test.
 
 ## What was learned
 
@@ -50,4 +46,4 @@ Shared hook ownership keeps consumers from detouring the same addresses twice. H
 
 ## Changelog
 
-No CHANGELOG.md yet. Version history is in the `manifest.toml` description and in docs 11 and 31.
+No CHANGELOG.md yet. Version history is in the `manifest.toml` description.

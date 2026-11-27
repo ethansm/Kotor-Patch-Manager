@@ -3,8 +3,8 @@
 > **STATUS** Track: SHIPPABLE. Version 0.1.0-dev (matches manifest.toml).
 > **What it does / explores:** Switch between the workbench Create/Breakdown and Upgrade screens without closing the workbench (BTN_SWITCH). Adds a crafting compare box, red unmet-skill rows, a crystal colour preview and a direct-open option that skips the bench dialog.
 > **Requires:** KPM patch provider `hud-host` (interface `k2.hud@1`), Steam/Aspyr KOTOR II (hash pinned in manifest.toml `[patch.supported_versions]`), Patch Manager.
-> **Known limits:** Live play rows are still pending. Debug `initTrace` file output is present (see PR_READINESS.md, upstream item). Version stays 0.x.y until the upstream PR.
-> **Play-test status:** rows WB-1..WB-5, WB-P2, WB-CMP1, WB-UX2, WB-CS1..WB-CS3 in the project play-test queue (pending as of PR_READINESS.md).
+> **Known limits:** Live play checks are still pending. Debug `initTrace` file output is present (an upstream item to remove). Version stays 0.x.y until the upstream PR.
+> **Testing:** not yet fully tested live; the switch button, compare box, red unmet-skill rows and crystal colour preview still need an in-game check.
 > **Install:** Install `hud-host` first, then install `workbench-upgrade` through Patch Manager. It applies the hooks in `kotor2-steam-aspyr.hooks.toml`.
 
 ## Features
@@ -26,16 +26,13 @@
 Uses the shared `KpLog.h` logger, configured through the `kplog.ini` section for this mod.
 
 ## Hooks
-Hooks are in `kotor2-steam-aspyr.hooks.toml`. Addresses are listed in `raw_addresses.toml` and the hooks file. Design notes and engine map: project design doc 55.
+Hooks are in `kotor2-steam-aspyr.hooks.toml`. Addresses are listed in the hooks file.
 
-## Build and test
-```
-python3 scripts/run_tests.py workbench
-python3 scripts/fork_lint.py workbench_upgrade
-```
+## Build
+From this folder run `python3 ../create-patch.py`. Host unit tests live in the author's development workspace and are not shipped here.
 
 ## What was learned
-The switch calls the same handler that the hub's Upgrade and Create buttons use. The hub surviving a Create Cancel is answered statically in doc 55 (Q1), with the live probe still pending. Full notes are in doc 55.
+The switch calls the same handler that the hub's Upgrade and Create buttons use. The hub surviving a Create Cancel was answered by static analysis only; the live probe is still pending.
 
 ## Changelog
 No CHANGELOG yet. Release notes will be added with the upstream PR.

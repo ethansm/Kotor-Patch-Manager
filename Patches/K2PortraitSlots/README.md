@@ -3,7 +3,7 @@
 > **STATUS** Track: SHIPPABLE. Version 0.1.0 (matches manifest.toml).
 > **What it does / explores:** Owns the party-portrait hooks (UpdatePortraits and the per-slot draw gate) and provides the `k2.portraitslots@1` registry so several HUD mods share them. Draws nothing by itself.
 > **Requires:** a KotorPatcher with the patch registry (KPatchInit). Steam/Aspyr LAA is live-tested. GOG is static-verified only (see the GOG callout below). Consumers: buff-duration-hud, shield-bar, queue-hud.
-> **Known limits:** Infrastructure only, useless alone. GOG untested live. The menu clamp uses a literal `& 3` eviction (K2PS_MAX_SLOTS = 4). **Play-test status:** row PRV in the project play-test queue, PASS 10-20.
+> **Known limits:** Infrastructure only, useless alone. GOG untested live. The menu clamp uses a literal `& 3` eviction (K2PS_MAX_SLOTS = 4). **Testing:** live-tested on Steam (passed 10-20).
 > **Install:** Install through KPM as a provider. It is auto-added and listed first in `patch_config.toml`. Install it together with the consumer HUD mods. Do not install it alone for normal play.
 
 ## Features
@@ -12,9 +12,9 @@
 - Snapshot of companion portraits per frame, with fresh/stale slot tracking and eviction when more than 4 distinct slots are seen.
 
 ## Consumers
-- the project workspace (buff-duration-hud)
-- the project workspace (shield-bar)
-- the project workspace (queue-hud)
+- `Patches/BuffDurationHud`
+- `Patches/ShieldBar`
+- `Patches/QueueHud`
 
 Each consumer must list portrait-slots in its `requires`.
 
@@ -26,18 +26,18 @@ None. The mod has no ini keys.
 - Fallback file `portrait-slots_log.txt` in the game dir, set at INFO level (`PortraitSlotsProvider.cpp`, `KpLog_SetFallbackFile`).
 
 ## Hooks
-Hook sites are in `kotor2-steam-aspyr.hooks.toml` and `kotor2-gog-aspyr.hooks.toml`. Design and address history: project design doc 21. GOG addresses: project design doc 21b.
+Hook sites are in `kotor2-steam-aspyr.hooks.toml` and `kotor2-gog-aspyr.hooks.toml`.
 
-## Build and test
-- Scoped host tests: `python3 scripts/run_tests.py ps_dispatch_test ps_registry_test portrait_slots`
-- Fork readiness: `python3 scripts/fork_lint.py portrait_slots`
-- Readiness audit: `PR_READINESS.md` in this directory.
+## Build
+From this folder run `python3 ../create-patch.py`.
+
+Host unit tests (dispatch, registry) live in the author's development workspace and are not shipped here.
 
 ## GOG callout
-GOG support is **static-verified only** (no GOG install here: hook bytes and addresses checked against the GOG exe in Ghidra, see doc 21b). **GOG contributor testing is required** before it is considered supported.
+GOG support is **static-verified only** (no GOG install here: hook bytes and addresses checked against the GOG exe in Ghidra). **GOG contributor testing is required** before it is considered supported.
 
 ## What was learned
-See project design doc 21 (Buff HUD / Shield Bar split).
+This provider was split out of the Buff HUD / Shield Bar work so both can share portrait slots.
 
 ## Changelog
-No CHANGELOG.md yet. History: project design doc 21 and `git log -- the project workspace.
+No CHANGELOG.md yet.

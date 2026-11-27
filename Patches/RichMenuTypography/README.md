@@ -3,7 +3,7 @@
 > **STATUS** Track: SHIPPABLE. Version 0.4.5 (dev, not play-verified; matches manifest.toml).
 > **What it does / explores:** Multi-colour and multi-font typography for KotOR II item descriptions and character stat menus, plus a Mod Config page with live preview.
 > **Requires:** Steam/Aspyr KOTOR II exe (SHA `6A522E71...`, see manifest.toml). No hard dependencies. Mod Config (k2.modconfig@1, k2.menuui@1) is optional and connected lazily at runtime. Install through Patch Manager (KPM).
-> **Known limits:** The core RichDescBox path is live since 0.3.0. The ItemNameTitle row depends on the P2a/P2a2 name probes (RMT8/RMT9). Preview build-failure paths and the 600-poll timeout have no unit test. **Play-test status:** RMT1-RMT9 and RMTC2 are `pending` in the project play-test queue.
+> **Known limits:** The core RichDescBox path is live since 0.3.0. The ItemNameTitle row depends on the P2a/P2a2 name probes. Preview build-failure paths and the 600-poll timeout have no unit test. **Testing:** the core path is live-tested on Steam; the item name title, stat menu typography and Mod Config preview still need an in-game check.
 > **Install:** Install through KPM. Every ini key is optional; copy `rich_menu_typography.ini` next to `swkotor2.exe` only to edit defaults by hand.
 
 ## Features
@@ -32,12 +32,10 @@
 Uses KpLog (`Common/KpLog.h`). Probe output is off by default; `Verbose` and `ProbeRmt` add more lines.
 
 ## Hooks
-Hook addresses are listed in `kotor2-steam-aspyr.hooks.toml`. No other `*_src` mod shares these hook addresses.
+Hook addresses are listed in `kotor2-steam-aspyr.hooks.toml`. No other mod shares these hook addresses.
 
-## Build and test
-- Scoped tests: `python3 scripts/run_tests.py rich_menu_typography`
-- Lint: `python3 scripts/fork_lint.py rich_menu_typography`
-- The vanilla-exe byte checks in `tests/rich_menu_typography_contract_test.cpp` run only when `KOTOR2_VANILLA_EXE` points at a vanilla `swkotor2.exe`. Unset, those checks are skipped.
+## Build
+From this folder run `python3 ../create-patch.py`. Host unit tests, including vanilla-exe byte checks, live in the author's development workspace and are not shipped here.
 
 ## Changelog
-No CHANGELOG.md yet. Design history is in project design doc 53 (doc 53 is partly stale; see `PR_READINESS.md`).
+- No CHANGELOG.md.

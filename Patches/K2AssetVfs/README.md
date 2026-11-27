@@ -2,8 +2,8 @@
 
 > **STATUS** Track: EXPERIMENTAL. Version 0.1.4-dev (matches manifest.toml).
 > **What it does / explores:** Resolves game resources from memory instead of Override files: a GetKeyEntry-miss and ServiceFromImage hook serve assets from an in-memory pool, load-time 2DA row splicing adds rows to existing tables, and memory-backed Miles audio streams play assets with no file on disk. Exposes `k2.assetvfs@1` and `k2.characterlib@1`. Explores whether one DLL can fan out character assets with no Override files.
-> **Requires:** Steam/Aspyr KOTOR II (target hash in manifest.toml `[patch.supported_versions]`). A consumer is required: `character_packs_src` (and `juhani_char_src`, which also depends on `k2.assetvfs@1`). Installed through KPM.
-> **Known limits:** 2DA splice cap is 1024 cells (`kMax2DaCells`, AssetVfsCore.h); static asset pool is 448 (Registry `kMaxAssets` 512, 64 dynamic reserve). Doc 44 does not yet record these caps. Engine hook call sites are verified in game only; host tests cover the pure helpers. `k2.npcworld@1` is optional. **Play-test status:** rows VFS-T0a, VFS-CT2, VFS-B5, VFS-T0, VFS-T1 are pending in the project play-test queue.
+> **Requires:** Steam/Aspyr KOTOR II (target hash in manifest.toml `[patch.supported_versions]`). A consumer is required: `Patches/CharacterPacks` (or any character pack that depends on `k2.assetvfs@1`). Installed through KPM.
+> **Known limits:** 2DA splice cap is 1024 cells (`kMax2DaCells`, AssetVfsCore.h); static asset pool is 448 (Registry `kMaxAssets` 512, 64 dynamic reserve). Engine hook call sites are verified in game only; host tests cover the pure helpers. `k2.npcworld@1` is optional. **Testing:** the service paths, 2DA cap and bundle handling still need an in-game check.
 > **Install:** Do not install for normal play. It does nothing alone (no consumer); install only with `character-packs` for the experiment. Config defaults to `mode=observe`, which logs what it would do and changes nothing.
 
 ## Features
@@ -31,14 +31,14 @@
 
 ## Build/test
 
-`python3 scripts/run_tests.py asset_vfs`. Shared headers come from `Patches/Common` and `${KPM_COMMON_DIR}`. `common_contract_test` also uses a parity stub under `research/companion_levelup/tools/parity/stub` (tracked in this repo).
+From this folder run `python3 ../create-patch.py`. Shared headers come from `Patches/Common` and `${KPM_COMMON_DIR}`. Host unit tests live in the author's development workspace and are not shipped here.
 
 ## What was learned (EXPERIMENTAL)
 
 - **H5 Release guard:** without `VFS_OnResRelease`, a served resource (packedId 0x40FC...) takes the `>>30 == 1` branch, finds no archive source, returns NULL, and faults at 0x007130E7. Found on the first live serve (10-18).
-- **2DA cap:** the cell cap went from 256 to 1024 with a WARN when cells are dropped. A third character bundle got 47 of 102 cells and lost its heads row (VFS-CT2).
+- **2DA cap:** the cell cap went from 256 to 1024 with a WARN when cells are dropped. A third character bundle got 47 of 102 cells and lost its heads row.
 - **Asset pool:** the static pool went from 192 to 448 (0098d66b). Registry `kMaxAssets` is 512 with a 64-slot dynamic reserve.
 
 ## Changelog pointer
 
-Version history is in the commit log (`git log -- the project workspace). Research notes: project design doc 44 (doc 44).
+No CHANGELOG.md.

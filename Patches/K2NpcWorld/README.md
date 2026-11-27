@@ -3,7 +3,7 @@
 > **STATUS** Track: SHIPPABLE. Version 0.1.2-dev (matches manifest.toml).
 > **What it does / explores:** Infrastructure provider. It owns the three engine detours that the NPC mods share, tracks one area visit, and exposes the `k2.npcworld@1` interface (area-load, creature-added, area-stable and tick events, plus a native Spawn() with a per-visit cap). It has no gameplay feature of its own.
 > **Requires:** Steam/Aspyr exe with LAA (supported_versions `kotor2_steam_aspyr`, sha 6A522E71...BBFFEF), KotorPatcher with the patch registry (KPatchInit export), and Kotor Patch Manager (KPM).
-> **Known limits:** Only useful with a client mod (k1-spawn-probe, npc-world-probe, voice-probe). Do not install alongside area-hook-probe, or k1-spawn-probe 0.2.x (both own the same addresses). Conflict list is one-sided until area-hook-probe lists npc-world. **Play-test status:** PRV row passed 10-20; VFS-CT2 is still pending (it relies on game-dir `npc_world.ini` `spawn_cap=6`). Both rows are in the project play-test queue.
+> **Known limits:** Only useful with a client mod (k1-spawn-probe, npc-world-probe, voice-probe). Do not install alongside area-hook-probe, or k1-spawn-probe 0.2.x (both own the same addresses). Conflict list is one-sided until area-hook-probe lists npc-world. **Testing:** live-tested on Steam (passed 10-20); the per-visit spawn cap with `spawn_cap=6` in the game-dir `npc_world.ini` still needs an in-game check.
 > **Install:** Install `npc-world` through KPM as a provider (no feature toggle). Opt out per install with `enabled=0` in `npc_world.ini` (see Configuration).
 
 ## Features
@@ -41,10 +41,9 @@ Log file: `npc-world_log.txt` in the game directory (KpLog fallback file, NpcWor
 - `k1-spawn-probe` 0.2.x: forbidden (same three addresses). The manifest comment says this, but the conflict is not in `conflicts`. Do not install both.
 - `save-events` also hooks 0x00533830. It is a provider with no conflict entry, and both are in the live install. Whether KPM accepts two MainLoop detours is not verified in code.
 
-## Build and test
-- Run host tests with `python3 scripts/run_tests.py npc_world` (scope to this mod; a bare run takes over 60 s).
-- `test.toml` uses `-I${KPM_COMMON_DIR}`. This points to the KPM `Patches/Common` headers (default `<KPM_DIR>/Patches/Common`).
-- `common_contract_test` also uses `-I../../research/companion_levelup/tools/parity/stub`. That path is outside this mod dir and exists only in the development workspace. Outside that workspace, that test cannot build until the include is removed or the stub is copied in.
+## Build
+- From this folder run `python3 ../create-patch.py`.
+- Host unit tests live in the author's development workspace and are not shipped here.
 
 ## What was learned
 - The three prologues are `55 8B EC 6A FF` (PUSH EBP / MOV EBP,ESP / PUSH -1). Each detour overwrites whole instructions.

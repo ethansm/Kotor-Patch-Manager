@@ -3,7 +3,7 @@
 > **STATUS** Track: EXPERIMENTAL. Version 0.1.6-dev (matches manifest.toml).
 > **What it does / explores:** Makes a companion's Auto level-up follow a build preset (feats, Force powers, skills, attributes), can bank levels until Jedi, and can make level-ups instant. Unconfigured companions level as in vanilla.
 > **Requires:** KOTOR II Steam/Aspyr exe (SHA-256 `6A522E71...`), Kotor Patch Manager, `levelup_paths.ini` (preset table) next to `swkotor2.exe`.
-> **Known limits:** Steam build only; the Configure page needs the preset table. **Play-test status:** see PLAY_TEST_QUEUE.md.
+> **Known limits:** Steam build only; the Configure page needs the preset table. **Testing:** live-tested on Steam; the Configure page and per-preset behaviour still need further in-game checks.
 > **Install:** install the `.kpatch`, put `levelup_paths.ini` in the game folder (steps below).
 
 
@@ -217,10 +217,6 @@ The patch writes `levelup_override_log.txt` in the game folder (the previous log
   DLL.
 - **Rollback:** set `mode=off` in `levelup_override.ini`, restart the game. The patch then does nothing. `mode=log`
   records what it would do without changing anything.
-- To check a session automatically, run from the repository:
-  `python3 scripts/luo_log_check.py --from N`, where N is the log line count before you started plus one.
-  It reports PASS / FAIL / PARTIAL / NOT-EXERCISED for each check. `--scenario ID` checks a named scenario and
-  `--expect-crc` compares the banner crc32 with a DLL. See project design doc 26.
 - No Configure button: the character has no presets in `levelup_paths.ini`, it is the PC, or the table failed to load.
 - A companion shows the level-up icon even though you configured a path: the icon is hidden only when the NEXT level
   is held. Levels before the conversion point follow the path and are not held.
@@ -236,22 +232,3 @@ The patch writes `levelup_override_log.txt` in the game folder (the previous log
   powers are marked, and Heal builds expect Treat Injury. They also fit a vanilla game, but the power choices were
   planned around those mods.
 - Steam Aspyr `swkotor2.exe` only (see the sha256 above).
-
-<!--
-Reviewer notes (claims and sources):
-- What it does, modes, defaults mode=rewrite/apply=1/verbose=0/table/dev=0, dev keys, precedence, playthroughs format:
-  LevelUpOverride.cpp header lines 1-65; Playthrough.h header lines 1-9; manifest.toml description.
-- Configure/Plan level-ups/Change path button text: LevelUpUi.h cfgButtonText (~31-33). Controls and captions: LevelUpUi.h
-  UiCtl/uiRenderPage/uiClick (~41, 296-346, 370-395); row labels uiRowText ~300-312; option row logic OptionsLogic.h.
-- Status line strings: LevelUpUi.h buildStatus. Banked message text and "once per (GUID, tag, N), at most every 5 s":
-  LevelUpOverride.cpp header "R11 banked message".
-- Pause: LevelUpUi.h uiCanPause/uiMinPause/uiClampPause/uiBankCycle/uiBankText (~236-262); levelNow comment ~554-575;
-  doc 08 Phase 6 RESUME HERE (Atton minPause 3, clamp to 0 on preset change, user value not remembered).
-- Recommended table: `recommended = true` in research/companion_levelup/paths/presets/*.toml (short, convert_at, hold_until_class).
-  Jedi class names derived from hold_until_class ids (5 Sentinel, 3 Guardian, 4 Consular) - see presets .md for atton/Sentinel; others inferred.
-- Instant leader: doc 08 "U5"; LevelUpOverride.cpp leaderInstant ~1565. Held GUI guards and indicator hiding: header hooks 2-5; doc 08 R5/R11.
-- Per-save, PC unaffected, manual picks: doc 08 Status R1/R2, header hooks 6-8 and "pre-save/post-load/new server"; PC = empty tag, LevelUpUi.h ~414.
-- Uninstall safety S7/S5: doc 26 section 6, doc 08 Phase 6b M3 notes, A4 adoption notes (removal safety).
-- Troubleshooting: log name LevelUpOverride.cpp LogName; log.old rotation per luo_log_check.py header; banner line cpp ~934; luo_log_check.py usage; doc 26.
-- Compatibility: Mod 14 hook 0x84D871 note in cpp header (Hook 9); indicator suppresses buff icons: doc 08 R5, R11; mod #142: presets/atton.md.
--->

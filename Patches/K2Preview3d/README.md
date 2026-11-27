@@ -3,7 +3,7 @@
 > **STATUS** Track: SHIPPABLE. Version 0.2.0-dev (matches manifest.toml).
 > **What it does / explores:** A shared provider of per-token 3D character viewers for GUI panels: bind a creature, rebuild its model, set weapons, drive the camera and play or pause an animation. Exposes `k2.preview3d@1`.
 > **Requires:** Kotor Patch Manager with the patch registry (`KPatchInit`); KOTOR II Steam (Aspyr) LAA build, sha256 `6A522E71...` (manifest.toml also lists the GOG Aspyr build, `777BEE23...`); the `Patches/Common` headers listed under Dependencies.
-> **Known limits:** No player-facing UI of its own, so it is only useful with a client mod (holster-editor). No engine hooks. `Preview3dProvider.cpp` has no host test; only `Preview3dLogic.h` and the ABI are covered. Helmet visor animation is not frozen by `SetAnimPaused`. **Play-test status:** rows FW-H1 and UX5 in the project play-test queue are pending (the queue never blocks a fork).
+> **Known limits:** No player-facing UI of its own, so it is only useful with a client mod (holster-editor). No engine hooks. `Preview3dProvider.cpp` has no host test; only `Preview3dLogic.h` and the ABI are covered. Helmet visor animation is not frozen by `SetAnimPaused`. **Testing:** live-tested on Steam; the holster-editor 3D view still needs an in-game check.
 > **Install:** install through Kotor Patch Manager, before the client mod (holster-editor lists `preview-3d` in its `requires`). Install with holster-editor; alone it does nothing visible.
 
 ## What the provider is
@@ -40,8 +40,8 @@ Consumers connect through the `Client` helper at `Preview3dApi.h:133-175` (`api-
 
 ## Consumers
 
-- **holster-editor** (`holster_editor_src`): the 3D view on the Holstered Weapons page. Its manifest lists `requires = ["holster", "preview-3d", "mod-config"]`.
-- **equipment-3d-character**: may follow (see `PR_READINESS.md`). Not a dependency today.
+- **holster-editor** (`Patches/HolsterEditor`): the 3D view on the Holstered Weapons page. Its manifest lists `requires = ["holster", "preview-3d", "mod-config"]`.
+- **equipment-3d-character**: may follow. Not a dependency today.
 
 ## Dependencies on Patches/Common and KPM Common
 
@@ -49,19 +49,14 @@ The provider includes these headers from Patches/Common/`:
 
 - `Preview3dApi.h` (the interface), `GameAddr.h` (engine addresses), `SceneView.h` (which pulls in `SafeRead.h` and `K2Addr.h`), `ViewDrag.h` (camera maths, via `Preview3dLogic.h`).
 
-It also includes `kpatch_api.h` and `KpLog.h`, which are not in `Patches/Common`. They come from the KPM Common directory: `$KPM_COMMON_DIR`, else `<KPM_DIR>/Patches/Common` (`scripts/run_tests.py`, `test.toml`). `GuiKit.h` is not used by this mod.
+It also includes `kpatch_api.h` and `KpLog.h`, which are not in `Patches/Common`. They come from the KPM Common directory: `$KPM_COMMON_DIR`, else `<KPM_DIR>/Patches/Common`. `GuiKit.h` is not used by this mod.
 
-A fork must carry all of `Patches/Common` that the list above names. The fork also needs a KPM Common checkout for `kpatch_api.h` and `KpLog.h`, passed as `-I${KPM_COMMON_DIR}` in `test.toml`.
+A fork must carry all of `Patches/Common` that the list above names. The fork also needs a KPM Common checkout for `kpatch_api.h` and `KpLog.h`.
 
-## Build and test
+## Build
 
-```
-python3 scripts/run_tests.py preview3d_logic_test
-python3 scripts/run_tests.py the project workspace
-```
-
-`test.toml` compiles both with `-Werror`. The lint gate is `python3 scripts/fork_lint.py preview_3d`.
+From this folder run `python3 ../create-patch.py`. Host unit tests for `Preview3dLogic.h` live in the author's development workspace and are not shipped here.
 
 ## Changelog pointer
 
-A `CHANGELOG.md` is not yet written; see the `PR_READINESS.md` "Remaining MVP work" section for the planned 0.1.0 / 0.1.1 / 0.2.0 entries.
+- No CHANGELOG.md.

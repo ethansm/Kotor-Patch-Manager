@@ -3,7 +3,7 @@
 > **STATUS** Track: SHIPPABLE. Version 0.8.0-dev (matches manifest.toml).
 > **What it does / explores:** FO4-style container peek and take: proximity and cursor-hover peek, take-all key, per-item take, composed hardware bezels, Mod Configuration page.
 > **Requires:** Steam/Aspyr KOTOR II (target hash in manifest.toml), KPM with the `hud-host` and `gui-input` providers. `mod-config` is a soft dependency (the page is skipped when absent).
-> **Known limits:** QL5 silent Close on an empty container click; the literal `{08}` name was fixed in 0.7.0 but is not yet play-confirmed. **Play-test status:** pending rows QL0-P1, QL2p-P1, QL061-P1, QL07-P1, QL071-P1, QL072-P1, QL03-P1, QL-OH1 in `PLAY_TEST_QUEUE.md`. QL2V-P1 and QL06-P1 were FAIL/PARTIAL with later fixes not yet confirmed.
+> **Known limits:** QL5 silent Close on an empty container click; the literal `{08}` name was fixed in 0.7.0 but is not yet play-confirmed. **Testing:** several recent changes still need an in-game check. Two earlier checks failed or partly failed, and the later fixes are not yet confirmed.
 > **Install:** normal play via KPM install. Set `Verbose=1` only when collecting QL0 probe logs.
 
 A non-intrusive container peek and instant looting system for *Star Wars: Knights of the Old Republic II: The Sith Lords*.

@@ -3,7 +3,7 @@
 > **STATUS** Track: DIAGNOSTIC. Version 0.2.1 (matches manifest.toml). Retired from live use, kept for research.
 > **What it does / explores:** Log-only probe of which engine paths run when a saved game loads into an already-visited area (H3 `CSWSModule::LoadModuleStart`) versus a fresh area load (H2 `CSWSModule::LoadModuleInProgress`). It also logs the area-ready latch at `CServerExoAppInternal+0x14`, a population-stable marker (POP-STABLE / POP-TIMEOUT), and the area pointer, object id and resref seen by `CSWSArea::AddObjectToArea` (H4).
 > **Requires:** Steam/Aspyr exe with LAA (supported_versions `kotor2_steam_aspyr`, sha 6A522E71...BBFFEF), KotorPatcher with the patch registry (KPatchInit export), and Kotor Patch Manager (KPM). Logs through `KpLog.h` (`Patches/Common`).
-> **Known limits:** Steam/Aspyr only. No test suite exists (see Future iterations). The latch meaning is INFERRED, not a verified ready marker. Shares `0x00533830` (MainLoop) and `0x0055A460` (LoadModuleInProgress) with `npc-world`; the two conflict with each other in both manifests. **Play-test status:** none pending. The probe was removed from the live set in T26 (see `../40_npc_behaviour_variety.md`, section 11).
+> **Known limits:** Steam/Aspyr only. No test suite exists (see Future iterations). The latch meaning is INFERRED, not a verified ready marker. Shares `0x00533830` (MainLoop) and `0x0055A460` (LoadModuleInProgress) with `npc-world`; the two conflict with each other in both manifests. **Testing:** none pending. The probe was removed from the author's live set after the shared `npc-world` provider replaced it.
 > **Install:** Do not install for normal play. It is a research diagnostic with detours that clash with `npc-world`, and only one owner per address may be live. Install only to reproduce the saved-vs-fresh load study, and never alongside `npc-world`.
 
 ## Features
@@ -28,18 +28,17 @@
 - `npc-world` owns `0x00533830` and `0x0055A460` and declares `conflicts = ["area-hook-probe"]`. This manifest declares `conflicts = ["npc-world"]`.
 
 ## What was learned
-- The latch at CServerExoAppInternal+0x14 and the POP-STABLE marker gave a usable "population settled" signal on 7 of 7 loads (about 33 ticks after entry), recorded in `../40_npc_behaviour_variety.md` (NB1 row).
-- AddToArea in `261tel` has a branch that `204tel` does not; it is unexplained (doc 40, detour conflicts note).
+- The latch at CServerExoAppInternal+0x14 and the POP-STABLE marker gave a usable "population settled" signal on 7 of 7 loads (about 33 ticks after entry).
+- AddToArea in `261tel` has a branch that `204tel` does not; it is unexplained.
 
-## Build and test
-- No build gate or test suite. `python3 scripts/fork_lint.py area_hook_probe` checks the STATUS banner and manifest only.
+## Build
+From this folder run `python3 ../create-patch.py`. No test suite exists.
 
 ## Future iterations
 - Tests (none exist): `fmtResref` and `fmtLatch` branches, POP-STABLE and POP-TIMEOUT counters, H4 same-area dedupe, and log split and caps. These need a fake log sink harness.
 
 ## Research links
-- `../40_npc_behaviour_variety.md`: detour conflicts (sections 11 and 12).
-- `../npc_world_src/README.md` and `../npc_world_src/CHANGELOG.md`: the shared provider that replaced this probe's detours.
+- `../K2NpcWorld/README.md`: the shared provider that replaced this probe's detours.
 
 ## Changelog
-See `CHANGELOG.md`.
+- No CHANGELOG.md.

@@ -1,22 +1,22 @@
 # k2-dialogue-letterbox-fix 0.1.0 (STAGED, not installed)
 
-> **STATUS** Track: SHIPPABLE. Version 0.1.0 (matches manifest.toml). The DIAGNOSTIC probe build is separate: `probe/`, version 0.1.0-probe.
+> **STATUS** Track: SHIPPABLE. Version 0.1.0 (matches manifest.toml). The DIAGNOSTIC probe build is separate and not shipped here (version 0.1.0-probe).
 > **What it does / explores:** Rewrites the letterbox aspect constant at 0x009A7D30 on every GUI size change, so the dialogue bars are H/6 tall on ultrawide (vanilla bars vanish at 3840x1600).
 > **Requires:** Steam/Aspyr KOTOR II exe (sha256 6A522E71...) and a Patch Manager build with the kpatch core (`KpLog.h` from `Patches/Common`). `requires = []`.
-> **Known limits:** no host test suite (Wine smoke only); hook sites 0x00411AC1, 0x008BAD7C, 0x008BAF01 not yet backed by query_ghidra. **Play-test status:** no PLAY_TEST_QUEUE.md row yet; never played live.
+> **Known limits:** no host test suite (Wine smoke only); hook sites 0x00411AC1, 0x008BAD7C, 0x008BAF01 not yet verified against a Ghidra address lookup. **Testing:** never played live.
 > **Install:** normal KPM patch install (id `k2-dialogue-letterbox-fix`). Not installed in the live game yet. Never install together with the probe build (same id).
 
 Changelog: 0.1.0 (current) = logging only: all lines now go through the shared `KpLog.h` (channels `main`, `set`; problem lines at WARN/ERR),
 the own file logger, the `[GetTickCount]` prefix and the 5000-line cap are gone, and the load line is emitted by `KPatchInit` (or the
 first hook call on an old core) instead of `DllMain`. Hooks, the constant write, the FOREIGN guard, the modes and the `log=0` first-event
-gating are unchanged. The probe variant (`probe/`, version `0.1.0-probe`) is built from the same source: see "Probe variant" below.
+gating are unchanged. The probe variant (version `0.1.0-probe`) is built from the same source; see "Probe variant and smoke test" below.
 
 Earlier drafts: the 1.0.0 / 1.0.1 / 1.0.2 labels were README-only draft numbers; the manifest and code say 0.1.0.
 Draft 1.0.1 = logging only. `log` defaulted to 0 (was 1): the DLL writes the load line, the first APPLY pair (header + outcome),
 the first SETTOP and the first SETBOTTOM per process, and problem lines; `log=1` restores full logging. Hooks and the write logic are
 unchanged from draft 1.0.0 (hooks file byte-identical).
 
-Doc 15 Phase 2 S3, finding L1 (build doc: `../17_dialogue_letterbox_and_wrap_fixes.md`). Targets KOTOR II Steam Aspyr (sha256 6A522E71...).
+Targets KOTOR II Steam Aspyr (sha256 6A522E71...).
 
 ## What / why
 
@@ -87,44 +87,10 @@ Shipping (writes `$STAGE/K2DialogueLetterboxFix.kpatch`; mingw i686, links only 
 ```
 cd "$KPM_DIR/Patches/K2DialogueLetterboxFix" && python3 ../create-patch.py --targets windows_x86 -o "$STAGE"
 ```
-Probe variant (0.1.0-probe): `F="$KPM_DIR" bash probe/build_probe.sh` (see "Probe variant" below). Output: `$KPM_DIR/letterbox_probe_stage/0.1.0-probe/K2DialogueLetterboxFixProbe.kpatch`.
-The sources in this directory (`K2DialogueLetterboxFix.cpp`, `exports.def`, `manifest.toml`, hooks toml) are byte-identical mirrors of the `Patches/K2DialogueLetterboxFix/` folder; copy them there before building.
 
-## Probe variant (`probe/`, 0.1.0-probe, DIAGNOSTIC)
+## Probe variant and smoke test
 
-Log-only windows W1-W5 for the letterbox investigation. Do not install for normal play; never alongside the shipping build.
-The windows, the expected PROBE lines and the probe build are described in [probe/README.md](probe/README.md).
-
-Same `K2DialogueLetterboxFix.cpp`; `probe/dlb_variant.h` (`#define DLB_PROBE 1`) is found through `__has_include`, so the probe build must have
-`probe/` on its include path (the shipping dir has no `dlb_variant.h`). The probe build uses `probe/manifest.toml`, `probe/exports.def` (KPatchInit + 3 + 5 handlers) and
-`probe/kotor2-steam-aspyr.hooks.toml` (3 shared hooks + W1-W5). It adds INI `probe=1|0` (default 0), the channels `probe` (PROBE W1/W2/W3/W3b/W5) and `probe_w4`
-(PROBE W4), and splits `PROBE W3` into `PROBE W3` + `PROBE W3b` (same `n=`) to stay under the core's 232-byte line cut. Same patch id as the shipping build: never install both.
-
-Build: `F="$KPM_DIR" bash probe/build_probe.sh`. It assembles `$F/Patches/K2DialogueLetterboxFixProbe.build/` (the shipping `.cpp` + `probe/{dlb_variant.h, manifest.toml, hooks toml, exports.def}`), runs `create-patch.py K2DialogueLetterboxFixProbe --targets windows_x86 -o $F/letterbox_probe_stage/0.1.0-probe` inside it and removes the dir on exit (a trap), because `validate-patches.py` FAILs on two catalog dirs with one id. The dir name differs from the package name, so the script passes the name explicitly.
-
-## Smoke test (Wine, no game)
-
-One harness, `smoke_dialogueletterbox.cpp`, for both variants. It detects the probe DLL through `GetProcAddress("dlbProbeW1")`; probe-only modes print `SKIP` and exit 0 on the shipping DLL.
-Set `KPM_DIR` (above), `STAGE` (above), `SMOKE_DIR` = an empty scratch dir, and `WINE` = the Proton `wine` binary.
-```
-S="$SMOKE_DIR"; mkdir -p "$S/ship" "$S/probe"; cd "$S"
-unzip -o -j "$STAGE/K2DialogueLetterboxFix.kpatch" binaries/windows_x86.dll -d ship
-unzip -o -j "$KPM_DIR/letterbox_probe_stage/0.1.0-probe/K2DialogueLetterboxFixProbe.kpatch" binaries/windows_x86.dll -d probe
-i686-w64-mingw32-g++ -O1 -static-libgcc -static-libstdc++ -I"$KPM_DIR/Patches/Common" -o smoke.exe <this dir>/smoke_dialogueletterbox.cpp
-export WINEPREFIX="$S/prefix" WINEDEBUG=-all
-for v in ship probe; do
-  for m in h6 clamp vanilla disabled foreign unchanged late ini log0 default core probe probe0 probelog0; do
-    w=$S/run_${v}_$m; rm -rf $w; mkdir -p $w; cp $S/$v/windows_x86.dll $S/smoke.exe $w/    # fresh dir: the harness leaves the INI + log behind
-    (cd $w && "$WINE" smoke.exe $m; echo "$v $m exit=$?")
-  done
-done
-```
-Modes: shipping (both DLLs, 11) `h6 clamp vanilla disabled foreign unchanged late ini log0 default core`; probe-only (3, SKIP on the shipping DLL) `probe probe0 probelog0`. Exit 0 = pass.
-Every mode except `core` runs the KpLog.h **fallback** sink (`KPatchInit` is never called): the harness writes `dialogue_letterbox_fix.ini` (`log=1`, except `log0`: `log=0`, and `default`: no INI), loads the DLL and checks the log file `dialogue_letterbox_fix_log.txt`, whose lines are `<ms> k2-dialogue-letterbox-fix/<channel> [WARN |ERR ]text` (CRLF). It checks that no file exists right after `LoadLibrary` (DllMain only formats the load line), that the first hook call writes the load line once on `/main`, that problem lines (INVALID, null manager, FOREIGN, unknown mode) carry `WARN ` on `/main`, SETTOP/SETBOTTOM are on `/set`, PROBE lines on `/probe` (W4 on `/probe_w4`), W3 and W3b carry the same `n=`, and every message is at most 220 bytes.
-`log0` / `default` check the log=0 set: load line, first APPLY pair, first SETTOP/SETBOTTOM, problems only.
-`core` calls the exported `KPatchInit` with a stub `KPatchApi` whose `kpatch.log` stub appends `<channel> <level> <text>` to `core_lines.txt`; with a FOREIGN-first sequence it checks the load line (once, `/main`, INFO), the WARN FOREIGN line, SETTOP on `/set`, (probe DLL) the probe lines, no `FrameTick` call, every `Submit` length, and that nothing reached the fallback file.
-The harness maps 0x9A7D30 as ordinary memory of a 32-bit exe at base 0x400000 (7 MB .bss pad, checked with `VirtualQuery`), calls the handlers with a fake frame / fake manager / fake letterbox, and checks bars, page protection restore, and log lines. The `probe` mode puts a fake letterbox (vtable value 0x9A7CBC), manager (W/H 3840/1600) and two ebp frames at game VAs 0xA20000+ in the pad, plus DAT_00a309b4/b8/bc, and checks every field of the five PROBE records, the W3 predicate terms, the W4 vtable filter and guarded reads, the 120/1-per-second rate limit, the SETTOP reset and the 3000-line global cap. `probe0`: probe=0 writes no PROBE line and the shipping lines still appear; `probelog0`: probe=1 with log=0 is silent.
-Workspace-only fixtures (not in this tree): `engine_bug_research/fixtures/letterbox_log_102_{fallback,probe_fallback,probe_core}.txt` (the data is synthetic, so the analyzer verdict is FAIL like the legacy `letterbox_log_101_smoke_default.txt`). Window check: `python3 engine_bug_research/tools/check_engfix_windows.py`.
+A log-only diagnostic probe build (0.1.0-probe, windows W1-W5) and a Wine smoke harness exist in the author's development workspace. They are not shipped here. Never install the probe alongside the shipping build.
 
 ## Rollback
 

@@ -3,8 +3,8 @@
 > **STATUS** Track: SHIPPABLE. Version 0.2.1-dev (matches manifest.toml).
 > **What it does / explores:** Ten on-screen slots on keys 1-0 for Force powers, feats, items and stances/forms, with an in-game editor and a hotbar per save.
 > **Requires:** save-events, hud-host and gui-input providers (manifest.toml:8); KOTOR II Steam (Aspyr) LAA build, sha256 `6A522E71...`; Kotor Patch Manager.
-> **Known limits:** Steam/Aspyr only. Engine glue in ActionHotbar.cpp has no host test. The 0.1.7-0.1.11 and auto-cast 0.2.0 play rows are not all confirmed.
-> **Play-test status:** AHR1-AHR7, PS1-PS5, TP1, KD1, TP3, TP4 in the project play-test queue (pending or not installed).
+> **Known limits:** Steam/Aspyr only. Engine glue in ActionHotbar.cpp has no host test. The 0.1.7-0.1.11 and auto-cast 0.2.0 in-game checks are not all confirmed.
+> **Testing:** several 0.1.x checks (action-bar rows, party switching, tooltips, key handling) are still pending in game.
 > **Install:** install through Kotor Patch Manager (Steam/Aspyr). Not for GOG builds.
 
 ## Target
@@ -128,7 +128,7 @@ Requests are at least 3 s apart. A failed read of the combat bit or the effect l
 
 Saved per slot as the `@auto` suffix, e.g. `Bottom1=spell:8@auto`. Only spells take it: items, feats and other powers are refused with a warning. Turn the whole feature off with `[General] AutoCast=0`. Flagged slots also fire for party members you are not controlling (0.2.1-dev probe, `[General] AutoCastParty=0` limits it to the controlled character).
 
-Status: built and unit-tested; not yet played in game. Play row AC1 in the project play-test queue.
+Status: built and unit-tested; not yet played in game.
 
 ## INI reference
 
@@ -248,8 +248,4 @@ One direct detour for the Steam Aspyr build (`CaptureHotbarKey`). HUD hooks are 
 
 Host tests (no game needed), in this folder and listed in `test.toml`: `config_roundtrip_test`, `hotbar_logic_test`,
 `hotbar_log_test`, `textures_test`, `tlk_test`, `twoda_test`, `common_contract_test`.
-Run them from the repo root, one `-k` per test name (the runner matches part of a test id):
-
-```
-python3 scripts/run_tests.py -k hotbar_logic_test
-```
+They live in the author's development workspace and are not shipped here. To build the patch, run `python3 ../create-patch.py` from this folder.

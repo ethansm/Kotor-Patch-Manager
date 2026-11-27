@@ -3,7 +3,7 @@
 > **STATUS** Track: EXPERIMENTAL. Version 0.2.7-probe (matches manifest.toml).
 > **What it does / explores:** Deterministic per-creature variety for commoner clothing textures, fat-body models and alien heads, plus an optional idle-flourish experiment (`anim_*` keys). The remap hook (hook 2) makes the choice. The texture hook (hook 1) only logs in this build.
 > **Requires:** Steam Aspyr (manifest.toml SHA `6A522E71...`) or GOG Aspyr (`777BEE23...`). No required providers (`requires = []`). Optional: the npc-world provider (`k2.npcworld`) for `visit_variety` and the `anim_*` keys. KPM version: not recorded in this dir.
-> **Known limits:** Hook 1 is log-only. The `anim_*` keys are probe code and default off. Commoner textures are large (Prerequisites 4). Named, merchant and uniformed NPCs keep their default look. **Play-test status:** NB2-A3, NB2-B and WI-119 are pending (not yet played).
+> **Known limits:** Hook 1 is log-only. The `anim_*` keys are probe code and default off. Commoner textures are large (Prerequisites 4). Named, merchant and uniformed NPCs keep their default look. **Testing:** live-tested on Steam; several NPC groups (named, merchant and animation variants) still need an in-game check.
 > **Install:** Do not install for normal play. This is a probe build that logs layout facts and runs the ambient-animation experiment. Install only to run the pending play checks.
 
 > **Assets not included:** the `override/` textures, models and 2DAs and the `rejected_pool/` named in this README are game-derived or third-party and are not in this repository. Without them the DLL only logs (Hook 1 is log-only); generate them locally with the author's scripts before using the remap.
@@ -49,30 +49,21 @@ A missing file or key reads as 0 unless noted.
 - With the logging core: `kplog.ini` section `[npc-diversity]`, `level=debug` for one REMAP line per row change.
 - Probe builds without the logging core: create `npc-diversity_debug.txt` in the game dir to raise the sink to DEBUG. Delete it to drop back to INFO. The flag is polled every 30th remap call.
 
-## Build & Verification
+## Build
 
-```bash
-# Verify MinGW DLL build & PE exports
-python3 scripts/build_check.py --mod npc_diversity_src
-
-# Run logic & common contract tests
-python3 scripts/run_tests.py diversity
-
-# Check hook bytes against game binary
-python3 scripts/run_tests.py suite:check-hook-bytes
-```
+From this folder run `python3 ../create-patch.py`. Host unit tests live in the author's development workspace and are not shipped here.
 
 ## Prerequisites
 
-1. **Echoes/TSLRCM-edited base 2DAs are not shipped as base.** `scripts/generate_diversity_2da.py` appends rows to the live `appearance.2da` and `heads.2da`. The shipped copies in `override/` are built on the author's base, so installing them over Echoes or TSLRCM table edits replaces those edits.
-2. **HD Twi'lek assets come from another mod.** `P_TwiHNGreen` and `P_TwiHTRed` (models) and `P_TwiNGreen`, `P_TwiNBlue`, `P_TwiToneRed` (textures) back heads 198, 200 and 204 (rows 809-811). Dancer textures `N_TwiDanceA01` and `N_TwiDanceB01` (rows 809-810) are also live-only. Without them those heads and textures are missing (expected at runtime: missing head or texture, not tested). `scripts/check_diversity_assets.py` reports them as `LIVE-ONLY (prerequisite)`.
+1. **Echoes/TSLRCM-edited base 2DAs are not shipped as base.** The author's generator appends rows to the live `appearance.2da` and `heads.2da`. The shipped copies in `override/` are built on the author's base, so installing them over Echoes or TSLRCM table edits replaces those edits.
+2. **HD Twi'lek assets come from another mod.** `P_TwiHNGreen` and `P_TwiHTRed` (models) and `P_TwiNGreen`, `P_TwiNBlue`, `P_TwiToneRed` (textures) back heads 198, 200 and 204 (rows 809-811). Dancer textures `N_TwiDanceA01` and `N_TwiDanceB01` (rows 809-810) are also live-only. Without them those heads and textures are missing (expected at runtime: missing head or texture, not tested).
 3. **`N_CommM10` is a TGA.** It is a valid uncompressed 32-bit 512x512 TGA with a TGA 2.0 footer, so the engine can load it as shipped.
 4. **Commoner textures are large.** 15 of the `N_Comm*` textures are 2048x2048 DXT5, about 4x the VRAM of the 1024x1024 set.
 5. **GOG note.** GOG hook 1 at `0x0048E691` collides with `k2-class-menu-clothes` (see the `conflicts` entry in `manifest.toml`).
 
 ## Asset provenance
 
-Provenance and license status are not recorded in this dir. `override/` (74 files) and `rejected_pool/` (33 files) include game-derived and third-party assets, such as the `llk_*` models. Before a public push, the owner must confirm the license of these files, or move them to install-time generation. `scripts/fork_lint.py npc_diversity` flags them as stray files until then.
+Provenance and license status are not recorded in this dir. `override/` (74 files) and `rejected_pool/` (33 files) include game-derived and third-party assets, such as the `llk_*` models. Before a public push, the owner must confirm the license of these files, or move them to install-time generation.
 
 ## Packaging (.kpatch)
 

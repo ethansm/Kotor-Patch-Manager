@@ -3,8 +3,8 @@
 > **STATUS** Track: DIAGNOSTIC. Version 0.2.0 (matches manifest.toml). Developer probe, silent by default.
 > **What it does / explores:** Log-only probe of the command queue, pause, combat round, ClearAllActions, medpack/CanUseItem paths, and QS queue/round/effect snapshots of party casts. It changes no game behaviour.
 > **Requires:** Steam/Aspyr build (target 6A522E71...BBFFEF), KpLog core (`Patches/Common` KpLog.h). No other mod required (`requires = []`, `conflicts = []`).
-> **Known limits:** Log only. Shipped ini is silent (`probe=0`). Busy when on: raise `max_lines` (20000) for QS. Open "S1 stale build" notes are engine findings, not mod bugs (PLAY_TEST_QUEUE.md:199, :202). Play-test status: CQ-QS1 PASS (PLAY_TEST_QUEUE.md:199).
-> **Install:** Developer use only. Do not install for normal play. It is useful only paired with `scripts/cmdq_probe_log_check.py` and the research notes below.
+> **Known limits:** Log only. Shipped ini is silent (`probe=0`). Busy when on: raise `max_lines` (20000) for QS. Open "S1 stale build" notes are engine findings, not mod bugs. Testing: the QS snapshots were checked live and passed.
+> **Install:** Developer use only. Do not install for normal play. It is useful only when you read the log by hand.
 
 ## Features
 - Log channels: PAUSE (edge-only), CMD, FIRE, ROUND, CLR, REEQ, MED, QS.
@@ -31,14 +31,11 @@ The log file is `cmdq-probe_log.txt` in the game dir.
 ## Hooks
 11 sites in `kotor2-steam-aspyr.hooks.toml`: SetPauseState 0x538ED0, AddCastSpellActions 0x565310, AddItemCastSpellActions 0x5648D0, cast fire 0x5BB07C, item fire 0x5B9414, StartCombatRound 0x58E730, EndCombatRound 0x58EA53, ClearAllActions 0x541080 (CSWSObject::ClearAllActions, DB-backed), ReequipResumeAttack 0x5DF920, PartyMenu item handler 0x77C780, CanUseItem exit 0x5D32AE. Several sites are mid-function detours, so they have no function-start DB row.
 
-## Build/test
-- Log checker (read-only, stdlib): `python3 scripts/cmdq_probe_log_check.py [LOG] [--json] [--all]`.
-- Checker tests: `python3 scripts/test_cmdq_probe_log_check.py`.
-- Fork lint: `python3 scripts/fork_lint.py cmdq_probe`.
+## Build
+- From this folder run `python3 ../create-patch.py`.
 
 ## What was learned
-- Research notes: the project design notes (not in this repo).
-- QS (0.2.0, combat AI recast WI-134) captures a party member's action queue, round nodes, and active-effect spell ids at each cast queue, cast build, spell fire, and round end.
+- QS (0.2.0) captures a party member's action queue, round nodes, and active-effect spell ids at each cast queue, cast build, spell fire, and round end.
 
 ## Changelog pointer
 Version history is in `manifest.toml` and the git log of this directory.

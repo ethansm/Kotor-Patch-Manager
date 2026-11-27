@@ -3,7 +3,7 @@
 > **STATUS** Track: SHIPPABLE. Version 0.4.9-dev (matches manifest.toml).
 > **What it does / explores:** Adds a "Mod Configuration" button under Gameplay in the Options screen. Other mods register config pages into it through `k2.modconfig@1` and build them with `k2.menuui@1`, so every mod's settings look like vanilla menus.
 > **Requires:** Steam/Aspyr KOTOR II (target hash in manifest.toml) and KPM. No other patch is required (`requires = []`). Optional `k2.guiinput` provider for mouse wheel scrolling.
-> **Known limits:** `arrow_icons=1` is reserved (logged only, text arrows are used). The ESC hook is not unhooked on DLL detach yet (open safety item in PR_READINESS.md). Latched-click and fail-fast root clone optimisations are not done. **Play-test status:** rows MC1 and ESC2 in the project play-test queue are pending (live-only, not blocking).
+> **Known limits:** `arrow_icons=1` is reserved (logged only, text arrows are used). The ESC hook is not unhooked on DLL detach yet (open safety item). Latched-click and fail-fast root clone optimisations are not done. **Testing:** live-tested on Steam; the menu page and the ESC handling still need a further in-game check.
 > **Install:** KPM install of `mod-config` (provider, install before its consumers: holster-editor, enemy-effects-strip, inventory-sort-filter).
 
 ## Features
@@ -26,7 +26,7 @@
 | `selftest` | 0 | 1 or 2 registers a built-in test entry for play checks. Never leave on in a shipped config. |
 
 ## Logging
-Add a `[mod-config]` section to the game-dir `kplog.ini`. Lines go to `mod-config_log.txt` (fallback level INFO). Check a session with `python3 scripts/kotor2_logs.py check mod-config_log.txt --new`.
+Add a `[mod-config]` section to the game-dir `kplog.ini`. Lines go to `mod-config_log.txt` (fallback level INFO).
 
 ## Interface summary for mod authors
 Declared in Patches/Common/ModConfigApi.h`. Provided by this mod; consumers use the struct sizes from that header.
@@ -35,12 +35,11 @@ Declared in Patches/Common/ModConfigApi.h`. Provided by this mod; consumers use 
 - Page changes fire on the left mouse button release edge.
 
 ## Hooks
-Three Options-menu sites in `kotor2-steam-aspyr.hooks.toml` (plain detours, whole stolen instructions). Addresses are raw; lookup evidence for the PR text is still to be added (see PR_READINESS.md).
+Three Options-menu sites in `kotor2-steam-aspyr.hooks.toml` (plain detours, whole stolen instructions). Addresses are raw; lookup evidence for the PR text is still to be added.
 
-## Build and test
-- Scoped tests: `python3 scripts/run_tests.py mod_config` (three suites: common contract, menu UI logic, slider row logic).
-- Fork lint: `python3 scripts/fork_lint.py mod_config`.
+## Build
+From this folder run `python3 ../create-patch.py`. Host unit tests (common contract, menu UI logic, slider row logic) live in the author's development workspace and are not shipped here.
 
 ## Known gaps
 - Host-glue tests for `ModConfig.cpp` (readConfig, pane status floor, slider give-up paths) are not written. The logic headers are covered.
-- Declarative layer (ModConfigDecl, PreviewCanvas, doc 46) lives outside this directory.
+- Declarative layer (ModConfigDecl, PreviewCanvas) lives outside this directory.

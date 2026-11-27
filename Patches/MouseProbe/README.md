@@ -3,7 +3,7 @@
 > **STATUS** Track: SHIPPABLE. Version 0.4.1 (matches manifest.toml).
 > **What it does / explores:** Fixes Wine/Wayland mouse-camera problems in KOTOR II (sanitizes bad pitch/yaw deltas, synthesizes double-clicks Wine drops, optional edge warp during camera drag) and logs mouse/camera telemetry for diagnosis.
 > **Requires:** Steam/Aspyr KOTOR II (target hash in manifest.toml `[patch.supported_versions]`); no other provider. Installed through KPM.
-> **Known limits:** Hook addresses are not all confirmed in the Ghidra knowledge DB (see PR_READINESS.md item 7). Host tests cover the pure heuristics only; the engine call sites are verified in game only. **Play-test status:** no row in PLAY_TEST_QUEUE.md yet.
+> **Known limits:** Hook addresses are not all confirmed in the Ghidra knowledge DB. Host tests cover the pure heuristics only; the engine call sites are verified in game only. **Testing:** not yet played in game.
 > **Install:** Install `mouse-probe` through Patch Manager (KPM). Default settings are the fix on; set `enabled = 0` in `[mouse_fix]` to get the read-only 0.1.0 behaviour.
 
 ## Features
@@ -35,12 +35,12 @@ Kill switch: delete or rename the flag file `mouseprobe.txt` (old core only) to 
 
 ## Hooks
 
-Nine detours, all in `kotor2-steam-aspyr.hooks.toml`: ProbeMouseRaw `0x0072F14E`, ProbeMouseNorm `0x0072F2EC`, ProbeCameraFrame `0x0078C452`, ProbeMouseMsg `0x0072E039`, ProbeLButtonDown `0x007B3560`, ProbeClickInWorld `0x007B3CA0`, ProbeDefaultAction `0x007B3E3C`, ProbeMoveToPoint `0x00564770`, ProbeWalkToWaypoint `0x0065B4F0`. Engine-side findings: project design doc 18.
+Nine detours, all in `kotor2-steam-aspyr.hooks.toml`: ProbeMouseRaw `0x0072F14E`, ProbeMouseNorm `0x0072F2EC`, ProbeCameraFrame `0x0078C452`, ProbeMouseMsg `0x0072E039`, ProbeLButtonDown `0x007B3560`, ProbeClickInWorld `0x007B3CA0`, ProbeDefaultAction `0x007B3E3C`, ProbeMoveToPoint `0x00564770`, ProbeWalkToWaypoint `0x0065B4F0`.
 
-## Build/test
+## Build
 
-`python3 scripts/run_tests.py mouse_probe`
+From this folder run `python3 ../create-patch.py`.
 
 ## Changelog pointer
 
-Version history is in the commit log for the project workspace.
+No CHANGELOG.md.

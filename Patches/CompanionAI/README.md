@@ -4,7 +4,7 @@
 > **What it does / explores:** Writes a party-AI trace log and applies INI-gated engine AI fixes for companion attack loops, follow-queue bumps, a NULL spell-row crash, and cast-queue handling.
 > **Requires:** kotor2_steam_aspyr (Steam/Aspyr build, hash pinned in manifest.toml); Patch Manager with mod-config; `Common` headers (SafeRead.h, Effects.h, GameAddr.h). No other mod required or conflicting.
 > **Known limits:** Perception throttle is off by default. Flurry bonus attacks are not addressed. Log-only probes add log volume. Unit tests and the upstream validator have not been run as part of this patch's PR cut.
-> **Play-test status:** pending rows CAI-PT1/PT2, WI-120, WI-125, CA-FG1/FG2/FG5, CA-RS1, CA-MC1 in the project play-test queue.
+> **Testing:** several fixes (companion attack loops, follow-queue bumps, cast-queue handling) still need an in-game check.
 > **Install:** Experimental. Do not install for normal play. Install only to test the INI flags, because the fixes are not yet verified in game.
 
 ## Features
@@ -30,15 +30,12 @@ One log: `companion-ai_log.txt` in the game folder, through the shared KpLog cor
 ## Hooks
 33 hook entries in `kotor2-steam-aspyr.hooks.toml`. Hook addresses are not in `raw_addresses.toml`. Addresses are checked against the Steam address DB and the windows validation in the hooks header. No hook address is shared with another mod's hooks file.
 
-## Build and test
-```
-python3 scripts/run_tests.py companion_ai
-```
-`test.toml` takes the KPM Common headers from `${KPM_COMMON_DIR}` (default `<KPM_DIR>/Patches/Common`).
+## Build
+From this folder run `python3 ../create-patch.py`. Host unit tests live in the author's development workspace and are not shipped here.
 
 ## What was learned (EXPERIMENTAL)
 - Out-of-reach attack loops come from the companion re-queuing its attack after the target leaves reach.
 - The leader bump's `ClearAllActions` drops a push-aside move queued in front of a follow queue.
 - Modded item spells can produce a NULL spell row in AIActionCombat.
 
-Research notes and the full issue breakdown are in the project research folder. The changelog is in the git history of this directory.
+The changelog is in the git history of this directory.

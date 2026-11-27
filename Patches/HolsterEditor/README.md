@@ -3,7 +3,7 @@
 > **STATUS** Track: SHIPPABLE. Version 0.7.3-dev (matches manifest.toml).
 > **What it does / explores:** Adds the Holstered Weapons page to Options -> Mod Configuration: a 3D holster placement editor with stance bars, a Draw / Holster toggle and a Speed slider.
 > **Requires:** holster (k2.holster@1), preview-3d (k2.preview3d@1), mod-config (k2.modconfig@1, k2.menuui@1); Steam/Aspyr build (kotor2_steam_aspyr); KPM Patch Manager.
-> **Known limits:** Not standalone: the page cannot run without its three dependencies. Game-linked code (HolsterEditor.cpp) has no host unit tests and is covered by play rows only. **Play-test status:** pending rows UX6, MC-PF3, SM-L17 and SM-L18 in the project play-test queue.
+> **Known limits:** Not standalone: the page cannot run without its three dependencies. Game-linked code (HolsterEditor.cpp) has no host unit tests and is checked in game only. **Testing:** the page, move/depth/tilt controls and Speed slider still need further in-game checks.
 > **Install:** Install with KPM after holster, preview-3d and mod-config; ships together with holster.
 
 ## Features
@@ -24,9 +24,9 @@
 ## Hooks
 - None. `hooks = []` in `kotor2-steam-aspyr.hooks.toml`; the mod is hookless.
 
-## Build and test
-- `python3 scripts/run_tests.py holster_editor`
-- `common_contract_test.cpp` pins the Common APIs the mod uses.
+## Build
+- From this folder run `python3 ../create-patch.py`.
+- Host unit tests live in the author's development workspace and are not shipped here.
 
 ## Changelog
-- See [CHANGELOG.md](CHANGELOG.md).
+- No CHANGELOG.md.

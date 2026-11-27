@@ -3,7 +3,7 @@
 > **STATUS** Track: SHIPPABLE. Version 0.9.4-dev (matches manifest.toml).
 > **What it does / explores:** Adds a heal button beside each companion's vitality bar. Left click uses the best healing item now. Right click opens a popover for Auto heal, the use-below % and the Keep reserve.
 > **Requires:** `portrait-slots` and `hud-host` (interfaces `k2.portraitslots@1`, `k2.hud@1`); KOTOR II Steam (Aspyr) build, sha256 `6A522E71...`; Kotor Patch Manager. Optional: `mod-config` 0.2.0+ for the options page.
-> **Known limits:** Mouse Look inversion is not handled (TODO CS8, `CompanionSelfHeal.cpp`). Settings are global, not per save. **Play-test status:** SH-RQ13a/b and SH-PG1 pending in the project play-test queue.
+> **Known limits:** Mouse Look inversion is not handled (TODO CS8, `CompanionSelfHeal.cpp`). Settings are global, not per save. **Testing:** the heal request cases and the options page still need an in-game check.
 > **Install:** Install `portrait-slots` and `hud-host` with KPM, then the `companion-selfheal` patch.
 
 ## What it does
@@ -74,24 +74,11 @@ Per-companion rows (written by the popover or the options page; edit by hand onl
 - A companion's max Force Points reading 0 is a Shield Bar issue, not this patch.
 - Settings are global (see Settings), not stored in the save.
 
-## Build and test
+## Build
 
-Scoped host tests (from the repo root):
-
-```
-python3 scripts/run_tests.py companion_selfheal
-python3 scripts/run_tests.py selfheal
-```
-
-`common_contract_test.cpp` includes the repo `Common` headers, the parity Win32 stub (`research/companion_levelup/tools/parity/stub`, tracked in git) and KpLog.h from a KPM checkout. Set `KPM_COMMON_DIR` to that checkout's `Patches/Common`; the default is `<KPM_DIR>/Patches/Common`.
+From this folder run `python3 ../create-patch.py`. Host unit tests live in the author's development workspace and are not shipped here.
 
 ## Logs
 
 `companion-selfheal_log.txt` in the game folder. Tags: `USE`, `DONE`, `REFUSE`, `KICK`, `TIMEOUT` (plus `BUILD`,
-`CLICK`, `AUTO`, `CFG`, `QDIAG`). `DONE ... reason=wiped` means an outside Cancel emptied the follower's whole queue while the use was pending (ended after 400 ms, no `TIMEOUT`). `REFUSE cast queued` means a cast/use is queued behind follow on that creature (not "any cast"; an executing cast does not count). Check it with:
-
-```
-python3 scripts/selfheal_log_check.py
-```
-
-`KICK starved` and `TIMEOUT unqueued` are warnings, not failures.
+`CLICK`, `AUTO`, `CFG`, `QDIAG`). `DONE ... reason=wiped` means an outside Cancel emptied the follower's whole queue while the use was pending (ended after 400 ms, no `TIMEOUT`). `REFUSE cast queued` means a cast/use is queued behind follow on that creature (not "any cast"; an executing cast does not count).`KICK starved` and `TIMEOUT unqueued` are warnings, not failures.

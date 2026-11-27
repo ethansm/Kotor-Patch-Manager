@@ -3,7 +3,7 @@
 > **STATUS** Track: SHIPPABLE. Version 0.6.0-dev (matches manifest.toml).
 > **What it does / explores:** Adds an Effects/Stats panel to the right third of the character page. Effects lists the shown character's active effects (Harmful first, then Beneficial); Stats shows combat stats (deflection, defense, resist, attack, crit, Force DC, alignment).
 > **Requires:** Patch Manager (KPM) with the `gui-input` provider (`k2.guiinput@1`). Target: Steam/Aspyr KOTOR II, supported hash in `manifest.toml` `[patch.supported_versions]`.
-> **Known limits:** Stats attack value is unverified in general (play row UX-TAB-P6). Influence row is hidden by default (`show_influence=0`, a spoiler). Hover tooltips and Stats tab still have pending play rows. **Play-test status:** ST5b-P1, ST6e-P1, UX-TAB-P1, UX-TAB-P5 pending in `PLAY_TEST_QUEUE.md`.
+> **Known limits:** Stats attack value is unverified in general (not yet confirmed in game). Influence row is hidden by default (`show_influence=0`, a spoiler). **Testing:** hover tooltips and the Stats tab still need an in-game check.
 > **Install:** Install as patch `character-effects-panel` through KPM. Copy `chareffects.ini` into the game folder to change settings (hot-reloaded about once a second).
 
 ## Features
@@ -43,14 +43,10 @@ Defined in `kotor2-steam-aspyr.hooks.toml` (4 hooks, Steam/Aspyr hash):
 - **CharEffectsDeflectCheck (`0x006E2351`) is DIAGNOSTIC.** It logs how the engine's blaster-deflection total compares with `CombatStats.h` (first 30 attacks, then mismatches). It does not change gameplay. Set `deflect_check=0` to turn it off; the hook then returns at once.
 - The raw attack-byte logger in `CharEffectsPanel.cpp` is also DIAGNOSTIC. It logs combat-info attack bytes when they change, capped per session.
 
-## Build and test
-Scoped host tests (run from repo root):
+## Build
+From this folder run `python3 ../create-patch.py`.
 
-```
-python3 scripts/run_tests.py --id chareff_decode_test --id combat_stats_test --id stats_rows_test --id tab_model_test --id vanilla_tips_test --id cpp:the project workspace
-```
-
-Known gap: no test compiles `CharEffectsPanel.cpp` (about 1450 lines). Logic is split into testable headers (`ChareffDecode.h`, `StatsRows.h`, `TabModel.h`, `VanillaTips.h`, `CombatStats.h`).
+Host unit tests for the logic headers live in the author's development workspace and are not shipped here. Known gap: no test compiles `CharEffectsPanel.cpp` (about 1450 lines). Logic is split into testable headers (`ChareffDecode.h`, `StatsRows.h`, `TabModel.h`, `VanillaTips.h`, `CombatStats.h`).
 
 ## Files
 - `manifest.toml`, `kotor2-steam-aspyr.hooks.toml`, `chareffects.ini`
