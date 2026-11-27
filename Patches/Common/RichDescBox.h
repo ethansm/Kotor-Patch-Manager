@@ -533,8 +533,17 @@ struct RichDescBox {
         };
 
         float origCol[3] = { kTealText[0], kTealText[1], kTealText[2] };
-        (void)guikit::getTextColor(srcCtl, origCol);
+        const bool gotCol = guikit::getTextColor(srcCtl, origCol);
         const bool isTeal = isDefaultTeal(origCol[0], origCol[1], origCol[2]);
+        static uintptr_t s_lastColSrc = 0; static int s_lastColKey = -1;
+        const int colKey = (gotCol ? 1 : 0) | (isTeal ? 2 : 0);
+        if (g_probeLog && (s_lastColSrc != srcCtl || s_lastColKey != colKey)) {
+            s_lastColSrc = srcCtl; s_lastColKey = colKey;
+            probeLogf("SRCCOL listbox=%p src=%p got=%d col=%.3f,%.3f,%.3f teal=%d cyan=%d",
+                  listbox, reinterpret_cast<void*>(srcCtl), gotCol ? 1 : 0,
+                  origCol[0], origCol[1], origCol[2], isTeal ? 1 : 0,
+                  isCyanFamily(origCol[0], origCol[1], origCol[2]) ? 1 : 0);
+        }
 
         // Non-teal menus (e.g. the store's gold text) keep the vanilla control colour on every row, so the box matches vanilla.
         const float* titleCol = isTeal ? kCream : origCol;
