@@ -694,6 +694,7 @@ inline int orderCategory3(const GroupView& g, const char names[][64], const Prof
 // One button's native tooltip decision per UI tick. Empty or null name: clear the native tip once and mark it unset (tipSet=false, never stored
 // as a set tip) and cleared (tipClr=true), so repeat empty frames do not re-clear. Same key with a tip already set: keep (no native write).
 // Otherwise: record the key and set. Callers reset tipSet and tipClr when the button is hidden.
+// CH7a: the hotbar passes chtip::hash(tip text) as `key`, so a count/usable change on the same entry re-sets the tip.
 enum class TipAction { Keep, Set, Clear };
 template <typename A, typename B>
 inline TipAction tooltipStep(bool& tipSet, bool& tipClr, A& tipKey, const B& key, const char* name) {

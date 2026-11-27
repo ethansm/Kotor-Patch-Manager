@@ -1,4 +1,4 @@
-// Combat Action Hotbar (Mod 31, 0.11.5-dev: probe + CH2 invoke keys + CH3b arrow hide + CH4c own buttons replacing the vanilla target boxes + CH4d per-group pill containers + CH4e content-sized pills + CH5 profile pin/hide/sort; consumer of hud-host)
+// Combat Action Hotbar (Mod 31, 0.12.0-dev: probe + CH2 invoke keys + CH3b arrow hide + CH4c own buttons replacing the vanilla target boxes + CH4d per-group pill containers + CH4e content-sized pills + CH5 profile pin/hide/sort + CH7a rich tooltips; consumer of hud-host)
 // Diagnostic probe for CSWGuiTargetActionMenu (hud + 0xCC).
 // Safely reads and logs target action groups when an enemy is targeted.
 // 0.2.0: no own hook any more. hud-host owns the PopulateMenus hook (0x00743540) and calls onTargetMenu through k2.hud@1
@@ -35,6 +35,7 @@
 #include <stddef.h>
 #include <limits.h>
 #include <vector>
+#include <cstdlib>
 #include <string>
 
 #include "../Common/KpLog.h"
@@ -45,6 +46,10 @@
 #include "../Common/GuiKit.h"
 #include "../Common/GuiTip.h"
 #include "CombatLogic.h"
+#include "../Common/TwoDA.h"
+#include "../Common/Tlk.h"
+#include "../Common/KeyBif.h"
+#include "CombatTip.h"
 #include "../Common/FileWatch.h"
 #define INIW_FILE_API 1   // ModConfigDecl.h ini-bound rows write through IniWrite.h's file API (doc 46)
 #define MCDECL_FILE_API 1
@@ -80,6 +85,7 @@ constexpr int MaxEntriesToLog = 8;
 
 KP_CHANNEL(chMain, "main");
 KP_CHANNEL(chTarget, "target");
+KP_CHANNEL(chTip, "tip");
 
 // CSTATE: change-gated combat edge line (CombatTrace.h). Read-only; VIS lines carry the same state as a " [c=.. p=.. m=..]" suffix.
 ctrace::Tracker g_ctrace;
@@ -120,6 +126,7 @@ struct Config {
     int hideEmpty = 1;                         // CH4e 0/1: hide the pill of an empty group, content-sized centred pills (0 = CH4d equal pills)
     int colsTotal = 6;                         // CH4e 1..12: button columns split across the visible pills (6 = 3x2, 2x3, 1x6)
     bool verbose = false;                      // CH6 [General] Verbose: per-frame / probe logging (default off)
+    int tipDetail = 2;                         // CH7a [Tips] Detail 0 = name only, 1 = + kind line, 2 = + description / "Not usable right now"
 } g_cfg;
 
 // CH6: high-volume and probe log lines only when [General] Verbose=1. Lines the log analyzers parse (profile:, config: reloaded, pills: visible=, click g=) and warnings stay on KP_LOGV.
@@ -157,9 +164,10 @@ void loadIni() {
     g_cfg.hideEmpty = GetPrivateProfileIntA("Buttons", "HideEmpty", 1, IniPath) != 0 ? 1 : 0;
     g_cfg.colsTotal = clampInt(GetPrivateProfileIntA("Buttons", "ColsTotal", 6, IniPath), 1, 12);
     g_cfg.verbose = GetPrivateProfileIntA("General", "Verbose", 0, IniPath) != 0;
-    KP_LOGV(chMain, KPLOG_INFO, "config: invoke=%d mod=%d keys=[%02x,%02x,%02x,%02x] keepSelection=%d arrowsHide=%d buttons=%d replace=%d cols=%d maxRows=%d btnPx=%d pad=%d groupGap=%d inset=%d clickSound=%d capPad=%d sidePad=%d hideEmpty=%d colsTotal=%d",
+    g_cfg.tipDetail = clampInt(GetPrivateProfileIntA("Tips", "Detail", 2, IniPath), 0, 2);
+    KP_LOGV(chMain, KPLOG_INFO, "config: invoke=%d mod=%d keys=[%02x,%02x,%02x,%02x] keepSelection=%d arrowsHide=%d buttons=%d replace=%d cols=%d maxRows=%d btnPx=%d pad=%d groupGap=%d inset=%d clickSound=%d capPad=%d sidePad=%d hideEmpty=%d colsTotal=%d tipDetail=%d",
             (int)g_cfg.invokeEnabled, g_cfg.mod, g_cfg.keys[0], g_cfg.keys[1], g_cfg.keys[2], g_cfg.keys[3], (int)g_cfg.keepSelection, (int)g_cfg.hideArrows,
-            (int)g_cfg.btnEnabled, (int)g_cfg.replace, g_cfg.cols, g_cfg.maxRows, g_cfg.btnPx, g_cfg.pad, g_cfg.groupGap, g_cfg.inset, g_cfg.clickSound, g_cfg.capPad, g_cfg.sidePad, g_cfg.hideEmpty, g_cfg.colsTotal);
+            (int)g_cfg.btnEnabled, (int)g_cfg.replace, g_cfg.cols, g_cfg.maxRows, g_cfg.btnPx, g_cfg.pad, g_cfg.groupGap, g_cfg.inset, g_cfg.clickSound, g_cfg.capPad, g_cfg.sidePad, g_cfg.hideEmpty, g_cfg.colsTotal, g_cfg.tipDetail);
 }
 
 ch::Profile g_prof;
@@ -317,7 +325,7 @@ struct Btn {
     Wid bg, icon;
     char iconName[17] = { 0 };
     bool iconSet = false;
-    uint32_t tipKey = 0;
+    uint32_t tipHash = 0;   // CH7a: FNV-1a of the last tip text set (a count/usable change on the same entry re-sets the tip)
     bool tipSet = false;
     bool tipClr = false;   // native tip cleared for an empty name (tipSet stays false); avoids a clearNative every tick
 };
@@ -526,6 +534,59 @@ void restoreVanilla(uintptr_t menu) {
         }
     g_replaced = false; g_replState = -1;
     KP_LOGV(chMain, KPLOG_INFO, "buttons: vanilla group boxes restored (menu=%08x)", (unsigned)menu);
+}
+
+// ---- CH7a tip tables (lazy, once per process; same recipe as ActionHotbar.cpp ensureLookups). Missing tables only drop the description lines. ----
+hb::TwoDA g_tipSpells, g_tipFeat; bool g_tipSpellsOk = false, g_tipFeatOk = false;
+hb::Tlk g_tipTlk; bool g_tipTlkOk = false; bool g_tipTried = false;
+
+bool loadTipTable(hb::TwoDA& t, const char* overridePath, const char* resref) {
+    if (t.Load(overridePath)) {
+        KP_LOGV(chTip, KPLOG_INFO, "tip: %s.2da -> ok source=override (cols=%d rows=%d)", resref, (int)t.cols.size(), (int)t.rows.size());
+        return true;
+    }
+    std::string bytes, err;   // no override copy: the stock table lives in chitin.key -> data/2da.bif (cwd is the game dir)
+    bool ok = hb::ReadKeyBifResource("chitin.key", ".", resref, hb::ResType2DA, bytes, err);
+    if (ok && !t.Parse(bytes)) { ok = false; err = "parse failed"; }
+    if (ok) KP_LOGV(chTip, KPLOG_INFO, "tip: %s.2da -> ok source=chitin (cols=%d rows=%d)", resref, (int)t.cols.size(), (int)t.rows.size());
+    else KP_LOGV(chTip, KPLOG_WARN, "tip: %s.2da missing (override + chitin: %.100s); descriptions off", resref, err.c_str());
+    return ok;
+}
+
+void ensureTipTables() {
+    if (g_tipTried) return;
+    g_tipTried = true;
+    g_tipSpellsOk = loadTipTable(g_tipSpells, "override/spells.2da", "spells");
+    g_tipFeatOk = loadTipTable(g_tipFeat, "override/feat.2da", "feat");
+    g_tipTlkOk = g_tipTlk.Open("dialog.tlk");
+    KP_LOGV(chTip, g_tipTlkOk ? KPLOG_INFO : KPLOG_WARN, "tip: dialog.tlk -> %s (strings=%u%s%.100s)", g_tipTlkOk ? "ok" : "FAILED; descriptions off",
+            (unsigned)g_tipTlk.count, g_tipTlkOk ? "" : " err=", g_tipTlkOk ? "" : g_tipTlk.error.c_str());
+}
+
+std::string tipCell(const std::string& v) { return v == "****" ? std::string() : v; }
+
+// Per (category, entry index) description cache, rebuilt only when the entry key in that index changes (never a per-frame 2DA/TLK read).
+std::string g_tipDesc[ch::kNumCats][16], g_tipFp[ch::kNumCats][16];
+uint32_t g_tipDescKey[ch::kNumCats][16]; bool g_tipDescValid[ch::kNumCats][16];
+
+void tipLookup(int g, int i, uint32_t key, chtip::Kind kind, const std::string*& fp, const std::string*& desc) {
+    if (!g_tipDescValid[g][i] || g_tipDescKey[g][i] != key) {
+        g_tipDescValid[g][i] = true; g_tipDescKey[g][i] = key;
+        g_tipFp[g][i].clear(); g_tipDesc[g][i].clear();
+        if (kind == chtip::K_Power || kind == chtip::K_Feat) {
+            ensureTipTables();
+            const int row = (int)(key & 0xFFFFu);
+            const bool pow = kind == chtip::K_Power;
+            const hb::TwoDA& t = pow ? g_tipSpells : g_tipFeat;
+            if (pow ? g_tipSpellsOk : g_tipFeatOk) {
+                if (pow) g_tipFp[g][i] = tipCell(t.Get(row, "forcepoints"));
+                const std::string ref = tipCell(t.Get(row, pow ? "spelldesc" : "description"));
+                if (g_tipTlkOk && !ref.empty()) g_tipDesc[g][i] = g_tipTlk.Get((uint32_t)atoi(ref.c_str()));
+            }
+            CH_VLOG(chTip, KPLOG_DEBUG, "tip: lookup g%d key=%08x row=%d fp='%s' desc=%u chars", g, (unsigned)key, row, g_tipFp[g][i].c_str(), (unsigned)g_tipDesc[g][i].size());
+        }
+    }
+    fp = &g_tipFp[g][i]; desc = &g_tipDesc[g][i];
 }
 
 void refreshGroupNames(int g, uintptr_t base, const ch::EntryView* entries, int count, int maxNames, char (*namesOut)[64]) {
@@ -793,9 +854,14 @@ void updateButtons(const K2HudContext* ctx) {
             widShow(b.bg, true); widShow(b.icon, false);
             ++visBtn;
 
-            const char* tipName = catNames[g][ord[g][k]];
-            switch (ch::tooltipStep(b.tipSet, b.tipClr, b.tipKey, e.key, tipName)) {
-                case ch::TipAction::Set:   guitip::setNative(b.bg.c, tipName); break;
+            const int ei = ord[g][k];
+            const chtip::Kind kind = chtip::kindOf(g, e.key);
+            const std::string* fp = nullptr; const std::string* desc = nullptr;
+            tipLookup(g, ei, e.key, kind, fp, desc);
+            chtip::TipIn tin; tin.name = catNames[g][ei]; tin.kind = kind; tin.count = e.count; tin.usable = e.usable; tin.fp = *fp; tin.desc = *desc;
+            const std::string tip = chtip::format(tin, g_cfg.tipDetail);   // empty name -> "" -> Clear path
+            switch (ch::tooltipStep(b.tipSet, b.tipClr, b.tipHash, chtip::hash(tip), tip.c_str())) {
+                case ch::TipAction::Set:   guitip::setNative(b.bg.c, tip.c_str()); break;
                 case ch::TipAction::Clear: guitip::clearNative(b.bg.c); break;
                 case ch::TipAction::Keep:  break;
             }
@@ -852,6 +918,7 @@ void KPATCH_CALL onTargetMenuPost(const K2HudContext* ctx, void*) {
         }
         g_pillMask = -1;
         for (int g = 0; g < 3; ++g) g_nameValid[g] = false;
+        for (int s = 0; s < g_nBtn; ++s) g_btn[s].tipSet = false;   // CH7a: a new [Tips] Detail re-sets every visible tip
     }
     updateButtons(ctx);
 }

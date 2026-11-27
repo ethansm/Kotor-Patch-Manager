@@ -1,9 +1,9 @@
 # Combat Action Hotbar (`combat-hotbar`)
 
-> **STATUS** Track: SHIPPABLE. Version 0.11.5-dev (matches manifest.toml).
+> **STATUS** Track: SHIPPABLE. Version 0.12.0-dev (matches manifest.toml).
 > **What it does / explores:** Replaces the vanilla target-menu action groups with clickable icon buttons in vanilla-style pills, adds Ctrl+Shift+F9..F12 invoke keys, and per-group pin/hide/sort set in `combat_hotbar.ini`.
 > **Requires:** `hud-host` (k2.hud@1, listed before this mod), Steam/Aspyr KOTOR II (manifest `kotor2_steam_aspyr` hash). Optional: `mod-config` + `menuui` for the Mod Configuration options page (the mod runs without them; only the page is missing).
-> **Known limits:** A group of 10 items shows 8 buttons at the default `Cols=2`, `MaxRows=4` (the other 2 are cut, not scrolled). No paging or scrolling yet. Standalone: no, needs hud-host. **Testing:** tooltips, the options page, preview and pooled-fill behaviour still need an in-game check.
+> **Known limits:** A group of 10 items shows 8 buttons at the default `Cols=2`, `MaxRows=4` (the other 2 are cut, not scrolled). No paging or scrolling yet. Standalone: no, needs hud-host. **Testing:** rich tooltips, the options page, preview and pooled-fill behaviour still need an in-game check.
 > **Install:** Install through Kotor Patch Manager as `combat-hotbar`, with `hud-host` enabled.
 
 ## Features
@@ -25,6 +25,7 @@ Hot-reloads within 1 second (FileWatch).
 | `[Buttons]` | `Enabled` (1), `Replace` (1: hide the vanilla group controls), `Cols` (2, range 1..4), `MaxRows` (4, range 1..8), `BtnPx` (0 = auto, else 8..256), `Pad` (default in code, 0..32), `GroupGap` (0..64), `Inset` (3, 0..16), `ClickSound` (0, -1..18), `CapPad`, `SidePad`, `HideEmpty` (1), `ColsTotal` (6, 1..12) |
 | `[Profile]` | `Pin0..Pin3`, `Hide0..Hide3`, `Sort0..Sort3` (comma lists; a token matches an entry name exactly, a `" "`-suffix when no entry has that exact name, or a `0x` engine key) |
 | `[General]` | `Verbose` (0; 1 adds per-frame and probe log lines) |
+| `[Tips]` | `Detail` (2: 0 = entry name only, 1 = + kind line with FP cost / count left, 2 = + short description and "Not usable right now"; INI only, hot-reloads) |
 
 ## Logging
 
