@@ -1,4 +1,4 @@
-// Load Hang Probe 0.1.11 (Steam Aspyr build 6A522E71...). Diagnostics; the 0.1.9 guard changes engine behaviour; "fix=auto" (default ON, "fix=off" disables) calls AppActivated.
+// Load Hang Probe 0.1.13 (Steam Aspyr build 6A522E71...). Diagnostics; the 0.1.9 guard changes engine behaviour; "fix=auto" (default ON, "fix=off" disables) calls AppActivated.
 // Version labels 1.2.0 to 1.4.1 in the comments below are internal phase labels (doc 09/10), not patch versions. Patch versions are 0.x.y (manifest.toml).
 // manifest 0.1.10: guard-only mode without hangprobe_debug.txt (DR0 breakpoint alone, no hooks or watchdog); fires and a 5-minute hit heartbeat persist to freeze_guard_history.txt. 0.1.9: GUARD for the +aa949 infinite loop (negative arr[i]-arr[j] -> store +inf, resume at +aa980; hangprobe_nofix.txt disables). 0.1.8: DR0 execute breakpoint at the +aa916 division logs each pass; MAIN_STALL writes hangprobe_stall.dmp. 0.1.7: stall report also dumps the float array (struct at [ebp-0xfa8], +0x98, 225 floats, count word +0x3bc) that the +aa974 loop indexes.
 // manifest 0.1.6: MAIN_STALL/LOADSCREEN report adds registers, a 0x120-byte frame dump and the float-loop decode (+aa974 spin), and tails cmdq-probe/queue-hud/action-hotbar/companion-ai logs.
@@ -17,8 +17,13 @@
 // optional guarded fix: if the load screen has been up >= fixdelay ms with a1b4e0==0, area ready and the OS foreground window
 // IS the game window, call the engine's own AppActivated once (max 5x per load, >= 2 s apart). hangprobe_debug.txt keys:
 //   fix=auto (default: ON since 0.1.11; fix=off disables)   fixdelay=6000 (ms)   io=0. Manual causality test: touch hangprobe_activate.txt in the game dir.
-// Investigation: project design doc 09 sections 9-10 (local-setup/KOTOR-II worktree).
+// Investigation: project design notes sections 9-10 (local-setup/KOTOR-II worktree).
 //
+// 0.1.13: guard-only mode also installs a crash catcher (vectored handler, last in line): one CRASH report per distinct access violation with
+//         module+offset, registers, return-address candidates on the stack and an EBP chain goes to freeze_guard_history.txt (hangprobe_nocrash.txt disables).
+//         Also: g_drArmed is true only when the DR0 breakpoint was really set (hangprobe_nodr.txt no longer leaves it true and blocks the stall sampler).
+// 0.1.12: the guarded activation fix (AppActivated when the load screen is stuck with active=0 and the foreground is ours) also runs in
+// guard-only mode, from the MainLoop hook; notes go to freeze_guard_history.txt as "ACTFIX ..."; hangprobe_noactfix.txt disables (11-20 Onderon movie hang).
 // 0.1.11: no SuspendThread sampling while DR0 is armed; fix=auto default on (fix=off disables), gate uses "foreground is ours" and skips an iconic window;
 // the 0x40A750 WndProc hook moved to k2-activation-fix 0.3.0 (hook set changed: REINSTALL).
 // 0.1.10: without "hangprobe_debug.txt" only the GUARD runs (guardOnly: DR0 breakpoint, no hooks, no watchdog, no kplog writes); its
@@ -285,9 +290,12 @@ bool g_fixAuto = true; DWORD g_fixDelayMs = 6000;
 volatile LONG g_reqActivate = 0;       // set by the watchdog when hangprobe_activate.txt appears; consumed on the main thread
 DWORD g_fixSince = 0, g_fixLastTry = 0; int g_fixTries = 0; bool g_fixNoted = false;   // main thread only
 inline int gflag() { return *reinterpret_cast<volatile int*>(FlagA1B4E0); }
+void histLine(const char* fmt, ...);
+// 0.1.12: in guard-only mode (no watchdog to flush the ring) the note goes straight to freeze_guard_history.txt; at most ~11 lines per load.
 void fixNote(const char* fmt, ...) {
     LONG i = InterlockedIncrement(&g_fixHead) - 1;
     va_list ap; va_start(ap, fmt); vsnprintf(g_fixMsg[i & 31], 200, fmt, ap); va_end(ap);
+    if (!g_on) histLine("ACTFIX %s", g_fixMsg[i & 31]);
 }
 const char* msgName(unsigned m) {
     switch (m) { case 0x05: return "WM_SIZE"; case 0x06: return "WM_ACTIVATE"; case 0x07: return "WM_SETFOCUS"; case 0x08: return "WM_KILLFOCUS";
@@ -648,8 +656,9 @@ LONG CALLBACK divVeh(EXCEPTION_POINTERS* ep) {
 }
 
 void armDivBreakpoint(HANDLE th) {
-    if (g_drArmed || !th) return;
-    g_drArmed = true;
+    static bool tried = false;   // 0.1.13: g_drArmed now means "breakpoint really set" (hangprobe_nodr.txt used to leave it true and silence the stall sampler)
+    if (tried || !th) return;
+    tried = true;
     g_divFix = GetFileAttributesA("hangprobe_nofix.txt") == INVALID_FILE_ATTRIBUTES;
     if (GetFileAttributesA("hangprobe_nodr.txt") != INVALID_FILE_ATTRIBUTES) { logf("DR arm skipped (hangprobe_nodr.txt)"); return; }
     if (!AddVectoredExceptionHandler(1, divVeh)) { logf("DR arm FAILED: AddVectoredExceptionHandler"); return; }
@@ -664,7 +673,101 @@ void armDivBreakpoint(HANDLE th) {
     CONTEXT r; memset(&r, 0, sizeof(r)); r.ContextFlags = CONTEXT_DEBUG_REGISTERS;
     bool back = GetThreadContext(th, &r) != 0;
     ResumeThread(th);
+    g_drArmed = set && back && r.Dr0 == DivSite;
     logf("DR arm guard=%d site=%08x get=%d set=%d err=%lu readback=%d dr0=%08x dr7=%08x", g_divFix ? 1 : 0, (unsigned)DivSite, got, set, err, back, back ? (unsigned)r.Dr0 : 0u, back ? (unsigned)r.Dr7 : 0u);
+}
+
+// 0.1.13 crash catcher (guard-only mode; hangprobe_nocrash.txt disables). A last-in-line vectored handler that writes ONE report per distinct
+// access violation / illegal instruction / stack overflow straight to freeze_guard_history.txt (CreateFile+WriteFile, no heap, no CRT
+// stream, no kplog): code, ip as module+offset, registers, the top of the stack words that point into swkotor2.exe (return-address
+// candidates) and an EBP chain. First-chance AVs the game handles itself are rare; repeats of the same ip are counted, not re-written,
+// and at most 12 reports are written per session. Never changes the exception flow (always EXCEPTION_CONTINUE_SEARCH).
+volatile LONG g_ccReports = 0, g_ccSeen = 0;
+uintptr_t g_ccExeLo = 0, g_ccExeHi = 0;
+DWORD g_ccIps[16]; volatile LONG g_ccIpN = 0;
+
+void ccWrite(const char* b, int n) {
+    HANDLE h = CreateFileA("freeze_guard_history.txt", FILE_APPEND_DATA, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (h == INVALID_HANDLE_VALUE) return;
+    DWORD w = 0; WriteFile(h, b, static_cast<DWORD>(n), &w, nullptr); CloseHandle(h);
+}
+// "swkotor2.exe+0x1234", "mod.dll+0x10" or "?" for an address; no allocation.
+int ccWhere(char* o, int cap, uintptr_t a) {
+    if (a >= g_ccExeLo && a < g_ccExeHi) return snprintf(o, cap, "exe+%x", (unsigned)(a - g_ccExeLo));
+    HMODULE m = nullptr;
+    if (GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, reinterpret_cast<LPCSTR>(a), &m) && m) {
+        char nm[MAX_PATH]; nm[0] = 0; GetModuleFileNameA(m, nm, sizeof(nm));
+        const char* base = strrchr(nm, '\\'); base = base ? base + 1 : nm;
+        const char* b2 = strrchr(base, '/'); base = b2 ? b2 + 1 : base;
+        return snprintf(o, cap, "%.40s+%x", base, (unsigned)(a - reinterpret_cast<uintptr_t>(m)));
+    }
+    return snprintf(o, cap, "?");
+}
+
+LONG CALLBACK crashVeh(EXCEPTION_POINTERS* ep) {
+    const DWORD code = ep->ExceptionRecord->ExceptionCode;
+    if (code != EXCEPTION_ACCESS_VIOLATION && code != EXCEPTION_ILLEGAL_INSTRUCTION && code != EXCEPTION_STACK_OVERFLOW &&
+        code != EXCEPTION_INT_DIVIDE_BY_ZERO && code != EXCEPTION_PRIV_INSTRUCTION && code != EXCEPTION_IN_PAGE_ERROR) return EXCEPTION_CONTINUE_SEARCH;
+    InterlockedIncrement(&g_ccSeen);
+    const CONTEXT* c = ep->ContextRecord;
+    const DWORD ip = c->Eip;
+    LONG n = g_ccIpN;
+    for (LONG i = 0; i < n && i < 16; ++i) if (g_ccIps[i] == ip) return EXCEPTION_CONTINUE_SEARCH;   // same ip already reported
+    if (g_ccReports >= 12) return EXCEPTION_CONTINUE_SEARCH;
+    if (n < 16) { g_ccIps[n] = ip; InterlockedIncrement(&g_ccIpN); }
+    InterlockedIncrement(&g_ccReports);
+    char b[3072]; int o = 0;
+    SYSTEMTIME st; GetLocalTime(&st);
+    char w[96];
+    ccWhere(w, sizeof(w), ip);
+    o += snprintf(b + o, sizeof(b) - o, "%04u-%02u-%02u %02u:%02u:%02u pid=%lu CRASH code=%08lx ip=%08x (%s) tid=%lu seen=%ld\n",
+                  (unsigned)st.wYear, (unsigned)st.wMonth, (unsigned)st.wDay, (unsigned)st.wHour, (unsigned)st.wMinute, (unsigned)st.wSecond,
+                  (unsigned long)GetCurrentProcessId(), (unsigned long)code, (unsigned)ip, w, (unsigned long)GetCurrentThreadId(), (long)g_ccSeen);
+    if (code == EXCEPTION_ACCESS_VIOLATION && ep->ExceptionRecord->NumberParameters >= 2) {
+        o += snprintf(b + o, sizeof(b) - o, "  av %s addr=%08x\n", ep->ExceptionRecord->ExceptionInformation[0] == 0 ? "read" : ep->ExceptionRecord->ExceptionInformation[0] == 1 ? "write" : "exec",
+                      (unsigned)ep->ExceptionRecord->ExceptionInformation[1]);
+    }
+    o += snprintf(b + o, sizeof(b) - o, "  eax=%08x ebx=%08x ecx=%08x edx=%08x esi=%08x edi=%08x ebp=%08x esp=%08x efl=%08x\n",
+                  (unsigned)c->Eax, (unsigned)c->Ebx, (unsigned)c->Ecx, (unsigned)c->Edx, (unsigned)c->Esi, (unsigned)c->Edi, (unsigned)c->Ebp, (unsigned)c->Esp, (unsigned)c->EFlags);
+    // Stack words that look like return addresses into the exe (nearest the top first), scanning 256 dwords.
+    const uintptr_t esp = c->Esp;
+    int found = 0;
+    o += snprintf(b + o, sizeof(b) - o, "  stack-ret:");
+    if (esp && !(esp & 3) && !IsBadReadPtr(reinterpret_cast<const void*>(esp), 1024)) {
+        const uint32_t* sp = reinterpret_cast<const uint32_t*>(esp);
+        for (int i = 0; i < 256 && found < 16 && o < 2300; ++i) {
+            const uintptr_t v = sp[i];
+            if (v >= g_ccExeLo && v < g_ccExeHi) { o += snprintf(b + o, sizeof(b) - o, " [+%x]exe+%x", i * 4, (unsigned)(v - g_ccExeLo)); ++found; }
+        }
+    } else o += snprintf(b + o, sizeof(b) - o, " (esp unreadable)");
+    o += snprintf(b + o, sizeof(b) - o, "\n  top-stack:");
+    if (esp && !(esp & 3) && !IsBadReadPtr(reinterpret_cast<const void*>(esp), 64)) {
+        const uint32_t* sp = reinterpret_cast<const uint32_t*>(esp);
+        for (int i = 0; i < 16; ++i) o += snprintf(b + o, sizeof(b) - o, " %08x", (unsigned)sp[i]);
+    }
+    // EBP chain (return address at [ebp+4]), up to 10 frames, each checked readable.
+    o += snprintf(b + o, sizeof(b) - o, "\n  ebp-chain:");
+    uintptr_t f = c->Ebp;
+    for (int i = 0; i < 10 && f && !(f & 3) && !IsBadReadPtr(reinterpret_cast<const void*>(f), 8) && o < 2900; ++i) {
+        const uint32_t* fp = reinterpret_cast<const uint32_t*>(f);
+        o += snprintf(b + o, sizeof(b) - o, " %08x", (unsigned)fp[1]);
+        if (fp[0] <= f) break;
+        f = fp[0];
+    }
+    o += snprintf(b + o, sizeof(b) - o, "\n");
+    if (o > 0) ccWrite(b, o < (int)sizeof(b) ? o : (int)sizeof(b) - 1);
+    return EXCEPTION_CONTINUE_SEARCH;
+}
+
+void installCrashCatcher() {
+    if (GetFileAttributesA("hangprobe_nocrash.txt") != INVALID_FILE_ATTRIBUTES) { histLine("crash catcher off (hangprobe_nocrash.txt)"); return; }
+    HMODULE exe = GetModuleHandleA(nullptr);
+    g_ccExeLo = reinterpret_cast<uintptr_t>(exe);
+    const IMAGE_DOS_HEADER* dos = reinterpret_cast<const IMAGE_DOS_HEADER*>(exe);
+    const IMAGE_NT_HEADERS* nt = reinterpret_cast<const IMAGE_NT_HEADERS*>(reinterpret_cast<const char*>(exe) + dos->e_lfanew);
+    g_ccExeHi = g_ccExeLo + nt->OptionalHeader.SizeOfImage;
+    const bool ok = AddVectoredExceptionHandler(0, crashVeh) != nullptr;
+    histLine("crash catcher %s (exe %08x-%08x; reports max 12, one per distinct ip)", ok ? "ON" : "FAILED", (unsigned)g_ccExeLo, (unsigned)g_ccExeHi);
 }
 
 // 0.1.10 guard-only mode (hangprobe_debug.txt absent): one thread, no hooks, no per-frame work. Arms DR0 on the main thread after 3 s,
@@ -674,7 +777,9 @@ DWORD WINAPI guardOnly(LPVOID) {
     Sleep(3000);
     if (GetFileAttributesA("hangprobe_nofix.txt") != INVALID_FILE_ATTRIBUTES) { histLine("guard off (hangprobe_nofix.txt): no breakpoint"); return 0; }
     HANDLE th = OpenThread(THREAD_SUSPEND_RESUME | THREAD_GET_CONTEXT | THREAD_SET_CONTEXT | THREAD_QUERY_INFORMATION, FALSE, g_guardTid);
-    histLine("guard-only mode 0.1.10: main thread %lu %s", (unsigned long)g_guardTid, th ? "opened" : "OPEN FAILED");
+    histLine("guard-only mode 0.1.13: main thread %lu %s; activation fix %s (load screen up >= %lums, active=0, foreground ours)", (unsigned long)g_guardTid, th ? "opened" : "OPEN FAILED",
+             g_fixAuto ? "ON" : "OFF (hangprobe_noactfix.txt)", g_fixDelayMs);
+    installCrashCatcher();
     if (th) armDivBreakpoint(th);
     histLine("DR0 armed=%d guard=%d site=%08x (kplog load-hang-probe_log.txt has the readback)", g_drArmed ? 1 : 0, g_divFix ? 1 : 0, (unsigned)DivSite);
     LONG seen = 0;
@@ -908,7 +1013,7 @@ extern "C" {
 
 // Hook: CClientExoAppInternal::MainLoop entry (0x00781BE0), ECX = internal. Main thread, every frame.
 void __cdecl HangProbeMainLoop(void* internal) {
-    if (!g_on) return;
+    if (!g_on && !g_fixAuto) return;   // 0.1.12: guard-only mode still runs the activation fix below (hangprobe_noactfix.txt disables)
     if (!g_mainTid) {
         NT_TIB* tib = reinterpret_cast<NT_TIB*>(NtCurrentTeb());
         g_stackBase = reinterpret_cast<uintptr_t>(tib->StackBase);
@@ -1019,6 +1124,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID) {
         g_on = GetFileAttributesA("hangprobe_debug.txt") != INVALID_FILE_ATTRIBUTES;
         if (!g_on) {   // 0.1.10 guard-only mode: DllMain runs on the game's main thread (implicit load of the binkw32 proxy)
             g_guardTid = GetCurrentThreadId();
+            g_fixAuto = GetFileAttributesA("hangprobe_noactfix.txt") == INVALID_FILE_ATTRIBUTES;   // 0.1.12 activation fix in guard-only mode
             HANDLE gt = CreateThread(nullptr, 0, guardOnly, nullptr, 0, nullptr);
             if (gt) CloseHandle(gt);
             return TRUE;
@@ -1030,7 +1136,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID) {
         auto nt = reinterpret_cast<const IMAGE_NT_HEADERS*>(g_exeLo + dos->e_lfanew);
         g_exeHi = g_exeLo + nt->OptionalHeader.SizeOfImage;
         if (FILE* cf = fopen("hangprobe_debug.txt", "r")) { char l[64]; while (fgets(l, sizeof l, cf)) { if (!strncmp(l, "fix=auto", 8)) g_fixAuto = true; if (probe::parseFixOff(l)) g_fixAuto = false; if (!strncmp(l, "fixdelay=", 9)) { long v = atol(l + 9); if (v >= 1000 && v <= 60000) g_fixDelayMs = (DWORD)v; } } fclose(cf); }
-        logf("load-hang-probe 0.1.11 loaded: attach tid=%lu exe=%08x-%08x fix=%s fixdelay=%lums", GetCurrentThreadId(), (unsigned)g_exeLo, (unsigned)g_exeHi, g_fixAuto ? "auto" : "off (log only)", g_fixDelayMs);
+        logf("load-hang-probe 0.1.13 loaded: attach tid=%lu exe=%08x-%08x fix=%s fixdelay=%lums", GetCurrentThreadId(), (unsigned)g_exeLo, (unsigned)g_exeHi, g_fixAuto ? "auto" : "off (log only)", g_fixDelayMs);
         {   // 1.2.0 file-I/O capture; "io=0" in hangprobe_debug.txt disables it
             bool ioWanted = true;
             if (FILE* cf = fopen("hangprobe_debug.txt", "r")) { char l[64]; while (fgets(l, sizeof l, cf)) if (!strncmp(l, "io=0", 4)) ioWanted = false; fclose(cf); }
