@@ -1,5 +1,5 @@
 // Companion AI (Steam Aspyr build 6A522E71...): party-AI trace layer + engine AI fixes, one DLL,
-// one INI (companion_ai.ini), one log (ai_trace.txt). Designs: the project workspace
+// one INI (companion_ai.ini), one log (ai_trace.txt). Designs: project design notes (not in this repo).
 // designs/design_ai_trace.md and design_ai_engine_fixes.md (user decisions in that folder's README.md).
 //
 // Every behaviour has an INI flag; all flags 0 = vanilla. The INI is re-checked at most once a second (file time and
@@ -24,6 +24,7 @@
 //   A4  0x6D9E2A CompanionAiA4(ebp) -> int      AIActionCombat NULL spell row (skip-only): 1 => 0x6D9EA4
 //   G1  0x6D9ADB CompanionAiCastGuard(ebp) -> int  AIActionCombat case 9 (spell round node): cast_family_guard. 1 => 0x6D9B65 (skip the round build); debuff families 20-24 read the target's effects (node +0x84, WI-137)
 //   F4  0x5917C1 CompanionAiCastQueueNewest(ebp)  AddSWSpellAction before AddAction: drop older pending spell nodes (cast_queue_newest)
+//   PAG 0x65C220 CompanionAiPartyAttackGuard(ebp)  HandlePlayerToServerInputMessage: skip front-attack if companion has queued item/spell (cast_queue_newest)
 //   C1  0x5868B9/0x5868F1/0x586929 CompanionAiC1(ebp)   ClearHostileActionsVersus restart index (skip-only)
 //   A3  0x6D78B7 CompanionAiA3(ebp)             dead/undetected-target exit: clear the orientation lock (opt, a3=0)
 //   (FM3 hot sentinel probe 0x51DBE7: designed and validated, NOT shipped -- wrapper cost in the hottest loop; the cold FM3 sites below ship)
@@ -352,6 +353,13 @@ bool vmCtx(Ctx& c) {
     c.self = rd<int>(vmi, VmiSelf + c.depth * 4, Invalid);
     c.ev = rd<int>(G_RunScriptVar, 0);
     return c.script[0] != 0 && c.script[0] != '?';
+}
+
+bool inVmScript() {
+    int vm = rd<int>(G_VM, 0), vmi = vm ? rd<int>(vm, VmInternal) : 0;
+    if (!vmi) return false;
+    int depth = rd<int>(vmi, VmiDepth, -1);
+    return depth >= 0 && depth <= 7;
 }
 
 // controlled creature id via the same chain AIActionPhysicalAttacks uses (0x6D8515..0x6D856B); false = unknown
@@ -948,6 +956,8 @@ extern "C" int __cdecl AiTracePrintString(int ebp) {
 namespace {
 int g_g1Logs = 0;   // session budget of G1 drop lines
 bool g_g1Noted = false;
+cai::F4Seen g_f4Player[64] = {};   // QL26: player-originated / non-VM companion spell round nodes (exempt from G1 and F4 drops)
+int g_f4PlayerNext = 0;
 // debug_log: one D line for a party member's decision that was not a drop. The actor id is read only when the line could be written;
 // the line goes out only for what objPasses lets through (party members; log_all/tags widen it), as a tline (dedupe + per-second cap).
 void dbgG1(DWORD now, int actor, int actorId, int spell, int reason) {
@@ -989,6 +999,10 @@ extern "C" int __cdecl CompanionAiCastGuard(int ebp) {
     bool actorIsLeader = reinterpret_cast<Fn0>(FnPlayerId)(server) == actorId;
     if (actorIsLeader) { dbgG1(now, actor, actorId, spell, cai::DkLeader); return 0; }
     if (!objInfo(actorId, now).party) { dbgG1(now, actor, actorId, spell, cai::DkNotParty); return 0; }   // party members only: enemies and neutral NPCs are never dropped
+    if (cai::f4IsPlayerCast(g_f4Player, 64, g_f4PlayerNext, node, now)) {
+        dbgG1(now, actor, actorId, spell, cai::DkPlayerCast);
+        return 0;
+    }
     // WI-137: the effect owner. Buff families (1-10) read the caster's effects; debuff families (20-24) read the target's (node +0x84).
     int targetId = 0, owner = actor;
     if (cai::castFamilyOnTarget(cai::castFamily(spell))) {
@@ -1038,15 +1052,22 @@ extern "C" void __cdecl CompanionAiCastQueueNewest(int ebp) {
     if (!actorId || actorId == Invalid) { ++g_st.f4Bad; return; }
     int app = rd<int>(G_App, 0), server = app ? rd<int>(app, 8) : 0;
     if (!server || !rd<int>(server, 4)) { ++g_st.f4Bad; dbgF4(now, actorId, 0, 0, 0, cai::DkBadRead); return; }   // 0x51C620 dereferences [server+4] (as CompanionAiCastGuard)
-    if (reinterpret_cast<Fn0>(FnPlayerId)(server) == actorId) { dbgF4(now, actorId, 0, 0, 0, cai::DkLeader); return; }   // the controlled leader: player-issued casts are never dropped
+    int fresh = fr<int>(ebp, -0x10);   // the new node (PUSH [EBP-0x10] -> AddAction): not linked yet
+    const bool isLeader = reinterpret_cast<Fn0>(FnPlayerId)(server) == actorId;
+    if (isLeader) {
+        if (fresh && objInfo(actorId, now).party == 1) cai::f4Stamp(g_f4Player, 64, g_f4PlayerNext, fresh, now);
+        dbgF4(now, actorId, 0, 0, 0, cai::DkLeader);
+        return;
+    }   // the controlled leader: player-issued casts are never dropped
     if (objInfo(actorId, now).party != 1) { dbgF4(now, actorId, 0, 0, 0, cai::DkNotParty); return; }   // party members only
     ++g_st.f4Checks;
-    int fresh = fr<int>(ebp, -0x10);   // the new node (PUSH [EBP-0x10] -> AddAction): not linked yet, stamp it for the same-run test
-    if (fresh) { g_f4Seen[g_f4Next].act = fresh; g_f4Seen[g_f4Next].t = now ? now : 1; g_f4Next = (g_f4Next + 1) & 63; }
+    const bool playerOrigin = cai::isPlayerOriginCast(false, inVmScript());
+    if (playerOrigin) cai::f4Stamp(g_f4Player, 64, g_f4PlayerNext, fresh, now);
+    else cai::f4Stamp(g_f4Seen, 64, g_f4Next, fresh, now);
     // WI-170: G1 drops the fresh node when its family is already active on the owner (buff: caster; debuff: target). Then this
     // build keeps the older valid cast instead of freeing it for a node that G1 will drop: the round is not left empty.
     const int fspell = fresh ? rd<int>(fresh, 0x24, -1) : -1;   // same spell offset the drop loop reads
-    if (g_cfg.castFamilyGuard && cai::castFamily(fspell) > 0) {
+    if (!playerOrigin && g_cfg.castFamilyGuard && cai::castFamily(fspell) > 0) {
         int owner = cr;
         if (cai::castFamilyOnTarget(cai::castFamily(fspell))) owner = gameObject(rd<int>(fresh, 0x84, 0));
         int ids[64];
@@ -1071,8 +1092,11 @@ extern "C" void __cdecl CompanionAiCastQueueNewest(int ebp) {
         node = nxt;
     }
     int sameRun = 0;
-    for (int i = 0; i < n; ++i)   // a combo queues several casts in one script run: keep this run's own earlier nodes
-        if (types[i] == 9 && cai::f4SameRun(cai::f4Lookup(g_f4Seen, 64, g_f4Next, acts[i]), now, 16)) { types[i] = 0; ++sameRun; }
+    for (int i = 0; i < n; ++i)   // keep same-run AI combo nodes and player/mod-originated companion casts
+        if (types[i] == 9 && (cai::f4SameRun(cai::f4Lookup(g_f4Seen, 64, g_f4Next, acts[i]), now, 16) ||
+                              cai::f4IsPlayerCast(g_f4Player, 64, g_f4PlayerNext, acts[i], now))) {
+            types[i] = 0; ++sameRun;
+        }
     int picked[8];
     int pn = cai::staleSpellPick(types, acts, n, cur, picked, 8);
     if (!pn) { dbgF4(now, actorId, n, cur, sameRun, cai::DkNoStale); return; }
@@ -1090,10 +1114,64 @@ extern "C" void __cdecl CompanionAiCastQueueNewest(int ebp) {
             eline(now, "t=%lu F4 drop cr=%08x spell=%d left=%d", now, actorId, spell, left);
         } else capNote(now, g_f4Noted, "F4 drop", 200, "counts continue in S");
         cai::f4Forget(g_f4Seen, 64, a);   // the pointer may be recycled: its stamp goes with it
+        cai::f4Forget(g_f4Player, 64, a);
         reinterpret_cast<Fn0>(FnActionDtor)(a);
         reinterpret_cast<void(__cdecl*)(void*)>(FnOpDelete)(reinterpret_cast<void*>(a));
     }
     if (dropped) ++g_st.f4Drops;
+}
+
+// QL26. HandlePlayerToServerInputMessage 0x65BE70 at 0x65C220: CMP [EBP-0x28C], 0x7F000000 before JNZ 0x65C266.
+// When the leader attacks and solo mode is off, vanilla calls AddAttackActions(leaderTgt, ..., clear=1, front=1)
+// on every untargeted companion ([EBP-0x28C] == 0x7F000000), which calls ClearAllActions(1) and front-injects 0x0C.
+// If the companion ([EBP-0x3C]) has a queued item/spell (0x0F/0x2E in cr+0x100 or type 9/10 in round+0xB00/0xB18),
+// write 0 to [EBP-0x28C] so the stolen CMP + JNZ skips AddAttackActions while still recording [cr+0x554] = leaderTgt.
+extern "C" void __cdecl CompanionAiPartyAttackGuard(int ebp) {
+    saferead::beginScope();
+    DWORD now = GetTickCount(); tick(now);
+    if (!g_cfg.castQueueNewest) return;
+    if (fr<int>(ebp, -0x28C) != Invalid) return;
+    int cr = fr<int>(ebp, -0x3C);
+    if (!cr || !rd<int>(cr, CrParty)) return;
+    uint16_t qTypes[16]; int nQ = 0;
+    if (int list = rd<int>(cr, ObQueue)) {
+        int node = rd<int>(list, 0);
+        while (node && nQ < 16) {
+            int data = 0, next = 0; unsigned short ty = 0;
+            if (!saferead::readAt<int>(6, static_cast<uintptr_t>(node), 8, &data) || !data ||
+                !saferead::readAt<unsigned short>(6, static_cast<uintptr_t>(data), 0, &ty) ||
+                !saferead::readAt<int>(6, static_cast<uintptr_t>(node), 4, &next)) break;
+            qTypes[nQ++] = ty; node = next;
+        }
+    }
+    int rTypes[8]; int nR = 0, curType = -1;
+    if (int round = rd<int>(cr, CrRound)) {
+        if (int cur = rd<int>(round, 0xB18, 0)) {
+            unsigned char ct = 0;
+            if (saferead::readAt<unsigned char>(1, static_cast<uintptr_t>(cur), 0x10, &ct)) curType = ct;
+        }
+        int W = rd<int>(round, 0xB00, 0);
+        int internal = W ? rd<int>(W, 0, 0) : 0;
+        int node = internal ? rd<int>(internal, 0, 0) : 0;
+        while (node && nR < 8) {
+            int act = 0, nxt = 0; unsigned char typ = 0;
+            if (!saferead::readAt<int>(1, static_cast<uintptr_t>(node), 8, &act) ||
+                !saferead::readAt<int>(1, static_cast<uintptr_t>(node), 4, &nxt) ||
+                !act || !saferead::readAt<unsigned char>(1, static_cast<uintptr_t>(act), 0x10, &typ)) break;
+            rTypes[nR++] = typ; node = nxt;
+        }
+    }
+    if (!cai::hasQueuedPlayerItemOrSpell(qTypes, nQ, rTypes, nR, curType)) return;
+    int leaderTgt = fr<int>(ebp, -0x28);
+    frw<int>(ebp, -0x28C, 0);
+    wr<int>(cr + 0x554, leaderTgt);
+    if (g_cfg.debugLog) {
+        int actorId = rd<int>(cr, ObId, 0);
+        if (actorId && actorId != Invalid)
+            tline(now, cai::dbgKey(actorId, curType, cai::DkPlayerCast),
+                  "t=%lu D PAG cr=%08x q=%d r=%d cur=%d tgt=%08x -> skip-front-attack (queued-item-or-spell)",
+                  now, actorId, nQ, nR, curType, leaderTgt);
+    }
 }
 
 // T3. ExecuteCommandAurPostString 0x6F6200 (retail stub) at 0x6F62F2, after the four pops succeeded.

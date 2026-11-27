@@ -31,4 +31,5 @@ EXPORTS
     CompanionAiProbeGetCurrentAction
     CompanionAiCastGuard
     CompanionAiCastQueueNewest
+    CompanionAiPartyAttackGuard
     KPatchInit

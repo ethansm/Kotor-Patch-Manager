@@ -711,8 +711,35 @@ inline unsigned f4Lookup(const F4Seen* r, int cap, int next, int act) {
 // clears every stamp of act (called when the action is freed, so a recycled pointer starts with no stamp)
 inline void f4Forget(F4Seen* r, int cap, int act) { for (int i = 0; i < cap; ++i) if (r[i].act == act) r[i] = F4Seen{0, 0}; }
 
+// QL26: TTL (ms) for a player-originated / mod-dispatched (outside NWScript VM) spell round node in g_f4Player.
+constexpr unsigned kPlayerCastTtlMs = 60000;
+inline bool isPlayerOriginCast(bool actorIsLeader, bool inVmScript) { return actorIsLeader || !inVmScript; }
+inline void f4Stamp(F4Seen* r, int cap, int& next, int act, unsigned now) {
+    if (!r || cap <= 0 || !act) return;
+    r[next].act = act;
+    r[next].t = now ? now : 1u;
+    next = (next + 1) % cap;
+}
+inline bool f4IsPlayerCast(const F4Seen* r, int cap, int next, int act, unsigned now, unsigned ttlMs = kPlayerCastTtlMs) {
+    if (!r || cap <= 0 || !act) return false;
+    return f4SameRun(f4Lookup(r, cap, next, act), now, ttlMs);
+}
+
+// QL26: true when a companion already has a queued item or spell action in cr+0x100 (0x0F CastSpell, 0x2E UseItem)
+// or a pending/in-progress spell (9) or item (10) round node in round+0xB00 / round+0xB18, so the engine's (VA 65be70)
+// party-wide auto-attack loop must not ClearAllActions(1) + front-inject AddAttackActions(0x0C) over it.
+constexpr uint16_t ActCastSpell = 0x0F, ActUseItem = 0x2E;
+inline bool hasQueuedPlayerItemOrSpell(const uint16_t* qTypes, int nQ, const int* rTypes, int nR, int curType) {
+    for (int i = 0; qTypes && i < nQ; ++i)
+        if (qTypes[i] == ActCastSpell || qTypes[i] == ActUseItem) return true;
+    if (curType == 9 || curType == 10) return true;
+    for (int i = 0; rTypes && i < nR; ++i)
+        if (rTypes[i] == 9 || rTypes[i] == 10) return true;
+    return false;
+}
+
 // debug_log "D" lines (G1 / F4): why a party member's decision was NOT a drop. The index is the reason in the dedupe key.
-enum DbgKeep { DkLeader = 0, DkNotParty, DkUntracked, DkFamilyNotActive, DkGuardOff, DkBadRead, DkNoStale, DkNoRound, DkFreshBlocked, DkCount };
+enum DbgKeep { DkLeader = 0, DkNotParty, DkUntracked, DkFamilyNotActive, DkGuardOff, DkBadRead, DkNoStale, DkNoRound, DkFreshBlocked, DkPlayerCast, DkCount };
 inline const char* dbgKeepName(int r) {
     switch (r) {
     case DkLeader: return "leader";
@@ -724,6 +751,7 @@ inline const char* dbgKeepName(int r) {
     case DkNoStale: return "no-stale-nodes";
     case DkNoRound: return "no-round";
     case DkFreshBlocked: return "fresh-family-active";
+    case DkPlayerCast: return "player-cast";
     default: return "?";
     }
 }
