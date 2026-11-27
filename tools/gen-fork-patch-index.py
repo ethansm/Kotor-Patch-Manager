@@ -22,7 +22,7 @@ SECTIONS = {
                       "CharacterEffectsPanel", "EnemyEffectsStrip", "LevelUpOverride", "RichMenuTypography",
                       "K2EquipIconFix", "K2DialogueLetterboxFix", "K2WrapMeasureFix"],
     "Inventory, items and equipment": ["InventorySortFilter", "QuickLoot", "Inventory3dViewport",
-                                       "Equipment3dCharacter", "WorkbenchUpgrade", "K2Holster", "HolsterEditor"],
+                                       "Equipment3dCharacter", "WorkbenchUpgrade", "K2Holster"],
     "Companions, AI and NPCs": ["CompanionAI", "CompanionSelfHeal", "RangedAI", "NpcDiversity", "CharacterPacks"],
     "Rendering and performance": ["K2FogDistance", "K2GrassDrawDistance", "K2ShadowDistance", "K2FramePacing",
                                   "K2EnginePerf", "K2TextureMemoryRelease"],

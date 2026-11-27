@@ -3,8 +3,8 @@
 > **STATUS** Track: SHIPPABLE. Version 0.2.0-dev (matches manifest.toml).
 > **What it does / explores:** A shared provider of per-token 3D character viewers for GUI panels: bind a creature, rebuild its model, set weapons, drive the camera and play or pause an animation. Exposes `k2.preview3d@1`.
 > **Requires:** Kotor Patch Manager with the patch registry (`KPatchInit`); KOTOR II Steam (Aspyr) LAA build, sha256 `6A522E71...` (manifest.toml also lists the GOG Aspyr build, `777BEE23...`); the `Patches/Common` headers listed under Dependencies.
-> **Known limits:** No player-facing UI of its own, so it is only useful with a client mod (holster-editor). No engine hooks. `Preview3dProvider.cpp` has no host test; only `Preview3dLogic.h` and the ABI are covered. Helmet visor animation is not frozen by `SetAnimPaused`. **Testing:** live-tested on Steam; the holster-editor 3D view still needs an in-game check.
-> **Install:** install through Kotor Patch Manager, before the client mod (holster-editor lists `preview-3d` in its `requires`). Install with holster-editor; alone it does nothing visible.
+> **Known limits:** No player-facing UI of its own, so it is only useful with a client mod (the Holstered Weapons settings page in K2Holster). No engine hooks. `Preview3dProvider.cpp` has no host test; only `Preview3dLogic.h` and the ABI are covered. Helmet visor animation is not frozen by `SetAnimPaused`. **Testing:** live-tested on Steam; the Holstered Weapons page 3D view still needs an in-game check.
+> **Install:** install through Kotor Patch Manager, before the client mod (holster lists `preview-3d` in its `requires` for its settings page). Install with holster; alone it does nothing visible.
 
 ## What the provider is
 
@@ -40,7 +40,7 @@ Consumers connect through the `Client` helper at `Preview3dApi.h:133-175` (`api-
 
 ## Consumers
 
-- **holster-editor** (`Patches/HolsterEditor`): the 3D view on the Holstered Weapons page. Its manifest lists `requires = ["holster", "preview-3d", "mod-config"]`.
+- **holster** (`Patches/K2Holster`): the 3D view on its Holstered Weapons settings page (merged from holster-editor in 0.22.0). Its manifest lists `requires = ["preview-3d", "mod-config"]`.
 - **equipment-3d-character**: may follow. Not a dependency today.
 
 ## Dependencies on Patches/Common and KPM Common

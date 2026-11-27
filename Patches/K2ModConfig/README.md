@@ -4,7 +4,7 @@
 > **What it does / explores:** Adds a "Mod Configuration" button under Gameplay in the Options screen. Other mods register config pages into it through `k2.modconfig@1` and build them with `k2.menuui@1`, so every mod's settings look like vanilla menus.
 > **Requires:** Steam/Aspyr KOTOR II (target hash in manifest.toml) and KPM. No other patch is required (`requires = []`). Optional `k2.guiinput` provider for mouse wheel scrolling.
 > **Known limits:** `arrow_icons=1` is reserved (logged only, text arrows are used). The ESC hook is not unhooked on DLL detach yet (open safety item). Latched-click and fail-fast root clone optimisations are not done. **Testing:** live-tested on Steam; the menu page and the ESC handling still need a further in-game check.
-> **Install:** KPM install of `mod-config` (provider, install before its consumers: holster-editor, enemy-effects-strip, inventory-sort-filter).
+> **Install:** KPM install of `mod-config` (provider, install before its consumers: holster (its settings page), enemy-effects-strip, inventory-sort-filter).
 
 ## Features
 - One "Mod Configuration" button after GAMEPLAY (or below QUIT when `reflow=0`).

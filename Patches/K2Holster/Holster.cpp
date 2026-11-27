@@ -3278,6 +3278,8 @@ static void applyBoneTest() {
 }
 
 // Written out literally (create-patch's export scan reads the source text) and listed in exports.def.
+void holsterEditorInit(const KPatchApi* api);   // HolsterEditor.cpp: the Holstered Weapons page under Options -> Mod Configuration
+
 extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     readConfig();
     if (api && api->struct_size >= offsetof(KPatchApi, require) + sizeof(api->require) && api->provide) {
@@ -3294,7 +3296,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
     addName(names, sizeof(names), g_onGob, "gob");
     addName(names, sizeof(names), g_onPlace, "place");
     addName(names, sizeof(names), g_onToggle, "toggle");
-    KP_LOG(chMain, "holster 0.21.1-dev loaded (P0 probe + unarmed_anim=%d): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_unarmedAnim ? 1 : 0, g_probe ? 1 : 0,
+    KP_LOG(chMain, "holster 0.22.0 loaded (P0 probe + unarmed_anim=%d): probe=%d channels=%s max_lines=%ld gob_every=%d table=%s", g_unarmedAnim ? 1 : 0, g_probe ? 1 : 0,
            names[0] ? names : "none", static_cast<long>(g_maxLines), g_gobEvery, k2addr::get() ? "ok" : "none");
     {
         hs::TuneCfg t;
@@ -3381,6 +3383,7 @@ extern "C" void __cdecl KPatchInit(const KPatchApi* api) {
                g_editor ? 1 : 0);
     }
     applyBoneTest();
+    holsterEditorInit(api);   // last: k2.holster@1 is provided and the log is up
 }
 
 // No I/O here (loader lock). The config is read in KPatchInit.

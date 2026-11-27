@@ -1,6 +1,0 @@
-# holster-editor: DLL-only consumer (no engine hooks). The Options-menu hooks, root button, list page, cloning and control freeing are owned by
-# the mod-config provider (k2.modconfig@1, k2.menuui@1); this patch registers one entry there and keeps only its 3D view and status label.
-[metadata]
-target_versions = ["6A522E71631DCEE93467BD2010F3B23D9145326E1E2E89305F13AB104DBBFFEF"]
-
-hooks = []
