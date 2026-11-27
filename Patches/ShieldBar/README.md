@@ -3,7 +3,7 @@
 > **STATUS** Track: SHIPPABLE. Version 0.1.3 (matches manifest.toml).
 > **What it does / explores:** Draws an energy-shield absorb bar beside each party portrait's health bar, adds health, force and shield gauges to the companion portraits on the menu screens, and shows "Shield: cur/max" in the portrait hover tooltip.
 > **Requires:** portrait-slots (`k2.portraitslots@1`, hard dependency), `Common/KpLog.h`, Steam/Aspyr LAA build (live-tested). GOG build is static-verified only.
-> **Known limits:** GOG untested live. The corner texture `uibit_bar_sc_p` is not shipped (see Art). The `lfw == 0` fallback path (ShieldBar.cpp:418-443) is live-only. Draws beside buff-duration-hud. **Play-test status:** no shield-bar rows pending in the project play-test queue; the PRV row (10-20) covers the bar on load.
+> **Known limits:** GOG untested live. The bar textures are derived from game art and not shipped: generate them once before use (see Art). The `lfw == 0` fallback path (ShieldBar.cpp:418-443) is live-only. Draws beside buff-duration-hud. **Play-test status:** no shield-bar rows pending in the project play-test queue; the PRV row (10-20) covers the bar on load.
 > **Install:** install through Patch Manager after portrait-slots. Not standalone (`requires = ["portrait-slots"]` in manifest.toml).
 
 ## Features
@@ -24,8 +24,9 @@
 - Address rows: `kotor2-steam-aspyr.hooks.toml`, `kotor2-gog-aspyr.hooks.toml`.
 
 ## Art
-- `uibit_bar_sh_p.tga/.txi` (shield bar) and `uibit_bar_vp_sq.tga/.txi` (squared health bar while a shield is up) are committed.
-- `uibit_bar_sc_p` (corner filler) is not committed. Generate it with `scripts/gen_shield_bar_art.py` from the vanilla `uibit_bar_vp_p.tga`. Without it the corner notch is not filled.
+- All three textures are built from the game's own `uibit_bar_vp_p.tga`, so no `.tga` ships here: `uibit_bar_sh_p` (shield bar), `uibit_bar_vp_sq` (squared health bar while a shield is up), `uibit_bar_sc_p` (corner filler).
+- Generate them once: extract `uibit_bar_vp_p.tga` from your game with a KOTOR resource tool, then run `python3 gen_shield_bar_art.py <uibit_bar_vp_p.tga> <game dir>/Override` from this folder (needs Pillow and numpy). It writes each `.tga` with its `.txi`.
+- Without `uibit_bar_sh_p` the bar is not drawn (one log line: `DRAW: shield bar texture 'uibit_bar_sh_p' unresolved, draw skipped`). Without `uibit_bar_sc_p` the corner notch is not filled.
 
 ## Build and test
 - `python3 scripts/run_tests.py shield_logic`
