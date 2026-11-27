@@ -5,7 +5,9 @@ version = "0.22.0"
 author = "ethansm"
 description = "Moves party weapons to hip and back mounts out of combat, with timed draw and stow slides, hand-reach arm IK, an F8 toggle, a shorter combat exit and unarmed locomotion clips. Includes the Holstered Weapons settings page under Options -> Mod Configuration: a 3D placement editor with stance bars, a Draw / Holster toggle and a Speed slider. Replaces the separate holster-editor patch (uninstall it first). Settings: holster.ini, holster_editor.ini; history: CHANGELOG.md."
 
-kind = "provider"
+# kind = "patch" (was "provider" up to 0.21.7): it is a mod the player picks, with its own settings page. A provider is only
+# installed when another mod requires it, and nothing requires holster (equipment-3d-character uses k2.holster@1 optionally).
+kind = "patch"
 provides = ["k2.holster@1"]
 # The settings page needs the 3D preview and the mod-config menu (it was holster-editor's requires).
 requires = ["preview-3d", "mod-config"]
