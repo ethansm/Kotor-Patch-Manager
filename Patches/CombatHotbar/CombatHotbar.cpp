@@ -1,4 +1,4 @@
-// Combat Action Hotbar (Mod 31, 0.12.0-dev: probe + CH2 invoke keys + CH3b arrow hide + CH4c own buttons replacing the vanilla target boxes + CH4d per-group pill containers + CH4e content-sized pills + CH5 profile pin/hide/sort + CH7a rich tooltips; consumer of hud-host)
+// Combat Action Hotbar (Mod 31, 0.12.1-dev: probe + CH2 invoke keys + CH3b arrow hide + CH4c own buttons replacing the vanilla target boxes + CH4d per-group pill containers + CH4e content-sized pills + CH5 profile pin/hide/sort + CH7a rich tooltips + CH7b count badges; consumer of hud-host)
 // Diagnostic probe for CSWGuiTargetActionMenu (hud + 0xCC).
 // Safely reads and logs target action groups when an enemy is targeted.
 // 0.2.0: no own hook any more. hud-host owns the PopulateMenus hook (0x00743540) and calls onTargetMenu through k2.hud@1
@@ -127,6 +127,8 @@ struct Config {
     int colsTotal = 6;                         // CH4e 1..12: button columns split across the visible pills (6 = 3x2, 2x3, 1x6)
     bool verbose = false;                      // CH6 [General] Verbose: per-frame / probe logging (default off)
     int tipDetail = 2;                         // CH7a [Tips] Detail 0 = name only, 1 = + kind line, 2 = + description / "Not usable right now"
+    bool badges = true;                        // CH7b [Badges] Count 0/1: stack-count number bottom-right of each item icon
+    int badgeMin = 2;                          // CH7b [Badges] MinCount 1..99: smallest stack that gets a number
 } g_cfg;
 
 // CH6: high-volume and probe log lines only when [General] Verbose=1. Lines the log analyzers parse (profile:, config: reloaded, pills: visible=, click g=) and warnings stay on KP_LOGV.
@@ -165,9 +167,11 @@ void loadIni() {
     g_cfg.colsTotal = clampInt(GetPrivateProfileIntA("Buttons", "ColsTotal", 6, IniPath), 1, 12);
     g_cfg.verbose = GetPrivateProfileIntA("General", "Verbose", 0, IniPath) != 0;
     g_cfg.tipDetail = clampInt(GetPrivateProfileIntA("Tips", "Detail", 2, IniPath), 0, 2);
-    KP_LOGV(chMain, KPLOG_INFO, "config: invoke=%d mod=%d keys=[%02x,%02x,%02x,%02x] keepSelection=%d arrowsHide=%d buttons=%d replace=%d cols=%d maxRows=%d btnPx=%d pad=%d groupGap=%d inset=%d clickSound=%d capPad=%d sidePad=%d hideEmpty=%d colsTotal=%d tipDetail=%d",
+    g_cfg.badges = GetPrivateProfileIntA("Badges", "Count", 1, IniPath) != 0;
+    g_cfg.badgeMin = clampInt(GetPrivateProfileIntA("Badges", "MinCount", 2, IniPath), 1, 99);
+    KP_LOGV(chMain, KPLOG_INFO, "config: invoke=%d mod=%d keys=[%02x,%02x,%02x,%02x] keepSelection=%d arrowsHide=%d buttons=%d replace=%d cols=%d maxRows=%d btnPx=%d pad=%d groupGap=%d inset=%d clickSound=%d capPad=%d sidePad=%d hideEmpty=%d colsTotal=%d tipDetail=%d badges=%d badgeMin=%d",
             (int)g_cfg.invokeEnabled, g_cfg.mod, g_cfg.keys[0], g_cfg.keys[1], g_cfg.keys[2], g_cfg.keys[3], (int)g_cfg.keepSelection, (int)g_cfg.hideArrows,
-            (int)g_cfg.btnEnabled, (int)g_cfg.replace, g_cfg.cols, g_cfg.maxRows, g_cfg.btnPx, g_cfg.pad, g_cfg.groupGap, g_cfg.inset, g_cfg.clickSound, g_cfg.capPad, g_cfg.sidePad, g_cfg.hideEmpty, g_cfg.colsTotal, g_cfg.tipDetail);
+            (int)g_cfg.btnEnabled, (int)g_cfg.replace, g_cfg.cols, g_cfg.maxRows, g_cfg.btnPx, g_cfg.pad, g_cfg.groupGap, g_cfg.inset, g_cfg.clickSound, g_cfg.capPad, g_cfg.sidePad, g_cfg.hideEmpty, g_cfg.colsTotal, g_cfg.tipDetail, (int)g_cfg.badges, g_cfg.badgeMin);
 }
 
 ch::Profile g_prof;
@@ -321,8 +325,21 @@ struct Wid {
     bool tintSet = false;
 };
 
+// CH7b: one engine text label with change-only setters (font/align/fill once, colour/text/rect on change).
+struct Txt {
+    uintptr_t c = 0;
+    int vis = -1;                 // -1 unknown, 0 hidden, 1 shown
+    bool styled = false;
+    uint32_t textHash = 0;        // FNV-1a of the last text written (0 = none yet)
+    float col[3] = { -1.f, -1.f, -1.f };
+    ch::Rect rect = { 0, 0, 0, 0 };
+    bool rectSet = false;
+};
+bool g_badgeDead = false;         // CH7b: the template label has no text object; badges off for the session (never retried)
+
 struct Btn {
     Wid bg, icon;
+    Txt qty;                      // CH7b stack-count badge (created last in the slot: draws on top of the icon)
     char iconName[17] = { 0 };
     bool iconSet = false;
     uint32_t tipHash = 0;   // CH7a: FNV-1a of the last tip text set (a count/usable change on the same entry re-sets the tip)
@@ -416,6 +433,43 @@ void widTint(Wid& w, const float* rgb) {
     }
 }
 
+void txtHide(Txt& t) {
+    if (!t.c || t.vis == 0) return;
+    guikit::setVisible(t.c, false); guikit::setClickable(t.c, false);
+    t.vis = 0;
+}
+uint32_t txtHash(const char* t) {   // FNV-1a, never 0 (0 = "no text set yet")
+    uint32_t h = 2166136261u;
+    for (; *t; ++t) { h ^= static_cast<unsigned char>(*t); h *= 16777619u; }
+    return h ? h : 1u;
+}
+// CH7b lblDrawText pattern (quick_loot): style once, colour / text / rect / visibility change-only. A failed first style or text write means the
+// LBL_QUEUE1 clone has no text object: one WARN, g_badgeDead, label hidden, never retried.
+bool txtDraw(Txt& t, const char* text, const ch::Rect& r, const float* col) {
+    if (!t.c || g_badgeDead) return false;
+    if (!t.styled) {
+        if (!guikit::setFont(t.c, "dialogfont10x10") || !guikit::setText(t.c, text)) {
+            g_badgeDead = true;
+            KP_LOGV(chMain, KPLOG_WARN, "badge: text object missing on LBL_QUEUE1, badges off");
+            txtHide(t);
+            return false;
+        }
+        t.textHash = txtHash(text);
+        guikit::setAlign(t.c, 36);          // right | bottom (action hotbar LBL_HOTBARQTY)
+        guikit::setFill(t.c, nullptr);      // no template image behind the number
+        t.styled = true;
+    }
+    if (t.col[0] != col[0] || t.col[1] != col[1] || t.col[2] != col[2]) {
+        guikit::setTextColor(t.c, col[0], col[1], col[2]);
+        t.col[0] = col[0]; t.col[1] = col[1]; t.col[2] = col[2];
+    }
+    const uint32_t th = txtHash(text);
+    if (t.textHash != th) { guikit::setText(t.c, text); t.textHash = th; }
+    if (!t.rectSet || t.rect.x != r.x || t.rect.y != r.y || t.rect.w != r.w || t.rect.h != r.h) { guikit::setRect(t.c, r.x, r.y, r.w, r.h); t.rect = r; t.rectSet = true; }
+    if (t.vis != 1) { guikit::setVisible(t.c, true); guikit::setClickable(t.c, false); t.vis = 1; }   // badges stay click-through
+    return true;
+}
+
 ch::Rect unionRect(const ch::Rect& a, const ch::Rect& b) {
     const int x0 = a.x < b.x ? a.x : b.x, y0 = a.y < b.y ? a.y : b.y;
     const int x1 = (a.x + a.w) > (b.x + b.w) ? (a.x + a.w) : (b.x + b.w), y1 = (a.y + a.h) > (b.y + b.h) ? (a.y + a.h) : (b.y + b.h);
@@ -449,7 +503,7 @@ void KPATCH_CALL onHudBuild(const K2HudContext* ctx, void*) {
     const uintptr_t panel = static_cast<uintptr_t>(static_cast<uint32_t>(ctx->panel));
     const int per = g_cfg.cols * g_cfg.maxRows, total = MaxBtn;   // all slots always: Cols/MaxRows/Enabled change live, only the stride g_per follows them
     ProjGuard pg;
-    int n = 0, failAlloc = 0, failVt = 0, failTpl = 0, failOther = 0, failAppend = 0, failAppendCont = 0;
+    int n = 0, failAlloc = 0, failVt = 0, failTpl = 0, failOther = 0, failAppend = 0, failAppendCont = 0, failQty = 0, nQty = 0;
     uint32_t badVt = 0;
     int nCont = 0;
     for (int g = 0; g < ch::kNumCats; ++g) {   // pill containers first: the panel list is the draw order, so they sit behind every button label
@@ -464,29 +518,35 @@ void KPATCH_CALL onHudBuild(const K2HudContext* ctx, void*) {
     }
     KP_LOGV(chMain, nCont == ch::kNumCats ? KPLOG_INFO : KPLOG_WARN, "BUILD: containers=%d/%d", nCont, ch::kNumCats);
     for (int i = 0; i < total && i < MaxBtn; ++i) {
-        uintptr_t cs[2] = { 0, 0 };
+        uintptr_t cs[3] = { 0, 0, 0 };
         bool okSlot = true;
-        for (int k = 0; k < 2 && okSlot; ++k) {   // 0 = bg, 1 = icon
+        for (int k = 0; k < 3 && okSlot; ++k) {   // 0 = bg, 1 = icon, 2 = qty (created last: draws on top)
             int why = guikit::CF_None; uint32_t bv = 0;
             uintptr_t c = guikit::createLabelFromTemplate(panel, "LBL_QUEUE1", &why, &bv);
+            if (!c && k == 2) { ++failQty; break; }   // CH7b: a missing badge is not fatal to the slot
             if (!c) {
                 switch (why) { case guikit::CF_Alloc: ++failAlloc; break; case guikit::CF_Vtable: ++failVt; badVt = bv; break; case guikit::CF_Template: ++failTpl; break; default: ++failOther; break; }
                 okSlot = false; break;
             }
             guikit::setVisible(c, false);
             guikit::setClickable(c, false);
-            if (!guikit::appendToPanel(panel, c)) { ++failAppend; KP_LOGV(chMain, KPLOG_WARN, "BUILD: append failed, control %08x left hidden + click-through", (unsigned)c); okSlot = false; break; }
+            const bool appended = guikit::appendToPanel(panel, c);
+            if (!appended && k == 2) { ++failQty; break; }   // left hidden + click-through
+            if (!appended) { ++failAppend; KP_LOGV(chMain, KPLOG_WARN, "BUILD: append failed, control %08x left hidden + click-through", (unsigned)c); okSlot = false; break; }
             cs[k] = c;
         }
         if (!okSlot) continue;   // slot stays unused (a half-built slot's appended bg stays hidden + click-through)
         g_btn[i].bg.c = cs[0]; g_btn[i].bg.vis = 0;
         g_btn[i].icon.c = cs[1]; g_btn[i].icon.vis = 0;
+        g_btn[i].qty.c = cs[2]; g_btn[i].qty.vis = cs[2] ? 0 : -1;
+        if (cs[2]) ++nQty;
         ++n;
     }
     g_nBtn = total; g_per = per;
-    if (n == total) KP_LOGV(chMain, KPLOG_INFO, "BUILD buttons created=%d/%d slots x2 labels (panel=%08x cols=%d rows=%d)", n, total, (unsigned)panel, g_cfg.cols, g_cfg.maxRows);
-    else KP_LOGV(chMain, KPLOG_WARN, "BUILD buttons created=%d/%d alloc=%d vtable=%d(%08x) template=%d append=%d other=%d", n, total, failAlloc, failVt, (unsigned)badVt, failTpl, failAppend, failOther);
-    if (visBudget(2)) KP_LOGV(chMain, KPLOG_INFO, "VIS build controls=%d failAppend=%d", nCont + 2 * n, failAppend + failAppendCont);
+    if (n == total) KP_LOGV(chMain, KPLOG_INFO, "BUILD buttons created=%d/%d slots x3 labels badges=%d (panel=%08x cols=%d rows=%d)", n, total, nQty, (unsigned)panel, g_cfg.cols, g_cfg.maxRows);
+    else KP_LOGV(chMain, KPLOG_WARN, "BUILD buttons created=%d/%d alloc=%d vtable=%d(%08x) template=%d append=%d other=%d badgeFail=%d", n, total, failAlloc, failVt, (unsigned)badVt, failTpl, failAppend, failOther, failQty);
+    if (failQty) KP_LOGV(chMain, KPLOG_WARN, "BUILD: %d badge labels failed (those slots draw without a count)", failQty);
+    if (visBudget(2)) KP_LOGV(chMain, KPLOG_INFO, "VIS build controls=%d failAppend=%d", nCont + 2 * n + nQty, failAppend + failAppendCont);
 }
 
 void hideAllButtons(const char* why) {
@@ -497,7 +557,7 @@ void hideAllButtons(const char* why) {
     for (int i = 0; i < g_nBtn; ++i) {
         Btn& b = g_btn[i];
         if (!b.bg.c) continue;
-        widHide(b.bg); widHide(b.icon);
+        widHide(b.bg); widHide(b.icon); txtHide(b.qty);
         b.tipSet = false; b.tipClr = false;
     }
     g_haveLast = false; g_pillMask = -1; g_freeze = { false, 0, 0 }; g_frozenLog = false; g_hover = -1; g_logObj = 0; g_logType = -2;
@@ -831,7 +891,7 @@ void updateButtons(const K2HudContext* ctx) {
             Btn& b = g_btn[s];
             if (!b.bg.c) { if (k < outN[g]) ++noCtl; continue; }
             if (k >= outN[g]) {
-                if (b.bg.vis != 0 || b.icon.vis != 0) { widHide(b.bg); widHide(b.icon); b.tipSet = false; b.tipClr = false; }
+                if (b.bg.vis != 0 || b.icon.vis != 0 || b.qty.vis == 1) { widHide(b.bg); widHide(b.icon); txtHide(b.qty); b.tipSet = false; b.tipClr = false; }
                 continue;
             }
             const ch::EntryView& e = gv[g].e[ord[g][k]];
@@ -847,11 +907,22 @@ void updateButtons(const K2HudContext* ctx) {
                 memcpy(b.iconName, e.icon, 16); b.iconName[16] = 0; b.iconSet = true;
             }
             float bTint[3] = { tint[g][0], tint[g][1], tint[g][2] };
-            if (s == g_hover) { bTint[0] = 1.0f; bTint[1] = 0.35f; bTint[2] = 0.35f; }
+            float bAlpha = (s == g_hover) ? 1.0f : alp[g];
+            if (!e.usable) {   // CH7b: unusable = grey frame, dimmer, never the red hover highlight (clicks unchanged)
+                bTint[0] = bTint[1] = bTint[2] = 0.45f;
+                bAlpha = alp[g] * 0.7f;
+            } else if (s == g_hover) { bTint[0] = 1.0f; bTint[1] = 0.35f; bTint[2] = 0.35f; }
             widTint(b.bg, bTint);
-            widAlpha(b.bg, (s == g_hover) ? 1.0f : alp[g]);
+            widAlpha(b.bg, bAlpha);
             widAlpha(b.icon, e.usable ? 1.0f : 0.35f);
             widShow(b.bg, true); widShow(b.icon, false);
+            {   // CH7b stack-count badge (re-evaluated each frame, so a [Badges] hot-reload needs no extra code)
+                static const float kCream[3] = { 0.95f, 0.90f, 0.75f }, kGrey[3] = { 0.55f, 0.55f, 0.55f };
+                char qb[8];
+                const bool showQ = g_cfg.badges && !g_badgeDead && b.qty.c && ch::badgeText(e.count, g_cfg.badgeMin, qb, sizeof qb);
+                if (showQ) { ch::Rect qr; ch::badgeRect(ir, &qr); txtDraw(b.qty, qb, qr, e.usable ? kCream : kGrey); }
+                else txtHide(b.qty);
+            }
             ++visBtn;
 
             const int ei = ord[g][k];
@@ -1051,6 +1122,7 @@ bool g_pvOn = false;              // canvas built, description split asked: the 
 unsigned g_pvFrame = 0;
 bool g_pvLogged = false;
 char g_pvCaption[48] = "";
+char g_pvBadge[chprev::kBadgeMax][8] = {};   // CH7b last text per preview badge label (change-only setText)
 
 constexpr const char* kPvSolid = "uibit_fill_2wt";     // solid WHITE: the tint is the colour (the black 2bt fill cannot be tinted, bars drawn on it stay black)
 constexpr const char* kPvPill = "lbl_miscroll_hi";     // the live pills' art: the cream-bordered hi frame, so a red tint stays vibrant (lbl_miscroll_f has teal baked in)
@@ -1104,6 +1176,14 @@ void pvRefresh() {
             case chprev::PK_NAME: g_cv.put(p.label, r, pvImage(kPvSolid), kPvNameTint, 0.95f); break;
             case chprev::PK_HEALTH: g_cv.put(p.label, r, pvImage(kPvSolid), kPvHealth, 1.f); break;
             case chprev::PK_PILL: g_cv.put(p.label, r, pvImage(kPvPill), kPvPillTint, p.alpha); break;
+            case chprev::PK_BADGE: {   // CH7b: text only (no fill); colour / align / font set once at build
+                const int j = p.label - chprev::kLblBadge;
+                char qb[8];
+                if (j < 0 || j >= chprev::kBadgeMax || !ch::badgeText(p.count, chprev::kBadgeMinCount, qb, sizeof qb)) break;
+                g_cv.put(p.label, r, nullptr, nullptr, 1.f);
+                if (strcmp(qb, g_pvBadge[j]) != 0) { memcpy(g_pvBadge[j], qb, sizeof qb); g_cv.text(p.label, g_pvBadge[j]); }
+                break;
+            }
             default: {
                 void* img = pvImage(kPvIcons[p.group][p.slot & 3]);
                 if (img) g_cv.put(p.label, r, img, kPvWhite, p.alpha);
@@ -1206,12 +1286,16 @@ void pvBuildModal(const K2MenuUiApi* ui, uint32_t page) {
 
 // DeclHooks::onBuilt (the Options ctor window, after the rows): the preview labels, then the description split, then the modal and the gear.
 void pvOnBuilt(void*, uint32_t page, void* panel) {
-    g_pvOn = false; g_modalPage = 0; g_gearItem = -1; g_pagePanel = panel; g_pvFrame = 0; g_pvLogged = false; g_pvCaption[0] = 0;
+    g_pvOn = false; g_modalPage = 0; g_gearItem = -1; g_pagePanel = panel; g_pvFrame = 0; g_pvLogged = false; g_pvCaption[0] = 0; memset(g_pvBadge, 0, sizeof g_pvBadge);
     for (int i = 0; i < g_nPvImgs; ++i) if (!g_pvImgs[i].img) g_pvImgs[i].tries = 0;   // unresolved icons get a fresh 20 tries per Options open
     if (!g_mcMenu.hasModal() || !g_mcMenu.hasDescSplit()) { KP_LOGV(chMain, KPLOG_INFO, "PREVIEW skipped: provider has no modal / gear / description split (older mod-config); the four rows work as before"); return; }
     const K2MenuUiApi* ui = g_mcMenu.p;
     if (!g_cv.build(ui, panel, page, chprev::kPoolSize)) { KP_LOGV(chMain, KPLOG_WARN, "PREVIEW skipped: label pool not complete (%d of %d listed)", g_cv.n, chprev::kPoolSize); return; }
     guikit::setAlign(g_cv.w[chprev::kLblCaption].c, 18);
+    for (int j = 0; j < chprev::kBadgeMax; ++j) {   // CH7b badges: right | bottom, small font, cream (failures only lose the badge look)
+        const uintptr_t c = g_cv.w[chprev::kLblBadge + j].c;
+        guikit::setFont(c, "dialogfont10x10"); guikit::setAlign(c, 36); guikit::setTextColor(c, 0.95f, 0.90f, 0.75f);
+    }
     if (!ui->SetDescSplit(page, chpage::kPreviewPermille)) { KP_LOGV(chMain, KPLOG_WARN, "PREVIEW skipped: SetDescSplit(%u, %d) refused (listed labels stay hidden)", page, chpage::kPreviewPermille); return; }
     pvBuildModal(ui, page);
     g_pvOn = true;

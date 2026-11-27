@@ -1,6 +1,6 @@
 # Combat Action Hotbar (`combat-hotbar`)
 
-> **STATUS** Track: SHIPPABLE. Version 0.12.0-dev (matches manifest.toml).
+> **STATUS** Track: SHIPPABLE. Version 0.12.1-dev (matches manifest.toml).
 > **What it does / explores:** Replaces the vanilla target-menu action groups with clickable icon buttons in vanilla-style pills, adds Ctrl+Shift+F9..F12 invoke keys, and per-group pin/hide/sort set in `combat_hotbar.ini`.
 > **Requires:** `hud-host` (k2.hud@1, listed before this mod), Steam/Aspyr KOTOR II (manifest `kotor2_steam_aspyr` hash). Optional: `mod-config` + `menuui` for the Mod Configuration options page (the mod runs without them; only the page is missing).
 > **Known limits:** A group of 10 items shows 8 buttons at the default `Cols=2`, `MaxRows=4` (the other 2 are cut, not scrolled). No paging or scrolling yet. Standalone: no, needs hud-host. **Testing:** rich tooltips, the options page, preview and pooled-fill behaviour still need an in-game check.
@@ -26,6 +26,7 @@ Hot-reloads within 1 second (FileWatch).
 | `[Profile]` | `Pin0..Pin3`, `Hide0..Hide3`, `Sort0..Sort3` (comma lists; a token matches an entry name exactly, a `" "`-suffix when no entry has that exact name, or a `0x` engine key) |
 | `[General]` | `Verbose` (0; 1 adds per-frame and probe log lines) |
 | `[Tips]` | `Detail` (2: 0 = entry name only, 1 = + kind line with FP cost / count left, 2 = + short description and "Not usable right now"; INI only, hot-reloads) |
+| `[Badges]` | `Count` (1: stack-count number bottom-right of each item icon, 0 = off), `MinCount` (2, 1..99: smallest stack that gets a number; above 99 shows "99+"). Unusable buttons are always greyed with no hover highlight. INI only, hot-reloads |
 
 ## Logging
 

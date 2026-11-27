@@ -47,8 +47,12 @@ struct Model {
     bool usable[kMaxBtn];            // same indexing as rects
     uint32_t key[kMaxBtn];           // fake entry key (g*100 + original index), for stable per-slot icon picks
     float alpha[kMaxBtn];            // 1.0 usable, kUnusableAlpha not
-    Model() { memset(rects, 0, sizeof rects); memset(cont, 0, sizeof cont); memset(usable, 0, sizeof usable); memset(key, 0, sizeof key); for (float& a : alpha) a = 1.f; }
+    uint32_t count[kMaxBtn];         // CH7b stack size (items only, 0 = not a stack)
+    Model() { memset(rects, 0, sizeof rects); memset(cont, 0, sizeof cont); memset(usable, 0, sizeof usable); memset(key, 0, sizeof key); memset(count, 0, sizeof count); for (float& a : alpha) a = 1.f; }
 };
+
+// CH7b demo item stack sizes by entry index (the "1"s show MinCount hiding a badge; 12 shows a two-digit badge).
+constexpr uint32_t kDemoItemCounts[16] = {3, 1, 12, 2, 5, 1, 8, 4, 1, 6, 2, 9, 1, 3, 7, 1};
 
 inline int clampi(int v, int lo, int hi) { return v < lo ? lo : (v > hi ? hi : v); }
 inline int scaled(int u, int sh) { return (u * sh + 540) / 1080; }
@@ -83,7 +87,7 @@ inline Model build(const Demo& demo, const Settings& s) {
         for (int i = 0; i < gv[g].count; ++i) {
             ch::EntryView& e = gv[g].e[i];
             e.key = static_cast<uint32_t>(g * 100 + i); e.owner = 1; e.usable = !entryUnusable(demo.unusable, i);
-            e.count = g == 2 ? static_cast<uint32_t>(1 + (i * 7) % 5) : 0;
+            e.count = g == 2 ? kDemoItemCounts[i & 15] : 0;
             snprintf(names[g][i], 64, "Demo %d-%d", g, i);
         }
         pre[g] = ch::orderGroup(gv[g], names[g], prof, g, ord[g], m.per > 16 ? 16 : m.per);
@@ -95,7 +99,7 @@ inline Model build(const Demo& demo, const Settings& s) {
         for (int k = 0; k < m.outN[g] && g * m.per + k < kMaxBtn; ++k) {
             const ch::EntryView& e = gv[g].e[ord[g][k]];
             const int idx = g * m.per + k;
-            m.usable[idx] = e.usable; m.key[idx] = e.key; m.alpha[idx] = e.usable ? 1.f : kUnusableAlpha;
+            m.usable[idx] = e.usable; m.key[idx] = e.key; m.alpha[idx] = e.usable ? 1.f : kUnusableAlpha; m.count[idx] = e.count;
         }
     return m;
 }
@@ -104,10 +108,15 @@ inline Model build(const Demo& demo, const Settings& s) {
 // Each Prim is one label of the preview canvas (PreviewCanvas.h) in virtual-screen units. The label index is fixed per thing (so the z-order is stable):
 // screen backdrop 0, name bar 1, health bar 2, pill of group g at 3+g, button k of group g at 6 + g*16 + k. One label per button (the entry icon; the
 // live HUD adds a frame label under it, which the page's 80-item cap cannot afford). Entries are capped at 16 per group by the live ordering anyway.
-enum PrimKind { PK_SCREEN = 0, PK_NAME, PK_HEALTH, PK_PILL, PK_BUTTON };
+// CH7b: up to kBadgeMax stack-count badges (text labels at 55+j, after the caption so they draw on top). The live HUD's grey unusable frame is not
+// drawn here (no frame label per preview button); the icon alpha kUnusableAlpha already shows unusable.
+enum PrimKind { PK_SCREEN = 0, PK_NAME, PK_HEALTH, PK_PILL, PK_BUTTON, PK_BADGE };
 constexpr int kLblScreen = 0, kLblName = 1, kLblHealth = 2, kLblPill = 3, kLblBtn = 6, kDrawPerGroup = 16;
 constexpr int kLblCaption = kLblBtn + 3 * kDrawPerGroup;   // 54: a text caption under everything else's feet, put by the glue in pane px (not a Prim)
-constexpr int kPoolSize = kLblCaption + 1;                 // 55 labels
+constexpr int kBadgeMax = 4;                               // CH7b: the page caps its label pool (~80 items)
+constexpr int kLblBadge = kLblCaption + 1;                 // 55
+constexpr int kPoolSize = kLblBadge + kBadgeMax;           // 59 labels
+constexpr int kBadgeMinCount = 2;                          // = [Badges] MinCount default
 
 // The part of the virtual screen the preview shows: the top-centre area where the target menu lives, 760 x 420 units of a 1080p screen (scaled by
 // height, clamped to the screen). Fixed per screen preset (it never depends on the counts), so the menu does not jump when entries come and go.
@@ -120,7 +129,7 @@ inline View viewOf(const Model& m) {
     return v;
 }
 constexpr int kMaxPrims = kPoolSize;
-struct Prim { int label; int kind; ch::Rect r; int group; int slot; float alpha; };
+struct Prim { int label; int kind; ch::Rect r; int group; int slot; float alpha; uint32_t count = 0; };
 
 // Fills out[] (cap kMaxPrims) and returns the count. The name bar is the top 60 % of the banner and the health bar the rest (the banner is the union
 // of LBL_NAME and PB_HEALTH). Pills are the model's containers (hidden groups have none); buttons are the model's rects, first 16 per group.
@@ -137,6 +146,16 @@ inline int buildPrims(const Model& m, Prim* out, int cap) {
             const int idx = g * m.per + k;
             add(kLblBtn + g * kDrawPerGroup + k, PK_BUTTON, m.rects[idx], g, k, m.alpha[idx]);
         }
+    }
+    int nb = 0;   // CH7b badges: item buttons whose count passes MinCount, first kBadgeMax, rect = the live badgeRect of the button rect
+    for (int k = 0; k < m.outN[2] && k < kDrawPerGroup && 2 * m.per + k < kMaxBtn && nb < kBadgeMax; ++k) {
+        const int idx = 2 * m.per + k;
+        char qb[8];
+        if (!ch::badgeText(m.count[idx], kBadgeMinCount, qb, sizeof qb)) continue;
+        ch::Rect br; ch::badgeRect(m.rects[idx], &br);
+        const int before = n;
+        add(kLblBadge + nb, PK_BADGE, br, 2, k, 1.f);
+        if (n > before) { out[n - 1].count = m.count[idx]; ++nb; }
     }
     return n;
 }

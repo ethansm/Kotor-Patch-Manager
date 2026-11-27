@@ -710,4 +710,27 @@ inline TipAction tooltipStep(bool& tipSet, bool& tipClr, A& tipKey, const B& key
     return TipAction::Set;
 }
 
+// ---- CH7b stack-count badge (pure, host-tested) ----
+// Badge text for a stack of `count`: false (hide) below max(1, minCount) or when the buffer is too small (needs 4 bytes for "99+").
+// Otherwise writes the decimal count, or "99+" above 99. ASCII only (bitmap fonts).
+inline bool badgeText(uint32_t count, int minCount, char* out, int cap) {
+    if (!out || cap < 4) return false;
+    const uint32_t lo = (uint32_t)(minCount < 1 ? 1 : minCount);
+    if (count < lo) return false;
+    if (count > 99) { out[0] = '9'; out[1] = '9'; out[2] = '+'; out[3] = 0; return true; }
+    int n = 0;
+    if (count >= 10) out[n++] = (char)('0' + count / 10);
+    out[n++] = (char)('0' + count % 10);
+    out[n] = 0;
+    return true;
+}
+
+// Badge rect inside an icon rect: bottom strip, h = max(12, ir.h/3), right edge inset 2 px (text is right|bottom aligned).
+inline void badgeRect(const Rect& ir, Rect* out) {
+    if (!out) return;
+    const int h = (ir.h / 3 > 12) ? ir.h / 3 : 12;
+    const int w = (ir.w - 2 >= 1) ? ir.w - 2 : 1;
+    *out = { ir.x, ir.y + ir.h - h, w, h };
+}
+
 }  // namespace ch
