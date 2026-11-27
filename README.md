@@ -6,6 +6,9 @@ It operates via a runtime DLL/SO/DYLIB-injection scheme, which installs the appl
 
 See roadmap [here](docs/Roadmap2026.md).
 
+## About this fork
+This is [ethansm](https://github.com/ethansm)'s fork of [LaneDibello/Kotor-Patch-Manager](https://github.com/LaneDibello/Kotor-Patch-Manager). It adds about 50 patches, mostly for KOTOR II Steam/Aspyr: HUD and menu additions, inventory and equipment tools, companion AI, rendering and performance fixes, engine fixes, and the shared providers they build on. **[docs/FORK_PATCHES.md](docs/FORK_PATCHES.md)** lists every one, with its track, version, requirements and supported builds. The rest of this README is upstream's.
+
 ## Install
 *NOTE: The patch manager is still in beta; there are likely going to be various issues within the current release. Please feel free to create GitHub Issues or contact Lane if anything strange comes up.*
 
