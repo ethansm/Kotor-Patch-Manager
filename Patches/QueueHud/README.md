@@ -1,6 +1,6 @@
 # Queue HUD (`queue-hud`)
 
-> **STATUS** Track: SHIPPABLE. Version 0.4.12-dev (matches manifest.toml).
+> **STATUS** Track: SHIPPABLE. Version 0.4.13-dev (matches manifest.toml).
 > **What it does / explores:** Shows the vanilla combat action-queue panel out of combat, so a use-item or cast-spell command given while paused stays visible while it waits. Buffers those commands, draws per-member queue strips and a Cancel control.
 > **Requires:** Steam/Aspyr KOTOR II only (target hash in manifest.toml `[patch.supported_versions]`); KPM with the `portrait-slots` (`k2.portraitslots@1`) and `hud-host` (`k2.hud@1`) providers.
 > **Known limits:** Steam/Aspyr only, no GOG address map. Cancel controls and the leader panel are out of combat only; left-click on a companion strip icon also works in combat. Items (medpacs) queued for a companion still wait. Per-node cancel address (RQ12) unverified. Hook DB backing unconfirmed (see Hooks). **Testing:** see Testing below.
@@ -15,6 +15,7 @@ Shared kit art (`qh_frame`, `kit_frame`) comes from `Common/HudKit.h`. Shared he
 - Cancel control: a wide "CANCEL QUEUE" bar under the leader queue, and a control left of each companion strip. A click clears that member's queue (`CServerExoApp::ClearAllActions`).
 - Left-click on one companion strip icon removes only that action (0.4.11, also in combat).
 - Out of combat, a stray no-target attack the engine parks in front of a queued power/item is removed, so the power/item runs first (0.4.12, `strip_stale_attack`).
+- In combat, the engine's own queued auto-attack moves behind a power/item the leader clicks, so the click runs next; attacks you click yourself keep their place (0.4.13, `auto_attack_last`).
 - Combat hand-off: the buffered queue goes to the engine when combat starts. Commands the engine wipes while paused are re-injected after unpause.
 
 ## Requirements and install
@@ -36,6 +37,7 @@ Key summary.
 | `companion_server_cast` | 1 | QL20: companion Force powers run while another member leads |
 | `pause_reinject` | 1 | Re-inject commands the engine wiped while paused |
 | `strip_stale_attack` | 1 | QL26: out of combat, remove the engine's no-target attack in front of a queued power/item |
+| `auto_attack_last` | 1 | QL27: in combat, the leader's engine-queued auto-attack moves behind a clicked power/item (the attack already swinging still finishes; companions untouched) |
 | `handoff_on_combat` | 1 | Hand the buffered queue to the engine at combat start |
 | `hide_banner_soft` / `hide_redbar_soft` | 1 | Hide the top banner / red bar in soft (ally-only) combat |
 | `log` | 1 | Edge-triggered log lines (`kplog.ini [queue-hud]`) |

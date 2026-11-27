@@ -1,4 +1,4 @@
-// Queue HUD 0.4.12-dev (CS10 strip slot, CS11 kit art, slim strip) (Steam Aspyr build 6A522E71...). A GREEN copy of the vanilla combat action-queue panel (up to 4 icons), drawn
+// Queue HUD 0.4.13-dev (CS10 strip slot, CS11 kit art, slim strip) (Steam Aspyr build 6A522E71...). A GREEN copy of the vanilla combat action-queue panel (up to 4 icons), drawn
 // OUT of combat so a command given while paused (a use-item / cast-spell that waits for unpause) is visible.
 // Research: the project workspace (0x74DC80 panel filler, 0x74E0B0 icon resolver); logic: QueueHudLogic.h.
 //
@@ -1396,10 +1396,16 @@ bool g_handoffHold[3];   // B1: HANDOFF_HOLD already traced for this episode (re
 // QL10 (handoff_keep_new): round nodes already pending at the first send (the player's new click); roundOrderTick keeps them behind our re-sent commands.
 struct RoundOrder { uint32_t foreign[qh::kMaxRound] = {}; int n = 0; DWORD armedAt = 0; bool watch = false; uint32_t seen[qh::kMaxRound] = {}; int nSeen = 0; DWORD lastScan = 0, clickConsumed = 0; const char* lastSkipWhy = nullptr; };   // RL6: watch/seen/lastScan/clickConsumed grow the foreign set with in-combat clicks
 RoundOrder g_roundOrder[3];
+// QL27 per-member state. g_atkClass: AUTO/PLAYER class per round node (reset = the next scan seeds). AutoAtkMove: per-pointer applied
+// moves / failed tries (engine-fight back-off), plus the one-shot POST log after an apply. Both reset / swap exactly where g_roundOrder does.
+qh::AtkClass g_atkClass[3];
+struct AutoAtkMove { uint32_t ptr[qh::kMaxRound] = {}; uint8_t moves[qh::kMaxRound] = {}, fails[qh::kMaxRound] = {}; int n = 0; bool postPending = false; };
+AutoAtkMove g_autoAtkMove[3];
 constexpr DWORD kRoundOrderMaxMs = 600000;   // safety net; normally disarmed as soon as no foreign node is pending
 // Round-list watch: 15 s after each hand-off dispatch, roundWatchTick logs the member's round / cur / entry state on change only.
 DWORD g_roundWatchUntil[3] = {};
 DWORD g_combatClickTick = 0;   // RL6: last player Force power / item click made in combat (tick)
+DWORD g_atkClickTick = 0;   // QL27: last left-button press edge (any click, nonzero); the first new attack node within qh::kPlayerAtkMs is the player's
 DWORD g_lastClickTick = 0;   // last left-button press edge (any frame, trace on or off); a head that vanishes right after one was cancelled, not wiped
 struct RoundLast { int subs[qh::kMaxRound]; int n = -1; int cur = -2; int ne = -1; } g_lastRound[3];
 bool g_prevCombat[3] = {false, false, false};
@@ -1832,6 +1838,117 @@ void stripStaleAttack(int k, const char* at) {
     }
 }
 
+// QL27 (auto_attack_last): reorder member k's round list to `order` only after a read-only pre-walk proves the live list holds exactly
+// s.rn's nodes, in order, ending in a null next (a 5th node or an unreadable node refuses). Then the roundListHandle guards, then
+// qh::applyOrder (pop n, identity check, push in order; restore popped order on a mismatch). The QL10 rotate block is not touched.
+// Returns 1 = reordered, 0 = pop/identity mismatch (list restored), -1 = walk refused, -2 = guard (CrRunning / list unreadable).
+int applyRoundOrderChecked(uintptr_t srv, const Snapshot& s, const int* order) {
+    if (!order || !s.round || s.nrn < 2 || s.nrn > qh::kMaxRound) return -1;
+    uint32_t walk[qh::kMaxRound + 1] = {};
+    int nWalk = 0;
+    bool endNull = false;
+    uint32_t list = 0, internal = 0, node = 0;
+    if (!(saferead::readAt(SiteCancel + 0x40, s.round, actq::RdList, &list) && list &&
+          saferead::readAt(SiteCancel + 0x41, list, 0, &internal) && internal &&
+          saferead::readAt(SiteCancel + 0x42, internal, 0, &node))) return -1;
+    for (int i = 0; i <= qh::kMaxRound; ++i) {   // one past the cap: a 5th node means a list longer than the snapshot can hold
+        if (!node) { endNull = true; break; }
+        uint32_t data = 0, next = 0;
+        const bool okD = saferead::readAt(SiteCancel + 0x43, node, actq::NodeData, &data);
+        if (!saferead::readAt(SiteCancel + 0x44, node, actq::NodeNext, &next)) break;   // unreadable link: endNull stays false
+        walk[nWalk++] = okD ? data : 0;
+        node = next;
+    }
+    if (!qh::roundWalkMatches(walk, nWalk, endNull, s.rn, s.nrn)) return -1;
+    uint32_t w = 0;
+    if (!roundListHandle(srv, s.round, &w)) return -2;
+    auto pop = reinterpret_cast<uint32_t(__thiscall*)(uintptr_t)>(gameaddr::ActListRemoveHead);
+    auto push = reinterpret_cast<void(__thiscall*)(uintptr_t, uint32_t)>(gameaddr::ActListAddTail);
+    uint32_t ptrs[qh::kMaxRound];
+    for (int i = 0; i < s.nrn; ++i) ptrs[i] = s.rn[i].ptr;
+    const bool ok = qh::applyOrder([&]() { return pop(w); }, [&](uint32_t d) { push(w, d); }, ptrs, s.nrn, order);
+    return ok ? 1 : 0;
+}
+
+constexpr int kAutoAtkMaxFails = 3;   // a node whose reorder failed this often is left where it is (no per-frame retry spam)
+
+void autoAttackLastTick(DWORD now) {
+    const int k = 0;   // the controlled member only; companions keep their own (MF1) default attack
+    const bool combatNow = g_combat != 0 && !g_combatUnreadable;
+    if (!qh::autoAttackLastAllowed(g_cfg.autoAttackLast, combatNow, g_handoff[k].pending, g_roundOrder[k].n > 0 || g_roundOrder[k].watch,
+                                   g_detached[k].n > 0, g_handoffHold[k], g_cpend[k].on)) {
+        g_atkClass[k] = qh::AtkClass(); g_autoAtkMove[k] = AutoAtkMove();   // blocked: nodes made meanwhile (hand-off re-sends, QL10) seed as PLAYER
+        return;
+    }
+    party::Fail why = party::F_None;
+    const uintptr_t tbl = party::table(&why);
+    const uintptr_t cli = tbl ? party::member(tbl, k) : 0;
+    const uintptr_t srv = cli ? party::serverCreature(cli) : 0;
+    Snapshot s;
+    if (!srv || !gatherFor(srv, s)) return;
+    const int nrn = s.nrn < qh::kMaxRound ? s.nrn : qh::kMaxRound;
+    const bool trace = g_logOn && g_cfg.traceQueue;
+    AutoAtkMove& mv = g_autoAtkMove[k];
+    if (mv.postPending) {
+        mv.postPending = false;
+        if (trace) { char line[qh::kLogLineMax]; qh::fmtAutoAttackLastPost(line, sizeof line, k, s.rn, nrn); QTRACE("%s", line); }
+    }
+    const bool wasSeeded = g_atkClass[k].seeded;
+    const DWORD tokTick = g_atkClickTick;
+    bool used = false;
+    uint8_t mark[qh::kMaxRound] = {};
+    const qh::AtkClass nc = qh::classifyRound(g_atkClass[k], s.rn, nrn, qh::atkTokenLive(tokTick, g_combatClickTick, now), &used, mark);
+    if (used) g_atkClickTick = 0;   // single-use: the click's attack node got it
+    if (trace) {
+        for (int i = 0; i < nrn; ++i) {
+            if (!(wasSeeded ? mark[i] != 0 : s.rn[i].subType == qh::kSubAttack)) continue;
+            char line[qh::kLogLineMax];
+            const int age = (nc.cls[i] == qh::ATK_PLAYER && used && tokTick) ? static_cast<int>(now - tokTick) : -1;
+            qh::fmtAtkClass(line, sizeof line, k, nc.ptr[i], nc.cls[i], age);
+            QTRACE("%s", line);
+        }
+    }
+    g_atkClass[k] = nc;
+    {   // keep back-off counters only for pointers still in the list (a reused pointer starts fresh)
+        AutoAtkMove keep; keep.postPending = mv.postPending;
+        for (int i = 0; i < nrn; ++i)
+            for (int j = 0; j < mv.n; ++j)
+                if (mv.ptr[j] == s.rn[i].ptr) { keep.ptr[keep.n] = mv.ptr[j]; keep.moves[keep.n] = mv.moves[j]; keep.fails[keep.n] = mv.fails[j]; ++keep.n; break; }
+        mv = keep;
+    }
+    if (!wasSeeded) return;   // the seed scan never reorders
+    int order[qh::kMaxRound];
+    int moved = qh::autoAttackOrder(s.rn, g_atkClass[k].cls, nrn, order);
+    if (moved == 0) return;
+    auto slotOf = [&](uint32_t p) { for (int j = 0; j < mv.n; ++j) if (mv.ptr[j] == p) return j; return -1; };
+    bool fought = false, failedOut = false;
+    for (int p = 0; p < nrn; ++p) {
+        const int idx = order[p];
+        if (idx == p || !qh::atkIsAuto(g_atkClass[k].cls[idx])) continue;
+        const int j = slotOf(s.rn[idx].ptr);
+        if (j < 0) continue;
+        if (mv.moves[j] >= qh::kAutoAtkMaxMoves) { g_atkClass[k].cls[idx] = qh::ATK_PLAYER; fought = true; }      // the engine keeps putting it back: let it win
+        else if (mv.fails[j] >= kAutoAtkMaxFails) { g_atkClass[k].cls[idx] = qh::ATK_PLAYER; failedOut = true; }  // already logged kAutoAtkMaxFails times
+    }
+    if (fought && trace) { char line[qh::kLogLineMax]; qh::fmtAutoAttackLast(line, sizeof line, k, nrn, 0, false, "engine_fights"); QTRACE("%s", line); }
+    if (fought || failedOut) { moved = qh::autoAttackOrder(s.rn, g_atkClass[k].cls, nrn, order); if (moved == 0) return; }
+    const int r = applyRoundOrderChecked(srv, s, order);
+    for (int p = 0; p < nrn; ++p) {
+        const int idx = order[p];
+        if (idx == p || !qh::atkIsAuto(g_atkClass[k].cls[idx])) continue;
+        int j = slotOf(s.rn[idx].ptr);
+        if (j < 0 && mv.n < qh::kMaxRound) { j = mv.n++; mv.ptr[j] = s.rn[idx].ptr; mv.moves[j] = 0; mv.fails[j] = 0; }
+        if (j < 0) continue;
+        if (r == 1) ++mv.moves[j]; else ++mv.fails[j];
+    }
+    if (r == 1) mv.postPending = true;
+    if (trace) {
+        char line[qh::kLogLineMax];
+        qh::fmtAutoAttackLast(line, sizeof line, k, nrn, moved, r == 1, r == 1 ? "applied" : r == 0 ? "mismatch" : r == -1 ? "walk" : "guard");
+        QTRACE("%s", line);
+    }
+}
+
 constexpr DWORD kDetachEndGraceMs = 20000;   // RQ9: after combat, how long a detached batch may wait for the buffer to drain before it is discarded
 void traceDetach(int k, int n, const char* act, bool ok, const char* why, bool always = false) {
     if (!g_logOn || (!always && !g_cfg.traceQueue)) return;
@@ -2024,7 +2141,7 @@ static void syncPartyIdentity(uintptr_t tbl, DWORD now, bool skip[3]) {
                 if (bufBusy(g_itemQueue[k])) { ++dropped; traceDropAll(k, qh::DR_PARTY_CHANGED); g_itemQueue[k].clear(); }
                 discardDetached(k, "party_changed", true);   // RV3 signature (default arg on the forward declaration); true = default-level line, not just a trace
                 g_flagGate[k].reset(); g_kickLast[k] = 0; g_downSince[k] = 0; g_identLostMs[k] = 0; g_identLastTick[k] = 0; g_prevRiWhy[k] = g_prevDsWhy[k] = -1;
-                g_roundOrder[k] = RoundOrder(); g_cpend[k] = CPending(); g_handoffHold[k] = false; g_heldStrip[k] = HeldStrip();   // R7: stale pointers / icons from the old party
+                g_roundOrder[k] = RoundOrder(); g_atkClass[k] = qh::AtkClass(); g_autoAtkMove[k] = AutoAtkMove(); g_cpend[k] = CPending(); g_handoffHold[k] = false; g_heldStrip[k] = HeldStrip();   // R7: stale pointers / icons from the old party
             }
             g_heldLeader = Held();   // R7: dead creature pointer in Held.creature, stale leader icons for 400 ms
             if (g_logOn && g_cfg.traceQueue) QTRACE("PARTY_GEN old=%08x,%08x,%08x new=%08x,%08x,%08x dropped=%d", (unsigned)g_prevSrv[0], (unsigned)g_prevSrv[1], (unsigned)g_prevSrv[2], (unsigned)nowSrv[0], (unsigned)nowSrv[1], (unsigned)nowSrv[2], dropped);
@@ -2052,6 +2169,7 @@ static void syncPartyIdentity(uintptr_t tbl, DWORD now, bool skip[3]) {
             std::swap(g_handoff[k], g_handoff[slot]);
             std::swap(g_handoffHold[k], g_handoffHold[slot]);
             std::swap(g_roundOrder[k], g_roundOrder[slot]);
+            std::swap(g_atkClass[k], g_atkClass[slot]); std::swap(g_autoAtkMove[k], g_autoAtkMove[slot]);   // QL27
             std::swap(g_roundWatchUntil[k], g_roundWatchUntil[slot]);
             std::swap(g_lastRound[k], g_lastRound[slot]);
             std::swap(g_prevGatherOk[k], g_prevGatherOk[slot]);
@@ -2147,8 +2265,8 @@ void tickItemQueues(DWORD now, bool inMenu) {
         }
     }
     if (inMenu || g_combat != 0) {
-        if (combatNow) { g_lastCombatTick = now; for (int k = 0; k < 3; ++k) if (edgeFlags[k]) { g_roundOrder[k] = RoundOrder(); discardDetached(k, "new_combat"); }   // a new combat starts clean
-                         combatEdgeTrace(now, edgeFlags); handoffTick(now, edgeFlags); roundOrderTick(now, edgeFlags); detachTick(now, false); roundWatchTick(now); }   // unreadable HUD flags: no hand-off and no drop, the buffers wait
+        if (combatNow) { g_lastCombatTick = now; for (int k = 0; k < 3; ++k) if (edgeFlags[k]) { g_roundOrder[k] = RoundOrder(); g_atkClass[k] = qh::AtkClass(); g_autoAtkMove[k] = AutoAtkMove(); discardDetached(k, "new_combat"); }   // a new combat starts clean
+                         combatEdgeTrace(now, edgeFlags); handoffTick(now, edgeFlags); roundOrderTick(now, edgeFlags); autoAttackLastTick(now); detachTick(now, false); roundWatchTick(now); }   // unreadable HUD flags: no hand-off and no drop, the buffers wait
         return;
     }
     if (!tbl) return;
@@ -2641,6 +2759,7 @@ void KPATCH_CALL onFrameBegin(const K2PsContext* ctx, void*) {
     const bool inMenu = menuKnown && (ctx->inMenu != 0);
     const bool ledge = guikit::clickEdge(g_lmb);   // polled every frame so a held press never fires on reopen
     if (ledge) {
+        { const DWORD t = GetTickCount(); g_atkClickTick = t ? t : 1; }   // QL27: every press arms the attack-click token (a skill hook in the same click voids it)
         int cx = 0, cy = 0;
         if (!guikit::cursorEngine(&cx, &cy) || cancelClickAt(cx, cy)) g_lastClickTick = GetTickCount();   // RQ11: unknown cursor keeps the old behaviour; other clicks never read as Cancel
     }
@@ -2838,7 +2957,7 @@ void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
     loadIni();
     g_logOn = g_cfg.log;
-    KP_LOG(chMain, "0.4.12-dev: kit=%d frame_alpha=%.2f cancel=%d enabled=%d waiting_dim=%d border_px=%d log=%d companions=%d strip_icon_px=%d strip_side=%s strip_max=%d waiting_icon_dim=%d strip_head_pct=%d", g_cfg.kit ? 1 : 0, g_cfg.frameAlpha, g_cfg.cancel ? 1 : 0, g_cfg.enabled ? 1 : 0, g_cfg.waitingDim ? 1 : 0, g_cfg.borderPx, g_cfg.log ? 1 : 0, g_cfg.companions ? 1 : 0, g_cfg.stripIconPx, g_cfg.stripSide == qh::kSideBelow ? "below" : g_cfg.stripSide == qh::kSideAbove ? "above" : "left", g_cfg.stripMax, g_cfg.waitingIconDim ? 1 : 0, g_cfg.stripHeadPct);
+    KP_LOG(chMain, "0.4.13-dev: kit=%d frame_alpha=%.2f cancel=%d enabled=%d waiting_dim=%d border_px=%d log=%d companions=%d strip_icon_px=%d strip_side=%s strip_max=%d waiting_icon_dim=%d strip_head_pct=%d", g_cfg.kit ? 1 : 0, g_cfg.frameAlpha, g_cfg.cancel ? 1 : 0, g_cfg.enabled ? 1 : 0, g_cfg.waitingDim ? 1 : 0, g_cfg.borderPx, g_cfg.log ? 1 : 0, g_cfg.companions ? 1 : 0, g_cfg.stripIconPx, g_cfg.stripSide == qh::kSideBelow ? "below" : g_cfg.stripSide == qh::kSideAbove ? "above" : "left", g_cfg.stripMax, g_cfg.waitingIconDim ? 1 : 0, g_cfg.stripHeadPct);
     if (g_iniRejected > 0) QLOGV(chMain, KPLOG_WARN, "queue_hud.ini: %d line(s) not applied (unknown key, bad value or over 255 bytes), first at line %d; those keys keep their defaults", g_iniRejected, g_iniFirstBad);
     QLOG(chMain, "pause_eaten_wait=%d dispatch_wait_flags=%d", g_cfg.pauseEatenWait ? 1 : 0, g_cfg.dispatchWaitFlags ? 1 : 0);
     if (g_cfg.spellReplayPosSeen) QLOG(chMain, "ini: spell_replay_pos is obsolete and ignored (0.4.6-dev)");

@@ -263,6 +263,7 @@ struct Config {
     bool handoffDetachHeld = true;  // handoff_detach_held: while an engine-held command waits, take the player's new round nodes out of the list and put them back after the hand-off (new power/attack runs LAST)
     bool companionServerCast = true; // companion_server_cast: a non-controlled member's queued Force power runs on that member via the server route (QL20; 0 = hold until it leads, QL17)
     bool stripStaleAttack = true;   // strip_stale_attack: out of combat, remove the engine's no-target attack round nodes before our cast/item send (QL26)
+    bool autoAttackLast = true;     // auto_attack_last: in combat, the engine's own queued auto-attack moves behind a skill the leader clicked (QL27)
     bool handoffResendHeld = true;  // handoff_resend_held: re-send an engine-held active command the engine wipes at combat start (default on)
     bool spellReplayPosSeen = false;   // legacy key spell_replay_pos was in the ini (accepted, ignored)
     bool hideBannerSoft = true;     // hide_banner_soft: hide the top combat banner while combat is "soft" (only own-party targets, no hostile)
@@ -564,10 +565,10 @@ inline bool parseSide(const char* b, const char* e, int* side) {
 }  // namespace detail
 
 // One INI line. Blank, ';' / '#' comments and [section] lines are ignored (true); an inline "; note" after a value is ignored (RL15).
-// key=value (spaces/tabs trimmed, key case-insensitive). The 38 keys:
+// key=value (spaces/tabs trimmed, key case-insensitive). The 39 keys:
 //   bool (0/1/true/false/on/off/yes/no): enabled, kit, cancel, waiting_dim, waiting_icon_dim, log, trace_queue, trace_clicks, trace_mode, companions,
 //     pause_reinject, pause_eaten_wait, dispatch_wait_flags, handoff_on_combat, handoff_clear_first, handoff_keep_new, handoff_keep_unpaused,
-//     handoff_detach_held, handoff_resend_held, strip_stale_attack, companion_server_cast, hide_banner_soft, hide_redbar_soft, show_in_combat,
+//     handoff_detach_held, handoff_resend_held, strip_stale_attack, auto_attack_last, companion_server_cast, hide_banner_soft, hide_redbar_soft, show_in_combat,
 //     spell_replay_pos (obsolete after RV1: accepted, ignored).
 //   float 0..1 (clamped): frame_alpha, bg_alpha, border_alpha, waiting_alpha. rgb "r,g,b" each 0..1: bg_rgb, border_rgb, waiting_dim_rgb.
 //   int: border_px (a single digit 1..6), strip_icon_px (0 = auto, else 8..96), strip_side (left | above | below), strip_max (a single digit 1..4),
@@ -618,6 +619,7 @@ inline bool parseIniLine(Config& c, const char* line) {
     if (detail::keyEq(kb, ke, "handoff_detach_held")) return detail::parseBool(vb, ve, &c.handoffDetachHeld);
     if (detail::keyEq(kb, ke, "companion_server_cast")) return detail::parseBool(vb, ve, &c.companionServerCast);
     if (detail::keyEq(kb, ke, "strip_stale_attack")) return detail::parseBool(vb, ve, &c.stripStaleAttack);
+    if (detail::keyEq(kb, ke, "auto_attack_last")) return detail::parseBool(vb, ve, &c.autoAttackLast);
     if (detail::keyEq(kb, ke, "handoff_resend_held")) return detail::parseBool(vb, ve, &c.handoffResendHeld);
     if (detail::keyEq(kb, ke, "spell_replay_pos")) { c.spellReplayPosSeen = true; return true; }
     if (detail::keyEq(kb, ke, "hide_banner_soft")) return detail::parseBool(vb, ve, &c.hideBannerSoft);
@@ -1490,6 +1492,130 @@ inline int fmtStaleAttack(char* out, int cap, int m, int n, const char* why, boo
     w.s(" why="); w.s(why);
     w.s(" ok="); w.i(ok ? 1 : 0);
     w.s(" at="); w.s(at);
+    return w.done();
+}
+
+// QL27 (auto_attack_last): in combat the engine queues the leader's next auto-attack round node (subType 1) on its own after a swing ends.
+// A skill the player then clicks lands behind it (log: ROUND m=0 n=1 subs=1, then subs=1,9 and the attack runs first). Each new attack
+// node is classed PLAYER (a left click armed a token within kPlayerAtkMs; the first new attack consumes it) or AUTO (no token).
+// AUTO attacks ahead of a 9/10/11 node are moved behind it (stable). PLAYER attacks keep their place (the player's clicks stay FIFO).
+constexpr uint32_t kPlayerAtkMs = 3000;        // click -> attack node window (walk-up to a distant enemy, L4953 pattern); tune after play
+constexpr uint32_t kSkillClickSameMs = 100;    // a skill/item hook within this of the press = the same click (not an attack click)
+constexpr int kAutoAtkMaxMoves = 2;         // the same AUTO node moved more than this = the engine fights back: stop moving it
+enum AtkCls : uint8_t { ATK_PLAYER = 0, ATK_AUTO = 1, ATK_SEED = 2 };   // SEED = present at the seed scan (treated as PLAYER)
+struct AtkClass {
+    uint32_t ptr[kMaxRound] = {};
+    uint8_t cls[kMaxRound] = {};
+    int n = 0;
+    bool seeded = false;   // false = next scan seeds (after a reset: combat edge, party swap/reset, feature start)
+};
+inline bool atkIsAuto(uint8_t c) { return c == ATK_AUTO; }
+// The press token is live: set, not consumed by a skill/item hook for the same click (|dt| <= kSkillClickSameMs), within kPlayerAtkMs.
+inline bool atkTokenLive(uint32_t atkTick, uint32_t combatClickTick, uint32_t now) {
+    if (atkTick == 0) return false;
+    if (combatClickTick != 0) {
+        const int dt = static_cast<int>(combatClickTick - atkTick);
+        if (dt >= -static_cast<int>(kSkillClickSameMs) && dt <= static_cast<int>(kSkillClickSameMs)) return false;
+    }
+    return static_cast<uint32_t>(now - atkTick) <= kPlayerAtkMs;
+}
+// One classification for a scan. Kept pointers keep their class; pointers no longer present are dropped (a reused pointer reads as new).
+// New attack nodes: the first with tokenLive is PLAYER (*tokenUsed = true), the rest AUTO. Non-attack nodes get ATK_PLAYER (never moved).
+// Seed scan (!prev.seeded): every present node is ATK_SEED and the result is seeded (the caller does no reordering on that scan).
+// newMark[i] (optional) = 1 when rn[i] is an attack node classified fresh this scan (for the ATK_CLASS log).
+inline AtkClass classifyRound(const AtkClass& prev, const RNode* rn, int nrn, bool tokenLive, bool* tokenUsed, uint8_t* newMark = nullptr) {
+    AtkClass out;
+    out.seeded = true;
+    if (tokenUsed) *tokenUsed = false;
+    const int n = (!rn || nrn < 0) ? 0 : (nrn < kMaxRound ? nrn : kMaxRound);
+    bool tok = tokenLive;
+    for (int i = 0; i < n; ++i) {
+        out.ptr[i] = rn[i].ptr;
+        if (newMark) newMark[i] = 0;
+        if (!prev.seeded) { out.cls[i] = ATK_SEED; continue; }
+        int j = -1;
+        for (int q = 0; q < prev.n && q < kMaxRound; ++q) if (prev.ptr[q] == rn[i].ptr) { j = q; break; }
+        if (j >= 0) { out.cls[i] = prev.cls[j]; continue; }
+        if (rn[i].subType != kSubAttack) { out.cls[i] = ATK_PLAYER; continue; }
+        if (newMark) newMark[i] = 1;
+        if (tok) { out.cls[i] = ATK_PLAYER; tok = false; if (tokenUsed) *tokenUsed = true; }
+        else out.cls[i] = ATK_AUTO;
+    }
+    out.n = n;
+    return out;
+}
+// Stable partition: when an AUTO attack sits ahead of any 9/10/11 node, non-AUTO nodes first (in order), then the AUTO attacks (in order).
+// order[i] = index of the node that goes to position i. Returns the count of AUTO nodes that change position (0 = leave the list alone).
+inline int autoAttackOrder(const RNode* rn, const uint8_t* cls, int n, int* order) {
+    if (!rn || !cls || !order || n < 2) return 0;
+    if (n > kMaxRound) n = kMaxRound;
+    bool autoBeforeSkill = false, seenAuto = false;
+    for (int i = 0; i < n; ++i) {
+        if (rn[i].subType == kSubAttack && atkIsAuto(cls[i])) seenAuto = true;
+        else if (seenAuto && (rn[i].subType == 9 || rn[i].subType == 10 || rn[i].subType == 11)) autoBeforeSkill = true;
+    }
+    if (!autoBeforeSkill) return 0;
+    int k = 0;
+    for (int i = 0; i < n; ++i) if (!(rn[i].subType == kSubAttack && atkIsAuto(cls[i]))) order[k++] = i;
+    const int firstAuto = k;
+    for (int i = 0; i < n; ++i) if (rn[i].subType == kSubAttack && atkIsAuto(cls[i])) order[k++] = i;
+    int moved = 0;
+    for (int p = firstAuto; p < n; ++p) if (order[p] != p) ++moved;
+    return moved;
+}
+// Gates for member 0 this frame (any false = no reorder): switch on, combat readable, no hand-off pending, no QL10 order armed/watching,
+// no detached nodes held, no HANDOFF_HOLD episode, no Cancel in flight.
+inline bool autoAttackLastAllowed(bool cfgOn, bool combatNow, bool handoffPending, bool roundOrderArmed, bool detachActive, bool handoffHold, bool cancelPending) {
+    return cfgOn && combatNow && !handoffPending && !roundOrderArmed && !detachActive && !handoffHold && !cancelPending;
+}
+// Read-only pre-walk check: the live list holds exactly the snapshot's nodes, in order. walkPtrs = data pointers read node by node
+// (0 = a read failed or a null data pointer), nWalk = nodes walked, endNull = the walk ended on a null next (false = stopped at the cap).
+inline bool roundWalkMatches(const uint32_t* walkPtrs, int nWalk, bool endNull, const RNode* rn, int nrn) {
+    if (!walkPtrs || !rn || nrn < 2 || nrn > kMaxRound || !endNull || nWalk != nrn) return false;
+    for (int i = 0; i < nrn; ++i) if (walkPtrs[i] == 0 || walkPtrs[i] != rn[i].ptr) return false;
+    return true;
+}
+// Pop n nodes, check they are ptrs[0..n) in order, push them back in `order`. On a short pop or a mismatch every popped node is pushed
+// back in popped order (the list is as it was). Safe only after roundWalkMatches proved the list holds exactly n nodes. true = reordered.
+template <class Pop, class Push>
+inline bool applyOrder(Pop pop, Push push, const uint32_t* ptrs, int n, const int* order) {
+    if (!ptrs || !order || n <= 0 || n > kMaxRound) return false;
+    uint32_t d[kMaxRound] = {};
+    int popped = 0;
+    for (; popped < n; ++popped) { d[popped] = pop(); if (d[popped] == 0) break; }
+    bool ok = popped == n;
+    for (int i = 0; i < n && ok; ++i) ok = d[i] == ptrs[i];
+    for (int i = 0; i < n && ok; ++i) ok = order[i] >= 0 && order[i] < n;
+    if (ok) for (int i = 0; i < n; ++i) push(d[order[i]]);
+    else for (int i = 0; i < popped; ++i) if (d[i]) push(d[i]);
+    return ok;
+}
+// ATK_CLASS m=<k> ptr=<hex> cls=<auto|player|seed> age=<ms since token|->
+inline int fmtAtkClass(char* out, int cap, int m, uint32_t ptr, uint8_t cls, int ageMs) {
+    detail::LogWr w(out, cap);
+    w.s("ATK_CLASS m="); w.mm(m);
+    w.s(" ptr="); w.x8(ptr);
+    w.s(" cls="); w.s(cls == ATK_AUTO ? "auto" : cls == ATK_SEED ? "seed" : "player");
+    w.s(" age="); if (ageMs < 0) w.c('-'); else w.i(ageMs);
+    return w.done();
+}
+// AUTO_ATTACK_LAST m=<k> n=<nrn> moved=<n> ok=<0|1> why=<applied|guard|walk|engine_fights>
+inline int fmtAutoAttackLast(char* out, int cap, int m, int n, int moved, bool ok, const char* why) {
+    detail::LogWr w(out, cap);
+    w.s("AUTO_ATTACK_LAST m="); w.mm(m);
+    w.s(" n="); w.i(n);
+    w.s(" moved="); w.i(moved);
+    w.s(" ok="); w.i(ok ? 1 : 0);
+    w.s(" why="); w.s(why);
+    return w.done();
+}
+// AUTO_ATTACK_LAST_POST m=<k> subs=<s,s,..|->   (the list the frame after an applied reorder)
+inline int fmtAutoAttackLastPost(char* out, int cap, int m, const RNode* rn, int n) {
+    detail::LogWr w(out, cap);
+    w.s("AUTO_ATTACK_LAST_POST m="); w.mm(m);
+    w.s(" subs=");
+    if (!rn || n <= 0) w.c('-');
+    for (int i = 0; rn && i < n && i < kMaxRound; ++i) { if (i) w.c(','); w.u(rn[i].subType); }
     return w.done();
 }
 
