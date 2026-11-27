@@ -1,4 +1,4 @@
-// Queue HUD 0.4.11-dev (CS10 strip slot, CS11 kit art, slim strip) (Steam Aspyr build 6A522E71...). A GREEN copy of the vanilla combat action-queue panel (up to 4 icons), drawn
+// Queue HUD 0.4.12-dev (CS10 strip slot, CS11 kit art, slim strip) (Steam Aspyr build 6A522E71...). A GREEN copy of the vanilla combat action-queue panel (up to 4 icons), drawn
 // OUT of combat so a command given while paused (a use-item / cast-spell that waits for unpause) is visible.
 // Research: the project workspace (0x74DC80 panel filler, 0x74E0B0 icon resolver); logic: QueueHudLogic.h.
 //
@@ -1259,7 +1259,9 @@ static SendResult serverCast(const qh::QueuedAction& a, int slot, uintptr_t tbl,
 
 // Issue one queued command to the engine (our own call: the hooks pass it through via g_dispatching). k = party member (-1 unknown).
 // QL20: the client wrappers act on the CONTROLLED creature, so an action owned by member 1-2 goes through serverCast or is not sent at all.
+void stripStaleAttack(int k, const char* at);   // QL26, defined after removeRoundNodes
 SendResult dispatchAction(const qh::QueuedAction& a, int k, bool retry = false) {
+    stripStaleAttack(k, "send");   // QL26: out of combat only (shouldStripStale)
     {
         party::Fail pf = party::F_None;
         const uintptr_t tbl = party::table(&pf);
@@ -1796,6 +1798,38 @@ int removeRoundNodes(uintptr_t srv, const Snapshot& s, unsigned removeMask) {
     int removed = 0;
     for (int i = 0; i < s.nrn; ++i) { if (removeMask & (1u << i)) ++removed; else push(w, got[i]); }
     return removed;
+}
+
+// QL26 (strip_stale_attack): before OUR out-of-combat cast/item send for member k, remove the engine's no-target attack round nodes
+// (qh::staleAttackMask) so the queued power/item is not run after an attack. One snapshot, the removeRoundNodes guards (CrRunning == 0,
+// identity check, untouched list on failure), no retry loop. A stale attack that is already the current action is left alone (traced why=cur).
+// The engine may add another attack after our node; that one runs after the power/item, which is the wanted order.
+void stripStaleAttack(int k, const char* at) {
+    if (k < 0 || k > 2) return;
+    if (!qh::shouldStripStale(g_cfg.stripStaleAttack, g_combat != 0, g_combatUnreadable, g_softCombat, g_detached[k].n > 0)) return;
+    party::Fail why = party::F_None;
+    const uintptr_t tbl = party::table(&why);
+    const uintptr_t cli = tbl ? party::member(tbl, k) : 0;
+    const uintptr_t srv = cli ? party::serverCreature(cli) : 0;
+    Snapshot s;
+    if (!srv || !gatherFor(srv, s)) return;
+    const unsigned mask = qh::staleAttackMask(s.rn, s.nrn);
+    const bool curStale = s.haveCur && qh::isStaleAttack(s.cur);
+    if (mask == 0 && !curStale) return;
+    int removed = 0;
+    const char* whyStr = "out_of_combat";
+    bool ok = true;
+    if (mask != 0) {
+        removed = removeRoundNodes(srv, s, mask);
+        if (removed < 0) { ok = false; removed = 0; whyStr = "guard"; }
+    } else {
+        ok = false; whyStr = "cur";
+    }
+    if (g_logOn && g_cfg.traceQueue) {
+        char line[120];
+        qh::fmtStaleAttack(line, sizeof line, k, removed, whyStr, ok, at);
+        QTRACE("%s", line);
+    }
 }
 
 constexpr DWORD kDetachEndGraceMs = 20000;   // RQ9: after combat, how long a detached batch may wait for the buffer to drain before it is discarded
@@ -2804,7 +2838,7 @@ void __cdecl KPatchInit(const KPatchApi* api) {
     KpLog_Init(api);
     loadIni();
     g_logOn = g_cfg.log;
-    KP_LOG(chMain, "0.4.11-dev: kit=%d frame_alpha=%.2f cancel=%d enabled=%d waiting_dim=%d border_px=%d log=%d companions=%d strip_icon_px=%d strip_side=%s strip_max=%d waiting_icon_dim=%d strip_head_pct=%d", g_cfg.kit ? 1 : 0, g_cfg.frameAlpha, g_cfg.cancel ? 1 : 0, g_cfg.enabled ? 1 : 0, g_cfg.waitingDim ? 1 : 0, g_cfg.borderPx, g_cfg.log ? 1 : 0, g_cfg.companions ? 1 : 0, g_cfg.stripIconPx, g_cfg.stripSide == qh::kSideBelow ? "below" : g_cfg.stripSide == qh::kSideAbove ? "above" : "left", g_cfg.stripMax, g_cfg.waitingIconDim ? 1 : 0, g_cfg.stripHeadPct);
+    KP_LOG(chMain, "0.4.12-dev: kit=%d frame_alpha=%.2f cancel=%d enabled=%d waiting_dim=%d border_px=%d log=%d companions=%d strip_icon_px=%d strip_side=%s strip_max=%d waiting_icon_dim=%d strip_head_pct=%d", g_cfg.kit ? 1 : 0, g_cfg.frameAlpha, g_cfg.cancel ? 1 : 0, g_cfg.enabled ? 1 : 0, g_cfg.waitingDim ? 1 : 0, g_cfg.borderPx, g_cfg.log ? 1 : 0, g_cfg.companions ? 1 : 0, g_cfg.stripIconPx, g_cfg.stripSide == qh::kSideBelow ? "below" : g_cfg.stripSide == qh::kSideAbove ? "above" : "left", g_cfg.stripMax, g_cfg.waitingIconDim ? 1 : 0, g_cfg.stripHeadPct);
     if (g_iniRejected > 0) QLOGV(chMain, KPLOG_WARN, "queue_hud.ini: %d line(s) not applied (unknown key, bad value or over 255 bytes), first at line %d; those keys keep their defaults", g_iniRejected, g_iniFirstBad);
     QLOG(chMain, "pause_eaten_wait=%d dispatch_wait_flags=%d", g_cfg.pauseEatenWait ? 1 : 0, g_cfg.dispatchWaitFlags ? 1 : 0);
     if (g_cfg.spellReplayPosSeen) QLOG(chMain, "ini: spell_replay_pos is obsolete and ignored (0.4.6-dev)");
@@ -2925,6 +2959,7 @@ int __cdecl QueueHudPerformUseItem(int clientCreature, int ebp) {
         g_itemQueue[memberK].markDispatched(GetTickCount());
         g_lastOurs[memberK].tag = "hook"; g_lastOurs[memberK].tick = GetTickCount();
         traceCmd(cmd, memberK, crPtr, qh::ActionKind::Item, true, itemId, targetId, "dispatch_now", fb, engqLog, bufBefore, false);
+        stripStaleAttack(memberK, "hook");   // QL26: the vanilla send runs after we return; clear a no-target attack in front first
         return 0;
     }
 
@@ -3033,6 +3068,7 @@ int __cdecl QueueHudPerformCastSpell(int clientCreature, int ebp) {
         g_itemQueue[memberK].markDispatched(GetTickCount());
         g_lastOurs[memberK].tag = "hook"; g_lastOurs[memberK].tick = GetTickCount();
         traceCmd(cmd, memberK, crPtr, qh::ActionKind::Spell, true, spellId, tgt, "dispatch_now", fb, engqLog, bufBefore, false);
+        stripStaleAttack(memberK, "hook");   // QL26: the vanilla send runs after we return; clear a no-target attack in front first
         return 0;
     }
 

@@ -262,6 +262,7 @@ struct Config {
     bool handoffKeepUnpaused = true; // handoff_keep_unpaused: keep_new / detach / reorder also apply when combat starts UNPAUSED (0 = only while paused; unpaused clears first)
     bool handoffDetachHeld = true;  // handoff_detach_held: while an engine-held command waits, take the player's new round nodes out of the list and put them back after the hand-off (new power/attack runs LAST)
     bool companionServerCast = true; // companion_server_cast: a non-controlled member's queued Force power runs on that member via the server route (QL20; 0 = hold until it leads, QL17)
+    bool stripStaleAttack = true;   // strip_stale_attack: out of combat, remove the engine's no-target attack round nodes before our cast/item send (QL26)
     bool handoffResendHeld = true;  // handoff_resend_held: re-send an engine-held active command the engine wipes at combat start (default on)
     bool spellReplayPosSeen = false;   // legacy key spell_replay_pos was in the ini (accepted, ignored)
     bool hideBannerSoft = true;     // hide_banner_soft: hide the top combat banner while combat is "soft" (only own-party targets, no hostile)
@@ -563,10 +564,10 @@ inline bool parseSide(const char* b, const char* e, int* side) {
 }  // namespace detail
 
 // One INI line. Blank, ';' / '#' comments and [section] lines are ignored (true); an inline "; note" after a value is ignored (RL15).
-// key=value (spaces/tabs trimmed, key case-insensitive). The 37 keys:
+// key=value (spaces/tabs trimmed, key case-insensitive). The 38 keys:
 //   bool (0/1/true/false/on/off/yes/no): enabled, kit, cancel, waiting_dim, waiting_icon_dim, log, trace_queue, trace_clicks, trace_mode, companions,
 //     pause_reinject, pause_eaten_wait, dispatch_wait_flags, handoff_on_combat, handoff_clear_first, handoff_keep_new, handoff_keep_unpaused,
-//     handoff_detach_held, handoff_resend_held, companion_server_cast, hide_banner_soft, hide_redbar_soft, show_in_combat,
+//     handoff_detach_held, handoff_resend_held, strip_stale_attack, companion_server_cast, hide_banner_soft, hide_redbar_soft, show_in_combat,
 //     spell_replay_pos (obsolete after RV1: accepted, ignored).
 //   float 0..1 (clamped): frame_alpha, bg_alpha, border_alpha, waiting_alpha. rgb "r,g,b" each 0..1: bg_rgb, border_rgb, waiting_dim_rgb.
 //   int: border_px (a single digit 1..6), strip_icon_px (0 = auto, else 8..96), strip_side (left | above | below), strip_max (a single digit 1..4),
@@ -616,6 +617,7 @@ inline bool parseIniLine(Config& c, const char* line) {
     if (detail::keyEq(kb, ke, "handoff_keep_unpaused")) return detail::parseBool(vb, ve, &c.handoffKeepUnpaused);
     if (detail::keyEq(kb, ke, "handoff_detach_held")) return detail::parseBool(vb, ve, &c.handoffDetachHeld);
     if (detail::keyEq(kb, ke, "companion_server_cast")) return detail::parseBool(vb, ve, &c.companionServerCast);
+    if (detail::keyEq(kb, ke, "strip_stale_attack")) return detail::parseBool(vb, ve, &c.stripStaleAttack);
     if (detail::keyEq(kb, ke, "handoff_resend_held")) return detail::parseBool(vb, ve, &c.handoffResendHeld);
     if (detail::keyEq(kb, ke, "spell_replay_pos")) { c.spellReplayPosSeen = true; return true; }
     if (detail::keyEq(kb, ke, "hide_banner_soft")) return detail::parseBool(vb, ve, &c.hideBannerSoft);
@@ -1462,6 +1464,32 @@ inline int fmtRoundDetach(char* out, int cap, int m, int n, const char* act, boo
     w.s(" act="); w.s(act);
     w.s(" ok="); w.i(ok ? 1 : 0);
     w.s(" why="); w.s(why);
+    return w.done();
+}
+
+// QL26 (strip_stale_attack): out of combat the engine sometimes parks a plain attack round node (subType 1) with no target (OBJECT_INVALID at
+// [N+0x64], read into RNode.itemId) in front of the player's queued power/item. No enemy near: it is skipped; an enemy near: it runs first.
+// Log evidence: queue-hud 11-27 session, `subs=1`, `cur=1:7f000000`, mixed lists 9,1 / 11,11,1 (QL26).
+constexpr uint8_t kSubAttack = 1;
+inline bool isStaleAttack(const RNode& n) { return n.subType == kSubAttack && n.itemId == kInvalidObjectId; }
+// Bit i set = rn[i] is a no-target attack node that may be removed before our send (kMaxRound cap).
+inline unsigned staleAttackMask(const RNode* rn, int n) {
+    unsigned m = 0;
+    for (int i = 0; rn && i < n && i < kMaxRound; ++i) if (isStaleAttack(rn[i])) m |= 1u << i;
+    return m;
+}
+// Strip only with the switch on, out of combat (readable flags), not soft combat, and when QL10 is not holding detached nodes for this member.
+inline bool shouldStripStale(bool cfgOn, bool combat, bool combatUnreadable, bool softCombat, bool detachActive) {
+    return cfgOn && !combat && !combatUnreadable && !softCombat && !detachActive;
+}
+// STALE_ATTACK m=<k> n=<removed> why=<out_of_combat|cur|guard> ok=<0|1> at=<hook|send>
+inline int fmtStaleAttack(char* out, int cap, int m, int n, const char* why, bool ok, const char* at) {
+    detail::LogWr w(out, cap);
+    w.s("STALE_ATTACK m="); w.mm(m);
+    w.s(" n="); w.i(n);
+    w.s(" why="); w.s(why);
+    w.s(" ok="); w.i(ok ? 1 : 0);
+    w.s(" at="); w.s(at);
     return w.done();
 }
 

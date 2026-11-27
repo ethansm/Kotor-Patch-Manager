@@ -1,7 +1,7 @@
 [patch]
 id = "queue-hud"
 name = "Queue HUD"
-version = "0.4.11-dev"
+version = "0.4.12-dev"
 author = "ethansm"
 description = "Shows the vanilla combat action-queue panel OUT of combat, so a use-item or cast-spell command given while paused stays visible while it waits for unpause. Buffers those commands, draws per-member queue strips and a Cancel control. Optional queue_hud.ini (see README.md). Needs portrait-slots and hud-host. Version history is in CHANGELOG.md."
 
